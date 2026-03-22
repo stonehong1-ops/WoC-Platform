@@ -9,11 +9,33 @@ import { cn } from '@/lib/utils';
 
 interface SocialCardProps {
   event: SocialEvent;
-  variant?: 'horizontal' | 'vertical' | 'large';
+  variant?: 'horizontal' | 'vertical' | 'large' | 'line';
 }
 
 export default function SocialCard({ event, variant = 'horizontal' }: SocialCardProps) {
   const isLarge = variant === 'large';
+  const isLine = variant === 'line';
+  
+  if (isLine) {
+    return (
+      <Link 
+        href={event.href}
+        className="flex items-center justify-between gap-4 py-2.5 px-1 border-b border-glass-border hover:bg-glass transition-colors group"
+      >
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <span className="text-xs font-bold text-primary truncate shrink-0 w-24">
+            {event.place}
+          </span>
+          <h4 className="text-sm font-medium truncate group-hover:text-primary transition-colors">
+            {event.title}
+          </h4>
+        </div>
+        <div className="text-[10px] text-muted-foreground whitespace-nowrap">
+          {event.organizers[0]}
+        </div>
+      </Link>
+    );
+  }
   
   return (
     <Link 

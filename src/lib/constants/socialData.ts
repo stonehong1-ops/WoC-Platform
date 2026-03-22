@@ -5,7 +5,7 @@ export interface SocialEvent {
   time: string;
   djs: string[];
   organizers: string[];
-  imageUrl: string;
+  imageUrl?: string;
   href: string;
   isSpecial?: boolean;
   day?: string; // e.g., '03/24(화)'
@@ -31,30 +31,23 @@ export const TODAY_SOCIALS: SocialEvent[] = Array.from({ length: 25 }).map((_, i
   href: `/social/today-${i}`,
 }));
 
-export const WEEKLY_SOCIALS: SocialEvent[] = [
-  {
-    id: 'week-1',
-    title: '밀롱가 엘 불린',
+export interface WeeklyDay {
+  day: string; // e.g., '03/24(화)'
+  events: SocialEvent[];
+}
+
+export const WEEKLY_SOCIALS: WeeklyDay[] = Array.from({ length: 7 }).map((_, i) => ({
+  day: `03/${24 + i}(${['화', '수', '목', '금', '토', '일', '월'][i]})`,
+  events: Array.from({ length: 15 }).map((__, j) => ({
+    id: `week-${i}-${j}`,
+    title: `밀롱가 엘 불린`,
     place: '합정 턴',
     time: '20:00 - 익일 01:00',
     djs: ['DJ Blue'],
     organizers: ['El Bulin Team'],
-    day: '03/24(화)',
-    imageUrl: 'https://images.unsplash.com/photo-1514525253361-bee8d48800d1?q=80&w=1964&auto=format&fit=crop',
-    href: '/social/week-1',
-  },
-  {
-    id: 'week-2',
-    title: '베이직 탱고 클래스 & 소셜',
-    place: '서초 연습실',
-    time: '14:00 - 18:00',
-    djs: ['DJ Basic'],
-    organizers: ['Tango Academy'],
-    day: '03/25(수)',
-    imageUrl: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=2070&auto=format&fit=crop',
-    href: '/social/week-2',
-  },
-];
+    href: `/social/week-${i}-${j}`,
+  })),
+}));
 
 export const SPECIAL_EVENTS: SocialEvent[] = [
   {

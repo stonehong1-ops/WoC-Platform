@@ -71,10 +71,6 @@ export default function SocialPageClient() {
                 {TODAY_SOCIALS.length}
               </span>
             </div>
-            <Link href="/social/new" className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-xl transition-colors">
-              <Plus size={14} strokeWidth={3} />
-              <span className="text-xs font-bold">등록</span>
-            </Link>
           </div>
           <div className="flex overflow-x-auto no-scrollbar gap-4 pb-2 -mx-1 px-1">
             {TODAY_SOCIALS.map((event) => (
@@ -83,42 +79,42 @@ export default function SocialPageClient() {
           </div>
         </section>
 
-        {/* 4. 이번 주 (This Week) Section */}
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
+        {/* 4. 이번 주 (This Week) Section - Refined to Day-by-Day Summary */}
+        <section className="space-y-6">
+          <div className="flex items-center justify-between border-b border-glass-border pb-2">
             <h3 className="text-lg font-black tracking-tight">이번 주</h3>
-            <Link href="/social/new" className="flex items-center gap-1.5 px-3 py-1.5 bg-glass-hover text-foreground/80 hover:bg-glass rounded-xl transition-colors border border-glass-border">
-              <Plus size={14} />
-              <span className="text-xs font-bold">등록</span>
-            </Link>
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Weekly Overview</span>
           </div>
-          <div className="space-y-4">
-            {WEEKLY_SOCIALS.map((event) => (
-              <div key={event.id} className="space-y-2">
-                <div className="flex items-center gap-2 text-primary">
-                  <Calendar size={14} />
-                  <span className="text-xs font-black">{event.day}</span>
-                  {event.day?.includes('내일') && (
-                    <span className="text-[10px] font-bold text-accent">내일</span>
+          
+          <div className="space-y-8">
+            {WEEKLY_SOCIALS.map((dayGroup) => (
+              <div key={dayGroup.day} className="space-y-3">
+                <div className="flex items-center gap-2 border-l-2 border-primary pl-3">
+                  <span className="text-sm font-black text-foreground">{dayGroup.day}</span>
+                  <span className="text-[10px] font-bold text-muted-foreground">
+                    {dayGroup.events.length}개의 이벤트
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 gap-1">
+                  {dayGroup.events.slice(0, 5).map((event) => (
+                    <SocialCard key={event.id} event={event} variant="line" />
+                  ))}
+                  {dayGroup.events.length > 5 && (
+                    <button className="text-[10px] font-bold text-primary/60 hover:text-primary transition-colors py-2 text-center border-t border-glass-border">
+                      {dayGroup.events.length - 5}개 더보기 <ChevronRight size={10} className="inline" />
+                    </button>
                   )}
                 </div>
-                <SocialCard event={event} variant="large" />
               </div>
             ))}
-            {/* Pagination / More Dots Mockup */}
-            <div className="flex justify-center gap-1.5 pt-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-              <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/30" />
-              <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/30" />
-            </div>
           </div>
         </section>
 
-        {/* 5. 팝업/스페셜 Section */}
+        {/* 5. 팝업 / 스페셜 Section */}
         <section className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-black tracking-tight">팝업 / 스페셜</h3>
-            <Link href="/social/new" className="text-xs font-bold text-muted-foreground hover:text-primary transition-colors flex items-center gap-0.5">
+            <Link href="/social/all-specials" className="text-xs font-bold text-muted-foreground hover:text-primary transition-colors flex items-center gap-0.5">
               전체보기 <ChevronRight size={14} />
             </Link>
           </div>
@@ -130,13 +126,17 @@ export default function SocialPageClient() {
         </section>
       </div>
 
-      {/* Floating Action Button Refined */}
-      <button className="fixed bottom-[84px] right-6 w-14 h-14 bg-primary text-white rounded-full shadow-2xl shadow-primary/40 flex items-center justify-center transition-transform hover:scale-110 active:scale-95 z-40">
+      {/* Floating Action Button - Global Register Button */}
+      <Link 
+        href="/social/new" 
+        className="fixed bottom-[84px] right-6 w-14 h-14 bg-primary text-white rounded-full shadow-2xl shadow-primary/40 flex items-center justify-center transition-transform hover:scale-110 active:scale-95 z-40"
+        aria-label="Add Event"
+      >
         <Plus size={28} strokeWidth={2.5} />
-      </button>
+      </Link>
 
-      {/* Contextual Info Bar Refined */}
-      <div className="fixed bottom-[80px] left-6 right-6 hidden md:flex h-12 bg-black/90 text-white rounded-full items-center px-6 justify-between z-30 ring-1 ring-white/10 backdrop-blur-md">
+      {/* Contextual Info Bar Refined for Light Mode */}
+      <div className="fixed bottom-[80px] left-6 right-6 hidden md:flex h-12 bg-white/90 text-foreground rounded-full items-center px-6 justify-between z-30 ring-1 ring-black/5 backdrop-blur-md shadow-lg">
         <div className="flex items-center gap-4">
           <span className="text-xs font-black text-primary">{region}</span>
           <div className="h-3 w-[1px] bg-white/20" />

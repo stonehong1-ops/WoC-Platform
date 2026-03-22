@@ -17,13 +17,13 @@
 }
 
 :root {
-  --background: #0a0a0a;
-  --foreground: #ffffff;
-  --accent: #6366f1;
-  --accent-secondary: #a855f7;
-  --glass: rgba(255, 255, 255, 0.03);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --text-muted: #94a3b8;
+  --background: #ffffff;
+  --foreground: #0f172a;
+  --accent: #4f46e5;
+  --accent-secondary: #9333ea;
+  --glass: rgba(0, 0, 0, 0.03);
+  --glass-border: rgba(0, 0, 0, 0.1);
+  --text-muted: #64748b;
 }
 
 @layer base {
