@@ -111,6 +111,9 @@ export default function ProfileSetupOverlay() {
               </label>
               <input 
                 type="tel" 
+                id="tel"
+                name="tel"
+                autoComplete="tel"
                 placeholder="예: 010-1234-5678"
                 value={formData.phone}
                 onChange={(e) => setFormData({...formData, phone: e.target.value})}
