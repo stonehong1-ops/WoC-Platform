@@ -46,10 +46,10 @@ export default function UniversalCompose({
       
       <div className="relative bg-background w-full max-w-lg h-[92vh] sm:h-auto sm:max-h-[85vh] sm:rounded-3xl border-t sm:border border-glass-border shadow-2xl overflow-hidden flex flex-col animate-slide-up">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-glass-border bg-background/80 backdrop-blur-md sticky top-0 z-10">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-glass-border bg-background/80 backdrop-blur-md sticky top-0 z-10">
           <button 
             onClick={() => setIsOpen(false)} 
-            className="p-2 -ml-2 text-muted-foreground hover:text-foreground transition-colors"
+            className="p-2 -ml-3 text-muted-foreground hover:text-foreground transition-colors"
           >
             <X size={24} />
           </button>
@@ -59,7 +59,7 @@ export default function UniversalCompose({
               onSubmit();
               setIsOpen(false);
             }}
-            className="px-4 py-1.5 bg-primary text-white text-sm font-bold rounded-full hover:bg-primary/90 transition-all active:scale-95 shadow-lg shadow-primary/20"
+            className="px-5 py-2 bg-primary text-white text-sm font-bold rounded-full hover:brightness-110 transition-all active:scale-95 shadow-lg shadow-primary/30"
           >
             {submitLabel}
           </button>

@@ -38,14 +38,18 @@ export default function SocialRegisterForm() {
       <div className="space-y-2">
         <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider ml-1">일시</label>
         <div className="flex gap-2">
-          <input 
-            type="date" 
-            className="flex-1 bg-glass border border-glass-border rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
-          />
-          <input 
-            type="time" 
-            className="w-28 bg-glass border border-glass-border rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
-          />
+          <div className="relative flex-1">
+            <input 
+              type="date" 
+              className="w-full bg-glass border border-glass-border rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
+            />
+          </div>
+          <div className="relative w-32">
+            <input 
+              type="time" 
+              className="w-full bg-glass border border-glass-border rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer px-4"
+            />
+          </div>
         </div>
       </div>
 

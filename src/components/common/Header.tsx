@@ -23,13 +23,13 @@ export default function Header() {
         <h1 className="text-lg font-bold tracking-tight">{title}</h1>
       </div>
       
-      <div className="flex items-center gap-3 text-muted-foreground">
+      <div className="flex items-center gap-1 text-muted-foreground mr-1">
         <button 
           onClick={() => window.dispatchEvent(new CustomEvent('woc:compose:open', { detail: { id: pathname.split('/')[1] || 'default' } }))}
-          className="p-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-xl transition-all active:scale-95"
+          className="p-2 text-foreground active:scale-95 transition-all"
           title="추가"
         >
-          <Plus size={22} strokeWidth={2.5} />
+          <Plus size={24} strokeWidth={2} />
         </button>
         <button className="p-2 hover:bg-black/5 rounded-full transition-colors">
           <Bell size={20} />

@@ -10,6 +10,7 @@ module.exports = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
+        primary: "var(--primary)",
         accent: "var(--accent)",
         glass: "var(--glass)",
         "glass-border": "var(--glass-border)",
