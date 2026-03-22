@@ -4,6 +4,7 @@
 @theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
   --color-accent: var(--accent);
   --color-accent-secondary: var(--accent-secondary);
   --color-glass: var(--glass);
