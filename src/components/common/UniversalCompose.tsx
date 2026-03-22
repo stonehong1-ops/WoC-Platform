@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -20,10 +21,11 @@ export default function UniversalCompose({
   children 
 }: UniversalComposeProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const handleOpen = (e: any) => {
-      // Open only if the ID matches or no ID is provided in the event
       if (!e.detail || e.detail.id === id) {
         setIsOpen(true);
       }
@@ -33,9 +35,9 @@ export default function UniversalCompose({
     return () => window.removeEventListener('woc:compose:open', handleOpen);
   }, [id]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-[2px] animate-in overflow-hidden">
       <div 
         className="absolute inset-0" 
@@ -68,6 +70,7 @@ export default function UniversalCompose({
           {children}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
