@@ -47,7 +47,7 @@ export default function SocialCard({ event, variant = 'horizontal' }: SocialCard
     >
       <div className={cn("relative", isLarge ? "aspect-[16/9]" : "aspect-[4/3]")}>
         <Image 
-          src={event.imageUrl} 
+          src={event.imageUrl || 'https://images.unsplash.com/photo-1545128485-c400e7702796?q=80&w=2070&auto=format&fit=crop'} 
           alt={event.title}
           fill
           className="object-cover transition-transform duration-500 group-hover:scale-105"
