@@ -1,5 +1,5 @@
-import TodoPage from '@/components/common/TodoPage';
+import FeedPageClient from '@/components/feed/FeedPageClient';
 
 export default function Page() {
-  return <TodoPage title="피드" />;
+  return <FeedPageClient />;
 }

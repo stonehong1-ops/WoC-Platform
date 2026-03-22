@@ -1,5 +1,5 @@
-import TodoPage from '@/components/common/TodoPage';
+import PlacePageClient from '@/components/place/PlacePageClient';
 
 export default function Page() {
-  return <TodoPage title="장소" />;
+  return <PlacePageClient />;
 }
