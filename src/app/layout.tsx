@@ -3,29 +3,31 @@ import type { Metadata } from 'next';
 import ReactQueryProvider from '@/components/providers/ReactQueryProvider';
 import FooterMenu from '@/components/common/FooterMenu';
 import Header from '@/components/common/Header';
-import ComposeOverlay from '@/components/feed/ComposeOverlay';
+import ProfileSetupOverlay from '@/components/auth/ProfileSetupOverlay';
 
 export const metadata: Metadata = {
   title: 'WoC - World of Community',
-  description: 'The Next Generation Large Scale World of Community Platform',
+  description: 'Global Tango Community Platform',
 };
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
     <html lang="ko">
-      <body>
+      <body className="antialiased">
         <ReactQueryProvider>
           <div className="gradient-bg" />
           <Header />
-          <main className="min-h-screen pt-[56px] pb-[64px]">
+          <main className="max-w-2xl mx-auto min-h-screen pt-14">
             {children}
           </main>
           <FooterMenu />
-          <ComposeOverlay />
+          
+          {/* First Entry Profile Setup */}
+          <ProfileSetupOverlay />
         </ReactQueryProvider>
       </body>
     </html>
