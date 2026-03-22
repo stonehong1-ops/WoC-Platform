@@ -3,7 +3,7 @@
 import React from 'react';
 import { usePathname } from 'next/navigation';
 import { NAV_ITEMS } from '@/lib/constants/navigation';
-import { Bell, MessageCircle, Search } from 'lucide-react';
+import { Bell, MessageCircle, Search, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function Header() {
@@ -24,13 +24,20 @@ export default function Header() {
       </div>
       
       <div className="flex items-center gap-3 text-muted-foreground">
-        <button className="p-2 hover:bg-white/5 rounded-full transition-colors">
+        <button 
+          onClick={() => window.dispatchEvent(new CustomEvent('woc:compose:open', { detail: { id: pathname.split('/')[1] || 'default' } }))}
+          className="p-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-xl transition-all active:scale-95"
+          title="추가"
+        >
+          <Plus size={22} strokeWidth={2.5} />
+        </button>
+        <button className="p-2 hover:bg-black/5 rounded-full transition-colors">
           <Bell size={20} />
         </button>
-        <button className="p-2 hover:bg-white/5 rounded-full transition-colors">
+        <button className="p-2 hover:bg-black/5 rounded-full transition-colors hidden sm:block">
           <MessageCircle size={20} />
         </button>
-        <button className="p-2 hover:bg-white/5 rounded-full transition-colors text-foreground">
+        <button className="p-2 hover:bg-black/5 rounded-full transition-colors text-foreground">
           <Search size={22} />
         </button>
       </div>

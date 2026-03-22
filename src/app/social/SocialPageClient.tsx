@@ -12,6 +12,8 @@ import {
 } from '@/lib/constants/socialData';
 import SocialCard from '@/components/social/SocialCard';
 import RegionFilter from '@/components/social/RegionFilter';
+import UniversalCompose from '@/components/common/UniversalCompose';
+import SocialRegisterForm from '@/components/social/SocialRegisterForm';
 import { cn } from '@/lib/utils';
 
 export default function SocialPageClient() {
@@ -126,14 +128,14 @@ export default function SocialPageClient() {
         </section>
       </div>
 
-      {/* Floating Action Button - Global Register Button */}
-      <Link 
-        href="/social/new" 
-        className="fixed bottom-[84px] right-6 w-14 h-14 bg-primary text-white rounded-full shadow-2xl shadow-primary/40 flex items-center justify-center transition-transform hover:scale-110 active:scale-95 z-40"
-        aria-label="Add Event"
+      {/* Universal Registration Overlay for Social */}
+      <UniversalCompose 
+        id="social" 
+        title="이벤트 등록" 
+        onSubmit={() => console.log('Social event submitted')}
       >
-        <Plus size={28} strokeWidth={2.5} />
-      </Link>
+        <SocialRegisterForm />
+      </UniversalCompose>
 
       {/* Contextual Info Bar Refined for Light Mode */}
       <div className="fixed bottom-[80px] left-6 right-6 hidden md:flex h-12 bg-white/90 text-foreground rounded-full items-center px-6 justify-between z-30 ring-1 ring-black/5 backdrop-blur-md shadow-lg">
