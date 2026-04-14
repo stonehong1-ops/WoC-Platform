@@ -17,10 +17,12 @@ export default function Footer() {
             <div className="flex flex-col gap-0.5">
               <span className="text-[9px] text-on-surface-variant/50 font-bold uppercase tracking-widest">WORLD</span>
               <div className="flex gap-4 items-center">
+                <Link href="/home" className="text-sm font-headline font-bold text-on-surface-variant hover:text-primary transition-colors">HOME</Link>
                 <Link href="/social" className="text-sm font-headline font-bold text-primary">SOCIAL</Link>
                 <Link href="/events" className="text-sm font-headline font-bold text-on-surface-variant hover:text-primary transition-colors">EVENTS</Link>
                 <Link href="/plaza" className="text-sm font-headline font-bold text-on-surface-variant hover:text-primary transition-colors">PLAZA</Link>
                 <Link href="/shop" className="text-sm font-headline font-bold text-on-surface-variant hover:text-primary transition-colors">SHOP</Link>
+                <Link href="/map" className="text-sm font-headline font-bold text-on-surface-variant hover:text-primary transition-colors">MAP</Link>
               </div>
             </div>
 
