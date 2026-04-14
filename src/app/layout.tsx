@@ -1,34 +1,31 @@
-import './globals.css';
-import type { Metadata } from 'next';
-import ReactQueryProvider from '@/components/providers/ReactQueryProvider';
-import FooterMenu from '@/components/common/FooterMenu';
-import Header from '@/components/common/Header';
-import ProfileSetupOverlay from '@/components/auth/ProfileSetupOverlay';
+import type { Metadata } from "next";
+import "./globals.css";
+import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
 
 export const metadata: Metadata = {
-  title: 'WoC - World of Community',
-  description: 'Global Tango Community Platform',
+  title: "WoC Today | World of Community",
+  description: "A community platform for the modern era.",
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="ko">
-      <body className="antialiased">
-        <ReactQueryProvider>
-          <div className="gradient-bg" />
-          <Header />
-          <main className="max-w-2xl mx-auto min-h-screen pt-14">
-            {children}
-          </main>
-          <FooterMenu />
-          
-          {/* First Entry Profile Setup */}
-          <ProfileSetupOverlay />
-        </ReactQueryProvider>
+    <html lang="en">
+      <body className="antialiased min-h-screen bg-[#f8f9fa] flex flex-col">
+        {/* Fixed Header */}
+        <Header />
+
+        {/* Dynamic Body Content */}
+        <main className="flex-1 mt-16 mb-20">
+          {children}
+        </main>
+
+        {/* Fixed Footer */}
+        <Footer />
       </body>
     </html>
   );
