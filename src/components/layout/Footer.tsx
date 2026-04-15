@@ -18,8 +18,8 @@ export default function Footer() {
       <div className="overflow-x-auto no-scrollbar scroll-smooth">
         <div className="flex items-stretch min-w-max px-4 gap-6">
           
-          {/* 1. WORLD PARTITION */}
-          <Section label="World">
+          {/* 1. TANGO WORLD PARTITION */}
+          <Section label={<><span className="text-primary">TANGO</span> WORLD</>}>
             <NavItem href="/home" icon="home" label="HOME" active={isActive('/home')} />
             <NavItem href="/plaza" icon="layers" label="PLAZA" active={isActive('/plaza')} />
             <NavItem href="/venues" icon="location_on" label="VENUES" active={isActive('/venues')} />
@@ -63,7 +63,7 @@ export default function Footer() {
   );
 }
 
-function Section({ label, children, isLast }: { label: string; children: React.ReactNode; isLast?: boolean }) {
+function Section({ label, children, isLast }: { label: React.ReactNode; children: React.ReactNode; isLast?: boolean }) {
   return (
     <div className={`flex flex-col flex-shrink-0 ${isLast ? 'pr-8' : ''}`}>
       <div className="px-1 mb-1.5 flex items-center gap-1.5 opacity-30">
