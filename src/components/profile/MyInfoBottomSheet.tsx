@@ -248,10 +248,10 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold uppercase tracking-wider text-outline">Cell Phone</label>
-                  <div className="flex gap-2 max-w-full">
-                    <div className="relative w-32 shrink-0">
+                  <div className="flex gap-2 w-full">
+                    <div className="relative w-28 shrink-0">
                       <select 
-                        className="w-full bg-white border border-outline-variant rounded px-4 py-2.5 text-on-surface focus:ring-1 focus:ring-primary focus:border-primary appearance-none outline-none"
+                        className="w-full bg-white border border-outline-variant rounded px-3 py-2.5 text-sm text-on-surface focus:ring-1 focus:ring-primary focus:border-primary appearance-none outline-none"
                         value={details.countryCode}
                         onChange={(e) => setDetails(prev => ({ ...prev, countryCode: e.target.value }))}
                       >
@@ -260,11 +260,12 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
                         <option value="+44 (UK)">+44 (UK)</option>
                         <option value="+49 (DE)">+49 (DE)</option>
                       </select>
-                      <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-outline">expand_more</span>
+                      <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-outline text-lg">expand_more</span>
                     </div>
                     <input 
-                      className="flex-1 bg-white border border-outline-variant rounded px-4 py-2.5 text-on-surface focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none" 
+                      className="flex-1 min-w-0 bg-white border border-outline-variant rounded px-4 py-2.5 text-on-surface focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none" 
                       type="tel" 
+                      placeholder="01012345678"
                       value={details.phoneNumber}
                       onChange={(e) => setDetails(prev => ({ ...prev, phoneNumber: e.target.value }))}
                     />
