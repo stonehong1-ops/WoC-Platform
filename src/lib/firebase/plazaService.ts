@@ -16,6 +16,7 @@ export interface Post {
   userPhoto?: string;
   content: string;
   images?: string[];
+  location?: string;
   likes: number;
   commentsCount: number;
   createdAt: Timestamp;
@@ -24,7 +25,7 @@ export interface Post {
 const COLLECTION_NAME = 'plaza';
 
 export const plazaService = {
-  // 실시간 게시글 목록 가져오기
+  // 실시간 게시글 목록 가져오기 (기존 유지용)
   subscribePosts: (callback: (posts: Post[]) => void) => {
     const q = query(collection(db, COLLECTION_NAME), orderBy('createdAt', 'desc'));
     return onSnapshot(q, (snapshot) => {
@@ -34,6 +35,36 @@ export const plazaService = {
       })) as Post[];
       callback(posts);
     });
+  },
+
+  // 페이지네이션 기반 게시글 가져오기
+  getPostsPaginated: async (pageSize: number = 10, lastDoc?: any) => {
+    try {
+      const { getDocs, limit, startAfter, query, collection, orderBy } = await import('firebase/firestore');
+      let q = query(
+        collection(db, COLLECTION_NAME), 
+        orderBy('createdAt', 'desc'), 
+        limit(pageSize)
+      );
+
+      if (lastDoc) {
+        q = query(q, startAfter(lastDoc));
+      }
+
+      const snapshot = await getDocs(q);
+      const posts = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Post[];
+
+      return {
+        posts,
+        lastVisible: snapshot.docs[snapshot.docs.length - 1]
+      };
+    } catch (error) {
+      console.error("Error fetching paginated posts:", error);
+      throw error;
+    }
   },
 
   // 게시글 작성
@@ -47,6 +78,77 @@ export const plazaService = {
       });
     } catch (error) {
       console.error("Error creating post in Plaza:", error);
+      throw error;
+    }
+  },
+
+  // 좋아요 기능
+  likePost: async (postId: string) => {
+    try {
+      const { doc, updateDoc, increment } = await import('firebase/firestore');
+      const postRef = doc(db, COLLECTION_NAME, postId);
+      await updateDoc(postRef, {
+        likes: increment(1)
+      });
+    } catch (error) {
+      console.error("Error liking post:", error);
+    }
+  },
+
+  // 댓글 추가 (대댓글 포함)
+  addComment: async (postId: string, commentData: { 
+    userId: string, 
+    userName: string, 
+    userPhoto: string, 
+    content: string, 
+    parentId?: string 
+  }) => {
+    try {
+      const { collection, addDoc, doc, updateDoc, increment, serverTimestamp } = await import('firebase/firestore');
+      const commentsRef = collection(db, COLLECTION_NAME, postId, 'comments');
+      
+      await addDoc(commentsRef, {
+        ...commentData,
+        createdAt: serverTimestamp(),
+      });
+
+      // 메인 포스트의 댓글 수 증가
+      const postRef = doc(db, COLLECTION_NAME, postId);
+      await updateDoc(postRef, {
+        commentsCount: increment(1)
+      });
+    } catch (error) {
+      console.error("Error adding comment:", error);
+      throw error;
+    }
+  },
+
+  // 댓글 실시간 보관함
+  subscribeComments: (postId: string, callback: (comments: any[]) => void) => {
+    const { collection, query, orderBy, onSnapshot } = require('firebase/firestore');
+    const q = query(collection(db, COLLECTION_NAME, postId, 'comments'), orderBy('createdAt', 'asc'));
+    return onSnapshot(q, (snapshot: any) => {
+      const comments = snapshot.docs.map((doc: any) => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      callback(comments);
+    });
+  },
+
+  // 미디어 업로드 (이미지/동영상)
+  uploadMedia: async (file: File) => {
+    try {
+      const { getStorage, ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
+      const storage = getStorage();
+      const filename = `${Date.now()}_${file.name}`;
+      const storageRef = ref(storage, `plaza/${filename}`);
+      
+      const snapshot = await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(snapshot.ref);
+      return downloadURL;
+    } catch (error) {
+      console.error("Error uploading media:", error);
       throw error;
     }
   }

@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { GoogleMap, useJsApiLoader, Marker, InfoWindow, Libraries } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
 import { db } from '@/lib/firebase/clientApp';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { useLocation } from '@/components/providers/LocationProvider';
+import { CITY_COORDINATES, DEFAULT_COORDINATES } from '@/lib/constants/locations';
 import PageWrapper from '@/components/layout/PageWrapper';
 import ManageEntry from '@/components/venues/ManageEntry';
 
@@ -26,14 +28,10 @@ const mapContainerStyle = {
   height: '100%'
 };
 
-const center = {
-  lat: 37.5575, // Hongdae Station
-  lng: 126.9245
-};
-
-const libraries: Libraries = ["places"];
+const libraries: ("places" | "drawing" | "geometry" | "visualization")[] = ["places"];
 
 export default function VenuesPage() {
+  const { location } = useLocation();
   const [venues, setVenues] = useState<Venue[]>([]);
   const [filteredVenues, setFilteredVenues] = useState<Venue[]>([]);
   const [activeCategory, setActiveCategory] = useState('All');
@@ -41,6 +39,13 @@ export default function VenuesPage() {
   const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [map, setMap] = useState<google.maps.Map | null>(null);
+
+  // Determine current center based on selected location
+  const currentCenter = useMemo(() => {
+    const cityKey = location.city.toUpperCase();
+    return CITY_COORDINATES[cityKey] || DEFAULT_COORDINATES;
+  }, [location.city]);
 
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
@@ -79,6 +84,14 @@ export default function VenuesPage() {
     setFilteredVenues(result);
   }, [venues, activeCategory, searchTerm]);
 
+  // Smoothly pan map when location changes
+  useEffect(() => {
+    if (map) {
+      map.panTo({ lat: currentCenter.lat, lng: currentCenter.lng });
+      map.setZoom(currentCenter.zoom);
+    }
+  }, [currentCenter, map]);
+
   const categories = ['All', 'Studio', 'Academy', 'Club', 'Shop', 'Service', 'Other'];
 
   if (loadError) {
@@ -89,26 +102,26 @@ export default function VenuesPage() {
     <PageWrapper>
       <div className="flex flex-col h-screen bg-[#f8f9fa] font-manrope">
         {/* Search & Tabs Header */}
-        <div className="bg-white px-4 pt-6 pb-4 border-b border-gray-100 z-10 shadow-sm">
-          <div className="relative mb-4">
-            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">search</span>
+        <div className="bg-white px-6 pt-6 pb-4 border-b border-gray-50 z-10">
+          <div className="relative mb-6">
+            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl">search</span>
             <input 
               type="text" 
-              placeholder="Search venues, studios, or events"
+              placeholder={`Search in ${location.city}...`}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-[#f1f3f4] border-none rounded-2xl py-3 pl-12 pr-4 text-sm focus:ring-2 focus:ring-[#0061ff] transition-all"
+              className="w-full bg-[#f8f9fa] border-none rounded-2xl py-4 pl-12 pr-4 text-sm focus:ring-2 focus:ring-[#0061ff] transition-all font-medium placeholder:text-gray-300"
             />
           </div>
-          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
             {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className={`flex-shrink-0 px-5 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
+                className={`flex-shrink-0 px-5 py-2.5 rounded-full text-[11px] font-black uppercase tracking-widest transition-all ${
                   activeCategory === cat 
-                  ? 'bg-[#0061ff] text-white shadow-md' 
-                  : 'bg-white text-gray-500 border border-gray-200 hover:border-gray-400'
+                  ? 'bg-[#0061ff] text-white shadow-xl shadow-[#0061ff]/20' 
+                  : 'bg-[#f8f9fa] text-gray-400 hover:text-gray-900 border-none'
                 }`}
               >
                 {cat}
@@ -118,25 +131,44 @@ export default function VenuesPage() {
         </div>
 
         {/* Main Content: Interactive Google Map */}
-        <div className="relative flex-grow overflow-hidden">
+        <div className="relative flex-grow overflow-hidden bg-[#f1f3f4]">
           {isLoaded ? (
             <GoogleMap
               mapContainerStyle={mapContainerStyle}
-              center={center}
-              zoom={15}
+              center={{ lat: currentCenter.lat, lng: currentCenter.lng }}
+              zoom={currentCenter.zoom}
+              onLoad={(m) => setMap(m)}
               options={{
                 disableDefaultUI: true,
-                zoomControl: true,
+                zoomControl: false,
                 styles: [
                   {
                     featureType: "all",
                     elementType: "geometry",
-                    stylers: [{ color: "#f5f5f5" }]
+                    stylers: [{ color: "#ffffff" }]
                   },
                   {
                     featureType: "water",
                     elementType: "geometry",
-                    stylers: [{ color: "#e9e9e9" }]
+                    stylers: [{ color: "#f1f3f4" }]
+                  },
+                  {
+                    featureType: "poi",
+                    stylers: [{ visibility: "off" }]
+                  },
+                  {
+                    featureType: "transit",
+                    stylers: [{ visibility: "off" }]
+                  },
+                  {
+                    featureType: "road",
+                    elementType: "geometry",
+                    stylers: [{ color: "#f8f9fa" }]
+                  },
+                  {
+                    featureType: "road",
+                    elementType: "labels.text.fill",
+                    stylers: [{ color: "#cccccc" }]
                   }
                 ]
               }}
@@ -147,13 +179,12 @@ export default function VenuesPage() {
                   position={{ lat: venue.coordinates.latitude, lng: venue.coordinates.longitude }}
                   onClick={() => setSelectedVenue(venue)}
                   icon={{
-                    path: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z",
-                    fillColor: selectedVenue?.id === venue.id ? "#ff3b30" : "#0061ff",
+                    path: google.maps.SymbolPath.CIRCLE,
+                    fillColor: selectedVenue?.id === venue.id ? "#0061ff" : "#ffffff",
                     fillOpacity: 1,
-                    strokeWeight: 2,
-                    strokeColor: "#ffffff",
-                    scale: 1.5,
-                    anchor: new google.maps.Point(12, 22)
+                    strokeWeight: 4,
+                    strokeColor: selectedVenue?.id === venue.id ? "#ffffff" : "#0061ff",
+                    scale: selectedVenue?.id === venue.id ? 10 : 7,
                   }}
                 />
               ))}
@@ -163,14 +194,23 @@ export default function VenuesPage() {
                   position={{ lat: selectedVenue.coordinates.latitude, lng: selectedVenue.coordinates.longitude }}
                   onCloseClick={() => setSelectedVenue(null)}
                 >
-                  <div className="p-2 max-w-[200px]">
-                    <h3 className="font-bold text-sm text-gray-900">{selectedVenue.name}</h3>
-                    <p className="text-[10px] text-gray-500 mt-1">{selectedVenue.address}</p>
+                  <div className="p-4 min-w-[220px] bg-white rounded-2xl shadow-none font-manrope">
+                    <div className="flex items-center gap-1 mb-1">
+                      <span className="text-[10px] font-black text-[#0061ff] uppercase tracking-widest">{selectedVenue.category}</span>
+                    </div>
+                    <h3 className="font-black text-base text-gray-900 leading-tight uppercase tracking-tighter">{selectedVenue.name}</h3>
+                    {selectedVenue.nativeName && (
+                      <p className="text-xs text-gray-400 font-medium">{selectedVenue.nativeName}</p>
+                    )}
+                    <p className="text-[11px] text-gray-400 mt-3 flex items-center gap-1">
+                      <span className="material-symbols-outlined text-xs">location_on</span>
+                      {selectedVenue.address}
+                    </p>
                     <button 
-                      className="mt-2 text-[#0061ff] text-[10px] font-bold"
+                      className="w-full mt-4 py-3 bg-[#f8f9fa] hover:bg-[#0061ff] hover:text-white text-gray-900 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all"
                       onClick={() => {/* Detail logic */}}
                     >
-                      VIEW DETAILS
+                      View Details
                     </button>
                   </div>
                 </InfoWindow>

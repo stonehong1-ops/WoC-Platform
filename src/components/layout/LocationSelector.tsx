@@ -56,38 +56,41 @@ export default function LocationSelector() {
       <div className="relative w-full max-w-lg bg-surface sm:rounded-3xl shadow-2xl animate-in slide-in-from-bottom-full duration-500 ease-out flex flex-col max-h-[90vh]">
         
         {/* Header Section */}
-        <div className="px-6 pt-6 pb-4">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="font-headline text-2xl font-bold tracking-tight text-on-surface">SELECT LOCATION</h2>
+        <div className="px-6 pt-8 pb-4">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex flex-col">
+              <span className="font-label text-[9px] font-black text-on-surface/30 tracking-[0.25em] uppercase mb-1">Network</span>
+              <h2 className="font-display text-[22px] font-black tracking-tight text-on-surface uppercase">Select Location</h2>
+            </div>
             <button 
               onClick={() => setIsSelectorOpen(false)}
-              className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-on-surface/5 transition-colors"
+              className="w-10 h-10 flex items-center justify-center rounded-full bg-on-surface/[0.03] hover:bg-on-surface/[0.08] transition-all"
             >
-              <span className="material-symbols-outlined">close</span>
+              <span className="material-symbols-outlined text-[20px] text-on-surface/40">close</span>
             </button>
           </div>
 
-          {/* Search Bar - No Line Design */}
-          <div className="relative mb-6">
-            <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-              <span className="material-symbols-outlined text-on-surface/40">search</span>
+          {/* Search Bar - No Line Design (Tonal) */}
+          <div className="relative mb-8">
+            <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none">
+              <span className="material-symbols-outlined text-[20px] text-primary">search</span>
             </div>
             <input 
               type="text"
               placeholder="Search city or country"
-              className="w-full h-12 pl-12 pr-4 bg-on-surface/[0.03] rounded-2xl border-none focus:ring-2 focus:ring-primary/20 focus:bg-on-surface/[0.05] transition-all font-body text-base outline-none"
+              className="w-full h-[56px] pl-14 pr-6 bg-on-surface/[0.03] rounded-3xl border-none focus:ring-1 focus:ring-primary/20 focus:bg-on-surface/[0.06] transition-all font-manrope text-[15px] font-medium text-on-surface placeholder:text-on-surface/30 outline-none"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
 
           {/* Recent/Favorite Chips */}
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
-            {['SEOUL', 'BUDAPEST', 'LONDON'].map((city) => (
+          <div className="flex gap-2 overflow-x-auto pb-4 no-scrollbar">
+            {['SEOUL', 'BUDAPEST', 'LONDON', 'TOKYO', 'PARIS'].map((city) => (
               <button 
                 key={city}
-                onClick={() => handleSelect(city === 'SEOUL' ? 'KOREA' : (city === 'BUDAPEST' ? 'HUNGARY' : 'UK'), city)}
-                className="px-4 py-2 bg-on-surface/[0.03] hover:bg-on-surface/[0.08] active:bg-primary/10 rounded-full text-xs font-bold tracking-wider text-on-surface/80 whitespace-nowrap transition-colors uppercase"
+                onClick={() => handleSelect('...', city)}
+                className="px-5 py-2.5 bg-white border border-on-surface/5 hover:border-primary/30 hover:bg-primary/[0.02] active:scale-95 rounded-full text-[11px] font-black tracking-widest text-on-surface/50 whitespace-nowrap transition-all uppercase"
               >
                 {city}
               </button>
@@ -95,19 +98,19 @@ export default function LocationSelector() {
           </div>
         </div>
 
-        {/* Tab Navigation - No Line (Tonal Layering) */}
-        <div className="px-6 flex gap-6 overflow-x-auto scrollbar-none bg-on-surface/[0.02]">
+        {/* Tab Navigation - Editorial No-Line */}
+        <div className="px-6 flex gap-8 overflow-x-auto no-scrollbar bg-on-surface/[0.01]">
           {CONTINENTS.map((tab) => (
             <button 
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`pt-4 pb-3 text-[10px] font-bold tracking-[0.2em] transition-all relative ${
-                activeTab === tab ? 'text-primary' : 'text-on-surface/40 hover:text-on-surface/60'
+              className={`pt-5 pb-4 text-[10px] font-black tracking-[0.25em] transition-all relative ${
+                activeTab === tab ? 'text-primary' : 'text-on-surface/30 hover:text-on-surface/50'
               }`}
             >
               {tab}
               {activeTab === tab && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary animate-in fade-in duration-300"></div>
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-t-full animate-in fade-in slide-in-from-bottom-1 duration-300"></div>
               )}
             </button>
           ))}

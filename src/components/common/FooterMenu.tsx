@@ -19,50 +19,46 @@ export default function FooterMenu() {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 h-[64px] bg-background/60 backdrop-blur-xl border-t border-glass-border z-50 overflow-hidden">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-gray-100 z-50">
       <div 
         ref={scrollRef}
-        className="h-full overflow-x-auto flex items-center px-4 no-scrollbar gap-0 scroll-smooth"
+        className="overflow-x-auto flex items-end px-4 h-[72px] no-scrollbar gap-6 scroll-smooth"
+        style={{ WebkitOverflowScrolling: 'touch' }}
       >
         {sectors.map((sector, sIdx) => (
-          <div key={sector.name} className="flex h-full items-center">
-            {/* Sector Section */}
-            <div className="flex flex-col items-center px-1">
-              <span className="text-[8px] font-bold text-muted-foreground/50 uppercase tracking-widest whitespace-nowrap mb-1">
-                {sector.name}
-              </span>
-              <div className="flex gap-0.5">
-                {sector.items.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = pathname === item.href;
-                  
-                  return (
-                    <Link
-                      key={item.id}
-                      href={item.href}
-                      className={cn(
-                        "flex flex-col items-center justify-center min-w-[52px] h-[40px] rounded-lg transition-all duration-300",
-                        isActive 
-                          ? "text-primary bg-primary/10 shadow-[0_0_15px_rgba(var(--primary-rgb),0.1)]" 
-                          : "text-muted-foreground hover:text-foreground hover:bg-white/5"
-                      )}
-                    >
-                      <Icon size={18} strokeWidth={isActive ? 2.5 : 2} className={cn("transition-transform", isActive && "scale-110")} />
-                      <span className="text-[9px] font-semibold mt-0.5">{item.label}</span>
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
+          <div key={sector.name} className="flex flex-col h-full justify-between py-2 shrink-0">
+            {/* Sector Label - Now on Top */}
+            <span className="text-[9px] font-black text-on-surface/20 uppercase tracking-[0.2em] whitespace-nowrap pt-1">
+              {sector.name}
+            </span>
             
-            {/* Elegant Divider */}
-            {sIdx < sectors.length - 1 && (
-              <div className="h-8 w-[1px] bg-gradient-to-b from-transparent via-glass-border to-transparent mx-2 self-center opacity-50" />
-            )}
+            {/* Items Group */}
+            <div className="flex gap-1 items-center pb-1">
+              {sector.items.map((item) => {
+                const Icon = item.icon;
+                const isActive = pathname === item.href;
+                
+                return (
+                  <Link
+                    key={item.id}
+                    href={item.href}
+                    className={cn(
+                      "flex flex-col items-center justify-center min-w-[56px] h-[40px] rounded-2xl transition-all duration-200",
+                      isActive 
+                        ? "text-primary bg-primary/5 font-bold" 
+                        : "text-on-surface/40 hover:text-on-surface hover:bg-surface-container-low"
+                    )}
+                  >
+                    <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+                    <span className="text-[10px] mt-0.5 tracking-tight">{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
           </div>
         ))}
         {/* Padding for end of scroll */}
-        <div className="min-w-[16px] h-full" />
+        <div className="min-w-[20px] shrink-0" />
       </div>
       
       {/* Scroll indicator gradient - optional but helpful */}

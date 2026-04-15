@@ -4,25 +4,92 @@ import React, { useState, useEffect } from 'react';
 import { plazaService, Post } from '@/lib/firebase/plazaService';
 import PageWrapper from '@/components/layout/PageWrapper';
 import { useAuth } from '@/components/providers/AuthProvider';
+import CreatePost from '@/components/plaza/CreatePost';
+import CommentsSheet from '@/components/plaza/CommentsSheet';
+import MediaViewer from '@/components/plaza/MediaViewer';
+import PostSkeleton from '@/components/plaza/PostSkeleton';
+import EmptyState from '@/components/common/EmptyState';
 
 export default function PlazaPage() {
   const { user } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [lastDoc, setLastDoc] = useState<any>(null);
+  const [hasMore, setHasMore] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('All');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
+  const [isCommentsOpen, setIsCommentsOpen] = useState(false);
+  const [viewerData, setViewerData] = useState<{ items: {url: string, type: 'image' | 'video'}[], initialIndex: number } | null>(null);
+
+  // Initial Fetch
+  const fetchInitialPosts = async () => {
+    setLoading(true);
+    try {
+      const { posts: newPosts, lastVisible } = await plazaService.getPostsPaginated(10);
+      setPosts(newPosts);
+      setLastDoc(lastVisible);
+      if (newPosts.length < 10) setHasMore(false);
+    } catch (error) {
+      console.error("Fetch error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load More logic. Updated fetch size to 10 for better experience
+  const loadMorePosts = async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    try {
+      const { posts: newPosts, lastVisible } = await plazaService.getPostsPaginated(10, lastDoc);
+      if (newPosts.length === 0) {
+        setHasMore(false);
+      } else {
+        setPosts(prev => [...prev, ...newPosts]);
+        setLastDoc(lastVisible);
+        if (newPosts.length < 10) setHasMore(false);
+      }
+    } catch (error) {
+      console.error("Load more error:", error);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   useEffect(() => {
-    const unsubscribe = plazaService.subscribePosts((data) => {
-      setPosts(data);
-      setLoading(false);
-    });
-    return () => unsubscribe();
+    fetchInitialPosts();
   }, []);
 
-  const tabs = ['All', 'Popular', 'Following', 'Events', 'Q&A'];
+  // Intersection Observer for Infinite Scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading && !loadingMore) {
+          loadMorePosts();
+        }
+      },
+      { threshold: 0.1 }
+    );
 
-  // Filter posts based on search
+    const target = document.getElementById('infinite-scroll-trigger');
+    if (target) observer.observe(target);
+
+    return () => {
+      if (target) observer.unobserve(target);
+    };
+  }, [hasMore, loading, loadingMore, lastDoc]);
+
+  const openComments = (postId: string) => {
+    setSelectedPostId(postId);
+    setIsCommentsOpen(true);
+  };
+
+  const tabs = ['All', 'Moments', 'Popular', 'Events', 'Q&A'];
+
+  // Filter posts based on search (already loaded posts)
   const filteredPosts = posts.filter(post => 
     post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
     post.userName.toLowerCase().includes(searchTerm.toLowerCase())
@@ -30,119 +97,249 @@ export default function PlazaPage() {
 
   return (
     <PageWrapper>
-      <div className="flex flex-col h-screen bg-[#f8f9fa] font-manrope">
-        {/* Header (1-pixel consistency with Venues) */}
-        <div className="bg-white px-4 pt-6 pb-4 border-b border-gray-50 z-10">
-          <div className="relative mb-4">
-            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">search</span>
-            <input 
-              type="text" 
-              placeholder="Search in Plaza"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-[#f1f3f4] border-none rounded-2xl py-3 pl-12 pr-4 text-sm focus:ring-2 focus:ring-[#0061ff] transition-all"
-            />
-          </div>
-          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-            {tabs.map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`flex-shrink-0 px-5 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
-                  activeTab === tab 
-                  ? 'bg-[#0061ff] text-white shadow-md' 
-                  : 'bg-white text-gray-500 border border-gray-100 hover:border-gray-300'
-                }`}
-              >
-                {tab}
-              </button>
+      <div className="flex flex-col min-h-screen bg-white font-manrope">
+        {/* 1. Stories Section */}
+        <section className="px-4 py-6 border-b border-gray-50">
+          <div className="flex items-center gap-5 overflow-x-auto no-scrollbar pb-2">
+            {/* Current User Story */}
+            <div className="flex flex-col items-center flex-shrink-0 gap-2">
+              <div className="relative w-16 h-16 rounded-full p-[2px] bg-white ring-2 ring-gray-100">
+                <img
+                  alt="User profile"
+                  className="w-full h-full rounded-full object-cover"
+                  src={user?.photoURL || "https://lh3.googleusercontent.com/a/default-user"}
+                />
+                <div className="absolute bottom-0 right-0 bg-[#0061ff] text-white rounded-full w-5 h-5 flex items-center justify-center border-2 border-white shadow-sm">
+                  <span className="material-symbols-outlined text-[14px]">add</span>
+                </div>
+              </div>
+              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-tight">Your Story</span>
+            </div>
+            
+            {/* Placeholder Stories (matching screenshot) */}
+            {[
+              { name: 'Marcus', img: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=200&h=200&fit=crop' },
+              { name: 'Elena', img: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop' },
+              { name: 'Julian', img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop' },
+              { name: 'Sarah', img: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop' },
+            ].map((story, i) => (
+              <div key={i} className="flex flex-col items-center flex-shrink-0 gap-2">
+                <div className="w-16 h-16 rounded-full p-[2px] bg-white ring-2 ring-primary/40">
+                  <img
+                    alt={story.name}
+                    className="w-full h-full rounded-full object-cover"
+                    src={story.img}
+                  />
+                </div>
+                <span className="text-[10px] font-bold text-gray-900 uppercase tracking-tight">{story.name}</span>
+              </div>
             ))}
           </div>
-        </div>
+        </section>
 
-        {/* Timeline Feed */}
-        <div className="flex-grow overflow-y-auto px-4 py-8 space-y-6 scrollbar-hide">
-          {filteredPosts.map((post) => (
-            <div key={post.id} className="bg-white rounded-[32px] p-6 shadow-[0_4px_20px_rgba(0,0,0,0.02)] border border-gray-50">
-              {/* User Header */}
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 rounded-full bg-gray-100 overflow-hidden">
-                  {post.userPhoto ? (
-                    <img src={post.userPhoto} alt={post.userName} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-300">
-                      <span className="material-symbols-outlined">person</span>
+        {/* 2. Quick Post Bar */}
+        <section className="px-4 py-6 bg-white border-b border-gray-50 shadow-sm sticky top-16 z-20 backdrop-blur-md bg-white/90">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-full bg-gray-100 overflow-hidden flex-shrink-0 ring-1 ring-gray-100">
+              <img src={user?.photoURL || "https://lh3.googleusercontent.com/a/default-user"} alt="User profile" className="w-full h-full object-cover" />
+            </div>
+            <div className="flex-1 relative cursor-pointer group" onClick={() => setIsCreateModalOpen(true)}>
+              <div className="w-full bg-[#f8f9fa] border border-transparent hover:border-primary/20 rounded-[24px] py-3 px-6 h-[48px] flex items-center shadow-inner transition-all">
+                <span className="text-gray-400 font-medium text-sm">Share your moment...</span>
+                <span className="w-[1.5px] h-5 bg-primary ml-0.5 animate-pulse"></span>
+              </div>
+            </div>
+            <button 
+              className="text-primary hover:opacity-70 transition-opacity active:scale-90 duration-100"
+              onClick={() => setIsCreateModalOpen(true)}
+            >
+              <span className="material-symbols-outlined text-[24px]">photo_camera</span>
+            </button>
+          </div>
+        </section>
+
+        {/* 3. Social Feed */}
+        <div className="flex-grow bg-[#f8f9fa] space-y-4 pb-24">
+          {loading ? (
+            <div className="space-y-4">
+              <PostSkeleton />
+              <PostSkeleton />
+              <PostSkeleton />
+            </div>
+          ) : filteredPosts.map((post) => (
+            <article key={post.id} className="bg-white overflow-hidden shadow-sm">
+              {/* Post Header */}
+              <div className="p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gray-100 overflow-hidden shrink-0 ring-1 ring-gray-100">
+                    <img src={post.userPhoto || ""} alt={post.userName} className="w-full h-full object-cover" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-gray-900 text-[13px] leading-none mb-1.5">{post.userName}</h4>
+                    <p className="text-[9px] text-gray-400 font-black uppercase tracking-widest leading-none">
+                      {post.location || "TOKYO, JAPAN"}
+                    </p>
+                  </div>
+                </div>
+                <button className="text-gray-400 hover:text-gray-900 transition-colors">
+                  <span className="material-symbols-outlined text-[20px]">more_horiz</span>
+                </button>
+              </div>
+
+              {/* Post Media (Bleed Container with Horizontal Scroll) */}
+              {post.images && post.images.length > 0 && (
+                <div className="relative group">
+                  <div className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar aspect-[4/3] bg-gray-50">
+                    {post.images.map((imgUrl, idx) => (
+                      <div 
+                        key={idx}
+                        className="flex-shrink-0 w-full h-full snap-start cursor-pointer relative"
+                        onClick={() => {
+                          const items = post.images?.map(url => ({
+                            url,
+                            type: (url.match(/\.(mp4|mov|webm|quicktime)/i) || url.includes('video')) ? 'video' as const : 'image' as const
+                          })) || [];
+                          setViewerData({ items, initialIndex: idx });
+                        }}
+                      >
+                        {imgUrl.match(/\.(mp4|mov|webm|quicktime)/i) || imgUrl.includes('video') ? (
+                          <video 
+                            src={imgUrl} 
+                            className="w-full h-full object-cover"
+                            autoPlay 
+                            muted 
+                            loop 
+                            playsInline 
+                          />
+                        ) : (
+                          <img 
+                            src={imgUrl} 
+                            alt={`content-${idx}`} 
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+                          />
+                        )}
+
+                        {/* Video Badge */}
+                        {(imgUrl.match(/\.(mp4|mov|webm|quicktime)/i) || imgUrl.includes('video')) && (
+                          <div className="absolute top-4 right-4 bg-black/40 backdrop-blur-md rounded-full px-2 py-1 flex items-center gap-1">
+                            <span className="material-symbols-outlined text-white text-[14px]">play_circle</span>
+                            <span className="text-[10px] text-white font-bold uppercase tracking-widest leading-none pt-0.5">Video</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Multi-image Indicator (Dots) */}
+                  {post.images.length > 1 && (
+                    <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1.5">
+                      {post.images.map((_, i) => (
+                        <div key={i} className="w-1.5 h-1.5 rounded-full bg-white/40 border border-black/10 shadow-sm" />
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Image Count Badge */}
+                  {post.images.length > 1 && (
+                    <div className="absolute top-4 right-4 bg-black/40 backdrop-blur-md rounded-full px-3 py-1.5">
+                      <span className="text-[10px] text-white font-black uppercase tracking-widest">1 / {post.images.length}</span>
                     </div>
                   )}
                 </div>
-                <div>
-                  <h4 className="font-bold text-gray-900 leading-tight">{post.userName}</h4>
-                  <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider mt-0.5">
-                    {post.createdAt?.toDate().toLocaleDateString() || 'Just now'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Content */}
-              <p className="text-gray-700 text-sm leading-relaxed mb-6 whitespace-pre-wrap">
-                {post.content}
-              </p>
-
-              {/* Images Grid (if any) */}
-              {post.images && post.images.length > 0 && (
-                <div className={`grid gap-2 mb-6 rounded-2xl overflow-hidden ${post.images.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-                  {post.images.map((img, idx) => (
-                    <img key={idx} src={img} alt="post" className="w-full h-64 object-cover" />
-                  ))}
-                </div>
               )}
 
-              {/* Interaction Bar */}
-              <div className="flex items-center gap-6 pt-4 border-t border-gray-50">
-                <button className="flex items-center gap-2 group">
-                  <span className="material-symbols-outlined text-xl text-gray-400 group-hover:text-red-500 transition-colors">favorite</span>
-                  <span className="text-xs font-bold text-gray-400 group-hover:text-gray-700">{post.likes}</span>
+              {/* Interaction Bar (Refined Editorial) */}
+              <div className="px-4 py-4 flex items-center gap-6">
+                <button 
+                  onClick={() => plazaService.likePost(post.id)}
+                  className="flex items-center gap-2 group"
+                >
+                  <span className={`material-symbols-outlined text-[22px] transition-all group-active:scale-125 ${post.likes > 0 ? 'text-red-500 fill-current' : 'text-gray-900'}`}>
+                    favorite
+                  </span>
+                  <span className="text-[11px] font-black text-gray-900">{post.likes || 0}</span>
                 </button>
-                <button className="flex items-center gap-2 group">
-                  <span className="material-symbols-outlined text-xl text-gray-400 group-hover:text-[#0061ff] transition-colors">chat_bubble</span>
-                  <span className="text-xs font-bold text-gray-400 group-hover:text-gray-700">{post.commentsCount}</span>
+
+                <button 
+                  onClick={() => openComments(post.id)}
+                  className="flex items-center gap-2 group"
+                >
+                  <span className="material-symbols-outlined text-[22px] text-gray-900 transition-transform group-active:scale-90">
+                    chat_bubble
+                  </span>
+                  <span className="text-[11px] font-black text-gray-900">{post.commentsCount || 0}</span>
                 </button>
-                <button className="flex items-center gap-2 group ml-auto">
-                  <span className="material-symbols-outlined text-xl text-gray-400 group-hover:text-gray-700 transition-colors">share</span>
+
+                <button className="ml-auto flex items-center gap-2 text-gray-900">
+                  <span className="material-symbols-outlined text-[22px]">share</span>
                 </button>
               </div>
-            </div>
+              
+              {/* Post Content (Below Interaction) */}
+              {post.content && (
+                <div className="px-4 pb-6">
+                  <p className="text-[13px] leading-relaxed text-gray-800">
+                    <span className="font-black mr-2 text-gray-900">{post.userName}</span>
+                    {post.content}
+                  </p>
+                </div>
+              )}
+            </article>
           ))}
 
-          {loading && (
-            <div className="flex flex-col items-center py-20 animate-pulse">
-              <div className="w-12 h-12 bg-gray-200 rounded-full mb-4"></div>
-              <div className="w-48 h-4 bg-gray-200 rounded-full"></div>
-            </div>
+          {/* If no posts, show refined Empty State */}
+          {posts.length === 0 && !loading && (
+            <EmptyState 
+              title="No Moments Yet"
+              description="Be the first one to share a moment in this community."
+              icon="photo_camera"
+              actionLabel="Create First Moment"
+              onAction={() => setIsCreateModalOpen(true)}
+            />
           )}
 
-          {!loading && filteredPosts.length === 0 && (
-            <div className="text-center py-20 text-gray-300">
-              <span className="material-symbols-outlined text-6xl mb-4">landscape</span>
-              <p className="text-sm font-semibold uppercase tracking-widest">Nothing yet in the Plaza</p>
-            </div>
-          )}
+          {/* Infinite Scroll Trigger */}
+          <div id="infinite-scroll-trigger" className="h-20 w-full flex items-center justify-center">
+            {loadingMore && (
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Loading More</span>
+              </div>
+            )}
+            {!hasMore && posts.length > 0 && (
+              <div className="py-8 grayscale opacity-50">
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">You've reached the end</p>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Floating Action Button (FAB): Compose */}
-        <button
-          className="fixed bottom-32 right-6 w-14 h-14 bg-[#0061ff] text-white rounded-full shadow-2xl shadow-[#0061ff]/30 flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-20"
-          onClick={() => alert("Write Post function coming soon")}
-        >
-          <span className="material-symbols-outlined text-2xl">edit_square</span>
-        </button>
+        {/* Create Post Modal remains active as backup */}
+        <CreatePost isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} />
+        
+        {selectedPostId && (
+          <CommentsSheet 
+            postId={selectedPostId} 
+            isOpen={isCommentsOpen} 
+            onClose={() => setIsCommentsOpen(false)} 
+          />
+        )}
+
+        {viewerData && (
+          <MediaViewer 
+            items={viewerData.items} 
+            initialIndex={viewerData.initialIndex} 
+            isOpen={!!viewerData} 
+            onClose={() => setViewerData(null)} 
+          />
+        )}
       </div>
 
       <style jsx global>{`
-        .scrollbar-hide::-webkit-scrollbar {
+        .no-scrollbar::-webkit-scrollbar {
           display: none;
         }
-        .scrollbar-hide {
+        .no-scrollbar {
           -ms-overflow-style: none;
           scrollbar-width: none;
         }

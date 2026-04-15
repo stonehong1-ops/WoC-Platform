@@ -7,14 +7,15 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { useNavigation } from '@/components/providers/NavigationProvider';
 
 export default function LandingPage() {
-  const { user, profile } = useAuth();
+  const { user, profile, setShowLogin } = useAuth();
   const { toggleDrawer } = useNavigation();
   const router = useRouter();
 
   const handleProtectedLink = (e: React.MouseEvent, href: string) => {
-    if (!user) {
+    if (!user || !profile?.isRegistered) {
       e.preventDefault();
-      router.push('/login');
+      localStorage.setItem('woc_context', href);
+      setShowLogin(true);
     }
   };
 
@@ -30,17 +31,23 @@ export default function LandingPage() {
           <span className="material-symbols-outlined text-2xl">menu</span>
         </button>
         <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-black">WoC / World Of Community</p>
-        <Link 
+        <button 
           aria-label="Profile" 
-          className="p-2 -mr-2 flex items-center justify-center" 
-          href={user ? "/profile" : "/login"}
+          className="p-2 -mr-2 flex items-center justify-center outline-none" 
+          onClick={() => {
+            if (user && profile?.isRegistered) {
+              router.push('/my-info');
+            } else {
+              setShowLogin(true);
+            }
+          }}
         >
-          {user && profile?.photoURL ? (
-            <img src={profile.photoURL} alt="Profile" className="w-8 h-8 rounded-full border border-gray-100" />
+          {user && profile?.isRegistered && (profile?.photoURL || user.photoURL) ? (
+            <img src={profile?.photoURL || user.photoURL || ''} alt="Profile" className="w-8 h-8 rounded-full border border-gray-100" />
           ) : (
             <span className="material-symbols-outlined text-2xl">account_circle</span>
           )}
-        </Link>
+        </button>
       </nav>
 
       {/* Header / Slogan Section */}

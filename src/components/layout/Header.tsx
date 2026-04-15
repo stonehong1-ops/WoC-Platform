@@ -11,11 +11,15 @@ import { useLocation } from "@/components/providers/LocationProvider";
 export default function Header() {
   const pathname = usePathname();
   const { toggleDrawer } = useNavigation();
-  const { user, profile } = useAuth();
+  const { user, profile, setShowLogin } = useAuth();
   const { location, toggleSelector } = useLocation();
 
-  // Hide on landing page and login page
-  if (pathname === '/' || pathname === '/login') return null;
+  // Hide on login page only
+  if (pathname === '/login') return null;
+  // If we are on landing page, Header is already there as a custom nav, 
+  // but if the user wants this global Header instead, we should decide.
+  // The provided HTML design usually replaces the landing page nav.
+  if (pathname === '/') return null; 
 
   const routeMap: Record<string, { headline: string; sub: string }> = {
     '/home': { headline: 'HOME', sub: 'Tango World' },
@@ -59,23 +63,22 @@ export default function Header() {
           <span className="material-symbols-outlined text-on-surface" data-icon="menu">menu</span>
         </button>
         {/* Title */}
-        <Link href="/home" className="flex items-center active:scale-95 transition-transform">
-          <h1 className="font-headline text-lg font-bold tracking-tight text-on-surface whitespace-nowrap min-w-[90px] uppercase">
-            {current.headline}
-          </h1>
-        </Link>
+        <div className="flex flex-col">
+          <span className="font-label text-[9px] font-black text-on-surface/30 leading-none mb-1 uppercase tracking-widest">{current.sub}</span>
+          <h1 className="font-display text-[16px] font-black tracking-tight text-on-surface leading-none">{current.headline}</h1>
+        </div>
       </div>
 
       <div className="flex items-center">
         {/* Action Group */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           {/* Notifications */}
           <Link 
             href="/notification" 
             className="relative hover:opacity-70 transition-opacity active:scale-95 duration-100 flex items-center justify-center w-8 h-8"
           >
-            <span className="material-symbols-outlined text-on-surface icon-sm" data-icon="notifications">notifications</span>
-            <span className="absolute top-0 right-0 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-white outline outline-1 outline-white">3</span>
+            <span className="material-symbols-outlined text-on-surface !text-[22px]" data-icon="notifications">notifications</span>
+            <span className="absolute top-0 right-0 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-[8px] font-black text-white outline outline-2 outline-white">3</span>
           </Link>
 
           {/* Chat */}
@@ -83,8 +86,8 @@ export default function Header() {
             href="/chat" 
             className="relative hover:opacity-70 transition-opacity active:scale-95 duration-100 flex items-center justify-center w-8 h-8"
           >
-            <span className="material-symbols-outlined text-on-surface icon-sm" data-icon="chat_bubble">chat_bubble</span>
-            <span className="absolute top-0 right-0 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-white outline outline-1 outline-white">5</span>
+            <span className="material-symbols-outlined text-on-surface !text-[22px]" data-icon="chat_bubble">chat_bubble</span>
+            <span className="absolute top-0 right-0 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-[8px] font-black text-white outline outline-2 outline-white">5</span>
           </Link>
 
           {/* Search */}
@@ -92,26 +95,47 @@ export default function Header() {
             href="/search" 
             className="hover:opacity-70 transition-opacity active:scale-95 duration-100 flex items-center justify-center w-8 h-8"
           >
-            <span className="material-symbols-outlined text-on-surface icon-sm" data-icon="search">search</span>
+            <span className="material-symbols-outlined text-on-surface !text-[22px]" data-icon="search">search</span>
           </Link>
         </div>
 
         {/* Vertical Divider */}
-        <div className="h-8 w-[1px] bg-outline-variant/30 mx-3"></div>
+        <div className="h-6 w-[1px] bg-outline-variant/20 mx-2"></div>
 
         {/* Location Group - Interactive */}
         <button 
           onClick={toggleSelector}
           className="flex flex-col justify-center items-end hover:opacity-70 transition-opacity active:scale-95 duration-100"
         >
-          <span className="font-label text-[10px] font-bold leading-none tracking-[0.15em] text-on-surface/40 uppercase">
+          <span className="font-label text-[9px] font-black tracking-widest text-on-surface/30 uppercase leading-none">
             {location.country}
           </span>
-          <span className="font-label text-[13px] font-extrabold leading-none text-primary flex items-center gap-0.5 mt-1 lg:mt-1.5 uppercase">
+          <span className="font-label text-[13px] font-black leading-none text-primary flex items-center gap-0.5 mt-1 uppercase">
             {location.city}{location.zone ? ` · ${location.zone}` : ''}
-            <span className="material-symbols-outlined !text-[16px] leading-none text-on-surface/60" data-icon="expand_more">expand_more</span>
+            <span className="material-symbols-outlined !text-[18px] leading-none text-primary" data-icon="expand_more">expand_more</span>
           </span>
         </button>
+
+        {/* Profile Button */}
+        <div className="ml-3">
+          <button 
+            onClick={() => {
+              if (user && profile?.isRegistered) {
+                // Navigate to my info
+              } else {
+                setShowLogin(true);
+              }
+            }}
+            className="flex items-center justify-center p-0.5 rounded-full hover:bg-gray-100 transition-colors outline-none"
+          >
+            {/* ONLY show photo if isRegistered is true */}
+            {user && profile?.isRegistered && (profile.photoURL || user.photoURL) ? (
+              <img src={profile.photoURL || user.photoURL || ''} alt="Profile" className="w-8 h-8 rounded-full" />
+            ) : (
+              <span className="material-symbols-outlined text-gray-400 !text-2xl">account_circle</span>
+            )}
+          </button>
+        </div>
       </div>
     </header>
   );

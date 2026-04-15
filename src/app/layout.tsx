@@ -24,6 +24,8 @@ import { AuthProvider } from "@/components/providers/AuthProvider";
 import { LocationProvider } from "@/components/providers/LocationProvider";
 import NavigationDrawer from "@/components/layout/NavigationDrawer";
 import LocationSelector from "@/components/layout/LocationSelector";
+import AuthModal from "@/components/auth/AuthModal";
+import AuthGuard from "@/components/auth/AuthGuard";
 
 export default function RootLayout({
   children,
@@ -39,27 +41,30 @@ export default function RootLayout({
       </head>
       <body className="bg-background text-on-surface font-body selection:bg-primary-container selection:text-on-primary-container antialiased">
         <AuthProvider>
-          <LocationProvider>
-            <NavigationProvider>
-              <SWRegister />
-              {/* Fixed Header */}
-              <Header />
+          <AuthModal />
+          <AuthGuard>
+            <LocationProvider>
+              <NavigationProvider>
+                <SWRegister />
+                {/* Fixed Header */}
+                <Header />
 
-              {/* Full Screen Menu */}
-              <NavigationDrawer />
+                {/* Full Screen Menu */}
+                <NavigationDrawer />
 
-              {/* Location Selector Bottom Sheet/Modal */}
-              <LocationSelector />
+                {/* Location Selector Bottom Sheet/Modal */}
+                <LocationSelector />
 
-              {/* Dynamic Body Content */}
-              <PageWrapper>
-                {children}
-              </PageWrapper>
+                {/* Dynamic Body Content */}
+                <PageWrapper>
+                  {children}
+                </PageWrapper>
 
-              {/* Fixed Footer */}
-              <Footer />
-            </NavigationProvider>
-          </LocationProvider>
+                {/* Fixed Footer */}
+                <Footer />
+              </NavigationProvider>
+            </LocationProvider>
+          </AuthGuard>
         </AuthProvider>
       </body>
     </html>
