@@ -70,8 +70,6 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // In a real app, you'd upload to Firebase Storage here.
-      // For now, we'll use a local object URL to show immediate feedback.
       const objectUrl = URL.createObjectURL(file);
       setDetails(prev => ({ ...prev, photoURL: objectUrl }));
     }
@@ -158,12 +156,14 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
               <div className="flex gap-3">
                 <button 
                   onClick={handlePhotoClick}
+                  type="button"
                   className="px-4 py-2 bg-primary text-on-primary font-medium text-sm rounded shadow-sm hover:brightness-110 transition-all"
                 >
                   Update Photo
                 </button>
                 <button 
                   onClick={() => setDetails(prev => ({ ...prev, photoURL: '' }))}
+                  type="button"
                   className="px-4 py-2 bg-surface-container-high text-on-surface-variant font-medium text-sm rounded hover:bg-surface-dim transition-all"
                 >
                   Remove
@@ -329,6 +329,7 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
                 </div>
                 <button 
                   onClick={onDeactivate}
+                  type="button"
                   className="px-6 py-2.5 bg-error text-on-error font-bold text-sm rounded-lg shadow-sm hover:brightness-110 active:scale-95 transition-all shrink-0 w-full sm:w-auto"
                 >
                   Deactivate
@@ -336,13 +337,14 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
               </div>
             </section>
           </main>
-        </div>    </div>
+        </div>
 
         {/* Docked Action Button */}
         <div className="p-6 bg-white border-t border-gray-100 shrink-0">
           <button 
             onClick={handleSave}
             disabled={saving}
+            type="button"
             className="w-full bg-primary text-on-primary py-4 rounded font-headline font-bold text-base shadow-lg active:scale-[0.98] transition-all disabled:opacity-50"
           >
             {saving ? 'Saving changes...' : 'Save changes'}
