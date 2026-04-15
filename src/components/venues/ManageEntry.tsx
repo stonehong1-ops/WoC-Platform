@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { db } from '@/lib/firebase/clientApp';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { useLocation } from '@/components/providers/LocationProvider';
 
 interface ManageEntryProps {
   isOpen: boolean;
@@ -10,6 +11,7 @@ interface ManageEntryProps {
 }
 
 export default function ManageEntry({ isOpen, onClose }: ManageEntryProps) {
+  const { location } = useLocation();
   const [formData, setFormData] = useState({
     name: '',
     nativeName: '',
@@ -31,6 +33,9 @@ export default function ManageEntry({ isOpen, onClose }: ManageEntryProps) {
     try {
       await addDoc(collection(db, "venues"), {
         ...formData,
+        // Automatically inject current global location context
+        city: location.city.toUpperCase(),
+        country: location.country.toUpperCase(),
         coordinates: {
           latitude: Number(formData.latitude),
           longitude: Number(formData.longitude)
@@ -38,8 +43,8 @@ export default function ManageEntry({ isOpen, onClose }: ManageEntryProps) {
         status: 'active',
         createdAt: serverTimestamp()
       });
-      alert('Venue registered successfully!');
       onClose();
+      // Optional: Refresh or show success toast
     } catch (error) {
       console.error("Error saving venue:", error);
       alert('Failed to register venue.');
@@ -49,115 +54,119 @@ export default function ManageEntry({ isOpen, onClose }: ManageEntryProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-white w-full max-w-2xl rounded-[32px] overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
-        <div className="relative p-8 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-[1000] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+      <div className="bg-white w-full max-w-2xl rounded-t-[40px] sm:rounded-[40px] overflow-hidden shadow-2xl animate-in slide-in-from-bottom sm:zoom-in duration-500">
+        <div className="relative p-8 max-h-[90vh] overflow-y-auto no-scrollbar">
           {/* Header */}
-          <div className="flex justify-between items-center mb-8">
+          <div className="flex justify-between items-start mb-10">
             <div>
-              <h2 className="text-3xl font-black text-gray-900 tracking-tighter uppercase">Manage Entry</h2>
-              <p className="text-xs text-[#0061ff] font-bold tracking-widest uppercase mt-1">Add New Workspace</p>
+              <span className="text-[10px] font-black text-primary tracking-[0.25em] uppercase mb-1 block">Space Management</span>
+              <h2 className="text-3xl font-black text-on-surface tracking-tighter uppercase">Register Space</h2>
+              <p className="text-[12px] font-bold text-on-surface/30 mt-1">Registering in {location.city}, {location.country}</p>
             </div>
-            <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 text-gray-400 hover:bg-gray-200 transition-colors">
+            <button onClick={onClose} className="w-12 h-12 flex items-center justify-center rounded-full bg-on-surface/[0.04] text-on-surface/40 hover:bg-on-surface/[0.08] transition-all">
               <span className="material-symbols-outlined">close</span>
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Venue Name</label>
+          <form onSubmit={handleSubmit} className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase text-on-surface/30 ml-1 tracking-widest">Space Name</label>
                 <input 
                   type="text" 
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  className="w-full bg-[#f8f9fa] border-none rounded-2xl p-4 text-sm focus:ring-2 focus:ring-[#0061ff] transition-all"
+                  className="w-full bg-on-surface/[0.03] border-none rounded-2xl p-5 text-[15px] font-bold focus:ring-1 focus:ring-primary/30 transition-all placeholder:text-on-surface/20"
                   placeholder="e.g. Hongdae Flow Studio"
                   required
                 />
               </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Native Name (Optional)</label>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase text-on-surface/30 ml-1 tracking-widest">Native Name</label>
                 <input 
                   type="text" 
                   value={formData.nativeName}
                   onChange={(e) => setFormData({...formData, nativeName: e.target.value})}
-                  className="w-full bg-[#f8f9fa] border-none rounded-2xl p-4 text-sm focus:ring-2 focus:ring-[#0061ff] transition-all"
+                  className="w-full bg-on-surface/[0.03] border-none rounded-2xl p-5 text-[15px] font-bold focus:ring-1 focus:ring-primary/30 transition-all placeholder:text-on-surface/20"
                   placeholder="홍대 플로우 스튜디오"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Category</label>
-                <select 
-                  value={formData.category}
-                  onChange={(e) => setFormData({...formData, category: e.target.value})}
-                  className="w-full bg-[#f8f9fa] border-none rounded-2xl p-4 text-sm focus:ring-2 focus:ring-[#0061ff] transition-all appearance-none"
-                >
-                  <option>Studio</option>
-                  <option>Academy</option>
-                  <option>Club</option>
-                  <option>Shop</option>
-                  <option>Service</option>
-                  <option>Other</option>
-                </select>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase text-on-surface/30 ml-1 tracking-widest">Category</label>
+                <div className="relative">
+                  <select 
+                    value={formData.category}
+                    onChange={(e) => setFormData({...formData, category: e.target.value})}
+                    className="w-full bg-on-surface/[0.03] border-none rounded-2xl p-5 text-[15px] font-bold focus:ring-1 focus:ring-primary/30 transition-all appearance-none"
+                  >
+                    <option>Studio</option>
+                    <option>Academy</option>
+                    <option>Club</option>
+                    <option>Shop</option>
+                    <option>Service</option>
+                    <option>Other</option>
+                  </select>
+                  <span className="material-symbols-outlined absolute right-5 top-1/2 -translate-y-1/2 text-on-surface/20 pointer-events-none">expand_more</span>
+                </div>
               </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Image URL</label>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase text-on-surface/30 ml-1 tracking-widest">Image URL</label>
                 <input 
                   type="url" 
                   value={formData.imageUrl}
                   onChange={(e) => setFormData({...formData, imageUrl: e.target.value})}
-                  className="w-full bg-[#f8f9fa] border-none rounded-2xl p-4 text-sm focus:ring-2 focus:ring-[#0061ff] transition-all"
+                  className="w-full bg-on-surface/[0.03] border-none rounded-2xl p-5 text-[15px] font-bold focus:ring-1 focus:ring-primary/30 transition-all placeholder:text-on-surface/20"
                   placeholder="https://images.unsplash.com/..."
                 />
               </div>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Address</label>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase text-on-surface/30 ml-1 tracking-widest">Full Address</label>
               <input 
                 type="text" 
                 value={formData.address}
                 onChange={(e) => setFormData({...formData, address: e.target.value})}
-                className="w-full bg-[#f8f9fa] border-none rounded-2xl p-4 text-sm focus:ring-2 focus:ring-[#0061ff] transition-all"
+                className="w-full bg-on-surface/[0.03] border-none rounded-2xl p-5 text-[15px] font-bold focus:ring-1 focus:ring-primary/30 transition-all placeholder:text-on-surface/20"
                 placeholder="Seoul, Mapo-gu, Yanghwa-ro 160"
                 required
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Latitude</label>
+            <div className="grid grid-cols-2 gap-8">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase text-on-surface/30 ml-1 tracking-widest">Latitude</label>
                 <input 
                   type="number" 
                   step="any"
                   value={formData.latitude}
                   onChange={(e) => setFormData({...formData, latitude: parseFloat(e.target.value)})}
-                  className="w-full bg-[#f8f9fa] border-none rounded-2xl p-4 text-sm focus:ring-2 focus:ring-[#0061ff] transition-all"
+                  className="w-full bg-on-surface/[0.03] border-none rounded-2xl p-5 text-[15px] font-bold focus:ring-1 focus:ring-primary/30 transition-all"
                 />
               </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Longitude</label>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase text-on-surface/30 ml-1 tracking-widest">Longitude</label>
                 <input 
                   type="number" 
                   step="any"
                   value={formData.longitude}
                   onChange={(e) => setFormData({...formData, longitude: parseFloat(e.target.value)})}
-                  className="w-full bg-[#f8f9fa] border-none rounded-2xl p-4 text-sm focus:ring-2 focus:ring-[#0061ff] transition-all"
+                  className="w-full bg-on-surface/[0.03] border-none rounded-2xl p-5 text-[15px] font-bold focus:ring-1 focus:ring-primary/30 transition-all"
                 />
               </div>
             </div>
 
-            <div className="pt-4">
+            <div className="pt-6">
               <button 
                 type="submit"
                 disabled={saving}
-                className="w-full py-4 bg-[#0061ff] text-white rounded-2xl font-black uppercase tracking-widest hover:bg-[#0052d9] transition-all disabled:opacity-50 shadow-xl shadow-[#0061ff]/20"
+                className="w-full py-5 bg-primary text-white rounded-[24px] text-[15px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-primary/30 active:scale-[0.98] transition-all disabled:opacity-50"
               >
-                {saving ? 'Registering...' : 'Complete Registration'}
+                {saving ? 'Processing...' : 'Complete Registration'}
               </button>
             </div>
           </form>

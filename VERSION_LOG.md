@@ -1,0 +1,15 @@
+# WoC Project Version Log
+
+This log tracks stable versions for the 4.18 Venture Round sprint.
+Rollback Goal: Under 10 minutes (Git Tag + Vercel Promote).
+
+| Version | Date | Status | Git Tag | Description | Vercel URL |
+|---------|------|--------|---------|-------------|------------|
+| **v1.0.0** | 2026-04-16 | ✅ Stable | `v1.0.0` | Initial production baseline | https://www.woc.today |
+
+---
+
+## 🛡️ Rollback Protocol
+1. **Source Rollback**: `git checkout vX.X.0`
+2. **Production Rollback**: Use Vercel Dashboard to "Promote" the previous stable deployment ID.
+3. **Emergency**: Contact Antigravity with "Rollback to version X.X.0" command.
