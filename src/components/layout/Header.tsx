@@ -96,12 +96,12 @@ export default function Header() {
         </div>
 
         {/* Vertical Divider - Separating Action Group from Location */}
-        <div className="h-5 w-[1px] bg-outline-variant/30 mx-2"></div>
+        <div className="h-5 w-[1px] bg-outline-variant/30 ml-2"></div>
 
-        {/* Location Group - Interactive */}
+        {/* Location Group - Interactive (Flush Left to Divider) */}
         <button 
           onClick={toggleSelector}
-          className="flex flex-col justify-center items-end hover:opacity-70 transition-opacity active:scale-95 duration-100 pr-1"
+          className="flex flex-col justify-center items-start hover:opacity-70 transition-opacity active:scale-95 duration-100 pl-1.5 pr-1"
         >
           <span className="font-label text-[8px] font-black tracking-widest text-on-surface/30 uppercase leading-none">
             {location.country}

@@ -10,7 +10,7 @@ const REGIONS = [
     continent: 'ASIA & OCEANIA',
     countries: [
       {
-        name: 'SOUTH KOREA',
+        name: 'KOREA',
         flag: '🇰🇷',
         cities: ['SEOUL', 'INCHEON', 'BUSAN', 'JEJU', 'DAEGU', 'DAEJEON', 'GWANGJU'].map(n => ({ name: n }))
       },
