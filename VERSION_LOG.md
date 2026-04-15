@@ -5,6 +5,7 @@ Rollback Goal: Under 10 minutes (Git Tag + Vercel Promote).
 
 | Version | Date | Status | Git Tag | Description | Vercel URL |
 |---------|------|--------|---------|-------------|------------|
+| **v1.1.0** | 2026-04-16 | ✅ Stable | `v1.1.0` | Venues: City filter & Editorial Map | https://www.woc.today |
 | **v1.0.0** | 2026-04-16 | ✅ Stable | `v1.0.0` | Initial production baseline | https://www.woc.today |
 
 ---
