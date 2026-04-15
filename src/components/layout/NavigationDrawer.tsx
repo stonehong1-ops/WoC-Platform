@@ -29,9 +29,9 @@ export default function NavigationDrawer() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const handleLogout = async () => {
-    await signOut();
     closeDrawer();
     router.push('/');
+    await signOut();
   };
 
   const displayName = profile?.nickname || user?.displayName || 'User';
@@ -102,7 +102,7 @@ export default function NavigationDrawer() {
           <Link 
             href="/" 
             onClick={closeDrawer}
-            className="flex items-center justify-between w-full h-[52px] px-5 mt-8 bg-on-surface/[0.03] text-on-surface/60 rounded-2xl active:scale-95 transition-all group"
+            className="flex items-center justify-between w-full h-[52px] px-5 mt-8 bg-gradient-to-r from-primary to-primary-container text-white rounded-2xl shadow-lg shadow-primary/20 active:scale-95 transition-all group"
           >
             <span className="font-bold text-[13px] tracking-tight">Go to landing page</span>
             <span className="material-symbols-outlined text-[18px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
@@ -239,7 +239,7 @@ export default function NavigationDrawer() {
         <div className="p-6 mt-auto">
           <button 
             onClick={handleLogout}
-            className="w-full flex items-center gap-4 px-6 py-4 bg-on-surface/[0.03] text-on-surface/40 hover:bg-error/5 hover:text-error rounded-[24px] transition-all active:scale-[0.98] font-bold text-left"
+            className="w-full flex items-center gap-4 px-6 py-4 bg-error/5 text-error hover:bg-error/10 rounded-[24px] transition-all active:scale-[0.98] font-bold text-left"
           >
             <span className="material-symbols-outlined text-[20px]">logout</span>
             <span className="text-[14px] tracking-tight">Logout</span>
