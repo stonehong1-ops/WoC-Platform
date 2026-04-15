@@ -66,6 +66,7 @@ export default function VenuesPage() {
 
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
+    mapIds: ["425069951fef97d91810ab94"],
     libraries
   });
 
@@ -172,7 +173,11 @@ export default function VenuesPage() {
               center={{ lat: currentCenter.lat, lng: currentCenter.lng }}
               zoom={currentCenter.zoom}
               onLoad={(m) => setMap(m)}
-              options={MAP_OPTIONS as any}
+              options={{
+                disableDefaultUI: true,
+                zoomControl: false,
+                mapId: "425069951fef97d91810ab94"
+              }}
             >
               {filteredVenues.map((venue) => (
                 <Marker
