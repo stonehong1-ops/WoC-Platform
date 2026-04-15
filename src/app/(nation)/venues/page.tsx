@@ -81,12 +81,13 @@ export default function VenuesPage() {
       <div className="relative flex-grow bg-[#dde4e5] overflow-hidden">
         {/* Stylized Hongdae Map Background (Representational) */}
         <div
-          className="absolute inset-0 grayscale contrast-[0.8] opacity-80 transition-opacity duration-1000 ease-in-out"
+          className="absolute inset-0 transition-opacity duration-1000 ease-in-out"
           style={{
-            backgroundColor: '#dde4e5',
-            backgroundImage: "url('https://images.unsplash.com/photo-1596464716127-f2a82984de30?q=80&w=2070&auto=format&fit=crop')", // High quality but cached CDN map-like image
+            backgroundColor: '#e5e9ea',
+            backgroundImage: "url('https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?q=80&w=2066&auto=format&fit=crop')", // Architectural/Map-like top-down view
             backgroundSize: 'cover',
             backgroundPosition: 'center',
+            filter: 'grayscale(0.6) contrast(1.1) brightness(1.05)',
           }}
         ></div>
         
