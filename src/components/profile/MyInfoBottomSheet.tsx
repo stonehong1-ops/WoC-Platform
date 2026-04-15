@@ -44,6 +44,8 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
     photoURL: ''
   });
 
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     if (profile) {
       setDetails({
@@ -60,6 +62,20 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
       });
     }
   }, [profile, isOpen]);
+
+  const handlePhotoClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // In a real app, you'd upload to Firebase Storage here.
+      // For now, we'll use a local object URL to show immediate feedback.
+      const objectUrl = URL.createObjectURL(file);
+      setDetails(prev => ({ ...prev, photoURL: objectUrl }));
+    }
+  };
 
   if (!isOpen || !profile) return null;
 
@@ -122,18 +138,30 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
             
             {/* Section 1: Profile Photo */}
             <section className="flex flex-col items-center gap-6">
-              <div className="relative group">
+              <div className="relative group cursor-pointer" onClick={handlePhotoClick}>
                 <img 
                   src={details.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(details.nickname || 'User')}&background=1A73E8&color=fff`} 
                   alt="Profile" 
                   className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-sm"
                 />
-                <div className="absolute inset-0 bg-black/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                <div className="absolute inset-0 bg-black/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                   <span className="material-symbols-outlined text-white text-3xl">photo_camera</span>
                 </div>
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  className="hidden" 
+                  accept="image/*" 
+                  onChange={handlePhotoChange}
+                />
               </div>
               <div className="flex gap-3">
-                <button className="px-4 py-2 bg-primary text-on-primary font-medium text-sm rounded shadow-sm hover:brightness-110 transition-all">Update Photo</button>
+                <button 
+                  onClick={handlePhotoClick}
+                  className="px-4 py-2 bg-primary text-on-primary font-medium text-sm rounded shadow-sm hover:brightness-110 transition-all"
+                >
+                  Update Photo
+                </button>
                 <button 
                   onClick={() => setDetails(prev => ({ ...prev, photoURL: '' }))}
                   className="px-4 py-2 bg-surface-container-high text-on-surface-variant font-medium text-sm rounded hover:bg-surface-dim transition-all"
@@ -232,6 +260,7 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
                   <button 
                     key={g}
                     onClick={() => setDetails(prev => ({ ...prev, gender: g }))}
+                    type="button"
                     className={`flex-1 py-2 text-sm font-semibold rounded transition-all ${
                       details.gender === g 
                         ? 'bg-white text-primary shadow-sm' 
@@ -290,24 +319,24 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
             </section>
 
             {/* Deactivation Section */}
-            <section className="pt-8 border-t border-gray-100">
-              <div className="bg-error/5 rounded p-6 flex items-start justify-between gap-6">
-                <div className="space-y-1">
+            <section className="pt-8 border-t border-surface-container-high">
+              <div className="bg-error/5 rounded-xl p-6 flex flex-col sm:flex-row items-start justify-between gap-6 border border-error/10">
+                <div className="space-y-2">
                   <h3 className="font-headline font-bold text-error">Deactivate Account</h3>
-                  <p className="text-xs text-on-error-container/70 leading-relaxed max-w-sm">
+                  <p className="text-[11px] text-error/80 leading-relaxed max-w-sm">
                     Deactivating your account will temporarily disable your profile and remove your name and photo from most things you've shared.
                   </p>
                 </div>
                 <button 
                   onClick={onDeactivate}
-                  className="px-6 py-2.5 bg-error text-on-error font-bold text-sm rounded shadow-sm hover:brightness-110 active:scale-95 transition-all shrink-0"
+                  className="px-6 py-2.5 bg-error text-on-error font-bold text-sm rounded-lg shadow-sm hover:brightness-110 active:scale-95 transition-all shrink-0 w-full sm:w-auto"
                 >
                   Deactivate
                 </button>
               </div>
             </section>
           </main>
-        </div>
+        </div>    </div>
 
         {/* Docked Action Button */}
         <div className="p-6 bg-white border-t border-gray-100 shrink-0">

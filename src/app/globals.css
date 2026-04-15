@@ -25,6 +25,10 @@
   --color-outline: #757c7d;
   --color-outline-variant: #acb3b4;
   --color-inverse-on-surface: #9c9d9d;
+  --color-error: #9f403d;
+  --color-on-error: #fff7f6;
+  --color-error-container: #fe8983;
+  --color-on-error-container: #752121;
   
   --radius-full: 0.75rem;
   --radius-xl: 0.5rem;
