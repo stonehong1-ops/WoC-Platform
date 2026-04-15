@@ -95,7 +95,8 @@ export default function Header() {
           </Link>
         </div>
 
-
+        {/* Vertical Divider - Separating Action Group from Location */}
+        <div className="h-5 w-[1px] bg-outline-variant/30 mx-2"></div>
 
         {/* Location Group - Interactive */}
         <button 
