@@ -5,6 +5,7 @@ import { doc, updateDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase/clientApp';
 import { useAuth } from '@/components/providers/AuthProvider';
+import DeactivateBottomSheet from './DeactivateBottomSheet';
 
 interface UserProfile {
   uid: string;
@@ -33,6 +34,7 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
   const { user, signOut } = useAuth();
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [isDeactivateOpen, setIsDeactivateOpen] = useState(false);
   const [details, setDetails] = useState({
     nickname: '',
     nativeNickname: '',
@@ -116,14 +118,12 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
   };
 
   const onDeactivate = async () => {
-    if (window.confirm('Are you sure you want to deactivate? Your profile will be temporarily disabled.')) {
-      try {
-        await deleteDoc(doc(db, 'users', profile.uid));
-        await signOut();
-        window.location.href = '/';
-      } catch (err) {
-        console.error('Deactivation error:', err);
-      }
+    try {
+      await deleteDoc(doc(db, 'users', profile.uid));
+      await signOut();
+      window.location.href = '/';
+    } catch (err) {
+      console.error('Deactivation error:', err);
     }
   };
 
@@ -349,7 +349,7 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
                   </p>
                 </div>
                 <button 
-                  onClick={onDeactivate}
+                  onClick={() => setIsDeactivateOpen(true)}
                   type="button"
                   className="px-6 py-2.5 bg-error text-on-error font-bold text-sm rounded-lg shadow-sm hover:brightness-110 active:scale-95 transition-all shrink-0 w-full sm:w-auto"
                 >
@@ -372,6 +372,13 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
           </button>
         </div>
       </div>
+
+      {/* Deactivate Bottom Sheet */}
+      <DeactivateBottomSheet 
+        isOpen={isDeactivateOpen}
+        onClose={() => setIsDeactivateOpen(false)}
+        onConfirm={onDeactivate}
+      />
     </div>
   );
 }
