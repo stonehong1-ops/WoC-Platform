@@ -95,8 +95,7 @@ export default function Header() {
           </Link>
         </div>
 
-        {/* Vertical Divider */}
-        <div className="h-5 w-[1px] bg-outline-variant/20 mx-1.5"></div>
+
 
         {/* Location Group - Interactive */}
         <button 
@@ -112,26 +111,7 @@ export default function Header() {
           </span>
         </button>
 
-        {/* Profile Button */}
-        <div className="ml-1">
-          <button 
-            onClick={() => {
-              if (user && profile?.isRegistered) {
-                router.push('/my-info');
-              } else {
-                setShowLogin(true);
-              }
-            }}
-            className="flex items-center justify-center p-0.5 rounded-full hover:bg-gray-100 transition-colors outline-none"
-          >
-            {/* ONLY show photo if isRegistered is true */}
-            {user && profile?.isRegistered && (profile.photoURL || user.photoURL) ? (
-              <img src={profile.photoURL || user.photoURL || ''} alt="Profile" className="w-8 h-8 rounded-full object-cover" />
-            ) : (
-              <span className="material-symbols-outlined text-gray-400 !text-[22px]">account_circle</span>
-            )}
-          </button>
-        </div>
+
       </div>
     </header>
 
