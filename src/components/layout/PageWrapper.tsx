@@ -25,12 +25,27 @@ export default function PageWrapper({ children }: { children: React.ReactNode })
     }
   }, [user, profile, loading, isPublic, isLogin, router]);
 
-  // 로딩 중이거나 공개 페이지가 아닌데 유저가 없으면 일단 빈 화면 (또는 로딩 스켈레톤)
-  if (loading || (!user && !isPublic)) {
+  // 로딩 중일 때 표시할 프리미엄 로딩 화면
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#f0f2f5]">
+        <div className="relative">
+          <div className="w-16 h-16 border-4 border-[#1A73E8]/10 border-t-[#1A73E8] rounded-full animate-spin"></div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-2 h-2 bg-[#1A73E8] rounded-full animate-ping"></div>
+          </div>
+        </div>
+        <p className="mt-6 text-[10px] font-black text-[#1A73E8] uppercase tracking-[0.3em] animate-pulse">
+          Synchronizing Experience
+        </p>
       </div>
+    );
+  }
+
+  // 로그인되지 않은 상태에서 비공개 페이지 접근 시 로딩 상태 유지 (useEffect에서 리다이렉트 처리됨)
+  if (!user && !isPublic) {
+    return (
+      <div className="min-h-screen bg-[#f0f2f5]"></div>
     );
   }
 
