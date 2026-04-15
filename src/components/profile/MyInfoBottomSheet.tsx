@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { doc, updateDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase/clientApp';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '@/lib/firebase/clientApp';
 import { useAuth } from '@/components/providers/AuthProvider';
 
 interface UserProfile {
@@ -31,6 +32,7 @@ interface MyInfoBottomSheetProps {
 export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBottomSheetProps) {
   const { user, signOut } = useAuth();
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [details, setDetails] = useState({
     nickname: '',
     nativeNickname: '',
@@ -44,7 +46,7 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
     photoURL: ''
   });
 
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (profile) {
@@ -67,11 +69,21 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
     fileInputRef.current?.click();
   };
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const objectUrl = URL.createObjectURL(file);
-      setDetails(prev => ({ ...prev, photoURL: objectUrl }));
+    if (file && profile) {
+      setUploading(true);
+      try {
+        const fileRef = ref(storage, `profiles/${profile.uid}/${Date.now()}_${file.name}`);
+        const snapshot = await uploadBytes(fileRef, file);
+        const downloadURL = await getDownloadURL(snapshot.ref);
+        setDetails(prev => ({ ...prev, photoURL: downloadURL }));
+      } catch (err) {
+        console.error('Photo upload error:', err);
+        alert('Failed to upload photo.');
+      } finally {
+        setUploading(false);
+      }
     }
   };
 
@@ -137,12 +149,20 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
             {/* Section 1: Profile Photo */}
             <section className="flex flex-col items-center gap-6">
               <div className="relative group cursor-pointer" onClick={handlePhotoClick}>
-                <img 
-                  src={details.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(details.nickname || 'User')}&background=1A73E8&color=fff`} 
-                  alt="Profile" 
-                  className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-sm"
-                />
-                <div className="absolute inset-0 bg-black/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <div className="w-32 h-32 rounded-squircle overflow-hidden border-4 border-white shadow-sm bg-surface-container">
+                  {uploading ? (
+                    <div className="w-full h-full flex items-center justify-center bg-black/10">
+                      <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  ) : (
+                    <img 
+                      src={details.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(details.nickname || 'User')}&background=1A73E8&color=fff`} 
+                      alt="Profile" 
+                      className="w-full h-full object-cover"
+                    />
+                  )}
+                </div>
+                <div className="absolute inset-0 bg-black/20 rounded-squircle opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                   <span className="material-symbols-outlined text-white text-3xl">photo_camera</span>
                 </div>
                 <input 
@@ -157,9 +177,10 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
                 <button 
                   onClick={handlePhotoClick}
                   type="button"
-                  className="px-4 py-2 bg-primary text-on-primary font-medium text-sm rounded shadow-sm hover:brightness-110 transition-all"
+                  disabled={uploading}
+                  className="px-4 py-2 bg-primary text-on-primary font-medium text-sm rounded shadow-sm hover:brightness-110 transition-all disabled:opacity-50"
                 >
-                  Update Photo
+                  {uploading ? 'Uploading...' : 'Update Photo'}
                 </button>
                 <button 
                   onClick={() => setDetails(prev => ({ ...prev, photoURL: '' }))}
@@ -221,7 +242,7 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
                     />
                     <div className="absolute right-3 flex items-center gap-1.5 bg-blue-50 text-primary px-2 py-1 rounded text-[10px] font-bold border border-blue-100 uppercase tracking-tighter">
                       <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
-                      {profile.authMethod || 'Google'} Verified
+                      Verified
                     </div>
                   </div>
                 </div>
@@ -343,7 +364,7 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
         <div className="p-6 bg-white border-t border-gray-100 shrink-0">
           <button 
             onClick={handleSave}
-            disabled={saving}
+            disabled={saving || uploading}
             type="button"
             className="w-full bg-primary text-on-primary py-4 rounded font-headline font-bold text-base shadow-lg active:scale-[0.98] transition-all disabled:opacity-50"
           >

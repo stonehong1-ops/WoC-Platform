@@ -33,7 +33,7 @@ export default function MyInfoPage() {
         {/* Profile Hero Section (Asymmetric Layout) */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-end mb-16">
           <div className="md:col-span-4 relative group">
-            <div className="aspect-square w-full max-w-[240px] overflow-hidden rounded-full border-4 border-surface-container-lowest shadow-xl">
+            <div className="aspect-square w-full max-w-[240px] overflow-hidden rounded-squircle border-4 border-surface-container-lowest shadow-xl">
               <img 
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
                 src={profile?.photoURL || user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.nickname || 'User')}&background=1A73E8&color=fff`}
@@ -42,9 +42,9 @@ export default function MyInfoPage() {
             </div>
             <div 
               onClick={() => setIsEditModalOpen(true)}
-              className="absolute bottom-4 right-4 md:right-12 bg-on-primary-fixed-variant text-on-primary p-2 rounded-full shadow-lg cursor-pointer hover:scale-110 transition-transform"
+              className="absolute bottom-4 right-4 md:right-12 bg-primary text-white p-3 rounded-full shadow-2xl cursor-pointer hover:scale-110 transition-transform flex items-center justify-center z-10"
             >
-              <span className="material-symbols-outlined text-sm">photo_camera</span>
+              <span className="material-symbols-outlined !text-[20px]">photo_camera</span>
             </div>
           </div>
           <div className="md:col-span-8 pb-4">
