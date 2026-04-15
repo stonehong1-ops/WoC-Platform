@@ -22,32 +22,8 @@ export default function LandingPage() {
   return (
     <div className="bg-white text-black antialiased">
       {/* Top Navigation Bar (Mobile App Style) */}
-      <nav className="fixed top-0 left-0 right-0 lg:left-[calc(50%-28rem)] lg:right-[calc(50%-28rem)] max-w-4xl mx-auto bg-white/90 backdrop-blur-md z-50 border-b border-gray-100 px-4 h-14 flex items-center justify-between">
-        <button 
-          aria-label="Menu" 
-          className="p-2 -ml-2"
-          onClick={() => toggleDrawer()}
-        >
-          <span className="material-symbols-outlined text-2xl">menu</span>
-        </button>
+      <nav className="fixed top-0 left-0 right-0 lg:left-[calc(50%-28rem)] lg:right-[calc(50%-28rem)] max-w-4xl mx-auto bg-white/80 backdrop-blur-md z-50 border-b border-gray-100 px-4 h-14 flex items-center justify-center">
         <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-black">WoC / World Of Community</p>
-        <button 
-          aria-label="Profile" 
-          className="p-2 -mr-2 flex items-center justify-center outline-none" 
-          onClick={() => {
-            if (user && profile?.isRegistered) {
-              router.push('/my-info');
-            } else {
-              setShowLogin(true);
-            }
-          }}
-        >
-          {user && profile?.isRegistered && (profile?.photoURL || user.photoURL) ? (
-            <img src={profile?.photoURL || user.photoURL || ''} alt="Profile" className="w-8 h-8 rounded-full border border-gray-100" />
-          ) : (
-            <span className="material-symbols-outlined text-2xl">account_circle</span>
-          )}
-        </button>
       </nav>
 
       {/* Header / Slogan Section */}
