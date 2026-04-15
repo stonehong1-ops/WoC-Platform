@@ -1,12 +1,29 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import PageWrapper from "@/components/layout/PageWrapper";
+import SWRegister from "@/components/layout/SWRegister";
 
 export const metadata: Metadata = {
   title: "WoC Today | World of Community",
-  description: "A community platform for the modern era.",
+  description: "A premium community platform for shared experiences and collective living.",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "WoC Today",
+  },
 };
+
+export const viewport: Viewport = {
+  themeColor: "#005BC0",
+};
+
+import { NavigationProvider } from "@/components/providers/NavigationProvider";
+import { AuthProvider } from "@/components/providers/AuthProvider";
+import { LocationProvider } from "@/components/providers/LocationProvider";
+import NavigationDrawer from "@/components/layout/NavigationDrawer";
+import LocationSelector from "@/components/layout/LocationSelector";
 
 export default function RootLayout({
   children,
@@ -14,18 +31,36 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className="antialiased min-h-screen bg-[#f8f9fa] flex flex-col">
-        {/* Fixed Header */}
-        <Header />
+    <html lang="en" className="light">
+      <head>
+        <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+      </head>
+      <body className="bg-background text-on-surface font-body selection:bg-primary-container selection:text-on-primary-container antialiased">
+        <AuthProvider>
+          <LocationProvider>
+            <NavigationProvider>
+              <SWRegister />
+              {/* Fixed Header */}
+              <Header />
 
-        {/* Dynamic Body Content */}
-        <main className="flex-1 mt-16 mb-20">
-          {children}
-        </main>
+              {/* Full Screen Menu */}
+              <NavigationDrawer />
 
-        {/* Fixed Footer */}
-        <Footer />
+              {/* Location Selector Bottom Sheet/Modal */}
+              <LocationSelector />
+
+              {/* Dynamic Body Content */}
+              <PageWrapper>
+                {children}
+              </PageWrapper>
+
+              {/* Fixed Footer */}
+              <Footer />
+            </NavigationProvider>
+          </LocationProvider>
+        </AuthProvider>
       </body>
     </html>
   );

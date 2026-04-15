@@ -1,21 +1,6 @@
 export default function SocialPage() {
   return (
     <main className="max-w-2xl mx-auto px-6 py-8 pb-24">
-      {/* Location Selector */}
-      <div className="flex items-center gap-1.5 mb-8">
-        <button className="flex items-center gap-1.5 group">
-          <span className="text-on-surface-variant font-label text-sm tracking-wide group-hover:text-on-surface transition-colors">
-            Korea
-          </span>
-          <span className="text-outline-variant font-label text-sm">&gt;</span>
-          <span className="text-primary font-headline font-bold text-sm tracking-tight group-hover:text-primary-dim transition-colors">
-            Seoul
-          </span>
-          <span className="material-symbols-outlined text-primary text-[18px] transition-transform group-hover:translate-y-0.5">
-            expand_more
-          </span>
-        </button>
-      </div>
 
       {/* Weekly Calendar */}
       <section className="mb-10">

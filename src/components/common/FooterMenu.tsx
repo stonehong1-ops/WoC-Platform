@@ -12,8 +12,8 @@ export default function FooterMenu() {
 
   // Group items for rendering labels
   const sectors: { name: NavGroup; items: typeof NAV_ITEMS }[] = [
-    { name: 'World', items: NAV_ITEMS.filter(i => i.group === 'World') },
-    { name: 'Tango Korea', items: NAV_ITEMS.filter(i => i.group === 'Tango Korea') },
+    { name: 'Tango World', items: NAV_ITEMS.filter(i => i.group === 'Tango World') },
+    { name: 'Activity', items: NAV_ITEMS.filter(i => i.group === 'Activity') },
     { name: 'Town', items: NAV_ITEMS.filter(i => i.group === 'Town') },
     { name: 'My Page', items: NAV_ITEMS.filter(i => i.group === 'My Page') },
   ];

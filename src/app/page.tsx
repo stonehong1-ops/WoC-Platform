@@ -1,18 +1,46 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/components/providers/AuthProvider';
+import { useNavigation } from '@/components/providers/NavigationProvider';
 
 export default function LandingPage() {
+  const { user, profile } = useAuth();
+  const { toggleDrawer } = useNavigation();
+  const router = useRouter();
+
+  const handleProtectedLink = (e: React.MouseEvent, href: string) => {
+    if (!user) {
+      e.preventDefault();
+      router.push('/login');
+    }
+  };
+
   return (
     <div className="bg-white text-black antialiased">
       {/* Top Navigation Bar (Mobile App Style) */}
       <nav className="fixed top-0 left-0 right-0 lg:left-[calc(50%-28rem)] lg:right-[calc(50%-28rem)] max-w-4xl mx-auto bg-white/90 backdrop-blur-md z-50 border-b border-gray-100 px-4 h-14 flex items-center justify-between">
-        <button aria-label="Menu" className="p-2 -ml-2">
+        <button 
+          aria-label="Menu" 
+          className="p-2 -ml-2"
+          onClick={() => toggleDrawer()}
+        >
           <span className="material-symbols-outlined text-2xl">menu</span>
         </button>
         <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-black">WoC / World Of Community</p>
-        <button aria-label="Profile" className="p-2 -mr-2">
-          <span className="material-symbols-outlined text-2xl">account_circle</span>
-        </button>
+        <Link 
+          aria-label="Profile" 
+          className="p-2 -mr-2 flex items-center justify-center" 
+          href={user ? "/profile" : "/login"}
+        >
+          {user && profile?.photoURL ? (
+            <img src={profile.photoURL} alt="Profile" className="w-8 h-8 rounded-full border border-gray-100" />
+          ) : (
+            <span className="material-symbols-outlined text-2xl">account_circle</span>
+          )}
+        </Link>
       </nav>
 
       {/* Header / Slogan Section */}
@@ -43,11 +71,11 @@ export default function LandingPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-4">
                 <div>
                   <h4 className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-4">Social Dance</h4>
-                  <div className="flex flex-wrap gap-x-4 font-medium">
-                    <Link className="tap-target text-base hover:underline" href="/home">Tango</Link>
-                    <a className="tap-target text-base hover:underline" href="#">Salsa</a>
-                    <a className="tap-target text-base hover:underline" href="#">Bachata</a>
-                    <a className="tap-target text-base hover:underline" href="#">Swing</a>
+                  <div className="flex flex-wrap gap-x-4 font-medium uppercase text-xs">
+                    <Link className="tap-target text-base hover:underline" href="/home" onClick={(e) => handleProtectedLink(e, '/home')}>Tango</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home" onClick={(e) => handleProtectedLink(e, '/home')}>Salsa</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home" onClick={(e) => handleProtectedLink(e, '/home')}>Bachata</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home" onClick={(e) => handleProtectedLink(e, '/home')}>Swing</Link>
                   </div>
                 </div>
                 <div>
@@ -243,22 +271,6 @@ export default function LandingPage() {
           </div>
         </article>
       </main>
-
-      {/* Footer */}
-      <footer className="py-16 px-6 bg-white text-black border-t border-gray-100">
-        <div className="max-w-4xl mx-auto flex flex-col gap-10">
-          <div className="space-y-2">
-            <p className="text-[11px] font-bold tracking-widest uppercase">WORLD OF COMMUNITY_</p>
-            <p className="text-[10px] font-medium tracking-widest uppercase text-gray-400">Digital Archive © 2024. All Rights Reserved.</p>
-          </div>
-          <nav className="flex flex-col gap-y-6 text-[10px] font-bold tracking-widest uppercase">
-            <a className="hover:text-gray-400 h-10 flex items-center" href="#">About</a>
-            <a className="hover:text-gray-400 h-10 flex items-center" href="#">Archive</a>
-            <a className="hover:text-gray-400 h-10 flex items-center" href="#">Editorial</a>
-            <a className="hover:text-gray-400 h-10 flex items-center" href="#">Contact</a>
-          </nav>
-        </div>
-      </footer>
     </div>
   );
 }

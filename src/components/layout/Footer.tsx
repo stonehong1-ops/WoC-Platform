@@ -1,63 +1,110 @@
-import Link from "next/link";
+'use client';
+
+import React from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 export default function Footer() {
+  const pathname = usePathname();
+
+  // Hide on landing page and login page
+  if (pathname === '/' || pathname === '/login') return null;
+
+  const isActive = (href: string) => pathname === href;
+
   return (
-    <footer className="fixed bottom-0 left-0 right-0 h-16 bg-white/95 backdrop-blur-sm border-t border-surface-container flex items-center px-4 z-50 overflow-hidden">
-      <div className="flex items-center w-full max-w-2xl mx-auto">
-        {/* Leftmost HUB Icon */}
-        <Link href="/" className="flex-none p-2 mr-4 text-primary hover:bg-primary/5 rounded-full transition-colors">
-          <span className="material-symbols-outlined text-[24px]">hub</span>
-        </Link>
-
-        {/* Partitioned Scrollable Area */}
-        <div className="flex-1 overflow-x-auto no-scrollbar">
-          <div className="flex gap-8 items-center h-full whitespace-nowrap px-2">
-            
-            {/* Partition: WORLD */}
-            <div className="flex flex-col gap-0.5">
-              <span className="text-[9px] text-on-surface-variant/50 font-bold uppercase tracking-widest">WORLD</span>
-              <div className="flex gap-4 items-center">
-                <Link href="/home" className="text-sm font-headline font-bold text-on-surface-variant hover:text-primary transition-colors">HOME</Link>
-                <Link href="/social" className="text-sm font-headline font-bold text-primary">SOCIAL</Link>
-                <Link href="/events" className="text-sm font-headline font-bold text-on-surface-variant hover:text-primary transition-colors">EVENTS</Link>
-                <Link href="/plaza" className="text-sm font-headline font-bold text-on-surface-variant hover:text-primary transition-colors">PLAZA</Link>
-                <Link href="/shop" className="text-sm font-headline font-bold text-on-surface-variant hover:text-primary transition-colors">SHOP</Link>
-                <Link href="/map" className="text-sm font-headline font-bold text-on-surface-variant hover:text-primary transition-colors">MAP</Link>
-              </div>
+    <footer className="fixed bottom-0 left-0 w-full z-50 bg-white border-t border-gray-100 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
+      {/* Integrated Scrollable Menu System */}
+      <div className="overflow-x-auto no-scrollbar scroll-smooth">
+        <div className="flex items-stretch divide-x divide-gray-100 min-w-max">
+          
+          {/* TANGO WORLD PARTITION */}
+          <div className="flex flex-col px-3.5 py-2.5 flex-shrink-0">
+            <div className="flex items-center gap-1.5 mb-2">
+              <p className="text-[10px] font-black tracking-wider uppercase">
+                <span className="text-primary italic">TANGO</span>
+                <span className="text-gray-400 ml-1 text-[8px]">WORLD</span>
+              </p>
             </div>
-
-            {/* Partition: NATION */}
-            <div className="flex flex-col gap-0.5 border-l border-surface-container pl-6">
-              <span className="text-[9px] text-on-surface-variant/50 font-bold uppercase tracking-widest">NATION</span>
-              <div className="flex gap-4 items-center">
-                <Link href="/community" className="text-sm font-headline font-bold text-on-surface-variant hover:text-primary transition-colors">COMMUNITY</Link>
-                <Link href="/stay" className="text-sm font-headline font-bold text-on-surface-variant hover:text-primary transition-colors">STAY</Link>
-              </div>
+            <div className="flex gap-1.5 items-center">
+              <NavItem href="/home" icon="home" label="HOME" active={isActive('/home')} />
+              <NavItem href="/plaza" icon="layers" label="PLAZA" active={isActive('/plaza')} />
+              <NavItem href="/venues" icon="location_on" label="VENUES" active={isActive('/venues')} />
+              <NavItem href="/groups" icon="group" label="GROUPS" active={isActive('/groups')} />
             </div>
-
-            {/* Partition: TOWN */}
-            <div className="flex flex-col gap-0.5 border-l border-surface-container pl-6">
-              <span className="text-[9px] text-on-surface-variant/50 font-bold uppercase tracking-widest">TOWN</span>
-              <div className="flex gap-4 items-center">
-                <Link href="/lost" className="text-sm font-headline font-bold text-on-surface-variant hover:text-primary transition-colors">LOST</Link>
-                <Link href="/resale" className="text-sm font-headline font-bold text-on-surface-variant hover:text-primary transition-colors">RESALE</Link>
-                <Link href="/arcade" className="text-sm font-headline font-bold text-on-surface-variant hover:text-primary transition-colors">ARCADE</Link>
-              </div>
-            </div>
-
-            {/* Partition: MY */}
-            <div className="flex flex-col gap-0.5 border-l border-surface-container pl-6">
-              <span className="text-[9px] text-on-surface-variant/50 font-bold uppercase tracking-widest">MY</span>
-              <div className="flex gap-4 items-center">
-                <Link href="/wallet" className="text-sm font-headline font-bold text-on-surface-variant hover:text-primary transition-colors">WALLET</Link>
-                <Link href="/history" className="text-sm font-headline font-bold text-on-surface-variant hover:text-primary transition-colors">HISTORY</Link>
-                <Link href="/my-info" className="text-sm font-headline font-bold text-on-surface-variant hover:text-primary transition-colors">INFO</Link>
-              </div>
-            </div>
-
           </div>
+
+          {/* ACTIVITY PARTITION */}
+          <div className="flex flex-col px-3.5 py-2.5 flex-shrink-0">
+            <div className="flex items-center gap-1.5 mb-2">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider">ACTIVITY</p>
+            </div>
+            <div className="flex gap-1.5 items-center">
+              <NavItem href="/social" icon="nightlife" label="SOCIAL" active={isActive('/social')} />
+              <NavItem href="/class" icon="school" label="CLASS" active={isActive('/class')} />
+              <NavItem href="/events" icon="event" label="EVENTS" active={isActive('/events')} />
+              <NavItem href="/shop" icon="storefront" label="SHOP" active={isActive('/shop')} />
+              <NavItem href="/stay" icon="bed" label="STAY" active={isActive('/stay')} />
+              <NavItem href="/service" icon="medical_services" label="SERVICE" active={isActive('/service')} />
+            </div>
+          </div>
+
+          {/* TOWN PARTITION */}
+          <div className="flex flex-col px-3.5 py-2.5 flex-shrink-0">
+            <div className="flex items-center gap-1.5 mb-2">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider">TOWN</p>
+            </div>
+            <div className="flex gap-1.5 items-center">
+              <NavItem href="/resale" icon="shopping_bag" label="RESALE" active={isActive('/resale')} />
+              <NavItem href="/lost" icon="find_in_page" label="L&F" active={isActive('/lost')} />
+              <NavItem href="/arcade" icon="videogame_asset" label="ARCADE" active={isActive('/arcade')} />
+            </div>
+          </div>
+
+          {/* MY PARTITION */}
+          <div className="flex flex-col px-3.5 py-2.5 flex-shrink-0">
+            <div className="flex items-center gap-1.5 mb-2">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider">MY</p>
+            </div>
+            <div className="flex gap-1.5 items-center">
+              <NavItem href="/wallet" icon="account_balance_wallet" label="WALLET" active={isActive('/wallet')} />
+              <NavItem href="/history" icon="history" label="HISTORY" active={isActive('/history')} />
+              <NavItem href="/my-info" icon="manage_accounts" label="MY INFO" active={isActive('/my-info')} />
+            </div>
+          </div>
+
+          {/* ADMIN PARTITION */}
+          <div className="flex flex-col px-3.5 py-2.5 flex-shrink-0 pr-12">
+            <div className="flex items-center gap-1.5 mb-2">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider">ADMIN</p>
+            </div>
+            <div className="flex gap-1.5 items-center">
+              <NavItem href="/admin/people" icon="person_search" label="PEOPLE" active={isActive('/admin/people')} />
+              <NavItem href="/admin/place" icon="location_city" label="PLACE" active={isActive('/admin/place')} />
+              <NavItem href="/admin/others" icon="more_horiz" label="OTHERS" active={isActive('/admin/others')} />
+            </div>
+          </div>
+
         </div>
       </div>
     </footer>
+  );
+}
+
+function NavItem({ href, icon, label, active }: { href: string; icon: string; label: string; active: boolean }) {
+  return (
+    <Link 
+      href={href}
+      className={`flex items-center gap-1 px-2 py-1.5 text-[11px] font-extrabold transition-all rounded-full whitespace-nowrap ${
+        active 
+          ? 'bg-primary/10 text-primary shadow-sm' 
+          : 'text-gray-500 hover:text-primary hover:bg-gray-50'
+      }`}
+    >
+      <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: active ? "'FILL' 1" : "'FILL' 0" }}>
+        {icon}
+      </span>
+      {label}
+    </Link>
   );
 }
