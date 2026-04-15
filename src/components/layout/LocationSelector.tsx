@@ -12,7 +12,7 @@ const REGIONS = [
       {
         name: 'SOUTH KOREA',
         flag: '🇰🇷',
-        cities: ['SEOUL', 'GYEONGGI/INCHEON', 'BUSAN', 'JEJU', 'DAEGU', 'DAEJEON', 'GWANGJU'].map(n => ({ name: n }))
+        cities: ['SEOUL', 'INCHEON', 'BUSAN', 'JEJU', 'DAEGU', 'DAEJEON', 'GWANGJU'].map(n => ({ name: n }))
       },
       {
         name: 'JAPAN',
@@ -32,7 +32,7 @@ const REGIONS = [
       {
         name: 'VIETNAM',
         flag: '🇻🇳',
-        cities: ['HO CHI MINH CITY', 'HANOI', 'DA NANG', 'HAI PHONG', 'NHA TRANG'].map(n => ({ name: n }))
+        cities: ['HO CHI MINH', 'HANOI', 'DA NANG', 'HAI PHONG', 'NHA TRANG'].map(n => ({ name: n }))
       },
       {
         name: 'THAILAND',
@@ -167,7 +167,7 @@ const REGIONS = [
       {
         name: 'PORTUGAL',
         flag: '🇵🇹',
-        cities: ['LISBON', 'PORTO', 'FARO'].map(n => ({ name: n }))
+        cities: ['LISBON', 'PORTO', 'FARO'].map(n => ({ n }))
       },
       {
         name: 'CZECH REPUBLIC',
@@ -217,7 +217,7 @@ const REGIONS = [
       {
         name: 'IRAN',
         flag: '🇮🇷',
-        cities: ['TEHRAN', 'ISFAHAN', 'SHIRAZ'].map(n => ({ name: n }))
+        cities: ['TEHRAN', 'ISFAHAN', 'SHIRAZ'].map(n => ({ n }))
       }
     ]
   },
@@ -227,7 +227,7 @@ const REGIONS = [
       {
         name: 'USA',
         flag: '🇺🇸',
-        cities: ['NEW YORK', 'LOS ANGELES', 'SAN FRANCISCO', 'CHICAGO', 'MIAMI', 'HOUSTON', 'SEATTLE', 'WASHINGTON D.C.'].map(n => ({ name: n }))
+        cities: ['NEW YORK', 'LOS ANGELES', 'SAN FRANCISCO', 'CHICAGO', 'MIAMI', 'HOUSTON', 'SEATTLE', 'WASHINGTON'].map(n => ({ name: n }))
       },
       {
         name: 'CANADA',
@@ -242,7 +242,7 @@ const REGIONS = [
       {
         name: 'MEXICO',
         flag: '🇲🇽',
-        cities: ['MEXICO CITY', 'CANCUN', 'GUADALAJARA', 'MONTERREY', 'TIJUANA'].map(n => ({ name: n }))
+        cities: ['MEXICO', 'CANCUN', 'GUADALAJARA', 'MONTERREY', 'TIJUANA'].map(n => ({ name: n }))
       },
       {
         name: 'ARGENTINA',
@@ -313,16 +313,13 @@ export default function LocationSelector() {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center">
-      {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300"
         onClick={() => setIsSelectorOpen(false)}
       ></div>
 
-      {/* Selector Body */}
       <div className="relative w-full max-w-lg bg-surface sm:rounded-3xl shadow-2xl animate-in slide-in-from-bottom-full duration-500 ease-out flex flex-col max-h-[90vh]">
         
-        {/* Header Section */}
         <div className="px-6 pt-8 pb-4">
           <div className="flex items-center justify-between mb-8">
             <div className="flex flex-col">
@@ -337,7 +334,6 @@ export default function LocationSelector() {
             </button>
           </div>
 
-          {/* Search Bar */}
           <div className="relative mb-6">
             <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none">
               <span className="material-symbols-outlined text-[20px] text-primary">search</span>
@@ -352,7 +348,6 @@ export default function LocationSelector() {
           </div>
         </div>
 
-        {/* Tab Navigation */}
         <div className="px-6 flex gap-6 overflow-x-auto no-scrollbar bg-on-surface/[0.01] border-b border-outline-variant/10">
           {CONTINENTS.map((tab) => (
             <button 
@@ -370,7 +365,6 @@ export default function LocationSelector() {
           ))}
         </div>
 
-        {/* Location List */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar">
           {filteredRegions.map((region) => (
             <div key={region.continent}>
@@ -386,7 +380,7 @@ export default function LocationSelector() {
                     >
                       <div className="flex items-center gap-3">
                         <span className="text-xl grayscale group-hover:grayscale-0 transition-all">{country.flag}</span>
-                        <span className="font-headline font-bold text-base tracking-tight uppercase">
+                        <span className="font-headline font-bold text-base tracking-tight uppercase text-left">
                           {country.name}
                         </span>
                       </div>
@@ -397,7 +391,6 @@ export default function LocationSelector() {
                       </span>
                     </button>
                     
-                    {/* Cities */}
                     <div className={`grid grid-cols-1 overflow-hidden transition-all duration-300 ${
                       expandedCountry === country.name ? 'max-h-[1000px] py-1 bg-on-surface/[0.015]' : 'max-h-0'
                     }`}>
@@ -405,7 +398,7 @@ export default function LocationSelector() {
                         <button 
                           key={city.name}
                           onClick={() => handleSelect(country.name, city.name)}
-                          className={`w-full text-left px-12 py-3.5 text-xs font-bold tracking-widest uppercase transition-all ${
+                          className={`w-full text-left px-13 py-3.5 text-xs font-bold tracking-widest uppercase transition-all ${
                             location.city === city.name && location.country === country.name
                               ? 'text-primary bg-primary/5' 
                               : 'text-on-surface/40 hover:text-on-surface hover:bg-on-surface/[0.02]'
@@ -422,7 +415,6 @@ export default function LocationSelector() {
           ))}
         </div>
 
-        {/* Footer */}
         <div className="p-6 bg-on-surface/[0.02] border-t border-outline-variant/10">
           <p className="text-[10px] text-center text-on-surface/40 font-medium tracking-widest uppercase">
             World of Community · Global Network
