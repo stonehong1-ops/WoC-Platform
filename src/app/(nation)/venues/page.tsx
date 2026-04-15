@@ -1,293 +1,267 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import VenueManagement from '@/components/venues/VenueManagement';
-import { Venue, venueService } from '@/lib/firebase/venueService';
-import { MapPin, Navigation, Info, Search } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
+import { db } from '@/lib/firebase/clientApp';
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import PageWrapper from '@/components/layout/PageWrapper';
+import ManageEntry from '@/components/venues/ManageEntry';
+
+interface Venue {
+  id: string;
+  name: string;
+  nativeName?: string;
+  category: string;
+  address: string;
+  coordinates: {
+    latitude: number;
+    longitude: number;
+  };
+  description?: string;
+  imageUrl?: string;
+}
+
+const mapContainerStyle = {
+  width: '100%',
+  height: '100%'
+};
+
+const center = {
+  lat: 37.5575, // Hongdae Station
+  lng: 126.9245
+};
+
+const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualizationOrders")[] = ["places"];
 
 export default function VenuesPage() {
   const [venues, setVenues] = useState<Venue[]>([]);
   const [filteredVenues, setFilteredVenues] = useState<Venue[]>([]);
-  const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null);
+  const [activeCategory, setActiveCategory] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Hongdae Station Coordinates (Center Point)
-  const HONGDAE_CENTER = { lat: 37.5575, lng: 126.9245 };
+  const { isLoaded, loadError } = useJsApiLoader({
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
+    libraries
+  });
 
+  // Fetch Venues from Firestore
   useEffect(() => {
-    const unsubscribe = venueService.subscribeVenues((data) => {
-      setVenues(data);
+    const q = query(collection(db, "venues"), orderBy("createdAt", "desc"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const venueData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Venue[];
+      setVenues(venueData);
+      setLoading(false);
     });
+
     return () => unsubscribe();
   }, []);
 
-  // Filter logic
+  // Filter Logic
   useEffect(() => {
     let result = venues;
-    
-    if (selectedCategory !== 'All') {
-      result = result.filter(v => v.category === selectedCategory);
+    if (activeCategory !== 'All') {
+      result = result.filter(v => v.category === activeCategory);
     }
-    
     if (searchTerm) {
-      const lowerSearch = searchTerm.toLowerCase();
+      const term = searchTerm.toLowerCase();
       result = result.filter(v => 
-        v.name.toLowerCase().includes(lowerSearch) || 
-        (v.nameNative && v.nameNative.toLowerCase().includes(lowerSearch)) ||
-        v.address.toLowerCase().includes(lowerSearch)
+        v.name.toLowerCase().includes(term) || 
+        v.nativeName?.toLowerCase().includes(term) ||
+        v.address.toLowerCase().includes(term)
       );
     }
-    
     setFilteredVenues(result);
-  }, [venues, searchTerm, selectedCategory]);
+  }, [venues, activeCategory, searchTerm]);
+
+  const categories = ['All', 'Studio', 'Academy', 'Club', 'Shop', 'Service', 'Other'];
+
+  if (loadError) {
+    return <div>Error loading maps</div>;
+  }
 
   return (
-    <main className="relative h-screen flex flex-col pt-16 overflow-hidden bg-[#f0f2f5]">
-      {/* Top Search & Filter Bar Section */}
-      <div className="z-40 bg-white/80 backdrop-blur-xl border-b border-[#dde4e5] w-full flex flex-col">
-        {/* Search Bar Area */}
-        <div className="px-4 pt-3 pb-1">
-          <div className="relative flex items-center">
-            <Search size={18} className="absolute left-3 text-[#596061]/60" />
-            <input
-              className="w-full bg-[#f0f2f5] border-none rounded-xl py-2.5 pl-10 pr-4 text-sm focus:ring-2 focus:ring-[#1A73E8]/10 placeholder:text-[#596061]/40 font-medium transition-all"
+    <PageWrapper>
+      <div className="flex flex-col h-screen bg-[#f8f9fa] font-manrope">
+        {/* Search & Tabs Header */}
+        <div className="bg-white px-4 pt-6 pb-4 border-b border-gray-100 z-10 shadow-sm">
+          <div className="relative mb-4">
+            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">search</span>
+            <input 
+              type="text" 
               placeholder="Search venues, studios, or events"
-              type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-[#f1f3f4] border-none rounded-2xl py-3 pl-12 pr-4 text-sm focus:ring-2 focus:ring-[#0061ff] transition-all"
             />
           </div>
-        </div>
-        {/* Filter Bar */}
-        <div className="w-full overflow-x-auto no-scrollbar py-3 px-4 flex gap-2 items-center">
-          {['All', 'Studio', 'Academy', 'Club', 'Shop', 'Service'].map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`flex items-center gap-1 flex-none px-4 py-1.5 rounded-full text-xs transition-all ${
-                selectedCategory === cat 
-                ? 'bg-[#1A73E8] text-[#f7f7ff] font-black shadow-lg shadow-[#1A73E8]/20' 
-                : 'bg-white border border-[#acb3b4]/30 font-bold text-[#596061] hover:bg-[#f0f2f5]'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Main Content: Interactive Map */}
-      <div className="relative flex-grow bg-[#dde4e5] overflow-hidden">
-        {/* Stylized Hongdae Map Background (Representational) */}
-        <div
-          className="absolute inset-0 transition-opacity duration-1000 ease-in-out"
-          style={{
-            backgroundColor: '#e5e9ea',
-            backgroundImage: "url('https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?q=80&w=2066&auto=format&fit=crop')", // Architectural/Map-like top-down view
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            filter: 'grayscale(0.6) contrast(1.1) brightness(1.05)',
-          }}
-        ></div>
-        
-        <div className="absolute inset-0 bg-blue-900/5 mix-blend-multiply pointer-events-none"></div>
-
-        {/* Dynamic Flag Markers */}
-        {filteredVenues.map((venue) => {
-          // Calculate relative position based on Hongdae Center (Simplified Mapping)
-          const yOffset = (venue.coordinates.lat - HONGDAE_CENTER.lat) * 5000 + 50; 
-          const xOffset = (venue.coordinates.lng - HONGDAE_CENTER.lng) * 5000 + 50;
-          
-          return (
-            <div 
-              key={venue.id}
-              className={`absolute transition-all duration-700 cursor-pointer group z-10 ${selectedVenue?.id === venue.id ? 'scale-125 z-20' : ''}`}
-              style={{ 
-                top: `${yOffset}%`, 
-                left: `${xOffset}%`,
-                display: (yOffset < 0 || yOffset > 100 || xOffset < 0 || xOffset > 100) ? 'none' : 'block'
-              }}
-              onClick={() => setSelectedVenue(venue)}
-            >
-              <div className="flex flex-col items-center">
-                {/* Flag Design Pin */}
-                <div className="relative">
-                  <div className={`px-3 py-1.5 rounded-r-xl rounded-tl-xl shadow-2xl flex items-center gap-2 transition-all ${
-                    selectedVenue?.id === venue.id ? 'bg-[#1A73E8] text-white' : 'bg-white text-[#2d3435]'
-                  }`}>
-                    <div className={`w-1.5 h-1.5 rounded-full ${selectedVenue?.id === venue.id ? 'bg-white' : 'bg-[#1A73E8] animate-pulse'}`}></div>
-                    <span className="text-[10px] font-black whitespace-nowrap uppercase tracking-tighter">
-                      {venue.name}
-                    </span>
-                  </div>
-                  {/* Flag Pole */}
-                  <div className={`w-0.5 h-4 mx-auto -mt-0.5 ${selectedVenue?.id === venue.id ? 'bg-[#1A73E8]' : 'bg-[#1A73E8]/60'}`}></div>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-
-        {/* Home Button (Center on Hongdae) */}
-        <button 
-          onClick={() => setSelectedVenue(null)}
-          className="absolute left-4 bottom-8 w-12 h-12 bg-white rounded-2xl shadow-xl border border-[#dde4e5] flex items-center justify-center text-[#1A73E8] active:scale-95 transition-all z-20"
-        >
-          <Navigation size={22} className={selectedVenue ? '' : 'fill-current'} />
-        </button>
-
-        {/* Map Interaction UI */}
-        <div className="absolute right-4 top-4 flex flex-col gap-3 z-20">
-          <VenueManagement />
-          <div className="flex flex-col bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-[#dde4e5] overflow-hidden">
-            <button className="w-12 h-12 flex items-center justify-center text-[#596061] hover:text-[#1A73E8] transition-colors">
-              <span className="material-symbols-outlined text-[20px]">add</span>
-            </button>
-            <div className="h-[1px] bg-[#dde4e5] mx-2"></div>
-            <button className="w-12 h-12 flex items-center justify-center text-[#596061] hover:text-[#1A73E8] transition-colors">
-              <span className="material-symbols-outlined text-[20px]">remove</span>
-            </button>
+          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={`flex-shrink-0 px-5 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
+                  activeCategory === cat 
+                  ? 'bg-[#0061ff] text-white shadow-md' 
+                  : 'bg-white text-gray-500 border border-gray-200 hover:border-gray-400'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
           </div>
         </div>
-      </div>
 
-      {/* Bottom Sheet */}
-      <div 
-        className="absolute bottom-0 left-0 w-full bg-white rounded-t-[32px] shadow-[0_-20px_40px_rgba(0,0,0,0.06)] z-50 flex flex-col transition-all duration-500 ease-out" 
-        style={{ height: selectedVenue ? '65%' : '40%' }}
-      >
-        {/* Handle */}
-        <div className="w-full flex justify-center py-4 cursor-pointer" onClick={() => selectedVenue && setSelectedVenue(null)}>
-          <div className="w-12 h-1.5 bg-[#f0f2f5] rounded-full"></div>
+        {/* Main Content: Interactive Google Map */}
+        <div className="relative flex-grow overflow-hidden">
+          {isLoaded ? (
+            <GoogleMap
+              mapContainerStyle={mapContainerStyle}
+              center={center}
+              zoom={15}
+              options={{
+                disableDefaultUI: true,
+                zoomControl: true,
+                styles: [
+                  {
+                    featureType: "all",
+                    elementType: "geometry",
+                    stylers: [{ color: "#f5f5f5" }]
+                  },
+                  {
+                    featureType: "water",
+                    elementType: "geometry",
+                    stylers: [{ color: "#e9e9e9" }]
+                  }
+                ]
+              }}
+            >
+              {filteredVenues.map((venue) => (
+                <Marker
+                  key={venue.id}
+                  position={{ lat: venue.coordinates.latitude, lng: venue.coordinates.longitude }}
+                  onClick={() => setSelectedVenue(venue)}
+                  icon={{
+                    path: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z",
+                    fillColor: selectedVenue?.id === venue.id ? "#ff3b30" : "#0061ff",
+                    fillOpacity: 1,
+                    strokeWeight: 2,
+                    strokeColor: "#ffffff",
+                    scale: 1.5,
+                    anchor: new google.maps.Point(12, 22)
+                  }}
+                />
+              ))}
+
+              {selectedVenue && (
+                <InfoWindow
+                  position={{ lat: selectedVenue.coordinates.latitude, lng: selectedVenue.coordinates.longitude }}
+                  onCloseClick={() => setSelectedVenue(null)}
+                >
+                  <div className="p-2 max-w-[200px]">
+                    <h3 className="font-bold text-sm text-gray-900">{selectedVenue.name}</h3>
+                    <p className="text-[10px] text-gray-500 mt-1">{selectedVenue.address}</p>
+                    <button 
+                      className="mt-2 text-[#0061ff] text-[10px] font-bold"
+                      onClick={() => {/* Detail logic */}}
+                    >
+                      VIEW DETAILS
+                    </button>
+                  </div>
+                </InfoWindow>
+              )}
+            </GoogleMap>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-[#f1f3f4]">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0061ff]"></div>
+            </div>
+          )}
         </div>
 
-        {/* Content Area */}
-        <div className="px-6 flex flex-col h-full overflow-hidden">
-          <div className="flex justify-between items-end mb-6">
+        {/* List Sheet (Bottom) */}
+        <div className="bg-white rounded-t-3xl shadow-[0_-10px_30px_rgba(0,0,0,0.05)] px-6 pt-3 pb-8 z-10">
+          <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6"></div>
+          <div className="flex justify-between items-end mb-4">
             <div>
-              <p className="text-[10px] font-black text-[#1A73E8] uppercase tracking-[0.2em] mb-1">
-                {selectedVenue ? selectedVenue.category : 'Nearby Community'}
-              </p>
-              <h2 className="font-headline font-black text-2xl text-[#2d3435] leading-tight uppercase">
-                {selectedVenue ? selectedVenue.name : `${filteredVenues.length} Spaces Found`}
-              </h2>
+              <p className="text-[10px] font-black tracking-widest text-[#0061ff] uppercase mb-1">Nearby Community</p>
+              <h2 className="text-2xl font-black text-gray-800 tracking-tighter uppercase">{filteredVenues.length} Spaces Found</h2>
             </div>
-            {selectedVenue && (
+            {searchTerm && (
               <button 
-                onClick={() => setSelectedVenue(null)}
-                className="text-[#596061] text-[10px] font-black uppercase tracking-widest border border-[#dde4e5] px-4 py-2 rounded-xl bg-[#f0f2f5]/50 active:scale-95 transition-all"
+                onClick={() => setSearchTerm('')}
+                className="text-xs text-gray-400 hover:text-gray-600 transition-colors underline underline-offset-4"
               >
-                Back to List
+                Clear Search
               </button>
             )}
           </div>
-
-          {/* List or Detail View */}
-          <div className="flex-grow overflow-y-auto pb-32 no-scrollbar space-y-8">
-            {selectedVenue ? (
-              <div className="animate-in fade-in slide-in-from-bottom-8 duration-500">
-                <div className="w-full h-56 bg-[#f0f2f5] rounded-[32px] overflow-hidden mb-8 shadow-inner">
-                  <img 
-                    src={selectedVenue.imageUrl || 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&q=80'} 
-                    alt={selectedVenue.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="space-y-8">
-                  <div className="flex items-start gap-5">
-                    <div className="w-12 h-12 bg-[#f7f7ff] rounded-2xl flex items-center justify-center text-[#1A73E8] flex-none shadow-sm">
-                      <MapPin size={22} />
-                    </div>
-                    <div>
-                      <p className="text-[11px] font-bold text-[#596061] uppercase tracking-widest mb-1">Location Address</p>
-                      <p className="text-base font-bold text-[#2d3435] leading-snug">{selectedVenue.address}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-5">
-                    <div className="w-12 h-12 bg-[#f7f7ff] rounded-2xl flex items-center justify-center text-[#1A73E8] flex-none shadow-sm">
-                      <Navigation size={22} />
-                    </div>
-                    <div>
-                      <p className="text-[11px] font-bold text-[#596061] uppercase tracking-widest mb-1">Operator & Contact</p>
-                      <p className="text-base font-bold text-[#2d3435] leading-snug">{selectedVenue.owner} • {selectedVenue.contact}</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 pt-4">
-                    <div className="bg-[#f7f7ff] p-4 rounded-2xl">
-                      <p className="text-[10px] font-bold text-[#596061] uppercase tracking-widest mb-1">Rating</p>
-                      <div className="flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[#1A73E8] text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                        <span className="text-lg font-black text-[#2d3435]">{selectedVenue.rating || 'N/A'}</span>
+          
+          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+            {filteredVenues.map((venue) => (
+              <div 
+                key={venue.id}
+                onClick={() => setSelectedVenue(venue)}
+                className={`flex-shrink-0 w-64 p-4 rounded-2xl border transition-all ${
+                  selectedVenue?.id === venue.id 
+                  ? 'border-[#0061ff] bg-[#0061ff]/5' 
+                  : 'border-gray-100 hover:border-gray-300 bg-[#fbfbfb]'
+                }`}
+              >
+                <div className="flex gap-4">
+                  <div className="w-16 h-16 rounded-xl bg-gray-200 overflow-hidden flex-shrink-0">
+                    {venue.imageUrl ? (
+                      <img src={venue.imageUrl} alt={venue.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-300">
+                        <span className="material-symbols-outlined">image</span>
                       </div>
-                    </div>
-                    <div className="bg-[#f7f7ff] p-4 rounded-2xl">
-                      <p className="text-[10px] font-bold text-[#596061] uppercase tracking-widest mb-1">Price</p>
-                      <p className="text-base font-black text-[#1A73E8]">{selectedVenue.price || 'Contact'}</p>
-                    </div>
+                    )}
                   </div>
-                  <button className="w-full py-5 bg-[#1A73E8] text-white rounded-3xl font-black text-sm shadow-2xl shadow-[#1A73E8]/30 flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-95 transition-all">
-                    <Info size={20} />
-                    EXPLORE FULL PROFILE
-                  </button>
+                  <div className="overflow-hidden">
+                    <h4 className="font-bold text-gray-900 truncate">{venue.name}</h4>
+                    <p className="text-[10px] text-gray-500 mt-1 uppercase tracking-tighter font-semibold">{venue.category}</p>
+                    <p className="text-[11px] text-gray-400 mt-2 truncate">{venue.address}</p>
+                  </div>
                 </div>
               </div>
-            ) : (
-              <div className="space-y-1">
-                {filteredVenues.map((venue) => (
-                  <div 
-                    key={venue.id} 
-                    className="flex gap-6 p-2 rounded-3xl hover:bg-[#f7f7ff] transition-all group cursor-pointer"
-                    onClick={() => setSelectedVenue(venue)}
-                  >
-                    <div className="w-28 h-28 rounded-[24px] overflow-hidden flex-none bg-[#f0f2f5] shadow-sm">
-                      <img
-                        alt={venue.name}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                        src={venue.imageUrl || 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=300&q=80'}
-                      />
-                    </div>
-                    <div className="flex flex-col justify-center flex-grow min-w-0 pr-2">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-[9px] font-black uppercase tracking-[0.15em] px-2.5 py-1 bg-white border border-[#dde4e5] text-[#1A73E8] rounded-md shadow-sm">
-                          {venue.category}
-                        </span>
-                        {venue.rating && (
-                          <div className="flex items-center gap-1 ml-auto">
-                            <span className="material-symbols-outlined text-[14px] text-[#1A73E8]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                            <span className="text-[11px] font-black">{venue.rating}</span>
-                          </div>
-                        )}
-                      </div>
-                      <h3 className="font-headline font-black text-[#2d3435] text-lg leading-tight uppercase tracking-tight truncate group-hover:text-[#1A73E8] transition-colors">
-                        {venue.name}
-                      </h3>
-                      <p className="text-[#596061] text-xs font-medium mt-1 truncate leading-relaxed">{venue.address}</p>
-                      <div className="mt-3 flex items-center justify-between">
-                        <span className="text-[#1A73E8] font-black text-[11px] tracking-wider uppercase">
-                          {venue.price || 'INQUIRE NOW'}
-                        </span>
-                        <span className="material-symbols-outlined text-[#dde4e5] group-hover:text-[#1A73E8] transition-colors">arrow_forward</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                {filteredVenues.length === 0 && (
-                  <div className="py-20 text-center">
-                    <p className="font-headline font-black text-[#dde4e5] text-4xl mb-4">NO SPACES</p>
-                    <p className="text-[#596061] font-bold text-sm">Try adjusting your filters or search term.</p>
-                  </div>
-                )}
+            ))}
+            {filteredVenues.length === 0 && !loading && (
+              <div className="w-full py-12 text-center text-gray-400">
+                <p className="text-sm">No venues found in this area.</p>
               </div>
             )}
           </div>
         </div>
+
+        {/* Floating Action Button (FAB): Add Venue */}
+        <button
+          onClick={() => setIsEditModalOpen(true)}
+          className="fixed bottom-32 right-6 w-14 h-14 bg-[#0061ff] text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-20"
+        >
+          <span className="material-symbols-outlined text-2xl">add</span>
+        </button>
+
+        {/* Integrated Entry/Edit Modal */}
+        <ManageEntry
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+        />
       </div>
 
-      <style jsx>{`
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      <style jsx global>{`
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
       `}</style>
-    </main>
+    </PageWrapper>
   );
 }
