@@ -2,8 +2,8 @@ import { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'WoC Today | World of Community',
-    short_name: 'WoC Today',
+    name: 'WoC',
+    short_name: 'WoC',
     description: 'A premium community platform for shared experiences and collective living.',
     start_url: '/',
     display: 'standalone',

@@ -14,9 +14,17 @@ interface UserProfile {
   email: string | null;
   nickname: string;
   nativeNickname?: string;
+  bio?: string;
   countryCode: string;
   photoURL: string | null;
+  phoneNumber?: string;
+  authMethod?: string;
+  gender?: string;
   isRegistered: boolean;
+  // Roles
+  isInstructor?: boolean;
+  isSeller?: boolean;
+  isServiceProvider?: boolean;
 }
 
 interface AuthContextType {
@@ -65,12 +73,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const data = docSnap.data();
             setProfile({
               uid: firebaseUser.uid,
-              email: firebaseUser.email,
+              email: data.email || firebaseUser.email,
               nickname: data.nickname || '',
               nativeNickname: data.nativeNickname || '',
+              bio: data.bio || '',
               countryCode: data.countryCode || '',
               photoURL: data.photoURL || firebaseUser.photoURL,
+              phoneNumber: data.phoneNumber || firebaseUser.phoneNumber || '',
+              authMethod: data.authMethod || '',
+              gender: data.gender || '',
               isRegistered: true,
+              isInstructor: data.isInstructor || false,
+              isSeller: data.isSeller || false,
+              isServiceProvider: data.isServiceProvider || false,
             });
           } else {
             setProfile({
@@ -79,6 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               nickname: '',
               countryCode: '',
               photoURL: firebaseUser.photoURL,
+              phoneNumber: firebaseUser.phoneNumber || '',
               isRegistered: false,
             });
           }

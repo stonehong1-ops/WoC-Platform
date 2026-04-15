@@ -3,9 +3,22 @@
 import React from 'react';
 import Link from 'next/link';
 import { useNavigation } from '@/components/providers/NavigationProvider';
+import { useAuth } from '@/components/providers/AuthProvider';
 
 export default function NavigationDrawer() {
   const { isDrawerOpen, closeDrawer } = useNavigation();
+  const { profile, user, signOut } = useAuth();
+
+  const handleLogout = async () => {
+    await signOut();
+    closeDrawer();
+  };
+
+  const displayName = profile?.nickname || user?.displayName || 'User';
+  const roleLabel = profile?.isInstructor ? 'Instructor' : 
+                   profile?.isSeller ? 'Seller' : 
+                   profile?.isServiceProvider ? 'Service' : 'Member';
+  const photoURL = profile?.photoURL || user?.photoURL || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop';
 
   return (
     <>
@@ -26,20 +39,24 @@ export default function NavigationDrawer() {
         {/* Header */}
         <header className="flex flex-col px-6 pt-10 pb-6 bg-slate-50/80 dark:bg-slate-900/50 backdrop-blur-xl shrink-0">
           <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
+            <Link 
+              href="/my-info" 
+              onClick={closeDrawer}
+              className="flex items-center gap-3 active:opacity-70 transition-opacity"
+            >
               <div className="relative">
                 <img 
                   alt="User Profile" 
                   className="w-12 h-12 rounded-xl object-cover shadow-blue-900/10 shadow-lg" 
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuBzfVjohrZHnoToAgj4Zr2p3GiJqMNQByqFJlw_vnXBARhHZ56P1eS52n90Aio9o3JH16AqA7kSNeFbNYmID6TWFQcmA8m3z-SAewptWhjXtjoivNHBXrTjU7VkiJXQwq3TMwbqUSA8OV6xxAF8rMzkAfF3yUFo83IShulQcR3QMjplCrj8DtNwBHwFnBg4UPVtUM6_07OFKEDYMLV--lmX1B0Q68bxGO5OF38Kiv9CW0VQTdja2Rnd8LS_-plaVrhTck_yL1y_Ykk"
+                  src={photoURL}
                 />
                 <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
               </div>
               <div>
-                <h1 className="text-xl font-extrabold text-blue-900 dark:text-blue-100 tracking-tight">Alex Sterling</h1>
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Active Member</p>
+                <h1 className="text-xl font-extrabold text-blue-900 dark:text-blue-100 tracking-tight">{displayName}</h1>
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{profile?.isRegistered ? roleLabel : 'Guest'}</p>
               </div>
-            </div>
+            </Link>
             <button 
               onClick={closeDrawer}
               className="bg-blue-50 dark:bg-blue-900/30 p-2 rounded-xl text-blue-700 dark:text-blue-400 active:scale-95 transition-all"
@@ -59,9 +76,9 @@ export default function NavigationDrawer() {
 
         {/* Navigation Content */}
         <main className="flex-grow flex flex-col px-4 py-4 overflow-y-auto w-full no-scrollbar">
-          {/* Section: TANGO WORLD */}
+          {/* Section: SOCIETY */}
           <div className="mb-8">
-            <h2 className="px-4 mb-3 text-[10px] uppercase tracking-[0.2em] font-bold text-slate-400">TANGO WORLD</h2>
+            <h2 className="px-4 mb-3 text-[10px] uppercase tracking-[0.2em] font-bold text-slate-400">SOCIETY</h2>
             <div className="space-y-1">
               {[
                 { icon: 'home', label: 'Home', href: '/home' },
@@ -151,17 +168,17 @@ export default function NavigationDrawer() {
 
           {/* Logout */}
           <div className="mt-auto pt-6 border-t border-slate-100 dark:border-slate-800 mb-8">
-            <Link 
-              href="/" 
-              onClick={closeDrawer}
-              className="w-full flex items-center gap-4 px-6 py-4 text-red-600 hover:bg-red-50 rounded-2xl transition-all active:scale-[0.98] font-bold"
+            <button 
+              onClick={handleLogout}
+              className="w-full flex items-center gap-4 px-6 py-4 text-red-600 hover:bg-red-50 rounded-2xl transition-all active:scale-[0.98] font-bold text-left"
             >
               <span className="material-symbols-outlined text-xl">logout</span>
               <span className="text-lg">Logout</span>
-            </Link>
+            </button>
           </div>
         </main>
       </div>
     </>
   );
 }
+

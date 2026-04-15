@@ -6,12 +6,12 @@ import PageWrapper from "@/components/layout/PageWrapper";
 import SWRegister from "@/components/layout/SWRegister";
 
 export const metadata: Metadata = {
-  title: "WoC Today | World of Community",
+  title: "WoC",
   description: "A premium community platform for shared experiences and collective living.",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "WoC Today",
+    title: "WoC",
   },
 };
 

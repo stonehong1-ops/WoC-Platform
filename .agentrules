@@ -1,0 +1,12 @@
+# WoC Project Agent Rules
+
+1. **Implementation Plan First**: 
+   Every coding task MUST start with a detailed implementation plan.
+   The agent must present this plan to the user and wait for explicit approval ("진행해" or similar) before making any file modifications or running build commands.
+
+2. **Design Integrity**:
+   Maintain the premium, editorial aesthetic (Kinetic Gallery / Pure Body) established in the project.
+   Avoid unnecessary borders, use sophisticated typography, and prioritize visual excellence.
+
+3. **No Assumptions**:
+   If a request is ambiguous, ask for clarification instead of guessing. Do not perform "bonus" refactoring unless specifically asked.
