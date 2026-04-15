@@ -95,9 +95,9 @@ export default function ManageEntry({ isOpen, onClose }: ManageEntryProps) {
         <div className="relative p-8 max-h-[90vh] overflow-y-auto no-scrollbar">
           {/* Header */}
           <div className="flex justify-between items-center mb-8">
-            <h2 className="text-xl font-black text-on-surface tracking-tight uppercase">Venue</h2>
-            <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full bg-on-surface/[0.04] text-on-surface/40 hover:bg-on-surface/[0.08] transition-all">
-              <span className="material-symbols-outlined">close</span>
+            <h2 className="text-xl font-black text-on-surface tracking-tighter uppercase">Venue</h2>
+            <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full bg-on-surface-variant/[0.08] text-on-surface-variant hover:bg-on-surface-variant/[0.12] transition-all active:scale-95">
+              <span className="material-symbols-outlined text-[20px]">close</span>
             </button>
           </div>
 
@@ -127,28 +127,28 @@ export default function ManageEntry({ isOpen, onClose }: ManageEntryProps) {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-on-surface/30 ml-1 tracking-widest">Space Name</label>
+                <label className="text-[10px] font-black uppercase text-on-surface-variant ml-1 tracking-widest block">Space Name</label>
                 <input 
                   type="text" 
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  className="w-full bg-on-surface/[0.03] border-none rounded-2xl p-4 text-[14px] font-bold focus:ring-1 focus:ring-primary/30"
+                  className="w-full bg-on-surface-variant/[0.04] border-none rounded-2xl p-4 text-[14px] font-bold focus:ring-1 focus:ring-primary/30"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-on-surface/30 ml-1 tracking-widest">Native Name</label>
+                <label className="text-[10px] font-black uppercase text-on-surface-variant ml-1 tracking-widest block">Native Name</label>
                 <input 
                   type="text" 
                   value={formData.nativeName}
                   onChange={(e) => setFormData({...formData, nativeName: e.target.value})}
-                  className="w-full bg-on-surface/[0.03] border-none rounded-2xl p-4 text-[14px] font-bold focus:ring-1 focus:ring-primary/30"
+                  className="w-full bg-on-surface-variant/[0.04] border-none rounded-2xl p-4 text-[14px] font-bold focus:ring-1 focus:ring-primary/30"
                 />
               </div>
             </div>
 
             <div className="space-y-3">
-              <label className="text-[10px] font-black uppercase text-on-surface/30 ml-1 tracking-widest block">Categories</label>
+              <label className="text-[10px] font-black uppercase text-on-surface-variant ml-1 tracking-widest block">Categories</label>
               <div className="flex flex-wrap gap-1.5">
                 {categoriesList.map((cat) => (
                   <button
@@ -157,8 +157,8 @@ export default function ManageEntry({ isOpen, onClose }: ManageEntryProps) {
                     onClick={() => toggleCategory(cat)}
                     className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
                       formData.categories.includes(cat)
-                      ? 'bg-primary text-white'
-                      : 'bg-on-surface/[0.03] text-on-surface/40 hover:bg-on-surface/[0.06]'
+                      ? 'bg-primary text-white shadow-md'
+                      : 'bg-on-surface-variant/[0.04] text-on-surface-variant hover:bg-on-surface-variant/[0.08]'
                     }`}
                   >
                     {cat}
@@ -169,23 +169,23 @@ export default function ManageEntry({ isOpen, onClose }: ManageEntryProps) {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-on-surface/30 ml-1 tracking-widest">Address</label>
+                <label className="text-[10px] font-black uppercase text-on-surface-variant ml-1 tracking-widest block">Address</label>
                 <input 
                   type="text" 
                   value={formData.address}
                   onChange={(e) => setFormData({...formData, address: e.target.value})}
-                  className="w-full bg-on-surface/[0.03] border-none rounded-2xl p-4 text-[14px] font-bold focus:ring-1 focus:ring-primary/30"
+                  className="w-full bg-on-surface-variant/[0.04] border-none rounded-2xl p-4 text-[14px] font-bold focus:ring-1 focus:ring-primary/30"
                   placeholder="Street address..."
                   required
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-on-surface/30 ml-1 tracking-widest">Detail Address</label>
+                <label className="text-[10px] font-black uppercase text-on-surface-variant ml-1 tracking-widest block">Detail Address</label>
                 <input 
                   type="text" 
                   value={formData.detailAddress}
                   onChange={(e) => setFormData({...formData, detailAddress: e.target.value})}
-                  className="w-full bg-on-surface/[0.03] border-none rounded-2xl p-4 text-[14px] font-bold focus:ring-1 focus:ring-primary/30"
+                  className="w-full bg-on-surface-variant/[0.04] border-none rounded-2xl p-4 text-[14px] font-bold focus:ring-1 focus:ring-primary/30"
                   placeholder="Floor, Suite, etc."
                 />
               </div>

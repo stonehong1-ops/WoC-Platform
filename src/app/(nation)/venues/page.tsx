@@ -147,7 +147,7 @@ export default function VenuesPage() {
               placeholder={`Search around ${location.city}...`}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-on-surface/[0.03] border-none rounded-2xl py-4 pl-12 pr-4 text-[14px] focus:ring-1 focus:ring-primary/30 transition-all font-medium placeholder:text-on-surface/20"
+              className="w-full bg-on-surface-variant/[0.06] border-none rounded-2xl py-4 pl-12 pr-4 text-[14px] focus:ring-1 focus:ring-primary/30 transition-all font-bold placeholder:text-on-surface-variant"
             />
           </div>
 
@@ -206,12 +206,14 @@ export default function VenuesPage() {
                   <div className="p-4 min-w-[220px] bg-white rounded-3xl font-manrope border-none shadow-none">
                     <span className="text-[9px] font-black text-primary uppercase tracking-widest mb-1 block">{selectedVenue.category}</span>
                     <h3 className="font-black text-lg text-on-surface leading-tight uppercase tracking-tighter mb-1">{selectedVenue.name}</h3>
-                    <p className="text-[11px] text-on-surface/40 flex items-start gap-1">
-                      <span className="material-symbols-outlined text-[14px]">location_on</span>
-                      {selectedVenue.address}
+                    <p className="text-[11px] text-on-surface-variant flex items-start gap-2 font-bold mb-4">
+                      <div className="w-6 h-6 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                        <span className="material-symbols-outlined text-[14px] text-primary">location_on</span>
+                      </div>
+                      {selectedVenue.address} {selectedVenue.detailAddress}
                     </p>
                     <button 
-                      className="w-full mt-4 py-3 bg-on-surface/[0.03] hover:bg-primary hover:text-white text-on-surface text-[10px] font-black uppercase tracking-widest rounded-xl transition-all"
+                      className="w-full py-3 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-primary/20 active:scale-95"
                       onClick={() => setSelectedVenue(selectedVenue)}
                     >
                       View Profile
@@ -233,10 +235,10 @@ export default function VenuesPage() {
             <h2 className="text-[14px] font-black text-on-surface uppercase tracking-tight">Community Spaces</h2>
             <button 
               onClick={() => setIsEditModalOpen(true)}
-              className="text-[11px] font-black text-primary uppercase tracking-widest flex items-center gap-1"
+              className="px-4 py-2 bg-secondary text-primary rounded-full text-[11px] font-black uppercase tracking-widest flex items-center gap-1.5 transition-all active:scale-95"
             >
               <span className="material-symbols-outlined text-sm">add</span>
-              Register Space
+              Register
             </button>
           </div>
           
@@ -265,9 +267,9 @@ export default function VenuesPage() {
                     )}
                   </div>
                   <div className="min-w-0 flex flex-col justify-center">
-                    <span className="text-[9px] font-black text-primary uppercase tracking-widest mb-0.5">{venue.category}</span>
-                    <h4 className="font-black text-[15px] text-on-surface leading-snug uppercase truncate">{venue.name}</h4>
-                    <p className="text-[11px] text-on-surface/40 mt-1 truncate">{venue.address}</p>
+                    <span className="text-[9px] font-black text-primary uppercase tracking-widest mb-1 block">{venue.category}</span>
+                    <h4 className="font-black text-[15px] text-on-surface leading-snug uppercase truncate tracking-tighter">{venue.name}</h4>
+                    <p className="text-[11px] text-on-surface-variant font-bold mt-1 truncate">{venue.address}</p>
                   </div>
                 </div>
               </div>

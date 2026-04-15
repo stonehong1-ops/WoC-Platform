@@ -3,9 +3,11 @@
 
 :root {
   --background: #F9F9F9;
-  --foreground: #1A1A1A;
+  --foreground: #2D3435;
   --primary: #005BC0;
   --secondary: #E3F2FD;
+  --on-surface: #2D3435;
+  --on-surface-variant: #596061;
 }
 
 @theme {
@@ -18,17 +20,12 @@
   --color-surface-container-high: #e4e9ea;
   --color-surface-container-highest: #dde4e5;
   --color-surface-container-lowest: #ffffff;
-  --color-primary: #1A73E8;
-  --color-on-primary: #f7f7ff;
+  --color-primary: #005BC0;
+  --color-on-primary: #ffffff;
   --color-primary-container: #d8e2ff;
   --color-on-primary-container: #004fa8;
   --color-outline: #757c7d;
   --color-outline-variant: #acb3b4;
-  --color-inverse-on-surface: #9c9d9d;
-  --color-error: #9f403d;
-  --color-on-error: #fff7f6;
-  --color-error-container: #fe8983;
-  --color-on-error-container: #752121;
   
   --radius-full: 9999px;
   --radius-squircle: 0.75rem;
@@ -50,8 +47,11 @@
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 
-  .font-headline {
+  h1, h2, h3, h4, .font-headline {
     font-family: 'Manrope', sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #2D3435;
   }
 
   .rounded-squircle {
