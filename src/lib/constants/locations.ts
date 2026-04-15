@@ -1,5 +1,5 @@
 export const CITY_COORDINATES: Record<string, { lat: number; lng: number; zoom: number }> = {
-  'SEOUL': { lat: 37.5665, lng: 126.9780, zoom: 13 },
+  'SEOUL': { lat: 37.5575, lng: 126.9244, zoom: 15 }, // Hongdae Station center
   'BUSAN': { lat: 35.1796, lng: 129.0756, zoom: 13 },
   'DAEGU': { lat: 35.8714, lng: 128.6014, zoom: 13 },
   'INCHEON': { lat: 37.4563, lng: 126.7052, zoom: 13 },
