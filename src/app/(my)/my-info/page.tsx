@@ -48,7 +48,7 @@ export default function MyInfoPage() {
             </div>
           </div>
           <div className="md:col-span-8 pb-4">
-            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-on-surface mb-2">
+            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-on-surface mb-2 font-headline">
               {profile?.nickname || user?.displayName || 'Adventurer'}
             </h1>
             <p className="text-on-surface-variant font-medium text-lg">
@@ -78,7 +78,7 @@ export default function MyInfoPage() {
               </div>
               <div>
                 <p className="text-xs font-bold text-outline uppercase tracking-widest">Login Method</p>
-                <p className="text-on-surface font-medium">Google</p>
+                <p className="text-on-surface font-medium">{profile?.authMethod || 'Google'}</p>
               </div>
             </div>
             <div className="flex items-center gap-4 mb-6">
@@ -105,7 +105,10 @@ export default function MyInfoPage() {
               </div>
               <div className="flex-grow">
                 <p className="text-xs font-bold text-outline uppercase tracking-widest">CELL PHONE</p>
-                <p className="text-on-surface font-medium">{profile?.countryCode} {profile?.phoneNumber || 'Not linked'}</p>
+                <div className="flex gap-2 items-center">
+                  <span className="text-on-surface font-medium">{profile?.countryCode}</span>
+                  <span className="text-on-surface font-medium">{profile?.phoneNumber || 'Not linked'}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -115,7 +118,7 @@ export default function MyInfoPage() {
             <div>
               <p className="text-xs font-bold text-inverse-on-surface uppercase tracking-widest mb-1">Professional Status</p>
               <div className="flex items-center gap-2 mb-4">
-                <h2 className="text-2xl font-bold text-white">Verified</h2>
+                <h2 className="text-2xl font-bold text-white font-headline">Verified</h2>
                 <span className="material-symbols-outlined text-primary fill-1" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
               </div>
               <p className="text-xs text-inverse-on-surface italic">Your primary credentials have been verified by our security team.</p>
@@ -140,7 +143,7 @@ export default function MyInfoPage() {
                   <span className="material-symbols-outlined">edit_square</span>
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-on-surface">Modify Profile</h3>
+                  <h3 className="text-lg font-bold text-on-surface font-headline">Modify Profile</h3>
                   <p className="text-sm text-on-surface-variant">Customize your account appearance and personal information</p>
                 </div>
               </div>
@@ -151,7 +154,7 @@ export default function MyInfoPage() {
 
         {/* Role Description Section */}
         <div className="mt-16 border-t border-surface-container pt-12">
-          <h2 className="text-xl font-bold text-on-surface mb-8">Access Rights</h2>
+          <h2 className="text-xl font-bold text-on-surface mb-8 font-headline">Access Rights</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             <div className="space-y-3">
               <p className="text-xs font-bold text-on-primary-fixed-variant uppercase">Instructor</p>
