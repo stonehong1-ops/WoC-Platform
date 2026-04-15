@@ -13,7 +13,7 @@ const REGIONS = [
         name: 'KOREA',
         flag: '🇰🇷',
         cities: [
-          { name: 'SEOUL', zones: ['CENTRAL', 'EAST', 'WEST', 'SOUTH', 'NORTH'] },
+          { name: 'SEOUL' },
           { name: 'BUSAN' },
           { name: 'JEJU' },
         ]
@@ -154,34 +154,15 @@ export default function LocationSelector() {
                       {country.cities.map((city) => (
                         <div key={city.name}>
                           <button 
-                            onClick={() => !city.zones && handleSelect(country.name, city.name)}
+                            onClick={() => handleSelect(country.name, city.name)}
                             className={`w-full text-left px-11 py-3 text-sm font-bold tracking-tight transition-colors ${
-                              location.city === city.name && !city.zones 
+                              location.city === city.name 
                                 ? 'text-primary' 
                                 : 'text-on-surface/60 hover:text-on-surface'
                             }`}
                           >
                             {city.name}
                           </button>
-                          
-                          {/* Zones Section (if any, like Seoul) */}
-                          {city.zones && (
-                            <div className="grid grid-cols-2 gap-2 px-11 py-2">
-                              {city.zones.map((zone) => (
-                                <button 
-                                  key={zone}
-                                  onClick={() => handleSelect(country.name, city.name, zone)}
-                                  className={`px-3 py-3 rounded-xl text-[10px] font-bold tracking-widest transition-all ${
-                                    location.city === city.name && location.zone === zone
-                                      ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]'
-                                      : 'bg-on-surface/[0.04] text-on-surface/40 hover:bg-on-surface/[0.08] hover:text-on-surface/60'
-                                  }`}
-                                >
-                                  {zone}
-                                </button>
-                              ))}
-                            </div>
-                          )}
                         </div>
                       ))}
                     </div>
