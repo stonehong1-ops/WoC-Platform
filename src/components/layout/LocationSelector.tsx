@@ -374,7 +374,7 @@ export default function LocationSelector() {
                   <div key={country.name} className="overflow-hidden rounded-2xl group">
                     <button 
                       onClick={() => setExpandedCountry(expandedCountry === country.name ? null : country.name)}
-                      className={`w-full flex items-center justify-between p-4 transition-all ${
+                      className={`w-full flex items-center justify-between px-5 py-4 transition-all ${
                         expandedCountry === country.name ? 'bg-primary/5 text-primary' : 'hover:bg-on-surface/[0.02]'
                       }`}
                     >
@@ -394,10 +394,10 @@ export default function LocationSelector() {
                     <div className={`grid grid-cols-1 overflow-hidden transition-all duration-300 ${
                       expandedCountry === country.name ? 'max-h-[1000px] py-1 bg-on-surface/[0.015]' : 'max-h-0'
                     }`}>
-                      {/* Master (ALL) Selection */}
+                      {/* Master (ALL) Selection - Standard Left Align */}
                       <button 
                         onClick={() => handleSelect(country.name, 'ALL')}
-                        className={`w-full text-left px-13 py-3.5 text-[10px] font-black tracking-[0.2em] uppercase transition-all ${
+                        className={`w-full text-left px-5 py-3 text-[11px] font-black tracking-[0.2em] uppercase transition-all ${
                           location.city === 'ALL' && location.country === country.name
                             ? 'text-primary bg-primary/10' 
                             : 'text-primary/70 hover:text-primary hover:bg-primary/5'
@@ -410,10 +410,10 @@ export default function LocationSelector() {
                         <button 
                           key={city.name}
                           onClick={() => handleSelect(country.name, city.name)}
-                          className={`w-full text-left px-13 py-3.5 text-[11px] font-bold tracking-widest uppercase transition-all ${
+                          className={`w-full text-left px-5 py-3 text-[12px] font-bold tracking-widest uppercase transition-all ${
                             location.city === city.name && location.country === country.name
                               ? 'text-primary bg-primary/5' 
-                              : 'text-on-surface/40 hover:text-on-surface hover:bg-on-surface/[0.02]'
+                              : 'text-on-surface/50 hover:text-on-surface hover:bg-on-surface/[0.02]'
                           }`}
                         >
                           {city.name}
