@@ -15,7 +15,7 @@ export default function ManageEntry({ isOpen, onClose }: ManageEntryProps) {
   const [formData, setFormData] = useState({
     name: '',
     nativeName: '',
-    category: 'Studio',
+    categories: [] as string[],
     address: '',
     description: '',
     latitude: 37.5575,
@@ -25,15 +25,31 @@ export default function ManageEntry({ isOpen, onClose }: ManageEntryProps) {
 
   const [saving, setSaving] = useState(false);
 
+  const categoriesList = ['Studio', 'Academy', 'Club', 'Shop', 'Service', 'Other'];
+
+  const toggleCategory = (category: string) => {
+    setFormData(prev => ({
+      ...prev,
+      categories: prev.categories.includes(category)
+        ? prev.categories.filter(c => c !== category)
+        : [...prev.categories, category]
+    }));
+  };
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (formData.categories.length === 0) {
+      alert('Please select at least one category.');
+      return;
+    }
     setSaving(true);
     try {
       await addDoc(collection(db, "venues"), {
         ...formData,
-        // Automatically inject current global location context
+        // Map to primary category for legacy support
+        category: formData.categories[0], 
         city: location.city.toUpperCase(),
         country: location.country.toUpperCase(),
         coordinates: {
@@ -44,7 +60,6 @@ export default function ManageEntry({ isOpen, onClose }: ManageEntryProps) {
         createdAt: serverTimestamp()
       });
       onClose();
-      // Optional: Refresh or show success toast
     } catch (error) {
       console.error("Error saving venue:", error);
       alert('Failed to register venue.');
@@ -94,35 +109,35 @@ export default function ManageEntry({ isOpen, onClose }: ManageEntryProps) {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-on-surface/30 ml-1 tracking-widest">Category</label>
-                <div className="relative">
-                  <select 
-                    value={formData.category}
-                    onChange={(e) => setFormData({...formData, category: e.target.value})}
-                    className="w-full bg-on-surface/[0.03] border-none rounded-2xl p-5 text-[15px] font-bold focus:ring-1 focus:ring-primary/30 transition-all appearance-none"
+            <div className="space-y-4">
+              <label className="text-[10px] font-black uppercase text-on-surface/30 ml-1 tracking-widest block">Categories (Select Multiple)</label>
+              <div className="flex flex-wrap gap-2">
+                {categoriesList.map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => toggleCategory(cat)}
+                    className={`px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${
+                      formData.categories.includes(cat)
+                      ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                      : 'bg-on-surface/[0.03] text-on-surface/40 hover:bg-on-surface/[0.06]'
+                    }`}
                   >
-                    <option>Studio</option>
-                    <option>Academy</option>
-                    <option>Club</option>
-                    <option>Shop</option>
-                    <option>Service</option>
-                    <option>Other</option>
-                  </select>
-                  <span className="material-symbols-outlined absolute right-5 top-1/2 -translate-y-1/2 text-on-surface/20 pointer-events-none">expand_more</span>
-                </div>
+                    {cat}
+                  </button>
+                ))}
               </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-on-surface/30 ml-1 tracking-widest">Image URL</label>
-                <input 
-                  type="url" 
-                  value={formData.imageUrl}
-                  onChange={(e) => setFormData({...formData, imageUrl: e.target.value})}
-                  className="w-full bg-on-surface/[0.03] border-none rounded-2xl p-5 text-[15px] font-bold focus:ring-1 focus:ring-primary/30 transition-all placeholder:text-on-surface/20"
-                  placeholder="https://images.unsplash.com/..."
-                />
-              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase text-on-surface/30 ml-1 tracking-widest">Image URL</label>
+              <input 
+                type="url" 
+                value={formData.imageUrl}
+                onChange={(e) => setFormData({...formData, imageUrl: e.target.value})}
+                className="w-full bg-on-surface/[0.03] border-none rounded-2xl p-5 text-[15px] font-bold focus:ring-1 focus:ring-primary/30 transition-all placeholder:text-on-surface/20"
+                placeholder="https://images.unsplash.com/..."
+              />
             </div>
 
             <div className="space-y-2">

@@ -14,6 +14,7 @@ interface Venue {
   name: string;
   nativeName?: string;
   category: string;
+  categories?: string[];
   address: string;
   city: string;
   country: string;
@@ -104,7 +105,9 @@ export default function VenuesPage() {
   // Secondary Filter Logic (Category & Search)
   const filteredVenues = useMemo(() => {
     return venues.filter(v => {
-      const matchCategory = activeCategory === 'All' || v.category === activeCategory;
+      const matchCategory = activeCategory === 'All' || 
+                           v.category === activeCategory || 
+                           (v.categories && v.categories.includes(activeCategory));
       const matchSearch = !searchTerm || 
         v.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         v.address.toLowerCase().includes(searchTerm.toLowerCase());
