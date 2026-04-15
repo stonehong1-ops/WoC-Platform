@@ -167,7 +167,7 @@ const REGIONS = [
       {
         name: 'PORTUGAL',
         flag: '🇵🇹',
-        cities: ['LISBON', 'PORTO', 'FARO'].map(n => ({ n }))
+        cities: ['LISBON', 'PORTO', 'FARO'].map(n => ({ name: n }))
       },
       {
         name: 'CZECH REPUBLIC',
@@ -217,7 +217,7 @@ const REGIONS = [
       {
         name: 'IRAN',
         flag: '🇮🇷',
-        cities: ['TEHRAN', 'ISFAHAN', 'SHIRAZ'].map(n => ({ n }))
+        cities: ['TEHRAN', 'ISFAHAN', 'SHIRAZ'].map(n => ({ name: n }))
       }
     ]
   },
