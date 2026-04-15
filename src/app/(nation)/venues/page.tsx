@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, Marker, InfoWindow, Libraries } from '@react-google-maps/api';
 import { db } from '@/lib/firebase/clientApp';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import PageWrapper from '@/components/layout/PageWrapper';
@@ -31,7 +31,7 @@ const center = {
   lng: 126.9245
 };
 
-const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualizationOrders")[] = ["places"];
+const libraries: Libraries = ["places"];
 
 export default function VenuesPage() {
   const [venues, setVenues] = useState<Venue[]>([]);
