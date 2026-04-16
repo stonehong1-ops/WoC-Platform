@@ -101,7 +101,7 @@ export default function MapComponent({ onRegisterOpen, isLoaded }: { onRegisterO
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleEnterKey()}
-                placeholder="도시, 지역, 명칭"
+                placeholder="City, Zone, Place Name"
                 className="w-full bg-white/80 backdrop-blur-3xl border-none rounded-3xl pl-12 pr-4 py-5 text-[#2D3435] font-black focus:bg-white focus:ring-4 focus:ring-[#005BC0]/5 shadow-[0_20px_48px_rgba(22,29,30,0.15)] transition-all text-[15px] outline-none placeholder:text-[#596061]/40"
               />
             </Autocomplete>
