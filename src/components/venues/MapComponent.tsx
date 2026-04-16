@@ -147,10 +147,10 @@ export default function MapComponent({ onRegisterOpen, isLoaded }: { onRegisterO
             zoom={14}
             onLoad={(m) => {
               setMap(m);
-              setBounds(m.getBounds());
+              setBounds(m.getBounds() || null);
             }}
             onBoundsChanged={() => {
-              if (map) setBounds(map.getBounds());
+              if (map) setBounds(map.getBounds() || null);
             }}
             options={{ disableDefaultUI: true, mapId: "425069951fef97d91810ab94", gestureHandling: 'greedy' }}
           >
