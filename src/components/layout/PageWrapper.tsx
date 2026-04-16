@@ -9,6 +9,7 @@ export default function PageWrapper({ children }: { children: React.ReactNode })
   const router = useRouter();
   const { user, profile, loading, setShowLogin } = useAuth();
   
+  const isVenues = pathname.startsWith('/venues');
   const isLanding = pathname === '/';
   const isLogin = pathname === '/login';
   const isPublic = isLanding || isLogin;
@@ -26,7 +27,7 @@ export default function PageWrapper({ children }: { children: React.ReactNode })
   }, [user, profile, loading, isPublic, setShowLogin]);
 
   return (
-    <main className={isLanding ? "" : "pt-16 pb-[60px]"}>
+    <main className={(isLanding || isVenues) ? "" : "pt-16 pb-[60px]"}>
       {children}
     </main>
   );
