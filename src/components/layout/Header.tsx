@@ -7,6 +7,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useNavigation } from '@/components/providers/NavigationProvider';
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useLocation } from "@/components/providers/LocationProvider";
+import { chatService } from '@/lib/firebase/chatService';
 
 export default function Header() {
   const pathname = usePathname();
@@ -14,6 +15,15 @@ export default function Header() {
   const { toggleDrawer } = useNavigation();
   const { user, profile, setShowLogin } = useAuth();
   const { location, toggleSelector } = useLocation();
+  const [unreadCount, setUnreadCount] = React.useState(0);
+
+  React.useEffect(() => {
+    if (!user) return;
+    const unsub = chatService.subscribeTotalUnreadCount(user.uid, (count) => {
+      setUnreadCount(count);
+    });
+    return () => unsub();
+  }, [user]);
 
   // Hide on login page or landing page
   if (pathname === '/login' || pathname === '/') return null;
@@ -83,7 +93,11 @@ export default function Header() {
             className="relative hover:opacity-70 transition-opacity active:scale-95 duration-100 flex items-center justify-center w-8 h-8"
           >
             <span className="material-symbols-outlined text-on-surface !text-[20px]" data-icon="chat_bubble">chat_bubble</span>
-            <span className="absolute top-0 right-0 flex h-3 w-3 items-center justify-center rounded-full bg-primary text-[7px] font-black text-white outline outline-1 outline-white">5</span>
+            {unreadCount > 0 && (
+              <span className="absolute top-0 right-0 flex h-3 w-3 items-center justify-center rounded-full bg-primary text-[7px] font-black text-white outline outline-1 outline-white animate-in zoom-in">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
           </Link>
 
           {/* Search */}

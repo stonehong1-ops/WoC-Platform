@@ -31,9 +31,11 @@ export const chatService = {
   // 1. Subscribe to Chat Rooms List
   subscribeRooms: (userId: string, callback: (rooms: ChatRoom[]) => void) => {
     const roomsRef = collection(db, ROOMS_COLLECTION);
-    
-    const handleSnapshot = (publicR: ChatRoom[], privateR: ChatRoom[]) => {
-      const allRooms = [...publicR, ...privateR];
+    let publicRooms: ChatRoom[] = [];
+    let privateRooms: ChatRoom[] = [];
+
+    const handleSnapshot = () => {
+      const allRooms = [...publicRooms, ...privateRooms];
       const sorted = allRooms.sort((a, b) => {
         if (a.id === SYSTEM_NOTICE_ID) return -1;
         if (b.id === SYSTEM_NOTICE_ID) return 1;
@@ -53,17 +55,14 @@ export const chatService = {
     const privateQ = query(roomsRef, where('participants', 'array-contains', userId));
 
     const unsubPublic = onSnapshot(publicQ, (snap) => {
-      const pRooms = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as ChatRoom));
-      // We need to fetch private rooms too or use cache
-      // For simplicity in porting, we just call handle with what we have
-      handleSnapshot(pRooms, []); 
-    });
+      publicRooms = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as ChatRoom));
+      handleSnapshot(); 
+    }, (err) => console.error("Public rooms error:", err));
 
     const unsubPrivate = onSnapshot(privateQ, (snap) => {
-      const privRooms = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as ChatRoom));
-      // In a real scenario, we'd sync these two snapshots. 
-      // This is a port of the User's working logic.
-    });
+      privateRooms = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as ChatRoom));
+      handleSnapshot();
+    }, (err) => console.error("Private rooms error:", err));
 
     return () => {
       unsubPublic();
@@ -205,5 +204,23 @@ export const chatService = {
     });
     
     return docRef.id;
+  },
+
+  // 7. Subscribe to Total Unread Count
+  subscribeTotalUnreadCount: (userId: string, callback: (count: number) => void) => {
+    const roomsRef = collection(db, ROOMS_COLLECTION);
+    
+    // We listen to all rooms where the user is a participant
+    const q = query(roomsRef, where('participants', 'array-contains', userId));
+    
+    return onSnapshot(q, (snap) => {
+      let total = 0;
+      snap.docs.forEach(doc => {
+        const data = doc.data();
+        const unread = data.unreadCounts?.[userId] || 0;
+        total += unread;
+      });
+      callback(total);
+    });
   }
 };
