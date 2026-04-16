@@ -54,39 +54,28 @@ export default function ManageEntry({ isOpen, onClose, isLoaded }: ManageEntryPr
     { id: 'Other', label: 'Other', icon: 'more_horiz' },
   ];
 
-  // Helper to parse address components
-  const parseComponents = (components: google.maps.GeocoderAddressComponent[] | google.maps.places.AddressComponent[] | undefined) => {
-    let country = '';
-    let city = '';
-    let zone = '';
-    components?.forEach(comp => {
-      const types = comp.types;
-      if (types.includes('country')) country = comp.long_name;
-      if (types.includes('locality') || types.includes('administrative_area_level_1')) city = comp.long_name;
-      if (types.includes('sublocality_level_1') || types.includes('administrative_area_level_2')) zone = comp.long_name;
-    });
-    return { country, city, zone };
-  };
-
-  const onPlaceChanged = () => {
-    if (autocomplete !== null) {
-      const place = autocomplete.getPlace();
-      updateWithPlace(place);
-    }
-  };
-
-  const updateWithPlace = (place: google.maps.places.PlaceResult | google.maps.GeocoderResult) => {
+  const updateWithPlace = (place: any) => {
     const geometry = place.geometry;
     if (!geometry || !geometry.location) return;
 
     const lat = geometry.location.lat();
     const lng = geometry.location.lng();
-    const { country, city, zone } = parseComponents(place.address_components);
+    
+    let country = '';
+    let city = '';
+    let zone = '';
+
+    place.address_components?.forEach((comp: any) => {
+      const types = comp.types;
+      if (types.includes('country')) country = comp.long_name;
+      if (types.includes('locality') || types.includes('administrative_area_level_1')) city = comp.long_name;
+      if (types.includes('sublocality_level_1') || types.includes('administrative_area_level_2')) zone = comp.long_name;
+    });
 
     setFormData(prev => ({
       ...prev,
-      address: 'formatted_address' in place ? place.formatted_address || '' : '',
-      name: prev.name || ('name' in place ? place.name || '' : ''),
+      address: place.formatted_address || '',
+      name: prev.name || place.name || '',
       latitude: lat,
       longitude: lng,
       city: city || prev.city,
@@ -97,8 +86,16 @@ export default function ManageEntry({ isOpen, onClose, isLoaded }: ManageEntryPr
     map?.panTo({ lat, lng });
     map?.setZoom(17);
 
-    // Auto-focus on Detail Address after a small delay
-    setTimeout(() => detailAddressRef.current?.focus(), 300);
+    setTimeout(() => {
+      detailAddressRef.current?.focus();
+    }, 400);
+  };
+
+  const onPlaceChanged = () => {
+    if (autocomplete !== null) {
+      const place = autocomplete.getPlace();
+      updateWithPlace(place);
+    }
   };
 
   const handleManualSearch = () => {
@@ -134,8 +131,8 @@ export default function ManageEntry({ isOpen, onClose, isLoaded }: ManageEntryPr
         category: formData.categories[0], 
         address: formData.address,
         detailAddress: formData.detailAddress,
-        city: formData.city.toUpperCase(),
-        country: formData.country.toUpperCase(),
+        city: (formData.city || '').toUpperCase(),
+        country: (formData.country || '').toUpperCase(),
         zone: formData.zone,
         coordinates: { latitude: Number(formData.latitude), longitude: Number(formData.longitude) },
         status: 'active',
@@ -154,7 +151,7 @@ export default function ManageEntry({ isOpen, onClose, isLoaded }: ManageEntryPr
   return (
     <div className="fixed inset-0 z-[2000] bg-white flex flex-col overflow-hidden animate-in fade-in duration-300">
       
-      {/* Header Shell */}
+      {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-[2001] bg-white flex justify-between items-center w-full px-6 h-16 border-b border-[#dde4e5]">
         <button onClick={onClose} className="p-2 hover:bg-[#e8eff0] transition-colors rounded-full"><span className="material-symbols-outlined text-[#161D1E]">close</span></button>
         <h1 className="font-headline text-[13px] font-black text-[#2D3435] uppercase tracking-widest">Register Venue</h1>
@@ -163,10 +160,10 @@ export default function ManageEntry({ isOpen, onClose, isLoaded }: ManageEntryPr
         </button>
       </header>
 
-      {/* Pure Body Content */}
+      {/* Body */}
       <main className="flex-grow overflow-y-auto no-scrollbar pt-20 pb-32 max-w-2xl mx-auto w-full px-6">
         
-        {/* Identity Section */}
+        {/* Identity */}
         <section className="mb-10">
           <h2 className="font-headline text-[13px] font-black text-[#2D3435] uppercase tracking-[0.15em] mb-6">Identity</h2>
           <div className="space-y-5">
@@ -174,14 +171,10 @@ export default function ManageEntry({ isOpen, onClose, isLoaded }: ManageEntryPr
               <label className="block text-[10px] font-bold text-[#596061] mb-2 tracking-widest uppercase">Place Name (Required)</label>
               <input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="e.g. Blue Horizon Studio" className="w-full bg-[#e8eff0] border-none rounded-xl px-5 py-4 text-[#2D3435] font-bold focus:bg-white focus:ring-2 focus:ring-[#005BC0]/20 transition-all placeholder:text-[#596061]/30 text-[15px]"/>
             </div>
-            <div className="group">
-              <label className="block text-[10px] font-bold text-[#596061] mb-2 tracking-widest uppercase">Native Name (Optional)</label>
-              <input type="text" value={formData.nativeName} onChange={(e) => setFormData({...formData, nativeName: e.target.value})} placeholder="예: 블루 호라이즌 스튜디오" className="w-full bg-[#e8eff0] border-none rounded-xl px-5 py-4 text-[#2D3435] font-bold focus:bg-white focus:ring-2 focus:ring-[#005BC0]/20 transition-all placeholder:text-[#596061]/30 text-[15px]"/>
-            </div>
           </div>
         </section>
 
-        {/* Category Section */}
+        {/* Category */}
         <section className="mb-10">
           <h2 className="font-headline text-[13px] font-black text-[#2D3435] uppercase tracking-[0.15em] mb-6">Category</h2>
           <div className="grid grid-cols-3 gap-2.5">
@@ -194,7 +187,7 @@ export default function ManageEntry({ isOpen, onClose, isLoaded }: ManageEntryPr
           </div>
         </section>
 
-        {/* Location Search Upgrade */}
+        {/* Search */}
         <section className="mb-10">
           <h2 className="font-headline text-[13px] font-black text-[#2D3435] uppercase tracking-[0.15em] mb-6">Location Search</h2>
           <div className="relative mb-5">
@@ -213,7 +206,7 @@ export default function ManageEntry({ isOpen, onClose, isLoaded }: ManageEntryPr
             <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#005BC0] text-[20px]">search</span>
           </div>
           
-          <div className="h-60 w-full bg-[#f4fbfb] rounded-[2rem] overflow-hidden relative border border-[#dde4e5] mb-6 shadow-inner">
+          <div className="h-60 w-full bg-[#f4fbfb] rounded-[2rem] overflow-hidden relative border border-[#dde4e5] mb-6">
             {isLoaded ? (
               <GoogleMap mapContainerStyle={mapContainerStyle} center={{ lat: formData.latitude, lng: formData.longitude }} zoom={17} onLoad={(m) => setMap(m)} options={{ disableDefaultUI: true, zoomControl: false, mapId: "425069951fef97d91810ab94", gestureHandling: 'greedy' }}>
                 <Marker position={{ lat: formData.latitude, lng: formData.longitude }} draggable={true} onDragEnd={(e) => { if (e.latLng) { setFormData(prev => ({ ...prev, latitude: e.latLng!.lat(), longitude: e.latLng!.lng() })); } }} icon={{ path: CIRCLE_PATH, fillColor: "#005BC0", fillOpacity: 1, strokeWeight: 4, strokeColor: "#ffffff", scale: 10 }}/>
@@ -221,13 +214,11 @@ export default function ManageEntry({ isOpen, onClose, isLoaded }: ManageEntryPr
             ) : <div className="w-full h-full flex items-center justify-center"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#005BC0]"></div></div>}
           </div>
 
-          {/* Location Data: Display-Only Hierarchy */}
           <div className="bg-[#f4fbfb] rounded-3xl p-2.5 space-y-1.5 border border-[#e8eff0]">
-            <DetailItem label="COUNTRY" placeholder="Auto-filled" value={formData.country} readOnly={true} />
-            <DetailItem label="CITY" placeholder="Auto-filled" value={formData.city} readOnly={true} />
-            <DetailItem label="ZONE" placeholder="Auto-filled" value={formData.zone} readOnly={true} />
+            <DetailItem label="COUNTRY" value={formData.country} readOnly={true} />
+            <DetailItem label="CITY" value={formData.city} readOnly={true} />
+            <DetailItem label="ZONE" value={formData.zone} readOnly={true} />
             
-            {/* Active Detail Input */}
             <div className="flex items-center px-5 py-4 bg-white rounded-2xl shadow-sm border-2 border-[#005BC0]/20">
               <label className="w-1/3 text-[9px] font-black text-[#005BC0] uppercase tracking-widest">UNIT / FLOOR</label>
               <input 
@@ -242,7 +233,7 @@ export default function ManageEntry({ isOpen, onClose, isLoaded }: ManageEntryPr
           </div>
         </section>
 
-        {/* Photos Section */}
+        {/* Photos */}
         <section className="mb-0">
           <div className="flex justify-between items-end mb-6">
             <h2 className="font-headline text-[13px] font-black text-[#2D3435] uppercase tracking-[0.15em]">Venue Photos</h2>
@@ -266,16 +257,15 @@ export default function ManageEntry({ isOpen, onClose, isLoaded }: ManageEntryPr
   );
 }
 
-function DetailItem({ label, value, readOnly, placeholder }: { label: string, value: string, readOnly?: boolean, placeholder?: string }) {
+function DetailItem({ label, value, readOnly }: { label: string, value: string, readOnly?: boolean }) {
   return (
-    <div className={`flex items-center px-5 py-4 bg-white/60 rounded-2xl shadow-sm border border-transparent ${readOnly ? 'opacity-60 cursor-default' : ''}`}>
+    <div className={`flex items-center px-5 py-4 bg-white/60 rounded-2xl shadow-sm border border-transparent ${readOnly ? 'opacity-60' : ''}`}>
       <label className="w-1/3 text-[9px] font-black text-[#596061] uppercase tracking-widest">{label}</label>
       <input 
         type="text" 
         value={value}
         readOnly={readOnly}
         tabIndex={readOnly ? -1 : 0}
-        placeholder={placeholder}
         className="w-2/3 border-none bg-transparent focus:ring-0 text-[#2D3435] font-bold text-[14px] p-0" 
       />
     </div>
