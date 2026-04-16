@@ -154,8 +154,8 @@ export default function MapComponent({
               onClick={() => setActiveCategory(cat)}
               className={`flex-shrink-0 px-4 py-1.5 rounded-full text-[11px] font-bold transition-all border uppercase tracking-tight ${
                 activeCategory === cat 
-                ? 'bg-surface-tint text-white border-surface-tint shadow-md' 
-                : 'bg-white/40 backdrop-blur-sm text-on-surface-variant border-white/20 hover:bg-white/60 font-black'
+                ? 'bg-[#005BC0] text-white border-[#005BC0] shadow-md' 
+                : 'bg-white/40 backdrop-blur-sm text-[#2D3435] border-white/20 hover:bg-white/60 font-black'
               }`}
             >
               {cat}
@@ -174,17 +174,17 @@ export default function MapComponent({
         style={{ height: '100dvh', top: '15dvh' }}
         className="absolute left-0 w-full z-40"
       >
-        <div className="h-full bg-surface-container-lowest backdrop-blur-xl rounded-t-[2.5rem] shadow-[0px_-12px_32px_rgba(22,29,30,0.06)] flex flex-col pt-3 border-t border-white/40">
-          <div className="w-12 h-1.5 bg-surface-container-highest rounded-full mx-auto mb-6 shrink-0 cursor-grab active:cursor-grabbing"></div>
+        <div className="h-full bg-white rounded-t-[2.5rem] shadow-[0px_-12px_32px_rgba(22,29,30,0.06)] flex flex-col pt-3 border-t border-white/40">
+          <div className="w-12 h-1.5 bg-[#e8eff0] rounded-full mx-auto mb-6 shrink-0 cursor-grab active:cursor-grabbing"></div>
           <div className="px-6 flex flex-col h-full overflow-hidden">
             <div className="flex items-center justify-between mb-5 shrink-0">
-              <h2 className="text-[17px] font-bold font-headline tracking-tighter text-on-surface uppercase">
-                <span className="text-surface-tint mr-1">{filteredVenues.length}</span> 
+              <h2 className="text-[17px] font-bold font-headline tracking-tighter text-[#2D3435] uppercase">
+                <span className="text-[#005BC0] mr-1">{filteredVenues.length}</span> 
                 Venues in {location?.city || ''}
               </h2>
               <button 
                 onClick={onRegisterOpen}
-                className="bg-surface-tint text-white px-5 py-2 rounded-xl flex items-center gap-1.5 shadow-sm active:scale-95 transition-all"
+                className="bg-[#005BC0] text-white px-5 py-2.5 rounded-xl flex items-center gap-1.5 shadow-md active:scale-95 transition-all"
               >
                 <span className="material-symbols-outlined text-[18px]">add</span>
                 <span className="text-[11px] font-black uppercase tracking-tight">Register</span>
