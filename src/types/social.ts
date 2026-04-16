@@ -16,6 +16,8 @@ export interface Social {
   date?: Timestamp; // For popups
   dayOfWeek?: number; // 0-6, For regulars
   description?: string;
+  price?: string;
+  socialEvents?: string[]; // Titles only
   djName?: string;
   createdAt: Timestamp;
 }

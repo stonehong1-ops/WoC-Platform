@@ -168,7 +168,37 @@ export default function SocialEventDetail({ social, onClose }: SocialEventDetail
             </motion.div>
           )}
 
-          {activeTab !== 'Info' && (
+          {activeTab === 'Event' && (
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="px-6 space-y-6"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <label className="block text-[10px] font-black uppercase tracking-[0.15em] text-gray-400">Social Event Schedule</label>
+              </div>
+              <div className="space-y-4">
+                {(social.socialEvents && social.socialEvents.length > 0) ? social.socialEvents.map((title, i) => (
+                  <div key={i} className="flex items-center gap-6 p-5 bg-white rounded-xl shadow-sm border border-gray-100">
+                    <div className="w-10 h-10 bg-primary/5 text-primary rounded-lg flex items-center justify-center font-black">
+                      {i + 1}
+                    </div>
+                    <div className="flex-1 text-left">
+                      <h4 className="font-bold text-gray-900">{title}</h4>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase mt-0.5">Program Segment</p>
+                    </div>
+                  </div>
+                )) : (
+                   <div className="py-20 flex flex-col items-center justify-center opacity-20">
+                      <span className="material-symbols-outlined text-5xl mb-3">list_alt</span>
+                      <p className="text-xs font-black uppercase tracking-widest">No segments scheduled</p>
+                   </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+
+          {(!['Info', 'Event'].includes(activeTab)) && (
             <div className="py-40 flex flex-col items-center justify-center opacity-20">
               <span className="material-symbols-outlined text-6xl mb-4">tab_unselected</span>
               <p className="text-xs font-black uppercase tracking-widest">{activeTab} system under construction</p>
@@ -182,7 +212,7 @@ export default function SocialEventDetail({ social, onClose }: SocialEventDetail
         <div className="max-w-3xl mx-auto flex items-center gap-4">
           <div className="flex-1 text-left">
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-0.5">Pricing</p>
-            <p className="text-lg font-black text-gray-900">FREE ENTRY</p>
+            <p className="text-lg font-black text-gray-900">{social.price || 'FREE ENTRY'}</p>
           </div>
           <button className="flex-[2] bg-primary text-white font-black py-4 rounded-xl shadow-[0px_8px_24px_rgba(0,68,147,0.3)] hover:scale-[1.02] active:scale-95 transition-all text-center uppercase tracking-widest text-sm">
             Register for Event

@@ -26,6 +26,8 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
   const [venueName, setVenueName] = useState(socialData?.venueName || '');
   const [djName, setDjName] = useState(socialData?.djName || '');
   const [dressCode, setDressCode] = useState('');
+  const [price, setPrice] = useState('FREE ENTRY');
+  const [description, setDescription] = useState('');
   
   // Social Events (Sub-programs)
   const [socialEvents, setSocialEvents] = useState<{ id: number; title: string }[]>([
@@ -70,7 +72,9 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
         endTime,
         dayOfWeek: type === 'regular' ? dayOfWeek : undefined,
         djName,
-        // Other meta could go here
+        description,
+        price,
+        socialEvents: socialEvents.map(e => e.title).filter(t => t.trim() !== ''),
       };
 
       // Implementation of save logic
@@ -291,7 +295,29 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
           </div>
         </section>
 
-        {/* 8. Social Events Schedule */}
+        {/* 8. Pricing & Description (Synced with Detail View) */}
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12 text-left">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 block">Entry Pricing</label>
+            <input
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              placeholder="Ex. FREE ENTRY or ₩25,000"
+              className="w-full bg-[#dde4e5] border-none rounded-2xl px-4 py-4 text-sm font-bold focus:ring-2 focus:ring-[#005BC0]/40 outline-none"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 block">Quick Intro</label>
+            <input
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Short catchy tagline..."
+              className="w-full bg-[#dde4e5] border-none rounded-2xl px-4 py-4 text-sm font-bold focus:ring-2 focus:ring-[#005BC0]/40 outline-none"
+            />
+          </div>
+        </section>
+
+        {/* 9. Social Events Schedule */}
         <section className="mb-20 text-left">
           <div className="flex items-center justify-between mb-6">
             <label className="block text-xs font-bold uppercase tracking-wider text-[#2D3435]/60 font-inter">Social Events Schedule</label>
