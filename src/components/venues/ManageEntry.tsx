@@ -136,8 +136,12 @@ export default function ManageEntry({ isOpen, onClose, isLoaded }: ManageEntryPr
   };
 
   const handleSubmit = async () => {
+    if (!formData.name.trim()) {
+      alert('Please enter a Place Name.');
+      return;
+    }
     if (formData.categories.length === 0) {
-      alert('Please select category.');
+      alert('Please select at least one category.');
       return;
     }
     setSaving(true);
@@ -156,9 +160,11 @@ export default function ManageEntry({ isOpen, onClose, isLoaded }: ManageEntryPr
         status: 'active',
         createdAt: serverTimestamp()
       });
+      alert('Venue saved successfully!');
       onClose();
-    } catch (error) {
-      console.error("Error saving:", error);
+    } catch (error: any) {
+      console.error("Error saving venue:", error);
+      alert(`Failed to save: ${error.message || 'Unknown error. check console.'}`);
     } finally {
       setSaving(false);
     }
