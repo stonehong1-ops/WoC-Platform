@@ -67,8 +67,8 @@ export default function MapComponent({ onRegisterOpen, isLoaded }: { onRegisterO
 
   return (
     <div className="relative w-full h-full overflow-hidden bg-[#eef5f6]">
-      {/* Layer 1: Floating Header - Main Search */}
-      <div className="absolute top-6 left-6 right-6 z-50 flex flex-col gap-3 pointer-events-none">
+      {/* Layer 1: Floating Header - Main Search & Filters (Lowered to avoid header overlap) */}
+      <div className="absolute top-20 left-6 right-6 z-50 flex flex-col gap-3.5 pointer-events-none animate-in fade-in slide-in-from-top-4 duration-700">
         <div className="relative w-full pointer-events-auto">
           {isLoaded ? (
             <Autocomplete 
@@ -90,7 +90,7 @@ export default function MapComponent({ onRegisterOpen, isLoaded }: { onRegisterO
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleEnterKey()}
                 placeholder={`Search in ${location?.city || 'City'}...`}
-                className="w-full bg-white/60 backdrop-blur-xl border-none rounded-2xl pl-12 pr-4 py-4 text-[#2D3435] font-black focus:bg-white focus:ring-4 focus:ring-[#005BC0]/10 shadow-[0_12px_24px_rgba(22,29,30,0.12)] transition-all text-[15px] outline-none"
+                className="w-full bg-white/70 backdrop-blur-2xl border-none rounded-2xl pl-12 pr-4 py-4 text-[#2D3435] font-black focus:bg-white focus:ring-4 focus:ring-[#005BC0]/5 shadow-[0_16px_32px_rgba(22,29,30,0.12)] transition-all text-[15px] outline-none"
               />
             </Autocomplete>
           ) : <div className="w-full h-14 bg-white/40 animate-pulse rounded-2xl" />}
@@ -99,7 +99,17 @@ export default function MapComponent({ onRegisterOpen, isLoaded }: { onRegisterO
 
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar px-1 pointer-events-auto">
           {categories.map((cat) => (
-            <button key={cat} onClick={() => setActiveCategory(cat)} className={`flex-shrink-0 px-4 py-1.5 rounded-full text-[11px] font-black transition-all border uppercase tracking-widest ${activeCategory === cat ? 'bg-[#005BC0] text-white border-[#005BC0] shadow-md' : 'bg-white/40 backdrop-blur-sm text-[#2D3435] border-white/20 hover:bg-white/60'}`}>{cat}</button>
+            <button 
+              key={cat} 
+              onClick={() => setActiveCategory(cat)} 
+              className={`flex-shrink-0 px-4 py-1.5 rounded-full text-[9.5px] font-black transition-all border uppercase tracking-[0.1em] ${
+                activeCategory === cat 
+                ? 'bg-[#005BC0] text-white border-[#005BC0] shadow-[0_4px_12px_rgba(0,91,192,0.3)]' 
+                : 'bg-white/50 backdrop-blur-md text-[#596061] border-white/20 hover:bg-white/80'
+              }`}
+            >
+              {cat}
+            </button>
           ))}
         </div>
       </div>
