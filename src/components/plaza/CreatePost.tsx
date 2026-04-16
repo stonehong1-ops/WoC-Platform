@@ -8,15 +8,17 @@ import { useLocation } from '@/components/providers/LocationProvider';
 interface CreatePostProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
-export default function CreatePost({ isOpen, onClose }: CreatePostProps) {
+export default function CreatePost({ isOpen, onClose, onSuccess }: CreatePostProps) {
   const { user } = useAuth();
   const { location } = useLocation();
   const [content, setContent] = useState('');
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [mediaPreviews, setMediaPreviews] = useState<{url: string, type: string}[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // 배경 스크롤 차단
@@ -63,8 +65,20 @@ export default function CreatePost({ isOpen, onClose }: CreatePostProps) {
     if (!user || (!content.trim() && mediaFiles.length === 0)) return;
 
     setIsSubmitting(true);
+    setUploadProgress(0);
+    
     try {
-      const uploadPromises = mediaFiles.map(file => plazaService.uploadMedia(file));
+      // Track progress for each file
+      const fileProgresses = new Array(mediaFiles.length).fill(0);
+      
+      const uploadPromises = mediaFiles.map((file, idx) => 
+        plazaService.uploadMedia(file, (p) => {
+          fileProgresses[idx] = p;
+          const totalProgress = fileProgresses.reduce((a, b) => a + b, 0) / mediaFiles.length;
+          setUploadProgress(Math.round(totalProgress));
+        })
+      );
+      
       const uploadedUrls = await Promise.all(uploadPromises);
 
       await plazaService.createPost({
@@ -79,9 +93,12 @@ export default function CreatePost({ isOpen, onClose }: CreatePostProps) {
       setContent('');
       setMediaFiles([]);
       setMediaPreviews([]);
+      setUploadProgress(0);
+      onSuccess?.();
       onClose();
     } catch (error) {
       console.error("Error creating post:", error);
+      setUploadProgress(0);
       alert("Failed to create post. Please try again.");
     } finally {
       setIsSubmitting(false);
@@ -179,13 +196,22 @@ export default function CreatePost({ isOpen, onClose }: CreatePostProps) {
             <button
               type="submit"
               disabled={isSubmitting || (!content.trim() && mediaFiles.length === 0)}
-              className={`px-8 py-3 rounded-full font-bold text-sm transition-all shadow-lg ${
-                (content.trim() || mediaFiles.length > 0)
-                ? 'bg-[#0061ff] text-white shadow-[#0061ff]/20 hover:scale-105 active:scale-95' 
-                : 'bg-gray-100 text-gray-300 cursor-not-allowed'
-              }`}
+              className="relative overflow-hidden bg-primary text-white px-8 h-12 rounded-full font-black text-[13px] uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center min-w-[140px]"
             >
-              {isSubmitting ? 'Posting...' : 'Post Moment'}
+              {isSubmitting ? (
+                <>
+                  <span className="relative z-10 flex items-center gap-2">
+                    <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                    Posting... {uploadProgress}%
+                  </span>
+                  <div 
+                    className="absolute inset-0 bg-white/20 transition-all duration-300"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </>
+              ) : (
+                "Post Moment"
+              )}
             </button>
           </div>
         </form>

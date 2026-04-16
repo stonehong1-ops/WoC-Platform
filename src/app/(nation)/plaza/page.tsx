@@ -52,6 +52,10 @@ export default function PlazaPage() {
     fetchInitialData();
   }, []);
 
+  const handleRefresh = () => {
+    fetchInitialData();
+  };
+
   // Relationship Logic: Sorting Algorithm
   const sortedStories = React.useMemo(() => {
     // 1st Priority: Self
@@ -419,7 +423,11 @@ export default function PlazaPage() {
         </div>
 
         {/* Create Post Modal remains active as backup */}
-        <CreatePost isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} />
+        <CreatePost 
+          isOpen={isCreateModalOpen} 
+          onClose={() => setIsCreateModalOpen(false)} 
+          onSuccess={handleRefresh}
+        />
         
         {selectedPostId && (
           <CommentsSheet 
