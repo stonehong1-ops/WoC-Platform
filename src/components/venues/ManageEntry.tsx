@@ -84,6 +84,15 @@ export default function ManageEntry({ isOpen, onClose, isLoaded }: ManageEntryPr
     }
   };
 
+  const toggleCategory = (category: string) => {
+    setFormData(prev => ({
+      ...prev,
+      categories: prev.categories.includes(category)
+        ? prev.categories.filter(c => c !== category)
+        : [...prev.categories, category]
+    }));
+  };
+
   const handleSubmit = async () => {
     if (formData.categories.length === 0) {
       alert('Please select at least one category.');
