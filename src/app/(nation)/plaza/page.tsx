@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { plazaService, Post } from '@/lib/firebase/plazaService';
 import PageWrapper from '@/components/layout/PageWrapper';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { motion, AnimatePresence } from 'framer-motion';
 import CreatePost from '@/components/plaza/CreatePost';
 import CommentsSheet from '@/components/plaza/CommentsSheet';
 import MediaViewer from '@/components/plaza/MediaViewer';
@@ -11,24 +12,31 @@ import PostSkeleton from '@/components/plaza/PostSkeleton';
 import EmptyState from '@/components/common/EmptyState';
 
 export default function PlazaPage() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
+  const [storyUsers, setStoryUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [lastDoc, setLastDoc] = useState<any>(null);
   const [hasMore, setHasMore] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState('All');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const [viewerData, setViewerData] = useState<{ items: {url: string, type: 'image' | 'video'}[], initialIndex: number } | null>(null);
+  
+  // Context Menu state
+  const [contextMenu, setContextMenu] = useState<{ userId: string, x: number, y: number } | null>(null);
+  const longPressTimer = React.useRef<any>(null);
 
   // Initial Fetch
-  const fetchInitialPosts = async () => {
+  const fetchInitialData = async () => {
     setLoading(true);
     try {
-      const { posts: newPosts, lastVisible } = await plazaService.getPostsPaginated(10);
+      const [{ posts: newPosts, lastVisible }, stories] = await Promise.all([
+        plazaService.getPostsPaginated(10),
+        plazaService.getUsersWithRecentPosts()
+      ]);
       setPosts(newPosts);
       setLastDoc(lastVisible);
       setStoryUsers(stories);

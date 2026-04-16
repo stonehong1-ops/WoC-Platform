@@ -67,6 +67,7 @@ export default function VenueForm({ isOpen, onClose, initialData }: VenueFormPro
       onClose();
     } catch (error) {
       console.error('Failed to save venue:', error);
+      alert('Failed to save venue. Please check your connection and permissions.');
     } finally {
       setIsSubmitting(false);
     }
