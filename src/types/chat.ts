@@ -15,6 +15,8 @@ export interface ChatMessage {
   readBy: string[];
   reactions?: Record<string, string>;
   replyTo?: string; // ID of message being replied to
+  isDeleted?: boolean;
+  isEdited?: boolean;
 }
 
 export interface ChatRoom {
