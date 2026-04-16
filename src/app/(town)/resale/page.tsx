@@ -1,87 +1,79 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/components/providers/AuthProvider';
+import { resaleService } from '@/lib/firebase/resaleService';
+import { ResaleItem } from '@/types/resale';
+import CreateResaleItem from '@/components/resale/CreateResaleItem';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ResalePage() {
-  const categories = [
-    { name: 'All', active: true },
-    { name: 'Shoes', active: false },
-    { name: 'Apparel', active: false },
-    { name: 'Accessories', active: false },
-    { name: 'Equipment', active: false },
-    { name: 'Others', active: false }
-  ];
+  const { user } = useAuth();
+  const [items, setItems] = useState<ResaleItem[]>([]);
+  const [activeCategory, setActiveCategory] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [userLikes, setUserLikes] = useState<string[]>([]);
 
-  const products = [
-    {
-      id: 1,
-      title: 'Tango Performance Shoes - Size 37',
-      location: 'Gangnam-gu',
-      time: '2 hours ago',
-      price: '₩45,000',
-      chats: 12,
-      likes: 8,
-      img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDEYWU9KQFCUvTK-L7S8K2B2NTZW0-U4QOsbEfBNdr0wVlI5COjMUdOnttyTf1ATnTq-0D57MF_iCdt2P_ufcmFIDsR6aW2EVzpn1RCfFANmw0A1DvWqY_DAIh1Dpg3KdtCTmEosV3gDP6CI-69W66AMfFHvbiayXbDo2BMcZsrpLYLzRsd_kgi9VOIG3Q12z7yd5O0Epoc9yVTMBkylFVQhZlyYJvzsV-aADxmiGtoGZmamnG3vV_v583N_Y8sTO03YDD3n8BnLULJ'
-    },
-    {
-      id: 2,
-      title: 'Satin Red Milonga Evening Dress',
-      location: 'Seocho-dong',
-      time: '5 hours ago',
-      price: '₩120,000',
-      chats: 4,
-      likes: 24,
-      liked: true,
-      img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAcgjNYSIOF8sKqo5VNEr0LuJvraqnC2itZuHQXf33KvzSkPiC-wU7Uc2T3T7cUW0tKNFY-n5KS2vAsnQCAcPQFlR9J2ByaaqwRVmfpMrbX2VOb8nNoh0Llfd_9_d7bIVqJPxVsKWNBFx3XLw9RcBU-LixlTBh356zdFAdafMa0n3-U2CgtiA3NjuNPtHCc0deOSL9PXUbpVA7Zo4Vjq2f-MBfP1gbUgkqL-Q7fcMAAh5p3_ZaFavBAwq4hi0ncXT6Wpw3WB_PZ2VRI'
-    },
-    {
-      id: 3,
-      title: 'Vintage Hand-painted Spanish Fan',
-      location: 'Gangnam-gu',
-      time: '8 hours ago',
-      price: '₩35,000',
-      chats: 2,
-      likes: 15,
-      img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDTwr2OUERYTdpRMcbF-wFlxBGpbLx92YDLgnAGO_p3PPmzY7pTFna5ytO7HOBbJDfmmkvRZa4DqYamorSHr7nFXQ4xUH3u743pDaI15tB9qb-4x_Qi--BU97YxadjAKBIigSOjI_us92HO27JoLD01nKqB0MbxXWlfuM2Ab2AP2O79kP1AaBMfxs2g3cco7Nkoisc3qmPwtIx2wIMkbHj-i0SunmSH2NFhh_nM7kIQYk7ZUtrmgjVu9vT-lKTbMQ_k2v_4wJtBgRSI'
-    },
-    {
-      id: 4,
-      title: 'Portable Bluetooth Speaker (For Practice)',
-      location: 'Nonhyeon-dong',
-      time: '1 day ago',
-      price: '₩88,000',
-      chats: 6,
-      likes: 31,
-      img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuC6lvbb0-XPt6AbHmdb-tCmbjbtaJqrJHbVbUIHQ0Zkr_xkqu1vsPsHPYJK57keT99BHCfc0BqTZ9zYURkO511QryKUsWAOIFmdYgNf0pC7wR_Ft6r80BNsKqmMjoJ5HXA25o7SiGoKn99bEgi7PWtvGksBeCBnODeTVFffDFVTVknD-KXdGw0TAI7W4KL6QlByWQQAeyDtJFRpXTPjROGkGWoxD1ypCOKoGAHMAPuR5NFhBp6kCR3gaXtA0Yz9gR6UjkKv5qMimiBX'
-    },
-    {
-      id: 5,
-      title: "Men's Tailored Performance Vest",
-      location: 'Gangnam-gu',
-      time: '2 days ago',
-      price: '₩65,000',
-      chats: 1,
-      likes: 9,
-      img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBC3CROXxISp90yEYo97RrpHlDvLEaCahuDGwOe52QVp-8_AplLjL8f1b6itlyS5bAsoxeb4B-Tno9sefdZT95tQuypWlo5xdl_X1Z9LFfp3L09SqM3KurtDtQYCofTyNisfXg8b4wRTSwHaek8vC0qO0WIK1q0Yy107wOFPeObgED3snL6SGsx80xzFtcCkT5xQqFloZoC6KnnYw7f9dFsbsi9h-SwnGQPNHpV7cjRUKAQIJ35FUyL6KmPq4TkGX6S48EqyX4Nuctw'
-    }
-  ];
+  // 1. Subscribe to real-time resale items
+  useEffect(() => {
+    const unsub = resaleService.subscribeItems(
+      activeCategory !== 'All' ? activeCategory : null,
+      (data) => setItems(data)
+    );
+    return () => unsub();
+  }, [activeCategory]);
+
+  // 2. Filter products locally based on search
+  const filteredItems = items.filter(item => 
+    item.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    item.location.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const categories = ['All', 'Shoes', 'Apparel', 'Accessories', 'Equipment', 'Others'];
+
+  const handleLike = async (e: React.MouseEvent, itemId: string) => {
+    e.stopPropagation();
+    if (!user) return alert("Please login to like items");
+    await resaleService.toggleLike(user.uid, itemId);
+  };
+
+  const getRelativeTime = (timestamp: any) => {
+    if (!timestamp) return 'Just now';
+    const now = new Date();
+    const date = timestamp.toDate();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    
+    if (diffInSeconds < 60) return 'Just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    return `${Math.floor(diffInSeconds / 86400)}d ago`;
+  };
 
   return (
-    <main className="max-w-2xl mx-auto min-h-screen flex flex-col pt-16">
-      {/* Search and Location Header Section */}
-      <section className="bg-white px-4 pt-4 pb-2 sticky top-16 z-40 border-b border-surface-container-highest">
+    <main className="max-w-2xl mx-auto min-h-screen flex flex-col pt-16 bg-white relative">
+      <style dangerouslySetInnerHTML={{ __html: `
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+      `}} />
+
+      {/* 1. Search and Location Header Section */}
+      <section className="bg-white/95 backdrop-blur-md px-4 pt-4 pb-2 sticky top-16 z-40 border-b border-surface-container-highest">
         <div className="flex flex-col gap-3">
           {/* Location Picker */}
           <div className="flex items-center gap-1 group cursor-pointer w-fit">
             <span className="material-symbols-outlined text-primary text-[20px]">location_on</span>
-            <span className="font-headline font-bold text-sm tracking-tight">Seoul, Gangnam-gu</span>
+            <span className="font-headline font-bold text-sm tracking-tight text-[#2d3435]">Seoul, Gangnam-gu</span>
             <span className="material-symbols-outlined text-on-surface-variant text-[16px]">expand_more</span>
           </div>
           {/* Search Bar */}
           <div className="relative flex items-center mb-2">
             <span className="material-symbols-outlined absolute left-4 text-on-surface-variant">search</span>
             <input 
-              className="w-full pl-12 pr-4 py-3 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-sm font-medium placeholder:text-on-surface-variant/60 outline-none" 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 bg-[#f2f4f4] border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-sm font-medium placeholder:text-on-surface-variant/60 outline-none transition-all" 
               placeholder="Search in this Society..." 
               type="text"
             />
@@ -89,92 +81,118 @@ export default function ResalePage() {
         </div>
       </section>
 
-      {/* Category Scroll Navigation */}
-      <section className="bg-white py-4 border-b border-surface-container-highest">
+      {/* 2. Category Scroll Navigation */}
+      <section className="bg-white py-4 border-b border-surface-container-highest z-30">
         <div className="flex gap-2 overflow-x-auto px-4 no-scrollbar scroll-smooth">
           {categories.map((cat, i) => (
             <button 
               key={i}
+              onClick={() => setActiveCategory(cat)}
               className={`px-5 py-2 rounded-full font-headline text-xs font-bold whitespace-nowrap transition-all active:scale-95 ${
-                cat.active 
-                  ? 'bg-primary text-on-primary' 
-                  : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'
+                activeCategory === cat 
+                  ? 'bg-primary text-white shadow-lg shadow-primary/20' 
+                  : 'bg-[#f2f4f4] text-[#596061] hover:bg-gray-200'
               }`}
             >
-              {cat.name}
+              {cat}
             </button>
           ))}
         </div>
       </section>
 
-      {/* Product Listing: Vertical Bento Style */}
-      <section className="flex flex-col p-4 gap-4">
-        {products.map((product) => (
-          <div 
-            key={product.id}
-            className="flex gap-4 p-3 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow group cursor-pointer border border-surface-container-highest/50"
-          >
-            <div className="relative w-32 h-32 flex-shrink-0 overflow-hidden rounded-lg bg-surface-container">
-              <img 
-                alt={product.title} 
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                src={product.img} 
-              />
-            </div>
-            <div className="flex flex-col justify-between flex-grow">
-              <div>
-                <h3 className="font-headline font-bold text-on-surface text-base leading-tight group-hover:text-primary transition-colors">
-                  {product.title}
-                </h3>
-                <div className="mt-1 flex items-center gap-1 text-[11px] text-on-surface-variant/80 font-medium uppercase tracking-wide">
-                  <span>{product.location}</span>
-                  <span className="w-1 h-1 rounded-full bg-outline-variant"></span>
-                  <span>{product.time}</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between mt-auto">
-                <span className="font-headline font-extrabold text-primary text-lg">{product.price}</span>
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1 text-on-surface-variant">
-                    <span className="material-symbols-outlined text-[18px]">chat_bubble</span>
-                    <span className="text-xs font-bold">{product.chats}</span>
-                  </div>
-                  <div className={`flex items-center gap-1 ${product.liked ? 'text-error' : 'text-on-surface-variant'}`}>
-                    <span 
-                      className="material-symbols-outlined text-[18px]" 
-                      style={{ fontVariationSettings: product.liked ? "'FILL' 1" : "'FILL' 0" }}
-                    >
-                      favorite
-                    </span>
-                    <span className="text-xs font-bold">{product.likes}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+      {/* 3. Product Listing: Vertical Bento Style */}
+      <section className="flex flex-col p-4 gap-4 pb-32 min-h-[60vh]">
+        {filteredItems.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-40 opacity-20">
+            <span className="material-symbols-outlined text-6xl mb-4">inventory_2</span>
+            <p className="text-sm font-black uppercase tracking-widest">No listings found</p>
           </div>
-        ))}
+        ) : (
+          filteredItems.map((item) => (
+            <div 
+              key={item.id}
+              className="flex gap-4 p-3 bg-white rounded-xl shadow-sm hover:shadow-lg transition-all group cursor-pointer border border-surface-container-highest/50 animate-in fade-in slide-in-from-bottom-4 duration-500"
+            >
+              <div className="relative w-32 h-32 flex-shrink-0 overflow-hidden rounded-lg bg-surface-container">
+                <img 
+                  alt={item.title} 
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                  src={item.imageUrl} 
+                />
+                {item.status !== 'active' && (
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                    <span className="text-white text-[10px] font-black uppercase tracking-widest bg-black/60 px-2 py-1 rounded">
+                      {item.status}
+                    </span>
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-col justify-between flex-grow overflow-hidden">
+                <div className="text-left">
+                  <h3 className="font-headline font-bold text-[#2d3435] text-base leading-tight group-hover:text-primary transition-colors truncate">
+                    {item.title}
+                  </h3>
+                  <div className="mt-1 flex items-center gap-1 text-[11px] text-[#596061]/80 font-medium uppercase tracking-wide">
+                    <span>{item.location}</span>
+                    <span className="w-1 h-1 rounded-full bg-gray-300"></span>
+                    <span>{getRelativeTime(item.createdAt)}</span>
+                    <span className="w-1 h-1 rounded-full bg-gray-300 ml-1"></span>
+                    <span className="text-primary font-bold">[{item.condition}]</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between mt-auto">
+                  <span className="font-headline font-extrabold text-primary text-xl">
+                    ₩{item.price.toLocaleString()}
+                  </span>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1 text-[#596061]">
+                      <span className="material-symbols-outlined text-[18px]">chat_bubble</span>
+                      <span className="text-xs font-bold">{item.chatsCount}</span>
+                    </div>
+                    <button 
+                      onClick={(e) => handleLike(e, item.id)}
+                      className={`flex items-center gap-1 transition-all ${item.likesCount > 0 ? 'text-red-500' : 'text-[#596061]'} hover:scale-110`}
+                    >
+                      <span 
+                        className="material-symbols-outlined text-[18px]" 
+                        style={{ fontVariationSettings: item.likesCount > 0 ? "'FILL' 1" : "'FILL' 0" }}
+                      >
+                        favorite
+                      </span>
+                      <span className="text-xs font-bold">{item.likesCount}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+
+        {filteredItems.length > 0 && (
+          <div className="py-12 flex flex-col items-center justify-center gap-2 opacity-30">
+            <span className="material-symbols-outlined text-4xl">inventory_2</span>
+            <p className="text-xs font-bold uppercase tracking-widest">End of the line</p>
+          </div>
+        )}
       </section>
 
-      {/* Floating Action Button Contextual (Marketplace Context) */}
-      <button className="fixed bottom-24 right-6 w-14 h-14 bg-on-primary-fixed-variant text-white rounded-full shadow-xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50">
-        <span className="material-symbols-outlined text-[32px]">add</span>
+      {/* 4. Global Resale FAB */}
+      <button 
+        onClick={() => setShowCreateModal(true)}
+        className="fixed bottom-24 right-6 w-16 h-16 bg-[#1f1f1f] text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 hover:bg-primary active:scale-95 transition-all z-50 group shadow-primary/20"
+      >
+        <span className="material-symbols-outlined text-[32px] group-hover:rotate-90 transition-transform duration-300">add</span>
       </button>
 
-      {/* Subtle End of List Indicator */}
-      <div className="py-12 flex flex-col items-center justify-center gap-2 opacity-30">
-        <span className="material-symbols-outlined text-4xl">inventory_2</span>
-        <p className="text-xs font-bold uppercase tracking-widest">No more items to show</p>
-      </div>
-
-      <style jsx>{`
-        .no-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-        .no-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
+      {/* Create Modal */}
+      <AnimatePresence>
+        {showCreateModal && (
+          <CreateResaleItem 
+            onClose={() => setShowCreateModal(false)}
+            onSuccess={() => {}}
+          />
+        )}
+      </AnimatePresence>
     </main>
   );
 }

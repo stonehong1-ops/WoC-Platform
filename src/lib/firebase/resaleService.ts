@@ -1,0 +1,101 @@
+import { db } from './clientApp';
+import { 
+  collection, 
+  query, 
+  orderBy, 
+  onSnapshot, 
+  addDoc, 
+  updateDoc, 
+  doc, 
+  serverTimestamp,
+  where,
+  increment,
+  writeBatch,
+  getDocs,
+  setDoc,
+  getDoc
+} from 'firebase/firestore';
+import { ResaleItem, UserReputation } from '@/types/resale';
+
+const RESALE_COLLECTION = 'resale_items';
+const REPUTATION_COLLECTION = 'user_reputation';
+const LIKES_COLLECTION = 'resale_likes';
+
+export const resaleService = {
+  // 1. Subscribe to real-time resale items
+  subscribeItems: (category: string | null, callback: (items: ResaleItem[]) => void) => {
+    let q = query(
+      collection(db, RESALE_COLLECTION), 
+      orderBy('createdAt', 'desc')
+    );
+    
+    if (category && category !== 'All') {
+      q = query(q, where('category', '==', category));
+    }
+    
+    return onSnapshot(q, (snapshot) => {
+      const items = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as ResaleItem[];
+      callback(items);
+    });
+  },
+
+  // 2. Register Resale Item
+  registerItem: async (itemData: Omit<ResaleItem, 'id' | 'createdAt' | 'likesCount' | 'chatsCount' | 'status'>) => {
+    try {
+      const docRef = await addDoc(collection(db, RESALE_COLLECTION), {
+        ...itemData,
+        status: 'active',
+        likesCount: 0,
+        chatsCount: 0,
+        createdAt: serverTimestamp()
+      });
+      return docRef.id;
+    } catch (error) {
+      console.error("Error registering resale item:", error);
+      throw error;
+    }
+  },
+
+  // 3. Toggle Like (Steam)
+  toggleLike: async (userId: string, itemId: string) => {
+    const likeId = `${userId}_${itemId}`;
+    const likeRef = doc(db, LIKES_COLLECTION, likeId);
+    const itemRef = doc(db, RESALE_COLLECTION, itemId);
+    
+    const likeDoc = await getDoc(likeRef);
+    const batch = writeBatch(db);
+
+    if (likeDoc.exists()) {
+      batch.delete(likeRef);
+      batch.update(itemRef, { likesCount: increment(-1) });
+    } else {
+      batch.set(likeRef, { userId, itemId, createdAt: serverTimestamp() });
+      batch.update(itemRef, { likesCount: increment(1) });
+    }
+    
+    await batch.commit();
+  },
+
+  // 4. Get User Hobby Score
+  getUserReputation: async (userId: string): Promise<UserReputation> => {
+    const docRef = doc(db, REPUTATION_COLLECTION, userId);
+    const docSnap = await getDoc(docRef);
+    
+    if (docSnap.exists()) {
+      return docSnap.data() as UserReputation;
+    } else {
+      // Initialize if not exists
+      const initial: UserReputation = {
+        userId,
+        hobbyScore: 36.5,
+        positiveReviews: 0,
+        tradeCount: 0
+      };
+      await setDoc(docRef, initial);
+      return initial;
+    }
+  }
+};
