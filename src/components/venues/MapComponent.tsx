@@ -84,8 +84,15 @@ export default function MapComponent({ onRegisterOpen, isLoaded }: { onRegisterO
                 }
               }}
               options={{
-                location: location?.city ? (CITY_COORDINATES[location.city.toUpperCase() as keyof typeof CITY_COORDINATES] || DEFAULT_COORDINATES) : DEFAULT_COORDINATES,
-                radius: 10000,
+                bounds: location?.city ? (() => {
+                  const coords = CITY_COORDINATES[location.city.toUpperCase() as keyof typeof CITY_COORDINATES] || DEFAULT_COORDINATES;
+                  return {
+                    north: coords.lat + 0.1,
+                    south: coords.lat - 0.1,
+                    east: coords.lng + 0.1,
+                    west: coords.lng - 0.1,
+                  };
+                })() : undefined,
                 componentRestrictions: { country: "kr" }
               }}
             >

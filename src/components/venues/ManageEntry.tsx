@@ -221,8 +221,12 @@ export default function ManageEntry({ isOpen, onClose, isLoaded }: ManageEntryPr
                 onLoad={(auto) => setAutocomplete(auto)} 
                 onPlaceChanged={onPlaceChanged}
                 options={{
-                  location: new google.maps.LatLng(formData.latitude, formData.longitude),
-                  radius: 10000,
+                  bounds: {
+                    north: Number(formData.latitude) + 0.1,
+                    south: Number(formData.latitude) - 0.1,
+                    east: Number(formData.longitude) + 0.1,
+                    west: Number(formData.longitude) - 0.1,
+                  },
                   componentRestrictions: { country: "kr" }
                 }}
               >
