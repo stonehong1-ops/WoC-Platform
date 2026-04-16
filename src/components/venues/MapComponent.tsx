@@ -164,23 +164,21 @@ export default function MapComponent({ onRegisterOpen, isLoaded }: { onRegisterO
 
       {/* Layer 2: Bottom Sheet - Dynamic Sizing (40% to 70%) */}
       <motion.div 
-        initial={{ y: "100dvh" }} 
+        initial={false}
         animate={{ y: isExpanded ? "30dvh" : "60dvh" }} 
         transition={{ type: "spring", damping: 25, stiffness: 200 }}
         drag="y" 
-        dragConstraints={{ top: 0, bottom: 500 }} 
-        dragElastic={0.1}
+        dragConstraints={{ top: 0, bottom: 0 }} 
+        dragElastic={0.05}
         onDragEnd={(_, info) => {
           if (info.offset.y < -50) setIsExpanded(true);
           else if (info.offset.y > 50) setIsExpanded(false);
-          else if (info.point.y < window.innerHeight * 0.45) setIsExpanded(true);
-          else setIsExpanded(false);
         }}
-        className="absolute left-0 w-full z-40 h-[100dvh]"
+        className="absolute inset-0 z-40 h-[100dvh] pointer-events-none"
       >
         <div 
           onClick={() => setIsExpanded(!isExpanded)}
-          className="h-full bg-white rounded-t-[2.5rem] shadow-[0px_-24px_64px_rgba(22,29,30,0.18)] flex flex-col pt-3 border-t border-white/60 cursor-pointer overflow-hidden"
+          className="absolute inset-0 h-full bg-white rounded-t-[2.5rem] shadow-[0px_-24px_64px_rgba(22,29,30,0.18)] flex flex-col pt-3 border-t border-white/60 cursor-pointer overflow-hidden pointer-events-auto"
         >
           <div className="w-12 h-1.5 bg-[#e8eff0] rounded-full mx-auto mb-7 shrink-0"></div>
           <div className="px-6 flex flex-col h-full overflow-hidden" onClick={(e) => isExpanded && e.stopPropagation()}>
