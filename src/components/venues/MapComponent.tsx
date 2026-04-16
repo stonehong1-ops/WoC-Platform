@@ -67,8 +67,8 @@ export default function MapComponent({ onRegisterOpen, isLoaded }: { onRegisterO
 
   return (
     <div className="relative w-full h-full overflow-hidden bg-[#eef5f6]">
-      {/* Layer 1: Floating Header - Main Search & Filters (Lowered to avoid header overlap) */}
-      <div className="absolute top-20 left-6 right-6 z-50 flex flex-col gap-3.5 pointer-events-none animate-in fade-in slide-in-from-top-4 duration-700">
+      {/* Layer 1: Floating Header - Main Search & Filters (Lowered further to ensure total header clearance) */}
+      <div className="absolute top-36 left-6 right-6 z-50 flex flex-col gap-4 pointer-events-none animate-in fade-in slide-in-from-top-6 duration-1000">
         <div className="relative w-full pointer-events-auto">
           {isLoaded ? (
             <Autocomplete 
@@ -101,12 +101,12 @@ export default function MapComponent({ onRegisterOpen, isLoaded }: { onRegisterO
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleEnterKey()}
-                placeholder={`Search in ${location?.city || 'City'}...`}
-                className="w-full bg-white/70 backdrop-blur-2xl border-none rounded-2xl pl-12 pr-4 py-4 text-[#2D3435] font-black focus:bg-white focus:ring-4 focus:ring-[#005BC0]/5 shadow-[0_16px_32px_rgba(22,29,30,0.12)] transition-all text-[15px] outline-none"
+                placeholder="도시, 지역, 명칭"
+                className="w-full bg-white/80 backdrop-blur-3xl border-none rounded-3xl pl-12 pr-4 py-5 text-[#2D3435] font-black focus:bg-white focus:ring-4 focus:ring-[#005BC0]/5 shadow-[0_20px_48px_rgba(22,29,30,0.15)] transition-all text-[15px] outline-none placeholder:text-[#596061]/40"
               />
             </Autocomplete>
-          ) : <div className="w-full h-14 bg-white/40 animate-pulse rounded-2xl" />}
-          <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#005BC0] text-[20px]">search</span>
+          ) : <div className="w-full h-16 bg-white/40 animate-pulse rounded-3xl" />}
+          <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#005BC0] text-[22px]">search</span>
         </div>
 
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar px-1 pointer-events-auto">
