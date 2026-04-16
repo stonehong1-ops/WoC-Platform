@@ -252,9 +252,14 @@ export default function ManageEntry({ isOpen, onClose, isLoaded }: ManageEntryPr
           </div>
 
           <div className="bg-[#f4fbfb] rounded-3xl p-2.5 space-y-1.5 border border-[#e8eff0]">
+            <div className="grid grid-cols-2 gap-1.5">
+              <DetailItem label="LATITUDE" value={formData.latitude.toString()} readOnly={true} />
+              <DetailItem label="LONGITUDE" value={formData.longitude.toString()} readOnly={true} />
+            </div>
             <DetailItem label="COUNTRY" value={formData.country} readOnly={true} />
             <DetailItem label="CITY" value={formData.city} readOnly={true} />
             <DetailItem label="ZONE" value={formData.zone} readOnly={true} />
+            <DetailItem label="STREET ADDR" value={formData.address} readOnly={true} />
             
             <div className="flex items-center px-5 py-4 bg-white rounded-2xl shadow-sm border-2 border-[#005BC0]/20">
               <label className="w-1/3 text-[9px] font-black text-[#005BC0] uppercase tracking-widest">UNIT / FLOOR</label>
