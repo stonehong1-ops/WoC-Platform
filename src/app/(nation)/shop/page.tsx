@@ -1,15 +1,61 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/components/providers/AuthProvider';
+import { shopService } from '@/lib/firebase/shopService';
+import { Product } from '@/types/shop';
+import CreateProduct from '@/components/shop/CreateProduct';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ShopPage() {
+  const { user } = useAuth();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [activeCategory, setActiveCategory] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [isAddingToCart, setIsAddingToCart] = useState<string | null>(null);
+
+  // 1. Subscribe to real-time products
+  useEffect(() => {
+    const unsub = shopService.subscribeProducts(activeCategory, (data) => {
+      setProducts(data);
+    });
+    return () => unsub();
+  }, [activeCategory]);
+
+  // 2. Filter products locally based on search
+  const filteredProducts = products.filter(p => 
+    p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    p.brand.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const categories = ['All', 'Shoes', 'Dresses', 'Accessories', 'Bikes', 'Yoga Wear', 'Equipments'];
+
+  const handleAddToCart = async (e: React.MouseEvent, product: Product) => {
+    e.stopPropagation();
+    if (!user) return alert("Please login first");
+    
+    setIsAddingToCart(product.id);
+    await shopService.addToCart(user.uid, product);
+    
+    setTimeout(() => setIsAddingToCart(null), 1000);
+  };
+
   return (
-    <main className="max-w-md mx-auto min-h-screen pb-24 pt-20">
+    <main className="max-w-md mx-auto min-h-screen pb-24 pt-20 bg-white relative">
+      <style dangerouslySetInnerHTML={{ __html: `
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+      `}} />
+
       {/* 1. Search Bar */}
-      <div className="px-4 pt-4 sticky top-16 bg-white/95 backdrop-blur-sm z-10 pb-2">
-        <div className="flex items-center bg-white border border-[#acb3b4]/30 rounded-full px-4 py-3 shadow-sm">
+      <div className="px-4 pt-4 sticky top-16 bg-white/95 backdrop-blur-sm z-30 pb-2">
+        <div className="flex items-center bg-white border border-[#acb3b4]/30 rounded-full px-4 py-3 shadow-sm focus-within:ring-2 focus-within:ring-primary/10 transition-all">
           <span className="material-symbols-outlined text-[#596061] mr-3">search</span>
           <input 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="bg-transparent border-none focus:ring-0 text-sm font-body w-full placeholder:text-[#596061]/60" 
             placeholder="Search products or brands..." 
             type="text" 
@@ -19,16 +65,21 @@ export default function ShopPage() {
       </div>
 
       {/* 2. Category Navigation */}
-      <div className="mt-4 px-4 overflow-x-auto no-scrollbar flex gap-3 pb-2">
-        <button className="flex-shrink-0 px-5 py-2 rounded-full bg-[#1A73E8] text-white text-sm font-semibold font-label">All</button>
-        <button className="flex-shrink-0 px-5 py-2 rounded-full bg-[#e4e9ea] text-[#2d3435] text-sm font-medium font-label hover:bg-[#dfe3e8] transition-colors">Shoes</button>
-        <button className="flex-shrink-0 px-5 py-2 rounded-full bg-[#e4e9ea] text-[#2d3435] text-sm font-medium font-label hover:bg-[#dfe3e8] transition-colors">Dresses</button>
-        <button className="flex-shrink-0 px-5 py-2 rounded-full bg-[#e4e9ea] text-[#2d3435] text-sm font-medium font-label hover:bg-[#dfe3e8] transition-colors">Accessories</button>
-        <button className="flex-shrink-0 px-5 py-2 rounded-full bg-[#e4e9ea] text-[#2d3435] text-sm font-medium font-label hover:bg-[#dfe3e8] transition-colors">Bikes</button>
-        <button className="flex-shrink-0 px-5 py-2 rounded-full bg-[#e4e9ea] text-[#2d3435] text-sm font-medium font-label hover:bg-[#dfe3e8] transition-colors">Yoga Wear</button>
+      <div className="mt-4 px-4 overflow-x-auto no-scrollbar flex gap-3 pb-2 z-20">
+        {categories.map(cat => (
+          <button 
+            key={cat}
+            onClick={() => setActiveCategory(cat)}
+            className={`flex-shrink-0 px-5 py-2 rounded-full text-sm font-semibold font-label transition-all ${
+              activeCategory === cat ? 'bg-[#1A73E8] text-white shadow-lg shadow-primary/20' : 'bg-[#e4e9ea] text-[#2d3435] hover:bg-[#dfe3e8]'
+            }`}
+          >
+            {cat}
+          </button>
+        ))}
       </div>
 
-      {/* 3. Featured Collection (Hero) */}
+      {/* 3. Featured Collection (Hero) - Kept static for design consistency */}
       <div className="mt-6 px-4">
         <div className="relative h-64 rounded-xl overflow-hidden shadow-md">
           <img 
@@ -46,108 +97,59 @@ export default function ShopPage() {
       </div>
 
       {/* 4. Product Grid */}
-      <div className="mt-8 px-4 mb-10 text-left">
+      <div className="mt-8 px-4 mb-10 text-left min-h-[400px]">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-headline text-lg font-bold text-[#2d3435]">Community Favorites</h3>
-          <button className="text-[#1A73E8] text-xs font-bold font-label">View All</button>
+          <h3 className="font-headline text-lg font-bold text-[#2d3435]">
+            {activeCategory === 'All' ? 'Community Favorites' : `${activeCategory}`}
+          </h3>
+          <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest">{filteredProducts.length} Items</span>
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          {/* Card 1: Shoes */}
-          <div className="group cursor-pointer">
-            <div className="relative aspect-square rounded-xl bg-[#f2f4f4] overflow-hidden mb-3">
-              <img 
-                alt="Red Tango Heels" 
-                className="w-full h-full object-cover transition-transform group-hover:scale-105" 
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuAUzLY_k1X_n6wm22azZbz0w4vnptUhZVO4qmS_7xxYK-pSadL5CfSIEvjr1IfzOQYxS2G98df8ufx3zBCtltdwHXS41Z1GfZUmele1IEvwuYgYsR-Rs5PtsBI_52f-U0AFYT9_jHMJBT9Y0cS6epQd0APX0bQ0ccEqj9S_kMBt43xdds6XC__1Qivc4WmOef0G5LhFcgsgvzOMZjSUIjnxZKqY_1HPzaze1clVckK9WCLA8a7XDXGJUCDgUF9o5m-IqYia8sqKW53f" 
-              />
-              <button className="absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur rounded-full flex items-center justify-center text-[#2d3435] shadow-sm">
-                <span className="material-symbols-outlined text-lg">favorite</span>
-              </button>
-            </div>
-            <div className="px-1">
-              <p className="text-[10px] font-bold text-[#5c5f62] uppercase tracking-tighter font-label">TANGO ELITE</p>
-              <h4 className="text-sm font-semibold text-[#2d3435] font-body truncate">Scarlet Performance Heels</h4>
-              <div className="flex items-center justify-between mt-1">
-                <span className="text-sm font-bold text-[#2d3435] font-headline">$189.00</span>
-                <button className="bg-[#d8e2ff] text-[#004fa8] p-1 rounded-lg">
-                  <span className="material-symbols-outlined text-lg leading-none">add_shopping_cart</span>
-                </button>
-              </div>
-            </div>
+
+        {filteredProducts.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center opacity-30">
+            <span className="material-symbols-outlined text-6xl mb-4">shopping_basket</span>
+            <p className="text-xs font-black uppercase tracking-widest">No products found</p>
           </div>
-          {/* Card 2: Yoga Wear */}
-          <div className="group cursor-pointer">
-            <div className="relative aspect-square rounded-xl bg-[#f2f4f4] overflow-hidden mb-3">
-              <img 
-                alt="Yoga Leggings" 
-                className="w-full h-full object-cover transition-transform group-hover:scale-105" 
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCh2ktGRxHSyZK8x1zbTKvtz1D6Y0sXJIQB-NmfxZrJVxkdACfij20f-DYlpdaaBEIekaSD3uoyG6WsMS_Oxw0VgrKy3WUm9rD1MZoiDd5a3zoIZXlS_FMccSWDP4DVz-_XZOf7II9wwfgT87nvQFzbwWLJflQAyeNoILjGlN-DQJ5t8iErX0xpFWDoARNIUoFDU1c9GCMwUjPDRBwEgyvGiQXiD1Z-N-ZFE0-vXJ4NX6LSZLIXOxMmjiRQ4Q9EuRT35ZUwtE_QwpNV" 
-              />
-              <button className="absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur rounded-full flex items-center justify-center text-[#2d3435] shadow-sm">
-                <span className="material-symbols-outlined text-lg">favorite</span>
-              </button>
-            </div>
-            <div className="px-1">
-              <p className="text-[10px] font-bold text-[#5c5f62] uppercase tracking-tighter font-label">ZEN FLOW</p>
-              <h4 className="text-sm font-semibold text-[#2d3435] font-body truncate">Seamless Motion Leggings</h4>
-              <div className="flex items-center justify-between mt-1">
-                <span className="text-sm font-bold text-[#2d3435] font-headline">$75.00</span>
-                <button className="bg-[#d8e2ff] text-[#004fa8] p-1 rounded-lg">
-                  <span className="material-symbols-outlined text-lg leading-none">add_shopping_cart</span>
-                </button>
+        ) : (
+          <div className="grid grid-cols-2 gap-4">
+            {filteredProducts.map(product => (
+              <div key={product.id} className="group cursor-pointer animate-in fade-in slide-in-from-bottom-2 duration-500">
+                <div className="relative aspect-square rounded-xl bg-[#f2f4f4] overflow-hidden mb-3">
+                  <img 
+                    alt={product.name} 
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+                    src={product.imageUrl} 
+                  />
+                  <button className="absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur rounded-full flex items-center justify-center text-[#2d3435] shadow-sm hover:text-red-500 transition-colors">
+                    <span className="material-symbols-outlined text-lg">favorite</span>
+                  </button>
+                </div>
+                <div className="px-1">
+                  <p className="text-[10px] font-bold text-[#5c5f62] uppercase tracking-tighter font-label">{product.brand}</p>
+                  <h4 className="text-sm font-semibold text-[#2d3435] font-body truncate">{product.name}</h4>
+                  <div className="flex items-center justify-between mt-1">
+                    <span className="text-sm font-bold text-[#2d3435] font-headline">
+                      ${product.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </span>
+                    <button 
+                      onClick={(e) => handleAddToCart(e, product)}
+                      className={`p-1.5 rounded-lg transition-all ${
+                        isAddingToCart === product.id ? 'bg-green-500 text-white' : 'bg-[#d8e2ff] text-[#004fa8] hover:bg-primary hover:text-white'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-lg leading-none">
+                        {isAddingToCart === product.id ? 'check' : 'add_shopping_cart'}
+                      </span>
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
+            ))}
           </div>
-          {/* Card 3: Bike Helmet */}
-          <div className="group cursor-pointer">
-            <div className="relative aspect-square rounded-xl bg-[#f2f4f4] overflow-hidden mb-3">
-              <img 
-                alt="Bike Helmet" 
-                className="w-full h-full object-cover transition-transform group-hover:scale-105" 
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuDJAZy2gVMefBK7_lj36xoARyahNLrZ1M55mrfJToa6B5Nx-TQnq4iK15NreDBHOEg9nbgVheiULmbbugOcAF_e39KvdwKDL2QWxuyvYNdcPZGxGuE2_NGfgr663Dfq8U3x4-rnlYYv8-xvJZwYiqUTphNoMabOezcBeF5iFeBgVXqFnm_zlYwU2JmVCBZCGiP8Q9-zeRftSrt48qYzVGJP5Ht9lh-4PX4l06YYIqVhKhykiU5Tm0iwzpwMwBf0cxlMNVxTdT89syX9" 
-              />
-              <button className="absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur rounded-full flex items-center justify-center text-[#2d3435] shadow-sm">
-                <span className="material-symbols-outlined text-lg">favorite</span>
-              </button>
-            </div>
-            <div className="px-1">
-              <p className="text-[10px] font-bold text-[#5c5f62] uppercase tracking-tighter font-label">VELO TECH</p>
-              <h4 className="text-sm font-semibold text-[#2d3435] font-body truncate">Aero-Guard Pro Helmet</h4>
-              <div className="flex items-center justify-between mt-1">
-                <span className="text-sm font-bold text-[#2d3435] font-headline">$120.00</span>
-                <button className="bg-[#d8e2ff] text-[#004fa8] p-1 rounded-lg">
-                  <span className="material-symbols-outlined text-lg leading-none">add_shopping_cart</span>
-                </button>
-              </div>
-            </div>
-          </div>
-          {/* Card 4: Accessories */}
-          <div className="group cursor-pointer">
-            <div className="relative aspect-square rounded-xl bg-[#f2f4f4] overflow-hidden mb-3">
-              <img 
-                alt="Tango Fan" 
-                className="w-full h-full object-cover transition-transform group-hover:scale-105" 
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCwd--vLsYTNIUZ8Vmzh3XSg7eW6RBZb5I1EUTrH6y_Ccq_kNjiaE1tgwCNIkrfGFXlPpww6niMyDIFYaL0Db_sXQEARbLSgzL-xqU5gTJDK3vsxh8K_o7JDbeO6NomBLCDqQ2jNlZtPz01dxEVEnhdc1rZAomr5IPMHyRogLNU1yzNYOJIvzF6QZFoIf7i-DnW3F7YXrfY9P1HtoQJ3tnIqrX3OuShSf8KUMZXcr7ONhvOPtLnxnk7Yr54vuYxoEL1cwTW5JxPATr3" 
-              />
-              <button className="absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur rounded-full flex items-center justify-center text-[#2d3435] shadow-sm">
-                <span className="material-symbols-outlined text-lg">favorite</span>
-              </button>
-            </div>
-            <div className="px-1">
-              <p className="text-[10px] font-bold text-[#5c5f62] uppercase tracking-tighter font-label">ACCESORIOS</p>
-              <h4 className="text-sm font-semibold text-[#2d3435] font-body truncate">Hand-Crafted Lace Fan</h4>
-              <div className="flex items-center justify-between mt-1">
-                <span className="text-sm font-bold text-[#2d3435] font-headline">$45.00</span>
-                <button className="bg-[#d8e2ff] text-[#004fa8] p-1 rounded-lg">
-                  <span className="material-symbols-outlined text-lg leading-none">add_shopping_cart</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
 
-      {/* 5. Secondary Featured Bento Section */}
+      {/* 5. Secondary Featured Bento Section (Visual Preservation) */}
       <div className="mt-4 px-4 pb-12">
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-[#dde4e5] p-5 rounded-2xl flex flex-col justify-between h-40 text-left">
@@ -167,15 +169,26 @@ export default function ShopPage() {
         </div>
       </div>
 
-      <style jsx>{`
-        .no-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-        .no-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
+      {/* 6. Global Shop FAB (Consistent with WoC System) */}
+      <button 
+        onClick={() => setShowCreateModal(true)}
+        className="fixed bottom-6 left-1/2 -translate-x-1/2 w-16 h-16 bg-primary text-white rounded-full shadow-2xl shadow-primary/40 flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50 group overflow-hidden"
+      >
+        <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+        <span className="material-symbols-outlined text-[32px] font-bold relative z-10">sell</span>
+      </button>
+
+      {/* Create Product Modal */}
+      <AnimatePresence>
+        {showCreateModal && (
+          <CreateProduct 
+            onClose={() => setShowCreateModal(false)}
+            onSuccess={() => {
+              // Option: Show success toast
+            }}
+          />
+        )}
+      </AnimatePresence>
     </main>
   );
 }
