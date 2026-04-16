@@ -100,10 +100,28 @@ export default function ManageEntry({ isOpen, onClose, isLoaded }: ManageEntryPr
 
   const handleManualSearch = () => {
     if (!formData.address) return;
+    
+    const service = new google.maps.places.AutocompleteService();
     const geocoder = new google.maps.Geocoder();
-    geocoder.geocode({ address: formData.address }, (results, status) => {
-      if (status === 'OK' && results && results[0]) {
-        updateWithPlace(results[0]);
+
+    service.getPlacePredictions({ input: formData.address }, (predictions, status) => {
+      if (status === 'OK' && predictions && predictions.length > 0) {
+        // Automatically pick the FIRST prediction if user hits Enter
+        const firstPlaceId = predictions[0].place_id;
+        const detailsService = new google.maps.places.PlacesService(document.createElement('div'));
+        
+        detailsService.getDetails({ placeId: firstPlaceId }, (place, status) => {
+          if (status === 'OK' && place) {
+            updateWithPlace(place);
+          }
+        });
+      } else {
+        // Fallback to basic geocoding if no predictions
+        geocoder.geocode({ address: formData.address }, (results, status) => {
+          if (status === 'OK' && results && results[0]) {
+            updateWithPlace(results[0]);
+          }
+        });
       }
     });
   };
@@ -190,7 +208,7 @@ export default function ManageEntry({ isOpen, onClose, isLoaded }: ManageEntryPr
         {/* Search */}
         <section className="mb-10">
           <h2 className="font-headline text-[13px] font-black text-[#2D3435] uppercase tracking-[0.15em] mb-6">Location Search</h2>
-          <div className="relative mb-5">
+          <div className="relative mb-5 w-full">
             {isLoaded ? (
               <Autocomplete onLoad={(auto) => setAutocomplete(auto)} onPlaceChanged={onPlaceChanged}>
                 <input 
@@ -198,8 +216,8 @@ export default function ManageEntry({ isOpen, onClose, isLoaded }: ManageEntryPr
                   value={formData.address}
                   onChange={(e) => setFormData({...formData, address: e.target.value})}
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleManualSearch(); } }}
-                  placeholder="Type address and press Enter..."
-                  className="w-full bg-[#e8eff0] border-none rounded-2xl pl-12 pr-5 py-4 text-[#2D3435] font-bold focus:bg-white focus:ring-2 focus:ring-[#005BC0]/20 shadow-sm transition-all text-[15px]"
+                  placeholder="Type address or place name..."
+                  className="w-full bg-[#e8eff0] border-none rounded-2xl pl-12 pr-4 py-4 text-[#2D3435] font-bold focus:bg-white focus:ring-2 focus:ring-[#005BC0]/20 shadow-sm transition-all text-[15px]"
                 />
               </Autocomplete>
             ) : <div className="w-full bg-[#e8eff0] h-14 rounded-2xl animate-pulse"></div>}

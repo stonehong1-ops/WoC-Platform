@@ -2,240 +2,151 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { GoogleMap, Marker, Autocomplete } from '@react-google-maps/api';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useLocation } from '@/components/providers/LocationProvider';
+import { db } from '@/lib/firebase/clientApp';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
 
 interface Venue {
   id: string;
   name: string;
   category: string;
-  categories?: string[];
+  coordinates: { latitude: number; longitude: number; };
   address: string;
-  detailAddress?: string;
   city: string;
-  country: string;
-  coordinates?: {
-    latitude: number;
-    longitude: number;
-  };
-  imageUrl?: string;
-  ownerName?: string;
+  status: string;
 }
 
-interface MapComponentProps {
-  venues: Venue[];
-  currentCenter: { lat: number; lng: number; zoom: number };
-  selectedVenue: Venue | null;
-  onVenueSelect: (venue: Venue) => void;
-  searchTerm: string;
-  setSearchTerm: (term: string) => void;
-  activeCategory: string;
-  setActiveCategory: (cat: string) => void;
-  onRegisterOpen: () => void;
-  location: { city: string; country: string };
-  setLocation: (loc: { city: string; country: string }) => void;
-}
-
+const mapContainerStyle = { width: '100%', height: '100dvh' };
 const CIRCLE_PATH = 0;
 
-export default function MapComponent({
-  venues,
-  currentCenter,
-  selectedVenue,
-  onVenueSelect,
-  searchTerm,
-  setSearchTerm,
-  activeCategory,
-  setActiveCategory,
-  onRegisterOpen,
-  location,
-  setLocation
-}: MapComponentProps) {
+export default function MapComponent({ onRegisterOpen, isLoaded }: { onRegisterOpen: () => void; isLoaded: boolean; }) {
+  const { location } = useLocation();
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
+  const [venues, setVenues] = useState<Venue[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeCategory, setActiveCategory] = useState('All');
 
-  const categories = ['All', 'Studio', 'Academy', 'Club', 'Shop', 'Cafe', 'Eats', 'Beauty', 'Stay', 'Other'];
+  const categories = ['All', 'Studio', 'Academy', 'Club', 'Shop', 'Cafe', 'Eats', 'Beauty', 'Stay'];
 
-  const onPlaceChanged = () => {
-    if (autocomplete !== null) {
-      const place = autocomplete.getPlace();
-      if (place.geometry && place.geometry.location) {
-        const lat = place.geometry.location.lat();
-        const lng = place.geometry.location.lng();
-        map?.panTo({ lat, lng });
-        map?.setZoom(15);
-
-        let city = '';
-        let country = '';
-        place.address_components?.forEach(comp => {
-          if (comp.types.includes('locality')) city = comp.long_name;
-          if (comp.types.includes('country')) country = comp.long_name;
-        });
-        
-        if (city && country) {
-          setLocation({ city, country });
-        }
-      }
-    }
-  };
-
-  const safeVenues = useMemo(() => {
-    return venues.filter(v => v.coordinates && v.coordinates.latitude && v.coordinates.longitude);
-  }, [venues]);
+  useEffect(() => {
+    if (!location?.city) return;
+    const q = query(collection(db, "venues"), where("city", "==", location.city.toUpperCase()));
+    return onSnapshot(q, (snapshot) => {
+      const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Venue));
+      setVenues(docs.filter(v => v.coordinates?.latitude && v.coordinates?.longitude));
+    });
+  }, [location?.city]);
 
   const filteredVenues = useMemo(() => {
-    return safeVenues.filter(v => {
-      const matchCategory = activeCategory === 'All' || 
-                           v.category === activeCategory || 
-                           (v.categories && v.categories.includes(activeCategory));
-      const matchSearch = !searchTerm || 
-        v.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        v.address.toLowerCase().includes(searchTerm.toLowerCase());
-      return matchCategory && matchSearch;
+    return venues.filter(v => {
+      const matchCat = activeCategory === 'All' || v.category === activeCategory;
+      const matchSearch = v.name.toLowerCase().includes(searchTerm.toLowerCase()) || v.address.toLowerCase().includes(searchTerm.toLowerCase());
+      return matchCat && matchSearch;
     });
-  }, [safeVenues, activeCategory, searchTerm]);
+  }, [venues, activeCategory, searchTerm]);
+
+  const handleEnterKey = () => {
+    if (!searchTerm) return;
+    const service = new google.maps.places.AutocompleteService();
+    service.getPlacePredictions({ input: searchTerm }, (predictions) => {
+      if (predictions && predictions.length > 0) {
+        const ds = new google.maps.places.PlacesService(document.createElement('div'));
+        ds.getDetails({ placeId: predictions[0].place_id }, (place) => {
+          if (place?.geometry?.location) {
+            map?.panTo(place.geometry.location);
+            map?.setZoom(16);
+            setSearchTerm(place.formatted_address || place.name || '');
+          }
+        });
+      }
+    });
+  };
 
   return (
-    <div className="relative h-screen w-full overflow-hidden bg-background select-none">
-      
-      {/* Map Layer */}
-      <div className="absolute inset-0 z-0">
-        <GoogleMap
-          mapContainerStyle={{ width: '100%', height: '100%' }}
-          center={{ lat: currentCenter.lat, lng: currentCenter.lng }}
-          zoom={currentCenter.zoom}
-          onLoad={(m) => setMap(m)}
-          options={{
-            disableDefaultUI: true,
-            zoomControl: false,
-            mapId: "425069951fef97d91810ab94",
-            gestureHandling: 'greedy'
-          }}
-        >
-          {filteredVenues.map((venue) => (
-            <Marker
-              key={venue.id}
-              position={{ lat: venue.coordinates!.latitude, lng: venue.coordinates!.longitude }}
-              onClick={() => onVenueSelect(venue)}
-              icon={{
-                path: CIRCLE_PATH,
-                fillColor: selectedVenue?.id === venue.id ? "#005BC0" : "#005BC0",
-                fillOpacity: 1,
-                strokeWeight: selectedVenue?.id === venue.id ? 4 : 2,
-                strokeColor: "#ffffff",
-                scale: selectedVenue?.id === venue.id ? 10 : 7,
+    <div className="relative w-full h-full overflow-hidden bg-[#eef5f6]">
+      {/* Layer 1: Floating Header - Main Search */}
+      <div className="absolute top-6 left-6 right-6 z-50 flex flex-col gap-3 pointer-events-none">
+        <div className="relative w-full pointer-events-auto">
+          {isLoaded ? (
+            <Autocomplete 
+              onLoad={setAutocomplete} 
+              onPlaceChanged={() => {
+                if (autocomplete) {
+                  const place = autocomplete.getPlace();
+                  if (place.geometry?.location) {
+                    map?.panTo(place.geometry.location);
+                    map?.setZoom(16);
+                    setSearchTerm(place.formatted_address || place.name || '');
+                  }
+                }
               }}
-            />
-          ))}
-        </GoogleMap>
-      </div>
-
-      {/* Floating Controls */}
-      <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[92%] max-w-lg z-20 flex flex-col gap-3 pointer-events-none">
-        <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-[0px_12px_32px_rgba(22,29,30,0.06)] px-5 py-3.5 flex items-center gap-3 pointer-events-auto border border-white/40">
-          <span className="material-symbols-outlined text-[#727784] text-[20px]">search</span>
-          <Autocomplete 
-            onLoad={(auto) => setAutocomplete(auto)} 
-            onPlaceChanged={onPlaceChanged}
-          >
-            <input 
-              type="text" 
-              placeholder={`Search around ${location?.city?.toUpperCase() || ''}...`}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-transparent border-none focus:ring-0 text-[#161D1E] placeholder:text-[#727784]/60 w-full text-[15px] font-semibold font-body"
-            />
-          </Autocomplete>
+            >
+              <input 
+                type="text" 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleEnterKey()}
+                placeholder={`Search in ${location?.city || 'City'}...`}
+                className="w-full bg-white/60 backdrop-blur-xl border-none rounded-2xl pl-12 pr-4 py-4 text-[#2D3435] font-black focus:bg-white focus:ring-4 focus:ring-[#005BC0]/10 shadow-[0_12px_24px_rgba(22,29,30,0.12)] transition-all text-[15px] outline-none"
+              />
+            </Autocomplete>
+          ) : <div className="w-full h-14 bg-white/40 animate-pulse rounded-2xl" />}
+          <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#005BC0] text-[20px]">search</span>
         </div>
-        
+
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar px-1 pointer-events-auto">
           {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className={`flex-shrink-0 px-4 py-1.5 rounded-full text-[11px] font-bold transition-all border uppercase tracking-tight ${
-                activeCategory === cat 
-                ? 'bg-[#005BC0] text-white border-[#005BC0] shadow-md' 
-                : 'bg-white/40 backdrop-blur-sm text-[#2D3435] border-white/20 hover:bg-white/60 font-black'
-              }`}
-            >
-              {cat}
-            </button>
+            <button key={cat} onClick={() => setActiveCategory(cat)} className={`flex-shrink-0 px-4 py-1.5 rounded-full text-[11px] font-black transition-all border uppercase tracking-widest ${activeCategory === cat ? 'bg-[#005BC0] text-white border-[#005BC0] shadow-md' : 'bg-white/40 backdrop-blur-sm text-[#2D3435] border-white/20 hover:bg-white/60'}`}>{cat}</button>
           ))}
         </div>
       </div>
 
-      {/* Bottom Sheet */}
-      <motion.div 
-        initial={{ y: "65dvh" }}
-        animate={{ y: "65dvh" }}
-        drag="y"
-        dragConstraints={{ top: 0, bottom: 0 }}
-        dragElastic={0.05}
-        style={{ height: '100dvh', top: '15dvh' }}
-        className="absolute left-0 w-full z-40"
-      >
+      {/* Layer 0: Map */}
+      <div className="w-full h-full -mt-16">
+        {isLoaded ? (
+          <GoogleMap
+            mapContainerStyle={mapContainerStyle}
+            center={{ lat: location?.latitude || 37.5575, lng: location?.longitude || 126.9244 }}
+            zoom={14}
+            onLoad={setMap}
+            options={{ disableDefaultUI: true, mapId: "425069951fef97d91810ab94", gestureHandling: 'greedy' }}
+          >
+            {filteredVenues.map((v) => (
+              <Marker key={v.id} position={{ lat: v.coordinates.latitude, lng: v.coordinates.longitude }} onClick={() => map?.panTo({ lat: v.coordinates.latitude, lng: v.coordinates.longitude })} icon={{ path: CIRCLE_PATH, fillColor: "#005BC0", fillOpacity: 1, strokeWeight: 4, strokeColor: "#ffffff", scale: 8 }} />
+            ))}
+          </GoogleMap>
+        ) : <div className="w-full h-full flex items-center justify-center bg-[#f4fbfb]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#005BC0]"></div></div>}
+      </div>
+
+      {/* Layer 2: Bottom Sheet - Venue List */}
+      <motion.div initial={{ y: "65dvh" }} animate={{ y: "65dvh" }} drag="y" dragConstraints={{ top: 0, bottom: 0 }} dragElastic={0.05} style={{ height: '100dvh', top: '15dvh' }} className="absolute left-0 w-full z-40">
         <div className="h-full bg-white rounded-t-[2.5rem] shadow-[0px_-20px_48px_rgba(22,29,30,0.1)] flex flex-col pt-3 border-t border-white/40">
           <div className="w-12 h-1.5 bg-[#e8eff0] rounded-full mx-auto mb-7 shrink-0 cursor-grab active:cursor-grabbing"></div>
           <div className="px-6 flex flex-col h-full overflow-hidden">
             <div className="flex items-center justify-between mb-6 shrink-0">
               <h2 className="text-[17px] font-bold font-headline tracking-tighter text-[#2D3435] uppercase">
-                <span className="text-[#005BC0] mr-1">{filteredVenues.length}</span> 
-                Venues in {location?.city || ''}
+                <span className="text-[#005BC0] mr-1">{filteredVenues.length}</span> Venues in {location?.city || ''}
               </h2>
-              <button 
-                onClick={onRegisterOpen}
-                className="bg-[#005BC0] text-white px-6 py-3 rounded-2xl flex items-center gap-2 shadow-[0_8px_16px_rgba(0,91,192,0.25)] active:scale-90 transition-all z-10"
-              >
+              <button onClick={onRegisterOpen} className="bg-[#005BC0] text-white px-6 py-3 rounded-2xl flex items-center gap-2 shadow-[0_8px_16px_rgba(0,91,192,0.25)] active:scale-90 transition-all z-10">
                 <span className="material-symbols-outlined text-[18px]">add</span>
                 <span className="text-[12px] font-black uppercase tracking-widest">Register</span>
               </button>
             </div>
-
-            <div className="flex-grow overflow-y-auto no-scrollbar pb-60">
-              <div className="space-y-3">
-                {filteredVenues.map((venue) => (
-                  <div 
-                    key={venue.id}
-                    onClick={() => {
-                      onVenueSelect(venue);
-                      if (venue.coordinates) {
-                        map?.panTo({ lat: venue.coordinates.latitude, lng: venue.coordinates.longitude });
-                        map?.setZoom(17);
-                      }
-                    }}
-                    className={`flex items-center gap-4 p-4 rounded-2xl border transition-all active:scale-[0.98] ${
-                      selectedVenue?.id === venue.id 
-                      ? 'bg-surface-container border-surface-tint/20' 
-                      : 'bg-surface-container-low border-transparent hover:bg-surface-container'
-                    }`}
-                  >
-                    <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0 bg-surface-container-highest">
-                      {venue.imageUrl ? (
-                        <img src={venue.imageUrl} alt={venue.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-outline/30">
-                          <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 0" }}>image</span>
-                        </div>
-                      )}
+            
+            <div className="flex-grow overflow-y-auto no-scrollbar pb-40">
+              <div className="grid grid-cols-1 gap-3">
+                {filteredVenues.map((v) => (
+                  <button key={v.id} onClick={() => { map?.panTo({ lat: v.coordinates.latitude, lng: v.coordinates.longitude }); map?.setZoom(17); }} className="flex items-center gap-4 p-4 bg-[#f4fbfb] hover:bg-[#eef5f6] rounded-2xl border border-transparent hover:border-[#dde4e5] transition-all group text-left">
+                    <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-[#005BC0] font-black text-[10px] shadow-sm group-hover:scale-105 transition-transform uppercase">{v.category.slice(0,3)}</div>
+                    <div className="flex-grow">
+                      <h3 className="text-[14px] font-black text-[#2D3435] tracking-tight">{v.name}</h3>
+                      <p className="text-[10px] text-[#596061] font-bold mt-0.5 line-clamp-1 opacity-70">{v.address}</p>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <h3 className="text-[15px] font-extrabold text-on-surface truncate uppercase tracking-tight leading-none">{venue.name}</h3>
-                        <span className="px-2 py-0.5 bg-surface-container-highest rounded text-[9px] font-black text-on-surface-variant uppercase tracking-widest shrink-0">
-                          {venue.category}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-on-surface-variant font-medium truncate mt-1">
-                        {venue.ownerName || 'Unknown Host'} • {venue.address}
-                      </p>
-                    </div>
-                  </div>
+                    <span className="material-symbols-outlined text-[#c2c6d5] group-hover:text-[#005BC0] transition-colors">arrow_forward_ios</span>
+                  </button>
                 ))}
-                {filteredVenues.length === 0 && (
-                  <div className="py-20 text-center">
-                    <p className="text-[13px] font-bold text-outline/30 italic">No venues in this area.</p>
-                  </div>
-                )}
               </div>
             </div>
           </div>
