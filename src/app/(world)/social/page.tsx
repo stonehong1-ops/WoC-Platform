@@ -6,6 +6,7 @@ import { socialService } from '@/lib/firebase/socialService';
 import { Social } from '@/types/social';
 import SocialFilterBottomSheet from '@/components/social/SocialFilterBottomSheet';
 import EditSocialEvent from '@/components/social/EditSocialEvent';
+import SocialEventDetail from '@/components/social/SocialEventDetail';
 import { AnimatePresence } from 'framer-motion';
 
 export default function SocialPage() {
@@ -56,6 +57,7 @@ export default function SocialPage() {
     setShowFilter(false);
   };
   const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedSocial, setSelectedSocial] = useState<Social | null>(null);
 
   // Filter Logic
   const filterSocials = (list: Social[]) => {
@@ -111,7 +113,11 @@ export default function SocialPage() {
             </div>
           ) : (
             filterSocials(regulars).map(social => (
-              <div key={social.id} className="relative flex-shrink-0 w-72 h-96 rounded-lg overflow-hidden group shadow-sm transition-all hover:shadow-md cursor-pointer animate-in zoom-in-95 duration-500">
+              <div 
+                key={social.id} 
+                onClick={() => setSelectedSocial(social)}
+                className="relative flex-shrink-0 w-72 h-96 rounded-lg overflow-hidden group shadow-sm transition-all hover:shadow-md cursor-pointer animate-in zoom-in-95 duration-500 text-left"
+              >
                 <img className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" src={social.imageUrl} alt={social.title} />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
                 <div className="absolute bottom-0 p-6 space-y-1 text-left">
@@ -161,7 +167,11 @@ export default function SocialPage() {
              </div>
           ) : (
             filterSocials(dailySocials).map(social => (
-              <div key={social.id} className="flex items-center gap-6 p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-all border border-gray-50 animate-in fade-in slide-in-from-left-4 duration-500">
+              <div 
+                key={social.id} 
+                onClick={() => setSelectedSocial(social)}
+                className="flex items-center gap-6 p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-all border border-gray-50 animate-in fade-in slide-in-from-left-4 duration-500 cursor-pointer"
+              >
                 <div className="flex flex-col items-center justify-center w-20 h-20 bg-[#F4FBFB] rounded-lg border-l-4 border-primary shrink-0">
                   <span className="text-xs font-bold text-on-surface-variant uppercase tracking-tighter">
                     {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date(social.date ? social.date.toDate() : new Date()).getDay()]}
@@ -217,6 +227,16 @@ export default function SocialPage() {
           <EditSocialEvent 
             onClose={() => setShowEditModal(false)}
             onSuccess={() => {}}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Social Detail Modal */}
+      <AnimatePresence>
+        {selectedSocial && (
+          <SocialEventDetail 
+            social={selectedSocial}
+            onClose={() => setSelectedSocial(null)}
           />
         )}
       </AnimatePresence>
