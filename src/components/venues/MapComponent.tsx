@@ -83,6 +83,11 @@ export default function MapComponent({ onRegisterOpen, isLoaded }: { onRegisterO
                   }
                 }
               }}
+              options={{
+                location: location?.city ? (CITY_COORDINATES[location.city.toUpperCase() as keyof typeof CITY_COORDINATES] || DEFAULT_COORDINATES) : DEFAULT_COORDINATES,
+                radius: 10000,
+                componentRestrictions: { country: "kr" }
+              }}
             >
               <input 
                 type="text" 

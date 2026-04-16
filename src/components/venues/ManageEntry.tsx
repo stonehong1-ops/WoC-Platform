@@ -189,6 +189,10 @@ export default function ManageEntry({ isOpen, onClose, isLoaded }: ManageEntryPr
               <label className="block text-[10px] font-bold text-[#596061] mb-2 tracking-widest uppercase">Place Name (Required)</label>
               <input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="e.g. Blue Horizon Studio" className="w-full bg-[#e8eff0] border-none rounded-xl px-5 py-4 text-[#2D3435] font-bold focus:bg-white focus:ring-2 focus:ring-[#005BC0]/20 transition-all placeholder:text-[#596061]/30 text-[15px]"/>
             </div>
+            <div className="group">
+              <label className="block text-[10px] font-bold text-[#596061] mb-2 tracking-widest uppercase">Native Name (Optional)</label>
+              <input type="text" value={formData.nativeName} onChange={(e) => setFormData({...formData, nativeName: e.target.value})} placeholder="예: 블루 호라이즌 스튜디오" className="w-full bg-[#e8eff0] border-none rounded-xl px-5 py-4 text-[#2D3435] font-bold focus:bg-white focus:ring-2 focus:ring-[#005BC0]/20 transition-all placeholder:text-[#596061]/30 text-[15px]"/>
+            </div>
           </div>
         </section>
 
@@ -213,7 +217,15 @@ export default function ManageEntry({ isOpen, onClose, isLoaded }: ManageEntryPr
           <h2 className="font-headline text-[13px] font-black text-[#2D3435] uppercase tracking-[0.15em] mb-6">Location Search</h2>
           <div className="relative mb-5 w-full">
             {isLoaded ? (
-              <Autocomplete onLoad={(auto) => setAutocomplete(auto)} onPlaceChanged={onPlaceChanged}>
+              <Autocomplete 
+                onLoad={(auto) => setAutocomplete(auto)} 
+                onPlaceChanged={onPlaceChanged}
+                options={{
+                  location: new google.maps.LatLng(formData.latitude, formData.longitude),
+                  radius: 10000,
+                  componentRestrictions: { country: "kr" }
+                }}
+              >
                 <input 
                   type="text" 
                   value={formData.address}
