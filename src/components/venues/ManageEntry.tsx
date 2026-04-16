@@ -194,7 +194,10 @@ export default function ManageEntry({ isOpen, onClose, isLoaded }: ManageEntryPr
 
         {/* Category */}
         <section className="mb-10">
-          <h2 className="font-headline text-[13px] font-black text-[#2D3435] uppercase tracking-[0.15em] mb-6">Category</h2>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="font-headline text-[13px] font-black text-[#2D3435] uppercase tracking-[0.15em]">Category</h2>
+            <span className="text-[10px] font-bold text-[#005BC0] uppercase tracking-widest bg-[#005BC0]/5 px-3 py-1 rounded-full">Multi-selection Enabled</span>
+          </div>
           <div className="grid grid-cols-3 gap-2.5">
             {categoriesList.map((cat) => (
               <button key={cat.id} type="button" onClick={() => toggleCategory(cat.id)} className={`flex flex-col items-center justify-center p-4 rounded-xl transition-all ${formData.categories.includes(cat.id) ? 'bg-[#005BC0] text-white shadow-lg scale-105 z-10' : 'bg-[#eef5f6] text-[#596061]'}`}>
