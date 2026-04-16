@@ -151,5 +151,59 @@ export const plazaService = {
       console.error("Error uploading media:", error);
       throw error;
     }
+  },
+
+  // --- Relationship & Affinity Logic ---
+
+  // 핀(Pin) 상태 토글
+  togglePinUser: async (userId: string, targetId: string, isPinned: boolean) => {
+    try {
+      const { doc, updateDoc, arrayUnion, arrayRemove } = await import('firebase/firestore');
+      const userRef = doc(db, 'users', userId);
+      await updateDoc(userRef, {
+        pinnedUserIds: isPinned ? arrayRemove(targetId) : arrayUnion(targetId)
+      });
+      return !isPinned;
+    } catch (error) {
+      console.error("Error toggling pin:", error);
+      throw error;
+    }
+  },
+
+  // 최근 스토리가 있는 유저 목록 가져오기 (24시간 이내)
+  getUsersWithRecentPosts: async () => {
+    try {
+      const { getDocs, query, collection, where, limit, Timestamp } = await import('firebase/firestore');
+      const dayAgo = Timestamp.fromMillis(Date.now() - 24 * 60 * 60 * 1000);
+      
+      const q = query(
+        collection(db, COLLECTION_NAME),
+        where('createdAt', '>=', dayAgo),
+        limit(50)
+      );
+
+      const snapshot = await getDocs(q);
+      const uniqueUserIds = new Set<string>();
+      const userStories: any[] = [];
+
+      snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        if (!uniqueUserIds.has(data.userId)) {
+          uniqueUserIds.add(data.userId);
+          userStories.push({
+            userId: data.userId,
+            userName: data.userName,
+            userPhoto: data.userPhoto,
+            lastPostAt: data.createdAt,
+            hasUnread: true // Default to true for simplicity in this version
+          });
+        }
+      });
+
+      return userStories;
+    } catch (error) {
+      console.error("Error getting story users:", error);
+      return [];
+    }
   }
 };

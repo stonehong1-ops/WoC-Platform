@@ -73,7 +73,7 @@ export default function CreatePost({ isOpen, onClose }: CreatePostProps) {
         userPhoto: user.photoURL || '',
         content: content.trim(),
         images: uploadedUrls,
-        location: `${location.city.toUpperCase()}, ${location.country.toUpperCase()}`,
+        location: `${(location?.city || 'Globe').toUpperCase()}, ${(location?.country || '').toUpperCase()}`,
       });
       
       setContent('');

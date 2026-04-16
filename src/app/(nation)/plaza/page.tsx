@@ -31,11 +31,83 @@ export default function PlazaPage() {
       const { posts: newPosts, lastVisible } = await plazaService.getPostsPaginated(10);
       setPosts(newPosts);
       setLastDoc(lastVisible);
+      setStoryUsers(stories);
       if (newPosts.length < 10) setHasMore(false);
     } catch (error) {
       console.error("Fetch error:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchInitialData();
+  }, []);
+
+  // Relationship Logic: Sorting Algorithm
+  const sortedStories = React.useMemo(() => {
+    // 1st Priority: Self
+    const self = {
+      userId: user?.uid,
+      userName: 'Your Story',
+      userPhoto: user?.photoURL,
+      isSelf: true
+    };
+
+    const pinnedIds = (profile as any)?.pinnedUserIds || [];
+    
+    // Sort remaining users
+    const others = [...storyUsers].filter(u => u.userId !== user?.uid);
+    
+    const sorted = others.sort((a, b) => {
+      const aPinned = pinnedIds.includes(a.userId);
+      const bPinned = pinnedIds.includes(b.userId);
+
+      // 2nd Priority: Pinned
+      if (aPinned && !bPinned) return -1;
+      if (!aPinned && bPinned) return 1;
+
+      // Within same group, Unread first
+      if (a.hasUnread && !b.hasUnread) return -1;
+      if (!a.hasUnread && b.hasUnread) return 1;
+
+      // 3rd Priority: Interaction Score (Mock score for now)
+      const aScore = a.interactionScore || 0;
+      const bScore = b.interactionScore || 0;
+      return bScore - aScore;
+    });
+
+    return [self, ...sorted];
+  }, [user, storyUsers, (profile as any)?.pinnedUserIds]);
+
+  // Handle Pinning
+  const handlePinToggle = async (targetId: string) => {
+    if (!user) return;
+    const pinnedIds = (profile as any)?.pinnedUserIds || [];
+    const isCurrentlyPinned = pinnedIds.includes(targetId);
+    
+    try {
+      await plazaService.togglePinUser(user.uid, targetId, isCurrentlyPinned);
+      setContextMenu(null);
+    } catch (error) {
+      alert("Failed to update pin status.");
+    }
+  };
+
+  // Long-press detection
+  const handleTouchStart = (userId: string, e: any) => {
+    if (userId === user?.uid) return;
+    const x = e.touches ? e.touches[0].clientX : e.clientX;
+    const y = e.touches ? e.touches[0].clientY : e.clientY;
+    
+    longPressTimer.current = setTimeout(() => {
+      setContextMenu({ userId, x, y });
+    }, 600);
+  };
+
+  const handleTouchEnd = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
     }
   };
 
@@ -59,11 +131,7 @@ export default function PlazaPage() {
     }
   };
 
-  useEffect(() => {
-    fetchInitialPosts();
-  }, []);
-
-  // Intersection Observer for Infinite Scroll
+  // Interaction Observer for Infinite Scroll
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -97,41 +165,69 @@ export default function PlazaPage() {
 
   return (
     <PageWrapper>
-      <div className="flex flex-col min-h-screen bg-white font-manrope">
+      <div className="flex flex-col min-h-screen bg-white font-manrope" onClick={() => contextMenu && setContextMenu(null)}>
+        {/* Context Menu for Pinning */}
+        <AnimatePresence>
+          {contextMenu && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              style={{ position: 'fixed', left: contextMenu.x, top: contextMenu.y - 60, zIndex: 1000 }}
+              className="bg-white shadow-2xl rounded-2xl border border-gray-100 py-2 min-w-[140px]"
+            >
+              <button 
+                onClick={(e) => { e.stopPropagation(); handlePinToggle(contextMenu.userId); }}
+                className="w-full px-4 py-3 flex items-center gap-2 hover:bg-gray-50 transition-colors text-left"
+              >
+                <span className="material-symbols-outlined text-[18px] text-primary">
+                  {((profile as any)?.pinnedUserIds || []).includes(contextMenu.userId) ? 'keep_off' : 'keep'}
+                </span>
+                <span className="text-[12px] font-bold text-gray-900">
+                  {((profile as any)?.pinnedUserIds || []).includes(contextMenu.userId) ? 'Unpin from Top' : 'Pin to Top'}
+                </span>
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* 1. Stories Section */}
         <section className="px-4 py-6 border-b border-gray-50">
           <div className="flex items-center gap-5 overflow-x-auto no-scrollbar pb-2">
-            {/* Current User Story */}
-            <div className="flex flex-col items-center flex-shrink-0 gap-2">
-              <div className="relative w-16 h-16 rounded-full p-[2px] bg-white ring-2 ring-gray-100">
-                <img
-                  alt="User profile"
-                  className="w-full h-full rounded-full object-cover"
-                  src={user?.photoURL || "https://lh3.googleusercontent.com/a/default-user"}
-                />
-                <div className="absolute bottom-0 right-0 bg-[#0061ff] text-white rounded-full w-5 h-5 flex items-center justify-center border-2 border-white shadow-sm">
-                  <span className="material-symbols-outlined text-[14px]">add</span>
-                </div>
-              </div>
-              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-tight">Your Story</span>
-            </div>
-            
-            {/* Placeholder Stories (matching screenshot) */}
-            {[
-              { name: 'Marcus', img: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=200&h=200&fit=crop' },
-              { name: 'Elena', img: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop' },
-              { name: 'Julian', img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop' },
-              { name: 'Sarah', img: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop' },
-            ].map((story, i) => (
-              <div key={i} className="flex flex-col items-center flex-shrink-0 gap-2">
-                <div className="w-16 h-16 rounded-full p-[2px] bg-white ring-2 ring-primary/40">
+            {sortedStories.map((story, i) => (
+              <div 
+                key={story.userId || i} 
+                className="flex flex-col items-center flex-shrink-0 gap-2 relative group"
+                onMouseDown={(e) => handleTouchStart(story.userId, e)}
+                onMouseUp={handleTouchEnd}
+                onMouseLeave={handleTouchEnd}
+                onTouchStart={(e) => handleTouchStart(story.userId, e)}
+                onTouchEnd={handleTouchEnd}
+              >
+                <div className={`relative w-16 h-16 rounded-full p-[2px] bg-white ring-2 ${story.hasUnread ? 'ring-[#0061ff]' : 'ring-gray-100'} transition-all group-active:scale-95`}>
                   <img
-                    alt={story.name}
+                    alt={story.userName}
                     className="w-full h-full rounded-full object-cover"
-                    src={story.img}
+                    src={story.userPhoto || "https://lh3.googleusercontent.com/a/default-user"}
                   />
+                  
+                  {/* Pin Badge */}
+                  {((profile as any)?.pinnedUserIds || []).includes(story.userId) && (
+                    <div className="absolute bottom-0 right-0 bg-white shadow-md rounded-full w-5 h-5 flex items-center justify-center border border-gray-100 animate-in zoom-in">
+                      <span className="material-symbols-outlined text-[12px] text-primary font-bold">push_pin</span>
+                    </div>
+                  )}
+
+                  {/* Add Story Badge for Self */}
+                  {story.isSelf && (
+                    <div className="absolute bottom-0 right-0 bg-[#0061ff] text-white rounded-full w-5 h-5 flex items-center justify-center border-2 border-white shadow-sm">
+                      <span className="material-symbols-outlined text-[14px]">add</span>
+                    </div>
+                  )}
                 </div>
-                <span className="text-[10px] font-bold text-gray-900 uppercase tracking-tight">{story.name}</span>
+                <span className={`text-[10px] font-bold ${story.hasUnread ? 'text-gray-900' : 'text-gray-500'} uppercase tracking-tight truncate max-w-[64px]`}>
+                  {story.userName}
+                </span>
               </div>
             ))}
           </div>

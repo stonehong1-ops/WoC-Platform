@@ -9,5 +9,13 @@ service cloud.firestore {
       allow read: if true;
       allow write: if true;
     }
+    match /plaza/{postId} {
+      allow read: if true;
+      allow write: if true;
+      match /comments/{commentId} {
+        allow read: if true;
+        allow write: if true;
+      }
+    }
   }
 }
