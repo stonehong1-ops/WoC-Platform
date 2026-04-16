@@ -204,7 +204,7 @@ export default function PlazaPage() {
         </AnimatePresence>
 
         {/* 1. Stories Section */}
-        <section className="px-4 py-6 border-b border-gray-50">
+        <section className="px-4 pt-2 pb-6 border-b border-gray-50">
           <div className="flex items-center gap-5 overflow-x-auto no-scrollbar pb-2">
             {sortedStories.map((story, i) => (
               <div 
