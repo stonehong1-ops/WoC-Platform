@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from '@/components/providers/LocationProvider';
 import { db } from '@/lib/firebase/clientApp';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { CITY_COORDINATES, DEFAULT_COORDINATES } from '@/lib/constants/locations';
 
 interface Venue {
   id: string;
@@ -108,7 +109,11 @@ export default function MapComponent({ onRegisterOpen, isLoaded }: { onRegisterO
         {isLoaded ? (
           <GoogleMap
             mapContainerStyle={mapContainerStyle}
-            center={{ lat: location?.latitude || 37.5575, lng: location?.longitude || 126.9244 }}
+            center={
+              location?.city 
+              ? (CITY_COORDINATES[location.city.toUpperCase() as keyof typeof CITY_COORDINATES] || DEFAULT_COORDINATES)
+              : DEFAULT_COORDINATES
+            }
             zoom={14}
             onLoad={setMap}
             options={{ disableDefaultUI: true, mapId: "425069951fef97d91810ab94", gestureHandling: 'greedy' }}
