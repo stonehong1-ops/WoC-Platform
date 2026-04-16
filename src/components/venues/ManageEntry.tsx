@@ -9,6 +9,7 @@ import { GoogleMap, Autocomplete, Marker } from '@react-google-maps/api';
 interface ManageEntryProps {
   isOpen: boolean;
   onClose: () => void;
+  isLoaded: boolean;
 }
 
 const mapContainerStyle = {
@@ -18,7 +19,7 @@ const mapContainerStyle = {
   marginTop: '12px'
 };
 
-export default function ManageEntry({ isOpen, onClose }: ManageEntryProps) {
+export default function ManageEntry({ isOpen, onClose, isLoaded }: ManageEntryProps) {
   const { location } = useLocation();
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
   const [formData, setFormData] = useState({
@@ -123,8 +124,8 @@ export default function ManageEntry({ isOpen, onClose }: ManageEntryProps) {
         category: formData.categories[0], 
         address: formData.address,
         detailAddress: formData.detailAddress,
-        city: formData.city.toUpperCase() || location.city.toUpperCase(),
-        country: formData.country.toUpperCase() || location.country.toUpperCase(),
+        city: formData.city.toUpperCase() || location?.city?.toUpperCase() || '',
+        country: formData.country.toUpperCase() || location?.country?.toUpperCase() || '',
         coordinates: {
           latitude: Number(formData.latitude),
           longitude: Number(formData.longitude)
@@ -198,29 +199,37 @@ export default function ManageEntry({ isOpen, onClose }: ManageEntryProps) {
             <div className="space-y-5">
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase text-on-surface-variant ml-1 tracking-widest block">Search Address & Adjust Pin</label>
-                <Autocomplete onLoad={onLoad} onPlaceChanged={onPlaceChanged}>
-                  <input type="text" value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} placeholder="Start typing address..." className="w-full bg-on-surface-variant/[0.06] border-none rounded-2xl p-4 text-[14px] font-bold focus:ring-1 focus:ring-primary/30 border-2 border-primary/20" required />
-                </Autocomplete>
-                
-                <GoogleMap
-                  mapContainerStyle={mapContainerStyle}
-                  center={{ lat: formData.latitude, lng: formData.longitude }}
-                  zoom={17}
-                  options={{ 
-                    disableDefaultUI: true, 
-                    zoomControl: false,
-                    styles: [
-                      { elementType: "geometry", stylers: [{ color: "#f5f5f5" }] },
-                      { elementType: "labels.icon", stylers: [{ visibility: "off" }] }
-                    ]
-                  }}
-                >
-                  <Marker
-                    position={{ lat: formData.latitude, lng: formData.longitude }}
-                    draggable={true}
-                    onDragEnd={onMarkerDragEnd}
-                  />
-                </GoogleMap>
+                {isLoaded ? (
+                  <>
+                    <Autocomplete onLoad={onLoad} onPlaceChanged={onPlaceChanged}>
+                      <input type="text" value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} placeholder="Start typing address..." className="w-full bg-on-surface-variant/[0.06] border-none rounded-2xl p-4 text-[14px] font-bold focus:ring-1 focus:ring-primary/30 border-2 border-primary/20" required />
+                    </Autocomplete>
+                    
+                    <GoogleMap
+                      mapContainerStyle={mapContainerStyle}
+                      center={{ lat: formData.latitude, lng: formData.longitude }}
+                      zoom={17}
+                      options={{ 
+                        disableDefaultUI: true, 
+                        zoomControl: false,
+                        styles: [
+                          { elementType: "geometry", stylers: [{ color: "#f5f5f5" }] },
+                          { elementType: "labels.icon", stylers: [{ visibility: "off" }] }
+                        ]
+                      }}
+                    >
+                      <Marker
+                        position={{ lat: formData.latitude, lng: formData.longitude }}
+                        draggable={true}
+                        onDragEnd={onMarkerDragEnd}
+                      />
+                    </GoogleMap>
+                  </>
+                ) : (
+                  <div className="w-full h-[280px] bg-[#e8eff0] rounded-2xl flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#005BC0]"></div>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 gap-6">

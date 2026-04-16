@@ -48,9 +48,10 @@ export default function VenuesPage() {
   });
 
   const currentCenter = useMemo(() => {
+    if (!location?.city) return DEFAULT_COORDINATES;
     const cityKey = location.city.toUpperCase();
     return CITY_COORDINATES[cityKey] || DEFAULT_COORDINATES;
-  }, [location.city]);
+  }, [location?.city]);
 
   useEffect(() => {
     setLoading(true);
@@ -61,15 +62,19 @@ export default function VenuesPage() {
         ...doc.data()
       })) as Venue[];
       
+      const city = location?.city?.toUpperCase();
       const filtered = venueData.filter(v => 
-        !v.city || v.city.toUpperCase() === location.city.toUpperCase()
+        !city || !v.city || v.city.toUpperCase() === city
       );
       
       setVenues(filtered);
       setLoading(false);
+    }, (error) => {
+      console.error("Firestore error:", error);
+      setLoading(false);
     });
     return () => unsubscribe();
-  }, [location.city]);
+  }, [location?.city]);
 
   const filteredVenues = useMemo(() => {
     return venues.filter(v => {
@@ -84,11 +89,11 @@ export default function VenuesPage() {
   }, [venues, activeCategory, searchTerm]);
 
   useEffect(() => {
-    if (map) {
+    if (map && isLoaded) {
       map.panTo({ lat: currentCenter.lat, lng: currentCenter.lng });
       map.setZoom(currentCenter.zoom);
     }
-  }, [currentCenter, map]);
+  }, [currentCenter, map, isLoaded]);
 
   const onAutocompleteLoad = (auto: google.maps.places.Autocomplete) => {
     setAutocomplete(auto);
@@ -103,7 +108,6 @@ export default function VenuesPage() {
         map?.panTo({ lat, lng });
         map?.setZoom(15);
 
-        // Optionally update global location if the search was a city
         let city = '';
         let country = '';
         place.address_components?.forEach(comp => {
@@ -125,7 +129,7 @@ export default function VenuesPage() {
   return (
     <div className="relative h-screen w-full overflow-hidden bg-[#f4fbfb] select-none">
       
-      {/* Layer 1: Full-screen Map (No Margins) */}
+      {/* Layer 1: Full-screen Map */}
       <div className="absolute inset-0 z-0">
         {isLoaded ? (
           <GoogleMap
@@ -149,33 +153,35 @@ export default function VenuesPage() {
                   map?.panTo({ lat: venue.coordinates.latitude, lng: venue.coordinates.longitude });
                   map?.setZoom(17);
                 }}
-                icon={{
-                  path: google.maps.SymbolPath.CIRCLE,
+                icon={window.google ? {
+                  path: window.google.maps.SymbolPath.CIRCLE,
                   fillColor: selectedVenue?.id === venue.id ? "#005BC0" : "#005BC0",
                   fillOpacity: 1,
                   strokeWeight: selectedVenue?.id === venue.id ? 4 : 2,
                   strokeColor: "#ffffff",
                   scale: selectedVenue?.id === venue.id ? 10 : 7,
-                }}
+                } : undefined}
               />
             ))}
           </GoogleMap>
         ) : (
-          <div className="w-full h-full bg-surface-container flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <div className="w-full h-full bg-[#e8eff0] flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#005BC0]"></div>
           </div>
         )}
       </div>
 
-      {/* Layer 2: Overlay Search & Filters (Adjusted for Header Clearance) */}
+      {/* Layer 2: Overlay Search & Filters */}
       <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[92%] max-w-lg z-20 flex flex-col gap-3 pointer-events-none">
-        {/* Search Bar with Google Autocomplete Integration */}
         <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-[0px_12px_32px_rgba(22,29,30,0.06)] px-5 py-3.5 flex items-center gap-3 pointer-events-auto border border-white/40">
           <span className="material-symbols-outlined text-[#727784] text-[20px]">search</span>
-          <Autocomplete onLoad={onAutocompleteLoad} onPlaceChanged={onPlaceChanged} className="w-full">
+          <Autocomplete 
+            onLoad={onAutocompleteLoad} 
+            onPlaceChanged={onPlaceChanged}
+          >
             <input 
               type="text" 
-              placeholder={`Search anywhere or filter ${location.city.toUpperCase()}...`}
+              placeholder={`Search anywhere or filter ${location?.city?.toUpperCase() || ''}...`}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="bg-transparent border-none focus:ring-0 text-[#2D3435] placeholder:text-[#727784]/60 w-full text-[15px] font-semibold font-body"
@@ -216,7 +222,7 @@ export default function VenuesPage() {
             <div className="flex items-center justify-between mb-5 shrink-0">
               <h2 className="text-[17px] font-bold font-headline tracking-tight text-[#2D3435]">
                 <span className="text-[#005BC0] mr-1">{filteredVenues.length}</span> 
-                Venues in {location.city}
+                Venues in {location?.city || ''}
               </h2>
               <button 
                 onClick={() => setIsEditModalOpen(true)}
@@ -243,7 +249,7 @@ export default function VenuesPage() {
                       : 'bg-[#f4fbfb]/40 border-transparent hover:bg-[#f4fbfb]/80'
                     }`}
                   >
-                    <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-surface-container">
+                    <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-[#e8eff0]">
                       {venue.imageUrl ? (
                         <img src={venue.imageUrl} alt={venue.name} className="w-full h-full object-cover" />
                       ) : (
@@ -281,6 +287,7 @@ export default function VenuesPage() {
       <ManageEntry
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
+        isLoaded={isLoaded}
       />
     </div>
   );
