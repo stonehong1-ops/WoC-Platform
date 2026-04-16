@@ -5,6 +5,7 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { socialService } from '@/lib/firebase/socialService';
 import { Social } from '@/types/social';
 import SocialFilterBottomSheet from '@/components/social/SocialFilterBottomSheet';
+import EditSocialEvent from '@/components/social/EditSocialEvent';
 import { AnimatePresence } from 'framer-motion';
 
 export default function SocialPage() {
@@ -54,6 +55,7 @@ export default function SocialPage() {
     setSelectedFilters(filters);
     setShowFilter(false);
   };
+  const [showEditModal, setShowEditModal] = useState(false);
 
   // Filter Logic
   const filterSocials = (list: Social[]) => {
@@ -75,13 +77,13 @@ export default function SocialPage() {
       `}} />
 
       {/* 1. Search Bar Section */}
-      <section className="w-full sticky top-16 z-40 bg-[#f4fbfb]/90 backdrop-blur-md py-2">
+      <section className="w-full sticky top-16 z-40 bg-[#f4fbfb]/90 backdrop-blur-md py-2 text-left">
         <div className="relative flex items-center w-full bg-white border border-[#dde4e5] rounded-lg px-4 py-3 group focus-within:ring-1 focus-within:ring-primary transition-all shadow-sm">
           <span className="material-symbols-outlined text-outline group-focus-within:text-primary transition-colors">search</span>
           <input 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-transparent border-none focus:ring-0 text-on-surface placeholder:text-outline/60 text-sm font-medium ml-3" 
+            className="w-full bg-transparent border-none focus:ring-0 text-on-surface placeholder:text-outline/60 text-sm font-medium ml-3 outline-none" 
             placeholder="Search organizers or venues..." 
             type="text"
           />
@@ -125,7 +127,7 @@ export default function SocialPage() {
       </section>
 
       {/* 3. Popup & Daily Socials */}
-      <section className="space-y-6 animate-in fade-in slide-in-from-bottom-8 duration-700">
+      <section className="space-y-6 animate-in fade-in slide-in-from-bottom-8 duration-700 text-left">
         <h2 className="text-2xl font-extrabold text-on-surface tracking-tight font-headline">Daily & Popup Socials</h2>
         
         {/* Weekly Calendar Filter */}
@@ -160,7 +162,7 @@ export default function SocialPage() {
           ) : (
             filterSocials(dailySocials).map(social => (
               <div key={social.id} className="flex items-center gap-6 p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-all border border-gray-50 animate-in fade-in slide-in-from-left-4 duration-500">
-                <div className="flex flex-col items-center justify-center w-20 h-20 bg-[#f4fbfb] rounded-lg border-l-4 border-primary shrink-0">
+                <div className="flex flex-col items-center justify-center w-20 h-20 bg-[#F4FBFB] rounded-lg border-l-4 border-primary shrink-0">
                   <span className="text-xs font-bold text-on-surface-variant uppercase tracking-tighter">
                     {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date(social.date ? social.date.toDate() : new Date()).getDay()]}
                   </span>
@@ -189,6 +191,14 @@ export default function SocialPage() {
         </div>
       </section>
 
+      {/* 4. Global Social Management FAB */}
+      <button 
+        onClick={() => setShowEditModal(true)}
+        className="fixed bottom-10 right-10 w-20 h-20 bg-[#1f1f1f] text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 hover:bg-primary active:scale-95 transition-all z-50 group shadow-primary/20"
+      >
+        <span className="material-symbols-outlined text-[36px] group-hover:rotate-90 transition-transform duration-300">add</span>
+      </button>
+
       {/* Filter Bottom Sheet */}
       <AnimatePresence>
         {showFilter && (
@@ -197,6 +207,16 @@ export default function SocialPage() {
             onApply={handleApplyFilter}
             selectedOrganizers={selectedFilters.organizers}
             selectedVenues={selectedFilters.venues}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Edit/Create Social Modal */}
+      <AnimatePresence>
+        {showEditModal && (
+          <EditSocialEvent 
+            onClose={() => setShowEditModal(false)}
+            onSuccess={() => {}}
           />
         )}
       </AnimatePresence>
