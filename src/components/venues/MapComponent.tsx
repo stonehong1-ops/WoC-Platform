@@ -25,6 +25,7 @@ export default function MapComponent({ onRegisterOpen, isLoaded }: { onRegisterO
   const { location } = useLocation();
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
+  const [bounds, setBounds] = useState<google.maps.LatLngBounds | null>(null);
   const [venues, setVenues] = useState<Venue[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
@@ -32,21 +33,28 @@ export default function MapComponent({ onRegisterOpen, isLoaded }: { onRegisterO
   const categories = ['All', 'Studio', 'Academy', 'Club', 'Shop', 'Cafe', 'Eats', 'Beauty', 'Stay', 'Other'];
 
   useEffect(() => {
-    if (!location?.city) return;
-    const q = query(collection(db, "venues"), where("city", "==", location.city.toUpperCase()));
+    // Fetch all active venues globally to allow seamless discovery across bounds
+    const q = query(collection(db, "venues"), where("status", "==", "active"));
     return onSnapshot(q, (snapshot) => {
       const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Venue));
       setVenues(docs.filter(v => v.coordinates?.latitude && v.coordinates?.longitude));
     });
-  }, [location?.city]);
+  }, []);
 
   const filteredVenues = useMemo(() => {
     return venues.filter(v => {
+      // 1. Logic: Current Viewport Bounds check
+      if (bounds && !bounds.contains({ lat: v.coordinates.latitude, lng: v.coordinates.longitude })) return false;
+
+      // 2. Category Filter
       const matchCat = activeCategory === 'All' || v.category === activeCategory;
+
+      // 3. Search Term Filter
       const matchSearch = v.name.toLowerCase().includes(searchTerm.toLowerCase()) || v.address.toLowerCase().includes(searchTerm.toLowerCase());
+
       return matchCat && matchSearch;
     });
-  }, [venues, activeCategory, searchTerm]);
+  }, [venues, activeCategory, searchTerm, bounds]);
 
   const handleEnterKey = () => {
     if (!searchTerm) return;
@@ -137,7 +145,13 @@ export default function MapComponent({ onRegisterOpen, isLoaded }: { onRegisterO
               : DEFAULT_COORDINATES
             }
             zoom={14}
-            onLoad={setMap}
+            onLoad={(m) => {
+              setMap(m);
+              setBounds(m.getBounds());
+            }}
+            onBoundsChanged={() => {
+              if (map) setBounds(map.getBounds());
+            }}
             options={{ disableDefaultUI: true, mapId: "425069951fef97d91810ab94", gestureHandling: 'greedy' }}
           >
             {filteredVenues.map((v) => (
@@ -148,13 +162,13 @@ export default function MapComponent({ onRegisterOpen, isLoaded }: { onRegisterO
       </div>
 
       {/* Layer 2: Bottom Sheet - Venue List */}
-      <motion.div initial={{ y: "65dvh" }} animate={{ y: "65dvh" }} drag="y" dragConstraints={{ top: 0, bottom: 0 }} dragElastic={0.05} style={{ height: '100dvh', top: '15dvh' }} className="absolute left-0 w-full z-40">
+      <motion.div initial={{ y: "85dvh" }} animate={{ y: "65dvh" }} drag="y" dragConstraints={{ top: 0, bottom: 0 }} dragElastic={0.05} style={{ height: '100dvh', top: '15dvh' }} className="absolute left-0 w-full z-40">
         <div className="h-full bg-white rounded-t-[2.5rem] shadow-[0px_-20px_48px_rgba(22,29,30,0.1)] flex flex-col pt-3 border-t border-white/40">
           <div className="w-12 h-1.5 bg-[#e8eff0] rounded-full mx-auto mb-7 shrink-0 cursor-grab active:cursor-grabbing"></div>
           <div className="px-6 flex flex-col h-full overflow-hidden">
             <div className="flex items-center justify-between mb-6 shrink-0">
               <h2 className="text-[17px] font-bold font-headline tracking-tighter text-[#2D3435] uppercase">
-                <span className="text-[#005BC0] mr-1">{filteredVenues.length}</span> Venues in {location?.city || ''}
+                <span className="text-[#005BC0] mr-1">{filteredVenues.length}</span> Venues in View
               </h2>
               <button onClick={onRegisterOpen} className="bg-[#005BC0] text-white px-6 py-3 rounded-2xl flex items-center gap-2 shadow-[0_8px_16px_rgba(0,91,192,0.25)] active:scale-90 transition-all z-10">
                 <span className="material-symbols-outlined text-[18px]">add</span>
