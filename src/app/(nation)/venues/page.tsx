@@ -16,6 +16,7 @@ interface Venue {
   category: string;
   categories?: string[];
   address: string;
+  detailAddress?: string;
   city: string;
   country: string;
   coordinates: {
