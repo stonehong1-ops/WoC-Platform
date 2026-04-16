@@ -29,6 +29,7 @@ export default function MapComponent({ onRegisterOpen, isLoaded }: { onRegisterO
   const [venues, setVenues] = useState<Venue[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const categories = ['All', 'Studio', 'Academy', 'Club', 'Shop', 'Cafe', 'Eats', 'Beauty', 'Stay', 'Other'];
 
@@ -161,22 +162,45 @@ export default function MapComponent({ onRegisterOpen, isLoaded }: { onRegisterO
         ) : <div className="w-full h-full flex items-center justify-center bg-[#f4fbfb]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#005BC0]"></div></div>}
       </div>
 
-      {/* Layer 2: Bottom Sheet - Venue List */}
-      <motion.div initial={{ y: "85dvh" }} animate={{ y: "65dvh" }} drag="y" dragConstraints={{ top: 0, bottom: 0 }} dragElastic={0.05} style={{ height: '100dvh', top: '15dvh' }} className="absolute left-0 w-full z-40">
-        <div className="h-full bg-white rounded-t-[2.5rem] shadow-[0px_-20px_48px_rgba(22,29,30,0.1)] flex flex-col pt-3 border-t border-white/40">
-          <div className="w-12 h-1.5 bg-[#e8eff0] rounded-full mx-auto mb-7 shrink-0 cursor-grab active:cursor-grabbing"></div>
-          <div className="px-6 flex flex-col h-full overflow-hidden">
+      {/* Layer 2: Bottom Sheet - Dynamic Sizing (40% to 70%) */}
+      <motion.div 
+        initial={{ y: "100dvh" }} 
+        animate={{ y: isExpanded ? "30dvh" : "60dvh" }} 
+        transition={{ type: "spring", damping: 25, stiffness: 200 }}
+        drag="y" 
+        dragConstraints={{ top: 0, bottom: 500 }} 
+        dragElastic={0.1}
+        onDragEnd={(_, info) => {
+          if (info.offset.y < -50) setIsExpanded(true);
+          else if (info.offset.y > 50) setIsExpanded(false);
+          else if (info.point.y < window.innerHeight * 0.45) setIsExpanded(true);
+          else setIsExpanded(false);
+        }}
+        className="absolute left-0 w-full z-40 h-[100dvh]"
+      >
+        <div 
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="h-full bg-white rounded-t-[2.5rem] shadow-[0px_-24px_64px_rgba(22,29,30,0.18)] flex flex-col pt-3 border-t border-white/60 cursor-pointer overflow-hidden"
+        >
+          <div className="w-12 h-1.5 bg-[#e8eff0] rounded-full mx-auto mb-7 shrink-0"></div>
+          <div className="px-6 flex flex-col h-full overflow-hidden" onClick={(e) => isExpanded && e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6 shrink-0">
               <h2 className="text-[17px] font-bold font-headline tracking-tighter text-[#2D3435] uppercase">
                 <span className="text-[#005BC0] mr-1">{filteredVenues.length}</span> Venues in View
               </h2>
-              <button onClick={onRegisterOpen} className="bg-[#005BC0] text-white px-6 py-3 rounded-2xl flex items-center gap-2 shadow-[0_8px_16px_rgba(0,91,192,0.25)] active:scale-90 transition-all z-10">
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRegisterOpen();
+                }} 
+                className="bg-[#005BC0] text-white px-6 py-3 rounded-2xl flex items-center gap-2 shadow-[0_8px_16px_rgba(0,91,192,0.25)] active:scale-90 transition-all z-10"
+              >
                 <span className="material-symbols-outlined text-[18px]">add</span>
                 <span className="text-[12px] font-black uppercase tracking-widest">Register</span>
               </button>
             </div>
             
-            <div className="flex-grow overflow-y-auto no-scrollbar pb-40">
+            <div className="flex-grow overflow-y-auto no-scrollbar pb-60">
               <div className="grid grid-cols-1 gap-3">
                 {filteredVenues.map((v) => (
                   <button key={v.id} onClick={() => { map?.panTo({ lat: v.coordinates.latitude, lng: v.coordinates.longitude }); map?.setZoom(17); }} className="flex items-center gap-4 p-4 bg-[#f4fbfb] hover:bg-[#eef5f6] rounded-2xl border border-transparent hover:border-[#dde4e5] transition-all group text-left">
