@@ -153,7 +153,7 @@ export default function ManageEntry({ isOpen, onClose, isLoaded }: ManageEntryPr
         category: formData.categories[0], 
         address: formData.address,
         detailAddress: formData.detailAddress,
-        city: (formData.city || '').toUpperCase(),
+        city: (location.city || '').toUpperCase(),
         country: (formData.country || '').toUpperCase(),
         zone: formData.zone,
         coordinates: { latitude: Number(formData.latitude), longitude: Number(formData.longitude) },
