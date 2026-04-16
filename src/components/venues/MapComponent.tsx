@@ -29,7 +29,7 @@ export default function MapComponent({ onRegisterOpen, isLoaded }: { onRegisterO
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
 
-  const categories = ['All', 'Studio', 'Academy', 'Club', 'Shop', 'Cafe', 'Eats', 'Beauty', 'Stay'];
+  const categories = ['All', 'Studio', 'Academy', 'Club', 'Shop', 'Cafe', 'Eats', 'Beauty', 'Stay', 'Other'];
 
   useEffect(() => {
     if (!location?.city) return;
