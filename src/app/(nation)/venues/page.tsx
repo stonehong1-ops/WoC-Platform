@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
 import { db } from '@/lib/firebase/clientApp';
-import { collection, query, orderBy, onSnapshot, where } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { useLocation } from '@/components/providers/LocationProvider';
 import { CITY_COORDINATES, DEFAULT_COORDINATES } from '@/lib/constants/locations';
 import PageWrapper from '@/components/layout/PageWrapper';
 import ManageEntry from '@/components/venues/ManageEntry';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Venue {
   id: string;
@@ -25,36 +26,10 @@ interface Venue {
   };
   description?: string;
   imageUrl?: string;
+  ownerName?: string;
 }
 
-const mapContainerStyle = {
-  width: '100%',
-  height: '100%'
-};
-
 const libraries: ("places" | "drawing" | "geometry" | "visualization")[] = ["places"];
-
-// Editorial Map Style (Silver/Clean)
-const MAP_OPTIONS = {
-  disableDefaultUI: true,
-  zoomControl: false,
-  styles: [
-    { elementType: "geometry", stylers: [{ color: "#f5f5f5" }] },
-    { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
-    { elementType: "labels.text.fill", stylers: [{ color: "#616161" }] },
-    { elementType: "labels.text.stroke", stylers: [{ color: "#f5f5f5" }] },
-    { featureType: "administrative.land_parcel", elementType: "labels.text.fill", stylers: [{ color: "#bdbdbd" }] },
-    { featureType: "poi", elementType: "geometry", stylers: [{ color: "#eeeeee" }] },
-    { featureType: "poi", elementType: "labels.text.fill", stylers: [{ color: "#757575" }] },
-    { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#e5e5e5" }] },
-    { featureType: "road", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
-    { featureType: "road.arterial", elementType: "labels.text.fill", stylers: [{ color: "#757575" }] },
-    { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#dadada" }] },
-    { featureType: "road.highway", elementType: "labels.text.fill", stylers: [{ color: "#616161" }] },
-    { featureType: "water", elementType: "geometry", stylers: [{ color: "#c9c9c9" }] },
-    { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#9e9e9e" }] },
-  ]
-};
 
 export default function VenuesPage() {
   const { location } = useLocation();
@@ -72,26 +47,20 @@ export default function VenuesPage() {
     libraries
   });
 
-  // Center based on global location
   const currentCenter = useMemo(() => {
     const cityKey = location.city.toUpperCase();
     return CITY_COORDINATES[cityKey] || DEFAULT_COORDINATES;
   }, [location.city]);
 
-  // Fetch Venues filtered by City/Country
   useEffect(() => {
     setLoading(true);
-    // Note: In a real production app, we query by city/country fields.
-    // To handle initial legacy data, we fetch all first but ideally use 'where("city", "==", location.city)'
     const q = query(collection(db, "venues"), orderBy("createdAt", "desc"));
-    
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const venueData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as Venue[];
       
-      // Client-side filtering for city if fields are missing, or strict filtering if present
       const filtered = venueData.filter(v => 
         !v.city || v.city.toUpperCase() === location.city.toUpperCase()
       );
@@ -99,11 +68,9 @@ export default function VenuesPage() {
       setVenues(filtered);
       setLoading(false);
     });
-
     return () => unsubscribe();
-  }, [location.city, location.country]);
+  }, [location.city]);
 
-  // Secondary Filter Logic (Category & Search)
   const filteredVenues = useMemo(() => {
     return venues.filter(v => {
       const matchCategory = activeCategory === 'All' || 
@@ -116,7 +83,6 @@ export default function VenuesPage() {
     });
   }, [venues, activeCategory, searchTerm]);
 
-  // Pan to center when location changes
   useEffect(() => {
     if (map) {
       map.panTo({ lat: currentCenter.lat, lng: currentCenter.lng });
@@ -124,43 +90,79 @@ export default function VenuesPage() {
     }
   }, [currentCenter, map]);
 
-  const categories = ['All', 'Studio', 'Academy', 'Club', 'Shop', 'Service', 'Other'];
+  const categories = ['All', 'Studio', 'Academy', 'Club', 'Shop', 'Service', 'Stay'];
 
   if (loadError) return <div className="p-10 text-center">Error loading maps. Check API Key.</div>;
 
   return (
     <PageWrapper>
-      <div className="flex flex-col h-[calc(100vh-72px)] bg-surface font-manrope overflow-hidden pb-[72px]">
-        {/* Editorial Header */}
-        <div className="bg-white px-6 pt-5 pb-5 shrink-0">
-          <div className="flex justify-between items-baseline mb-5">
-            <div>
-              <span className="text-[10px] font-black tracking-[0.2em] text-primary uppercase mb-1 block">Spaces in</span>
-              <h1 className="text-3xl font-black text-on-surface tracking-tighter uppercase">{location.city}</h1>
+      <div className="relative h-[calc(100vh-72px)] w-full overflow-hidden bg-[#f4fbfb] select-none">
+        
+        {/* Layer 1: Full-screen Map */}
+        <div className="absolute inset-0 z-0">
+          {isLoaded ? (
+            <GoogleMap
+              mapContainerStyle={{ width: '100%', height: '100%' }}
+              center={{ lat: currentCenter.lat, lng: currentCenter.lng }}
+              zoom={currentCenter.zoom}
+              onLoad={(m) => setMap(m)}
+              options={{
+                disableDefaultUI: true,
+                zoomControl: false,
+                mapId: "425069951fef97d91810ab94",
+                gestureHandling: 'greedy'
+              }}
+            >
+              {filteredVenues.map((venue) => (
+                <Marker
+                  key={venue.id}
+                  position={{ lat: venue.coordinates.latitude, lng: venue.coordinates.longitude }}
+                  onClick={() => {
+                    setSelectedVenue(venue);
+                    map?.panTo({ lat: venue.coordinates.latitude, lng: venue.coordinates.longitude });
+                  }}
+                  icon={{
+                    path: google.maps.SymbolPath.CIRCLE,
+                    fillColor: selectedVenue?.id === venue.id ? "#005BC0" : "#005BC0",
+                    fillOpacity: 1,
+                    strokeWeight: selectedVenue?.id === venue.id ? 4 : 2,
+                    strokeColor: "#ffffff",
+                    scale: selectedVenue?.id === venue.id ? 10 : 7,
+                  }}
+                />
+              ))}
+            </GoogleMap>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-surface-container">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
-            <span className="text-[12px] font-bold text-on-surface/30">{filteredVenues.length} Results</span>
-          </div>
+          )}
+        </div>
 
-          <div className="relative mb-6">
-            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface/20 text-xl">search</span>
+        {/* Layer 2: Overlay Search & Filters */}
+        <div className="absolute top-6 left-1/2 -translate-x-1/2 w-[92%] max-w-lg z-20 flex flex-col gap-3 pointer-events-none">
+          {/* Search Bar */}
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-[0px_12px_32px_rgba(22,29,30,0.06)] px-5 py-3.5 flex items-center gap-3 pointer-events-auto border border-white/40">
+            <span className="material-symbols-outlined text-[#727784] text-[20px]">search</span>
             <input 
               type="text" 
-              placeholder={`Search around ${location.city}...`}
+              placeholder={`Search around ${location.city.toUpperCase()}...`}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-on-surface-variant/[0.06] border-none rounded-2xl py-4 pl-12 pr-4 text-[14px] focus:ring-1 focus:ring-primary/30 transition-all font-bold placeholder:text-on-surface-variant"
+              className="bg-transparent border-none focus:ring-0 text-[#2D3435] placeholder:text-[#727784]/60 w-full text-[15px] font-semibold font-body"
             />
           </div>
-
-          <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar shrink-0">
+          
+          {/* Subtle Filters */}
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar px-1 pointer-events-auto">
             {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className={`flex-shrink-0 px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${
+                className={`flex-shrink-0 px-4 py-1.5 rounded-full text-[12px] font-bold transition-all border ${
                   activeCategory === cat 
-                  ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]' 
-                  : 'bg-on-surface/[0.03] text-on-surface/40 hover:text-on-surface'
+                  ? 'bg-[#005BC0] text-white border-[#005BC0] shadow-md' 
+                  : 'bg-white/40 backdrop-blur-sm text-[#2D3435]/80 border-white/20 hover:bg-white/60'
                 }`}
               >
                 {cat}
@@ -169,119 +171,90 @@ export default function VenuesPage() {
           </div>
         </div>
 
-        {/* Map View */}
-        <div className="relative flex-grow bg-on-surface/[0.02] border-t border-on-surface/[0.05]">
-          {isLoaded ? (
-            <GoogleMap
-              mapContainerStyle={mapContainerStyle}
-              center={{ lat: currentCenter.lat, lng: currentCenter.lng }}
-              zoom={currentCenter.zoom}
-              onLoad={(m) => setMap(m)}
-              options={{
-                disableDefaultUI: true,
-                zoomControl: false,
-                mapId: "425069951fef97d91810ab94"
-              }}
-            >
-              {filteredVenues.map((venue) => (
-                <Marker
-                  key={venue.id}
-                  position={{ lat: venue.coordinates.latitude, lng: venue.coordinates.longitude }}
-                  onClick={() => setSelectedVenue(venue)}
-                  icon={{
-                    path: google.maps.SymbolPath.CIRCLE,
-                    fillColor: selectedVenue?.id === venue.id ? "#0061ff" : "#ffffff",
-                    fillOpacity: 1,
-                    strokeWeight: 4,
-                    strokeColor: selectedVenue?.id === venue.id ? "#ffffff" : "#0061ff",
-                    scale: selectedVenue?.id === venue.id ? 10 : 7,
-                  }}
-                />
-              ))}
+        {/* Layer 3: Draggable Bottom Sheet */}
+        <motion.div 
+          initial={{ y: "65%" }}
+          animate={{ y: "65%" }}
+          drag="y"
+          dragConstraints={{ top: 0, bottom: 0 }}
+          dragElastic={0.05}
+          onDrag={(e, info) => {
+            // Drag logic for full expansion if needed
+          }}
+          style={{ height: '100%', top: '15%' }}
+          className="absolute left-0 w-full z-40"
+        >
+          <div className="h-full bg-white/95 backdrop-blur-xl rounded-t-[2.5rem] shadow-[0px_-12px_32px_rgba(22,29,30,0.06)] flex flex-col pt-3 border-t border-white/40">
+            {/* Grab Handle */}
+            <div className="w-12 h-1.5 bg-[#dde4e5] rounded-full mx-auto mb-6 shrink-0"></div>
 
-              {selectedVenue && (
-                <InfoWindow
-                  position={{ lat: selectedVenue.coordinates.latitude, lng: selectedVenue.coordinates.longitude }}
-                  onCloseClick={() => setSelectedVenue(null)}
+            <div className="px-6 flex flex-col h-full overflow-hidden">
+              {/* Bottom Sheet Header */}
+              <div className="flex items-center justify-between mb-5 shrink-0">
+                <h2 className="text-[17px] font-bold font-headline tracking-tight text-[#2D3435]">
+                  <span className="text-[#005BC0] mr-1">{filteredVenues.length}</span> 
+                  Venues found
+                </h2>
+                <button 
+                  onClick={() => setIsEditModalOpen(true)}
+                  className="bg-[#005BC0] text-white px-4 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm active:scale-95 transition-all"
                 >
-                  <div className="p-4 min-w-[220px] bg-white rounded-3xl font-manrope border-none shadow-none">
-                    <span className="text-[9px] font-black text-primary uppercase tracking-widest mb-1 block">{selectedVenue.category}</span>
-                    <h3 className="font-black text-lg text-on-surface leading-tight uppercase tracking-tighter mb-1">{selectedVenue.name}</h3>
-                    <p className="text-[11px] text-on-surface-variant flex items-start gap-2 font-bold mb-4">
-                      <div className="w-6 h-6 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-                        <span className="material-symbols-outlined text-[14px] text-primary">location_on</span>
-                      </div>
-                      {selectedVenue.address} {selectedVenue.detailAddress}
-                    </p>
-                    <button 
-                      className="w-full py-3 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-primary/20 active:scale-95"
-                      onClick={() => setSelectedVenue(selectedVenue)}
-                    >
-                      View Profile
-                    </button>
-                  </div>
-                </InfoWindow>
-              )}
-            </GoogleMap>
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-          )}
-        </div>
+                  <span className="material-symbols-outlined text-[18px]">add</span>
+                  <span className="text-[11px] font-bold">Register</span>
+                </button>
+              </div>
 
-        {/* Horizontal Venue List (Editorial Style) */}
-        <div className="bg-white border-t border-on-surface/[0.05] pt-5 pb-8 shrink-0">
-          <div className="px-6 flex justify-between items-center mb-4">
-            <h2 className="text-[14px] font-black text-on-surface uppercase tracking-tight">Community Spaces</h2>
-            <button 
-              onClick={() => setIsEditModalOpen(true)}
-              className="px-4 py-2 bg-secondary text-primary rounded-full text-[11px] font-black uppercase tracking-widest flex items-center gap-1.5 transition-all active:scale-95"
-            >
-              <span className="material-symbols-outlined text-sm">add</span>
-              Register
-            </button>
-          </div>
-          
-          <div className="flex gap-4 overflow-x-auto px-6 no-scrollbar">
-            {filteredVenues.map((venue) => (
-              <div 
-                key={venue.id}
-                onClick={() => {
-                  setSelectedVenue(venue);
-                  map?.panTo({ lat: venue.coordinates.latitude, lng: venue.coordinates.longitude });
-                }}
-                className={`flex-shrink-0 w-[280px] p-4 rounded-[28px] border transition-all active:scale-[0.98] ${
-                  selectedVenue?.id === venue.id 
-                  ? 'border-primary bg-primary/[0.02]' 
-                  : 'border-on-surface/[0.05] bg-on-surface/[0.01] hover:border-on-surface/20'
-                }`}
-              >
-                <div className="flex gap-4">
-                  <div className="w-20 h-20 rounded-2xl bg-on-surface/[0.05] overflow-hidden shrink-0">
-                    {venue.imageUrl ? (
-                      <img src={venue.imageUrl} alt={venue.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-on-surface/10">
-                        <span className="material-symbols-outlined text-3xl">image</span>
+              {/* Venue List */}
+              <div className="flex-grow overflow-y-auto no-scrollbar pb-32">
+                <div className="space-y-3">
+                  {filteredVenues.map((venue) => (
+                    <div 
+                      key={venue.id}
+                      onClick={() => {
+                        setSelectedVenue(venue);
+                        map?.panTo({ lat: venue.coordinates.latitude, lng: venue.coordinates.longitude });
+                        map?.setZoom(17);
+                      }}
+                      className={`flex items-center gap-3 p-3 rounded-2xl border transition-all active:scale-[0.98] ${
+                        selectedVenue?.id === venue.id 
+                        ? 'bg-[#005BC0]/05 border-[#005BC0]/20' 
+                        : 'bg-[#f4fbfb]/40 border-transparent hover:bg-[#f4fbfb]/80'
+                      }`}
+                    >
+                      <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-surface-container">
+                        {venue.imageUrl ? (
+                          <img src={venue.imageUrl} alt={venue.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-[#727784]/20">
+                            <span className="material-symbols-outlined text-xl">image</span>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                  <div className="min-w-0 flex flex-col justify-center">
-                    <span className="text-[9px] font-black text-primary uppercase tracking-widest mb-1 block">{venue.category}</span>
-                    <h4 className="font-black text-[15px] text-on-surface leading-snug uppercase truncate tracking-tighter">{venue.name}</h4>
-                    <p className="text-[11px] text-on-surface-variant font-bold mt-1 truncate">{venue.address}</p>
-                  </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <h3 className="text-[14px] font-bold text-[#2D3435] truncate uppercase tracking-tight">{venue.name}</h3>
+                          <div className="flex gap-1 shrink-0">
+                            <span className="px-1.5 py-0.5 bg-[#dde4e5] rounded text-[9px] font-bold text-[#424753] uppercase tracking-wider">
+                              {venue.category}
+                            </span>
+                          </div>
+                        </div>
+                        <p className="text-[11px] text-[#727784] font-semibold truncate mt-0.5">
+                          {venue.ownerName || 'Unknown Host'} • {venue.address}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                  {filteredVenues.length === 0 && !loading && (
+                    <div className="py-20 text-center">
+                      <p className="text-[13px] font-bold text-[#2D3435]/20 italic">No venues in this area.</p>
+                    </div>
+                  )}
                 </div>
               </div>
-            ))}
-            {filteredVenues.length === 0 && !loading && (
-              <div className="w-full py-6 text-center text-on-surface/20">
-                <p className="text-[12px] font-bold italic tracking-tight">No spaces registered in {location.city} yet.</p>
-              </div>
-            )}
+            </div>
           </div>
-        </div>
+        </motion.div>
 
         <ManageEntry
           isOpen={isEditModalOpen}
