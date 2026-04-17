@@ -15,6 +15,7 @@ export interface Social {
   endTime: string; // e.g. "23:00"
   date?: Timestamp; // For popups
   dayOfWeek?: number; // 0-6, For regulars
+  recurrence?: string; // e.g. "every", "1st", "2nd", "3rd", "4th", "last"
   description?: string;
   price?: string;
   socialEvents?: string[]; // Titles only

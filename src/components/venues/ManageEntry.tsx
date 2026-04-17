@@ -28,7 +28,7 @@ export default function ManageEntry({ isOpen, onClose, isLoaded }: ManageEntryPr
   
   const [formData, setFormData] = useState({
     name: '',
-    nativeName: '',
+    nameKo: '',
     categories: [] as string[],
     address: '',
     detailAddress: '',
@@ -148,7 +148,7 @@ export default function ManageEntry({ isOpen, onClose, isLoaded }: ManageEntryPr
     try {
       await addDoc(collection(db, "venues"), {
         name: formData.name,
-        nativeName: formData.nativeName,
+        nameKo: formData.nameKo,
         categories: formData.categories,
         category: formData.categories[0], 
         address: formData.address,
@@ -196,8 +196,8 @@ export default function ManageEntry({ isOpen, onClose, isLoaded }: ManageEntryPr
               <input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="e.g. Blue Horizon Studio" className="w-full bg-[#e8eff0] border-none rounded-xl px-5 py-4 text-[#2D3435] font-bold focus:bg-white focus:ring-2 focus:ring-[#005BC0]/20 transition-all placeholder:text-[#596061]/30 text-[15px]"/>
             </div>
             <div className="group">
-              <label className="block text-[10px] font-bold text-[#596061] mb-2 tracking-widest uppercase">Native Name (Optional)</label>
-              <input type="text" value={formData.nativeName} onChange={(e) => setFormData({...formData, nativeName: e.target.value})} placeholder="예: 블루 호라이즌 스튜디오" className="w-full bg-[#e8eff0] border-none rounded-xl px-5 py-4 text-[#2D3435] font-bold focus:bg-white focus:ring-2 focus:ring-[#005BC0]/20 transition-all placeholder:text-[#596061]/30 text-[15px]"/>
+              <label className="block text-[10px] font-bold text-[#596061] mb-2 tracking-widest uppercase">Korean Name (Optional)</label>
+              <input type="text" value={formData.nameKo} onChange={(e) => setFormData({...formData, nameKo: e.target.value})} placeholder="예: 탱고라이프" className="w-full bg-[#e8eff0] border-none rounded-xl px-5 py-4 text-[#2D3435] font-bold focus:bg-white focus:ring-2 focus:ring-[#005BC0]/20 transition-all placeholder:text-[#596061]/30 text-[15px]"/>
             </div>
           </div>
         </section>

@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Plus, Settings, Search, SlidersHorizontal, ChevronLeft, MapPin } from 'lucide-react';
-import { Venue, venueService } from '@/lib/firebase/venueService';
+import { venueService } from '@/lib/firebase/venueService';
+import { Venue } from '@/types/venue';
 import VenueItem from './VenueItem';
 import VenueForm from './VenueForm';
 

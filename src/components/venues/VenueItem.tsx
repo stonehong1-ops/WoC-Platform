@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Edit2, Trash2, MapPin, Star } from 'lucide-react';
-import { Venue } from '@/lib/firebase/venueService';
+import { Venue } from '@/types/venue';
 
 interface VenueItemProps {
   venue: Venue;

@@ -1,83 +1,47 @@
+import { db } from './config';
 import { 
   collection, 
   addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  doc, 
-  onSnapshot, 
+  getDocs, 
   query, 
-  orderBy,
+  where, 
+  orderBy, 
+  onSnapshot,
   Timestamp,
-  serverTimestamp
+  doc,
+  setDoc,
+  writeBatch
 } from 'firebase/firestore';
-import { db } from './clientApp';
+import { Venue } from '@/types/venue';
 
-export interface Venue {
-  id?: string;
-  name: string;
-  nameNative?: string;
-  category: string;
-  owner: string;
-  isRepresentative?: boolean;
-  contact: string;
-  address: string;
-  coordinates: {
-    lat: number;
-    lng: number;
-  };
-  rating?: number;
-  price?: string;
-  imageUrl?: string;
-  createdAt?: any;
-  updatedAt?: any;
-}
-
-const COLLECTION_NAME = 'venues';
+const VENUES_COLLECTION = 'venues';
 
 export const venueService = {
-  // Add a new venue
-  async addVenue(venue: Omit<Venue, 'id' | 'createdAt' | 'updatedAt'>) {
-    try {
-      const docRef = await addDoc(collection(db, COLLECTION_NAME), {
-        ...venue,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+  // 1. Single Registration
+  async addVenue(venue: Omit<Venue, 'id' | 'createdAt'>) {
+    const docRef = await addDoc(collection(db, VENUES_COLLECTION), {
+      ...venue,
+      createdAt: Timestamp.now(),
+    });
+    return docRef.id;
+  },
+
+  // 2. Batch Registration (For Seed Data)
+  async batchAddVenues(venues: Omit<Venue, 'id' | 'createdAt'>[]) {
+    const batch = writeBatch(db);
+    venues.forEach((v) => {
+      const docRef = doc(collection(db, VENUES_COLLECTION));
+      batch.set(docRef, {
+        ...v,
+        createdAt: Timestamp.now(),
       });
-      return docRef.id;
-    } catch (error) {
-      console.error('Error adding venue: ', error);
-      throw error;
-    }
+    });
+    await batch.commit();
   },
 
-  // Update an existing venue
-  async updateVenue(id: string, venue: Partial<Venue>) {
-    try {
-      const docRef = doc(db, COLLECTION_NAME, id);
-      await updateDoc(docRef, {
-        ...venue,
-        updatedAt: serverTimestamp(),
-      });
-    } catch (error) {
-      console.error('Error updating venue: ', error);
-      throw error;
-    }
-  },
-
-  // Delete a venue
-  async deleteVenue(id: string) {
-    try {
-      const docRef = doc(db, COLLECTION_NAME, id);
-      await deleteDoc(docRef);
-    } catch (error) {
-      console.error('Error deleting venue: ', error);
-      throw error;
-    }
-  },
-
-  // Get all venues with real-time updates
+  // 3. Get All Venues (Real-time)
   subscribeVenues(callback: (venues: Venue[]) => void) {
-    const q = query(collection(db, COLLECTION_NAME), orderBy('createdAt', 'desc'));
+    const q = query(collection(db, VENUES_COLLECTION), orderBy('name', 'asc'));
     return onSnapshot(q, (snapshot) => {
       const venues = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -85,5 +49,31 @@ export const venueService = {
       })) as Venue[];
       callback(venues);
     });
+  },
+
+  // 4. Search Venues by Name
+  async searchVenues(keyword: string) {
+    const q = query(
+      collection(db, VENUES_COLLECTION),
+      where('name', '>=', keyword),
+      where('name', '<=', keyword + '\uf8ff')
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })) as Venue[];
+  },
+
+  // 5. Update Venue
+  async updateVenue(id: string, venue: Partial<Omit<Venue, 'id' | 'createdAt'>>) {
+    const docRef = doc(db, VENUES_COLLECTION, id);
+    await setDoc(docRef, { ...venue }, { merge: true });
+  },
+
+  // 6. Delete Venue
+  async deleteVenue(id: string) {
+    const docRef = doc(db, VENUES_COLLECTION, id);
+    await setDoc(docRef, { status: 'inactive' }, { merge: true }); // Soft delete for safety
   }
 };

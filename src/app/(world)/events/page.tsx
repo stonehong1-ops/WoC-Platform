@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { eventService } from '@/lib/firebase/eventService';
 import { Event } from '@/types/event';
-import { format, isSameDay } from 'date-fns';
+import { format, isSameDay, isAfter, startOfDay } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import CreateEvent from '@/components/events/CreateEvent';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -17,21 +17,31 @@ export default function EventsPage() {
   // Real-time Subscription
   useEffect(() => {
     const unsub = eventService.subscribeEvents((data) => {
-      setEvents(data);
+      // Sort events by startDate
+      const sorted = [...data].sort((a, b) => a.startDate.toMillis() - b.startDate.toMillis());
+      setEvents(sorted);
     });
     return () => unsub();
   }, []);
 
   // Today's events
-  const todayEvents = events.filter(e => {
+  const todayEvents = useMemo(() => events.filter(e => {
     const start = e.startDate.toDate();
     return isSameDay(start, new Date());
-  });
+  }), [events]);
+
+  // Upcoming events (after today)
+  const upcomingEvents = useMemo(() => events.filter(e => {
+    const start = e.startDate.toDate();
+    return isAfter(start, startOfDay(new Date())) && !isSameDay(start, new Date());
+  }), [events]);
 
   const getCategoryColor = (cat: string) => {
     switch(cat) {
       case 'CONFERENCE': return { text: '#1A73E8', bg: '#d8e2ff' };
       case 'WORKSHOP': return { text: '#9f403d', bg: '#fe8983' };
+      case 'PARTY': return { text: '#7b1fa2', bg: '#f3e5f5' };
+      case 'SOCIAL': return { text: '#388e3c', bg: '#e8f5e9' };
       case 'NETWORKING': return { text: '#5b5f64', bg: '#dfe3e8' };
       default: return { text: '#2d3435', bg: '#f2f4f4' };
     }
@@ -55,41 +65,40 @@ export default function EventsPage() {
 
       <main className="max-w-7xl mx-auto px-4 pt-6 pb-24 bg-[#f9f9f9] min-h-screen relative">
         {/* Section: Event Today */}
-        <section className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-headline text-lg font-extrabold tracking-tight text-[#2d3435]">Event Today</h2>
-            <button className="text-[#1A73E8] font-bold text-sm flex items-center gap-1 group">
-              See all 
-              <span className="material-symbols-outlined text-sm font-bold transition-transform group-hover:translate-x-1">arrow_forward</span>
-            </button>
+        <section className="mb-12">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="font-headline text-2xl font-extrabold tracking-tight text-[#2d3435]">Event Today</h2>
+            <div className="h-[1px] flex-grow mx-6 bg-gray-200" />
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{format(new Date(), 'MMMM d, yyyy')}</span>
           </div>
           
           <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar -mx-4 px-4">
             {todayEvents.length === 0 ? (
-              <div className="flex-none w-72 p-8 bg-white border border-dashed border-gray-200 rounded-lg flex flex-col items-center justify-center text-center">
-                <span className="material-symbols-outlined text-gray-200 text-4xl mb-3">event_busy</span>
-                <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest">No Events Today</p>
+              <div className="flex-none w-full max-w-md p-10 bg-white border border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center text-center">
+                <span className="material-symbols-outlined text-gray-200 text-5xl mb-3">event_busy</span>
+                <p className="text-[12px] font-black text-gray-300 uppercase tracking-widest">No Events Scheduled for Today</p>
               </div>
             ) : (
               todayEvents.map(event => {
                 const colors = getCategoryColor(event.category);
                 return (
-                  <div key={event.id} className="flex-none w-72 p-5 bg-white border border-[#ebeeef] rounded-lg shadow-sm hover:shadow-md transition-all cursor-pointer group">
-                    <div className="flex justify-between items-start mb-3">
-                      <span className={`text-[10px] font-bold tracking-widest uppercase px-2 py-0.5 rounded transition-colors`} style={{ color: colors.text, backgroundColor: `${colors.bg}4D` }}>
+                  <div key={event.id} className="flex-none w-80 p-6 bg-white border border-[#ebeeef] rounded-2xl shadow-sm hover:shadow-xl transition-all cursor-pointer group relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-1 h-full" style={{ backgroundColor: colors.text }} />
+                    <div className="flex justify-between items-start mb-4">
+                      <span className={`text-[10px] font-bold tracking-widest uppercase px-2.5 py-1 rounded-full transition-colors`} style={{ color: colors.text, backgroundColor: `${colors.bg}` }}>
                         {event.category}
                       </span>
-                      <span className="material-symbols-outlined text-[#596061] text-base opacity-0 group-hover:opacity-100 transition-opacity">more_horiz</span>
+                      <span className="material-symbols-outlined text-[#596061] text-lg opacity-40 group-hover:opacity-100 transition-opacity">more_horiz</span>
                     </div>
-                    <h3 className="font-headline font-bold text-lg leading-tight mb-3 line-clamp-2">{event.title}</h3>
-                    <div className="flex flex-col gap-2 text-[#596061] text-sm">
+                    <h3 className="font-headline font-bold text-xl leading-tight mb-4 line-clamp-2 text-[#2d3435]">{event.title}</h3>
+                    <div className="flex flex-col gap-3 text-[#596061] text-sm">
                       <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-base">location_on</span>
-                        <span className="truncate">{event.location}</span>
+                        <span className="text-lg">{event.locationEmoji || '📍'}</span>
+                        <span className="truncate font-medium">{event.location}</span>
                       </div>
-                      <div className="flex items-center gap-2 font-bold text-[#2d3435]">
-                        <span className="material-symbols-outlined text-base">calendar_today</span>
-                        <span>{format(event.startDate.toDate(), 'MMM d, yyyy')}</span>
+                      <div className="flex items-center gap-2 font-bold text-[#1A73E8]">
+                        <span className="material-symbols-outlined text-base">schedule</span>
+                        <span>Starts at {format(event.startDate.toDate(), 'HH:mm')}</span>
                       </div>
                     </div>
                   </div>
@@ -99,48 +108,79 @@ export default function EventsPage() {
           </div>
         </section>
 
-        {/* Section: Monthly Calendar (Mocked View for UI Preservation) */}
-        <section className="bg-white border border-[#ebeeef] rounded-lg shadow-sm overflow-hidden mb-12">
-          <div className="flex items-center justify-between p-3 border-b border-[#ebeeef]">
-            <div className="flex items-center gap-2">
-              <button className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"><span className="material-symbols-outlined text-xl text-[#596061]">chevron_left</span></button>
-              <div className="flex items-center gap-1">
-                <h1 className="font-headline text-sm font-extrabold text-[#2d3435]">April,</h1>
-                <span className="font-headline text-sm font-medium text-[#596061]">2026</span>
-              </div>
-              <button className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"><span className="material-symbols-outlined text-xl text-[#596061]">chevron_right</span></button>
-            </div>
-            <div className="flex items-center bg-[#f2f4f4] p-1 rounded-lg segmented-control">
-              <input checked className="hidden" id="view-month" name="view" type="radio" readOnly /><label className="px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded cursor-pointer transition-all" htmlFor="view-month">M</label>
-              <label className="px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded cursor-pointer transition-all" htmlFor="view-week">W</label>
-              <label className="px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded cursor-pointer transition-all" htmlFor="view-day">D</label>
-            </div>
+        {/* Section: Upcoming Highlights */}
+        <section className="mb-12">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="font-headline text-2xl font-extrabold tracking-tight text-[#2d3435]">Upcoming Events</h2>
+            <div className="h-[1px] flex-grow ml-6 bg-gray-200" />
           </div>
 
-          <div className="calendar-grid bg-white border-b border-[#ebeeef] text-center">
-            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
-              <div key={day} className="py-2.5 border-r border-[#ebeeef] last:border-r-0"><span className="text-[10px] font-bold text-[#596061] uppercase tracking-widest">{day}</span></div>
-            ))}
-          </div>
+          {upcomingEvents.length === 0 ? (
+            <div className="p-12 text-center text-gray-400 font-bold uppercase tracking-widest border border-dashed border-gray-200 rounded-2xl">
+              Stay tuned for more events...
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {upcomingEvents.map((event, idx) => {
+                const colors = getCategoryColor(event.category);
+                return (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.05 }}
+                    key={event.id} 
+                    className="p-6 bg-white border border-[#ebeeef] rounded-2xl hover:border-[#1A73E8]/30 hover:shadow-lg transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-black text-[#1A73E8] uppercase tracking-tighter mb-1">
+                          {format(event.startDate.toDate(), 'MMM d')}
+                        </span>
+                        <span className="text-lg font-bold text-[#2d3435]">
+                          {format(event.startDate.toDate(), 'yyyy')}
+                        </span>
+                      </div>
+                      <span className={`text-[9px] font-black tracking-widest uppercase px-3 py-1 rounded-full`} style={{ color: colors.text, backgroundColor: `${colors.bg}` }}>
+                        {event.category}
+                      </span>
+                    </div>
+                    
+                    <h3 className="font-headline font-bold text-lg mb-3 leading-tight group-hover:text-[#1A73E8] transition-colors line-clamp-1">
+                      {event.title}
+                    </h3>
+                    
+                    <p className="text-xs text-gray-500 line-clamp-2 mb-4 leading-relaxed italic">
+                      {event.description}
+                    </p>
 
-          <div className="calendar-grid auto-rows-min relative h-[450px]">
-             {/* Simplified grid for visual preservation */}
-             {Array.from({ length: 35 }).map((_, i) => (
-              <div key={i} className="min-h-[100px] p-2 border-b border-r border-[#ebeeef] last:border-r-0 flex flex-col items-end">
-                <span className="text-xs font-bold text-[#757c7d]">{((i + 30) % 31) + 1}</span>
-                {/* Real Data Logic would place bars here. For UI preservation, we keep the grid structure. */}
-              </div>
-             ))}
-          </div>
+                    <div className="pt-4 border-t border-gray-50 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">{event.locationEmoji || '📍'}</span>
+                        <span className="text-[11px] font-bold text-[#596061] uppercase tracking-wide truncate max-w-[120px]">
+                          {event.location}
+                        </span>
+                      </div>
+                      <div className="flex -space-x-2">
+                        {/* Avatar placeholder for admin added events */}
+                        <div className="w-6 h-6 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center">
+                          <span className="material-symbols-outlined text-[12px] text-gray-400">person</span>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
         </section>
 
         {/* Global FAB (Plaza Style) */}
         <button 
           onClick={() => setShowCreateModal(true)}
-          className="fixed bottom-6 right-6 w-16 h-16 bg-primary text-white rounded-full shadow-2xl shadow-primary/40 flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50 group overflow-hidden"
+          className="fixed bottom-6 right-6 w-16 h-16 bg-[#2d3435] text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50 group overflow-hidden"
         >
-          <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-          <span className="material-symbols-outlined text-[32px] font-bold relative z-10 animate-in zoom-in duration-300">add</span>
+          <div className="absolute inset-0 bg-[#1A73E8] translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+          <span className="material-symbols-outlined text-[32px] font-bold relative z-10">add</span>
         </button>
 
         {/* Create Event Modal */}
@@ -148,9 +188,7 @@ export default function EventsPage() {
           {showCreateModal && (
             <CreateEvent 
               onClose={() => setShowCreateModal(false)} 
-              onSuccess={() => {
-                // Success feedback can be added here
-              }}
+              onSuccess={() => {}}
             />
           )}
         </AnimatePresence>
@@ -158,3 +196,4 @@ export default function EventsPage() {
     </>
   );
 }
+

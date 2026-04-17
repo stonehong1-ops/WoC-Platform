@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { socialService } from '@/lib/firebase/socialService';
 import { plazaService } from '@/lib/firebase/plazaService';
+import { venueService } from '@/lib/firebase/venueService';
 import { Social, SocialType } from '@/types/social';
 
 interface EditSocialEventProps {
@@ -24,10 +25,34 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
   const [endTime, setEndTime] = useState(socialData?.endTime || '23:00');
   const [dayOfWeek, setDayOfWeek] = useState<number>(socialData?.dayOfWeek ?? 4); // Default Friday (5) or Fri-index (4)? Let's use 0-6 (Sun-Sat). Fri=5.
   const [venueName, setVenueName] = useState(socialData?.venueName || '');
+  const [venueId, setVenueId] = useState(socialData?.venueId || '');
+  const [venueResults, setVenueResults] = useState<any[]>([]);
+  const [showVenueResults, setShowVenueResults] = useState(false);
+
+  const handleVenueSearch = async (val: string) => {
+    setVenueName(val);
+    if (val.length > 1) {
+      // For instant response using simple filtering from local state if we had one, 
+      // but here we use the service for real database searching
+      const results = await venueService.searchVenues(val);
+      setVenueResults(results.slice(0, 5));
+      setShowVenueResults(results.length > 0);
+    } else {
+      setShowVenueResults(false);
+    }
+  };
+
+  const handleSelectVenue = (v: any) => {
+    setVenueName(v.name);
+    setVenueId(v.id);
+    setShowVenueResults(false);
+  };
   const [djName, setDjName] = useState(socialData?.djName || '');
   const [dressCode, setDressCode] = useState('');
   const [price, setPrice] = useState('FREE ENTRY');
   const [description, setDescription] = useState('');
+  
+  const [recurrence, setRecurrence] = useState(socialData?.recurrence || 'every');
   
   // Social Events (Sub-programs)
   const [socialEvents, setSocialEvents] = useState<{ id: number; title: string }[]>([
@@ -65,12 +90,13 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
         type,
         organizerId: user.uid,
         organizerName: user.displayName || 'Anonymous',
-        venueId: 'v1',
+        venueId: venueId || 'v1',
         venueName,
         imageUrl: images[0],
         startTime,
         endTime,
         dayOfWeek: type === 'regular' ? dayOfWeek : undefined,
+        recurrence: type === 'regular' ? recurrence : undefined,
         djName,
         description,
         price,
@@ -230,7 +256,7 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
             {/* Day Selector (Recurring Days) */}
             <div className={`col-span-full transition-opacity ${type === 'regular' ? 'opacity-100' : 'opacity-30 pointer-events-none'}`}>
               <label className="block text-xs font-bold uppercase tracking-wider text-[#2D3435]/60 mb-3 font-inter">Recurring Day (Single Select)</label>
-              <div className="flex justify-between gap-1">
+              <div className="flex justify-between gap-1 mb-6">
                 {days.map((day, idx) => {
                   const isActive = dayOfWeek === dayIndices[idx];
                   return (
@@ -246,24 +272,68 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
                   );
                 })}
               </div>
+
+              {/* Recurrence Selection */}
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#2D3435]/60 mb-3 font-inter">Recurrence Frequency</label>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { id: 'every', label: 'Every Week' },
+                  { id: '1st', label: '1st' },
+                  { id: '2nd', label: '2nd' },
+                  { id: '3rd', label: '3rd' },
+                  { id: '4th', label: '4th' },
+                  { id: 'last', label: 'Last' }
+                ].map(r => (
+                  <button
+                    key={r.id}
+                    onClick={() => setRecurrence(r.id)}
+                    className={`px-4 py-2 rounded-full text-xs font-bold transition-all border ${
+                      recurrence === r.id 
+                        ? 'bg-[#005BC0] text-white border-[#005BC0] shadow-sm' 
+                        : 'bg-white text-[#2D3435]/60 border-gray-200 hover:border-[#005BC0]/30'
+                    }`}
+                  >
+                    {r.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </section>
 
         {/* 5 & 6. Venue & DJ */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12 text-left">
-          <div>
+          <div className="relative">
             <label className="block text-xs font-bold uppercase tracking-wider text-[#2D3435]/60 mb-3 font-inter">Venue Selection</label>
             <div className="relative group">
               <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#2D3435]/40">location_on</span>
               <input 
                 value={venueName}
-                onChange={(e) => setVenueName(e.target.value)}
+                onChange={(e) => handleVenueSearch(e.target.value)}
+                onBlur={() => setTimeout(() => setShowVenueResults(false), 200)}
                 className="w-full pl-12 pr-4 py-4 bg-white border-none rounded shadow-sm focus:ring-2 focus:ring-[#005BC0]/40 font-medium outline-none" 
                 placeholder="Search venues..." 
                 type="text"
               />
             </div>
+            {/* Search Results Dropdown */}
+            {showVenueResults && (
+              <div className="absolute top-full left-0 w-full bg-white border border-gray-100 rounded-b shadow-xl z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                {venueResults.map(v => (
+                  <button 
+                    key={v.id}
+                    onClick={() => handleSelectVenue(v)}
+                    className="w-full text-left p-4 hover:bg-gray-50 flex items-center justify-between group transition-colors border-b border-gray-50 last:border-b-0"
+                  >
+                    <div>
+                      <p className="font-bold text-[#2D3435] group-hover:text-[#005BC0] transition-colors">{v.name}</p>
+                      <p className="text-[10px] text-gray-400 font-medium">{v.region} • {v.district}</p>
+                    </div>
+                    <span className="material-symbols-outlined text-gray-200 group-hover:text-[#005BC0] transition-colors">add_circle</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-[#2D3435]/60 mb-3 font-inter">DJ Selection</label>

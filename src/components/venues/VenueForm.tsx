@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Venue, venueService } from '@/lib/firebase/venueService';
+import { venueService } from '@/lib/firebase/venueService';
+import { Venue, VenueType } from '@/types/venue';
 
 interface VenueFormProps {
   isOpen: boolean;
@@ -21,18 +22,17 @@ const CATEGORY_OPTIONS = [
 ];
 
 export default function VenueForm({ isOpen, onClose, initialData }: VenueFormProps) {
-  const [formData, setFormData] = useState<Omit<Venue, 'id' | 'createdAt' | 'updatedAt'>>({
+  const [formData, setFormData] = useState<Omit<Venue, 'id' | 'createdAt'>>({
     name: '',
-    nameNative: '',
-    category: 'Cafe',
-    owner: 'Alex Sterling', // Match design placeholder
-    isRepresentative: false,
-    contact: '',
-    address: 'Marina Bay Sands, 10 Bayfront Ave',
-    coordinates: { lat: 1.290270, lng: 103.851959 },
-    rating: 0,
-    price: '',
-    imageUrl: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&q=80',
+    nameKo: '',
+    types: ['Club'],
+    category: 'Club',
+    address: '',
+    region: 'Seoul',
+    city: 'Seoul',
+    district: '',
+    status: 'active',
+    coordinates: { latitude: 37.5665, longitude: 126.9780 },
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -41,16 +41,15 @@ export default function VenueForm({ isOpen, onClose, initialData }: VenueFormPro
     if (initialData) {
       setFormData({
         name: initialData.name,
-        nameNative: initialData.nameNative || '',
+        nameKo: initialData.nameKo || '',
+        types: initialData.types || ['Club'],
         category: initialData.category,
-        owner: initialData.owner,
-        isRepresentative: initialData.isRepresentative || false,
-        contact: initialData.contact,
         address: initialData.address,
+        region: initialData.region,
+        city: initialData.city,
+        district: initialData.district,
+        status: initialData.status,
         coordinates: initialData.coordinates,
-        rating: initialData.rating || 0,
-        price: initialData.price || '',
-        imageUrl: initialData.imageUrl || '',
       });
     }
   }, [initialData, isOpen]);
@@ -142,14 +141,14 @@ export default function VenueForm({ isOpen, onClose, initialData }: VenueFormPro
                 />
               </div>
               <div className="space-y-2">
-                <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest ml-1" htmlFor="venue-name-native">Venue Name (Native) <span className="normal-case opacity-70">(If applicable)</span></label>
+                <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest ml-1" htmlFor="venue-name-ko">Venue Name (Korean) <span className="normal-case opacity-70">(If applicable)</span></label>
                 <input 
                   className="w-full px-4 py-4 bg-surface-container-lowest border-none ring-1 ring-outline-variant focus:ring-2 focus:ring-primary rounded-xl transition-all font-body text-on-surface" 
-                  id="venue-name-native" 
-                  placeholder="e.g. ブルーコーヒー" 
+                  id="venue-name-ko" 
+                  placeholder="e.g. 탱고라이프" 
                   type="text" 
-                  value={formData.nameNative}
-                  onChange={(e) => setFormData({ ...formData, nameNative: e.target.value })}
+                  value={formData.nameKo}
+                  onChange={(e) => setFormData({ ...formData, nameKo: e.target.value })}
                 />
               </div>
             </div>
@@ -169,7 +168,7 @@ export default function VenueForm({ isOpen, onClose, initialData }: VenueFormPro
                     name="category" 
                     type="radio" 
                     checked={formData.category === cat.id}
-                    onChange={() => setFormData({ ...formData, category: cat.id })}
+                    onChange={() => setFormData({ ...formData, category: cat.id as VenueType })}
                   />
                   <div className="flex flex-col items-center justify-center p-4 aspect-square bg-surface-container-low rounded-xl border-2 border-transparent transition-all group-hover:bg-surface-container peer-checked:border-primary peer-checked:bg-primary-container/30">
                     <span className="material-symbols-outlined text-on-surface-variant peer-checked:text-primary mb-2">{cat.icon}</span>
@@ -186,31 +185,12 @@ export default function VenueForm({ isOpen, onClose, initialData }: VenueFormPro
               <span className="material-symbols-outlined text-primary">person_pin</span>
               <h3 className="font-headline text-xl font-bold text-on-surface">Owner / Operator *</h3>
             </div>
-            <div className="space-y-4">
-              <div className="p-4 bg-surface-container-lowest ring-1 ring-outline-variant rounded-xl flex items-center justify-between group">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center overflow-hidden">
-                    <span className="material-symbols-outlined text-primary text-xl">person</span>
-                  </div>
-                  <span className="font-body text-sm font-semibold text-on-surface">Me (Alex Sterling)</span>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center overflow-hidden">
+                  <span className="material-symbols-outlined text-primary text-xl">person</span>
                 </div>
-                <button className="p-1 hover:bg-surface-container-high rounded-full transition-colors" type="button">
-                  <span className="material-symbols-outlined text-on-surface-variant text-sm">close</span>
-                </button>
+                <span className="font-body text-sm font-semibold text-on-surface">Admin Mode</span>
               </div>
-              <label className="flex items-center gap-3 cursor-pointer select-none px-1">
-                <div className="relative flex items-center">
-                  <input 
-                    className="peer h-5 w-5 cursor-pointer appearance-none rounded border border-outline-variant bg-surface-container-lowest transition-all checked:bg-primary checked:border-primary focus:ring-2 focus:ring-primary/20" 
-                    type="checkbox"
-                    checked={formData.isRepresentative}
-                    onChange={(e) => setFormData({ ...formData, isRepresentative: e.target.checked })}
-                  />
-                  <span className="material-symbols-outlined absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-white text-[16px] pointer-events-none opacity-0 peer-checked:opacity-100">check</span>
-                </div>
-                <span className="font-label text-sm font-medium text-on-surface-variant">I'm registering on behalf of the owner</span>
-              </label>
-            </div>
           </section>
 
           {/* 4. Global Details (Timezone Only) */}
@@ -267,7 +247,7 @@ export default function VenueForm({ isOpen, onClose, initialData }: VenueFormPro
                       <div>
                         <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Selected Coordinates</p>
                         <p className="text-xs font-mono font-bold text-on-surface">
-                          {formData.coordinates.lat.toFixed(6)}, {formData.coordinates.lng.toFixed(6)}
+                          {formData.coordinates.latitude.toFixed(6)}, {formData.coordinates.longitude.toFixed(6)}
                         </p>
                       </div>
                     </div>

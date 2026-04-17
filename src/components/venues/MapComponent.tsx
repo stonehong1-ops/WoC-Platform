@@ -11,6 +11,7 @@ import { CITY_COORDINATES, DEFAULT_COORDINATES } from '@/lib/constants/locations
 interface Venue {
   id: string;
   name: string;
+  nameKo?: string;
   category: string;
   coordinates: { latitude: number; longitude: number; };
   address: string;
@@ -204,7 +205,10 @@ export default function MapComponent({ onRegisterOpen, isLoaded }: { onRegisterO
                   <button key={v.id} onClick={() => { map?.panTo({ lat: v.coordinates.latitude, lng: v.coordinates.longitude }); map?.setZoom(17); }} className="flex items-center gap-4 p-4 bg-[#f4fbfb] hover:bg-[#eef5f6] rounded-2xl border border-transparent hover:border-[#dde4e5] transition-all group text-left">
                     <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-[#005BC0] font-black text-[10px] shadow-sm group-hover:scale-105 transition-transform uppercase">{v.category.slice(0,3)}</div>
                     <div className="flex-grow">
-                      <h3 className="text-[14px] font-black text-[#2D3435] tracking-tight">{v.name}</h3>
+                      <h3 className="text-[14px] font-black text-[#2D3435] tracking-tight">
+                        {v.name} 
+                        {v.nameKo && <span className="ml-2 text-[11px] font-bold text-[#596061] opacity-60 font-sans">{v.nameKo}</span>}
+                      </h3>
                       <p className="text-[10px] text-[#596061] font-bold mt-0.5 line-clamp-1 opacity-70">{v.address}</p>
                     </div>
                     <span className="material-symbols-outlined text-[#c2c6d5] group-hover:text-[#005BC0] transition-colors">arrow_forward_ios</span>
