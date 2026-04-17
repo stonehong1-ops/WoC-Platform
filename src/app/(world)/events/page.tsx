@@ -212,7 +212,7 @@ export default function EventsPage() {
                           <span className="material-symbols-outlined text-[16px] flex-shrink-0">location_on</span>
                           <span className="font-headline text-[9px] font-extrabold uppercase tracking-widest truncate">{event.location?.split(',')[0]}</span>
                         </div>
-                        <span className="font-headline text-[9px] font-black text-[#424753] bg-[#eef5f6] px-2.5 py-1 rounded-full uppercase tracking-tighter flex-shrink-0"> {format(start, 'EEE')} </span>
+                        <span className="font-headline text-[9px] font-black text-[#424753] bg-[#eef5f6] px-2.5 py-1 rounded-full uppercase tracking-tighter flex-shrink-0"> {format(start, 'EEE, d MMM')} </span>
                       </div>
 
                       <div className="flex flex-col gap-2">
@@ -263,18 +263,27 @@ export default function EventsPage() {
                     const dayEvents = events.filter(e => {
                         const start = getNormalizedDate(e.startDate);
                         const end = getNormalizedDate(e.endDate || e.startDate);
-                        return isWithinInterval(date, { start, end });
+                        return date >= start && date <= end;
                     });
+                    const hasEvents = dayEvents.length > 0;
                     const hasMultiple = dayEvents.length > 1;
+                    const isToday = isSameDay(date, new Date());
+                    const isFirstDay = date.getDate() === 1;
 
                     return (
                         <div key={i} className={`day-cell ${[0, 6].includes(getDay(date)) ? 'weekend' : ''} ${date.getMonth() !== currentDate.getMonth() ? 'opacity-20' : ''}`}>
-                            <div className="absolute top-3 left-3 flex items-center justify-center">
+                            <div className="absolute top-3 left-3 flex flex-col items-center">
                                 <span className={`font-headline text-[11px] font-black w-6 h-6 flex items-center justify-center rounded-full transition-all
-                                    ${isSameDay(date, new Date()) ? 'text-white bg-primary' : 
-                                      hasMultiple ? 'text-white bg-[#7c2e00]' : 'text-[#7c8485]'}`}>
-                                    {format(date, 'd')}
+                                    ${isToday ? 'text-white bg-primary shadow-lg scale-110' : 
+                                      hasMultiple ? 'text-white bg-[#7c2e00]' : 
+                                      hasEvents ? 'text-[#161d1e] bg-[#dde4e5]' : 'text-[#7c8485]'}`}>
+                                    {date.getDate()}
                                 </span>
+                                {isFirstDay && (
+                                  <span className="text-[8px] font-black text-[#7c8485] uppercase tracking-tighter mt-0.5">
+                                    {format(date, 'MMM')}
+                                  </span>
+                                )}
                             </div>
                         </div>
                     );
@@ -318,9 +327,10 @@ export default function EventsPage() {
                             <div className="event-bar-inner group" style={{ backgroundColor: colorSet.bg, borderColor: colorSet.border, color: colorSet.text }}>
                               <span className="event-dot" style={{ backgroundColor: colorSet.dot }} />
                               <span className="truncate">{event.locationEmoji} {event.title}</span>
-                              <div className="absolute -top-14 left-1/2 -translate-x-1/2 bg-[#161d1e] text-white p-3 rounded-xl text-[10px] opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-50 w-56 shadow-2xl border border-white/10">
+                              <div className="absolute -top-16 left-1/2 -translate-x-1/2 bg-[#161d1e] text-white p-3 rounded-xl text-[10px] opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-50 w-56 shadow-2xl border border-white/10">
                                 <div className="font-black border-b border-white/10 pb-2 mb-2 uppercase tracking-widest text-primary-fixed">{event.category}</div>
                                 <div className="font-bold mb-1">{event.title}</div>
+                                <div className="text-[9px] opacity-60 mb-2">{format(start, 'EEE, d MMM')} {isSameDay(start, end) ? '' : `- ${format(end, 'EEE, d MMM')}`}</div>
                                 <div className="flex items-center gap-2 opacity-60"><span className="material-symbols-outlined text-[14px]">location_on</span><span>{event.location}</span></div>
                               </div>
                             </div>
