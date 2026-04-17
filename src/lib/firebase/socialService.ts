@@ -17,22 +17,22 @@ export const socialService = {
   subscribeSocials: (type: SocialType, callback: (socials: Social[]) => void) => {
     const q = query(
       collection(db, SOCIALS_COLLECTION),
-      where('type', '==', type),
       orderBy('createdAt', 'desc')
     );
     
     return onSnapshot(q, (snapshot) => {
-      const socials = snapshot.docs.map(doc => ({
+      const all = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as Social[];
-      callback(socials);
+      
+      const filtered = all.filter(s => String(s.type).toLowerCase() === String(type).toLowerCase());
+      callback(filtered);
     });
   },
 
   // 2. Subscribe to socials for a specific day or date
   subscribeDailySocials: (day: number, date?: Date, callback?: (socials: Social[]) => void) => {
-    // This is a complex logic that would ideally combine Regulars on that day and Popups on that date
     const q = query(
       collection(db, SOCIALS_COLLECTION),
       orderBy('createdAt', 'desc')
@@ -42,8 +42,13 @@ export const socialService = {
       const all = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Social[];
       
       const filtered = all.filter(s => {
-        if (s.type === 'regular') return s.dayOfWeek === day;
-        if (s.type === 'popup' && date && s.date) {
+        const isRegular = String(s.type).toLowerCase() === 'regular';
+        const isPopup = String(s.type).toLowerCase() === 'popup';
+
+        if (isRegular) {
+            return Number(s.dayOfWeek) === Number(day);
+        }
+        if (isPopup && date && s.date) {
             const sDate = s.date.toDate();
             return sDate.toDateString() === date.toDateString();
         }
