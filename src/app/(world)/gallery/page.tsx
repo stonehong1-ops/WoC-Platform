@@ -23,14 +23,18 @@ const GalleryPage = () => {
   const [activeCommentPost, setActiveCommentPost] = useState<string | null>(null);
   const [selectedPostForViewer, setSelectedPostForViewer] = useState<GalleryPost | null>(null);
   const { user } = useAuth();
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const unsubscribe = galleryService.subscribeFeed((data) => {
       setPosts(data);
       setLoading(false);
     });
     return () => unsubscribe();
   }, []);
+
+  if (!mounted) return null;
 
   if (loading) {
     return (
@@ -172,13 +176,13 @@ const GalleryCard = ({
       <div className="gallery-post-overlay-bottom">
         <div className="post-tags" onClick={(e) => e.stopPropagation()}>
           {post.venueName && (
-            <Link href={`/space/${post.venueId}`} className="tag-badge">
+            <Link href={`/venues?id=${post.venueId}`} className="tag-badge">
               <MapPin size={12} />
               {post.venueName}
             </Link>
           )}
           {post.eventName && (
-            <Link href={`/events/${post.eventId}`} className="tag-badge">
+            <Link href={`/events?id=${post.eventId}`} className="tag-badge">
               <Calendar size={12} />
               {post.eventName}
             </Link>

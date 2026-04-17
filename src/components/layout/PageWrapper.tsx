@@ -9,20 +9,18 @@ export default function PageWrapper({ children }: { children: React.ReactNode })
   const router = useRouter();
   const { user, profile, loading, setShowLogin } = useAuth();
   
+  const isGallery = pathname.startsWith('/gallery');
   const isVenues = pathname.startsWith('/venues');
+  const isEvents = pathname.startsWith('/events');
+  const isSocial = pathname.startsWith('/social');
   const isLanding = pathname === '/';
   const isLogin = pathname === '/login';
-  const isPublic = isLanding || isLogin;
+  
+  const isPublic = isLanding || isLogin || isGallery || isVenues || isEvents || isSocial;
 
   useEffect(() => {
-    if (!loading) {
-      if (!user && !isPublic) {
-        // 비공개 페이지인데 로그인 안됨 -> 로그인 유도
-        setShowLogin(true);
-      } else if (user && !profile?.isRegistered && !isPublic) {
-        // 비공개 페이지인데 가입 안됨 -> 가입 유도
-        setShowLogin(true);
-      }
+    if (!loading && !isPublic && (!user || !profile?.isRegistered)) {
+      setShowLogin(true);
     }
   }, [user, profile, loading, isPublic, setShowLogin]);
 

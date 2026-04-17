@@ -15,6 +15,7 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { galleryService } from '@/lib/firebase/galleryService';
 import { venueService } from '@/lib/firebase/venueService';
 import { socialService } from '@/lib/firebase/socialService';
+import { eventService } from '@/lib/firebase/eventService';
 import { storage } from '@/lib/firebase/config';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import '../gallery.css';
@@ -43,8 +44,14 @@ const GalleryCreatePage = () => {
   useEffect(() => {
     const timer = setTimeout(async () => {
       if (venueSearch.length >= 1) {
+        // Try original and capitalized to overcome Firestore case-sensitivity
+        const capitalized = venueSearch.charAt(0).toUpperCase() + venueSearch.slice(1);
         const results = await venueService.searchVenues(venueSearch);
-        setVenueResults(results);
+        const capResults = await venueService.searchVenues(capitalized);
+        
+        const combined = [...results, ...capResults];
+        const unique = combined.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
+        setVenueResults(unique);
       } else {
         setVenueResults([]);
       }
@@ -54,20 +61,26 @@ const GalleryCreatePage = () => {
 
   // Social (Event) Search Logic
   useEffect(() => {
-    // Currently socialService doesn't have a direct keyword search, 
-    // so we'll fetch list and filter or implement a simple query here.
-    const fetchSocials = async () => {
+    const timer = setTimeout(async () => {
       if (socialSearch.length >= 1) {
-        // Simple mock/filter for demo, or we could add a proper search in service
-        // For now, let's assume we can query them
-        const { organizers, venues } = await socialService.getFilterOptions();
-        const filtered = organizers.filter(o => o.toLowerCase().includes(socialSearch.toLowerCase()));
-        setSocialResults(filtered.map(o => ({ id: o, name: o })));
+        const capitalized = socialSearch.charAt(0).toUpperCase() + socialSearch.slice(1);
+        
+        // Search BOTH events and socials
+        const [evResults, evCapResults, socResults, socCapResults] = await Promise.all([
+          eventService.searchEvents(socialSearch),
+          eventService.searchEvents(capitalized),
+          socialService.searchSocials(socialSearch),
+          socialService.searchSocials(capitalized)
+        ]);
+        
+        const combined = [...evResults, ...evCapResults, ...socResults, ...socCapResults];
+        const unique = combined.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
+        setSocialResults(unique.map(e => ({ id: e.id, name: (e as any).title })));
       } else {
         setSocialResults([]);
       }
-    };
-    fetchSocials();
+    }, 300);
+    return () => clearTimeout(timer);
   }, [socialSearch]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
