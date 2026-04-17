@@ -8,42 +8,64 @@ import { format, isSameDay, isAfter, startOfDay } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import CreateEvent from '@/components/events/CreateEvent';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useLocation } from '@/components/providers/LocationProvider';
 
 export default function EventsPage() {
   const { user } = useAuth();
+  const { location } = useLocation();
   const [events, setEvents] = useState<Event[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   
   // Real-time Subscription
   useEffect(() => {
     const unsub = eventService.subscribeEvents((data) => {
-      // Safely set events: firestore already orders by startDate, 
-      // but we filter out any malformed data just in case
-      const validEvents = data.filter(e => e.startDate && typeof e.startDate.toDate === 'function');
+      // Safely set events: firestore already orders by startDate
+      const validEvents = data.filter(e => e.startDate);
       setEvents(validEvents);
     });
     return () => unsub();
   }, []);
 
+  // Filter events by location
+  const filteredLocationEvents = useMemo(() => {
+    if (!location) return events;
+    
+    return events.filter(e => {
+      const eventLoc = e.location?.toLowerCase() || '';
+      const countryMatch = eventLoc.includes(location.country.toLowerCase());
+      
+      if (location.city === 'ALL') {
+        return countryMatch;
+      }
+      
+      const cityMatch = eventLoc.includes(location.city.toLowerCase());
+      return countryMatch && cityMatch;
+    });
+  }, [events, location]);
+
   // Today's events
-  const todayEvents = useMemo(() => events.filter(e => {
+  const todayEvents = useMemo(() => filteredLocationEvents.filter(e => {
     try {
-      const start = e.startDate.toDate();
+      const start = typeof e.startDate.toDate === 'function' 
+        ? e.startDate.toDate() 
+        : new Date(e.startDate as any);
       return isSameDay(start, new Date());
-    } catch (e) {
+    } catch (err) {
       return false;
     }
-  }), [events]);
+  }), [filteredLocationEvents]);
 
   // Upcoming events (after today)
-  const upcomingEvents = useMemo(() => events.filter(e => {
+  const upcomingEvents = useMemo(() => filteredLocationEvents.filter(e => {
     try {
-      const start = e.startDate.toDate();
+      const start = typeof e.startDate.toDate === 'function' 
+        ? e.startDate.toDate() 
+        : new Date(e.startDate as any);
       return isAfter(start, startOfDay(new Date())) && !isSameDay(start, new Date());
-    } catch (e) {
+    } catch (err) {
       return false;
     }
-  }), [events]);
+  }), [filteredLocationEvents]);
 
   const getCategoryColor = (cat: string) => {
     switch(cat) {
