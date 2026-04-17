@@ -135,7 +135,7 @@ export default function SocialPage() {
                   onClick={() => setSelectedSocial(social)}
                   className="relative flex-shrink-0 w-72 h-96 rounded-lg overflow-hidden group shadow-sm transition-all hover:shadow-md cursor-pointer animate-in zoom-in-95 duration-500 text-left"
                 >
-                  <img className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" src={social.imageUrl} alt={social.title} />
+                  <SocialCardImage imageUrl={social.imageUrl} title={social.title} />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
                   <div className="absolute bottom-0 p-6 space-y-1 text-left">
                     <h3 className="text-white text-xl font-bold font-headline leading-tight">{social.title}</h3>
@@ -214,5 +214,43 @@ export default function SocialPage() {
         />
       )}
     </main>
+  );
+}
+
+// --- Premium UI Components ---
+
+function SocialCardImage({ imageUrl, title }: { imageUrl?: string; title: string }) {
+  const [error, setError] = useState(false);
+  const firstLetter = title.trim().charAt(0).toUpperCase();
+
+  if (!imageUrl || error) {
+    return (
+      <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-[#EEF2F3] via-white to-[#DDE4E5] flex items-center justify-center overflow-hidden">
+        {/* Large Decorative Letter - Editorial Style */}
+        <span className="absolute -bottom-8 -right-8 text-[20rem] font-black text-primary/[0.03] select-none pointer-events-none italic leading-none">
+          {firstLetter}
+        </span>
+        
+        {/* Centered Graphic Element */}
+        <div className="relative z-10 flex flex-col items-center opacity-20 transform -translate-y-4">
+          <div className="w-12 h-12 rounded-full border-2 border-primary/30 flex items-center justify-center mb-4">
+             <span className="material-symbols-outlined text-2xl text-primary/50">auto_awesome</span>
+          </div>
+          <span className="text-[10px] font-black tracking-[0.5em] text-primary/40 uppercase ml-2">Heritage</span>
+        </div>
+        
+        {/* Subtle Texture Overlay */}
+        <div className="absolute inset-0 opacity-[0.04] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '12px 12px' }}></div>
+      </div>
+    );
+  }
+
+  return (
+    <img 
+      className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+      src={imageUrl} 
+      alt={title} 
+      onError={() => setError(true)}
+    />
   );
 }
