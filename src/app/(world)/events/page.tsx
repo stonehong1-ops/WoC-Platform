@@ -17,23 +17,32 @@ export default function EventsPage() {
   // Real-time Subscription
   useEffect(() => {
     const unsub = eventService.subscribeEvents((data) => {
-      // Sort events by startDate
-      const sorted = [...data].sort((a, b) => a.startDate.toMillis() - b.startDate.toMillis());
-      setEvents(sorted);
+      // Safely set events: firestore already orders by startDate, 
+      // but we filter out any malformed data just in case
+      const validEvents = data.filter(e => e.startDate && typeof e.startDate.toDate === 'function');
+      setEvents(validEvents);
     });
     return () => unsub();
   }, []);
 
   // Today's events
   const todayEvents = useMemo(() => events.filter(e => {
-    const start = e.startDate.toDate();
-    return isSameDay(start, new Date());
+    try {
+      const start = e.startDate.toDate();
+      return isSameDay(start, new Date());
+    } catch (e) {
+      return false;
+    }
   }), [events]);
 
   // Upcoming events (after today)
   const upcomingEvents = useMemo(() => events.filter(e => {
-    const start = e.startDate.toDate();
-    return isAfter(start, startOfDay(new Date())) && !isSameDay(start, new Date());
+    try {
+      const start = e.startDate.toDate();
+      return isAfter(start, startOfDay(new Date())) && !isSameDay(start, new Date());
+    } catch (e) {
+      return false;
+    }
   }), [events]);
 
   const getCategoryColor = (cat: string) => {
