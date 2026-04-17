@@ -16,16 +16,16 @@ Focuses on the core community infrastructure and news.
 
 ### B. Activity
 Focuses on dynamic social and educational experiences.
-- **Social (`/social`)**: Milongas, Practicas, and social gatherings.
-- **Class (`/class`)**: Lessons, workshops, and educational programs.
 - **Events (`/events`)**: Festivals, marathons, and special one-off events.
-- **Shop (`/shop`)**: Commerce and marketplace for community items.
-- **Stay (`/stay`)**: Accommodations and lodging for community members.
-- **Service (`/service`)**: Community-specific services and support.
+- **Social (`/social`)**: Milongas, Practicas, and social gatherings.
+- **Gallery (`/gallery`)**: Community photo gallery and media.
+- **Class (`/class`)**: Lessons, workshops, and educational programs.
 
-### C. Town
+### C. Space (formerly Town)
 Focuses on the secondary community utility and economy.
+- **Shop (`/shop`)**: Commerce and marketplace for community items.
 - **Resale (`/resale`)**: Second-hand market for gear and apparel.
+- **Stay (`/stay`)**: Accommodations and lodging for community members.
 - **Lost (`/lost`)**: Lost and found service.
 - **Arcade (`/arcade`)**: Interactive games and community engagement features.
 
@@ -39,17 +39,17 @@ The following folders in `src/app/(nation)` correspond to the routes above:
 | :--- | :--- | :--- | :--- |
 | `/home` | `home` | Tango World | Active |
 | `/plaza` | `plaza` | Tango World | Active |
-| `/venues` | `venues` | Tango World | Active (Renamed from `map`) |
-| `/groups` | `groups` | Tango World | Active (Renamed from `community`) |
-| `/social` | `social` | Activity | Active |
-| `/class` | `class` | Activity | Active |
+| `/venues` | `venues` | Tango World | Active |
+| `/groups` | `groups` | Tango World | Active |
 | `/events` | `events` | Activity | Active |
-| `/shop` | `shop` | Activity | Active |
-| `/stay` | `stay` | Activity | Active |
-| `/service` | `service` | Activity | New |
-| `/resale` | `resale` | Town | Active |
-| `/lost` | `lost` | Town | Active |
-| `/arcade` | `arcade` | Town | Active |
+| `/social` | `social` | Activity | Active |
+| `/gallery` | `gallery` | Activity | New |
+| `/class` | `class` | Activity | Active |
+| `/shop` | `shop` | Space | Moved |
+| `/resale` | `resale` | Space | Active |
+| `/stay` | `stay` | Space | Moved |
+| `/lost` | `lost` | Space | Active |
+| `/arcade` | `arcade` | Space | Active |
 
 ---
 

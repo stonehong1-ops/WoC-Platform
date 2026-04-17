@@ -26,7 +26,11 @@ export const socialService = {
         ...doc.data()
       })) as Social[];
       
-      const filtered = all.filter(s => String(s.type).toLowerCase() === String(type).toLowerCase());
+      const filtered = all.filter(s => {
+        const typeStr = String(s.type || '').toLowerCase();
+        const targetType = String(type || '').toLowerCase();
+        return typeStr === targetType;
+      });
       callback(filtered);
     });
   },
@@ -42,14 +46,16 @@ export const socialService = {
       const all = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Social[];
       
       const filtered = all.filter(s => {
-        const isRegular = String(s.type).toLowerCase() === 'regular';
-        const isPopup = String(s.type).toLowerCase() === 'popup';
+        const typeStr = String(s.type || '').toLowerCase();
+        const isRegular = typeStr === 'regular';
+        const isPopup = typeStr === 'popup';
 
         if (isRegular) {
-            return Number(s.dayOfWeek) === Number(day);
+            return s.dayOfWeek !== undefined && Number(s.dayOfWeek) === Number(day);
         }
         if (isPopup && date && s.date) {
-            const sDate = s.date.toDate();
+            // Safety: handle both Firestore Timestamp and JS Date (if any)
+            const sDate = typeof s.date.toDate === 'function' ? s.date.toDate() : new Date(s.date as any);
             return sDate.toDateString() === date.toDateString();
         }
         return false;

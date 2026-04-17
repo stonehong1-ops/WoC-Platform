@@ -14,7 +14,7 @@ export default function FooterMenu() {
   const sectors: { name: NavGroup; items: typeof NAV_ITEMS }[] = [
     { name: 'Tango World', items: NAV_ITEMS.filter(i => i.group === 'Tango World') },
     { name: 'Activity', items: NAV_ITEMS.filter(i => i.group === 'Activity') },
-    { name: 'Town', items: NAV_ITEMS.filter(i => i.group === 'Town') },
+    { name: 'Space', items: NAV_ITEMS.filter(i => i.group === 'Space') },
     { name: 'My Page', items: NAV_ITEMS.filter(i => i.group === 'My Page') },
   ];
 

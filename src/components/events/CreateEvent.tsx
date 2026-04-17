@@ -21,7 +21,7 @@ export default function CreateEvent({ onClose, onSuccess }: CreateEventProps) {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<EventCategory>('SOCIAL');
   const [startDate, setStartDate] = useState('');
-  const [startTime, setStartTime] = useState('14:00');
+  const [endDate, setEndDate] = useState('');
   const [locationName, setLocationName] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -30,15 +30,20 @@ export default function CreateEvent({ onClose, onSuccess }: CreateEventProps) {
 
     setIsSubmitting(true);
     try {
-      // Combine date and time
-      const dateObj = new Date(`${startDate}T${startTime}`);
+      // Normalize to midnight UTC/Local depending on browser, but consistent
+      const startObj = new Date(startDate);
+      startObj.setHours(0, 0, 0, 0);
+      
+      const endObj = endDate ? new Date(endDate) : new Date(startDate);
+      endObj.setHours(0, 0, 0, 0);
       
       await eventService.createEvent({
         title,
         description,
         category,
         location: locationName || `${location?.city || 'Globe'}, ${location?.country || ''}`,
-        startDate: Timestamp.fromDate(dateObj),
+        startDate: Timestamp.fromDate(startObj),
+        endDate: Timestamp.fromDate(endObj),
         hostId: user.uid,
         hostName: user.displayName || 'Anonymous',
         hostPhoto: user.photoURL || '',
@@ -122,15 +127,15 @@ export default function CreateEvent({ onClose, onSuccess }: CreateEventProps) {
                 required
               />
             </div>
-            {/* Time Input */}
+            {/* End Date Input */}
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Start Time</label>
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">End Date</label>
               <input
-                type="time"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
                 className="w-full px-5 py-3.5 bg-gray-50 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-primary/10 transition-all"
-                required
+                placeholder="Optional"
               />
             </div>
           </div>
@@ -159,6 +164,7 @@ export default function CreateEvent({ onClose, onSuccess }: CreateEventProps) {
               className="w-full min-h-[140px] px-5 py-4 bg-gray-50 border-none rounded-3xl text-sm font-medium focus:ring-2 focus:ring-primary/10 transition-all resize-none"
             />
           </div>
+
         </form>
 
         {/* Footer Content */}

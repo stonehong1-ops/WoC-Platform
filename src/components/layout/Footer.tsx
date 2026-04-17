@@ -28,17 +28,17 @@ export default function Footer() {
 
           {/* 2. ACTIVITY PARTITION */}
           <Section label="Activity">
-            <NavItem href="/social" icon="nightlife" label="SOCIAL" active={isActive('/social')} />
-            <NavItem href="/class" icon="school" label="CLASS" active={isActive('/class')} />
             <NavItem href="/events" icon="event" label="EVENTS" active={isActive('/events')} />
-            <NavItem href="/shop" icon="storefront" label="SHOP" active={isActive('/shop')} />
-            <NavItem href="/stay" icon="bed" label="STAY" active={isActive('/stay')} />
-            <NavItem href="/service" icon="medical_services" label="SERVICE" active={isActive('/service')} />
+            <NavItem href="/social" icon="nightlife" label="SOCIAL" active={isActive('/social')} />
+            <NavItem href="/gallery" icon="photo_library" label="GALLERY" active={isActive('/gallery')} />
+            <NavItem href="/class" icon="school" label="CLASS" active={isActive('/class')} />
           </Section>
 
-          {/* 3. TOWN PARTITION */}
-          <Section label="Town">
-            <NavItem href="/resale" icon="shopping_bag" label="RESALE" active={isActive('/resale')} />
+          {/* 3. SPACE PARTITION */}
+          <Section label="Space">
+            <NavItem href="/shop" icon="storefront" label="SHOP" active={isActive('/shop')} />
+            <NavItem href="/resale" icon="shopping_bag" label="RESELL" active={isActive('/resale')} />
+            <NavItem href="/stay" icon="bed" label="STAY" active={isActive('/stay')} />
             <NavItem href="/lost" icon="find_in_page" label="LOST" active={isActive('/lost')} />
             <NavItem href="/arcade" icon="videogame_asset" label="ARCADE" active={isActive('/arcade')} />
           </Section>

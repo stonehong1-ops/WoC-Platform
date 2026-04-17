@@ -5,9 +5,11 @@ import { socialService } from '@/lib/firebase/socialService';
 import { Social } from '@/types/social';
 import SocialFilterBottomSheet from '@/components/social/SocialFilterBottomSheet';
 import EditSocialEvent from '@/components/social/EditSocialEvent';
+import { useLocation } from '@/components/providers/LocationProvider';
 
 export default function SocialPage() {
   const [regulars, setRegulars] = useState<Social[]>([]);
+  const [popups, setPopups] = useState<Social[]>([]);
   const [dailySocials, setDailySocials] = useState<Social[]>([]);
   const [activeDayOffset, setActiveDayOffset] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
@@ -20,6 +22,12 @@ export default function SocialPage() {
     organizers: [],
     venues: []
   });
+
+  const { location } = useLocation();
+
+  const countryDisplay = location.country.charAt(0).toUpperCase() + location.country.slice(1).toLowerCase();
+  const cityDisplay = location.city === 'ALL' || !location.city ? 'All' : 
+                    location.city.charAt(0).toUpperCase() + location.city.slice(1).toLowerCase();
 
   // Calculate week days starting from today
   const weekDays = Array.from({ length: 7 }, (_, i) => {
@@ -41,15 +49,26 @@ export default function SocialPage() {
         setDailySocials(data);
     });
 
+    const unsubPopups = socialService.subscribeSocials('popup', (data) => {
+        // Sort popups by date
+        const sorted = [...data].sort((a, b) => {
+            const dateA = a.date ? a.date.toMillis() : 0;
+            const dateB = b.date ? b.date.toMillis() : 0;
+            return dateA - dateB;
+        });
+        setPopups(sorted);
+    });
+
     return () => {
       unsubRegulars();
       unsubDaily();
+      unsubPopups();
     };
   }, [activeDayOffset]);
 
   // Filters
-  const organizers = Array.from(new Set([...regulars, ...dailySocials].map(s => s.organizerName)));
-  const venues = Array.from(new Set([...regulars, ...dailySocials].map(s => s.venueName)));
+  const organizers = Array.from(new Set([...regulars, ...dailySocials, ...popups].map(s => s.organizerName)));
+  const venues = Array.from(new Set([...regulars, ...dailySocials, ...popups].map(s => s.venueName)));
 
   // Filter Logic helper
   const filterSocials = (list: Social[]) => {
@@ -69,17 +88,7 @@ export default function SocialPage() {
   return (
     <main className="min-h-screen bg-[#FBFDFD] pb-32">
       {/* Header & Search */}
-      <div className="sticky top-0 z-30 bg-[#FBFDFD]/80 backdrop-blur-md px-6 pt-6 pb-4 space-y-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-black text-on-surface tracking-tighter font-headline">SOCIAL</h1>
-          <button 
-            onClick={() => setIsFilterOpen(true)}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-white border border-[#dde4e5] text-on-surface shadow-sm active:scale-90 transition-transform"
-          >
-            <span className="material-symbols-outlined text-xl">tune</span>
-          </button>
-        </div>
-        
+      <div className="sticky top-0 z-30 bg-[#FBFDFD]/80 backdrop-blur-md px-6 pt-6 pb-4">
         <div className="relative group">
           <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-400 group-focus-within:text-primary transition-colors">search</span>
           <input 
@@ -87,39 +96,49 @@ export default function SocialPage() {
             placeholder="Search socials, organizers..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-12 pl-12 pr-4 bg-white border border-[#dde4e5] rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm"
+            className="w-full h-12 pl-12 pr-14 bg-white border border-[#dde4e5] rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm"
           />
-        </div>
-
-        {/* Day Selector */}
-        <div className="flex gap-3 overflow-x-auto no-scrollbar py-2">
-          {weekDays.map((date, i) => (
-            <button
-              key={i}
-              onClick={() => setActiveDayOffset(i)}
-              className={`flex-shrink-0 flex flex-col items-center justify-center w-14 h-20 rounded-xl transition-all ${
-                activeDayOffset === i 
-                ? 'bg-primary text-white shadow-lg shadow-primary/30 scale-105' 
-                : 'bg-white text-on-surface-variant border border-[#dde4e5]'
-              }`}
-            >
-              <span className="text-[10px] font-black uppercase tracking-widest mb-1 opacity-70">
-                {date.toLocaleDateString('en-US', { weekday: 'short' })}
-              </span>
-              <span className="text-xl font-black tracking-tight">
-                {date.getDate()}
-              </span>
-            </button>
-          ))}
+          <button 
+            onClick={() => setIsFilterOpen(true)}
+            className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-xl text-on-surface-variant hover:text-primary transition-colors"
+          >
+            <span className="material-symbols-outlined text-xl">tune</span>
+          </button>
         </div>
       </div>
 
       <div className="px-6 space-y-12 mt-4">
         {/* 1. Regular Socials Carousel */}
         <section className="space-y-6">
-          <div className="flex items-end justify-between">
+          <div className="flex items-end justify-between px-1">
             <h2 className="text-2xl font-extrabold text-on-surface tracking-tight font-headline">Regular Socials</h2>
-            <span className="text-[10px] font-black uppercase tracking-widest text-primary/40">Weekly Heritage</span>
+            <div className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-primary/60">
+                <span>{countryDisplay}</span>
+                <span className="material-symbols-outlined text-[12px]">chevron_right</span>
+                <span>{cityDisplay}</span>
+            </div>
+          </div>
+
+          {/* Day Selector - Moved Here */}
+          <div className="grid grid-cols-7 gap-1.5 py-2">
+            {weekDays.map((date, i) => (
+              <button
+                key={i}
+                onClick={() => setActiveDayOffset(i)}
+                className={`flex flex-col items-center justify-center py-3 rounded-xl transition-all ${
+                  activeDayOffset === i 
+                  ? 'bg-primary text-white shadow-lg shadow-primary/30' 
+                  : 'bg-white text-on-surface-variant border border-[#dde4e5]'
+                }`}
+              >
+                <span className="text-[9px] font-black uppercase tracking-tighter mb-1 opacity-70">
+                  {date.toLocaleDateString('en-US', { weekday: 'short' })}
+                </span>
+                <span className="text-lg font-black tracking-tighter">
+                  {date.getDate()}
+                </span>
+              </button>
+            ))}
           </div>
           
           <div className="flex gap-6 overflow-x-auto no-scrollbar pb-4 -mx-6 px-6">
@@ -154,23 +173,26 @@ export default function SocialPage() {
           <h2 className="text-2xl font-extrabold text-on-surface tracking-tight font-headline">Popup Socials</h2>
 
           <div className="space-y-4">
-            {filterSocials(dailySocials).filter(s => String(s.type).toLowerCase() === 'popup').length === 0 ? (
+            {filterSocials(popups).length === 0 ? (
               <div className="w-full h-32 flex flex-col items-center justify-center opacity-30 bg-white rounded-lg border border-dashed border-gray-200">
                  <p className="text-xs font-black uppercase tracking-widest text-primary/40">No popup socials scheduled</p>
               </div>
             ) : (
-              filterSocials(dailySocials).filter(s => String(s.type).toLowerCase() === 'popup').map(social => (
+              filterSocials(popups).map(social => (
                 <div 
                   key={social.id} 
                   onClick={() => setSelectedSocial(social)}
                   className="flex items-center gap-4 p-4 bg-white rounded-lg border border-[#dde4e5] hover:border-primary/30 transition-all cursor-pointer group shadow-sm active:scale-[0.98] text-left"
                 >
                   <div className="flex flex-col items-center justify-center w-20 h-20 bg-[#F4FBFB] rounded-lg border-l-4 border-primary shrink-0">
-                    <span className="text-[10px] font-black text-primary uppercase tracking-widest mb-0.5">
-                      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date(social.date ? social.date.toDate() : new Date()).getDay()]}
+                    <span className="text-[9px] font-black text-primary uppercase tracking-widest leading-none mb-1">
+                      {new Date(social.date ? social.date.toDate() : new Date()).toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()}
                     </span>
-                    <span className="text-2xl font-black text-on-surface tracking-tighter">
+                    <span className="text-2xl font-black text-on-surface tracking-tighter leading-none mb-1">
                       {new Date(social.date ? social.date.toDate() : new Date()).getDate()}
+                    </span>
+                    <span className="text-[9px] font-bold text-on-surface-variant uppercase tracking-widest leading-none">
+                      {new Date(social.date ? social.date.toDate() : new Date()).toLocaleDateString('en-US', { month: 'short' }).toUpperCase()}
                     </span>
                   </div>
                   <div className="flex-1 space-y-0.5 text-left overflow-hidden">

@@ -2,10 +2,10 @@ import {
   Globe, Map, ShoppingBag, MessageSquare, 
   Users, Library, FileText, MapPin, 
   Store, Tent, Calendar, Cpu, 
-  Heart, Wallet, Settings 
+  Heart, Wallet, Settings, Image, Boxes
 } from 'lucide-react';
 
-export type NavGroup = 'Tango World' | 'Activity' | 'Town' | 'My Page';
+export type NavGroup = 'Tango World' | 'Activity' | 'Space' | 'My Page';
 
 export interface NavItem {
   id: string;
@@ -23,17 +23,17 @@ export const NAV_ITEMS: NavItem[] = [
   { id: 'groups', label: '그룹', group: 'Tango World', icon: Users, href: '/groups' },
 
   // Activity
-  { id: 'social', label: '소셜', group: 'Activity', icon: Heart, href: '/social' },
-  { id: 'class', label: '클래스', group: 'Activity', icon: Library, href: '/class' },
   { id: 'events', label: '이벤트', group: 'Activity', icon: Calendar, href: '/events' },
-  { id: 'shop', label: '숍', group: 'Activity', icon: ShoppingBag, href: '/shop' },
-  { id: 'stay', label: '스테이', group: 'Activity', icon: Tent, href: '/stay' },
-  { id: 'service', label: '서비스', group: 'Activity', icon: Settings, href: '/service' },
+  { id: 'social', label: '소셜', group: 'Activity', icon: Heart, href: '/social' },
+  { id: 'gallery', label: '갤러리', group: 'Activity', icon: Image, href: '/gallery' },
+  { id: 'class', label: '클래스', group: 'Activity', icon: Library, href: '/class' },
   
-  // Town
-  { id: 'resale', label: '리세일', group: 'Town', icon: Store, href: '/resale' },
-  { id: 'lost', label: '분실물', group: 'Town', icon: MessageSquare, href: '/lost' },
-  { id: 'arcade', label: '아케이드', group: 'Town', icon: Cpu, href: '/arcade' },
+  // Space
+  { id: 'shop', label: '숍', group: 'Space', icon: ShoppingBag, href: '/shop' },
+  { id: 'resale', label: '리세일', group: 'Space', icon: Store, href: '/resale' },
+  { id: 'stay', label: '스테이', group: 'Space', icon: Tent, href: '/stay' },
+  { id: 'lost', label: '분실물', group: 'Space', icon: MessageSquare, href: '/lost' },
+  { id: 'arcade', label: '아케이드', group: 'Space', icon: Cpu, href: '/arcade' },
   
   // My Page
   { id: 'wallet', label: '지갑', group: 'My Page', icon: Wallet, href: '/wallet' },

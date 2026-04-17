@@ -4,23 +4,33 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { eventService } from '@/lib/firebase/eventService';
 import { Event } from '@/types/event';
-import { format, isSameDay, isAfter, startOfDay } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { format, isSameDay, startOfDay, addDays, getDay, startOfWeek, endOfWeek, eachDayOfInterval, differenceInCalendarDays, endOfDay, isWithinInterval } from 'date-fns';
 import CreateEvent from '@/components/events/CreateEvent';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from '@/components/providers/LocationProvider';
 
+// Helper to safely convert Firestore timestamp or other date formats and strip time
+const getNormalizedDate = (val: any): Date => {
+  if (!val) return startOfDay(new Date());
+  let date: Date;
+  if (typeof val.toDate === 'function') date = val.toDate();
+  else if (val instanceof Date) date = val;
+  else {
+    try { date = new Date(val); } catch (e) { date = new Date(); }
+  }
+  return startOfDay(date);
+};
+
 export default function EventsPage() {
-  const { user } = useAuth();
   const { location } = useLocation();
   const [events, setEvents] = useState<Event[]>([]);
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  
+  const [currentDate, setCurrentDate] = useState(new Date());
+
   // Real-time Subscription
   useEffect(() => {
     const unsub = eventService.subscribeEvents((data) => {
-      // Safely set events: firestore already orders by startDate
       const validEvents = data.filter(e => e.startDate);
       setEvents(validEvents);
     });
@@ -30,306 +40,334 @@ export default function EventsPage() {
   // Filter events by location
   const filteredLocationEvents = useMemo(() => {
     if (!location) return events;
-    
     return events.filter(e => {
       const eventLoc = e.location?.toLowerCase() || '';
       const countryMatch = eventLoc.includes(location.country.toLowerCase());
-      
-      if (location.city === 'ALL') {
-        return countryMatch;
-      }
-      
+      if (location.city === 'ALL') return countryMatch;
       const cityMatch = eventLoc.includes(location.city.toLowerCase());
       return countryMatch && cityMatch;
     });
   }, [events, location]);
 
-  // Today's events
-  const todayEvents = useMemo(() => filteredLocationEvents.filter(e => {
-    try {
-      const start = typeof e.startDate.toDate === 'function' 
-        ? e.startDate.toDate() 
-        : new Date(e.startDate as any);
-      return isSameDay(start, new Date());
-    } catch (err) {
-      return false;
-    }
-  }), [filteredLocationEvents]);
+  const sortedEvents = useMemo(() => {
+    return [...filteredLocationEvents].sort((a, b) => 
+      getNormalizedDate(a.startDate).getTime() - getNormalizedDate(b.startDate).getTime()
+    );
+  }, [filteredLocationEvents]);
 
-  // Upcoming events (after today)
-  const upcomingEvents = useMemo(() => filteredLocationEvents.filter(e => {
-    try {
-      const start = typeof e.startDate.toDate === 'function' 
-        ? e.startDate.toDate() 
-        : new Date(e.startDate as any);
-      return isAfter(start, startOfDay(new Date())) && !isSameDay(start, new Date());
-    } catch (err) {
-      return false;
-    }
-  }), [filteredLocationEvents]);
+  // Upcoming Events Highlights (Next 5 events starting from today)
+  const upcomingHighlightEvents = useMemo(() => {
+    const today = startOfDay(new Date());
+    return sortedEvents
+      .filter(e => {
+        const end = getNormalizedDate(e.endDate || e.startDate);
+        return end >= today;
+      })
+      .slice(0, 5);
+  }, [sortedEvents]);
 
-  const getCategoryColor = (cat: string) => {
-    switch(cat) {
-      case 'CONFERENCE': return { text: '#1A73E8', bg: '#d8e2ff' };
-      case 'WORKSHOP': return { text: '#9f403d', bg: '#fe8983' };
-      case 'PARTY': return { text: '#7b1fa2', bg: '#f3e5f5' };
-      case 'SOCIAL': return { text: '#388e3c', bg: '#e8f5e9' };
-      case 'NETWORKING': return { text: '#5b5f64', bg: '#dfe3e8' };
-      default: return { text: '#2d3435', bg: '#f2f4f4' };
-    }
-  };
-
-  // Calendar Helper Logic
-  const calendarDays = useMemo(() => {
-    const today = new Date();
-    const start = startOfDay(today);
-    // Show 35 days (5 weeks) from current week
-    const firstDayOfWeek = today.getDay(); // 0=Sun, 1=Mon...
-    const paddingDays = (firstDayOfWeek + 6) % 7; // Mon=0
+  // Calendar Logic (5 weeks)
+  const calendarRange = useMemo(() => {
+    const startOfCurrentMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    const startOfView = startOfWeek(startOfCurrentMonth, { weekStartsOn: 1 }); 
+    const endOfView = addDays(startOfView, 34); // 5 weeks total
     
-    const days = [];
-    // Just showing a fixed range for now to represent the "upcoming" view
-    for (let i = 0; i < 35; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() - paddingDays + i);
-      days.push(date);
+    const weeks = [];
+    for (let i = 0; i < 5; i++) {
+        const weekStart = startOfDay(addDays(startOfView, i * 7));
+        const weekEnd = endOfDay(addDays(weekStart, 6));
+        weeks.push({
+            start: weekStart,
+            end: weekEnd,
+            days: eachDayOfInterval({ start: weekStart, end: weekEnd })
+        });
     }
-    return days;
-  }, []);
+    return { weeks, start: startOfView, end: endOfView };
+  }, [currentDate]);
+
+  // GLOBAL Stacking Logic: Prevent vertical jumping across weeks
+  const eventSlots = useMemo(() => {
+    const slotsMap: { [eventId: string]: number } = {};
+    const occupiedUntil: { [slot: number]: Date } = {};
+
+    // Use all events for stacking calculation to match calendar rendering
+    [...events].sort((a, b) => 
+      getNormalizedDate(a.startDate).getTime() - getNormalizedDate(b.startDate).getTime()
+    ).forEach(event => {
+      const start = getNormalizedDate(event.startDate);
+      const end = getNormalizedDate(event.endDate || event.startDate);
+      
+      let slot = 0;
+      // If a slot is occupied until or after the current event starts, move to next slot
+      while (occupiedUntil[slot] && occupiedUntil[slot] >= start) {
+        slot++;
+      }
+      slotsMap[event.id] = slot;
+      occupiedUntil[slot] = end;
+    });
+
+    return slotsMap;
+  }, [events]);
+
+  const STACK_COLORS = [
+    { bg: 'rgba(0, 68, 147, 0.08)', border: 'rgba(0, 68, 147, 0.15)', text: '#004493', dot: '#004493' },
+    { bg: 'rgba(124, 46, 0, 0.08)', border: 'rgba(124, 46, 0, 0.15)', text: '#7c2e00', dot: '#7c2e00' },
+    { bg: 'rgba(123, 31, 162, 0.08)', border: 'rgba(123, 31, 162, 0.15)', text: '#7b1fa2', dot: '#7b1fa2' },
+    { bg: 'rgba(56, 142, 60, 0.08)', border: 'rgba(56, 142, 60, 0.15)', text: '#388e3c', dot: '#388e3c' },
+    { bg: 'rgba(194, 24, 91, 0.08)', border: 'rgba(194, 24, 91, 0.15)', text: '#c2185b', dot: '#c2185b' }
+  ];
 
   return (
     <>
+      <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
       <style dangerouslySetInnerHTML={{ __html: `
-        .material-symbols-outlined {
-          font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        }
+        .font-headline { font-family: 'Manrope', sans-serif; }
+        .font-body { font-family: 'Inter', sans-serif; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); width: 100%; border-top: 1px solid #ebeeef; border-left: 1px solid #ebeeef; }
-        .calendar-day { min-height: 120px; padding: 8px; border-right: 1px solid #ebeeef; border-bottom: 1px solid #ebeeef; background: white; transition: background 0.2s; }
-        .calendar-day:hover { background: #fcfcfc; }
-        .event-bar {
-          height: 22px; font-size: 10px; font-weight: 700; display: flex; align-items: center;
-          padding: 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
-          margin-bottom: 2px; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        
+        .calendar-grid-container {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            background-color: #ffffff;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0px 12px 32px rgba(22,29,30,0.02);
+            border: 1px solid #dde4e5;
         }
+        .day-cell {
+            height: 120px; /* Fixed height for consistency */
+            padding: 12px;
+            border-right: 1px solid rgba(222, 228, 229, 0.4);
+            border-bottom: 1px solid rgba(222, 228, 229, 0.4);
+            position: relative;
+        }
+        .day-cell.weekend { background-color: rgba(238, 245, 246, 0.3); }
+        .day-cell:nth-child(7n) { border-right: none; }
+        
+        .event-bar-span {
+            position: absolute;
+            height: 24px; /* Slightly reduced height */
+            z-index: 10;
+            padding: 0 4px;
+            pointer-events: auto;
+        }
+        .event-bar-inner {
+            height: 100%;
+            border-radius: 4px;
+            padding: 0 6px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+            font-family: 'Inter', sans-serif;
+        }
+        .event-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
       `}} />
 
-      <main className="max-w-7xl mx-auto px-4 pt-6 pb-24 bg-[#f9f9f9] min-h-screen relative">
-        {/* Section: Event Today */}
-        <section className="mb-12">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="font-headline text-2xl font-extrabold tracking-tight text-[#2d3435]">Event Today</h2>
-            <div className="h-[1px] flex-grow mx-6 bg-gray-200" />
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{format(new Date(), 'MMMM d, yyyy')}</span>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col gap-16 font-body text-[#161d1e] bg-[#f4fbfb] min-h-screen">
+        
+        {/* "Upcoming Events" Highlights Section */}
+        <section className="flex flex-col gap-6">
+          <div className="flex items-center justify-between">
+            <h2 className="font-headline text-2xl font-black text-[#161d1e] tracking-tight">Upcoming</h2>
+            <div className="h-[1px] flex-grow mx-8 bg-[#dde4e5] opacity-50" />
+            <span className="text-[10px] font-black text-[#424753] uppercase tracking-[0.2em]">
+              {location ? `${location.country}, ${location.city}` : 'Global, All'}
+            </span>
           </div>
           
-          <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar -mx-4 px-4">
-            {todayEvents.length === 0 ? (
-              <div className="flex-none w-full max-w-md p-10 bg-white border border-[#ebeeef] rounded-2xl flex flex-col items-center justify-center text-center">
-                <span className="material-symbols-outlined text-gray-200 text-5xl mb-3">event_busy</span>
-                <p className="text-[12px] font-black text-gray-300 uppercase tracking-widest">No Events Scheduled for Today</p>
-              </div>
+          <div className="flex overflow-x-auto gap-5 pb-6 no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
+            {upcomingHighlightEvents.length === 0 ? (
+               <div className="w-full h-40 bg-white/50 border border-dashed border-[#dde4e5] rounded-[24px] flex items-center justify-center">
+                  <p className="text-[12px] font-black text-[#dde4e5] uppercase tracking-widest">No Upcoming Events</p>
+               </div>
             ) : (
-              todayEvents.map(event => {
-                const colors = getCategoryColor(event.category);
-                return (
-                  <div key={event.id} className="flex-none w-80 p-6 bg-white border border-[#ebeeef] rounded-2xl shadow-sm hover:shadow-xl transition-all cursor-pointer group relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-1 h-full" style={{ backgroundColor: colors.text }} />
-                    <div className="flex justify-between items-start mb-4">
-                      <span className={`text-[10px] font-bold tracking-widest uppercase px-2.5 py-1 rounded-full`} style={{ color: colors.text, backgroundColor: `${colors.bg}` }}>
-                        {event.category}
-                      </span>
-                      <span className="material-symbols-outlined text-[#596061] text-lg opacity-40 group-hover:opacity-100 transition-opacity">more_horiz</span>
-                    </div>
-                    <h3 className="font-headline font-bold text-xl leading-tight mb-4 line-clamp-2 text-[#2d3435]">{event.title}</h3>
-                    <div className="flex flex-col gap-3 text-[#596061] text-sm">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{event.locationEmoji || '📍'}</span>
-                        <span className="truncate font-medium">{event.location}</span>
+                upcomingHighlightEvents.map((event) => {
+                  const start = getNormalizedDate(event.startDate);
+                  const end = getNormalizedDate(event.endDate || event.startDate);
+                  
+                  let organizer = event.hostName || 'Organizer';
+                  let cleanDescription = event.description || '';
+                  if (cleanDescription.startsWith('[주최:')) {
+                     const match = cleanDescription.match(/\[주최:\s*([^\]]+)\]\s*(.*)/);
+                     if (match) { organizer = match[1]; cleanDescription = match[2]; }
+                  }
+
+                  const dateRange = isSameDay(start, end)
+                    ? format(start, 'MMM d')
+                    : `${format(start, 'MMM d')} - ${format(end, 'MMM d')}`;
+
+                  return (
+                    <div key={event.id} className="min-w-[280px] sm:min-w-[260px] flex-none bg-white p-5 rounded-[20px] flex flex-col gap-4 shadow-[0px_12px_32px_rgba(22,29,30,0.03)] border border-[#dde4e5]/30 hover:shadow-xl transition-all cursor-pointer group relative overflow-hidden text-left">
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-bl-full -mr-8 -mt-8 group-hover:scale-150 transition-transform duration-700" />
+                      
+                      <div className="flex justify-between items-start">
+                        <div className="flex items-center gap-2 text-primary overflow-hidden">
+                          <span className="material-symbols-outlined text-[16px] flex-shrink-0">location_on</span>
+                          <span className="font-headline text-[9px] font-extrabold uppercase tracking-widest truncate">{event.location?.split(',')[0]}</span>
+                        </div>
+                        <span className="font-headline text-[9px] font-black text-[#424753] bg-[#eef5f6] px-2.5 py-1 rounded-full uppercase tracking-tighter flex-shrink-0"> {format(start, 'EEE')} </span>
                       </div>
-                      <div className="flex items-center gap-2 font-bold text-[#1A73E8]">
-                        <span className="material-symbols-outlined text-base">schedule</span>
-                        <span>Starts at {format(event.startDate.toDate(), 'HH:mm')}</span>
+
+                      <div className="flex flex-col gap-2">
+                        <h3 className="font-headline text-[17px] font-extrabold text-[#161d1e] truncate group-hover:text-primary transition-colors leading-tight">{event.title}</h3>
+                        <div className="flex flex-col gap-1.5">
+                           <div className="flex items-center gap-1.5 text-primary/80">
+                             <span className="material-symbols-outlined text-[14px]">person</span>
+                             <p className="text-[10px] font-bold uppercase tracking-tighter truncate">{organizer}</p>
+                           </div>
+                           <p className="text-[12px] text-[#424753] opacity-70 font-medium line-clamp-1 leading-relaxed">{cleanDescription || 'Community Gathering'}</p>
+                        </div>
+                      </div>
+
+                      <div className="mt-auto pt-4 border-t border-[#dde4e5]/30">
+                        <p className="text-[10px] font-black text-primary uppercase tracking-widest"> {dateRange} </p>
                       </div>
                     </div>
-                  </div>
-                )
-              })
+                  );
+                })
             )}
           </div>
         </section>
 
-        {/* Section: Upcoming Grid / Calendar */}
-        <section className="mb-12">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="font-headline text-2xl font-extrabold tracking-tight text-[#2d3435]">Upcoming Events</h2>
-            
-            <div className="flex items-center gap-6">
-              {/* View Toggle */}
-              <div className="flex bg-[#ecedee] p-1 rounded-xl shadow-inner">
-                <button 
-                  onClick={() => setViewMode('calendar')}
-                  className={`px-4 py-2 rounded-lg text-[11px] font-black uppercase tracking-wider transition-all flex items-center gap-2 ${viewMode === 'calendar' ? 'bg-white text-[#1A73E8] shadow-sm' : 'text-[#596061] hover:text-[#2d3435]'}`}
-                >
-                  <span className="material-symbols-outlined text-base">calendar_view_month</span>
-                  Calendar
-                </button>
-                <button 
-                  onClick={() => setViewMode('list')}
-                  className={`px-4 py-2 rounded-lg text-[11px] font-black uppercase tracking-wider transition-all flex items-center gap-2 ${viewMode === 'list' ? 'bg-white text-[#1A73E8] shadow-sm' : 'text-[#596061] hover:text-[#2d3435]'}`}
-                >
-                  <span className="material-symbols-outlined text-base">list</span>
-                  List
-                </button>
+        {/* Schedule Section */}
+        <section className="flex flex-col gap-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <h2 className="font-headline text-2xl font-black text-[#161d1e] tracking-tight">All Events</h2>
+            <div className="flex items-center bg-white p-1.5 pl-5 rounded-full shadow-[0px_8px_24px_rgba(22,29,30,0.04)] border border-[#dde4e5]/50">
+              <div className="flex items-center gap-4 border-r border-[#dde4e5] pr-6 mr-6">
+                <button onClick={() => setCurrentDate(prev => addDays(prev, -30))} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#eef5f6] text-[#424753] transition-colors"><span className="material-symbols-outlined text-[20px]">chevron_left</span></button>
+                <span className="font-headline text-xs font-black text-[#161d1e] min-w-[100px] text-center uppercase tracking-[0.2em]">{format(currentDate, 'MMM, yyyy')}</span>
+                <button onClick={() => setCurrentDate(prev => addDays(prev, 30))} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#eef5f6] text-[#424753] transition-colors"><span className="material-symbols-outlined text-[20px]">chevron_right</span></button>
+              </div>
+              <div className="flex bg-[#eef5f6] rounded-full p-1">
+                <button onClick={() => setViewMode('calendar')} title="Calendar View" className={`flex items-center justify-center w-10 h-10 rounded-full transition-all ${viewMode === 'calendar' ? 'bg-primary text-white shadow-lg' : 'text-[#424753] hover:text-[#161d1e]'}`}><span className="material-symbols-outlined text-[22px]">calendar_view_month</span></button>
+                <button onClick={() => setViewMode('list')} title="List View" className={`flex items-center justify-center w-10 h-10 rounded-full transition-all ${viewMode === 'list' ? 'bg-primary text-white shadow-lg' : 'text-[#424753] hover:text-[#161d1e]'}`}><span className="material-symbols-outlined text-[22px]">format_list_bulleted</span></button>
               </div>
             </div>
           </div>
 
           <AnimatePresence mode="wait">
             {viewMode === 'calendar' ? (
-              <motion.div 
-                key="calendar"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                className="bg-white rounded-3xl overflow-hidden border border-[#ebeeef] shadow-sm"
-              >
-                {/* Week Header */}
-                <div className="grid grid-cols-7 text-center bg-[#fdfdfd] border-b border-[#ebeeef]">
-                  {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
-                    <div key={day} className="py-4 border-r border-[#ebeeef] last:border-r-0">
-                      <span className="text-[10px] font-black text-[#596061] uppercase tracking-[0.2em]">{day}</span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Calendar Grid */}
-                <div className="calendar-grid">
-                  {calendarDays.map((date, i) => {
-                    const isToday = isSameDay(date, new Date());
-                    const dayEvents = filteredLocationEvents.filter(e => {
-                      const getAsDate = (val: any) => typeof val?.toDate === 'function' ? val.toDate() : new Date(val);
-                      const start = getAsDate(e.startDate);
-                      const end = getAsDate(e.endDate || e.startDate);
-                      return (isSameDay(date, start) || (date >= start && date <= end));
+              <motion.div key="calendar-grid" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="calendar-grid-container relative">
+                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
+                  <div key={day} className="py-3 text-center border-b border-[#dde4e5] bg-[#f9fdfd]"><span className="font-headline text-[10px] font-black text-[#7c8485] uppercase tracking-[0.2em]">{day}</span></div>
+                ))}
+                {calendarRange.weeks.flatMap(w => w.days).map((date, i) => {
+                    const dayEvents = events.filter(e => {
+                        const start = getNormalizedDate(e.startDate);
+                        const end = getNormalizedDate(e.endDate || e.startDate);
+                        return isWithinInterval(date, { start, end });
                     });
+                    const hasMultiple = dayEvents.length > 1;
 
                     return (
-                      <div key={i} className={`calendar-day ${!isSameDay(date, new Date()) && date.getMonth() !== new Date().getMonth() ? 'opacity-40' : ''}`}>
-                        <div className="flex justify-between items-start mb-2">
-                          <span className={`text-[11px] font-black ${isToday ? 'bg-[#1A73E8] text-white w-6 h-6 flex items-center justify-center rounded-full translate-x-1 -translate-y-1' : 'text-[#757c7d]'}`}>
-                            {format(date, 'd')}
-                          </span>
+                        <div key={i} className={`day-cell ${[0, 6].includes(getDay(date)) ? 'weekend' : ''} ${date.getMonth() !== currentDate.getMonth() ? 'opacity-20' : ''}`}>
+                            <div className="absolute top-3 left-3 flex items-center justify-center">
+                                <span className={`font-headline text-[11px] font-black w-6 h-6 flex items-center justify-center rounded-full transition-all
+                                    ${isSameDay(date, new Date()) ? 'text-white bg-primary' : 
+                                      hasMultiple ? 'text-white bg-[#7c2e00]' : 'text-[#7c8485]'}`}>
+                                    {format(date, 'd')}
+                                </span>
+                            </div>
                         </div>
-                        <div className="flex flex-col gap-1 overflow-y-auto max-h-[80px] no-scrollbar">
-                          {dayEvents.map(event => {
-                            const colors = getCategoryColor(event.category);
-                            return (
-                              <div 
-                                key={event.id}
-                                className="event-bar group relative cursor-pointer"
-                                style={{ backgroundColor: colors.bg, color: colors.text }}
-                              >
-                                <span className="truncate">{event.locationEmoji} {event.title}</span>
-                                {/* Mini Tooltip on Hover */}
-                                <div className="absolute bottom-full left-0 mb-2 invisible group-hover:visible bg-[#2d3435] text-white p-2 rounded-lg text-[10px] z-50 w-48 shadow-xl">
-                                  <p className="font-bold mb-1">{event.title}</p>
-                                  <p className="opacity-70">{event.location}</p>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
                     );
-                  })}
+                })}
+                
+                {/* Spanning Bar Layer */}
+                <div className="absolute inset-0 top-[41px] pointer-events-none grid grid-cols-7" style={{ gridTemplateRows: 'repeat(5, 120px)' }}>
+                   {calendarRange.weeks.map((week, weekIdx) => {
+                      const weekEvents = events.filter(e => {
+                        const start = getNormalizedDate(e.startDate);
+                        const end = getNormalizedDate(e.endDate || e.startDate);
+                        return start <= week.end && end >= week.start;
+                      });
+
+                      return weekEvents.map((event) => {
+                        const start = getNormalizedDate(event.startDate);
+                        const end = getNormalizedDate(event.endDate || event.startDate);
+                        
+                        // Clip to week
+                        const renderStart = start < week.start ? week.start : start;
+                        const renderEnd = end > week.end ? week.end : end;
+                        
+                        const colStart = (getDay(renderStart) + 6) % 7 + 1;
+                        const daySpan = differenceInCalendarDays(renderEnd, renderStart) + 1;
+                        const colEnd = colStart + daySpan;
+
+                         const slotIdx = eventSlots[event.id] ?? 0;
+                         const colorSet = STACK_COLORS[slotIdx % STACK_COLORS.length];
+                         
+                         // Vertical position: Base top offset (below day number) + (slot * barHeight)
+                         const barHeight = 28;
+                         const baseTop = 38;
+
+                         return (
+                           <div key={`${event.id}-${weekIdx}`} className="event-bar-span" style={{
+                               gridRow: weekIdx + 1,
+                               gridColumnStart: colStart,
+                               gridColumnEnd: Math.min(colEnd, 8),
+                               marginTop: `${baseTop + (slotIdx * barHeight)}px`
+                             }}>
+                            <div className="event-bar-inner group" style={{ backgroundColor: colorSet.bg, borderColor: colorSet.border, color: colorSet.text }}>
+                              <span className="event-dot" style={{ backgroundColor: colorSet.dot }} />
+                              <span className="truncate">{event.locationEmoji} {event.title}</span>
+                              <div className="absolute -top-14 left-1/2 -translate-x-1/2 bg-[#161d1e] text-white p-3 rounded-xl text-[10px] opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-50 w-56 shadow-2xl border border-white/10">
+                                <div className="font-black border-b border-white/10 pb-2 mb-2 uppercase tracking-widest text-primary-fixed">{event.category}</div>
+                                <div className="font-bold mb-1">{event.title}</div>
+                                <div className="flex items-center gap-2 opacity-60"><span className="material-symbols-outlined text-[14px]">location_on</span><span>{event.location}</span></div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      });
+                   })}
                 </div>
               </motion.div>
             ) : (
-              <motion.div 
-                key="list"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-              >
-                {upcomingEvents.length === 0 ? (
-                  <div className="p-20 text-center bg-white border border-[#ebeeef] rounded-3xl">
-                    <span className="material-symbols-outlined text-gray-200 text-6xl mb-4">event_repeat</span>
-                    <p className="text-[14px] font-black text-gray-400 uppercase tracking-widest">No Events Found</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {upcomingEvents.map((event, idx) => {
-                      const colors = getCategoryColor(event.category);
-                      return (
-                        <motion.div 
-                          key={event.id}
-                          className="p-6 bg-white border border-[#ebeeef] rounded-2xl hover:border-[#1A73E8]/30 hover:shadow-xl transition-all cursor-pointer group"
-                        >
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="flex flex-col">
-                              <span className="text-[10px] font-black text-[#1A73E8] uppercase tracking-tighter mb-1">
-                                {format(event.startDate.toDate(), 'MMM d')}
-                              </span>
-                              <span className="text-lg font-bold text-[#2d3435]">
-                                {format(event.startDate.toDate(), 'yyyy')}
-                              </span>
-                            </div>
-                            <span className={`text-[9px] font-black tracking-widest uppercase px-3 py-1 rounded-full`} style={{ color: colors.text, backgroundColor: `${colors.bg}` }}>
-                              {event.category}
-                            </span>
+              <motion.div key="list-view" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.02 }} className="max-w-3xl mx-auto w-full flex flex-col gap-6">
+                {events.map(event => {
+                  const start = getNormalizedDate(event.startDate);
+                  return (
+                    <div key={event.id} className="group flex flex-col sm:flex-row gap-8 p-8 rounded-[24px] bg-white border border-[#dde4e5]/30 hover:shadow-2xl transition-all duration-500 hover:bg-[#F4FBFB]">
+                      <div className="flex sm:flex-col sm:w-28 gap-4 flex-shrink-0 text-left">
+                        <div className="flex flex-col items-center justify-center w-24 h-28 bg-[#eef5f6] rounded-[20px] shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] group-hover:bg-primary transition-all duration-500">
+                          <span className="font-headline text-xs font-black text-[#7c8485] uppercase tracking-[0.2em] mb-1 group-hover:text-white/60">{format(start, 'MMM')}</span>
+                          <span className="font-headline text-4xl font-black text-[#161d1e] tracking-tighter group-hover:text-white">{format(start, 'dd')}</span>
+                        </div>
+                      </div>
+                      <div className="flex-1 flex flex-col justify-center gap-4 text-left">
+                        <h3 className="font-headline text-2xl font-black text-[#161d1e] tracking-tight group-hover:text-primary transition-colors leading-tight">{event.title}</h3>
+                        <div className="flex flex-wrap gap-5">
+                          <div className="flex items-center gap-2 text-[#424753] font-semibold text-sm">
+                            <span className="material-symbols-outlined text-[18px] text-primary">location_on</span>
+                            <span>{event.location}</span>
                           </div>
-                          
-                          <h3 className="font-headline font-bold text-lg mb-3 leading-tight group-hover:text-[#1A73E8] transition-colors line-clamp-1">
-                            {event.title}
-                          </h3>
-                          
-                          <p className="text-xs text-gray-500 line-clamp-2 mb-4 leading-relaxed italic">
-                            {event.description}
-                          </p>
-
-                          <div className="pt-4 border-t border-gray-50 flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <span className="text-base">{event.locationEmoji || '📍'}</span>
-                              <span className="text-[11px] font-bold text-[#596061] uppercase tracking-wide truncate max-w-[120px]">
-                                {event.location}
-                              </span>
-                            </div>
-                            <div className="w-6 h-6 rounded-full bg-gray-50 flex items-center justify-center">
-                              <span className="material-symbols-outlined text-[12px] text-gray-400">person</span>
-                            </div>
-                          </div>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
-                )}
+                        </div>
+                      </div>
+                      <div className="flex items-center">
+                        <button className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-[#161d1e] text-white font-headline text-[11px] font-black uppercase tracking-[0.2em] hover:bg-primary transition-all shadow-lg active:scale-95">Details</button>
+                      </div>
+                    </div>
+                  );
+                })}
               </motion.div>
             )}
           </AnimatePresence>
         </section>
 
-        {/* Global FAB (Plaza Style) */}
-        <button 
-          onClick={() => setShowCreateModal(true)}
-          className="fixed bottom-6 right-6 w-16 h-16 bg-[#2d3435] text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50 group overflow-hidden"
-        >
-          <div className="absolute inset-0 bg-[#1A73E8] translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-          <span className="material-symbols-outlined text-[32px] font-bold relative z-10">add</span>
+        <button onClick={() => setShowCreateModal(true)} className="fixed bottom-8 right-8 w-20 h-20 bg-[#161d1e] text-white rounded-full shadow-[0px_24px_48px_rgba(22,29,30,0.3)] flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50 group overflow-hidden">
+          <div className="absolute inset-0 bg-primary translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
+          <span className="material-symbols-outlined text-[36px] relative z-10">add</span>
         </button>
-
-        {/* Create Event Modal */}
-        <AnimatePresence>
-          {showCreateModal && (
-            <CreateEvent 
-              onClose={() => setShowCreateModal(false)} 
-              onSuccess={() => {}}
-            />
-          )}
-        </AnimatePresence>
+        <AnimatePresence>{showCreateModal && (<CreateEvent onClose={() => setShowCreateModal(false)} onSuccess={() => {}} />)}</AnimatePresence>
       </main>
     </>
   );
 }
-
