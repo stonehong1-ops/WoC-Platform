@@ -245,7 +245,18 @@ export default function MapComponent({
     return { lat: coords.lat, lng: coords.lng, zoom: coords.zoom };
   }, []); // Only once at mount
 
-  const selectedVenue = useMemo(() => venues.find(v => v.id === selectedVenueId), [venues, selectedVenueId]);
+  const categoryIcons: Record<string, string> = {
+    'All': 'apps',
+    'Club': 'nightlife',
+    'Stay': 'bed',
+    'Shop': 'shopping_bag',
+    'Studio': 'theater_comedy',
+    'Academy': 'school',
+    'Beauty': 'face_5',
+    'Cafe': 'coffee',
+    'Eats': 'restaurant',
+    'Other': 'more_horiz'
+  };
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-surface-container select-none font-body">
@@ -353,18 +364,20 @@ export default function MapComponent({
       </div>
 
       {/* Layer 1: Floating Filter Icons (Top Left) */}
-      <div className="absolute top-6 left-6 z-20 flex gap-1 pointer-events-auto">
-        {categories.slice(0, 4).map((cat) => (
+      <div className="absolute top-6 left-0 right-0 z-20 flex gap-2 overflow-x-auto px-6 no-scrollbar pointer-events-auto">
+        {categories.map((cat) => (
           <button
             key={cat}
             onClick={() => toggleCategory(cat)}
-            className={`px-2 py-1 backdrop-blur-md rounded-md text-[10px] font-bold uppercase tracking-wider shadow-sm border transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 backdrop-blur-md rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm border transition-all whitespace-nowrap ${
               selectedCategories.includes(cat)
-              ? 'bg-primary/60 text-white border-white/20'
-              : 'bg-white/30 text-on-surface border-white/40 hover:bg-white/40'
+              ? 'bg-primary text-white border-primary/20'
+              : 'bg-white/70 text-on-surface border-white/40 hover:bg-white/90'
             }`}
           >
-            {selectedCategories.includes(cat) && <span className="inline-block w-1.5 h-1.5 bg-white rounded-full mr-1.5 mb-[1px]"></span>}
+            <span className="material-symbols-outlined text-[16px]">
+              {categoryIcons[cat]}
+            </span>
             {cat}
           </button>
         ))}
