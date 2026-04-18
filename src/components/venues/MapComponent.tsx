@@ -54,14 +54,19 @@ export default function MapComponent({
   const categories = ['All', 'Club', 'Stay', 'Shop', 'Studio', 'Academy', 'Beauty', 'Cafe', 'Eats', 'Other'];
 
   useEffect(() => {
-    // Sync map center/zoom when location from context changes
+    if (!map) return;
+    // Sync map center/zoom when location from context changes via map instance
     const coords = (location?.city && location.city !== 'ALL' && CITY_COORDINATES[location.city.toUpperCase()])
       ? CITY_COORDINATES[location.city.toUpperCase()]
       : (CITY_COORDINATES[location.country.toUpperCase()] || DEFAULT_COORDINATES);
     
+    map.panTo({ lat: coords.lat, lng: coords.lng });
+    map.setZoom(coords.zoom);
+    
+    // Also update state for filtering
     setCenter({ lat: coords.lat, lng: coords.lng });
     setZoom(coords.zoom);
-  }, [location]);
+  }, [location, map]);
 
   useEffect(() => {
     // Fetch all active venues globally to allow seamless discovery across bounds
@@ -233,6 +238,13 @@ export default function MapComponent({
     }
   };
 
+  const initialMapConfig = useMemo(() => {
+    const coords = (location?.city && location.city !== 'ALL' && CITY_COORDINATES[location.city.toUpperCase()])
+      ? CITY_COORDINATES[location.city.toUpperCase()]
+      : (CITY_COORDINATES[location.country.toUpperCase()] || DEFAULT_COORDINATES);
+    return { lat: coords.lat, lng: coords.lng, zoom: coords.zoom };
+  }, []); // Only once at mount
+
   const selectedVenue = useMemo(() => venues.find(v => v.id === selectedVenueId), [venues, selectedVenueId]);
 
   return (
@@ -242,8 +254,8 @@ export default function MapComponent({
         {isLoaded ? (
           <GoogleMap
             mapContainerStyle={mapContainerStyle}
-            center={center || DEFAULT_COORDINATES}
-            zoom={zoom}
+            center={initialMapConfig}
+            zoom={initialMapConfig.zoom}
             onLoad={(m) => {
               setMap(m);
               const c = m.getCenter();
