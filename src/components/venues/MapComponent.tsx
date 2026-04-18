@@ -364,15 +364,15 @@ export default function MapComponent({
       </div>
 
       {/* Layer 1: Floating Filter Icons (Top Left) */}
-      <div className="absolute top-6 left-0 right-0 z-20 flex gap-2 overflow-x-auto px-6 no-scrollbar pointer-events-auto">
+      <div className="absolute top-20 left-0 right-0 z-20 flex gap-2 overflow-x-auto px-6 no-scrollbar pointer-events-auto">
         {categories.map((cat) => (
           <button
             key={cat}
             onClick={() => toggleCategory(cat)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 backdrop-blur-md rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm border transition-all whitespace-nowrap ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 backdrop-blur-md rounded-full text-[10px] font-bold uppercase tracking-wider shadow-[0_4px_12px_rgba(0,0,0,0.08)] border transition-all whitespace-nowrap ${
               selectedCategories.includes(cat)
               ? 'bg-primary text-white border-primary/20'
-              : 'bg-white/70 text-on-surface border-white/40 hover:bg-white/90'
+              : 'bg-white/80 text-on-surface border-white/60 hover:bg-white'
             }`}
           >
             <span className="material-symbols-outlined text-[16px]">
