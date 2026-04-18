@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { 
   X, 
   Camera, 
@@ -20,7 +20,7 @@ import { storage } from '@/lib/firebase/config';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import '../gallery.css';
 
-const GalleryCreatePage = () => {
+const GalleryCreateContent = () => {
   const router = useRouter();
   const { user } = useAuth();
   
@@ -28,6 +28,10 @@ const GalleryCreatePage = () => {
   const [previews, setPreviews] = useState<string[]>([]);
   const [caption, setCaption] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [existingImages, setExistingImages] = useState<string[]>([]);
+  const searchParams = useSearchParams();
+  const editId = searchParams.get('edit');
 
   // Search States
   const [venueSearch, setVenueSearch] = useState('');
@@ -39,6 +43,27 @@ const GalleryCreatePage = () => {
   const [selectedSocial, setSelectedSocial] = useState<any | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Initial Load for Edit Mode
+  useEffect(() => {
+    if (editId) {
+      setIsEditMode(true);
+      galleryService.getPost(editId).then(post => {
+        if (post) {
+          if (user && post.authorId !== user.uid) {
+            alert('수정 권한이 없습니다.');
+            router.push('/gallery');
+            return;
+          }
+          setCaption(post.caption);
+          setExistingImages(post.media);
+          setPreviews(post.media);
+          if (post.venueId) setSelectedVenue({ id: post.venueId, name: post.venueName });
+          if (post.eventId) setSelectedSocial({ id: post.eventId, name: post.eventName });
+        }
+      });
+    }
+  }, [editId, user]);
 
   // Venue Search Logic
   useEffect(() => {
@@ -93,23 +118,41 @@ const GalleryCreatePage = () => {
   };
 
   const removeImage = (index: number) => {
-    const newImages = [...images];
-    const newPreviews = [...previews];
-    newImages.splice(index, 1);
-    newPreviews.splice(index, 1);
-    setImages(newImages);
-    setPreviews(newPreviews);
+    const previewToRemove = previews[index];
+    
+    // If it's an existing image (URL)
+    if (existingImages.includes(previewToRemove)) {
+      setExistingImages(prev => prev.filter(url => url !== previewToRemove));
+    } else {
+      // It's a new file. Find its index in the 'images' array.
+      // We need to know which of the 'previews' are new files.
+      const newImagesStartIndex = existingImages.length;
+      const fileIndex = index - newImagesStartIndex;
+      if (fileIndex >= 0) {
+        setImages(prev => {
+          const next = [...prev];
+          next.splice(fileIndex, 1);
+          return next;
+        });
+      }
+    }
+
+    setPreviews(prev => {
+      const next = [...prev];
+      next.splice(index, 1);
+      return next;
+    });
   };
 
   const handlePost = async () => {
     if (!user) return alert('로그인이 필요합니다.');
-    if (images.length === 0) return alert('최소 1장의 사진이 필요합니다.');
+    if (images.length === 0 && existingImages.length === 0) return alert('최소 1장의 사진이 필요합니다.');
     if (!caption.trim()) return alert('설명을 입력해주세요.');
 
     setIsUploading(true);
     try {
-      // 1. Upload Images to Storage
-      const imageUrls = await Promise.all(
+      // 1. Upload NEW Images to Storage
+      const newImageUrls = await Promise.all(
         images.map(async (file) => {
           const storageRef = ref(storage, `gallery/${user.uid}/${Date.now()}_${file.name}`);
           const snapshot = await uploadBytes(storageRef, file);
@@ -117,23 +160,37 @@ const GalleryCreatePage = () => {
         })
       );
 
-      // 2. Save to Firestore
-      await galleryService.createPost({
-        authorId: user.uid,
-        authorName: user.displayName || 'Anonymous',
-        authorPhoto: user.photoURL || '',
-        media: imageUrls,
-        caption: caption,
-        venueId: selectedVenue?.id || '',
-        venueName: selectedVenue?.name || '',
-        eventId: selectedSocial?.id || '',
-        eventName: selectedSocial?.name || '',
-      });
+      const finalMedia = [...existingImages, ...newImageUrls];
+
+      if (isEditMode && editId) {
+        // Update existing post
+        await galleryService.updatePost(editId, {
+          media: finalMedia,
+          caption: caption,
+          venueId: selectedVenue?.id || '',
+          venueName: selectedVenue?.name || '',
+          eventId: selectedSocial?.id || '',
+          eventName: selectedSocial?.name || '',
+        });
+      } else {
+        // Create NEW post
+        await galleryService.createPost({
+          authorId: user.uid,
+          authorName: user.displayName || 'Anonymous',
+          authorPhoto: user.photoURL || '',
+          media: finalMedia,
+          caption: caption,
+          venueId: selectedVenue?.id || '',
+          venueName: selectedVenue?.name || '',
+          eventId: selectedSocial?.id || '',
+          eventName: selectedSocial?.name || '',
+        });
+      }
 
       router.push('/gallery');
     } catch (error) {
       console.error(error);
-      alert('게시 중 오류가 발생했습니다.');
+      alert(isEditMode ? '수정 중 오류가 발생했습니다.' : '게시 중 오류가 발생했습니다.');
     } finally {
       setIsUploading(false);
     }
@@ -144,13 +201,13 @@ const GalleryCreatePage = () => {
       {/* Header */}
       <div className="create-header">
         <button onClick={() => router.back()}><ChevronLeft size={24} /></button>
-        <span className="create-title">New Post</span>
+        <span className="create-title">{isEditMode ? 'Edit Post' : 'New Post'}</span>
         <button 
           className="btn-post" 
           onClick={handlePost} 
-          disabled={isUploading || images.length === 0}
+          disabled={isUploading || (images.length === 0 && existingImages.length === 0)}
         >
-          {isUploading ? 'Posting...' : 'Post'}
+          {isUploading ? (isEditMode ? 'Updating...' : 'Posting...') : (isEditMode ? 'Update' : 'Post')}
         </button>
       </div>
 
@@ -271,5 +328,15 @@ const GalleryCreatePage = () => {
     </div>
   );
 };
+
+const GalleryCreatePage = () => (
+  <Suspense fallback={
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+    </div>
+  }>
+    <GalleryCreateContent />
+  </Suspense>
+);
 
 export default GalleryCreatePage;

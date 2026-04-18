@@ -11,7 +11,9 @@ import {
   Plus, 
   X, 
   MoreHorizontal,
-  Bookmark
+  Bookmark,
+  Trash2,
+  Edit2
 } from 'lucide-react';
 import { galleryService, GalleryPost, GalleryComment } from '@/lib/firebase/galleryService';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -117,7 +119,16 @@ const GalleryCard = ({
   const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!user) return alert('로그인이 필요합니다.');
+    const newIsLiked = !isLiked;
     await galleryService.toggleLike(post.id, user.uid, isLiked);
+  };
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user || user.uid !== post.authorId) return;
+    if (confirm('정말로 이 게시물을 삭제하시겠습니까?')) {
+      await galleryService.deletePost(post.id);
+    }
   };
 
   const formatTime = (timestamp: any) => {
@@ -145,9 +156,25 @@ const GalleryCard = ({
             <span className="post-time">{formatTime(post.createdAt)}</span>
           </span>
         </div>
-        <button className="text-white">
-          <MoreHorizontal size={20} />
-        </button>
+        <div className="flex gap-2">
+          {user?.uid === post.authorId && (
+            <>
+              <Link 
+                href={`/gallery/create?edit=${post.id}`} 
+                className="text-white opacity-80 hover:opacity-100"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Edit2 size={20} />
+              </Link>
+              <button className="text-white opacity-80 hover:opacity-100" onClick={handleDelete}>
+                <Trash2 size={20} />
+              </button>
+            </>
+          )}
+          <button className="text-white">
+            <MoreHorizontal size={20} />
+          </button>
+        </div>
       </div>
 
       {/* Media Carousel */}
@@ -157,7 +184,7 @@ const GalleryCard = ({
         onScroll={handleScroll}
       >
         {post.media.map((url, idx) => (
-          <div key={idx} className="gallery-media-item">
+          <div key={idx} className="gallery-media-item" onClick={onOpenViewer}>
             <img src={url} alt="" />
           </div>
         ))}

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { eventService } from '@/lib/firebase/eventService';
 import { Event } from '@/types/event';
-import { format, isSameDay, startOfDay, addDays, getDay, startOfWeek, endOfWeek, eachDayOfInterval, differenceInCalendarDays, endOfDay, isWithinInterval } from 'date-fns';
+import { format, isSameDay, startOfDay, addDays, getDay, startOfWeek, endOfWeek, eachDayOfInterval, differenceInCalendarDays, endOfDay, isWithinInterval, startOfMonth, endOfMonth } from 'date-fns';
 import CreateEvent from '@/components/events/CreateEvent';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from '@/components/providers/LocationProvider';
@@ -274,9 +274,7 @@ export default function EventsPage() {
                         <div key={i} className={`day-cell ${[0, 6].includes(getDay(date)) ? 'weekend' : ''} ${date.getMonth() !== currentDate.getMonth() ? 'opacity-20' : ''}`}>
                             <div className="absolute top-3 left-3 flex flex-col items-center">
                                 <span className={`font-headline text-[11px] font-black w-6 h-6 flex items-center justify-center rounded-full transition-all
-                                    ${isToday ? 'text-white bg-primary shadow-lg scale-110' : 
-                                      hasMultiple ? 'text-white bg-[#7c2e00]' : 
-                                      hasEvents ? 'text-[#161d1e] bg-[#dde4e5]' : 'text-[#7c8485]'}`}>
+                                    ${isToday ? 'text-white bg-primary shadow-lg scale-110' : 'text-[#7c8485]'}`}>
                                     {date.getDate()}
                                 </span>
                                 {isFirstDay && (
@@ -307,7 +305,7 @@ export default function EventsPage() {
                         const renderEnd = end > week.end ? week.end : end;
                         
                         const colStart = (getDay(renderStart) + 6) % 7 + 1;
-                        const daySpan = differenceInCalendarDays(renderEnd, renderStart) + 1;
+                        const daySpan = differenceInCalendarDays(startOfDay(renderEnd), startOfDay(renderStart)) + 1;
                         const colEnd = colStart + daySpan;
 
                          const slotIdx = eventSlots[event.id] ?? 0;
@@ -342,27 +340,44 @@ export default function EventsPage() {
               </motion.div>
             ) : (
               <motion.div key="list-view" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.02 }} className="max-w-3xl mx-auto w-full flex flex-col gap-6">
-                {events.map(event => {
+                {events.filter(e => {
+                  const s = getNormalizedDate(e.startDate);
+                  const end = getNormalizedDate(e.endDate || e.startDate);
+                  const viewStart = startOfMonth(currentDate);
+                  const viewEnd = endOfMonth(currentDate);
+                  return s <= viewEnd && end >= viewStart;
+                }).map(event => {
                   const start = getNormalizedDate(event.startDate);
+                  const end = getNormalizedDate(event.endDate || event.startDate);
+                  const dateRange = isSameDay(start, end)
+                    ? format(start, 'EEE, d MMM yyyy')
+                    : `${format(start, 'EEE, d MMM')} - ${format(end, 'EEE, d MMM yyyy')}`;
+                  
                   return (
-                    <div key={event.id} className="group flex flex-col sm:flex-row gap-8 p-8 rounded-[24px] bg-white border border-[#dde4e5]/30 hover:shadow-2xl transition-all duration-500 hover:bg-[#F4FBFB]">
-                      <div className="flex sm:flex-col sm:w-28 gap-4 flex-shrink-0 text-left">
-                        <div className="flex flex-col items-center justify-center w-24 h-28 bg-[#eef5f6] rounded-[20px] shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] group-hover:bg-primary transition-all duration-500">
-                          <span className="font-headline text-xs font-black text-[#7c8485] uppercase tracking-[0.2em] mb-1 group-hover:text-white/60">{format(start, 'MMM')}</span>
-                          <span className="font-headline text-4xl font-black text-[#161d1e] tracking-tighter group-hover:text-white">{format(start, 'dd')}</span>
-                        </div>
+                    <div key={event.id} className="group flex gap-6 p-6 sm:p-8 rounded-[24px] bg-white border border-[#dde4e5]/30 hover:shadow-2xl transition-all duration-500 hover:bg-[#F4FBFB] items-start">
+                      <div className="flex flex-col items-center justify-center w-20 h-24 sm:w-24 sm:h-28 bg-[#eef5f6] rounded-[20px] shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] group-hover:bg-primary transition-all duration-500 flex-shrink-0">
+                        <span className="text-[10px] font-black text-[#7c8485] group-hover:text-white/70 uppercase tracking-widest mb-1">{format(start, 'MMM')}</span>
+                        <span className="text-3xl sm:text-4xl font-black text-[#161d1e] group-hover:text-white transition-colors tracking-tighter">{format(start, 'd')}</span>
                       </div>
-                      <div className="flex-1 flex flex-col justify-center gap-4 text-left">
-                        <h3 className="font-headline text-2xl font-black text-[#161d1e] tracking-tight group-hover:text-primary transition-colors leading-tight">{event.title}</h3>
-                        <div className="flex flex-wrap gap-5">
-                          <div className="flex items-center gap-2 text-[#424753] font-semibold text-sm">
+
+                      <div className="flex-1 flex flex-col justify-center gap-2 py-1">
+                        <h3 className="text-xl sm:text-2xl font-black text-primary group-hover:text-primary transition-colors leading-tight">{event.title}</h3>
+                        <div className="flex flex-col gap-1.5 mt-1">
+                          <div className="flex items-center gap-2 text-[#424753] font-bold">
                             <span className="material-symbols-outlined text-[18px] text-primary">location_on</span>
-                            <span>{event.location}</span>
+                            <span className="text-[13px] sm:text-[14px]">{event.location}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-[#7c8485] font-black">
+                            <span className="material-symbols-outlined text-[18px]">calendar_today</span>
+                            <span className="text-[11px] sm:text-[12px] uppercase tracking-tighter">{dateRange}</span>
                           </div>
                         </div>
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          <span className="px-3 py-1 rounded-full bg-[#f0f4f5] text-[9px] font-black text-[#424753] uppercase tracking-widest">{event.category}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center">
-                        <button className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-[#161d1e] text-white font-headline text-[11px] font-black uppercase tracking-[0.2em] hover:bg-primary transition-all shadow-lg active:scale-95">Details</button>
+                      <div className="hidden sm:flex self-center">
+                        <button className="px-6 py-3 rounded-xl bg-[#161d1e] text-white font-headline text-[10px] font-black uppercase tracking-[0.2em] hover:bg-primary transition-all shadow-lg">Details</button>
                       </div>
                     </div>
                   );

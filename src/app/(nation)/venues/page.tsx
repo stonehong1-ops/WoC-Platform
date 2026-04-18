@@ -5,6 +5,8 @@ import dynamic from 'next/dynamic';
 import { useJsApiLoader } from '@react-google-maps/api';
 import PageWrapper from '@/components/layout/PageWrapper';
 import ManageEntry from '@/components/venues/ManageEntry';
+import { venueService } from '@/lib/firebase/venueService';
+import { Venue } from '@/types/venue';
 
 // Defensive Architecture 2: Dynamically import MapComponent with ssr: false
 const MapComponent = dynamic(() => import('@/components/venues/MapComponent'), { 
@@ -18,12 +20,36 @@ const libraries: ("places" | "drawing" | "geometry" | "visualization")[] = ["pla
 
 export default function VenuesPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingVenue, setEditingVenue] = useState<Venue | null>(null);
 
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
     mapIds: ["425069951fef97d91810ab94"],
     libraries
   });
+
+  const handleRegisterOpen = () => {
+    setEditingVenue(null);
+    setIsEditModalOpen(true);
+  };
+
+  const handleEdit = (venue: any) => {
+    // Map minimal venue type to full Venue type if needed, 
+    // but here we just pass it to ManageEntry which should handle it.
+    setEditingVenue(venue as Venue);
+    setIsEditModalOpen(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (confirm('Are you sure you want to delete this venue?')) {
+      try {
+        await venueService.deleteVenue(id);
+      } catch (error) {
+        console.error('Failed to delete venue:', error);
+        alert('Failed to delete venue.');
+      }
+    }
+  };
 
   if (loadError) return <div className="p-10 text-center font-bold text-error">Error loading maps system.</div>;
 
@@ -32,13 +58,19 @@ export default function VenuesPage() {
       <div className="relative h-screen w-full -mt-16 sm:mt-0 overflow-hidden">
         <MapComponent 
           isLoaded={isLoaded}
-          onRegisterOpen={() => setIsEditModalOpen(true)}
+          onRegisterOpen={handleRegisterOpen}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
         />
 
         <ManageEntry
           isOpen={isEditModalOpen}
-          onClose={() => setIsEditModalOpen(false)}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setEditingVenue(null);
+          }}
           isLoaded={isLoaded}
+          initialData={editingVenue}
         />
       </div>
     </PageWrapper>

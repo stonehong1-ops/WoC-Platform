@@ -127,5 +127,22 @@ export const galleryService = {
   // 6. Delete Post
   async deletePost(postId: string) {
     await deleteDoc(doc(db, GALLERY_COLLECTION, postId));
+  },
+
+  // 7. Get Single Post
+  async getPost(postId: string) {
+    const docRef = doc(db, GALLERY_COLLECTION, postId);
+    const snapshot = await getDocs(query(collection(db, GALLERY_COLLECTION), where('__name__', '==', postId)));
+    if (snapshot.empty) return null;
+    return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as GalleryPost;
+  },
+
+  // 8. Update Post
+  async updatePost(postId: string, data: Partial<GalleryPost>) {
+    const postRef = doc(db, GALLERY_COLLECTION, postId);
+    await updateDoc(postRef, {
+      ...data,
+      updatedAt: serverTimestamp()
+    });
   }
 };

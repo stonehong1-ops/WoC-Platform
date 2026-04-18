@@ -1,15 +1,18 @@
 "use client";
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { db } from '@/lib/firebase/clientApp';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
 import { useLocation } from '@/components/providers/LocationProvider';
 import { GoogleMap, Autocomplete, Marker } from '@react-google-maps/api';
+import { venueService } from '@/lib/firebase/venueService';
+import { Venue } from '@/types/venue';
 
 interface ManageEntryProps {
   isOpen: boolean;
   onClose: () => void;
   isLoaded: boolean;
+  initialData?: Venue | null;
 }
 
 const mapContainerStyle = {
@@ -20,7 +23,7 @@ const mapContainerStyle = {
 
 const CIRCLE_PATH = 0;
 
-export default function ManageEntry({ isOpen, onClose, isLoaded }: ManageEntryProps) {
+export default function ManageEntry({ isOpen, onClose, isLoaded, initialData }: ManageEntryProps) {
   const { location } = useLocation();
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
@@ -41,6 +44,38 @@ export default function ManageEntry({ isOpen, onClose, isLoaded }: ManageEntryPr
   });
 
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        name: initialData.name,
+        nameKo: initialData.nameKo || '',
+        categories: initialData.types || [initialData.category],
+        address: initialData.address,
+        detailAddress: (initialData as any).detailAddress || '',
+        city: initialData.city,
+        country: (initialData as any).country || '',
+        zone: (initialData as any).zone || '',
+        latitude: initialData.coordinates.latitude,
+        longitude: initialData.coordinates.longitude,
+        images: [], // Images are tricky, usually we handle them separately or keep existing ones
+      });
+    } else {
+      setFormData({
+        name: '',
+        nameKo: '',
+        categories: [],
+        address: '',
+        detailAddress: '',
+        city: '',
+        country: '',
+        zone: '',
+        latitude: 37.5575,
+        longitude: 126.9244,
+        images: [],
+      });
+    }
+  }, [initialData, isOpen]);
 
   const categoriesList = [
     { id: 'Studio', label: 'Studio', icon: 'workspaces' },
@@ -146,10 +181,10 @@ export default function ManageEntry({ isOpen, onClose, isLoaded }: ManageEntryPr
     }
     setSaving(true);
     try {
-      await addDoc(collection(db, "venues"), {
+      const payload: any = {
         name: formData.name,
         nameKo: formData.nameKo,
-        categories: formData.categories,
+        types: formData.categories,
         category: formData.categories[0], 
         address: formData.address,
         detailAddress: formData.detailAddress,
@@ -158,9 +193,16 @@ export default function ManageEntry({ isOpen, onClose, isLoaded }: ManageEntryPr
         zone: formData.zone,
         coordinates: { latitude: Number(formData.latitude), longitude: Number(formData.longitude) },
         status: 'active',
-        createdAt: serverTimestamp()
-      });
-      alert('Venue saved successfully!');
+      };
+
+      if (initialData?.id) {
+        await venueService.updateVenue(initialData.id, payload);
+        alert('Venue updated successfully!');
+      } else {
+        payload.createdAt = serverTimestamp();
+        await addDoc(collection(db, "venues"), payload);
+        alert('Venue saved successfully!');
+      }
       onClose();
     } catch (error: any) {
       console.error("Error saving venue:", error);
@@ -178,7 +220,9 @@ export default function ManageEntry({ isOpen, onClose, isLoaded }: ManageEntryPr
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-[2001] bg-white flex justify-between items-center w-full px-6 h-16 border-b border-[#dde4e5]">
         <button onClick={onClose} className="p-2 hover:bg-[#e8eff0] transition-colors rounded-full"><span className="material-symbols-outlined text-[#161D1E]">close</span></button>
-        <h1 className="font-headline text-[13px] font-black text-[#2D3435] uppercase tracking-widest">Register Venue</h1>
+        <h1 className="font-headline text-[13px] font-black text-[#2D3435] uppercase tracking-widest">
+          {initialData ? 'Edit Venue' : 'Register Venue'}
+        </h1>
         <button onClick={handleSubmit} disabled={saving} className="px-5 py-2 bg-[#005BC0] text-white font-black rounded-xl active:scale-95 transition-all text-[11px] uppercase tracking-widest disabled:opacity-50">
           {saving ? 'WAIT' : 'SAVE'}
         </button>
