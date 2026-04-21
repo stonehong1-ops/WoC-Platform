@@ -5,6 +5,7 @@ Rollback Goal: Under 10 minutes (Git Tag + Vercel Promote).
 
 | Version | Date | Status | Git Tag | Description | Vercel URL |
 |---------|------|--------|---------|-------------|------------|
+| **v2.4.0** | 2026-04-22 | ✅ Stable | `v2.4.0` | Infra: Photo Migration & PWA Logo Sync | https://www.woc.today |
 | **v2.3.0** | 2026-04-21 | ✅ Stable | `v2.3.0` | State: Migration & Fixes finalized | https://www.woc.today |
 | **v2.2.2** | 2026-04-21 | ✅ Stable | `v2.2.2` | Fix: Firestore rules for 'groups' & Agent Rules update | https://www.woc.today |
 
