@@ -136,10 +136,14 @@ export default function SpaceHome({ community }: { community: Community }) {
             <h3 className="px-2 mb-2 text-[10px] uppercase tracking-[0.15em] font-bold text-[#a3abd7]">App Settings</h3>
             <div className="space-y-1">
               {[
-                { icon: "person_edit", label: "Setup Profile" },
+                { icon: "person_edit", label: "Setup Profile", path: "/my-info" },
                 { icon: "settings_applications", label: "Community Settings" },
               ].map((item) => (
-                <button key={item.label} className="w-full flex items-center gap-3 px-4 py-3 text-[#242c51] dark:text-slate-300 hover:bg-[#f7f5ff] dark:hover:bg-slate-800 rounded-xl hover:translate-x-1 transition-transform duration-200">
+                <button 
+                  key={item.label} 
+                  onClick={() => item.path && router.push(item.path)}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-[#242c51] dark:text-slate-300 hover:bg-[#f7f5ff] dark:hover:bg-slate-800 rounded-xl hover:translate-x-1 transition-transform duration-200"
+                >
                   <span className="material-symbols-outlined">{item.icon}</span>
                   <span>{item.label}</span>
                 </button>
