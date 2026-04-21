@@ -15,17 +15,18 @@ export default function PageWrapper({ children }: { children: React.ReactNode })
   const isSocial = pathname.startsWith('/social');
   const isLanding = pathname === '/';
   const isLogin = pathname === '/login';
+  const isSpace = pathname.startsWith('/space/');
   
   const isPublic = isLanding || isLogin || isGallery || isVenues || isEvents || isSocial;
 
   useEffect(() => {
-    if (!loading && !isPublic && (!user || !profile?.isRegistered)) {
+    if (!loading && !isPublic && !isSpace && (!user || !profile?.isRegistered)) {
       setShowLogin(true);
     }
-  }, [user, profile, loading, isPublic, setShowLogin]);
+  }, [user, profile, loading, isPublic, isSpace, setShowLogin]);
 
   return (
-    <main className={(isLanding || isVenues) ? "" : "pt-16 pb-[60px]"}>
+    <main className={(isLanding || isVenues || isSpace) ? "" : "pt-16 pb-[60px]"}>
       {children}
     </main>
   );

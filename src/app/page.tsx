@@ -7,7 +7,7 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { useNavigation } from '@/components/providers/NavigationProvider';
 
 export default function LandingPage() {
-  const { user, profile, loading, setShowLogin } = useAuth();
+  const { user, profile, setShowLogin } = useAuth();
   const { toggleDrawer } = useNavigation();
   const router = useRouter();
 

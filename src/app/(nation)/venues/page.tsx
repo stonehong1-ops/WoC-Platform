@@ -21,6 +21,7 @@ const libraries: ("places" | "drawing" | "geometry" | "visualization")[] = ["pla
 export default function VenuesPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingVenue, setEditingVenue] = useState<Venue | null>(null);
+  const [editMode, setEditMode] = useState<'edit' | 'geo'>('edit');
 
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
@@ -30,13 +31,15 @@ export default function VenuesPage() {
 
   const handleRegisterOpen = () => {
     setEditingVenue(null);
+    setEditMode('edit');
     setIsEditModalOpen(true);
   };
 
-  const handleEdit = (venue: any) => {
+  const handleEdit = (venue: any, mode: 'edit' | 'geo' = 'edit') => {
     // Map minimal venue type to full Venue type if needed, 
     // but here we just pass it to ManageEntry which should handle it.
     setEditingVenue(venue as Venue);
+    setEditMode(mode);
     setIsEditModalOpen(true);
   };
 
@@ -71,6 +74,7 @@ export default function VenuesPage() {
           }}
           isLoaded={isLoaded}
           initialData={editingVenue}
+          mode={editMode}
         />
       </div>
     </PageWrapper>

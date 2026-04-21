@@ -1,0 +1,1107 @@
+[
+  {
+    "nameKo": "오나다",
+    "name": "Onada",
+    "address": "서울특별시 마포구 동교로 193",
+    "detailAddress": "동진빌딩 지하 1층",
+    "city": "SEOUL",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 37.5576722,
+      "longitude": 126.9225812
+    },
+    "status": "active",
+    "region": "Seoul"
+  },
+  {
+    "nameKo": "오뜨라",
+    "name": "Otra",
+    "address": "서울특별시 마포구 홍익로5안길 20",
+    "detailAddress": "지하 1층",
+    "city": "SEOUL",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 37.553752,
+      "longitude": 126.9215423
+    },
+    "status": "active",
+    "region": "Seoul"
+  },
+  {
+    "nameKo": "오초",
+    "name": "Ocho",
+    "address": "서울특별시 마포구 월드컵북로2길 57",
+    "detailAddress": "지하 1층",
+    "city": "SEOUL",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 37.5574993,
+      "longitude": 126.9232963
+    },
+    "status": "active",
+    "region": "Seoul"
+  },
+  {
+    "nameKo": "안단테",
+    "name": "Andante",
+    "address": "서울특별시 마포구 양화로12길 24",
+    "detailAddress": "지하 1층",
+    "city": "SEOUL",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 37.5517434,
+      "longitude": 126.9184714
+    },
+    "status": "active",
+    "region": "Seoul"
+  },
+  {
+    "nameKo": "프리스타일",
+    "name": "Freestyle",
+    "address": "서울특별시 마포구 양화로3길 55",
+    "detailAddress": "지하 2층",
+    "city": "SEOUL",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 37.5513246,
+      "longitude": 126.9109233
+    },
+    "status": "active",
+    "region": "Seoul"
+  },
+  {
+    "nameKo": "에이비탱고",
+    "name": "AB Tango",
+    "address": "서울특별시 성동구 성덕정9가길 2",
+    "detailAddress": "1층/지하",
+    "city": "SEOUL",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 37.5394462,
+      "longitude": 127.0502127
+    },
+    "status": "active",
+    "region": "Seoul"
+  },
+  {
+    "nameKo": "엘땅고",
+    "name": "El Tango",
+    "address": "서울특별시 서초구 주흥길 12",
+    "detailAddress": "2층",
+    "city": "SEOUL",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 37.5044284,
+      "longitude": 127.0206468
+    },
+    "status": "active",
+    "region": "Seoul"
+  },
+  {
+    "nameKo": "또도땅고",
+    "name": "Todo tango",
+    "address": "서울특별시 강남구 언주로172길 7",
+    "detailAddress": "지하 1층",
+    "city": "SEOUL",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 37.5278884,
+      "longitude": 127.0344858
+    },
+    "status": "active",
+    "region": "Seoul"
+  },
+  {
+    "nameKo": "엔빠스",
+    "name": "En Paz Studio",
+    "address": "서울특별시 서초구 반포대로30길 82",
+    "detailAddress": "지하 1층",
+    "city": "SEOUL",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 37.492636,
+      "longitude": 127.0129631
+    },
+    "status": "active",
+    "region": "Seoul"
+  },
+  {
+    "nameKo": "클럽판",
+    "name": "Club PAN",
+    "address": "서울특별시 서초구 강남대로 595",
+    "detailAddress": "지하 1층",
+    "city": "SEOUL",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 37.5148446,
+      "longitude": 127.0194574
+    },
+    "status": "active",
+    "region": "Seoul"
+  },
+  {
+    "nameKo": "마젠타",
+    "name": "Magenta",
+    "address": "서울특별시 강남구 선릉로 709",
+    "detailAddress": "지하 1층",
+    "city": "SEOUL",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 37.5182165,
+      "longitude": 127.0406688
+    },
+    "status": "active",
+    "region": "Seoul"
+  },
+  {
+    "nameKo": "탱고라이프",
+    "name": "TangoLife",
+    "address": "서울특별시 강남구 역삼로 109",
+    "detailAddress": "B05호 지하 1층",
+    "city": "SEOUL",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 37.49366029999999,
+      "longitude": 127.0310159
+    },
+    "status": "active",
+    "region": "Seoul"
+  },
+  {
+    "nameKo": "서아탱",
+    "name": "S.A.T.A",
+    "address": "서울특별시 마포구 홍익로6길 10",
+    "detailAddress": "4층",
+    "city": "SEOUL",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 37.5550091,
+      "longitude": 126.9226877
+    },
+    "status": "active",
+    "region": "Seoul"
+  },
+  {
+    "nameKo": "소셜탱고아카데미",
+    "name": "Socialtango Academy",
+    "address": "서울특별시 마포구 동교로 201",
+    "detailAddress": "4층",
+    "city": "SEOUL",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 37.5582237,
+      "longitude": 126.9229514
+    },
+    "status": "active",
+    "region": "Seoul"
+  },
+  {
+    "nameKo": "스튜디오엘리",
+    "name": "Studio Elly",
+    "address": "서울특별시 마포구 연남로3길 72",
+    "detailAddress": "지하 1층",
+    "city": "SEOUL",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 37.5597292,
+      "longitude": 126.9190383
+    },
+    "status": "active",
+    "region": "Seoul"
+  },
+  {
+    "nameKo": "운포코데탱고",
+    "name": "Un Poco de Tango",
+    "address": "서울특별시 마포구 월드컵북로2길 12",
+    "detailAddress": "1층",
+    "city": "SEOUL",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 37.5575748,
+      "longitude": 126.9234799
+    },
+    "status": "active",
+    "region": "Seoul"
+  },
+  {
+    "nameKo": "탱고파시온",
+    "name": "Tango Pasion",
+    "address": "서울특별시 마포구 월드컵북로6길 69",
+    "detailAddress": "지하 1층",
+    "city": "SEOUL",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 37.5597715,
+      "longitude": 126.9217747
+    },
+    "status": "active",
+    "region": "Seoul"
+  },
+  {
+    "nameKo": "탱고브루호",
+    "name": "Tango Brujo",
+    "address": "서울특별시 마포구 잔다리로 68",
+    "detailAddress": "지하 1층",
+    "city": "SEOUL",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 37.5538501,
+      "longitude": 126.9171659
+    },
+    "status": "active",
+    "region": "Seoul"
+  },
+  {
+    "nameKo": "솔땅연습실",
+    "name": "Soltang Studio",
+    "address": "서울특별시 관악구 남현길 6",
+    "detailAddress": "지하 1층",
+    "city": "SEOUL",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 37.4762669,
+      "longitude": 126.977415
+    },
+    "status": "active",
+    "region": "Seoul"
+  },
+  {
+    "nameKo": "피스타",
+    "name": "Tango Pista",
+    "address": "서울특별시 마포구 월드컵북로6길 49",
+    "detailAddress": "지하 1층",
+    "city": "SEOUL",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 37.5592151,
+      "longitude": 126.9208666
+    },
+    "status": "active",
+    "region": "Seoul"
+  },
+  {
+    "nameKo": "플레이스오션",
+    "name": "Place Ocean",
+    "address": "서울특별시 마포구 월드컵북로6길 40",
+    "detailAddress": "지하 1층",
+    "city": "SEOUL",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 37.5590938,
+      "longitude": 126.9211789
+    },
+    "status": "active",
+    "region": "Seoul"
+  },
+  {
+    "nameKo": "클럽뜨로일로",
+    "name": "Club Troilo",
+    "address": "서울특별시 마포구 연남로 9",
+    "detailAddress": "지하 1층",
+    "city": "SEOUL",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 37.5606021,
+      "longitude": 126.9230251
+    },
+    "status": "active",
+    "region": "Seoul"
+  },
+  {
+    "nameKo": "보니따",
+    "name": "Bonita",
+    "address": "서울특별시 마포구 와우산로21길 31",
+    "detailAddress": "지하 1층",
+    "city": "SEOUL",
+    "category": "Club",
+    "types": [
+      "Club"
+    ],
+    "coordinates": {
+      "latitude": 37.5522583,
+      "longitude": 126.9221208
+    },
+    "status": "active",
+    "region": "Seoul"
+  },
+  {
+    "nameKo": "탱고하우스",
+    "name": "Tango House",
+    "address": "서울특별시 강남구 역삼로 152",
+    "detailAddress": "지하 1층",
+    "city": "SEOUL",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 37.4946468,
+      "longitude": 127.0359602
+    },
+    "status": "active",
+    "region": "Seoul"
+  },
+  {
+    "nameKo": "피에스타(강남)",
+    "name": "Fiesta",
+    "address": "서울특별시 서초구 서초대로 397",
+    "detailAddress": "지하 1층",
+    "city": "SEOUL",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 37.4974995,
+      "longitude": 127.0245281
+    },
+    "status": "active",
+    "region": "Seoul"
+  },
+  {
+    "nameKo": "라로까",
+    "name": "La Loca",
+    "address": "서울특별시 강남구 논현로150길 21",
+    "detailAddress": "지하 1층",
+    "city": "SEOUL",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 37.5196388,
+      "longitude": 127.030151
+    },
+    "status": "active",
+    "region": "Seoul"
+  },
+  {
+    "nameKo": "라벤따나",
+    "name": "La Ventana",
+    "address": "서울특별시 마포구 잔다리로 48",
+    "detailAddress": "2층",
+    "city": "SEOUL",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 37.5525451,
+      "longitude": 126.9186816
+    },
+    "status": "active",
+    "region": "Seoul"
+  },
+  {
+    "nameKo": "오나다2",
+    "name": "Onada 2",
+    "address": "서울특별시 마포구 서교동 351-18",
+    "detailAddress": "지하 1층",
+    "city": "SEOUL",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 37.5555189,
+      "longitude": 126.920799
+    },
+    "status": "active",
+    "region": "Seoul"
+  },
+  {
+    "nameKo": "인천탱고카페",
+    "name": "Incheon Tango Cafe",
+    "address": "인천광역시 부평구 경원대로 1415",
+    "detailAddress": "지하 1층",
+    "city": "INCHEON",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 37.4915879,
+      "longitude": 126.7263399
+    },
+    "status": "active",
+    "region": "Incheon"
+  },
+  {
+    "nameKo": "일산탱고",
+    "name": "Ilsan Tango",
+    "address": "경기도 고양시 일산동구 백석로71번길 13",
+    "detailAddress": "1층",
+    "city": "SEOUL",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 37.6472951,
+      "longitude": 126.7853294
+    },
+    "status": "active",
+    "region": "Gyeonggi"
+  },
+  {
+    "nameKo": "탱고스테이까나로",
+    "name": "Tango Stay Canaro",
+    "address": "경기도 고양시 덕양구 으뜸로 110",
+    "detailAddress": "힐스테이트에코덕은 235호",
+    "city": "SEOUL",
+    "category": "Stay",
+    "types": [
+      "Stay"
+    ],
+    "coordinates": {
+      "latitude": 37.5800489,
+      "longitude": 126.8695432
+    },
+    "status": "active",
+    "region": "Gyeonggi"
+  },
+  {
+    "nameKo": "춘천탱고",
+    "name": "Chuncheon Tango",
+    "address": "강원도 춘천시 효자동 641-11",
+    "detailAddress": "지하 1층",
+    "city": "SEOUL",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 37.8772612,
+      "longitude": 127.7366116
+    },
+    "status": "active",
+    "region": "Gangwon"
+  },
+  {
+    "nameKo": "탱고미오",
+    "name": "Tango mio",
+    "address": "부산광역시 부산진구 부전로20번길 32-5",
+    "detailAddress": "5층",
+    "city": "BUSAN",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 35.1535269,
+      "longitude": 129.057046
+    },
+    "status": "active",
+    "region": "Busan"
+  },
+  {
+    "nameKo": "코르테뇨",
+    "name": "Corteño",
+    "address": "부산광역시 부산진구 부전동 240-5",
+    "detailAddress": "4층",
+    "city": "BUSAN",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 35.1540224,
+      "longitude": 129.0582606
+    },
+    "status": "active",
+    "region": "Busan"
+  },
+  {
+    "nameKo": "아미고",
+    "name": "Amigo",
+    "address": "부산광역시 부산진구 부전로 34",
+    "detailAddress": "황제주차장 2층",
+    "city": "BUSAN",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 35.1531818,
+      "longitude": 129.0565437
+    },
+    "status": "active",
+    "region": "Busan"
+  },
+  {
+    "nameKo": "스튜디오242",
+    "name": "Studio 242",
+    "address": "부산광역시 부산진구 부전동 242-32",
+    "detailAddress": "4층",
+    "city": "BUSAN",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 35.1552145,
+      "longitude": 129.0582212
+    },
+    "status": "active",
+    "region": "Busan"
+  },
+  {
+    "nameKo": "맘보",
+    "name": "Mambo",
+    "address": "부산광역시 부산진구 중앙대로691번길 52",
+    "detailAddress": "지하 1층",
+    "city": "BUSAN",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 35.1546231,
+      "longitude": 129.0562513
+    },
+    "status": "active",
+    "region": "Busan"
+  },
+  {
+    "nameKo": "카페데탱고",
+    "name": "Café de Tango",
+    "address": "부산광역시 부산진구 서면로 68번길 41",
+    "detailAddress": "2층",
+    "city": "BUSAN",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 35.1551194,
+      "longitude": 129.0585495
+    },
+    "status": "active",
+    "region": "Busan"
+  },
+  {
+    "nameKo": "아르떼탱고",
+    "name": "Arte Tango",
+    "address": "부산광역시 해운대구 세실로 45",
+    "detailAddress": "3층",
+    "city": "BUSAN",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 35.1690013,
+      "longitude": 129.1782841
+    },
+    "status": "active",
+    "region": "Busan"
+  },
+  {
+    "nameKo": "탱고카페이데알",
+    "name": "Tango Cafe Ideal",
+    "address": "부산광역시 부산진구 부전동 241-41",
+    "detailAddress": "3층",
+    "city": "BUSAN",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 35.1535387,
+      "longitude": 129.0585665
+    },
+    "status": "active",
+    "region": "Busan"
+  },
+  {
+    "nameKo": "울산탱고데오로",
+    "name": "Tango de Oro",
+    "address": "울산광역시 남구 삼산로 181",
+    "detailAddress": "4층",
+    "city": "ULSAN",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 35.5376846,
+      "longitude": 129.3270436
+    },
+    "status": "active",
+    "region": "Ulsan"
+  },
+  {
+    "nameKo": "진주탱고피플",
+    "name": "Jinju Tango People",
+    "address": "경상남도 진주시 평거로 7",
+    "detailAddress": "1층",
+    "city": "JINJU",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 35.1718192,
+      "longitude": 128.062536
+    },
+    "status": "active",
+    "region": "Jinju"
+  },
+  {
+    "nameKo": "창원케렌시아",
+    "name": "Querencia",
+    "address": "경상남도 창원시 성산구 마디미로 64번길 7",
+    "detailAddress": "3층",
+    "city": "CHANGWON",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 35.2196091,
+      "longitude": 128.6811397
+    },
+    "status": "active",
+    "region": "Changwon"
+  },
+  {
+    "nameKo": "탱고비엔",
+    "name": "Tango Bien",
+    "address": "대구광역시 남구 현충로 256",
+    "detailAddress": "2층",
+    "city": "DAEGU",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 35.8552057,
+      "longitude": 128.5832746
+    },
+    "status": "active",
+    "region": "Daegu"
+  },
+  {
+    "nameKo": "탱고나비",
+    "name": "Tangonabi",
+    "address": "대구광역시 중구 명덕로 315",
+    "detailAddress": "지하 1층",
+    "city": "DAEGU",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 35.8554109,
+      "longitude": 128.604757
+    },
+    "status": "active",
+    "region": "Daegu"
+  },
+  {
+    "nameKo": "탱고카페디아",
+    "name": "Tango Cafe Dia",
+    "address": "대구광역시 북구 침산로 168",
+    "detailAddress": "엠브로타워 5층",
+    "city": "DAEGU",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 35.8909365,
+      "longitude": 128.5909205
+    },
+    "status": "active",
+    "region": "Daegu"
+  },
+  {
+    "nameKo": "미비다탱고스튜디오",
+    "name": "Mi Vida Tango Studio",
+    "address": "광주광역시 동구 중앙로 162-1",
+    "detailAddress": "5층",
+    "city": "GWANGJU",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 35.14833,
+      "longitude": 126.9137328
+    },
+    "status": "active",
+    "region": "Gwangju"
+  },
+  {
+    "nameKo": "광주탱고하우스",
+    "name": "Gwangju Tango",
+    "address": "광주광역시 북구 중흥동 711-10",
+    "detailAddress": "지하 1층",
+    "city": "GWANGJU",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 35.1610167,
+      "longitude": 126.9096865
+    },
+    "status": "active",
+    "region": "Gwangju"
+  },
+  {
+    "nameKo": "대전오나다",
+    "name": "Onada",
+    "address": "대전광역시 유성구 대학로76안길 23",
+    "detailAddress": "지하 1층",
+    "city": "DAEJEON",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 36.365491,
+      "longitude": 127.3542468
+    },
+    "status": "active",
+    "region": "Daejeon"
+  },
+  {
+    "nameKo": "아주카르",
+    "name": "Azucar",
+    "address": "대전광역시 유성구 대학로 127-1",
+    "detailAddress": "지하 1층",
+    "city": "DAEJEON",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 36.3614378,
+      "longitude": 127.3478809
+    },
+    "status": "active",
+    "region": "Daejeon"
+  },
+  {
+    "nameKo": "까미니또",
+    "name": "Caminito",
+    "address": "대전광역시 유성구 계룡로66번길 5",
+    "detailAddress": "3층",
+    "city": "DAEJEON",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 36.3543621,
+      "longitude": 127.3383596
+    },
+    "status": "active",
+    "region": "Daejeon"
+  },
+  {
+    "nameKo": "라붐",
+    "name": "LaBoom",
+    "address": "대전광역시 유성구 대학로81번길 32-11",
+    "detailAddress": "지하 1층",
+    "city": "DAEJEON",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 36.3620822,
+      "longitude": 127.3431507
+    },
+    "status": "active",
+    "region": "Daejeon"
+  },
+  {
+    "nameKo": "라비스타",
+    "name": "LaVista",
+    "address": "대전광역시 서구 괴정로 179",
+    "detailAddress": "지하 1층",
+    "city": "DAEJEON",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 36.3335701,
+      "longitude": 127.390585
+    },
+    "status": "active",
+    "region": "Daejeon"
+  },
+  {
+    "nameKo": "제주피에스타",
+    "name": "Jeju Fiesta",
+    "address": "제주시 신대로 104",
+    "detailAddress": "지하 1층",
+    "city": "JEJU",
+    "category": "Studio",
+    "types": [
+      "Studio"
+    ],
+    "coordinates": {
+      "latitude": 33.488201,
+      "longitude": 126.4961019
+    },
+    "status": "active",
+    "region": "Jeju"
+  },
+  {
+    "nameKo": "탱고하우스Stay",
+    "name": "Tango House Stay",
+    "address": "서울특별시 마포구 양화로 156",
+    "detailAddress": "마젤란21",
+    "city": "SEOUL",
+    "category": "Stay",
+    "types": [
+      "Stay"
+    ],
+    "coordinates": {
+      "latitude": 37.5560787,
+      "longitude": 126.9234503
+    },
+    "status": "active",
+    "region": "Seoul"
+  },
+  {
+    "nameKo": "탱고스테이디살리",
+    "name": "Tango Stay",
+    "address": "서울특별시 마포구 양화로 13",
+    "detailAddress": "스퀘어리버빌 807호",
+    "city": "SEOUL",
+    "category": "Stay",
+    "types": [
+      "Stay"
+    ],
+    "coordinates": {
+      "latitude": 37.5487888,
+      "longitude": 126.9105061
+    },
+    "status": "active",
+    "region": "Seoul"
+  },
+  {
+    "nameKo": "샤론슈즈",
+    "name": "Sharon Shoes",
+    "address": "서울특별시 마포구 동교로 223",
+    "detailAddress": "2층",
+    "city": "SEOUL",
+    "category": "Shop",
+    "types": [
+      "Shop"
+    ],
+    "coordinates": {
+      "latitude": 37.5598949,
+      "longitude": 126.9236378
+    },
+    "status": "active",
+    "region": "Seoul"
+  },
+  {
+    "nameKo": "탑드레스",
+    "name": "Top Dress",
+    "address": "서울특별시 마포구 성미산로 174",
+    "detailAddress": "2층",
+    "city": "SEOUL",
+    "category": "Shop",
+    "types": [
+      "Shop"
+    ],
+    "coordinates": {
+      "latitude": 37.5639436,
+      "longitude": 126.924965
+    },
+    "status": "active",
+    "region": "Seoul"
+  },
+  {
+    "nameKo": "레오나슈즈",
+    "name": "Leona Shoes",
+    "address": "서울특별시 서초구 방배천로2안길 69",
+    "detailAddress": "1층",
+    "city": "SEOUL",
+    "category": "Shop",
+    "types": [
+      "Shop"
+    ],
+    "coordinates": {
+      "latitude": 37.4801309,
+      "longitude": 126.9838755
+    },
+    "status": "active",
+    "region": "Seoul"
+  },
+  {
+    "nameKo": "비비안슈즈",
+    "name": "Vivian Shoes",
+    "address": "서울특별시 강남구 논현로153길 13",
+    "detailAddress": "1층",
+    "city": "SEOUL",
+    "category": "Shop",
+    "types": [
+      "Shop"
+    ],
+    "coordinates": {
+      "latitude": 37.5206401,
+      "longitude": 127.0250835
+    },
+    "status": "active",
+    "region": "Seoul"
+  },
+  {
+    "nameKo": "오딜슈즈",
+    "name": "Odile Shoes",
+    "address": "서울특별시 마포구 연남동 567-39",
+    "detailAddress": "301호",
+    "city": "SEOUL",
+    "category": "Shop",
+    "types": [
+      "Shop"
+    ],
+    "coordinates": {
+      "latitude": 37.5604589,
+      "longitude": 126.9228144
+    },
+    "status": "active",
+    "region": "Seoul"
+  },
+  {
+    "nameKo": "마라비샤제이",
+    "name": "Maravilla J",
+    "address": "서울특별시 마포구 월드컵북로6길 52-11",
+    "detailAddress": "1층",
+    "city": "SEOUL",
+    "category": "Shop",
+    "types": [
+      "Shop"
+    ],
+    "coordinates": {
+      "latitude": 37.5587499,
+      "longitude": 126.9217279
+    },
+    "status": "active",
+    "region": "Seoul"
+  },
+  {
+    "nameKo": "이브니아",
+    "name": "Evenia",
+    "address": "서울특별시 서초구 효령로 423",
+    "detailAddress": "1층",
+    "city": "SEOUL",
+    "category": "Shop",
+    "types": [
+      "Shop"
+    ],
+    "coordinates": {
+      "latitude": 37.4893119,
+      "longitude": 127.0299484
+    },
+    "status": "active",
+    "region": "Seoul"
+  },
+  {
+    "nameKo": "탱고슈즈코리아",
+    "name": "Tango Shoes Korea",
+    "address": "서울특별시 강남구 테헤란로 406",
+    "detailAddress": "1층",
+    "city": "SEOUL",
+    "category": "Shop",
+    "types": [
+      "Shop"
+    ],
+    "coordinates": {
+      "latitude": 37.5044068,
+      "longitude": 127.0497041
+    },
+    "status": "active",
+    "region": "Seoul"
+  },
+  {
+    "nameKo": "티밸런스탱고슈즈",
+    "name": "T.Balance Shoes",
+    "address": "경기도 광주시 보뚱치길130번길 49-30",
+    "detailAddress": "1층",
+    "city": "SEOUL",
+    "category": "Shop",
+    "types": [
+      "Shop"
+    ],
+    "coordinates": {
+      "latitude": 37.3400527,
+      "longitude": 127.2134508
+    },
+    "status": "active",
+    "region": "Gyeonggi"
+  }
+]

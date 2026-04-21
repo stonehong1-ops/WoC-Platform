@@ -51,6 +51,16 @@ export const venueService = {
     });
   },
 
+  // Get All Venues once
+  async getVenues() {
+    const q = query(collection(db, VENUES_COLLECTION), orderBy('name', 'asc'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })) as Venue[];
+  },
+
   // 4. Search Venues by Name
   async searchVenues(keyword: string) {
     const q = query(

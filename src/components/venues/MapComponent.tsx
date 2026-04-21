@@ -9,6 +9,7 @@ import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { CITY_COORDINATES, DEFAULT_COORDINATES } from '@/lib/constants/locations';
 import { useRouter } from 'next/navigation';
 import { OverlayView } from '@react-google-maps/api';
+import useSupercluster from 'use-supercluster';
 
 interface Venue {
   id: string;
@@ -25,6 +26,10 @@ interface Venue {
 const mapContainerStyle = { width: '100%', height: '100dvh' };
 const CIRCLE_PATH = 0;
 
+const getKakaoMapUrl = (v: Venue) => `https://map.kakao.com/link/map/${v.nameKo || v.name},${v.coordinates.latitude},${v.coordinates.longitude}`;
+const getNaverMapUrl = (v: Venue) => `https://map.naver.com/v5/search/${v.nameKo || v.name}?c=${v.coordinates.longitude},${v.coordinates.latitude},15,0,0,0,dh`;
+const getGoogleMapUrl = (v: Venue) => `https://www.google.com/maps/search/?api=1&query=${v.coordinates.latitude},${v.coordinates.longitude}`;
+
 export default function MapComponent({ 
   onRegisterOpen, 
   onEdit, 
@@ -32,7 +37,7 @@ export default function MapComponent({
   isLoaded 
 }: { 
   onRegisterOpen: () => void; 
-  onEdit: (venue: Venue) => void;
+  onEdit: (venue: Venue, mode?: 'edit' | 'geo') => void;
   onDelete: (id: string) => void;
   isLoaded: boolean; 
 }) {
@@ -40,6 +45,7 @@ export default function MapComponent({
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
   const [bounds, setBounds] = useState<google.maps.LatLngBounds | null>(null);
+  const [mapBounds, setMapBounds] = useState<[number, number, number, number] | null>(null);
   const [venues, setVenues] = useState<Venue[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>(['All']);
@@ -131,6 +137,27 @@ export default function MapComponent({
 
     return result;
   }, [venues, selectedCategories, searchTerm, center, bounds]); // bounds dependency for re-filtering on move
+
+  const points = useMemo(() => {
+    return filteredVenues.map(venue => ({
+      type: "Feature" as const,
+      properties: { cluster: false, venueId: venue.id, venue },
+      geometry: {
+        type: "Point" as const,
+        coordinates: [
+          venue.coordinates.longitude,
+          venue.coordinates.latitude
+        ]
+      }
+    }));
+  }, [filteredVenues]);
+
+  const { clusters, supercluster } = useSupercluster({
+    points,
+    bounds: mapBounds ? mapBounds : undefined,
+    zoom,
+    options: { radius: 60, maxZoom: 15 }
+  });
 
   useEffect(() => {
     if (!isExpanded) {
@@ -247,7 +274,7 @@ export default function MapComponent({
 
   const categoryIcons: Record<string, string> = {
     'All': 'apps',
-    'Club': 'nightlife',
+    'Club': 'local_bar',
     'Stay': 'bed',
     'Shop': 'shopping_bag',
     'Studio': 'theater_comedy',
@@ -272,6 +299,16 @@ export default function MapComponent({
               const c = m.getCenter();
               if (c) setCenter({ lat: c.lat(), lng: c.lng() });
               setZoom(m.getZoom() || 14);
+              const b = m.getBounds();
+              setBounds(b || null);
+              if (b) {
+                setMapBounds([
+                  b.getSouthWest().lng(),
+                  b.getSouthWest().lat(),
+                  b.getNorthEast().lng(),
+                  b.getNorthEast().lat()
+                ]);
+              }
             }}
             onBoundsChanged={() => {
               if (map) {
@@ -283,7 +320,16 @@ export default function MapComponent({
                 if (z !== undefined && z !== zoom) {
                   setZoom(z);
                 }
-                setBounds(map.getBounds() || null);
+                const b = map.getBounds();
+                setBounds(b || null);
+                if (b) {
+                  setMapBounds([
+                    b.getSouthWest().lng(),
+                    b.getSouthWest().lat(),
+                    b.getNorthEast().lng(),
+                    b.getNorthEast().lat()
+                  ]);
+                }
               }
             }}
             onClick={() => {
@@ -303,49 +349,87 @@ export default function MapComponent({
               ]
             }}
           >
-            {filteredVenues.map((v) => (
-              <OverlayView
-                key={v.id}
-                position={{ lat: v.coordinates.latitude, lng: v.coordinates.longitude }}
-                mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
-              >
-                <div 
-                  className="flex flex-col items-center cursor-pointer pointer-events-auto group"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleMarkerClick(v);
-                    setIsExpanded(true);
-                  }}
-                  style={{ 
-                    transform: `translate(-50%, -50%) scale(${labelScale})`,
-                    transition: 'transform 0.1s ease-out'
-                  }}
-                >
-                  {selectedVenueId === v.id ? (
-                    <div className="flex flex-col items-center">
-                      <div className="relative flex items-center justify-center mb-1">
-                        <div className="absolute w-4 h-4 bg-primary/30 rounded-full animate-halo-pulse"></div>
-                        <div className="w-5 h-5 bg-primary flex items-center justify-center rounded-full border-2 border-white shadow-xl">
-                          <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
-                        </div>
-                      </div>
-                      <span className="text-[11px] font-black uppercase tracking-tight map-label text-primary bg-white/40 px-2 py-0.5 rounded-full backdrop-blur-sm whitespace-nowrap">
-                        {v.nameKo || v.name}
-                      </span>
+            {clusters.map((cluster) => {
+              const [longitude, latitude] = cluster.geometry.coordinates;
+              const { cluster: isCluster, point_count: pointCount, venue } = cluster.properties as any;
+
+              if (isCluster) {
+                const size = Math.max(36, 24 + (pointCount / points.length) * 40);
+                return (
+                  <OverlayView
+                    key={`cluster-${cluster.id}`}
+                    position={{ lat: latitude, lng: longitude }}
+                    mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+                  >
+                    <div
+                      className="flex items-center justify-center bg-slate-800 text-white font-bold rounded-full shadow-[0_8px_16px_rgba(0,0,0,0.3)] cursor-pointer hover:scale-110 active:scale-95 transition-transform"
+                      style={{
+                        width: `${size}px`,
+                        height: `${size}px`,
+                        transform: 'translate(-50%, -50%)',
+                        fontSize: `${Math.max(12, 10 + (pointCount / points.length) * 10)}px`
+                      }}
+                      onClick={(e) => {
+                         e.stopPropagation();
+                         const expansionZoom = Math.min(
+                            supercluster?.getClusterExpansionZoom(cluster.id) || 16, 
+                            20
+                         );
+                         map?.panTo({ lat: latitude, lng: longitude });
+                         map?.setZoom(expansionZoom);
+                      }}
+                    >
+                      {pointCount}
                     </div>
-                  ) : (
-                    <div className="flex flex-col items-center">
-                      <div className="w-3 h-3 bg-white border-[3px] border-primary rounded-full shadow-sm mb-1 group-hover:scale-125 transition-transform"></div>
-                      {zoom >= 13 && (
-                        <span className="text-[10px] font-extrabold uppercase tracking-tight map-label text-slate-800 whitespace-nowrap opacity-80 group-hover:opacity-100 transition-opacity">
+                  </OverlayView>
+                );
+              }
+
+              const v = venue as Venue;
+              return (
+                <OverlayView
+                  key={v.id}
+                  position={{ lat: v.coordinates.latitude, lng: v.coordinates.longitude }}
+                  mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+                >
+                  <div 
+                    className="flex flex-col items-center cursor-pointer pointer-events-auto group"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleMarkerClick(v);
+                      setIsExpanded(true);
+                    }}
+                    style={{ 
+                      transform: `translate(-50%, -50%) scale(${labelScale})`,
+                      transition: 'transform 0.1s ease-out'
+                    }}
+                  >
+                    {selectedVenueId === v.id ? (
+                      <div className="flex flex-col items-center">
+                        <div className="relative flex items-center justify-center mb-1">
+                          <div className="absolute w-4 h-4 bg-primary/30 rounded-full animate-halo-pulse"></div>
+                          <div className="w-5 h-5 bg-primary flex items-center justify-center rounded-full border-2 border-white shadow-xl">
+                            <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+                          </div>
+                        </div>
+                        <span className="text-[11px] font-black uppercase tracking-tight map-label text-primary bg-white/40 px-2 py-0.5 rounded-full backdrop-blur-sm whitespace-nowrap">
                           {v.nameKo || v.name}
                         </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </OverlayView>
-            ))}
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center">
+                        <div className="w-3 h-3 bg-white border-[3px] border-primary rounded-full shadow-sm mb-1 group-hover:scale-125 transition-transform"></div>
+                        {zoom >= 13 && (
+                          <span className="text-[10px] font-extrabold uppercase tracking-tight map-label text-slate-800 whitespace-nowrap opacity-80 group-hover:opacity-100 transition-opacity">
+                            {v.nameKo || v.name}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </OverlayView>
+              );
+            })}
 
             {userLocation && (
               <OverlayView
@@ -363,22 +447,22 @@ export default function MapComponent({
         )}
       </div>
 
-      {/* Layer 1: Floating Filter Icons (Top Left) */}
-      <div className="absolute top-20 left-0 right-0 z-20 flex gap-2 overflow-x-auto px-6 no-scrollbar pointer-events-auto">
+      {/* Layer 1: Floating Filter Icons (Top) */}
+      <div className="absolute top-36 left-0 right-0 z-20 flex gap-2.5 overflow-x-auto px-6 no-scrollbar pointer-events-auto py-2">
         {categories.map((cat) => (
           <button
             key={cat}
             onClick={() => toggleCategory(cat)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 backdrop-blur-md rounded-full text-[10px] font-bold uppercase tracking-wider shadow-[0_4px_12px_rgba(0,0,0,0.08)] border transition-all whitespace-nowrap ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 backdrop-blur-md rounded-full text-[11px] font-black uppercase tracking-tight shadow-[0_4px_12px_rgba(0,0,0,0.12)] border-0 transition-all whitespace-nowrap active:scale-95 ${
               selectedCategories.includes(cat)
-              ? 'bg-primary text-white border-primary/20'
-              : 'bg-white/80 text-on-surface border-white/60 hover:bg-white'
+              ? 'bg-primary text-white shadow-primary/20 scale-105'
+              : 'bg-white/90 text-on-surface hover:bg-white'
             }`}
           >
-            <span className="material-symbols-outlined text-[16px]">
+            <span className="material-symbols-outlined !text-[18px] leading-none" style={{ fontVariationSettings: "'FILL' 1" }}>
               {categoryIcons[cat]}
             </span>
-            {cat}
+            <span className="mt-[1px]">{cat}</span>
           </button>
         ))}
       </div>
@@ -524,18 +608,40 @@ export default function MapComponent({
                       <AnimatePresence>
                         {activeMenuId === v.id && (
                           <motion.div 
-                            initial={{ opacity: 0, y: -10 }}
+                            initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            className="absolute right-2 top-10 bg-white rounded-xl shadow-2xl border border-slate-100 py-1 min-w-[100px] z-50"
+                            exit={{ opacity: 0, y: 10 }}
+                            className="absolute right-2 bottom-full mb-2 bg-white rounded-xl shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.3)] border border-slate-100 min-w-[140px] z-50 overflow-hidden origin-bottom-right"
                           >
+                            <div className="flex items-center justify-between px-2 py-2 border-b border-slate-50 gap-1 bg-slate-50/50">
+                              <a href={getKakaoMapUrl(v)} target="_blank" rel="noreferrer" className="flex-1 text-center bg-[#FEE500] text-black text-[9px] font-black py-1.5 rounded shadow-sm hover:brightness-95 transition-all" onClick={e => e.stopPropagation()}>
+                                K
+                              </a>
+                              <a href={getNaverMapUrl(v)} target="_blank" rel="noreferrer" className="flex-1 text-center bg-[#03C75A] text-white text-[9px] font-black py-1.5 rounded shadow-sm hover:brightness-95 transition-all" onClick={e => e.stopPropagation()}>
+                                N
+                              </a>
+                              <a href={getGoogleMapUrl(v)} target="_blank" rel="noreferrer" className="flex-1 text-center bg-white border border-slate-200 text-[#4285F4] text-[9px] font-black py-1.5 rounded shadow-sm hover:bg-slate-50 transition-all" onClick={e => e.stopPropagation()}>
+                                G
+                              </a>
+                            </div>
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onEdit(v, 'geo');
+                                setActiveMenuId(null);
+                              }}
+                              className="w-full px-4 py-2.5 text-left text-xs font-bold text-primary hover:bg-primary/5 border-b border-slate-50 flex items-center justify-between transition-colors"
+                            >
+                              <span>Geo tuning</span>
+                              <span className="material-symbols-outlined text-[14px]">my_location</span>
+                            </button>
                             <button 
                               onClick={(e) => {
                                 e.stopPropagation();
                                 onEdit(v);
                                 setActiveMenuId(null);
                               }}
-                              className="w-full px-4 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 border-b border-slate-50"
+                              className="w-full px-4 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 border-b border-slate-50 transition-colors"
                             >
                               Edit
                             </button>
@@ -545,7 +651,7 @@ export default function MapComponent({
                                 onDelete(v.id);
                                 setActiveMenuId(null);
                               }}
-                              className="w-full px-4 py-2 text-left text-xs font-bold text-error hover:bg-red-50"
+                              className="w-full px-4 py-2 text-left text-xs font-bold text-error hover:bg-red-50 transition-colors"
                             >
                               Delete
                             </button>

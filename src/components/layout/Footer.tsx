@@ -7,8 +7,8 @@ import { usePathname } from 'next/navigation';
 export default function Footer() {
   const pathname = usePathname();
 
-  // Hide on landing page and login page
-  if (pathname === '/' || pathname === '/login') return null;
+  // Hide on landing page, login page, and space detail pages
+  if (pathname === '/' || pathname === '/login' || pathname?.startsWith('/space/')) return null;
 
   const isActive = (href: string) => pathname === href;
 

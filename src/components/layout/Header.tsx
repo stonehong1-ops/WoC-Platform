@@ -25,10 +25,11 @@ export default function Header() {
     return () => unsub();
   }, [user]);
 
-  // Hide on login page or landing page
-  if (pathname === '/login' || pathname === '/') return null;
+  // Hide on login page, landing page, or space pages (App-in-App)
+  if (pathname === '/login' || pathname === '/' || pathname.startsWith('/space/')) return null;
 
   const routeMap: Record<string, { headline: string; sub: string }> = {
+    '/': { headline: 'HOME', sub: 'SOCIETY' },
     '/home': { headline: 'HOME', sub: 'SOCIETY' },
     '/plaza': { headline: 'PLAZA', sub: 'SOCIETY' },
     '/venues': { headline: 'VENUES', sub: 'SOCIETY' },
@@ -126,7 +127,28 @@ export default function Header() {
           </span>
         </button>
 
-
+        {/* User Group */}
+        <div className="flex items-center gap-1 ml-2">
+          {user ? (
+            <Link 
+              href="/my-info" 
+              className="w-9 h-9 rounded-full overflow-hidden border border-outline-variant/30 hover:opacity-80 transition-opacity active:scale-95"
+            >
+              <img 
+                src={profile?.photoURL || user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`} 
+                alt={profile?.nickname || 'Profile'} 
+                className="w-full h-full object-cover"
+              />
+            </Link>
+          ) : (
+            <button 
+              onClick={() => setShowLogin(true)}
+              className="w-9 h-9 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant hover:bg-primary-container hover:text-on-primary-container transition-all active:scale-95"
+            >
+              <span className="material-symbols-outlined text-[20px]">person</span>
+            </button>
+          )}
+        </div>
       </div>
     </header>
 

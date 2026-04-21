@@ -29,13 +29,15 @@ import AuthGuard from "@/components/auth/AuthGuard";
 
 export default function RootLayout({
   children,
+  modal,
 }: {
   children: React.ReactNode;
+  modal?: React.ReactNode;
 }) {
   return (
     <html lang="en" className="light">
       <head>
-        <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       </head>
@@ -59,6 +61,9 @@ export default function RootLayout({
                 <PageWrapper>
                   {children}
                 </PageWrapper>
+
+                {/* Parallel Route Modal Content */}
+                {modal}
 
                 {/* Fixed Footer */}
                 <Footer />

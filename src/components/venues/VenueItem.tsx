@@ -1,16 +1,33 @@
 'use client';
 
-import React from 'react';
-import { Edit2, Trash2, MapPin, Star } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Edit2, Trash2, MapPin, Star, MoreVertical } from 'lucide-react';
 import { Venue } from '@/types/venue';
 
 interface VenueItemProps {
   venue: Venue;
-  onEdit: (venue: Venue) => void;
+  onEdit: (venue: Venue, mode?: 'edit' | 'geo') => void;
   onDelete: (id: string) => void;
 }
 
 export default function VenueItem({ venue, onEdit, onDelete }: VenueItemProps) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const getKakaoMapUrl = (v: Venue) => `https://map.kakao.com/link/map/${v.nameKo || v.name},${v.coordinates.latitude},${v.coordinates.longitude}`;
+  const getNaverMapUrl = (v: Venue) => `https://map.naver.com/v5/search/${v.nameKo || v.name}?c=${v.coordinates.longitude},${v.coordinates.latitude},15,0,0,0,dh`;
+  const getGoogleMapUrl = (v: Venue) => `https://www.google.com/maps/search/?api=1&query=${v.coordinates.latitude},${v.coordinates.longitude}`;
+
   return (
     <div className="group relative bg-[#f7f7ff] hover:bg-[#f0f2f5] rounded-2xl p-4 transition-all duration-300">
       <div className="flex gap-4">
@@ -50,20 +67,61 @@ export default function VenueItem({ venue, onEdit, onDelete }: VenueItemProps) {
         </div>
       </div>
 
-      {/* Action Overlay (Visible on Hover/Desktop or always on Mobile) */}
-      <div className="absolute top-2 right-2 flex gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+      {/* Kebab Menu */}
+      <div className="absolute top-2 right-2" ref={menuRef}>
         <button 
-          onClick={() => onEdit(venue)}
-          className="w-8 h-8 rounded-lg bg-white shadow-md flex items-center justify-center text-[#596061] hover:text-[#1A73E8] transition-colors"
+          onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen); }}
+          className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-[#596061] hover:text-[#1A73E8] transition-colors"
         >
-          <Edit2 size={14} />
+          <MoreVertical size={16} />
         </button>
-        <button 
-          onClick={() => venue.id && onDelete(venue.id)}
-          className="w-8 h-8 rounded-lg bg-white shadow-md flex items-center justify-center text-[#596061] hover:text-[#E53935] transition-colors"
-        >
-          <Trash2 size={14} />
-        </button>
+
+        {menuOpen && (
+          <div className="absolute right-0 bottom-full mb-2 w-40 bg-white rounded-xl shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.3)] border border-slate-100 z-50 overflow-hidden origin-bottom-right">
+            <div className="flex items-center justify-between px-2 py-2 border-b border-slate-50 gap-1 bg-slate-50/50">
+              <a href={getKakaoMapUrl(venue)} target="_blank" rel="noreferrer" className="flex-1 text-center bg-[#FEE500] text-black text-[9px] font-black py-1.5 rounded shadow-sm hover:brightness-95 transition-all" onClick={e => e.stopPropagation()}>
+                K
+              </a>
+              <a href={getNaverMapUrl(venue)} target="_blank" rel="noreferrer" className="flex-1 text-center bg-[#03C75A] text-white text-[9px] font-black py-1.5 rounded shadow-sm hover:brightness-95 transition-all" onClick={e => e.stopPropagation()}>
+                N
+              </a>
+              <a href={getGoogleMapUrl(venue)} target="_blank" rel="noreferrer" className="flex-1 text-center bg-white border border-slate-200 text-[#4285F4] text-[9px] font-black py-1.5 rounded shadow-sm hover:bg-slate-50 transition-all" onClick={e => e.stopPropagation()}>
+                G
+              </a>
+            </div>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(venue, 'geo');
+                setMenuOpen(false);
+              }}
+              className="w-full px-4 py-2.5 text-left text-xs font-bold text-[#1A73E8] hover:bg-[#1A73E8]/5 border-b border-slate-50 flex items-center justify-between transition-colors"
+            >
+              <span>Geo tuning</span>
+              <span className="material-symbols-outlined text-[14px]">my_location</span>
+            </button>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(venue);
+                setMenuOpen(false);
+              }}
+              className="w-full px-4 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 border-b border-slate-50 transition-colors"
+            >
+              Edit
+            </button>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                if(venue.id) onDelete(venue.id);
+                setMenuOpen(false);
+              }}
+              className="w-full px-4 py-2 text-left text-xs font-bold text-red-500 hover:bg-red-50 transition-colors"
+            >
+              Delete
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

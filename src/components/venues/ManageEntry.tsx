@@ -13,6 +13,7 @@ interface ManageEntryProps {
   onClose: () => void;
   isLoaded: boolean;
   initialData?: Venue | null;
+  mode?: 'edit' | 'geo';
 }
 
 const mapContainerStyle = {
@@ -23,7 +24,7 @@ const mapContainerStyle = {
 
 const CIRCLE_PATH = 0;
 
-export default function ManageEntry({ isOpen, onClose, isLoaded, initialData }: ManageEntryProps) {
+export default function ManageEntry({ isOpen, onClose, isLoaded, initialData, mode = 'edit' }: ManageEntryProps) {
   const { location } = useLocation();
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
@@ -221,7 +222,7 @@ export default function ManageEntry({ isOpen, onClose, isLoaded, initialData }: 
       <header className="fixed top-0 left-0 right-0 z-[2001] bg-white flex justify-between items-center w-full px-6 h-16 border-b border-[#dde4e5]">
         <button onClick={onClose} className="p-2 hover:bg-[#e8eff0] transition-colors rounded-full"><span className="material-symbols-outlined text-[#161D1E]">close</span></button>
         <h1 className="font-headline text-[13px] font-black text-[#2D3435] uppercase tracking-widest">
-          {initialData ? 'Edit Venue' : 'Register Venue'}
+          {mode === 'geo' ? 'Geo Tuning' : initialData ? 'Edit Venue' : 'Register Venue'}
         </h1>
         <button onClick={handleSubmit} disabled={saving} className="px-5 py-2 bg-[#005BC0] text-white font-black rounded-xl active:scale-95 transition-all text-[11px] uppercase tracking-widest disabled:opacity-50">
           {saving ? 'WAIT' : 'SAVE'}
@@ -232,35 +233,39 @@ export default function ManageEntry({ isOpen, onClose, isLoaded, initialData }: 
       <main className="flex-grow overflow-y-auto no-scrollbar pt-20 pb-32 max-w-2xl mx-auto w-full px-6">
         
         {/* Identity */}
-        <section className="mb-10">
-          <h2 className="font-headline text-[13px] font-black text-[#2D3435] uppercase tracking-[0.15em] mb-6">Identity</h2>
-          <div className="space-y-5">
-            <div className="group">
-              <label className="block text-[10px] font-bold text-[#596061] mb-2 tracking-widest uppercase">Place Name (Required)</label>
-              <input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="e.g. Blue Horizon Studio" className="w-full bg-[#e8eff0] border-none rounded-xl px-5 py-4 text-[#2D3435] font-bold focus:bg-white focus:ring-2 focus:ring-[#005BC0]/20 transition-all placeholder:text-[#596061]/30 text-[15px]"/>
+        {mode === 'edit' && (
+          <section className="mb-10">
+            <h2 className="font-headline text-[13px] font-black text-[#2D3435] uppercase tracking-[0.15em] mb-6">Identity</h2>
+            <div className="space-y-5">
+              <div className="group">
+                <label className="block text-[10px] font-bold text-[#596061] mb-2 tracking-widest uppercase">Place Name (Required)</label>
+                <input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="e.g. Blue Horizon Studio" className="w-full bg-[#e8eff0] border-none rounded-xl px-5 py-4 text-[#2D3435] font-bold focus:bg-white focus:ring-2 focus:ring-[#005BC0]/20 transition-all placeholder:text-[#596061]/30 text-[15px]"/>
+              </div>
+              <div className="group">
+                <label className="block text-[10px] font-bold text-[#596061] mb-2 tracking-widest uppercase">Korean Name (Optional)</label>
+                <input type="text" value={formData.nameKo} onChange={(e) => setFormData({...formData, nameKo: e.target.value})} placeholder="예: 탱고라이프" className="w-full bg-[#e8eff0] border-none rounded-xl px-5 py-4 text-[#2D3435] font-bold focus:bg-white focus:ring-2 focus:ring-[#005BC0]/20 transition-all placeholder:text-[#596061]/30 text-[15px]"/>
+              </div>
             </div>
-            <div className="group">
-              <label className="block text-[10px] font-bold text-[#596061] mb-2 tracking-widest uppercase">Korean Name (Optional)</label>
-              <input type="text" value={formData.nameKo} onChange={(e) => setFormData({...formData, nameKo: e.target.value})} placeholder="예: 탱고라이프" className="w-full bg-[#e8eff0] border-none rounded-xl px-5 py-4 text-[#2D3435] font-bold focus:bg-white focus:ring-2 focus:ring-[#005BC0]/20 transition-all placeholder:text-[#596061]/30 text-[15px]"/>
-            </div>
-          </div>
-        </section>
+          </section>
+        )}
 
         {/* Category */}
-        <section className="mb-10">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="font-headline text-[13px] font-black text-[#2D3435] uppercase tracking-[0.15em]">Category</h2>
-            <span className="text-[10px] font-bold text-[#005BC0] uppercase tracking-widest bg-[#005BC0]/5 px-3 py-1 rounded-full">Multi-selection Enabled</span>
-          </div>
-          <div className="grid grid-cols-3 gap-2.5">
-            {categoriesList.map((cat) => (
-              <button key={cat.id} type="button" onClick={() => toggleCategory(cat.id)} className={`flex flex-col items-center justify-center p-4 rounded-xl transition-all ${formData.categories.includes(cat.id) ? 'bg-[#005BC0] text-white shadow-lg scale-105 z-10' : 'bg-[#eef5f6] text-[#596061]'}`}>
-                <span className="material-symbols-outlined text-[20px] mb-2" style={{ fontVariationSettings: formData.categories.includes(cat.id) ? "'FILL' 1" : "'FILL' 0" }}>{cat.icon}</span>
-                <span className="text-[9px] font-black uppercase tracking-tight">{cat.label}</span>
-              </button>
-            ))}
-          </div>
-        </section>
+        {mode === 'edit' && (
+          <section className="mb-10">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="font-headline text-[13px] font-black text-[#2D3435] uppercase tracking-[0.15em]">Category</h2>
+              <span className="text-[10px] font-bold text-[#005BC0] uppercase tracking-widest bg-[#005BC0]/5 px-3 py-1 rounded-full">Multi-selection Enabled</span>
+            </div>
+            <div className="grid grid-cols-3 gap-2.5">
+              {categoriesList.map((cat) => (
+                <button key={cat.id} type="button" onClick={() => toggleCategory(cat.id)} className={`flex flex-col items-center justify-center p-4 rounded-xl transition-all ${formData.categories.includes(cat.id) ? 'bg-[#005BC0] text-white shadow-lg scale-105 z-10' : 'bg-[#eef5f6] text-[#596061]'}`}>
+                  <span className="material-symbols-outlined text-[20px] mb-2" style={{ fontVariationSettings: formData.categories.includes(cat.id) ? "'FILL' 1" : "'FILL' 0" }}>{cat.icon}</span>
+                  <span className="text-[9px] font-black uppercase tracking-tight">{cat.label}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Search */}
         <section className="mb-10">
@@ -326,24 +331,26 @@ export default function ManageEntry({ isOpen, onClose, isLoaded, initialData }: 
         </section>
 
         {/* Photos */}
-        <section className="mb-0">
-          <div className="flex justify-between items-end mb-6">
-            <h2 className="font-headline text-[13px] font-black text-[#2D3435] uppercase tracking-[0.15em]">Venue Photos</h2>
-            <span className="text-[10px] font-black text-[#005BC0] bg-[#005BC0]/5 px-3 py-1 rounded-full uppercase tracking-widest">{formData.images.length} / 20</span>
-          </div>
-          <div className="flex gap-4 overflow-x-auto no-scrollbar pb-6 -mx-6 px-6">
-            <label className="flex-shrink-0 w-48 h-48 border-2 border-dashed border-[#c2c6d5] rounded-[2rem] flex flex-col items-center justify-center bg-white hover:bg-[#eaf2ff] transition-all cursor-pointer group">
-              <span className="material-symbols-outlined text-[#727784] text-[40px] mb-2 group-hover:scale-110 transition-all">add_a_photo</span>
-              <input type="file" multiple accept="image/*" onChange={(e) => { if (e.target.files) { const filesArray = Array.from(e.target.files); if (filesArray.length + formData.images.length > 20) return; setFormData(prev => ({ ...prev, images: [...prev.images, ...filesArray] })); } }} className="hidden" />
-            </label>
-            {formData.images.map((img, idx) => (
-              <div key={idx} className="relative flex-shrink-0 w-48 h-48 rounded-[2rem] bg-[#e2e9ea] overflow-hidden shadow-md">
-                <img src={URL.createObjectURL(img)} className="w-full h-full object-cover" alt="" />
-                <button type="button" onClick={() => setFormData(prev => ({ ...prev, images: prev.images.filter((_, i) => i !== idx) }))} className="absolute top-3 right-3 w-8 h-8 bg-black/40 text-white rounded-full flex items-center justify-center backdrop-blur-lg hover:bg-[#ba1a1a] transition-colors"><span className="material-symbols-outlined text-[18px]">close</span></button>
-              </div>
-            ))}
-          </div>
-        </section>
+        {mode === 'edit' && (
+          <section className="mb-0">
+            <div className="flex justify-between items-end mb-6">
+              <h2 className="font-headline text-[13px] font-black text-[#2D3435] uppercase tracking-[0.15em]">Venue Photos</h2>
+              <span className="text-[10px] font-black text-[#005BC0] bg-[#005BC0]/5 px-3 py-1 rounded-full uppercase tracking-widest">{formData.images.length} / 20</span>
+            </div>
+            <div className="flex gap-4 overflow-x-auto no-scrollbar pb-6 -mx-6 px-6">
+              <label className="flex-shrink-0 w-48 h-48 border-2 border-dashed border-[#c2c6d5] rounded-[2rem] flex flex-col items-center justify-center bg-white hover:bg-[#eaf2ff] transition-all cursor-pointer group">
+                <span className="material-symbols-outlined text-[#727784] text-[40px] mb-2 group-hover:scale-110 transition-all">add_a_photo</span>
+                <input type="file" multiple accept="image/*" onChange={(e) => { if (e.target.files) { const filesArray = Array.from(e.target.files); if (filesArray.length + formData.images.length > 20) return; setFormData(prev => ({ ...prev, images: [...prev.images, ...filesArray] })); } }} className="hidden" />
+              </label>
+              {formData.images.map((img, idx) => (
+                <div key={idx} className="relative flex-shrink-0 w-48 h-48 rounded-[2rem] bg-[#e2e9ea] overflow-hidden shadow-md">
+                  <img src={URL.createObjectURL(img)} className="w-full h-full object-cover" alt="" />
+                  <button type="button" onClick={() => setFormData(prev => ({ ...prev, images: prev.images.filter((_, i) => i !== idx) }))} className="absolute top-3 right-3 w-8 h-8 bg-black/40 text-white rounded-full flex items-center justify-center backdrop-blur-lg hover:bg-[#ba1a1a] transition-colors"><span className="material-symbols-outlined text-[18px]">close</span></button>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
       </main>
     </div>
   );
