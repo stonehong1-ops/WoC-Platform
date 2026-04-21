@@ -10,7 +10,7 @@ export default function ServicePage() {
       </div>
       <h1 className="font-headline text-3xl font-bold tracking-tight text-on-surface mb-4">SERVICE</h1>
       <p className="text-on-surface/60 max-w-sm font-body">
-        Premium professional services for our community members are coming soon.
+        Premium professional services for our group members are coming soon.
       </p>
     </div>
   );

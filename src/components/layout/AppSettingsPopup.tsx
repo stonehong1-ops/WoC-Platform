@@ -127,7 +127,7 @@ export default function AppSettingsPopup({ isOpen, onClose }: AppSettingsPopupPr
 
           {/* Footer Note */}
           <div className="mt-16 mb-12 text-center opacity-40">
-            <p className="text-[9px] font-black tracking-[0.3em] uppercase">World of Community · Home Screen Setup</p>
+            <p className="text-[9px] font-black tracking-[0.3em] uppercase">World of Group · Home Screen Setup</p>
           </div>
         </div>
       </main>

@@ -222,7 +222,7 @@ export default function EventsPage() {
                              <span className="material-symbols-outlined text-[14px]">person</span>
                              <p className="text-[10px] font-bold uppercase tracking-tighter truncate">{organizer}</p>
                            </div>
-                           <p className="text-[12px] text-[#424753] opacity-70 font-medium line-clamp-1 leading-relaxed">{cleanDescription || 'Community Gathering'}</p>
+                           <p className="text-[12px] text-[#424753] opacity-70 font-medium line-clamp-1 leading-relaxed">{cleanDescription || 'Group Gathering'}</p>
                         </div>
                       </div>
 

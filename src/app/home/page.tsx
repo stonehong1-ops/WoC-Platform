@@ -127,7 +127,7 @@ export default function HomePage() {
               <h4 className="text-lg font-bold mb-2 font-headline">Society Podcasting Workshop</h4>
               <div className="flex items-center text-gray-500 text-sm gap-4 mb-4">
                 <span className="flex items-center gap-1 font-medium italic"><span className="material-symbols-outlined text-base text-primary">schedule</span> 18:00</span>
-                <span className="flex items-center gap-1 font-medium italic"><span className="material-symbols-outlined text-base text-primary">location_on</span> Community Lab</span>
+                <span className="flex items-center gap-1 font-medium italic"><span className="material-symbols-outlined text-base text-primary">location_on</span> Group Lab</span>
               </div>
               <button className="w-full py-3 bg-primary text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-sm">Reserve Member Spot</button>
             </div>

@@ -146,7 +146,7 @@ export default function NotificationPage() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm text-[#2d3435] leading-relaxed">
-              New community post: <span className="font-semibold">"Best practices for minimalist design tokens"</span> was published in{' '}
+              New group post: <span className="font-semibold">"Best practices for minimalist design tokens"</span> was published in{' '}
               <span className="font-bold">UI Collective</span>.
             </p>
             <p className="text-xs text-[#596061] mt-1.5 flex items-center gap-1.5">

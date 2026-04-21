@@ -15,7 +15,7 @@ export default function PageWrapper({ children }: { children: React.ReactNode })
   const isSocial = pathname.startsWith('/social');
   const isLanding = pathname === '/';
   const isLogin = pathname === '/login';
-  const isSpace = pathname.startsWith('/space/');
+  const isSpace = pathname.startsWith('/group/');
   
   const isPublic = isLanding || isLogin || isGallery || isVenues || isEvents || isSocial;
 

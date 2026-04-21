@@ -8,7 +8,7 @@ export default function Footer() {
   const pathname = usePathname();
 
   // Hide on landing page, login page, and space detail pages
-  if (pathname === '/' || pathname === '/login' || pathname?.startsWith('/space/')) return null;
+  if (pathname === '/' || pathname === '/login' || pathname?.startsWith('/group/')) return null;
 
   const isActive = (href: string) => pathname === href;
 

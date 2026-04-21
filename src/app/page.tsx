@@ -23,7 +23,7 @@ export default function LandingPage() {
     <div className="bg-white text-black antialiased">
       {/* Top Navigation Bar (Mobile App Style) */}
       <nav className="fixed top-0 left-0 right-0 lg:left-[calc(50%-28rem)] lg:right-[calc(50%-28rem)] max-w-4xl mx-auto bg-white/80 backdrop-blur-md z-50 border-b border-gray-100 px-4 h-14 flex items-center justify-center">
-        <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-black">WoC / World Of Community</p>
+        <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-black">WoC / World Of Group</p>
       </nav>
 
       {/* Header / Slogan Section */}

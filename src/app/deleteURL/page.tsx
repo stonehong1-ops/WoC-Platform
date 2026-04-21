@@ -12,7 +12,7 @@ export default function DeleteDataPage() {
       <section className="mb-12 p-8 rounded-3xl bg-on-surface/[0.03] border border-outline-variant/10">
         <h2 className="text-xl font-bold mb-6 text-primary">Facebook Data Deletion</h2>
         <p className="mb-6 leading-relaxed text-on-surface/80">
-          World of Community (WoC) uses Facebook Login to manage user accounts. If you wish to delete your activities for WoC, you can remove your information by following these steps:
+          World of Group (WoC) uses Facebook Login to manage user accounts. If you wish to delete your activities for WoC, you can remove your information by following these steps:
         </p>
         <ol className="list-decimal pl-5 space-y-4 text-on-surface/80 font-medium">
           <li>Go to your Facebook Account's <strong>"Settings & Privacy"</strong> menu.</li>
@@ -37,7 +37,7 @@ export default function DeleteDataPage() {
 
       <div className="pt-10 border-t border-outline-variant/10 opacity-50 text-center">
         <p className="text-[10px] font-black tracking-widest uppercase">
-          World of Community Support · stonehong1@gmail.com
+          World of Group Support · stonehong1@gmail.com
         </p>
       </div>
     </div>

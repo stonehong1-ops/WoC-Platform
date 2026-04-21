@@ -245,7 +245,7 @@ export default function NavigationDrawer() {
             <span className="text-[14px] tracking-tight">Logout</span>
           </button>
           <div className="mt-4 px-6">
-            <p className="text-[8px] font-black tracking-[0.3em] text-on-surface/20 uppercase">World of Community © 2026</p>
+            <p className="text-[8px] font-black tracking-[0.3em] text-on-surface/20 uppercase">World of Group © 2026</p>
           </div>
         </div>
       </div>

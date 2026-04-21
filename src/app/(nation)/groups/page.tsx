@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { communityService } from '@/lib/firebase/communityService';
-import { Community } from '@/types/community';
+import { groupService } from '@/lib/firebase/groupService';
+import { Group } from '@/types/group';
 import { Plus_Jakarta_Sans, Inter } from 'next/font/google';
 
 const plusJakartaSans = Plus_Jakarta_Sans({ 
@@ -19,13 +19,13 @@ const inter = Inter({
 });
 
 export default function GroupsDiscoveryPage() {
-  const [communities, setCommunities] = useState<Community[]>([]);
+  const [communities, setCommunities] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchCommunities = async () => {
       try {
-        const data = await communityService.getCommunities();
+        const data = await groupService.getGroups();
         setCommunities(data);
       } catch (error) {
         console.error('Failed to fetch communities:', error);
@@ -93,14 +93,14 @@ export default function GroupsDiscoveryPage() {
             <Link href="/groups/new" className="text-primary text-xs font-bold hover:underline">View All</Link>
           </div>
           <div className="flex gap-4 overflow-x-auto hide-scrollbar snap-x pb-4 -mx-6 px-6">
-            {whatsNew.map((community, i) => (
-              <Link key={community.id} href={`/space/${community.id}`} className="snap-start min-w-[280px]">
+            {whatsNew.map((group, i) => (
+              <Link key={group.id} href={`/group/${group.id}`} className="snap-start min-w-[280px]">
                 <div className="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/10 shadow-sm hover:shadow-md transition-all h-full">
                   <div className="aspect-video rounded-lg overflow-hidden mb-3 bg-surface-container">
                     <img 
-                      alt={community.name} 
+                      alt={group.name} 
                       className="w-full h-full object-cover" 
-                      src={community.coverImage || community.logo || 'https://images.unsplash.com/photo-1545670723-196ed09c3944?auto=format&fit=crop&q=80&w=400'}
+                      src={group.coverImage || group.logo || 'https://images.unsplash.com/photo-1545670723-196ed09c3944?auto=format&fit=crop&q=80&w=400'}
                       onError={(e) => {
                         e.currentTarget.src = 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&q=80&w=800';
                       }}
@@ -109,20 +109,20 @@ export default function GroupsDiscoveryPage() {
                   <span className="text-[10px] font-bold uppercase tracking-widest text-primary mb-1 block">
                     {i === 0 ? 'New Arrival' : i < 3 ? 'Trending Up' : 'Just Joined'}
                   </span>
-                  <h4 className="font-headline font-bold text-lg text-on-surface truncate">{community.name}</h4>
-                  <p className="text-xs text-on-surface-variant line-clamp-1 mb-3">{community.description}</p>
+                  <h4 className="font-headline font-bold text-lg text-on-surface truncate">{group.name}</h4>
+                  <p className="text-xs text-on-surface-variant line-clamp-1 mb-3">{group.description}</p>
                   <div className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-full bg-surface-container overflow-hidden">
                       <img 
                         alt="avatar" 
                         className="w-full h-full object-cover" 
-                        src={community.members?.[0]?.avatar || community.logo || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'}
+                        src={group.members?.[0]?.avatar || group.logo || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'}
                         onError={(e) => {
                           e.currentTarget.src = 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y';
                         }}
                       />
                     </div>
-                    <span className="text-[10px] text-on-surface-variant font-medium">{community.memberCount || 0} members</span>
+                    <span className="text-[10px] text-on-surface-variant font-medium">{group.memberCount || 0} members</span>
                   </div>
                 </div>
               </Link>
@@ -141,7 +141,7 @@ export default function GroupsDiscoveryPage() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
               {/* Large Feature Card */}
-              <Link href={`/space/${trendingNow[0].id}`} className="md:col-span-8 group relative rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 transform hover:scale-[0.99] bg-surface-container-lowest">
+              <Link href={`/group/${trendingNow[0].id}`} className="md:col-span-8 group relative rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 transform hover:scale-[0.99] bg-surface-container-lowest">
                 <div className="aspect-[16/9] md:aspect-[4/3] w-full bg-surface-container relative">
                   <img 
                     className="w-full h-full object-cover" 
@@ -178,7 +178,7 @@ export default function GroupsDiscoveryPage() {
               {/* Two Smaller Cards */}
               <div className="md:col-span-4 flex flex-col gap-6">
                 {trendingNow.slice(1, 3).map((item) => (
-                  <Link key={item.id} href={`/space/${item.id}`} className="group relative rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 transform hover:scale-[0.99] bg-surface-container-lowest flex-1">
+                  <Link key={item.id} href={`/group/${item.id}`} className="group relative rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 transform hover:scale-[0.99] bg-surface-container-lowest flex-1">
                     <div className="h-32 w-full bg-surface-container relative">
                       <img 
                         className="w-full h-full object-cover" 
@@ -219,12 +219,12 @@ export default function GroupsDiscoveryPage() {
           </div>
           <div className="grid grid-cols-1 gap-4">
             {categories.map((cat) => {
-              // Pick a random community for demo if actual filtered data is empty
+              // Pick a random group for demo if actual filtered data is empty
               const topInCat = communities.find(c => c.tags?.includes(cat.name)) || communities[Math.floor(Math.random() * communities.length)];
               if (!topInCat) return null;
 
               return (
-                <Link key={cat.name} href={`/space/${topInCat.id}`}>
+                <Link key={cat.name} href={`/group/${topInCat.id}`}>
                   <div className="flex items-center gap-4 bg-surface-container-lowest p-4 rounded-xl shadow-sm border border-outline-variant/10 hover:border-primary/30 transition-colors">
                     <div className="w-16 h-16 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
                       <span className="material-symbols-outlined text-3xl">{cat.icon}</span>

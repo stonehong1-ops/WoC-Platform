@@ -97,7 +97,7 @@ export default function FeedPageClient() {
             </div>
           )}
         </div>
-        <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Community Feed</div>
+        <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Group Feed</div>
       </div>
 
       {/* Feed List */}

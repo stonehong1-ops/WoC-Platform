@@ -7,7 +7,7 @@ import SWRegister from "@/components/layout/SWRegister";
 
 export const metadata: Metadata = {
   title: "WoC",
-  description: "A premium community platform for shared experiences and collective living.",
+  description: "A premium group platform for shared experiences and collective living.",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",

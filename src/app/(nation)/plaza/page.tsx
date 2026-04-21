@@ -399,7 +399,7 @@ export default function PlazaPage() {
           {posts.length === 0 && !loading && (
             <EmptyState 
               title="No Moments Yet"
-              description="Be the first one to share a moment in this community."
+              description="Be the first one to share a moment in this group."
               icon="photo_camera"
               actionLabel="Create First Moment"
               onAction={() => setIsCreateModalOpen(true)}

@@ -52,7 +52,7 @@ export default function HistoryPage() {
         {
           id: 4,
           type: 'Events',
-          title: 'World of Community Summit',
+          title: 'World of Group Summit',
           location: 'Grand Ballroom',
           status: 'REGISTERED',
           statusColor: 'text-purple-600 bg-purple-50',

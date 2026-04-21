@@ -100,7 +100,7 @@ export default function VenueForm({ isOpen, onClose, initialData }: VenueFormPro
           </h1>
         </div>
         <div className="flex items-center gap-1">
-          <div className="text-[10px] font-extrabold text-on-surface-variant tracking-tighter uppercase mr-2 hidden md:block">World of Community</div>
+          <div className="text-[10px] font-extrabold text-on-surface-variant tracking-tighter uppercase mr-2 hidden md:block">World of Group</div>
           {initialData && (
             <button 
               onClick={handleDelete}
@@ -117,7 +117,7 @@ export default function VenueForm({ isOpen, onClose, initialData }: VenueFormPro
           <h2 className="font-headline text-3xl md:text-4xl font-extrabold text-on-surface tracking-tight mb-3">
             {initialData ? 'Update your space.' : 'Configure your space.'}
           </h2>
-          <p className="text-on-surface-variant text-base leading-relaxed">Keep your venue details up to date for the local community.</p>
+          <p className="text-on-surface-variant text-base leading-relaxed">Keep your venue details up to date for the local group.</p>
         </header>
 
         <form onSubmit={handleSubmit} className="space-y-16">

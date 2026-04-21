@@ -150,7 +150,7 @@ export const chatService = {
           createdBy: 'system',
           createdAt: serverTimestamp(),
           lastMessageTime: serverTimestamp(),
-          lastMessage: 'Welcome to World of Community!',
+          lastMessage: 'Welcome to World of Group!',
           participants: []
         });
       }

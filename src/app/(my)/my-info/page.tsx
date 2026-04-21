@@ -52,7 +52,7 @@ export default function MyInfoPage() {
               {profile?.nickname || user?.displayName || 'Adventurer'}
             </h1>
             <p className="text-on-surface-variant font-medium text-lg">
-              {profile?.bio || 'Senior Community Member'}
+              {profile?.bio || 'Senior Group Member'}
             </p>
             <div className="mt-6 flex flex-wrap gap-2">
               <span className={`px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider ${profile?.isInstructor ? 'bg-primary-container text-on-primary-container' : 'bg-surface-container-highest text-on-surface-variant'}`}>

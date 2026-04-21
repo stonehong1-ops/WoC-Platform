@@ -12,7 +12,7 @@ export default function PrivacyPage() {
       <section className="mb-10">
         <h2 className="text-xl font-bold mb-4 uppercase tracking-wider text-primary">1. Overview</h2>
         <p className="leading-relaxed text-on-surface/80">
-          World of Community ("we," "our," or "us") operates the WoC platform. This Privacy Policy informs you of our policies regarding the collection, use, and disclosure of personal data when you use our Service and the choices you have associated with that data.
+          World of Group ("we," "our," or "us") operates the WoC platform. This Privacy Policy informs you of our policies regarding the collection, use, and disclosure of personal data when you use our Service and the choices you have associated with that data.
         </p>
       </section>
 

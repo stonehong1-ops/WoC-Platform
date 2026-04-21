@@ -26,7 +26,7 @@ export default function Header() {
   }, [user]);
 
   // Hide on login page, landing page, or space pages (App-in-App)
-  if (pathname === '/login' || pathname === '/' || pathname.startsWith('/space/')) return null;
+  if (pathname === '/login' || pathname === '/' || pathname.startsWith('/group/')) return null;
 
   const routeMap: Record<string, { headline: string; sub: string }> = {
     '/': { headline: 'HOME', sub: 'SOCIETY' },

@@ -134,7 +134,7 @@ export default function VenueManagement() {
             </div>
             <h3 className="font-headline font-bold text-[#2d3435]">No venues found</h3>
             <p className="text-xs text-[#596061] mt-1 max-w-[200px]">
-              Register your first community space to get started.
+              Register your first group space to get started.
             </p>
           </div>
         )}

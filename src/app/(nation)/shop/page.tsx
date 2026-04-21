@@ -100,7 +100,7 @@ export default function ShopPage() {
       <div className="mt-8 px-4 mb-10 text-left min-h-[400px]">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-headline text-lg font-bold text-[#2d3435]">
-            {activeCategory === 'All' ? 'Community Favorites' : `${activeCategory}`}
+            {activeCategory === 'All' ? 'Group Favorites' : `${activeCategory}`}
           </h3>
           <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest">{filteredProducts.length} Items</span>
         </div>
@@ -161,7 +161,7 @@ export default function ShopPage() {
           </div>
           <div className="bg-[#d8e2ff] p-5 rounded-2xl flex flex-col justify-between h-40 text-left">
             <div>
-              <h4 className="font-headline font-bold text-sm text-[#004fa8]">Community Pickup</h4>
+              <h4 className="font-headline font-bold text-sm text-[#004fa8]">Group Pickup</h4>
               <p className="text-xs text-[#004fa8]/80 font-body mt-1">Free delivery at local studios</p>
             </div>
             <span className="material-symbols-outlined text-[#1A73E8] text-3xl">local_shipping</span>

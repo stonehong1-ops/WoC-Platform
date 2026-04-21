@@ -53,7 +53,7 @@ export default function ChatList({ onSelectRoom, selectedRoomId }: ChatListProps
             <span className="material-symbols-outlined text-gray-200 text-4xl">chat_bubble</span>
           </div>
           <h3 className="text-lg font-black text-gray-900 mb-2 uppercase tracking-tighter">No Conversations</h3>
-          <p className="text-xs text-gray-400 font-medium leading-relaxed">Start a new dialogue with the community or friends.</p>
+          <p className="text-xs text-gray-400 font-medium leading-relaxed">Start a new dialogue with the group or friends.</p>
         </div>
       ) : (
         <div className="divide-y divide-gray-50">

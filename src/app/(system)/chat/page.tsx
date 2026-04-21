@@ -52,7 +52,7 @@ export default function ChatPage() {
               </div>
               <h3 className="text-[22px] font-black text-gray-900 uppercase tracking-tighter mb-3">Your Dialogue Awaits</h3>
               <p className="text-[13px] text-gray-400 font-medium leading-relaxed max-w-xs mx-auto">
-                Select a room to resume your connection with the community. Everything is synchronized in real-time.
+                Select a room to resume your connection with the group. Everything is synchronized in real-time.
               </p>
             </div>
           )}

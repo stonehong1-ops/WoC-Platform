@@ -9,7 +9,7 @@ export default function ArcadePage() {
       <section className="relative w-full h-[618px] flex items-center overflow-hidden">
         <div className="absolute inset-0 z-0">
           <img 
-            alt="Community Arcade Hongdae Hub Interior" 
+            alt="Group Arcade Hongdae Hub Interior" 
             className="w-full h-full object-cover" 
             src="https://lh3.googleusercontent.com/aida-public/AB6AXuCDFS7LxLPHTu5TG6JbstbHTdZ1GibV05Qncif6NmhKAR7yxr4uXIZaVJcf7389nc-9TOE4Gx36Ts7h0vX8M9tSMEJ42olPF-aow8Wbl2XpvvBZ1lQW6wq3JokwNP2xfsn_zzcUn3TAIAwFI3vIpFrNGoADa_9aGI3SpIFGA3dBC7vznqHc0xpNBTb7uK4p6Y2vkdaYdscv8XO2ZGAkrWPWH8K2aNHw3IeCx-oCjDvXKhz70o6smvTdUmE9V50P4-n6uAW7EydE3E57"
           />
@@ -18,10 +18,10 @@ export default function ArcadePage() {
         <div className="container mx-auto px-6 relative z-10">
           <div className="max-w-2xl">
             <h1 className="font-headline font-extrabold text-5xl md:text-6xl text-white mb-6 tracking-tight leading-tight">
-              Community Arcade: <br/> Hongdae Hub
+              Group Arcade: <br/> Hongdae Hub
             </h1>
             <p className="font-body text-lg md:text-xl text-white/90 font-light mb-8 max-w-lg">
-              Bridging the gap between our online community and offline experiences.
+              Bridging the gap between our online group and offline experiences.
             </p>
             <div className="flex items-center gap-4">
               <button className="bg-primary text-on-primary px-8 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity">
@@ -36,7 +36,7 @@ export default function ArcadePage() {
       <section className="py-24 container mx-auto px-6">
         <div className="mb-12 text-center md:text-left">
           <span className="text-primary font-bold tracking-widest text-xs uppercase">Essential Services</span>
-          <h2 className="font-headline font-bold text-3xl mt-2 text-on-surface">Designed for the Community</h2>
+          <h2 className="font-headline font-bold text-3xl mt-2 text-on-surface">Designed for the Group</h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Service 1 */}
@@ -45,7 +45,7 @@ export default function ArcadePage() {
               <span className="material-symbols-outlined">shopping_basket</span>
             </div>
             <h3 className="font-headline font-bold text-xl mb-3">Online Pickup</h3>
-            <p className="text-on-surface-variant text-sm leading-relaxed mb-6">Pick up your community orders here instantly.</p>
+            <p className="text-on-surface-variant text-sm leading-relaxed mb-6">Pick up your group orders here instantly.</p>
           </div>
           {/* Service 2 */}
           <div className="bg-surface-container-lowest p-8 rounded-xl border border-outline-variant/30 flex flex-col group hover:border-primary/40 transition-colors shadow-sm">
@@ -72,7 +72,7 @@ export default function ArcadePage() {
               <span className="material-symbols-outlined">handyman</span>
             </div>
             <h3 className="font-headline font-bold text-xl mb-3">Repair & Care</h3>
-            <p className="text-on-surface-variant text-sm leading-relaxed mb-6">Expert repair service for your community gear.</p>
+            <p className="text-on-surface-variant text-sm leading-relaxed mb-6">Expert repair service for your group gear.</p>
             <button className="mt-auto border border-primary text-primary hover:bg-primary hover:text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all">
               Repair Request
             </button>
@@ -139,7 +139,7 @@ export default function ArcadePage() {
             <div className="p-6">
               <span className="text-[10px] font-bold text-primary px-2 py-1 bg-primary-container rounded mb-2 inline-block uppercase">Limited Edition</span>
               <h4 className="font-headline font-bold text-lg">Arcade Hydro-X</h4>
-              <p className="text-on-surface-variant text-sm mt-1">Insulated community gear.</p>
+              <p className="text-on-surface-variant text-sm mt-1">Insulated group gear.</p>
             </div>
           </div>
         </div>

@@ -429,7 +429,7 @@ export default function LocationSelector() {
 
         <div className="p-6 bg-on-surface/[0.02] border-t border-outline-variant/10">
           <p className="text-[10px] text-center text-on-surface/40 font-medium tracking-widest uppercase">
-            World of Community · Global Network
+            World of Group · Global Network
           </p>
         </div>
       </div>

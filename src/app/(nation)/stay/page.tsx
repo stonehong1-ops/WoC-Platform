@@ -113,7 +113,7 @@ export default function StayPage() {
                 </button>
                 <div className="absolute bottom-6 left-6 text-white text-left">
                   <div className="flex items-center gap-2 mb-2">
-                    {featureStay.isCommunityChoice && <span className="px-2 py-1 bg-primary text-white text-[10px] font-bold rounded uppercase">Community Choice</span>}
+                    {featureStay.isCommunityChoice && <span className="px-2 py-1 bg-primary text-white text-[10px] font-bold rounded uppercase">Group Choice</span>}
                     <span className="flex items-center gap-1 text-sm font-medium"><span className="material-symbols-outlined text-sm">location_on</span>{featureStay.location}</span>
                   </div>
                   <h2 className="text-3xl font-headline font-extrabold tracking-tight">{featureStay.title}</h2>
