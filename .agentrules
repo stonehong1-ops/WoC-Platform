@@ -22,3 +22,7 @@
 5. **Design & Quality**:
    - Premium Editorial aesthetic(Kinetic Gallery / Pure Body)을 유지한다.
    - 시각적 탁월함(Visual Excellence)을 최우선으로 하며, 불필요한 요소를 배제한다.
+
+6. **Firestore Lifecycle Management**:
+   - Firestore와 관련된 코딩을 할 때(새 컬렉션 추가, 필드 변경 등) 반드시 보안 규칙(`firestore.rules`)과 인덱스(`firestore.indexes.json`) 작업을 병행해야 한다.
+   - 데이터 구조의 변경이 클라이언트에 즉시 반영될 수 있도록 보안 규칙 배포를 우선순위에 둔다.
