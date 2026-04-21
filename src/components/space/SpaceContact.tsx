@@ -3,7 +3,7 @@ import CommunityFooter from './CommunityFooter';
 
 const SpaceContact = ({ community }: any) => {
   return (
-    <div className="relative z-10 max-w-5xl mx-auto space-y-8 pb-32">
+    <div className="relative z-10 max-w-5xl mx-auto space-y-8 pb-32 px-4 md:px-8">
       {/* Header Section */}
       <div className="space-y-2">
         <h1 className="font-headline font-extrabold text-3xl md:text-4xl tracking-tight text-on-surface">Get in Touch</h1>

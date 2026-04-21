@@ -4,7 +4,7 @@ import CommunityFooter from './CommunityFooter';
 
 const SpaceGallery = ({ community }: any) => {
   return (
-    <div className="relative z-10 space-y-12 pb-32">
+    <div className="relative z-10 space-y-12 pb-32 px-4 md:px-8 max-w-7xl mx-auto">
       {/* Gallery Header & Filters */}
       <section className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
