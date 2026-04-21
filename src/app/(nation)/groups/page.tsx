@@ -71,13 +71,16 @@ export default function GroupsDiscoveryPage() {
 
       <main className="px-6 py-8 space-y-12 max-w-7xl mx-auto">
         {/* 1. Create Group Button */}
-        <div className="flex justify-center">
+        <div className="flex flex-col items-center gap-3">
           <Link href="/groups/create" className="w-full">
             <button className="w-full bg-primary text-white font-headline font-bold py-4 px-8 rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex items-center justify-center gap-2 active:scale-95">
               <span className="material-symbols-outlined fill-1">add_circle</span>
-              새로운 그룹 만들기
+              Make new group
             </button>
           </Link>
+          <p className="text-[11px] font-body text-on-surface-variant/70 font-medium tracking-tight">
+            Anyone can create as many groups as they want.
+          </p>
         </div>
 
         {/* 2. What's New Section (Horizontal Scroll) */}
@@ -85,9 +88,9 @@ export default function GroupsDiscoveryPage() {
           <div className="flex items-end justify-between mb-6">
             <div>
               <h2 className="font-headline font-extrabold text-2xl tracking-tighter text-on-surface">What's New</h2>
-              <p className="font-body text-on-surface-variant text-xs mt-1">방금 막 탄생한 따끈따끈한 커뮤니티들입니다.</p>
+              <p className="font-body text-on-surface-variant text-xs mt-1">Explore the freshest communities just joining our network.</p>
             </div>
-            <Link href="/groups/new" className="text-primary text-xs font-bold hover:underline">모두 보기</Link>
+            <Link href="/groups/new" className="text-primary text-xs font-bold hover:underline">View All</Link>
           </div>
           <div className="flex gap-4 overflow-x-auto hide-scrollbar snap-x pb-4 -mx-6 px-6">
             {whatsNew.map((community, i) => (
@@ -98,6 +101,9 @@ export default function GroupsDiscoveryPage() {
                       alt={community.name} 
                       className="w-full h-full object-cover" 
                       src={community.coverImage || community.logo || 'https://images.unsplash.com/photo-1545670723-196ed09c3944?auto=format&fit=crop&q=80&w=400'}
+                      onError={(e) => {
+                        e.currentTarget.src = 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&q=80&w=800';
+                      }}
                     />
                   </div>
                   <span className="text-[10px] font-bold uppercase tracking-widest text-primary mb-1 block">
@@ -111,9 +117,12 @@ export default function GroupsDiscoveryPage() {
                         alt="avatar" 
                         className="w-full h-full object-cover" 
                         src={community.members?.[0]?.avatar || community.logo || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'}
+                        onError={(e) => {
+                          e.currentTarget.src = 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y';
+                        }}
                       />
                     </div>
-                    <span className="text-[10px] text-on-surface-variant font-medium">{community.memberCount || 0} 명의 멤버</span>
+                    <span className="text-[10px] text-on-surface-variant font-medium">{community.memberCount || 0} members</span>
                   </div>
                 </div>
               </Link>
@@ -127,7 +136,7 @@ export default function GroupsDiscoveryPage() {
             <div className="flex items-end justify-between mb-8">
               <div>
                 <h2 className="font-headline font-extrabold text-3xl tracking-tighter text-on-surface">Trending Now</h2>
-                <p className="font-body text-on-surface-variant text-sm mt-1">이번 주 가장 핫한 커뮤니티입니다.</p>
+                <p className="font-body text-on-surface-variant text-sm mt-1">The most talked-about communities this week.</p>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
@@ -138,6 +147,9 @@ export default function GroupsDiscoveryPage() {
                     className="w-full h-full object-cover" 
                     alt={trendingNow[0].name}
                     src={trendingNow[0].coverImage || 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=80&w=800'}
+                    onError={(e) => {
+                      e.currentTarget.src = 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=80&w=800';
+                    }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
                   <div className="absolute top-4 left-4">
@@ -172,6 +184,9 @@ export default function GroupsDiscoveryPage() {
                         className="w-full h-full object-cover" 
                         alt={item.name}
                         src={item.coverImage || 'https://images.unsplash.com/photo-1551818255-e6e10975bc17?auto=format&fit=crop&q=80&w=400'}
+                        onError={(e) => {
+                          e.currentTarget.src = 'https://images.unsplash.com/photo-1551818255-e6e10975bc17?auto=format&fit=crop&q=80&w=400';
+                        }}
                       />
                     </div>
                     <div className="p-4">
@@ -199,7 +214,7 @@ export default function GroupsDiscoveryPage() {
           <div className="flex items-end justify-between mb-8">
             <div>
               <h2 className="font-headline font-extrabold text-3xl tracking-tighter text-on-surface">Category Best</h2>
-              <p className="font-body text-on-surface-variant text-sm mt-1">도메인별 최고의 커뮤니티들입니다.</p>
+              <p className="font-body text-on-surface-variant text-sm mt-1">Top-rated communities curated by category.</p>
             </div>
           </div>
           <div className="grid grid-cols-1 gap-4">
@@ -225,7 +240,7 @@ export default function GroupsDiscoveryPage() {
                           <span className="material-symbols-outlined text-[12px] fill-1 text-amber-500">star</span> 
                           4.9
                         </span>
-                        <span>{topInCat.memberCount} 명 참여 중</span>
+                        <span>{topInCat.memberCount} active members</span>
                       </div>
                     </div>
                     <span className="material-symbols-outlined text-on-surface-variant">chevron_right</span>

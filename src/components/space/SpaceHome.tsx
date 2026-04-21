@@ -10,15 +10,55 @@ import SpaceFeed from "./SpaceFeed";
 import SpaceBoard from "./SpaceBoard";
 import SpaceGallery from "./SpaceGallery";
 import SpaceContact from "./SpaceContact";
+import SpaceProfileSetup from "./SpaceProfileSetup";
+import SpaceCommunitySettings from "./SpaceCommunitySettings";
+import SpaceClassEditor from "./SpaceClassEditor";
+import SpaceShopEditor from "./SpaceShopEditor";
+import SpaceStayEditor from "./SpaceStayEditor";
+import SpaceRentalEditor from "./SpaceRentalEditor";
+import SpaceMemberManager from "./SpaceMemberManager";
 
 export default function SpaceHome({ community }: { community: Community }) {
   const [activeTab, setActiveTab] = useState("Home");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [activeEditor, setActiveEditor] = useState<string | null>(null);
   const router = useRouter();
 
   const handleNavClick = (tab: string) => {
     setActiveTab(tab);
     setIsMenuOpen(false);
+  };
+
+  const [appSettings, setAppSettings] = useState({
+    "Class Setting": true,
+    "Shop Setting": false,
+    "Stay Setting": true,
+    "Rental Setting": false,
+  });
+
+  const handleToggle = (label: string) => {
+    const currentStatus = appSettings[label as keyof typeof appSettings];
+    const serviceNames: {[key: string]: string} = {
+      "Class Setting": "클래스(Class)",
+      "Shop Setting": "샵(Shop)",
+      "Stay Setting": "스테이(Stay)",
+      "Rental Setting": "렌탈(Rental)"
+    };
+    const displayName = serviceNames[label] || label;
+    
+    let message = "";
+    if (currentStatus) {
+      message = `[${displayName}] 버튼을 끄면 사이트에서 더 이상 관련 정보가 공개되지 않습니다. 계속하시겠습니까?`;
+    } else {
+      message = `[${displayName}] 서비스를 다시 활성화하여 정보를 공개하시겠습니까?`;
+    }
+    
+    if (window.confirm(message)) {
+      setAppSettings(prev => ({
+        ...prev,
+        [label]: !currentStatus
+      }));
+    }
   };
 
   const renderContent = () => {
@@ -35,6 +75,20 @@ export default function SpaceHome({ community }: { community: Community }) {
         return <SpaceGallery community={community} />;
       case "Contact":
         return <SpaceContact community={community} />;
+      case "Setup Profile":
+        return <SpaceProfileSetup community={community} />;
+      case "CommunitySettings":
+        return <SpaceCommunitySettings community={community} />;
+      case "ClassSetting":
+        return <SpaceClassEditor />;
+      case "ShopSetting":
+        return <SpaceShopEditor />;
+      case "StaySetting":
+        return <SpaceStayEditor />;
+      case "RentalSetting":
+        return <SpaceRentalEditor />;
+      case "Members":
+        return <SpaceMemberManager />;
       default:
         return <SpaceHomeMain community={community} />;
     }
@@ -72,10 +126,10 @@ export default function SpaceHome({ community }: { community: Community }) {
         <div className="px-6 mb-8 flex items-center gap-4">
           <div className="relative group cursor-pointer" onClick={() => router.push('/')}>
             <div className="absolute -inset-1 bg-gradient-to-tr from-[#0057bd] to-[#6e9fff] rounded-full blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
-            <img 
-              alt="Curator Admin" 
-              className="relative h-14 w-14 rounded-full object-cover border-2 border-white shadow-sm" 
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuC0Ng87KONyvBOgFvp-1LRX3WNjTO0RexQhCMxyK_7YcS_2poaUarQZwyBw8sYF95IkjeYAfn6biKUc9jJ7qgBMQ1fCFDnVvLZ_9QLn6nC1t9Bi8ckk_ad1ugjRUoDbduXu1Io0HLBFbZxZOHsH4BMP1zVyMP48wE1l1tcJ1koxecJ9jmc5rELtjJDBBO_TYhwP_SD7y7HPn0GnFHOSew3pDnflxAK0ULU6qarjX6tItNDSzTnblhxLzlclR36i2yASGgKhQV-fLzw" 
+            <img
+              alt="Curator Admin"
+              className="relative h-14 w-14 rounded-full object-cover border-2 border-white shadow-sm"
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuC0Ng87KONyvBOgFvp-1LRX3WNjTO0RexQhCMxyK_7YcS_2poaUarQZwyBw8sYF95IkjeYAfn6biKUc9jJ7qgBMQ1fCFDnVvLZ_9QLn6nC1t9Bi8ckk_ad1ugjRUoDbduXu1Io0HLBFbZxZOHsH4BMP1zVyMP48wE1l1tcJ1koxecJ9jmc5rELtjJDBBO_TYhwP_SD7y7HPn0GnFHOSew3pDnflxAK0ULU6qarjX6tItNDSzTnblhxLzlclR36i2yASGgKhQV-fLzw"
             />
           </div>
           <div className="flex flex-col">
@@ -89,8 +143,8 @@ export default function SpaceHome({ community }: { community: Community }) {
           {/* Section: Navigation */}
           <div>
             <h3 className="px-2 mb-2 text-[10px] uppercase tracking-[0.15em] font-bold text-[#a3abd7]">Navigation</h3>
-            <button 
-              onClick={() => router.push('/')}
+            <button
+              onClick={() => router.push('/groups')}
               className="w-full flex items-center gap-3 px-4 py-3 text-[#242c51] dark:text-slate-300 hover:bg-[#f7f5ff] dark:hover:bg-slate-800 rounded-xl hover:translate-x-1 transition-transform duration-200"
             >
               <span className="material-symbols-outlined text-[#0057bd]">keyboard_return</span>
@@ -113,13 +167,12 @@ export default function SpaceHome({ community }: { community: Community }) {
                 <button
                   key={item.id}
                   onClick={() => handleNavClick(item.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
-                    activeTab === item.id 
-                      ? "bg-[#efefff] dark:bg-blue-900/30 text-[#0057bd] dark:text-blue-200 font-bold" 
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${activeTab === item.id
+                      ? "bg-[#efefff] dark:bg-blue-900/30 text-[#0057bd] dark:text-blue-200 font-bold"
                       : "text-[#242c51] dark:text-slate-300 hover:bg-[#f7f5ff] dark:hover:bg-slate-800 hover:translate-x-1"
-                  }`}
+                    }`}
                 >
-                  <span 
+                  <span
                     className="material-symbols-outlined"
                     style={{ fontVariationSettings: activeTab === item.id ? "'FILL' 1" : "'FILL' 0" }}
                   >
@@ -136,13 +189,17 @@ export default function SpaceHome({ community }: { community: Community }) {
             <h3 className="px-2 mb-2 text-[10px] uppercase tracking-[0.15em] font-bold text-[#a3abd7]">App Settings</h3>
             <div className="space-y-1">
               {[
-                { icon: "person_edit", label: "Setup Profile", path: "/my-info" },
-                { icon: "settings_applications", label: "Community Settings" },
+                { id: "Setup Profile", icon: "person_edit", label: "Setup Profile" },
+                { id: "CommunitySettings", icon: "settings_applications", label: "Community Settings" },
               ].map((item) => (
                 <button 
                   key={item.label} 
-                  onClick={() => item.path && router.push(item.path)}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-[#242c51] dark:text-slate-300 hover:bg-[#f7f5ff] dark:hover:bg-slate-800 rounded-xl hover:translate-x-1 transition-transform duration-200"
+                  onClick={() => handleNavClick(item.id)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                    activeTab === item.id
+                      ? "bg-[#efefff] dark:bg-blue-900/30 text-[#0057bd] dark:text-blue-200 font-bold"
+                      : "text-[#242c51] dark:text-slate-300 hover:bg-[#f7f5ff] dark:hover:bg-slate-800 hover:translate-x-1"
+                  }`}
                 >
                   <span className="material-symbols-outlined">{item.icon}</span>
                   <span>{item.label}</span>
@@ -151,19 +208,33 @@ export default function SpaceHome({ community }: { community: Community }) {
 
               {/* Toggles */}
               {[
-                { icon: "school", label: "Class Setting", active: true },
-                { icon: "shopping_bag", label: "Shop Setting", active: false },
-                { icon: "bed", label: "Stay Setting", active: true },
-                { icon: "key", label: "Rental Setting", active: false },
+                { id: "ClassSetting", icon: "school", label: "Class Setting" },
+                { id: "ShopSetting", icon: "shopping_bag", label: "Shop Setting" },
+                { id: "StaySetting", icon: "bed", label: "Stay Setting" },
+                { id: "RentalSetting", icon: "key", label: "Rental Setting" },
               ].map((item) => (
-                <div key={item.label} className="flex items-center justify-between px-4 py-3 text-[#242c51] dark:text-slate-300 hover:bg-[#f7f5ff] dark:hover:bg-slate-800 rounded-xl group transition-all">
+                <div 
+                  key={item.label} 
+                  onClick={() => handleNavClick(item.id)}
+                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl group transition-all cursor-pointer ${
+                    activeTab === item.id
+                      ? "bg-[#efefff] dark:bg-blue-900/30 text-[#0057bd] dark:text-blue-200 font-bold"
+                      : "text-[#242c51] dark:text-slate-300 hover:bg-[#f7f5ff] dark:hover:bg-slate-800 hover:translate-x-1"
+                  }`}
+                >
                   <div className="flex items-center gap-3">
                     <span className="material-symbols-outlined">{item.icon}</span>
                     <span>{item.label}</span>
                   </div>
-                  <div className={`w-8 h-4 rounded-full relative ${item.active ? "bg-[#0057bd]" : "bg-[#a3abd7]"}`}>
-                    <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${item.active ? "right-0.5" : "left-0.5"}`}></div>
-                  </div>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleToggle(item.label);
+                    }}
+                    className={`w-8 h-4 rounded-full relative transition-colors duration-300 cursor-pointer ${appSettings[item.label as keyof typeof appSettings] ? "bg-[#0057bd]" : "bg-[#a3abd7]"}`}
+                  >
+                    <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all duration-300 ${appSettings[item.label as keyof typeof appSettings] ? "right-0.5" : "left-0.5"}`}></div>
+                  </button>
                 </div>
               ))}
             </div>
@@ -172,7 +243,14 @@ export default function SpaceHome({ community }: { community: Community }) {
           {/* Section: Admin */}
           <div className="pb-8">
             <h3 className="px-2 mb-2 text-[10px] uppercase tracking-[0.15em] font-bold text-[#a3abd7]">Admin</h3>
-            <button className="w-full flex items-center gap-3 px-4 py-3 text-[#242c51] dark:text-slate-300 hover:bg-[#f7f5ff] dark:hover:bg-slate-800 rounded-xl hover:translate-x-1 transition-transform duration-200">
+            <button 
+              onClick={() => handleNavClick("Members")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                activeTab === "Members"
+                  ? "bg-[#efefff] dark:bg-blue-900/30 text-[#0057bd] dark:text-blue-200 font-bold"
+                  : "text-[#242c51] dark:text-slate-300 hover:bg-[#f7f5ff] dark:hover:bg-slate-800 hover:translate-x-1"
+              }`}
+            >
               <span className="material-symbols-outlined">group</span>
               <span>Members</span>
               <span className="ml-auto bg-[#0057bd]/10 text-[#0057bd] text-[10px] font-black px-1.5 py-0.5 rounded-md">24</span>
@@ -184,7 +262,7 @@ export default function SpaceHome({ community }: { community: Community }) {
       {/* Overlay for mobile menu */}
       <AnimatePresence>
         {isMenuOpen && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -232,12 +310,11 @@ export default function SpaceHome({ community }: { community: Community }) {
             { id: "Gallery", icon: "collections", label: "Gallery" },
             { id: "Contact", icon: "contact_support", label: "Contact" },
           ].map((item) => (
-            <button 
+            <button
               key={item.id}
               onClick={() => handleNavClick(item.id)}
-              className={`flex flex-col items-center justify-center px-3 py-1 scale-100 active:scale-95 transition-transform duration-200 ${
-                activeTab === item.id ? "bg-blue-50 text-[#0057bd] rounded-2xl" : "text-slate-500 hover:text-[#0057bd]"
-              }`}
+              className={`flex flex-col items-center justify-center px-3 py-1 scale-100 active:scale-95 transition-transform duration-200 ${activeTab === item.id ? "bg-blue-50 text-[#0057bd] rounded-2xl" : "text-slate-500 hover:text-[#0057bd]"
+                }`}
             >
               <span className="material-symbols-outlined" style={{ fontVariationSettings: activeTab === item.id ? "'FILL' 1" : "'FILL' 0" }}>{item.icon}</span>
               <span className="font-label font-bold text-[10px] uppercase tracking-wider mt-1">{item.label}</span>
