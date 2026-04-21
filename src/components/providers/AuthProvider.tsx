@@ -6,7 +6,7 @@ import {
   User,
   signOut as firebaseSignOut
 } from 'firebase/auth';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteDoc, onSnapshot, Timestamp } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase/clientApp';
 
 interface UserProfile {
@@ -66,8 +66,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(firebaseUser);
       
       if (firebaseUser) {
-        // 실시간 프로필 감시
+        // [Link Logic] 사전 등록된 데이터가 있는지 확인 (전화번호 기준)
         const userDocRef = doc(db, 'users', firebaseUser.uid);
+        
+        try {
+          const userSnap = await getDoc(userDocRef);
+          
+          if (!userSnap.exists()) {
+            // 처음 로그인하는 사용자라면 전화번호 기반 데이터 검색
+            const phone = firebaseUser.phoneNumber;
+            if (phone) {
+              const phoneDocRef = doc(db, 'users', phone);
+              const phoneSnap = await getDoc(phoneDocRef);
+              
+              if (phoneSnap.exists()) {
+                const migratedData = phoneSnap.data();
+                console.log('Migrating user data from phone ID to UID:', phone);
+                
+                // 새로운 UID 문서로 데이터 복사
+                await setDoc(userDocRef, {
+                  ...migratedData,
+                  uid: firebaseUser.uid,
+                  migratedAt: Timestamp.now(),
+                  isRegistered: true,
+                  authMethod: migratedData.authMethod || 'phone'
+                });
+
+                // [Group Membership Migration] 프리스타일탱고 멤버십 이전
+                const oldMemberRef = doc(db, 'groups', 'freestyle-tango', 'members', phone);
+                const memberSnap = await getDoc(oldMemberRef);
+                
+                if (memberSnap.exists()) {
+                  const memberData = memberSnap.data();
+                  const newMemberRef = doc(db, 'groups', 'freestyle-tango', 'members', firebaseUser.uid);
+                  await setDoc(newMemberRef, {
+                    ...memberData,
+                    userId: firebaseUser.uid,
+                    migratedAt: Timestamp.now()
+                  });
+                  await deleteDoc(oldMemberRef);
+                  console.log('Migrated membership for freestyle-tango');
+                }
+                
+                // 기존 전화번호 기반 문서 삭제
+                await deleteDoc(phoneDocRef);
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Migration link failed:', error);
+        }
+
+        // 실시간 프로필 감시 시작
         unsubscribeProfile = onSnapshot(userDocRef, (docSnap) => {
           if (docSnap.exists()) {
             const data = docSnap.data();

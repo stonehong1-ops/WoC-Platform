@@ -7,12 +7,14 @@ import {
   onSnapshot, 
   getDoc,
   getDocs,
+  setDoc,
+  deleteDoc,
+  limit,
+  startAfter,
   Timestamp,
   addDoc,
   updateDoc,
-  increment,
-  arrayUnion,
-  arrayRemove
+  increment
 } from 'firebase/firestore';
 import { Group, Post, Member } from '@/types/group';
 
@@ -58,14 +60,28 @@ export const groupService = {
       if (!rawData) return;
       const data = groupService._convertTimestamps(rawData);
       
-      // Initially set without posts (we'll fetch posts separately)
+      // Initially set without posts or members (we'll fetch them separately)
       callback({
         id: snapshot.id,
         ...data,
-        members: Array.isArray(data.members) ? data.members : [],
+        members: [], // Members now in subcollection
         memberCount: typeof data.memberCount === 'number' ? data.memberCount : 0,
         posts: []
       } as Group);
+    });
+  },
+
+  // Subscribe to group members
+  subscribeMembers: (groupId: string, callback: (members: Member[]) => void) => {
+    const membersRef = collection(db, GROUPS_COLLECTION, groupId, 'members');
+    const q = query(membersRef, orderBy('name', 'asc'));
+    
+    return onSnapshot(q, (snapshot) => {
+      const members = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Member[];
+      callback(members);
     });
   },
 
@@ -95,7 +111,7 @@ export const groupService = {
       return {
         id: doc.id,
         ...data,
-        members: Array.isArray(data.members) ? data.members : [],
+        members: [],
         memberCount: typeof data.memberCount === 'number' ? data.memberCount : 0,
         posts: []
       } as Group;
@@ -122,10 +138,31 @@ export const groupService = {
     return {
       id: snapshot.id,
       ...data,
-      members: Array.isArray(data?.members) ? data?.members : [],
+      members: [],
       memberCount: typeof data?.memberCount === 'number' ? data?.memberCount : 0,
       posts
     } as Group;
+  },
+
+  // Get group members with pagination
+  getGroupMembers: async (groupId: string, pageSize = 20, lastVisible?: any): Promise<{ members: Member[], lastVisible: any }> => {
+    const membersRef = collection(db, GROUPS_COLLECTION, groupId, 'members');
+    let q = query(membersRef, orderBy('name', 'asc'), limit(pageSize));
+    
+    if (lastVisible) {
+      q = query(membersRef, orderBy('name', 'asc'), startAfter(lastVisible), limit(pageSize));
+    }
+    
+    const snapshot = await getDocs(q);
+    const members = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })) as Member[];
+    
+    return {
+      members,
+      lastVisible: snapshot.docs[snapshot.docs.length - 1]
+    };
   },
 
   // Like a post
@@ -149,29 +186,33 @@ export const groupService = {
   },
 
   // Join a group
-  joinGroup: async (groupId: string, member: Member) => {
-    const docRef = doc(db, GROUPS_COLLECTION, groupId);
-    await updateDoc(docRef, {
-      members: arrayUnion(member),
+  joinGroup: async (groupId: string, userId: string, memberData: Omit<Member, 'id'>) => {
+    const groupRef = doc(db, GROUPS_COLLECTION, groupId);
+    const memberRef = doc(db, GROUPS_COLLECTION, groupId, 'members', userId);
+    
+    // Add to members subcollection
+    await setDoc(memberRef, {
+      ...memberData,
+      joinedAt: Timestamp.now()
+    });
+    
+    // Increment member count in metadata
+    await updateDoc(groupRef, {
       memberCount: increment(1)
     });
   },
 
   // Leave a group
-  leaveGroup: async (groupId: string, memberId: string) => {
-    const docRef = doc(db, GROUPS_COLLECTION, groupId);
-    const snapshot = await getDoc(docRef);
-    if (!snapshot.exists()) return;
-
-    const data = snapshot.data();
-    const members = data.members || [];
-    const memberToRemove = members.find((m: Member) => m.id === memberId);
-
-    if (memberToRemove) {
-      await updateDoc(docRef, {
-        members: arrayRemove(memberToRemove),
-        memberCount: increment(-1)
-      });
-    }
+  leaveGroup: async (groupId: string, userId: string) => {
+    const groupRef = doc(db, GROUPS_COLLECTION, groupId);
+    const memberRef = doc(db, GROUPS_COLLECTION, groupId, 'members', userId);
+    
+    // Remove from members subcollection
+    await deleteDoc(memberRef);
+    
+    // Decrement member count in metadata
+    await updateDoc(groupRef, {
+      memberCount: increment(-1)
+    });
   }
 };

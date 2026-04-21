@@ -88,7 +88,7 @@ export default function GroupHome({ group }: { group: Group }) {
       case "RentalSetting":
         return <GroupRentalEditor />;
       case "Members":
-        return <GroupMemberManager />;
+        return <GroupMemberManager group={group} />;
       default:
         return <GroupHomeMain group={group} />;
     }
@@ -253,7 +253,7 @@ export default function GroupHome({ group }: { group: Group }) {
             >
               <span className="material-symbols-outlined">group</span>
               <span>Members</span>
-              <span className="ml-auto bg-[#0057bd]/10 text-[#0057bd] text-[10px] font-black px-1.5 py-0.5 rounded-md">24</span>
+              <span className="ml-auto bg-[#0057bd]/10 text-[#0057bd] text-[10px] font-black px-1.5 py-0.5 rounded-md">{group.memberCount || 0}</span>
             </button>
           </div>
         </nav>

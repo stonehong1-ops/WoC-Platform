@@ -1,9 +1,32 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Group, Member } from '@/types/group';
+import { groupService } from '@/lib/firebase/groupService';
 
-const GroupMemberManager = () => {
-  const [activeSubTab, setActiveSubTab] = useState('Stats');
+const GroupMemberManager = ({ group }: { group: Group }) => {
+  const [activeSubTab, setActiveSubTab] = useState('Member');
+  const [members, setMembers] = useState<Member[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!group?.id) return;
+    
+    // Subscribe to members
+    const unsubscribe = groupService.subscribeMembers(group.id, (memberList) => {
+      setMembers(memberList);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [group?.id]);
+
+  const stats = [
+    { label: 'Total Members', value: members.length.toLocaleString(), grow: '+0%', icon: 'group', color: 'blue' },
+    { label: 'Active Now', value: '0', grow: '+0%', icon: 'bolt', color: 'amber' },
+    { label: 'New This Month', value: '0', grow: '+0%', icon: 'person_add', color: 'emerald' },
+    { label: 'Pending Approval', value: '0', grow: '+0%', icon: 'hourglass_empty', color: 'rose' }
+  ];
 
   const renderSubContent = () => {
     switch (activeSubTab) {
@@ -12,12 +35,7 @@ const GroupMemberManager = () => {
           <div className="group-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Stats Overview */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {[
-                { label: 'Total Members', value: '1,284', grow: '+12%', icon: 'group', color: 'blue' },
-                { label: 'Active Now', value: '156', grow: '+5%', icon: 'bolt', color: 'amber' },
-                { label: 'New This Month', value: '84', grow: '+18%', icon: 'person_add', color: 'emerald' },
-                { label: 'Pending Approval', value: '12', grow: '-2%', icon: 'hourglass_empty', color: 'rose' }
-              ].map((stat, i) => (
+              {stats.map((stat, i) => (
                 <div key={i} className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200/50 group hover:shadow-md transition-all duration-300">
                   <div className="flex items-start justify-between mb-4">
                     <div className={`p-3 rounded-2xl bg-${stat.color}-50 text-${stat.color}-600 group-hover:scale-110 transition-transform`}>
@@ -177,29 +195,30 @@ const GroupMemberManager = () => {
 
             {/* Member Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[
-                { name: 'Elena Rodriguez', tag: 'High Engagement', tagColor: 'purple', join: 'Oct 12, 2023', last: '2 hours ago', total: '142', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBm1xtRGlIfM5n46_mjrDP0TN1zmTFGP6uzuWdpSweGjrZ-lyIsS8HWjYd3a1n_o1HGP65isAG-S8i_AZKMCcp32psi9qFD1creUUjjtC2eWALHzxFPyb4L4lAblzhig6o8SxN8ipz6si8wEPlwzVmZI5ICBF_y-ij-uksQOb1lluOMbgCtRoILax5zl1aknntgoJcMurUwYyuKOZubHft9dFQ_76opNyyRkewBKWyqZkbgKzKgEe1XwukEjhj1HQrTbQBEu1vbatE' },
-                { name: 'Marcus Sterling', tag: 'Regular', tagColor: 'slate', join: 'Jan 05, 2024', last: 'Yesterday', total: '28', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBDV2BX-sikLexMoBlHtcNWXqdO-uTvtazoIRXTHg27MNGq_b0j0H0plceLPN3ruKgB415FW-Rvpu7DtEJkRD7jDkOTQDjvpUTLWiQZB6Qh5mWx_UxdEZ8bKr0MZjU8D9ZDdd4v4FxlsQD8HHbyYJv7RwsgYtbR29AQG7jqoOkKrmwpetajtFHG-DA7XLSXRYR2Hw6VdctdKyzqlfqZ9wUWptqBxrQL_W15zDWF_LX-_9mxbjli1XtQpYxuL9QYBE8v9scT3X91-9A' },
-                { name: 'Julian Chen', tag: 'Inactive', tagColor: 'rose', join: 'Nov 20, 2023', last: '3 weeks ago', total: '12', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBxri2pL577ENZ91Q2jjcngiHpSdPI16O2oAOtZKj2rM6P7FZPdkwBoc2SqgWzisiimrlFyRM0XBgkmCgco4RUYHauiGKK0stR2q65CdlDdKZET_qp1d-Ntuw5H1cFAzqCimgFDQmwO0LIyYZN94tuYVTzsHGpILOiUMp3qBsuUnrSw4AB7jUHQuMivwDAUMZMAIcpeLTV8cKk-ixRUHnY8CuvgUa1m3wHqqrqut3a50Mb7RbNzqVajs10oIDape8i0mrJIKVDsbRY' },
-                { name: 'Sarah Jenkins', tag: 'New Member', tagColor: 'blue', join: 'Mar 15, 2024', last: 'Today', total: '3', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBFgZ3gL9qUGVsXxXmZI9L5jTZTO4apLrq5QYFATMYRx48bjOO4qbosFcSKqNrmWZWKKNu0Tz0uG7zOJvfC3_La1qegqcjhOfcAK_wjm671YpatEiNgqJBXJ1ltFWFZVt6qNg7tWMhaYX0kSmSQ2i0tdBAbDDuvzptk-C7YDUgvozDdRMu1hLoyXzhiWM-g5E-YHz7RarZP4WSAlbRm1y1MljtyhHhJHzIFqa0ztLUib8ZqHHOTiUnpvOUt51TYZRX5GR9j7fWLRZA' },
-                { name: 'Miriam Valeska', tag: 'High Engagement', tagColor: 'purple', join: 'Feb 11, 2023', last: '4 hours ago', total: '204', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBDJAwQZK-8qIk-xK_Gt062kVhYLfDEej03Bf5Gdo0ryoNP9vl_O0atuhwkePAGp_V0kMiFfiGFBhrZxEm8Q_siZLxqMtHAB_pqc3nV4AUhiuD7Ng22LQAbZ8cp0mSSd96bG8s3sqOvmsJzYb8FJl5WDNaS6hnYnjZ8ZBvtlcuIP7W5ti3m0hBmMt1l8xnGTQtdQjFoUi7m-k0r_cYsDp45ZGynWlphcia_8m-6X9V1opO2dzOpUNGHIm_535rMoxmrM4_abSkUuSw' },
-                { name: 'David Miller', tag: 'Regular', tagColor: 'slate', join: 'Aug 30, 2023', last: '3 days ago', total: '67', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDpD4FvAVj1ssEB6Jz72KcYQ0PyiQsud4D4b6XhK9LDdsnpMCcgvxpB_vteh33inv95_hyuV6nbJUF6VpCIpHIgHUXsYldDMaddWsWfOo5zLxtTPTJI5w6U66jWwI33la_CrKLBt6zSad2zfq15OV6INaQJ7TxSyxurcWJ0Q6o4MLXuzA65WKQFnvzAjVGDZDeiPMBv17XHbwAic7SKY8txvdQu1Z1LHnPERavPv_pug2U_dTWqH4yg15EBxwkR2-clebMB35veQtA' }
-              ].map((member, i) => (
-                <div key={i} className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200/50 hover:shadow-md transition-all duration-300 group">
+              {loading ? (
+                <div className="col-span-full py-20 text-center text-slate-400 font-medium">
+                  멤버 목록을 불러오는 중...
+                </div>
+              ) : members.length === 0 ? (
+                <div className="col-span-full py-20 text-center text-slate-400 font-medium">
+                  등록된 멤버가 없습니다.
+                </div>
+              ) : members.map((member, i) => (
+                <div key={member.id} className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200/50 hover:shadow-md transition-all duration-300 group">
                   <div className="flex items-start justify-between mb-6">
                     <div className="flex items-center gap-4">
                       <div className="relative">
-                        <img className="w-14 h-14 rounded-full object-cover border-2 border-slate-50 group-hover:border-[#6e9fff] transition-colors" src={member.img} alt={member.name} />
-                        <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${member.tag === 'Inactive' ? 'bg-slate-300' : 'bg-emerald-500'}`}></div>
+                        <img 
+                          className="w-14 h-14 rounded-full object-cover border-2 border-slate-50 group-hover:border-[#6e9fff] transition-colors" 
+                          src={member.avatar || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
+                          alt={member.name} 
+                        />
+                        <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white bg-emerald-500"></div>
                       </div>
                       <div>
                         <h3 className="font-bold text-[#242c51] leading-tight font-headline">{member.name}</h3>
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider mt-1.5 ${
-                          member.tagColor === 'purple' ? 'bg-purple-50 text-purple-600' :
-                          member.tagColor === 'rose' ? 'bg-rose-50 text-rose-600' :
-                          member.tagColor === 'blue' ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-500'
-                        }`}>
-                          {member.tag}
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider mt-1.5 bg-blue-50 text-blue-600">
+                          Member
                         </span>
                       </div>
                     </div>
@@ -209,20 +228,9 @@ const GroupMemberManager = () => {
                   </div>
                   
                   <div className="grid grid-cols-2 gap-y-4 pt-4 border-t border-slate-50">
-                    <div>
-                      <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">Join Date</p>
-                      <p className="text-sm font-bold text-[#242c51]">{member.join}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">Last Visit</p>
-                      <p className="text-sm font-bold text-[#242c51]">{member.last}</p>
-                    </div>
                     <div className="col-span-2">
-                      <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">Total Visits</p>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-2xl font-black text-[#0057bd]">{member.total}</span>
-                        <span className="text-xs font-bold text-slate-400">visits this year</span>
-                      </div>
+                      <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">User ID</p>
+                      <p className="text-xs font-mono text-slate-500 truncate">{member.id}</p>
                     </div>
                   </div>
                 </div>

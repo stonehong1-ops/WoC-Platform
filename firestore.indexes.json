@@ -7,6 +7,14 @@
         { "fieldPath": "postId", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "members",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "joinedAt", "order": "DESCENDING" },
+        { "fieldPath": "nickname", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
