@@ -1,175 +1,229 @@
 "use client";
 
-import React from "react";
-import { motion } from "framer-motion";
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Group } from "@/types/group";
+import { groupService } from "@/lib/firebase/groupService";
 
 interface GroupRoleEditorProps {
+  group: Group;
   onClose: () => void;
 }
 
-const GroupRoleEditor: React.FC<GroupRoleEditorProps> = ({ onClose }) => {
+const GroupRoleEditor: React.FC<GroupRoleEditorProps> = ({ group, onClose }) => {
+  const [permissions, setPermissions] = useState(group.staffPermissions || {
+    managePosts: true,
+    manageMembers: true,
+    viewAnalytics: false
+  });
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await groupService.updateGroupMetadata(group.id, {
+        staffPermissions: permissions
+      });
+      onClose();
+    } catch (error) {
+      console.error("Error saving permissions:", error);
+      alert("권한 설정 저장에 실패했습니다.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const togglePermission = (key: keyof typeof permissions) => {
+    setPermissions(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const roles = [
+    {
+      id: 'owner',
+      title: 'Owner (소유자)',
+      icon: 'stars',
+      color: '#0057bd',
+      desc: '그룹의 모든 권한을 가집니다. 결제 관리, 그룹 설정 및 삭제가 가능합니다.',
+      count: '1 Member'
+    },
+    {
+      id: 'staff',
+      title: 'Staff (운영진)',
+      icon: 'shield_person',
+      color: '#893c92',
+      desc: '그룹 관리 및 중재 권한을 가집니다. 멤버 관리 및 분석 데이터를 조회할 수 있습니다.',
+      count: `${group.members?.filter(m => m.role === 'staff').length || 0} Members`
+    },
+    {
+      id: 'member',
+      title: 'Member (일반 멤버)',
+      icon: 'group',
+      color: '#3a53b7',
+      desc: '기본적인 활동 권한을 가집니다. 게시글 작성 및 그룹 내 활동이 가능합니다.',
+      count: `${group.memberCount || 0} Members`
+    }
+  ];
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 20 }}
-      className="fixed inset-0 z-[100] bg-[#f7f5ff] flex flex-col overflow-y-auto no-scrollbar font-body"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[100] bg-[#0a0f1d] flex flex-col overflow-y-auto no-scrollbar font-body text-white"
     >
-      {/* TopAppBar */}
-      <header className="bg-[#f7f5ff] shadow-[0_32px_32px_rgba(36,44,81,0.06)] sticky top-0 z-50">
-        <div className="flex justify-between items-center w-full px-6 py-4 max-w-screen-xl mx-auto">
+      {/* Background Atmosphere */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-5%] left-[-5%] w-[40%] h-[40%] bg-[#0057bd]/10 blur-[100px] rounded-full" />
+        <div className="absolute bottom-[-5%] right-[-5%] w-[30%] h-[30%] bg-purple-900/10 blur-[80px] rounded-full" />
+      </div>
+
+      {/* Header */}
+      <header className="sticky top-0 z-50 bg-[#0a0f1d]/80 backdrop-blur-2xl border-b border-white/10">
+        <div className="max-w-screen-xl mx-auto px-6 py-4 flex items-center justify-between w-full">
           <div className="flex items-center gap-4">
             <button 
               onClick={onClose}
-              className="active:scale-95 duration-200 ease-out p-2 rounded-full hover:bg-[#d6dbff]/30 text-[#0057bd]"
+              className="w-10 h-10 rounded-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-all"
             >
               <span className="material-symbols-outlined">arrow_back</span>
             </button>
-            <h1 className="font-headline font-bold tracking-tight text-[#0057bd] text-xl">Member Roles & Staff</h1>
+            <div>
+              <h1 className="text-lg font-headline font-black tracking-tight">Role & Permissions</h1>
+              <p className="text-xs text-white/40">멤버 역할 및 스태프 권한 관리</p>
+            </div>
           </div>
           <button 
-            onClick={onClose}
-            className="bg-gradient-to-br from-[#0057bd] to-[#6e9fff] text-white px-6 py-2 rounded-xl font-semibold shadow-lg active:scale-95 duration-200 ease-out"
+            onClick={handleSave}
+            disabled={isSaving}
+            className={`px-8 py-2.5 rounded-xl font-headline font-black transition-all active:scale-95 shadow-2xl ${
+              isSaving
+                ? "bg-white/10 text-white/30"
+                : "bg-white text-black hover:bg-[#0057bd] hover:text-white"
+            }`}
           >
-            Save
+            {isSaving ? '저장 중...' : '권한 저장'}
           </button>
         </div>
       </header>
 
-      <main className="max-w-screen-xl mx-auto px-6 py-10 w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Section 1: Role Definitions */}
-          <div className="lg:col-span-8 flex flex-col gap-6">
-            <div className="flex flex-col gap-2">
-              <h2 className="font-headline text-2xl font-extrabold tracking-tight text-[#242c51]">Role Definitions</h2>
-              <p className="text-[#515981] text-sm">Define the core hierarchy and access levels for your group.</p>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Owner Card */}
-              <div className="bg-white p-6 rounded-xl shadow-sm border-l-4 border-[#0057bd] group hover:shadow-md transition-shadow">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="bg-[#0057bd]/10 p-3 rounded-lg">
-                    <span className="material-symbols-outlined text-[#0057bd]" style={{ fontVariationSettings: "'FILL' 1" }}>stars</span>
-                  </div>
-                  <div className="flex flex-col items-end gap-2">
-                    <span className="bg-[#0057bd]/10 text-[#0057bd] px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Owner</span>
-                  </div>
-                </div>
-                <h3 className="font-headline font-bold text-lg mb-2 text-[#242c51]">Owner</h3>
-                <p className="text-[#515981] text-sm leading-relaxed mb-6">Full administrative access. Can manage billing, group settings, and delete the group.</p>
-                <div className="flex items-center justify-between mt-auto">
-                  <div className="flex items-center gap-2 text-[#0057bd] font-semibold text-xs">
-                    <span>1 Member</span>
-                  </div>
-                  <button className="flex items-center gap-1 bg-[#0057bd] text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-md active:scale-95 duration-200 ease-out">
-                    <span className="material-symbols-outlined text-sm">person_add_alt</span>
-                    Add Owner
-                  </button>
-                </div>
+      <main className="relative z-10 max-w-screen-xl mx-auto px-6 py-12 w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+          {/* Left Column: Roles & Permissions */}
+          <div className="lg:col-span-8 space-y-12">
+            <section>
+              <header className="mb-8">
+                <h2 className="text-3xl font-headline font-black mb-2">Role Definitions</h2>
+                <p className="text-white/60">그룹 내 멤버들의 핵심 권한 체계를 정의합니다.</p>
+              </header>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {roles.map((role, idx) => (
+                  <motion.div
+                    key={role.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.1 }}
+                    className={`p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-white/20 transition-all ${role.id === 'member' ? 'md:col-span-2' : ''}`}
+                  >
+                    <div className="flex justify-between items-start mb-6">
+                      <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-white/5 border border-white/10">
+                        <span className="material-symbols-outlined text-white" style={{ color: role.color }}>{role.icon}</span>
+                      </div>
+                      <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/10 text-white/40">
+                        {role.id}
+                      </span>
+                    </div>
+                    <h3 className="text-xl font-headline font-bold mb-2">{role.title}</h3>
+                    <p className="text-sm text-white/50 leading-relaxed mb-6">{role.desc}</p>
+                    <div className="flex items-center gap-2 text-[11px] font-bold text-white/30">
+                      <span className="material-symbols-outlined text-[14px]">group</span>
+                      {role.count}
+                    </div>
+                  </motion.div>
+                ))}
               </div>
+            </section>
 
-              {/* Staff Card */}
-              <div className="bg-white p-6 rounded-xl shadow-sm border-l-4 border-[#893c92] group hover:shadow-md transition-shadow">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="bg-[#f199f7]/20 p-3 rounded-lg">
-                    <span className="material-symbols-outlined text-[#893c92]" style={{ fontVariationSettings: "'FILL' 1" }}>shield_person</span>
-                  </div>
-                  <span className="bg-[#893c92]/10 text-[#893c92] px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Staff</span>
-                </div>
-                <h3 className="font-headline font-bold text-lg mb-2 text-[#242c51]">Staff</h3>
-                <p className="text-[#515981] text-sm leading-relaxed mb-4">Moderation and group management. Can view analytics and manage most member activities.</p>
-                <div className="flex items-center gap-2 text-[#893c92] font-semibold text-xs">
-                  <span>8 Members</span>
-                </div>
-              </div>
-
-              {/* Member Card */}
-              <div className="md:col-span-2 bg-white p-6 rounded-xl shadow-sm border-l-4 border-[#3a53b7] group hover:shadow-md transition-shadow flex flex-col md:flex-row md:items-center gap-6">
-                <div className="flex-shrink-0">
-                  <div className="bg-[#c7cfff]/20 p-3 rounded-lg">
-                    <span className="material-symbols-outlined text-[#3a53b7]" style={{ fontVariationSettings: "'FILL' 1" }}>group</span>
-                  </div>
-                </div>
-                <div className="flex-grow">
-                  <div className="flex items-center gap-3 mb-1">
-                    <h3 className="font-headline font-bold text-lg text-[#242c51]">Member</h3>
-                    <span className="bg-[#3a53b7]/10 text-[#3a53b7] px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Standard</span>
-                  </div>
-                  <p className="text-[#515981] text-sm leading-relaxed">Default role for all new joins. Can participate in discussions, post content, and join public groups.</p>
-                </div>
-                <div className="flex-shrink-0 bg-[#efefff] px-4 py-2 rounded-lg">
-                  <span className="text-[#242c51] font-bold text-xl">1,248</span>
-                  <span className="text-[#515981] text-xs block">Active Members</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Staff Permissions */}
-            <div className="mt-8 bg-[#efefff] rounded-2xl p-8">
-              <div className="flex flex-col gap-2 mb-8">
-                <h2 className="font-headline text-2xl font-extrabold tracking-tight text-[#242c51]">Staff Permissions</h2>
-                <p className="text-[#515981] text-sm">Granular control over what your staff members can see and do.</p>
-              </div>
-              <div className="group-y-4">
-                {/* Toggle 1 */}
+            <section className="p-8 rounded-3xl bg-white/5 border border-white/10 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-[#0057bd]/10 blur-[60px] rounded-full" />
+              <header className="mb-8">
+                <h2 className="text-2xl font-headline font-black mb-2">Staff Permissions</h2>
+                <p className="text-white/40 text-sm">운영진에게 부여할 세부 권한을 선택하세요.</p>
+              </header>
+              
+              <div className="space-y-4">
                 {[
-                  { icon: "post_add", label: "Manage posts", desc: "Edit, delete, or pin any group post", checked: true },
-                  { icon: "person_search", label: "Manage members", desc: "Invite, kick, or ban members from the group", checked: true },
-                  { icon: "analytics", label: "View analytics", desc: "Access engagement dashboards and reports", checked: false },
-                ].map((perm, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-[#0057bd]/10 flex items-center justify-center">
-                        <span className="material-symbols-outlined text-[#0057bd] text-xl">{perm.icon}</span>
+                  { id: "managePosts", icon: "post_add", label: "게시글 관리", desc: "그룹 내 모든 포스트 수정, 삭제 및 고정 권한" },
+                  { id: "manageMembers", icon: "person_search", label: "멤버 관리", desc: "멤버 초대, 추방 및 블랙리스트 관리 권한" },
+                  { id: "viewAnalytics", icon: "analytics", label: "데이터 분석", desc: "활동 지표 및 리포트 대시보드 접근 권한" },
+                ].map((perm) => (
+                  <div key={perm.id} className="flex items-center justify-between p-5 bg-white/5 rounded-2xl border border-white/5 hover:border-white/10 transition-all">
+                    <div className="flex items-center gap-5">
+                      <div className="w-12 h-12 rounded-xl bg-[#0057bd]/10 flex items-center justify-center border border-[#0057bd]/20">
+                        <span className="material-symbols-outlined text-[#0057bd]">{perm.icon}</span>
                       </div>
                       <div>
-                        <h4 className="font-bold text-[#242c51]">{perm.label}</h4>
-                        <p className="text-xs text-[#515981]">{perm.desc}</p>
+                        <h4 className="font-bold text-white">{perm.label}</h4>
+                        <p className="text-xs text-white/40">{perm.desc}</p>
                       </div>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
-                      <input defaultChecked={perm.checked} className="sr-only peer" type="checkbox" />
-                      <div className="w-11 h-6 bg-[#a3abd7] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0057bd]"></div>
+                      <input 
+                        type="checkbox" 
+                        className="sr-only peer" 
+                        checked={permissions[perm.id as keyof typeof permissions]}
+                        onChange={() => togglePermission(perm.id as keyof typeof permissions)}
+                      />
+                      <div className="w-12 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white/40 after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#0057bd] peer-checked:after:bg-white peer-checked:after:shadow-[0_0_10px_rgba(255,255,255,0.5)]"></div>
                     </label>
                   </div>
                 ))}
               </div>
-            </div>
+            </section>
           </div>
 
-          {/* Section 2: Staff List */}
-          <div className="lg:col-span-4">
-            <div className="bg-white rounded-2xl p-6 shadow-[0_8px_24px_rgba(36,44,81,0.04)] sticky top-28">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="font-headline font-bold text-xl text-[#242c51]">Staff List</h2>
-                <button className="p-2 bg-[#0057bd]/10 rounded-lg hover:bg-[#0057bd]/20 transition-colors">
-                  <span className="material-symbols-outlined text-[#0057bd]">person_add</span>
+          {/* Right Column: Staff List */}
+          <div className="lg:col-span-4 space-y-6">
+            <div className="p-8 rounded-3xl bg-white/5 border border-white/10 sticky top-28 backdrop-blur-md">
+              <div className="flex items-center justify-between mb-8">
+                <h2 className="text-xl font-headline font-black">Staff List</h2>
+                <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-[#0057bd] transition-all">
+                  <span className="material-symbols-outlined text-sm">person_add</span>
                 </button>
               </div>
-              <div className="group-y-6">
-                {[
-                  { name: "Sarah Jenkins", role: "Group Lead", img: "https://lh3.googleusercontent.com/aida-public/AB6AXuCl30bOWbj8eu5-5mksyArDh9zEdWo8VmV5_xHkvDg9-nCe9Fo3CfoUyER8UzM8Dr35FK0jFxhGaEUpuJT2Wd4rBxPfRJsGpd_sh8Y6p2MQyMBhMy6WXHDSYvUMPmqxbq5y_F-wU2ucel_EPeF-7g07WuJuA-6AhoD1qa_wlD_D3yUgRuTz0plwWETzDkCWeOmr94-oaDK3vyEj4KK1Y0Vju2vHOSz4Wgvfiwo3xUHbB6t8Kct70p5tECR5odLCS3qIhuu_YI_I3XA" },
-                  { name: "Marcus Thorne", role: "Content Moderator", img: "https://lh3.googleusercontent.com/aida-public/AB6AXuAOai7AAk1qyjW4YN1qiGchlt4V5yRf6XXdQ5_9BBRKkHN3L0Ldx_NuCsUOwyfGeQJ-pxgkw3f6BTkj-Gg0-Td7e0P88EGl1CRQLM3Ugq3aV5rhbSJ8AHIbPR66ryGo-iKKJb24JEvWOSHpyCR2_f8aFYPxVJROo0b0-6TXt6RUsskBb8_bOGW5rcDldc1Lxql_7C4S_KxwCYOSENPz1HGWOYb3CNZDmBekJ0_ZDrMPChFXhnVUVj6hpOCMCPnrDjr1cVfBXcE18L4" },
-                  { name: "Elena Rodriguez", role: "Events Manager", img: "https://lh3.googleusercontent.com/aida-public/AB6AXuDnGrzgOyEbcgxvJcxBzYOr9JyN70qLZocWA-dXUxr7NbyOWVRFmNpjqVy8ySmDxG3BX1SJb5zW_GAmBBBcdOydTPHCqVUe5F8lGo7JVmk2tFE7xwoaZIHKj8RcnlhsLVJSzK5h1tohYMxqbjBDGp4_oN85CqWtbHyMY8VktcKhtF6nkySQNMZGJWNJv2IzFOhvjBpBa4229eGiOImNRsRm1i8LxqGlYzxnlXmiGDJb13ht2oss6rxPYDziRKfd8jD3dpDSFuQpQFE" },
-                  { name: "David Kim", role: "Support Specialist", img: "https://lh3.googleusercontent.com/aida-public/AB6AXuAzsJVzkJLzdH2x3KNGIqCuDWYns31SVCdhZtj0Xs705ZGwofkPxhloynQkEQIThrHb9KLiSYXc76GXT8vcQ-WKHCnZHdyvv5N9k-q0hYsJWbH5ZQT-hqHuTBQGiXzqx1J3GW3lpI1dNbLSdpiAs29nu5_VYWl31Xu5i-9dguQ6S_yPc8Ovk_eRT02Ifj0sR6QZt4oAsnLy_tHLtpg3S5G8ExSWbrHuSQaj-2WkiwBZeE6Qnar2cWgO_47NgsN2nz_H_CoPRE7fDIs" },
-                ].map((staff, idx) => (
-                  <div key={idx} className="flex items-center gap-4 group">
-                    <img alt={staff.name} className="w-12 h-12 rounded-full object-cover" src={staff.img} />
-                    <div className="flex-grow">
-                      <h4 className="font-bold text-sm text-[#242c51]">{staff.name}</h4>
-                      <p className="text-xs text-[#515981]">{staff.role}</p>
+              
+              <div className="space-y-6">
+                {group.members?.filter(m => m.role === 'staff').map((staff) => (
+                  <div key={staff.id} className="flex items-center gap-4 group">
+                    <div className="relative">
+                      <img alt={staff.name} className="w-12 h-12 rounded-full object-cover border border-white/10" src={staff.avatar || staff.photoURL || "/default-avatar.png"} />
+                      <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-[#893c92] rounded-full border-2 border-[#0a0f1d] flex items-center justify-center">
+                        <span className="material-symbols-outlined text-[8px] text-white">shield</span>
+                      </div>
                     </div>
-                    <button className="opacity-0 group-hover:opacity-100 p-2 text-red-500 hover:bg-red-50 rounded-lg transition-all">
+                    <div className="flex-grow">
+                      <h4 className="font-bold text-sm text-white/90">{staff.name}</h4>
+                      <p className="text-[10px] text-white/30 font-bold uppercase tracking-wider">Staff Member</p>
+                    </div>
+                    <button className="opacity-0 group-hover:opacity-100 w-8 h-8 flex items-center justify-center text-red-400 hover:bg-red-500/10 rounded-lg transition-all">
                       <span className="material-symbols-outlined text-sm">person_remove</span>
                     </button>
                   </div>
                 ))}
+                {(!group.members || group.members.filter(m => m.role === 'staff').length === 0) && (
+                  <div className="py-12 text-center border border-dashed border-white/10 rounded-2xl">
+                    <span className="material-symbols-outlined text-white/10 text-4xl mb-2">person_off</span>
+                    <p className="text-xs text-white/20">할당된 운영진이 없습니다.</p>
+                  </div>
+                )}
               </div>
-              <div className="mt-10 p-4 rounded-xl bg-[#0057bd]/5 border border-[#0057bd]/10">
-                <p className="text-xs text-[#515981] mb-3 leading-relaxed">Need more help? You can invite external consultants to temporary staff roles using high-level access keys.</p>
-                <button className="w-full py-2 bg-white text-[#0057bd] font-bold text-xs rounded-lg border border-[#0057bd]/20 hover:bg-[#0057bd]/10 transition-colors">
-                  Generate Staff Invite Link
+
+              <div className="mt-10 p-5 rounded-2xl bg-[#0057bd]/5 border border-[#0057bd]/10">
+                <p className="text-[11px] text-white/40 leading-relaxed mb-4">
+                  그룹 운영을 도와줄 전문가나 파트너를 운영진으로 초대할 수 있습니다. 초대 링크를 생성하세요.
+                </p>
+                <button className="w-full py-3 bg-white/5 text-white font-headline font-black text-xs rounded-xl border border-white/10 hover:bg-white hover:text-black transition-all">
+                  Staff Invite Link 생성
                 </button>
               </div>
             </div>

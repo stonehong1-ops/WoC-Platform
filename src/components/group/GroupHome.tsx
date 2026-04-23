@@ -1,327 +1,521 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { Group, Post as GroupPost } from "@/types/group";
+import { Post as FeedPost, FeedContext } from "@/types/feed";
+import { useAuth } from "@/components/providers/AuthProvider";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
-import { Group } from "@/types/group";
-import GroupHomeMain from "./GroupHomeMain";
-import GroupCalendar from "./GroupCalendar";
-import GroupFeed from "./GroupFeed";
-import GroupBoard from "./GroupBoard";
-import GroupGallery from "./GroupGallery";
-import GroupContact from "./GroupContact";
-import GroupProfileSetup from "./GroupProfileSetup";
-import GroupSettings from "./GroupSettings";
-import GroupClassEditor from "./GroupClassEditor";
-import GroupShopEditor from "./GroupShopEditor";
-import GroupStayEditor from "./GroupStayEditor";
-import GroupRentalEditor from "./GroupRentalEditor";
-import GroupMemberManager from "./GroupMemberManager";
+import ImageWithFallback from "@/components/common/ImageWithFallback";
+import { groupService } from "@/lib/firebase/groupService";
+import { feedService } from "@/lib/firebase/feedService";
+import GroupClassSetting from "./GroupClassSetting";
+import UniversalFeed from "@/components/feed/UniversalFeed";
 
 export default function GroupHome({ group }: { group: Group }) {
-  const [activeTab, setActiveTab] = useState("Home");
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [activeEditor, setActiveEditor] = useState<string | null>(null);
   const router = useRouter();
+  const { user, profile } = useAuth();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [activeView, setActiveView] = useState<'home' | 'search' | 'class-setting' | 'calendar' | 'feed' | 'board' | 'info' | 'class'>('home');
+  const [posts, setPosts] = useState<FeedPost[]>([]);
+  const [classes, setClasses] = useState<any[]>([]);
 
-  const handleNavClick = (tab: string) => {
-    setActiveTab(tab);
-    setIsMenuOpen(false);
+  // Feed Context for this group
+  const groupFeedContext: FeedContext = {
+    scope: 'group',
+    scopeId: group.id,
+    label: group.name,
+    category: 'tango' // Default category for this community
   };
 
-  const [appSettings, setAppSettings] = useState({
-    "Class Setting": true,
-    "Shop Setting": false,
-    "Stay Setting": true,
-    "Rental Setting": false,
-  });
-
-  const handleToggle = (label: string) => {
-    const currentStatus = appSettings[label as keyof typeof appSettings];
-    const serviceNames: {[key: string]: string} = {
-      "Class Setting": "클래스(Class)",
-      "Shop Setting": "샵(Shop)",
-      "Stay Setting": "스테이(Stay)",
-      "Rental Setting": "렌탈(Rental)"
+  useEffect(() => {
+    if (!group.id) return;
+    
+    // Subscribe to unified feeds instead of legacy group posts
+    const unsubscribeFeed = feedService.subscribePosts(group.id, setPosts);
+    const unsubscribeClasses = groupService.subscribeClasses(group.id, setClasses);
+    
+    return () => {
+      unsubscribeFeed();
+      unsubscribeClasses();
     };
-    const displayName = serviceNames[label] || label;
-    
-    let message = "";
-    if (currentStatus) {
-      message = `[${displayName}] 버튼을 끄면 사이트에서 더 이상 관련 정보가 공개되지 않습니다. 계속하시겠습니까?`;
-    } else {
-      message = `[${displayName}] 서비스를 다시 활성화하여 정보를 공개하시겠습니까?`;
-    }
-    
-    if (window.confirm(message)) {
-      setAppSettings(prev => ({
-        ...prev,
-        [label]: !currentStatus
-      }));
-    }
-  };
+  }, [group.id]);
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case "Home":
-        return <GroupHomeMain group={group} />;
-      case "Calendar":
-        return <GroupCalendar group={group} />;
-      case "Feed":
-        return <GroupFeed group={group} />;
-      case "Board":
-        return <GroupBoard group={group} />;
-      case "Gallery":
-        return <GroupGallery group={group} />;
-      case "Contact":
-        return <GroupContact group={group} />;
-      case "Setup Profile":
-        return <GroupProfileSetup group={group} />;
-      case "CommunitySettings":
-        return <GroupSettings group={group} />;
-      case "ClassSetting":
-        return <GroupClassEditor />;
-      case "ShopSetting":
-        return <GroupShopEditor />;
-      case "StaySetting":
-        return <GroupStayEditor />;
-      case "RentalSetting":
-        return <GroupRentalEditor />;
-      case "Members":
-        return <GroupMemberManager group={group} />;
-      default:
-        return <GroupHomeMain group={group} />;
-    }
-  };
+  const notices = posts.filter(p => p.category === 'notice');
+  const latestNotice = notices[0];
+  const moments = posts.filter(p => p.images && p.images.length > 0);
 
   return (
-    <div className="bg-[#F1F5F9] text-[#242c51] min-h-screen flex overflow-hidden font-body selection:bg-[#0057bd]/10 relative">
+    <div className="bg-surface relative min-h-screen pb-24 font-body bg-blur-primary overflow-x-hidden text-[#242c51]">
       <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@700;800&display=swap');
-        .material-symbols-outlined {
-          font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-          vertical-align: middle;
-        }
-        .font-headline { font-family: 'Plus Jakarta Sans', sans-serif; }
-        .font-body { font-family: 'Inter', sans-serif; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
         .bg-blur-primary {
-          background-image: radial-gradient(circle at top left, rgba(59, 130, 246, 0.05), transparent 40%);
+            background-image: radial-gradient(circle at top left, rgba(59, 130, 246, 0.08), transparent 45%);
         }
         
         .bg-blur-tertiary {
-          background-image: radial-gradient(circle at bottom right, rgba(137, 60, 146, 0.05), transparent 40%);
+            background-image: radial-gradient(circle at bottom right, rgba(137, 60, 146, 0.08), transparent 45%);
+        }
+
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .moments-placeholder {
+            background: linear-gradient(135deg, #e4e7ff 0%, #d6dbff 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
       `}</style>
 
-      {/* Atmospheric Background Effects */}
-      <div className="fixed inset-0 pointer-events-none bg-blur-tertiary -z-10"></div>
-      <div className="fixed inset-0 pointer-events-none bg-blur-primary -z-10"></div>
-
-      {/* Navigation Drawer Component (Sidebar) - DO NOT TOUCH AS PER USER REQUEST */}
-      <aside className={`fixed inset-y-0 left-0 z-[60] flex flex-col py-8 bg-white dark:bg-slate-900 h-full w-80 rounded-r-3xl shadow-2xl shadow-blue-900/10 font-headline text-sm font-medium transition-transform duration-300 lg:translate-x-0 ${isMenuOpen ? "translate-x-0" : "-translate-x-full"}`}>
+      {/* Navigation Drawer Component (Sidebar) - EXACT RESTORATION */}
+      <aside className={`fixed inset-y-0 left-0 z-[100] flex flex-col py-8 bg-white dark:bg-slate-900 h-full w-80 rounded-r-3xl shadow-2xl shadow-blue-900/10 font-headline text-sm font-medium transition-transform duration-300 ${isMenuOpen ? "translate-x-0" : "-translate-x-full"}`}>
         {/* Profile Header */}
         <div className="px-6 mb-8 flex items-center gap-4">
           <div className="relative group cursor-pointer" onClick={() => router.push('/')}>
             <div className="absolute -inset-1 bg-gradient-to-tr from-[#0057bd] to-[#6e9fff] rounded-full blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
-            <img
-              alt="Curator Admin"
+            <ImageWithFallback
+              alt={profile?.nickname || "Guest"}
               className="relative h-14 w-14 rounded-full object-cover border-2 border-white shadow-sm"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuC0Ng87KONyvBOgFvp-1LRX3WNjTO0RexQhCMxyK_7YcS_2poaUarQZwyBw8sYF95IkjeYAfn6biKUc9jJ7qgBMQ1fCFDnVvLZ_9QLn6nC1t9Bi8ckk_ad1ugjRUoDbduXu1Io0HLBFbZxZOHsH4BMP1zVyMP48wE1l1tcJ1koxecJ9jmc5rELtjJDBBO_TYhwP_SD7y7HPn0GnFHOSew3pDnflxAK0ULU6qarjX6tItNDSzTnblhxLzlclR36i2yASGgKhQV-fLzw"
+              src={profile?.photoURL || ""}
+              fallbackType="avatar"
+              nameForAvatar={profile?.nickname || "G"}
             />
           </div>
-          <div className="flex flex-col">
-            <h2 className="text-[#242c51] font-extrabold text-lg tracking-tight">The Curator</h2>
-            <span className="text-[#515981] text-xs font-medium">Group Lead</span>
+          <div className="flex flex-col overflow-hidden">
+            <h2 className="text-[#242c51] font-extrabold text-lg tracking-tight truncate max-w-[150px]">
+              {profile?.nickname || "Guest User"}
+            </h2>
+            <span className="text-[#515981] text-xs font-medium truncate max-w-[150px]">
+              {profile?.email || "Signed in"}
+            </span>
           </div>
         </div>
 
         {/* Scrollable Menu Content */}
-        <nav className="flex-1 overflow-y-auto px-4 group-y-6 no-scrollbar pb-10">
-          {/* Section: Navigation */}
-          <div>
-            <h3 className="px-2 mb-2 text-[10px] uppercase tracking-[0.15em] font-bold text-[#a3abd7]">Navigation</h3>
-            <button
-              onClick={() => router.push('/groups')}
-              className="w-full flex items-center gap-3 px-4 py-3 text-[#242c51] dark:text-slate-300 hover:bg-[#f7f5ff] dark:hover:bg-slate-800 rounded-xl hover:translate-x-1 transition-transform duration-200"
-            >
-              <span className="material-symbols-outlined text-[#0057bd]">keyboard_return</span>
-              <span>Return Home</span>
-            </button>
-          </div>
-
+        <nav className="flex-1 overflow-y-auto px-4 space-y-6 no-scrollbar pb-10">
           {/* Section: Menu */}
           <div>
-            <h3 className="px-2 mb-2 text-[10px] uppercase tracking-[0.15em] font-bold text-[#a3abd7]">Menu</h3>
-            <div className="group-y-1">
+            <div className="flex items-center justify-between px-2 mb-2">
+              <h3 className="text-[10px] uppercase tracking-[0.15em] font-bold text-[#a3abd7]">Menu</h3>
+              <button
+                onClick={() => router.push('/groups')}
+                className="text-[10px] font-bold text-[#0057bd] hover:underline flex items-center gap-1"
+              >
+                <span className="material-symbols-outlined text-[14px]">keyboard_return</span>
+                HOME
+              </button>
+            </div>
+            <div className="space-y-1">
               {[
-                { id: "Home", icon: "home", label: "Home" },
-                { id: "Calendar", icon: "calendar_today", label: "Calendar" },
-                { id: "Feed", icon: "rss_feed", label: "Feed" },
-                { id: "Board", icon: "forum", label: "Board" },
-                { id: "Gallery", icon: "grid_view", label: "Gallery" },
-                { id: "Contact", icon: "mail", label: "Contact" },
+                { id: "Home", icon: "home", label: "Home", view: 'home' as const },
+                { id: "Calendar", icon: "calendar_today", label: "Calendar", view: 'calendar' as const },
+                { id: "Feed", icon: "rss_feed", label: "Feed", view: 'feed' as const },
+                { id: "Board", icon: "forum", label: "Board", view: 'board' as const },
+                { id: "Info", icon: "info", label: "Info", view: 'info' as const },
               ].map((item) => (
                 <button
                   key={item.id}
-                  onClick={() => handleNavClick(item.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${activeTab === item.id
-                      ? "bg-[#efefff] dark:bg-blue-900/30 text-[#0057bd] dark:text-blue-200 font-bold"
-                      : "text-[#242c51] dark:text-slate-300 hover:bg-[#f7f5ff] dark:hover:bg-slate-800 hover:translate-x-1"
-                    }`}
-                >
-                  <span
-                    className="material-symbols-outlined"
-                    style={{ fontVariationSettings: activeTab === item.id ? "'FILL' 1" : "'FILL' 0" }}
-                  >
-                    {item.icon}
-                  </span>
-                  <span>{item.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Section: App Settings */}
-          <div>
-            <h3 className="px-2 mb-2 text-[10px] uppercase tracking-[0.15em] font-bold text-[#a3abd7]">App Settings</h3>
-            <div className="group-y-1">
-              {[
-                { id: "Setup Profile", icon: "person_edit", label: "Setup Profile" },
-                { id: "CommunitySettings", icon: "settings_applications", label: "Group Settings" },
-              ].map((item) => (
-                <button 
-                  key={item.label} 
-                  onClick={() => handleNavClick(item.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
-                    activeTab === item.id
-                      ? "bg-[#efefff] dark:bg-blue-900/30 text-[#0057bd] dark:text-blue-200 font-bold"
-                      : "text-[#242c51] dark:text-slate-300 hover:bg-[#f7f5ff] dark:hover:bg-slate-800 hover:translate-x-1"
+                  onClick={() => {
+                    setActiveView(item.view);
+                    setIsMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 hover:translate-x-1 ${
+                    activeView === item.view 
+                      ? "bg-primary/10 text-primary font-bold shadow-sm shadow-primary/5" 
+                      : "text-[#242c51] dark:text-slate-300 hover:bg-[#f7f5ff] dark:hover:bg-slate-800"
                   }`}
                 >
                   <span className="material-symbols-outlined">{item.icon}</span>
                   <span>{item.label}</span>
                 </button>
               ))}
+            </div>
+          </div>
 
-              {/* Toggles */}
+          {/* Section: App Setting */}
+          <div>
+            <h3 className="px-2 mb-2 text-[10px] uppercase tracking-[0.15em] font-bold text-[#a3abd7]">App Setting</h3>
+            <div className="space-y-1">
               {[
-                { id: "ClassSetting", icon: "school", label: "Class Setting" },
-                { id: "ShopSetting", icon: "shopping_bag", label: "Shop Setting" },
-                { id: "StaySetting", icon: "bed", label: "Stay Setting" },
-                { id: "RentalSetting", icon: "key", label: "Rental Setting" },
+                { id: "CommunitySettings", icon: "settings_applications", label: "Group Settings", view: 'search' as const },
+                { id: "ClassSetting", icon: "school", label: "Class Setting", view: 'class-setting' as const },
+                { id: "ShopSetting", icon: "shopping_bag", label: "Shop Setting", view: 'search' as const },
+                { id: "StaySetting", icon: "bed", label: "Stay Setting", view: 'search' as const },
+                { id: "RentalSetting", icon: "key", label: "Rental Setting", view: 'search' as const },
               ].map((item) => (
-                <div 
-                  key={item.label} 
-                  onClick={() => handleNavClick(item.id)}
-                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl group transition-all cursor-pointer ${
-                    activeTab === item.id
-                      ? "bg-[#efefff] dark:bg-blue-900/30 text-[#0057bd] dark:text-blue-200 font-bold"
-                      : "text-[#242c51] dark:text-slate-300 hover:bg-[#f7f5ff] dark:hover:bg-slate-800 hover:translate-x-1"
+                <button 
+                  key={item.id} 
+                  onClick={() => {
+                    setActiveView(item.view);
+                    setIsMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 hover:translate-x-1 ${
+                    activeView === item.view 
+                      ? "bg-primary/10 text-primary font-bold shadow-sm shadow-primary/5" 
+                      : "text-[#242c51] dark:text-slate-300 hover:bg-[#f7f5ff] dark:hover:bg-slate-800"
                   }`}
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="material-symbols-outlined">{item.icon}</span>
-                    <span>{item.label}</span>
-                  </div>
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleToggle(item.label);
-                    }}
-                    className={`w-8 h-4 rounded-full relative transition-colors duration-300 cursor-pointer ${appSettings[item.label as keyof typeof appSettings] ? "bg-[#0057bd]" : "bg-[#a3abd7]"}`}
-                  >
-                    <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all duration-300 ${appSettings[item.label as keyof typeof appSettings] ? "right-0.5" : "left-0.5"}`}></div>
-                  </button>
-                </div>
+                  <span className="material-symbols-outlined">{item.icon}</span>
+                  <span>{item.label}</span>
+                </button>
               ))}
             </div>
           </div>
 
           {/* Section: Admin */}
-          <div className="pb-8">
+          <div>
             <h3 className="px-2 mb-2 text-[10px] uppercase tracking-[0.15em] font-bold text-[#a3abd7]">Admin</h3>
-            <button 
-              onClick={() => handleNavClick("Members")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
-                activeTab === "Members"
-                  ? "bg-[#efefff] dark:bg-blue-900/30 text-[#0057bd] dark:text-blue-200 font-bold"
-                  : "text-[#242c51] dark:text-slate-300 hover:bg-[#f7f5ff] dark:hover:bg-slate-800 hover:translate-x-1"
-              }`}
-            >
-              <span className="material-symbols-outlined">group</span>
-              <span>Members</span>
-              <span className="ml-auto bg-[#0057bd]/10 text-[#0057bd] text-[10px] font-black px-1.5 py-0.5 rounded-md">{group.memberCount || 0}</span>
-            </button>
+            <div className="space-y-1">
+              {[
+                { id: "Members", icon: "group", label: "Members" },
+              ].map((item) => (
+                <div 
+                  key={item.id} 
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-[#242c51] dark:text-slate-300 hover:bg-[#f7f5ff] dark:hover:bg-slate-800 hover:translate-x-1"
+                >
+                  <span className="material-symbols-outlined">{item.icon}</span>
+                  <span>{item.label}</span>
+                  <span className="ml-auto bg-[#0057bd]/10 text-[#0057bd] text-[10px] font-black px-1.5 py-0.5 rounded-md">{group.memberCount?.toLocaleString() || 0}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </nav>
       </aside>
 
-      {/* Overlay for mobile menu */}
-      <AnimatePresence>
-        {isMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setIsMenuOpen(false)}
-            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 lg:hidden"
-          />
-        )}
-      </AnimatePresence>
+      {/* Overlay for sidebar */}
+      {isMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[90]" 
+          onClick={() => setIsMenuOpen(false)}
+        />
+      )}
 
-      {/* Main Content Area */}
-      <main className="flex-1 lg:ml-80 h-screen overflow-y-auto no-scrollbar relative flex flex-col bg-transparent">
-        {/* Top App Bar */}
-        <header className="w-full top-0 sticky z-50 bg-slate-50/90 backdrop-blur-xl border-b border-slate-200/20 shadow-sm flex items-center justify-between px-6 h-16 shrink-0">
-          <div className="flex items-center gap-4">
-            <button onClick={() => setIsMenuOpen(true)} className="material-symbols-outlined text-[#0057bd] p-2 hover:bg-slate-200/50 rounded-full transition-all active:scale-90 flex items-center justify-center">menu</button>
-            <h1 className="font-headline font-extrabold tracking-tight text-xl text-[#0057bd]">Freestyle Tango</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <button className="material-symbols-outlined text-[#0057bd] p-2 hover:bg-slate-200/50 rounded-full transition-all active:scale-95">search</button>
-          </div>
-        </header>
+      {/* Atmospheric Background Effects */}
+      <div className="fixed inset-0 pointer-events-none bg-blur-tertiary -z-10"></div>
 
-        {/* Dynamic Content */}
-        <div className="flex-1">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-            >
-              {renderContent()}
-            </motion.div>
-          </AnimatePresence>
+      {/* Header */}
+      <header className="fixed top-0 w-full bg-slate-50/90 backdrop-blur-xl border-b border-slate-200/20 shadow-sm flex justify-between items-center px-4 h-16 z-50 transition-colors">
+        <div className="flex items-center gap-3">
+          <button onClick={() => setIsMenuOpen(true)} className="text-blue-600 hover:bg-slate-200/50 scale-95 active:scale-90 transition-transform p-2 rounded-full flex items-center justify-center">
+            <span className="material-symbols-outlined">menu</span>
+          </button>
+          <h1 className="font-headline font-extrabold tracking-tight text-lg text-blue-600">{group.name}</h1>
         </div>
+        <div className="flex items-center gap-1">
+          <button onClick={() => setActiveView('search')} className="text-blue-600 hover:bg-slate-200/50 scale-95 active:scale-90 transition-transform p-2 rounded-full flex items-center justify-center">
+            <span className="material-symbols-outlined">search</span>
+          </button>
+          <button onClick={() => router.back()} className="text-blue-600 hover:bg-slate-200/50 scale-95 active:scale-90 transition-transform p-2 rounded-full flex items-center justify-center">
+            <span className="material-symbols-outlined">logout</span>
+          </button>
+        </div>
+      </header>
 
-        {/* BottomNavBar (Mobile only) */}
-        <nav className="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-2 md:px-4 pb-6 pt-3 bg-slate-50/95 backdrop-blur-2xl border-t border-slate-200/10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] lg:hidden">
-          {[
-            { id: "Home", icon: "home", label: "Home" },
-            { id: "Calendar", icon: "calendar_today", label: "Calendar" },
-            { id: "Feed", icon: "dynamic_feed", label: "Feed" },
-            { id: "Board", icon: "forum", label: "Board" },
-            { id: "Gallery", icon: "collections", label: "Gallery" },
-            { id: "Contact", icon: "contact_support", label: "Contact" },
-          ].map((item) => (
-            <button
-              key={item.id}
-              onClick={() => handleNavClick(item.id)}
-              className={`flex flex-col items-center justify-center px-3 py-1 scale-100 active:scale-95 transition-transform duration-200 ${activeTab === item.id ? "bg-blue-50 text-[#0057bd] rounded-2xl" : "text-slate-500 hover:text-[#0057bd]"
-                }`}
+      {/* Main Content */}
+      <main className="pt-16 pb-8">
+        {activeView === 'class-setting' ? (
+          <GroupClassSetting group={group} onBack={() => setActiveView('home')} />
+        ) : activeView === 'feed' ? (
+          <div className="bg-[#f8f9fa] min-h-screen">
+            <UniversalFeed context={groupFeedContext} currentUser={user} />
+          </div>
+        ) : activeView !== 'home' ? (
+          <div className="max-w-7xl mx-auto px-4 py-20 flex flex-col items-center justify-center text-center">
+            <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mb-6">
+              <span className="material-symbols-outlined text-5xl text-primary animate-pulse">
+                {activeView === 'class' ? 'school' : 'construction'}
+              </span>
+            </div>
+            <h2 className="text-3xl font-headline font-black text-on-surface mb-2">
+              {activeView.charAt(0).toUpperCase() + activeView.slice(1).replace('-', ' ')} Coming Soon
+            </h2>
+            <p className="text-on-surface-variant max-w-md">
+              {activeView === 'class' 
+                ? "Our class schedule and booking system is coming soon. Stay tuned!" 
+                : "We're working hard to bring you this feature. Please check back later!"}
+            </p>
+            <button 
+              onClick={() => setActiveView('home')}
+              className="mt-8 px-8 py-3 bg-primary text-white rounded-full font-bold shadow-lg hover:bg-primary-dim transition-all"
             >
-              <span className="material-symbols-outlined" style={{ fontVariationSettings: activeTab === item.id ? "'FILL' 1" : "'FILL' 0" }}>{item.icon}</span>
-              <span className="font-label font-bold text-[10px] uppercase tracking-wider mt-1">{item.label}</span>
+              Back to Home
             </button>
-          ))}
-        </nav>
+          </div>
+        ) : (
+          <>
+            {/* Hero Section (Full Width Bleed) */}
+            <section className="relative w-full aspect-[16/10] max-h-[500px]">
+              <img 
+                alt={group.name} 
+                className="object-cover w-full h-full" 
+                src={group.coverImage || "https://lh3.googleusercontent.com/aida-public/AB6AXuDmgTw1z77XdZAmz_0MD3pqggmINudggBz39QJXF77OYWIlyN3OgnZUyAr46RTl6uFXxo8GK09N0_7R9xXywU2ks3z-1_5LXOJooEX1v5l_ptYk-NZ3CsdE33uWUJCCEgSS5zZF2S-ZNG3QngPwtsy_PhOZ43WXx4vZoUDkkeS_INRP93IkgVw6QZkrGK5p1u6-fieCLtMBdiXrMtg1rOJRv5598VC7JghCWTFyQK1VWKHLVXYO9pAgGbw1ntk0-ObPEEmP3R1dHOE"}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6 md:p-12 pb-10">
+                <p className="text-white font-body text-base md:text-xl max-w-xl mb-6">{group.description || "Connect, dance, and express yourself in the heart of our community."}</p>
+                <button className="bg-primary text-white font-bold py-2 px-6 rounded-full shadow-xl hover:bg-primary-dim transition-all w-fit uppercase tracking-widest text-xs">Join Now</button>
+              </div>
+            </section>
+
+            <div className="max-w-7xl mx-auto px-4 md:px-8 space-y-8 mt-8">
+              {/* Notice Section */}
+              <div className="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/10 hover:shadow-md transition-shadow">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-headline font-bold text-lg text-on-surface flex items-center gap-2">
+                    <span className="material-symbols-outlined text-tertiary">campaign</span> Notice
+                  </h3>
+                </div>
+                {latestNotice ? (
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-error-container/5 border border-error-container/10">
+                    <div className="bg-error-container text-error p-2 rounded-lg shrink-0">
+                      <span className="material-symbols-outlined text-sm">priority_high</span>
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm text-on-surface">
+                        {latestNotice.content.length > 40 
+                          ? latestNotice.content.substring(0, 40) + "..." 
+                          : latestNotice.content}
+                      </h4>
+                      <p className="text-xs text-on-surface-variant mt-1 opacity-70">
+                        {new Date(latestNotice.createdAt.seconds * 1000).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-slate-100/50 border border-slate-200/50">
+                    <div className="bg-slate-200 text-slate-500 p-2 rounded-lg shrink-0">
+                      <span className="material-symbols-outlined text-sm">info</span>
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm text-on-surface">No announcements available</h4>
+                      <p className="text-xs text-on-surface-variant mt-0.5">There are no new notices at this time. Stay tuned!</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Moments Section */}
+              <section>
+                <div className="flex justify-between items-end mb-4">
+                  <h2 className="font-headline font-extrabold text-xl text-on-surface">Moments</h2>
+                </div>
+                <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar -mx-4 px-4 snap-x">
+                  {moments.length > 0 ? (
+                    moments.map((moment) => (
+                      <div key={moment.id} className="shrink-0 w-64 aspect-video rounded-xl overflow-hidden shadow-sm snap-start relative border border-outline-variant/10 bg-slate-100">
+                        <img 
+                          src={moment.images?.[0] || "https://lh3.googleusercontent.com/aida-public/AB6AXuDmgTw1z77XdZAmz_0MD3pqggmINudggBz39QJXF77OYWIlyN3OgnZUyAr46RTl6uFXxo8GK09N0_7R9xXywU2ks3z-1_5LXOJooEX1v5l_ptYk-NZ3CsdE33uWUJCCEgSS5zZF2S-ZNG3QngPwtsy_PhOZ43WXx4vZoUDkkeS_INRP93IkgVw6QZkrGK5p1u6-fieCLtMBdiXrMtg1rOJRv5598VC7JghCWTFyQK1VWKHLVXYO9pAgGbw1ntk0-ObPEEmP3R1dHOE"} 
+                          alt="Moment"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ))
+                  ) : (
+                    <>
+                      <div className="shrink-0 w-64 aspect-video rounded-xl overflow-hidden shadow-sm snap-start moments-placeholder relative border border-outline-variant/10 flex flex-col items-center justify-center text-center px-4">
+                        <span className="material-symbols-outlined text-primary/20 text-4xl mb-2">image_not_supported</span>
+                        <span className="text-[11px] text-on-surface-variant font-bold leading-tight">등록된 사진이나 영상이 없습니다</span>
+                      </div>
+                      <div className="shrink-0 w-64 aspect-video rounded-xl overflow-hidden shadow-sm snap-start moments-placeholder relative border border-outline-variant/10 flex flex-col items-center justify-center text-center px-4">
+                        <span className="material-symbols-outlined text-primary/20 text-4xl mb-2">image_not_supported</span>
+                        <span className="text-[11px] text-on-surface-variant font-bold leading-tight">No photos or videos registered</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </section>
+
+              {/* Schedule Section */}
+              <section>
+                <div className="flex justify-between items-end mb-6">
+                  <div>
+                    <h2 className="font-headline font-extrabold text-on-surface text-xl">Upcoming Schedule</h2>
+                    <p className="text-sm text-on-surface-variant mt-1">Thursday, October 12</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {classes.length > 0 ? (
+                    classes.map((cls) => (
+                      <div key={cls.id} className="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/10 shadow-sm hover:shadow-md hover:scale-[0.99] transition-all cursor-pointer relative overflow-hidden group">
+                        <div className={`absolute top-0 left-0 w-1 h-full ${cls.status === 'Open' ? 'bg-primary' : 'bg-slate-300'} group-hover:w-2 transition-all`}></div>
+                        <div className="flex justify-between items-start mb-3 pl-3">
+                          <span className={`font-label font-bold text-[10px] uppercase tracking-wider py-1 px-2 rounded-full ${
+                            cls.status === 'Open' ? 'bg-primary/10 text-primary' : 'bg-slate-100 text-slate-500'
+                          }`}>
+                            {cls.level || 'Class'}
+                          </span>
+                          <span className="text-on-surface-variant text-sm font-medium flex items-center gap-1">
+                            <span className="material-symbols-outlined text-xs">schedule</span> 
+                            {cls.schedule?.[0]?.timeSlot || 'TBD'}
+                          </span>
+                        </div>
+                        <div className="pl-3">
+                          <h3 className="font-headline font-bold text-lg text-on-surface mb-1">{cls.title}</h3>
+                          <p className="text-sm text-on-surface-variant mb-2 flex items-center gap-1">
+                            <span className="material-symbols-outlined text-xs">person</span> 
+                            {cls.instructors?.map((i: any) => i.name).join(' & ') || 'Staff'}
+                          </p>
+                          <p className="text-xs text-on-surface-variant/70 line-clamp-2">{cls.description}</p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="col-span-full py-12 flex flex-col items-center justify-center text-center bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-200">
+                      <span className="material-symbols-outlined text-4xl text-slate-300 mb-2">event_busy</span>
+                      <p className="text-slate-500 font-medium">No upcoming classes found</p>
+                      <button 
+                        onClick={() => setActiveView('class-setting')}
+                        className="mt-4 text-primary font-bold text-sm hover:underline"
+                      >
+                        Set up your first class
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              {/* Recent Feed Section */}
+              <section>
+                <div className="flex justify-between items-end mb-6">
+                  <h2 className="font-headline font-extrabold text-on-surface text-xl">Recent Feed</h2>
+                </div>
+                <div className="space-y-4">
+                  {posts.length > 0 ? (
+                    posts
+                      .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
+                      .slice(0, 3)
+                      .map((post) => (
+                        <div 
+                          key={post.id} 
+                          onClick={() => setActiveView('feed')}
+                          className="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/10 shadow-sm flex flex-col gap-3 cursor-pointer hover:shadow-md transition-shadow"
+                        >
+                          <div className="flex items-center gap-3">
+                            {post.userPhoto ? (
+                              <ImageWithFallback 
+                                src={post.userPhoto} 
+                                alt={post.userName} 
+                                className="w-10 h-10 rounded-full object-cover"
+                                fallbackType="avatar"
+                                nameForAvatar={post.userName}
+                              />
+                            ) : (
+                              <div className="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold uppercase">
+                                {post.userName?.[0] || '?'}
+                              </div>
+                            )}
+                            <div>
+                              <h4 className="font-bold text-sm text-on-surface">{post.userName || "Anonymous"}</h4>
+                              <p className="text-xs text-on-surface-variant">
+                                {post.createdAt?.seconds 
+                                  ? new Date(post.createdAt.seconds * 1000).toLocaleDateString() 
+                                  : "Recently"}
+                              </p>
+                            </div>
+                          </div>
+                          <p className="text-sm text-on-surface line-clamp-3">{post.content}</p>
+                        </div>
+                      ))
+                  ) : (
+                    <div className="bg-surface-container-lowest p-8 rounded-xl border border-dashed border-outline-variant/30 flex flex-col items-center justify-center text-center">
+                      <span className="material-symbols-outlined text-4xl text-slate-300 mb-2">rss_feed</span>
+                      <p className="text-slate-500 font-medium">등록된 피드가 없습니다</p>
+                      <p className="text-xs text-slate-400">No feed available at this time.</p>
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              {/* Community Pulse (Stats) */}
+              <section className="bg-white rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100/50">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+                    <span className="material-symbols-outlined text-[#0057bd] text-[24px]">insert_chart</span>
+                  </div>
+                  <h3 className="font-headline font-bold text-[#242c51] text-xl tracking-tight">Community Pulse</h3>
+                </div>
+                
+                <div className="space-y-6">
+                  <div>
+                    <div className="flex justify-between items-end mb-2.5">
+                      <span className="text-[#515981] text-[13px] font-medium">Members (Male / Female)</span>
+                      <span className="font-bold text-[#0057bd] text-[13px]">45% / 55%</span>
+                    </div>
+                    <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden flex">
+                      <div className="bg-[#0057bd] h-full" style={{ width: "45%" }}></div>
+                      <div className="bg-[#893c92] h-full" style={{ width: "55%" }}></div>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-slate-50 flex justify-between items-center">
+                    <span className="text-[#515981] text-[13px] font-medium">Today's Visitors</span>
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[#00c853] text-[20px] font-bold">trending_up</span>
+                      <span className="font-headline font-black text-2xl text-[#242c51] leading-none">142</span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <footer className="text-center py-4">
+                <p className="text-xs text-on-surface-variant/60 font-body">© 2026 Freestyle Tango. All rights reserved.</p>
+              </footer>
+            </div>
+          </>
+        )}
       </main>
+
+      {/* BottomNavBar (Icon-Only and Compact) */}
+      <nav className="fixed bottom-0 left-0 w-full z-50 flex items-center bg-slate-50/95 backdrop-blur-2xl border-t border-slate-200/10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] h-16 px-6">
+        <div className="flex w-full overflow-x-auto hide-scrollbar px-4 items-center h-full">
+          <div className="flex w-full justify-between items-center h-full max-w-lg mx-auto">
+            <button 
+              onClick={() => setActiveView('home')}
+              className={`p-2 rounded-xl transition-all scale-100 active:scale-95 ${activeView === 'home' ? 'text-primary bg-primary/10' : 'text-slate-500 hover:text-primary'}`}
+            >
+              <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: activeView === 'home' ? "'FILL' 1" : "" }}>grid_view</span>
+            </button>
+            <button 
+              onClick={() => setActiveView('calendar')}
+              className={`p-2 rounded-xl transition-all scale-100 active:scale-95 ${activeView === 'calendar' ? 'text-primary bg-primary/10' : 'text-slate-500 hover:text-primary'}`}
+            >
+              <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: activeView === 'calendar' ? "'FILL' 1" : "" }}>calendar_today</span>
+            </button>
+            <button 
+              onClick={() => setActiveView('feed')}
+              className={`p-2 rounded-xl transition-all scale-100 active:scale-95 ${activeView === 'feed' ? 'text-primary bg-primary/10' : 'text-slate-500 hover:text-primary'}`}
+            >
+              <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: activeView === 'feed' ? "'FILL' 1" : "" }}>rss_feed</span>
+            </button>
+            <button 
+              onClick={() => setActiveView('board')}
+              className={`p-2 rounded-xl transition-all scale-100 active:scale-95 ${activeView === 'board' ? 'text-primary bg-primary/10' : 'text-slate-500 hover:text-primary'}`}
+            >
+              <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: activeView === 'board' ? "'FILL' 1" : "" }}>forum</span>
+            </button>
+            <button 
+              onClick={() => setActiveView('info')}
+              className={`p-2 rounded-xl transition-all scale-100 active:scale-95 ${activeView === 'info' ? 'text-primary bg-primary/10' : 'text-slate-500 hover:text-primary'}`}
+            >
+              <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: activeView === 'info' ? "'FILL' 1" : "" }}>info</span>
+            </button>
+            <div className="w-[1px] h-6 bg-slate-300 mx-2 self-center"></div>
+            <button 
+              onClick={() => {
+                alert('Coming Soon');
+                setActiveView('class');
+              }}
+              className={`p-2 rounded-xl transition-all scale-100 active:scale-95 ${activeView === 'class' ? 'text-primary bg-primary/10' : 'text-slate-500 hover:text-primary'}`}
+            >
+              <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: activeView === 'class' ? "'FILL' 1" : "" }}>school</span>
+            </button>
+          </div>
+        </div>
+      </nav>
     </div>
   );
 }

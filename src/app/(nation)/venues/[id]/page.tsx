@@ -25,17 +25,28 @@ export default function VenueDetailPage() {
     fetchVenue();
   }, [id]);
 
+  const handleBack = () => {
+    // If we're the first page in the history, go to /groups
+    // window.history.length > 1 is usually true even on first load in some browsers, 
+    // so we can also check document.referrer
+    if (typeof window !== 'undefined' && window.history.length <= 1) {
+      router.push('/groups');
+    } else {
+      router.back();
+    }
+  };
+
   if (loading) return <div className="min-h-screen bg-white flex items-center justify-center font-bold text-[#005BC0] animate-pulse">Loading...</div>;
   if (!venue) return <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-4">
     <h1 className="text-2xl font-black">Venue Not Found</h1>
-    <button onClick={() => router.back()} className="text-[#005BC0] font-bold underline">Go Back</button>
+    <button onClick={handleBack} className="text-[#005BC0] font-bold underline">Go Back</button>
   </div>;
 
   return (
     <div className="min-h-screen bg-[#f8fbfa] flex flex-col">
       {/* Header */}
       <div className="sticky top-0 bg-white/80 backdrop-blur-xl z-50 px-6 py-4 flex items-center justify-between border-b border-[#005BC0]/10">
-        <button onClick={() => router.back()} className="tap-target -ml-2">
+        <button onClick={handleBack} className="tap-target -ml-2">
           <span className="material-symbols-outlined text-[#2D3435]">arrow_back_ios</span>
         </button>
         <span className="text-[14px] font-black uppercase tracking-widest text-[#005BC0]">Venue Detail</span>

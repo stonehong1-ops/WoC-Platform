@@ -7,6 +7,7 @@ import { Group } from "@/types/group";
 import { db } from "@/lib/firebase/clientApp";
 import { doc, getDoc } from "firebase/firestore";
 import GroupFooter from "./GroupFooter";
+import ImageWithFallback from "@/components/common/ImageWithFallback";
 
 const mapContainerStyle = {
   width: "100%",
@@ -204,7 +205,7 @@ export default function GroupMap({ group }: { group: Group }) {
             transition={{ delay: 0.2 }}
             className="grid grid-cols-1 md:grid-cols-3 gap-6"
           >
-            <div className="md:col-span-2 group-y-6">
+            <div className="md:col-span-2 space-y-6">
               <div className="bg-surface-container-lowest/80 backdrop-blur-xl p-8 rounded-[32px] border border-white/40 shadow-xl">
                 <div className="flex items-center gap-3 mb-4">
                   <span className="material-symbols-outlined text-primary font-bold">location_on</span>
@@ -224,21 +225,20 @@ export default function GroupMap({ group }: { group: Group }) {
                   <h3 className="text-xl font-bold text-on-surface uppercase tracking-tight">How to visit</h3>
                 </div>
                 <p className="text-on-surface/70 font-medium leading-relaxed">
-                  이 장소는 홍대입구역 1번 출구에서 도보 5분 거리에 위치해 있습니다. <br/>
+                  지하철 강남역(또는 신논현역)에서 도보 5분 거리에 위치하고 있습니다. <br/>
                   입구에서 벨을 눌러주시면 직원이 안내해 드립니다.
                 </p>
               </div>
             </div>
 
-            <div className="group-y-6">
+            <div className="space-y-6">
               <div className="aspect-square bg-slate-200 rounded-[32px] overflow-hidden shadow-xl border border-white/40 group relative">
-                {venue.imageUrl ? (
-                  <img src={venue.imageUrl} alt={venue.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <span className="material-symbols-outlined text-4xl text-slate-400">image</span>
-                  </div>
-                )}
+                <ImageWithFallback 
+                  src={venue.imageUrl} 
+                  alt={venue.name} 
+                  fallbackType="gallery"
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-6">
                   <span className="text-white font-bold uppercase text-[10px] tracking-widest">Venue Preview</span>
                 </div>
@@ -246,7 +246,7 @@ export default function GroupMap({ group }: { group: Group }) {
               
               <div className="bg-primary p-8 rounded-[32px] shadow-2xl shadow-primary/20 text-white">
                 <h4 className="font-headline font-black text-xl mb-2 uppercase tracking-tighter">Open Hours</h4>
-                <div className="group-y-2 opacity-90 text-sm font-medium">
+                <div className="space-y-2 opacity-90 text-sm font-medium">
                   <div className="flex justify-between">
                     <span>Weekdays</span>
                     <span>14:00 - 22:00</span>

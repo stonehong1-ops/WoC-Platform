@@ -1,152 +1,345 @@
 "use client";
 
-import React from "react";
-import { motion } from "framer-motion";
+import React, { useState, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Group, GallerySection } from "@/types/group";
+import { storageService } from "@/lib/firebase/storageService";
+import { groupService } from "@/lib/firebase/groupService";
 
 interface GroupGalleryEditorProps {
+  group: Group;
   onClose: () => void;
   onSave?: () => void;
 }
 
-export default function GroupGalleryEditor({ onClose, onSave }: GroupGalleryEditorProps) {
+export default function GroupGalleryEditor({ group, onClose, onSave }: GroupGalleryEditorProps) {
+  const [loading, setLoading] = useState(false);
+  const [sections, setSections] = useState<GallerySection[]>(group.gallery || [
+    {
+      id: "1",
+      title: "Milonga Highlights",
+      type: "photos",
+      media: []
+    }
+  ]);
+  
+  const [uploadingSectionId, setUploadingSectionId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+      await groupService.updateGroupMetadata(group.id, {
+        gallery: sections
+      });
+      if (onSave) onSave();
+      onClose();
+    } catch (error) {
+      console.error("Failed to save gallery:", error);
+      alert("Failed to save changes.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addSection = () => {
+    const newId = Math.random().toString(36).substr(2, 9);
+    setSections([...sections, { id: newId, title: "New Gallery Section", type: "photos", media: [] }]);
+  };
+
+  const removeSection = (id: string) => {
+    setSections(sections.filter(s => s.id !== id));
+  };
+
+  const updateSection = (id: string, updates: Partial<GallerySection>) => {
+    setSections(sections.map(s => s.id === id ? { ...s, ...updates } : s));
+  };
+
+  const triggerUpload = (sectionId: string) => {
+    const section = sections.find(s => s.id === sectionId);
+    if (!section) return;
+
+    // Check limits before triggering upload
+    if (section.type === 'photos' && section.media.length >= 10) {
+      alert("Maximum 10 photos allowed per section.");
+      return;
+    }
+    if (section.type === 'videos' && section.media.length >= 1) {
+      alert("Only 1 video allowed per section.");
+      return;
+    }
+
+    setUploadingSectionId(sectionId);
+    if (fileInputRef.current) {
+      fileInputRef.current.accept = section.type === 'photos' ? "image/*" : "video/*";
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !uploadingSectionId) return;
+
+    setLoading(true);
+    try {
+      const section = sections.find(s => s.id === uploadingSectionId);
+      if (!section) return;
+
+      // Re-verify limits
+      if (section.type === 'photos' && section.media.length >= 10) throw new Error("Limit exceeded");
+      if (section.type === 'videos' && section.media.length >= 1) throw new Error("Limit exceeded");
+
+      const path = `groups/${group.id}/gallery/${uploadingSectionId}/${Date.now()}_${file.name}`;
+      const url = await storageService.uploadFile(file, path);
+
+      setSections(sections.map(s => {
+        if (s.id === uploadingSectionId) {
+          return { ...s, media: [...s.media, url] };
+        }
+        return s;
+      }));
+    } catch (error: any) {
+      console.error("Upload failed:", error);
+      alert(error.message === "Limit exceeded" ? "Section limit reached." : "Upload failed. Please try again.");
+    } finally {
+      setLoading(false);
+      setUploadingSectionId(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const removeMedia = (sectionId: string, index: number) => {
+    setSections(sections.map(s => {
+      if (s.id === sectionId) {
+        const newMedia = [...s.media];
+        newMedia.splice(index, 1);
+        return { ...s, media: newMedia };
+      }
+      return s;
+    }));
+  };
+
+  const totalMediaCount = sections.reduce((acc, s) => acc + s.media.length, 0);
+  const maxAllowed = sections.length * 10; // Dynamic cap for visualization
+  const storagePercentage = Math.min(Math.round((totalMediaCount / 50) * 100), 100);
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 50 }}
+      initial={{ opacity: 0, y: "100%" }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 50 }}
-      className="fixed inset-0 z-[100] bg-[#f7f5ff] overflow-y-auto font-body"
+      exit={{ opacity: 0, y: "100%" }}
+      transition={{ type: "spring", damping: 30, stiffness: 300 }}
+      className="fixed inset-0 z-[100] bg-[#f7f8ff] overflow-y-auto font-body"
     >
-      {/* TopAppBar */}
-      <header className="fixed top-0 w-full z-50 bg-[#f7f5ff] flex items-center justify-between px-6 h-16 shadow-[0_4px_32px_rgba(36,44,81,0.06)]">
-        <div className="flex items-center gap-4">
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        onChange={handleFileChange} 
+        className="hidden" 
+      />
+
+      {/* Top Bar */}
+      <header className="sticky top-0 z-50 bg-[#f7f5ff]/80 backdrop-blur-xl border-b border-[#a3abd7]/10">
+        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between w-full">
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={onClose}
+              className="w-10 h-10 rounded-full flex items-center justify-center text-[#0057bd] hover:bg-[#0057bd]/5 transition-all"
+            >
+              <span className="material-symbols-outlined">arrow_back</span>
+            </button>
+            <h1 className="text-base font-headline font-semibold text-[#242c51]">Gallery Settings</h1>
+          </div>
           <button
-            onClick={onClose}
-            className="active:scale-95 transition-transform text-[#0057bd] hover:bg-[#d6dbff] p-2 rounded-full duration-200"
+            onClick={handleSave}
+            disabled={loading}
+            className={`px-8 py-2.5 rounded-xl font-headline font-black transition-all active:scale-95 ${
+              loading
+                ? "bg-slate-200 text-slate-400 cursor-not-allowed"
+                : "bg-[#0057bd] text-white hover:bg-[#004bb3] shadow-lg shadow-blue-900/10"
+            }`}
           >
-            <span className="material-symbols-outlined">arrow_back</span>
+            {loading ? "Saving..." : "Save"}
           </button>
-          <h1 className="font-headline font-bold text-xl tracking-tight text-[#242c51]">Gallery Editor</h1>
         </div>
-        <button
-          onClick={onSave || onClose}
-          className="bg-[#0057bd] text-white px-6 py-2 rounded-xl font-headline font-bold hover:opacity-90 active:scale-95 transition-all"
-        >
-          Save
-        </button>
       </header>
 
-      <main className="pt-24 px-6 max-w-4xl mx-auto group-y-12 pb-32">
-        {/* Cloud Storage Usage Bar */}
-        <section className="bg-white p-8 rounded-xl shadow-sm">
-          <div className="flex justify-between items-end mb-4">
+      <main className="max-w-3xl mx-auto px-8 pt-16 space-y-16 pb-48">
+        {/* Cloud Storage Usage Card */}
+        <section className="bg-white p-12 rounded-[3rem] shadow-2xl shadow-blue-900/5 border border-white">
+          <div className="flex justify-between items-end mb-8">
             <div>
-              <h2 className="font-headline text-2xl font-extrabold text-[#242c51] tracking-tight">Cloud Storage</h2>
-              <p className="text-[#515981] text-sm mt-1">Using 6.4 GB of 10 GB</p>
+              <h2 className="font-headline text-3xl font-black text-[#242c51] tracking-tight">Media Repository</h2>
+              <p className="text-[#a3abd7] text-sm font-black uppercase tracking-widest mt-2 opacity-80">
+                {totalMediaCount} Assets Managed
+              </p>
             </div>
-            <span className="text-[#0057bd] font-bold text-lg">64%</span>
+            <div className="text-right">
+              <span className="text-[#0057bd] font-black text-4xl italic">{storagePercentage}%</span>
+              <p className="text-[10px] font-black text-[#a3abd7] uppercase tracking-tighter mt-1">Storage Quota</p>
+            </div>
           </div>
-          <div className="h-3 w-full bg-[#efefff] rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-[#0057bd] to-[#893c92] w-[64%] rounded-full"></div>
+          <div className="h-5 w-full bg-[#f1f3ff] rounded-full overflow-hidden border border-[#efefff]">
+            <motion.div 
+              initial={{ width: 0 }}
+              animate={{ width: `${storagePercentage}%` }}
+              transition={{ duration: 1.5, ease: "circOut" }}
+              className="h-full bg-gradient-to-r from-[#0057bd] via-[#0057bd] to-[#893c92] rounded-full"
+            />
           </div>
         </section>
 
-        {/* Gallery Sections List */}
-        <div className="group-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="font-headline text-2xl font-extrabold text-[#242c51] tracking-tight">Gallery Sections</h3>
-            <span className="text-xs font-bold uppercase tracking-widest text-[#6c759e]">Manage Layout</span>
+        {/* Gallery Sections */}
+        <div className="space-y-10">
+          <div className="flex items-center justify-between px-4">
+            <h3 className="font-headline text-2xl font-black text-[#242c51] tracking-tight italic uppercase opacity-40">Layout Sections</h3>
           </div>
 
-          {/* Single Section Example: Milonga Highlights */}
-          <div className="bg-white rounded-xl overflow-hidden shadow-sm">
-            <div className="p-8 group-y-6">
-              {/* Section Title Input */}
-              <div className="group-y-2">
-                <label className="text-sm font-semibold text-[#515981]">Section Title</label>
-                <input
-                  className="w-full bg-[#efefff] border-none focus:ring-2 focus:ring-[#0057bd] rounded-xl px-4 py-3 font-headline font-bold text-[#242c51] placeholder:opacity-40"
-                  type="text"
-                  defaultValue="Milonga Highlights"
-                />
-              </div>
+          <div className="space-y-24">
+            {sections.map((section) => (
+              <motion.div
+                key={section.id}
+                layout
+                className="bg-white rounded-[3.5rem] shadow-xl shadow-blue-900/5 border border-white overflow-hidden group/section"
+              >
+                <div className="p-12 space-y-12">
+                  {/* Section Title */}
+                  <div className="space-y-4">
+                    <label className="text-[10px] font-black text-[#a3abd7] uppercase tracking-[0.3em] ml-1">Section Identity</label>
+                    <input
+                      value={section.title}
+                      onChange={(e) => updateSection(section.id, { title: e.target.value })}
+                      className="w-full bg-[#f8faff] border border-[#efefff] focus:ring-2 focus:ring-[#0057bd] rounded-[1.5rem] px-8 py-6 font-headline font-black text-2xl text-[#242c51] placeholder:opacity-20 transition-all"
+                      type="text"
+                      placeholder="e.g. Atmosphere & Vibes"
+                    />
+                  </div>
 
-              {/* Media Type Toggle */}
-              <div className="flex flex-col gap-2">
-                <label className="text-sm font-semibold text-[#515981]">Media Type</label>
-                <div className="flex bg-[#efefff] p-1 rounded-xl w-fit">
-                  <button className="px-6 py-2 rounded-lg bg-white text-[#0057bd] shadow-sm font-bold text-sm flex items-center gap-2">
-                    <span className="material-symbols-outlined text-sm">photo_library</span>
-                    Photos
-                  </button>
-                  <button className="px-6 py-2 rounded-lg text-[#515981] hover:text-[#0057bd] font-bold text-sm flex items-center gap-2 transition-colors">
-                    <span className="material-symbols-outlined text-sm">movie</span>
-                    Videos
-                  </button>
-                </div>
-                <p className="text-[11px] text-[#6c759e] italic mt-1">* Note: Media types cannot coexist in the same section.</p>
-              </div>
+                  {/* Media Type Toggle */}
+                  <div className="space-y-6">
+                    <label className="text-[10px] font-black text-[#a3abd7] uppercase tracking-[0.3em] ml-1">Media Protocol</label>
+                    <div className="flex bg-[#f8faff] p-2.5 rounded-[2rem] w-fit border border-[#efefff]">
+                      <button 
+                        onClick={() => updateSection(section.id, { type: 'photos', media: [] })}
+                        className={`px-12 py-5 rounded-[1.5rem] font-headline font-black text-xs uppercase tracking-widest flex items-center gap-4 transition-all ${
+                          section.type === 'photos' 
+                            ? "bg-white text-[#0057bd] shadow-xl shadow-blue-900/10 border border-[#efefff]" 
+                            : "text-[#515981] opacity-40 hover:opacity-100"
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-2xl">photo_library</span>
+                        Photos
+                      </button>
+                      <button 
+                        onClick={() => updateSection(section.id, { type: 'videos', media: [] })}
+                        className={`px-12 py-5 rounded-[1.5rem] font-headline font-black text-xs uppercase tracking-widest flex items-center gap-4 transition-all ${
+                          section.type === 'videos' 
+                            ? "bg-white text-[#0057bd] shadow-xl shadow-blue-900/10 border border-[#efefff]" 
+                            : "text-[#515981] opacity-40 hover:opacity-100"
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-2xl">movie</span>
+                        Videos
+                      </button>
+                    </div>
+                    <p className="text-[11px] font-black text-[#fb5151] italic ml-1 opacity-70">
+                      * Switching types will clear existing media in this section.
+                    </p>
+                  </div>
 
-              {/* Photos Grid Selection State */}
-              <div className="group-y-4">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-semibold text-[#515981]">Up to 10 photos</label>
-                  <span className="text-xs font-medium text-[#004ca6]">3 / 10 Used</span>
+                  {/* Media Grid */}
+                  <div className="space-y-8">
+                    <div className="flex items-center justify-between px-1">
+                      <label className="text-[10px] font-black text-[#a3abd7] uppercase tracking-[0.3em]">
+                        {section.type === 'photos' ? "Photo Stream (Max 10)" : "Cinema (1 Clip Only)"}
+                      </label>
+                      <span className={`text-[10px] font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-full ${
+                        (section.type === 'photos' && section.media.length >= 10) || (section.type === 'videos' && section.media.length >= 1)
+                          ? "bg-[#fb5151]/10 text-[#fb5151]" 
+                          : "bg-[#0057bd]/10 text-[#0057bd]"
+                      }`}>
+                        {section.media.length} / {section.type === 'photos' ? 10 : 1} Slots Occupied
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-8">
+                      {section.media.map((url, idx) => (
+                        <motion.div
+                          key={idx}
+                          layout
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className="relative aspect-square rounded-[2.5rem] overflow-hidden group border-4 border-[#f8faff] shadow-lg"
+                        >
+                          {section.type === 'photos' ? (
+                            <img src={url} alt="Gallery" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full bg-[#242c51] flex items-center justify-center">
+                              <span className="material-symbols-outlined text-white text-6xl opacity-40">play_circle</span>
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                              <span className="absolute bottom-6 left-6 text-white font-headline font-black text-xs uppercase tracking-widest">Active Clip</span>
+                            </div>
+                          )}
+                          <button 
+                            onClick={() => removeMedia(section.id, idx)}
+                            className="absolute top-6 right-6 bg-[#fb5151] text-white p-3 rounded-full shadow-2xl opacity-0 group-hover:opacity-100 transition-all hover:scale-110 active:scale-90 z-10 border-2 border-white/20"
+                          >
+                            <span className="material-symbols-outlined text-sm font-black">close</span>
+                          </button>
+                        </motion.div>
+                      ))}
+
+                      {/* Add Button */}
+                      {((section.type === 'photos' && section.media.length < 10) || (section.type === 'videos' && section.media.length < 1)) && (
+                        <button 
+                          onClick={() => triggerUpload(section.id)}
+                          disabled={loading}
+                          className="aspect-square rounded-[2.5rem] border-4 border-dashed border-[#f1f3ff] hover:border-[#0057bd]/30 hover:bg-[#0057bd]/5 transition-all flex flex-col items-center justify-center gap-6 group/add disabled:opacity-50"
+                        >
+                          <div className="w-20 h-20 rounded-full bg-[#f8faff] flex items-center justify-center group-hover/add:scale-110 group-hover/add:bg-white shadow-inner transition-all">
+                            <span className="material-symbols-outlined text-5xl text-[#a3abd7] group-hover/add:text-[#0057bd]">
+                              {section.type === 'photos' ? "add_a_photo" : "video_call"}
+                            </span>
+                          </div>
+                          <span className="text-[11px] font-black text-[#a3abd7] uppercase tracking-[0.3em] group-hover/add:text-[#0057bd]">
+                            {loading && uploadingSectionId === section.id ? "Syncing..." : "Add Content"}
+                          </span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                  {/* Photo 1 */}
-                  <div className="relative aspect-square rounded-lg overflow-hidden group/item">
-                    <img
-                      className="w-full h-full object-cover"
-                      alt="tango dancers"
-                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuCAvGbfCS2RkgboVWgJGh5dSvgSwJ4k3zmY1Ze92pmiDOpD1XF5HsnBwfuDyXkpj46E0c2-b7Cxisi3NTqvDuJxiEXFbLPkufbLOmnW_jOr0nNRo5kTailzfJ-Cv4TS4LlXcShtnIPd-ewSD67fkVc15FN4V4JmRDYzvyBmLSV08g3wGd0z_2jE5QhbUos1JvTGkJsbTXxlM4BKstOnmq_iPNe6AoHZ7Kb2rk6de1TUF7yWc-8GQyN-xsmsN2Rtp8x3neJlyfkphEQ"
-                    />
-                    <button className="absolute top-1 right-1 bg-[#b31b25] text-white p-1 rounded-full shadow-lg opacity-0 group-hover/item:opacity-100 transition-opacity">
-                      <span className="material-symbols-outlined text-[16px]">close</span>
-                    </button>
-                  </div>
-                  {/* Photo 2 */}
-                  <div className="relative aspect-square rounded-lg overflow-hidden group/item">
-                    <img
-                      className="w-full h-full object-cover"
-                      alt="tango shoes"
-                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuDu9cgQy-ODOil4Bf6up0LmABZ0DtwSYLJ7hRlWyYABlifycX-2KINmevPm1A0t5-YRFk1UQMTxu2HBDJe0iPNuez8PSS2Th9aMk2cTIPvxvdqJr4XYde-hCSe-TFsT-N_9Q05Q2hn1-Akr002M1G0x4QLnIqxyT26LylR58dWYLskNE_0XSboJXBukFZVw0IraEuKy6vJhUv7EDhv7pHQiBA2eue8ZbT0c9f6oECmpNoj3nYdZsV8byxJY8DNggnVeUipRQfFfuA4"
-                    />
-                    <button className="absolute top-1 right-1 bg-[#b31b25] text-white p-1 rounded-full shadow-lg opacity-0 group-hover/item:opacity-100 transition-opacity">
-                      <span className="material-symbols-outlined text-[16px]">close</span>
-                    </button>
-                  </div>
-                  {/* Photo 3 */}
-                  <div className="relative aspect-square rounded-lg overflow-hidden group/item">
-                    <img
-                      className="w-full h-full object-cover"
-                      alt="tango hall"
-                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuChwT5Z3mmLOlHFtVUcXrtX7Rvfzgp8D1Ww0r_-IP9AThRG1CPfFwucN0UFjQeS7-JlMbPscn9_cpYgs8-tV8cUu_WrGVtW-H1hTCZV5R7vgeAc6tWjvL1TcXpxQvNUQ_uOX1vxkh77QmaOSck0RJm0phT31uPO3chWW_zPVvDQh9myrbuM7PRxiwanGspFrloXDMuNHjuWVXpYZ3OOixgyuO3GVOLrzr91a2Cdbd4U0AoZhQixa1vVwRuCsv-1ryd-tGcNvbKjzOo"
-                    />
-                    <button className="absolute top-1 right-1 bg-[#b31b25] text-white p-1 rounded-full shadow-lg opacity-0 group-hover/item:opacity-100 transition-opacity">
-                      <span className="material-symbols-outlined text-[16px]">close</span>
-                    </button>
-                  </div>
-                  {/* Add Photo Button */}
-                  <button className="aspect-square rounded-lg border-2 border-dashed border-[#a3abd7]/30 hover:border-[#0057bd] hover:bg-[#dde1ff] transition-all flex flex-col items-center justify-center gap-1 group/btn">
-                    <span className="material-symbols-outlined text-[#a3abd7] group-hover/btn:text-[#0057bd]">
-                      add_a_photo
-                    </span>
-                    <span className="text-[10px] font-bold text-[#a3abd7] group-hover/btn:text-[#0057bd] uppercase tracking-tighter">
-                      Add
-                    </span>
+                
+                {/* Section Footer / Remove Button */}
+                {sections.length > 1 && (
+                  <button 
+                    onClick={() => removeSection(section.id)}
+                    className="w-full py-8 bg-[#fffafa] text-[#fb5151] font-black uppercase tracking-[0.3em] text-[10px] hover:bg-[#fb5151] hover:text-white transition-all flex items-center justify-center gap-3 border-t border-[#fb5151]/10"
+                  >
+                    <span className="material-symbols-outlined text-lg">delete_sweep</span>
+                    Terminate Section
                   </button>
-                </div>
+                )}
+              </motion.div>
+            ))}
+
+            {/* Add New Section Button */}
+            <button
+              onClick={addSection}
+              className="w-full py-24 border-4 border-dashed border-[#0057bd]/10 rounded-[4rem] flex flex-col items-center justify-center gap-8 text-[#0057bd] font-black group hover:bg-[#0057bd]/5 hover:border-[#0057bd]/40 transition-all active:scale-[0.99]"
+            >
+              <div className="w-24 h-24 rounded-full bg-[#0057bd]/10 flex items-center justify-center group-hover:scale-110 group-hover:bg-[#0057bd]/20 transition-all shadow-lg shadow-[#0057bd]/5">
+                <span className="material-symbols-outlined text-6xl">add_circle</span>
               </div>
-            </div>
+              <div className="text-center space-y-2">
+                <span className="block text-2xl italic uppercase tracking-[0.4em]">Initialize Section</span>
+                <span className="block text-[10px] font-black text-[#a3abd7] uppercase tracking-widest opacity-60">Expand your community story</span>
+              </div>
+            </button>
           </div>
-
-          {/* Add New Section Button */}
-          <button className="w-full py-8 border-2 border-dashed border-[#0057bd]/30 rounded-xl flex flex-col items-center justify-center gap-2 text-[#0057bd] font-bold hover:bg-[#0057bd]/5 transition-all active:scale-[0.98]">
-            <span className="material-symbols-outlined text-3xl">add_circle</span>
-            <span className="font-headline font-bold">Add New Section</span>
-          </button>
         </div>
       </main>
     </motion.div>
   );
 }
+

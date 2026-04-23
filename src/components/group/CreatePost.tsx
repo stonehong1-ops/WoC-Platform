@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useRef } from 'react';
 import { groupService } from '@/lib/firebase/groupService';
@@ -106,7 +106,7 @@ export default function CreatePost({ communityId, onSuccess }: CreatePostProps) 
         <motion.div 
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="group-y-6"
+          className="space-y-6"
         >
           <div className="flex items-center justify-between">
              <div className="flex gap-2">

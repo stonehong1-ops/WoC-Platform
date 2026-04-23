@@ -63,46 +63,12 @@ export default function NavigationDrawer() {
           isDrawerOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        {/* User Info Section - Horizontal Layout */}
+        {/* Landing Page Link Section */}
         <div className="px-6 pt-14 pb-8 border-b border-on-surface/[0.05]">
-          <Link 
-            href="/my-info" 
-            onClick={closeDrawer}
-            className="flex items-center gap-5 active:opacity-70 transition-opacity"
-          >
-            {/* Photo on the Left */}
-            <div className="relative shrink-0">
-              <img 
-                alt={displayName} 
-                className="w-16 h-16 rounded-[22px] object-cover ring-2 ring-on-surface/[0.05] shadow-sm" 
-                src={photoURL}
-              />
-              <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-surface rounded-full shadow-sm"></span>
-            </div>
-            
-            {/* Name and Bio on the Right */}
-            <div className="min-w-0">
-              <h1 className="text-[18px] font-black tracking-tight text-on-surface leading-tight uppercase truncate mb-0.5">{displayName}</h1>
-              {profile?.bio && (
-                <p className="text-[13px] font-medium text-on-surface/50 leading-tight line-clamp-2 mb-2">
-                  {profile.bio}
-                </p>
-              )}
-              {/* ROLES */}
-              <div className="flex flex-wrap gap-1.5">
-                {roles.map(role => (
-                  <span key={role} className="px-1.5 py-0.5 rounded bg-primary/5 text-primary text-[8px] font-black tracking-widest uppercase">
-                    {role}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </Link>
-
           <Link 
             href="/" 
             onClick={closeDrawer}
-            className="flex items-center justify-between w-full h-[52px] px-5 mt-8 bg-gradient-to-r from-primary to-primary-container text-white rounded-2xl shadow-lg shadow-primary/20 active:scale-95 transition-all group"
+            className="flex items-center justify-between w-full h-[52px] px-5 bg-gradient-to-r from-primary to-primary-container text-white rounded-2xl shadow-lg shadow-primary/20 active:scale-95 transition-all group"
           >
             <span className="font-bold text-[13px] tracking-tight">Go to landing page</span>
             <span className="material-symbols-outlined text-[18px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span>

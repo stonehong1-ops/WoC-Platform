@@ -5,6 +5,10 @@ Rollback Goal: Under 10 minutes (Git Tag + Vercel Promote).
 
 | Version | Date | Status | Git Tag | Description | Vercel URL |
 |---------|------|--------|---------|-------------|------------|
+| **v2.5.0** | 2026-04-23 | ✅ Stable | `v2.5.0` | Release: Finalized Feed Interaction System (6 Reactions, Nested Comments) | https://www.woc.today |
+| **v2.4.3** | 2026-04-23 | ✅ Stable | `v2.4.3` | Fix: Stacking context issue via React Portal | https://www.woc.today |
+| **v2.4.2** | 2026-04-23 | ✅ Stable | `v2.4.2` | UI: Post Create Popup Fidelity Restoration | https://www.woc.today |
+| **v2.4.1** | 2026-04-23 | ✅ Stable | `v2.4.1` | UI: Plaza Fidelity Restoration & Strict Design Rules | https://www.woc.today |
 | **v2.4.0** | 2026-04-22 | ✅ Stable | `v2.4.0` | Infra: Photo Migration & PWA Logo Sync | https://www.woc.today |
 | **v2.3.0** | 2026-04-21 | ✅ Stable | `v2.3.0` | State: Migration & Fixes finalized | https://www.woc.today |
 | **v2.2.2** | 2026-04-21 | ✅ Stable | `v2.2.2` | Fix: Firestore rules for 'groups' & Agent Rules update | https://www.woc.today |

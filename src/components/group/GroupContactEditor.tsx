@@ -1,69 +1,226 @@
 "use client";
 
-import React from "react";
-import { motion } from "framer-motion";
+import React, { useState, useRef, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { GoogleMap, Marker, Autocomplete } from "@react-google-maps/api";
+import { Group } from "@/types/group";
+import { groupService } from "@/lib/firebase/groupService";
+import { storageService } from "@/lib/firebase/storageService";
 
 interface GroupContactEditorProps {
+  group: Group;
+  isLoaded: boolean;
   onClose: () => void;
-  onSave?: () => void;
 }
 
-export default function GroupContactEditor({ onClose, onSave }: GroupContactEditorProps) {
+const mapContainerStyle = {
+  width: "100%",
+  height: "100%",
+};
+
+const mapOptions = {
+  disableDefaultUI: true,
+  zoomControl: true,
+  mapId: "425069951fef97d91810ab94", // Premium Map ID
+};
+
+export default function GroupContactEditor({ group, isLoaded, onClose }: GroupContactEditorProps) {
+  const [formData, setFormData] = useState({
+    representative: group.representative || { name: "", phone: "", avatar: "" },
+    address: group.address || "",
+    detailedAddress: group.detailedAddress || "",
+    publicTransport: group.publicTransport || "",
+    coordinates: group.coordinates || { latitude: 37.5665, longitude: 126.9780 },
+    socialLinks: group.socialLinks || {
+      facebook: "",
+      instagram: "",
+      twitter: "",
+      website: ""
+    }
+  });
+
+  const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [map, setMap] = useState<google.maps.Map | null>(null);
+
+  const onMapLoad = useCallback((map: google.maps.Map) => {
+    setMap(map);
+  }, []);
+
+  const onPlaceChanged = () => {
+    if (autocompleteRef.current) {
+      const place = autocompleteRef.current.getPlace();
+      if (place.geometry && place.geometry.location) {
+        const latitude = place.geometry.location.lat();
+        const longitude = place.geometry.location.lng();
+        const address = place.formatted_address || "";
+
+        setFormData(prev => ({
+          ...prev,
+          coordinates: { latitude, longitude },
+          address: address
+        }));
+
+        if (map) {
+          map.panTo({ lat: latitude, lng: longitude });
+          map.setZoom(17);
+        }
+      }
+    }
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const path = `groups/${group.id}/representative_${Date.now()}`;
+      const downloadURL = await storageService.uploadFile(file, path);
+      setFormData(prev => ({
+        ...prev,
+        representative: { ...prev.representative, avatar: downloadURL }
+      }));
+    } catch (error) {
+      console.error("Error uploading avatar:", error);
+      alert("이미지 업로드에 실패했습니다.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await groupService.updateGroupMetadata(group.id, {
+        representative: formData.representative,
+        address: formData.address,
+        detailedAddress: formData.detailedAddress,
+        publicTransport: formData.publicTransport,
+        coordinates: formData.coordinates,
+        socialLinks: formData.socialLinks
+      });
+      onClose();
+    } catch (error) {
+      console.error("Error saving contact info:", error);
+      alert("정보 저장 중 오류가 발생했습니다.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 50 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 50 }}
-      className="fixed inset-0 z-[100] bg-[#f7f5ff] overflow-y-auto font-body"
+      initial={{ opacity: 0, scale: 0.95, y: 20 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95, y: 20 }}
+      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      className="fixed inset-0 z-[100] bg-[#0a0f1d] flex flex-col overflow-y-auto no-scrollbar"
     >
-      {/* TopAppBar */}
-      <header className="fixed top-0 w-full z-50 bg-[#f7f5ff] flex items-center justify-between px-6 h-16 shadow-[0_4px_32px_rgba(36,44,81,0.06)]">
-        <div className="flex items-center gap-4">
+      {/* Premium Background Decor */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[20%] left-[-5%] w-[40%] h-[40%] bg-[#0057bd]/5 blur-[120px] rounded-full" />
+        <div className="absolute bottom-[10%] right-[-10%] w-[50%] h-[50%] bg-purple-600/5 blur-[100px] rounded-full animate-pulse" />
+      </div>
+
+      {/* Top Bar - Glassmorphism */}
+      <header className="sticky top-0 z-50 bg-[#0a0f1d]/60 backdrop-blur-2xl border-b border-white/5">
+        <div className="max-w-4xl mx-auto px-6 py-5 flex items-center justify-between w-full">
+          <div className="flex items-center gap-5">
+            <button 
+              onClick={onClose}
+              className="w-11 h-11 rounded-2xl flex items-center justify-center text-white/50 hover:text-white hover:bg-white/5 transition-all group"
+            >
+              <span className="material-symbols-outlined group-hover:-translate-x-0.5 transition-transform">arrow_back</span>
+            </button>
+            <div>
+              <h1 className="text-lg font-headline font-black text-white tracking-tight">Contact Settings</h1>
+              <p className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em]">Location & Networks</p>
+            </div>
+          </div>
           <button
-            onClick={onClose}
-            className="active:scale-95 transition-transform text-[#0057bd] hover:bg-[#d6dbff] p-2 rounded-full duration-200"
+            onClick={handleSave}
+            disabled={isSaving || isUploading}
+            className={`px-10 py-3 rounded-2xl font-headline font-black text-sm transition-all active:scale-95 flex items-center gap-2 ${
+              isSaving || isUploading
+                ? "bg-white/5 text-white/20 cursor-not-allowed"
+                : "bg-white text-[#0a0f1d] hover:bg-[#0057bd] hover:text-white shadow-[0_20px_40px_rgba(0,0,0,0.3)]"
+            }`}
           >
-            <span className="material-symbols-outlined">arrow_back</span>
+            {isSaving ? (
+              <>
+                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                <span>SAVING...</span>
+              </>
+            ) : (
+              "SAVE CHANGES"
+            )}
           </button>
-          <h1 className="font-headline font-bold text-xl tracking-tight text-[#242c51]">Contact Info</h1>
         </div>
-        <button
-          onClick={onSave || onClose}
-          className="bg-[#0057bd] text-white px-6 py-2 rounded-xl font-headline font-bold hover:opacity-90 active:scale-95 transition-all"
-        >
-          Save
-        </button>
       </header>
 
-      <main className="pt-24 px-6 max-w-4xl mx-auto group-y-12 pb-32">
+      <main className="max-w-4xl mx-auto w-full px-6 py-12 relative z-10 space-y-16 mb-20">
+        
+        {/* Intro Section */}
+        <section className="space-y-4 ml-6">
+          <h2 className="text-4xl font-headline font-black text-white tracking-tight leading-tight">Establish your<br/>presence</h2>
+          <p className="text-white/40 font-medium max-w-xl">커뮤니티의 물리적 위치와 주요 연락처 정보를 설정하여 멤버들이 쉽게 찾아오고 소통할 수 있게 합니다.</p>
+        </section>
+
         {/* Representative Section */}
-        <section className="group-y-6">
-          <h2 className="font-headline text-2xl font-extrabold text-[#242c51] tracking-tight">Representative</h2>
-          <div className="bg-white p-8 rounded-xl shadow-sm group-y-8">
-            <div className="flex flex-col items-center sm:flex-row sm:group-x-8">
-              <div className="relative group">
-                <div className="w-24 h-24 rounded-full bg-[#efefff] flex items-center justify-center overflow-hidden border-2 border-dashed border-[#a3abd7]/30 hover:border-[#0057bd] transition-colors">
-                  <span className="material-symbols-outlined text-4xl text-[#a3abd7]">account_circle</span>
+        <section className="space-y-10">
+          <h3 className="text-xl font-headline font-black text-white flex items-center gap-4 ml-6">
+            <span className="w-2 h-7 bg-[#0057bd] rounded-full"></span>
+            Representative Identity
+          </h3>
+          <div className="bg-white/[0.03] backdrop-blur-xl p-10 rounded-[3rem] border border-white/5 space-y-8 shadow-2xl ml-6">
+            <div className="flex flex-col md:flex-row items-center gap-12">
+              <div className="relative group cursor-pointer" onClick={() => avatarInputRef.current?.click()}>
+                <div className="w-36 h-36 rounded-full bg-[#0a0f1d] flex items-center justify-center overflow-hidden border-2 border-dashed border-white/10 group-hover:border-[#0057bd] transition-all shadow-inner relative">
+                  {formData.representative.avatar ? (
+                    <img src={formData.representative.avatar} alt="Avatar" className="w-full h-full object-cover transition-transform group-hover:scale-110" />
+                  ) : (
+                    <span className="material-symbols-outlined text-7xl text-white/10">account_circle</span>
+                  )}
+                  {isUploading && (
+                    <div className="absolute inset-0 bg-[#0a0f1d]/80 flex items-center justify-center">
+                      <div className="w-8 h-8 border-2 border-[#0057bd] border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  )}
                 </div>
-                <button className="absolute bottom-0 right-0 bg-[#0057bd] text-white p-2 rounded-full shadow-lg active:scale-90 transition-transform">
-                  <span className="material-symbols-outlined text-sm">edit</span>
-                </button>
+                <div className="absolute -bottom-1 -right-1 bg-[#0057bd] text-white p-3 rounded-2xl shadow-2xl border-4 border-[#121829] group-hover:scale-110 transition-transform">
+                  <span className="material-symbols-outlined text-sm">photo_camera</span>
+                </div>
+                <input type="file" ref={avatarInputRef} className="hidden" accept="image/*" onChange={handleAvatarUpload} />
               </div>
-              <div className="flex-1 w-full mt-6 sm:mt-0 group-y-6">
-                <div className="group-y-2">
-                  <label className="text-sm font-semibold text-[#515981]">Full Name</label>
+              
+              <div className="flex-1 w-full grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 ml-1">Full Representative Name</label>
                   <input
-                    className="w-full bg-[#efefff] border-none focus:ring-2 focus:ring-[#0057bd] rounded-xl px-4 py-3 font-headline font-bold text-[#242c51] placeholder:opacity-40"
+                    className="w-full bg-white/5 border border-white/5 focus:bg-white/10 focus:border-[#0057bd]/40 outline-none rounded-2xl px-6 py-4 font-headline font-bold text-white transition-all shadow-inner"
                     type="text"
-                    defaultValue="Julian Kang"
+                    value={formData.representative.name}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      representative: { ...prev.representative, name: e.target.value }
+                    }))}
+                    placeholder="이름 입력"
                   />
                 </div>
-                <div className="group-y-2">
-                  <label className="text-sm font-semibold text-[#515981]">Phone Number</label>
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 ml-1">Direct Contact Line</label>
                   <input
-                    className="w-full bg-[#efefff] border-none focus:ring-2 focus:ring-[#0057bd] rounded-xl px-4 py-3 font-headline font-bold text-[#242c51] placeholder:opacity-40"
-                    placeholder="+82 10-0000-0000"
+                    className="w-full bg-white/5 border border-white/5 focus:bg-white/10 focus:border-[#0057bd]/40 outline-none rounded-2xl px-6 py-4 font-headline font-bold text-white transition-all shadow-inner"
                     type="tel"
+                    value={formData.representative.phone}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      representative: { ...prev.representative, phone: e.target.value }
+                    }))}
+                    placeholder="+82 10-0000-0000"
                   />
                 </div>
               </div>
@@ -72,123 +229,124 @@ export default function GroupContactEditor({ onClose, onSave }: GroupContactEdit
         </section>
 
         {/* Location Section */}
-        <section className="group-y-6">
-          <div className="flex justify-between items-center">
-            <h2 className="font-headline text-2xl font-extrabold text-[#242c51] tracking-tight">Location</h2>
-            <span
-              className="material-symbols-outlined text-[#0057bd]"
-              style={{ fontVariationSettings: "'FILL' 1" }}
-            >
-              location_on
-            </span>
-          </div>
-          <div className="bg-white rounded-xl overflow-hidden shadow-sm">
-            <div className="h-48 w-full bg-[#efefff] relative">
-              <img
-                alt="Map View"
-                className="w-full h-full object-cover opacity-80"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuA7-NdwfiTqKyKbj9eiXsNSOaU47y_iiipygKn01ILZOdDARTnOaefq3g77AFz9kNRzEBlXSnrIyGx1OVczszYpgPRSHBKIIQ3KZ9W73ezxXqJD4g1-UXGbnZEEBbcdQP8f6kjmAr50r73BBgmc3_UyUgjZUcFZltF38rXbG36FREp1Z9soSEeRk-FnMfnR7Iz4ZP3vmSq_YXIi2VvILsN5qD_O5d08gcRvO6VvT9HCEEH6hQmvpVjavRz6aDAJHBu_K0hju_2LhqI"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent"></div>
-            </div>
-            <div className="p-8 group-y-6">
-              <div className="group-y-2">
-                <label className="text-sm font-semibold text-[#515981]">Primary Address</label>
-                <div className="relative">
-                  <input
-                    className="w-full bg-[#efefff] border-none focus:ring-2 focus:ring-[#0057bd] rounded-xl pl-4 pr-12 py-3 font-headline font-bold text-[#242c51] placeholder:opacity-40"
-                    placeholder="Start typing address..."
-                    type="text"
+        <section className="space-y-10">
+          <h3 className="text-xl font-headline font-black text-white flex items-center gap-4 ml-6">
+            <span className="w-2 h-7 bg-[#0057bd] rounded-full"></span>
+            Physical Location
+          </h3>
+          <div className="bg-white/[0.03] backdrop-blur-xl rounded-[3rem] border border-white/5 overflow-hidden shadow-2xl ml-6">
+            <div className="h-[450px] w-full relative bg-[#0a0f1d]">
+              {isLoaded ? (
+                <GoogleMap
+                  mapContainerStyle={mapContainerStyle}
+                  center={{ lat: formData.coordinates.latitude, lng: formData.coordinates.longitude }}
+                  zoom={16}
+                  onLoad={onMapLoad}
+                  options={mapOptions}
+                >
+                  <Marker 
+                    position={{ lat: formData.coordinates.latitude, lng: formData.coordinates.longitude }}
                   />
-                  <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-[#a3abd7]">
-                    search
-                  </span>
+                </GoogleMap>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <div className="animate-pulse flex flex-col items-center gap-4 text-white/20">
+                    <span className="material-symbols-outlined text-6xl">map</span>
+                    <span className="font-black uppercase tracking-[0.3em] text-[10px]">Synchronizing Maps...</span>
+                  </div>
+                </div>
+              )}
+              
+              {/* Floating Address Search */}
+              <div className="absolute top-8 left-8 right-8 z-10">
+                {isLoaded && (
+                  <Autocomplete
+                    onLoad={(ref) => (autocompleteRef.current = ref)}
+                    onPlaceChanged={onPlaceChanged}
+                  >
+                    <div className="relative group max-w-2xl mx-auto">
+                      <input
+                        className="w-full bg-[#0a0f1d]/80 backdrop-blur-3xl border border-white/10 focus:ring-8 focus:ring-[#0057bd]/10 focus:border-[#0057bd]/40 outline-none rounded-[2rem] pl-16 pr-8 py-5 font-headline font-bold text-white transition-all shadow-2xl"
+                        placeholder="커뮤니티 주소를 검색하세요..."
+                        type="text"
+                      />
+                      <div className="absolute left-6 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#0057bd] flex items-center justify-center shadow-lg shadow-blue-900/40">
+                        <span className="material-symbols-outlined text-white text-sm">search</span>
+                      </div>
+                    </div>
+                  </Autocomplete>
+                )}
+              </div>
+            </div>
+            
+            <div className="p-10 grid grid-cols-1 md:grid-cols-2 gap-12">
+              <div className="space-y-8">
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 ml-1">Verified Address</label>
+                  <div className="w-full bg-white/[0.02] border border-white/5 rounded-2xl px-6 py-5 flex items-center gap-4 opacity-50">
+                    <span className="material-symbols-outlined text-[#0057bd] text-xl">verified</span>
+                    <span className="font-headline font-bold text-white text-sm truncate">
+                      {formData.address || "지도를 통해 주소를 검색하세요"}
+                    </span>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 ml-1">Building Detail / Suite</label>
+                  <input
+                    className="w-full bg-white/5 border border-white/5 focus:bg-white/10 focus:border-[#0057bd]/40 outline-none rounded-2xl px-6 py-4 font-headline font-bold text-white transition-all"
+                    type="text"
+                    value={formData.detailedAddress}
+                    onChange={(e) => setFormData(prev => ({ ...prev, detailedAddress: e.target.value }))}
+                    placeholder="층수, 호수 또는 주요 랜드마크"
+                  />
                 </div>
               </div>
-              <div className="group-y-2">
-                <label className="text-sm font-semibold text-[#515981]">Detailed Address</label>
-                <input
-                  className="w-full bg-[#efefff] border-none focus:ring-2 focus:ring-[#0057bd] rounded-xl px-4 py-3 font-headline font-bold text-[#242c51] placeholder:opacity-40"
-                  placeholder="Suite, floor, or building unit"
-                  type="text"
-                />
-              </div>
-              <div className="group-y-2">
-                <label className="text-sm font-semibold text-[#515981]">Public Transport</label>
+              
+              <div className="space-y-3 flex flex-col">
+                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 ml-1">Public Transit Guide</label>
                 <textarea
-                  className="w-full bg-[#efefff] border-none focus:ring-2 focus:ring-[#0057bd] rounded-xl px-4 py-3 font-headline font-bold text-[#242c51] placeholder:opacity-40 resize-none font-body"
-                  placeholder="Enter bus or subway instructions"
-                  rows={4}
-                ></textarea>
+                  className="flex-1 min-h-[160px] bg-white/5 border border-white/5 focus:bg-white/10 focus:border-[#0057bd]/40 outline-none rounded-2xl px-6 py-5 font-medium text-white transition-all resize-none leading-relaxed shadow-inner"
+                  value={formData.publicTransport}
+                  onChange={(e) => setFormData(prev => ({ ...prev, publicTransport: e.target.value }))}
+                  placeholder="대중교통(버스, 지하철) 이용 방법이나 주차 정보를 입력하세요..."
+                />
               </div>
             </div>
           </div>
         </section>
 
-        {/* Social Media Section */}
-        <section className="group-y-6">
-          <h2 className="font-headline text-2xl font-extrabold text-[#242c51] tracking-tight">Social Media</h2>
-          <div className="bg-white rounded-xl shadow-sm divide-y divide-[#e4e7ff] overflow-hidden">
-            {/* Facebook */}
-            <div className="p-6 flex items-start group-x-4">
-              <div className="w-12 h-12 rounded-xl bg-[#1877F2]/10 flex items-center justify-center shrink-0">
-                <span className="material-symbols-outlined text-[#1877F2]">public</span>
-              </div>
-              <div className="flex-1 group-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="font-headline font-bold text-[#242c51]">Facebook</span>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" defaultChecked />
-                    <div className="w-11 h-6 bg-[#dde1ff] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0057bd]"></div>
-                  </label>
+        {/* Social Network Section */}
+        <section className="space-y-10">
+          <h3 className="text-xl font-headline font-black text-white flex items-center gap-4 ml-6">
+            <span className="w-2 h-7 bg-[#0057bd] rounded-full"></span>
+            Social Ecosystem
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 ml-6">
+            {[
+              { id: 'instagram', label: 'Instagram', icon: 'photo_camera', color: '#E4405F', placeholder: '@username' },
+              { id: 'facebook', label: 'Facebook', icon: 'public', color: '#1877F2', placeholder: 'facebook.com/page' },
+              { id: 'twitter', label: 'X (Twitter)', icon: 'close', color: '#FFFFFF', placeholder: '@username' },
+              { id: 'website', label: 'Official Site', icon: 'language', color: '#0057bd', placeholder: 'https://...' }
+            ].map((sns) => (
+              <div key={sns.id} className="p-8 bg-white/[0.03] backdrop-blur-lg rounded-[2.5rem] border border-white/5 flex items-center gap-6 group hover:border-[#0057bd]/30 hover:bg-white/[0.05] transition-all shadow-xl">
+                <div className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 shadow-2xl transition-transform group-hover:scale-110 group-hover:rotate-6" style={{ backgroundColor: `${sns.color}15` }}>
+                  <span className="material-symbols-outlined text-2xl" style={{ color: sns.color }}>{sns.icon}</span>
                 </div>
-                <input
-                  className="w-full bg-[#efefff] border-none focus:ring-2 focus:ring-[#0057bd] rounded-xl px-4 py-3 font-headline font-bold text-[#242c51] placeholder:opacity-40 text-sm"
-                  type="text"
-                  defaultValue="facebook.com/kineticsky"
-                />
-              </div>
-            </div>
-            {/* Instagram */}
-            <div className="p-6 flex items-start group-x-4">
-              <div className="w-12 h-12 rounded-xl bg-[#E4405F]/10 flex items-center justify-center shrink-0">
-                <span className="material-symbols-outlined text-[#E4405F]">photo_camera</span>
-              </div>
-              <div className="flex-1 group-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="font-headline font-bold text-[#242c51]">Instagram</span>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" defaultChecked />
-                    <div className="w-11 h-6 bg-[#dde1ff] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0057bd]"></div>
-                  </label>
+                <div className="flex-1 space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 ml-1">{sns.label}</label>
+                  <input
+                    className="w-full bg-transparent outline-none font-headline font-black text-white placeholder:text-white/10 text-lg"
+                    type="text"
+                    value={formData.socialLinks[sns.id as keyof typeof formData.socialLinks] || ""}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      socialLinks: { ...prev.socialLinks, [sns.id]: e.target.value }
+                    }))}
+                    placeholder={sns.placeholder}
+                  />
                 </div>
-                <input
-                  className="w-full bg-[#efefff] border-none focus:ring-2 focus:ring-[#0057bd] rounded-xl px-4 py-3 font-headline font-bold text-[#242c51] placeholder:opacity-40 text-sm"
-                  type="text"
-                  defaultValue="@kineticsky_official"
-                />
               </div>
-            </div>
-            {/* X / Twitter */}
-            <div className="p-6 flex items-start group-x-4">
-              <div className="w-12 h-12 rounded-xl bg-[#000000]/10 flex items-center justify-center shrink-0">
-                <span className="material-symbols-outlined text-[#000000]">close</span>
-              </div>
-              <div className="flex-1 group-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="font-headline font-bold text-[#242c51]">X/Twitter</span>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" />
-                    <div className="w-11 h-6 bg-[#dde1ff] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0057bd]"></div>
-                  </label>
-                </div>
-                <input
-                  className="w-full bg-[#efefff] border-none focus:ring-2 focus:ring-[#0057bd] rounded-xl px-4 py-3 font-headline font-bold text-[#242c51] placeholder:opacity-40 text-sm opacity-60"
-                  placeholder="Link your X account"
-                  type="text"
-                />
-              </div>
-            </div>
+            ))}
           </div>
         </section>
       </main>

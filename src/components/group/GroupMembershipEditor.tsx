@@ -1,162 +1,171 @@
 "use client";
 
-import React from "react";
-import { motion } from "framer-motion";
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Group } from "@/types/group";
+import { groupService } from "@/lib/firebase/groupService";
 
 interface GroupMembershipEditorProps {
+  group: Group;
   onClose: () => void;
 }
 
-const GroupMembershipEditor: React.FC<GroupMembershipEditorProps> = ({ onClose }) => {
+const GroupMembershipEditor: React.FC<GroupMembershipEditorProps> = ({ group, onClose }) => {
+  const [joinStrategy, setJoinStrategy] = useState<'open' | 'approval' | 'invite'>(
+    group.membershipPolicy?.joinStrategy || 'open'
+  );
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await groupService.updateGroupMetadata(group.id, {
+        membershipPolicy: {
+          joinStrategy,
+        }
+      });
+      onClose();
+    } catch (error) {
+      console.error("Error saving membership policy:", error);
+      alert("변경사항 저장에 실패했습니다.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const strategies = [
+    {
+      id: 'open',
+      title: 'Open Group (공개 그룹)',
+      icon: 'public',
+      desc: '누구나 즉시 가입할 수 있는 개방형 커뮤니티입니다. 대규모 공지나 정보 공유 목적에 적합합니다.',
+    },
+    {
+      id: 'approval',
+      title: 'Admin Approval (승인제)',
+      icon: 'verified_user',
+      desc: '가입 신청 후 관리자의 승인이 필요합니다. 커뮤니티의 성격에 맞는 멤버를 선별할 때 유용합니다.',
+    },
+    {
+      id: 'invite',
+      title: 'Manager Selection (초대제)',
+      icon: 'lock_person',
+      desc: '관리자가 직접 초대한 멤버만 가입할 수 있습니다. 보안이 중요하거나 소수 정예 모임에 최적화되어 있습니다.',
+    }
+  ];
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 20 }}
-      className="fixed inset-0 z-[100] bg-[#f7f5ff] flex flex-col overflow-y-auto no-scrollbar font-body"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[100] bg-[#0a0f1d] flex flex-col overflow-y-auto no-scrollbar font-body text-white"
     >
-      {/* TopAppBar */}
-      <header className="sticky top-0 z-50 bg-[#f7f5ff] shadow-[0_32px_32px_rgba(36,44,81,0.06)]">
-        <div className="flex justify-between items-center w-full px-6 py-4 max-w-screen-xl mx-auto">
+      {/* Background Atmosphere */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#0057bd]/10 blur-[120px] rounded-full" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-900/10 blur-[100px] rounded-full" />
+      </div>
+
+      {/* Top Bar */}
+      <header className="sticky top-0 z-50 bg-[#0a0f1d]/80 backdrop-blur-2xl border-b border-white/10">
+        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between w-full">
           <div className="flex items-center gap-4">
             <button 
               onClick={onClose}
-              className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-[#d6dbff]/30 transition-colors active:scale-95 duration-200 ease-out text-[#0057bd]"
+              className="w-10 h-10 rounded-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-all active:scale-90"
             >
               <span className="material-symbols-outlined">arrow_back</span>
             </button>
-            <h1 className="font-headline font-bold tracking-tight text-[#0057bd] text-xl">Membership Policy</h1>
+            <div>
+              <h1 className="text-lg font-headline font-black tracking-tight text-white">Membership Policy</h1>
+              <p className="text-xs text-white/40">커뮤니티 가입 방식 설정</p>
+            </div>
           </div>
           <button 
-            onClick={onClose}
-            className="bg-[#0057bd] text-white px-8 py-2.5 rounded-xl font-bold tracking-tight hover:bg-[#004ca6] hover:shadow-lg transition-all active:scale-95 duration-200"
+            onClick={handleSave}
+            disabled={isSaving}
+            className={`px-8 py-2.5 rounded-xl font-headline font-black transition-all active:scale-95 shadow-2xl ${
+              isSaving
+                ? "bg-white/10 text-white/30 cursor-not-allowed"
+                : "bg-white text-black hover:bg-[#0057bd] hover:text-white"
+            }`}
           >
-            Save
+            {isSaving ? (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                <span>저장 중...</span>
+              </div>
+            ) : '정책 저장'}
           </button>
         </div>
       </header>
 
-      <main className="max-w-screen-xl mx-auto px-6 py-12 w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-          {/* Section 1: Join Strategy */}
-          <section className="lg:col-span-7">
-            <header className="mb-8">
-              <h2 className="text-3xl font-extrabold text-[#242c51] tracking-tight mb-2 font-headline">Join Strategy</h2>
-              <p className="text-[#515981] text-lg">Define how new members enter your group group.</p>
-            </header>
-            
-            <div className="group-y-4">
-              {/* Option 1: Open Group */}
-              <label className="block cursor-pointer group">
-                <input defaultChecked name="join_strategy" type="radio" className="peer hidden" />
-                <div className="p-6 rounded-xl bg-white border-2 border-transparent transition-all hover:bg-[#efefff] flex items-start gap-5 peer-checked:border-[#0057bd] peer-checked:shadow-[0_10px_25px_-5px_rgba(0,87,189,0.1)]">
-                  <div className="mt-1 w-6 h-6 rounded-full border-2 border-[#a3abd7] flex items-center justify-center transition-colors shrink-0 peer-checked:bg-[#0057bd] peer-checked:border-[#0057bd] relative after:content-[''] after:hidden peer-checked:after:block after:w-2 after:h-2 after:bg-white after:rounded-full">
-                    {/* The structure above is a bit complex for pure CSS peer-checked on a child, 
-                        so let's use a simplified approach that matches the user's HTML intent */}
-                    <div className="w-2 h-2 bg-white rounded-full opacity-0 transition-opacity peer-checked:group-[]:opacity-100"></div>
+      <main className="relative z-10 max-w-2xl mx-auto px-6 py-12 w-full">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-10"
+        >
+          <header>
+            <h2 className="text-4xl font-headline font-black text-white tracking-tighter mb-4 leading-none">
+              Join Strategy
+            </h2>
+            <p className="text-white/60 text-lg leading-relaxed">
+              새로운 멤버가 커뮤니티에 합류하는 방식을 정의하세요. <br/>
+              운영 목적에 따라 가입 문턱을 조절할 수 있습니다.
+            </p>
+          </header>
+          
+          <div className="space-y-4">
+            {strategies.map((strategy, index) => (
+              <motion.label
+                key={strategy.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="block cursor-pointer group"
+              >
+                <input 
+                  name="join_strategy" 
+                  type="radio" 
+                  className="peer hidden" 
+                  checked={joinStrategy === strategy.id}
+                  onChange={() => setJoinStrategy(strategy.id as any)}
+                />
+                <div className="p-6 rounded-2xl bg-white/5 border border-white/10 transition-all duration-300 hover:bg-white/10 flex items-start gap-6 peer-checked:border-[#0057bd] peer-checked:bg-[#0057bd]/10 peer-checked:shadow-[0_0_30px_rgba(0,87,189,0.2)]">
+                  <div className="mt-1 w-6 h-6 rounded-full border-2 border-white/20 flex items-center justify-center transition-all duration-300 shrink-0 peer-checked:border-[#0057bd] peer-checked:bg-[#0057bd]">
+                    <div className={`w-2 h-2 bg-white rounded-full transition-all duration-300 ${joinStrategy === strategy.id ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}`}></div>
                   </div>
                   <div className="flex-grow">
-                    <div className="flex items-center justify-between mb-1">
-                      <h3 className="font-bold text-xl text-[#242c51]">Open Group</h3>
-                      <span className="material-symbols-outlined text-[#0057bd]">public</span>
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className={`font-headline font-bold text-xl transition-colors ${joinStrategy === strategy.id ? 'text-white' : 'text-white/80'}`}>
+                        {strategy.title}
+                      </h3>
+                      <span className={`material-symbols-outlined transition-all ${joinStrategy === strategy.id ? 'text-[#0057bd] scale-110' : 'text-white/20'}`}>
+                        {strategy.icon}
+                      </span>
                     </div>
-                    <p className="text-[#515981] leading-relaxed">Anyone can join instantly without any prior approval. Best for large public interest groups or discovery-based communities.</p>
+                    <p className={`text-sm leading-relaxed transition-colors ${joinStrategy === strategy.id ? 'text-white/70' : 'text-white/40'}`}>
+                      {strategy.desc}
+                    </p>
                   </div>
                 </div>
-              </label>
+              </motion.label>
+            ))}
+          </div>
 
-              {/* Option 2: Admin Approval */}
-              <label className="block cursor-pointer group">
-                <input name="join_strategy" type="radio" className="peer hidden" />
-                <div className="p-6 rounded-xl bg-white border-2 border-transparent transition-all hover:bg-[#efefff] flex items-start gap-5 peer-checked:border-[#0057bd] peer-checked:shadow-[0_10px_25px_-5px_rgba(0,87,189,0.1)]">
-                  <div className="mt-1 w-6 h-6 rounded-full border-2 border-[#a3abd7] flex items-center justify-center transition-colors shrink-0 peer-checked:bg-[#0057bd] peer-checked:border-[#0057bd]">
-                    <div className="w-2 h-2 bg-white rounded-full opacity-0 transition-opacity peer-checked:group-[]:opacity-100"></div>
-                  </div>
-                  <div className="flex-grow">
-                    <div className="flex items-center justify-between mb-1">
-                      <h3 className="font-bold text-xl text-[#242c51]">Admin Approval</h3>
-                      <span className="material-symbols-outlined text-[#0057bd]">verified_user</span>
-                    </div>
-                    <p className="text-[#515981] leading-relaxed">Users must request to join. Moderators or Admins will review their profile before granting access. Ideal for semi-private professional groups.</p>
-                  </div>
-                </div>
-              </label>
-
-              {/* Option 3: Manager Selection */}
-              <label className="block cursor-pointer group">
-                <input name="join_strategy" type="radio" className="peer hidden" />
-                <div className="p-6 rounded-xl bg-white border-2 border-transparent transition-all hover:bg-[#efefff] flex items-start gap-5 peer-checked:border-[#0057bd] peer-checked:shadow-[0_10px_25px_-5px_rgba(0,87,189,0.1)]">
-                  <div className="mt-1 w-6 h-6 rounded-full border-2 border-[#a3abd7] flex items-center justify-center transition-colors shrink-0 peer-checked:bg-[#0057bd] peer-checked:border-[#0057bd]">
-                    <div className="w-2 h-2 bg-white rounded-full opacity-0 transition-opacity peer-checked:group-[]:opacity-100"></div>
-                  </div>
-                  <div className="flex-grow">
-                    <div className="flex items-center justify-between mb-1">
-                      <h3 className="font-bold text-xl text-[#242c51]">Manager Selection</h3>
-                      <span className="material-symbols-outlined text-[#0057bd]">lock_person</span>
-                    </div>
-                    <p className="text-[#515981] leading-relaxed">Invite only. New members can only be added by group managers. Maximum security for sensitive or high-value inner circles.</p>
-                  </div>
-                </div>
-              </label>
+          <footer className="pt-8 border-t border-white/5">
+            <div className="p-6 rounded-2xl bg-white/5 border border-dashed border-white/10 text-center">
+              <span className="material-symbols-outlined text-[#0057bd] mb-3 block">info</span>
+              <p className="text-white/40 text-sm">
+                정책 변경 시 기존 대기 중인 가입 신청자들에게는 <br/>
+                새로운 정책이 소급 적용되지 않을 수 있습니다.
+              </p>
             </div>
-          </section>
-
-          {/* Section 2: Onboarding Flow */}
-          <aside className="lg:col-span-5">
-            <div className="bg-[#efefff] p-8 rounded-[2rem] relative overflow-hidden">
-              <div className="relative z-10">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="w-14 h-14 bg-[#0057bd]/10 rounded-2xl flex items-center justify-center text-[#0057bd] mb-4">
-                    <span className="material-symbols-outlined text-3xl">rocket_launch</span>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input defaultChecked className="sr-only peer" type="checkbox" />
-                    <div className="w-14 h-7 bg-[#a3abd7]/30 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-[#0057bd]"></div>
-                  </label>
-                </div>
-                <h3 className="text-2xl font-bold text-[#242c51] mb-2 font-headline">Onboarding Flow</h3>
-                <p className="text-[#515981] leading-relaxed mb-6">Enable a guided welcome experience for new members. This includes a welcome message, rules acknowledgment, and profile setup.</p>
-                <div className="group-y-3">
-                  <div className="flex items-center gap-3 text-sm font-semibold text-[#0057bd]">
-                    <span className="material-symbols-outlined text-lg">check_circle</span>
-                    Welcome Message
-                  </div>
-                  <div className="flex items-center gap-3 text-sm font-semibold text-[#0057bd]">
-                    <span className="material-symbols-outlined text-lg">check_circle</span>
-                    Rule Acceptance
-                  </div>
-                  <div className="flex items-center gap-3 text-sm font-semibold text-[#0057bd]">
-                    <span className="material-symbols-outlined text-lg">check_circle</span>
-                    Initial Survey
-                  </div>
-                </div>
-              </div>
-              {/* Decorative Element */}
-              <div className="absolute -right-8 -bottom-8 w-48 h-48 bg-[#0057bd]/5 rounded-full blur-3xl"></div>
-            </div>
-          </aside>
-        </div>
+          </footer>
+        </motion.div>
       </main>
-
-      <style jsx>{`
-        input:checked + div {
-          border-color: #0057bd;
-          background-color: #ffffff;
-          box-shadow: 0 10px 25px -5px rgba(0, 87, 189, 0.1);
-        }
-        input:checked + div .mt-1 {
-          background-color: #0057bd;
-          border-color: #0057bd;
-        }
-        input:checked + div .mt-1::after {
-          content: '';
-          display: block;
-          width: 8px;
-          height: 8px;
-          background: white;
-          border-radius: 50%;
-        }
-      `}</style>
     </motion.div>
   );
 };

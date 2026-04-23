@@ -1,17 +1,36 @@
-'use client';
+﻿'use client';
 
-import React from 'react';
-import { Post } from '@/types/group';
+import React, { useState, useEffect } from 'react';
+import { Post, Comment } from '@/types/group';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
+import { groupService } from '@/lib/firebase/groupService';
+import { useAuth } from '@/components/providers/AuthProvider';
 
 interface PostDetailModalProps {
+  groupId: string;
   post: Post | null;
   isOpen: boolean;
   onClose: () => void;
+  onEdit: (post: Post) => void;
 }
 
-export default function PostDetailModal({ post, isOpen, onClose }: PostDetailModalProps) {
+export default function PostDetailModal({ groupId, post, isOpen, onClose, onEdit }: PostDetailModalProps) {
+  const { user, profile, setShowLogin } = useAuth();
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [newComment, setNewComment] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen || !post) return;
+
+    const unsubscribe = groupService.subscribeComments(groupId, post.id, (fetchedComments) => {
+      setComments(fetchedComments as Comment[]);
+    });
+
+    return () => unsubscribe();
+  }, [isOpen, post, groupId]);
+
   if (!post) return null;
 
   const formatDate = (date: any) => {
@@ -24,125 +43,230 @@ export default function PostDetailModal({ post, isOpen, onClose }: PostDetailMod
     }
   };
 
+  const handleAddComment = async () => {
+    if (!user) {
+      setShowLogin(true);
+      return;
+    }
+
+    if (!newComment.trim()) return;
+
+    setIsSubmitting(true);
+    try {
+      await groupService.addComment(groupId, post.id, {
+        content: newComment.trim(),
+        author: {
+          id: user.uid,
+          name: profile?.nickname || user.displayName || 'Anonymous',
+          avatar: profile?.photoURL || user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`
+        }
+      });
+      setNewComment('');
+    } catch (error) {
+      console.error('Failed to add comment:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!confirm('Delete this comment?')) return;
+    try {
+      await groupService.deleteComment(groupId, post.id, commentId);
+    } catch (error) {
+      console.error('Failed to delete comment:', error);
+    }
+  };
+
+  const handleDeletePost = async () => {
+    if (!confirm('Are you sure you want to delete this post?')) return;
+    try {
+      await groupService.deletePost(groupId, post.id);
+      onClose();
+    } catch (error) {
+      console.error('Failed to delete post:', error);
+    }
+  };
+
+  const isAuthor = user?.uid === post.author.id;
+
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 sm:px-6">
+        <div className="fixed inset-0 z-[120] flex items-center justify-center px-4 sm:px-6">
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/80 backdrop-blur-md"
           />
           
           <motion.div 
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="relative w-full max-w-4xl bg-surface rounded-[3rem] overflow-hidden shadow-2xl flex flex-col md:flex-row max-h-[90vh]"
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="relative w-full max-w-5xl bg-[#fcfaff] rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col md:flex-row max-h-[90vh]"
           >
             {/* Close Button */}
             <button 
               onClick={onClose}
-              className="absolute top-6 right-6 z-10 w-10 h-10 rounded-full bg-black/20 hover:bg-black/40 text-white flex items-center justify-center transition-colors"
+              className="absolute top-6 right-6 z-20 w-10 h-10 rounded-full bg-black/10 hover:bg-black/20 text-[#242c51] flex items-center justify-center transition-colors backdrop-blur-md"
             >
               <span className="material-symbols-outlined">close</span>
             </button>
 
-            {/* Content Side */}
-            {post.image && (
-              <div className="w-full md:w-1/2 bg-black flex items-center justify-center overflow-hidden h-64 md:h-auto">
-                <img 
-                  src={post.image} 
-                  alt="" 
-                  className="w-full h-full object-contain"
-                />
+            {/* Media Side */}
+            {(post.image || post.video) && (
+              <div className="w-full md:w-3/5 bg-black flex items-center justify-center overflow-hidden h-64 md:h-auto relative">
+                {post.video ? (
+                  <video 
+                    src={post.video} 
+                    controls 
+                    autoPlay 
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
+                  <img 
+                    src={post.image} 
+                    alt="" 
+                    className="w-full h-full object-contain"
+                  />
+                )}
+                <div className="absolute top-6 left-6 px-4 py-2 bg-black/20 backdrop-blur-md rounded-full text-white text-[10px] font-black uppercase tracking-widest">
+                  {post.type}
+                </div>
               </div>
             )}
 
-            <div className={`flex flex-col flex-1 ${post.image ? 'md:w-1/2' : 'w-full'} bg-surface overflow-y-auto`}>
-              <div className="p-8 sm:p-10">
-                <div className="flex items-center gap-4 mb-8">
+            {/* Content Side */}
+            <div className={`flex flex-col flex-1 ${post.image || post.video ? 'md:w-2/5' : 'w-full'} bg-white overflow-hidden`}>
+              {/* Header */}
+              <div className="p-8 border-b border-[#a3abd7]/10 flex items-center justify-between">
+                <div className="flex items-center gap-4">
                   <img 
-                    src={post.author?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.author?.name || 'anon'}`} 
-                    alt={post.author?.name || 'Anonymous'} 
-                    className="w-12 h-12 rounded-2xl object-cover" 
+                    src={post.author.avatar} 
+                    alt={post.author.name} 
+                    className="w-12 h-12 rounded-2xl object-cover ring-4 ring-[#efefff]" 
                   />
                   <div>
-                    <h3 className="font-headline font-black text-on-surface">@{post.author?.name || 'Anonymous'}</h3>
-                    <p className="text-xs text-on-surface-variant font-bold uppercase tracking-widest">
+                    <h3 className="font-headline font-black text-[#242c51]">@{post.author.name}</h3>
+                    <p className="text-[10px] text-[#515981]/50 font-black uppercase tracking-widest">
                       {formatDate(post.createdAt)}
                     </p>
                   </div>
                 </div>
 
-                <div className="group-y-6">
+                {isAuthor && (
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => onEdit(post)}
+                      className="w-9 h-9 rounded-xl bg-primary/5 text-primary flex items-center justify-center hover:bg-primary hover:text-white transition-all"
+                    >
+                      <span className="material-symbols-outlined text-lg">edit</span>
+                    </button>
+                    <button 
+                      onClick={handleDeletePost}
+                      className="w-9 h-9 rounded-xl bg-error/5 text-error flex items-center justify-center hover:bg-error hover:text-white transition-all"
+                    >
+                      <span className="material-symbols-outlined text-lg">delete</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Scrollable Content */}
+              <div className="flex-1 overflow-y-auto no-scrollbar p-8">
+                <div className="space-y-6">
                   {post.title && (
-                    <h2 className="text-3xl font-headline font-black leading-tight text-on-surface">
+                    <h2 className="text-2xl font-headline font-black leading-tight text-[#242c51]">
                       {post.title}
                     </h2>
                   )}
-                  <p className="text-xl text-on-surface-variant leading-relaxed font-medium">
+                  <p className="text-lg text-[#515981] leading-relaxed font-medium whitespace-pre-wrap">
                     {post.content}
                   </p>
                 </div>
 
-                <div className="mt-10 pt-10 border-t border-outline-variant/10">
-                   <div className="flex items-center gap-6 text-on-surface-variant mb-10">
-                      <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-primary fill-1">favorite</span>
-                        <span className="font-black text-sm">{post.likes}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-tertiary">chat_bubble</span>
-                        <span className="font-black text-sm">{post.comments}</span>
-                      </div>
-                   </div>
+                {/* Stats */}
+                <div className="flex items-center gap-6 mt-10 pt-8 border-t border-[#a3abd7]/10">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-primary fill-1">favorite</span>
+                    <span className="font-black text-sm text-[#242c51]">{post.likes}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[#515981]/40">visibility</span>
+                    <span className="font-black text-sm text-[#242c51]">{post.views}</span>
+                  </div>
+                  <div className="flex items-center gap-2 ml-auto">
+                    <span className="material-symbols-outlined text-tertiary">chat_bubble</span>
+                    <span className="font-black text-sm text-[#242c51]">{comments.length}</span>
+                  </div>
+                </div>
 
-                   {/* Fake Comments for UI refinement */}
-                   <div className="group-y-8">
-                      <h4 className="text-xs font-black uppercase tracking-[0.2em] text-on-surface-variant/40">Comments</h4>
-                      <div className="flex gap-4">
-                        <div className="w-10 h-10 rounded-xl bg-primary-container shrink-0" />
-                        <div className="flex-1 group-y-2">
-                           <div className="flex items-center gap-2">
-                              <span className="text-xs font-black">Alex Rivera</span>
-                              <span className="text-[10px] text-on-surface-variant/40">2h ago</span>
-                           </div>
-                           <p className="text-sm text-on-surface-variant leading-relaxed">
-                              This is absolutely stunning! The freestyle world needed this platform.
-                           </p>
+                {/* Comments List */}
+                <div className="mt-12 space-y-8 pb-10">
+                  <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#515981]/40">Comments</h4>
+                  
+                  {comments.length === 0 ? (
+                    <div className="py-10 text-center">
+                      <p className="text-sm font-bold text-[#515981]/30">No comments yet. Be the first!</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-8">
+                      {comments.map((comment) => (
+                        <div key={comment.id} className="flex gap-4 group/comment">
+                          <img 
+                            src={comment.author.avatar} 
+                            className="w-10 h-10 rounded-xl object-cover shrink-0"
+                            alt=""
+                          />
+                          <div className="flex-1 space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-black text-[#242c51]">{comment.author.name}</span>
+                                <span className="text-[10px] font-bold text-[#515981]/30">{formatDate(comment.createdAt)}</span>
+                              </div>
+                              {user?.uid === comment.author.id && (
+                                <button 
+                                  onClick={() => handleDeleteComment(comment.id)}
+                                  className="opacity-0 group-hover/comment:opacity-100 transition-opacity text-error hover:scale-110"
+                                >
+                                  <span className="material-symbols-outlined text-sm">delete</span>
+                                </button>
+                              )}
+                            </div>
+                            <p className="text-sm text-[#515981] leading-relaxed font-medium">
+                              {comment.content}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex gap-4">
-                        <div className="w-10 h-10 rounded-xl bg-tertiary-container shrink-0" />
-                        <div className="flex-1 group-y-2">
-                           <div className="flex items-center gap-2">
-                              <span className="text-xs font-black">Sarah Chen</span>
-                              <span className="text-[10px] text-on-surface-variant/40">5h ago</span>
-                           </div>
-                           <p className="text-sm text-on-surface-variant leading-relaxed">
-                              Can't wait for the next event in Seoul! 🔥
-                           </p>
-                        </div>
-                      </div>
-                   </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Comment Input Sticky at Bottom */}
-              <div className="sticky bottom-0 p-8 pt-0 bg-surface/80 backdrop-blur-md">
-                 <div className="flex gap-4 items-center bg-surface-container-high rounded-full p-2 pl-6 shadow-xl">
-                    <input 
-                      type="text" 
-                      placeholder="Write a comment..." 
-                      className="bg-transparent border-none focus:ring-0 text-sm font-bold flex-1"
-                    />
-                    <button className="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center">
-                      <span className="material-symbols-outlined">send</span>
-                    </button>
-                 </div>
+              {/* Comment Input */}
+              <div className="p-8 bg-white border-t border-[#a3abd7]/10">
+                <div className="flex gap-4 items-center bg-[#f7f5ff] rounded-[1.5rem] p-2 pl-6 focus-within:ring-2 focus-within:ring-primary transition-all">
+                  <input 
+                    type="text" 
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
+                    placeholder="Write a premium comment..." 
+                    disabled={isSubmitting}
+                    className="bg-transparent border-none focus:ring-0 text-sm font-bold flex-1 text-[#242c51] placeholder:text-slate-300"
+                  />
+                  <button 
+                    onClick={handleAddComment}
+                    disabled={isSubmitting || !newComment.trim()}
+                    className="w-10 h-10 rounded-xl bg-primary text-on-primary flex items-center justify-center shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
+                  >
+                    <span className="material-symbols-outlined text-lg">send</span>
+                  </button>
+                </div>
               </div>
             </div>
           </motion.div>

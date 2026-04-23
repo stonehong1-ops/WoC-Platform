@@ -6,17 +6,59 @@ import { Group } from "@/types/group";
 import GroupMembershipEditor from "./GroupMembershipEditor";
 import GroupBoardEditor from "./GroupBoardEditor";
 import GroupRoleEditor from "./GroupRoleEditor";
+import GroupHomeConfig from "./GroupHomeConfig";
+import GroupGalleryEditor from "./GroupGalleryEditor";
+import GroupBasicEditor from "./GroupBasicEditor";
+import GroupContactEditor from "./GroupContactEditor";
+import { useSearchParams } from "next/navigation";
 
 const GroupSettings = ({ group }: { group: Group }) => {
-  const [activePopup, setActivePopup] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const [activePopup, setActivePopup] = useState<string | null>(searchParams.get("popup"));
+
+  React.useEffect(() => {
+    const popup = searchParams.get("popup");
+    if (popup) {
+      setActivePopup(popup);
+    }
+  }, [searchParams]);
+
+  React.useEffect(() => {
+    const handlePopState = () => {
+      if (activePopup) {
+        setActivePopup(null);
+        // Prevent browser from navigating back
+        window.history.pushState(null, "", window.location.href);
+      }
+    };
+
+    if (activePopup) {
+      window.history.pushState(null, "", window.location.href);
+      window.addEventListener("popstate", handlePopState);
+    }
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [activePopup]);
 
   const settingsSteps = [
     {
+      id: "profile",
+      icon: "badge",
+      status: "CORE",
+      statusColor: "bg-blue-100 text-blue-700",
+      title: "1. Profile & Branding",
+      desc: "Set your logo, cover, and group identity.",
+      accent: "border-blue-100 group-hover:border-blue-200",
+      iconBg: "bg-blue-50 text-blue-600",
+    },
+    {
       id: "membership",
       icon: "security",
-      status: "COMPLETED",
+      status: "CORE",
       statusColor: "bg-emerald-100 text-emerald-700",
-      title: "1. Membership Policy",
+      title: "2. Membership Policy",
       desc: "Define join strategies (Open, Approval, or Invite-only) for your group.",
       accent: "border-emerald-100 group-hover:border-emerald-200",
       iconBg: "bg-emerald-50 text-emerald-600",
@@ -24,22 +66,32 @@ const GroupSettings = ({ group }: { group: Group }) => {
     {
       id: "boards",
       icon: "dashboard_customize",
-      status: "NEEDS EDIT",
+      status: "CORE",
       statusColor: "bg-orange-100 text-orange-700",
-      title: "2. Board Settings",
+      title: "3. Board Settings",
       desc: "Manage your boards. Create up to 10 boards including mandatory notices.",
       accent: "border-orange-100 group-hover:border-orange-200",
       iconBg: "bg-orange-50 text-orange-600",
     },
     {
-      id: "roles",
-      icon: "group_add",
-      status: "COMPLETED",
-      statusColor: "bg-emerald-100 text-emerald-700",
-      title: "3. Roles & Staff",
-      desc: "Define member roles and granular staff permissions.",
-      accent: "border-emerald-100 group-hover:border-emerald-200",
-      iconBg: "bg-emerald-50 text-emerald-600",
+      id: "gallery",
+      icon: "grid_view",
+      status: "CORE",
+      statusColor: "bg-purple-100 text-purple-700",
+      title: "4. Gallery Setting",
+      desc: "Manage your photos and videos collections.",
+      accent: "border-purple-100 group-hover:border-purple-200",
+      iconBg: "bg-purple-50 text-purple-600",
+    },
+    {
+      id: "contact",
+      icon: "mail",
+      status: "CORE",
+      statusColor: "bg-rose-100 text-rose-700",
+      title: "5. Contact Setting",
+      desc: "Configure how members can reach you and see location info.",
+      accent: "border-rose-100 group-hover:border-rose-200",
+      iconBg: "bg-rose-50 text-rose-600",
     },
   ];
 
@@ -48,7 +100,7 @@ const GroupSettings = ({ group }: { group: Group }) => {
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md flex justify-between items-center px-6 py-4 w-full border-b border-[#F0F2F9]">
         <div className="flex items-center gap-4">
-          <h1 className="font-headline font-bold tracking-tight text-[#242c51] text-xl">Group Setting</h1>
+          <h1 className="font-headline font-semibold tracking-tight text-[#242c51] text-lg">Group Settings</h1>
         </div>
         <div className="flex items-center gap-3">
           <button className="hidden md:flex items-center gap-2 px-6 py-2 rounded-full bg-white text-[#242c51] font-bold text-sm transition-all active:scale-95 border border-gray-100 shadow-sm">
@@ -72,15 +124,15 @@ const GroupSettings = ({ group }: { group: Group }) => {
           {/* Progress Indicator */}
           <div className="bg-white p-6 rounded-[2rem] shadow-xl shadow-blue-900/5 border border-gray-100 flex-shrink-0 min-w-[240px]">
             <div className="flex items-center gap-4 mb-3">
-              <span className="text-3xl font-black text-[#3B82F6] font-headline">66%</span>
+              <span className="text-3xl font-black text-[#3B82F6] font-headline">0%</span>
               <div className="flex-1 h-3 bg-gray-50 rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-gradient-to-r from-[#3B82F6] to-[#60A5FA] transition-all duration-1000" 
-                  style={{ width: '66.6%' }}
+                  style={{ width: '0%' }}
                 ></div>
               </div>
             </div>
-            <p className="text-[10px] font-bold text-[#515981]/60 uppercase tracking-[0.1em]">2 of 3 steps completed</p>
+            <p className="text-[10px] font-bold text-[#515981]/60 uppercase tracking-[0.1em]">0 of 5 steps completed</p>
           </div>
         </div>
 
@@ -141,14 +193,20 @@ const GroupSettings = ({ group }: { group: Group }) => {
 
       {/* Editor Overlays */}
       <AnimatePresence>
+        {activePopup === "profile" && (
+          <GroupBasicEditor group={group} onClose={() => setActivePopup(null)} />
+        )}
         {activePopup === "membership" && (
-          <GroupMembershipEditor onClose={() => setActivePopup(null)} />
+          <GroupMembershipEditor group={group} onClose={() => setActivePopup(null)} />
         )}
         {activePopup === "boards" && (
-          <GroupBoardEditor onClose={() => setActivePopup(null)} />
+          <GroupBoardEditor group={group} onClose={() => setActivePopup(null)} />
         )}
-        {activePopup === "roles" && (
-          <GroupRoleEditor onClose={() => setActivePopup(null)} />
+        {activePopup === "gallery" && (
+          <GroupGalleryEditor group={group} onClose={() => setActivePopup(null)} />
+        )}
+        {activePopup === "contact" && (
+          <GroupContactEditor group={group} isLoaded={true} onClose={() => setActivePopup(null)} />
         )}
       </AnimatePresence>
     </div>

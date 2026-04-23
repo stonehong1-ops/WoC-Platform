@@ -19,9 +19,10 @@
    - 첫 번째 숫자(X)는 사용자가 명시적으로 변경하라고 할 때만 변경한다.
    - 모든 변경 사항은 `VERSION_LOG.md`에 기록한다.
 
-5. **Design & Quality**:
-   - Premium Editorial aesthetic(Kinetic Gallery / Pure Body)을 유지한다.
-   - 시각적 탁월함(Visual Excellence)을 최우선으로 하며, 불필요한 요소를 배제한다.
+5. **Design Fidelity & Integrity (Critical)**:
+   - **절대 디자인 리팩토링 하지 않을 것**: 사용자가 제공한 디자인 구조나 CSS 클래스를 임의로 변경하거나 "최적화"하지 않는다.
+   - **HTML 수준의 픽셀 퍼펙트 유지**: 모든 디자인은 제공된 HTML 수준에서 단 하나의 픽셀도 변경하지 않고 그대로 유지한다.
+   - Premium Editorial aesthetic(Kinetic Gallery / Pure Body)을 유지하며, 시각적 탁월함(Visual Excellence)을 최우선으로 한다.
 
 6. **Firestore Lifecycle Management**:
    - Firestore와 관련된 코딩을 할 때(새 컬렉션 추가, 필드 변경 등) 반드시 보안 규칙(`firestore.rules`)과 인덱스(`firestore.indexes.json`) 작업을 병행해야 한다.

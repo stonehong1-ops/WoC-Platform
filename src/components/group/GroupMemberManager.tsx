@@ -1,297 +1,591 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Group, Member } from '@/types/group';
 import { groupService } from '@/lib/firebase/groupService';
+import { useAuth } from '@/components/providers/AuthProvider';
+import { UserProfile } from '@/types/user';
+import { db } from '@/lib/firebase/clientApp';
+import { doc, updateDoc, deleteDoc, collection, query, onSnapshot, orderBy } from 'firebase/firestore';
+import { format, formatDistanceToNow } from 'date-fns';
+import { ko } from 'date-fns/locale';
+import GroupInvitationModal from './GroupInvitationModal';
+
+interface MemberWithProfile extends Member {
+  profile?: UserProfile | null;
+  nickname?: string; // Add this to match Firestore data if present
+}
 
 const GroupMemberManager = ({ group }: { group: Group }) => {
-  const [activeSubTab, setActiveSubTab] = useState('Member');
-  const [members, setMembers] = useState<Member[]>([]);
+  const { profile: currentUserProfile } = useAuth();
+  const [activeSubTab, setActiveSubTab] = useState('All');
+  const [members, setMembers] = useState<MemberWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Pagination & Sorting State
+  const [pageSize, setPageSize] = useState(20);
+  const [sortBy, setSortBy] = useState<'joinedAt' | 'lastVisitedAt'>('joinedAt');
 
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Handle click outside to close menu
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setOpenMenuId(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Fetch all members with profiles
   useEffect(() => {
     if (!group?.id) return;
     
-    // Subscribe to members
-    const unsubscribe = groupService.subscribeMembers(group.id, (memberList) => {
-      setMembers(memberList);
+    setLoading(true);
+    // Subscribe to group members to get real-time updates of membership
+    const membersRef = collection(db, 'groups', group.id, 'members');
+    const q = query(membersRef, orderBy('joinedAt', 'desc'));
+
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+      const memberList = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Member[];
+
+      // Fetch profiles for all members
+      const membersWithProfiles = await Promise.all(memberList.map(async (member) => {
+        try {
+          const { userService } = await import('@/lib/firebase/userService');
+          const userProfile = await userService.getUserById(member.id);
+          return {
+            ...member,
+            profile: userProfile
+          };
+        } catch (error) {
+          console.error(`Failed to fetch profile for user ${member.id}:`, error);
+          return { ...member, profile: null };
+        }
+      }));
+
+      setMembers(membersWithProfiles);
+      setLoading(false);
+    }, (error) => {
+      console.error('Failed to subscribe to members:', error);
       setLoading(false);
     });
 
     return () => unsubscribe();
   }, [group?.id]);
 
-  const stats = [
-    { label: 'Total Members', value: members.length.toLocaleString(), grow: '+0%', icon: 'group', color: 'blue' },
-    { label: 'Active Now', value: '0', grow: '+0%', icon: 'bolt', color: 'amber' },
-    { label: 'New This Month', value: '0', grow: '+0%', icon: 'person_add', color: 'emerald' },
-    { label: 'Pending Approval', value: '0', grow: '+0%', icon: 'hourglass_empty', color: 'rose' }
-  ];
+  const updateUserInfo = async (userId: string, data: Partial<UserProfile>) => {
+    try {
+      // 1. Update global user profile
+      const userRef = doc(db, 'users', userId);
+      await updateDoc(userRef, data);
+      
+      // 2. Update group member subcollection if relevant fields are changed
+      if (data.role || data.nickname || data.photoURL || data.systemRole) {
+        const memberRef = doc(db, 'groups', group.id, 'members', userId);
+        const memberUpdate: any = {};
+        if (data.role) memberUpdate.role = data.role;
+        if (data.nickname) memberUpdate.nickname = data.nickname;
+        if (data.photoURL) memberUpdate.photoURL = data.photoURL;
+        
+        try {
+          await updateDoc(memberRef, memberUpdate);
+        } catch (e) {
+          console.warn("Member subcollection update failed (might not exist yet):", e);
+        }
+      }
 
-  const renderSubContent = () => {
-    switch (activeSubTab) {
-      case 'Stats':
-        return (
-          <div className="group-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {/* Stats Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {stats.map((stat, i) => (
-                <div key={i} className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200/50 group hover:shadow-md transition-all duration-300">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className={`p-3 rounded-2xl bg-${stat.color}-50 text-${stat.color}-600 group-hover:scale-110 transition-transform`}>
-                      <span className="material-symbols-outlined">{stat.icon}</span>
-                    </div>
-                    <span className={`text-xs font-bold px-2 py-1 rounded-lg ${stat.grow.startsWith('+') ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
-                      {stat.grow}
-                    </span>
-                  </div>
-                  <h4 className="text-slate-500 text-sm font-medium mb-1">{stat.label}</h4>
-                  <p className="text-2xl font-black text-slate-900">{stat.value}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      case 'Owner':
-        return (
-          <div className="group-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {/* Owner List Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Owner Card 1 */}
-              <div className="bg-white p-5 rounded-3xl border border-slate-200/50 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
-                <div className="relative flex-shrink-0">
-                  <img alt="Alexander Wright" className="w-14 h-14 rounded-full object-cover border-2 border-[#6e9fff]" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD4epRAucAyV46XUjwL9l9lCxwCRDTMNl4cmsK5MNMnVjpun6h8SrDIL8Y5ukX5UolqpJ8jeYrPZ72guOJMN78Vx4XIudze_tiOJ3EweHX5ePNo-9WeCUEaTAiFqZd2PRDptqz1Xyj1CbMhmQPDD9jVfd_-1R0w3vOVNZe_cHAgF4T5_qjDQzOwXhX9OjqY5wgKn6RlcvQL5A6B_WRwqMWLvfkXpl_XHxsC4iR4zS9Zdl7-VP8fdq89DVRTw3XYJ1tHh6th0t3H1Aw"/>
-                  <div className="absolute -bottom-1 -right-1 bg-[#0057bd] text-white p-1 rounded-full border-2 border-white">
-                    <span className="material-symbols-outlined text-[12px] block" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
-                  </div>
-                </div>
-                <div className="flex-grow min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <h3 className="font-headline font-bold text-[#242c51] truncate">Alexander Wright</h3>
-                    <span className="px-2 py-0.5 bg-[#6e9fff]/20 text-[#0057bd] text-[10px] font-extrabold uppercase tracking-wider rounded-full flex-shrink-0">
-                      Primary Owner
-                    </span>
-                  </div>
-                  <p className="text-sm text-[#515981] truncate">alex.wright@venture-systems.com</p>
-                </div>
-                <button className="p-2 text-[#515981] hover:bg-slate-50 rounded-lg transition-colors">
-                  <span className="material-symbols-outlined">more_vert</span>
-                </button>
-              </div>
-
-              {/* Owner Card 2 */}
-              <div className="bg-white p-5 rounded-3xl border border-slate-200/50 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
-                <div className="relative flex-shrink-0">
-                  <img alt="Elena Rodriguez" className="w-14 h-14 rounded-full object-cover border-2 border-slate-200" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC37XjhuYUKfcgnXgXVfULPsxIMG_KgfqMedEwQCU6y-Y1JICvG0QTar1zMFozdAoGvVDPb9HjqogMb2U_vsmGWbcJkzcZEZ3f1TBSyAHqnoRv2QaiOTGvyQUWKxcqYAIyJSrlBiIpxr_cMgI_OOhV0pUX37ZkfsPWlh-WCTCgPCG0nAHnvuDgPcVG4o3lk_XjUQZJhx2ICDUqQYk1k1M_AxVvzev9G_JvXkXJXYugNKPFAr8opA8rREYqL0vrJuaQZrI5shwHP7RU"/>
-                </div>
-                <div className="flex-grow min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <h3 className="font-headline font-bold text-[#242c51] truncate">Elena Rodriguez</h3>
-                  </div>
-                  <p className="text-sm text-[#515981] truncate">e.rodriguez@globalcorp.io</p>
-                </div>
-                <button className="p-2 text-[#515981] hover:bg-slate-50 rounded-lg transition-colors">
-                  <span className="material-symbols-outlined">more_vert</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Functional Tip */}
-            <div className="pt-4 border-t border-slate-200/50">
-              <div className="flex items-center gap-3 p-4 bg-[#6e9fff]/10 rounded-2xl text-[#002150]/80 text-sm">
-                <span className="material-symbols-outlined text-[20px]">info</span>
-                <p>Owners have full administrative access including billing and user role assignments. Maximum 3 owners per workspace.</p>
-              </div>
-            </div>
-          </div>
-        );
-      case 'Staff':
-        return (
-          <div className="group-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {/* Staff List Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[
-                { name: 'Sarah Jenkins', email: 's.jenkins@system.com', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDRozEQMrmM5eIibmqjie2T-4Sy_fSmJo8xFHxDSkbQ0Ntf8T6CRUzffaTHpAzBdBt2xJlIujvL_ihXnFM2DkRbYOS8YWZUMYK5lEHMVAfnvczw8jdhYqGCrNKXy7zAbv331FxJmhMMNhWMrOUkxaMF8IfZec-ctKlMYdRtoCebPTS4m1RQRymy1aHH1fknOUsxfckf1W4g07us1dKBXzAM4ulErq3dlx8z64xrCshcuGTh8uysvGI8GB_hM1-_A2-FTaTwMgerFDs', permissions: [true, true, false] },
-                { name: 'Marcus Chen', email: 'm.chen@system.com', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDQhOMg4knSuVsBnji17t-jCVTEzjRiGHWbFD6CGVnPfQFiCg5IELHWJSwTe7XIvc4Yg78wvFwQ8Tj_acM_kknoGMs6y2FO2SYn4pZbVUZr-Y7YoFx0C6XISrQ9svF-eJ9frUYcsW3JlDuErXzKssS2lHMJqHnX15Dqfu99_xODP-Z7BP8Ni99JsV3FL5L34PTrsDNP8-e24E-luTq1BTLlfmZrmDeSClWqhJ1O_mbzqyTAljQu7WU9kA4x4bYSOLtw2fgPBiKCHWE', permissions: [false, true, true] },
-                { name: 'David Miller', email: 'd.miller@system.com', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBGo86tCQu7pcoAsTFgiqGHKI69KbgMxyGLxvwbxCAORF99BxL2VK9xMdB1vbikyxgL2bYhQ9dHnw1lV24X-VSlpCJTtF2rw9HrGWxckPKQ_h2z9gtG5FnPFwQZBbqsTlN4Ebv72Avc_NSRNVQf853UccPIfBnqKpo5n4uKC2kDeuZGAtFvRKQFGSt49X9FJF-VkmeoTCVuzWYplpL1yy8vwIkGAdXA5sWU6KJdmjEz-UvNo3aNFon64l9tqwmYPvr-QkIwSB3VEVU', permissions: [true, false, true] },
-                { name: 'Elena Rodriguez', email: 'e.rodriguez@system.com', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAZ94ka61keSDBaeWt0THvoCmoEt1b8vB0rgVuiPk4eAvZAcHR4IXdEtJkF7l1GYRfWl_Wg6EzfW3_FZQed28HQF_P-hZRsEVk61LKAixmVRPOhewedawNghdTb8DU3lY1LkZQOMZiXXQMo-Ee3K-Cm9nVqk_JFZNytj-bkdIlcEffO9s-GLuO3rf0uKJFpKbQIK26v252RfZAz6FmCIxKzxoOE8zJRlem1EmFbOTNx8yA_TWYiL1JvzrchUOLs9u5X0SwiZbQWvPs', permissions: [true, true, true] },
-                { name: 'James Wilson', email: 'j.wilson@system.com', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCrn3Z0xn6_UlSmc0h2a8NxzKU0euHOSyQORk0RD6LKSlBB7iyv6-E83c5_Z_DTa4Rfr5GLpJygEeCLp7ceScMAa1ZvRW5p6VmI1h1F7ZZ1bt-R34zDlkxibX3JV4dlAuDho8JLvxZJM6YnrvTbVPQRJzBaCoqRIrp54D50VQEoEWCZl39mVrORItHAcncM60YpQZxtK9bEPQ6sibaGKweb3qwZmZcxNlt1cVemJzQgDcMc1Ycam1YXeVS8gbvtt0gfQZGjj3TG-EM', permissions: [false, false, false] }
-              ].map((staff, i) => (
-                <div key={i} className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200/50 flex flex-col gap-6 hover:shadow-md transition-all duration-300 group">
-                  <div className="flex items-center gap-4">
-                    <img alt={staff.name} className="w-14 h-14 rounded-full object-cover border-2 border-slate-50 group-hover:border-[#6e9fff] transition-colors" src={staff.img} />
-                    <div className="min-w-0">
-                      <h3 className="font-headline font-bold text-[#242c51] truncate">{staff.name}</h3>
-                      <p className="text-sm text-[#515981] truncate">{staff.email}</p>
-                    </div>
-                  </div>
-                  <div className="group-y-4 pt-4 border-t border-slate-50">
-                    {[
-                      { label: 'Board Access', active: staff.permissions[0] },
-                      { label: 'Schedule Management', active: staff.permissions[1] },
-                      { label: 'Approval Authority', active: staff.permissions[2] }
-                    ].map((perm, j) => (
-                      <div key={j} className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-[#515981]">{perm.label}</span>
-                        <button 
-                          className={`w-10 h-5 rounded-full relative transition-colors duration-300 ${perm.active ? "bg-[#0057bd]" : "bg-slate-200"}`}
-                        >
-                          <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-all duration-300 ${perm.active ? "right-0.5" : "left-0.5"}`}></div>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-              
-              {/* Add New Staff Placeholder */}
-              <div className="border-2 border-dashed border-slate-200 rounded-3xl p-6 flex flex-col items-center justify-center gap-3 text-slate-400 hover:border-[#0057bd] hover:text-[#0057bd] hover:bg-blue-50/50 transition-all cursor-pointer group">
-                <span className="material-symbols-outlined text-4xl group-hover:scale-110 transition-transform">person_add</span>
-                <span className="font-headline font-bold text-sm">Add New Staff Member</span>
-              </div>
-            </div>
-          </div>
-        );
-      case 'Member':
-        return (
-          <div className="group-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {/* Search and Filters Area */}
-            <div className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-200/50 group-y-6">
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                <div>
-                  <h2 className="text-xl font-extrabold tracking-tight text-[#242c51] font-headline">Member Directory</h2>
-                  <p className="text-sm text-[#515981] mt-1">Manage and monitor active group members.</p>
-                </div>
-                <div className="relative flex-grow max-w-md">
-                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">search</span>
-                  <input 
-                    type="text" 
-                    placeholder="Search members by name, email or ID..." 
-                    className="w-full pl-11 pr-4 py-3 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-[#0057bd]/20 transition-all"
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-100">
-                <div className="flex flex-wrap items-center gap-3">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Sort By</span>
-                  {[
-                    { icon: 'calendar_today', label: 'Recent Joined' },
-                    { icon: 'history', label: 'Recent Visit' },
-                    { icon: 'analytics', label: 'Engagement' }
-                  ].map((filter, i) => (
-                    <button key={i} className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-[#515981] hover:border-[#0057bd] hover:text-[#0057bd] transition-all shadow-sm">
-                      <span className="material-symbols-outlined text-[18px]">{filter.icon}</span>
-                      {filter.label}
-                    </button>
-                  ))}
-                </div>
-                <button className="flex items-center gap-2 px-5 py-2 bg-slate-50 text-[#515981] font-bold rounded-xl text-xs hover:bg-slate-100 transition-colors">
-                  <span className="material-symbols-outlined text-[18px]">tune</span>
-                  Advanced Filters
-                </button>
-              </div>
-            </div>
-
-            {/* Member Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {loading ? (
-                <div className="col-span-full py-20 text-center text-slate-400 font-medium">
-                  멤버 목록을 불러오는 중...
-                </div>
-              ) : members.length === 0 ? (
-                <div className="col-span-full py-20 text-center text-slate-400 font-medium">
-                  등록된 멤버가 없습니다.
-                </div>
-              ) : members.map((member, i) => (
-                <div key={member.id} className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200/50 hover:shadow-md transition-all duration-300 group">
-                  <div className="flex items-start justify-between mb-6">
-                    <div className="flex items-center gap-4">
-                      <div className="relative">
-                        <img 
-                          className="w-14 h-14 rounded-full object-cover border-2 border-slate-50 group-hover:border-[#6e9fff] transition-colors" 
-                          src={member.avatar || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
-                          alt={member.name} 
-                        />
-                        <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white bg-emerald-500"></div>
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-[#242c51] leading-tight font-headline">{member.name}</h3>
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider mt-1.5 bg-blue-50 text-blue-600">
-                          Member
-                        </span>
-                      </div>
-                    </div>
-                    <button className="text-slate-400 hover:text-[#0057bd] transition-colors">
-                      <span className="material-symbols-outlined">more_vert</span>
-                    </button>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-y-4 pt-4 border-t border-slate-50">
-                    <div className="col-span-2">
-                      <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">User ID</p>
-                      <p className="text-xs font-mono text-slate-500 truncate">{member.id}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Pagination / Load More */}
-            <div className="flex justify-center pt-4">
-              <button className="flex items-center gap-2 px-8 py-3 bg-white border border-slate-200 text-[#0057bd] font-bold rounded-2xl shadow-sm hover:shadow-md hover:border-[#0057bd] transition-all active:scale-95 group">
-                Load More Members
-                <span className="material-symbols-outlined group-hover:translate-y-0.5 transition-transform">expand_more</span>
-              </button>
-            </div>
-          </div>
-        );
-      default:
-        return null;
+      // Local state update for immediate UI feedback
+      setMembers(prev => prev.map(m => {
+        if (m.id === userId) {
+          return {
+            ...m,
+            role: data.role || m.role,
+            name: data.nickname || m.name,
+            profile: m.profile ? { ...m.profile, ...data } : { id: userId, nickname: m.name, ...data } as UserProfile
+          };
+        }
+        return m;
+      }));
+    } catch (error) {
+      console.error("Error updating user:", error);
+      alert("변경 중 오류가 발생했습니다.");
     }
   };
 
+  const deleteMember = async (userId: string) => {
+    if (!window.confirm("정말로 이 멤버를 커뮤니티에서 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) {
+      return;
+    }
+
+    try {
+      // 1. Delete from group members subcollection
+      const memberRef = doc(db, 'groups', group.id, 'members', userId);
+      await deleteDoc(memberRef);
+
+      // Local state update
+      setMembers(prev => prev.filter(m => m.id !== userId));
+      alert("멤버가 삭제되었습니다.");
+    } catch (error) {
+      console.error("Error deleting member:", error);
+      alert("삭제 중 오류가 발생했습니다.");
+    }
+  };
+
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    e.currentTarget.src = '/anonymous-user.png';
+  };
+
+  const getMillis = (date: any) => {
+    if (!date) return 0;
+    if (typeof date === 'number') return date;
+    if (typeof date.toMillis === 'function') return date.toMillis();
+    if (typeof date.toDate === 'function') return date.toDate().getTime();
+    return 0;
+  };
+
+  const filteredMembers = members.filter(member => {
+    const profile = member.profile;
+    const nickname = profile?.nickname || member.name || member.nickname || '';
+    const email = profile?.email || '';
+    
+    const nameMatch = nickname.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                      email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      member.id.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    if (!nameMatch) return false;
+
+    // Filter by subtab based on Group System Role
+    const isAdmin = member.role === 'owner' || member.id === group.ownerId || profile?.systemRole === 'admin' || profile?.isAdmin;
+    const isStaff = profile?.isStaff || profile?.systemRole === 'staff' || 
+                    profile?.isInstructor || profile?.isSeller || 
+                    profile?.isStayHost || profile?.isServiceProvider;
+    
+    if (activeSubTab === 'Admin') return isAdmin;
+    if (activeSubTab === 'Staff') return isStaff && !isAdmin;
+    if (activeSubTab === 'Member') return !isAdmin && !isStaff;
+    if (activeSubTab === 'All') return true;
+    
+    return true;
+  }).sort((a, b) => {
+    if (sortBy === 'joinedAt') {
+      const dateA = getMillis(a.joinedAt);
+      const dateB = getMillis(b.joinedAt);
+      return dateB - dateA;
+    } else {
+      const dateA = getMillis(a.profile?.updatedAt || a.profile?.createdAt);
+      const dateB = getMillis(b.profile?.updatedAt || b.profile?.createdAt);
+      return dateB - dateA;
+    }
+  });
+
+  const currentItems = filteredMembers.slice(0, pageSize);
+
+  const loadMore = () => {
+    setPageSize(prev => prev + 20);
+  };
+
+  const renderMemberCard = (member: MemberWithProfile) => {
+    // Nickname logic: Ensure English primary
+    const isEnglish = (str: string) => /^[a-zA-Z0-9\s._-]+$/.test(str);
+    
+    let primaryNickname = member.profile?.nickname || member.name || member.nickname || 'Unknown';
+    let secondaryNickname = member.profile?.nativeNickname || '';
+    
+    // If primary is not English, move it to secondary and make a placeholder primary
+    if (primaryNickname && !isEnglish(primaryNickname)) {
+      if (!secondaryNickname) secondaryNickname = primaryNickname;
+      // Use part of ID as temporary English nickname if not already English
+      primaryNickname = member.id.substring(0, 8); 
+    }
+
+    const user = {
+      id: member.id,
+      nickname: primaryNickname,
+      nativeNickname: secondaryNickname,
+      photoURL: member.profile?.photoURL || member.photoURL || member.avatar,
+      role: member.profile?.role || member.role,
+      isAdmin: member.profile?.isAdmin || member.profile?.systemRole === 'admin' || member.role === 'owner' || member.id === group.ownerId,
+      isStaff: member.profile?.isStaff || member.profile?.systemRole === 'staff',
+      isInstructor: member.profile?.isInstructor,
+      isSeller: member.profile?.isSeller,
+      isStayHost: member.profile?.isStayHost,
+      isServiceProvider: member.profile?.isServiceProvider,
+    };
+
+    const isLeader = user.role?.toLowerCase() === 'leader';
+    const isFollower = user.role?.toLowerCase() === 'follower';
+
+    return (
+      <div key={member.id} className="bg-white rounded-[4px] p-5 shadow-[0px_4px_16px_rgba(22,29,30,0.03)] border-b-4 border-[#004493]/10 relative animate-in fade-in slide-in-from-bottom-2 duration-300">
+        <div className="flex justify-between items-start mb-6">
+          <div className="flex items-center gap-4">
+            <div className="h-12 w-12 rounded-[4px] overflow-hidden bg-slate-100 relative border border-slate-200/50">
+              {user.photoURL ? (
+                <img 
+                  className="h-full w-full object-cover transition-opacity duration-300" 
+                  src={user.photoURL} 
+                  alt={user.nickname}
+                  onError={handleImageError}
+                />
+              ) : (
+                <div className="h-full w-full flex items-center justify-center bg-[#dde4e5] text-[#727784]">
+                  <span className="material-symbols-outlined text-2xl">person</span>
+                </div>
+              )}
+              {user.role && (
+                <div className={`absolute bottom-0 right-0 px-1 text-[8px] font-black uppercase tracking-tighter shadow-sm ${isLeader ? 'bg-[#004493] text-white' : isFollower ? 'bg-[#7c2e00] text-white' : 'bg-slate-500 text-white'}`}>
+                  {user.role[0]}
+                </div>
+              )}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-[#2D3435] font-bold text-lg leading-tight truncate max-w-[150px]">{user.nickname}</h3>
+                {user.isAdmin && <span className="bg-[#ff3b30] text-white text-[9px] font-bold px-1.5 py-0.5 rounded-[2px] uppercase tracking-tighter shadow-sm">Admin</span>}
+                {user.isStaff && !user.isAdmin && <span className="bg-[#004493] text-white text-[9px] font-bold px-1.5 py-0.5 rounded-[2px] uppercase tracking-tighter shadow-sm">Staff</span>}
+              </div>
+              <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                {user.nativeNickname && <span className="text-[11px] text-[#727784] font-medium mr-1">{user.nativeNickname}</span>}
+                {user.isInstructor && <span className="bg-[#004493]/10 text-[#004493] text-[8px] font-extrabold tracking-widest px-1.5 py-0.5 rounded-[1px] uppercase">Instructor</span>}
+                {user.isSeller && <span className="bg-[#34c759]/10 text-[#34c759] text-[8px] font-extrabold tracking-widest px-1.5 py-0.5 rounded-[1px] uppercase">Seller</span>}
+                {user.isStayHost && <span className="bg-[#ff9500]/10 text-[#ff9500] text-[8px] font-extrabold tracking-widest px-1.5 py-0.5 rounded-[1px] uppercase">Stay Host</span>}
+                {user.isServiceProvider && <span className="bg-[#5856d6]/10 text-[#5856d6] text-[8px] font-extrabold tracking-widest px-1.5 py-0.5 rounded-[1px] uppercase">Service Provider</span>}
+              </div>
+            </div>
+          </div>
+          
+          {/* More Menu */}
+          <div className="relative">
+            <button 
+              onClick={() => setOpenMenuId(openMenuId === member.id ? null : member.id)}
+              className="text-[#727784] hover:text-[#004493] transition-colors p-1 rounded-full hover:bg-slate-100"
+            >
+              <span className="material-symbols-outlined">more_vert</span>
+            </button>
+            
+            {openMenuId === member.id && (
+              <div 
+                ref={menuRef}
+                className="absolute right-0 top-8 w-56 bg-white rounded-[4px] shadow-2xl border border-[#e8eff0] z-[100] py-2 no-scrollbar max-h-[400px] overflow-y-auto"
+              >
+                {/* Section: Dance Role */}
+                <div className="px-4 py-2 border-b border-[#f4fbfb]">
+                  <p className="text-[10px] font-bold text-[#727784] tracking-widest uppercase mb-2">Dance Role</p>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => updateUserInfo(member.id, { role: 'leader' })}
+                      className={`flex-1 py-1.5 text-[11px] font-bold rounded-[2px] border transition-all ${isLeader ? 'bg-[#004493] text-white border-[#004493]' : 'bg-white text-[#424753] border-[#e2e9ea] hover:border-[#004493]'}`}
+                    >Leader</button>
+                    <button 
+                      onClick={() => updateUserInfo(member.id, { role: 'follower' })}
+                      className={`flex-1 py-1.5 text-[11px] font-bold rounded-[2px] border transition-all ${isFollower ? 'bg-[#7c2e00] text-white border-[#7c2e00]' : 'bg-white text-[#424753] border-[#e2e9ea] hover:border-[#7c2e00]'}`}
+                    >Follower</button>
+                  </div>
+                </div>
+
+                {/* Section: System Role */}
+                <div className="px-4 py-2 border-b border-[#f4fbfb]">
+                  <p className="text-[10px] font-bold text-[#727784] tracking-widest uppercase mb-2">System Role</p>
+                  <button 
+                    onClick={() => updateUserInfo(member.id, { systemRole: 'admin', isAdmin: true, isStaff: false })}
+                    className={`w-full flex items-center justify-between py-2 text-[13px] font-medium transition-colors ${user.isAdmin ? 'text-[#ff3b30] font-bold' : 'text-[#2D3435] hover:text-[#ff3b30]'}`}
+                  >
+                    Admin
+                    {user.isAdmin && <span className="material-symbols-outlined text-[#ff3b30] text-lg">verified</span>}
+                  </button>
+                  <button 
+                    onClick={() => updateUserInfo(member.id, { systemRole: 'staff', isStaff: true, isAdmin: false })}
+                    className={`w-full flex items-center justify-between py-2 text-[13px] font-medium transition-colors ${user.isStaff && !user.isAdmin ? 'text-[#004493] font-bold' : 'text-[#2D3435] hover:text-[#004493]'}`}
+                  >
+                    Staff
+                    {user.isStaff && !user.isAdmin && <span className="material-symbols-outlined text-[#004493] text-lg">verified</span>}
+                  </button>
+                  <button 
+                    onClick={() => updateUserInfo(member.id, { systemRole: 'member', isStaff: false, isAdmin: false })}
+                    className={`w-full flex items-center justify-between py-2 text-[13px] font-medium transition-colors ${!user.isStaff && !user.isAdmin ? 'text-[#004493] font-bold' : 'text-[#2D3435] hover:text-[#004493]'}`}
+                  >
+                    Member
+                    {!user.isStaff && !user.isAdmin && <span className="material-symbols-outlined text-[#004493] text-lg">verified</span>}
+                  </button>
+                </div>
+
+                {/* Section: Staff Roles */}
+                <div className="px-4 py-2">
+                  <p className="text-[10px] font-bold text-[#727784] tracking-widest uppercase mb-2">Service Staff Roles</p>
+                  <button 
+                    onClick={() => updateUserInfo(member.id, { isInstructor: !user.isInstructor })}
+                    className={`w-full flex items-center justify-between py-2 text-[13px] font-medium transition-colors ${user.isInstructor ? 'text-[#004493] font-bold' : 'text-[#2D3435] hover:text-[#004493]'}`}
+                  >
+                    Instructor
+                    {user.isInstructor && <span className="material-symbols-outlined text-[#004493] text-lg">check_circle</span>}
+                  </button>
+                  <button 
+                    onClick={() => updateUserInfo(member.id, { isSeller: !user.isSeller })}
+                    className={`w-full flex items-center justify-between py-2 text-[13px] font-medium transition-colors ${user.isSeller ? 'text-[#004493] font-bold' : 'text-[#2D3435] hover:text-[#004493]'}`}
+                  >
+                    Seller
+                    {user.isSeller && <span className="material-symbols-outlined text-[#004493] text-lg">check_circle</span>}
+                  </button>
+                  <button 
+                    onClick={() => updateUserInfo(member.id, { isStayHost: !user.isStayHost })}
+                    className={`w-full flex items-center justify-between py-2 text-[13px] font-medium transition-colors ${user.isStayHost ? 'text-[#004493] font-bold' : 'text-[#2D3435] hover:text-[#004493]'}`}
+                  >
+                    Stay Host
+                    {user.isStayHost && <span className="material-symbols-outlined text-[#004493] text-lg">check_circle</span>}
+                  </button>
+                  <button 
+                    onClick={() => updateUserInfo(member.id, { isServiceProvider: !user.isServiceProvider })}
+                    className={`w-full flex items-center justify-between py-2 text-[13px] font-medium transition-colors ${user.isServiceProvider ? 'text-[#004493] font-bold' : 'text-[#2D3435] hover:text-[#004493]'}`}
+                  >
+                    Service Provider
+                    {user.isServiceProvider && <span className="material-symbols-outlined text-[#004493] text-lg">check_circle</span>}
+                  </button>
+                </div>
+
+                {/* Section: Delete */}
+                <div className="px-4 py-2 border-t border-[#f4fbfb] bg-red-50/30">
+                  <button 
+                    onClick={() => deleteMember(member.id)}
+                    className="w-full flex items-center justify-between py-2 text-[13px] font-bold text-[#ff3b30] hover:text-[#d32f2f] transition-colors"
+                  >
+                    Delete Member
+                    <span className="material-symbols-outlined text-lg">delete_forever</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-y-4 gap-x-4 pt-4 border-t border-[#f4fbfb]">
+          <div className="space-y-1">
+            <p className="font-label text-[10px] font-bold text-[#727784] tracking-widest uppercase">Nickname</p>
+            <div className="flex flex-col overflow-hidden">
+              <span className="font-semibold text-[#2D3435] truncate">{user.nickname}</span>
+              {user.nativeNickname && <span className="text-[10px] text-[#c2c6d5] font-medium truncate">{user.nativeNickname}</span>}
+            </div>
+          </div>
+          <div className="space-y-1">
+            <p className="font-label text-[10px] font-bold text-[#727784] tracking-widest uppercase">Dance Role</p>
+            <p className={`text-sm font-semibold capitalize ${isLeader ? 'text-[#004493]' : isFollower ? 'text-[#7c2e00]' : 'text-[#2D3435]'}`}>
+              {user.role || 'Not Set'}
+            </p>
+          </div>
+          <div className="space-y-1">
+            <p className="font-label text-[10px] font-bold text-[#727784] tracking-widest uppercase">Joined Date</p>
+            <p className="text-sm font-medium text-[#2D3435]">
+              {member.joinedAt ? format(getMillis(member.joinedAt), 'yyyy.MM.dd') : '-'}
+            </p>
+          </div>
+          <div className="space-y-1 overflow-hidden">
+            <p className="font-label text-[10px] font-bold text-[#727784] tracking-widest uppercase">Member ID</p>
+            <p className="text-xs font-medium text-[#c2c6d5] truncate">
+              {member.id.length > 15 ? member.id.substring(0, 15) + '...' : member.id}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderSubContent = () => {
+    switch (activeSubTab) {
+      case 'All':
+      case 'Member':
+      case 'Staff':
+      case 'Admin':
+        return (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Search Area */}
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="relative group flex-1">
+                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#727784]">search</span>
+                <input 
+                  className="w-full bg-[#dde4e5] border-none rounded-[4px] py-4 pl-12 pr-4 font-body text-lg placeholder:text-[#727784] focus:bg-white focus:ring-2 focus:ring-[#004493]/40 transition-all duration-200 shadow-sm" 
+                  placeholder="Search by name or email" 
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setPageSize(20); // Reset page size on search
+                  }}
+                />
+              </div>
+              <div className="flex items-center gap-2 bg-[#dde4e5] rounded-[4px] p-1">
+                {[
+                  { id: 'joinedAt', label: '가입일순', icon: 'calendar_today' },
+                  { id: 'lastVisitedAt', label: '방문순', icon: 'history' }
+                ].map((option) => (
+                  <button
+                    key={option.id}
+                    onClick={() => setSortBy(option.id as any)}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-[2px] text-xs font-bold transition-all ${sortBy === option.id ? 'bg-white text-[#004493] shadow-sm' : 'text-[#727784] hover:text-[#004493]'}`}
+                  >
+                    <span className="material-symbols-outlined text-[16px]">{option.icon}</span>
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Results Count */}
+            {!loading && (
+              <div className="flex items-center justify-between px-1">
+                <p className="text-[12px] font-bold text-[#727784]">
+                  SHOWING <span className="text-[#004493]">{Math.min(currentItems.length, filteredMembers.length)}</span> OF <span className="text-[#004493]">{filteredMembers.length}</span> {activeSubTab.toUpperCase()}S
+                </p>
+                {searchQuery && (
+                  <button 
+                    onClick={() => setSearchQuery('')}
+                    className="text-[11px] font-bold text-[#004493] hover:underline"
+                  >
+                    Clear Search
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Member Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {loading ? (
+                <div className="col-span-full py-20 text-center text-[#727784] font-medium">
+                  <div className="mx-auto w-10 h-10 border-4 border-[#004493]/10 border-t-[#004493] rounded-full animate-spin mb-4"></div>
+                  멤버 목록을 불러오는 중...
+                </div>
+              ) : currentItems.length === 0 ? (
+                <div className="col-span-full py-20 text-center text-[#727784] font-medium bg-white rounded-[4px] border-b-4 border-slate-100">
+                  <span className="material-symbols-outlined text-6xl mb-4 block opacity-50">group_off</span>
+                  검색 결과가 없습니다.
+                </div>
+              ) : (
+                <>
+                  {currentItems.map(member => renderMemberCard(member))}
+                </>
+              )}
+            </div>
+
+            {/* Load More Section */}
+            {!loading && filteredMembers.length > pageSize && (
+              <div className="flex flex-col items-center gap-6 pt-8 pb-12">
+                <button 
+                  onClick={loadMore}
+                  className="w-full md:w-auto px-12 py-4 bg-white border-2 border-[#004493] text-[#004493] rounded-[4px] font-black text-sm uppercase tracking-widest hover:bg-[#004493] hover:text-white transition-all duration-300 shadow-lg shadow-blue-900/5 active:scale-95"
+                >
+                  Load More ({filteredMembers.length - pageSize} remaining)
+                </button>
+                
+                <div className="flex items-center gap-2">
+                  <div className="h-[1px] w-12 bg-slate-200"></div>
+                  <span className="text-[10px] font-bold text-[#a3abd7] uppercase tracking-widest">End of visible list</span>
+                  <div className="h-[1px] w-12 bg-slate-200"></div>
+                </div>
+              </div>
+            )}
+
+            {!loading && filteredMembers.length <= pageSize && filteredMembers.length > 0 && (
+              <div className="flex items-center justify-center py-12">
+                <div className="flex items-center gap-3 text-[#a3abd7]">
+                  <span className="material-symbols-outlined text-sm">check_circle</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest">You've reached the end of the list</span>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      case 'Stats':
+        const adminCount = members.filter(m => m.role === 'owner' || m.id === group.ownerId || m.profile?.systemRole === 'admin' || m.profile?.isAdmin).length;
+        const staffCount = members.filter(m => (m.profile?.isStaff || m.profile?.systemRole === 'staff' || m.profile?.isInstructor || m.profile?.isSeller || m.profile?.isStayHost || m.profile?.isServiceProvider) && !(m.role === 'owner' || m.id === group.ownerId || m.profile?.systemRole === 'admin' || m.profile?.isAdmin)).length;
+        const memberOnlyCount = members.length - adminCount - staffCount;
+
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in duration-500">
+            {[
+              { label: 'Total Members', value: members.length.toLocaleString(), icon: 'group', color: '#004493' },
+              { label: 'Admins', value: adminCount.toLocaleString(), icon: 'admin_panel_settings', color: '#ff3b30' },
+              { label: 'Staffs', value: staffCount.toLocaleString(), icon: 'shield_person', color: '#004493' },
+              { label: 'General Members', value: memberOnlyCount.toLocaleString(), icon: 'person', color: '#727784' }
+            ].map((stat, i) => (
+              <div key={i} className="bg-white rounded-[4px] p-6 shadow-sm border-b-4 border-slate-100">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="p-2 rounded-[4px] bg-slate-50 text-slate-600">
+                    <span className="material-symbols-outlined" style={{ color: stat.color }}>{stat.icon}</span>
+                  </div>
+                </div>
+                <h4 className="text-[#727784] text-[10px] font-bold uppercase tracking-widest mb-1">{stat.label}</h4>
+                <p className="text-2xl font-black text-[#2D3435]">{stat.value}</p>
+              </div>
+            ))}
+          </div>
+        );
+      default:
+        return <div className="py-20 text-center text-slate-400">준비 중인 기능입니다.</div>;
+    }
+  };
+
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+
   return (
-    <div className="p-4 md:p-8 group-y-8 animate-in fade-in duration-500">
-      {/* Header Section with Sub-navigation and Action */}
+    <div className="p-4 md:p-8 space-y-8 bg-[#f4fbfb] min-h-screen">
+      <style jsx global>{`
+        h1, h2, h3, h4 { font-family: 'Manrope', sans-serif; }
+        body { font-family: 'Inter', sans-serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      `}</style>
+
+      {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div className="group-y-4">
-          <h1 className="text-2xl font-bold font-headline tracking-tight text-[#242c51]">Member Management</h1>
-          {/* Sub-navigation Tab Bar */}
-          <nav className="flex items-center group-x-1 bg-slate-200/30 p-1 rounded-2xl w-fit">
-            {['Stats', 'Owner', 'Staff', 'Member'].map((tab) => (
+        <div className="space-y-4">
+          <h1 className="text-2xl font-extrabold tracking-tight text-[#2D3435]">Member Management</h1>
+          <nav className="flex items-center space-x-2 overflow-x-auto no-scrollbar pb-2">
+            {['Stats', 'All', 'Admin', 'Staff', 'Member'].map((tab) => (
               <button
                 key={tab}
-                onClick={() => setActiveSubTab(tab)}
-                className={`px-5 py-2 text-sm transition-all rounded-xl ${
-                  activeSubTab === tab
-                    ? "bg-white shadow-sm text-[#0057bd] font-bold ring-1 ring-black/5"
-                    : "text-[#515981] font-medium hover:text-[#242c51]"
-                }`}
+                onClick={() => {
+                  setActiveSubTab(tab);
+                  setPageSize(20); // Reset page size on tab change
+                }}
+                className={`px-5 py-2 text-[13px] font-bold transition-all rounded-full whitespace-nowrap ${activeSubTab === tab
+                    ? "bg-[#004493] text-white shadow-md"
+                    : "bg-[#e2e9ea] text-[#424753] hover:bg-[#dde4e5]"
+                  }`}
               >
-                {tab}
+                {tab === 'All' ? '전체' : tab === 'Stats' ? '현황' : tab}
               </button>
             ))}
           </nav>
         </div>
-        
-        {activeSubTab !== 'Stats' && (
-          <button 
-            className="flex items-center justify-center gap-2 px-6 py-3 bg-[#0057bd] text-white rounded-2xl font-semibold shadow-lg shadow-blue-900/10 hover:shadow-xl transition-all active:scale-95 group"
+
+        {activeSubTab === 'Member' && (
+          <button
+            onClick={() => setIsInviteModalOpen(true)}
+            className="flex items-center justify-center gap-2 px-6 py-3 bg-[#004493] text-white rounded-[4px] font-bold shadow-lg shadow-blue-900/10 hover:shadow-xl transition-all active:scale-95 group"
           >
-            <span className="material-symbols-outlined text-[20px]">
-              {activeSubTab === 'Owner' ? 'person_add' : 'person_add'}
-            </span>
-            <span className="font-headline">
-              {activeSubTab === 'Owner' ? 'Invite Owner' : 
-               activeSubTab === 'Staff' ? 'Add Staff' : 
-               activeSubTab === 'Member' ? 'Add Member' : 'Add Member'}
-            </span>
+            <span className="material-symbols-outlined text-[20px]">person_add</span>
+            <span>Invite Member</span>
           </button>
         )}
       </div>
 
       {renderSubContent()}
+
+      {/* Invitation Modal */}
+      {isInviteModalOpen && currentUserProfile && (
+        <GroupInvitationModal
+          isOpen={isInviteModalOpen}
+          onClose={() => setIsInviteModalOpen(false)}
+          group={group}
+          currentUser={{ id: (currentUserProfile as any).uid, name: currentUserProfile.nickname }}
+        />
+      )}
     </div>
   );
 };
