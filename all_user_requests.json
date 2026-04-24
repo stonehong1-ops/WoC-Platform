@@ -1,0 +1,237 @@
+[
+  {
+    "line": 1
+  },
+  {
+    "line": 26
+  },
+  {
+    "line": 28
+  },
+  {
+    "line": 43
+  },
+  {
+    "line": 59
+  },
+  {
+    "line": 70
+  },
+  {
+    "line": 103
+  },
+  {
+    "line": 115
+  },
+  {
+    "line": 151
+  },
+  {
+    "line": 155
+  },
+  {
+    "line": 160
+  },
+  {
+    "line": 179
+  },
+  {
+    "line": 195
+  },
+  {
+    "line": 257
+  },
+  {
+    "line": 296
+  },
+  {
+    "line": 324
+  },
+  {
+    "line": 353
+  },
+  {
+    "line": 384
+  },
+  {
+    "line": 402
+  },
+  {
+    "line": 404
+  },
+  {
+    "line": 441
+  },
+  {
+    "line": 548
+  },
+  {
+    "line": 570
+  },
+  {
+    "line": 607
+  },
+  {
+    "line": 642
+  },
+  {
+    "line": 742
+  },
+  {
+    "line": 750
+  },
+  {
+    "line": 774
+  },
+  {
+    "line": 874
+  },
+  {
+    "line": 908
+  },
+  {
+    "line": 1008
+  },
+  {
+    "line": 1013
+  },
+  {
+    "line": 1046
+  },
+  {
+    "line": 1056
+  },
+  {
+    "line": 1058
+  },
+  {
+    "line": 1060
+  },
+  {
+    "line": 1062
+  },
+  {
+    "line": 1064
+  },
+  {
+    "line": 1066
+  },
+  {
+    "line": 1068
+  },
+  {
+    "line": 1070
+  },
+  {
+    "line": 1072
+  },
+  {
+    "line": 1074
+  },
+  {
+    "line": 1078
+  },
+  {
+    "line": 1116
+  },
+  {
+    "line": 1121
+  },
+  {
+    "line": 1136
+  },
+  {
+    "line": 1149
+  },
+  {
+    "line": 1171
+  },
+  {
+    "line": 1181
+  },
+  {
+    "line": 1183
+  },
+  {
+    "line": 1253
+  },
+  {
+    "line": 1255
+  },
+  {
+    "line": 1256
+  },
+  {
+    "line": 1287
+  },
+  {
+    "line": 1289
+  },
+  {
+    "line": 1291
+  },
+  {
+    "line": 1312
+  },
+  {
+    "line": 1327
+  },
+  {
+    "line": 1338
+  },
+  {
+    "line": 1340
+  },
+  {
+    "line": 1390
+  },
+  {
+    "line": 1405
+  },
+  {
+    "line": 1412
+  },
+  {
+    "line": 1436
+  },
+  {
+    "line": 1438,
+    "content": "<USER_REQUEST>\n기다려..\n</USER_REQUEST>\n<ADDITIONAL_METADATA>\nThe current local time is: 2026-04-23T06:54:40+09:00.\n\nThe user's current state is as follows:\nActive Document: c:\\Users\\stone\\WoC\\src\\app\\page.tsx (LANGUAGE_TSX)\nCursor is on line: 373\nOther open documents:\n- c:\\Users\\stone\\WoC\\src\\app\\page.tsx (LANGUAGE_TSX)\nNo browser pages are currently open.\n</ADDITIONAL_METADATA>"
+  },
+  {
+    "line": 1440,
+    "content": "<USER_REQUEST>\n코딩 중 주요참고사항 : (물론 다 영어로)\n1. 사진이 없는 경우 > Brand Setting버튼 > Group setting의 1번 풀팝업 띄워주고 Save하면 사진과 사진속 텍스트 변경\n2. 노티스 없는 경우 > 칸은 유지함 // 노티스 최근 1 있는 경우 클릭하면 무조건 Menu 'board'로 이동 > 즉, 자체로 읽는 기능 없음\n3. Moments \n- 기본로직 : 피드에서 최근 사진(사진그룹)이나 동영상만 가져옴. 좌우 슬라이드 최근 10개만\n4. 업커밍 스케줄 : 가장 가까운 일정 있는 날 하루치 보여줌 > 마찬가지로 클릭하면 캘린더 메뉴로 이동\n5. 리센트 피드 : 최근 피드의 텍스트 하나만 보여주고 > 마찬가지로 피드메뉴로 이동\n\n개발계획\n</USER_REQUEST>\n<ADDITIONAL_METADATA>\nThe current local time is: 2026-04-23T07:01:21+09:00.\n\nThe user's current state is as follows:\nActive Document: c:\\Users\\stone\\WoC\\src\\app\\page.tsx (LANGUAGE_TSX)\nCursor is on line: 373\n<truncated 135 bytes>"
+  },
+  {
+    "line": 1442,
+    "content": "<USER_REQUEST>\n고고\n</USER_REQUEST>\n<ADDITIONAL_METADATA>\nThe current local time is: 2026-04-23T07:01:42+09:00.\n\nThe user's current state is as follows:\nActive Document: c:\\Users\\stone\\WoC\\src\\app\\page.tsx (LANGUAGE_TSX)\nCursor is on line: 373\nOther open documents:\n- c:\\Users\\stone\\WoC\\src\\app\\page.tsx (LANGUAGE_TSX)\nNo browser pages are currently open.\n</ADDITIONAL_METADATA>"
+  },
+  {
+    "line": 1457,
+    "content": "<USER_REQUEST>\n고\n</USER_REQUEST>\n<ADDITIONAL_METADATA>\nThe current local time is: 2026-04-23T07:05:19+09:00.\n\nThe user's current state is as follows:\nActive Document: c:\\Users\\stone\\WoC\\src\\app\\page.tsx (LANGUAGE_TSX)\nCursor is on line: 373\nOther open documents:\n- c:\\Users\\stone\\WoC\\src\\app\\page.tsx (LANGUAGE_TSX)\nNo browser pages are currently open.\n</ADDITIONAL_METADATA>"
+  },
+  {
+    "line": 1489,
+    "content": "<USER_REQUEST>\nContinue\n</USER_REQUEST>\n<ADDITIONAL_METADATA>\nThe current local time is: 2026-04-23T07:10:18+09:00.\n\nThe user's current state is as follows:\nActive Document: c:\\Users\\stone\\WoC\\src\\app\\page.tsx (LANGUAGE_TSX)\nCursor is on line: 373\nOther open documents:\n- c:\\Users\\stone\\WoC\\src\\app\\page.tsx (LANGUAGE_TSX)\nNo browser pages are currently open.\n</ADDITIONAL_METADATA>"
+  },
+  {
+    "line": 1538,
+    "content": "<USER_REQUEST>\n<!DOCTYPE html>\n\n<html class=\"light\" lang=\"en\"><head>\n<meta charset=\"utf-8\"/>\n<meta content=\"width=device-width, initial-scale=1.0\" name=\"viewport\"/>\n<title>Freestyle Tango</title>\n<script src=\"https://cdn.tailwindcss.com?plugins=forms,container-queries\"></script>\n<link href=\"https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap\" rel=\"stylesheet\"/>\n<link href=\"https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap\" rel=\"stylesheet\"/>\n<script id=\"tailwind-config\">\n        tailwind.config = {\n            darkMode: \"class\",\n            theme: {\n                extend: {\n                    \"colors\": {\n                        \"primary-container\": \"#6e9fff\",\n                        \"tertiary-dim\": \"#7b2f85\",\n                        \"background\": \"#F1F5F9\",\n                        \"surface-container-low\": \"#F1F5F9\",\n<truncated 31209 bytes>"
+  },
+  {
+    "line": 1549,
+    "content": "<USER_REQUEST>\n조까는 소리 하지말고... 디자인을 100%로 원본을 반영할 수 있는 개발계획 수립\n</USER_REQUEST>\n<ADDITIONAL_METADATA>\nThe current local time is: 2026-04-23T07:20:40+09:00.\n\nThe user's current state is as follows:\nActive Document: c:\\Users\\stone\\WoC\\src\\app\\page.tsx (LANGUAGE_TSX)\nCursor is on line: 373\nOther open documents:\n- c:\\Users\\stone\\WoC\\src\\app\\page.tsx (LANGUAGE_TSX)\nNo browser pages are currently open.\n</ADDITIONAL_METADATA>"
+  },
+  {
+    "line": 1551,
+    "content": "<USER_REQUEST>\nContinue\n</USER_REQUEST>\n<ADDITIONAL_METADATA>\nThe current local time is: 2026-04-23T07:20:52+09:00.\n\nThe user's current state is as follows:\nActive Document: c:\\Users\\stone\\WoC\\src\\app\\page.tsx (LANGUAGE_TSX)\nCursor is on line: 373\nOther open documents:\n- c:\\Users\\stone\\WoC\\src\\app\\page.tsx (LANGUAGE_TSX)\nNo browser pages are currently open.\n</ADDITIONAL_METADATA>"
+  },
+  {
+    "line": 1563,
+    "content": "<USER_REQUEST>\n씨발놈아 디자인을 100%로 원본을 반영할 수 있는 개발계획 수립 하라고... 코딩 절대 금지\n</USER_REQUEST>\n<ADDITIONAL_METADATA>\nThe current local time is: 2026-04-23T07:22:59+09:00.\n\nThe user's current state is as follows:\nActive Document: c:\\Users\\stone\\WoC\\src\\app\\page.tsx (LANGUAGE_TSX)\nCursor is on line: 373\nOther open documents:\n- c:\\Users\\stone\\WoC\\src\\app\\page.tsx (LANGUAGE_TSX)\nNo browser pages are currently open.\n</ADDITIONAL_METADATA>"
+  },
+  {
+    "line": 1565,
+    "content": "<USER_REQUEST>\n홈 목록의 순서, 타이틀 하나도 바꾸지 말고, / 디자인 1픽셀도 변하지 않는 범위에서 코딩만 붙여\n지금 이틀째다 이 개새끼야....\n</USER_REQUEST>\n<ADDITIONAL_METADATA>\nThe current local time is: 2026-04-23T07:24:07+09:00.\n\nThe user's current state is as follows:\nActive Document: c:\\Users\\stone\\WoC\\src\\app\\page.tsx (LANGUAGE_TSX)\nCursor is on line: 373\nOther open documents:\n- c:\\Users\\stone\\WoC\\src\\app\\page.tsx (LANGUAGE_TSX)\nNo browser pages are currently open.\n</ADDITIONAL_METADATA>"
+  }
+]

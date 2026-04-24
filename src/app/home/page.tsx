@@ -23,18 +23,18 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Hero & Featured Society Story */}
+      {/* Featured Highlight */}
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 relative h-[400px] rounded-[40px] overflow-hidden group">
+        <div className="lg:col-span-2 relative aspect-video rounded-[40px] overflow-hidden shadow-xl group">
           <img 
-            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuBXW3nqGOr5ChU9wSgXxUDIS316gqxMG4Lkk310Daap7msw1o1Uac2jQGY9eS8LsN6znjUS9rZ0w34k4DlA5FypKEvmld-2sCtW38OLDN54KzPuT5e5Fw4U4sMlGRwM3Q1Ee8JLFRQOthUc5Ffg2pjxhBfSQ2d7Dq-VSkq7882_zjX0wx48M-qSv5bQDeR3DKAeWdzB8BlAroQvvD8eBiPn-_HrHtWyRP62AbuEgz6rl0fodzUmtnr0ewZjjyQ2e6fauuqwIiex3Ope"
-            alt="Shared living"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuDt8x-6_x9p_1N-W7l-p9U2A8qP1H_X-B0Tz0z0z0z0z0z0z0z0z0z0z0z0z0z0z0z0z0z0z0z0z0z0" 
+            alt="Society Spotlight" 
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-          <div className="absolute bottom-0 left-0 p-8 space-y-3">
-            <span className="px-3 py-1 bg-primary text-white text-xs font-bold rounded-full tracking-wider uppercase">Society Spotlight</span>
-            <h1 className="text-3xl md:text-5xl font-extrabold text-white leading-tight font-headline">The Joy of Shared Living in the Digital Age</h1>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+          <div className="absolute bottom-8 left-8 right-8">
+            <span className="px-3 py-1 bg-primary text-white text-[10px] font-bold uppercase tracking-widest rounded-full mb-3 inline-block">Society Spotlight</span>
+            <h3 className="text-3xl font-black text-white mb-2 leading-tight font-headline">The Oasis: Our First<br/>Self-Sustaining Colony</h3>
             <p className="text-white/80 max-w-lg font-body text-sm md:text-base">Meet the members of 'The Oasis' house and how they built a thriving internal micro-economy.</p>
             <button className="mt-4 px-6 py-3 bg-white text-primary font-bold rounded-xl shadow-lg hover:bg-slate-100 transition-colors">Read Full Story</button>
           </div>
@@ -50,33 +50,9 @@ export default function HomePage() {
                   Global Stats
                 </h3>
               </div>
-              <div className="relative">
-                <select className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-700 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20">
-                  <option value="korea">Tango Korea</option>
-                  <option value="england">Tango England</option>
-                  <option value="usa">Tango USA</option>
-                </select>
-                <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">expand_more</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-4 flex-1">
-            <div className="p-5 bg-white rounded-2xl border border-slate-100 shadow-sm">
-              <p className="text-[10px] text-gray-400 font-bold mb-1 uppercase tracking-widest">Total Members</p>
-              <div className="flex items-end justify-between">
-                <h4 className="text-3xl font-extrabold text-slate-900 font-headline">12,842</h4>
-                <div className="flex items-center gap-1 text-green-600 font-bold text-sm bg-green-50 px-2 py-1 rounded-lg mb-1">
-                  <span className="material-symbols-outlined text-sm">trending_up</span>
-                  14.2%
-                </div>
-              </div>
-            </div>
-            
-            <div className="space-y-3 mt-4 px-1">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-500 font-medium">Active Hubs</span>
-                <span className="font-bold text-slate-900">24</span>
+                <span className="text-slate-500 font-medium">Active Members</span>
+                <span className="font-bold text-slate-900">4,281</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-slate-500 font-medium">Total Stays</span>
@@ -99,54 +75,15 @@ export default function HomePage() {
       <section className="space-y-6">
         <div className="flex items-center justify-between px-2">
           <h2 className="text-2xl font-extrabold text-slate-900 font-headline">Society Events</h2>
-          <div className="flex gap-2">
-            <button className="w-10 h-10 rounded-full bg-white shadow-sm border border-slate-100 flex items-center justify-center text-slate-400 hover:text-primary transition-colors">
-              <span className="material-symbols-outlined">chevron_left</span>
-            </button>
-            <button className="w-10 h-10 rounded-full bg-white shadow-sm border border-slate-100 flex items-center justify-center text-slate-400 hover:text-primary transition-colors">
-              <span className="material-symbols-outlined">chevron_right</span>
-            </button>
-          </div>
+          <a className="text-primary font-bold text-sm hover:underline" href="#">View Calendar</a>
         </div>
-        
-        <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide no-scrollbar -mx-4 px-4 snap-x">
-          {/* Event 1 */}
-          <div className="min-w-[300px] md:min-w-[380px] snap-start bg-white rounded-[32px] overflow-hidden border border-slate-100 shadow-sm group">
-            <div className="h-48 relative overflow-hidden">
-              <img 
-                className="w-full h-full object-cover transition-transform group-hover:scale-110 duration-500" 
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCJFTBWLksFMX3uH_-d18NtU60H-_sNF1ZGg7Vy0Yh6eabVQlvXRC6MGi9SnBsKMC8-jbDSOAfR1TM9S0LNsSjnrLW8W2xhZw5vedW_MvKpaf7mLf1btTsyLEfuXJdzAmW_V7d9E997z0xQdRtER0-yHioAYx-Q1x7eRNXVr-6Nk0qFBbn9B65aq7dzs1xpCB3MgnMpdSJzm33i2jeezAUsNonwEJh1YEWKlq1bcm2rqHbKbJTG-Ytm-aw4OnaRVEE5oP9J4UvjH9tE"
-                alt="Workshop"
-              />
-              <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-md rounded-2xl px-3 py-2 text-center shadow-lg border border-white/20">
-                <span className="block text-primary font-bold text-lg leading-none">24</span>
-                <span className="block text-[10px] uppercase font-bold text-gray-500">JUN</span>
-              </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="bg-white rounded-[32px] overflow-hidden border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+            <div className="h-40 bg-slate-200">
+              <img className="w-full h-full object-cover" src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800&q=80" alt="Event" />
             </div>
             <div className="p-6">
-              <h4 className="text-lg font-bold mb-2 font-headline">Society Podcasting Workshop</h4>
-              <div className="flex items-center text-gray-500 text-sm gap-4 mb-4">
-                <span className="flex items-center gap-1 font-medium italic"><span className="material-symbols-outlined text-base text-primary">schedule</span> 18:00</span>
-                <span className="flex items-center gap-1 font-medium italic"><span className="material-symbols-outlined text-base text-primary">location_on</span> Group Lab</span>
-              </div>
-              <button className="w-full py-3 bg-primary text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-sm">Reserve Member Spot</button>
-            </div>
-          </div>
-
-          {/* Event 2 */}
-          <div className="min-w-[300px] md:min-w-[380px] snap-start bg-white rounded-[32px] overflow-hidden border border-slate-100 shadow-sm group">
-            <div className="h-48 relative overflow-hidden">
-              <img 
-                className="w-full h-full object-cover transition-transform group-hover:scale-110 duration-500" 
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHPQnrvY0VWX0zhQJR6iCYHJP8COYoTK0pDlce8rUYSDfeSi2s3n39UtJHOUjfIne3GBF-diVaDiraTHcqzhKdt6zz4EkE2yj5thBLHYvO22OhuavxkZLUBX7bAjg56OOXifARhUMMdz_CGgUHy6nIX_VRO4cuibP2WCkSew6Wy6wgg-Ms6QvC1DUU3CHbuzCEhk0k5IGkCtTORoW-l1lgGS6PSC2wmPMpLv0kEORL0xKbqBQPtXKdN5U78od1pqAPiDB-N2XEOz2i" 
-                alt="Meetup"
-              />
-              <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-md rounded-2xl px-3 py-2 text-center shadow-lg border border-white/20">
-                <span className="block text-primary font-bold text-lg leading-none">28</span>
-                <span className="block text-[10px] uppercase font-bold text-gray-500">JUN</span>
-              </div>
-            </div>
-            <div className="p-6">
+              <span className="px-2 py-0.5 bg-blue-50 text-primary text-[10px] font-bold rounded-md uppercase tracking-wider mb-2 inline-block">Workshop</span>
               <h4 className="text-lg font-bold mb-2 font-headline">Founder Meetup: Scale & Stay</h4>
               <div className="flex items-center text-gray-500 text-sm gap-4 mb-4">
                 <span className="flex items-center gap-1 font-medium italic"><span className="material-symbols-outlined text-base text-primary">schedule</span> 14:00</span>

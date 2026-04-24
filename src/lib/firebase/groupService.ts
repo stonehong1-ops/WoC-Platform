@@ -268,20 +268,59 @@ export const groupService = {
     });
   },
 
-  // Join a group
+  // Join a group (Immediate for 'open' strategy)
   joinGroup: async (groupId: string, userId: string, memberData: Omit<Member, 'id'>) => {
     const groupRef = doc(db, GROUPS_COLLECTION, groupId);
     const memberRef = doc(db, GROUPS_COLLECTION, groupId, 'members', userId);
 
-    // Add to members subcollection
+    // Add to members subcollection as active
     await setDoc(memberRef, {
       ...memberData,
+      status: 'active',
       joinedAt: Timestamp.now()
     });
 
     // Increment member count in metadata
     await updateDoc(groupRef, {
       memberCount: increment(1)
+    });
+  },
+
+  // Request to join a group (for 'approval' strategy)
+  requestJoinGroup: async (groupId: string, userId: string, memberData: Omit<Member, 'id'>) => {
+    const memberRef = doc(db, GROUPS_COLLECTION, groupId, 'members', userId);
+
+    // Add to members subcollection as pending
+    await setDoc(memberRef, {
+      ...memberData,
+      status: 'pending',
+      joinedAt: Timestamp.now()
+    });
+  },
+
+  // Approve a pending member
+  approveMember: async (groupId: string, userId: string) => {
+    const groupRef = doc(db, GROUPS_COLLECTION, groupId);
+    const memberRef = doc(db, GROUPS_COLLECTION, groupId, 'members', userId);
+
+    await updateDoc(memberRef, {
+      status: 'active',
+      approvedAt: Timestamp.now()
+    });
+
+    // Increment member count in metadata
+    await updateDoc(groupRef, {
+      memberCount: increment(1)
+    });
+  },
+
+  // Reject a pending member
+  rejectMember: async (groupId: string, userId: string) => {
+    const memberRef = doc(db, GROUPS_COLLECTION, groupId, 'members', userId);
+
+    await updateDoc(memberRef, {
+      status: 'rejected',
+      rejectedAt: Timestamp.now()
     });
   },
 
@@ -392,5 +431,16 @@ export const groupService = {
   deleteClass: async (groupId: string, classId: string) => {
     const classRef = doc(db, GROUPS_COLLECTION, groupId, 'classes', classId);
     await deleteDoc(classRef);
+  },
+
+  // Create a new group
+  createGroup: async (groupData: Partial<Group>): Promise<string> => {
+    const docRef = await addDoc(collection(db, GROUPS_COLLECTION), {
+      ...groupData,
+      memberCount: 0,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+    });
+    return docRef.id;
   }
 };

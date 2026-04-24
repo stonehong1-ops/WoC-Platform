@@ -28,15 +28,11 @@ interface Venue {
   category?: string;
 }
 
-export default function GroupMap({ group }: { group: Group }) {
+export default function GroupMap({ group, isLoaded }: { group: Group, isLoaded: boolean }) {
   const [venue, setVenue] = useState<Venue | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const { isLoaded } = useJsApiLoader({
-    id: 'google-map-script',
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
-    libraries: ['places']
-  });
+  // useJsApiLoader removed - received as prop from GroupHome
 
   useEffect(() => {
     async function fetchVenue() {

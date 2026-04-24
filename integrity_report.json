@@ -1,0 +1,305 @@
+{
+  "totalWoc": 87,
+  "totalFree": 69,
+  "missingNickname": [
+    {
+      "uid": "+821040595391",
+      "wocData": {
+        "photoURL": "/anonymous-user.png"
+      },
+      "freeData": {
+        "createdAt": "2026-04-01T07:17:40.499Z",
+        "device": "android",
+        "dwellMinutes": "2",
+        "lastVisit": "2026-04-11T12:52:17.333Z",
+        "nickname": "엠제이",
+        "phone": "01040595391",
+        "photoURL": "",
+        "role": "follower",
+        "settings": null,
+        "visitCount": "3"
+      }
+    },
+    {
+      "uid": "+821042048733",
+      "wocData": {
+        "photoURL": "/anonymous-user.png"
+      },
+      "freeData": {
+        "createdAt": "2026-04-08T07:47:24.325Z",
+        "device": "android",
+        "dwellMinutes": "8",
+        "lastVisit": "2026-04-12T08:52:55.589Z",
+        "nickname": "린다",
+        "phone": "01042048733",
+        "photoURL": "",
+        "role": "follower",
+        "settings": null,
+        "visitCount": "33"
+      }
+    },
+    {
+      "uid": "+821050464998",
+      "wocData": {
+        "photoURL": "/anonymous-user.png"
+      },
+      "freeData": {
+        "createdAt": "2026-04-11T04:19:34.821Z",
+        "device": "android",
+        "dwellMinutes": "1",
+        "lastVisit": "2026-04-11T04:20:35.111Z",
+        "nickname": "베라",
+        "phone": "01050464998",
+        "role": "follower",
+        "visitCount": "4"
+      }
+    },
+    {
+      "uid": "+821051024950",
+      "wocData": {
+        "photoURL": "/anonymous-user.png"
+      },
+      "freeData": {
+        "createdAt": "2026-04-09T02:46:52.330Z",
+        "device": "android",
+        "dwellMinutes": "5",
+        "lastVisit": "2026-04-09T06:31:46.067Z",
+        "nickname": "듀엣",
+        "phone": "01051024950",
+        "photoURL": "",
+        "role": "follower",
+        "visitCount": "7"
+      }
+    },
+    {
+      "uid": "+821053153070",
+      "wocData": {
+        "photoURL": "/anonymous-user.png"
+      }
+    },
+    {
+      "uid": "+821099998888",
+      "wocData": {
+        "photoURL": "/anonymous-user.png"
+      },
+      "freeData": {
+        "device": "pc",
+        "dwellMinutes": "129",
+        "lastVisit": "2026-04-14T05:49:25.438Z",
+        "nickname": "NewUser",
+        "phone": "01099998888",
+        "role": "leader",
+        "settings": null,
+        "visitCount": "17"
+      }
+    },
+    {
+      "uid": "system1",
+      "wocData": {
+        "bio": "WoC 플랫폼의 메인 시스템 관리 계정입니다.",
+        "city": "Seoul",
+        "country": "🇰🇷",
+        "createdAt": "2026-04-17T12:00:00Z",
+        "displayName": "WoC System 1 (Main)",
+        "email": "system1@woc.today",
+        "instagram": "@woc_today_1",
+        "phoneNumber": "+82-10-0000-0001",
+        "photoURL": "https://api.dicebear.com/7.x/bottts/svg?seed=system1",
+        "role": "ADMIN",
+        "status": "active",
+        "updatedAt": "2026-04-17T12:00:00Z",
+        "userRole": "ADMIN",
+        "website": "https://woc.today"
+      }
+    },
+    {
+      "uid": "system2",
+      "wocData": {
+        "bio": "WoC 플랫폼의 보조 시스템 관리 계정입니다. (수석 운영자)",
+        "city": "Seoul",
+        "country": "🇰🇷",
+        "createdAt": "2026-04-17T12:00:00Z",
+        "displayName": "WoC System 2",
+        "email": "system2@woc.today",
+        "instagram": "@woc_today_2",
+        "phoneNumber": "+82-10-0000-0002",
+        "photoURL": "https://api.dicebear.com/7.x/bottts/svg?seed=system2",
+        "role": "ADMIN",
+        "status": "active",
+        "updatedAt": "2026-04-17T12:00:00Z",
+        "userRole": "ADMIN",
+        "website": "https://woc.today"
+      }
+    },
+    {
+      "uid": "system3",
+      "wocData": {
+        "bio": "WoC 플랫폼의 보조 시스템 관리 계정입니다. (CS 대응팀)",
+        "city": "Seoul",
+        "country": "🇰🇷",
+        "createdAt": "2026-04-17T12:00:00Z",
+        "displayName": "WoC System 3",
+        "email": "system3@woc.today",
+        "instagram": "@woc_today_3",
+        "phoneNumber": "+82-10-0000-0003",
+        "photoURL": "https://api.dicebear.com/7.x/bottts/svg?seed=system3",
+        "role": "ADMIN",
+        "status": "active",
+        "updatedAt": "2026-04-17T12:00:00Z",
+        "userRole": "ADMIN",
+        "website": "https://woc.today"
+      }
+    }
+  ],
+  "dataDiscrepancies": [
+    {
+      "uid": "+821028305740",
+      "woc": {
+        "nickname": "소노발로 님",
+        "role": "leader"
+      },
+      "free": {
+        "nickname": "소노발로 ",
+        "role": "leader"
+      }
+    },
+    {
+      "uid": "+821049956915",
+      "woc": {
+        "nickname": "루나",
+        "role": "follower"
+      },
+      "free": {
+        "nickname": "별그림자밟기",
+        "role": "leader"
+      }
+    },
+    {
+      "uid": "+821052184101",
+      "woc": {
+        "nickname": "지나",
+        "role": "follower"
+      },
+      "free": {
+        "nickname": "프레디",
+        "role": "leader"
+      }
+    },
+    {
+      "uid": "+821082346700",
+      "woc": {
+        "nickname": "생블루 Combined",
+        "role": "leader"
+      },
+      "free": {
+        "nickname": "생블루 ",
+        "role": "leader"
+      }
+    },
+    {
+      "uid": "+821087810703",
+      "woc": {
+        "nickname": "토토로 01087810703",
+        "role": "leader"
+      },
+      "free": {
+        "nickname": "토토로 ",
+        "role": "leader"
+      }
+    },
+    {
+      "uid": "+821089178552",
+      "woc": {
+        "nickname": "엘린 01089178552",
+        "role": "follower"
+      },
+      "free": {
+        "nickname": "엘린",
+        "role": "follower"
+      }
+    },
+    {
+      "uid": "+821089656361",
+      "woc": {
+        "nickname": "까를로스 01089656361",
+        "role": "leader"
+      },
+      "free": {
+        "nickname": "까를로스",
+        "role": "leader"
+      }
+    },
+    {
+      "uid": "+821089679144",
+      "woc": {
+        "nickname": "기쁨 란",
+        "role": "follower"
+      },
+      "free": {
+        "nickname": "기쁨 ",
+        "role": "follower"
+      }
+    },
+    {
+      "uid": "+821091086475",
+      "woc": {
+        "nickname": "보미 01091086475",
+        "role": "follower"
+      },
+      "free": {
+        "nickname": "보미",
+        "role": "follower"
+      }
+    },
+    {
+      "uid": "+821093349441",
+      "woc": {
+        "nickname": "폴리 01093349441",
+        "role": "follower"
+      },
+      "free": {
+        "nickname": "폴리",
+        "role": "follower"
+      }
+    },
+    {
+      "uid": "+821095690708",
+      "woc": {
+        "nickname": "제이든 01095690708",
+        "role": "leader"
+      },
+      "free": {
+        "nickname": "제이든",
+        "role": "leader"
+      }
+    },
+    {
+      "uid": "+821096869554",
+      "woc": {
+        "nickname": "알마삭제용 01096869554",
+        "role": "leader"
+      },
+      "free": {
+        "nickname": "알마삭제용",
+        "role": "leader"
+      }
+    }
+  ],
+  "onlyInWoc": [
+    "+821049961623",
+    "+821050212000",
+    "+821050256915",
+    "+821050472485",
+    "+821050630768",
+    "+821051515233",
+    "+821052824043",
+    "+821054174360",
+    "+821054366668",
+    "+821054388836",
+    "+821054415894",
+    "+821054521408",
+    "+821055743632",
+    "ecOxXTUKdBPXc3Xyl4Ok7blq1zA2"
+  ],
+  "onlyInFree": []
+}

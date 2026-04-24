@@ -1,266 +1,678 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { groupService } from '@/lib/firebase/groupService';
+import { storageService } from '@/lib/firebase/storageService';
+import { useAuth } from '@/components/providers/AuthProvider';
+import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import { Group } from '@/types/group';
-import { Plus_Jakarta_Sans, Inter } from 'next/font/google';
-
-const plusJakartaSans = Plus_Jakarta_Sans({ 
-  subsets: ['latin'],
-  variable: '--font-headline',
-  weight: ['400', '500', '600', '700', '800']
-});
-
-const inter = Inter({ 
-  subsets: ['latin'],
-  variable: '--font-body',
-  weight: ['400', '500', '600', '700']
-});
+import Link from 'next/link';
 
 export default function GroupsDiscoveryPage() {
-  const [communities, setCommunities] = useState<Group[]>([]);
+  const router = useRouter();
+  const { user, profile, setShowLogin } = useAuth();
+  const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
+  // My Groups Bottom Sheet State
+  const [sheetState, setSheetState] = useState<'minimized' | 'half' | 'full'>('minimized');
+  const userJoinedGroups = profile?.joinedGroups ? groups.filter(g => profile.joinedGroups?.includes(g.id)) : [];
+
+  // Handle Back Button for Bottom Sheet
   useEffect(() => {
-    const fetchCommunities = async () => {
-      try {
-        const data = await groupService.getGroups();
-        setCommunities(data);
-      } catch (error) {
-        console.error('Failed to fetch communities:', error);
-      } finally {
-        setLoading(false);
+    const handlePopState = () => {
+      if (sheetState !== 'minimized') {
+        setSheetState('minimized');
       }
     };
-    fetchCommunities();
+
+    if (sheetState !== 'minimized') {
+      window.history.pushState({ sheetOpen: true }, '');
+      window.addEventListener('popstate', handlePopState);
+    } else {
+      // If sheet is minimized manually, we might want to check if we should remove the pushed state
+      // but usually the user just navigates back. 
+      // For simplicity in this UI, we mainly care about the back button closing the sheet.
+    }
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [sheetState]);
+
+  // Create Group State
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [createLoading, setCreateLoading] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    name: '',
+    description: '',
+    category: 'Studio',
+    joinPolicy: 'open',
+    coverImage: null as File | null,
+    previewUrl: null as string | null
+  });
+
+  const fetchGroups = async () => {
+    try {
+      const data = await groupService.getGroups();
+      setGroups(data);
+    } catch (error) {
+      console.error('Error fetching groups:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchGroups();
   }, []);
 
-  // Filter 10 most recent for "What's New"
-  const whatsNew = [...communities]
-    .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
+  // What's New: Latest 10
+  const whatsNewGroups = [...groups]
+    .sort((a, b) => {
+      const getTime = (val: any) => {
+        if (!val) return 0;
+        if (val instanceof Date) return val.getTime();
+        if (typeof val === 'object' && val.toMillis) return val.toMillis();
+        if (typeof val === 'number') return val;
+        return 0;
+      };
+      return getTime(b.updatedAt) - getTime(a.updatedAt);
+    })
     .slice(0, 10);
 
-  // Filter top 3 by memberCount for "Trending Now"
-  const trendingNow = [...communities]
-    .sort((a, b) => (b.memberCount || 0) - (a.memberCount || 0))
-    .slice(0, 3);
+  // Category counts mapping
+  const categoryCounts = {
+    Studio: groups.filter(g => g.activeServices?.class || g.tags?.includes('Studio')).length,
+    Shop: groups.filter(g => g.activeServices?.shop || g.tags?.includes('Shop')).length,
+    Stay: groups.filter(g => g.activeServices?.stay || g.tags?.includes('Stay')).length,
+    Rental: groups.filter(g => g.activeServices?.rental || g.tags?.includes('Rental')).length,
+    Wellness: groups.filter(g => g.activeServices?.wellness || g.tags?.includes('Wellness')).length,
+    Dining: groups.filter(g => g.activeServices?.dining || g.tags?.includes('Dining')).length,
+    Office: groups.filter(g => g.activeServices?.office || g.tags?.includes('Office')).length,
+    Online: groups.filter(g => g.activeServices?.online || g.tags?.includes('Online')).length,
+  };
 
-  // Group by category (simulated or using tags)
-  const categories = [
-    { name: 'Studio', icon: 'palette', color: 'primary', label: 'CREATIVE' },
-    { name: 'Shop', icon: 'shopping_bag', color: 'tertiary', label: 'COMMERCE' },
-    { name: 'Tech', icon: 'terminal', color: 'on-secondary-fixed-variant', label: 'TECH' },
+  const discoveryCategories = [
+    { id: 'Studio', icon: 'palette', color: 'bg-primary-container', text: 'text-on-primary-container' },
+    { id: 'Shop', icon: 'shopping_bag', color: 'bg-secondary-container', text: 'text-on-secondary-container' },
+    { id: 'Stay', icon: 'bed', color: 'bg-tertiary-container', text: 'text-on-tertiary-container' },
+    { id: 'Rental', icon: 'car_rental', color: 'bg-surface-container-highest', text: 'text-on-surface-variant' },
+    { id: 'Wellness', icon: 'self_care', color: 'bg-rose-100', text: 'text-rose-900' },
+    { id: 'Dining', icon: 'restaurant', color: 'bg-orange-100', text: 'text-orange-900' },
+    { id: 'Office', icon: 'work', color: 'bg-slate-100', text: 'text-slate-900' },
+    { id: 'Online', icon: 'computer', color: 'bg-blue-100', text: 'text-blue-900' }
   ];
+
+  const getFilteredGroups = () => {
+    if (!selectedCategory) return [];
+    if (selectedCategory === 'All') return groups;
+    return groups.filter(g => 
+      g.tags?.includes(selectedCategory) || 
+      (selectedCategory === 'Studio' && g.activeServices?.class) ||
+      (selectedCategory === 'Shop' && g.activeServices?.shop) ||
+      (selectedCategory === 'Stay' && g.activeServices?.stay) ||
+      (selectedCategory === 'Rental' && g.activeServices?.rental) ||
+      (selectedCategory === 'Wellness' && g.activeServices?.wellness) ||
+      (selectedCategory === 'Dining' && g.activeServices?.dining) ||
+      (selectedCategory === 'Office' && g.activeServices?.office) ||
+      (selectedCategory === 'Online' && g.activeServices?.online)
+    );
+  };
+
+  const GroupCoverImage = ({ group, className = "" }: { group: Group, className?: string }) => {
+    if (group.coverImage) {
+      return (
+        <img
+          className={`w-full h-full object-cover transition-transform duration-500 ${className}`}
+          src={group.coverImage}
+          alt={group.name}
+        />
+      );
+    }
+
+    return (
+      <div className={`w-full h-full bg-gradient-to-br from-surface-container to-surface-container-highest flex items-center justify-center p-6 ${className}`}>
+        <div className="text-center opacity-20">
+          <span className="material-symbols-outlined text-5xl mb-2">groups</span>
+          <p className="text-[10px] font-bold uppercase tracking-widest font-headline">{group.name}</p>
+        </div>
+      </div>
+    );
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setCreateForm(prev => ({
+        ...prev,
+        coverImage: file,
+        previewUrl: URL.createObjectURL(file)
+      }));
+    }
+  };
+
+  const handleCreateSubmit = async () => {
+    if (!user) {
+      setShowLogin(true);
+      return;
+    }
+
+    if (!createForm.name.trim()) {
+      alert('Please enter a group name.');
+      return;
+    }
+
+    setCreateLoading(true);
+    try {
+      let imageUrl = '';
+      if (createForm.coverImage) {
+        const path = `groups/${Date.now()}_${createForm.coverImage.name}`;
+        imageUrl = await storageService.uploadFile(createForm.coverImage, path);
+      }
+
+      // Map categories to services or tags
+      const activeServices = {
+        class: createForm.category === 'Studio',
+        shop: createForm.category === 'Shop',
+        stay: createForm.category === 'Stay',
+        rental: createForm.category === 'Rental',
+        wellness: createForm.category === 'Wellness',
+        dining: createForm.category === 'Dining',
+        office: createForm.category === 'Office',
+        online: createForm.category === 'Online'
+      };
+
+      const newGroupData: Partial<Group> = {
+        name: createForm.name,
+        description: createForm.description,
+        coverImage: imageUrl,
+        tags: [createForm.category],
+        ownerId: user.uid,
+        representative: {
+          name: profile?.nickname || user.displayName || 'Community Leader',
+          avatar: profile?.photoURL || user.photoURL || ''
+        },
+        activeServices,
+        memberCount: 1,
+        membershipPolicy: {
+          joinStrategy: createForm.joinPolicy as any
+        },
+        updatedAt: new Date()
+      };
+
+      await groupService.createGroup(newGroupData);
+
+      // Reset and close
+      setCreateForm({
+        name: '',
+        description: '',
+        category: 'Studio',
+        joinPolicy: 'open',
+        coverImage: null,
+        previewUrl: null
+      });
+      setIsCreateOpen(false);
+      fetchGroups();
+    } catch (error) {
+      console.error('Error creating group:', error);
+      alert('Failed to create group. Please try again.');
+    } finally {
+      setCreateLoading(false);
+    }
+  };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-surface">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="bg-background min-h-screen flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className={`${plusJakartaSans.variable} ${inter.variable} font-body bg-surface text-on-surface pb-32 selection:bg-primary-container selection:text-on-primary-container min-h-screen pt-20`}>
-      {/* Ambient Background Textures */}
-      <div className="fixed inset-0 z-[-1] pointer-events-none overflow-hidden">
-        <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-primary/5 blur-3xl mix-blend-multiply"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] rounded-full bg-tertiary/5 blur-3xl mix-blend-multiply"></div>
-      </div>
-
-      <main className="px-6 py-8 space-y-12 max-w-7xl mx-auto">
-        {/* 1. Create Group Button */}
-        <div className="flex flex-col items-center gap-3">
-          <Link href="/groups/create" className="w-full">
-            <button className="w-full bg-primary text-white font-headline font-bold py-4 px-8 rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex items-center justify-center gap-2 active:scale-95">
-              <span className="material-symbols-outlined fill-1">add_circle</span>
-              Make new group
-            </button>
-          </Link>
-          <p className="text-[11px] font-body text-on-surface-variant/70 font-medium tracking-tight">
-            Anyone can create as many groups as they want.
-          </p>
-        </div>
-
-        {/* 2. What's New Section (Horizontal Scroll) */}
-        <section>
-          <div className="flex items-end justify-between mb-6">
+    <div className="bg-background min-h-screen pb-24 relative font-body">
+      <main className="max-w-4xl mx-auto px-6 py-8 space-y-10">
+        {/* What's New Carousel */}
+        <section className="space-y-4">
+          <div className="flex items-end justify-between">
             <div>
-              <h2 className="font-headline font-extrabold text-2xl tracking-tighter text-on-surface">What's New</h2>
-              <p className="font-body text-on-surface-variant text-xs mt-1">Explore the freshest communities just joining our network.</p>
+              <h2 className="text-2xl font-extrabold font-headline tracking-tight text-on-background">What's New</h2>
+              <p className="text-on-surface-variant text-sm font-medium">Discover the latest communities</p>
             </div>
-            <Link href="/groups/new" className="text-primary text-xs font-bold hover:underline">View All</Link>
+            <button
+              onClick={() => setSelectedCategory('All')}
+              className="text-primary font-bold text-sm flex items-center gap-1 group"
+            >
+              View all <span className="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
+            </button>
           </div>
-          <div className="flex gap-4 overflow-x-auto hide-scrollbar snap-x pb-4 -mx-6 px-6">
-            {whatsNew.map((group, i) => (
-              <Link key={group.id} href={`/group/${group.id}`} className="snap-start min-w-[280px]">
-                <div className="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/10 shadow-sm hover:shadow-md transition-all h-full">
-                  <div className="aspect-video rounded-lg overflow-hidden mb-3 bg-surface-container">
-                    <img 
-                      alt={group.name} 
-                      className="w-full h-full object-cover" 
-                      src={group.coverImage || group.logo || 'https://images.unsplash.com/photo-1545670723-196ed09c3944?auto=format&fit=crop&q=80&w=400'}
-                      onError={(e) => {
-                        e.currentTarget.src = 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&q=80&w=800';
-                      }}
-                    />
+          <div className="flex overflow-x-auto gap-4 no-scrollbar pb-4 -mx-6 px-6">
+            {whatsNewGroups.length > 0 ? whatsNewGroups.map((group) => (
+              <div 
+                key={group.id} 
+                onClick={() => router.push(`/group/${group.id}`)}
+                className="flex-shrink-0 w-[320px] group cursor-pointer active:scale-95 transition-transform"
+              >
+                <div className="relative aspect-[16/9] rounded-2xl overflow-hidden mb-4 shadow-md group-hover:shadow-xl transition-all duration-300">
+                  <GroupCoverImage group={group} className="group-hover:scale-105" />
+                  <div className="absolute inset-0 bg-black/10 z-10"></div>
+                  <div className="absolute top-3 left-3">
+                    <span className="bg-white/90 backdrop-blur px-2.5 py-0.5 rounded-full text-[10px] font-bold text-primary flex items-center gap-1 shadow-sm">
+                      <span className="material-symbols-outlined text-[12px]">location_on</span> {group.address || 'Venue'}
+                    </span>
                   </div>
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-primary mb-1 block">
-                    {i === 0 ? 'New Arrival' : i < 3 ? 'Trending Up' : 'Just Joined'}
-                  </span>
-                  <h4 className="font-headline font-bold text-lg text-on-surface truncate">{group.name}</h4>
-                  <p className="text-xs text-on-surface-variant line-clamp-1 mb-3">{group.description}</p>
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-surface-container overflow-hidden">
-                      <img 
-                        alt="avatar" 
-                        className="w-full h-full object-cover" 
-                        src={group.members?.[0]?.avatar || group.logo || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'}
-                        onError={(e) => {
-                          e.currentTarget.src = 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y';
-                        }}
-                      />
-                    </div>
-                    <span className="text-[10px] text-on-surface-variant font-medium">{group.memberCount || 0} members</span>
+                  <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 via-black/40 to-transparent z-20 text-white">
+                    <h3 className="text-lg font-bold font-headline mb-0.5">{group.name}</h3>
+                    <p className="text-white/80 text-xs line-clamp-1">{group.memberCount} members • {group.tags?.[0] || 'Community'}</p>
                   </div>
                 </div>
-              </Link>
-            ))}
+              </div>
+            )) : (
+              <div className="w-full text-center py-10 text-on-surface-variant/50 font-medium">No groups discovered yet.</div>
+            )}
           </div>
         </section>
 
-        {/* 3. Trending Now Grid */}
-        {trendingNow.length > 0 && (
-          <section>
-            <div className="flex items-end justify-between mb-8">
-              <div>
-                <h2 className="font-headline font-extrabold text-3xl tracking-tighter text-on-surface">Trending Now</h2>
-                <p className="font-body text-on-surface-variant text-sm mt-1">The most talked-about communities this week.</p>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-              {/* Large Feature Card */}
-              <Link href={`/group/${trendingNow[0].id}`} className="md:col-span-8 group relative rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 transform hover:scale-[0.99] bg-surface-container-lowest">
-                <div className="aspect-[16/9] md:aspect-[4/3] w-full bg-surface-container relative">
-                  <img 
-                    className="w-full h-full object-cover" 
-                    alt={trendingNow[0].name}
-                    src={trendingNow[0].coverImage || 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=80&w=800'}
-                    onError={(e) => {
-                      e.currentTarget.src = 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=80&w=800';
-                    }}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-                  <div className="absolute top-4 left-4">
-                    <span className="bg-primary/80 backdrop-blur-md text-white font-label font-bold text-[10px] uppercase px-3 py-1 rounded-full tracking-wide">🔥 Hot</span>
-                  </div>
-                </div>
-                <div className="absolute bottom-0 left-0 w-full p-6 text-white">
-                  <h3 className="font-headline font-extrabold text-2xl mb-2">{trendingNow[0].name}</h3>
-                  <div className="flex flex-wrap items-center gap-4 text-xs font-body font-medium text-white/90">
-                    <span className="flex items-center gap-1">
-                      <span className="material-symbols-outlined text-[16px]">person</span> 
-                      {trendingNow[0].members?.[0]?.name || 'Admin'}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <span className="material-symbols-outlined text-[16px]">group</span> 
-                      {trendingNow[0].memberCount} Members
-                    </span>
-                    <span className="flex items-center gap-1 text-primary-container">
-                      <span className="material-symbols-outlined text-[16px]">lock_open</span> 
-                      Open
-                    </span>
-                  </div>
-                </div>
-              </Link>
-              
-              {/* Two Smaller Cards */}
-              <div className="md:col-span-4 flex flex-col gap-6">
-                {trendingNow.slice(1, 3).map((item) => (
-                  <Link key={item.id} href={`/group/${item.id}`} className="group relative rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 transform hover:scale-[0.99] bg-surface-container-lowest flex-1">
-                    <div className="h-32 w-full bg-surface-container relative">
-                      <img 
-                        className="w-full h-full object-cover" 
-                        alt={item.name}
-                        src={item.coverImage || 'https://images.unsplash.com/photo-1551818255-e6e10975bc17?auto=format&fit=crop&q=80&w=400'}
-                        onError={(e) => {
-                          e.currentTarget.src = 'https://images.unsplash.com/photo-1551818255-e6e10975bc17?auto=format&fit=crop&q=80&w=400';
-                        }}
-                      />
-                    </div>
-                    <div className="p-4">
-                      <h3 className="font-headline font-bold text-lg text-on-surface mb-2 truncate">{item.name}</h3>
-                      <div className="flex flex-col gap-1 text-xs font-body text-on-surface-variant">
-                        <span className="flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[14px]">group</span> 
-                          {item.memberCount} Members
-                        </span>
-                        <span className="flex items-center gap-1 text-primary">
-                          <span className="material-symbols-outlined text-[14px]">lock_open</span> 
-                          Open
-                        </span>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* 4. Category Best Section */}
+        {/* New Group Action Button */}
         <section>
-          <div className="flex items-end justify-between mb-8">
-            <div>
-              <h2 className="font-headline font-extrabold text-3xl tracking-tighter text-on-surface">Category Best</h2>
-              <p className="font-body text-on-surface-variant text-sm mt-1">Top-rated communities curated by category.</p>
+          <button
+            onClick={() => setIsCreateOpen(true)}
+            className="w-full bg-primary text-on-primary flex items-center justify-between px-6 py-5 rounded-3xl shadow-lg hover:bg-primary-dim transition-all active:scale-[0.98] group"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
+                <span className="material-symbols-outlined text-3xl">add</span>
+              </div>
+              <div className="text-left">
+                <h3 className="font-bold font-headline text-lg">Create a New Group</h3>
+                <p className="text-on-primary/70 text-sm">Start your own community today</p>
+              </div>
             </div>
-          </div>
-          <div className="grid grid-cols-1 gap-4">
-            {categories.map((cat) => {
-              // Pick a random group for demo if actual filtered data is empty
-              const topInCat = communities.find(c => c.tags?.includes(cat.name)) || communities[Math.floor(Math.random() * communities.length)];
-              if (!topInCat) return null;
+            <span className="material-symbols-outlined text-on-primary/50 group-hover:text-on-primary transition-colors">chevron_right</span>
+          </button>
+        </section>
 
-              return (
-                <Link key={cat.name} href={`/group/${topInCat.id}`}>
-                  <div className="flex items-center gap-4 bg-surface-container-lowest p-4 rounded-xl shadow-sm border border-outline-variant/10 hover:border-primary/30 transition-colors">
-                    <div className="w-16 h-16 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                      <span className="material-symbols-outlined text-3xl">{cat.icon}</span>
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-headline font-bold text-on-surface">{topInCat.name}</h4>
-                        <span className="text-[10px] font-bold bg-secondary/10 text-secondary px-2 py-0.5 rounded">{cat.label}</span>
-                      </div>
-                      <p className="text-xs text-on-surface-variant mt-1 line-clamp-1">{topInCat.description}</p>
-                      <div className="flex items-center gap-4 mt-2 text-[10px] text-on-surface-variant/80">
-                        <span className="flex items-center gap-1 font-bold">
-                          <span className="material-symbols-outlined text-[12px] fill-1 text-amber-500">star</span> 
-                          4.9
-                        </span>
-                        <span>{topInCat.memberCount} active members</span>
-                      </div>
-                    </div>
-                    <span className="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+        {/* Category Best Section */}
+        <section className="space-y-4">
+          <div>
+            <h2 className="text-2xl font-extrabold font-headline tracking-tight text-on-background">Category Best</h2>
+            <p className="text-on-surface-variant text-sm font-medium">Explore by activity type</p>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            {discoveryCategories.map((cat) => (
+              <div 
+                key={cat.id} 
+                onClick={() => setSelectedCategory(cat.id)} 
+                className={`group relative aspect-[4/3] rounded-3xl overflow-hidden ${cat.color} cursor-pointer transition-all hover:scale-[0.98] shadow-sm hover:shadow-md`}
+              >
+                <div className="absolute inset-0 bg-black/5 z-0"></div>
+                <div className="absolute inset-0 p-5 flex flex-col justify-between z-10">
+                  <div className="flex justify-between items-start">
+                    <span className={`material-symbols-outlined ${cat.text} text-3xl`}>{cat.icon}</span>
+                    <span className={`bg-white/40 backdrop-blur-md px-2 py-0.5 rounded-lg text-xs font-bold ${cat.text}`}>
+                      {categoryCounts[cat.id as keyof typeof categoryCounts] || 0}
+                    </span>
                   </div>
-                </Link>
-              );
-            })}
+                  <span className={`${cat.text} font-black font-headline text-lg uppercase italic`}>{cat.id}</span>
+                </div>
+                <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                  <span className={`material-symbols-outlined text-8xl ${cat.text}`}>{cat.icon}</span>
+                </div>
+              </div>
+            ))}
           </div>
         </section>
       </main>
 
+      {/* Category Detail Overlay */}
+      {selectedCategory && (
+        <div className="fixed inset-0 z-[100] bg-background overflow-y-auto no-scrollbar animate-in slide-in-from-bottom duration-300">
+          <header className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-md z-50 border-b border-slate-100">
+            <div className="max-w-2xl mx-auto px-4 h-16 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => setSelectedCategory(null)}
+                  className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors text-on-surface"
+                >
+                  <span className="material-symbols-outlined">arrow_back</span>
+                </button>
+                <h1 className="text-xl font-bold font-headline text-on-surface">
+                  {selectedCategory === 'All' ? 'Discover All' : `Category: ${selectedCategory}`}
+                </h1>
+              </div>
+            </div>
+          </header>
+
+          <main className="max-w-2xl mx-auto px-4 space-y-6 pt-20 pb-8">
+            {getFilteredGroups().length > 0 ? getFilteredGroups().map((group, index) => (
+              <article 
+                key={group.id} 
+                onClick={() => router.push(`/group/${group.id}`)}
+                className="bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-md hover:shadow-xl transition-shadow group cursor-pointer active:scale-[0.99] transition-all"
+              >
+                <div className="relative h-48 overflow-hidden">
+                  <GroupCoverImage group={group} className="group-hover:scale-105" />
+                  {index === 0 && (
+                    <div className="absolute top-4 right-4 bg-primary text-white px-3 py-1 rounded-full text-[10px] font-bold shadow-lg tracking-wider">
+                      FEATURED
+                    </div>
+                  )}
+                  <div className="absolute bottom-4 left-4 flex -space-x-2">
+                    <div className="w-8 h-8 rounded-full border-2 border-white bg-slate-200 flex items-center justify-center overflow-hidden">
+                      <img className="w-full h-full object-cover" src={`https://ui-avatars.com/api/?name=${encodeURIComponent(group.name)}&background=random`} alt="User" />
+                    </div>
+                    <div className="w-8 h-8 rounded-full border-2 border-white bg-slate-300 flex items-center justify-center overflow-hidden">
+                      <img className="w-full h-full object-cover" src={`https://ui-avatars.com/api/?name=User&background=random`} alt="User" />
+                    </div>
+                    <div className="w-8 h-8 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-600">+{group.memberCount > 2 ? group.memberCount - 2 : 0}</div>
+                  </div>
+                </div>
+                <div className="p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h2 className="text-xl font-bold font-headline text-on-surface mb-1">{group.name}</h2>
+                      <div className="flex items-center gap-2 text-on-surface-variant text-xs">
+                        <span className="material-symbols-outlined text-[14px]">person</span>
+                        <span>Owned by {group.representative?.name || 'Community Leader'}</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="inline-flex items-center gap-1 text-primary font-bold text-xs bg-primary-container/20 px-2.5 py-1 rounded-lg">
+                        <span className="material-symbols-outlined text-[14px]">groups</span>
+                        {group.memberCount}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest bg-emerald-50 px-2 py-0.5 rounded-md">Open to Join</span>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Join logic would go here
+                      }}
+                      className="bg-gradient-to-br from-primary to-[#4d8eff] text-white px-6 py-2 rounded-xl font-bold shadow-lg shadow-blue-100 active:scale-95 transition-all text-sm"
+                    >
+                      Join Group
+                    </button>
+                  </div>
+                </div>
+              </article>
+            )) : (
+              <div className="flex flex-col items-center justify-center py-20 text-on-surface-variant/50">
+                <span className="material-symbols-outlined text-6xl mb-4 opacity-20">search_off</span>
+                <p className="font-medium">No communities found in this category.</p>
+              </div>
+            )}
+          </main>
+        </div>
+      )}
+
+      {/* Create New Group Overlay */}
+      {isCreateOpen && (
+        <div className="fixed inset-0 z-[110] bg-surface overflow-y-auto no-scrollbar animate-in slide-in-from-bottom duration-300">
+          <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm flex justify-between items-center w-full px-6 py-4">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setIsCreateOpen(false)}
+                className="flex items-center justify-center p-2 rounded-lg hover:bg-gray-200 transition-colors active:scale-95 duration-150 text-gray-500"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+              <h1 className="font-headline text-lg font-bold text-[#1a1c1e]">Create New Group</h1>
+            </div>
+            <button
+              onClick={handleCreateSubmit}
+              disabled={createLoading}
+              className="bg-[#0b5ac0] text-white px-6 py-2 rounded-lg font-headline font-bold text-sm hover:brightness-110 active:scale-95 transition-all duration-150 shadow-md disabled:opacity-50"
+            >
+              {createLoading ? 'Saving...' : 'Save'}
+            </button>
+          </header>
+
+          <main className="mt-20 pb-12 px-6 max-w-[896px] mx-auto space-y-6">
+            {/* Section: Basic Info */}
+            <section className="bg-white rounded-[12px] p-6 shadow-sm border border-outline-variant/30">
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-outline">GROUP NAME</label>
+                  <input
+                    className="w-full bg-surface-container-low border-transparent focus:border-primary focus:ring-0 rounded-lg p-3 text-on-surface font-medium transition-all"
+                    placeholder="Enter group name..."
+                    type="text"
+                    value={createForm.name}
+                    onChange={(e) => setCreateForm(prev => ({ ...prev, name: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-outline">DESCRIPTION</label>
+                  <textarea
+                    className="w-full bg-surface-container-low border-transparent focus:border-primary focus:ring-0 rounded-lg p-3 text-on-surface font-medium transition-all resize-none"
+                    placeholder="Describe the purpose of this group..."
+                    rows={4}
+                    value={createForm.description}
+                    onChange={(e) => setCreateForm(prev => ({ ...prev, description: e.target.value }))}
+                  ></textarea>
+                </div>
+              </div>
+            </section>
+
+            {/* Section: Category */}
+            <section className="bg-white rounded-[12px] p-6 shadow-sm border border-outline-variant/30">
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-outline mb-4">CATEGORY</label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                {[
+                  { id: 'Studio', icon: 'palette' },
+                  { id: 'Shop', icon: 'shopping_bag' },
+                  { id: 'Stay', icon: 'bed' },
+                  { id: 'Rental', icon: 'car_rental' },
+                  { id: 'Wellness', icon: 'self_care' },
+                  { id: 'Dining', icon: 'restaurant' },
+                  { id: 'Office', icon: 'work' },
+                  { id: 'Online', icon: 'computer' }
+                ].map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setCreateForm(prev => ({ ...prev, category: cat.id }))}
+                    className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all group active:scale-95 ${createForm.category === cat.id
+                        ? 'border-primary bg-primary-container/10'
+                        : 'border-transparent bg-surface-container-low hover:bg-surface-container-high'
+                      }`}
+                  >
+                    <span className={`material-symbols-outlined mb-2 ${createForm.category === cat.id ? 'text-primary' : 'text-outline'}`}>{cat.icon}</span>
+                    <span className={`text-[12px] font-semibold ${createForm.category === cat.id ? 'text-primary' : 'text-on-surface-variant'}`}>{cat.id}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            {/* Section: Membership Strategy */}
+            <section className="bg-white rounded-[12px] p-6 shadow-sm border border-outline-variant/30">
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-outline mb-4">JOINING POLICY</label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {[
+                  { id: 'open', label: 'Open', icon: 'public', desc: 'Anyone can join the group instantly.' },
+                  { id: 'approval', label: 'Approval', icon: 'verified_user', desc: 'Admin must approve each request.' },
+                  { id: 'invite', label: 'Invitation', icon: 'mail', desc: 'Private selected members only.' }
+                ].map((policy) => (
+                  <div
+                    key={policy.id}
+                    onClick={() => setCreateForm(prev => ({ ...prev, joinPolicy: policy.id }))}
+                    className={`relative p-4 rounded-xl border-2 cursor-pointer group hover:shadow-md transition-all ${createForm.joinPolicy === policy.id
+                        ? 'border-primary bg-primary-container/5'
+                        : 'border-outline-variant/30 bg-white hover:border-outline'
+                      }`}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <span className={`material-symbols-outlined ${createForm.joinPolicy === policy.id ? 'text-primary' : 'text-outline'}`}>{policy.icon}</span>
+                      <div className={`w-5 h-5 rounded-full border-4 bg-white ${createForm.joinPolicy === policy.id ? 'border-primary' : 'border-outline-variant'}`}></div>
+                    </div>
+                    <p className="font-bold text-sm mb-1">{policy.label}</p>
+                    <p className="text-[12px] text-on-surface-variant font-medium">{policy.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Section: Media */}
+            <section className="bg-white rounded-[12px] p-6 shadow-sm border border-outline-variant/30">
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-outline mb-4">COVER PHOTO</label>
+              <div className="relative group">
+                <div className={`w-full aspect-[21/9] rounded-xl overflow-hidden border-2 border-dashed flex flex-col items-center justify-center transition-all cursor-pointer ${createForm.previewUrl ? 'border-primary' : 'border-outline-variant bg-surface-container-low hover:bg-surface-container hover:border-primary'
+                  }`}>
+                  {createForm.previewUrl ? (
+                    <img src={createForm.previewUrl} className="w-full h-full object-cover" alt="Preview" />
+                  ) : (
+                    <>
+                      <div className="p-4 rounded-full bg-white shadow-sm mb-3">
+                        <span className="material-symbols-outlined text-primary text-3xl">upload_file</span>
+                      </div>
+                      <p className="font-bold text-sm">Click to upload or drag and drop</p>
+                      <p className="text-[12px] text-outline font-medium mt-1">SVG, PNG, JPG or GIF (max. 800x400px)</p>
+                    </>
+                  )}
+                </div>
+                <input
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                />
+              </div>
+
+              {createForm.previewUrl && (
+                <div className="mt-4 flex items-center gap-3 p-3 bg-surface-container-low rounded-lg">
+                  <div className="w-12 h-12 rounded bg-outline-variant/20 flex items-center justify-center overflow-hidden">
+                    <img src={createForm.previewUrl} className="w-full h-full object-cover" alt="Small Preview" />
+                  </div>
+                  <div>
+                    <p className="text-[12px] font-semibold text-on-surface">{createForm.coverImage?.name}</p>
+                    <p className="text-[10px] text-outline font-medium">{(createForm.coverImage?.size || 0 / 1024 / 1024).toFixed(1)} MB • Ready to upload</p>
+                  </div>
+                  <button
+                    onClick={() => setCreateForm(prev => ({ ...prev, coverImage: null, previewUrl: null }))}
+                    className="ml-auto text-error hover:bg-error-container/20 p-2 rounded-full transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-sm">delete</span>
+                  </button>
+                </div>
+              )}
+            </section>
+
+            <div className="h-8"></div>
+          </main>
+        </div>
+      )}
+      {/* Persistent Bottom Sheet */}
+      <AnimatePresence>
+        {sheetState !== 'minimized' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSheetState('minimized')}
+            className="fixed inset-0 bg-black/40 z-40 pointer-events-auto"
+          />
+        )}
+      </AnimatePresence>
+
+      <motion.div
+        drag="y"
+        dragConstraints={{ top: 0, bottom: 0 }}
+        dragElastic={0.1}
+        onDragEnd={(e, info) => {
+          if (info.offset.y < -100) {
+            setSheetState('full');
+          } else if (info.offset.y > 100) {
+            setSheetState('minimized');
+          } else if (Math.abs(info.offset.y) > 50) {
+            setSheetState('half');
+          }
+        }}
+        initial={false}
+        animate={{
+          y: sheetState === 'minimized' ? 'calc(100% - 100px)' : sheetState === 'half' ? '40%' : '10%',
+          height: '100%'
+        }}
+        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+        className="fixed inset-x-0 bottom-0 z-50 bg-white shadow-[0_-8px_30px_rgb(0,0,0,0.08)] rounded-t-[32px] border-t border-slate-50 flex flex-col"
+      >
+        {/* Handle & Header Section */}
+        <div 
+          className="pt-3 px-6 cursor-pointer pb-1 touch-none"
+          onClick={() => setSheetState(sheetState === 'minimized' ? 'half' : sheetState === 'half' ? 'full' : 'minimized')}
+        >
+          {/* Handle Bar Container */}
+          <div className="relative flex items-center justify-center mb-6">
+            {/* Handle Bar */}
+            <div className="w-10 h-1.5 bg-slate-200 rounded-full"></div>
+            {/* My Groups Label */}
+            <span className="absolute right-0 text-[10px] font-bold text-slate-400 uppercase tracking-widest">My Groups</span>
+          </div>
+        </div>
+
+        {/* Scrollable Content */}
+        <div className={`flex-1 overflow-y-auto px-6 pb-20 custom-scrollbar touch-pan-y ${sheetState === 'minimized' ? 'overflow-hidden' : ''}`}>
+          <div className="space-y-3">
+            {userJoinedGroups.length > 0 ? userJoinedGroups.map((group) => (
+              <div 
+                key={group.id} 
+                onClick={() => router.push(`/group/${group.id}`)}
+                className="flex items-center p-3 -mx-3 rounded-2xl hover:bg-slate-50 transition-colors group cursor-pointer active:scale-[0.98]"
+              >
+                <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center overflow-hidden mr-4 shadow-sm">
+                  {group.coverImage ? (
+                    <img src={group.coverImage} className="w-full h-full object-cover" alt={group.name} />
+                  ) : (
+                    <span className="material-symbols-outlined text-slate-400">groups</span>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-slate-900 truncate">{group.name}</h3>
+                  <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
+                    <div className="flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[14px]">group</span>
+                      <span>{group.memberCount || 0}</span>
+                    </div>
+                    <span>•</span>
+                    <span>{group.tags?.[0] || 'Member'}</span>
+                  </div>
+                </div>
+                <div className="text-slate-400 group-hover:text-primary transition-colors">
+                  <span className="material-symbols-outlined">chevron_right</span>
+                </div>
+              </div>
+            )) : (
+              <div className="py-10 text-center space-y-4">
+                <p className="text-slate-400 text-sm font-medium">You haven't joined any groups yet.</p>
+                <button 
+                  onClick={() => setIsCreateOpen(true)}
+                  className="text-primary font-bold text-sm bg-primary/5 px-4 py-2 rounded-full"
+                >
+                  Create Your First Group
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </motion.div>
+
       <style jsx global>{`
-        .hide-scrollbar::-webkit-scrollbar {
-          display: none;
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
         }
-        .hide-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #e2e8f0;
+          border-radius: 10px;
         }
       `}</style>
     </div>
   );
 }
+
+

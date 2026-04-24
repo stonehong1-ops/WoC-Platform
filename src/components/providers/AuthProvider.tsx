@@ -25,6 +25,9 @@ interface UserProfile {
   isInstructor?: boolean;
   isSeller?: boolean;
   isServiceProvider?: boolean;
+  role?: string;
+  isAdmin?: boolean;
+  joinedGroups?: string[];
 }
 
 interface AuthContextType {
@@ -136,6 +139,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               isInstructor: data.isInstructor || false,
               isSeller: data.isSeller || false,
               isServiceProvider: data.isServiceProvider || false,
+              joinedGroups: data.joinedGroups || [],
             });
           } else {
             setProfile({

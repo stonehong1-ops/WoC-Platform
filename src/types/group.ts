@@ -12,7 +12,7 @@ export interface Post {
   author: Author;
   title?: string;
   content: string;
-  type: 'text' | 'image' | 'video' | 'question' | 'event' | 'info';
+  type: 'text' | 'image' | 'video' | 'question' | 'event' | 'info' | 'text-card';
   image?: string;
   video?: string;
   media?: string[];
@@ -23,6 +23,7 @@ export interface Post {
   createdAt: any;
   updatedAt?: any;
   tags?: string[];
+  bgTheme?: string;
 }
 
 export interface Comment {
@@ -39,6 +40,7 @@ export interface Member {
   photoURL?: string;
   role?: string;
   joinedAt?: any;
+  status?: 'active' | 'pending' | 'rejected';
 }
 
 export interface ServiceItem {
@@ -165,6 +167,10 @@ export interface ActiveServices {
   shop: boolean;
   stay: boolean;
   rental: boolean;
+  wellness?: boolean;
+  dining?: boolean;
+  office?: boolean;
+  online?: boolean;
 }
 
 export interface ClassScheduleEntry {
@@ -223,3 +229,8 @@ export interface CalendarEvent {
   createdBy: string;
   createdAt: any;
 }
+export const DEFAULT_BOARDS: GroupBoard[] = [
+  { id: 'notice', title: 'Notice', permission: 'Only Admin', order: 1 },
+  { id: 'freetalk', title: 'Free Talk', permission: 'Everyone', order: 2 },
+  { id: 'qna', title: 'Q&A', permission: 'Everyone', order: 3 },
+];

@@ -1,0 +1,200 @@
+'use client';
+
+import React, { useState } from 'react';
+import FeedCreatePopup from './FeedCreatePopup';
+
+interface UniversalFeedProps {
+  context: any;
+  currentUser: any;
+}
+
+export default function UniversalFeed({ context, currentUser }: UniversalFeedProps) {
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+  return (
+    <div className="text-on-surface font-body min-h-screen relative overflow-x-hidden">
+      <main className="max-w-3xl mx-auto flex flex-col gap-4 pt-8 px-4 sm:px-6">
+        {/* Feed Header/Composer (Simplified One-Line) */}
+        <section
+          onClick={() => setIsCreateModalOpen(true)}
+          className="bg-surface-container-lowest rounded-xl shadow-sm py-2.5 px-4 flex gap-4 items-center border border-outline-variant/10 cursor-pointer hover:bg-surface-container-low transition-colors"
+        >
+          <img
+            alt={currentUser?.displayName || "Current User"}
+            className="w-10 h-10 rounded-full object-cover shrink-0"
+            src={currentUser?.photoURL || "https://lh3.googleusercontent.com/a/default-user"}
+          />
+          <div className="flex-1 text-on-surface-variant/60 text-sm">
+            Share your latest moves or thoughts...
+          </div>
+        </section>
+
+        {/* Feed Posts List */}
+        <div className="flex flex-col gap-4">
+          {/* Post 1 (Image Post) */}
+          <article className="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/10 overflow-hidden transform transition-transform hover:scale-[0.99]">
+            <div className="p-4 sm:p-6 pb-3">
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex gap-3 items-center">
+                  <img
+                    alt="Marco Rossi"
+                    className="w-10 h-10 rounded-full object-cover"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuAgfjt_pv8oqJsayYTG7Vuv6LTMGSsNTSDooBLOFw3BbgycyYXm_V53fWU5wnKb3zhUpz-9GuyxSlAdK1VqdYsfzt37aGqPhy7usdQmzH3E6OzS7IBhe10kzT-DHZMXzdHZ1sC5-j-pf0tOQOiu92jmZbAsjaJ0fcHutTmAmZ8tGqKGtHkyjFTEM1Rrbm2e-qC31IlDPx-wat2R-LF1GkbbteLi-G4Fpz3V4b-6fi3buZMPdbVwAEZB55BUyalMLhrwCW5hzF3cAXs"
+                  />
+                  <div>
+                    <h3 className="font-headline font-bold text-on-surface text-sm leading-tight">Marco Rossi</h3>
+                    <p className="text-on-surface-variant text-xs font-medium">2 hours ago</p>
+                  </div>
+                </div>
+                <button className="text-on-surface-variant hover:bg-surface p-1 rounded-full transition-colors">
+                  <span className="material-symbols-outlined">more_horiz</span>
+                </button>
+              </div>
+              <p className="text-on-surface text-sm mb-4 leading-relaxed">
+                Incredible workshop this morning! The energy in the room was unmatched. Focused heavily on connection and subtle weight shifts. Can't wait for next week's session.
+              </p>
+            </div>
+
+            <div className="w-full aspect-video bg-surface relative">
+              <img
+                alt="Tango Workshop"
+                className="w-full h-full object-cover"
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuC8EJ_7SOaasugoJoW1-V6qlw1mjEMlTXx1ediURkOQrOKpkUZaN9O31zkXB9eUlzKBDqrOztfQuOdwNlj81qJ2dbDJFU1NstQoD6Y-YhTrDQiXndyoTv998magsVNDbFKgICO6E3E_CRitHqLjz9lJaDbG0AKkBGcozaD1zPkGtI_xEw0IuLm6LkZcmDlzQjWXNSEhVX8c1jnw_-rWt3VzFHf1YTamzBsEiFxlzXceswpQw2oMWqKELNl5M1T-1Q-u20_kBWgZ61o"
+              />
+              {/* Action Tag */}
+              <div className="absolute bottom-4 left-4 bg-surface-container-lowest/90 backdrop-blur-md px-3 py-1 rounded-full shadow-sm flex items-center gap-1">
+                <span className="material-symbols-outlined text-[14px] text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>local_fire_department</span>
+                <span className="font-label text-[10px] font-bold text-primary uppercase tracking-wider">Trending</span>
+              </div>
+            </div>
+
+            <div className="p-4 sm:px-6 border-t border-outline-variant/10 flex justify-between items-center text-on-surface-variant">
+              <div className="flex gap-6">
+                <button className="flex items-center gap-2 hover:text-primary transition-colors group">
+                  <span className="material-symbols-outlined group-hover:scale-110 transition-transform">favorite</span>
+                  <span className="text-xs font-medium">24</span>
+                </button>
+                <button className="flex items-center gap-2 hover:text-primary transition-colors group">
+                  <span className="material-symbols-outlined group-hover:scale-110 transition-transform">chat_bubble</span>
+                  <span className="text-xs font-medium">5</span>
+                </button>
+              </div>
+              <button className="flex items-center gap-2 hover:text-primary transition-colors group">
+                <span className="material-symbols-outlined group-hover:scale-110 transition-transform">share</span>
+              </button>
+            </div>
+          </article>
+
+          {/* Post 2 (Text only with highlight) */}
+          <article className="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/10 p-4 sm:p-6 transform transition-transform hover:scale-[0.99]">
+            <div className="flex justify-between items-start mb-4">
+              <div className="flex gap-3 items-center">
+                <img
+                  alt="Elena Rodriguez"
+                  className="w-10 h-10 rounded-full object-cover"
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuDt0BscUZUEcX1rbx3RbmOJNcp1ij-QdFshsPtIMpKHdo1whOMXpFz5achU13tUfSwMiyVYJ7Wokz3k9g9WEtGM6I59eBxNwFv_6Y76dwyDd6X4E1x8MnErf-ckrMAB8tjvnP0yqf6sfPvd_foiAbLhDoNkhlTJKxOQjhgJWKbBgBxbPXAbNFTshuBCm9i_NjkcoGl3BWaEdOecfUNRGnmc3s1eXkYxFR5jMticgC7QUkWAcCt0cSKwURlTawCpp87SnjcPRj7j7VY"
+                />
+                <div>
+                  <h3 className="font-headline font-bold text-on-surface text-sm leading-tight">Elena Rodriguez</h3>
+                  <p className="text-on-surface-variant text-xs font-medium">5 hours ago</p>
+                </div>
+              </div>
+              <button className="text-on-surface-variant hover:bg-surface p-1 rounded-full transition-colors">
+                <span className="material-symbols-outlined">more_horiz</span>
+              </button>
+            </div>
+            <div className="bg-secondary-container/20 rounded-lg p-4 mb-4 border border-secondary-container/50">
+              <p className="text-on-surface text-lg font-headline font-semibold leading-tight text-center">
+                "The embrace is not just a posture; it's a conversation."
+              </p>
+            </div>
+            <div className="flex justify-between items-center text-on-surface-variant pt-2">
+              <div className="flex gap-6">
+                <button className="flex items-center gap-2 text-primary group">
+                  <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>
+                  <span className="text-xs font-medium text-primary">89</span>
+                </button>
+                <button className="flex items-center gap-2 hover:text-primary transition-colors group">
+                  <span className="material-symbols-outlined group-hover:scale-110 transition-transform">chat_bubble</span>
+                  <span className="text-xs font-medium">12</span>
+                </button>
+              </div>
+              <button className="flex items-center gap-2 hover:text-primary transition-colors group">
+                <span className="material-symbols-outlined group-hover:scale-110 transition-transform">share</span>
+              </button>
+            </div>
+          </article>
+
+          {/* Post 3 (Event/Announcement style) */}
+          <article className="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/10 overflow-hidden transform transition-transform hover:scale-[0.99]">
+            <div className="p-4 sm:p-6 pb-3">
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex gap-3 items-center">
+                  <div className="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold font-headline">
+                    FT
+                  </div>
+                  <div>
+                    <h3 className="font-headline font-bold text-on-surface text-sm leading-tight">Freestyle Tango Official</h3>
+                    <p className="text-on-surface-variant text-xs font-medium">Yesterday at 2:00 PM</p>
+                  </div>
+                </div>
+                <span className="bg-tertiary-container/30 text-on-tertiary-container font-label text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full">
+                  Announcement
+                </span>
+              </div>
+              <h4 className="font-headline font-bold text-lg mb-2 text-primary">Milonga Under the Stars ✨</h4>
+              <p className="text-on-surface text-sm mb-4 leading-relaxed">
+                Join us this Saturday for our monthly open-air Milonga. Live music, great company, and the beautiful night sky. Open to all levels!
+              </p>
+              <div className="bg-surface rounded-lg p-3 flex items-center gap-4 mb-4">
+                <div className="bg-surface-container-lowest w-12 h-12 rounded flex flex-col items-center justify-center border border-outline-variant/20 shadow-sm">
+                  <span className="text-[10px] font-bold text-error uppercase">Oct</span>
+                  <span className="text-lg font-headline font-extrabold leading-none">24</span>
+                </div>
+                <div>
+                  <p className="font-bold text-sm">Plaza Mayor</p>
+                  <p className="text-xs text-on-surface-variant">8:00 PM - 12:00 AM</p>
+                </div>
+                <div className="ml-auto">
+                  <button className="bg-secondary-container text-on-secondary-container font-label text-[11px] font-bold uppercase tracking-wider px-4 py-2 rounded-full hover:bg-secondary-container/80 transition-colors">
+                    RSVP
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="p-4 sm:px-6 border-t border-outline-variant/10 flex justify-between items-center text-on-surface-variant bg-surface/50">
+              <div className="flex gap-6">
+                <button className="flex items-center gap-2 hover:text-primary transition-colors group">
+                  <span className="material-symbols-outlined group-hover:scale-110 transition-transform">favorite</span>
+                  <span className="text-xs font-medium">156</span>
+                </button>
+                <button className="flex items-center gap-2 hover:text-primary transition-colors group">
+                  <span className="material-symbols-outlined group-hover:scale-110 transition-transform">chat_bubble</span>
+                  <span className="text-xs font-medium">23</span>
+                </button>
+              </div>
+              <button className="flex items-center gap-2 hover:text-primary transition-colors group">
+                <span className="material-symbols-outlined group-hover:scale-110 transition-transform">share</span>
+              </button>
+            </div>
+          </article>
+        </div>
+      </main>
+
+      {/* Floating FAB */}
+      <button
+        onClick={() => setIsCreateModalOpen(true)}
+        className="fixed bottom-6 right-6 w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg shadow-primary/30 flex items-center justify-center hover:scale-105 active:scale-95 transition-transform z-40"
+      >
+        <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>add</span>
+      </button>
+
+      {/* Full Screen Post Creation Popup */}
+      <FeedCreatePopup
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        currentUser={currentUser}
+      />
+    </div>
+  );
+}

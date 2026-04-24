@@ -1,0 +1,181 @@
+'use client';
+
+import React from 'react';
+import { Post } from '@/types/feed';
+import { formatDistanceToNow } from 'date-fns';
+import { ko } from 'date-fns/locale';
+
+interface FeedPostCardProps {
+  post: Post;
+  currentUser?: any;
+  onLike?: (postId: string, isLike: boolean) => void;
+  onComment?: (postId: string, content: string) => void;
+  onDelete?: (postId: string) => void;
+  onDeleteComment?: (postId: string, commentId: string) => void;
+}
+
+export default function FeedPostCard({ 
+  post, 
+  currentUser, 
+  onLike, 
+  onComment, 
+  onDelete,
+  onDeleteComment 
+}: FeedPostCardProps) {
+  
+  // 1. 데이터 기반 조건 설정
+  const hasMedia = post.images && post.images.length > 0;
+  const isShortText = !hasMedia && post.content.length <= 70;
+  const hasSchedule = !!post.scheduleId; // 추후 로직 연결용
+
+  const timeAgo = post.createdAt 
+    ? formatDistanceToNow(
+        typeof (post.createdAt as any).toDate === 'function' 
+          ? (post.createdAt as any).toDate() 
+          : new Date(post.createdAt as any), 
+        { addSuffix: true, locale: ko }
+      )
+    : '방금 전';
+
+  // 2. 일정 연동형 (Variant 3: Announcement/Schedule)
+  if (hasSchedule) {
+    return (
+      <article className="bg-primary/5 border-2 border-primary/20 rounded-2xl p-6 relative overflow-hidden group hover:border-primary/40 transition-all mb-6">
+        <div className="absolute top-0 right-0 p-4">
+          <span className="bg-primary text-on-primary text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest shadow-lg shadow-primary/20">
+            FT Official
+          </span>
+        </div>
+        <div className="flex items-center gap-4 mb-6">
+          <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-on-primary">
+            <span className="material-symbols-outlined !text-2xl">campaign</span>
+          </div>
+          <div>
+            <h3 className="font-title text-lg font-bold text-on-surface">Weekly Milonga Night</h3>
+            <p className="text-on-surface-variant text-xs">This Friday, 8:00 PM • Main Hall</p>
+          </div>
+        </div>
+        <p className="text-on-surface text-base leading-relaxed mb-6 font-medium">
+          {post.content}
+        </p>
+        <div className="flex justify-between items-center pt-4 border-t border-primary/10">
+          <div className="flex -space-x-2">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="w-8 h-8 rounded-full border-2 border-surface-container bg-surface-variant" />
+            ))}
+            <div className="w-8 h-8 rounded-full border-2 border-surface-container bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">
+              +12
+            </div>
+          </div>
+          <button className="bg-primary text-on-primary px-6 py-2 rounded-full font-label text-[11px] font-bold uppercase tracking-wider hover:scale-95 transition-transform">
+            RSVP Now
+          </button>
+        </div>
+      </article>
+    );
+  }
+
+  // 3. 텍스트 강조형 (Variant 2: Quote/Highlight - 70자 이하)
+  if (isShortText) {
+    return (
+      <article className="bg-secondary-container/20 border border-outline-variant/10 rounded-2xl p-8 flex flex-col items-center text-center group hover:bg-secondary-container/30 transition-all mb-6">
+        <span className="material-symbols-outlined text-secondary/40 !text-4xl mb-4">format_quote</span>
+        <p className="text-on-secondary-container text-xl font-title font-medium leading-snug mb-6 italic">
+          "{post.content}"
+        </p>
+        <div className="flex items-center gap-3">
+          <img 
+            src={post.authorPhoto || post.userPhoto || "https://lh3.googleusercontent.com/a/default-user"} 
+            className="w-8 h-8 rounded-full border border-outline-variant/20" 
+            alt={post.authorName} 
+          />
+          <span className="text-on-surface font-semibold text-sm">{post.authorName || post.userName}</span>
+          <span className="text-on-surface-variant/40 text-xs">• {timeAgo}</span>
+        </div>
+      </article>
+    );
+  }
+
+  // 4. 미디어형 (Variant 1: Image Post)
+  return (
+    <article className="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl overflow-hidden group hover:shadow-xl hover:shadow-primary/5 transition-all mb-6">
+      {hasMedia && (
+        <div className="relative aspect-video overflow-hidden">
+          <img 
+            src={post.images![0]} 
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
+            alt="Post content" 
+          />
+          <div className="absolute top-4 left-4">
+            <span className="bg-black/40 backdrop-blur-md text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest flex items-center gap-2">
+              <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse"></span>
+              Trending
+            </span>
+          </div>
+          <button className="absolute top-4 right-4 w-10 h-10 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-colors">
+            <span className="material-symbols-outlined">more_vert</span>
+          </button>
+        </div>
+      )}
+      
+      <div className="p-5">
+        {!hasMedia && (
+          <div className="flex justify-between items-start mb-4">
+            <div className="flex items-center gap-3">
+              <img 
+                src={post.authorPhoto || post.userPhoto || "https://lh3.googleusercontent.com/a/default-user"} 
+                className="w-10 h-10 rounded-full border border-outline-variant/10" 
+                alt={post.authorName} 
+              />
+              <div>
+                <h4 className="text-on-surface font-bold text-sm leading-none mb-1">{post.authorName || post.userName}</h4>
+                <p className="text-on-surface-variant text-[10px] uppercase tracking-tighter font-semibold">
+                  {post.location?.city || 'Global Community'}
+                </p>
+              </div>
+            </div>
+            <button className="text-on-surface-variant hover:text-on-surface transition-colors">
+              <span className="material-symbols-outlined">more_horiz</span>
+            </button>
+          </div>
+        )}
+
+        <p className="text-on-surface text-sm leading-relaxed mb-4">
+          {post.content}
+        </p>
+
+        {hasMedia && (
+          <div className="flex items-center gap-3 mb-4 pt-4 border-t border-outline-variant/5">
+            <img 
+              src={post.authorPhoto || post.userPhoto || "https://lh3.googleusercontent.com/a/default-user"} 
+              className="w-8 h-8 rounded-full border border-outline-variant/10" 
+              alt={post.authorName} 
+            />
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <span className="text-on-surface font-bold text-xs">{post.authorName || post.userName}</span>
+                <span className="text-on-surface-variant/40 text-[10px]">• {timeAgo}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between pt-2 border-t border-outline-variant/5">
+          <div className="flex gap-4">
+            <button className="flex items-center gap-1.5 text-on-surface-variant hover:text-primary transition-colors group/btn">
+              <span className="material-symbols-outlined !text-[20px] group-hover/btn:fill-1">favorite</span>
+              <span className="text-xs font-semibold">{post.likesCount || post.likes || 0}</span>
+            </button>
+            <button className="flex items-center gap-1.5 text-on-surface-variant hover:text-primary transition-colors group/btn">
+              <span className="material-symbols-outlined !text-[20px] group-hover/btn:fill-1">chat_bubble</span>
+              <span className="text-xs font-semibold">{post.commentsCount || 0}</span>
+            </button>
+          </div>
+          <button className="text-on-surface-variant hover:text-primary transition-colors">
+            <span className="material-symbols-outlined !text-[20px]">share</span>
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+}

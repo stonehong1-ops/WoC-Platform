@@ -1,0 +1,93 @@
+[
+  {
+    "uid": "+821040595391",
+    "sourceData": {
+      "createdAt": "2026-04-01T07:17:40.499Z",
+      "device": "android",
+      "dwellMinutes": "2",
+      "lastVisit": "2026-04-11T12:52:17.333Z",
+      "nickname": "엠제이",
+      "phone": "01040595391",
+      "photoURL": "",
+      "role": "follower",
+      "settings": null,
+      "visitCount": "3"
+    },
+    "type": "recovery"
+  },
+  {
+    "uid": "+821042048733",
+    "sourceData": {
+      "createdAt": "2026-04-08T07:47:24.325Z",
+      "device": "android",
+      "dwellMinutes": "8",
+      "lastVisit": "2026-04-12T08:52:55.589Z",
+      "nickname": "린다",
+      "phone": "01042048733",
+      "photoURL": "",
+      "role": "follower",
+      "settings": null,
+      "visitCount": "33"
+    },
+    "type": "recovery"
+  },
+  {
+    "uid": "+821050464998",
+    "sourceData": {
+      "createdAt": "2026-04-11T04:19:34.821Z",
+      "device": "android",
+      "dwellMinutes": "1",
+      "lastVisit": "2026-04-11T04:20:35.111Z",
+      "nickname": "베라",
+      "phone": "01050464998",
+      "role": "follower",
+      "visitCount": "4"
+    },
+    "type": "recovery"
+  },
+  {
+    "uid": "+821051024950",
+    "sourceData": {
+      "createdAt": "2026-04-09T02:46:52.330Z",
+      "device": "android",
+      "dwellMinutes": "5",
+      "lastVisit": "2026-04-09T06:31:46.067Z",
+      "nickname": "듀엣",
+      "phone": "01051024950",
+      "photoURL": "",
+      "role": "follower",
+      "visitCount": "7"
+    },
+    "type": "recovery"
+  },
+  {
+    "uid": "+821053153070",
+    "type": "unknown_corrupted"
+  },
+  {
+    "uid": "+821099998888",
+    "sourceData": {
+      "device": "pc",
+      "dwellMinutes": "129",
+      "lastVisit": "2026-04-14T05:49:25.438Z",
+      "nickname": "NewUser",
+      "phone": "01099998888",
+      "role": "leader",
+      "settings": null,
+      "visitCount": "17"
+    },
+    "type": "recovery"
+  },
+  {
+    "uid": "system1",
+    "type": "unknown_corrupted"
+  },
+  {
+    "uid": "system2",
+    "type": "unknown_corrupted"
+  },
+  {
+    "uid": "system3",
+    "type": "unknown_corrupted"
+  }
+]
