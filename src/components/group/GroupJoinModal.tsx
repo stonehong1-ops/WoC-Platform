@@ -8,6 +8,7 @@ interface GroupJoinModalProps {
   onClose: () => void;
   groupName: string;
   adminName: string;
+  adminId?: string;
   strategy: 'open' | 'approval' | 'invite' | undefined;
   onConfirm: () => void;
 }

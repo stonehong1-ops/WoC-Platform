@@ -9,16 +9,16 @@ import { Post } from '@/types/feed';
 interface UniversalFeedProps {
   context: any;
   currentUser: any;
+  profile?: any;
 }
 
-export default function UniversalFeed({ context, currentUser }: UniversalFeedProps) {
+export default function UniversalFeed({ context, currentUser, profile }: UniversalFeedProps) {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 실시간 포스트 구독: plaza 스코프면 'plaza'를 우선 타겟으로 설정
     const targetId = context.scope === 'plaza' ? 'plaza' : (context.scopeId || 'freestyle-tango');
     const unsubscribe = feedService.subscribePosts(
       targetId,
@@ -37,33 +37,57 @@ export default function UniversalFeed({ context, currentUser }: UniversalFeedPro
   }, [context.scopeId]);
 
   return (
-    <div className="text-on-surface font-body min-h-screen relative overflow-x-hidden">
-      <main className="max-w-3xl mx-auto flex flex-col gap-4 pt-8 px-4 sm:px-6">
-        {/* Feed Header/Composer (Simplified One-Line) */}
-        <section
+    <div className={`text-on-surface font-body relative ${context.scope === 'plaza' ? 'min-h-screen overflow-x-hidden' : ''}`}>
+      {/* Ambient Background Effects */}
+      <div className={`${context.scope === 'plaza' ? 'fixed inset-0 z-[-1] overflow-hidden pointer-events-none' : 'hidden'}`}>
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/5 blur-3xl rounded-full"></div>
+        <div className="absolute bottom-[20%] right-[-5%] w-[40%] h-[60%] bg-tertiary/5 blur-3xl rounded-full"></div>
+      </div>
+
+      <main className={`max-w-3xl mx-auto flex flex-col gap-6 px-4 sm:px-6 ${context.scope === 'plaza' ? 'pt-8' : 'pt-0 pb-16'}`}>
+        {/* Feed Header/Composer (Bento Style) */}
+        <section 
           onClick={() => setIsCreateModalOpen(true)}
-          className="bg-surface-container-lowest rounded-xl shadow-sm py-2.5 px-4 flex gap-4 items-center border border-outline-variant/10 cursor-pointer hover:bg-surface-container-low transition-colors"
+          className="bg-surface-container-lowest rounded-xl shadow-sm p-4 sm:p-6 flex gap-4 items-start border border-outline-variant/10 cursor-pointer hover:shadow-md transition-all"
         >
-          <img
-            alt={currentUser?.displayName || "Current User"}
-            className="w-10 h-10 rounded-full object-cover shrink-0"
-            src={currentUser?.photoURL || "https://lh3.googleusercontent.com/a/default-user"}
+          <img 
+            alt={profile?.nickname || currentUser?.displayName || "Current User"} 
+            className="w-12 h-12 rounded-full object-cover shrink-0 bg-slate-100" 
+            src={profile?.photoURL || profile?.avatar || currentUser?.photoURL || "https://ui-avatars.com/api/?name=User&background=0f172a&color=fff"}
           />
-          <div className="flex-1 text-on-surface-variant/60 text-sm">
-            Share your latest moves or thoughts...
+          <div className="flex-1 flex flex-col gap-3">
+            <div className="w-full bg-surface rounded-lg p-3 text-sm text-on-surface-variant/50 min-h-[60px]">
+              Share your latest moves or thoughts...
+            </div>
+            <div className="flex justify-between items-center">
+              <div className="flex gap-2">
+                <button className="text-on-surface-variant hover:text-primary hover:bg-primary/5 p-2 rounded-full transition-colors">
+                  <span className="material-symbols-outlined">image</span>
+                </button>
+                <button className="text-on-surface-variant hover:text-primary hover:bg-primary/5 p-2 rounded-full transition-colors">
+                  <span className="material-symbols-outlined">videocam</span>
+                </button>
+                <button className="text-on-surface-variant hover:text-primary hover:bg-primary/5 p-2 rounded-full transition-colors">
+                  <span className="material-symbols-outlined">location_on</span>
+                </button>
+              </div>
+              <button className="bg-primary text-on-primary font-label text-[11px] font-bold uppercase tracking-wider px-6 py-2 rounded-full shadow-md shadow-primary/20 hover:scale-95 transition-transform">
+                Post
+              </button>
+            </div>
           </div>
         </section>
 
         {/* Feed Posts List */}
-        <div className="flex flex-col gap-4 pb-20">
+        <div className="flex flex-col gap-6 pb-24">
           {loading ? (
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-6">
               {[1, 2, 3].map(i => (
-                <div key={i} className="bg-surface-container-lowest h-64 rounded-xl animate-pulse border border-outline-variant/10" />
+                <div key={i} className="bg-surface-container-lowest h-80 rounded-xl animate-pulse border border-outline-variant/10 shadow-sm" />
               ))}
             </div>
           ) : posts.length === 0 ? (
-            <div className="py-20 text-center">
+            <div className="py-20 text-center bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm">
               <span className="material-symbols-outlined text-outline-variant text-6xl mb-4">post_add</span>
               <p className="text-on-surface-variant font-medium">No posts yet. Be the first to share!</p>
             </div>
@@ -91,14 +115,6 @@ export default function UniversalFeed({ context, currentUser }: UniversalFeedPro
           )}
         </div>
       </main>
-
-      {/* Floating FAB */}
-      <button
-        onClick={() => setIsCreateModalOpen(true)}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg shadow-primary/30 flex items-center justify-center hover:scale-105 active:scale-95 transition-transform z-40"
-      >
-        <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>add</span>
-      </button>
 
       {/* Full Screen Post Creation Popup */}
       <FeedCreatePopup

@@ -24,6 +24,7 @@ export interface GalleryPost {
   authorName: string;
   authorPhoto: string;
   media: string[];
+  mediaTypes?: ('image' | 'video')[];
   caption: string;
   venueId?: string;
   venueName?: string;

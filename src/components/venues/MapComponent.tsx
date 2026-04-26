@@ -214,39 +214,11 @@ export default function MapComponent({
   };
 
   const handleMarkerClick = (v: Venue) => {
-    if (selectedVenueId === v.id) {
-      // Second click: Navigate to details
-      router.push(`/venues/${v.id}`);
-    } else {
-      // First click: Highlight and show preview card
-      setSelectedVenueId(v.id);
-      map?.panTo({ lat: v.coordinates.latitude, lng: v.coordinates.longitude });
-      map?.setZoom(17);
-      
-      // We don't necessarily need to expand the full list anymore, 
-      // as the preview card will provide basic info.
-      
-      // Scroll list item into view if expanded
-      if (isExpanded) {
-        setTimeout(() => {
-          const element = document.getElementById(`venue-item-${v.id}`);
-          if (element) {
-            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }
-        }, 300);
-      }
-    }
+    router.push(`/venues/${v.id}`);
   };
 
   const handleListItemClick = (v: Venue) => {
-    if (selectedVenueId === v.id) {
-      // Second click: Navigate to details
-      router.push(`/venues/${v.id}`);
-    } else {
-      setSelectedVenueId(v.id);
-      map?.panTo({ lat: v.coordinates.latitude, lng: v.coordinates.longitude });
-      map?.setZoom(17);
-    }
+    router.push(`/venues/${v.id}`);
   };
 
   const findMyLocation = () => {

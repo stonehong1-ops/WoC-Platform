@@ -1,8 +1,7 @@
-﻿"use client";
+"use client";
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 
 export default function GroupModalContainer({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -30,18 +29,12 @@ export default function GroupModalContainer({ children }: { children: React.Reac
   return (
     <div className="fixed inset-0 z-[100] bg-background overflow-hidden flex flex-col">
       {/* Full Screen container for App-in-App feel */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.2 }}
-        className="relative w-full h-full bg-background overflow-hidden flex flex-col"
-      >
+      <div className="relative w-full h-full bg-background flex flex-col">
         {/* The children already contain the header and navigation logic */}
-        <div className="flex-1 w-full h-full overflow-hidden">
+        <div className="flex-1 w-full h-full overflow-y-auto custom-scrollbar">
           {children}
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

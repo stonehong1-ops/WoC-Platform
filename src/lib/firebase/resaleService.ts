@@ -97,5 +97,11 @@ export const resaleService = {
       await setDoc(docRef, initial);
       return initial;
     }
+  },
+
+  // 5. Update Item Status
+  updateItemStatus: async (itemId: string, status: 'active' | 'reserved' | 'sold') => {
+    const itemRef = doc(db, RESALE_COLLECTION, itemId);
+    await updateDoc(itemRef, { status });
   }
 };

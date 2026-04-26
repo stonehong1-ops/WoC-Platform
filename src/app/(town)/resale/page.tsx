@@ -5,6 +5,7 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { resaleService } from '@/lib/firebase/resaleService';
 import { ResaleItem } from '@/types/resale';
 import CreateResaleItem from '@/components/resale/CreateResaleItem';
+import ResaleItemDetail from '@/components/resale/ResaleItemDetail';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ResalePage() {
@@ -13,6 +14,7 @@ export default function ResalePage() {
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<ResaleItem | null>(null);
   const [userLikes, setUserLikes] = useState<string[]>([]);
 
   // 1. Subscribe to real-time resale items
@@ -51,7 +53,7 @@ export default function ResalePage() {
   };
 
   return (
-    <main className="max-w-2xl mx-auto min-h-screen flex flex-col pt-16 bg-white relative">
+    <main className="max-w-2xl mx-auto min-h-screen flex flex-col bg-white relative">
       <style dangerouslySetInnerHTML={{ __html: `
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -111,6 +113,7 @@ export default function ResalePage() {
           filteredItems.map((item) => (
             <div 
               key={item.id}
+              onClick={() => setSelectedItem(item)}
               className="flex gap-4 p-3 bg-white rounded-xl shadow-sm hover:shadow-lg transition-all group cursor-pointer border border-surface-container-highest/50 animate-in fade-in slide-in-from-bottom-4 duration-500"
             >
               <div className="relative w-32 h-32 flex-shrink-0 overflow-hidden rounded-lg bg-surface-container">
@@ -190,6 +193,12 @@ export default function ResalePage() {
           <CreateResaleItem 
             onClose={() => setShowCreateModal(false)}
             onSuccess={() => {}}
+          />
+        )}
+        {selectedItem && (
+          <ResaleItemDetail 
+            item={selectedItem} 
+            onClose={() => setSelectedItem(null)} 
           />
         )}
       </AnimatePresence>

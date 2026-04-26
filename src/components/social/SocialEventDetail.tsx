@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Social } from '@/types/social';
+import { DualText, getSocialDisplayTitle } from './SocialHeroCard';
 
 interface SocialEventDetailProps {
   social: Social;
@@ -11,6 +12,8 @@ interface SocialEventDetailProps {
 
 export default function SocialEventDetail({ social, onClose }: SocialEventDetailProps) {
   const [activeTab, setActiveTab] = useState('Info');
+  const [isShareMenuOpen, setIsShareMenuOpen] = useState(false);
+  const shareMenuRef = React.useRef<HTMLDivElement>(null);
   
   const tabs = ['Info', 'Photos', 'Event', 'Table', 'Talk'];
   const weekNames = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -20,6 +23,81 @@ export default function SocialEventDetail({ social, onClose }: SocialEventDetail
   const formattedDate = social.date 
     ? social.date.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', weekday: 'short' })
     : 'Every Week';
+
+  const displayTitle = getSocialDisplayTitle(social);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (shareMenuRef.current && !shareMenuRef.current.contains(event.target as Node)) {
+        setIsShareMenuOpen(false);
+      }
+    };
+    if (isShareMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isShareMenuOpen]);
+
+  const handleShareLink = async () => {
+    setIsShareMenuOpen(false);
+    const url = new URL(window.location.href);
+    url.searchParams.set('social', social.id);
+    const shareUrl = url.toString();
+
+    const shareData = {
+      title: social.title,
+      url: shareUrl
+    };
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        console.error('Error sharing link:', err);
+      }
+    } else {
+      navigator.clipboard.writeText(shareUrl);
+      alert("Link copied to clipboard.");
+    }
+  };
+
+  const handleSharePoster = async () => {
+    setIsShareMenuOpen(false);
+    if (!social.imageUrl) {
+      alert("No poster image available to share.");
+      return;
+    }
+    try {
+      const response = await fetch(social.imageUrl);
+      const blob = await response.blob();
+      const fileExt = blob.type.split('/')[1] || 'jpeg';
+      const file = new File([blob], `poster_${social.id}.${fileExt}`, { type: blob.type });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: social.title
+        });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `poster_${social.id}.${fileExt}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+    } catch (err: any) {
+      console.error('Error sharing poster:', err);
+      if (err.name === 'AbortError') return;
+      if (err.name === 'TypeError' || err.message?.includes('fetch')) {
+        alert("Due to image security settings (CORS), direct sharing is restricted. The image will open in a new window.");
+        window.open(social.imageUrl, '_blank');
+      } else {
+        alert("An error occurred while sharing the poster: " + (err.message || 'Unknown error'));
+      }
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-[150] bg-[#f4fbfb] flex flex-col animate-in fade-in slide-in-from-bottom-8 duration-500 overflow-hidden font-body text-[#161d1e]">
@@ -31,16 +109,43 @@ export default function SocialEventDetail({ social, onClose }: SocialEventDetail
 
       {/* TopAppBar */}
       <header className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-4 h-16 bg-white/90 backdrop-blur-md shadow-[0px_12px_32px_rgba(22,29,30,0.06)]">
-        <div className="flex items-center gap-4 flex-1 min-w-0">
+        <div className="flex items-center gap-4 flex-1 min-w-0 pr-2">
           <button onClick={onClose} className="hover:bg-gray-100 p-2 transition-colors active:opacity-70 rounded-full shrink-0">
             <span className="material-symbols-outlined text-gray-900">close</span>
           </button>
-          <h1 className="text-lg font-extrabold font-headline text-gray-900 truncate uppercase tracking-tighter">{social.title}</h1>
+          <DualText 
+            text={displayTitle.primary}
+            subText={displayTitle.secondary}
+            primaryClassName="text-lg font-extrabold font-headline text-gray-900 truncate uppercase tracking-tighter"
+            secondaryClassName="text-xs font-bold text-gray-500 truncate"
+            containerClassName="flex-col gap-0 min-w-0"
+          />
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <button className="p-2 hover:bg-gray-100 transition-colors active:scale-95 rounded text-gray-500">
-            <span className="material-symbols-outlined">share</span>
-          </button>
+          <div className="relative" ref={shareMenuRef}>
+            <button onClick={() => setIsShareMenuOpen(!isShareMenuOpen)} className="p-2 hover:bg-gray-100 transition-colors active:scale-95 rounded text-gray-500">
+              <span className="material-symbols-outlined">share</span>
+            </button>
+            
+            {isShareMenuOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl py-2 shadow-lg border border-gray-100 animate-in fade-in slide-in-from-top-2 duration-200">
+                <button 
+                  onClick={handleSharePoster}
+                  className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-primary">image</span>
+                  <span className="font-label text-sm font-semibold text-gray-900">Share Poster</span>
+                </button>
+                <button 
+                  onClick={handleShareLink}
+                  className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-primary">link</span>
+                  <span className="font-label text-sm font-semibold text-gray-900">Share Link</span>
+                </button>
+              </div>
+            )}
+          </div>
           <button className="p-2 hover:bg-gray-100 transition-colors active:scale-95 rounded text-gray-500">
             <span className="material-symbols-outlined">bookmark</span>
           </button>
@@ -122,8 +227,14 @@ export default function SocialEventDetail({ social, onClose }: SocialEventDetail
                   </div>
                   <div>
                     <label className="block text-[10px] font-black uppercase tracking-[0.15em] text-gray-400 mb-1 leading-none">DJ</label>
-                    <p className="font-bold text-gray-900">{social.djName || 'TBA'}</p>
-                    <p className="text-sm text-gray-500">Live Mix</p>
+                    <DualText 
+                      text={social.djName || 'TBA'}
+                      subText={social.djNameNative}
+                      primaryClassName="font-bold text-gray-900"
+                      secondaryClassName="text-xs font-medium text-gray-500"
+                      containerClassName="flex-wrap items-baseline gap-2"
+                    />
+                    <p className="text-sm text-gray-500 mt-0.5">Live Mix</p>
                   </div>
                 </div>
 
@@ -134,8 +245,14 @@ export default function SocialEventDetail({ social, onClose }: SocialEventDetail
                   </div>
                   <div>
                     <label className="block text-[10px] font-black uppercase tracking-[0.15em] text-gray-400 mb-1 leading-none">Venue</label>
-                    <p className="font-bold text-gray-900">{social.venueName}</p>
-                    <p className="text-sm text-gray-500">Main Hall, Downtown</p>
+                    <DualText 
+                      text={social.venueName}
+                      subText={social.venueNameNative}
+                      primaryClassName="font-bold text-gray-900"
+                      secondaryClassName="text-xs font-medium text-gray-500"
+                      containerClassName="flex-wrap items-baseline gap-2"
+                    />
+                    <p className="text-sm text-gray-500 mt-0.5">{social.city ? `${social.city}, ${social.country}` : 'Main Hall, Downtown'}</p>
                   </div>
                 </div>
 
@@ -148,8 +265,14 @@ export default function SocialEventDetail({ social, onClose }: SocialEventDetail
                         {social.organizerName.charAt(0)}
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-gray-900">{social.organizerName}</p>
-                        <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Main Host</p>
+                        <DualText 
+                          text={social.organizerName}
+                          subText={social.organizerNameNative}
+                          primaryClassName="text-sm font-bold text-gray-900"
+                          secondaryClassName="text-[11px] font-medium text-gray-500"
+                          containerClassName="flex-wrap items-baseline gap-2"
+                        />
+                        <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold mt-0.5">Main Host</p>
                       </div>
                     </div>
                   </div>

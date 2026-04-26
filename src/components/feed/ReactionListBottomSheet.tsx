@@ -90,7 +90,10 @@ export default function ReactionListBottomSheet({ post, isOpen, onClose }: React
                   />
                   <span className="absolute -bottom-1 -right-1 text-base">{REACTION_INFO[reaction.type].emoji}</span>
                 </div>
-                <span className="font-bold text-on-surface">{reaction.userName}</span>
+                <div className="flex items-baseline gap-1.5 flex-wrap">
+                  <span className="font-bold text-on-surface text-sm">{reaction.userName}</span>
+                  {reaction.userNameNative && <span className="text-[11px] font-medium text-on-surface-variant leading-tight">{reaction.userNameNative}</span>}
+                </div>
               </div>
               <button className="px-4 py-1.5 rounded-full border border-outline-variant/30 text-xs font-bold text-on-surface-variant hover:bg-surface-container-high transition-colors">
                 팔로우

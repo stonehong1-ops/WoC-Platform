@@ -5,6 +5,9 @@ import {
   GoogleAuthProvider, 
   FacebookAuthProvider,
   signInWithPopup,
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
+  ConfirmationResult
 } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase/clientApp';
@@ -14,14 +17,17 @@ import { useRouter } from 'next/navigation';
 export default function AuthModal() {
   const { user, profile, showLogin, setShowLogin } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [step, setStep] = useState<'SOCIAL' | 'FORM'>('SOCIAL');
+  const [step, setStep] = useState<'SOCIAL' | 'PHONE_INPUT' | 'PHONE_VERIFY' | 'FORM'>('SOCIAL');
   const [authMethod, setAuthMethod] = useState<string>('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
   const router = useRouter();
 
   const [details, setDetails] = useState({
     nickname: '',
     nativeNickname: '',
-    countryCode: '',
+    countryCode: 'KR',
     gender: 'Other'
   });
 
@@ -30,6 +36,9 @@ export default function AuthModal() {
     if (showLogin) {
       setStep('SOCIAL');
       setAuthMethod('');
+      setPhoneNumber('');
+      setVerificationCode('');
+      setConfirmationResult(null);
     }
   }, [showLogin]);
 
@@ -118,13 +127,76 @@ export default function AuthModal() {
     }
   };
 
+  const setupRecaptcha = () => {
+    if (!(window as any).recaptchaVerifier) {
+      (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        'size': 'invisible',
+        'callback': (response: any) => {
+          // reCAPTCHA solved
+        }
+      });
+    }
+  };
+
+  const handleSendCode = async () => {
+    if (!phoneNumber) {
+      alert("Please enter a valid phone number.");
+      return;
+    }
+    setIsLoading(true);
+    try {
+      setupRecaptcha();
+      const appVerifier = (window as any).recaptchaVerifier;
+      // Format number to international if not already
+      const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+82${phoneNumber.replace(/^0/, '')}`;
+      const confirmation = await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
+      setConfirmationResult(confirmation);
+      setStep('PHONE_VERIFY');
+    } catch (error: any) {
+      console.error("SMS sending failed:", error);
+      alert("Failed to send SMS: " + error.message);
+      // Reset recaptcha on error
+      if ((window as any).recaptchaVerifier) {
+        (window as any).recaptchaVerifier.clear();
+        (window as any).recaptchaVerifier = null;
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    if (!verificationCode || !confirmationResult) {
+      alert("Please enter the verification code.");
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const result = await confirmationResult.confirm(verificationCode);
+      const loggedUser = result.user;
+      setAuthMethod('Phone');
+      if (!profile?.isRegistered) {
+        setStep('FORM');
+      } else {
+        // Already registered user
+        setShowLogin(false);
+        router.push('/home');
+      }
+    } catch (error: any) {
+      console.error("Verification failed:", error);
+      alert("Invalid code: " + error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleCompleteRegistration = async () => {
     if (!user) {
       alert('Please verify your identity first.');
       setStep('SOCIAL');
       return;
     }
-    if (!details.nickname || !details.countryCode) {
+    if (!details.nickname || !details.countryCode || !details.nativeNickname || !details.gender) {
       alert('Please fill in all required fields.');
       return;
     }
@@ -174,59 +246,117 @@ export default function AuthModal() {
 
       {/* Main Content Canvas */}
       <main className="flex-grow pt-[80px] pb-24 px-6 max-w-2xl mx-auto w-full">
+        <div id="recaptcha-container"></div>
         <div className="mt-20">
           <h2 className="text-3xl font-extrabold tracking-tight text-on-surface mb-2 font-headline">
-            {step === 'FORM' ? 'Tell us more' : 'Join WoC'}
+            {step === 'FORM' ? 'Tell us more' : step === 'PHONE_INPUT' || step === 'PHONE_VERIFY' ? 'Verify Identity' : 'Join WoC'}
           </h2>
           <p className="text-on-surface-variant text-sm mb-8 font-body text-gray-500">
             {step === 'FORM' 
               ? 'Identity verified! Just a few more details to set up your profile.' 
+              : step === 'PHONE_INPUT' ? 'Enter your phone number to receive a verification code.'
+              : step === 'PHONE_VERIFY' ? 'Enter the 6-digit code sent to your phone.'
               : 'Create your global identity and start your journey.'}
           </p>
         </div>
 
         {step === 'SOCIAL' ? (
-          /* Step 1: Social Buttons */
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-10">
+          /* Step 1: Social Buttons — Phone Only Active */
+          <div className="space-y-4 mb-10">
+            {/* Phone — Active */}
             <button 
               disabled={isLoading}
-              onClick={handleGoogleLogin}
-              className="flex flex-col items-center justify-center gap-2 h-24 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all disabled:opacity-50"
+              onClick={() => setStep('PHONE_INPUT')}
+              className="w-full flex items-center justify-center gap-3 h-16 bg-blue-600 text-white rounded-2xl font-bold text-base shadow-lg shadow-blue-600/20 hover:bg-blue-700 active:scale-[0.98] transition-all disabled:opacity-50"
             >
-              <img alt="Google" className="w-6 h-6 grayscale opacity-60" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCrULfO5Si59s3yrGL1htM77UognPjlHkqCzmmqrbzqnNtGF7WHN8-E46CnXyZo-7bHd1wL78yQ6vat7pfYchsCTUmOFLpR7ttH1sp-iSZcq6i-zaOW4aoPFNiRS7AnA9xcYBQG4FyplVXBuKqvIDCOv9Lty8noBe58-BBq95wecE5M7v07XJgmZQrlcz362rkU-rE04bG_vmQXErI9lSqoPnrclYJgdfnabauLle6HNzmsdCFQKlXsCPTWgBF01qCZCc94BYLbUGcU" />
-              <span className="text-xs font-bold text-gray-900 uppercase">Google</span>
+              <span className="material-symbols-outlined text-[22px]">phone_iphone</span>
+              Continue with Phone
+            </button>
+
+            {/* Divider */}
+            <div className="flex items-center gap-4 py-2">
+              <div className="flex-1 h-px bg-gray-100" />
+              <span className="text-xs font-bold text-gray-300 uppercase tracking-widest">Other Methods</span>
+              <div className="flex-1 h-px bg-gray-100" />
+            </div>
+
+            {/* Disabled grid */}
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { icon: 'google', label: 'Google', isImg: true, imgSrc: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCrULfO5Si59s3yrGL1htM77UognPjlHkqCzmmqrbzqnNtGF7WHN8-E46CnXyZo-7bHd1wL78yQ6vat7pfYchsCTUmOFLpR7ttH1sp-iSZcq6i-zaOW4aoPFNiRS7AnA9xcYBQG4FyplVXBuKqvIDCOv9Lty8noBe58-BBq95wecE5M7v07XJgmZQrlcz362rkU-rE04bG_vmQXErI9lSqoPnrclYJgdfnabauLle6HNzmsdCFQKlXsCPTWgBF01qCZCc94BYLbUGcU' },
+                { icon: 'facebook', label: 'Facebook', isImg: false },
+                { icon: 'mail', label: 'Email', isImg: false },
+                { icon: 'computer', label: 'Apple', isImg: false },
+              ].map((item) => (
+                <div
+                  key={item.label}
+                  className="flex flex-col items-center justify-center gap-1.5 h-20 bg-gray-50 border border-gray-100 rounded-xl cursor-not-allowed relative overflow-hidden"
+                >
+                  {item.isImg ? (
+                    <img alt={item.label} className="w-5 h-5 grayscale opacity-25" src={item.imgSrc} />
+                  ) : (
+                    <span className="material-symbols-outlined text-[20px] text-gray-200">{item.icon}</span>
+                  )}
+                  <span className="text-[11px] font-bold text-gray-300 uppercase">{item.label}</span>
+                  <span className="absolute top-1.5 right-2 text-[8px] font-black text-gray-300 uppercase tracking-wider">Soon</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : step === 'PHONE_INPUT' ? (
+          <div className="animate-in slide-in-from-bottom-4 duration-500 space-y-6">
+            <div>
+              <label className="block text-sm font-bold text-gray-900 mb-2">Phone Number</label>
+              <input 
+                type="tel"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                placeholder="01012345678"
+                className="w-full h-14 px-4 bg-gray-50 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+              />
+            </div>
+            <button 
+              disabled={isLoading}
+              onClick={handleSendCode}
+              className="w-full h-14 bg-blue-600 text-white rounded-full font-bold text-lg shadow-lg shadow-blue-600/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {isLoading && <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>}
+              Send Verification Code
             </button>
             <button 
               disabled={isLoading}
-              onClick={() => { setAuthMethod('Apple'); setStep('FORM'); }}
-              className="flex flex-col items-center justify-center gap-2 h-24 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all disabled:opacity-50"
+              onClick={() => setStep('SOCIAL')}
+              className="w-full h-14 text-gray-500 font-semibold"
             >
-              <span className="text-[10px] font-black text-gray-400 font-manrope">APPLE</span>
-              <span className="text-xs font-bold text-gray-900 uppercase">Apple</span>
+              Back
+            </button>
+          </div>
+        ) : step === 'PHONE_VERIFY' ? (
+          <div className="animate-in slide-in-from-bottom-4 duration-500 space-y-6">
+            <div>
+              <label className="block text-sm font-bold text-gray-900 mb-2">Verification Code</label>
+              <input 
+                type="text"
+                value={verificationCode}
+                onChange={(e) => setVerificationCode(e.target.value)}
+                placeholder="123456"
+                className="w-full h-14 px-4 text-center tracking-[0.5em] text-xl font-bold bg-gray-50 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+              />
+            </div>
+            <button 
+              disabled={isLoading}
+              onClick={handleVerifyCode}
+              className="w-full h-14 bg-blue-600 text-white rounded-full font-bold text-lg shadow-lg shadow-blue-600/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {isLoading && <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>}
+              Verify Code
             </button>
             <button 
               disabled={isLoading}
-              onClick={handleFacebookLogin}
-              className="flex flex-col items-center justify-center gap-2 h-24 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all disabled:opacity-50"
+              onClick={() => setStep('PHONE_INPUT')}
+              className="w-full h-14 text-gray-500 font-semibold"
             >
-              <span className="material-symbols-outlined text-gray-400">facebook</span>
-              <span className="text-xs font-bold text-gray-900 uppercase">Facebook</span>
-            </button>
-            <button 
-              disabled={isLoading}
-              onClick={() => { setAuthMethod('Email'); setStep('FORM'); }}
-              className="flex flex-col items-center justify-center gap-2 h-24 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all disabled:opacity-50"
-            >
-              <span className="material-symbols-outlined text-gray-400">mail</span>
-              <span className="text-xs font-bold text-gray-900 uppercase">Email</span>
-            </button>
-            <button 
-              disabled={isLoading}
-              onClick={() => { setAuthMethod('Phone'); setStep('FORM'); }}
-              className="flex flex-col items-center justify-center gap-2 h-24 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all disabled:opacity-50"
-            >
-              <span className="material-symbols-outlined text-gray-400">phone_iphone</span>
-              <span className="text-xs font-bold text-gray-900 uppercase">Phone</span>
+              Back
             </button>
           </div>
         ) : (
@@ -235,7 +365,7 @@ export default function AuthModal() {
             <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
               <div>
                 <label className="block text-sm font-bold text-gray-900 mb-2">
-                  Country <span className="text-red-500">*</span>
+                  Country
                 </label>
                 <div className="relative">
                   <select 
@@ -264,7 +394,7 @@ export default function AuthModal() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-bold text-gray-900 mb-2">
-                    English Nickname <span className="text-red-500">*</span>
+                    English Nickname
                   </label>
                   <input 
                     value={details.nickname}
@@ -292,7 +422,7 @@ export default function AuthModal() {
 
               <div>
                 <label className="block text-sm font-bold text-gray-900 mb-2">
-                  Native Nickname (Optional)
+                  Native Nickname
                 </label>
                 <input 
                   value={details.nativeNickname}

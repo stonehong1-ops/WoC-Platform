@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+
 import { Group, ClassDiscount } from "@/types/group";
 import { groupService } from "@/lib/firebase/groupService";
 import { v4 as uuidv4 } from "uuid";
@@ -11,22 +11,25 @@ interface GroupClassDiscountEditorProps {
   onClose: () => void;
   onSave?: () => void;
   initialData?: ClassDiscount | null;
+  targetMonth?: string;
 }
 
-const GroupClassDiscountEditor: React.FC<GroupClassDiscountEditorProps> = ({ group, onClose, onSave, initialData }) => {
+const GroupClassDiscountEditor: React.FC<GroupClassDiscountEditorProps> = ({ group, onClose, onSave, initialData, targetMonth }) => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<ClassDiscount>({
-    id: uuidv4(),
-    title: "",
-    description: "",
-    currency: "KRW",
-    amount: 0,
-    discountDescription: "",
-    includedClassIds: []
+    id: initialData?.id || uuidv4(),
+    title: initialData?.title || "",
+    description: initialData?.description || "",
+    currency: initialData?.currency || "KRW",
+    amount: initialData?.amount || 0,
+    discountDescription: initialData?.discountDescription || "",
+    includedClassIds: initialData?.includedClassIds || [],
+    targetMonth: initialData?.targetMonth || targetMonth || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`
   });
 
   const isEditMode = !!initialData;
-  const classes = group.classes || [];
+  const currentMonth = formData.targetMonth;
+  const classes = (group.classes || []).filter(cls => !cls.targetMonth || cls.targetMonth === currentMonth);
 
   useEffect(() => {
     if (initialData) {
@@ -47,273 +50,196 @@ const GroupClassDiscountEditor: React.FC<GroupClassDiscountEditorProps> = ({ gro
 
   const handleSave = async () => {
     if (!formData.title.trim()) {
-      alert("할인 혜택 이름을 입력해주세요.");
+      alert("Please enter a bundle title.");
       return;
     }
-    if (formData.includedClassIds.length === 0) {
-      alert("최소 하나 이상의 클래스를 선택해주세요.");
+    if (formData.includedClassIds.length < 2) {
+      alert("Please select at least 2 classes.");
       return;
     }
-    if (formData.amount <= 0) {
-      alert("할인 금액을 입력해주세요.");
+    if (formData.amount < 0) {
+      alert("Please enter a discount amount.");
       return;
     }
 
     setLoading(true);
     try {
-      let updatedDiscounts: ClassDiscount[];
-      const currentDiscounts = group.discounts || [];
-
-      if (isEditMode) {
-        updatedDiscounts = currentDiscounts.map(d => d.id === formData.id ? formData : d);
+      if (initialData) {
+        await groupService.updateDiscount(group.id, formData.id, formData);
       } else {
-        updatedDiscounts = [...currentDiscounts, formData];
+        await groupService.addDiscount(group.id, formData);
       }
-
-      await groupService.updateGroupMetadata(group.id, {
-        discounts: updatedDiscounts
-      });
-
+      
       if (onSave) onSave();
       onClose();
     } catch (error) {
       console.error("Failed to save discount:", error);
-      alert("할인 혜택 저장에 실패했습니다.");
+      alert("Failed to save the bundle.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6 bg-[#242c51]/60 backdrop-blur-xl"
+    <div
+      className="fixed inset-0 z-[200] text-[#242c51] bg-[#F3F4F6] min-h-screen overflow-y-auto font-['Inter'] animate-in slide-in-from-bottom-[100%] duration-300"
     >
-      <motion.div
-        initial={{ scale: 0.9, y: 40, opacity: 0 }}
-        animate={{ scale: 1, y: 0, opacity: 1 }}
-        exit={{ scale: 0.9, y: 40, opacity: 0 }}
-        transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className="bg-white w-full max-w-xl rounded-[3rem] shadow-[0_32px_64px_-16px_rgba(36,44,81,0.25)] overflow-hidden flex flex-col max-h-[92vh] border border-white/20"
-      >
-        {/* Header */}
-        <div className="px-10 py-8 bg-gradient-to-br from-[#223ea2] via-[#0057bd] to-[#00a3bd] text-white shrink-0 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl pointer-events-none" />
-          
-          <div className="relative flex items-center justify-between">
-            <div className="flex items-center gap-5">
-              <div className="w-14 h-14 bg-white/15 backdrop-blur-2xl rounded-[1.25rem] flex items-center justify-center shadow-xl border border-white/20">
-                <span className="material-symbols-outlined text-white text-3xl">percent</span>
-              </div>
-              <div>
-                <h2 className="text-2xl font-black font-headline tracking-tight uppercase">
-                  {isEditMode ? "Edit Discount" : "New Discount"}
-                </h2>
-                <div className="flex items-center gap-2 mt-1">
-                  <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full animate-pulse" />
-                  <p className="text-white/70 text-[10px] font-black tracking-widest uppercase">Bundle Promotion Program</p>
-                </div>
-              </div>
-            </div>
-            <button 
-              onClick={onClose}
-              className="w-11 h-11 rounded-2xl bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all active:scale-90 border border-white/10"
-            >
-              <span className="material-symbols-outlined text-white">close</span>
-            </button>
+      <style>{`
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 10px;
+        }
+      `}</style>
+      
+      {/* Header */}
+      <header className="sticky top-0 z-50 bg-[#F3F4F6] px-6 py-4 flex items-center border-b border-[#6c759e]/20">
+        <div className="max-w-md mx-auto w-full flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button onClick={onClose} className="material-symbols-outlined text-[#515981] p-2 hover:bg-[#d6dbff] rounded-full transition-colors active:scale-[0.98]">close</button>
+            <h1 className="text-xl font-extrabold tracking-tight text-[#242c51] font-['Plus_Jakarta_Sans']">{isEditMode ? "Edit Bundle" : "Discount Editor"}</h1>
           </div>
-        </div>
-
-        {/* Content */}
-        <div className="p-10 overflow-y-auto no-scrollbar space-y-10 flex-1">
-          {/* Basic Info */}
-          <section className="space-y-8">
-            <div className="flex items-center gap-3 px-1">
-              <div className="w-1 h-4 bg-[#223ea2] rounded-full" />
-              <h3 className="text-[10px] font-black text-[#515981] uppercase tracking-[0.2em]">Promotion Details</h3>
-            </div>
-            <div className="space-y-8">
-              <div className="relative group">
-                <label className="absolute left-6 -top-2.5 px-3 bg-white text-[9px] font-black text-[#223ea2] uppercase tracking-widest z-10 border border-[#efefff] rounded-full">Bundle Title</label>
-                <input 
-                  className="w-full bg-white border-2 border-[#efefff] rounded-[1.75rem] px-8 py-6 text-[#242c51] font-black text-lg focus:border-[#223ea2] focus:ring-8 focus:ring-[#223ea2]/5 outline-none transition-all placeholder:text-[#a3abd7]/30 shadow-sm" 
-                  placeholder="예: 얼리버드 전과목 패키지" 
-                  type="text" 
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                />
-              </div>
-              <div className="relative group">
-                <label className="absolute left-6 -top-2.5 px-3 bg-white text-[9px] font-black text-[#223ea2] uppercase tracking-widest z-10 border border-[#efefff] rounded-full">Promotion Description</label>
-                <textarea 
-                  className="w-full bg-white border-2 border-[#efefff] rounded-[1.75rem] px-8 py-6 text-[#242c51] font-bold focus:border-[#223ea2] focus:ring-8 focus:ring-[#223ea2]/5 outline-none resize-none min-h-[100px] transition-all placeholder:text-[#a3abd7]/30 leading-relaxed shadow-sm" 
-                  placeholder="할인 혜택의 조건이나 장점을 설명해주세요..." 
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                />
-              </div>
-            </div>
-          </section>
-
-          {/* Pricing Logic */}
-          <section className="space-y-6">
-            <div className="flex items-center gap-3 px-1">
-              <div className="w-1 h-4 bg-[#223ea2] rounded-full" />
-              <h3 className="text-[10px] font-black text-[#515981] uppercase tracking-[0.2em]">Benefit Strategy</h3>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <div className="bg-white border-2 border-[#efefff] rounded-[1.5rem] p-2 flex items-center shadow-sm focus-within:border-[#223ea2] focus-within:ring-8 focus-within:ring-[#223ea2]/5 transition-all">
-                <div className="w-12 h-12 bg-[#223ea2]/10 rounded-xl flex items-center justify-center shrink-0">
-                  <span className="material-symbols-outlined text-[#223ea2]">payments</span>
-                </div>
-                <div className="flex-1 flex items-center">
-                  <span className="pl-4 text-[#a3abd7] font-black text-sm">{formData.currency}</span>
-                  <input 
-                    className="flex-1 bg-transparent px-3 py-3 text-[#242c51] font-black text-lg outline-none transition-all" 
-                    placeholder="0" 
-                    type="number" 
-                    value={formData.amount || ""}
-                    onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value) })}
-                  />
-                </div>
-              </div>
-              
-              <div className="relative group">
-                <label className="absolute left-6 -top-2.5 px-3 bg-white text-[9px] font-black text-[#223ea2] uppercase tracking-widest z-10 border border-[#efefff] rounded-full">Marketing Hook</label>
-                <input 
-                  className="w-full bg-white border-2 border-[#efefff] rounded-[1.5rem] px-6 py-5 text-[#242c51] font-black text-[15px] focus:border-[#223ea2] focus:ring-8 focus:ring-[#223ea2]/5 outline-none transition-all shadow-sm" 
-                  placeholder="예: 25,000원 세이브!" 
-                  type="text" 
-                  value={formData.discountDescription}
-                  onChange={(e) => setFormData({ ...formData, discountDescription: e.target.value })}
-                />
-              </div>
-            </div>
-          </section>
-
-          {/* Included Classes */}
-          <section className="space-y-6">
-            <div className="flex items-center justify-between px-1">
-              <div className="flex items-center gap-3">
-                <div className="w-1 h-4 bg-[#223ea2] rounded-full" />
-                <h3 className="text-[10px] font-black text-[#515981] uppercase tracking-[0.2em]">Target Classes</h3>
-              </div>
-              <button 
-                onClick={() => {
-                  const allIds = classes.map(c => c.id);
-                  setFormData(prev => ({ 
-                    ...prev, 
-                    includedClassIds: prev.includedClassIds.length === allIds.length ? [] : allIds 
-                  }));
-                }}
-                className="bg-[#223ea2]/5 text-[#223ea2] px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#223ea2] hover:text-white transition-all active:scale-95"
-              >
-                {formData.includedClassIds.length === classes.length ? "Deselect All" : "Select All"}
-              </button>
-            </div>
-            
-            <div className="grid grid-cols-1 gap-3">
-              {classes.length === 0 ? (
-                <div className="bg-[#f8faff] rounded-[2rem] p-12 text-center border-2 border-dashed border-[#efefff]">
-                  <span className="material-symbols-outlined text-[#a3abd7] text-4xl mb-3">inventory_2</span>
-                  <p className="text-[#a3abd7] text-sm font-bold headline">선택 가능한 클래스가 없습니다.</p>
-                  <p className="text-[#a3abd7]/60 text-xs mt-1">먼저 클래스를 등록해주세요.</p>
-                </div>
-              ) : (
-                classes.map((cls) => {
-                  const isSelected = formData.includedClassIds.includes(cls.id);
-                  return (
-                    <motion.button
-                      key={cls.id}
-                      whileHover={{ scale: 1.01 }}
-                      whileTap={{ scale: 0.99 }}
-                      onClick={() => handleToggleClass(cls.id)}
-                      className={`flex items-center gap-5 p-5 rounded-[2rem] border-2 transition-all text-left relative overflow-hidden ${
-                        isSelected
-                          ? 'bg-[#223ea2]/5 border-[#223ea2] shadow-md'
-                          : 'bg-white border-[#efefff] hover:border-[#223ea2]/30 shadow-sm'
-                      }`}
-                    >
-                      {isSelected && (
-                        <div className="absolute top-0 right-0 w-16 h-16 bg-[#223ea2]/5 rounded-bl-full flex items-center justify-center pl-4 pb-4">
-                          <span className="material-symbols-outlined text-[#223ea2] font-black">check</span>
-                        </div>
-                      )}
-                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${
-                        isSelected ? 'bg-[#223ea2] text-white shadow-lg shadow-[#223ea2]/20' : 'bg-[#f8faff] text-[#a3abd7]'
-                      }`}>
-                        <span className="material-symbols-outlined text-2xl">school</span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-[15px] font-black truncate leading-tight ${
-                          isSelected ? 'text-[#223ea2]' : 'text-[#242c51]'
-                        }`}>
-                          {cls.title}
-                        </p>
-                        <div className="flex items-center gap-3 mt-1">
-                          <span className="text-[10px] font-black text-[#a3abd7] uppercase tracking-widest">{cls.level}</span>
-                          <div className="w-1 h-1 bg-[#a3abd7]/30 rounded-full" />
-                          <span className="text-[10px] font-bold text-[#515981]">{cls.currency} {cls.amount.toLocaleString()}</span>
-                        </div>
-                      </div>
-                    </motion.button>
-                  );
-                })
-              )}
-            </div>
-            
-            <AnimatePresence>
-              {formData.includedClassIds.length > 0 && (
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  className="bg-green-50 p-5 rounded-[1.5rem] border border-green-100 flex items-center gap-4"
-                >
-                  <div className="w-10 h-10 bg-green-500 text-white rounded-xl flex items-center justify-center">
-                    <span className="material-symbols-outlined font-black">task_alt</span>
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-black text-green-800 uppercase tracking-widest">Bundle Configuration</p>
-                    <p className="text-[13px] font-bold text-green-700/80 mt-0.5">{formData.includedClassIds.length}개의 클래스가 패키지에 포함되었습니다.</p>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </section>
-        </div>
-
-        {/* Footer Actions */}
-        <div className="p-8 bg-[#f8faff] border-t border-[#efefff] flex gap-4 shrink-0">
-          <button 
-            onClick={onClose}
-            className="flex-1 py-5 bg-white border border-[#efefff] text-[#515981] rounded-[1.5rem] font-black text-xs uppercase tracking-widest hover:bg-gray-50 transition-all active:scale-[0.98] shadow-sm"
-          >
-            Cancel
-          </button>
           <button 
             onClick={handleSave}
             disabled={loading}
-            className="flex-[2] py-5 bg-gradient-to-r from-[#223ea2] to-[#0057bd] text-white rounded-[1.5rem] font-black text-xs uppercase tracking-widest shadow-xl shadow-[#223ea2]/25 hover:opacity-95 hover:shadow-2xl hover:shadow-[#223ea2]/30 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-3"
+            className="bg-[#0057bd] text-white font-bold text-sm px-6 py-2 rounded-lg shadow-sm shadow-[#0057bd]/20 hover:bg-[#0057bd]/90 transition-all active:scale-[0.98] flex items-center gap-2"
           >
-            {loading ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                <span>Processing...</span>
-              </>
-            ) : (
-              <>
-                <span className="material-symbols-outlined text-lg">verified</span>
-                <span>{isEditMode ? "Save Changes" : "Create Discount"}</span>
-              </>
-            )}
+            {loading && <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>}
+            Save
           </button>
         </div>
-      </motion.div>
-    </motion.div>
+      </header>
+
+      <main className="max-w-md mx-auto px-6 py-8 space-y-6">
+        {/* Basic Info Card */}
+        <div className="bg-[#ffffff] p-6 rounded-xl border border-[#6c759e]/20 shadow-sm space-y-5">
+          <div>
+            <label className="block text-[10px] font-bold text-[#515981] mb-2 uppercase tracking-widest opacity-70" htmlFor="discount-title">Class Title</label>
+            <input 
+              id="discount-title"
+              className="w-full bg-[#d6dbff]/30 border border-[#6c759e]/30 rounded-lg px-4 py-3 text-[#242c51] focus:ring-2 focus:ring-[#0057bd]/20 focus:border-[#0057bd] placeholder:text-[#515981]/40 outline-none transition-all" 
+              placeholder="Enter discount title" 
+              type="text"
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold text-[#515981] mb-2 uppercase tracking-widest opacity-70" htmlFor="discount-desc">Description</label>
+            <textarea 
+              id="discount-desc"
+              className="w-full bg-[#d6dbff]/30 border border-[#6c759e]/30 rounded-lg px-4 py-3 text-[#242c51] focus:ring-2 focus:ring-[#0057bd]/20 focus:border-[#0057bd] placeholder:text-[#515981]/40 outline-none resize-none text-sm transition-all" 
+              placeholder="Describe the discount..." 
+              rows={4}
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            ></textarea>
+          </div>
+        </div>
+
+        {/* Pricing & Discount Details Card */}
+        <div className="bg-[#ffffff] p-6 rounded-xl border border-[#6c759e]/20 shadow-sm space-y-5">
+          <h2 className="text-sm font-extrabold font-['Plus_Jakarta_Sans'] text-[#242c51] uppercase tracking-widest mb-4">Pricing</h2>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-[10px] font-bold text-[#515981] mb-2 uppercase tracking-widest opacity-70">Currency</label>
+              <div className="relative">
+                <select 
+                  className="w-full bg-[#d6dbff]/30 border border-[#6c759e]/30 rounded-lg px-4 py-3 text-[#242c51] focus:ring-2 focus:ring-[#0057bd]/20 focus:border-[#0057bd] appearance-none outline-none transition-all text-sm"
+                  value={formData.currency}
+                  onChange={(e) => setFormData({ ...formData, currency: e.target.value as any })}
+                >
+                  <option value="KRW">KRW - South Korean Won</option>
+                  <option value="USD">USD - US Dollar</option>
+                  <option value="EUR">EUR - Euro</option>
+                  <option value="JPY">JPY - Japanese Yen</option>
+                </select>
+                <span className="material-symbols-outlined absolute right-3 top-3 pointer-events-none text-[#515981]">expand_more</span>
+              </div>
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-[#515981] mb-2 uppercase tracking-widest opacity-70">Amount</label>
+              <div className="relative">
+                <span className="absolute left-4 top-3.5 text-[#515981] font-bold text-sm">
+                  {formData.currency === 'KRW' ? '₩' : formData.currency === 'USD' ? '$' : formData.currency === 'EUR' ? '€' : formData.currency === 'JPY' ? '¥' : '₩'}
+                </span>
+                <input 
+                  className="w-full bg-[#d6dbff]/30 border border-[#6c759e]/30 rounded-lg pl-8 pr-4 py-3 text-[#242c51] focus:ring-2 focus:ring-[#0057bd]/20 focus:border-[#0057bd] outline-none transition-all text-sm" 
+                  placeholder="0" 
+                  type="text"
+                  value={formData.amount ? formData.amount.toLocaleString() : ""}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9]/g, '');
+                    setFormData({ ...formData, amount: Number(val) });
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+          <div className="mt-5">
+            <label className="block text-[10px] font-bold text-[#515981] mb-2 uppercase tracking-widest opacity-70" htmlFor="discount-details">Discount Description</label>
+            <input 
+              id="discount-details"
+              className="w-full bg-[#d6dbff]/30 border border-[#6c759e]/30 rounded-lg px-4 py-3 text-[#242c51] focus:ring-2 focus:ring-[#0057bd]/20 focus:border-[#0057bd] placeholder:text-[#515981]/40 outline-none transition-all text-sm" 
+              placeholder="e.g., '20% discount for bundle classes'" 
+              type="text"
+              value={formData.discountDescription}
+              onChange={(e) => setFormData({ ...formData, discountDescription: e.target.value })}
+            />
+          </div>
+        </div>
+
+        {/* Select Classes Card */}
+        <div className="bg-[#ffffff] p-6 rounded-xl border border-[#6c759e]/20 shadow-sm">
+          <div className="mb-6">
+            <h2 className="text-sm font-extrabold font-['Plus_Jakarta_Sans'] text-[#242c51] uppercase tracking-widest">Select Classes</h2>
+            <p className="font-['Inter'] text-xs text-[#515981] opacity-70 mt-1">Choose existing classes from this month to include in the bundle.</p>
+          </div>
+          <div className="space-y-3">
+            {classes.length === 0 ? (
+              <p className="text-sm text-center py-4 text-[#515981]/60 font-bold">No classes available.</p>
+            ) : (
+              classes.map((cls) => {
+                const isSelected = formData.includedClassIds.includes(cls.id);
+                return (
+                  <label key={cls.id} className="flex items-center gap-4 p-4 bg-[#d6dbff]/30 rounded-xl border border-[#6c759e]/20 cursor-pointer group">
+                    <div className="relative flex items-center justify-center w-5 h-5 shrink-0">
+                      <input 
+                        type="checkbox"
+                        className="peer appearance-none w-5 h-5 border border-[#6c759e]/40 rounded bg-transparent checked:bg-[#0057bd] checked:border-[#0057bd] transition-all duration-200 cursor-pointer"
+                        checked={isSelected}
+                        onChange={() => handleToggleClass(cls.id)}
+                      />
+                      <span className="material-symbols-outlined absolute text-white opacity-0 peer-checked:opacity-100 pointer-events-none text-xs font-bold transition-opacity duration-200">check</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-[#242c51] group-hover:text-[#0057bd] transition-colors truncate">{cls.title}</p>
+                      <p className="text-[11px] font-bold text-[#515981] opacity-70 truncate mt-0.5">
+                        {cls.schedule && cls.schedule.length > 0 
+                          ? `${cls.schedule[0].date} • ${cls.schedule[0].timeSlot}` 
+                          : "No schedule"}
+                      </p>
+                    </div>
+                  </label>
+                );
+              })
+            )}
+          </div>
+        </div>
+      </main>
+    </div>
   );
 };
 
 export default GroupClassDiscountEditor;
+

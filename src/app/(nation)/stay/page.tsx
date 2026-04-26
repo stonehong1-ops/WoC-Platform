@@ -46,7 +46,7 @@ export default function StayPage() {
   const otherStays = filteredStays.slice(4);
 
   return (
-    <main className="max-w-7xl mx-auto px-4 py-8 space-y-8 pt-20 bg-[#fefefe] min-h-screen relative">
+    <main className="max-w-7xl mx-auto px-4 pt-24 pb-8 space-y-8 bg-[#fefefe] min-h-screen relative">
       <style dangerouslySetInnerHTML={{ __html: `
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

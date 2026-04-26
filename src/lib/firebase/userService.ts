@@ -7,7 +7,10 @@ import {
   getDoc,
   getDocs, 
   limit,
-  orderBy
+  orderBy,
+  updateDoc,
+  arrayUnion,
+  arrayRemove
 } from 'firebase/firestore';
 import { PlatformUser } from '@/types/user';
 
@@ -42,5 +45,43 @@ export const userService = {
     const snapshot = await getDoc(docRef);
     if (!snapshot.exists()) return null;
     return { id: snapshot.id, ...snapshot.data() } as PlatformUser;
+  },
+
+  // Get top members (currently mock logic fetching users with photos)
+  getTopMembers: async (limitCount = 3): Promise<PlatformUser[]> => {
+    const q = query(
+      collection(db, USERS_COLLECTION),
+      limit(limitCount)
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })) as PlatformUser[];
+  },
+  
+  // Get all users for client-side filtering
+  getAllUsers: async (): Promise<PlatformUser[]> => {
+    const q = query(collection(db, USERS_COLLECTION));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })) as PlatformUser[];
+  },
+
+  // Toggle Like on a class
+  toggleLikeClass: async (uid: string, classId: string, isLiking: boolean): Promise<void> => {
+    const docRef = doc(db, USERS_COLLECTION, uid);
+    await updateDoc(docRef, {
+      likedClassIds: isLiking ? arrayUnion(classId) : arrayRemove(classId)
+    });
+  },
+
+  // Get user's liked classes
+  getLikedClassIds: async (uid: string): Promise<string[]> => {
+    const userDoc = await getDoc(doc(db, USERS_COLLECTION, uid));
+    if (!userDoc.exists()) return [];
+    return userDoc.data().likedClassIds || [];
   }
 };

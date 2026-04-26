@@ -286,7 +286,10 @@ export default function AdminPeoplePage() {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="text-[#2D3435] font-bold text-lg leading-tight">{user.nickname}</h3>
+                      <h3 className="text-[#2D3435] font-bold text-lg leading-tight">
+                        {user.nickname}
+                        {user.nativeNickname && <span className="text-sm font-normal text-slate-500 ml-1.5">({user.nativeNickname})</span>}
+                      </h3>
                       {user.isAdmin && <span className="bg-[#ff3b30] text-white text-[9px] font-bold px-1.5 py-0.5 rounded-[2px] uppercase">Admin</span>}
                     </div>
                     <div className="flex flex-wrap gap-1 mt-1">
@@ -329,14 +332,18 @@ export default function AdminPeoplePage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-y-4">
+              <div className="grid grid-cols-3 gap-y-4">
                 <div className="space-y-0.5">
                   <p className="font-label text-[9px] font-bold text-[#727784] tracking-widest uppercase">Nickname</p>
-                  <p className="font-semibold text-sm text-[#2D3435]">{user.nickname} <span className="text-[10px] text-slate-400 font-normal">{user.nativeNickname}</span></p>
+                  <p className="font-semibold text-sm text-[#2D3435]">{user.nickname}</p>
                 </div>
                 <div className="space-y-0.5">
                   <p className="font-label text-[9px] font-bold text-[#727784] tracking-widest uppercase">Joined</p>
-                  <p className="text-sm font-medium text-[#2D3435]">{user.createdAt ? format(user.createdAt.toDate(), 'MMM dd, yyyy') : '-'}</p>
+                  <p className="text-sm font-medium text-[#2D3435]">{user.createdAt ? format(user.createdAt.toDate(), 'yyyy.MM.dd') : '-'}</p>
+                </div>
+                <div className="space-y-0.5">
+                  <p className="font-label text-[9px] font-bold text-[#727784] tracking-widest uppercase">Last Visit</p>
+                  <p className="text-sm font-medium text-[#2D3435]">{user.lastVisitedAt ? formatDistanceToNow(user.lastVisitedAt.toDate(), { addSuffix: true, locale: ko }) : '-'}</p>
                 </div>
               </div>
             </div>

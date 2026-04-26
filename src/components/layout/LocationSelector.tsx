@@ -289,7 +289,7 @@ const REGIONS = [
 ];
 
 export default function LocationSelector() {
-  const { location, setLocation, isSelectorOpen, setIsSelectorOpen } = useLocation();
+  const { location, setLocation, isSelectorOpen, setIsSelectorOpen, selectorCallback, clearSelectorCallback } = useLocation();
   const [activeTab, setActiveTab] = useState('GLOBAL');
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedCountry, setExpandedCountry] = useState<string | null>(location.country);
@@ -297,7 +297,14 @@ export default function LocationSelector() {
   if (!isSelectorOpen) return null;
 
   const handleSelect = (country: string, city: string) => {
-    setLocation({ country, city, zone: undefined });
+    if (selectorCallback) {
+      // 콜백 모드: 전역 location 변경 없이 콜백만 호출
+      selectorCallback(country, city);
+      clearSelectorCallback();
+    } else {
+      // 기본 모드: 전역 location 변경
+      setLocation({ country, city, zone: undefined });
+    }
     setIsSelectorOpen(false);
   };
 

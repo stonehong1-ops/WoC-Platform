@@ -1,11 +1,9 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
-import GroupFooter from './GroupFooter';
+import React, { useState, useEffect, useMemo } from 'react';
 import { groupService } from '@/lib/firebase/groupService';
 import { Group, Post } from '@/types/group';
 import { formatDistanceToNow } from 'date-fns';
 import PostEditorModal from './PostEditorModal';
 import PostDetailModal from './PostDetailModal';
-import { motion, AnimatePresence } from 'framer-motion';
 import ImageWithFallback from '@/components/common/ImageWithFallback';
 
 interface GroupBoardProps {
@@ -20,6 +18,7 @@ const GroupBoard = ({ group }: GroupBoardProps) => {
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [pageSize, setPageSize] = useState(12);
 
   useEffect(() => {
     const unsubscribe = groupService.subscribePosts(group.id, (fetchedPosts) => {
@@ -35,22 +34,18 @@ const GroupBoard = ({ group }: GroupBoardProps) => {
 
   const filteredPosts = useMemo(() => {
     return posts.filter(post => {
+      // Category Filter
       const matchesCategory = selectedCategory === 'all' || post.category === selectedCategory;
-      const matchesSearch = post.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                           post.content.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      // Search Filter
+      const matchesSearch = !searchQuery || (post.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                           post.content.toLowerCase().includes(searchQuery.toLowerCase()));
+      
       return matchesCategory && matchesSearch;
     });
   }, [posts, selectedCategory, searchQuery]);
 
-  const featuredPost = useMemo(() => {
-    // Find the latest 'notice' or pinned post
-    return filteredPosts.find(p => p.category === 'notice') || filteredPosts[0];
-  }, [filteredPosts]);
-
-  const otherPosts = useMemo(() => {
-    if (!featuredPost) return filteredPosts;
-    return filteredPosts.filter(p => p.id !== featuredPost.id);
-  }, [filteredPosts, featuredPost]);
+  const currentPosts = filteredPosts.slice(0, pageSize);
 
   const formatDate = (date: any) => {
     if (!date) return '';
@@ -65,257 +60,233 @@ const GroupBoard = ({ group }: GroupBoardProps) => {
   const handlePostClick = (post: Post) => {
     setSelectedPost(post);
     setIsDetailOpen(true);
-    // Increment view count
     groupService.incrementPostViews(group.id, post.id);
   };
 
   return (
-    <div className="flex-1 overflow-y-auto no-scrollbar bg-[#fcfaff]">
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 pt-24 pb-32">
-        {/* Board Header & Categories */}
-        <section className="space-y-8 mb-12">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-            <div className="text-left">
-              <h2 className="font-headline font-black text-3xl text-[#242c51] tracking-tight">Group Board</h2>
-              <p className="font-body text-sm text-[#515981] mt-1">Connect, share, and learn with fellow dancers.</p>
-            </div>
-            
-            {/* Search Bar */}
-            <div className="relative w-full md:w-80">
-              <input 
-                type="text"
-                placeholder="Search posts..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-white border-none rounded-2xl px-12 py-3.5 text-sm font-bold text-[#242c51] shadow-sm ring-1 ring-[#a3abd7]/10 focus:ring-2 focus:ring-primary outline-none transition-all placeholder:text-slate-300"
-              />
-              <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">search</span>
-            </div>
+    <div className="space-y-12">
+      {/* Board Header & Categories */}
+      <section className="space-y-6">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div>
+            <h2 className="font-headline font-extrabold text-2xl text-on-surface tracking-tight">Community Board</h2>
+            <p className="font-body text-sm text-on-surface-variant mt-1">Connect, share, and learn with fellow dancers.</p>
           </div>
-
-          {/* Horizontal Scrollable Categories */}
-          <div className="flex overflow-x-auto pb-2 -mx-6 px-6 gap-3 snap-x hide-scrollbar">
-            {categories.map((cat) => (
-              <button 
-                key={cat.id}
-                onClick={() => setSelectedCategory(cat.id)}
-                className={`snap-start flex-shrink-0 font-label font-black text-[10px] uppercase tracking-wider px-6 py-3 rounded-full transition-all active:scale-95
-                  ${selectedCategory === cat.id 
-                    ? 'bg-primary text-on-primary shadow-lg shadow-primary/20' 
-                    : 'bg-white text-[#515981] shadow-sm ring-1 ring-[#a3abd7]/10 hover:bg-slate-50'}
-                `}
-              >
-                {cat.title}
-              </button>
-            ))}
+          
+          {/* Search Bar Integration */}
+          <div className="relative w-full md:w-64">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/50 text-[20px]">search</span>
+            <input 
+              type="text" 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search posts..." 
+              className="w-full pl-10 pr-4 py-2 bg-surface-container-lowest border border-outline-variant/20 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+            />
           </div>
-        </section>
+        </div>
 
-        {/* Post Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Featured Post Card */}
-          {featuredPost && (
-            <article 
-              onClick={() => handlePostClick(featuredPost)}
-              className="bg-white rounded-[2.5rem] shadow-sm ring-1 ring-[#a3abd7]/10 overflow-hidden lg:col-span-2 group hover:shadow-xl hover:ring-primary/20 transition-all duration-500 flex flex-col sm:flex-row cursor-pointer group"
+        {/* Horizontal Scrollable Categories */}
+        <div className="flex overflow-x-auto pb-4 -mx-6 px-6 space-x-3 snap-x hide-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          {categories.map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => setSelectedCategory(cat.id)}
+              className={`snap-start flex-shrink-0 font-label font-bold text-[11px] uppercase tracking-wider px-5 py-2.5 rounded-full transition-all ${
+                selectedCategory === cat.id
+                  ? "bg-primary text-on-primary shadow-md shadow-primary/20 -translate-y-0.5"
+                  : "bg-surface-container-lowest text-on-surface shadow-sm outline outline-1 outline-outline-variant/10 hover:bg-surface-container-low"
+              }`}
             >
-              <div className="w-full sm:w-2/5 h-64 sm:h-auto relative overflow-hidden bg-slate-100">
-                {(featuredPost.image || featuredPost.video) ? (
-                  <>
-                    {featuredPost.video ? (
-                      <video src={featuredPost.video} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                    ) : (
-                    <ImageWithFallback 
-                      src={featuredPost.image} 
-                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
-                      alt="" 
-                      fallbackType="gallery"
-                    />
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent sm:hidden" />
-                  </>
-                ) : (
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-tertiary/10 flex items-center justify-center">
-                    <span className="material-symbols-outlined text-4xl text-primary/20">article</span>
-                  </div>
-                )}
-                <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md text-primary font-black text-[10px] uppercase tracking-widest px-3 py-1.5 rounded-full shadow-sm">
-                  {categories.find(c => c.id === featuredPost.category)?.title || 'Post'}
-                </div>
-              </div>
-              
-              <div className="p-10 flex flex-col justify-between w-full sm:w-3/5 text-left">
-                <div>
-                  <div className="flex items-center gap-3 mb-4">
-                    <ImageWithFallback 
-                      src={featuredPost.author.avatar} 
-                      className="w-8 h-8 rounded-xl object-cover ring-2 ring-white" 
-                      alt="" 
-                      nameForAvatar={featuredPost.author.name}
-                      fallbackType="avatar"
-                    />
-                    <div>
-                      <span className="block text-xs font-black text-[#242c51]">@{featuredPost.author.name}</span>
-                      <span className="text-[10px] font-bold text-[#515981]/50 uppercase tracking-tighter">{formatDate(featuredPost.createdAt)}</span>
-                    </div>
-                  </div>
-                  <h3 className="font-headline font-black text-2xl text-[#242c51] leading-tight mb-4 group-hover:text-primary transition-colors">
-                    {featuredPost.title || featuredPost.content.substring(0, 50) + '...'}
-                  </h3>
-                  <p className="font-body text-[#515981] line-clamp-3 leading-relaxed">
-                    {featuredPost.content}
-                  </p>
-                </div>
-                
-                <div className="flex items-center justify-between mt-8 pt-8 border-t border-[#a3abd7]/10">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-1.5 text-slate-400">
-                      <span className="material-symbols-outlined text-[18px]">visibility</span>
-                      <span className="text-xs font-bold">{featuredPost.views || 0}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-slate-400">
-                      <span className="material-symbols-outlined text-[18px]">chat_bubble</span>
-                      <span className="text-xs font-bold">{featuredPost.comments || 0}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-primary">
-                    <span className="material-symbols-outlined text-[18px] fill-1">favorite</span>
-                    <span className="text-xs font-bold">{featuredPost.likes || 0}</span>
-                  </div>
-                </div>
-              </div>
-            </article>
-          )}
+              {cat.title}
+            </button>
+          ))}
+        </div>
+      </section>
 
-          {/* Other Posts */}
-          {otherPosts.map((post) => (
+      {/* Post List (Bento Grid Style) */}
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {currentPosts.map((post, index) => {
+          const isFeatured = index === 0 && selectedCategory === 'all' && !searchQuery; // Featured if first post and no specific filter
+          const hasImage = !!post.image;
+          const categoryTitle = categories.find(c => c.id === post.category)?.title || 'General';
+
+          if (isFeatured) {
+            return (
+              <article 
+                key={post.id}
+                onClick={() => handlePostClick(post)}
+                className="bg-surface-container-lowest rounded-xl shadow-sm outline outline-1 outline-outline-variant/10 overflow-hidden lg:col-span-2 group hover:shadow-md transition-all duration-300 transform scale-100 active:scale-99 flex flex-col sm:flex-row cursor-pointer"
+              >
+                <div className="w-full sm:w-2/5 h-48 sm:h-auto relative overflow-hidden bg-surface-container-low">
+                  <ImageWithFallback 
+                    src={post.image} 
+                    alt={post.title || ""} 
+                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    fallbackType="gallery"
+                  />
+                  <div className="absolute top-3 left-3 bg-tertiary-container/80 backdrop-blur-sm text-on-tertiary-container font-label font-bold text-[10px] uppercase tracking-wider px-2 py-1 rounded-full">Featured</div>
+                </div>
+                <div className="p-6 flex flex-col justify-between w-full sm:w-3/5">
+                  <div>
+                    <div className="flex items-center space-x-2 mb-3">
+                      <span className="text-xs font-bold text-primary tracking-wide uppercase">{categoryTitle}</span>
+                      <span className="w-1 h-1 rounded-full bg-outline-variant"></span>
+                      <span className="text-xs font-medium text-on-surface-variant">{formatDate(post.createdAt)}</span>
+                    </div>
+                    <h3 className="font-headline font-bold text-xl text-on-surface leading-tight mb-2 group-hover:text-primary transition-colors line-clamp-2">
+                      {post.title}
+                    </h3>
+                    <p className="font-body text-sm text-on-surface-variant line-clamp-3 mb-4 leading-relaxed">
+                      {post.content}
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-between mt-auto pt-4 border-t border-outline-variant/10">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-6 h-6 rounded-full overflow-hidden bg-secondary-container flex items-center justify-center">
+                        {post.author.avatar ? (
+                          <img src={post.author.avatar} alt={post.author.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="material-symbols-outlined text-xs text-on-secondary-container">person</span>
+                        )}
+                      </div>
+                      <span className="font-body text-xs font-semibold text-on-surface">{post.author.name}</span>
+                    </div>
+                    <div className="flex items-center space-x-3 text-on-surface-variant">
+                      <div className="flex items-center space-x-1">
+                        <span className="material-symbols-outlined text-[16px]">visibility</span>
+                        <span className="text-xs font-bold">{(post.views || 0).toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <span className="material-symbols-outlined text-[16px]">chat_bubble</span>
+                        <span className="text-xs font-bold">{(post.comments || 0).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            );
+          }
+
+          // Standard Card (with or without image)
+          return (
             <article 
               key={post.id}
               onClick={() => handlePostClick(post)}
-              className="bg-white rounded-[2.5rem] shadow-sm ring-1 ring-[#a3abd7]/10 p-8 flex flex-col justify-between group hover:shadow-xl hover:ring-primary/20 transition-all duration-500 cursor-pointer text-left"
+              className="bg-surface-container-lowest rounded-xl shadow-sm outline outline-1 outline-outline-variant/10 overflow-hidden group hover:shadow-md transition-all duration-300 transform scale-100 active:scale-99 flex flex-col cursor-pointer"
             >
-              <div>
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <ImageWithFallback 
-                      src={post.author.avatar} 
-                      className="w-8 h-8 rounded-xl object-cover" 
-                      alt="" 
-                      nameForAvatar={post.author.name}
-                      fallbackType="avatar"
-                    />
-                    <div>
-                      <span className="block text-xs font-black text-[#242c51]">@{post.author.name}</span>
-                      <span className="text-[10px] font-bold text-[#515981]/50 uppercase tracking-tighter">{formatDate(post.createdAt)}</span>
+              {hasImage && (
+                <div className="w-full h-40 relative overflow-hidden bg-surface-container-low">
+                  <ImageWithFallback 
+                    src={post.image} 
+                    alt={post.title || ""} 
+                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    fallbackType="gallery"
+                  />
+                </div>
+              )}
+              <div className="p-6 flex flex-col justify-between flex-grow">
+                <div>
+                  <div className="flex items-center space-x-2 mb-3">
+                    <span className="text-xs font-bold text-primary tracking-wide uppercase">{categoryTitle}</span>
+                    <span className="w-1 h-1 rounded-full bg-outline-variant"></span>
+                    <span className="text-xs font-medium text-on-surface-variant">{formatDate(post.createdAt)}</span>
+                  </div>
+                  <h3 className="font-headline font-bold text-lg text-on-surface leading-tight mb-2 group-hover:text-primary transition-colors line-clamp-2">
+                    {post.title}
+                  </h3>
+                  <p className="font-body text-sm text-on-surface-variant line-clamp-3 mb-4 leading-relaxed">
+                    {post.content}
+                  </p>
+                </div>
+                <div className="flex items-center justify-between mt-auto pt-4 border-t border-outline-variant/10">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-6 h-6 rounded-full overflow-hidden bg-secondary-container flex items-center justify-center">
+                      {post.author.avatar ? (
+                        <img src={post.author.avatar} alt={post.author.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="material-symbols-outlined text-xs text-on-secondary-container">person</span>
+                      )}
+                    </div>
+                    <span className="font-body text-xs font-semibold text-on-surface">{post.author.name}</span>
+                  </div>
+                  <div className="flex items-center space-x-3 text-on-surface-variant">
+                    <div className="flex items-center space-x-1">
+                      <span className="material-symbols-outlined text-[16px]">visibility</span>
+                      <span className="text-xs font-bold">{(post.views || 0).toLocaleString()}</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <span className="material-symbols-outlined text-[16px]">chat_bubble</span>
+                      <span className="text-xs font-bold">{(post.comments || 0).toLocaleString()}</span>
                     </div>
                   </div>
-                  <div className="text-[10px] font-black text-primary uppercase tracking-widest bg-primary/5 px-3 py-1 rounded-full">
-                    {categories.find(c => c.id === post.category)?.title || 'Post'}
-                  </div>
-                </div>
-
-                {post.image && (
-                  <div className="w-full h-40 rounded-2xl overflow-hidden mb-6 relative">
-                    <ImageWithFallback 
-                      src={post.image} 
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
-                      alt="" 
-                      fallbackType="gallery"
-                    />
-                  </div>
-                )}
-                
-                {post.video && (
-                  <div className="w-full h-40 rounded-2xl overflow-hidden mb-6 relative bg-black">
-                    <video src={post.video} className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="material-symbols-outlined text-white text-4xl opacity-60">play_circle</span>
-                    </div>
-                  </div>
-                )}
-
-                <h3 className="font-headline font-black text-xl text-[#242c51] leading-tight mb-3 group-hover:text-primary transition-colors">
-                  {post.title || post.content.substring(0, 40) + '...'}
-                </h3>
-                <p className="font-body text-sm text-[#515981] line-clamp-3 leading-relaxed mb-6">
-                  {post.content}
-                </p>
-              </div>
-
-              <div className="flex items-center justify-between mt-auto pt-6 border-t border-[#a3abd7]/10">
-                <div className="flex items-center gap-4 text-slate-400">
-                  <div className="flex items-center gap-1.5">
-                    <span className="material-symbols-outlined text-[16px]">visibility</span>
-                    <span className="text-xs font-bold">{post.views || 0}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="material-symbols-outlined text-[16px]">chat_bubble</span>
-                    <span className="text-xs font-bold">{post.comments || 0}</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1.5 text-primary">
-                  <span className="material-symbols-outlined text-[16px] fill-1">favorite</span>
-                  <span className="text-xs font-bold">{post.likes || 0}</span>
                 </div>
               </div>
             </article>
-          ))}
+          );
+        })}
+      </section>
+
+      {/* Empty State */}
+      {currentPosts.length === 0 && (
+        <div className="py-24 text-center bg-surface-container-lowest rounded-2xl outline outline-1 outline-outline-variant/10">
+          <span className="material-symbols-outlined text-6xl text-outline-variant opacity-20 mb-4 block">inbox</span>
+          <h3 className="text-lg font-bold text-on-surface">No posts found</h3>
+          <p className="text-sm text-on-surface-variant mt-1">Be the first to share something with the community!</p>
         </div>
+      )}
 
-        {/* Empty State */}
-        {filteredPosts.length === 0 && (
-          <div className="py-32 flex flex-col items-center justify-center text-center">
-            <div className="w-24 h-24 rounded-full bg-[#efefff] flex items-center justify-center mb-6">
-              <span className="material-symbols-outlined text-4xl text-primary/30">drafts</span>
-            </div>
-            <h3 className="text-xl font-headline font-black text-[#242c51]">No posts yet</h3>
-            <p className="text-[#515981] mt-2">Be the first to share something with the group!</p>
-            <button 
-              onClick={() => setIsEditorOpen(true)}
-              className="mt-8 px-8 py-3 bg-primary text-on-primary font-black rounded-xl shadow-lg shadow-primary/20 active:scale-95 transition-all"
-            >
-              Create First Post
-            </button>
-          </div>
-        )}
+      {/* Load More */}
+      {filteredPosts.length > pageSize && (
+        <div className="flex justify-center mt-8">
+          <button 
+            onClick={() => setPageSize(prev => prev + 12)}
+            className="flex items-center gap-2 px-8 py-3 bg-surface-container-lowest text-on-surface font-bold rounded-xl shadow-sm outline outline-1 outline-outline-variant/10 hover:bg-surface-container-low transition-all"
+          >
+            Load More Posts
+            <span className="material-symbols-outlined">expand_more</span>
+          </button>
+        </div>
+      )}
 
-        {/* Floating Action Button for New Post */}
-        <button 
-          onClick={() => {
-            setEditingPost(null);
-            setIsEditorOpen(true);
-          }}
-          className="fixed bottom-24 right-6 w-16 h-16 bg-primary text-white rounded-[2rem] shadow-2xl shadow-primary/40 flex items-center justify-center hover:scale-105 active:scale-95 transition-all z-40 group"
-        >
-          <span className="material-symbols-outlined text-3xl transition-transform group-hover:rotate-12" style={{ fontVariationSettings: "'FILL' 1" }}>edit</span>
-        </button>
-      </main>
-
-      <GroupFooter communityName={group.name} />
-
-      {/* Modals */}
-      <PostEditorModal 
-        group={group}
-        post={editingPost}
-        isOpen={isEditorOpen}
-        onClose={() => {
-          setIsEditorOpen(false);
+      {/* Floating Action Button */}
+      <button 
+        onClick={() => {
           setEditingPost(null);
-        }}
-      />
-
-      <PostDetailModal 
-        groupId={group.id}
-        post={selectedPost}
-        isOpen={isDetailOpen}
-        onClose={() => setIsDetailOpen(false)}
-        onEdit={(post) => {
-          setIsDetailOpen(false);
-          setEditingPost(post);
           setIsEditorOpen(true);
         }}
-      />
+        className="fixed bottom-24 right-6 w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg shadow-primary/25 flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-40 group"
+      >
+        <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>edit</span>
+        {/* Tooltip or Label could be added here if needed */}
+      </button>
+
+      {/* Modals */}
+      {isEditorOpen && (
+        <PostEditorModal 
+          group={group}
+          post={editingPost}
+          isOpen={isEditorOpen}
+          onClose={() => {
+            setIsEditorOpen(false);
+            setEditingPost(null);
+          }}
+        />
+      )}
+
+      {selectedPost && (
+        <PostDetailModal 
+          groupId={group.id}
+          post={selectedPost}
+          isOpen={isDetailOpen}
+          onClose={() => setIsDetailOpen(false)}
+          onEdit={(post) => {
+            setIsDetailOpen(false);
+            setEditingPost(post);
+            setIsEditorOpen(true);
+          }}
+        />
+      )}
     </div>
   );
 };

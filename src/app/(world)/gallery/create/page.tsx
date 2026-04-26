@@ -1,5 +1,6 @@
 'use client';
 
+import '../gallery.css';
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { 
@@ -17,19 +18,19 @@ import { venueService } from '@/lib/firebase/venueService';
 import { socialService } from '@/lib/firebase/socialService';
 import { eventService } from '@/lib/firebase/eventService';
 import { storage } from '@/lib/firebase/config';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import '../gallery.css';
+import { ref, uploadBytes, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 
 const GalleryCreateContent = () => {
   const router = useRouter();
   const { user } = useAuth();
   
   const [images, setImages] = useState<File[]>([]);
-  const [previews, setPreviews] = useState<string[]>([]);
+  const [previews, setPreviews] = useState<{url: string, type: 'image'|'video'}[]>([]);
   const [caption, setCaption] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [existingImages, setExistingImages] = useState<{url: string, type: 'image'|'video'}[]>([]);
   const searchParams = useSearchParams();
   const editId = searchParams.get('edit');
 
@@ -56,8 +57,14 @@ const GalleryCreateContent = () => {
             return;
           }
           setCaption(post.caption);
-          setExistingImages(post.media);
-          setPreviews(post.media);
+          
+          const loadedMedia = post.media.map((url, i) => ({
+             url,
+             type: post.mediaTypes ? post.mediaTypes[i] : (url.toLowerCase().includes('.mp4') || url.toLowerCase().includes('.mov') || url.toLowerCase().includes('.webm') || url.toLowerCase().includes('video') ? 'video' : 'image')
+          })) as { url: string; type: 'image' | 'video' }[];
+          
+          setExistingImages(loadedMedia);
+          setPreviews(loadedMedia);
           if (post.venueId) setSelectedVenue({ id: post.venueId, name: post.venueName });
           if (post.eventId) setSelectedSocial({ id: post.eventId, name: post.eventName });
         }
@@ -110,9 +117,12 @@ const GalleryCreateContent = () => {
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    if (files.length + images.length > 10) return alert('Maximum 10 images allowed.');
+    if (files.length + images.length + existingImages.length > 10) return alert('Maximum 10 files allowed.');
 
-    const newPreviews = files.map(file => URL.createObjectURL(file));
+    const newPreviews = files.map(file => ({
+      url: URL.createObjectURL(file),
+      type: file.type.startsWith('video/') ? 'video' as const : 'image' as const
+    }));
     setImages([...images, ...files]);
     setPreviews([...previews, ...newPreviews]);
   };
@@ -121,8 +131,9 @@ const GalleryCreateContent = () => {
     const previewToRemove = previews[index];
     
     // If it's an existing image (URL)
-    if (existingImages.includes(previewToRemove)) {
-      setExistingImages(prev => prev.filter(url => url !== previewToRemove));
+    const existingIndex = existingImages.findIndex(img => img.url === previewToRemove.url);
+    if (existingIndex >= 0) {
+      setExistingImages(prev => prev.filter((_, i) => i !== existingIndex));
     } else {
       // It's a new file. Find its index in the 'images' array.
       // We need to know which of the 'previews' are new files.
@@ -146,26 +157,49 @@ const GalleryCreateContent = () => {
 
   const handlePost = async () => {
     if (!user) return alert('로그인이 필요합니다.');
-    if (images.length === 0 && existingImages.length === 0) return alert('최소 1장의 사진이 필요합니다.');
+    if (images.length === 0 && existingImages.length === 0) return alert('최소 1개의 미디어가 필요합니다.');
     if (!caption.trim()) return alert('설명을 입력해주세요.');
 
     setIsUploading(true);
+    setUploadProgress(0);
     try {
-      // 1. Upload NEW Images to Storage
-      const newImageUrls = await Promise.all(
-        images.map(async (file) => {
-          const storageRef = ref(storage, `gallery/${user.uid}/${Date.now()}_${file.name}`);
-          const snapshot = await uploadBytes(storageRef, file);
-          return await getDownloadURL(snapshot.ref);
+      // 1. Upload NEW Images/Videos to Storage
+      let totalBytesTransferred = 0;
+      let totalBytes = images.reduce((acc, file) => acc + file.size, 0);
+
+      const newMediaData = await Promise.all(
+        images.map((file) => {
+          return new Promise<{url: string, type: 'image'|'video'}>((resolve, reject) => {
+            const storageRef = ref(storage, `gallery/${user.uid}/${Date.now()}_${file.name}`);
+            const uploadTask = uploadBytesResumable(storageRef, file);
+            
+            let lastTransferred = 0;
+            uploadTask.on('state_changed', 
+              (snapshot) => {
+                const diff = snapshot.bytesTransferred - lastTransferred;
+                lastTransferred = snapshot.bytesTransferred;
+                totalBytesTransferred += diff;
+                const progress = Math.round((totalBytesTransferred / totalBytes) * 100);
+                setUploadProgress(progress > 100 ? 100 : progress);
+              },
+              (error) => reject(error),
+              async () => {
+                const url = await getDownloadURL(uploadTask.snapshot.ref);
+                resolve({ url, type: file.type.startsWith('video/') ? 'video' : 'image' });
+              }
+            );
+          });
         })
       );
 
-      const finalMedia = [...existingImages, ...newImageUrls];
+      const finalMediaUrls = [...existingImages.map(img => img.url), ...newMediaData.map(m => m.url)];
+      const finalMediaTypes = [...existingImages.map(img => img.type), ...newMediaData.map(m => m.type)];
 
       if (isEditMode && editId) {
         // Update existing post
         await galleryService.updatePost(editId, {
-          media: finalMedia,
+          media: finalMediaUrls,
+          mediaTypes: finalMediaTypes,
           caption: caption,
           venueId: selectedVenue?.id || '',
           venueName: selectedVenue?.name || '',
@@ -178,7 +212,8 @@ const GalleryCreateContent = () => {
           authorId: user.uid,
           authorName: user.displayName || 'Anonymous',
           authorPhoto: user.photoURL || '',
-          media: finalMedia,
+          media: finalMediaUrls,
+          mediaTypes: finalMediaTypes,
           caption: caption,
           venueId: selectedVenue?.id || '',
           venueName: selectedVenue?.name || '',
@@ -197,7 +232,8 @@ const GalleryCreateContent = () => {
   };
 
   return (
-    <div className="gallery-create-container">
+    <div className="fixed inset-0 z-[100] bg-white md:bg-black/80 flex justify-center backdrop-blur-sm">
+      <div className="gallery-create-container w-full h-full overflow-y-auto bg-white shadow-xl flex flex-col relative">
       {/* Header */}
       <div className="create-header">
         <button onClick={() => router.back()}><ChevronLeft size={24} /></button>
@@ -207,16 +243,26 @@ const GalleryCreateContent = () => {
           onClick={handlePost} 
           disabled={isUploading || (images.length === 0 && existingImages.length === 0)}
         >
-          {isUploading ? (isEditMode ? 'Updating...' : 'Posting...') : (isEditMode ? 'Update' : 'Post')}
+          {isUploading ? `${uploadProgress}%` : (isEditMode ? 'Update' : 'Post')}
         </button>
       </div>
+
+      {isUploading && (
+        <div className="w-full bg-gray-100 h-1">
+          <div className="bg-primary h-1 transition-all duration-300" style={{ width: `${uploadProgress}%` }}></div>
+        </div>
+      )}
 
       {/* Image Upload Area */}
       <div className="upload-section">
         <div className="image-preview-scroll">
-          {previews.map((src, idx) => (
+          {previews.map((item, idx) => (
             <div key={idx} className="preview-item">
-              <img src={src} alt="" />
+              {item.type === 'video' ? (
+                <video src={item.url} className="w-full h-full object-cover" muted loop autoPlay playsInline />
+              ) : (
+                <img src={item.url} alt="" className="w-full h-full object-cover" />
+              )}
               <button className="btn-remove-image" onClick={() => removeImage(idx)}>
                 <X size={14} />
               </button>
@@ -230,7 +276,7 @@ const GalleryCreateContent = () => {
         <input 
           type="file" 
           multiple 
-          accept="image/*" 
+          accept="image/*,video/*" 
           hidden 
           ref={fileInputRef} 
           onChange={handleImageChange} 
@@ -325,6 +371,7 @@ const GalleryCreateContent = () => {
           )}
         </div>
       </div>
+    </div>
     </div>
   );
 };

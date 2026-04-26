@@ -5,14 +5,8 @@ export default function LandingPage() {
   return (
     <div className="bg-white text-black antialiased">
       {/* Top Navigation Bar (Mobile App Style) */}
-      <nav className="fixed top-0 left-0 right-0 lg:left-[calc(50%-28rem)] lg:right-[calc(50%-28rem)] max-w-4xl mx-auto bg-white/90 backdrop-blur-md z-50 border-b border-gray-100 px-4 h-14 flex items-center justify-between">
-        <button aria-label="Menu" className="p-2 -ml-2">
-          <span className="material-symbols-outlined text-2xl">menu</span>
-        </button>
-        <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-black">WOC / WORLD OF GROUP</p>
-        <button aria-label="Profile" className="p-2 -mr-2">
-          <span className="material-symbols-outlined text-2xl">account_circle</span>
-        </button>
+      <nav className="fixed top-0 left-0 right-0 lg:left-[calc(50%-28rem)] lg:right-[calc(50%-28rem)] max-w-4xl mx-auto bg-white/90 backdrop-blur-md z-50 border-b border-gray-100 px-4 h-14 flex items-center justify-center">
+        <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-black">WORLD OF COMMUNITY</p>
       </nav>
 
       {/* Header / Slogan Section */}
@@ -27,6 +21,26 @@ export default function LandingPage() {
 
       {/* Main Content */}
       <main>
+        {/* SECTION 0: FEATURED SOCIETY */}
+        <article className="border-b border-gray-100 bg-white pb-12 md:pb-16">
+          <div className="max-w-4xl mx-auto">
+            <Link href="/home" className="block relative group cursor-pointer overflow-hidden">
+              <img 
+                alt="Argentine Tango" 
+                className="w-full h-[400px] md:h-[500px] object-cover transition-transform duration-700 group-hover:scale-105" 
+                src="/tango-featured.jpg" 
+              />
+              <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors flex flex-col justify-end p-6 md:p-12 text-white">
+                <span className="text-sm italic mb-2 tracking-wide block text-gray-200">Recommended Society</span>
+                <h2 className="text-5xl md:text-6xl font-black tracking-tighter uppercase leading-none mb-3">Argentine Tango</h2>
+                <p className="text-sm md:text-base font-medium max-w-xl text-gray-300">
+                  Bring the dance within you to the floor. Turn your dormant passion into reality.
+                </p>
+              </div>
+            </Link>
+          </div>
+        </article>
+
         {/* SECTION 1: STAGE */}
         <article className="border-b border-gray-100">
           <div className="max-w-4xl mx-auto">
@@ -248,7 +262,7 @@ export default function LandingPage() {
       <footer className="py-16 px-6 bg-white text-black border-t border-gray-100">
         <div className="max-w-4xl mx-auto flex flex-col gap-10">
           <div className="space-y-2">
-            <p className="text-[11px] font-bold tracking-widest uppercase">WORLD OF GROUP_</p>
+            <p className="text-[11px] font-bold tracking-widest uppercase">WORLD OF COMMUNITY_</p>
             <p className="text-[10px] font-medium tracking-widest uppercase text-gray-400">Digital Archive © 2024. All Rights Reserved.</p>
           </div>
           <nav className="flex flex-col gap-y-6 text-[10px] font-bold tracking-widest uppercase">

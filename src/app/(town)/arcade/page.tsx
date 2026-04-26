@@ -4,7 +4,7 @@ import React from 'react';
 
 export default function ArcadePage() {
   return (
-    <main className="bg-background font-body text-on-surface min-h-screen pt-16">
+    <main className="bg-background font-body text-on-surface min-h-screen">
       {/* Hero Section */}
       <section className="relative w-full h-[618px] flex items-center overflow-hidden">
         <div className="absolute inset-0 z-0">

@@ -136,7 +136,7 @@ export default function PlazaPage() {
 
           {/* Universal Feed Section */}
           <div className="flex-grow">
-            <UniversalFeed context={plazaContext} currentUser={user} />
+            <UniversalFeed context={plazaContext} currentUser={user} profile={profile} />
           </div>
         </div>
       </div>

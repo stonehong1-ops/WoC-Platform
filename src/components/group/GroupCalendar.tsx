@@ -15,8 +15,7 @@ import {
   startOfDay,
   isToday
 } from 'date-fns';
-import { motion, AnimatePresence } from 'framer-motion';
-import GroupFooter from './GroupFooter';
+import { AnimatePresence, motion } from 'framer-motion';
 import { groupService } from '@/lib/firebase/groupService';
 import { CalendarEvent, Group } from '@/types/group';
 
@@ -30,6 +29,7 @@ const GroupCalendar: React.FC<GroupCalendarProps> = ({ group }) => {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
+  const [expandedEvent, setExpandedEvent] = useState<CalendarEvent | null>(null);
   
   // Form State
   const [formData, setFormData] = useState({
@@ -55,6 +55,7 @@ const GroupCalendar: React.FC<GroupCalendarProps> = ({ group }) => {
 
   const onDateClick = (day: Date) => {
     setSelectedDate(day);
+    setExpandedEvent(null);
   };
 
   const handleOpenModal = (event?: CalendarEvent) => {
@@ -90,7 +91,7 @@ const GroupCalendar: React.FC<GroupCalendarProps> = ({ group }) => {
     const eventPayload = {
       ...formData,
       startDate: startOfDay(selectedDate).getTime(),
-      createdBy: 'user', // In real app, this would be current user ID
+      createdBy: 'user',
     };
 
     try {
@@ -114,205 +115,219 @@ const GroupCalendar: React.FC<GroupCalendarProps> = ({ group }) => {
     }
   };
 
-  const renderHeader = () => {
-    return (
-      <div className="flex justify-between items-center mb-6 md:mb-8 bg-white/40 backdrop-blur-md px-6 py-4 rounded-[32px] border border-white/50 shadow-sm">
-        <h2 className="font-headline font-black text-2xl md:text-3xl tracking-tight text-[var(--on-surface)]">
-          {format(currentMonth, 'MMMM yyyy')}
-        </h2>
-        <div className="flex gap-2">
-          <button 
-            onClick={prevMonth}
-            className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white transition-all text-[var(--on-surface-variant)] shadow-sm hover:shadow-md active:scale-95"
-          >
-            <span className="material-symbols-outlined icon-sm">chevron_left</span>
-          </button>
-          <button 
-            onClick={nextMonth}
-            className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white transition-all text-[var(--on-surface-variant)] shadow-sm hover:shadow-md active:scale-95"
-          >
-            <span className="material-symbols-outlined icon-sm">chevron_right</span>
-          </button>
-        </div>
-      </div>
-    );
+  const getTypeLabel = (type: string) => {
+    const labels: Record<string, string> = {
+      'class': 'Class',
+      'milonga': 'Milonga',
+      'social': 'Social',
+      'practice': 'Practice',
+      'general': 'Event',
+    };
+    return labels[type] || 'Event';
   };
 
-  const renderDays = () => {
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    return (
-      <div className="grid grid-cols-7 mb-6">
-        {days.map((day, i) => (
-          <div key={i} className="text-center">
-            <span className={`text-[10px] md:text-[11px] font-black uppercase tracking-[0.2em] font-label ${i === 0 ? 'text-red-400' : i === 6 ? 'text-blue-400' : 'text-[var(--outline-variant)]'}`}>
-              {day}
-            </span>
+  const getTypeBadgeClass = (type: string) => {
+    if (type === 'class' || type === 'social' || type === 'practice') {
+      return 'bg-[#f199f7]/30 text-[#5e106a]';
+    }
+    return 'bg-[#6e9fff]/30 text-[#002150]';
+  };
+
+  // Build calendar grid
+  const monthStart = startOfMonth(currentMonth);
+  const monthEnd = endOfMonth(monthStart);
+  const calStartDate = startOfWeek(monthStart);
+  const calEndDate = endOfWeek(monthEnd);
+
+  const calendarDays: Date[] = [];
+  let day = calStartDate;
+  while (day <= calEndDate) {
+    calendarDays.push(day);
+    day = addDays(day, 1);
+  }
+
+  const selectedDayEvents = events.filter(e => isSameDay(new Date(e.startDate), selectedDate));
+
+  return (
+    <div className="pb-8">
+      <div className="flex flex-col md:flex-row gap-8">
+        {/* Calendar Section */}
+        <section className="flex-1 w-full bg-white rounded-xl shadow-sm p-6 relative z-10 border border-[#a3abd7]/10">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="font-headline font-extrabold text-2xl tracking-tight text-[#242c51]">{format(currentMonth, 'MMMM yyyy')}</h2>
+            <div className="flex gap-2">
+              <button onClick={prevMonth} className="p-2 rounded-full hover:bg-[#F1F5F9] transition-colors text-[#515981]">
+                <span className="material-symbols-outlined">chevron_left</span>
+              </button>
+              <button onClick={nextMonth} className="p-2 rounded-full hover:bg-[#F1F5F9] transition-colors text-[#515981]">
+                <span className="material-symbols-outlined">chevron_right</span>
+              </button>
+            </div>
           </div>
-        ))}
-      </div>
-    );
-  };
+          <div className="grid grid-cols-7 gap-2 mb-2 text-center">
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
+              <span key={d} className="text-[11px] font-bold uppercase tracking-wider text-[#515981] font-label">{d}</span>
+            ))}
+          </div>
+          <div className="grid grid-cols-7 gap-2">
+            {calendarDays.map((calDay, idx) => {
+              const isCurrentMonth = isSameMonth(calDay, monthStart);
+              const isSelected = isSameDay(calDay, selectedDate);
+              const isTodayDate = isToday(calDay);
+              const dayEvents = events.filter(e => isSameDay(new Date(e.startDate), calDay));
 
-  const renderCells = () => {
-    const monthStart = startOfMonth(currentMonth);
-    const monthEnd = endOfMonth(monthStart);
-    const startDate = startOfWeek(monthStart);
-    const endDate = endOfWeek(monthEnd);
-
-    const rows = [];
-    let days = [];
-    let day = startDate;
-
-    while (day <= endDate) {
-      for (let i = 0; i < 7; i++) {
-        const cloneDay = day;
-        const dayEvents = events.filter(e => isSameDay(new Date(e.startDate), cloneDay));
-        const isSelected = isSameDay(day, selectedDate);
-        const isCurrentMonth = isSameMonth(day, monthStart);
-        const isTodayDate = isToday(day);
-
-        days.push(
-          <div
-            key={day.toString()}
-            className={`relative aspect-square flex flex-col items-center justify-center rounded-2xl md:rounded-[24px] cursor-pointer transition-all duration-300
-              ${!isCurrentMonth ? 'text-[var(--outline-variant)] opacity-40' : 'text-[var(--on-surface)]'}
-              ${isSelected 
-                ? 'bg-[var(--primary)] text-white shadow-xl shadow-[var(--primary)]/20 scale-[1.05] z-10' 
-                : isTodayDate 
-                  ? 'bg-white border-2 border-[var(--primary)]/30 text-[var(--primary)] font-black' 
-                  : 'hover:bg-white hover:shadow-lg hover:scale-[1.02]'
+              if (!isCurrentMonth) {
+                return (
+                  <div key={idx} className="aspect-square flex items-center justify-center text-[#515981]/40 text-sm font-medium">
+                    {format(calDay, 'd')}
+                  </div>
+                );
               }
-            `}
-            onClick={() => onDateClick(cloneDay)}
-          >
-            <span className={`text-sm md:text-base font-bold ${isSelected ? 'text-white' : ''}`}>{format(day, "d")}</span>
-            <div className="absolute bottom-2 md:bottom-3 flex gap-1 justify-center w-full">
-              {dayEvents.slice(0, 3).map((event, idx) => (
-                <div 
-                  key={idx} 
-                  className={`w-1 h-1 md:w-1.5 md:h-1.5 rounded-full`}
-                  style={{ backgroundColor: isSelected ? 'white' : (event.color || 'var(--primary)') }}
-                />
-              ))}
-              {dayEvents.length > 3 && (
-                <div className={`w-1 h-1 rounded-full ${isSelected ? 'bg-white' : 'bg-[var(--outline-variant)]'}`} />
+
+              if (isSelected) {
+                return (
+                  <div
+                    key={idx}
+                    onClick={() => onDateClick(calDay)}
+                    className="aspect-square flex flex-col items-center justify-center bg-[#0057bd] text-[#f0f2ff] rounded-lg shadow-md shadow-[#0057bd]/20 scale-[0.99] cursor-pointer text-sm font-bold relative"
+                  >
+                    {format(calDay, 'd')}
+                    {dayEvents.length > 0 && (
+                      <div className="w-1.5 h-1.5 bg-white rounded-full absolute bottom-2"></div>
+                    )}
+                  </div>
+                );
+              }
+
+              return (
+                <div
+                  key={idx}
+                  onClick={() => onDateClick(calDay)}
+                  className={`aspect-square flex flex-col items-center justify-center rounded-lg hover:bg-[#F1F5F9] transition-colors cursor-pointer text-sm font-medium text-[#242c51] relative ${isTodayDate ? 'ring-2 ring-[#0057bd]/30' : ''}`}
+                >
+                  {format(calDay, 'd')}
+                  {dayEvents.length > 0 && (
+                    <div className="flex gap-1 absolute bottom-2">
+                      {dayEvents.slice(0, 2).map((ev, i) => (
+                        <div key={i} className="w-1 h-1 rounded-full" style={{ backgroundColor: ev.type === 'class' || ev.type === 'social' || ev.type === 'practice' ? '#893c92' : '#0057bd' }}></div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Selected Date Events */}
+        <section className="w-full md:w-[400px] flex flex-col gap-4">
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-[#a3abd7]/10">
+            <h3 className="font-headline font-bold text-xl text-[#242c51] mb-2">{format(selectedDate, 'EEEE, MMM d')}</h3>
+            <p className="text-[13px] font-medium text-[#515981] mb-6">{selectedDayEvents.length} event{selectedDayEvents.length !== 1 ? 's' : ''} scheduled</p>
+            <div className="space-y-4">
+              {selectedDayEvents.length > 0 ? (
+                selectedDayEvents.map((event) => (
+                  <div
+                    key={event.id}
+                    onClick={() => setExpandedEvent(expandedEvent?.id === event.id ? null : event)}
+                    className="group relative bg-[#F1F5F9] rounded-lg p-4 hover:bg-[#dde1ff] transition-colors cursor-pointer border border-[#a3abd7]/5"
+                  >
+                    <div className={`absolute top-4 right-4 text-[10px] font-bold uppercase tracking-wider ${getTypeBadgeClass(event.type)} px-2 py-1 rounded-full font-label`}>
+                      {getTypeLabel(event.type)}
+                    </div>
+                    <p className="text-sm font-semibold text-[#0057bd] mb-1">{event.startTime} - {event.endTime}</p>
+                    <h4 className="font-headline font-bold text-lg text-[#242c51] mb-1">{event.title}</h4>
+                    {event.location && (
+                      <p className="text-[13px] font-medium text-[#515981] flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[16px]">location_on</span>
+                        {event.location}
+                      </p>
+                    )}
+                    {/* Edit/Delete on hover */}
+                    <div className="absolute bottom-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleOpenModal(event); }}
+                        className="p-1 text-[#515981] hover:text-[#0057bd] rounded transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">edit</span>
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDeleteEvent(event.id); }}
+                        className="p-1 text-[#515981] hover:text-red-500 rounded transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">delete</span>
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <span className="material-symbols-outlined text-4xl text-[#a3abd7]/40 mb-2 block">event_busy</span>
+                  <p className="text-sm text-[#515981]">No events scheduled</p>
+                </div>
               )}
             </div>
           </div>
-        );
-        day = addDays(day, 1);
-      }
-      rows.push(
-        <div className="grid grid-cols-7 gap-1 md:gap-3" key={day.toString()}>
-          {days}
-        </div>
-      );
-      days = [];
-    }
-    return <div className="flex flex-col gap-1 md:gap-3">{rows}</div>;
-  };
 
-  const renderEvents = () => {
-    const dayEvents = events.filter(e => isSameDay(new Date(e.startDate), selectedDate));
-
-    return (
-      <div className="flex flex-col gap-6">
-        <div className="flex justify-between items-center bg-white/60 backdrop-blur-md p-6 rounded-[32px] border border-white/50 shadow-sm">
-          <div>
-            <h3 className="font-headline font-black text-xl md:text-2xl text-[var(--on-surface)]">{format(selectedDate, 'EEEE, MMM d')}</h3>
-            <p className="text-[11px] font-bold text-[var(--on-surface-variant)] tracking-wide uppercase mt-1">
-              {dayEvents.length} {dayEvents.length === 1 ? 'Event' : 'Events'} Scheduled
-            </p>
-          </div>
-          <button 
-            onClick={() => handleOpenModal()}
-            className="w-12 h-12 bg-[var(--primary)] text-white rounded-2xl flex items-center justify-center shadow-lg shadow-[var(--primary)]/20 hover:scale-110 active:scale-95 transition-all"
-          >
-            <span className="material-symbols-outlined">add</span>
-          </button>
-        </div>
-
-        <div className="flex flex-col gap-4">
-          {dayEvents.length > 0 ? (
-            dayEvents.map((event) => (
-              <motion.div 
-                layout
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                key={event.id}
-                className="group bg-white/80 backdrop-blur-md rounded-[24px] p-5 hover:shadow-xl transition-all border border-white/80"
-              >
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex flex-col">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: event.color || 'var(--primary)' }} />
-                      <span className="text-[10px] font-black uppercase tracking-[0.15em] text-[var(--primary)]">
-                        {event.startTime} - {event.endTime}
-                      </span>
-                    </div>
-                    <h4 className="font-headline font-extrabold text-lg text-[var(--on-surface)] group-hover:text-[var(--primary)] transition-colors">{event.title}</h4>
+          {/* Expanded Event Detail Card */}
+          {expandedEvent && (
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-[#a3abd7]/10">
+              <div className="h-32 w-full bg-[#e4e7ff] relative">
+                <div className="absolute inset-0 bg-gradient-to-t from-white via-white/50 to-transparent"></div>
+              </div>
+              <div className="p-6 pt-2 relative z-10">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h4 className="font-headline font-bold text-xl text-[#242c51]">{expandedEvent.title}</h4>
+                    <p className="text-sm font-medium text-[#0057bd]">{format(selectedDate, 'MMM d')}, {expandedEvent.startTime} - {expandedEvent.endTime}</p>
                   </div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button 
-                      onClick={() => handleOpenModal(event)}
-                      className="p-2 text-[var(--outline-variant)] hover:text-[var(--primary)] hover:bg-[var(--primary)]/10 rounded-xl transition-all"
-                    >
-                      <span className="material-symbols-outlined text-sm">edit</span>
-                    </button>
-                    <button 
-                      onClick={() => handleDeleteEvent(event.id)}
-                      className="p-2 text-[var(--outline-variant)] hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
-                    >
-                      <span className="material-symbols-outlined text-sm">delete</span>
-                    </button>
-                  </div>
+                  <button onClick={() => setExpandedEvent(null)} className="text-[#515981] hover:text-[#242c51] transition-colors p-1">
+                    <span className="material-symbols-outlined">close</span>
+                  </button>
                 </div>
-                {event.description && <p className="text-[var(--on-surface-variant)] text-sm leading-relaxed mb-4">{event.description}</p>}
-                <div className="flex flex-wrap gap-2">
-                  {event.location && (
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--surface-container-low)] rounded-lg">
-                      <span className="material-symbols-outlined text-sm text-[var(--primary)]">location_on</span>
-                      <span className="text-[11px] font-bold text-[var(--on-surface-variant)]">{event.location}</span>
+                <div className="space-y-3 mb-6">
+                  {expandedEvent.location && (
+                    <div className="flex items-start gap-3">
+                      <span className="material-symbols-outlined text-[#515981]">location_on</span>
+                      <div>
+                        <p className="text-sm font-medium text-[#242c51]">{expandedEvent.location}</p>
+                      </div>
                     </div>
                   )}
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--surface-container-low)] rounded-lg">
-                    <span className="material-symbols-outlined text-sm text-[var(--primary)]">category</span>
-                    <span className="text-[11px] font-bold text-[var(--on-surface-variant)] uppercase tracking-wider">{event.type}</span>
+                  <div className="flex items-start gap-3">
+                    <span className="material-symbols-outlined text-[#515981]">category</span>
+                    <div>
+                      <p className="text-sm font-medium text-[#242c51]">{getTypeLabel(expandedEvent.type)}</p>
+                    </div>
                   </div>
+                  {expandedEvent.description && (
+                    <div className="flex items-start gap-3">
+                      <span className="material-symbols-outlined text-[#515981]">description</span>
+                      <div>
+                        <p className="text-sm text-[#515981]">{expandedEvent.description}</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </motion.div>
-            ))
-          ) : (
-            <div className="bg-white/40 border-2 border-dashed border-[var(--outline-variant)]/30 rounded-[32px] p-12 flex flex-col items-center justify-center text-center">
-              <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center mb-4 shadow-sm">
-                <span className="material-symbols-outlined text-3xl text-[var(--outline-variant)]">event_busy</span>
+                <button
+                  onClick={() => handleOpenModal(expandedEvent)}
+                  className="w-full bg-[#0057bd] text-[#f0f2ff] font-bold text-sm uppercase tracking-wider py-3 rounded-lg shadow-md shadow-[#0057bd]/20 scale-100 active:scale-[0.98] transition-transform font-label"
+                >
+                  Edit Event
+                </button>
               </div>
-              <h4 className="font-headline font-bold text-lg text-[var(--on-surface)] mb-1">일정이 없습니다</h4>
-              <p className="text-sm text-[var(--on-surface-variant)]">새로운 일정을 추가해보세요!</p>
             </div>
           )}
-        </div>
+        </section>
       </div>
-    );
-  };
 
-  return (
-    <div className="flex-1 overflow-y-auto no-scrollbar pb-32 bg-[var(--surface-bright)]">
-      <main className="pt-28 md:pt-36 px-4 md:px-8 max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 md:gap-20">
-          <section className="lg:col-span-7 flex flex-col gap-8">
-            {renderHeader()}
-            <div className="bg-white/60 backdrop-blur-xl p-8 md:p-12 rounded-[var(--radius-premium)] border border-white shadow-[var(--shadow-premium)]">
-              {renderDays()}
-              {renderCells()}
-            </div>
-          </section>
-
-          <section className="lg:col-span-5">
-            {renderEvents()}
-          </section>
-        </div>
-      </main>
+      {/* Floating Action Button */}
+      <button
+        onClick={() => handleOpenModal()}
+        className="fixed bottom-24 right-6 md:bottom-8 md:right-8 w-14 h-14 bg-[#0057bd] text-[#f0f2ff] rounded-xl shadow-md shadow-[#0057bd]/30 flex items-center justify-center hover:bg-[#004ca6] transition-colors scale-100 active:scale-95 z-40"
+      >
+        <span className="material-symbols-outlined text-2xl">add</span>
+      </button>
 
       {/* Add/Edit Modal */}
       <AnimatePresence>
@@ -323,34 +338,34 @@ const GroupCalendar: React.FC<GroupCalendarProps> = ({ group }) => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsModalOpen(false)}
-              className="absolute inset-0 bg-[var(--on-surface)]/40 backdrop-blur-sm"
+              className="absolute inset-0 bg-[#242c51]/40 backdrop-blur-sm"
             />
             <motion.div 
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative w-full max-w-lg bg-white rounded-[var(--radius-premium)] shadow-2xl overflow-hidden"
+              className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden"
             >
-              <div className="bg-gradient-to-br from-[var(--primary)] to-[var(--primary-container)] px-8 py-10 text-white relative">
+              <div className="bg-gradient-to-br from-[#0057bd] to-[#6e9fff] px-8 py-10 text-white relative">
                 <button 
                   onClick={() => setIsModalOpen(false)}
                   className="absolute top-6 right-6 p-2 hover:bg-white/20 rounded-full transition-colors"
                 >
                   <span className="material-symbols-outlined">close</span>
                 </button>
-                <h2 className="font-headline font-black text-3xl mb-2">
+                <h2 className="font-headline font-extrabold text-3xl mb-2">
                   {editingEvent ? '일정 수정' : '일정 만들기'}
                 </h2>
                 <p className="opacity-80 font-medium">{format(selectedDate, 'EEEE, MMMM do, yyyy')}</p>
               </div>
 
-              <div className="p-8 flex flex-col gap-6 max-h-[60vh] overflow-y-auto no-scrollbar">
+              <div className="p-8 flex flex-col gap-6 max-h-[60vh] overflow-y-auto">
                 <div className="flex flex-col gap-2">
-                  <label className="text-xs font-black uppercase tracking-widest text-[var(--on-surface-variant)] ml-1">Event Title</label>
+                  <label className="text-xs font-bold uppercase tracking-widest text-[#515981] ml-1">Event Title</label>
                   <input 
                     autoFocus
-                    placeholder="?? ?뚯뀥 ?꾩뒪 ?뚰떚"
-                    className="w-full px-6 py-4 bg-[var(--surface-container-low)] rounded-2xl border-none focus:ring-4 focus:ring-[var(--primary)]/10 transition-all font-bold text-[var(--on-surface)]"
+                    placeholder="이벤트 제목을 입력하세요"
+                    className="w-full px-6 py-4 bg-[#F1F5F9] rounded-xl border-none focus:ring-4 focus:ring-[#0057bd]/10 transition-all font-bold text-[#242c51]"
                     value={formData.title}
                     onChange={(e) => setFormData({...formData, title: e.target.value})}
                   />
@@ -358,19 +373,19 @@ const GroupCalendar: React.FC<GroupCalendarProps> = ({ group }) => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-2">
-                    <label className="text-xs font-black uppercase tracking-widest text-[var(--on-surface-variant)] ml-1">Start Time</label>
+                    <label className="text-xs font-bold uppercase tracking-widest text-[#515981] ml-1">Start Time</label>
                     <input 
                       type="time"
-                      className="w-full px-6 py-4 bg-[var(--surface-container-low)] rounded-2xl border-none focus:ring-4 focus:ring-[var(--primary)]/10 transition-all font-bold text-[var(--on-surface)]"
+                      className="w-full px-6 py-4 bg-[#F1F5F9] rounded-xl border-none focus:ring-4 focus:ring-[#0057bd]/10 transition-all font-bold text-[#242c51]"
                       value={formData.startTime}
                       onChange={(e) => setFormData({...formData, startTime: e.target.value})}
                     />
                   </div>
                   <div className="flex flex-col gap-2">
-                    <label className="text-xs font-black uppercase tracking-widest text-[var(--on-surface-variant)] ml-1">End Time</label>
+                    <label className="text-xs font-bold uppercase tracking-widest text-[#515981] ml-1">End Time</label>
                     <input 
                       type="time"
-                      className="w-full px-6 py-4 bg-[var(--surface-container-low)] rounded-2xl border-none focus:ring-4 focus:ring-[var(--primary)]/10 transition-all font-bold text-[var(--on-surface)]"
+                      className="w-full px-6 py-4 bg-[#F1F5F9] rounded-xl border-none focus:ring-4 focus:ring-[#0057bd]/10 transition-all font-bold text-[#242c51]"
                       value={formData.endTime}
                       onChange={(e) => setFormData({...formData, endTime: e.target.value})}
                     />
@@ -378,26 +393,26 @@ const GroupCalendar: React.FC<GroupCalendarProps> = ({ group }) => {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <label className="text-xs font-black uppercase tracking-widest text-[var(--on-surface-variant)] ml-1">Location</label>
+                  <label className="text-xs font-bold uppercase tracking-widest text-[#515981] ml-1">Location</label>
                   <input 
-                    placeholder="?? 硫붿씤 ?"
-                    className="w-full px-6 py-4 bg-[var(--surface-container-low)] rounded-2xl border-none focus:ring-4 focus:ring-[var(--primary)]/10 transition-all font-bold text-[var(--on-surface)]"
+                    placeholder="장소를 입력하세요"
+                    className="w-full px-6 py-4 bg-[#F1F5F9] rounded-xl border-none focus:ring-4 focus:ring-[#0057bd]/10 transition-all font-bold text-[#242c51]"
                     value={formData.location}
                     onChange={(e) => setFormData({...formData, location: e.target.value})}
                   />
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <label className="text-xs font-black uppercase tracking-widest text-[var(--on-surface-variant)] ml-1">Event Type</label>
+                  <label className="text-xs font-bold uppercase tracking-widest text-[#515981] ml-1">Event Type</label>
                   <div className="flex flex-wrap gap-2">
                     {['general', 'class', 'social', 'milonga', 'practice'].map((type) => (
                       <button
                         key={type}
-                        onClick={() => setFormData({...formData, type: type as any})}
-                        className={`px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+                        onClick={() => setFormData({...formData, type: type as CalendarEvent['type']})}
+                        className={`px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${
                           formData.type === type 
-                            ? 'bg-[var(--primary)] text-white shadow-lg shadow-[var(--primary)]/20 scale-105' 
-                            : 'bg-[var(--surface-container-low)] text-[var(--on-surface-variant)] hover:bg-[var(--surface-container-high)]'
+                            ? 'bg-[#0057bd] text-white shadow-lg shadow-[#0057bd]/20 scale-105' 
+                            : 'bg-[#F1F5F9] text-[#515981] hover:bg-[#dde1ff]'
                         }`}
                       >
                         {type}
@@ -407,11 +422,11 @@ const GroupCalendar: React.FC<GroupCalendarProps> = ({ group }) => {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <label className="text-xs font-black uppercase tracking-widest text-[var(--on-surface-variant)] ml-1">Description</label>
+                  <label className="text-xs font-bold uppercase tracking-widest text-[#515981] ml-1">Description</label>
                   <textarea 
                     rows={3}
-                    placeholder="?곸꽭 ?댁슜???낅젰?섏꽭??.."
-                    className="w-full px-6 py-4 bg-[var(--surface-container-low)] rounded-2xl border-none focus:ring-4 focus:ring-[var(--primary)]/10 transition-all font-medium text-[var(--on-surface)] resize-none"
+                    placeholder="상세 내용을 입력하세요..."
+                    className="w-full px-6 py-4 bg-[#F1F5F9] rounded-xl border-none focus:ring-4 focus:ring-[#0057bd]/10 transition-all font-medium text-[#242c51] resize-none"
                     value={formData.description}
                     onChange={(e) => setFormData({...formData, description: e.target.value})}
                   />
@@ -422,7 +437,7 @@ const GroupCalendar: React.FC<GroupCalendarProps> = ({ group }) => {
                 <button 
                   onClick={handleSaveEvent}
                   disabled={!formData.title}
-                  className="w-full py-5 bg-gradient-to-br from-[var(--primary)] to-[var(--primary-container)] text-white font-black uppercase tracking-widest rounded-3xl shadow-2xl shadow-[var(--primary)]/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:hover:scale-100"
+                  className="w-full py-4 bg-gradient-to-br from-[#0057bd] to-[#6e9fff] text-white font-bold uppercase tracking-widest rounded-xl shadow-2xl shadow-[#0057bd]/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:hover:scale-100"
                 >
                   {editingEvent ? '변경사항 저장' : '일정 추가하기'}
                 </button>
@@ -431,11 +446,8 @@ const GroupCalendar: React.FC<GroupCalendarProps> = ({ group }) => {
           </div>
         )}
       </AnimatePresence>
-
-      <GroupFooter communityName={group.name} />
     </div>
   );
 };
 
 export default GroupCalendar;
-

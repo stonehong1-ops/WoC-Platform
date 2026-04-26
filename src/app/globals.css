@@ -220,3 +220,12 @@
   box-shadow: 0 2px 10px rgba(0,0,0,0.2); 
 }
 
+@keyframes doorLeft {
+  0%, 100% { transform: perspective(200px) rotateY(0deg); }
+  50% { transform: perspective(200px) rotateY(-90deg); }
+}
+
+@keyframes doorRight {
+  0%, 100% { transform: perspective(200px) rotateY(0deg); }
+  50% { transform: perspective(200px) rotateY(90deg); }
+}

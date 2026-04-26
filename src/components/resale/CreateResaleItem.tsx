@@ -127,6 +127,26 @@ export default function CreateResaleItem({ onClose, onSuccess }: CreateResaleIte
               />
             </div>
 
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Category</label>
+              <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+                {categories.map(c => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setCategory(c)}
+                    className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
+                      category === c 
+                        ? 'bg-primary text-white shadow-md' 
+                        : 'bg-gray-50 text-gray-400 hover:bg-gray-100'
+                    }`}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-8">
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Price (₩)</label>

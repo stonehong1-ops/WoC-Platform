@@ -5,42 +5,29 @@ import { useRouter } from 'next/navigation';
 import { groupService } from '@/lib/firebase/groupService';
 import { storageService } from '@/lib/firebase/storageService';
 import { useAuth } from '@/components/providers/AuthProvider';
-import { motion, AnimatePresence, useDragControls } from 'framer-motion';
-import { Group } from '@/types/group';
+import { Group, Member } from '@/types/group';
 import Link from 'next/link';
+import ImageWithFallback from '@/components/common/ImageWithFallback';
+import { db } from '@/lib/firebase/clientApp';
+import { updateDoc, doc, collection, getDocs, query } from 'firebase/firestore';
 
 export default function GroupsDiscoveryPage() {
   const router = useRouter();
   const { user, profile, setShowLogin } = useAuth();
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-
-  // My Groups Bottom Sheet State
-  const [sheetState, setSheetState] = useState<'minimized' | 'half' | 'full'>('minimized');
-  const userJoinedGroups = profile?.joinedGroups ? groups.filter(g => profile.joinedGroups?.includes(g.id)) : [];
-
-  // Handle Back Button for Bottom Sheet
-  useEffect(() => {
-    const handlePopState = () => {
-      if (sheetState !== 'minimized') {
-        setSheetState('minimized');
-      }
-    };
-
-    if (sheetState !== 'minimized') {
-      window.history.pushState({ sheetOpen: true }, '');
-      window.addEventListener('popstate', handlePopState);
-    } else {
-      // If sheet is minimized manually, we might want to check if we should remove the pushed state
-      // but usually the user just navigates back. 
-      // For simplicity in this UI, we mainly care about the back button closing the sheet.
+  const userJoinedGroups = user ? groups.filter(g => {
+    const inJoinedGroups = profile?.joinedGroups && profile.joinedGroups.includes(g.id);
+    const inMemberIds = (g as any).memberIds && Array.isArray((g as any).memberIds) && (g as any).memberIds.includes(user.uid);
+    const isOwner = g.ownerId === user.uid;
+    const matches = inJoinedGroups || inMemberIds || isOwner;
+    if (g.name === 'freestyle tango') {
+      console.log('Freestyle Tango check:', { gId: g.id, uid: user.uid, inJoinedGroups, inMemberIds, isOwner, profileJoined: profile?.joinedGroups });
     }
-
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-    };
-  }, [sheetState]);
+    return matches;
+  }) : [];
 
   // Create Group State
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -54,12 +41,63 @@ export default function GroupsDiscoveryPage() {
     previewUrl: null as string | null
   });
 
+  // My Groups Bottom Sheet State
+  const [sheetState, setSheetState] = useState<'minimized' | 'half' | 'peek'>('minimized');
+
+  useEffect(() => {
+    if (!loading) {
+      // Component mounted & data loaded, start the peek animation (slide up slightly)
+      const timer1 = setTimeout(() => {
+        setSheetState('peek');
+      }, 500);
+
+      // After 2.5 seconds, go back down to minimized
+      const timer2 = setTimeout(() => {
+        setSheetState('minimized');
+      }, 2500);
+
+      return () => {
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+      };
+    }
+  }, [loading]);
+
+  // 스크롤 먹통 방지: 모달/팝업 상태에 따른 body overflow 제어 및 언마운트 시 초기화
+  useEffect(() => {
+    if (isCreateOpen || selectedCategory) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isCreateOpen, selectedCategory]);
+
+  const openCategoryModal = (category: string) => {
+    setSelectedCategory(category);
+  };
+
+  const openCreateModal = () => {
+    setIsCreateOpen(true);
+  };
+
+  const closeModals = () => {
+    setIsCreateOpen(false);
+    setSelectedCategory(null);
+  };
+
+
+
   const fetchGroups = async () => {
     try {
+      setError(null);
       const data = await groupService.getGroups();
       setGroups(data);
-    } catch (error) {
-      console.error('Error fetching groups:', error);
+    } catch (err: any) {
+      console.error('Error fetching groups:', err);
+      setError(err.message || 'Failed to load groups. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -69,8 +107,71 @@ export default function GroupsDiscoveryPage() {
     fetchGroups();
   }, []);
 
+  // Admin Auto-Migration Script
+  useEffect(() => {
+    const runMigration = async () => {
+      // stonehong1@gmail.com 관리자 계정일 때만 한 번 자동 실행
+      if (user?.email === 'stonehong1@gmail.com' && typeof window !== 'undefined' && !localStorage.getItem('category_migrated_v3')) {
+        try {
+          console.log('Starting category migration...');
+          const venuesSnap = await getDocs(query(collection(db, 'venues')));
+          const venuesMap = new Map();
+          venuesSnap.docs.forEach(d => venuesMap.set(d.id, d.data()));
+
+          const groupsSnap = await getDocs(query(collection(db, 'groups')));
+
+          let count = 0;
+          for (const gDoc of groupsSnap.docs) {
+            const groupData = gDoc.data();
+            if (groupData.venueId && venuesMap.has(groupData.venueId)) {
+              const venue = venuesMap.get(groupData.venueId);
+              // 태그가 없거나 기본 Studio인 경우 업데이트 진행
+              if (venue.category && (!groupData.tags || groupData.tags.length === 0 || groupData.tags.includes('Studio'))) {
+                const catMap = ['Studio', 'Shop', 'Stay', 'Rental', 'Beauty', 'Wellness', 'Restaurant', 'Cafe', 'Office', 'Online'];
+                const targetCat = catMap.find(c => venue.category.toLowerCase().includes(c.toLowerCase())) || 'Studio'; // fallback to Studio if no match
+
+                // 해당 카테고리가 Studio가 아닐 경우에만 업데이트
+                if (targetCat !== 'Studio' || venue.category.includes('Studio')) {
+                  const activeServices: any = groupData.activeServices || {};
+                  const tc = targetCat.toLowerCase();
+                  if (tc === 'shop') activeServices.shop = true;
+                  if (tc === 'stay') activeServices.stay = true;
+                  if (tc === 'rental') activeServices.rental = true;
+                  if (tc === 'beauty') activeServices.beauty = true;
+                  if (tc === 'wellness') activeServices.wellness = true;
+                  if (tc === 'restaurant') activeServices.restaurant = true;
+                  if (tc === 'cafe') activeServices.cafe = true;
+                  if (tc === 'office') activeServices.office = true;
+                  if (tc === 'online') activeServices.online = true;
+
+                  await updateDoc(doc(db, 'groups', gDoc.id), {
+                    tags: [targetCat],
+                    activeServices: activeServices
+                  });
+                  count++;
+                  console.log(`Migrated Group ${groupData.name} to ${targetCat}`);
+                }
+              }
+            }
+          }
+          console.log(`Migrated ${count} groups!`);
+          localStorage.setItem('category_migrated_v3', 'true');
+          fetchGroups(); // refresh the list
+        } catch (e) {
+          console.error('Migration error:', e);
+        }
+      }
+    };
+    if (user && groups.length > 0) {
+      runMigration();
+    }
+  }, [user, groups.length]);
+
+  // Filter removed: all groups including unpublished ones should appear in the directory
+  const publishedGroups = groups;
+
   // What's New: Latest 10
-  const whatsNewGroups = [...groups]
+  const whatsNewGroups = [...publishedGroups]
     .sort((a, b) => {
       const getTime = (val: any) => {
         if (!val) return 0;
@@ -85,14 +186,16 @@ export default function GroupsDiscoveryPage() {
 
   // Category counts mapping
   const categoryCounts = {
-    Studio: groups.filter(g => g.activeServices?.class || g.tags?.includes('Studio')).length,
-    Shop: groups.filter(g => g.activeServices?.shop || g.tags?.includes('Shop')).length,
-    Stay: groups.filter(g => g.activeServices?.stay || g.tags?.includes('Stay')).length,
-    Rental: groups.filter(g => g.activeServices?.rental || g.tags?.includes('Rental')).length,
-    Wellness: groups.filter(g => g.activeServices?.wellness || g.tags?.includes('Wellness')).length,
-    Dining: groups.filter(g => g.activeServices?.dining || g.tags?.includes('Dining')).length,
-    Office: groups.filter(g => g.activeServices?.office || g.tags?.includes('Office')).length,
-    Online: groups.filter(g => g.activeServices?.online || g.tags?.includes('Online')).length,
+    Studio: publishedGroups.filter(g => g.activeServices?.class || g.tags?.includes('Studio') || (!g.tags || g.tags.length === 0)).length,
+    Shop: publishedGroups.filter(g => g.activeServices?.shop || g.tags?.includes('Shop')).length,
+    Stay: publishedGroups.filter(g => g.activeServices?.stay || g.tags?.includes('Stay')).length,
+    Rental: publishedGroups.filter(g => g.activeServices?.rental || g.tags?.includes('Rental')).length,
+    Beauty: publishedGroups.filter(g => g.activeServices?.beauty || g.tags?.includes('Beauty')).length,
+    Wellness: publishedGroups.filter(g => g.activeServices?.wellness || g.tags?.includes('Wellness')).length,
+    Restaurant: publishedGroups.filter(g => g.activeServices?.restaurant || g.tags?.includes('Restaurant')).length,
+    Cafe: publishedGroups.filter(g => g.activeServices?.cafe || g.tags?.includes('Cafe')).length,
+    Office: publishedGroups.filter(g => g.activeServices?.office || g.tags?.includes('Office')).length,
+    Online: publishedGroups.filter(g => g.activeServices?.online || g.tags?.includes('Online')).length,
   };
 
   const discoveryCategories = [
@@ -100,46 +203,42 @@ export default function GroupsDiscoveryPage() {
     { id: 'Shop', icon: 'shopping_bag', color: 'bg-secondary-container', text: 'text-on-secondary-container' },
     { id: 'Stay', icon: 'bed', color: 'bg-tertiary-container', text: 'text-on-tertiary-container' },
     { id: 'Rental', icon: 'car_rental', color: 'bg-surface-container-highest', text: 'text-on-surface-variant' },
+    { id: 'Beauty', icon: 'face_retouching_natural', color: 'bg-pink-100', text: 'text-pink-900' },
     { id: 'Wellness', icon: 'self_care', color: 'bg-rose-100', text: 'text-rose-900' },
-    { id: 'Dining', icon: 'restaurant', color: 'bg-orange-100', text: 'text-orange-900' },
+    { id: 'Restaurant', icon: 'restaurant', color: 'bg-orange-100', text: 'text-orange-900' },
+    { id: 'Cafe', icon: 'local_cafe', color: 'bg-amber-100', text: 'text-amber-900' },
     { id: 'Office', icon: 'work', color: 'bg-slate-100', text: 'text-slate-900' },
     { id: 'Online', icon: 'computer', color: 'bg-blue-100', text: 'text-blue-900' }
   ];
 
   const getFilteredGroups = () => {
     if (!selectedCategory) return [];
-    if (selectedCategory === 'All') return groups;
-    return groups.filter(g => 
-      g.tags?.includes(selectedCategory) || 
-      (selectedCategory === 'Studio' && g.activeServices?.class) ||
-      (selectedCategory === 'Shop' && g.activeServices?.shop) ||
-      (selectedCategory === 'Stay' && g.activeServices?.stay) ||
-      (selectedCategory === 'Rental' && g.activeServices?.rental) ||
-      (selectedCategory === 'Wellness' && g.activeServices?.wellness) ||
-      (selectedCategory === 'Dining' && g.activeServices?.dining) ||
-      (selectedCategory === 'Office' && g.activeServices?.office) ||
-      (selectedCategory === 'Online' && g.activeServices?.online)
-    );
+    if (selectedCategory === 'All') return publishedGroups;
+    return publishedGroups.filter(g => {
+      const groupTags = g.tags && g.tags.length > 0 ? g.tags : ['Studio'];
+      return groupTags.includes(selectedCategory) ||
+        (selectedCategory === 'Studio' && g.activeServices?.class) ||
+        (selectedCategory === 'Shop' && g.activeServices?.shop) ||
+        (selectedCategory === 'Stay' && g.activeServices?.stay) ||
+        (selectedCategory === 'Rental' && g.activeServices?.rental) ||
+        (selectedCategory === 'Beauty' && g.activeServices?.beauty) ||
+        (selectedCategory === 'Wellness' && g.activeServices?.wellness) ||
+        (selectedCategory === 'Restaurant' && g.activeServices?.restaurant) ||
+        (selectedCategory === 'Cafe' && g.activeServices?.cafe) ||
+        (selectedCategory === 'Office' && g.activeServices?.office) ||
+        (selectedCategory === 'Online' && g.activeServices?.online);
+    });
   };
 
   const GroupCoverImage = ({ group, className = "" }: { group: Group, className?: string }) => {
-    if (group.coverImage) {
-      return (
-        <img
-          className={`w-full h-full object-cover transition-transform duration-500 ${className}`}
-          src={group.coverImage}
-          alt={group.name}
-        />
-      );
-    }
-
     return (
-      <div className={`w-full h-full bg-gradient-to-br from-surface-container to-surface-container-highest flex items-center justify-center p-6 ${className}`}>
-        <div className="text-center opacity-20">
-          <span className="material-symbols-outlined text-5xl mb-2">groups</span>
-          <p className="text-[10px] font-bold uppercase tracking-widest font-headline">{group.name}</p>
-        </div>
-      </div>
+      <ImageWithFallback
+        alt={group.name}
+        className={`w-full h-full object-cover transition-transform duration-500 ${className}`}
+        src={group.coverImage || ""}
+        fallbackType="cover"
+        category={group.tags?.[0] || ''}
+      />
     );
   };
 
@@ -179,8 +278,10 @@ export default function GroupsDiscoveryPage() {
         shop: createForm.category === 'Shop',
         stay: createForm.category === 'Stay',
         rental: createForm.category === 'Rental',
+        beauty: createForm.category === 'Beauty',
         wellness: createForm.category === 'Wellness',
-        dining: createForm.category === 'Dining',
+        restaurant: createForm.category === 'Restaurant',
+        cafe: createForm.category === 'Cafe',
         office: createForm.category === 'Office',
         online: createForm.category === 'Online'
       };
@@ -203,7 +304,12 @@ export default function GroupsDiscoveryPage() {
         updatedAt: new Date()
       };
 
-      await groupService.createGroup(newGroupData);
+      const memberData: Omit<Member, 'id'> = {
+        name: profile?.nickname || user.displayName || 'Community Leader',
+        avatar: profile?.photoURL || user.photoURL || '',
+      };
+
+      await groupService.createGroup(newGroupData, user.uid, memberData);
 
       // Reset and close
       setCreateForm({
@@ -243,7 +349,7 @@ export default function GroupsDiscoveryPage() {
               <p className="text-on-surface-variant text-sm font-medium">Discover the latest communities</p>
             </div>
             <button
-              onClick={() => setSelectedCategory('All')}
+              onClick={() => { openCategoryModal('All'); }}
               className="text-primary font-bold text-sm flex items-center gap-1 group"
             >
               View all <span className="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
@@ -251,8 +357,8 @@ export default function GroupsDiscoveryPage() {
           </div>
           <div className="flex overflow-x-auto gap-4 no-scrollbar pb-4 -mx-6 px-6">
             {whatsNewGroups.length > 0 ? whatsNewGroups.map((group) => (
-              <div 
-                key={group.id} 
+              <div
+                key={group.id}
                 onClick={() => router.push(`/group/${group.id}`)}
                 className="flex-shrink-0 w-[320px] group cursor-pointer active:scale-95 transition-transform"
               >
@@ -279,7 +385,7 @@ export default function GroupsDiscoveryPage() {
         {/* New Group Action Button */}
         <section>
           <button
-            onClick={() => setIsCreateOpen(true)}
+            onClick={openCreateModal}
             className="w-full bg-primary text-on-primary flex items-center justify-between px-6 py-5 rounded-3xl shadow-lg hover:bg-primary-dim transition-all active:scale-[0.98] group"
           >
             <div className="flex items-center gap-4">
@@ -303,9 +409,9 @@ export default function GroupsDiscoveryPage() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             {discoveryCategories.map((cat) => (
-              <div 
-                key={cat.id} 
-                onClick={() => setSelectedCategory(cat.id)} 
+              <div
+                key={cat.id}
+                onClick={() => { openCategoryModal(cat.id); }}
                 className={`group relative aspect-[4/3] rounded-3xl overflow-hidden ${cat.color} cursor-pointer transition-all hover:scale-[0.98] shadow-sm hover:shadow-md`}
               >
                 <div className="absolute inset-0 bg-black/5 z-0"></div>
@@ -334,7 +440,7 @@ export default function GroupsDiscoveryPage() {
             <div className="max-w-2xl mx-auto px-4 h-16 flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <button
-                  onClick={() => setSelectedCategory(null)}
+                  onClick={closeModals}
                   className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors text-on-surface"
                 >
                   <span className="material-symbols-outlined">arrow_back</span>
@@ -346,11 +452,14 @@ export default function GroupsDiscoveryPage() {
             </div>
           </header>
 
-          <main className="max-w-2xl mx-auto px-4 space-y-6 pt-20 pb-8">
+          <main className="max-w-2xl mx-auto px-4 space-y-6 pb-8">
             {getFilteredGroups().length > 0 ? getFilteredGroups().map((group, index) => (
-              <article 
-                key={group.id} 
-                onClick={() => router.push(`/group/${group.id}`)}
+              <article
+                key={group.id}
+                onClick={() => {
+                  closeModals();
+                  router.push(`/group/${group.id}`);
+                }}
                 className="bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-md hover:shadow-xl transition-shadow group cursor-pointer active:scale-[0.99] transition-all"
               >
                 <div className="relative h-48 overflow-hidden">
@@ -388,7 +497,7 @@ export default function GroupsDiscoveryPage() {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest bg-emerald-50 px-2 py-0.5 rounded-md">Open to Join</span>
-                    <button 
+                    <button
                       onClick={(e) => {
                         e.stopPropagation();
                         // Join logic would go here
@@ -416,7 +525,7 @@ export default function GroupsDiscoveryPage() {
           <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm flex justify-between items-center w-full px-6 py-4">
             <div className="flex items-center gap-4">
               <button
-                onClick={() => setIsCreateOpen(false)}
+                onClick={closeModals}
                 className="flex items-center justify-center p-2 rounded-lg hover:bg-gray-200 transition-colors active:scale-95 duration-150 text-gray-500"
               >
                 <span className="material-symbols-outlined">close</span>
@@ -468,8 +577,10 @@ export default function GroupsDiscoveryPage() {
                   { id: 'Shop', icon: 'shopping_bag' },
                   { id: 'Stay', icon: 'bed' },
                   { id: 'Rental', icon: 'car_rental' },
+                  { id: 'Beauty', icon: 'face_retouching_natural' },
                   { id: 'Wellness', icon: 'self_care' },
-                  { id: 'Dining', icon: 'restaurant' },
+                  { id: 'Restaurant', icon: 'restaurant' },
+                  { id: 'Cafe', icon: 'local_cafe' },
                   { id: 'Office', icon: 'work' },
                   { id: 'Online', icon: 'computer' }
                 ].map((cat) => (
@@ -477,8 +588,8 @@ export default function GroupsDiscoveryPage() {
                     key={cat.id}
                     onClick={() => setCreateForm(prev => ({ ...prev, category: cat.id }))}
                     className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all group active:scale-95 ${createForm.category === cat.id
-                        ? 'border-primary bg-primary-container/10'
-                        : 'border-transparent bg-surface-container-low hover:bg-surface-container-high'
+                      ? 'border-primary bg-primary-container/10'
+                      : 'border-transparent bg-surface-container-low hover:bg-surface-container-high'
                       }`}
                   >
                     <span className={`material-symbols-outlined mb-2 ${createForm.category === cat.id ? 'text-primary' : 'text-outline'}`}>{cat.icon}</span>
@@ -501,8 +612,8 @@ export default function GroupsDiscoveryPage() {
                     key={policy.id}
                     onClick={() => setCreateForm(prev => ({ ...prev, joinPolicy: policy.id }))}
                     className={`relative p-4 rounded-xl border-2 cursor-pointer group hover:shadow-md transition-all ${createForm.joinPolicy === policy.id
-                        ? 'border-primary bg-primary-container/5'
-                        : 'border-outline-variant/30 bg-white hover:border-outline'
+                      ? 'border-primary bg-primary-container/5'
+                      : 'border-outline-variant/30 bg-white hover:border-outline'
                       }`}
                   >
                     <div className="flex justify-between items-start mb-2">
@@ -566,43 +677,21 @@ export default function GroupsDiscoveryPage() {
         </div>
       )}
       {/* Persistent Bottom Sheet */}
-      <AnimatePresence>
-        {sheetState !== 'minimized' && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setSheetState('minimized')}
-            className="fixed inset-0 bg-black/40 z-40 pointer-events-auto"
-          />
-        )}
-      </AnimatePresence>
+      {sheetState === 'half' && (
+        <div
+          onClick={() => setSheetState('minimized')}
+          className="fixed inset-0 bg-black/40 z-40 pointer-events-auto animate-in fade-in duration-200"
+        />
+      )}
 
-      <motion.div
-        drag="y"
-        dragConstraints={{ top: 0, bottom: 0 }}
-        dragElastic={0.1}
-        onDragEnd={(e, info) => {
-          if (info.offset.y < -100) {
-            setSheetState('full');
-          } else if (info.offset.y > 100) {
-            setSheetState('minimized');
-          } else if (Math.abs(info.offset.y) > 50) {
-            setSheetState('half');
-          }
-        }}
-        initial={false}
-        animate={{
-          y: sheetState === 'minimized' ? 'calc(100% - 100px)' : sheetState === 'half' ? '40%' : '10%',
-          height: '100%'
-        }}
-        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-        className="fixed inset-x-0 bottom-0 z-50 bg-white shadow-[0_-8px_30px_rgb(0,0,0,0.08)] rounded-t-[32px] border-t border-slate-50 flex flex-col"
+      <div
+        className="fixed inset-x-0 bottom-0 z-50 bg-white shadow-[0_-8px_30px_rgb(0,0,0,0.08)] rounded-t-[32px] border-t border-slate-50 flex flex-col transition-transform duration-300 ease-out h-full"
+        style={{ transform: `translateY(${sheetState === 'minimized' ? 'calc(100% - 100px)' : sheetState === 'peek' ? '70%' : '50%'})` }}
       >
         {/* Handle & Header Section */}
-        <div 
+        <div
           className="pt-3 px-6 cursor-pointer pb-1 touch-none"
-          onClick={() => setSheetState(sheetState === 'minimized' ? 'half' : sheetState === 'half' ? 'full' : 'minimized')}
+          onClick={() => setSheetState(sheetState === 'minimized' ? 'half' : 'minimized')}
         >
           {/* Handle Bar Container */}
           <div className="relative flex items-center justify-center mb-6">
@@ -617,8 +706,8 @@ export default function GroupsDiscoveryPage() {
         <div className={`flex-1 overflow-y-auto px-6 pb-20 custom-scrollbar touch-pan-y ${sheetState === 'minimized' ? 'overflow-hidden' : ''}`}>
           <div className="space-y-3">
             {userJoinedGroups.length > 0 ? userJoinedGroups.map((group) => (
-              <div 
-                key={group.id} 
+              <div
+                key={group.id}
                 onClick={() => router.push(`/group/${group.id}`)}
                 className="flex items-center p-3 -mx-3 rounded-2xl hover:bg-slate-50 transition-colors group cursor-pointer active:scale-[0.98]"
               >
@@ -647,8 +736,8 @@ export default function GroupsDiscoveryPage() {
             )) : (
               <div className="py-10 text-center space-y-4">
                 <p className="text-slate-400 text-sm font-medium">You haven't joined any groups yet.</p>
-                <button 
-                  onClick={() => setIsCreateOpen(true)}
+                <button
+                  onClick={() => { setIsCreateOpen(true); }}
                   className="text-primary font-bold text-sm bg-primary/5 px-4 py-2 rounded-full"
                 >
                   Create Your First Group
@@ -657,7 +746,7 @@ export default function GroupsDiscoveryPage() {
             )}
           </div>
         </div>
-      </motion.div>
+      </div>
 
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {

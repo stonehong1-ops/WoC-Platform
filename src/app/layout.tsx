@@ -22,6 +22,7 @@ export const viewport: Viewport = {
 import { NavigationProvider } from "@/components/providers/NavigationProvider";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { LocationProvider } from "@/components/providers/LocationProvider";
+import { ClassCartProvider } from "@/contexts/ClassCartContext";
 import NavigationDrawer from "@/components/layout/NavigationDrawer";
 import LocationSelector from "@/components/layout/LocationSelector";
 import AuthModal from "@/components/auth/AuthModal";
@@ -47,7 +48,8 @@ export default function RootLayout({
           <AuthGuard>
             <LocationProvider>
               <NavigationProvider>
-                <SWRegister />
+                <ClassCartProvider>
+                  <SWRegister />
                 {/* Fixed Header */}
                 <Header />
 
@@ -66,7 +68,8 @@ export default function RootLayout({
                 {modal}
 
                 {/* Fixed Footer */}
-                <Footer />
+                  <Footer />
+                </ClassCartProvider>
               </NavigationProvider>
             </LocationProvider>
           </AuthGuard>

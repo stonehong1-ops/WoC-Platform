@@ -63,8 +63,32 @@ export default function NavigationDrawer() {
           isDrawerOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
+        {/* Profile Header */}
+        <div className="px-6 pt-12 pb-6 flex items-start gap-4">
+          <div className="relative shrink-0">
+            <div className="absolute -inset-1 bg-gradient-to-tr from-primary to-primary-container rounded-2xl blur opacity-15"></div>
+            <img 
+              src={photoURL} 
+              alt={displayName} 
+              className="relative h-14 w-14 rounded-2xl object-cover border-2 border-surface shadow-sm" 
+            />
+          </div>
+          <div className="flex flex-col pt-1">
+            <h2 className="text-on-surface font-extrabold text-xl tracking-tight leading-none mb-1.5 line-clamp-1">
+              {displayName}
+            </h2>
+            <div className="flex flex-wrap gap-1">
+              {roles.map(role => (
+                <span key={role} className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">
+                  {role}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+
         {/* Landing Page Link Section */}
-        <div className="px-6 pt-14 pb-8 border-b border-on-surface/[0.05]">
+        <div className="px-6 pb-6 border-b border-on-surface/[0.05]">
           <Link 
             href="/" 
             onClick={closeDrawer}

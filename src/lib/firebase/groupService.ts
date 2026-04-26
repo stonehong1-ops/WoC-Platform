@@ -14,7 +14,8 @@ import {
   Timestamp,
   addDoc,
   updateDoc,
-  increment
+  increment,
+  arrayUnion
 } from 'firebase/firestore';
 import { Group, Post, Member, GroupClass } from '@/types/group';
 
@@ -135,9 +136,25 @@ export const groupService = {
 
     const data = groupService._convertTimestamps(snapshot.data());
 
+    // Fetch subcollections to attach to Group object (backward compatibility + easy access)
+    const classesSnap = await getDocs(query(collection(db, GROUPS_COLLECTION, groupId, 'classes'), orderBy('createdAt', 'desc')));
+    const subClasses = classesSnap.docs.map(d => ({ id: d.id, ...groupService._convertTimestamps(d.data()) })) as GroupClass[];
+    
+    const passesSnap = await getDocs(query(collection(db, GROUPS_COLLECTION, groupId, 'monthlyPasses'), orderBy('createdAt', 'desc')));
+    const subPasses = passesSnap.docs.map(d => ({ id: d.id, ...groupService._convertTimestamps(d.data()) }));
+    
+    const discountsSnap = await getDocs(query(collection(db, GROUPS_COLLECTION, groupId, 'discounts'), orderBy('createdAt', 'desc')));
+    const subDiscounts = discountsSnap.docs.map(d => ({ id: d.id, ...groupService._convertTimestamps(d.data()) }));
+
     return {
       id: snapshot.id,
       ...data,
+      classes: [...subClasses, ...(data.classes || [])],
+      monthlyPasses: [...subPasses, ...(data.monthlyPasses || [])],
+      discounts: [...subDiscounts, ...(data.discounts || [])],
+      _legacyClasses: data.classes || [],
+      _legacyMonthlyPasses: data.monthlyPasses || [],
+      _legacyDiscounts: data.discounts || [],
       members: [],
       memberCount: typeof data?.memberCount === 'number' ? data?.memberCount : 0,
       posts
@@ -433,14 +450,129 @@ export const groupService = {
     await deleteDoc(classRef);
   },
 
+  // --- Monthly Passes Section ---
+  subscribeMonthlyPasses: (groupId: string, callback: (passes: any[]) => void) => {
+    const passesRef = collection(db, GROUPS_COLLECTION, groupId, 'monthlyPasses');
+    const q = query(passesRef, orderBy('createdAt', 'desc'));
+    return onSnapshot(q, (snapshot) => {
+      callback(snapshot.docs.map(doc => ({ id: doc.id, ...groupService._convertTimestamps(doc.data()) })));
+    });
+  },
+  addMonthlyPass: async (groupId: string, passData: any) => {
+    const passesRef = collection(db, GROUPS_COLLECTION, groupId, 'monthlyPasses');
+    if (passData.id) {
+      await setDoc(doc(passesRef, passData.id), { ...passData, createdAt: Timestamp.now(), updatedAt: Timestamp.now() });
+      return passData.id;
+    } else {
+      const docRef = await addDoc(passesRef, { ...passData, createdAt: Timestamp.now(), updatedAt: Timestamp.now() });
+      return docRef.id;
+    }
+  },
+  updateMonthlyPass: async (groupId: string, passId: string, passData: any) => {
+    const passRef = doc(db, GROUPS_COLLECTION, groupId, 'monthlyPasses', passId);
+    await updateDoc(passRef, { ...passData, updatedAt: Timestamp.now() });
+  },
+  deleteMonthlyPass: async (groupId: string, passId: string) => {
+    await deleteDoc(doc(db, GROUPS_COLLECTION, groupId, 'monthlyPasses', passId));
+  },
+
+  // --- Discounts Section ---
+  subscribeDiscounts: (groupId: string, callback: (discounts: any[]) => void) => {
+    const discountsRef = collection(db, GROUPS_COLLECTION, groupId, 'discounts');
+    const q = query(discountsRef, orderBy('createdAt', 'desc'));
+    return onSnapshot(q, (snapshot) => {
+      callback(snapshot.docs.map(doc => ({ id: doc.id, ...groupService._convertTimestamps(doc.data()) })));
+    });
+  },
+  addDiscount: async (groupId: string, discountData: any) => {
+    const discountsRef = collection(db, GROUPS_COLLECTION, groupId, 'discounts');
+    if (discountData.id) {
+      await setDoc(doc(discountsRef, discountData.id), { ...discountData, createdAt: Timestamp.now(), updatedAt: Timestamp.now() });
+      return discountData.id;
+    } else {
+      const docRef = await addDoc(discountsRef, { ...discountData, createdAt: Timestamp.now(), updatedAt: Timestamp.now() });
+      return docRef.id;
+    }
+  },
+  updateDiscount: async (groupId: string, discountId: string, discountData: any) => {
+    const discountRef = doc(db, GROUPS_COLLECTION, groupId, 'discounts', discountId);
+    await updateDoc(discountRef, { ...discountData, updatedAt: Timestamp.now() });
+  },
+  deleteDiscount: async (groupId: string, discountId: string) => {
+    await deleteDoc(doc(db, GROUPS_COLLECTION, groupId, 'discounts', discountId));
+  },
+
   // Create a new group
-  createGroup: async (groupData: Partial<Group>): Promise<string> => {
+  createGroup: async (groupData: Partial<Group>, userId?: string, memberData?: Omit<Member, 'id'>): Promise<string> => {
+    // 1. Create the group document
     const docRef = await addDoc(collection(db, GROUPS_COLLECTION), {
       ...groupData,
-      memberCount: 0,
+      memberCount: 1, // Automatically counting the creator
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
     });
+
+    if (userId) {
+      // 2. Add the user to the members subcollection as an owner
+      const memberRef = doc(db, GROUPS_COLLECTION, docRef.id, 'members', userId);
+      await setDoc(memberRef, {
+        ...(memberData || {}),
+        name: memberData?.name || groupData.representative?.name || 'Owner',
+        role: 'owner',
+        status: 'active',
+        joinedAt: Timestamp.now()
+      });
+
+      // 3. Update the user's joinedGroups array
+      const userRef = doc(db, 'users', userId);
+      await updateDoc(userRef, {
+        joinedGroups: arrayUnion(docRef.id),
+      });
+      
+      // Update memberIds array on the group for easier querying if needed
+      await updateDoc(docRef, {
+        memberIds: arrayUnion(userId)
+      });
+    }
+
     return docRef.id;
+  },
+
+  // Publish a group (Go Live)
+  publishGroup: async (groupId: string): Promise<void> => {
+    const docRef = doc(db, GROUPS_COLLECTION, groupId);
+    await updateDoc(docRef, {
+      isPublished: true,
+      updatedAt: Timestamp.now(),
+    });
+  },
+
+  // Claim admin rights for an unassigned group
+  claimGroupAdmin: async (groupId: string, userId: string, memberData: Omit<Member, 'id'>): Promise<void> => {
+    const groupRef = doc(db, GROUPS_COLLECTION, groupId);
+    const memberRef = doc(db, GROUPS_COLLECTION, groupId, 'members', userId);
+
+    const userRef = doc(db, 'users', userId);
+
+    // 1. Set the user as the owner of the group, update member count and memberIds
+    await updateDoc(groupRef, {
+      ownerId: userId,
+      memberCount: increment(1),
+      memberIds: arrayUnion(userId),
+      updatedAt: Timestamp.now(),
+    });
+
+    // 2. Add the user to the members subcollection as an admin
+    await setDoc(memberRef, {
+      ...memberData,
+      role: 'admin',
+      status: 'active',
+      joinedAt: Timestamp.now()
+    });
+
+    // 3. Update the user's joinedGroups array
+    await updateDoc(userRef, {
+      joinedGroups: arrayUnion(groupId),
+    });
   }
 };

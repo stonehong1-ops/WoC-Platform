@@ -1,4 +1,4 @@
-﻿
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -12,7 +12,7 @@ interface GroupDetailProps {
   isModal?: boolean;
 }
 
-export default function GroupDetail({ group: initialGroup }: GroupDetailProps) {
+export default function GroupDetail({ group: initialGroup, isModal }: GroupDetailProps) {
   const [group, setGroup] = useState<Group>(initialGroup);
   
   // Real-time Group Subscription
@@ -26,5 +26,5 @@ export default function GroupDetail({ group: initialGroup }: GroupDetailProps) {
     };
   }, [initialGroup.id]);
 
-  return <GroupHome group={group} />;
+  return <GroupHome group={group} isModal={isModal} />;
 }

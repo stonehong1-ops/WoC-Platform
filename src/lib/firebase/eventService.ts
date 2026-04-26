@@ -12,7 +12,9 @@ import {
   arrayRemove,
   Timestamp,
   getDocs,
-  where
+  where,
+  limit,
+  deleteDoc
 } from 'firebase/firestore';
 import { Event } from '@/types/event';
 
@@ -63,12 +65,49 @@ export const eventService = {
     }
   },
 
+  // Update Event
+  updateEvent: async (eventId: string, eventData: Partial<Event>) => {
+    try {
+      const eventRef = doc(db, COLLECTION_NAME, eventId);
+      await updateDoc(eventRef, eventData);
+    } catch (error) {
+      console.error("Error updating event:", error);
+      throw error;
+    }
+  },
+
+  // Delete Event
+  deleteEvent: async (eventId: string) => {
+    try {
+      const eventRef = doc(db, COLLECTION_NAME, eventId);
+      await deleteDoc(eventRef);
+    } catch (error) {
+      console.error("Error deleting event:", error);
+      throw error;
+    }
+  },
+
   // 4. Search Events by Title
   async searchEvents(keyword: string) {
     const q = query(
       collection(db, COLLECTION_NAME),
       where('title', '>=', keyword),
       where('title', '<=', keyword + '\uf8ff')
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })) as Event[];
+  },
+
+  // 5. Get Upcoming Events
+  getUpcomingEvents: async (limitCount: number = 3) => {
+    const q = query(
+      collection(db, COLLECTION_NAME),
+      where('startDate', '>=', Timestamp.now()),
+      orderBy('startDate', 'asc'),
+      limit(limitCount)
     );
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({

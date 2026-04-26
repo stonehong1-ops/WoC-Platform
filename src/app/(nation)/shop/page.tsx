@@ -42,7 +42,7 @@ export default function ShopPage() {
   };
 
   return (
-    <main className="max-w-md mx-auto min-h-screen pb-24 pt-20 bg-white relative">
+    <main className="max-w-md mx-auto min-h-screen pb-24 bg-white relative">
       <style dangerouslySetInnerHTML={{ __html: `
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

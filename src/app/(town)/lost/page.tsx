@@ -5,6 +5,7 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { lostService } from '@/lib/firebase/lostService';
 import { LostItem } from '@/types/lost';
 import CreateLostItem from '@/components/lost/CreateLostItem';
+import LostItemDetail from '@/components/lost/LostItemDetail';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function LostPage() {
@@ -13,6 +14,7 @@ export default function LostPage() {
   const [activeCategory, setActiveCategory] = useState<'All' | 'Lost' | 'Found'>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<LostItem | null>(null);
 
   // 1. Subscribe to real-time reports
   useEffect(() => {
@@ -31,7 +33,7 @@ export default function LostPage() {
   );
 
   return (
-    <main className="max-w-4xl mx-auto px-4 py-8 space-y-8 pt-20 bg-white min-h-screen relative">
+    <main className="max-w-4xl mx-auto px-4 pt-24 pb-8 space-y-8 bg-white min-h-screen relative">
       <style dangerouslySetInnerHTML={{ __html: `
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -83,6 +85,7 @@ export default function LostPage() {
           {filteredItems.map((item) => (
             <div 
               key={item.id}
+              onClick={() => setSelectedItem(item)}
               className="group flex flex-col bg-white rounded-[24px] border border-gray-100 overflow-hidden hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 animate-in fade-in zoom-in-95 cursor-pointer"
             >
               <div className="relative aspect-[4/5] overflow-hidden bg-gray-50">
@@ -138,6 +141,12 @@ export default function LostPage() {
           <CreateLostItem 
             onClose={() => setShowCreateModal(false)}
             onSuccess={() => {}}
+          />
+        )}
+        {selectedItem && (
+          <LostItemDetail
+            item={selectedItem}
+            onClose={() => setSelectedItem(null)}
           />
         )}
       </AnimatePresence>

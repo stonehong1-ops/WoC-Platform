@@ -10,6 +10,7 @@ export interface Venue {
   category: VenueType; // Primary category for map filtering
   address: string;
   region: string; 
+  country?: string; // e.g. 'KOREA', 'JAPAN'
   city: string; // Compatible with legacy map scripts
   district: string;
   status: 'active' | 'inactive';

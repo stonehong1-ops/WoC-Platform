@@ -55,9 +55,18 @@ export default function Header() {
     '/admin/others': { headline: 'OTHERS', sub: 'Admin' },
     '/notification': { headline: 'NOTIFICATION', sub: 'System' },
     '/search': { headline: 'SEARCH', sub: 'System' },
+    '/gallery': { headline: 'GALLERY', sub: 'Activity' },
+    '/gallery/create': { headline: 'GALLERY', sub: 'Activity' },
   };
 
-  const current = routeMap[pathname] || { headline: 'SALON', sub: 'SOCIETY' };
+  let current = routeMap[pathname];
+  if (!current) {
+    if (pathname.startsWith('/class/')) {
+      current = { headline: 'CLASS', sub: 'Activity' };
+    } else {
+      current = { headline: 'COMMUNITY', sub: 'SOCIETY' };
+    }
+  }
 
   return (
     <header className="fixed top-0 w-full z-50 bg-white border-b border-outline-variant/20 h-16 px-3 flex items-center justify-between">

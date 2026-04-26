@@ -215,25 +215,27 @@ export default function FeedCreatePopup({ isOpen, onClose, context, editingPost 
     <Portal>
       <div className="fixed inset-0 z-[10000] bg-white dark:bg-slate-900 font-body overflow-y-auto selection:bg-primary-container selection:text-on-primary-container">
       {/* TopAppBar Shell */}
-      <header className="fixed top-0 w-full z-[10001] bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between px-4 h-16">
-        <div className="flex items-center gap-4">
+      <header className="fixed top-0 w-full z-[10001] bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
+        <div className="max-w-2xl mx-auto flex items-center justify-between px-4 h-16 w-full">
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={onClose}
+              className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors p-2 rounded-full active:opacity-70"
+            >
+              <span className="material-symbols-outlined text-on-surface">close</span>
+            </button>
+            <h1 className="font-['Plus_Jakarta_Sans'] text-base font-semibold text-slate-900 dark:text-slate-50">
+              {editingPost ? 'Edit Post' : 'Create Post'}
+            </h1>
+          </div>
           <button 
-            onClick={onClose}
-            className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors p-2 rounded-full active:opacity-70"
+            onClick={handleSubmit}
+            disabled={isSubmitting || (media.some(m => m.status === 'uploading'))}
+            className="text-blue-700 dark:text-blue-400 font-bold px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors rounded-lg active:opacity-70 disabled:opacity-30"
           >
-            <span className="material-symbols-outlined text-on-surface">close</span>
+            {isSubmitting ? (editingPost ? 'Updating...' : 'Posting...') : (editingPost ? 'Update' : 'Post')}
           </button>
-          <h1 className="font-['Plus_Jakarta_Sans'] text-base font-semibold text-slate-900 dark:text-slate-50">
-            {editingPost ? 'Edit Post' : 'Create Post'}
-          </h1>
         </div>
-        <button 
-          onClick={handleSubmit}
-          disabled={isSubmitting || (media.some(m => m.status === 'uploading'))}
-          className="text-blue-700 dark:text-blue-400 font-bold px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors rounded-lg active:opacity-70 disabled:opacity-30"
-        >
-          {isSubmitting ? (editingPost ? 'Updating...' : 'Posting...') : (editingPost ? 'Update' : 'Post')}
-        </button>
       </header>
 
       {/* Main Content Canvas */}
@@ -244,7 +246,7 @@ export default function FeedCreatePopup({ isOpen, onClose, context, editingPost 
             <img 
               alt="Profile Avatar" 
               className="w-full h-full object-cover" 
-              src={profile?.photoURL || user?.photoURL || "https://www.woc.today/images/default-avatar.png"}
+              src={profile?.photoURL || user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.nickname || user?.displayName || 'A')}&background=0A0A0A&color=fff`}
             />
           </div>
           <div>
@@ -259,7 +261,7 @@ export default function FeedCreatePopup({ isOpen, onClose, context, editingPost 
         {/* Post Content Input */}
         <section className="mb-8">
           <textarea 
-            className="w-full bg-transparent border-none focus:ring-0 text-xl font-body text-on-surface placeholder:text-outline resize-none min-h-[140px]" 
+            className="w-full bg-transparent border-none focus:ring-0 text-xl font-body text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 resize-none min-h-[140px]" 
             placeholder="What's on your mind?"
             value={content}
             onChange={(e) => setContent(e.target.value)}
@@ -280,7 +282,7 @@ export default function FeedCreatePopup({ isOpen, onClose, context, editingPost 
         {/* Media Section - Horizontal Scroll */}
         <section className="mb-8">
           <h3 className="text-xs font-bold uppercase tracking-wider text-outline mb-3 ml-1">Media</h3>
-          <div className="flex gap-4 overflow-x-auto pb-4 snap-x">
+          <div className="flex gap-4 overflow-x-auto pb-4 snap-x custom-scrollbar">
             {media.map((item) => (
               <div key={item.id} className="relative flex-shrink-0 w-48 h-64 rounded-xl overflow-hidden snap-start group shadow-md border border-outline-variant/30">
                 {item.type === 'video' ? (
@@ -434,18 +436,15 @@ export default function FeedCreatePopup({ isOpen, onClose, context, editingPost 
         )}
       </main>
 
-      <style jsx global>{`
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        }
-        ::-webkit-scrollbar {
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
             height: 4px;
             width: 4px;
         }
-        ::-webkit-scrollbar-track {
+        .custom-scrollbar::-webkit-scrollbar-track {
             background: transparent;
         }
-        ::-webkit-scrollbar-thumb {
+        .custom-scrollbar::-webkit-scrollbar-thumb {
             background: #a3abd7;
             border-radius: 10px;
         }

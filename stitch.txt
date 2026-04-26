@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Class Payment Management</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary": "#00629d",
+                        "surface-tint": "#00629d",
+                        "on-primary": "#ffffff",
+                        "on-surface": "#191c1e",
+                        "on-tertiary-fixed-variant": "#544600",
+                        "secondary-fixed": "#d6e3ff",
+                        "surface-bright": "#f7f9fb",
+                        "inverse-primary": "#98cbff",
+                        "surface-container-low": "#f2f4f6",
+                        "on-surface-variant": "#3f4852",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-fixed-variant": "#39475f",
+                        "surface-variant": "#e0e3e5",
+                        "surface-container-highest": "#e0e3e5",
+                        "surface-container-high": "#e6e8ea",
+                        "primary-container": "#00a3ff",
+                        "on-primary-fixed-variant": "#004a77",
+                        "secondary-container": "#d2e0fe",
+                        "background": "#f7f9fb",
+                        "tertiary": "#705d00",
+                        "primary-fixed-dim": "#98cbff",
+                        "error-container": "#ffdad6",
+                        "on-secondary": "#ffffff",
+                        "outline-variant": "#bec7d4",
+                        "on-tertiary-container": "#4c3e00",
+                        "surface-dim": "#d8dadc",
+                        "secondary": "#515f78",
+                        "on-tertiary-fixed": "#221b00",
+                        "primary-fixed": "#cfe5ff",
+                        "on-secondary-container": "#55637d",
+                        "surface": "#f7f9fb",
+                        "on-primary-fixed": "#001d33",
+                        "tertiary-fixed-dim": "#e9c400",
+                        "on-error": "#ffffff",
+                        "inverse-on-surface": "#eff1f3",
+                        "on-error-container": "#93000a",
+                        "on-primary-container": "#00375a",
+                        "surface-container": "#eceef0",
+                        "on-secondary-fixed": "#0d1c32",
+                        "on-background": "#191c1e",
+                        "tertiary-fixed": "#ffe16d",
+                        "outline": "#6f7883",
+                        "inverse-surface": "#2d3133",
+                        "tertiary-container": "#c9a900",
+                        "secondary-fixed-dim": "#b9c7e4",
+                        "error": "#ba1a1a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "lg": "48px",
+                        "gutter": "24px",
+                        "xs": "4px",
+                        "xl": "80px",
+                        "md": "24px",
+                        "margin": "40px",
+                        "base": "8px",
+                        "sm": "12px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Plus Jakarta Sans"],
+                        "body-sm": ["Plus Jakarta Sans"],
+                        "label-caps": ["Plus Jakarta Sans"],
+                        "h3": ["Plus Jakarta Sans"],
+                        "h2": ["Plus Jakarta Sans"],
+                        "h1": ["Plus Jakarta Sans"],
+                        "display": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "button": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                        "h3": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "h2": ["30px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                        "h1": ["36px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                        "display": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "button": ["15px", {"lineHeight": "1", "fontWeight": "600"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-top: 1px solid rgba(255, 255, 255, 0.8);
+            border-left: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 30px rgba(0, 163, 255, 0.05);
+        }
+        .input-glass {
+            background: rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(0, 98, 157, 0.1);
+            transition: all 0.3s ease;
+        }
+        .input-glass:focus {
+            background: rgba(255, 255, 255, 0.9);
+            border-color: #00A3FF;
+            box-shadow: 0 0 0 4px rgba(0, 163, 255, 0.1);
+            outline: none;
+        }
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #00a3ff;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #00a3ff;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body-md h-screen overflow-hidden flex flex-col relative">
+<!-- Ambient Background -->
+<div class="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+<div class="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary-fixed opacity-30 blur-[100px]"></div>
+<div class="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-secondary-fixed opacity-40 blur-[120px]"></div>
+</div>
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-6 h-16 bg-white/70 dark:bg-slate-900/70 backdrop-blur-lg border-b border-white/20 dark:border-slate-800 shadow-[0_4px_30px_rgba(0,163,255,0.1)]">
+<button class="w-10 h-10 flex items-center justify-center rounded-full text-slate-500 hover:bg-sky-50/50 active:scale-95 duration-200 transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">close</span>
+</button>
+<h1 class="font-['Plus_Jakarta_Sans'] text-sm font-semibold tracking-tight text-slate-900 dark:text-white">Payment Management</h1>
+<button class="font-button text-button text-sky-500 dark:text-sky-400 hover:text-sky-600 active:scale-95 duration-200 transition-colors px-4 py-2 rounded-lg">
+            Save
+        </button>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 overflow-y-auto z-10 pt-20 pb-10 px-4 md:px-gutter lg:px-lg max-w-3xl mx-auto w-full relative">
+<div class="flex flex-col gap-md">
+<!-- Bank Transfer Section -->
+<section class="glass-panel rounded-xl p-6 relative overflow-hidden">
+<div class="flex items-center gap-3 mb-6 border-b border-outline-variant/30 pb-4">
+<div class="w-10 h-10 rounded-full bg-primary-fixed/30 flex items-center justify-center text-primary-container">
+<span class="material-symbols-outlined">account_balance</span>
+</div>
+<div>
+<h2 class="font-h3 text-h3 text-on-surface">Bank Transfer</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Domestic wire instructions.</p>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="flex flex-col gap-1">
+<label class="font-label-caps text-label-caps text-on-surface-variant ml-1">Bank Name</label>
+<input class="input-glass w-full rounded-lg h-[48px] px-4 font-body-md text-on-surface" placeholder="e.g. Chase Bank" type="text"/>
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-caps text-label-caps text-on-surface-variant ml-1">Account Holder Name</label>
+<input class="input-glass w-full rounded-lg h-[48px] px-4 font-body-md text-on-surface" placeholder="John Doe" type="text"/>
+</div>
+<div class="flex flex-col gap-1 md:col-span-2">
+<label class="font-label-caps text-label-caps text-on-surface-variant ml-1">Account Number</label>
+<input class="input-glass w-full rounded-lg h-[48px] px-4 font-body-md text-on-surface" placeholder="0000 0000 0000" type="text"/>
+</div>
+</div>
+</section>
+<!-- Card Payment Section -->
+<section class="glass-panel rounded-xl p-6 relative overflow-hidden">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-outline-variant/30 pb-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-primary-fixed/30 flex items-center justify-center text-primary-container">
+<span class="material-symbols-outlined">credit_card</span>
+</div>
+<div>
+<h2 class="font-h3 text-h3 text-on-surface">Card Payment</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Accept credit &amp; debit cards.</p>
+</div>
+</div>
+<!-- Toggle Switch -->
+<div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-outline-variant z-10 top-0 left-0 transition-transform duration-300 ease-in-out" id="card-toggle" name="toggle" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-outline-variant cursor-pointer transition-colors duration-300 ease-in-out" for="card-toggle"></label>
+</div>
+</div>
+<div class="bg-surface-container-low rounded-lg p-4 border border-outline-variant/20 flex flex-col gap-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container text-[20px]">info</span>
+<span class="font-body-sm text-body-sm text-on-surface">Currently processed via Stripe gateway.</span>
+</div>
+<div class="flex gap-2 mt-2">
+<span class="px-3 py-1 bg-white rounded-md border border-outline-variant/30 font-label-caps text-label-caps text-on-surface-variant flex items-center justify-center shadow-sm">VISA</span>
+<span class="px-3 py-1 bg-white rounded-md border border-outline-variant/30 font-label-caps text-label-caps text-on-surface-variant flex items-center justify-center shadow-sm">MASTERCARD</span>
+<span class="px-3 py-1 bg-white rounded-md border border-outline-variant/30 font-label-caps text-label-caps text-on-surface-variant flex items-center justify-center shadow-sm">AMEX</span>
+</div>
+</div>
+</section>
+<!-- International Payment Section -->
+<section class="glass-panel rounded-xl p-6 relative overflow-hidden">
+<div class="flex items-center gap-3 mb-6 border-b border-outline-variant/30 pb-4">
+<div class="w-10 h-10 rounded-full bg-primary-fixed/30 flex items-center justify-center text-primary-container">
+<span class="material-symbols-outlined">public</span>
+</div>
+<div>
+<h2 class="font-h3 text-h3 text-on-surface">International Payment</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Powered by Wise.</p>
+</div>
+</div>
+<div class="flex flex-col gap-4">
+<div class="bg-secondary-fixed/30 rounded-lg p-4 border border-primary-fixed-dim/30 flex items-start gap-3">
+<span class="material-symbols-outlined text-primary-container mt-0.5 text-[20px]">lightbulb</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+                            For international students, we recommend using Wise for lower fees and better exchange rates. Provide your Wise ID below to receive funds directly.
+                        </p>
+</div>
+<div class="flex flex-col gap-1 mt-2">
+<label class="font-label-caps text-label-caps text-on-surface-variant ml-1">Wise ID / Email Address</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">alternate_email</span>
+<input class="input-glass w-full rounded-lg h-[48px] pl-12 pr-4 font-body-md text-on-surface" placeholder="student@example.com" type="text"/>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- BottomNavBar (Suppressed as per rules for focused/transactional modal screens) -->
+</body></html>

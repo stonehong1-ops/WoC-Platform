@@ -9,27 +9,29 @@ interface SocialFilterBottomSheetProps {
   onApply: (filters: { organizers: string[]; venues: string[] }) => void;
   selectedOrganizers: string[];
   selectedVenues: string[];
+  availableOrganizers?: string[];
+  availableVenues?: string[];
 }
 
 export default function SocialFilterBottomSheet({ 
   onClose, 
   onApply,
   selectedOrganizers: initialOrganizers,
-  selectedVenues: initialVenues
+  selectedVenues: initialVenues,
+  availableOrganizers = [],
+  availableVenues = []
 }: SocialFilterBottomSheetProps) {
   const [filterType, setFilterType] = useState<'Organizers' | 'Clubs'>('Organizers');
-  const [organizers, setOrganizers] = useState<string[]>([]);
-  const [venues, setVenues] = useState<string[]>([]);
+  const [organizers, setOrganizers] = useState<string[]>(availableOrganizers);
+  const [venues, setVenues] = useState<string[]>(availableVenues);
   
   const [tempOrg, setTempOrg] = useState<string[]>(initialOrganizers);
   const [tempVen, setTempVen] = useState<string[]>(initialVenues);
 
   useEffect(() => {
-    socialService.getFilterOptions().then(options => {
-      setOrganizers(options.organizers);
-      setVenues(options.venues);
-    });
-  }, []);
+    setOrganizers(availableOrganizers);
+    setVenues(availableVenues);
+  }, [availableOrganizers, availableVenues]);
 
   const toggleTarget = (name: string) => {
     if (filterType === 'Organizers') {

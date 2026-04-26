@@ -6,6 +6,9 @@ import { Social } from '@/types/social';
 import SocialFilterBottomSheet from '@/components/social/SocialFilterBottomSheet';
 import EditSocialEvent from '@/components/social/EditSocialEvent';
 import { useLocation } from '@/components/providers/LocationProvider';
+import { useAuth } from '@/components/providers/AuthProvider';
+import SocialViewer from '@/components/social/SocialViewer';
+import SocialHeroCard, { DualText, SocialCardImage, getSocialDisplayTitle } from '@/components/social/SocialHeroCard';
 
 export default function SocialPage() {
   const [regulars, setRegulars] = useState<Social[]>([]);
@@ -15,6 +18,7 @@ export default function SocialPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSocial, setSelectedSocial] = useState<Social | null>(null);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState<{
     organizers: string[];
     venues: string[];
@@ -24,6 +28,49 @@ export default function SocialPage() {
   });
 
   const { location } = useLocation();
+  const { user, profile } = useAuth();
+  const [viewSocial, setViewSocial] = useState<Social | null>(null);
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+
+  const canEdit = (s: Social) => {
+    if (!user) return false;
+    if (profile?.isAdmin || (profile as any)?.systemRole === 'admin') return true;
+    if (user.uid === s.organizerId) return true;
+    return false;
+  };
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this social event?')) {
+      await socialService.deleteSocial(id);
+      setActiveMenuId(null);
+    }
+  };
+
+  // 모달 제어용 (디바이스 뒤로가기 대응)
+  const openModal = (setter: Function, value: any) => {
+    window.history.pushState({ modal: true }, '');
+    setter(value);
+  };
+
+  const closeModal = (setter: Function, fallbackValue: any = null) => {
+    if (window.history.state?.modal) {
+      window.history.back(); // 이 호출이 popstate 이벤트를 발생시킵니다
+    } else {
+      setter(fallbackValue);
+    }
+  };
+
+  useEffect(() => {
+    const handlePopState = () => {
+      // 뒤로가기 버튼 클릭 시 모든 모달 닫기
+      setViewSocial(null);
+      setIsCreateOpen(false);
+      setSelectedSocial(null);
+      setIsFilterOpen(false);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   const countryDisplay = location.country.charAt(0).toUpperCase() + location.country.slice(1).toLowerCase();
   const cityDisplay = location.city === 'ALL' || !location.city ? 'All' : 
@@ -66,18 +113,60 @@ export default function SocialPage() {
     };
   }, [activeDayOffset]);
 
-  // Filters
-  const organizers = Array.from(new Set([...regulars, ...dailySocials, ...popups].map(s => s.organizerName)));
-  const venues = Array.from(new Set([...regulars, ...dailySocials, ...popups].map(s => s.venueName)));
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    if (id) {
+      socialService.getSocialById(id).then((social) => {
+        if (social) {
+          openModal(setViewSocial, social);
+        }
+      });
+    }
+  }, []);
 
-  // Filter Logic helper
+  // 위치 필터 헬퍼 — strict mode: city 선택 시 city 필드 없는 데이터는 숨김
+  const matchLocation = (s: Social) => {
+    const isGlobal = !location.country || location.country === 'ALL';
+    const isCityAll = !location.city || location.city === 'ALL';
+    if (isGlobal && isCityAll) return true;
+
+    // country 체크: s.country 없으면 제외 (strict)
+    if (!isGlobal) {
+      if (!s.country) return false;
+      const matchCountry = String(s.country).trim().toLowerCase() === String(location.country).trim().toLowerCase();
+      if (!matchCountry) return false;
+    }
+
+    // city 체크: s.city 없으면 제외 (strict), 있으면 정확히 비교
+    if (!isCityAll) {
+      if (!s.city) return false;
+      const matchCity = String(s.city).trim().toLowerCase() === String(location.city).trim().toLowerCase();
+      if (!matchCity) return false;
+    }
+
+    return true;
+  };
+
+  const locationFilteredSocials = [...regulars, ...dailySocials, ...popups].filter(matchLocation);
+
+  const organizers = Array.from(new Set(locationFilteredSocials.map(s => s.organizerName).filter(Boolean)));
+  const venues = Array.from(new Set(locationFilteredSocials.map(s => s.venueName).filter(Boolean)));
+
+  // Unified Filter Logic
   const filterSocials = (list: Social[]) => {
     return list.filter(s => {
-      const title = String(s.title || '').toLowerCase();
-      const org = String(s.organizerName || '').toLowerCase();
+      // 1. 위치 필터
+      if (!matchLocation(s)) return false;
+
+      // 2. Keyword Search
       const search = searchQuery.toLowerCase();
-      
-      const matchSearch = title.includes(search) || org.includes(search);
+      const matchSearch = !search || 
+        String(s.title || '').toLowerCase().includes(search) || 
+        String(s.organizerName || '').toLowerCase().includes(search) || 
+        String(s.venueName || '').toLowerCase().includes(search);
+
+      // 3. Multi-dimensional Chip Filters
       const matchOrg = selectedFilters.organizers.length === 0 || selectedFilters.organizers.includes(s.organizerName);
       const matchVen = selectedFilters.venues.length === 0 || selectedFilters.venues.includes(s.venueName);
       
@@ -88,7 +177,7 @@ export default function SocialPage() {
   return (
     <main className="min-h-screen bg-[#FBFDFD] pb-32">
       {/* Header & Search */}
-      <div className="sticky top-0 z-30 bg-[#FBFDFD]/80 backdrop-blur-md px-6 pt-6 pb-4">
+      <div className="sticky top-0 z-30 bg-[#FBFDFD]/80 backdrop-blur-md px-6 pt-6 pb-4 flex flex-col gap-3">
         <div className="relative group">
           <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-400 group-focus-within:text-primary transition-colors">search</span>
           <input 
@@ -99,12 +188,46 @@ export default function SocialPage() {
             className="w-full h-12 pl-12 pr-14 bg-white border border-[#dde4e5] rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm"
           />
           <button 
-            onClick={() => setIsFilterOpen(true)}
+            onClick={() => openModal(setIsFilterOpen, true)}
             className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-xl text-on-surface-variant hover:text-primary transition-colors"
           >
             <span className="material-symbols-outlined text-xl">tune</span>
           </button>
         </div>
+
+        {/* Filter Chips */}
+        {(selectedFilters.organizers.length > 0 || selectedFilters.venues.length > 0) && (
+          <div className="flex flex-wrap gap-2">
+            {selectedFilters.organizers.map(org => (
+              <div key={org} className="flex items-center gap-1 pl-3 pr-2 py-1.5 bg-primary/10 text-primary rounded-full text-xs font-bold shadow-sm">
+                <span>{org}</span>
+                <button 
+                  onClick={() => setSelectedFilters(prev => ({ ...prev, organizers: prev.organizers.filter(o => o !== org) }))}
+                  className="w-4 h-4 flex items-center justify-center rounded-full hover:bg-primary/20 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[14px]">close</span>
+                </button>
+              </div>
+            ))}
+            {selectedFilters.venues.map(venue => (
+              <div key={venue} className="flex items-center gap-1 pl-3 pr-2 py-1.5 bg-[#F4FBFB] text-on-surface border border-[#dde4e5] rounded-full text-xs font-bold shadow-sm">
+                <span>{venue}</span>
+                <button 
+                  onClick={() => setSelectedFilters(prev => ({ ...prev, venues: prev.venues.filter(v => v !== venue) }))}
+                  className="w-4 h-4 flex items-center justify-center rounded-full hover:bg-black/5 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[14px]">close</span>
+                </button>
+              </div>
+            ))}
+            <button 
+              onClick={() => setSelectedFilters({ organizers: [], venues: [] })}
+              className="text-xs font-bold text-on-surface-variant hover:text-primary underline px-2 py-1.5"
+            >
+              Clear All
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="px-6 space-y-12 mt-4">
@@ -151,17 +274,38 @@ export default function SocialPage() {
               filterSocials(regulars).filter(s => Number(s.dayOfWeek) === weekDays[activeDayOffset].getDay()).map(social => (
                 <div 
                   key={social.id} 
-                  onClick={() => setSelectedSocial(social)}
+                  onClick={() => openModal(setViewSocial, social)}
                   className="relative flex-shrink-0 w-72 h-96 rounded-lg overflow-hidden group shadow-sm transition-all hover:shadow-md cursor-pointer animate-in zoom-in-95 duration-500 text-left"
                 >
-                  <SocialCardImage imageUrl={social.imageUrl} title={social.title} />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-                  <div className="absolute bottom-0 p-6 space-y-1 text-left">
-                    <h3 className="text-white text-xl font-bold font-headline leading-tight">{social.title}</h3>
-                    <p className="text-white/80 text-sm font-medium">{social.organizerName}</p>
-                    <p className="text-white/70 text-xs">{social.venueName}</p>
-                    <p className="text-white/70 text-xs">{social.startTime} - {social.endTime}</p>
-                  </div>
+                  <SocialHeroCard social={social} />
+                  
+                  {/* Action Menu for Admins / Organizers */}
+                  {canEdit(social) && (
+                    <div className="absolute top-4 right-4 z-20">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); setActiveMenuId(activeMenuId === social.id ? null : social.id); }}
+                        className="w-8 h-8 bg-black/40 hover:bg-black/60 rounded-full flex items-center justify-center text-white backdrop-blur-md transition-all"
+                      >
+                        <span className="material-symbols-outlined text-sm">more_vert</span>
+                      </button>
+                      {activeMenuId === social.id && (
+                        <div className="absolute right-0 mt-2 w-32 bg-white rounded-lg shadow-xl overflow-hidden border border-gray-100 py-1 origin-top-right animate-in fade-in zoom-in-95">
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); openModal(setSelectedSocial, social); setActiveMenuId(null); }}
+                            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">edit</span> Edit
+                          </button>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); handleDelete(social.id); }}
+                            className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">delete</span> Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))
             )}
@@ -178,11 +322,13 @@ export default function SocialPage() {
                  <p className="text-xs font-black uppercase tracking-widest text-primary/40">No popup socials scheduled</p>
               </div>
             ) : (
-              filterSocials(popups).map(social => (
+              filterSocials(popups).map(social => {
+                const displayTitle = getSocialDisplayTitle(social);
+                return (
                 <div 
                   key={social.id} 
-                  onClick={() => setSelectedSocial(social)}
-                  className="flex items-center gap-4 p-4 bg-white rounded-lg border border-[#dde4e5] hover:border-primary/30 transition-all cursor-pointer group shadow-sm active:scale-[0.98] text-left"
+                  onClick={() => openModal(setViewSocial, social)}
+                  className="relative flex items-center gap-4 p-4 bg-white rounded-lg border border-[#dde4e5] hover:border-primary/30 transition-all cursor-pointer group shadow-sm active:scale-[0.98] text-left"
                 >
                   <div className="flex flex-col items-center justify-center w-20 h-20 bg-[#F4FBFB] rounded-lg border-l-4 border-primary shrink-0">
                     <span className="text-[9px] font-black text-primary uppercase tracking-widest leading-none mb-1">
@@ -195,16 +341,56 @@ export default function SocialPage() {
                       {new Date(social.date ? social.date.toDate() : new Date()).toLocaleDateString('en-US', { month: 'short' }).toUpperCase()}
                     </span>
                   </div>
-                  <div className="flex-1 space-y-0.5 text-left overflow-hidden">
-                    <h4 className="text-lg font-bold text-on-surface font-headline leading-tight truncate">{social.title}</h4>
-                    <p className="text-sm text-primary font-semibold truncate">{social.venueName}</p>
-                    <p className="text-xs text-on-surface-variant font-medium truncate">
+                  <div className="flex-1 space-y-0.5 text-left overflow-hidden pr-8">
+                    <DualText 
+                      text={displayTitle.primary}
+                      subText={displayTitle.secondary}
+                      primaryClassName="text-lg font-bold text-on-surface font-headline leading-tight truncate"
+                      secondaryClassName="text-xs text-on-surface-variant font-medium truncate shrink-0"
+                      containerClassName="w-full"
+                    />
+                    <DualText 
+                      text={social.venueName}
+                      primaryClassName="text-sm text-primary font-semibold truncate block mt-1"
+                      secondaryClassName="text-[10px] text-primary/60 truncate block mt-0.5"
+                    />
+                    <p className="text-xs text-on-surface-variant font-medium truncate mt-1">
                       {social.startTime} - {social.endTime} {social.djName ? `• DJ ${social.djName}` : ''}
                     </p>
                   </div>
-                  <span className="material-symbols-outlined text-[#dde4e5] group-hover:text-primary transition-all group-hover:translate-x-1">chevron_right</span>
+
+                  {/* Action Menu for Admins / Organizers */}
+                  {canEdit(social) ? (
+                    <div className="absolute top-4 right-4 z-20">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); setActiveMenuId(activeMenuId === social.id ? null : social.id); }}
+                        className="w-8 h-8 hover:bg-gray-100 rounded-full flex items-center justify-center text-gray-500 transition-all"
+                      >
+                        <span className="material-symbols-outlined text-sm">more_vert</span>
+                      </button>
+                      {activeMenuId === social.id && (
+                        <div className="absolute right-0 mt-2 w-32 bg-white rounded-lg shadow-xl overflow-hidden border border-gray-100 py-1 origin-top-right animate-in fade-in zoom-in-95">
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); openModal(setSelectedSocial, social); setActiveMenuId(null); }}
+                            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">edit</span> Edit
+                          </button>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); handleDelete(social.id); }}
+                            className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">delete</span> Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="material-symbols-outlined text-[#dde4e5] group-hover:text-primary transition-all group-hover:translate-x-1 absolute right-4 top-1/2 -translate-y-1/2">chevron_right</span>
+                  )}
                 </div>
-              ))
+                );
+              })
             )}
           </div>
 
@@ -216,63 +402,53 @@ export default function SocialPage() {
         </section>
       </div>
 
+      {/* FAB - 신규 소셜 등록 버튼 */}
+      <button
+        onClick={() => openModal(setIsCreateOpen, true)}
+        className="fixed bottom-24 right-6 z-40 w-14 h-14 bg-primary text-white rounded-full shadow-lg shadow-primary/30 flex items-center justify-center hover:bg-primary/90 active:scale-95 transition-all"
+        aria-label="소셜 등록"
+      >
+        <span className="material-symbols-outlined text-2xl">add</span>
+      </button>
+
       {/* Overlays */}
       {isFilterOpen && (
         <SocialFilterBottomSheet 
-          onClose={() => setIsFilterOpen(false)}
+          onClose={() => closeModal(setIsFilterOpen, false)}
           onApply={(filters) => {
             setSelectedFilters(filters);
-            setIsFilterOpen(false);
+            closeModal(setIsFilterOpen, false);
           }}
           selectedOrganizers={selectedFilters.organizers}
           selectedVenues={selectedFilters.venues}
+          availableOrganizers={organizers}
+          availableVenues={venues}
         />
       )}
 
+      {/* 신규 등록 (Create 모드) */}
+      {isCreateOpen && (
+        <EditSocialEvent 
+          onClose={() => closeModal(setIsCreateOpen, false)}
+          onSuccess={() => closeModal(setIsCreateOpen, false)}
+        />
+      )}
+
+      {/* 기존 소셜 편집 (Edit 모드) */}
       {selectedSocial && (
         <EditSocialEvent 
           socialData={selectedSocial}
-          onClose={() => setSelectedSocial(null)}
+          onClose={() => closeModal(setSelectedSocial, null)}
+        />
+      )}
+
+      {/* 뷰 모드 (일반 사용자) */}
+      {viewSocial && (
+        <SocialViewer 
+          social={viewSocial}
+          onClose={() => closeModal(setViewSocial, null)}
         />
       )}
     </main>
-  );
-}
-
-// --- Premium UI Components ---
-
-function SocialCardImage({ imageUrl, title }: { imageUrl?: string; title: string }) {
-  const [error, setError] = useState(false);
-  const firstLetter = title.trim().charAt(0).toUpperCase();
-
-  if (!imageUrl || error) {
-    return (
-      <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-[#EEF2F3] via-white to-[#DDE4E5] flex items-center justify-center overflow-hidden">
-        {/* Large Decorative Letter - Editorial Style */}
-        <span className="absolute -bottom-8 -right-8 text-[20rem] font-black text-primary/[0.03] select-none pointer-events-none italic leading-none">
-          {firstLetter}
-        </span>
-        
-        {/* Centered Graphic Element */}
-        <div className="relative z-10 flex flex-col items-center opacity-20 transform -translate-y-4">
-          <div className="w-12 h-12 rounded-full border-2 border-primary/30 flex items-center justify-center mb-4">
-             <span className="material-symbols-outlined text-2xl text-primary/50">auto_awesome</span>
-          </div>
-          <span className="text-[10px] font-black tracking-[0.5em] text-primary/40 uppercase ml-2">Heritage</span>
-        </div>
-        
-        {/* Subtle Texture Overlay */}
-        <div className="absolute inset-0 opacity-[0.04] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '12px 12px' }}></div>
-      </div>
-    );
-  }
-
-  return (
-    <img 
-      className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
-      src={imageUrl} 
-      alt={title} 
-      onError={() => setError(true)}
-    />
   );
 }

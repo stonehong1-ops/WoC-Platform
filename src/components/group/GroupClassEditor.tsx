@@ -1,18 +1,23 @@
-import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Group, GroupClass, ClassDiscount, MonthlyPass } from "@/types/group";
 import { groupService } from "@/lib/firebase/groupService";
+import { db } from "@/lib/firebase/clientApp";
+import { doc, writeBatch, deleteField, Timestamp } from "firebase/firestore";
+
 import { toast } from "sonner";
 import GroupClassAddEditor from "./GroupClassAddEditor";
 import GroupClassDiscountEditor from "./GroupClassDiscountEditor";
 import GroupClassMonthlyPassEditor from "./GroupClassMonthlyPassEditor";
+import { classRegistrationService } from "@/lib/firebase/classRegistrationService";
+import { useRouter } from "next/navigation";
 
 interface GroupClassEditorProps {
   group: Group;
   onSave?: () => void;
 }
 
-type EditorType = 'add-class' | 'discount' | 'monthly-pass';
+type EditorType = 'add-class' | 'discount' | 'monthly-pass' | 'payment';
 
 interface EditingState {
   type: EditorType;
@@ -20,79 +25,162 @@ interface EditingState {
 }
 
 const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave }) => {
+  const router = useRouter();
   const [editingState, setEditingState] = useState<EditingState | null>(null);
-  const [currentDate, setCurrentDate] = useState(new Date());
   const [loading, setLoading] = useState(false);
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
 
-  const classes = group.classes || [];
-  const discounts = group.discounts || [];
-  const passes = group.monthlyPasses || [];
+  // Payment Settings State
+  const [paymentSettings, setPaymentSettings] = useState({
+    paymentMethods: {
+      bankTransfer: group.classPaymentSettings?.paymentMethods?.bankTransfer ?? true,
+      creditCard: group.classPaymentSettings?.paymentMethods?.creditCard ?? false,
+      overseas: group.classPaymentSettings?.paymentMethods?.overseas ?? false,
+    },
+    bankDetails: {
+      bankName: group.classPaymentSettings?.bankDetails?.bankName ?? "",
+      accountHolder: group.classPaymentSettings?.bankDetails?.accountHolder ?? "",
+      accountNumber: group.classPaymentSettings?.bankDetails?.accountNumber ?? "",
+      wiseId: (group.classPaymentSettings?.bankDetails as any)?.wiseId ?? "",
+    }
+  });
+  const [isEditingPayment, setIsEditingPayment] = useState(false);
+  const [savingPayment, setSavingPayment] = useState(false);
+
+  const handleSavePaymentSettings = async () => {
+    setSavingPayment(true);
+    try {
+      await groupService.updateGroupMetadata(group.id, {
+        classPaymentSettings: paymentSettings
+      });
+      setIsEditingPayment(false);
+      toast.success("Payment settings updated successfully.");
+      if (onSave) onSave();
+    } catch (error) {
+      console.error("Failed to update payment settings:", error);
+      toast.error("Failed to update payment settings.");
+    } finally {
+      setSavingPayment(false);
+    }
+  };
+
+  const [currentDate, setCurrentDate] = useState(() => {
+    const d = new Date();
+    if (d.getDate() >= 15) {
+      d.setMonth(d.getMonth() + 1);
+    }
+    return d;
+  });
 
   const handlePrevMonth = () => {
-    setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+    setCurrentDate(prev => {
+      const d = new Date(prev);
+      d.setMonth(d.getMonth() - 1);
+      return d;
+    });
   };
 
   const handleNextMonth = () => {
-    setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+    setCurrentDate(prev => {
+      const d = new Date(prev);
+      d.setMonth(d.getMonth() + 1);
+      return d;
+    });
   };
 
-  const formattedMonth = currentDate.toLocaleDateString('ko-KR', { month: 'long', year: 'numeric' });
+  const currentMonthStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+  const monthDisplay = currentDate.toLocaleString('en-US', { month: 'short', year: 'numeric' });
+
+  // Real-time data from subcollections
+  const [subClasses, setSubClasses] = useState<GroupClass[]>([]);
+  const [subPasses, setSubPasses] = useState<MonthlyPass[]>([]);
+  const [subDiscounts, setSubDiscounts] = useState<ClassDiscount[]>([]);
+
+  useEffect(() => {
+    // Auto-migration logic for legacy embedded arrays
+    const legacyClasses = (group as any)._legacyClasses || [];
+    const legacyPasses = (group as any)._legacyMonthlyPasses || [];
+    const legacyDiscounts = (group as any)._legacyDiscounts || [];
+
+    if (legacyClasses.length > 0 || legacyPasses.length > 0 || legacyDiscounts.length > 0) {
+      const migrateData = async () => {
+        try {
+          const batch = writeBatch(db);
+          for (const cls of legacyClasses) {
+            batch.set(doc(db, 'groups', group.id, 'classes', cls.id), { ...cls, createdAt: Timestamp.now() });
+          }
+          for (const pass of legacyPasses) {
+            batch.set(doc(db, 'groups', group.id, 'monthlyPasses', pass.id), { ...pass, createdAt: Timestamp.now() });
+          }
+          for (const discount of legacyDiscounts) {
+            batch.set(doc(db, 'groups', group.id, 'discounts', discount.id), { ...discount, createdAt: Timestamp.now() });
+          }
+          batch.update(doc(db, 'groups', group.id), {
+            classes: deleteField(),
+            monthlyPasses: deleteField(),
+            discounts: deleteField()
+          });
+          await batch.commit();
+          toast.success("Successfully migrated data to new collections!");
+          router.refresh();
+        } catch (err) {
+          console.error("Migration error:", err);
+        }
+      };
+      migrateData();
+    }
+  }, [group]);
+
+  useEffect(() => {
+    const unsubClasses = groupService.subscribeClasses(group.id, setSubClasses);
+    const unsubPasses = groupService.subscribeMonthlyPasses(group.id, setSubPasses);
+    const unsubDiscounts = groupService.subscribeDiscounts(group.id, setSubDiscounts);
+    return () => {
+      unsubClasses();
+      unsubPasses();
+      unsubDiscounts();
+    };
+  }, [group.id]);
+
+  // Combine legacy props (if not migrated yet) and real-time subcollections
+  // De-duplicate by ID just in case
+  const allClasses = [...subClasses, ...(group.classes || []).filter(c => !subClasses.find(sc => sc.id === c.id))];
+  const allMonthlyPasses = [...subPasses, ...(group.monthlyPasses || []).filter(p => !subPasses.find(sp => sp.id === p.id))];
+  const allDiscounts = [...subDiscounts, ...(group.discounts || []).filter(d => !subDiscounts.find(sd => sd.id === d.id))];
+
+  const filteredClasses = allClasses.filter(cls => !cls.targetMonth || cls.targetMonth === currentMonthStr);
+  const filteredPasses = allMonthlyPasses.filter((pass: MonthlyPass) => !pass.targetMonth || pass.targetMonth === currentMonthStr);
+  const filteredDiscounts = allDiscounts.filter((discount: ClassDiscount) => !discount.targetMonth || discount.targetMonth === currentMonthStr);
 
   const handleDelete = async (type: 'class' | 'discount' | 'pass', id: string) => {
-    toast.custom((t) => (
-      <div className="bg-white border border-[var(--outline-variant)]/30 rounded-[28px] p-6 shadow-2xl backdrop-blur-xl max-w-md w-full">
-        <div className="flex items-start gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center flex-shrink-0">
-            <span className="material-symbols-outlined text-red-500 text-2xl font-black">delete_forever</span>
-          </div>
-          <div className="flex-1">
-            <h4 className="font-headline font-black text-lg text-[var(--on-surface)] mb-1">삭제 확인</h4>
-            <p className="text-[var(--on-surface-variant)] text-sm font-medium leading-relaxed">
-              이 항목을 정말로 삭제하시겠습니까? 삭제된 데이터는 복구할 수 없습니다.
-            </p>
-            <div className="flex gap-3 mt-6">
-              <button 
-                onClick={() => toast.dismiss(t)}
-                className="flex-1 px-4 py-3 rounded-xl bg-[var(--surface-container-highest)] font-headline font-black text-[11px] uppercase tracking-widest text-[var(--on-surface)] hover:bg-[var(--surface-container-high)] transition-all"
-              >
-                취소
-              </button>
-              <button 
-                onClick={async () => {
-                  toast.dismiss(t);
-                  executeDelete(type, id);
-                }}
-                className="flex-1 px-4 py-3 rounded-xl bg-red-500 font-headline font-black text-[11px] uppercase tracking-widest text-white hover:bg-red-600 shadow-lg shadow-red-200 transition-all"
-              >
-                삭제하기
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    ), { duration: Infinity });
+    setActiveMenuId(null);
+    if (window.confirm("Are you sure you want to delete this item? This action cannot be undone.")) {
+      executeDelete(type, id);
+    }
   };
 
   const executeDelete = async (type: 'class' | 'discount' | 'pass', id: string) => {
     setLoading(true);
     const promise = (async () => {
-      let updateData: any = {};
-      if (type === 'class') {
-        updateData.classes = classes.filter(c => c.id !== id);
-      } else if (type === 'discount') {
-        updateData.discounts = discounts.filter(d => d.id !== id);
-      } else if (type === 'pass') {
-        updateData.monthlyPasses = passes.filter(p => p.id !== id);
+      if (type === "class") {
+        await groupService.deleteClass(group.id, id);
+      } else if (type === "discount") {
+        await groupService.deleteDiscount(group.id, id);
+      } else if (type === "pass") {
+        await groupService.deleteMonthlyPass(group.id, id);
       }
-
-      await groupService.updateGroupMetadata(group.id, updateData);
-      if (onSave) onSave();
+      setActiveMenuId(null);
+      if (onSave) {
+        onSave();
+      } else {
+        router.refresh();
+      }
     })();
 
     toast.promise(promise, {
-      loading: '삭제 중...',
-      success: '삭제되었습니다.',
-      error: '삭제에 실패했습니다.',
+      loading: 'Deleting...',
+      success: 'Deleted successfully.',
+      error: 'Failed to delete.',
     });
 
     try {
@@ -104,396 +192,506 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave }) =>
     }
   };
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
+  const handleEdit = (type: EditorType, data: any) => {
+    setActiveMenuId(null);
+    setEditingState({ type, data });
+  };
+
+  // Detect outside clicks to handle closing the menu
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (!(e.target as Element).closest('.action-menu-container')) {
+        setActiveMenuId(null);
       }
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, []);
+
+  const getLevelColor = (level: string) => {
+    switch (level?.toLowerCase()) {
+      case 'beginner': return 'text-emerald-600 bg-emerald-50';
+      case 'intermediate': return 'text-orange-600 bg-orange-50';
+      case 'advanced': return 'text-blue-600 bg-blue-50';
+      default: return 'text-purple-600 bg-purple-50';
     }
   };
 
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { 
-      opacity: 1, 
-      y: 0,
-      transition: {
-        type: "spring",
-        stiffness: 100,
-        damping: 15
-      }
-    }
-  } as const;
-
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="flex flex-col min-h-screen font-body pb-32 bg-[#f8faff]"
-    >
-      {/* Header */}
-      <header className="px-10 py-12 w-full bg-white border-b border-[#efefff] relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-[#0057bd]/5 rounded-full -mr-20 -mt-20 blur-3xl pointer-events-none" />
-        <div className="max-w-5xl mx-auto flex items-center justify-between relative z-10">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-1.5 h-6 bg-[#0057bd] rounded-full" />
-              <span className="text-[10px] font-black text-[#0057bd] uppercase tracking-[0.3em]">Administrative</span>
+    <div className="antialiased text-gray-900 bg-[#F3F4F6] min-h-screen font-['Plus_Jakarta_Sans'] pb-20">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Class Basic Info 1-line Summary */}
+        <section className="mb-6">
+          <div className="bg-white rounded-[12px] p-4 flex items-center justify-between shadow-sm border border-gray-100">
+            <div className="flex items-center gap-3">
+              <span className="material-symbols-outlined text-[#0057bd]">info</span>
+              <div>
+                <h3 className="font-bold text-gray-900 text-sm">Class Basic Info</h3>
+                <p className="text-xs text-gray-500 truncate max-w-[200px] sm:max-w-sm">
+                  {paymentSettings.paymentMethods.bankTransfer
+                    ? `Payment: ${paymentSettings.bankDetails.bankName || 'No bank'} | ${paymentSettings.bankDetails.accountNumber || 'No account'}`
+                    : 'Payment: No method set'}
+                </p>
+              </div>
             </div>
-            <h1 className="font-headline font-black text-4xl tracking-tight text-[#242c51]">Class Setting</h1>
-            <p className="text-[#515981] text-sm mt-2 font-bold opacity-70">Manage community class schedules, discount packages, and monthly passes.</p>
+            <button
+              onClick={() => setEditingState({ type: 'payment', data: paymentSettings })}
+              className="px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg text-sm font-bold transition-colors shrink-0"
+            >
+              Edit
+            </button>
           </div>
-          <div className="hidden lg:flex items-center gap-4">
-            <div className="text-right">
-              <p className="text-[10px] font-black text-[#a3abd7] uppercase tracking-widest">Active Services</p>
-              <p className="text-xl font-black text-[#242c51]">{classes.length + discounts.length + passes.length}</p>
-            </div>
-            <div className="w-14 h-14 bg-[#0057bd] text-white rounded-2xl flex items-center justify-center shadow-lg shadow-[#0057bd]/20">
-              <span className="material-symbols-outlined text-3xl">dashboard_customize</span>
-            </div>
-          </div>
-        </div>
-      </header>
+        </section>
 
-      <main className="max-w-5xl mx-auto px-8 py-12 w-full text-[#242c51] space-y-16">
-        {/* Quick Actions */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <button 
+        {/* Month Navigation & Visibility */}
+        <section className="mb-6 bg-white rounded-[16px] shadow-sm border border-gray-100 overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50/50">
+            <button onClick={handlePrevMonth} className="p-2 hover:bg-white rounded-full transition-colors shadow-sm bg-white border border-gray-100 active:scale-95">
+              <span className="material-symbols-outlined text-gray-600">chevron_left</span>
+            </button>
+            <h2 className="text-xl font-bold text-gray-900">{monthDisplay}</h2>
+            <button onClick={handleNextMonth} className="p-2 hover:bg-white rounded-full transition-colors shadow-sm bg-white border border-gray-100 active:scale-95">
+              <span className="material-symbols-outlined text-gray-600">chevron_right</span>
+            </button>
+          </div>
+          <div className="p-5 flex items-center justify-between">
+            <div>
+              <h3 className="font-bold text-gray-900">Monthly Visibility</h3>
+              <p className="text-sm text-gray-500">Show this month's classes to members</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input defaultChecked className="sr-only peer" type="checkbox" value="" />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0057bd]"></div>
+              <span className="ml-3 text-sm font-medium text-gray-900">ON</span>
+            </label>
+          </div>
+        </section>
+
+        {/* Action Buttons */}
+        <section className="mb-8 flex justify-between gap-3">
+          <button
             onClick={() => setEditingState({ type: 'add-class', data: null })}
-            className="group relative flex flex-col items-center justify-center gap-3 p-8 bg-[#0057bd] text-white rounded-[2.5rem] font-black font-headline text-xs uppercase tracking-widest hover:shadow-2xl hover:shadow-[#0057bd]/30 transition-all active:scale-[0.97] overflow-hidden"
+            className="flex-1 flex flex-col items-center justify-center gap-1 px-2 py-3 bg-[#0057bd] text-white rounded-[12px] shadow-sm hover:bg-blue-700 transition-colors active:scale-95"
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
-              <span className="material-symbols-outlined text-3xl">add_circle</span>
-            </div>
-            <span>신규 수업 추가</span>
+            <span className="material-symbols-outlined text-xl">school</span>
+            <span className="text-xs font-bold leading-tight text-center">Class</span>
           </button>
-
-          <button 
+          <button
             onClick={() => setEditingState({ type: 'discount', data: null })}
-            className="group relative flex flex-col items-center justify-center gap-3 p-8 bg-white text-[#223ea2] border-2 border-[#efefff] rounded-[2.5rem] font-black font-headline text-xs uppercase tracking-widest hover:border-[#223ea2]/30 transition-all active:scale-[0.97] shadow-sm overflow-hidden"
+            className="flex-1 flex flex-col items-center justify-center gap-1 px-2 py-3 bg-white text-gray-700 rounded-[12px] border border-gray-100 shadow-sm hover:bg-gray-50 transition-colors active:scale-95"
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-[#223ea2]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <div className="w-14 h-14 bg-[#223ea2]/5 rounded-2xl flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
-              <span className="material-symbols-outlined text-3xl">percent</span>
-            </div>
-            <span>할인 패키지 추가</span>
+            <span className="material-symbols-outlined text-xl">sell</span>
+            <span className="text-xs font-bold leading-tight text-center">Bundle<br />discount</span>
           </button>
-
-          <button 
+          <button
             onClick={() => setEditingState({ type: 'monthly-pass', data: null })}
-            className="group relative flex flex-col items-center justify-center gap-3 p-8 bg-white text-[#5e106a] border-2 border-[#f199f7]/30 rounded-[2.5rem] font-black font-headline text-xs uppercase tracking-widest hover:border-[#f199f7]/60 transition-all active:scale-[0.97] shadow-sm overflow-hidden"
+            className="flex-1 flex flex-col items-center justify-center gap-1 px-2 py-3 bg-white text-gray-700 rounded-[12px] border border-gray-100 shadow-sm hover:bg-gray-50 transition-colors active:scale-95"
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-[#f199f7]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <div className="w-14 h-14 bg-[#f199f7]/10 rounded-2xl flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
-              <span className="material-symbols-outlined text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>confirmation_number</span>
-            </div>
-            <span>정기권 추가</span>
+            <span className="material-symbols-outlined text-xl">confirmation_number</span>
+            <span className="text-xs font-bold leading-tight text-center">Monthly<br />Pass</span>
           </button>
         </section>
 
-        {/* Classes Section */}
-        <section className="space-y-8">
-          <div className="flex items-center justify-between px-2">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-[#0057bd]/10 rounded-2xl flex items-center justify-center">
-                <span className="material-symbols-outlined text-[#0057bd] text-2xl">school</span>
-              </div>
-              <div>
-                <h2 className="text-2xl font-black font-headline text-[#242c51] tracking-tight">개설된 수업</h2>
-                <p className="text-[10px] font-bold text-[#a3abd7] uppercase tracking-[0.2em] mt-1">Regular Course Management</p>
-              </div>
+        {/* List Section */}
+        <section className="flex flex-col gap-4">
+          {filteredClasses.length === 0 && filteredDiscounts.length === 0 && filteredPasses.length === 0 && (
+            <div className="bg-transparent border-2 border-dashed border-gray-300 rounded-[12px] p-10 text-center flex flex-col items-center justify-center">
+              <span className="material-symbols-outlined text-gray-400 text-4xl mb-2">inbox</span>
+              <p className="text-gray-500 font-bold">No items registered</p>
             </div>
-            <div className="px-4 py-2 bg-white border border-[#efefff] rounded-full text-[10px] font-black text-[#515981] uppercase tracking-widest shadow-sm">
-              {classes.length} 수업 개설됨
-            </div>
-          </div>
+          )}
 
-          <motion.div 
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            className="grid grid-cols-1 gap-5"
-          >
-            {classes.length === 0 ? (
-              <motion.div variants={itemVariants} className="bg-white border-2 border-dashed border-[#efefff] rounded-[3rem] p-20 text-center shadow-sm">
-                <div className="w-20 h-20 bg-[#f8faff] rounded-[2rem] flex items-center justify-center mx-auto mb-6">
-                  <span className="material-symbols-outlined text-[#a3abd7] text-4xl">add_task</span>
-                </div>
-                <h3 className="text-lg font-black text-[#242c51] uppercase tracking-tight mb-2">개설된 수업이 없습니다</h3>
-                <p className="text-[#a3abd7] text-sm font-bold opacity-80">첫 번째 정규 수업을 추가해 보세요.</p>
-              </motion.div>
-            ) : (
-              classes.map((cls) => (
-                <motion.div 
-                  key={cls.id} 
-                  variants={itemVariants}
-                  onClick={() => setEditingState({ type: 'add-class', data: cls })}
-                  className="group/card cursor-pointer bg-white border border-[#efefff] rounded-[2.5rem] p-8 transition-all hover:border-[#0057bd]/40 shadow-[0_4px_20px_-4px_rgba(36,44,81,0.02)] hover:shadow-[0_20px_40px_-8px_rgba(0,87,189,0.1)] active:scale-[0.99] relative overflow-hidden"
-                >
-                  <div className="flex items-center justify-between gap-8 relative z-10">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-4">
-                        <h3 className="text-xl font-black text-[#242c51] truncate headline tracking-tight group-hover/card:text-[#0057bd] transition-colors">{cls.title}</h3>
-                        <span className={`text-[9px] font-black px-2 py-1 rounded-lg uppercase tracking-wider border transition-all ${
-                          cls.status === 'Open' 
-                          ? 'bg-green-50 text-green-600 border-green-100' 
-                          : 'bg-gray-50 text-gray-500 border-gray-100'
-                        }`}>
-                          {cls.status === 'Open' ? '모집 중' : '마감'}
-                        </span>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-[#f8faff] rounded-xl flex items-center justify-center group-hover/card:bg-[#0057bd]/5 transition-colors">
-                            <span className="material-symbols-outlined text-lg text-[#0057bd]">layers</span>
-                          </div>
-                          <div>
-                            <p className="text-[9px] font-black text-[#a3abd7] uppercase tracking-widest">수업 레벨</p>
-                            <p className="text-xs font-bold text-[#515981] uppercase">{cls.level}</p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-[#f8faff] rounded-xl flex items-center justify-center group-hover/card:bg-[#0057bd]/5 transition-colors">
-                            <span className="material-symbols-outlined text-lg text-[#0057bd]">payments</span>
-                          </div>
-                          <div>
-                            <p className="text-[9px] font-black text-[#a3abd7] uppercase tracking-widest">수강료</p>
-                            <p className="text-xs font-black text-[#242c51]">{cls.currency === 'KRW' ? '₩' : cls.currency} {cls.amount.toLocaleString()}</p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-[#f8faff] rounded-xl flex items-center justify-center group-hover/card:bg-[#0057bd]/5 transition-colors">
-                            <span className="material-symbols-outlined text-lg text-[#0057bd]">schedule</span>
-                          </div>
-                          <div>
-                            <p className="text-[9px] font-black text-[#a3abd7] uppercase tracking-widest">수업 횟수</p>
-                            <p className="text-xs font-bold text-[#515981]">{cls.schedule?.length || 0} 세션</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-6">
-                      <div className="hidden sm:flex -space-x-3">
-                        {cls.instructors.map((inst, i) => (
-                          <div key={i} className="relative group/avatar">
-                            <img 
-                              alt={inst.name} 
-                              className="w-12 h-12 rounded-[1.25rem] border-4 border-white object-cover shadow-lg bg-gray-100" 
-                              src={inst.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${inst.name}`}
-                            />
-                            <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-[#242c51] text-white text-[9px] font-black px-3 py-1.5 rounded-lg opacity-0 group-hover/avatar:opacity-100 transition-all whitespace-nowrap z-20 shadow-xl pointer-events-none uppercase tracking-widest scale-90 group-hover/avatar:scale-100">
-                              {inst.name}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="w-px h-12 bg-[#efefff]" />
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete('class', cls.id);
-                        }}
-                        className="w-14 h-14 flex items-center justify-center text-[#ff4b4b] hover:bg-[#ff4b4b]/5 rounded-[1.5rem] transition-all active:scale-90 group/delete"
-                        disabled={loading}
-                      >
-                        <span className="material-symbols-outlined text-2xl group-hover/delete:scale-110 transition-transform">delete</span>
-                      </button>
-                    </div>
-                  </div>
-                  {/* Progress Line */}
-                  <div className="absolute bottom-0 left-0 h-1 bg-[#0057bd] transition-all duration-500 opacity-0 group-hover/card:opacity-100" style={{ width: '4px' }} />
-                </motion.div>
-              ))
-            )}
-          </motion.div>
-        </section>
-
-        {/* Discounts Section */}
-        <section className="space-y-8">
-          <div className="flex items-center justify-between px-2">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-[#223ea2]/10 rounded-2xl flex items-center justify-center">
-                <span className="material-symbols-outlined text-[#223ea2] text-2xl">loyalty</span>
-              </div>
-              <div>
-                <h2 className="text-2xl font-black font-headline text-[#242c51] tracking-tight">번들 및 할인 패키지</h2>
-                <p className="text-[10px] font-bold text-[#a3abd7] uppercase tracking-[0.2em] mt-1">Pricing Strategy Management</p>
-              </div>
-            </div>
-            <div className="px-4 py-2 bg-white border border-[#efefff] rounded-full text-[10px] font-black text-[#515981] uppercase tracking-widest shadow-sm">
-              {discounts.length} 패키지
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {discounts.length === 0 ? (
-              <div className="col-span-full bg-white border-2 border-[#efefff] rounded-[3rem] p-16 text-center shadow-sm">
-                <p className="text-[#a3abd7] text-sm font-black headline uppercase tracking-widest opacity-60">등록된 할인 패키지가 없습니다</p>
-              </div>
-            ) : (
-              discounts.map((discount) => (
-                <div 
-                  key={discount.id} 
-                  onClick={() => setEditingState({ type: 'discount', data: discount })}
-                  className="group cursor-pointer bg-white border border-[#efefff] rounded-[2.5rem] p-8 transition-all hover:border-[#223ea2]/40 shadow-sm hover:shadow-xl hover:shadow-[#223ea2]/5 active:scale-[0.99] relative overflow-hidden"
-                >
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-[#223ea2]/5 rounded-bl-[4rem] -mr-8 -mt-8 transition-all group-hover:scale-110" />
-                  
-                  <div className="relative z-10">
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-[#223ea2] text-white rounded-xl flex items-center justify-center shadow-lg shadow-[#223ea2]/20">
-                          <span className="material-symbols-outlined text-xl">sell</span>
-                        </div>
-                        <h3 className="text-lg font-black text-[#242c51] headline tracking-tight group-hover:text-[#223ea2] transition-colors">{discount.title}</h3>
-                      </div>
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete('discount', discount.id);
-                        }}
-                        className="w-10 h-10 flex items-center justify-center text-[#ff4b4b] hover:bg-[#ff4b4b]/5 rounded-xl transition-all"
-                      >
-                        <span className="material-symbols-outlined text-xl">delete</span>
-                      </button>
-                    </div>
-
-                    <div className="flex items-end justify-between">
-                      <div>
-                        <p className="text-[9px] font-black text-[#a3abd7] uppercase tracking-[0.2em] mb-1">패키지 요금</p>
-                        <p className="text-2xl font-black text-[#223ea2] tracking-tight">{discount.currency === 'KRW' ? '₩' : discount.currency} {discount.amount.toLocaleString()}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[13px] font-bold text-[#515981] opacity-70 mb-1">{discount.includedClassIds.length}개 수업 포함</p>
-                        <span className="bg-[#223ea2]/10 text-[#223ea2] text-[9px] font-black px-2 py-1 rounded-lg uppercase tracking-wider">번들 할인 적용</span>
-                      </div>
-                    </div>
+          {/* Monthly Passes */}
+          {filteredPasses.map((pass: MonthlyPass) => (
+            <div key={pass.id} className="bg-white rounded-[12px] shadow-sm hover:shadow-md transition-shadow border border-gray-100 p-5 flex items-start gap-4">
+              <div className="flex-grow">
+                <div className="flex justify-between items-start mb-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-fuchsia-600 bg-fuchsia-50 px-2 py-0.5 rounded">
+                      Pass
+                    </span>
+                    <span className="text-xs font-bold text-gray-400">#P-{pass.id.slice(0, 4)}</span>
                   </div>
                 </div>
-              ))
-            )}
-          </div>
-        </section>
-
-        {/* Monthly Passes Section */}
-        <section className="space-y-8">
-          <div className="flex items-center justify-between px-2">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-[#f199f7]/20 to-[#d66edc]/10 rounded-2xl flex items-center justify-center shadow-inner border border-[#f199f7]/20">
-                <span className="material-symbols-outlined text-[#d66edc] text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>confirmation_number</span>
-              </div>
-              <div>
-                <h2 className="text-2xl font-black font-headline text-[#242c51] tracking-tight">월간 정기 멤버십</h2>
-                <p className="text-[10px] font-bold text-[#a3abd7] uppercase tracking-[0.2em] mt-1">Subscription Pass Management</p>
-              </div>
-            </div>
-            <div className="px-4 py-2 bg-white border border-[#efefff] rounded-full text-[10px] font-black text-[#515981] uppercase tracking-widest shadow-sm">
-              {passes.length} 정기권
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {passes.length === 0 ? (
-              <div className="col-span-full bg-white border-2 border-dashed border-[#efefff] rounded-[3rem] p-16 text-center shadow-sm">
-                <div className="w-16 h-16 bg-[#f8faff] rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <span className="material-symbols-outlined text-[#a3abd7] text-3xl">confirmation_number</span>
+                <h4 className="text-lg font-bold text-gray-900 leading-tight mb-2">{pass.title}</h4>
+                <div className="flex flex-col gap-1 text-sm text-gray-600 mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-gray-600">
+                      Unlimited access for 30 days
+                    </span>
+                  </div>
+                  {pass.includedClassIds && pass.includedClassIds.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {pass.includedClassIds.map((classId: string) => {
+                        const cls = allClasses.find(c => c.id === classId);
+                        return cls ? (
+                          <span key={classId} className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full border border-gray-200">
+                            {cls.title}
+                          </span>
+                        ) : null;
+                      })}
+                    </div>
+                  )}
                 </div>
-                <p className="text-[#a3abd7] text-sm font-black headline uppercase tracking-widest opacity-60">등록된 정기권이 없습니다</p>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-500">Monthly Price</span>
+                  </div>
+                  <span className="text-sm font-bold text-gray-900">{pass.currency === 'KRW' ? '₩' : pass.currency} {pass.amount.toLocaleString()}</span>
+                </div>
               </div>
-            ) : (
-              passes.map((pass) => (
-                <div 
-                  key={pass.id} 
-                  onClick={() => setEditingState({ type: 'monthly-pass', data: pass })}
-                  className="group/card cursor-pointer bg-white border border-[#efefff] rounded-[2.5rem] p-8 transition-all hover:border-[#f199f7] shadow-[0_4px_20px_-4px_rgba(36,44,81,0.02)] hover:shadow-[0_24px_48px_-12px_rgba(241,153,247,0.15)] active:scale-[0.99] relative overflow-hidden"
+              <div className="relative action-menu-container">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveMenuId(activeMenuId === pass.id ? null : pass.id);
+                  }}
+                  className="p-1 hover:bg-gray-100 rounded-full transition-colors text-gray-400"
                 >
-                  {/* Decorative Gradient Background */}
-                  <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-[#f199f7]/5 to-transparent rounded-full -mr-16 -mt-16 transition-transform duration-700 group-hover/card:scale-150" />
-                  
-                  <div className="relative z-10">
-                    <div className="flex items-center justify-between mb-8">
-                      <div className="flex items-center gap-5">
-                        <div className="w-14 h-14 bg-gradient-to-br from-[#f199f7] via-[#d66edc] to-[#b84ec0] text-white rounded-[1.25rem] flex items-center justify-center shadow-xl shadow-[#f199f7]/30 border border-white/20">
-                          <span className="material-symbols-outlined text-2xl font-black" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
-                        </div>
-                        <div>
-                          <h3 className="text-xl font-black text-[#242c51] headline tracking-tight group-hover/card:text-[#d66edc] transition-colors">{pass.title}</h3>
-                          <div className="flex items-center gap-2 mt-1">
-                             <span className="w-1.5 h-1.5 bg-[#d66edc] rounded-full" />
-                             <p className="text-[10px] font-black text-[#d66edc] uppercase tracking-widest opacity-80">30일 무제한 이용권</p>
-                          </div>
-                        </div>
-                      </div>
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete('pass', pass.id);
-                        }}
-                        className="w-12 h-12 flex items-center justify-center text-[#ff4b4b] hover:bg-[#ff4b4b]/5 rounded-[1rem] transition-all group/delete"
-                        disabled={loading}
-                      >
-                        <span className="material-symbols-outlined text-2xl group-hover/delete:scale-110 transition-transform">delete</span>
-                      </button>
-                    </div>
+                  <span className="material-symbols-outlined">more_vert</span>
+                </button>
+                {activeMenuId === pass.id && (
+                  <div className="absolute right-0 mt-1 w-32 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden z-20">
+                    <button onClick={() => handleEdit('monthly-pass', pass)} className="w-full px-4 py-2 text-left text-sm font-bold hover:bg-gray-50">Edit</button>
+                    <button onClick={() => handleDelete('pass', pass.id)} className="w-full px-4 py-2 text-left text-sm font-bold text-red-500 hover:bg-red-50">Delete</button>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
 
-                    <div className="flex items-end justify-between gap-6 pt-4 border-t border-[#efefff]/60">
-                      <div>
-                        <p className="text-[10px] font-black text-[#a3abd7] uppercase tracking-[0.2em] mb-1.5">이용 요금</p>
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-sm font-black text-[#5e106a] opacity-40">{pass.currency === 'KRW' ? '₩' : pass.currency}</span>
-                          <span className="text-3xl font-black text-[#5e106a] tracking-tighter">{pass.amount.toLocaleString()}</span>
-                        </div>
-                      </div>
-                      <div className="text-right flex-1 min-w-0">
-                        <p className="text-[12px] font-bold text-[#515981] opacity-60 leading-snug line-clamp-2 bg-[#f8faff] px-4 py-3 rounded-2xl border border-[#efefff]">
-                          {pass.description || "포함된 모든 수업에 대한 무제한 이용 권한을 제공합니다."}
-                        </p>
-                      </div>
-                    </div>
+          {/* Discounts */}
+          {filteredDiscounts.map((discount: ClassDiscount) => (
+            <div key={discount.id} className="bg-white rounded-[12px] shadow-sm hover:shadow-md transition-shadow border border-gray-100 p-5 flex items-start gap-4">
+              <div className="flex-grow">
+                <div className="flex justify-between items-start mb-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-rose-600 bg-rose-50 px-2 py-0.5 rounded">
+                      Bundle
+                    </span>
+                    <span className="text-xs font-bold text-gray-400">#D-{discount.id.slice(0, 4)}</span>
                   </div>
                 </div>
-              ))
-            )}
-          </div>
+                <h4 className="text-lg font-bold text-gray-900 leading-tight mb-2">{discount.title}</h4>
+                <div className="flex flex-col gap-1 text-sm text-gray-600 mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-gray-600">
+                      Includes {discount.includedClassIds?.length || 0} classes
+                    </span>
+                  </div>
+                  {discount.includedClassIds && discount.includedClassIds.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {discount.includedClassIds.map((classId: string) => {
+                        const cls = allClasses.find(c => c.id === classId);
+                        return cls ? (
+                          <span key={classId} className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full border border-gray-200">
+                            {cls.title}
+                          </span>
+                        ) : null;
+                      })}
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-500">Discounted Price</span>
+                  </div>
+                  <span className="text-sm font-bold text-[#0057bd]">{discount.currency === 'KRW' ? '₩' : discount.currency} {discount.amount.toLocaleString()}</span>
+                </div>
+              </div>
+              <div className="relative action-menu-container">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveMenuId(activeMenuId === discount.id ? null : discount.id);
+                  }}
+                  className="p-1 hover:bg-gray-100 rounded-full transition-colors text-gray-400"
+                >
+                  <span className="material-symbols-outlined">more_vert</span>
+                </button>
+                {activeMenuId === discount.id && (
+                  <div className="absolute right-0 mt-1 w-32 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden z-20">
+                    <button onClick={() => handleEdit('discount', discount)} className="w-full px-4 py-2 text-left text-sm font-bold hover:bg-gray-50">Edit</button>
+                    <button onClick={() => handleDelete('discount', discount.id)} className="w-full px-4 py-2 text-left text-sm font-bold text-red-500 hover:bg-red-50">Delete</button>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+
+          {/* Classes */}
+          {filteredClasses.map((cls) => (
+            <div key={cls.id} className="bg-white rounded-[12px] shadow-sm hover:shadow-md transition-shadow border border-gray-100 p-5 flex items-start gap-4">
+              <div className="flex-grow">
+                <div className="flex justify-between items-start mb-1">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${getLevelColor(cls.level)}`}>
+                      {cls.level || 'All Levels'}
+                    </span>
+                    <span className="text-xs font-bold text-gray-400">#C-{cls.id.slice(0, 4)}</span>
+                  </div>
+                </div>
+                <h4 className="text-lg font-bold text-gray-900 leading-tight mb-2">{cls.title}</h4>
+                <div className="flex flex-col gap-1 text-sm text-gray-600 mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-[#0057bd]">
+                      {cls.schedule?.length ? `${cls.schedule[0].date} plus ${cls.schedule.length - 1} sessions` : 'No sessions'}
+                    </span>
+                    <span className="ml-2 text-gray-600">{cls.schedule?.[0]?.timeSlot || ''}</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-500">Instructor:</span>
+                    <span className="text-sm font-semibold text-gray-800">{cls.instructors?.[0]?.name || 'TBD'}</span>
+                  </div>
+                  <span className="text-sm font-bold text-gray-900">{cls.currency === 'KRW' ? '₩' : cls.currency} {cls.amount.toLocaleString()}</span>
+                </div>
+              </div>
+              <div className="relative action-menu-container">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveMenuId(activeMenuId === cls.id ? null : cls.id);
+                  }}
+                  className="p-1 hover:bg-gray-100 rounded-full transition-colors text-gray-400"
+                >
+                  <span className="material-symbols-outlined">more_vert</span>
+                </button>
+                {activeMenuId === cls.id && (
+                  <div className="absolute right-0 mt-1 w-32 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden z-20">
+                    <button onClick={() => handleEdit('add-class', cls)} className="w-full px-4 py-2 text-left text-sm font-bold hover:bg-gray-50">Edit</button>
+                    <button onClick={() => handleDelete('class', cls.id)} className="w-full px-4 py-2 text-left text-sm font-bold text-red-500 hover:bg-red-50">Delete</button>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
         </section>
       </main>
 
       {/* Editors Overlay */}
-      <AnimatePresence>
+      <>
         {editingState?.type === "add-class" && (
-          <GroupClassAddEditor 
-            group={group} 
+          <GroupClassAddEditor
+            group={group}
             initialData={editingState.data}
-            onClose={() => setEditingState(null)} 
-            onSave={onSave} 
+            onClose={() => setEditingState(null)}
+            onSave={() => {
+              if (onSave) onSave();
+              else router.refresh();
+            }}
+            targetMonth={currentMonthStr}
           />
         )}
         {editingState?.type === "discount" && (
-          <GroupClassDiscountEditor 
-            group={group} 
+          <GroupClassDiscountEditor
+            group={group}
             initialData={editingState.data}
-            onClose={() => setEditingState(null)} 
-            onSave={onSave} 
+            onClose={() => setEditingState(null)}
+            onSave={() => {
+              if (onSave) onSave();
+              else router.refresh();
+            }}
+            targetMonth={currentMonthStr}
           />
         )}
         {editingState?.type === "monthly-pass" && (
-          <GroupClassMonthlyPassEditor 
-            group={group} 
+          <GroupClassMonthlyPassEditor
+            group={group}
             initialData={editingState.data}
-            onClose={() => setEditingState(null)} 
-            onSave={onSave} 
+            onClose={() => setEditingState(null)}
+            onSave={() => {
+              if (onSave) onSave();
+              else router.refresh();
+            }}
+            targetMonth={currentMonthStr}
           />
         )}
-      </AnimatePresence>
-    </motion.div>
+        {editingState?.type === "payment" && typeof document !== 'undefined' && createPortal(
+          <div className="fixed inset-0 z-[99999] bg-[#f7f9fb] text-[#191c1e] font-['Plus_Jakarta_Sans'] h-[100dvh] w-screen overflow-hidden flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <style dangerouslySetInnerHTML={{
+              __html: `
+              .glass-panel {
+                  background: rgba(255, 255, 255, 0.7);
+                  backdrop-filter: blur(16px);
+                  -webkit-backdrop-filter: blur(16px);
+                  border: 1px solid rgba(255, 255, 255, 0.3);
+                  border-top: 1px solid rgba(255, 255, 255, 0.8);
+                  border-left: 1px solid rgba(255, 255, 255, 0.8);
+                  box-shadow: 0 4px 30px rgba(0, 163, 255, 0.05);
+              }
+              .input-glass {
+                  background: rgba(255, 255, 255, 0.5);
+                  border: 1px solid rgba(0, 98, 157, 0.1);
+                  transition: all 0.3s ease;
+              }
+              .input-glass:focus {
+                  background: rgba(255, 255, 255, 0.9);
+                  border-color: #00A3FF;
+                  box-shadow: 0 0 0 4px rgba(0, 163, 255, 0.1);
+                  outline: none;
+              }
+              .toggle-checkbox:checked {
+                  right: 0;
+                  border-color: #00a3ff;
+              }
+              .toggle-checkbox:checked + .toggle-label {
+                  background-color: #00a3ff;
+              }
+            `}} />
+
+            {/* Ambient Background */}
+            <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+              <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-[#cfe5ff] opacity-30 blur-[100px]"></div>
+              <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-[#d6e3ff] opacity-40 blur-[120px]"></div>
+            </div>
+
+            <header className="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-6 h-16 bg-white/70 dark:bg-slate-900/70 backdrop-blur-lg border-b border-white/20 dark:border-slate-800 shadow-[0_4px_30px_rgba(0,163,255,0.1)]">
+              <button onClick={() => setEditingState(null)} className="w-10 h-10 flex items-center justify-center rounded-full text-slate-500 hover:bg-sky-50/50 active:scale-95 duration-200 transition-colors">
+                <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>close</span>
+              </button>
+              <h1 className="font-['Plus_Jakarta_Sans'] text-sm font-semibold tracking-tight text-slate-900 dark:text-white">Payment Management</h1>
+              <button onClick={async () => { await handleSavePaymentSettings(); setEditingState(null); }} disabled={savingPayment} className="text-[15px] leading-[1] font-semibold text-sky-500 dark:text-sky-400 hover:text-sky-600 active:scale-95 duration-200 transition-colors px-4 py-2 rounded-lg">
+                {savingPayment ? 'Saving...' : 'Save'}
+              </button>
+            </header>
+
+            <main className="flex-1 overflow-y-auto z-10 pt-20 pb-10 px-4 md:px-[24px] lg:px-[48px] max-w-3xl mx-auto w-full relative">
+              <div className="flex flex-col gap-[24px]">
+
+                {/* Bank Transfer Section */}
+                <section className="glass-panel rounded-xl p-6 relative overflow-hidden">
+                  <div className="flex items-center gap-3 mb-6 border-b border-[#bec7d4]/30 pb-4">
+                    <div className="w-10 h-10 rounded-full bg-[#cfe5ff]/30 flex items-center justify-center text-[#00a3ff]">
+                      <span className="material-symbols-outlined">account_balance</span>
+                    </div>
+                    <div>
+                      <h2 className="text-[24px] leading-[1.3] font-semibold text-[#191c1e]">Bank Transfer</h2>
+                      <p className="text-[14px] leading-[1.5] font-normal text-[#3f4852]">Domestic wire instructions.</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[12px] leading-[1] font-bold tracking-[0.05em] uppercase text-[#3f4852] ml-1">Bank Name</label>
+                      <input
+                        value={paymentSettings.bankDetails.bankName}
+                        onChange={(e) => setPaymentSettings(prev => ({ ...prev, bankDetails: { ...prev.bankDetails, bankName: e.target.value } }))}
+                        className="input-glass w-full rounded-lg h-[48px] px-4 text-[16px] leading-[1.5] font-normal text-[#191c1e] bg-transparent"
+                        placeholder="e.g. Chase Bank"
+                        type="text"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[12px] leading-[1] font-bold tracking-[0.05em] uppercase text-[#3f4852] ml-1">Account Holder Name</label>
+                      <input
+                        value={paymentSettings.bankDetails.accountHolder}
+                        onChange={(e) => setPaymentSettings(prev => ({ ...prev, bankDetails: { ...prev.bankDetails, accountHolder: e.target.value } }))}
+                        className="input-glass w-full rounded-lg h-[48px] px-4 text-[16px] leading-[1.5] font-normal text-[#191c1e] bg-transparent"
+                        placeholder="John Doe"
+                        type="text"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1 md:col-span-2">
+                      <label className="text-[12px] leading-[1] font-bold tracking-[0.05em] uppercase text-[#3f4852] ml-1">Account Number</label>
+                      <input
+                        value={paymentSettings.bankDetails.accountNumber}
+                        onChange={(e) => setPaymentSettings(prev => ({ ...prev, bankDetails: { ...prev.bankDetails, accountNumber: e.target.value } }))}
+                        className="input-glass w-full rounded-lg h-[48px] px-4 text-[16px] leading-[1.5] font-normal text-[#191c1e] bg-transparent"
+                        placeholder="0000 0000 0000"
+                        type="text"
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                {/* Card Payment Section */}
+                <section className="glass-panel rounded-xl p-6 relative overflow-hidden">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-[#bec7d4]/30 pb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-[#cfe5ff]/30 flex items-center justify-center text-[#00a3ff]">
+                        <span className="material-symbols-outlined">credit_card</span>
+                      </div>
+                      <div>
+                        <h2 className="text-[24px] leading-[1.3] font-semibold text-[#191c1e]">Card Payment</h2>
+                        <p className="text-[14px] leading-[1.5] font-normal text-[#3f4852]">Accept credit &amp; debit cards.</p>
+                      </div>
+                    </div>
+                    <div className="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+                      <input
+                        checked={paymentSettings.paymentMethods.creditCard}
+                        onChange={(e) => setPaymentSettings(prev => ({ ...prev, paymentMethods: { ...prev.paymentMethods, creditCard: e.target.checked } }))}
+                        className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-[#bec7d4] z-10 top-0 left-0 transition-transform duration-300 ease-in-out"
+                        id="card-toggle"
+                        name="toggle"
+                        type="checkbox"
+                      />
+                      <label className="toggle-label block overflow-hidden h-6 rounded-full bg-[#bec7d4] cursor-pointer transition-colors duration-300 ease-in-out" htmlFor="card-toggle"></label>
+                    </div>
+                  </div>
+                  <div className="bg-[#f2f4f6] rounded-lg p-4 border border-[#bec7d4]/20 flex flex-col gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[#00a3ff] text-[20px]">info</span>
+                      <span className="text-[14px] leading-[1.5] font-normal text-[#191c1e]">Currently processed via Stripe gateway.</span>
+                    </div>
+                    <div className="flex gap-2 mt-2">
+                      <span className="px-3 py-1 bg-white rounded-md border border-[#bec7d4]/30 text-[12px] leading-[1] font-bold tracking-[0.05em] uppercase text-[#3f4852] flex items-center justify-center shadow-sm">VISA</span>
+                      <span className="px-3 py-1 bg-white rounded-md border border-[#bec7d4]/30 text-[12px] leading-[1] font-bold tracking-[0.05em] uppercase text-[#3f4852] flex items-center justify-center shadow-sm">MASTERCARD</span>
+                      <span className="px-3 py-1 bg-white rounded-md border border-[#bec7d4]/30 text-[12px] leading-[1] font-bold tracking-[0.05em] uppercase text-[#3f4852] flex items-center justify-center shadow-sm">AMEX</span>
+                    </div>
+                  </div>
+                </section>
+
+                {/* International Payment Section */}
+                <section className="glass-panel rounded-xl p-6 relative overflow-hidden">
+                  <div className="flex items-center gap-3 mb-6 border-b border-[#bec7d4]/30 pb-4">
+                    <div className="w-10 h-10 rounded-full bg-[#cfe5ff]/30 flex items-center justify-center text-[#00a3ff]">
+                      <span className="material-symbols-outlined">public</span>
+                    </div>
+                    <div>
+                      <h2 className="text-[24px] leading-[1.3] font-semibold text-[#191c1e]">International Payment</h2>
+                      <p className="text-[14px] leading-[1.5] font-normal text-[#3f4852]">Powered by Wise.</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-4">
+                    <div className="bg-[#d6e3ff]/30 rounded-lg p-4 border border-[#98cbff]/30 flex items-start gap-3">
+                      <span className="material-symbols-outlined text-[#00a3ff] mt-0.5 text-[20px]">lightbulb</span>
+                      <p className="text-[14px] leading-[1.5] font-normal text-[#3f4852] leading-relaxed">
+                        For international students, we recommend using Wise for lower fees and better exchange rates. Provide your Wise ID below to receive funds directly.
+                      </p>
+                    </div>
+                    <div className="flex flex-col gap-1 mt-2">
+                      <label className="text-[12px] leading-[1] font-bold tracking-[0.05em] uppercase text-[#3f4852] ml-1">Wise ID / Email Address</label>
+                      <div className="relative">
+                        <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#6f7883]">alternate_email</span>
+                        <input
+                          value={paymentSettings.bankDetails.wiseId}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setPaymentSettings(prev => ({
+                              ...prev,
+                              bankDetails: { ...prev.bankDetails, wiseId: val },
+                              paymentMethods: { ...prev.paymentMethods, overseas: val.trim() !== "" }
+                            }));
+                          }}
+                          className="input-glass w-full rounded-lg h-[48px] pl-12 pr-4 text-[16px] leading-[1.5] font-normal text-[#191c1e] bg-transparent"
+                          placeholder="student@example.com"
+                          type="text"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+              </div>
+            </main>
+          </div>,
+          document.body
+        )}
+      </>
+    </div>
   );
 };
 
 export default GroupClassEditor;
+

@@ -97,7 +97,10 @@ export default function CommentBottomSheet({ post, isOpen, onClose, currentUser 
           />
           <div className="flex-1 min-w-0">
             <div className="flex justify-between items-start">
-              <h4 className="font-bold text-sm text-on-surface">{comment.userName}</h4>
+              <div className="flex items-baseline gap-1 flex-wrap">
+                <h4 className="font-bold text-sm text-on-surface">{comment.userName}</h4>
+                {comment.userNameNative && <span className="text-[11px] font-medium text-on-surface-variant leading-tight">{comment.userNameNative}</span>}
+              </div>
               <span className="text-[10px] text-on-surface-variant">{timeAgo}</span>
             </div>
             <p className="text-sm text-on-surface-variant mt-1 leading-relaxed">
@@ -146,7 +149,7 @@ export default function CommentBottomSheet({ post, isOpen, onClose, currentUser 
       {replyTo && (
         <div className="mb-2 px-3 py-1.5 bg-primary/5 rounded-lg flex justify-between items-center animate-in slide-in-from-bottom-2">
           <span className="text-[11px] text-primary font-medium">
-            <strong>{replyTo.userName}</strong>님에게 답글 남기는 중...
+            <strong>{replyTo.userName}{replyTo.userNameNative ? ` (${replyTo.userNameNative})` : ''}</strong>님에게 답글 남기는 중...
           </span>
           <button onClick={() => setReplyTo(null)} className="material-symbols-outlined text-sm text-on-surface-variant hover:text-on-surface transition-colors">close</button>
         </div>

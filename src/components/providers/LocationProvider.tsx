@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 export type SelectedLocation = {
   country: string;
@@ -8,12 +8,18 @@ export type SelectedLocation = {
   zone?: string;
 };
 
+type LocationCallback = ((country: string, city: string) => void) | null;
+
 interface LocationContextType {
   location: SelectedLocation;
   setLocation: (location: SelectedLocation) => void;
   isSelectorOpen: boolean;
   setIsSelectorOpen: (open: boolean) => void;
   toggleSelector: () => void;
+  // 콜백 모드: 등록폼 등에서 사용. 전역 location 변경 없이 콜백만 호출
+  openSelectorWithCallback: (cb: (country: string, city: string) => void) => void;
+  selectorCallback: LocationCallback;
+  clearSelectorCallback: () => void;
 }
 
 const LocationContext = createContext<LocationContextType | undefined>(undefined);
@@ -25,6 +31,7 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
     zone: 'CENTRAL',
   });
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
+  const [selectorCallback, setSelectorCallback] = useState<LocationCallback>(null);
 
   // Load from localStorage if available
   useEffect(() => {
@@ -45,6 +52,16 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
 
   const toggleSelector = () => setIsSelectorOpen(!isSelectorOpen);
 
+  // 콜백 모드로 selector 열기 (전역 location 변경 없음)
+  const openSelectorWithCallback = useCallback((cb: (country: string, city: string) => void) => {
+    setSelectorCallback(() => cb);
+    setIsSelectorOpen(true);
+  }, []);
+
+  const clearSelectorCallback = useCallback(() => {
+    setSelectorCallback(null);
+  }, []);
+
   return (
     <LocationContext.Provider 
       value={{ 
@@ -52,7 +69,10 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
         setLocation, 
         isSelectorOpen, 
         setIsSelectorOpen, 
-        toggleSelector 
+        toggleSelector,
+        openSelectorWithCallback,
+        selectorCallback,
+        clearSelectorCallback,
       }}
     >
       {children}

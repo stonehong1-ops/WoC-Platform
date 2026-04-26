@@ -6,7 +6,7 @@ import {
   User,
   signOut as firebaseSignOut
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, deleteDoc, onSnapshot, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteDoc, onSnapshot, Timestamp, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase/clientApp';
 
 interface UserProfile {
@@ -27,7 +27,9 @@ interface UserProfile {
   isServiceProvider?: boolean;
   role?: string;
   isAdmin?: boolean;
+  systemRole?: string;
   joinedGroups?: string[];
+  lastVisitedAt?: any;
 }
 
 interface AuthContextType {
@@ -120,6 +122,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.error('Migration link failed:', error);
         }
 
+        // Update last visited time
+        try {
+          await updateDoc(userDocRef, { lastVisitedAt: serverTimestamp() });
+        } catch (error) {
+          console.log('User document might not exist yet for lastVisitedAt update');
+        }
+
         // 실시간 프로필 감시 시작
         unsubscribeProfile = onSnapshot(userDocRef, (docSnap) => {
           if (docSnap.exists()) {
@@ -139,6 +148,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               isInstructor: data.isInstructor || false,
               isSeller: data.isSeller || false,
               isServiceProvider: data.isServiceProvider || false,
+              isAdmin: data.isAdmin || false,
+              systemRole: data.systemRole || '',
               joinedGroups: data.joinedGroups || [],
             });
           } else {
