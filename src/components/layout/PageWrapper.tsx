@@ -17,9 +17,10 @@ export default function PageWrapper({ children }: { children: React.ReactNode })
   const isLogin = pathname === '/login';
   const isSpace = pathname.startsWith('/group/');
   const isPlaza = pathname.startsWith('/plaza');
-  const isNation = pathname.startsWith('/class') || pathname.startsWith('/shop') || pathname.startsWith('/resell') || pathname.startsWith('/stay') || pathname.startsWith('/lost') || pathname.startsWith('/arcade');
+  const isExplore = pathname.startsWith('/explore');
+  const isNation = pathname.startsWith('/class') || pathname.startsWith('/shop') || pathname.startsWith('/resale') || pathname.startsWith('/stay') || pathname.startsWith('/lost') || pathname.startsWith('/arcade');
   
-  const isPublic = isLanding || isLogin || isGallery || isVenues || isEvents || isSocial || isPlaza || isNation;
+  const isPublic = isLanding || isLogin || isGallery || isVenues || isEvents || isSocial || isPlaza || isExplore || isNation;
 
   useEffect(() => {
     if (!loading && !isPublic && !isSpace && (!user || !profile?.isRegistered)) {
@@ -28,8 +29,8 @@ export default function PageWrapper({ children }: { children: React.ReactNode })
   }, [user, profile, loading, isPublic, isSpace, setShowLogin]);
 
   return (
-    <main className={(isLanding || isVenues || isSpace || isPlaza || isEvents || isNation) ? "" : "pt-16 pb-[60px]"}>
+    <>
       {children}
-    </main>
+    </>
   );
 }

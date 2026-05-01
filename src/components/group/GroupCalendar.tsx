@@ -107,7 +107,7 @@ const GroupCalendar: React.FC<GroupCalendarProps> = ({ group }) => {
   };
 
   const handleDeleteEvent = async (eventId: string) => {
-    if (!window.confirm("일정을 삭제하시겠습니까?")) return;
+    if (!window.confirm("Are you sure you want to delete this event?")) return;
     try {
       await groupService.deleteCalendarEvent(group.id, eventId);
     } catch (error) {

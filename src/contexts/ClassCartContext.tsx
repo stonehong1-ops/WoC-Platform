@@ -58,14 +58,14 @@ export const ClassCartProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setCart((prev) => {
       // If cart is empty, we can add it and set the group
       if (prev.items.length === 0) {
-        toast.success(`장바구니에 담겼습니다.`);
+        toast.success(`Added to cart.`);
         return { groupId, groupName, items: [item] };
       }
 
       // If cart has items, check if the group matches
       if (prev.groupId !== groupId) {
-        if (window.confirm("장바구니에는 동일한 클럽(그룹)의 클래스만 담을 수 있습니다. 기존 장바구니를 비우고 새로 담으시겠습니까?")) {
-          toast.success(`장바구니에 담겼습니다.`);
+        if (window.confirm("You can only add classes from the same group. Clear the current cart and add this item?")) {
+          toast.success(`Added to cart.`);
           return { groupId, groupName, items: [item] };
         }
         return prev;
@@ -73,11 +73,11 @@ export const ClassCartProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
       // Group matches, check if item already exists
       if (prev.items.some(i => i.itemId === item.itemId)) {
-        toast.info("이미 장바구니에 담겨있습니다.");
+        toast.info("This item is already in your cart.");
         return prev;
       }
 
-      toast.success(`장바구니에 담겼습니다.`);
+      toast.success(`Added to cart.`);
       return { ...prev, items: [...prev.items, item] };
     });
   };

@@ -2,10 +2,11 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useNavigation } from '@/components/providers/NavigationProvider';
 import { useAuth } from '@/components/providers/AuthProvider';
 import AppSettingsPopup from './AppSettingsPopup';
+import UserBadge from '../common/UserBadge';
 
 const LANGUAGES = [
   { code: 'en', name: 'English', native: 'English', active: true },
@@ -35,15 +36,18 @@ export default function NavigationDrawer() {
   };
 
   const displayName = profile?.nickname || user?.displayName || 'User';
-  const photoURL = profile?.photoURL || user?.photoURL || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop';
+  const nativeNickname = profile?.nativeNickname;
+  const photoURL = profile?.photoURL || user?.photoURL || null;
   
-  // Collect Roles
   const roles = [];
   if (profile?.isInstructor) roles.push('Instructor');
   if (profile?.isSeller) roles.push('Seller');
   if (profile?.isServiceProvider) roles.push('Service');
   if (!profile?.isRegistered) roles.push('Guest');
   else if (roles.length === 0) roles.push('Member');
+
+  const pathname = usePathname();
+  if (pathname === '/' || pathname === '/login') return null;
 
   return (
     <>
@@ -65,26 +69,31 @@ export default function NavigationDrawer() {
       >
         {/* Profile Header */}
         <div className="px-6 pt-12 pb-6 flex items-start gap-4">
-          <div className="relative shrink-0">
-            <div className="absolute -inset-1 bg-gradient-to-tr from-primary to-primary-container rounded-2xl blur opacity-15"></div>
-            <img 
-              src={photoURL} 
-              alt={displayName} 
-              className="relative h-14 w-14 rounded-2xl object-cover border-2 border-surface shadow-sm" 
-            />
-          </div>
-          <div className="flex flex-col pt-1">
-            <h2 className="text-on-surface font-extrabold text-xl tracking-tight leading-none mb-1.5 line-clamp-1">
-              {displayName}
-            </h2>
-            <div className="flex flex-wrap gap-1">
-              {roles.map(role => (
-                <span key={role} className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">
-                  {role}
-                </span>
-              ))}
-            </div>
-          </div>
+          <UserBadge
+            uid={profile?.uid || user?.uid || ''}
+            nickname={displayName}
+            nativeNickname={nativeNickname}
+            photoURL={photoURL}
+            avatarSize="h-14 w-14 border-2 border-surface shadow-sm"
+            nameClassName="text-on-surface font-extrabold text-xl tracking-tight leading-none mb-1 line-clamp-1 hover:text-primary transition-colors"
+            nativeClassName="text-on-surface-variant text-[12px] font-medium leading-none mb-1.5 block mt-1"
+            subText={
+              <div className="flex flex-wrap gap-1 mt-1">
+                {roles.map(role => (
+                  <span key={role} className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">
+                    {role}
+                  </span>
+                ))}
+              </div>
+            }
+            showEditIcon={true}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              closeDrawer();
+              router.push('/my-info');
+            }}
+          />
         </div>
 
         {/* Landing Page Link Section */}
@@ -102,15 +111,16 @@ export default function NavigationDrawer() {
         {/* Scrollable Navigation - Restored Structure */}
         <main className="flex-1 overflow-y-auto no-scrollbar px-3 py-6">
           
-          {/* Section: SOCIETY */}
+          {/* Section: TANGO WORLD */}
           <div className="mb-8">
-            <h2 className="px-5 mb-2 text-[9px] font-black tracking-[0.25em] text-on-surface/30 uppercase">SOCIETY</h2>
+            <h2 className="px-5 mb-2 text-[9px] font-black tracking-[0.25em] text-on-surface/30 uppercase">TANGO WORLD</h2>
             <div className="space-y-0.5">
               {[
                 { icon: 'home', label: 'Home', href: '/home' },
                 { icon: 'forum', label: 'Plaza', href: '/plaza' },
-                { icon: 'explore', label: 'Venues', href: '/venues' },
-                { icon: 'groups', label: 'Groups', href: '/groups' },
+                { icon: 'explore', label: 'Map', href: '/venues' },
+                { icon: 'storefront', label: 'Shop', href: '/shop' },
+                { icon: 'bed', label: 'Stay', href: '/stay' },
               ].map((item) => (
                 <Link 
                   key={item.label}
@@ -131,11 +141,10 @@ export default function NavigationDrawer() {
             <div className="space-y-0.5">
               {[
                 { icon: 'nightlife', label: 'Social', href: '/social' },
-                { icon: 'school', label: 'Class', href: '/class' },
+                { icon: 'photo_library', label: 'Gallery', href: '/gallery' },
                 { icon: 'event', label: 'Events', href: '/events' },
-                { icon: 'storefront', label: 'Shop', href: '/shop' },
-                { icon: 'bed', label: 'Stay', href: '/stay' },
-                { icon: 'medical_services', label: 'Service', href: '/service' },
+                { icon: 'school', label: 'Class', href: '/class' },
+                { icon: 'groups', label: 'Group', href: '/groups' },
               ].map((item) => (
                 <Link 
                   key={item.label}
@@ -156,7 +165,8 @@ export default function NavigationDrawer() {
             <div className="space-y-0.5">
               {[
                 { icon: 'shopping_bag', label: 'Resale', href: '/resale' },
-                { icon: 'find_in_page', label: 'Lost & Found', href: '/lost' },
+                { icon: 'handshake', label: 'Rental', href: '/rental' },
+                { icon: 'find_in_page', label: 'Lost', href: '/lost-found' },
                 { icon: 'videogame_asset', label: 'Arcade', href: '/arcade' },
               ].map((item) => (
                 <Link 
@@ -171,6 +181,53 @@ export default function NavigationDrawer() {
               ))}
             </div>
           </div>
+
+          {/* Section: MY */}
+          <div className="mb-8">
+            <h2 className="px-5 mb-2 text-[9px] font-black tracking-[0.25em] text-on-surface/30 uppercase">MY</h2>
+            <div className="space-y-0.5">
+              {[
+                { icon: 'manage_accounts', label: 'My Info', href: '/my-info' },
+                { icon: 'account_balance_wallet', label: 'Wallet', href: '/wallet' },
+                { icon: 'history', label: 'History', href: '/history' },
+              ].map((item) => (
+                <Link 
+                  key={item.label}
+                  href={item.href}
+                  onClick={closeDrawer}
+                  className="flex items-center gap-4 px-5 py-3 text-on-surface/60 hover:bg-on-surface/[0.03] hover:text-on-surface rounded-2xl font-bold transition-all text-left"
+                >
+                  <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
+                  <span className="text-[15px] tracking-tight">{item.label}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Section: ADMIN */}
+          {profile?.isAdmin && (
+            <div className="mb-8">
+              <h2 className="px-5 mb-2 text-[9px] font-black tracking-[0.25em] text-error/80 uppercase">ADMIN</h2>
+              <div className="space-y-0.5">
+                {[
+                  { icon: 'person_search', label: 'People', href: '/admin/people' },
+                  { icon: 'location_city', label: 'Place', href: '/admin/place' },
+                  { icon: 'checklist', label: 'Todo', href: '/admin/todo' },
+                  { icon: 'more_horiz', label: 'Others', href: '/admin/others' },
+                ].map((item) => (
+                  <Link 
+                    key={item.label}
+                    href={item.href}
+                    onClick={closeDrawer}
+                    className="flex items-center gap-4 px-5 py-3 text-error/80 hover:bg-error/10 hover:text-error rounded-2xl font-bold transition-all text-left"
+                  >
+                    <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
+                    <span className="text-[15px] tracking-tight">{item.label}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Section: SUPPORT */}
           <div className="mb-6">

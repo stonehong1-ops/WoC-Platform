@@ -2,7 +2,9 @@ import { db } from './clientApp';
 import { 
   collection, 
   addDoc, 
-  Timestamp 
+  Timestamp,
+  doc,
+  getDoc
 } from 'firebase/firestore';
 import { Notification } from '@/types/notification';
 
@@ -38,6 +40,34 @@ export const notificationService = {
       ...notificationData,
       createdAt: Timestamp.now() // Use Firestore Timestamp for the actual DB field
     });
+
+    // FCM 푸시 발송 로직 추가
+    try {
+      const userDoc = await getDoc(doc(db, 'users', targetUserId));
+      const userData = userDoc.data();
+      const tokens = userData?.fcmTokens;
+
+      if (tokens && Array.isArray(tokens) && tokens.length > 0) {
+        await fetch('/api/notifications', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            tokens: tokens,
+            title: '새로운 그룹 초대',
+            message: message,
+            data: {
+              type: 'GROUP_INVITE',
+              groupId: groupId
+            }
+          })
+        });
+      }
+    } catch (pushError) {
+      console.error('FCM 푸시 알림 발송 실패:', pushError);
+      // DB 저장 자체는 실패하지 않도록 catch에서 로깅만 함
+    }
 
     return docRef.id;
   }

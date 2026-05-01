@@ -8,6 +8,7 @@ import { UserProfile } from '@/types/user';
 import { db } from '@/lib/firebase/clientApp';
 import { doc, updateDoc, deleteDoc, collection, query, onSnapshot, orderBy } from 'firebase/firestore';
 import { format, formatDistanceToNow } from 'date-fns';
+import UserBadge from '@/components/common/UserBadge';
 import { ko } from 'date-fns/locale';
 import GroupInvitationModal from './GroupInvitationModal';
 
@@ -111,12 +112,12 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
       }));
     } catch (error) {
       console.error("Error updating user:", error);
-      alert("변경 중 오류가 발생했습니다.");
+      alert("An error occurred while updating.");
     }
   };
 
   const deleteMember = async (userId: string) => {
-    if (!window.confirm("정말로 이 멤버를 커뮤니티에서 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) {
+    if (!window.confirm("Are you sure you want to remove this member from the community? This action cannot be undone.")) {
       return;
     }
 
@@ -124,10 +125,10 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
       const memberRef = doc(db, 'groups', group.id, 'members', userId);
       await deleteDoc(memberRef);
       setMembers(prev => prev.filter(m => m.id !== userId));
-      alert("멤버가 삭제되었습니다.");
+      alert("Member has been removed.");
     } catch (error) {
       console.error("Error deleting member:", error);
-      alert("삭제 중 오류가 발생했습니다.");
+      alert("An error occurred while removing the member.");
     }
   };
 
@@ -150,7 +151,7 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
   };
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-    e.currentTarget.src = '/anonymous-user.png';
+    e.currentTarget.style.display = 'none';
   };
 
   const getMillis = (date: any) => {
@@ -262,23 +263,16 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
       <div key={member.id} className="bg-white p-6 rounded-xl shadow-[0_4px_20px_-4px_rgba(36,44,81,0.08)] border border-white hover:shadow-md transition-shadow">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-[#6e9fff] bg-[#e4e7ff] flex-shrink-0">
-              {user.photoURL ? (
-                <img 
-                  className="w-full h-full object-cover" 
-                  src={user.photoURL} 
-                  alt={user.nickname}
-                  onError={handleImageError}
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-[#515981]">
-                  <span className="material-symbols-outlined text-2xl">person</span>
-                </div>
-              )}
-            </div>
+            <UserBadge
+              uid={user.id}
+              nickname={user.nickname}
+              nativeNickname={user.nativeNickname}
+              photoURL={user.photoURL}
+              avatarSize="w-14 h-14"
+              nameClassName="font-bold text-[#242c51] leading-tight"
+              nativeClassName="text-[11px] text-[#515981] font-medium ml-1.5"
+            />
             <div>
-              <h3 className="font-bold text-[#242c51] leading-tight">{user.nickname}</h3>
-              {user.nativeNickname && <span className="text-[11px] text-[#515981] font-medium">{user.nativeNickname}</span>}
               <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                 {user.isAdmin && (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-red-100 text-red-700">
@@ -412,7 +406,9 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
   const renderStaffCard = (member: MemberWithProfile) => {
     const isEnglish = (str: string) => /^[a-zA-Z0-9\s._-]+$/.test(str);
     let primaryNickname = member.profile?.nickname || member.name || member.nickname || 'Unknown';
+    let secondaryNickname = member.profile?.nativeNickname || '';
     if (primaryNickname && !isEnglish(primaryNickname)) {
+      if (!secondaryNickname) secondaryNickname = primaryNickname;
       primaryNickname = member.id.substring(0, 8);
     }
     const photoURL = member.profile?.photoURL || member.photoURL || member.avatar;
@@ -428,19 +424,16 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
     return (
       <div key={member.id} className="bg-white rounded-xl p-6 shadow-sm border border-slate-100 flex flex-col gap-6 hover:shadow-md transition-shadow">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full overflow-hidden bg-[#e4e7ff] flex-shrink-0">
-            {photoURL ? (
-              <img className="w-full h-full object-cover" src={photoURL} alt={primaryNickname} onError={handleImageError} />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-[#515981]">
-                <span className="material-symbols-outlined text-2xl">person</span>
-              </div>
-            )}
-          </div>
-          <div>
-            <h3 className="font-bold text-slate-900">{primaryNickname}</h3>
-            {email && <p className="text-sm text-slate-500">{email}</p>}
-          </div>
+          <UserBadge
+            uid={member.id}
+            nickname={primaryNickname}
+            nativeNickname={secondaryNickname}
+            photoURL={photoURL}
+            avatarSize="w-14 h-14"
+            nameClassName="font-bold text-slate-900"
+            nativeClassName="text-xs font-medium text-slate-500 ml-1.5"
+            subText={email ? <p className="text-sm text-slate-500">{email}</p> : undefined}
+          />
         </div>
         <div className="space-y-4 pt-4 border-t border-slate-50">
           {permissionItems.map((perm) => (

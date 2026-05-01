@@ -28,7 +28,7 @@ export default function FeedComposer({ onPost, currentUser, placeholder }: FeedC
       setImages(prev => [...prev, ...urls]);
     } catch (error) {
       console.error("Image upload failed:", error);
-      alert("이미지 업로드에 실패했습니다.");
+      alert("Failed to upload image.");
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -49,7 +49,7 @@ export default function FeedComposer({ onPost, currentUser, placeholder }: FeedC
       setImages([]);
     } catch (error) {
       console.error("Posting failed:", error);
-      alert("게시글 작성에 실패했습니다.");
+      alert("Failed to create post.");
     } finally {
       setIsPosting(false);
     }
@@ -57,11 +57,13 @@ export default function FeedComposer({ onPost, currentUser, placeholder }: FeedC
 
   return (
     <section className="bg-surface-container-lowest rounded-xl shadow-sm p-4 sm:p-6 flex gap-4 items-start border border-outline-variant/10 mb-8">
-      <img 
-        alt={currentUser?.displayName || "User"} 
-        className="w-12 h-12 rounded-full object-cover shrink-0 border border-outline-variant/10" 
-        src={currentUser?.photoURL || "https://lh3.googleusercontent.com/a/default-user"} 
-      />
+      <div className="w-12 h-12 rounded-full shrink-0 bg-surface-container-low border border-outline-variant/10 overflow-hidden flex items-center justify-center">
+        {currentUser?.photoURL ? (
+          <img alt={currentUser?.displayName || "User"} className="w-full h-full object-cover" src={currentUser.photoURL} />
+        ) : (
+          <span className="material-symbols-outlined text-on-surface-variant" style={{ fontSize: '28px', fontVariationSettings: "'FILL' 1" }}>account_circle</span>
+        )}
+      </div>
       <div className="flex-1 flex flex-col gap-3">
         <textarea 
           className="w-full bg-surface resize-none rounded-lg p-3 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/20 border-none placeholder-on-surface-variant/50 transition-all min-h-[100px]" 

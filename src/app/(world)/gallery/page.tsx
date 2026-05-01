@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { galleryService, GalleryPost, GalleryComment } from '@/lib/firebase/galleryService';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { safeDate } from '@/lib/utils/safeData';
 
 // Helper to determine if a URL is a video
 const isVideoUrl = (url: string) => {
@@ -85,7 +86,7 @@ const GalleryPage = () => {
       {/* Floating Create Button */}
       <Link 
         href="/gallery/create" 
-        className="fixed bottom-24 right-6 w-14 h-14 rounded-full bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/30 z-40 hover:scale-105 active:scale-95 transition-transform"
+        className="fixed bottom-28 right-6 w-14 h-14 rounded-full bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/30 z-40 hover:scale-105 active:scale-95 transition-transform"
       >
         <Plus size={28} />
       </Link>
@@ -157,7 +158,7 @@ const GalleryCard = ({
 
   const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!user) return alert('로그인이 필요합니다.');
+    if (!user) return alert('Please sign in first.');
     const newIsLiked = !isLiked;
     await galleryService.toggleLike(post.id, user.uid, isLiked);
   };
@@ -165,7 +166,7 @@ const GalleryCard = ({
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!user || user.uid !== post.authorId) return;
-    if (confirm('정말로 이 게시물을 삭제하시겠습니까?')) {
+    if (confirm('Are you sure you want to delete this post?')) {
       await galleryService.deletePost(post.id);
     }
   };
@@ -182,7 +183,8 @@ const GalleryCard = ({
 
   const formatTime = (timestamp: any) => {
     if (!timestamp) return '';
-    const date = timestamp.toDate();
+    const date = safeDate(timestamp);
+    if (!date) return '';
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const mins = Math.floor(diff / 60000);
@@ -342,7 +344,7 @@ const CommentBottomSheet = ({ postId, onClose }: { postId: string, onClose: () =
   }, [postId]);
 
   const handleSubmit = async () => {
-    if (!user) return alert('로그인이 필요합니다.');
+    if (!user) return alert('Please sign in first.');
     if (!inputText.trim()) return;
 
     await galleryService.addComment(postId, {
@@ -373,39 +375,39 @@ const CommentBottomSheet = ({ postId, onClose }: { postId: string, onClose: () =
         className="relative w-full max-w-xl h-[70vh] bg-white rounded-t-[2rem] flex flex-col overflow-hidden shadow-2xl"
       >
         <div className="w-full flex justify-center pt-3 pb-2 shrink-0">
-          <div className="w-12 h-1.5 bg-gray-300 rounded-full"></div>
+          <div className="w-12 h-1.5 bg-outline-variant rounded-full"></div>
         </div>
         
-        <div className="px-6 pb-4 border-b border-gray-100 flex justify-between items-center shrink-0">
+        <div className="px-6 pb-4 border-b border-outline-variant flex justify-between items-center shrink-0">
           <h2 className="text-lg font-extrabold text-on-surface font-headline">{comments.length} Comments</h2>
-          <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100 transition-colors">
-            <X size={20} className="text-gray-500" />
+          <button onClick={onClose} className="p-2 rounded-full hover:bg-surface-container transition-colors">
+            <X size={20} className="text-on-surface-variant" />
           </button>
         </div>
         
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {comments.map((comment) => (
             <div key={comment.id} className="flex gap-4">
-              <img src={comment.authorPhoto || '/default-avatar.png'} alt="" className="w-10 h-10 rounded-full object-cover border border-gray-100 shrink-0" />
+              <img src={comment.authorPhoto || '/default-avatar.png'} alt="" className="w-10 h-10 rounded-full object-cover border border-outline-variant shrink-0" />
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="font-bold text-sm text-gray-900">{comment.authorName}</span>
-                  <span className="text-xs text-gray-400 font-medium">
+                  <span className="font-bold text-sm text-on-surface">{comment.authorName}</span>
+                  <span className="text-xs text-on-surface-variant font-medium">
                     {comment.createdAt ? 'just now' : ''}
                   </span>
                 </div>
-                <p className="text-sm text-gray-700 leading-relaxed">{comment.text}</p>
-                <div className="flex gap-4 mt-2 text-xs font-bold text-gray-400">
-                  <button className="hover:text-gray-600 transition-colors">Reply</button>
+                <p className="text-sm text-on-surface leading-relaxed">{comment.text}</p>
+                <div className="flex gap-4 mt-2 text-xs font-bold text-on-surface-variant">
+                  <button className="hover:text-on-surface transition-colors">Reply</button>
                 </div>
               </div>
-              <button className="text-gray-300 hover:text-red-500 transition-colors shrink-0 pt-2">
+              <button className="text-outline hover:text-error transition-colors shrink-0 pt-2">
                 <Heart size={16} />
               </button>
             </div>
           ))}
           {comments.length === 0 && (
-            <div className="py-20 flex flex-col items-center justify-center text-gray-400">
+            <div className="py-20 flex flex-col items-center justify-center text-on-surface-variant">
               <MessageCircle size={40} className="mb-4 opacity-20" />
               <p className="font-medium">No comments yet.</p>
               <p className="text-sm opacity-80">Start the conversation.</p>
@@ -413,19 +415,19 @@ const CommentBottomSheet = ({ postId, onClose }: { postId: string, onClose: () =
           )}
         </div>
 
-        <div className="p-4 border-t border-gray-100 bg-gray-50 shrink-0 mb-safe">
-          <div className="flex items-center gap-3 bg-white p-2 rounded-full border border-gray-200 shadow-sm focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+        <div className="p-4 border-t border-outline-variant bg-surface shrink-0 mb-safe">
+          <div className="flex items-center gap-3 bg-surface-container-lowest p-2 rounded-full border border-outline shadow-sm focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all">
             <img src={user?.photoURL || '/default-avatar.png'} alt="" className="w-8 h-8 rounded-full ml-1 object-cover" />
             <input 
               type="text" 
-              className="flex-1 bg-transparent border-none text-sm focus:outline-none px-2" 
+              className="flex-1 bg-transparent border-none text-sm focus:outline-none px-2 text-on-surface" 
               placeholder="Add a comment..." 
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
             />
             <button 
-              className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center disabled:opacity-50 disabled:bg-gray-300 transition-all shrink-0" 
+              className="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center disabled:opacity-50 disabled:bg-outline-variant transition-all shrink-0" 
               onClick={handleSubmit}
               disabled={!inputText.trim()}
             >

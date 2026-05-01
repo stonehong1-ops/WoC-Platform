@@ -57,11 +57,11 @@ const GroupInvitationModal = ({ isOpen, onClose, group, currentUser }: GroupInvi
         groupName: group.name
       });
       
-      alert(`${selectedUser.nickname}님께 초대장을 보냈습니다.`);
+      alert(`Invitation sent to ${selectedUser.nickname}.`);
       onClose();
     } catch (error) {
       console.error('Invitation failed:', error);
-      alert('초대장 발송에 실패했습니다.');
+      alert('Failed to send invitation.');
     } finally {
       setIsSending(false);
     }
@@ -122,13 +122,22 @@ const GroupInvitationModal = ({ isOpen, onClose, group, currentUser }: GroupInvi
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <img 
-                      src={user.photoURL || '/anonymous-user.png'} 
-                      alt={user.nickname} 
-                      className="w-10 h-10 rounded-full object-cover bg-slate-100"
-                    />
+                    {user.photoURL ? (
+                      <img 
+                        src={user.photoURL} 
+                        alt={user.nickname} 
+                        className="w-10 h-10 rounded-full object-cover bg-slate-100"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
+                        <span className="material-symbols-outlined text-slate-400">person</span>
+                      </div>
+                    )}
                     <div>
-                      <p className="font-bold text-[#242c51] text-sm">{user.nickname}</p>
+                      <div className="flex items-baseline gap-1">
+                        <p className="font-bold text-[#242c51] text-sm">{user.nickname}</p>
+                        {user.nativeNickname && <span className="text-xs font-medium text-slate-500">({user.nativeNickname})</span>}
+                      </div>
                       <p className="text-xs text-slate-500">{user.email || 'No email'}</p>
                     </div>
                   </div>

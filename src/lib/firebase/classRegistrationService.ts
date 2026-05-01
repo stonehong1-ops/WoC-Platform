@@ -32,12 +32,17 @@ export const classRegistrationService = {
   addRegistration: async (data: Omit<ClassRegistration, 'id' | 'appliedAt' | 'updatedAt'>) => {
     try {
       const regRef = doc(collection(db, COLLECTION_NAME));
-      const registration = cleanData({
-        ...data,
+      
+      // Clean undefined/null from data first
+      const cleanedData = cleanData(data);
+      
+      // Add system fields directly so FieldValue prototypes aren't stripped
+      const registration = {
+        ...cleanedData,
         id: regRef.id,
         appliedAt: serverTimestamp(),
         updatedAt: serverTimestamp()
-      });
+      };
       
       await setDoc(regRef, registration);
       return registration as ClassRegistration;
@@ -66,8 +71,7 @@ export const classRegistrationService = {
     try {
       const q = query(
         collection(db, COLLECTION_NAME),
-        where("groupId", "==", groupId),
-        orderBy("appliedAt", "desc")
+        where("groupId", "==", groupId)
       );
       const snapshot = await getDocs(q);
       return snapshot.docs.map(doc => doc.data() as ClassRegistration);
@@ -82,8 +86,7 @@ export const classRegistrationService = {
     try {
       const q = query(
         collection(db, COLLECTION_NAME),
-        where("userId", "==", userId),
-        orderBy("appliedAt", "desc")
+        where("userId", "==", userId)
       );
       const snapshot = await getDocs(q);
       return snapshot.docs.map(doc => doc.data() as ClassRegistration);
@@ -97,8 +100,7 @@ export const classRegistrationService = {
   subscribeToGroupRegistrations: (groupId: string, callback: (registrations: ClassRegistration[]) => void) => {
     const q = query(
       collection(db, COLLECTION_NAME),
-      where("groupId", "==", groupId),
-      orderBy("appliedAt", "desc")
+      where("groupId", "==", groupId)
     );
     
     return onSnapshot(q, (snapshot) => {
@@ -112,8 +114,7 @@ export const classRegistrationService = {
   subscribeToUserRegistrations: (userId: string, callback: (registrations: ClassRegistration[]) => void) => {
     const q = query(
       collection(db, COLLECTION_NAME),
-      where("userId", "==", userId),
-      orderBy("appliedAt", "desc")
+      where("userId", "==", userId)
     );
     
     return onSnapshot(q, (snapshot) => {
@@ -127,8 +128,7 @@ export const classRegistrationService = {
   subscribeToPhoneRegistrations: (phoneNumber: string, callback: (registrations: ClassRegistration[]) => void) => {
     const q = query(
       collection(db, COLLECTION_NAME),
-      where("contactNumber", "==", phoneNumber),
-      orderBy("appliedAt", "desc")
+      where("contactNumber", "==", phoneNumber)
     );
     
     return onSnapshot(q, (snapshot) => {
@@ -137,5 +137,14 @@ export const classRegistrationService = {
     }, (error) => {
       console.error("Error subscribing to phone registrations:", error);
     });
+  },
+
+  deleteRegistration: async (id: string): Promise<void> => {
+    try {
+      await deleteDoc(doc(db, COLLECTION_NAME, id));
+    } catch (error) {
+      console.error("Error deleting registration:", error);
+      throw error;
+    }
   }
 };

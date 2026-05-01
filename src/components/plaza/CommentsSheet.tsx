@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { plazaService } from '@/lib/firebase/plazaService';
 import { useAuth } from '@/components/providers/AuthProvider';
-
+import { useHistoryBack } from '@/hooks/useHistoryBack';
+import UserBadge from '../common/UserBadge';
+import UserAvatar from '../common/UserAvatar';
 interface Comment {
   id: string;
   userId: string;
@@ -20,6 +22,7 @@ interface CommentsSheetProps {
 
 export default function CommentsSheet({ postId, isOpen, onClose }: CommentsSheetProps) {
   const { user } = useAuth();
+  const { handleClose } = useHistoryBack(isOpen, onClose);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
@@ -73,9 +76,9 @@ export default function CommentsSheet({ postId, isOpen, onClose }: CommentsSheet
 
   return (
     <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] animate-in fade-in duration-200" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] animate-in fade-in duration-200" onClick={handleClose} />
       
-      <div className="relative w-full max-w-xl bg-white rounded-t-[32px] sm:rounded-[32px] shadow-2xl h-[80vh] flex flex-col animate-in slide-in-from-bottom duration-300">
+      <div className="relative w-full max-w-xl bg-surface rounded-t-[32px] sm:rounded-[32px] shadow-2xl h-[80vh] flex flex-col animate-in slide-in-from-bottom duration-300">
         {/* Header Indicator for Mobile */}
         <div className="w-full flex justify-center pt-3 pb-1 sm:hidden">
           <div className="w-10 h-1 bg-gray-200 rounded-full" />
@@ -87,7 +90,7 @@ export default function CommentsSheet({ postId, isOpen, onClose }: CommentsSheet
             <span className="font-label text-[9px] font-black text-primary tracking-[0.25em] uppercase mb-1">Discussions</span>
             <h3 className="text-[18px] font-black font-display text-gray-900 uppercase">Comments</h3>
           </div>
-          <button onClick={onClose} className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-50 text-gray-400 hover:bg-gray-100 transition-colors">
+          <button onClick={handleClose} className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-50 text-gray-400 hover:bg-gray-100 transition-colors">
             <span className="material-symbols-outlined text-[20px]">close</span>
           </button>
         </div>
@@ -98,10 +101,16 @@ export default function CommentsSheet({ postId, isOpen, onClose }: CommentsSheet
             <div key={comment.id} className="space-y-4">
               {/* Main Comment */}
               <div className="flex gap-3">
-                <img src={comment.userPhoto || 'https://lh3.googleusercontent.com/a/default-user'} className="w-8 h-8 rounded-full flex-shrink-0 object-cover bg-gray-100" alt="" />
-                <div className="flex-1">
+                <UserBadge 
+                  uid={comment.userId}
+                  nickname={comment.userName}
+                  photoURL={comment.userPhoto}
+                  avatarSize="w-8 h-8 shrink-0"
+                  nameClassName="font-bold text-[13px] text-gray-900"
+                  nativeClassName="text-[10px] font-medium text-gray-500 ml-1.5"
+                />
+                <div className="flex-1 mt-1">
                   <div className="flex items-baseline gap-2 mb-1">
-                    <span className="font-bold text-[13px] text-gray-900">{comment.userName}</span>
                     <span className="text-[9px] font-bold text-gray-300 uppercase tracking-widest">Just now</span>
                   </div>
                   <p className="text-[13px] text-gray-700 leading-relaxed mb-2">{comment.content}</p>
@@ -120,10 +129,16 @@ export default function CommentsSheet({ postId, isOpen, onClose }: CommentsSheet
               {/* Replies (Nested) */}
               {getReplies(comment.id).map(reply => (
                 <div key={reply.id} className="flex gap-3 ml-11 border-l-2 border-gray-50 pl-4">
-                  <img src={reply.userPhoto || 'https://lh3.googleusercontent.com/a/default-user'} className="w-6 h-6 rounded-full flex-shrink-0 object-cover bg-gray-100" alt="" />
-                  <div className="flex-1">
+                  <UserBadge 
+                    uid={reply.userId}
+                    nickname={reply.userName}
+                    photoURL={reply.userPhoto}
+                    avatarSize="w-6 h-6 shrink-0"
+                    nameClassName="font-bold text-[12px] text-gray-900"
+                    nativeClassName="text-[10px] font-medium text-gray-500 ml-1"
+                  />
+                  <div className="flex-1 mt-1">
                     <div className="flex items-baseline gap-2 mb-1">
-                      <span className="font-bold text-[12px] text-gray-900">{reply.userName}</span>
                       <span className="text-[9px] font-bold text-gray-300 uppercase tracking-widest">Just now</span>
                     </div>
                     <p className="text-[12px] text-gray-700 leading-relaxed">{reply.content}</p>
@@ -142,7 +157,7 @@ export default function CommentsSheet({ postId, isOpen, onClose }: CommentsSheet
         </div>
 
         {/* Input Bar */}
-        <div className="p-4 border-t border-gray-50 bg-white sticky bottom-0">
+        <div className="p-4 border-t border-gray-50 bg-surface sticky bottom-0">
           {replyTo && (
             <div className="px-4 py-2 bg-primary/[0.03] flex items-center justify-between mb-2 rounded-xl">
               <span className="text-[10px] font-bold text-primary italic">Replying to @{replyTo.userName}</span>
@@ -150,9 +165,10 @@ export default function CommentsSheet({ postId, isOpen, onClose }: CommentsSheet
             </div>
           )}
           <form onSubmit={handleSubmit} className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
-              <img src={user?.photoURL || 'https://lh3.googleusercontent.com/a/default-user'} alt="" className="w-full h-full object-cover" />
-            </div>
+            <UserAvatar 
+              photoURL={user?.photoURL} 
+              className="w-8 h-8 shrink-0" 
+            />
             <input 
               ref={inputRef}
               type="text" 

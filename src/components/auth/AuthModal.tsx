@@ -70,7 +70,7 @@ export default function AuthModal() {
         localStorage.removeItem('woc_context');
         router.push(lastContext);
       } else {
-        router.push('/home');
+        router.push('/social');
       }
     }
   }, [user, profile, showLogin, setShowLogin, router]);
@@ -180,7 +180,7 @@ export default function AuthModal() {
       } else {
         // Already registered user
         setShowLogin(false);
-        router.push('/home');
+        router.push('/social');
       }
     } catch (error: any) {
       console.error("Verification failed:", error);
@@ -398,7 +398,7 @@ export default function AuthModal() {
                   </label>
                   <input 
                     value={details.nickname}
-                    onChange={(e) => setDetails({...details, nickname: e.target.value})}
+                    onChange={(e) => setDetails({...details, nickname: e.target.value.replace(/[^a-zA-Z0-9_.\-\s]/g, '')})}
                     className="w-full h-14 px-4 bg-gray-50 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all" 
                     placeholder="e.g. Alex" 
                     type="text"

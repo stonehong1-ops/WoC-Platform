@@ -33,7 +33,12 @@ export default function ClassMenuPage() {
           g.name.toLowerCase().includes('studio') ||
           g.name.toLowerCase().includes('academy') ||
           g.name.toLowerCase().includes('tango')
-        );
+        ).map(g => {
+          if (g.name.toLowerCase().includes('freestyle tango')) {
+            return { ...g, name: 'Freestyle Tango', nativeName: '프리스타일' };
+          }
+          return g;
+        });
         setGroups(classGroups);
 
         // Fetch subcollection counts in parallel for all groups
@@ -63,11 +68,6 @@ export default function ClassMenuPage() {
 
   const safeSearch = searchQuery.toLowerCase();
   const dropdownGroups = groups.filter(g => {
-    // Force inject nativeName for freestyle tango
-    if (g.name === 'freestyle tango' && !g.nativeName) {
-      g.nativeName = '프리스타일';
-    }
-
     const matchEng = g.name ? g.name.toLowerCase().includes(safeSearch) : false;
     const matchKor = g.nativeName ? g.nativeName.toLowerCase().includes(safeSearch) : false;
     return matchEng || matchKor;
@@ -104,65 +104,10 @@ export default function ClassMenuPage() {
   };
 
   return (
-    <main className="max-w-md mx-auto min-h-screen pb-24 px-5 pt-24 space-y-8">
-      {/* Header */}
-      <header className="space-y-4 relative z-50">
-        <h1 className="font-headline font-extrabold text-2xl text-on-surface">Class Summary</h1>
-        
-        {/* Exact Venue Selection UI */}
-        <div className="relative z-40">
-          <label className="block text-[10px] font-bold text-on-surface-variant mb-2 uppercase tracking-widest opacity-70">Group Selection</label>
-          <div className="relative group">
-            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/40">location_on</span>
-            <input 
-              className="w-full pl-12 pr-4 py-3 bg-surface-variant/30 border border-outline/30 rounded-lg text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary placeholder:text-on-surface-variant/40 outline-none transition-all text-sm" 
-              placeholder="Search venues... (영문 또는 한글)" 
-              type="text"
-              value={searchQuery}
-              onChange={handleSearchChange}
-              onFocus={() => { if (searchQuery.length >= 1) setShowSearchResults(true); }}
-              onBlur={() => setTimeout(() => setShowSearchResults(false), 200)}
-            />
-          </div>
-          {/* Typeahead Dropdown (Exact match with Venue Search) */}
-          {showSearchResults && dropdownGroups.length > 0 && (
-            <div className="absolute top-full left-0 w-full mt-1 bg-white border border-slate-100 rounded-xl shadow-lg z-50 max-h-60 overflow-y-auto animate-in fade-in duration-200">
-              {dropdownGroups.slice(0, 10).map(g => (
-                <button
-                  key={g.id}
-                  onMouseDown={() => handleSelectGroup(g)}
-                  className="w-full text-left px-4 py-3 hover:bg-slate-50 flex items-center justify-between group transition-colors border-b border-slate-50 last:border-b-0"
-                >
-                  <div className="flex items-baseline gap-2">
-                    <p className="font-bold text-[#2D3435] group-hover:text-primary transition-colors">{g.name}</p>
-                    {g.nativeName && <span className="text-[11px] text-gray-400 font-medium">{g.nativeName}</span>}
-                  </div>
-                  <span className="text-[10px] text-gray-300 font-bold uppercase">SEOUL</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </header>
-
+    <main className="max-w-md mx-auto w-full relative px-5 pt-4 space-y-4">
       {/* Club Breakdown Section */}
       <section className="space-y-4 relative z-10">
-        <div className="flex justify-between items-end mb-2 px-1">
-          <div>
-            <p className="text-[11px] font-bold text-primary mt-0.5">
-              {selectedGroupId
-                ? `1 group: ${filteredGroups[0]?.name || ''}`
-                : `${filteredGroups.length} group${filteredGroups.length !== 1 ? 's' : ''} in Seoul, Korea`}
-            </p>
-          </div>
-          <button 
-            onClick={() => setSortOrder(prev => prev === 'name' ? 'classes' : 'name')}
-            className="text-xs font-bold text-primary flex items-center gap-1 hover:opacity-80 transition-opacity"
-          >
-            {sortOrder === 'name' ? 'Sort by Name' : 'Sort by Classes'}
-            <span className="material-symbols-outlined text-[14px]">swap_vert</span>
-          </button>
-        </div>
+
 
         {loading ? (
           <div className="flex justify-center items-center py-20">
@@ -184,7 +129,12 @@ export default function ClassMenuPage() {
                 >
                   <div className="flex justify-between items-center mb-5">
                     <div className="flex items-center gap-3">
-                      <h3 className="font-headline font-bold text-lg text-on-surface">{group.name}</h3>
+                      <div className="flex flex-col">
+                        <h3 className="font-headline font-bold text-lg text-on-surface leading-tight">{group.name}</h3>
+                        {group.nativeName && group.nativeName !== group.name && (
+                          <span className="text-[13px] font-medium text-on-surface-variant mt-0.5">{group.nativeName}</span>
+                        )}
+                      </div>
                     </div>
                     <button className="w-8 h-8 rounded-full flex items-center justify-center bg-surface-container-low group-hover:bg-primary/10 transition-colors">
                       <span className="material-symbols-outlined text-outline group-hover:text-primary transition-colors">chevron_right</span>

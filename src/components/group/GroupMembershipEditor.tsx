@@ -27,7 +27,7 @@ const GroupMembershipEditor: React.FC<GroupMembershipEditorProps> = ({ group, on
       onClose();
     } catch (error) {
       console.error("Error saving membership policy:", error);
-      alert("변경사항 저장에 실패했습니다.");
+      alert("Failed to save changes.");
     } finally {
       setIsSaving(false);
     }

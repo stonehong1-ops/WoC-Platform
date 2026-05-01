@@ -12,9 +12,12 @@ import {
   getDocs,
   getDoc,
   limit,
+  limitToLast,
   arrayUnion,
+  arrayRemove,
   setDoc,
-  increment
+  increment,
+  writeBatch
 } from 'firebase/firestore';
 import { db } from './clientApp';
 import { ChatRoom, ChatMessage } from '@/types/chat';
@@ -71,31 +74,41 @@ export const chatService = {
   },
 
   // 2. Subscribe to Messages
-  subscribeMessages: (roomId: string, callback: (messages: ChatMessage[]) => void) => {
+  subscribeMessages: (roomId: string, messageLimit: number, callback: (messages: ChatMessage[]) => void) => {
     const q = query(
       collection(db, MESSAGES_COLLECTION),
       where('roomId', '==', roomId),
-      orderBy('timestamp', 'asc'),
-      limit(200)
+      orderBy('timestamp', 'desc'),
+      limit(messageLimit)
     );
     
     return onSnapshot(q, (snapshot) => {
       const messages = snapshot.docs.map(doc => ({ 
         id: doc.id, 
-        ...doc.data() 
+        ...doc.data({ serverTimestamps: 'estimate' }) 
       } as ChatMessage));
-      callback(messages);
+      // Reverse because we queried DESC to get the latest messages correctly
+      callback(messages.reverse());
+    }, (error) => {
+      console.error("Error subscribing to messages: ", error);
     });
   },
 
   // 3. Send Message
   sendMessage: async (message: Omit<ChatMessage, 'id' | 'timestamp' | 'readBy'>) => {
     try {
-      const messageData = {
+      const messageData: any = {
         ...message,
         readBy: [message.senderId],
         timestamp: serverTimestamp()
       };
+
+      // Firestore 거부 방지: undefined 값 삭제
+      Object.keys(messageData).forEach(key => {
+        if (messageData[key] === undefined) {
+          delete messageData[key];
+        }
+      });
 
       const docRef = await addDoc(collection(db, MESSAGES_COLLECTION), messageData);
       
@@ -106,10 +119,10 @@ export const chatService = {
       const participants = roomData.participants || [];
       const unreadCounts = roomData.unreadCounts || {};
       
-      participants.forEach((p: string) => {
-        if (p !== message.senderId) {
-          unreadCounts[p] = (unreadCounts[p] || 0) + 1;
-        }
+      const otherParticipants = participants.filter((p: string) => p !== message.senderId);
+      
+      otherParticipants.forEach((p: string) => {
+        unreadCounts[p] = (unreadCounts[p] || 0) + 1;
       });
 
       await updateDoc(roomRef, {
@@ -118,6 +131,49 @@ export const chatService = {
         lastMessageSenderId: message.senderId,
         unreadCounts: unreadCounts
       });
+
+      // ---- 푸시 알림 전송 로직 시작 ----
+      try {
+        if (otherParticipants.length > 0) {
+          // sender 정보 가져오기
+          const senderDoc = await getDoc(doc(db, USERS_COLLECTION, message.senderId));
+          const senderData = senderDoc.exists() ? senderDoc.data() : {};
+          const senderName = senderData.nickname || senderData.displayName || 'User';
+
+          // 상대방들의 FCM 토큰 수집
+          const tokens: string[] = [];
+          for (const pId of otherParticipants) {
+            const pDoc = await getDoc(doc(db, USERS_COLLECTION, pId));
+            if (pDoc.exists()) {
+              const pData = pDoc.data();
+              if (pData.fcmTokens && Array.isArray(pData.fcmTokens)) {
+                tokens.push(...pData.fcmTokens);
+              }
+            }
+          }
+
+          // 토큰이 있으면 API 호출
+          if (tokens.length > 0) {
+            await fetch('/api/notifications', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                tokens,
+                title: roomData.type === 'private' ? senderName : (roomData.name || senderName),
+                message: message.type === 'text' ? message.text : '📷 Photo',
+                data: {
+                  url: `/chat?roomId=${message.roomId}`,
+                  type: 'chat',
+                  roomId: message.roomId
+                }
+              })
+            });
+          }
+        }
+      } catch (pushErr) {
+        console.error("Failed to send push notification:", pushErr);
+      }
+      // ---- 푸시 알림 전송 로직 끝 ----
 
       return docRef.id;
     } catch (error) {
@@ -173,17 +229,17 @@ export const chatService = {
     }
   },
 
-  // 6. 1:1 Chat Creation
-  getOrCreatePrivateRoom: async (participantIds: string[], creatorId: string, customNames?: Record<string, string>) => {
+  // 6. Private/Business Chat Creation
+  getOrCreatePrivateRoom: async (participantIds: string[], creatorId: string, type: 'personal' | 'business' = 'personal') => {
     const sortedIds = [...participantIds].sort();
     const roomsRef = collection(db, ROOMS_COLLECTION);
     
-    // Check for existing 1:1
+    // Check for existing room of specified type
     if (sortedIds.length === 2) {
       const q = query(
         roomsRef, 
         where('participants', 'array-contains', sortedIds[0]),
-        where('type', '==', 'private')
+        where('type', '==', type)
       );
       const snap = await getDocs(q);
       const existing = snap.docs.find(doc => {
@@ -195,12 +251,12 @@ export const chatService = {
 
     // Create new
     const docRef = await addDoc(collection(db, ROOMS_COLLECTION), {
-      type: 'private',
+      type: type,
       participants: sortedIds,
       createdBy: creatorId,
       createdAt: serverTimestamp(),
       lastMessageTime: serverTimestamp(),
-      lastMessage: '대화가 시작되었습니다.'
+      lastMessage: type === 'business' ? '상품 문의가 시작되었습니다.' : '대화가 시작되었습니다.'
     });
     
     return docRef.id;
@@ -270,6 +326,50 @@ export const chatService = {
     }
   },
 
+  // 11. Typing Indicator
+  setTypingStatus: async (roomId: string, userId: string, isTyping: boolean) => {
+    try {
+      const roomRef = doc(db, ROOMS_COLLECTION, roomId);
+      if (isTyping) {
+        await updateDoc(roomRef, { typing: arrayUnion(userId) });
+      } else {
+        await updateDoc(roomRef, { typing: arrayRemove(userId) });
+      }
+    } catch (err) {
+      console.error("Error setting typing status:", err);
+    }
+  },
+
+  // 12. Mark single message as read
+  markMessageAsRead: async (messageId: string, userId: string) => {
+    try {
+      const msgRef = doc(db, MESSAGES_COLLECTION, messageId);
+      await updateDoc(msgRef, {
+        readBy: arrayUnion(userId)
+      });
+    } catch (err) {
+      console.error("Error marking message as read:", err);
+    }
+  },
+
+  markMessagesAsReadBatch: async (messageIds: string[], userId: string) => {
+    if (!messageIds.length) return;
+    try {
+      const batch = writeBatch(db);
+      messageIds.forEach(id => {
+        const msgRef = doc(db, MESSAGES_COLLECTION, id);
+        batch.update(msgRef, {
+          readBy: arrayUnion(userId)
+        });
+      });
+      await batch.commit();
+    } catch (err) {
+      console.error("Error marking messages as read in batch:", err);
+    }
+  },
+
+
+
   // 11. Upload Media for Chat
   uploadChatMedia: async (file: File | Blob, path: string, onProgress?: (progress: number) => void): Promise<string> => {
     try {
@@ -293,6 +393,58 @@ export const chatService = {
       });
     } catch (error) {
       console.error("Error uploading chat media:", error);
+      throw error;
+    }
+  },
+
+  // 12. Pin Room
+  pinRoom: async (roomId: string, userId: string, isPinned: boolean) => {
+    try {
+      const roomRef = doc(db, ROOMS_COLLECTION, roomId);
+      await updateDoc(roomRef, {
+        pinnedBy: isPinned ? arrayUnion(userId) : arrayRemove(userId)
+      });
+    } catch (error) {
+      console.error("Error pinning room:", error);
+      throw error;
+    }
+  },
+
+  // 13. Leave Room
+  leaveRoom: async (roomId: string, userId: string) => {
+    try {
+      const roomRef = doc(db, ROOMS_COLLECTION, roomId);
+      await updateDoc(roomRef, {
+        participants: arrayRemove(userId)
+      });
+    } catch (error) {
+      console.error("Error leaving room:", error);
+      throw error;
+    }
+  },
+
+  // 14. Nudge Room
+  nudgeRoom: async (roomId: string, senderId: string, senderName: string) => {
+    try {
+      const messageData = {
+        roomId,
+        senderId,
+        text: `🔔 ${senderName} nudged the chat.`,
+        type: 'system',
+        readBy: [senderId],
+        timestamp: serverTimestamp()
+      };
+
+      await addDoc(collection(db, MESSAGES_COLLECTION), messageData);
+
+      const roomRef = doc(db, ROOMS_COLLECTION, roomId);
+      await updateDoc(roomRef, {
+        lastMessage: `🔔 ${senderName} nudged the chat.`,
+        lastMessageTime: serverTimestamp(),
+        lastMessageSenderId: senderId
+      });
+    } catch (error) {
+      console.error("Error nudging room:", error);
       throw error;
     }
   }

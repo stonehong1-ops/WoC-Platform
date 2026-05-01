@@ -4,6 +4,7 @@ import SocialHeroCard, { DualText, getSocialDisplayTitle } from './SocialHeroCar
 import { useAuth } from '@/components/providers/AuthProvider';
 import UniversalFeed from '@/components/feed/UniversalFeed';
 import { socialService } from '@/lib/firebase/socialService';
+import { useHistoryBack } from '@/hooks/useHistoryBack';
 
 interface SocialViewerProps {
   social: Social;
@@ -12,6 +13,7 @@ interface SocialViewerProps {
 
 export default function SocialViewer({ social, onClose }: SocialViewerProps) {
   const { user } = useAuth();
+  const { handleClose } = useHistoryBack(true, onClose);
   const images = [social.imageUrl].filter(url => url && url.trim() !== '');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [activeTab, setActiveTab] = useState('Info');
@@ -68,14 +70,14 @@ export default function SocialViewer({ social, onClose }: SocialViewerProps) {
       }
     } else {
       navigator.clipboard.writeText(shareUrl);
-      alert("링크가 클립보드에 복사되었습니다.");
+      alert("Link copied to clipboard.");
     }
   };
 
   const handleSharePoster = async () => {
     setIsShareMenuOpen(false);
     if (!social.imageUrl) {
-      alert("공유할 포스터 이미지가 없습니다.");
+      alert("No poster image available to share.");
       return;
     }
     try {
@@ -102,23 +104,23 @@ export default function SocialViewer({ social, onClose }: SocialViewerProps) {
     } catch (err: any) {
       console.error('Error sharing poster:', err);
       if (err.name === 'AbortError') {
-        // 사용자가 공유를 취소한 경우
+        // User cancelled the share
         return;
       }
       
-      // CORS나 네트워크 문제로 fetch가 실패한 경우 백폴
+      // CORS or network issue caused fetch to fail
       if (err.name === 'TypeError' || err.message?.includes('fetch')) {
-        alert("이미지 보안 설정(CORS)으로 인해 직접 공유가 제한되었습니다. 새 창에서 이미지를 엽니다.");
+        alert("Image sharing is restricted due to security settings (CORS). Opening in a new window.");
         window.open(social.imageUrl, '_blank');
       } else {
-        alert("포스터를 공유하는 중 오류가 발생했습니다: " + (err.message || '알 수 없는 오류'));
+        alert("An error occurred while sharing the poster: " + (err.message || 'Unknown error'));
       }
     }
   };
 
   const handleReservationSubmit = async () => {
     if (!user) {
-      alert("로그인이 필요합니다.");
+      alert("Please sign in first.");
       return;
     }
     
@@ -133,14 +135,14 @@ export default function SocialViewer({ social, onClose }: SocialViewerProps) {
         notes,
         status: 'pending'
       });
-      alert("예약이 성공적으로 요청되었습니다!");
+      alert("Reservation submitted successfully!");
       setIsReservationFormOpen(false);
       setPeopleCount(2);
       setGuests(['Maria S.', 'Diego R.']);
       setNotes('');
     } catch (error) {
       console.error("Error submitting reservation:", error);
-      alert("예약 요청 중 오류가 발생했습니다.");
+      alert("An error occurred while submitting the reservation.");
     } finally {
       setIsSubmitting(false);
     }
@@ -198,7 +200,7 @@ export default function SocialViewer({ social, onClose }: SocialViewerProps) {
 
       {/* TopAppBar */}
       <header className="fixed top-0 left-0 w-full z-[70] flex justify-between items-center px-4 h-16 bg-white/70 backdrop-blur-lg border-b border-sky-100/20 shadow-[0_4px_12px_rgba(0,163,255,0.08)]">
-        <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-sky-50/50 transition-colors text-sky-500">
+        <button onClick={handleClose} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-sky-50/50 transition-colors text-sky-500">
           <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>arrow_back</span>
         </button>
         <div className="flex flex-col items-center justify-center max-w-[200px] flex-1">
@@ -415,11 +417,11 @@ export default function SocialViewer({ social, onClose }: SocialViewerProps) {
               <ul className="space-y-2">
                 <li className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-[#00629d] text-lg">redeem</span>
-                  <span className="font-body-md text-[14px] text-[#3f4852] font-medium">테이블 예약시 2+1 이벤트</span>
+                  <span className="font-body-md text-[14px] text-[#3f4852] font-medium">Book a table for 2+1 event</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-[#00629d] text-lg">redeem</span>
-                  <span className="font-body-md text-[14px] text-[#3f4852] font-medium">최고의 드레서에게 와인 한 병 드려요</span>
+                  <span className="font-body-md text-[14px] text-[#3f4852] font-medium">Best dressed wins a bottle of wine</span>
                 </li>
               </ul>
             </div>

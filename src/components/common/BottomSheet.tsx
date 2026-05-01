@@ -10,7 +10,7 @@ interface BottomSheetProps {
   title?: string;
   children: ReactNode;
   footer?: ReactNode;
-  height?: string; // e.g. "80vh"
+  height?: string;
 }
 
 export default function BottomSheet({ 
@@ -21,7 +21,6 @@ export default function BottomSheet({
   footer,
   height = "80vh" 
 }: BottomSheetProps) {
-  
   // Lock body scroll when open
   useEffect(() => {
     if (isOpen) {
@@ -29,9 +28,7 @@ export default function BottomSheet({
     } else {
       document.body.style.overflow = 'unset';
     }
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
+    return () => { document.body.style.overflow = 'unset'; };
   }, [isOpen]);
 
   return (

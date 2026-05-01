@@ -7,10 +7,13 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { motion, AnimatePresence } from 'framer-motion';
 import UniversalFeed from '@/components/feed/UniversalFeed';
 import { FeedContext } from '@/types/feed';
+import UserProfileModal from '@/components/profile/UserProfileModal';
 
 export default function PlazaPage() {
   const { user, profile } = useAuth();
   const [storyUsers, setStoryUsers] = useState<any[]>([]);
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState<string>('all'); // 'all', 'hot', 'pinned', 'my'
 
   // Context Menu state
   const [contextMenu, setContextMenu] = useState<{ userId: string, x: number, y: number } | null>(null);
@@ -39,13 +42,6 @@ export default function PlazaPage() {
 
   // Relationship Logic: Sorting Algorithm
   const sortedStories = React.useMemo(() => {
-    const self = {
-      userId: user?.uid,
-      userName: 'Your Story',
-      userPhoto: user?.photoURL,
-      isSelf: true
-    };
-
     const pinnedIds = (profile as any)?.pinnedUserIds || [];
     const others = [...storyUsers].filter(u => u.userId !== user?.uid);
 
@@ -64,8 +60,8 @@ export default function PlazaPage() {
       return bScore - aScore;
     });
 
-    return [self, ...sorted];
-  }, [user, storyUsers, (profile as any)?.pinnedUserIds]);
+    return sorted;
+  }, [user, profile, storyUsers]);
 
   // Handle Pinning
   const handlePinToggle = async (targetId: string) => {
@@ -100,7 +96,13 @@ export default function PlazaPage() {
 
   return (
     <PageWrapper>
-      <div className="flex flex-col min-h-screen bg-[#F8FAFC] font-manrope relative overflow-hidden pt-16" onClick={() => contextMenu && setContextMenu(null)}>
+      {selectedProfileId && (
+        <UserProfileModal
+          userId={selectedProfileId}
+          onClose={() => setSelectedProfileId(null)}
+        />
+      )}
+      <div className="flex flex-col min-h-screen bg-background relative overflow-hidden pt-16" onClick={() => contextMenu && setContextMenu(null)}>
         {/* Ambient Background Elements */}
         <div className="fixed inset-0 pointer-events-none z-0">
           <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-primary/5 blur-[120px]" />
@@ -134,9 +136,103 @@ export default function PlazaPage() {
             )}
           </AnimatePresence>
 
+          {/* Sticky Filter Chip Bar */}
+          <div className="sticky top-16 z-40 w-full bg-background/80 backdrop-blur-md border-b border-outline-variant/10 px-4 py-3 flex items-center gap-2 overflow-x-auto no-scrollbar shadow-sm">
+            <button 
+              onClick={() => setActiveFilter('all')}
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[13px] font-bold tracking-wide transition-all whitespace-nowrap ${activeFilter === 'all' ? 'bg-on-surface text-surface shadow-md scale-105' : 'bg-surface-container-low text-on-surface-variant border border-outline-variant/20 hover:bg-surface-container'}`}
+            >
+              <span className="material-symbols-outlined text-[16px]">public</span>
+              ALL
+            </button>
+            <button 
+              onClick={() => setActiveFilter('hot')}
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[13px] font-bold tracking-wide transition-all whitespace-nowrap ${activeFilter === 'hot' ? 'bg-on-surface text-surface shadow-md scale-105' : 'bg-surface-container-low text-on-surface-variant border border-outline-variant/20 hover:bg-surface-container'}`}
+            >
+              <span className="material-symbols-outlined text-[16px]" style={activeFilter === 'hot' ? { fontVariationSettings: "'FILL' 1" } : {}}>local_fire_department</span>
+              HOT
+            </button>
+            <button 
+              onClick={() => setActiveFilter('pinned')}
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[13px] font-bold tracking-wide transition-all whitespace-nowrap ${activeFilter === 'pinned' ? 'bg-on-surface text-surface shadow-md scale-105' : 'bg-surface-container-low text-on-surface-variant border border-outline-variant/20 hover:bg-surface-container'}`}
+            >
+              <span className="material-symbols-outlined text-[16px]" style={activeFilter === 'pinned' ? { fontVariationSettings: "'FILL' 1" } : {}}>keep</span>
+              PINNED
+            </button>
+            <button 
+              onClick={() => setActiveFilter('my')}
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[13px] font-bold tracking-wide transition-all whitespace-nowrap ${activeFilter === 'my' ? 'bg-on-surface text-surface shadow-md scale-105' : 'bg-surface-container-low text-on-surface-variant border border-outline-variant/20 hover:bg-surface-container'}`}
+            >
+              <span className="material-symbols-outlined text-[16px]" style={activeFilter === 'my' ? { fontVariationSettings: "'FILL' 1" } : {}}>person</span>
+              MY
+            </button>
+            <div className="flex-1 min-w-[8px]"></div> {/* Spacer */}
+            <button 
+              className="flex flex-shrink-0 items-center justify-center w-8 h-8 rounded-full bg-surface-container-low text-on-surface-variant border border-outline-variant/20 hover:bg-surface-container transition-colors ml-auto"
+            >
+              <span className="material-symbols-outlined text-[18px]">tune</span>
+            </button>
+          </div>
+
+          {/* Stories Section (Profile List View) */}
+          <div className="w-full pt-4 pb-2 px-4 overflow-x-auto no-scrollbar border-b border-outline-variant/20 bg-surface-container-lowest/50 backdrop-blur-md">
+            <div className="flex items-center gap-4 min-w-max">
+              {sortedStories.map((storyUser, idx) => {
+                const isPinned = ((profile as any)?.pinnedUserIds || []).includes(storyUser.userId);
+                
+                return (
+                  <div 
+                    key={storyUser.userId || `story-${idx}`}
+                    className="flex flex-col items-center gap-1.5 cursor-pointer relative"
+                    onClick={() => {
+                      if (storyUser.userId && !storyUser.isSelf) {
+                        setSelectedProfileId(storyUser.userId);
+                      }
+                    }}
+                    onTouchStart={(e) => {
+                      if (storyUser.userId) handleTouchStart(storyUser.userId, e);
+                    }}
+                    onTouchEnd={handleTouchEnd}
+                    onTouchMove={handleTouchEnd}
+                  >
+                    <div className="relative">
+                      <div className={`w-16 h-16 rounded-full p-[2px] ${storyUser.hasUnread ? 'bg-gradient-to-tr from-primary to-secondary' : 'bg-outline-variant/30'}`}>
+                        <div className="w-full h-full rounded-full border-2 border-surface-container-lowest overflow-hidden">
+                          <img 
+                            src={storyUser.userPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(storyUser.userName || 'User')}&background=0f172a&color=fff&font-size=0.33&bold=true`}
+                            alt={storyUser.userName || 'User'}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(storyUser.userName || 'User')}&background=0f172a&color=fff&font-size=0.33&bold=true`;
+                            }}
+                          />
+                        </div>
+                      </div>
+                      
+                      {storyUser.isSelf && (
+                        <div className="absolute bottom-0 right-0 w-5 h-5 bg-primary rounded-full border-2 border-surface-container-lowest flex items-center justify-center">
+                          <span className="material-symbols-outlined text-[12px] text-on-primary">add</span>
+                        </div>
+                      )}
+                      
+                      {isPinned && !storyUser.isSelf && (
+                        <div className="absolute bottom-0 right-0 w-5 h-5 bg-tertiary rounded-full border-2 border-surface-container-lowest flex items-center justify-center">
+                          <span className="material-symbols-outlined text-[10px] text-on-tertiary">keep</span>
+                        </div>
+                      )}
+                    </div>
+                    <span className={`text-[11px] max-w-[64px] truncate text-center ${storyUser.isSelf ? 'text-on-surface font-medium' : 'text-on-surface-variant'}`}>
+                      {storyUser.userName || 'Unknown'}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Universal Feed Section */}
           <div className="flex-grow">
-            <UniversalFeed context={plazaContext} currentUser={user} profile={profile} />
+            <UniversalFeed context={plazaContext} currentUser={user} profile={profile} activeFilter={activeFilter} />
           </div>
         </div>
       </div>

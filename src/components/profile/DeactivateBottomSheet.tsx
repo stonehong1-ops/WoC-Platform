@@ -18,7 +18,7 @@ export default function DeactivateBottomSheet({ isOpen, onClose, onConfirm }: De
     >
       {/* Bottom Sheet Content */}
       <div 
-        className="bg-white w-full max-w-md rounded-t-[2.5rem] shadow-2xl relative overflow-hidden pb-10 animate-in slide-in-from-bottom duration-500"
+        className="bg-surface w-full max-w-md rounded-t-[2.5rem] shadow-2xl relative overflow-hidden pb-10 animate-in slide-in-from-bottom duration-500"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Handle */}

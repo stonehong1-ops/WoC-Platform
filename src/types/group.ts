@@ -1,4 +1,5 @@
 import { Timestamp } from "firebase/firestore";
+import { ShopSettings } from "./shop";
 
 export interface Author {
   id: string;
@@ -86,6 +87,7 @@ export interface Group {
   storageUsed?: number; // in bytes
   representative?: {
     name: string;
+    localName?: string;
     phone?: string;
     avatar?: string;
   };
@@ -118,6 +120,7 @@ export interface Group {
   shopItems?: ShopItem[];
   stayRooms?: StayRoom[];
   staySettings?: StaySettings;
+  shopSettings?: ShopSettings;
   rentalSettings?: RentalSettings;
   activeServices?: ActiveServices;
   classPaymentSettings?: {
@@ -131,6 +134,11 @@ export interface Group {
       accountHolder: string;
       accountNumber: string;
     };
+  };
+  bankDetails?: {
+    bankName: string;
+    accountHolder: string;
+    accountNumber: string;
   };
   isPublished?: boolean;
 }
@@ -204,16 +212,19 @@ export interface StaySettings {
 }
 
 export interface RentalSettings {
-  frequency: 'hourly' | 'daily';
   currency: string;
-  baseAmount: number;
-  paymentMethod: 'bank_transfer' | 'credit_card';
-  bankDetails?: {
-    bankName: string;
-    ownerName: string;
-    accountNumber: string;
-    swiftCode?: string;
-    additionalDetails?: string;
+  rentalInfo: string;
+  pricePalette: {
+    tier1: number;
+    tier2: number;
+    tier3: number;
+    tier4: number;
+    tier5: number;
+    tier6: number;
+    tier7: number;
+  };
+  timeGrid: {
+    [day: number]: string[]; // 0-6 for Mon-Sun, 24 elements for 0-23 hours
   };
 }
 
@@ -337,4 +348,8 @@ export interface ClassRegistration {
   groupName?: string;         // 신규 등록 시 저장
   contactNumber?: string;
   partnerName?: string; // For couple registrations
+  selectedClassIds?: string[]; // Custom selection for monthly passes
+  adminMemo?: string;
+  paymentAmount?: number;
 }
+

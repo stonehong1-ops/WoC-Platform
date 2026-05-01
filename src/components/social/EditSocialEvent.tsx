@@ -136,7 +136,7 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
   const handleTitleChange = (val: string) => {
     const isEnglishOnly = /^[a-zA-Z0-9\s\-_'"()&.,!?]*$/.test(val);
     if (!isEnglishOnly && val !== '') {
-      setTitleError('English only / 영문만 입력 가능합니다');
+      setTitleError('English only');
     } else {
       setTitleError('');
       setTitle(val);
@@ -149,7 +149,7 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
     setSocialEvents(socialEvents.map(e => e.id === id ? { ...e, title: val } : e));
 
   const handleSave = async () => {
-    if (!user || !title) return alert('이벤트 제목을 입력해주세요');
+    if (!user || !title) return alert('Please enter an event title');
     setIsSubmitting(true);
     try {
       let finalImageUrl = images[0] || '';
@@ -193,7 +193,7 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
       onClose();
     } catch (e) {
       console.error(e);
-      alert('저장 중 오류가 발생했습니다');
+      alert('An error occurred while saving');
     } finally {
       setIsSubmitting(false);
     }
@@ -201,7 +201,7 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
 
   const handleDelete = async () => {
     if (!socialData?.id) return;
-    if (!confirm('이 이벤트를 삭제하시겠습니까?')) return;
+    if (!confirm('Are you sure you want to delete this event?')) return;
     try {
       await socialService.deleteSocial(socialData.id);
       onSuccess?.();
@@ -266,7 +266,7 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
               value={titleNative}
               onChange={(e) => setTitleNative(e.target.value)}
               className="w-full bg-[#dde4e5] border-none focus:bg-white focus:ring-2 focus:ring-[#005BC0]/40 p-4 text-lg font-semibold rounded text-[#2D3435] placeholder:text-[#2D3435]/30 transition-all outline-none"
-              placeholder="자국어 이름 (예: 밀롱가 엘 불린)"
+              placeholder="Native title (e.g. 밀롱가 엘 불린)"
               type="text"
             />
           </div>
@@ -404,7 +404,7 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
                 onFocus={() => venueName.length >= 1 && setShowVenueResults(venueResults.length > 0)}
                 onBlur={() => setTimeout(() => setShowVenueResults(false), 200)}
                 className="w-full pl-12 pr-4 py-4 bg-white border-none rounded shadow-sm focus:ring-2 focus:ring-[#005BC0]/40 font-medium outline-none"
-                placeholder="Search venues... (영문 또는 한글)"
+                placeholder="Search venues..."
                 type="text"
               />
             </div>
@@ -476,7 +476,7 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
             <span className="material-symbols-outlined text-[#2D3435]/40">chevron_right</span>
           </button>
           <p className="text-[10px] text-[#2D3435]/40 mt-2 ml-1">
-            * Venue를 선택하면 해당 Venue의 위치로 자동 업데이트됩니다
+            * Selecting a venue will auto-update the location
           </p>
         </section>
 

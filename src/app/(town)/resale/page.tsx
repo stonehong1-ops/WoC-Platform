@@ -1,49 +1,125 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { resaleService } from '@/lib/firebase/resaleService';
 import { ResaleItem } from '@/types/resale';
 import CreateResaleItem from '@/components/resale/CreateResaleItem';
 import ResaleItemDetail from '@/components/resale/ResaleItemDetail';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
+import { safeDate } from '@/lib/utils/safeData';
+
+type SortOption = 'latest' | 'popular' | 'price_asc' | 'price_desc';
+
+const SORT_OPTIONS: { key: SortOption; label: string; icon: string }[] = [
+  { key: 'latest', label: 'Latest', icon: 'schedule' },
+  { key: 'popular', label: 'Popular', icon: 'trending_up' },
+  { key: 'price_asc', label: 'Price ↑', icon: 'arrow_upward' },
+  { key: 'price_desc', label: 'Price ↓', icon: 'arrow_downward' },
+];
+
+const RESALE_FILTER_DEFS: Record<string, { label: string; fullLabel?: string; icon?: string }> = {
+  All: { label: 'All', fullLabel: 'All Items' },
+  Shoes: { label: 'Shoes', fullLabel: 'Shoes', icon: 'steps' },
+  Apparel: { label: 'Apparel', fullLabel: 'Apparel', icon: 'checkroom' },
+  Accessories: { label: 'Accessories', fullLabel: 'Accessories', icon: 'diamond' },
+  Equipment: { label: 'Equipment', fullLabel: 'Equipment', icon: 'fitness_center' },
+  Others: { label: 'Others', fullLabel: 'Others', icon: 'more_horiz' },
+};
+
+const RESALE_FILTER_KEYS = ['All', 'Shoes', 'Apparel', 'Accessories', 'Equipment', 'Others'];
 
 export default function ResalePage() {
-  const { user } = useAuth();
+  const { user, setShowLogin } = useAuth();
   const [items, setItems] = useState<ResaleItem[]>([]);
-  const [activeCategory, setActiveCategory] = useState('All');
+  const [isLoading, setIsLoading] = useState(true);
+  const [activeFilter, setActiveFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showLocationFilter, setShowLocationFilter] = useState(false);
+  const [sortOption, setSortOption] = useState<SortOption>('latest');
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState<ResaleItem | null>(null);
-  const [userLikes, setUserLikes] = useState<string[]>([]);
 
-  // 1. Subscribe to real-time resale items
+  const [userLikes, setUserLikes] = useState<Set<string>>(new Set());
+
+  const resaleFilters = useMemo(() => {
+    return RESALE_FILTER_KEYS.map(key => ({ key, ...RESALE_FILTER_DEFS[key] }));
+  }, []);
+
+  // Subscribe to real-time resale items
   useEffect(() => {
     const unsub = resaleService.subscribeItems(
-      activeCategory !== 'All' ? activeCategory : null,
-      (data) => setItems(data)
+      null,
+      (data) => {
+        setItems(data);
+        setIsLoading(false);
+      }
     );
     return () => unsub();
-  }, [activeCategory]);
+  }, []);
 
-  // 2. Filter products locally based on search
-  const filteredItems = items.filter(item => 
-    item.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    item.location.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const categories = ['All', 'Shoes', 'Apparel', 'Accessories', 'Equipment', 'Others'];
+  // Sync likes
+  useEffect(() => {
+    if (!user) {
+      setUserLikes(new Set());
+    }
+  }, [user]);
 
   const handleLike = async (e: React.MouseEvent, itemId: string) => {
     e.stopPropagation();
-    if (!user) return alert("Please login to like items");
+    if (!user) {
+      alert("Please login to like items");
+      return;
+    }
+    
+    // Optimistic UI Update for user likes tracking
+    setUserLikes(prev => {
+       const newSet = new Set(prev);
+       if (newSet.has(itemId)) newSet.delete(itemId);
+       else newSet.add(itemId);
+       return newSet;
+    });
+
     await resaleService.toggleLike(user.uid, itemId);
   };
 
+  const filtered = useMemo(() => {
+    let result = items.filter(s => {
+      const matchSearch = !searchQuery ||
+        s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.location.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchType = activeFilter === 'All' || s.category === activeFilter;
+      return matchSearch && matchType;
+    });
+
+    switch (sortOption) {
+      case 'popular':
+        result.sort((a, b) => (b.likesCount || 0) - (a.likesCount || 0));
+        break;
+      case 'price_asc':
+        result.sort((a, b) => a.price - b.price);
+        break;
+      case 'price_desc':
+        result.sort((a, b) => b.price - a.price);
+        break;
+      case 'latest':
+      default:
+        result.sort((a, b) => {
+          const timeA = typeof a.createdAt === 'object' && a.createdAt !== null && 'seconds' in a.createdAt ? (a.createdAt as any).seconds : 0;
+          const timeB = typeof b.createdAt === 'object' && b.createdAt !== null && 'seconds' in b.createdAt ? (b.createdAt as any).seconds : 0;
+          return timeB - timeA;
+        });
+        break;
+    }
+    return result;
+  }, [items, activeFilter, searchQuery, sortOption]);
+
   const getRelativeTime = (timestamp: any) => {
     if (!timestamp) return 'Just now';
+    const date = safeDate(timestamp);
+    if (!date) return 'Just now';
     const now = new Date();
-    const date = timestamp.toDate();
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
     
     if (diffInSeconds < 60) return 'Just now';
@@ -53,138 +129,115 @@ export default function ResalePage() {
   };
 
   return (
-    <main className="max-w-2xl mx-auto min-h-screen flex flex-col bg-white relative">
+    <main className="max-w-md mx-auto w-full relative">
       <style dangerouslySetInnerHTML={{ __html: `
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .material-symbols-rounded { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
       `}} />
 
-      {/* 1. Search and Location Header Section */}
-      <section className="bg-white/95 backdrop-blur-md px-4 pt-4 pb-2 sticky top-16 z-40 border-b border-surface-container-highest">
-        <div className="flex flex-col gap-3">
-          {/* Location Picker */}
-          <div className="flex items-center gap-1 group cursor-pointer w-fit">
-            <span className="material-symbols-outlined text-primary text-[20px]">location_on</span>
-            <span className="font-headline font-bold text-sm tracking-tight text-[#2d3435]">Seoul, Gangnam-gu</span>
-            <span className="material-symbols-outlined text-on-surface-variant text-[16px]">expand_more</span>
-          </div>
-          {/* Search Bar */}
-          <div className="relative flex items-center mb-2">
-            <span className="material-symbols-outlined absolute left-4 text-on-surface-variant">search</span>
-            <input 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-[#f2f4f4] border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-sm font-medium placeholder:text-on-surface-variant/60 outline-none transition-all" 
-              placeholder="Search in this Society..." 
-              type="text"
-            />
-          </div>
-        </div>
-      </section>
+      {/* ③ Product Grid (Resale Listings) */}
+      <div className="pt-4 px-4 mb-10 text-left min-h-[400px]">
 
-      {/* 2. Category Scroll Navigation */}
-      <section className="bg-white py-4 border-b border-surface-container-highest z-30">
-        <div className="flex gap-2 overflow-x-auto px-4 no-scrollbar scroll-smooth">
-          {categories.map((cat, i) => (
-            <button 
-              key={i}
-              onClick={() => setActiveCategory(cat)}
-              className={`px-5 py-2 rounded-full font-headline text-xs font-bold whitespace-nowrap transition-all active:scale-95 ${
-                activeCategory === cat 
-                  ? 'bg-primary text-white shadow-lg shadow-primary/20' 
-                  : 'bg-[#f2f4f4] text-[#596061] hover:bg-gray-200'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-      </section>
 
-      {/* 3. Product Listing: Vertical Bento Style */}
-      <section className="flex flex-col p-4 gap-4 pb-32 min-h-[60vh]">
-        {filteredItems.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-40 opacity-20">
-            <span className="material-symbols-outlined text-6xl mb-4">inventory_2</span>
-            <p className="text-sm font-black uppercase tracking-widest">No listings found</p>
+        {isLoading ? (
+          <div className="grid grid-cols-2 gap-4">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="animate-pulse">
+                <div className="aspect-square rounded-xl bg-surface-container-lowest border border-outline-variant/20 mb-3" />
+                <div className="h-3 bg-surface-container rounded w-1/2 mb-2" />
+                <div className="h-4 bg-surface-container-low rounded w-3/4 mb-2" />
+                <div className="h-4 bg-surface-container rounded w-1/3" />
+              </div>
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center opacity-30">
+            <span className="material-symbols-rounded text-6xl mb-4">inventory_2</span>
+            <p className="text-xs font-black uppercase tracking-widest">
+              No items found
+            </p>
           </div>
         ) : (
-          filteredItems.map((item) => (
-            <div 
-              key={item.id}
-              onClick={() => setSelectedItem(item)}
-              className="flex gap-4 p-3 bg-white rounded-xl shadow-sm hover:shadow-lg transition-all group cursor-pointer border border-surface-container-highest/50 animate-in fade-in slide-in-from-bottom-4 duration-500"
-            >
-              <div className="relative w-32 h-32 flex-shrink-0 overflow-hidden rounded-lg bg-surface-container">
-                <img 
-                  alt={item.title} 
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
-                  src={item.imageUrl} 
-                />
-                {item.status !== 'active' && (
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                    <span className="text-white text-[10px] font-black uppercase tracking-widest bg-black/60 px-2 py-1 rounded">
-                      {item.status}
-                    </span>
-                  </div>
-                )}
-              </div>
-              <div className="flex flex-col justify-between flex-grow overflow-hidden">
-                <div className="text-left">
-                  <h3 className="font-headline font-bold text-[#2d3435] text-base leading-tight group-hover:text-primary transition-colors truncate">
-                    {item.title}
-                  </h3>
-                  <div className="mt-1 flex items-center gap-1 text-[11px] text-[#596061]/80 font-medium uppercase tracking-wide">
-                    <span>{item.location}</span>
-                    <span className="w-1 h-1 rounded-full bg-gray-300"></span>
-                    <span>{getRelativeTime(item.createdAt)}</span>
-                    <span className="w-1 h-1 rounded-full bg-gray-300 ml-1"></span>
-                    <span className="text-primary font-bold">[{item.condition}]</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between mt-auto">
-                  <span className="font-headline font-extrabold text-primary text-xl">
-                    ₩{item.price.toLocaleString()}
-                  </span>
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1 text-[#596061]">
-                      <span className="material-symbols-outlined text-[18px]">chat_bubble</span>
-                      <span className="text-xs font-bold">{item.chatsCount}</span>
+          <div className="grid grid-cols-2 gap-4">
+            {filtered.map(item => {
+              return (
+                <div 
+                  key={item.id} 
+                  onClick={() => setSelectedItem(item)}
+                  className="group cursor-pointer animate-in fade-in slide-in-from-bottom-2 duration-500 block relative"
+                >
+                  <div className="relative aspect-square rounded-xl bg-[#f2f4f4] overflow-hidden mb-3">
+                    {/* Fallback View */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-[#c4cacc]">
+                      <span className="material-symbols-outlined text-4xl mb-1">image</span>
+                      <span className="text-[10px] font-bold tracking-wider uppercase">No Image</span>
                     </div>
-                    <button 
+                    
+                    {/* Actual Image */}
+                    {item.imageUrl && (
+                      <img
+                        alt={item.title}
+                        className={`absolute inset-0 z-10 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 bg-[#f2f4f4] ${item.status !== 'active' ? 'opacity-50' : ''}`}
+                        src={item.imageUrl}
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    )}
+
+                    {item.status !== 'active' && (
+                      <div className="absolute inset-0 z-15 bg-black/40 flex items-center justify-center">
+                        <span className="text-white text-[10px] font-black uppercase tracking-widest bg-black/60 px-2 py-1 rounded">
+                          {item.status}
+                        </span>
+                      </div>
+                    )}
+                    
+                    <button
                       onClick={(e) => handleLike(e, item.id)}
-                      className={`flex items-center gap-1 transition-all ${item.likesCount > 0 ? 'text-red-500' : 'text-[#596061]'} hover:scale-110`}
+                      className={`absolute z-20 top-3 right-3 w-8 h-8 backdrop-blur rounded-full flex items-center justify-center shadow-sm transition-colors active:scale-90 ${
+                        userLikes.has(item.id) || item.likesCount > 0 ? 'bg-red-50 text-red-500' : 'bg-white/90 text-[#2d3435] hover:text-red-500'
+                      }`}
                     >
-                      <span 
-                        className="material-symbols-outlined text-[18px]" 
-                        style={{ fontVariationSettings: item.likesCount > 0 ? "'FILL' 1" : "'FILL' 0" }}
-                      >
-                        favorite
-                      </span>
-                      <span className="text-xs font-bold">{item.likesCount}</span>
+                      <span className="material-symbols-rounded text-lg" style={{ fontVariationSettings: userLikes.has(item.id) || item.likesCount > 0 ? "'FILL' 1" : "'FILL' 0" }}>favorite</span>
                     </button>
                   </div>
+                  
+                  <div className="px-1">
+                    <p className="text-[10px] font-bold text-[#5c5f62] uppercase tracking-tighter font-label truncate">
+                      {item.location} • {getRelativeTime(item.createdAt)}
+                    </p>
+                    <h4 className="text-sm font-semibold text-[#2d3435] font-body truncate">{item.title}</h4>
+                    <div className="flex items-center justify-between mt-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm font-bold text-[#2d3435] font-headline">
+                          ₩{item.price.toLocaleString()}
+                        </span>
+                      </div>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setSelectedItem(item); }}
+                        className={`p-1.5 rounded-lg transition-all ${
+                          userLikes.has(item.id) || item.likesCount > 0 ? 'bg-red-50 text-red-500' : 'bg-[#d8e2ff] text-[#004fa8] hover:bg-primary hover:text-white'
+                        }`}
+                      >
+                        <span className="material-symbols-rounded text-[18px] leading-none">chat_bubble</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          ))
-        )}
-
-        {filteredItems.length > 0 && (
-          <div className="py-12 flex flex-col items-center justify-center gap-2 opacity-30">
-            <span className="material-symbols-outlined text-4xl">inventory_2</span>
-            <p className="text-xs font-bold uppercase tracking-widest">End of the line</p>
+              );
+            })}
           </div>
         )}
-      </section>
+      </div>
 
       {/* 4. Global Resale FAB */}
       <button 
         onClick={() => setShowCreateModal(true)}
-        className="fixed bottom-24 right-6 w-16 h-16 bg-[#1f1f1f] text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 hover:bg-primary active:scale-95 transition-all z-50 group shadow-primary/20"
+        className="fixed bottom-28 right-6 w-14 h-14 bg-primary text-white rounded-full shadow-lg shadow-primary/30 flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50"
       >
-        <span className="material-symbols-outlined text-[32px] group-hover:rotate-90 transition-transform duration-300">add</span>
+        <span className="material-symbols-rounded text-[32px] group-hover:rotate-90 transition-transform duration-300">add</span>
       </button>
 
       {/* Create Modal */}

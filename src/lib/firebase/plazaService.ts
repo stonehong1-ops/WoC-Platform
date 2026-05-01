@@ -139,31 +139,13 @@ export const plazaService = {
   // 미디어 업로드 (이미지/동영상)
   uploadMedia: async (file: File, onProgress?: (progress: number) => void) => {
     try {
-      const { getStorage, ref, uploadBytesResumable, getDownloadURL } = await import('firebase/storage');
-      const storage = getStorage();
-      const filename = `${Date.now()}_${file.name}`;
-      const storageRef = ref(storage, `plaza/${filename}`);
+      const { storageService } = await import('./storageService');
+      const filename = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`; // Sanitize filename
       
-      const uploadTask = uploadBytesResumable(storageRef, file);
-
-      return new Promise<string>((resolve, reject) => {
-        uploadTask.on('state_changed', 
-          (snapshot) => {
-            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            if (onProgress) onProgress(progress);
-          }, 
-          (error) => {
-            console.error("Upload failed:", error);
-            reject(error);
-          }, 
-          async () => {
-            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-            resolve(downloadURL);
-          }
-        );
-      });
+      // Delegate to the shared storageService which includes image compression
+      return await storageService.uploadFile(file, `plaza/${filename}`, onProgress);
     } catch (error) {
-      console.error("Error uploading media:", error);
+      console.error("Error uploading media to plaza:", error);
       throw error;
     }
   },

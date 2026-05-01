@@ -83,5 +83,20 @@ export const userService = {
     const userDoc = await getDoc(doc(db, USERS_COLLECTION, uid));
     if (!userDoc.exists()) return [];
     return userDoc.data().likedClassIds || [];
+  },
+
+  // Toggle Like on a stay
+  toggleLikeStay: async (uid: string, stayId: string, isLiking: boolean): Promise<void> => {
+    const docRef = doc(db, USERS_COLLECTION, uid);
+    await updateDoc(docRef, {
+      likedStayIds: isLiking ? arrayUnion(stayId) : arrayRemove(stayId)
+    });
+  },
+
+  // Get user's liked stays
+  getLikedStayIds: async (uid: string): Promise<string[]> => {
+    const userDoc = await getDoc(doc(db, USERS_COLLECTION, uid));
+    if (!userDoc.exists()) return [];
+    return userDoc.data().likedStayIds || [];
   }
 };

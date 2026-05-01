@@ -1,0 +1,692 @@
+[
+  {
+    "id": "tango",
+    "category": "Life on STAGE",
+    "subCategory": "Social Dance",
+    "welcome_message": "Hi Stony, Welcome to the World Tango Society!",
+    "welcome_text": "A collective of dancers speaking the universal language of the embrace. Our community is built on profound connection, pure improvisation, and the silent conversation of moving as one.",
+    "keyword_badges": [
+      "Connection",
+      "Improvisation"
+    ],
+    "blog_core_keyword": "ZERO TOLERANCE",
+    "blog_title": "Safe Floor: Enforcing Our Zero Tolerance Policy to Protect the Trust of Our Embrace",
+    "blog_subtitle": "Protecting the trust and safety of our embrace.",
+    "blog_description": "Reaffirming our strict zero-tolerance policy against sexual harassment to protect the trust and safety of our community."
+  },
+  {
+    "id": "salsa",
+    "category": "Life on STAGE",
+    "subCategory": "Social Dance",
+    "welcome_message": "Hi Stony, Welcome to the World Salsa Society!",
+    "welcome_text": "Step into the vibrant energy of the clave. Salsa is an electrifying celebration of rhythm, movement, and cultural fusion. We embrace dynamic spins, infectious horns, and pure joy.",
+    "keyword_badges": [
+      "Rhythm",
+      "Cultural Fusion"
+    ],
+    "blog_core_keyword": "TIMING DEBATE",
+    "blog_title": "The Great Timing Divide: Why the On1 Versus On2 Debate Still Dominates the Salsa Dance Floor",
+    "blog_subtitle": "Which style truly offers the best musicality?",
+    "blog_description": "An expert breakdown of the historical and technical differences between dancing On1 and On2."
+  },
+  {
+    "id": "bachata",
+    "category": "Life on STAGE",
+    "subCategory": "Social Dance",
+    "welcome_message": "Hi Stony, Welcome to the World Bachata Society!",
+    "welcome_text": "Discover the deeply rhythmic world of Bachata. We cherish the smooth hip movements, intimate partner connection, and beautiful guitar melodies. Find your flow on our dance floor.",
+    "keyword_badges": [
+      "Sensual Flow",
+      "Intimacy"
+    ],
+    "blog_core_keyword": "CULTURAL ROOTS",
+    "blog_title": "Traditional vs. Sensual Bachata: Is the Modern Evolution Erasing Its Authentic Dominican Roots?",
+    "blog_subtitle": "The cultural shift from Caribbean origins to global club styles.",
+    "blog_description": "Exploring the controversial evolution of Bachata and the preservation of authentic flavor."
+  },
+  {
+    "id": "swing",
+    "category": "Life on STAGE",
+    "subCategory": "Social Dance",
+    "welcome_message": "Hi Stony, Welcome to the World Swing Society!",
+    "welcome_text": "Bounce to the irresistible jazz rhythms. Our society honors the joyful spirit of Lindy Hop. It is all about infectious energy, playful partner dynamics, and absolute freedom.",
+    "keyword_badges": [
+      "Joyful Bounce",
+      "Freedom"
+    ],
+    "blog_core_keyword": "STYLE CLASH",
+    "blog_title": "Lindy Hop or West Coast Swing: Which Dance Truly Captures the Ultimate Freedom of Expression?",
+    "blog_subtitle": "Comparing the historical bounce with the smooth modern slot.",
+    "blog_description": "A deep dive into the fundamental differences in partner dynamics and musicality."
+  },
+  {
+    "id": "flamenco",
+    "category": "Life on STAGE",
+    "subCategory": "Stage Dance",
+    "welcome_message": "Hi Stony, Welcome to the World Flamenco Society!",
+    "welcome_text": "Express your deepest emotions through powerful footwork and passionate guitar rhythms. Experience the raw intensity and historical depth of Spanish soul.",
+    "keyword_badges": [
+      "Passion",
+      "Precision"
+    ],
+    "blog_core_keyword": "AUTHENTICITY",
+    "blog_title": "Puro vs. Nuevo: The Struggle to Define Authenticity in the Rapidly Evolving World of Flamenco",
+    "blog_subtitle": "Must we stick to the old ways to keep the soul alive?",
+    "blog_description": "Experts debate whether modern influences enhance or dilute the traditional Flamenco spirit."
+  },
+  {
+    "id": "street",
+    "category": "Life on STAGE",
+    "subCategory": "Stage Dance",
+    "welcome_message": "Hi Stony, Welcome to the Street Dance Society!",
+    "welcome_text": "Own the cypher and let the urban beat move your soul. From breaking to popping, we celebrate the raw creativity and athletic artistry of the streets.",
+    "keyword_badges": [
+      "Raw Creativity",
+      "Urban Beat"
+    ],
+    "blog_core_keyword": "BATTLE CULTURE",
+    "blog_title": "Choreography vs. Freestyle: Which Discipline Truly Defines the Spirit of Modern Street Dance?",
+    "blog_subtitle": "The tension between planned performance and raw improvisation.",
+    "blog_description": "Analyzing how the rise of commercial choreography impacts the underground battle scene."
+  },
+  {
+    "id": "ballet",
+    "category": "Life on STAGE",
+    "subCategory": "Stage Dance",
+    "welcome_message": "Hi Stony, Welcome to the World Ballet Society!",
+    "welcome_text": "Defy gravity with grace, precision, and centuries of tradition. We celebrate the ethereal beauty and rigorous discipline of classical dance.",
+    "keyword_badges": [
+      "Grace",
+      "Discipline"
+    ],
+    "blog_core_keyword": "MODERNIZATION",
+    "blog_title": "The Glass Ceiling: How Contemporary Ballet is Breaking Traditional Norms of Body and Technique",
+    "blog_subtitle": "Redefining the boundaries of the classical form.",
+    "blog_description": "An investigation into how modern ballet companies are adapting to inclusive standards."
+  },
+  {
+    "id": "yoga",
+    "category": "Life on STAGE",
+    "subCategory": "Body Flow",
+    "welcome_message": "Hi Stony, Welcome to the World Yoga Society!",
+    "welcome_text": "Find your center and connect your breath to your body's natural flow. We explore the balance between physical strength and mental tranquility.",
+    "keyword_badges": [
+      "Mindfulness",
+      "Balance"
+    ],
+    "blog_core_keyword": "SPIRITUALITY",
+    "blog_title": "Exercise or Enlightenment? Debating Whether Modern Yoga Has Lost Its Ancient Spiritual Essence",
+    "blog_subtitle": "Has the physical focus overshadowed the mental journey?",
+    "blog_description": "Examining the commercialization of yoga and the quest for its original purpose."
+  },
+  {
+    "id": "pilates",
+    "category": "Life on STAGE",
+    "subCategory": "Body Flow",
+    "welcome_message": "Hi Stony, Welcome to the World Pilates Society!",
+    "welcome_text": "Build core strength and achieve perfect alignment from the inside out. Master the control and precision of every movement for total body health.",
+    "keyword_badges": [
+      "Core Strength",
+      "Alignment"
+    ],
+    "blog_core_keyword": "EQUIPMENT",
+    "blog_title": "Mat vs. Reformer: Which Method Delivers a More Effective Core Transformation for Beginners?",
+    "blog_subtitle": "Choosing the right path for your fitness journey.",
+    "blog_description": "A comparative study on the benefits of resistance-based training versus bodyweight control."
+  },
+  {
+    "id": "contemporary",
+    "category": "Life on STAGE",
+    "subCategory": "Body Flow",
+    "welcome_message": "Hi Stony, Welcome to the Contemporary Society!",
+    "welcome_text": "Break the rules of classical movement and tell your own story. We explore the limitless possibilities of human expression through modern dance.",
+    "keyword_badges": [
+      "Expression",
+      "Innovation"
+    ],
+    "blog_core_keyword": "TECHNIQUE",
+    "blog_title": "Emotion vs. Technique: What Should Take Priority in a Professional Contemporary Performance?",
+    "blog_subtitle": "Finding the balance between skill and storytelling.",
+    "blog_description": "Leading choreographers discuss the evolving standards of contemporary dance auditions."
+  },
+  {
+    "id": "bike",
+    "category": "Life on ROAD",
+    "subCategory": "Two-Wheels",
+    "welcome_message": "Hi Stony, Welcome to the World Bike Society!",
+    "welcome_text": "Feel the breeze and conquer new trails with human power. Whether it's road racing or mountain biking, we celebrate the freedom of the ride.",
+    "keyword_badges": [
+      "Endurance",
+      "Freedom"
+    ],
+    "blog_core_keyword": "MATERIAL SCIENCE",
+    "blog_title": "The Weight Debate: Is a High-End Carbon Frame Truly Worth the Investment for Casual Riders?",
+    "blog_subtitle": "Analyzing performance gains versus cost-effectiveness.",
+    "blog_description": "A technical comparison of frame materials and their impact on long-distance comfort."
+  },
+  {
+    "id": "motorbike",
+    "category": "Life on ROAD",
+    "subCategory": "Two-Wheels",
+    "welcome_message": "Hi Stony, Welcome to the Motorbike Society!",
+    "welcome_text": "Experience the thrill of the open road and the roar of the engine. We are a community of riders dedicated to the soul of the machine.",
+    "keyword_badges": [
+      "Speed",
+      "Adventure"
+    ],
+    "blog_core_keyword": "TRANSMISSION",
+    "blog_title": "The End of the Clutch? Why Traditional Manual Gearboxes are Facing Competition from DCT Systems",
+    "blog_subtitle": "The future of the pure riding experience.",
+    "blog_description": "Expert riders weigh in on the convenience of automatic shifting versus the control of a manual."
+  },
+  {
+    "id": "e-scooter",
+    "category": "Life on ROAD",
+    "subCategory": "Two-Wheels",
+    "welcome_message": "Hi Stony, Welcome to the E-Scooter Society!",
+    "welcome_text": "Navigate the urban jungle with speed and eco-friendly style. Join the movement for smarter, faster, and more sustainable city transport.",
+    "keyword_badges": [
+      "Urban Mobility",
+      "Eco-Friendly"
+    ],
+    "blog_core_keyword": "SAFETY LAWS",
+    "blog_title": "Sidewalks vs. Bike Lanes: Navigating the Complex Safety Regulations for Modern E-Scooter Riders",
+    "blog_subtitle": "Where do we belong in the city infrastructure?",
+    "blog_description": "An analysis of global urban planning trends and their impact on personal electric vehicles."
+  },
+  {
+    "id": "running",
+    "category": "Life on ROAD",
+    "subCategory": "Urban Sports",
+    "welcome_message": "Hi Stony, Welcome to the World Running Society!",
+    "welcome_text": "Push your limits, one step at a time, across the city pavement. We support every runner, from first-timers to marathon veterans.",
+    "keyword_badges": [
+      "Endurance",
+      "Vitality"
+    ],
+    "blog_core_keyword": "BIOMECHANICS",
+    "blog_title": "Heel Strike vs. Forefoot: The Scientific Debate on Which Running Form Best Prevents Chronic Injury",
+    "blog_subtitle": "Finding the most efficient way to run.",
+    "blog_description": "Orthopedic specialists break down the impact of different striking patterns on joint health."
+  },
+  {
+    "id": "skateboarding",
+    "category": "Life on ROAD",
+    "subCategory": "Urban Sports",
+    "welcome_message": "Hi Stony, Welcome to the Skateboarding Society!",
+    "welcome_text": "Turn the concrete streets into your personal playground. We celebrate the tricks, the culture, and the fearless spirit of skating.",
+    "keyword_badges": [
+      "Fearless",
+      "Creativity"
+    ],
+    "blog_core_keyword": "OLYMPIC STATUS",
+    "blog_title": "Street vs. Park: How the Inclusion of Skateboarding in the Olympics is Changing the Culture",
+    "blog_subtitle": "Is mainstream recognition a threat to underground roots?",
+    "blog_description": "Pro skaters discuss the shift from street clips to competitive medal-chasing."
+  },
+  {
+    "id": "inline",
+    "category": "Life on ROAD",
+    "subCategory": "Urban Sports",
+    "welcome_message": "Hi Stony, Welcome to the Inline Skating Society!",
+    "welcome_text": "Glide smoothly through the city with speed and agility. Experience the unique flow of urban skating and the community that drives it.",
+    "keyword_badges": [
+      "Flow",
+      "Agility"
+    ],
+    "blog_core_keyword": "WHEEL CONFIG",
+    "blog_title": "The Big Wheel Revolution: Why 3-Wheel Setups are Overtaking the Traditional 4-Wheel Inline Skates",
+    "blog_subtitle": "Speed versus stability in urban environments.",
+    "blog_description": "A guide to choosing the right frame and wheel size for city cruising versus aggressive skating."
+  },
+  {
+    "id": "camping",
+    "category": "Life on ROAD",
+    "subCategory": "Nature Path",
+    "welcome_message": "Hi Stony, Welcome to the World Camping Society!",
+    "welcome_text": "Disconnect from the noise and reconnect with the wild. Whether it's a tent or a van, we celebrate life under the stars.",
+    "keyword_badges": [
+      "Wilderness",
+      "Self-Reliance"
+    ],
+    "blog_core_keyword": "ETHICS",
+    "blog_title": "Glamping vs. Roughing It: Does Luxury Gear Take Away the True Spirit of Living in the Wilderness?",
+    "blog_subtitle": "Defining the boundaries of outdoor living.",
+    "blog_description": "A social commentary on the rise of luxury camping and its impact on the 'Leave No Trace' philosophy."
+  },
+  {
+    "id": "trekking",
+    "category": "Life on ROAD",
+    "subCategory": "Nature Path",
+    "welcome_message": "Hi Stony, Welcome to the World Trekking Society!",
+    "welcome_text": "Walk the long paths and discover the hidden beauty of the earth. We are hikers dedicated to the journey and the summits.",
+    "keyword_badges": [
+      "Adventure",
+      "Perseverance"
+    ],
+    "blog_core_keyword": "FOOTWEAR",
+    "blog_title": "The Boot Debate: Why Long-Distance Trekkers are Swapping Heavy Boots for Ultralight Trail Runners",
+    "blog_subtitle": "Protection versus mobility on the trail.",
+    "blog_description": "Experienced thru-hikers share their gear transitions for thousand-mile journeys."
+  },
+  {
+    "id": "climbing",
+    "category": "Life on ROAD",
+    "subCategory": "Nature Path",
+    "welcome_message": "Hi Stony, Welcome to the World Climbing Society!",
+    "welcome_text": "Challenge your physical limits and conquer the vertical world. From indoor bouldering to mountain peaks, we climb together.",
+    "keyword_badges": [
+      "Strength",
+      "Strategy"
+    ],
+    "blog_core_keyword": "SAFETY GEAR",
+    "blog_title": "Free Solo vs. Rope Climbing: Understanding the Ethical and Physical Limits of Modern Mountaineering",
+    "blog_subtitle": "Where should we draw the line on risk?",
+    "blog_description": "Climbing legends discuss the psychological impact of high-stakes, unroped ascents."
+  },
+  {
+    "id": "cooking",
+    "category": "Life on TABLE",
+    "subCategory": "Culinary",
+    "welcome_message": "Hi Stony, Welcome to the World Cooking Society!",
+    "welcome_text": "Transform raw ingredients into unforgettable culinary experiences. Join our kitchen where creativity meets the heat of the pan.",
+    "keyword_badges": [
+      "Creativity",
+      "Flavor"
+    ],
+    "blog_core_keyword": "TECHNIQUE",
+    "blog_title": "The Recipe Debate: Should You Follow Instructions Strictly or Cook with Intuition and Feeling?",
+    "blog_subtitle": "Mastering the science and art of the kitchen.",
+    "blog_description": "Michelin-starred chefs share their journey from following rules to breaking them."
+  },
+  {
+    "id": "baking",
+    "category": "Life on TABLE",
+    "subCategory": "Culinary",
+    "welcome_message": "Hi Stony, Welcome to the World Baking Society!",
+    "welcome_text": "Master the sweet science of flour, butter, and exact temperatures. We celebrate the precision and patience of the perfect bake.",
+    "keyword_badges": [
+      "Precision",
+      "Patience"
+    ],
+    "blog_core_keyword": "MEASUREMENT",
+    "blog_title": "Grams vs. Cups: Why Professional Bakers Insist on Weight Over Volume for Perfect Result Consistency",
+    "blog_subtitle": "The secret to successful sourdough and sponge.",
+    "blog_description": "A technical look at how humidity and packing density ruin cup-based measurements."
+  },
+  {
+    "id": "dessert",
+    "category": "Life on TABLE",
+    "subCategory": "Culinary",
+    "welcome_message": "Hi Stony, Welcome to the Dessert Society!",
+    "welcome_text": "Craft sweet masterpieces that delight both the eyes and the palate. Explore the world of pastries, chocolates, and sugar art.",
+    "keyword_badges": [
+      "Artistry",
+      "Indulgence"
+    ],
+    "blog_core_keyword": "FUSION",
+    "blog_title": "Tradition vs. Innovation: Are Modern Hybrid Desserts Ruining the Integrity of Classic French Pastries?",
+    "blog_subtitle": "The rise of the Cronut and beyond.",
+    "blog_description": "Patissiers debate whether social media trends are devaluing traditional pastry skills."
+  },
+  {
+    "id": "coffee",
+    "category": "Life on TABLE",
+    "subCategory": "Beverage",
+    "welcome_message": "Hi Stony, Welcome to the World Coffee Society!",
+    "welcome_text": "Extract the perfect shot and explore the complex notes of the bean. Join our pursuit of the ultimate brew from soil to cup.",
+    "keyword_badges": [
+      "Extraction",
+      "Complexity"
+    ],
+    "blog_core_keyword": "ROAST PROFILES",
+    "blog_title": "The Light Roast Trend: Why the Specialty Coffee World is Turning Away from Traditional Dark Roasts",
+    "blog_subtitle": "Preserving the terroir of the bean.",
+    "blog_description": "Baristas explain how light roasting highlights fruit notes but challenges extraction consistency."
+  },
+  {
+    "id": "wine",
+    "category": "Life on TABLE",
+    "subCategory": "Beverage",
+    "welcome_message": "Hi Stony, Welcome to the World Wine Society!",
+    "welcome_text": "Swirl, sniff, and taste the history captured in a bottle. We celebrate the terroir and the craft of fine winemaking.",
+    "keyword_badges": [
+      "Terroir",
+      "Tradition"
+    ],
+    "blog_core_keyword": "NATURAL WINE",
+    "blog_title": "Pure vs. Processed: The Controversial Rise of Natural Wines and the Fight for Clean Fermentation",
+    "blog_subtitle": "Is the funky taste a flaw or a feature?",
+    "blog_description": "Sommeliers debate the quality control issues and the beauty of zero-sulfite production."
+  },
+  {
+    "id": "whisky",
+    "category": "Life on TABLE",
+    "subCategory": "Beverage",
+    "welcome_message": "Hi Stony, Welcome to the World Whisky Society!",
+    "welcome_text": "Savor the deep, oak-aged complexity of liquid gold. We explore the heritage of distilleries and the science of the cask.",
+    "keyword_badges": [
+      "Heritage",
+      "Complexity"
+    ],
+    "blog_core_keyword": "MATURATION",
+    "blog_title": "Single Malt vs. Blended: Debunking the Myth That Only Single Malts Deserve a Place on Your Shelf",
+    "blog_subtitle": "The art of the master blender.",
+    "blog_description": "Industry experts explain why blending is often more difficult than single-distillery aging."
+  },
+  {
+    "id": "tea",
+    "category": "Life on TABLE",
+    "subCategory": "Beverage",
+    "welcome_message": "Hi Stony, Welcome to the World Tea Society!",
+    "welcome_text": "Find peace in the slow, mindful ritual of brewing leaves. Explore the ancient traditions and modern varieties of global tea culture.",
+    "keyword_badges": [
+      "Mindfulness",
+      "Ritual"
+    ],
+    "blog_core_keyword": "QUALITY",
+    "blog_title": "Loose Leaf vs. Tea Bags: Why Serious Connoisseurs Are Abandoning the Convenience of the Mesh Bag",
+    "blog_subtitle": "Maximizing the expansion of the leaf.",
+    "blog_description": "A guide to how tea dust in bags prevents the true release of complex tannins and flavors."
+  },
+  {
+    "id": "pottery",
+    "category": "Life on TABLE",
+    "subCategory": "Handcraft",
+    "welcome_message": "Hi Stony, Welcome to the World Pottery Society!",
+    "welcome_text": "Shape the earth with your hands and fire it into art. Experience the tactile joy of creating functional beauty from clay.",
+    "keyword_badges": [
+      "Tactile",
+      "Earthy"
+    ],
+    "blog_core_keyword": "TECHNIQUE",
+    "blog_title": "Wheel Throwing vs. Hand Building: Which Method Best Connects the Artist to the Raw Essence of Clay?",
+    "blog_subtitle": "The speed of the wheel versus the touch of the hand.",
+    "blog_description": "Potters discuss the meditative differences between symmetrical turning and organic construction."
+  },
+  {
+    "id": "woodworking",
+    "category": "Life on TABLE",
+    "subCategory": "Handcraft",
+    "welcome_message": "Hi Stony, Welcome to the Woodworking Society!",
+    "welcome_text": "Carve, join, and polish raw timber into functional beauty. We celebrate the smell of sawdust and the strength of the joint.",
+    "keyword_badges": [
+      "Craftsmanship",
+      "Utility"
+    ],
+    "blog_core_keyword": "TOOLS",
+    "blog_title": "Hand Tools vs. Power Tools: The Ongoing Debate Over What Constitutes True Traditional Craftsmanship",
+    "blog_subtitle": "Efficiency versus the soul of the work.",
+    "blog_description": "A look at why the resurgence of hand planes and chisels is changing the modern shop."
+  },
+  {
+    "id": "knitting",
+    "category": "Life on TABLE",
+    "subCategory": "Handcraft",
+    "welcome_message": "Hi Stony, Welcome to the Knitting Society!",
+    "welcome_text": "Weave warmth and creativity, one peaceful stitch at a time. Join a community dedicated to the rhythm of the needles.",
+    "keyword_badges": [
+      "Creativity",
+      "Rhythm"
+    ],
+    "blog_core_keyword": "FIBER ETHICS",
+    "blog_title": "Natural Fibers vs. Synthetic Blends: The Environmental and Practical Impact of Your Yarn Choice",
+    "blog_subtitle": "Choosing the right material for longevity.",
+    "blog_description": "An investigation into microplastics in yarn and the performance of heirloom wool."
+  },
+  {
+    "id": "bts",
+    "category": "Life on MUSE",
+    "subCategory": "The Artists",
+    "welcome_message": "Hi Stony, Welcome to the World BTS Society!",
+    "welcome_text": "Join the ARMY and celebrate the music that moves the globe. We explore the message, the performance, and the legacy of BTS.",
+    "keyword_badges": [
+      "ARMY",
+      "Global Impact"
+    ],
+    "blog_core_keyword": "ARTISTRY",
+    "blog_title": "Beyond the Idol Label: How BTS Redefined the Global Music Industry Through Sincere Storytelling",
+    "blog_subtitle": "Analyzing the impact of the 'Love Yourself' message.",
+    "blog_description": "A musical analysis of how BTS bridges the gap between pop hits and social commentary."
+  },
+  {
+    "id": "k-pop",
+    "category": "Life on MUSE",
+    "subCategory": "The Artists",
+    "welcome_message": "Hi Stony, Welcome to the K-Pop Society!",
+    "welcome_text": "Dive into the synchronized choreographies and vibrant fandoms. We celebrate the unique fusion of visual and musical excellence.",
+    "keyword_badges": [
+      "Fandom",
+      "Performance"
+    ],
+    "blog_core_keyword": "GEN DEBATE",
+    "blog_title": "The Golden Era: Why Fans Still Debate Whether the 2nd Generation of K-Pop Was Better Than the 4th",
+    "blog_subtitle": "Comparing vocal power with modern production.",
+    "blog_description": "An industry retrospective on how K-Pop groups have evolved from domestic acts to global icons."
+  },
+  {
+    "id": "global-pop",
+    "category": "Life on MUSE",
+    "subCategory": "The Artists",
+    "welcome_message": "Hi Stony, Welcome to the Global Pop Society!",
+    "welcome_text": "Catch the infectious hooks and chart-topping hits of the world. From stadium anthems to bedroom pop, we listen to it all.",
+    "keyword_badges": [
+      "Melody",
+      "Universal"
+    ],
+    "blog_core_keyword": "ALGORITHMS",
+    "blog_title": "The TikTok Effect: How Viral Short-Form Content is Forcing Pop Stars to Change How They Write Songs",
+    "blog_subtitle": "The death of the bridge and the rise of the hook.",
+    "blog_description": "Music producers discuss the shortening of song lengths to satisfy digital consumption habits."
+  },
+  {
+    "id": "cinema",
+    "category": "Life on MUSE",
+    "subCategory": "Screen & Page",
+    "welcome_message": "Hi Stony, Welcome to the World Cinema Society!",
+    "welcome_text": "Lose yourself in the visual storytelling of the silver screen. We celebrate the directors, the actors, and the magic of film.",
+    "keyword_badges": [
+      "Visual Storytelling",
+      "Aesthetics"
+    ],
+    "blog_core_keyword": "SFX VS PRACTICAL",
+    "blog_title": "The Realism Debate: Why Practical Effects are Making a Comeback in a World Dominated by CGI",
+    "blog_subtitle": "The tactile magic of the silver screen.",
+    "blog_description": "Film critics analyze why audiences are feeling 'CGI fatigue' and longing for real stunts."
+  },
+  {
+    "id": "anime",
+    "category": "Life on MUSE",
+    "subCategory": "Screen & Page",
+    "welcome_message": "Hi Stony, Welcome to the World Anime Society!",
+    "welcome_text": "Explore limitless worlds of imagination and stunning 2D animation. From shonen action to slice-of-life, we share our favorite series.",
+    "keyword_badges": [
+      "Imagination",
+      "2D Art"
+    ],
+    "blog_core_keyword": "LOCALIZATION",
+    "blog_title": "Sub vs. Dub: The Eternal Debate Over Which Format Provides the Most Authentic Anime Experience",
+    "blog_subtitle": "Lost in translation or gained in accessibility?",
+    "blog_description": "Voice actors and translators discuss the challenge of preserving Japanese cultural nuances."
+  },
+  {
+    "id": "literature",
+    "category": "Life on MUSE",
+    "subCategory": "Screen & Page",
+    "welcome_message": "Hi Stony, Welcome to the World Literature Society!",
+    "welcome_text": "Turn the page and travel through a thousand different lives. We are readers dedicated to the power of the written word.",
+    "keyword_badges": [
+      "Narration",
+      "Human Condition"
+    ],
+    "blog_core_keyword": "FORMATS",
+    "blog_title": "Paper vs. Pixel: Is the Rise of E-Readers Destroying the Romantic Connection to the Physical Book?",
+    "blog_subtitle": "The tactile experience of reading.",
+    "blog_description": "A psychological study on how physical pages impact memory retention compared to digital screens."
+  },
+  {
+    "id": "vinyl",
+    "category": "Life on MUSE",
+    "subCategory": "Collectors",
+    "welcome_message": "Hi Stony, Welcome to the World Vinyl Society!",
+    "welcome_text": "Drop the needle and enjoy the warm, analog sound of history. We celebrate the physical connection to music and the art of the cover.",
+    "keyword_badges": [
+      "Analog",
+      "Tactile"
+    ],
+    "blog_core_keyword": "PRESSINGS",
+    "blog_title": "First Pressings vs. Remasters: Why Audiophiles Spend Thousands Tracking Down Original Vinyl Releases",
+    "blog_subtitle": "The search for the purest analog signal.",
+    "blog_description": "A guide to understanding matrix numbers and why digital remasters often lose dynamic range."
+  },
+  {
+    "id": "figures",
+    "category": "Life on MUSE",
+    "subCategory": "Collectors",
+    "welcome_message": "Hi Stony, Welcome to the World Figures Society!",
+    "welcome_text": "Curate your display and bring your favorite characters to life. We celebrate the craftsmanship of sculptors and the joy of the hunt.",
+    "keyword_badges": [
+      "Sculpting",
+      "Curation"
+    ],
+    "blog_core_keyword": "DISPLAY",
+    "blog_title": "In-Box vs. Out-of-Box: The Great Collector's Dilemma Between Resale Value and Personal Enjoyment",
+    "blog_subtitle": "Preservation versus presence.",
+    "blog_description": "Veteran collectors share tips on how to display figures without causing sun damage or dust wear."
+  },
+  {
+    "id": "art-pieces",
+    "category": "Life on MUSE",
+    "subCategory": "Collectors",
+    "welcome_message": "Hi Stony, Welcome to the World Art Society!",
+    "welcome_text": "Invest in beauty and surround yourself with unique expressions. We explore the world of fine art, from the canvas to the sculpture.",
+    "keyword_badges": [
+      "Expression",
+      "Value"
+    ],
+    "blog_core_keyword": "DIGITAL ART",
+    "blog_title": "Canvas vs. NFT: Can Digital Ownership Ever Truly Replace the Physical Presence of a Masterpiece?",
+    "blog_subtitle": "The future of the art market.",
+    "blog_description": "Gallerists discuss the shifting definition of 'ownership' in the age of digital scarcity."
+  },
+  {
+    "id": "english",
+    "category": "Life on MIND",
+    "subCategory": "Language",
+    "welcome_message": "Hi Stony, Welcome to the World English Society!",
+    "welcome_text": "Break down barriers and connect with the global community. We share tools and strategies for mastering the world's most spoken language.",
+    "keyword_badges": [
+      "Global Connection",
+      "Fluency"
+    ],
+    "blog_core_keyword": "LEARNING PHILOSOPHY",
+    "blog_title": "Grammar First vs. Communication First: Which Method Produces the Fastest Path to Fluent English?",
+    "blog_subtitle": "Breaking the fear of making mistakes.",
+    "blog_description": "Linguists argue for immersion-based learning over the traditional memorization of rules."
+  },
+  {
+    "id": "spanish",
+    "category": "Life on MIND",
+    "subCategory": "Language",
+    "welcome_message": "Hi Stony, Welcome to the World Spanish Society!",
+    "welcome_text": "Speak the passionate language of diverse cultures and continents. Join our community to master the rhythms of Spanish.",
+    "keyword_badges": [
+      "Passion",
+      "Diversity"
+    ],
+    "blog_core_keyword": "DIALECTS",
+    "blog_title": "Castilian vs. Latin American Spanish: Navigating the Regional Differences for Global Communication",
+    "blog_subtitle": "Which version should you learn first?",
+    "blog_description": "A guide to the most important vocabulary shifts between Spain and Mexico."
+  },
+  {
+    "id": "japanese",
+    "category": "Life on MIND",
+    "subCategory": "Language",
+    "welcome_message": "Hi Stony, Welcome to the World Japanese Society!",
+    "welcome_text": "Master the elegant characters and subtle nuances of expression. Explore the deep culture through the beauty of the Japanese language.",
+    "keyword_badges": [
+      "Nuance",
+      "Elegance"
+    ],
+    "blog_core_keyword": "KANJI",
+    "blog_title": "The Kanji Wall: Is Memorizing Thousands of Characters Still Essential in the Age of Digital Input?",
+    "blog_subtitle": "The debate over writing versus reading.",
+    "blog_description": "Modern learners discuss how AI and auto-complete are changing Japanese language education."
+  },
+  {
+    "id": "journaling",
+    "category": "Life on MIND",
+    "subCategory": "Writing",
+    "welcome_message": "Hi Stony, Welcome to the World Journaling Society!",
+    "welcome_text": "Reflect on your day and organize your inner thoughts on paper. Experience the therapeutic power of a daily writing habit.",
+    "keyword_badges": [
+      "Reflection",
+      "Mindfulness"
+    ],
+    "blog_core_keyword": "SYSTEMS",
+    "blog_title": "Bullet Journaling vs. Morning Pages: Which System Best Promotes Mental Clarity and Productivity?",
+    "blog_subtitle": "Finding the structure that fits your life.",
+    "blog_description": "A comparison of productivity-focused logging versus stream-of-consciousness writing."
+  },
+  {
+    "id": "essay",
+    "category": "Life on MIND",
+    "subCategory": "Writing",
+    "welcome_message": "Hi Stony, Welcome to the World Essay Society!",
+    "welcome_text": "Structure your arguments and persuade the world with logic. We celebrate the art of deep thinking and clear writing.",
+    "keyword_badges": [
+      "Logic",
+      "Deep Thinking"
+    ],
+    "blog_core_keyword": "AI WRITING",
+    "blog_title": "The Death of the Essay? How Large Language Models Are Forcing a Re-evaluation of Student Writing",
+    "blog_subtitle": "Defining original thought in the AI era.",
+    "blog_description": "Educators debate whether AI tools are a threat to critical thinking or a new form of research."
+  },
+  {
+    "id": "copywriting",
+    "category": "Life on MIND",
+    "subCategory": "Writing",
+    "welcome_message": "Hi Stony, Welcome to the World Copywriting Society!",
+    "welcome_text": "Craft words that sell, convert, and capture instant attention. Master the psychology of persuasion through the written word.",
+    "keyword_badges": [
+      "Persuasion",
+      "Strategy"
+    ],
+    "blog_core_keyword": "ATTENTION SPAN",
+    "blog_title": "Short vs. Long Form: Why Detailed Copy is Making a Surprising Comeback in the Age of 15-Second Videos",
+    "blog_subtitle": "The psychology of the deep dive.",
+    "blog_description": "Top marketers explain why consumers still crave long-form stories when making big decisions."
+  },
+  {
+    "id": "interior",
+    "category": "Life on MIND",
+    "subCategory": "Home Styling",
+    "welcome_message": "Hi Stony, Welcome to the World Interior Society!",
+    "welcome_text": "Design your sanctuary and match your space to your lifestyle. We explore the balance of aesthetics, comfort, and function.",
+    "keyword_badges": [
+      "Aesthetics",
+      "Sanctuary"
+    ],
+    "blog_core_keyword": "MINIMALISM",
+    "blog_title": "Minimalism vs. Maximalism: Why Modern Homes are Moving Away from Cold White Boxes to Cozy Clutter",
+    "blog_subtitle": "The rise of the 'Cluttercore' movement.",
+    "blog_description": "Designers discuss the psychological benefits of surrounding yourself with meaningful objects."
+  },
+  {
+    "id": "plant-care",
+    "category": "Life on MIND",
+    "subCategory": "Home Styling",
+    "welcome_message": "Hi Stony, Welcome to the Plant Care Society!",
+    "welcome_text": "Bring nature indoors and cultivate your own urban jungle. Learn the science of light, water, and life.",
+    "keyword_badges": [
+      "Nature",
+      "Cultivation"
+    ],
+    "blog_core_keyword": "SUBSTRATES",
+    "blog_title": "Soil vs. LECA: Is the Future of Houseplant Care Moving Toward Semi-Hydroponic Systems?",
+    "blog_subtitle": "Reducing pests and perfecting hydration.",
+    "blog_description": "An expert guide to transitioning your collection to soilless growth for faster results."
+  }
+]

@@ -11,6 +11,8 @@ import GroupClassDiscountEditor from "./GroupClassDiscountEditor";
 import GroupClassMonthlyPassEditor from "./GroupClassMonthlyPassEditor";
 import { classRegistrationService } from "@/lib/firebase/classRegistrationService";
 import { useRouter } from "next/navigation";
+import { GroupClassRegistrations } from "./GroupClassRegistrations";
+import { GroupClassStats } from "./GroupClassStats";
 
 interface GroupClassEditorProps {
   group: Group;
@@ -29,40 +31,7 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave }) =>
   const [editingState, setEditingState] = useState<EditingState | null>(null);
   const [loading, setLoading] = useState(false);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
-
-  // Payment Settings State
-  const [paymentSettings, setPaymentSettings] = useState({
-    paymentMethods: {
-      bankTransfer: group.classPaymentSettings?.paymentMethods?.bankTransfer ?? true,
-      creditCard: group.classPaymentSettings?.paymentMethods?.creditCard ?? false,
-      overseas: group.classPaymentSettings?.paymentMethods?.overseas ?? false,
-    },
-    bankDetails: {
-      bankName: group.classPaymentSettings?.bankDetails?.bankName ?? "",
-      accountHolder: group.classPaymentSettings?.bankDetails?.accountHolder ?? "",
-      accountNumber: group.classPaymentSettings?.bankDetails?.accountNumber ?? "",
-      wiseId: (group.classPaymentSettings?.bankDetails as any)?.wiseId ?? "",
-    }
-  });
-  const [isEditingPayment, setIsEditingPayment] = useState(false);
-  const [savingPayment, setSavingPayment] = useState(false);
-
-  const handleSavePaymentSettings = async () => {
-    setSavingPayment(true);
-    try {
-      await groupService.updateGroupMetadata(group.id, {
-        classPaymentSettings: paymentSettings
-      });
-      setIsEditingPayment(false);
-      toast.success("Payment settings updated successfully.");
-      if (onSave) onSave();
-    } catch (error) {
-      console.error("Failed to update payment settings:", error);
-      toast.error("Failed to update payment settings.");
-    } finally {
-      setSavingPayment(false);
-    }
-  };
+  const [activeTab, setActiveTab] = useState<'register' | 'application' | 'stats'>('register');
 
   const [currentDate, setCurrentDate] = useState(() => {
     const d = new Date();
@@ -220,29 +189,6 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave }) =>
   return (
     <div className="antialiased text-gray-900 bg-[#F3F4F6] min-h-screen font-['Plus_Jakarta_Sans'] pb-20">
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Class Basic Info 1-line Summary */}
-        <section className="mb-6">
-          <div className="bg-white rounded-[12px] p-4 flex items-center justify-between shadow-sm border border-gray-100">
-            <div className="flex items-center gap-3">
-              <span className="material-symbols-outlined text-[#0057bd]">info</span>
-              <div>
-                <h3 className="font-bold text-gray-900 text-sm">Class Basic Info</h3>
-                <p className="text-xs text-gray-500 truncate max-w-[200px] sm:max-w-sm">
-                  {paymentSettings.paymentMethods.bankTransfer
-                    ? `Payment: ${paymentSettings.bankDetails.bankName || 'No bank'} | ${paymentSettings.bankDetails.accountNumber || 'No account'}`
-                    : 'Payment: No method set'}
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={() => setEditingState({ type: 'payment', data: paymentSettings })}
-              className="px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg text-sm font-bold transition-colors shrink-0"
-            >
-              Edit
-            </button>
-          </div>
-        </section>
-
         {/* Month Navigation & Visibility */}
         <section className="mb-6 bg-white rounded-[16px] shadow-sm border border-gray-100 overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50/50">
@@ -267,7 +213,37 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave }) =>
           </div>
         </section>
 
-        {/* Action Buttons */}
+        {/* Tabs Navigation */}
+        <div className="flex bg-white rounded-[12px] p-1 shadow-sm border border-gray-100 mb-6 gap-1">
+          <button
+            onClick={() => setActiveTab('register')}
+            className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${
+              activeTab === 'register' ? 'bg-[#0057bd] text-white' : 'text-gray-500 hover:bg-gray-50'
+            }`}
+          >
+            Register
+          </button>
+          <button
+            onClick={() => setActiveTab('application')}
+            className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${
+              activeTab === 'application' ? 'bg-[#0057bd] text-white' : 'text-gray-500 hover:bg-gray-50'
+            }`}
+          >
+            Application
+          </button>
+          <button
+            onClick={() => setActiveTab('stats')}
+            className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${
+              activeTab === 'stats' ? 'bg-[#0057bd] text-white' : 'text-gray-500 hover:bg-gray-50'
+            }`}
+          >
+            Stats
+          </button>
+        </div>
+
+        {activeTab === 'register' && (
+          <>
+            {/* Action Buttons */}
         <section className="mb-8 flex justify-between gap-3">
           <button
             onClick={() => setEditingState({ type: 'add-class', data: null })}
@@ -443,7 +419,10 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave }) =>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-gray-500">Instructor:</span>
-                    <span className="text-sm font-semibold text-gray-800">{cls.instructors?.[0]?.name || 'TBD'}</span>
+                    <span className="text-sm font-semibold text-gray-800">
+                      {cls.instructors?.[0]?.name || 'TBD'}
+                      {cls.instructors && cls.instructors.length > 1 && ` +${cls.instructors.length - 1}`}
+                    </span>
                   </div>
                   <span className="text-sm font-bold text-gray-900">{cls.currency === 'KRW' ? '₩' : cls.currency} {cls.amount.toLocaleString()}</span>
                 </div>
@@ -468,6 +447,38 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave }) =>
             </div>
           ))}
         </section>
+        </>
+        )}
+
+        {activeTab === 'application' && (
+          <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <GroupClassRegistrations 
+              group={group} 
+              validClassIds={[
+                ...filteredClasses.map(c => c.id),
+                ...filteredPasses.map((p: any) => p.id),
+                ...filteredDiscounts.map((d: any) => d.id)
+              ]}
+              allClasses={allClasses}
+              allPasses={allMonthlyPasses}
+              allDiscounts={allDiscounts}
+            />
+          </section>
+        )}
+
+        {activeTab === 'stats' && (
+          <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <GroupClassStats 
+              group={group} 
+              validClassIds={[
+                ...filteredClasses.map(c => c.id),
+                ...filteredPasses.map((p: any) => p.id),
+                ...filteredDiscounts.map((d: any) => d.id)
+              ]}
+              filteredClasses={filteredClasses}
+            />
+          </section>
+        )}
       </main>
 
       {/* Editors Overlay */}
@@ -507,186 +518,6 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave }) =>
             }}
             targetMonth={currentMonthStr}
           />
-        )}
-        {editingState?.type === "payment" && typeof document !== 'undefined' && createPortal(
-          <div className="fixed inset-0 z-[99999] bg-[#f7f9fb] text-[#191c1e] font-['Plus_Jakarta_Sans'] h-[100dvh] w-screen overflow-hidden flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <style dangerouslySetInnerHTML={{
-              __html: `
-              .glass-panel {
-                  background: rgba(255, 255, 255, 0.7);
-                  backdrop-filter: blur(16px);
-                  -webkit-backdrop-filter: blur(16px);
-                  border: 1px solid rgba(255, 255, 255, 0.3);
-                  border-top: 1px solid rgba(255, 255, 255, 0.8);
-                  border-left: 1px solid rgba(255, 255, 255, 0.8);
-                  box-shadow: 0 4px 30px rgba(0, 163, 255, 0.05);
-              }
-              .input-glass {
-                  background: rgba(255, 255, 255, 0.5);
-                  border: 1px solid rgba(0, 98, 157, 0.1);
-                  transition: all 0.3s ease;
-              }
-              .input-glass:focus {
-                  background: rgba(255, 255, 255, 0.9);
-                  border-color: #00A3FF;
-                  box-shadow: 0 0 0 4px rgba(0, 163, 255, 0.1);
-                  outline: none;
-              }
-              .toggle-checkbox:checked {
-                  right: 0;
-                  border-color: #00a3ff;
-              }
-              .toggle-checkbox:checked + .toggle-label {
-                  background-color: #00a3ff;
-              }
-            `}} />
-
-            {/* Ambient Background */}
-            <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-              <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-[#cfe5ff] opacity-30 blur-[100px]"></div>
-              <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-[#d6e3ff] opacity-40 blur-[120px]"></div>
-            </div>
-
-            <header className="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-6 h-16 bg-white/70 dark:bg-slate-900/70 backdrop-blur-lg border-b border-white/20 dark:border-slate-800 shadow-[0_4px_30px_rgba(0,163,255,0.1)]">
-              <button onClick={() => setEditingState(null)} className="w-10 h-10 flex items-center justify-center rounded-full text-slate-500 hover:bg-sky-50/50 active:scale-95 duration-200 transition-colors">
-                <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>close</span>
-              </button>
-              <h1 className="font-['Plus_Jakarta_Sans'] text-sm font-semibold tracking-tight text-slate-900 dark:text-white">Payment Management</h1>
-              <button onClick={async () => { await handleSavePaymentSettings(); setEditingState(null); }} disabled={savingPayment} className="text-[15px] leading-[1] font-semibold text-sky-500 dark:text-sky-400 hover:text-sky-600 active:scale-95 duration-200 transition-colors px-4 py-2 rounded-lg">
-                {savingPayment ? 'Saving...' : 'Save'}
-              </button>
-            </header>
-
-            <main className="flex-1 overflow-y-auto z-10 pt-20 pb-10 px-4 md:px-[24px] lg:px-[48px] max-w-3xl mx-auto w-full relative">
-              <div className="flex flex-col gap-[24px]">
-
-                {/* Bank Transfer Section */}
-                <section className="glass-panel rounded-xl p-6 relative overflow-hidden">
-                  <div className="flex items-center gap-3 mb-6 border-b border-[#bec7d4]/30 pb-4">
-                    <div className="w-10 h-10 rounded-full bg-[#cfe5ff]/30 flex items-center justify-center text-[#00a3ff]">
-                      <span className="material-symbols-outlined">account_balance</span>
-                    </div>
-                    <div>
-                      <h2 className="text-[24px] leading-[1.3] font-semibold text-[#191c1e]">Bank Transfer</h2>
-                      <p className="text-[14px] leading-[1.5] font-normal text-[#3f4852]">Domestic wire instructions.</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[12px] leading-[1] font-bold tracking-[0.05em] uppercase text-[#3f4852] ml-1">Bank Name</label>
-                      <input
-                        value={paymentSettings.bankDetails.bankName}
-                        onChange={(e) => setPaymentSettings(prev => ({ ...prev, bankDetails: { ...prev.bankDetails, bankName: e.target.value } }))}
-                        className="input-glass w-full rounded-lg h-[48px] px-4 text-[16px] leading-[1.5] font-normal text-[#191c1e] bg-transparent"
-                        placeholder="e.g. Chase Bank"
-                        type="text"
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[12px] leading-[1] font-bold tracking-[0.05em] uppercase text-[#3f4852] ml-1">Account Holder Name</label>
-                      <input
-                        value={paymentSettings.bankDetails.accountHolder}
-                        onChange={(e) => setPaymentSettings(prev => ({ ...prev, bankDetails: { ...prev.bankDetails, accountHolder: e.target.value } }))}
-                        className="input-glass w-full rounded-lg h-[48px] px-4 text-[16px] leading-[1.5] font-normal text-[#191c1e] bg-transparent"
-                        placeholder="John Doe"
-                        type="text"
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1 md:col-span-2">
-                      <label className="text-[12px] leading-[1] font-bold tracking-[0.05em] uppercase text-[#3f4852] ml-1">Account Number</label>
-                      <input
-                        value={paymentSettings.bankDetails.accountNumber}
-                        onChange={(e) => setPaymentSettings(prev => ({ ...prev, bankDetails: { ...prev.bankDetails, accountNumber: e.target.value } }))}
-                        className="input-glass w-full rounded-lg h-[48px] px-4 text-[16px] leading-[1.5] font-normal text-[#191c1e] bg-transparent"
-                        placeholder="0000 0000 0000"
-                        type="text"
-                      />
-                    </div>
-                  </div>
-                </section>
-
-                {/* Card Payment Section */}
-                <section className="glass-panel rounded-xl p-6 relative overflow-hidden">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-[#bec7d4]/30 pb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-[#cfe5ff]/30 flex items-center justify-center text-[#00a3ff]">
-                        <span className="material-symbols-outlined">credit_card</span>
-                      </div>
-                      <div>
-                        <h2 className="text-[24px] leading-[1.3] font-semibold text-[#191c1e]">Card Payment</h2>
-                        <p className="text-[14px] leading-[1.5] font-normal text-[#3f4852]">Accept credit &amp; debit cards.</p>
-                      </div>
-                    </div>
-                    <div className="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
-                      <input
-                        checked={paymentSettings.paymentMethods.creditCard}
-                        onChange={(e) => setPaymentSettings(prev => ({ ...prev, paymentMethods: { ...prev.paymentMethods, creditCard: e.target.checked } }))}
-                        className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-[#bec7d4] z-10 top-0 left-0 transition-transform duration-300 ease-in-out"
-                        id="card-toggle"
-                        name="toggle"
-                        type="checkbox"
-                      />
-                      <label className="toggle-label block overflow-hidden h-6 rounded-full bg-[#bec7d4] cursor-pointer transition-colors duration-300 ease-in-out" htmlFor="card-toggle"></label>
-                    </div>
-                  </div>
-                  <div className="bg-[#f2f4f6] rounded-lg p-4 border border-[#bec7d4]/20 flex flex-col gap-3">
-                    <div className="flex items-center gap-2">
-                      <span className="material-symbols-outlined text-[#00a3ff] text-[20px]">info</span>
-                      <span className="text-[14px] leading-[1.5] font-normal text-[#191c1e]">Currently processed via Stripe gateway.</span>
-                    </div>
-                    <div className="flex gap-2 mt-2">
-                      <span className="px-3 py-1 bg-white rounded-md border border-[#bec7d4]/30 text-[12px] leading-[1] font-bold tracking-[0.05em] uppercase text-[#3f4852] flex items-center justify-center shadow-sm">VISA</span>
-                      <span className="px-3 py-1 bg-white rounded-md border border-[#bec7d4]/30 text-[12px] leading-[1] font-bold tracking-[0.05em] uppercase text-[#3f4852] flex items-center justify-center shadow-sm">MASTERCARD</span>
-                      <span className="px-3 py-1 bg-white rounded-md border border-[#bec7d4]/30 text-[12px] leading-[1] font-bold tracking-[0.05em] uppercase text-[#3f4852] flex items-center justify-center shadow-sm">AMEX</span>
-                    </div>
-                  </div>
-                </section>
-
-                {/* International Payment Section */}
-                <section className="glass-panel rounded-xl p-6 relative overflow-hidden">
-                  <div className="flex items-center gap-3 mb-6 border-b border-[#bec7d4]/30 pb-4">
-                    <div className="w-10 h-10 rounded-full bg-[#cfe5ff]/30 flex items-center justify-center text-[#00a3ff]">
-                      <span className="material-symbols-outlined">public</span>
-                    </div>
-                    <div>
-                      <h2 className="text-[24px] leading-[1.3] font-semibold text-[#191c1e]">International Payment</h2>
-                      <p className="text-[14px] leading-[1.5] font-normal text-[#3f4852]">Powered by Wise.</p>
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-4">
-                    <div className="bg-[#d6e3ff]/30 rounded-lg p-4 border border-[#98cbff]/30 flex items-start gap-3">
-                      <span className="material-symbols-outlined text-[#00a3ff] mt-0.5 text-[20px]">lightbulb</span>
-                      <p className="text-[14px] leading-[1.5] font-normal text-[#3f4852] leading-relaxed">
-                        For international students, we recommend using Wise for lower fees and better exchange rates. Provide your Wise ID below to receive funds directly.
-                      </p>
-                    </div>
-                    <div className="flex flex-col gap-1 mt-2">
-                      <label className="text-[12px] leading-[1] font-bold tracking-[0.05em] uppercase text-[#3f4852] ml-1">Wise ID / Email Address</label>
-                      <div className="relative">
-                        <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#6f7883]">alternate_email</span>
-                        <input
-                          value={paymentSettings.bankDetails.wiseId}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setPaymentSettings(prev => ({
-                              ...prev,
-                              bankDetails: { ...prev.bankDetails, wiseId: val },
-                              paymentMethods: { ...prev.paymentMethods, overseas: val.trim() !== "" }
-                            }));
-                          }}
-                          className="input-glass w-full rounded-lg h-[48px] pl-12 pr-4 text-[16px] leading-[1.5] font-normal text-[#191c1e] bg-transparent"
-                          placeholder="student@example.com"
-                          type="text"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </section>
-
-              </div>
-            </main>
-          </div>,
-          document.body
         )}
       </>
     </div>

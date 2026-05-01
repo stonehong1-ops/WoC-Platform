@@ -85,7 +85,7 @@ export default function GroupContactEditor({ group, isLoaded, onClose }: GroupCo
       }));
     } catch (error) {
       console.error("Error uploading avatar:", error);
-      alert("이미지 업로드에 실패했습니다.");
+      alert("Failed to upload image.");
     } finally {
       setIsUploading(false);
     }
@@ -105,7 +105,7 @@ export default function GroupContactEditor({ group, isLoaded, onClose }: GroupCo
       onClose();
     } catch (error) {
       console.error("Error saving contact info:", error);
-      alert("정보 저장 중 오류가 발생했습니다.");
+      alert("Failed to save information.");
     } finally {
       setIsSaving(false);
     }

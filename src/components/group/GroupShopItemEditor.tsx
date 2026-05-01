@@ -2,15 +2,16 @@
 
 import React, { useState, useRef } from "react";
 import { motion } from "framer-motion";
-import { Group, ShopItem } from "@/types/group";
-import { groupService } from "@/lib/firebase/groupService";
+import { Group } from "@/types/group";
+import { Product } from "@/types/shop";
+import { shopService } from "@/lib/firebase/shopService";
 import { storageService } from "@/lib/firebase/storageService";
 import { toast } from "sonner";
 
 interface GroupShopItemEditorProps {
   group: Group;
   onClose: () => void;
-  item?: ShopItem;
+  item?: Product;
 }
 
 const GroupShopItemEditor: React.FC<GroupShopItemEditorProps> = ({ group, onClose, item }) => {
@@ -75,6 +76,21 @@ const GroupShopItemEditor: React.FC<GroupShopItemEditorProps> = ({ group, onClos
     setDisplayImageUrls(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleDelete = async () => {
+    if (!isEditing || !item) return;
+    if (!confirm("Are you sure you want to delete this item?")) return;
+    setIsSaving(true);
+    try {
+      await shopService.deleteProduct(item.id);
+      toast.success("Item deleted.");
+      onClose();
+    } catch {
+      toast.error("Failed to delete.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!formData.title || !formData.category || formData.price < 0) {
       toast.error("Please fill in all required fields.");
@@ -91,51 +107,31 @@ const GroupShopItemEditor: React.FC<GroupShopItemEditorProps> = ({ group, onClos
 
       const existingUrls = displayImageUrls.filter(url => !url.startsWith('blob:'));
       const finalImageUrls = [...existingUrls, ...uploadedUrls];
-
-      const currentItems = group.shopItems || [];
-      let updatedShopItems: ShopItem[];
-
       const optionsArray = formData.optionsInput.split(',').map(s => s.trim()).filter(s => s);
 
-      if (isEditing && item) {
-        updatedShopItems = currentItems.map(si => 
-          si.id === item.id ? {
-            ...si,
-            title: formData.title,
-            description: formData.description,
-            category: formData.category,
-            currency: formData.currency,
-            price: Number(formData.price),
-            discountPrice: formData.discountPrice ? Number(formData.discountPrice) : undefined,
-            brand: formData.brand || undefined,
-            images: finalImageUrls,
-            options: optionsArray,
-            stock: Number(formData.stock),
-            status: formData.status as 'Active' | 'Stopped',
-          } : si
-        );
-      } else {
-        const newItem: ShopItem = {
-          id: Math.random().toString(36).substring(2, 9),
-          title: formData.title,
-          description: formData.description,
-          category: formData.category,
-          currency: formData.currency,
-          price: Number(formData.price),
-          discountPrice: formData.discountPrice ? Number(formData.discountPrice) : undefined,
-          brand: formData.brand || undefined,
-          images: finalImageUrls,
-          status: formData.status as 'Active' | 'Stopped',
-          createdAt: Date.now(),
-          options: optionsArray,
-          stock: Number(formData.stock),
-        };
-        updatedShopItems = [...currentItems, newItem];
-      }
+      const productData = {
+        groupId: group.id,
+        groupName: group.name,
+        sellerId: 'adminstone',
+        title: formData.title,
+        description: formData.description,
+        category: formData.category,
+        currency: formData.currency,
+        price: Number(formData.price),
+        discountPrice: formData.discountPrice ? Number(formData.discountPrice) : undefined,
+        brand: formData.brand || '',
+        images: finalImageUrls,
+        options: optionsArray,
+        stock: Number(formData.stock),
+        status: formData.status as 'Active' | 'Stopped',
+        deliveryType: 'both' as const,
+      };
 
-      await groupService.updateGroupMetadata(group.id, {
-        shopItems: updatedShopItems
-      } as any);
+      if (isEditing && item) {
+        await shopService.updateProduct(item.id, productData);
+      } else {
+        await shopService.addProduct(productData as any);
+      }
 
       toast.success(isEditing ? "Item updated successfully." : "Item added successfully.");
       onClose();
@@ -295,11 +291,11 @@ const GroupShopItemEditor: React.FC<GroupShopItemEditorProps> = ({ group, onClos
                 onChange={handleInputChange}
               >
                 <option disabled value="">Select Category</option>
-                <option value="Men's Shoes">Men's Shoes</option>
-                <option value="Women's Shoes">Women's Shoes</option>
-                <option value="Dresses">Dresses</option>
-                <option value="Suits">Suits</option>
-                <option value="Others">Others</option>
+                <option value="Woman Shoes">Woman Shoes (Tango Shoes, etc)</option>
+                <option value="Man Shoes">Man Shoes (Tango Shoes, etc)</option>
+                <option value="Woman Wear">Woman Wear (Dresses, Skirts, etc)</option>
+                <option value="Man Wear">Man Wear (Suits, Pants, etc)</option>
+                <option value="Item">Item / Accessories</option>
               </select>
               <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#a3abd7] pointer-events-none" data-icon="expand_more">expand_more</span>
             </div>
@@ -394,6 +390,17 @@ const GroupShopItemEditor: React.FC<GroupShopItemEditorProps> = ({ group, onClos
             </div>
           </div>
         </section>
+
+        {/* Delete Button */}
+        {isEditing && (
+          <button
+            onClick={handleDelete}
+            disabled={isSaving}
+            className="w-full py-3 text-red-500 font-bold text-sm rounded-xl border-2 border-red-200 hover:bg-red-50 active:scale-[0.99] transition-all disabled:opacity-50 mb-8"
+          >
+            Delete This Item
+          </button>
+        )}
       </main>
     </motion.div>
   );

@@ -25,8 +25,8 @@ export default function Header() {
     return () => unsub();
   }, [user]);
 
-  // Hide on login page, landing page, or space pages (App-in-App)
-  if (pathname === '/login' || pathname === '/' || pathname.startsWith('/group/')) return null;
+  // Hide on login page, landing page, stay detail, or space pages (App-in-App)
+  if (pathname === '/login' || pathname === '/' || (pathname.startsWith('/stay/') && pathname !== '/stay') || (pathname.startsWith('/rental/') && pathname !== '/rental') || pathname.startsWith('/group/')) return null;
 
   const routeMap: Record<string, { headline: string; sub: string }> = {
     '/': { headline: 'HOME', sub: 'SOCIETY' },
@@ -40,10 +40,11 @@ export default function Header() {
     '/events': { headline: 'EVENTS', sub: 'Activity' },
     '/shop': { headline: 'SHOP', sub: 'Activity' },
     '/stay': { headline: 'STAY', sub: 'Activity' },
+    '/rental': { headline: 'Freestyle Tango', sub: 'Activity' },
     '/service': { headline: 'SERVICE', sub: 'Activity' },
     
     '/resale': { headline: 'RESALE', sub: 'Town' },
-    '/lost': { headline: 'L&F', sub: 'Town' },
+    '/lost-found': { headline: 'Losts & Found', sub: 'Town' },
     '/arcade': { headline: 'ARCADE', sub: 'Town' },
     
     '/chat': { headline: 'CHAT', sub: 'Social' },
@@ -63,6 +64,10 @@ export default function Header() {
   if (!current) {
     if (pathname.startsWith('/class/')) {
       current = { headline: 'CLASS', sub: 'Activity' };
+    } else if (pathname.startsWith('/lost-found/')) {
+      current = { headline: 'Losts & Found', sub: 'Town' };
+    } else if (pathname.startsWith('/rental/')) {
+      current = { headline: 'Freestyle Tango', sub: 'Activity' };
     } else {
       current = { headline: 'COMMUNITY', sub: 'SOCIETY' };
     }

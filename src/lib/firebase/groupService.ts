@@ -15,7 +15,8 @@ import {
   addDoc,
   updateDoc,
   increment,
-  arrayUnion
+  arrayUnion,
+  arrayRemove
 } from 'firebase/firestore';
 import { Group, Post, Member, GroupClass } from '@/types/group';
 
@@ -289,6 +290,7 @@ export const groupService = {
   joinGroup: async (groupId: string, userId: string, memberData: Omit<Member, 'id'>) => {
     const groupRef = doc(db, GROUPS_COLLECTION, groupId);
     const memberRef = doc(db, GROUPS_COLLECTION, groupId, 'members', userId);
+    const userRef = doc(db, 'users', userId);
 
     // Add to members subcollection as active
     await setDoc(memberRef, {
@@ -297,9 +299,15 @@ export const groupService = {
       joinedAt: Timestamp.now()
     });
 
-    // Increment member count in metadata
+    // Increment member count and update memberIds in metadata
     await updateDoc(groupRef, {
-      memberCount: increment(1)
+      memberCount: increment(1),
+      memberIds: arrayUnion(userId)
+    });
+
+    // Update user's joinedGroups
+    await updateDoc(userRef, {
+      joinedGroups: arrayUnion(groupId)
     });
   },
 
@@ -319,15 +327,22 @@ export const groupService = {
   approveMember: async (groupId: string, userId: string) => {
     const groupRef = doc(db, GROUPS_COLLECTION, groupId);
     const memberRef = doc(db, GROUPS_COLLECTION, groupId, 'members', userId);
+    const userRef = doc(db, 'users', userId);
 
     await updateDoc(memberRef, {
       status: 'active',
       approvedAt: Timestamp.now()
     });
 
-    // Increment member count in metadata
+    // Increment member count and update memberIds in metadata
     await updateDoc(groupRef, {
-      memberCount: increment(1)
+      memberCount: increment(1),
+      memberIds: arrayUnion(userId)
+    });
+
+    // Update user's joinedGroups
+    await updateDoc(userRef, {
+      joinedGroups: arrayUnion(groupId)
     });
   },
 
@@ -345,13 +360,20 @@ export const groupService = {
   leaveGroup: async (groupId: string, userId: string) => {
     const groupRef = doc(db, GROUPS_COLLECTION, groupId);
     const memberRef = doc(db, GROUPS_COLLECTION, groupId, 'members', userId);
-
+    const userRef = doc(db, 'users', userId);
+    
     // Remove from members subcollection
     await deleteDoc(memberRef);
 
-    // Decrement member count in metadata
+    // Decrement member count and remove from memberIds
     await updateDoc(groupRef, {
-      memberCount: increment(-1)
+      memberCount: increment(-1),
+      memberIds: arrayRemove(userId)
+    });
+
+    // Remove from user's joinedGroups
+    await updateDoc(userRef, {
+      joinedGroups: arrayRemove(groupId)
     });
   },
 

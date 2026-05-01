@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import { Post, Comment } from '@/types/group';
@@ -6,6 +6,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { groupService } from '@/lib/firebase/groupService';
 import { useAuth } from '@/components/providers/AuthProvider';
+import UserBadge from '../common/UserBadge';
+import UserProfileClickable from '../common/UserProfileClickable';
+import UserAvatar from '../common/UserAvatar';
+import UserName from '../common/UserName';
 
 interface PostDetailModalProps {
   groupId: string;
@@ -58,7 +62,7 @@ export default function PostDetailModal({ groupId, post, isOpen, onClose, onEdit
         author: {
           id: user.uid,
           name: profile?.nickname || user.displayName || 'Anonymous',
-          avatar: profile?.photoURL || user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`
+          avatar: profile?.photoURL || user.photoURL || ''
         }
       });
       setNewComment('');
@@ -144,14 +148,16 @@ export default function PostDetailModal({ groupId, post, isOpen, onClose, onEdit
               {/* Header */}
               <div className="p-8 border-b border-[#a3abd7]/10 flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <img 
-                    src={post.author.avatar} 
-                    alt={post.author.name} 
-                    className="w-12 h-12 rounded-2xl object-cover ring-4 ring-[#efefff]" 
+                  <UserBadge 
+                    uid={post.author.id || (post.author as any).uid} 
+                    nickname={post.author.name} 
+                    photoURL={post.author.avatar} 
+                    avatarSize="w-12 h-12"
+                    nameClassName="font-headline font-black text-[#242c51] text-lg"
+                    nativeClassName="text-xs font-medium text-[#515981] ml-1.5"
                   />
-                  <div>
-                    <h3 className="font-headline font-black text-[#242c51]">@{post.author.name}</h3>
-                    <p className="text-[10px] text-[#515981]/50 font-black uppercase tracking-widest">
+                  <div className="flex flex-col ml-1">
+                    <p className="text-[10px] text-[#515981]/50 font-black uppercase tracking-widest mt-1">
                       {formatDate(post.createdAt)}
                     </p>
                   </div>
@@ -216,15 +222,15 @@ export default function PostDetailModal({ groupId, post, isOpen, onClose, onEdit
                     <div className="space-y-8">
                       {comments.map((comment) => (
                         <div key={comment.id} className="flex gap-4 group/comment">
-                          <img 
-                            src={comment.author.avatar} 
-                            className="w-10 h-10 rounded-xl object-cover shrink-0"
-                            alt=""
-                          />
+                          <UserProfileClickable uid={comment.author.id} initialData={{ nickname: comment.author.name, photoURL: comment.author.avatar }}>
+                            <UserAvatar photoURL={comment.author.avatar} className="w-10 h-10 rounded-xl" />
+                          </UserProfileClickable>
                           <div className="flex-1 space-y-1.5">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
-                                <span className="text-xs font-black text-[#242c51]">{comment.author.name}</span>
+                                <UserProfileClickable uid={comment.author.id} initialData={{ nickname: comment.author.name, photoURL: comment.author.avatar }}>
+                                  <UserName nickname={comment.author.name} className="text-xs font-black text-[#242c51] hover:underline" />
+                                </UserProfileClickable>
                                 <span className="text-[10px] font-bold text-[#515981]/30">{formatDate(comment.createdAt)}</span>
                               </div>
                               {user?.uid === comment.author.id && (

@@ -1,0 +1,914 @@
+[
+  {
+    "id": "1fks9xVZzh9NhcW9sbSa",
+    "type": "festival",
+    "description": "대구에서 펼쳐지는 뜨거운 열기의 국제 탱고 마라톤 이벤트입니다.",
+    "location": "Daegu, Korea",
+    "title": "대구 국제 탱고 마라톤",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1776988800,
+      "nanoseconds": 0
+    },
+    "hostId": "system1",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1777161600,
+      "nanoseconds": 0
+    },
+    "hostName": "doyadoya"
+  },
+  {
+    "id": "3oJOclLXecV61emSQA0Y",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1793318400,
+      "nanoseconds": 0
+    },
+    "hostId": "system1",
+    "type": "festival",
+    "location": "Xiamen, China",
+    "title": "샤먼 국제 탱고 페스티벌",
+    "description": "중국 샤먼의 아름다운 해변에서 펼쳐지는 국제 탱고 페스티벌입니다.",
+    "hostName": "Xiamen International Tango Festival",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1793577600,
+      "nanoseconds": 0
+    }
+  },
+  {
+    "id": "4KHUDIJPDw612UL4eVmK",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1780272000,
+      "nanoseconds": 0
+    },
+    "hostName": "Selene Son & Federico Kim",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1780012800,
+      "nanoseconds": 0
+    },
+    "hostId": "system1",
+    "type": "gathering",
+    "title": "부산 탱고 위켄드 - 안드레스 & 엘라디아",
+    "location": "Busan, Korea",
+    "description": "안드레스와 엘라디아가 함께하는 부산의 열광적인 탱고 위켄드입니다."
+  },
+  {
+    "id": "4pFvGzHpYlpsGTEZHDKo",
+    "hostId": "system1",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1789603200,
+      "nanoseconds": 0
+    },
+    "description": "Octavio와 Carolina가 함께하는 영감을 주는 탱고 워크숍 시리즈입니다.",
+    "title": "탱고 워크숍 & 밀롱가 - 옥타비오 & 카롤리나",
+    "location": "Seoul, Korea",
+    "type": "gathering",
+    "hostName": "Moses Park & Nina Park",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1789948800,
+      "nanoseconds": 0
+    }
+  },
+  {
+    "id": "56j7pxiD6CCHYmniE3b9",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1779062400,
+      "nanoseconds": 0
+    },
+    "hostName": "Sol & Chany Seoul Tango",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1778716800,
+      "nanoseconds": 0
+    },
+    "hostId": "system1",
+    "type": "festival",
+    "description": "서울의 랜드마크에서 열리는 화려한 국제 탱고 페스티벌입니다.",
+    "location": "Seoul, Korea",
+    "title": "서울 탱고 페스티벌"
+  },
+  {
+    "id": "6VDEiM8BW5NGV59Ogop7",
+    "hostName": "Nathalie Cheng",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1773532800,
+      "nanoseconds": 0
+    },
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1773360000,
+      "nanoseconds": 0
+    },
+    "hostId": "system1",
+    "type": "festival",
+    "description": "홍콩에서 열리는 아기자기하고 집중도 높은 페스티발리토입니다.",
+    "title": "홍콩 탱고 페스티발리토",
+    "location": "Hong Kong, China"
+  },
+  {
+    "id": "9bNUXkEO2XftgWNCe7oU",
+    "hostName": "Singapore Sunset Tango Marathon",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1778457600,
+      "nanoseconds": 0
+    },
+    "type": "festival",
+    "location": "Singapore, Singapore",
+    "description": "싱가포르의 환상적인 일몰을 배경으로 춤추는 탱고 마라톤입니다.",
+    "title": "싱가포르 선셋 탱고 마라톤",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1778198400,
+      "nanoseconds": 0
+    },
+    "hostId": "system1"
+  },
+  {
+    "id": "AynHMDVJkctYqFIHEDeq",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1778112000,
+      "nanoseconds": 0
+    },
+    "hostName": "Wang Felicia",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1777939200,
+      "nanoseconds": 0
+    },
+    "hostId": "system1",
+    "type": "festival",
+    "description": "중국 난징에서 개최되는 수준 높은 탱고 마스터 클래스 및 밀롱가입니다.",
+    "title": "난징 탱고 페스티벌",
+    "location": "Nanjing, China"
+  },
+  {
+    "id": "BgZVrFe42zy2pXsS4rFE",
+    "type": "festival",
+    "location": "Tianjin, China",
+    "description": "중국 천진에서 열리는 에너제틱한 국제 탱고 마라톤 이벤트입니다.",
+    "title": "톈진 탱고 마라톤",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1781827200,
+      "nanoseconds": 0
+    },
+    "hostId": "system1",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1782086400,
+      "nanoseconds": 0
+    },
+    "hostName": "Tianjin Tango Marathon"
+  },
+  {
+    "id": "CodQsAVk5P3aK5nCb1GH",
+    "hostName": "Moses Park & Nina Park",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1792368000,
+      "nanoseconds": 0
+    },
+    "type": "gathering",
+    "description": "Sebastian와 Joana가 선사하는 고품격 탱고 워크숍 및 위켄드입니다.",
+    "title": "한국 탱고 위켄드 - 세바스티안 & 조아나",
+    "location": "Seoul, Korea",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1792022400,
+      "nanoseconds": 0
+    },
+    "hostId": "system1"
+  },
+  {
+    "id": "DmkoL87WGzwZkgp3Gx9J",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1775433600,
+      "nanoseconds": 0
+    },
+    "hostName": "Alice Tango Saigon",
+    "type": "festival",
+    "description": "베트남 다낭의 휴양지에서 즐기는 탱고 마라톤 VTM입니다.",
+    "location": "Da Nang, Vientam",
+    "title": "베트남 탱고 마라톤 (VTM)",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1775088000,
+      "nanoseconds": 0
+    },
+    "hostId": "system1"
+  },
+  {
+    "id": "EXEe35A5NpiGPpxRryte",
+    "type": "gathering",
+    "description": "세계적인 마에스트로 Jonathan & Clarisa의 한국 투어 워크숍 및 밀롱가입니다.",
+    "location": "Busan & Seoul, KR",
+    "title": "조나단 & 클라리사",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1794960000,
+      "nanoseconds": 0
+    },
+    "hostId": "system1",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1795564800,
+      "nanoseconds": 0
+    },
+    "hostName": "Moses Park & Nina Park"
+  },
+  {
+    "id": "Eo4fgBGeExQNk66ASYO9",
+    "hostId": "system1",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1788912000,
+      "nanoseconds": 0
+    },
+    "location": "Busan & Seoul, KR",
+    "description": "정통 밀롱가 스타일의 진수, Octavio와 Carolina가 선사하는 특별한 시간입니다.",
+    "title": "옥타비오 페르난데스 & 카롤리나 지아니니",
+    "type": "gathering",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1789344000,
+      "nanoseconds": 0
+    },
+    "hostName": "Moses Park & Nina Park"
+  },
+  {
+    "id": "GNcuG8U317ZgHyKTy62G",
+    "description": "안드레스와 엘라디아가 함께하는 부산 탱고 워크숍 시리즈입니다.",
+    "location": "Busan, Korea",
+    "title": "안드레스 라자 모레노 & 엘라디아 코르도바",
+    "type": "gathering",
+    "hostId": "system1",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1779926400,
+      "nanoseconds": 0
+    },
+    "hostName": "Selene Son & Federico Kim",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1780272000,
+      "nanoseconds": 0
+    }
+  },
+  {
+    "id": "IOIP6XfBf41tekcR9Whf",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1783900800,
+      "nanoseconds": 0
+    },
+    "hostName": "Michael Mao",
+    "type": "festival",
+    "location": "Shanghai, China",
+    "description": "탱고 월드컵 아시아 예선과 페스티벌이 결합된 대형 이벤트입니다.",
+    "title": "월드컵 아시아 & 아시아 태평양 탱고 페스티벌",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1783555200,
+      "nanoseconds": 0
+    },
+    "hostId": "system1"
+  },
+  {
+    "id": "MAvB17hb5LVVoM9JupIq",
+    "hostName": "Tokyo Tango Marathon",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1788134400,
+      "nanoseconds": 0
+    },
+    "hostId": "system1",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1787875200,
+      "nanoseconds": 0
+    },
+    "description": "도쿄의 세련된 분위기 속에서 즐기는 국제 탱고 마라톤입니다.",
+    "title": "도쿄 탱고 마라톤",
+    "location": "Tokyo, Japan",
+    "type": "festival"
+  },
+  {
+    "id": "MUiLH9W20qltCZbIObV7",
+    "type": "festival",
+    "location": "Osaka, Japan",
+    "title": "오사카 탱고 페스티벌",
+    "description": "오사카의 열정과 함께하는 일본 최대 규모의 탱고 페스티벌입니다.",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1778803200,
+      "nanoseconds": 0
+    },
+    "hostId": "system1",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1779062400,
+      "nanoseconds": 0
+    },
+    "hostName": "Osaka Tango Festival"
+  },
+  {
+    "id": "Pw304mnF3gK15DPpy14y",
+    "hostId": "system1",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1781136000,
+      "nanoseconds": 0
+    },
+    "location": "Seoul, Korea",
+    "title": "탱고 워크숍 & 밀롱가 - 안드레스 & 엘라디아",
+    "description": "안드레스와 엘라디아의 집중 워크숍과 화려한 밀롱가 파티입니다.",
+    "type": "gathering",
+    "hostName": "Moses Park & Nina Park",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1781481600,
+      "nanoseconds": 0
+    }
+  },
+  {
+    "id": "RtLKEUPv5Hx73kkqAlnt",
+    "description": "인도네시아 탱고 챔피언십과 파라다이스 밀롱가가 결합된 특별한 이벤트입니다.",
+    "location": "Bali, Indonesia",
+    "title": "인도네시아 챔피언십 & 파라다이스",
+    "type": "festival",
+    "hostId": "system1",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1779148800,
+      "nanoseconds": 0
+    },
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1779321600,
+      "nanoseconds": 0
+    },
+    "hostName": "Ratih Soe Kosasie"
+  },
+  {
+    "id": "Sr78Lwy2EMvq8CsT4oFX",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1778025600,
+      "nanoseconds": 0
+    },
+    "hostName": "Tokyo Tango Festival",
+    "hostId": "system1",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1777593600,
+      "nanoseconds": 0
+    },
+    "description": "도쿄의 심장부에서 열리는 정통 아르헨티나 탱고 대축제입니다.",
+    "title": "도쿄 탱고 페스티벌",
+    "location": "Tokyo, Japan",
+    "type": "festival"
+  },
+  {
+    "id": "UV54hQTUHPTfjqWnPjK2",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1780185600,
+      "nanoseconds": 0
+    },
+    "hostName": "Michael Mao",
+    "hostId": "system1",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1779926400,
+      "nanoseconds": 0
+    },
+    "title": "아시아 태평양 탱고 챔피언십",
+    "location": "Shanghai, China",
+    "description": "아시아 태평양 지역 최고의 댄서들이 실력을 겨루는 공식 챔피언십입니다.",
+    "type": "festival"
+  },
+  {
+    "id": "UoWWYuODYZrqEiDjUnQ0",
+    "hostName": "Shiao Chang",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1794182400,
+      "nanoseconds": 0
+    },
+    "hostId": "system1",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1793836800,
+      "nanoseconds": 0
+    },
+    "location": "Beijing, China",
+    "description": "마에스트로 Jonathan & Clarisa와 함께하는 베이징 셀렉트 탱고 위켄드입니다.",
+    "title": "베이징 셀렉트 탱고 위켄드 - 조나단 & 클라리사",
+    "type": "gathering"
+  },
+  {
+    "id": "UqeigO2tpp2hcbxvCdkU",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1776038400,
+      "nanoseconds": 0
+    },
+    "hostName": "Michael Mao",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1775779200,
+      "nanoseconds": 0
+    },
+    "hostId": "system1",
+    "type": "festival",
+    "description": "상하이의 모던한 감각과 전통 탱고가 만나는 대규모 마라톤입니다.",
+    "title": "상하이 탱고 마라톤",
+    "location": "Shanghai, China"
+  },
+  {
+    "id": "UyflYuYTzfpDMGuxFkZj",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1790035200,
+      "nanoseconds": 0
+    },
+    "hostName": "Daniel Liu & Anna Chin",
+    "hostId": "system1",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1789603200,
+      "nanoseconds": 0
+    },
+    "description": "대만 타이페이에서 열리는 유서 깊고 화려한 탱고 축제입니다.",
+    "title": "타이베이 탱고 페스티벌",
+    "location": "Taipei, Taiwan",
+    "type": "festival"
+  },
+  {
+    "id": "VYelOru84GUcSnpLYFKv",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1775088000,
+      "nanoseconds": 0
+    },
+    "hostId": "system1",
+    "type": "festival",
+    "location": "Chengdu, China",
+    "title": "중화권 탱고 챔피언십",
+    "description": "중화권 최대 규모의 탱고 챔피언십 대회가 성도에서 개최됩니다.",
+    "hostName": "Unknown",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1775433600,
+      "nanoseconds": 0
+    }
+  },
+  {
+    "id": "Y5LI2baGGplnLW8hINaC",
+    "type": "festival",
+    "description": "바다와 함께하는 부산 탱고 위켄드 '엘 마르' 이벤트입니다.",
+    "location": "Busan, Korea",
+    "title": "부산 탱고 위켄드 \"엘 마르\"",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1787788800,
+      "nanoseconds": 0
+    },
+    "hostId": "system1",
+    "hostName": "Chanbee Bokchan Park",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1788134400,
+      "nanoseconds": 0
+    }
+  },
+  {
+    "id": "YDhVnBGfvChkpuNVU3kX",
+    "hostId": "system1",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1773273600,
+      "nanoseconds": 0
+    },
+    "location": "Asia Pacific Region",
+    "description": "아시아 태평양 지역을 순회하며 열리는 마에스트로 워크숍과 밀롱가 투어입니다.",
+    "title": "아시아 태평양 밀롱가 & 워크숍 투어",
+    "type": "gathering",
+    "hostName": "Michael Mao",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1774224000,
+      "nanoseconds": 0
+    }
+  },
+  {
+    "id": "ZBBCGWlcPXW7GraLDrDz",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1785888000,
+      "nanoseconds": 0
+    },
+    "hostId": "system1",
+    "type": "gathering",
+    "description": "독창적인 에너지의 Murat과 Silvina의 클래스를 한국에서 만나보세요.",
+    "location": "Busan & Seoul, KR",
+    "title": "무라트 에르뎀셀 & 실비나 체",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1786320000,
+      "nanoseconds": 0
+    },
+    "hostName": "Moses Park & Nina Park"
+  },
+  {
+    "id": "a0mS6Rlt8bv956vWUxLO",
+    "hostName": "Michael Mao",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1781395200,
+      "nanoseconds": 0
+    },
+    "hostId": "system1",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1781136000,
+      "nanoseconds": 0
+    },
+    "location": "Shanghai, China",
+    "description": "아시아 최고의 탱고 댄서를 가리는 권위 있는 챔피언십 대회입니다.",
+    "title": "아시아 탱고 챔피언십",
+    "type": "festival"
+  },
+  {
+    "id": "eQIjqKBnV7gbYMCsWAXT",
+    "description": "베트남 호치민(사이공)에서 열리는 에너지 넘치는 탱고 마라톤입니다.",
+    "location": "Hochiminh, Vietnam",
+    "title": "사이공 탱고 마라톤",
+    "type": "festival",
+    "hostId": "system1",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1790812800,
+      "nanoseconds": 0
+    },
+    "hostName": "Saigon Tango Marathon",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1791158400,
+      "nanoseconds": 0
+    }
+  },
+  {
+    "id": "eXUR50C5yo1bN99JHKQT",
+    "description": "Andres와 Eladia 유수의 마에스트로와 함께하는 한국 탱고 위켄드입니다.",
+    "title": "한국 탱고 위켄드 - 안드레스 & 엘라디아",
+    "location": "Seoul, Korea",
+    "type": "gathering",
+    "hostId": "system1",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1780531200,
+      "nanoseconds": 0
+    },
+    "hostName": "Moses Park & Nina Park",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1780876800,
+      "nanoseconds": 0
+    }
+  },
+  {
+    "id": "fV99rxRuvuP6A5HIWovo",
+    "hostName": "Tokyo Queer Tango Festival",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1791763200,
+      "nanoseconds": 0
+    },
+    "type": "festival",
+    "description": "다양성과 포용성을 주제로 도쿄에서 열리는 특별한 퀴어 탱고 축제입니다.",
+    "location": "Tokyo, Japan",
+    "title": "도쿄 퀴어 탱고 페스티벌",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1791504000,
+      "nanoseconds": 0
+    },
+    "hostId": "system1"
+  },
+  {
+    "id": "jW8kjIMCO9jobcoAN5tD",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1778803200,
+      "nanoseconds": 0
+    },
+    "hostName": "Panda LU",
+    "hostId": "system1",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1778457600,
+      "nanoseconds": 0
+    },
+    "description": "성도에서 열리는 전통 있는 ICH 탱고 페스티벌 및 컴피티션입니다.",
+    "location": "Chengdu, China",
+    "title": "청두 ICH 탱고 페스티벌",
+    "type": "festival"
+  },
+  {
+    "id": "kgQRcHCCd6cfEXi8xwmO",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1771200000,
+      "nanoseconds": 0
+    },
+    "hostName": "Sol & Chany Seoul Tango",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1770854400,
+      "nanoseconds": 0
+    },
+    "hostId": "system1",
+    "type": "festival",
+    "description": "추운 겨울을 탱고의 열기로 녹이는 서울의 윈터 탱고 페스티벌입니다.",
+    "location": "Seoul, Korea",
+    "title": "윈터 탱고 페스티벌"
+  },
+  {
+    "id": "nApqOlH5vlKTdE0nm1y6",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1777680000,
+      "nanoseconds": 0
+    },
+    "hostName": "Pablo & Emilie Tegli",
+    "type": "festival",
+    "description": "아름다운 발리에서 펼쳐지는 탱고 홀리데이 및 워크숍 시리즈입니다.",
+    "location": "Bali, Indonesia",
+    "title": "발리 탱고 홀리데이",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1777075200,
+      "nanoseconds": 0
+    },
+    "hostId": "system1"
+  },
+  {
+    "id": "nQ5WrcBHsLHfXd1lS33R",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1779062400,
+      "nanoseconds": 0
+    },
+    "hostId": "system1",
+    "type": "festival",
+    "location": "Beijing, China",
+    "title": "셀렉트 탱고 위켄드",
+    "description": "엄선된 마에스트로들과 함께하는 베이징 셀렉트 탱고 위켄드입니다.",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1779408000,
+      "nanoseconds": 0
+    },
+    "hostName": "Shiao Chang"
+  },
+  {
+    "id": "oeP8ZYps4fv47mWybE79",
+    "hostName": "Daniel Liu & Anna Chin",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1774828800,
+      "nanoseconds": 0
+    },
+    "type": "festival",
+    "description": "대만 전역의 탱고인들이 모여 끊임없이 춤추는 열정의 마라톤입니다.",
+    "title": "대만 탱고 마라톤",
+    "location": "Taipei, Taiwan",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1774483200,
+      "nanoseconds": 0
+    },
+    "hostId": "system1"
+  },
+  {
+    "id": "pqvhPOERFzyYbJa6OIMy",
+    "hostName": "Augusto Kim & Moses Park",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1773532800,
+      "nanoseconds": 0
+    },
+    "title": "서라벌 밀롱게로스",
+    "description": "천년고도 경주에서 펼쳐지는 서라벌 밀롱게로스 축제입니다.",
+    "location": "Gyeongju, Korea",
+    "type": "festival",
+    "hostId": "system1",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1773273600,
+      "nanoseconds": 0
+    }
+  },
+  {
+    "id": "rChRfdNS5JyxUTkVtehW",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1791158400,
+      "nanoseconds": 0
+    },
+    "hostName": "John & White Bear",
+    "location": "Chuncheon, Korea",
+    "title": "춘천 탱고 페스티벌",
+    "description": "호반의 도시 춘천에서 즐기는 로맨틱한 탱고 페스티벌입니다.",
+    "type": "festival",
+    "hostId": "system1",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1790899200,
+      "nanoseconds": 0
+    }
+  },
+  {
+    "id": "smswCybB6FiFRELKr1ll",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1779667200,
+      "nanoseconds": 0
+    },
+    "hostName": "Shiao Chang",
+    "location": "Beijing, China",
+    "title": "베이징 셀렉트 탱고 위켄드 - 안드레스 & 엘라디아",
+    "description": "마에스트로 Andres & Eladia와 함께하는 베이징 셀렉트 탱고 위켄드입니다.",
+    "type": "gathering",
+    "hostId": "system1",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1779321600,
+      "nanoseconds": 0
+    }
+  },
+  {
+    "id": "tiAdMKqUV09lwoNyu9jg",
+    "type": "festival",
+    "location": "Beijing, China",
+    "description": "베이징에서 개최되는 오리엔탈 탱고 콩그레스(OTC)로 아시아 전역의 탱고인들이 모입니다.",
+    "title": "오리엔탈 탱고 콩그레스 (OTC)",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1776384000,
+      "nanoseconds": 0
+    },
+    "hostId": "system1",
+    "hostName": "Simona Wu & Allen Ma",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1776556800,
+      "nanoseconds": 0
+    }
+  },
+  {
+    "id": "tmu0wX7I9NbB8m92hX5I",
+    "location": "Shanghai, China",
+    "title": "아시아 태평양 탱고 페스티벌 - APTF",
+    "description": "아시아 태평양 지역 탱고인들의 갈라 쇼와 워크숍이 어우러진 대축제입니다.",
+    "type": "festival",
+    "hostId": "system1",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1795046400,
+      "nanoseconds": 0
+    },
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1795392000,
+      "nanoseconds": 0
+    },
+    "hostName": "Michael Mao"
+  },
+  {
+    "id": "vQie24IaKeyzO1ipufDP",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1774137600,
+      "nanoseconds": 0
+    },
+    "hostName": "Pop & Xiao Yang",
+    "type": "festival",
+    "description": "남중국 최고의 탱고 댄서들을 선발하는 대규모 컴피티션입니다.",
+    "title": "남중국 아르헨티나 탱고 챔피언십",
+    "location": "Guangzhou, China",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1773878400,
+      "nanoseconds": 0
+    },
+    "hostId": "system1"
+  },
+  {
+    "id": "x9J1QnIwiTkiWcE846s3",
+    "hostId": "system1",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1792627200,
+      "nanoseconds": 0
+    },
+    "description": "매년 가을 서울을 물들이는 열정적인 탱고 피에스타 축제입니다.",
+    "location": "Seoul, Korea",
+    "title": "서울 탱고 피에스타",
+    "type": "festival",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1792972800,
+      "nanoseconds": 0
+    },
+    "hostName": "Sol & Chany Seoul Tango"
+  },
+  {
+    "id": "xNCdA0y3KQDb6GYDfntx",
+    "hostId": "system1",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1774483200,
+      "nanoseconds": 0
+    },
+    "title": "체리 블라썸 밀롱가",
+    "location": "Changwon, Korea",
+    "description": "벚꽃 시즌에 맞춰 창원에서 열리는 Cherry Blossoms 밀롱가입니다.",
+    "type": "gathering",
+    "hostName": "Han pacino",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1774828800,
+      "nanoseconds": 0
+    }
+  },
+  {
+    "id": "xQUIaLK6qqctXoyRA1SA",
+    "hostName": "Fukuoka Chamuya Tango",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1775347200,
+      "nanoseconds": 0
+    },
+    "location": "Fukuoka, Japan",
+    "title": "사쿠라 탱고 페스티벌",
+    "description": "벚꽃이 만개한 후쿠오카에서 즐기는 환상적인 탱고 축제입니다.",
+    "type": "festival",
+    "hostId": "system1",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1775088000,
+      "nanoseconds": 0
+    }
+  },
+  {
+    "id": "z1WnJolYFO9kBQg2ouri",
+    "hostName": "Moses Park & Nina Park",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1776038400,
+      "nanoseconds": 0
+    },
+    "description": "Maximo와 Paloma가 이끄는 한국 탱고 위켄드 워크숍입니다.",
+    "location": "Seoul, Korea",
+    "title": "한국 탱고 위켄드 - 막시모 & 팔로마",
+    "type": "gathering",
+    "hostId": "system1",
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1775692800,
+      "nanoseconds": 0
+    }
+  },
+  {
+    "id": "zugsTXdppsZebsaVrBxA",
+    "hostName": "Kim Seong Gong & Augusto Kim",
+    "endDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1787443200,
+      "nanoseconds": 0
+    },
+    "startDate": {
+      "type": "firestore/timestamp/1.0",
+      "seconds": 1787270400,
+      "nanoseconds": 0
+    },
+    "hostId": "system1",
+    "type": "gathering",
+    "location": "Jeju, Korea",
+    "description": "제주의 푸른 여름 바다와 함께 즐기는 시원한 밀롱가 파티입니다.",
+    "title": "제주 썸머 밀롱가"
+  }
+]

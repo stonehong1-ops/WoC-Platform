@@ -8,6 +8,8 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, deleteDoc, onSnapshot, Timestamp, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase/clientApp';
+import { toast } from 'sonner';
+import { fcmService } from '@/lib/firebase/fcmService';
 
 interface UserProfile {
   uid: string;
@@ -176,6 +178,79 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (unsubscribeProfile) unsubscribeProfile();
     };
   }, []);
+
+  // Push Notification Permission Prompt (Option 1)
+  useEffect(() => {
+    if (user && typeof window !== 'undefined' && 'Notification' in window) {
+      // 이미 허용된 상태라면 백그라운드에서 토큰을 갱신/저장합니다.
+      if (Notification.permission === 'granted') {
+        fcmService.requestPermissionAndGetToken(user.uid).catch(console.error);
+      } 
+      // 권한을 아직 묻지 않은 상태(default)일 때만 토스트를 띄웁니다.
+      else if (Notification.permission === 'default') {
+        // 중복 토스트 방지를 위해 약간 지연
+        const timer = setTimeout(() => {
+          const toastId = toast('새로운 채팅 알림을 실시간으로 받으시겠습니까?', {
+            description: '채팅이 오면 알림을 받아볼 수 있습니다.',
+            duration: 15000, // 15초 후 자동 닫힘
+            position: 'top-center',
+            action: {
+              label: '알림 켜기',
+              onClick: async () => {
+                toast.dismiss(toastId);
+                try {
+                  const token = await fcmService.requestPermissionAndGetToken(user.uid);
+                  if (token) {
+                    toast.success('푸시 알림이 성공적으로 켜졌습니다!');
+                  } else {
+                    if (Notification.permission === 'denied') {
+                      toast.error('브라우저 알림 권한이 차단되어 설정할 수 없습니다.');
+                    }
+                  }
+                } catch (error) {
+                  console.error('Error enabling notifications:', error);
+                }
+              }
+            },
+            cancel: {
+              label: '나중에',
+              onClick: () => toast.dismiss(toastId)
+            }
+          });
+        }, 3000); // 페이지 로딩 후 3초 뒤에 띄움
+
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [user]);
+
+  // Foreground FCM Listener
+  useEffect(() => {
+    let unsubscribeMessage = () => {};
+    
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'granted') {
+        unsubscribeMessage = fcmService.onMessageListener((payload: any) => {
+          console.log('[Foreground Push]', payload);
+          toast(payload.notification?.title || 'New Message', {
+            description: payload.notification?.body,
+            action: {
+              label: 'View',
+              onClick: () => {
+                if (payload.data?.url) {
+                  window.location.href = payload.data.url;
+                }
+              }
+            }
+          });
+        });
+      }
+    }
+
+    return () => {
+      unsubscribeMessage();
+    };
+  }, [user]);
 
   const signOut = async () => {
     try {

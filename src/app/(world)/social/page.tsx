@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { socialService } from '@/lib/firebase/socialService';
 import { Social } from '@/types/social';
+import { safeDate } from '@/lib/utils/safeData';
 import SocialFilterBottomSheet from '@/components/social/SocialFilterBottomSheet';
 import EditSocialEvent from '@/components/social/EditSocialEvent';
 import { useLocation } from '@/components/providers/LocationProvider';
@@ -31,6 +32,13 @@ export default function SocialPage() {
   const { user, profile } = useAuth();
   const [viewSocial, setViewSocial] = useState<Social | null>(null);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const carouselRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (carouselRef.current) {
+      carouselRef.current.scrollLeft = 0;
+    }
+  }, [activeDayOffset]);
 
   const canEdit = (s: Social) => {
     if (!user) return false;
@@ -175,62 +183,8 @@ export default function SocialPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#FBFDFD] pb-32">
-      {/* Header & Search */}
-      <div className="sticky top-0 z-30 bg-[#FBFDFD]/80 backdrop-blur-md px-6 pt-6 pb-4 flex flex-col gap-3">
-        <div className="relative group">
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-400 group-focus-within:text-primary transition-colors">search</span>
-          <input 
-            type="text" 
-            placeholder="Search socials, organizers..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-12 pl-12 pr-14 bg-white border border-[#dde4e5] rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm"
-          />
-          <button 
-            onClick={() => openModal(setIsFilterOpen, true)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-xl text-on-surface-variant hover:text-primary transition-colors"
-          >
-            <span className="material-symbols-outlined text-xl">tune</span>
-          </button>
-        </div>
-
-        {/* Filter Chips */}
-        {(selectedFilters.organizers.length > 0 || selectedFilters.venues.length > 0) && (
-          <div className="flex flex-wrap gap-2">
-            {selectedFilters.organizers.map(org => (
-              <div key={org} className="flex items-center gap-1 pl-3 pr-2 py-1.5 bg-primary/10 text-primary rounded-full text-xs font-bold shadow-sm">
-                <span>{org}</span>
-                <button 
-                  onClick={() => setSelectedFilters(prev => ({ ...prev, organizers: prev.organizers.filter(o => o !== org) }))}
-                  className="w-4 h-4 flex items-center justify-center rounded-full hover:bg-primary/20 transition-colors"
-                >
-                  <span className="material-symbols-outlined text-[14px]">close</span>
-                </button>
-              </div>
-            ))}
-            {selectedFilters.venues.map(venue => (
-              <div key={venue} className="flex items-center gap-1 pl-3 pr-2 py-1.5 bg-[#F4FBFB] text-on-surface border border-[#dde4e5] rounded-full text-xs font-bold shadow-sm">
-                <span>{venue}</span>
-                <button 
-                  onClick={() => setSelectedFilters(prev => ({ ...prev, venues: prev.venues.filter(v => v !== venue) }))}
-                  className="w-4 h-4 flex items-center justify-center rounded-full hover:bg-black/5 transition-colors"
-                >
-                  <span className="material-symbols-outlined text-[14px]">close</span>
-                </button>
-              </div>
-            ))}
-            <button 
-              onClick={() => setSelectedFilters({ organizers: [], venues: [] })}
-              className="text-xs font-bold text-on-surface-variant hover:text-primary underline px-2 py-1.5"
-            >
-              Clear All
-            </button>
-          </div>
-        )}
-      </div>
-
-      <div className="px-6 space-y-12 mt-4">
+    <main className="w-full relative pb-32">
+      <div className="px-6 space-y-6 pt-4">
         {/* 1. Regular Socials Carousel */}
         <section className="space-y-6">
           <div className="flex items-end justify-between px-1">
@@ -264,7 +218,10 @@ export default function SocialPage() {
             ))}
           </div>
           
-          <div className="flex gap-6 overflow-x-auto no-scrollbar pb-4 -mx-6 px-6">
+          <div 
+            ref={carouselRef}
+            className="flex gap-6 overflow-x-auto no-scrollbar pb-4 -mx-6 px-6"
+          >
             {filterSocials(regulars).filter(s => Number(s.dayOfWeek) === weekDays[activeDayOffset].getDay()).length === 0 ? (
               <div className="w-full h-40 flex flex-col items-center justify-center opacity-20 bg-white rounded-lg border border-dashed border-gray-200">
                  <span className="material-symbols-outlined text-4xl mb-2">event_busy</span>
@@ -331,15 +288,17 @@ export default function SocialPage() {
                   className="relative flex items-center gap-4 p-4 bg-white rounded-lg border border-[#dde4e5] hover:border-primary/30 transition-all cursor-pointer group shadow-sm active:scale-[0.98] text-left"
                 >
                   <div className="flex flex-col items-center justify-center w-20 h-20 bg-[#F4FBFB] rounded-lg border-l-4 border-primary shrink-0">
+                    {(() => { const d = safeDate(social.date) || new Date(); return (<>
                     <span className="text-[9px] font-black text-primary uppercase tracking-widest leading-none mb-1">
-                      {new Date(social.date ? social.date.toDate() : new Date()).toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()}
+                      {d.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()}
                     </span>
                     <span className="text-2xl font-black text-on-surface tracking-tighter leading-none mb-1">
-                      {new Date(social.date ? social.date.toDate() : new Date()).getDate()}
+                      {d.getDate()}
                     </span>
                     <span className="text-[9px] font-bold text-on-surface-variant uppercase tracking-widest leading-none">
-                      {new Date(social.date ? social.date.toDate() : new Date()).toLocaleDateString('en-US', { month: 'short' }).toUpperCase()}
+                      {d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()}
                     </span>
+                    </>); })()}
                   </div>
                   <div className="flex-1 space-y-0.5 text-left overflow-hidden pr-8">
                     <DualText 

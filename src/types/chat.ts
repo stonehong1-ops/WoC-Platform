@@ -22,7 +22,7 @@ export interface ChatMessage {
 export interface ChatRoom {
   id: string;
   name: string;
-  type: 'public' | 'private' | 'group' | 'notice';
+  type: 'public' | 'private' | 'group' | 'notice' | 'personal' | 'groups' | 'business';
   participants: string[];
   lastMessage?: string;
   lastMessageTime?: any;
@@ -34,4 +34,5 @@ export interface ChatRoom {
   createdBy: string;
   customName?: string;
   description?: string;
+  pinnedBy?: string[];
 }

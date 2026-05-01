@@ -15,7 +15,7 @@ export default function RegionFilter({ onRegionChange, currentRegion }: RegionFi
     <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-2 px-1">
       <div className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 rounded-full text-primary shrink-0 border border-primary/20">
         <MapPin size={14} />
-        <span className="text-xs font-bold">지역</span>
+        <span className="text-xs font-bold">Region</span>
       </div>
       {REGIONS.map((region) => (
         <button

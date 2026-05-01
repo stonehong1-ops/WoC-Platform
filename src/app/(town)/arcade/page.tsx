@@ -195,7 +195,7 @@ export default function ArcadePage() {
               <span className="text-[10px] font-bold text-on-surface uppercase">Currently Open</span>
             </div>
           </div>
-          <div className="p-10 lg:p-16 lg:max-w-md bg-white flex flex-col justify-center">
+          <div className="p-10 lg:p-16 lg:max-w-md bg-surface flex flex-col justify-center">
             <h2 className="font-headline font-bold text-3xl mb-8 text-on-surface">Visit the Hub</h2>
             <div className="space-y-8">
               <div className="flex gap-4">

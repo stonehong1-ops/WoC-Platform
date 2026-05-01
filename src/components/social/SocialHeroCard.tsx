@@ -71,16 +71,10 @@ export function SocialCardImage({ imageUrl, title }: { imageUrl?: string; title?
 }
 
 export function getSocialDisplayTitle(social: Social) {
-  let primary = social.titleEn || social.title;
-  let secondary = social.titleNative;
-
-  if (social.titleEn && !social.titleNative) {
-    if (social.title && social.title !== social.titleEn) {
-       secondary = social.title;
-    }
-  }
-
-  return { primary, secondary };
+  return {
+    primary:   social.title,
+    secondary: social.titleNative,
+  };
 }
 
 export default function SocialHeroCard({ social }: { social: Social }) {

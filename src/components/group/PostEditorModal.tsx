@@ -118,7 +118,7 @@ export default function PostEditorModal({ group, post, isOpen, onClose }: PostEd
         author: {
           id: user.uid,
           name: profile?.nickname || user.displayName || 'Anonymous',
-          avatar: profile?.photoURL || user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`,
+          avatar: profile?.photoURL || user.photoURL || '',
           role: profile?.isInstructor ? 'Instructor' : 'Curator'
         }
       };

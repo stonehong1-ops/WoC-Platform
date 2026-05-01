@@ -5,9 +5,8 @@ export type SocialType = 'regular' | 'popup';
 export interface Social {
   id: string;
   type: SocialType;
-  title: string;
-  titleEn?: string; // English title
-  titleNative?: string; // Native language title (e.g. Korean, Spanish)
+  title: string;           // English title (required)
+  titleNative?: string;    // Native language title (optional)
   organizerId: string;
   organizerName: string;
   organizerNameNative?: string;

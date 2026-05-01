@@ -11,7 +11,7 @@ import ReactionListBottomSheet from './ReactionListBottomSheet';
 import CommentBottomSheet from './CommentBottomSheet';
 import MediaViewerPopup from './MediaViewerPopup';
 import { DualText } from '@/components/social/SocialHeroCard';
-
+import UserBadge from '@/components/common/UserBadge';
 interface FeedPostCardProps {
   post: Post;
   currentUser?: any;
@@ -108,7 +108,7 @@ export default function FeedPostCard({ post, currentUser, onEdit, onDelete }: Fe
 
   const handleReactionSelect = async (type: ReactionType) => {
     if (!currentUser?.uid) {
-      alert("로그인이 필요한 기능입니다.");
+      alert("Please sign in first.");
       return;
     }
     
@@ -139,39 +139,46 @@ export default function FeedPostCard({ post, currentUser, onEdit, onDelete }: Fe
     }
   };
 
+  const handleShare = async () => {
+    const shareUrl = `${window.location.origin}/plaza`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: post.userName ? `${post.userName}의 게시물` : 'WoC 게시물', text: post.content?.slice(0, 100), url: shareUrl });
+      } catch (e) { /* user cancelled */ }
+    } else {
+      await navigator.clipboard.writeText(shareUrl);
+      alert('Link copied to clipboard.');
+    }
+  };
+
   const renderHeader = (isOfficial = false) => (
     <div className="flex justify-between items-start mb-4">
-      <div className="flex gap-3 items-center">
-        {isOfficial ? (
+      {isOfficial ? (
+        <div className="flex gap-3 items-center">
           <div className="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold font-headline">
             FT
           </div>
-        ) : (
-          <img
-            alt={post.userName}
-            className="w-10 h-10 rounded-full object-cover border border-outline-variant/10"
-            src={post.userPhoto || post.authorPhoto || 'https://lh3.googleusercontent.com/a/default-user'}
-          />
-        )}
-        <div>
-          {isOfficial ? (
+          <div>
             <div className="flex items-baseline gap-1.5 flex-wrap">
               <h3 className="font-headline font-bold text-on-surface text-sm leading-tight">
                 Freestyle Tango Official
               </h3>
             </div>
-          ) : (
-            <DualText 
-              text={post.userName || post.authorName || 'Unknown User'}
-              subText={post.userNameNative || post.authorNameNative}
-              primaryClassName="font-headline font-bold text-on-surface text-sm leading-tight"
-              secondaryClassName="text-[11px] font-medium text-on-surface-variant leading-tight"
-              containerClassName="flex-wrap items-baseline gap-1.5"
-            />
-          )}
-          <p className="text-on-surface-variant text-xs font-medium">{timeAgo}</p>
+            <p className="text-on-surface-variant text-xs font-medium">{timeAgo}</p>
+          </div>
         </div>
-      </div>
+      ) : (
+        <UserBadge
+          uid={post.userId || (post as any).authorId || ''}
+          nickname={post.userName || (post as any).authorName || 'Unknown User'}
+          nativeNickname={post.userNameNative || (post as any).authorNameNative}
+          photoURL={post.userPhoto || (post as any).authorPhoto}
+          avatarSize="w-10 h-10"
+          nameClassName="font-headline font-bold text-on-surface text-sm leading-tight"
+          nativeClassName="text-[11px] font-medium text-on-surface-variant leading-tight"
+          subText={<p className="text-on-surface-variant text-xs font-medium">{timeAgo}</p>}
+        />
+      )}
       <div className="flex items-center gap-2">
         {post.isAnnouncement && (
           <span className="bg-tertiary-container/30 text-on-tertiary-container font-label text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full">
@@ -208,10 +215,17 @@ export default function FeedPostCard({ post, currentUser, onEdit, onDelete }: Fe
   const renderFooter = (bgColor = "transparent") => (
     <div className={`p-4 sm:px-6 border-t border-outline-variant/10 flex justify-between items-center text-on-surface-variant`} style={{ backgroundColor: bgColor }}>
       <div className="flex gap-6">
-        <div className="flex items-center gap-1.5 relative">
-          <button 
-            onClick={() => handleReactionSelect('LIKE')}
-            onMouseEnter={() => !('ontouchstart' in window) && setIsReactionSelectorOpen(true)}
+        {/* Reaction 영역: 호버 딜레이로 깜빡임 방지 */}
+        <div
+          className="flex items-center gap-1.5 relative"
+          onMouseEnter={() => { if (reactionTimerRef.current) clearTimeout(reactionTimerRef.current); }}
+          onMouseLeave={() => {
+            reactionTimerRef.current = setTimeout(() => setIsReactionSelectorOpen(false), 250);
+          }}
+        >
+          <button
+            onClick={(e) => { e.stopPropagation(); setIsReactionSelectorOpen(prev => !prev); }}
+            onMouseEnter={() => { if (!('ontouchstart' in window)) { if (reactionTimerRef.current) clearTimeout(reactionTimerRef.current); setIsReactionSelectorOpen(true); } }}
             className={`flex items-center transition-all active:scale-90 group ${myReaction.color}`}
           >
             {localMyReaction || post.myReaction ? (
@@ -234,10 +248,9 @@ export default function FeedPostCard({ post, currentUser, onEdit, onDelete }: Fe
           <span className="text-xs font-medium">{post.commentsCount || 0}</span>
         </button>
       </div>
-      <button className="hover:text-primary transition-colors group">
+      <button onClick={handleShare} className="hover:text-primary transition-colors group">
         <span className="material-symbols-outlined group-hover:scale-110 transition-transform">share</span>
       </button>
-      
       <ReactionListBottomSheet post={post} isOpen={isReactionListOpen} onClose={() => setIsReactionListOpen(false)} />
       <CommentBottomSheet post={post} isOpen={isCommentSheetOpen} onClose={() => setIsCommentSheetOpen(false)} currentUser={currentUser} />
     </div>
@@ -274,20 +287,141 @@ export default function FeedPostCard({ post, currentUser, onEdit, onDelete }: Fe
     );
   }
 
-  // Quote Style
+  // Quote / Color Style
   if (isShortText) {
+    const style = (post as any).shortTextStyle;
+    const hasColorStyle = style?.bgColor && style.bgColor !== 'transparent';
+    const contentClass = hasColorStyle
+      ? `${style.impactClass || 'text-xl font-normal'} ${(style.emphasisClasses || []).join(' ')}`
+      : 'text-on-surface text-lg font-headline font-semibold leading-tight';
     return (
-      <article className="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/10 p-4 sm:p-6 transform transition-transform hover:scale-[0.99]">
-        {renderHeader()}
-        <div className="bg-secondary-container/20 rounded-lg p-4 mb-4 border border-secondary-container/50">
-          <p className="text-on-surface text-lg font-headline font-semibold leading-tight text-center">
-            "{post.content}"
-          </p>
-        </div>
+      <article className="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/10 overflow-hidden transform transition-transform hover:scale-[0.99]">
+        <div className="p-4 sm:p-6 pb-0">{renderHeader()}</div>
+        {hasColorStyle ? (
+          <div
+            className="mx-4 sm:mx-6 mb-4 rounded-xl p-6 min-h-[120px] flex items-center justify-center"
+            style={{ background: style.bgColor, color: style.textColor }}
+          >
+            <p className={`text-center break-words w-full ${contentClass}`} style={{ color: style.textColor }}>
+              {post.content}
+            </p>
+          </div>
+        ) : (
+          <div className="mx-4 sm:mx-6 mb-4 bg-secondary-container/20 rounded-lg p-4 border border-secondary-container/50">
+            <p className={`text-center ${contentClass}`}>"{post.content}"</p>
+          </div>
+        )}
         {renderFooter()}
       </article>
     );
   }
+
+  // 미디어 아이템 렌더 헬퍼 (비디오 아이콘 + 오버레이 포함)
+  const renderMediaThumb = (item: { url: string; type: string }, index: number, showMoreOverlay?: boolean, moreCount?: number) => (
+    <div
+      key={index}
+      className="relative w-full h-full overflow-hidden cursor-pointer group"
+      onClick={() => { setInitialMediaIndex(index); setIsMediaViewerOpen(true); }}
+    >
+      {item.type === 'video' ? (
+        <>
+          <video src={item.url} className="w-full h-full object-cover" muted playsInline />
+          {!showMoreOverlay && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/25 group-hover:bg-black/35 transition-colors">
+              <div className="w-11 h-11 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center text-white shadow-lg">
+                <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        <img
+          alt={`Post media ${index + 1}`}
+          src={item.url}
+          className="w-full h-full object-cover group-hover:brightness-95 transition-all duration-200 select-none"
+          draggable={false}
+        />
+      )}
+      {showMoreOverlay && (
+        <div className="absolute inset-0 bg-black/55 group-hover:bg-black/65 transition-colors flex items-center justify-center">
+          <span className="text-white font-bold text-2xl drop-shadow-lg">+{moreCount}</span>
+        </div>
+      )}
+    </div>
+  );
+
+  // 미디어 그리드 레이아웃
+  const renderMediaGrid = () => {
+    const count = normalizedMedia.length;
+    if (count === 0) return null;
+
+    // 1장: 풀 너비, 4:5 세로 비율
+    if (count === 1) {
+      return (
+        <div className="rounded-xl overflow-hidden border border-outline-variant/10 aspect-[4/5]">
+          {renderMediaThumb(normalizedMedia[0], 0)}
+        </div>
+      );
+    }
+
+    // 2장: 50:50 나란히, 1:1
+    if (count === 2) {
+      return (
+        <div className="grid grid-cols-2 gap-1.5">
+          {normalizedMedia.map((item, i) => (
+            <div key={i} className="aspect-square rounded-xl overflow-hidden border border-outline-variant/10">
+              {renderMediaThumb(item, i)}
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    // 3장: 상단 1장 풀너비(16:9) + 하단 2장 균등(1:1)
+    if (count === 3) {
+      return (
+        <div className="flex flex-col gap-1.5">
+          <div className="aspect-video rounded-xl overflow-hidden border border-outline-variant/10">
+            {renderMediaThumb(normalizedMedia[0], 0)}
+          </div>
+          <div className="grid grid-cols-2 gap-1.5">
+            {[normalizedMedia[1], normalizedMedia[2]].map((item, i) => (
+              <div key={i + 1} className="aspect-square rounded-xl overflow-hidden border border-outline-variant/10">
+                {renderMediaThumb(item, i + 1)}
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // 4장: 2×2 균등 그리드
+    if (count === 4) {
+      return (
+        <div className="grid grid-cols-2 gap-1.5">
+          {normalizedMedia.map((item, i) => (
+            <div key={i} className="aspect-square rounded-xl overflow-hidden border border-outline-variant/10">
+              {renderMediaThumb(item, i)}
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    // 5장+: 2×2 + 마지막 셀에 +N 오버레이
+    return (
+      <div className="grid grid-cols-2 gap-1.5">
+        {normalizedMedia.slice(0, 3).map((item, i) => (
+          <div key={i} className="aspect-square rounded-xl overflow-hidden border border-outline-variant/10">
+            {renderMediaThumb(item, i)}
+          </div>
+        ))}
+        <div className="aspect-square rounded-xl overflow-hidden border border-outline-variant/10">
+          {renderMediaThumb(normalizedMedia[3], 3, true, count - 4)}
+        </div>
+      </div>
+    );
+  };
 
   // Standard / Image Style
   return (
@@ -296,79 +430,10 @@ export default function FeedPostCard({ post, currentUser, onEdit, onDelete }: Fe
         {renderHeader()}
         <p className="text-on-surface text-sm mb-4 leading-relaxed whitespace-pre-wrap">{post.content}</p>
       </div>
-      
+
       {hasMedia && (
         <div className="px-4 sm:px-6 mb-4">
-          <div className={`grid gap-2 ${normalizedMedia.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
-            <div 
-              className={`aspect-square rounded-xl overflow-hidden border border-outline-variant/10 relative cursor-pointer group ${normalizedMedia.length === 1 ? 'aspect-video' : ''}`}
-              onClick={() => { setInitialMediaIndex(0); setIsMediaViewerOpen(true); }}
-            >
-              {normalizedMedia[0].type === 'video' ? (
-                <>
-                  <video src={normalizedMedia[0].url} className="w-full h-full object-cover" muted playsInline />
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
-                    <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center text-white">
-                      <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <img alt="Post content" className="w-full h-full object-cover group-hover:brightness-95 transition-all" src={normalizedMedia[0].url} />
-              )}
-            </div>
-            
-            {normalizedMedia.length > 1 && (
-              <div className="grid grid-rows-2 gap-2">
-                <div 
-                  className="aspect-square rounded-xl overflow-hidden border border-outline-variant/10 relative cursor-pointer group"
-                  onClick={() => { setInitialMediaIndex(1); setIsMediaViewerOpen(true); }}
-                >
-                  {normalizedMedia[1].type === 'video' ? (
-                    <>
-                      <video src={normalizedMedia[1].url} className="w-full h-full object-cover" muted playsInline />
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
-                        <div className="w-10 h-10 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center text-white">
-                          <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <img alt="Post content" className="w-full h-full object-cover group-hover:brightness-95 transition-all" src={normalizedMedia[1].url} />
-                  )}
-                </div>
-                
-                {normalizedMedia.length > 2 ? (
-                  <div 
-                    className="aspect-square rounded-xl overflow-hidden border border-outline-variant/10 relative cursor-pointer group"
-                    onClick={() => { setInitialMediaIndex(2); setIsMediaViewerOpen(true); }}
-                  >
-                    {normalizedMedia[2].type === 'video' ? (
-                      <video src={normalizedMedia[2].url} className="w-full h-full object-cover" muted playsInline />
-                    ) : (
-                      <img alt="Post content" className="w-full h-full object-cover group-hover:brightness-95 transition-all" src={normalizedMedia[2].url} />
-                    )}
-                    {normalizedMedia[2].type === 'video' && normalizedMedia.length <= 3 && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
-                        <div className="w-10 h-10 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center text-white">
-                          <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
-                        </div>
-                      </div>
-                    )}
-                    {normalizedMedia.length > 3 && (
-                      <div className="absolute inset-0 bg-black/50 hover:bg-black/60 transition-colors flex items-center justify-center text-white font-bold text-2xl">
-                        +{normalizedMedia.length - 3}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="aspect-square rounded-xl bg-surface border border-outline-variant/10 flex items-center justify-center">
-                    <span className="material-symbols-outlined text-outline-variant text-4xl opacity-50">image</span>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+          {renderMediaGrid()}
           {(post.likesCount || 0) > 10 && (
             <div className="mt-3 inline-flex items-center gap-1 bg-surface-container-lowest/90 backdrop-blur-md px-3 py-1 rounded-full shadow-sm border border-outline-variant/10">
               <span className="material-symbols-outlined text-[14px] text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>local_fire_department</span>
@@ -377,12 +442,13 @@ export default function FeedPostCard({ post, currentUser, onEdit, onDelete }: Fe
           )}
         </div>
       )}
+
       {renderFooter()}
-      <MediaViewerPopup 
-        isOpen={isMediaViewerOpen} 
-        onClose={() => setIsMediaViewerOpen(false)} 
-        media={normalizedMedia as any} 
-        initialIndex={initialMediaIndex} 
+      <MediaViewerPopup
+        isOpen={isMediaViewerOpen}
+        onClose={() => setIsMediaViewerOpen(false)}
+        media={normalizedMedia as any}
+        initialIndex={initialMediaIndex}
       />
     </article>
   );

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Edit2, Trash2, MapPin, Star, MoreVertical } from 'lucide-react';
@@ -98,7 +98,7 @@ export default function VenueItem({ venue, onEdit, onDelete }: VenueItemProps) {
               className="w-full px-4 py-2.5 text-left text-xs font-bold text-[#1A73E8] hover:bg-[#1A73E8]/5 border-b border-slate-50 flex items-center justify-between transition-colors"
             >
               <span>Geo tuning</span>
-              <span className="material-symbols-outlined text-[14px]">my_location</span>
+              <span className="material-symbols-rounded text-[14px]">my_location</span>
             </button>
             <button 
               onClick={(e) => {

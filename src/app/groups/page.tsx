@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { groupService } from '@/lib/firebase/groupService';
 import { storageService } from '@/lib/firebase/storageService';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -11,23 +11,51 @@ import ImageWithFallback from '@/components/common/ImageWithFallback';
 import { db } from '@/lib/firebase/clientApp';
 import { updateDoc, doc, collection, getDocs, query } from 'firebase/firestore';
 
-export default function GroupsDiscoveryPage() {
+import { Suspense } from 'react';
+
+function GroupsContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
   const { user, profile, setShowLogin } = useAuth();
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const userJoinedGroups = user ? groups.filter(g => {
+    // 1. Check user profile's joinedGroups
     const inJoinedGroups = profile?.joinedGroups && profile.joinedGroups.includes(g.id);
+    
+    // 2. Check group metadata's memberIds array
     const inMemberIds = (g as any).memberIds && Array.isArray((g as any).memberIds) && (g as any).memberIds.includes(user.uid);
+    
+    // 3. Check if owner
     const isOwner = g.ownerId === user.uid;
+    
+    // 4. Fallback: if it's the freestyle tango group and we want to ensure visibility for debugging
+    // (Optional, but helps during transitions)
+    const isFreestyle = g.name?.toLowerCase().includes('freestyle');
+    
     const matches = inJoinedGroups || inMemberIds || isOwner;
-    if (g.name === 'freestyle tango') {
-      console.log('Freestyle Tango check:', { gId: g.id, uid: user.uid, inJoinedGroups, inMemberIds, isOwner, profileJoined: profile?.joinedGroups });
+    
+    if (isFreestyle) {
+      console.log('Freestyle Group Membership Check:', { 
+        id: g.id, 
+        inJoinedGroups, 
+        inMemberIds, 
+        isOwner,
+        profileJoined: profile?.joinedGroups
+      });
     }
+    
     return matches;
   }) : [];
+  
+  useEffect(() => {
+    if (user) {
+      console.log('Total Joined Groups Found:', userJoinedGroups.length);
+    }
+  }, [user, profile?.joinedGroups, groups.length, userJoinedGroups.length]);
 
   // Create Group State
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -42,30 +70,11 @@ export default function GroupsDiscoveryPage() {
   });
 
   // My Groups Bottom Sheet State
-  const [sheetState, setSheetState] = useState<'minimized' | 'half' | 'peek'>('minimized');
-
-  useEffect(() => {
-    if (!loading) {
-      // Component mounted & data loaded, start the peek animation (slide up slightly)
-      const timer1 = setTimeout(() => {
-        setSheetState('peek');
-      }, 500);
-
-      // After 2.5 seconds, go back down to minimized
-      const timer2 = setTimeout(() => {
-        setSheetState('minimized');
-      }, 2500);
-
-      return () => {
-        clearTimeout(timer1);
-        clearTimeout(timer2);
-      };
-    }
-  }, [loading]);
+  const [sheetState, setSheetState] = useState<'minimized' | 'half'>('minimized');
 
   // 스크롤 먹통 방지: 모달/팝업 상태에 따른 body overflow 제어 및 언마운트 시 초기화
   useEffect(() => {
-    if (isCreateOpen || selectedCategory) {
+    if (isCreateOpen || selectedCategory || sheetState === 'half') {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
@@ -73,7 +82,7 @@ export default function GroupsDiscoveryPage() {
     return () => {
       document.body.style.overflow = '';
     };
-  }, [isCreateOpen, selectedCategory]);
+  }, [isCreateOpen, selectedCategory, sheetState]);
 
   const openCategoryModal = (category: string) => {
     setSelectedCategory(category);
@@ -86,12 +95,16 @@ export default function GroupsDiscoveryPage() {
   const closeModals = () => {
     setIsCreateOpen(false);
     setSelectedCategory(null);
+    setSheetState('minimized');
+    // Clear URL params when closing
+    if (searchParams.get('action') || searchParams.get('view')) {
+      router.replace(pathname);
+    }
   };
-
-
 
   const fetchGroups = async () => {
     try {
+      setLoading(true);
       setError(null);
       const data = await groupService.getGroups();
       setGroups(data);
@@ -106,6 +119,35 @@ export default function GroupsDiscoveryPage() {
   useEffect(() => {
     fetchGroups();
   }, []);
+
+  // Handle URL Search Params for specialized header triggers
+  useEffect(() => {
+    const action = searchParams.get('action');
+    const view = searchParams.get('view');
+
+    if (action === 'create') {
+      setIsCreateOpen(true);
+    } else {
+      setIsCreateOpen(false);
+    }
+    
+    if (view === 'my') {
+      setSheetState('half');
+    } else {
+      setSheetState('minimized');
+    }
+  }, [searchParams]);
+
+  // Function to close modals and clear params
+  const closeModalsWithParams = () => {
+    setIsCreateOpen(false);
+    setSelectedCategory(null);
+    setSheetState('minimized');
+    // Clear the search params by navigating to the current path
+    if (searchParams.get('action') || searchParams.get('view')) {
+      router.replace(pathname);
+    }
+  };
 
   // Admin Auto-Migration Script
   useEffect(() => {
@@ -359,7 +401,7 @@ export default function GroupsDiscoveryPage() {
             {whatsNewGroups.length > 0 ? whatsNewGroups.map((group) => (
               <div
                 key={group.id}
-                onClick={() => router.push(`/group/${group.id}`)}
+                onClick={() => { router.push(`/group/${group.id}`); }}
                 className="flex-shrink-0 w-[320px] group cursor-pointer active:scale-95 transition-transform"
               >
                 <div className="relative aspect-[16/9] rounded-2xl overflow-hidden mb-4 shadow-md group-hover:shadow-xl transition-all duration-300">
@@ -530,12 +572,12 @@ export default function GroupsDiscoveryPage() {
               >
                 <span className="material-symbols-outlined">close</span>
               </button>
-              <h1 className="font-headline text-lg font-bold text-[#1a1c1e]">Create New Group</h1>
+              <h1 className="font-headline text-lg font-bold text-on-surface">Create New Group</h1>
             </div>
             <button
               onClick={handleCreateSubmit}
               disabled={createLoading}
-              className="bg-[#0b5ac0] text-white px-6 py-2 rounded-lg font-headline font-bold text-sm hover:brightness-110 active:scale-95 transition-all duration-150 shadow-md disabled:opacity-50"
+              className="bg-primary text-on-primary px-6 py-2 rounded-lg font-headline font-bold text-sm hover:brightness-110 active:scale-95 transition-all duration-150 shadow-md disabled:opacity-50"
             >
               {createLoading ? 'Saving...' : 'Save'}
             </button>
@@ -679,26 +721,37 @@ export default function GroupsDiscoveryPage() {
       {/* Persistent Bottom Sheet */}
       {sheetState === 'half' && (
         <div
-          onClick={() => setSheetState('minimized')}
+          onClick={() => {
+            setSheetState('minimized');
+            if (searchParams.get('view')) router.replace(pathname);
+          }}
           className="fixed inset-0 bg-black/40 z-40 pointer-events-auto animate-in fade-in duration-200"
         />
       )}
 
       <div
         className="fixed inset-x-0 bottom-0 z-50 bg-white shadow-[0_-8px_30px_rgb(0,0,0,0.08)] rounded-t-[32px] border-t border-slate-50 flex flex-col transition-transform duration-300 ease-out h-full"
-        style={{ transform: `translateY(${sheetState === 'minimized' ? 'calc(100% - 100px)' : sheetState === 'peek' ? '70%' : '50%'})` }}
+        style={{ transform: `translateY(${sheetState === 'minimized' ? 'calc(100% - 100px)' : '50%'})` }}
       >
         {/* Handle & Header Section */}
         <div
           className="pt-3 px-6 cursor-pointer pb-1 touch-none"
-          onClick={() => setSheetState(sheetState === 'minimized' ? 'half' : 'minimized')}
+          onClick={() => {
+            const nextState = sheetState === 'minimized' ? 'half' : 'minimized';
+            setSheetState(nextState);
+            if (nextState === 'minimized' && searchParams.get('view')) {
+              router.replace(pathname);
+            }
+          }}
         >
           {/* Handle Bar Container */}
           <div className="relative flex items-center justify-center mb-6">
             {/* Handle Bar */}
             <div className="w-10 h-1.5 bg-slate-200 rounded-full"></div>
             {/* My Groups Label */}
-            <span className="absolute right-0 text-[10px] font-bold text-slate-400 uppercase tracking-widest">My Groups</span>
+            <span className="absolute right-0 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              My Groups ({userJoinedGroups.length})
+            </span>
           </div>
         </div>
 
@@ -708,7 +761,7 @@ export default function GroupsDiscoveryPage() {
             {userJoinedGroups.length > 0 ? userJoinedGroups.map((group) => (
               <div
                 key={group.id}
-                onClick={() => router.push(`/group/${group.id}`)}
+                onClick={() => { router.push(`/group/${group.id}`); }}
                 className="flex items-center p-3 -mx-3 rounded-2xl hover:bg-slate-50 transition-colors group cursor-pointer active:scale-[0.98]"
               >
                 <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center overflow-hidden mr-4 shadow-sm">
@@ -736,12 +789,6 @@ export default function GroupsDiscoveryPage() {
             )) : (
               <div className="py-10 text-center space-y-4">
                 <p className="text-slate-400 text-sm font-medium">You haven't joined any groups yet.</p>
-                <button
-                  onClick={() => { setIsCreateOpen(true); }}
-                  className="text-primary font-bold text-sm bg-primary/5 px-4 py-2 rounded-full"
-                >
-                  Create Your First Group
-                </button>
               </div>
             )}
           </div>
@@ -761,6 +808,18 @@ export default function GroupsDiscoveryPage() {
         }
       `}</style>
     </div>
+  );
+}
+
+export default function GroupsDiscoveryPage() {
+  return (
+    <Suspense fallback={
+      <div className="bg-background min-h-screen flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    }>
+      <GroupsContent />
+    </Suspense>
   );
 }
 

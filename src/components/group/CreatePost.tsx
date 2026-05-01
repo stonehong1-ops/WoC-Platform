@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useRef } from 'react';
 import { groupService } from '@/lib/firebase/groupService';
@@ -61,7 +61,7 @@ export default function CreatePost({ communityId, onSuccess }: CreatePostProps) 
         author: {
           id: user.uid,
           name: profile?.nickname || user.displayName || 'Anonymous',
-          avatar: profile?.photoURL || user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`,
+          avatar: profile?.photoURL || user.photoURL || '',
           role: profile?.isInstructor ? 'Instructor' : 'Curator'
         },
         likes: 0,
@@ -90,11 +90,13 @@ export default function CreatePost({ communityId, onSuccess }: CreatePostProps) 
           onClick={() => setIsOpen(true)}
           className="flex items-center gap-4 cursor-pointer group"
         >
-          <img 
-            src={profile?.photoURL || user?.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.uid || 'guest'}`} 
-            className="w-12 h-12 rounded-2xl object-cover shadow-md" 
-            alt="User" 
-          />
+          <div className="w-12 h-12 rounded-2xl object-cover shadow-md bg-surface-container-low flex items-center justify-center overflow-hidden">
+            {(profile?.photoURL || user?.photoURL) ? (
+              <img src={profile?.photoURL || user?.photoURL || undefined} className="w-full h-full object-cover" alt="User" />
+            ) : (
+              <span className="material-symbols-outlined text-on-surface-variant" style={{ fontSize: '28px', fontVariationSettings: "'FILL' 1" }}>account_circle</span>
+            )}
+          </div>
           <div className="flex-1 h-12 bg-surface-container-low rounded-2xl flex items-center px-6 text-on-surface-variant font-bold group-hover:bg-surface-container-high transition-colors">
             Share your thoughts in this group...
           </div>

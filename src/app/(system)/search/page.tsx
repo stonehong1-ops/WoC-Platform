@@ -4,17 +4,17 @@ import React from 'react';
 
 export default function SearchPage() {
   return (
-    <main className="max-w-2xl mx-auto px-4 pt-8 pb-24 space-y-10 min-h-screen">
+    <main className="max-w-2xl mx-auto px-4 pt-8 pb-24 space-y-10 min-h-screen bg-background">
       {/* 1. Search Input Section */}
-      <section className="sticky top-20 z-40 bg-[#F9F9F9]/80 backdrop-blur-sm -mx-4 px-4 py-2">
+      <section className="sticky top-20 z-40 bg-background/80 backdrop-blur-sm -mx-4 px-4 py-2">
         <div className="relative group">
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <span className="material-symbols-outlined text-gray-400 group-focus-within:text-[#1A73E8] transition-colors">
+            <span className="material-symbols-outlined text-on-surface-variant group-focus-within:text-primary transition-colors">
               search
             </span>
           </div>
           <input
-            className="w-full bg-white border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-[#1A73E8] h-14 pl-12 pr-4 rounded-xl font-body text-base shadow-sm transition-all outline-none placeholder:text-gray-400"
+            className="w-full bg-surface-container-lowest border-none ring-1 ring-outline-variant focus:ring-2 focus:ring-primary h-14 pl-12 pr-4 rounded-xl font-body text-base shadow-sm transition-all outline-none placeholder:text-on-surface-variant"
             placeholder="Search moments, people..."
             type="text"
           />
@@ -27,7 +27,7 @@ export default function SearchPage() {
           <h2 className="font-headline font-bold text-lg tracking-tight">Quick Filters</h2>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button className="px-5 py-2.5 rounded-full bg-[#d8e2ff] text-[#004fa8] font-label text-sm font-semibold flex items-center gap-2 hover:opacity-90 transition-opacity">
+          <button className="px-5 py-2.5 rounded-full bg-primary-container text-on-primary-container font-label text-sm font-semibold flex items-center gap-2 hover:opacity-90 transition-opacity">
             <span className="material-symbols-outlined text-[18px]">group</span>
             Social
           </button>
@@ -54,10 +54,10 @@ export default function SearchPage() {
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-headline font-bold text-lg tracking-tight">Recent Searches</h2>
-          <button className="text-[#1A73E8] font-label text-sm font-semibold hover:underline px-2 py-1">Clear All</button>
+          <button className="text-primary font-label text-sm font-semibold hover:underline px-2 py-1">Clear All</button>
         </div>
         <div className="space-y-1">
-          <div className="flex items-center justify-between py-3 px-1 hover:bg-gray-50 rounded-lg group transition-colors cursor-pointer">
+          <div className="flex items-center justify-between py-3 px-1 hover:bg-surface-container-low rounded-lg group transition-colors cursor-pointer">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
                 <span className="material-symbols-outlined text-gray-400 text-[20px]">history</span>
@@ -66,7 +66,7 @@ export default function SearchPage() {
             </div>
             <span className="material-symbols-outlined text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity">close</span>
           </div>
-          <div className="flex items-center justify-between py-3 px-1 hover:bg-gray-50 rounded-lg group transition-colors cursor-pointer">
+          <div className="flex items-center justify-between py-3 px-1 hover:bg-surface-container-low rounded-lg group transition-colors cursor-pointer">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
                 <span className="material-symbols-outlined text-gray-400 text-[20px]">history</span>
@@ -94,13 +94,13 @@ export default function SearchPage() {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
             <div className="absolute bottom-0 left-0 p-6 text-white w-full">
-              <span className="bg-[#1A73E8] px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider mb-2 inline-block">Trending Salon</span>
+              <span className="bg-primary px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider mb-2 inline-block text-on-primary">Trending Salon</span>
               <h3 className="font-headline font-bold text-xl leading-tight mb-1">Velvet & Vine Grooming</h3>
               <p className="text-white/80 text-xs font-medium">Downtown • 4.9 ★ (2k+)</p>
             </div>
           </div>
           {/* Profile Card 1 */}
-          <div className="col-span-1 bg-[#f2f4f4] rounded-2xl p-4 flex flex-col items-center justify-center text-center space-y-3 border border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
+          <div className="col-span-1 bg-surface-container-low rounded-2xl p-4 flex flex-col items-center justify-center text-center space-y-3 border border-outline-variant hover:shadow-md transition-shadow cursor-pointer">
             <div className="relative">
               <img
                 alt="Elena"

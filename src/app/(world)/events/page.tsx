@@ -63,6 +63,7 @@ export default function EventsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
 
   // Real-time Subscription
   useEffect(() => {
@@ -170,18 +171,15 @@ export default function EventsPage() {
   }, [events]);
 
   const STACK_COLORS = [
-    { bg: '#E91E63', text: '#ffffff' },
-    { bg: '#FCE4EC', text: '#C2185B' },
-    { bg: '#F8BBD0', text: '#880E4F' },
-    { bg: '#F06292', text: '#ffffff' },
-    { bg: '#D81B60', text: '#ffffff' }
+    { bg: '#0057bd', text: '#ffffff' },   // primary
+    { bg: '#3d56ba', text: '#ffffff' },   // secondary
+    { bg: '#6e9fff', text: '#002150' },   // primary-container
+    { bg: '#8097ff', text: '#03288f' },   // secondary-container
+    { bg: '#883b91', text: '#ffffff' },   // tertiary
   ];
 
   return (
     <>
-      <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-      <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&display=swap" rel="stylesheet"/>
-      
       <style dangerouslySetInnerHTML={{ __html: `
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -189,14 +187,14 @@ export default function EventsPage() {
         .calendar-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            border-left: 1px solid #E5E7EB;
-            border-top: 1px solid #E5E7EB;
+            border-left: 1px solid var(--color-outline-variant, #a3abd7);
+            border-top: 1px solid var(--color-outline-variant, #a3abd7);
         }
         
         .calendar-cell {
             min-height: 100px;
-            border-right: 1px solid #E5E7EB;
-            border-bottom: 1px solid #E5E7EB;
+            border-right: 1px solid var(--color-outline-variant, #a3abd7);
+            border-bottom: 1px solid var(--color-outline-variant, #a3abd7);
             padding: 4px;
             position: relative;
             display: flex;
@@ -231,13 +229,16 @@ export default function EventsPage() {
         }
       `}} />
 
-      <div className="bg-[#F3F4F6] font-sans text-[#191b22] min-h-screen">
-        <main className="pt-24 pb-24">
-          {/* Hot 5 Section */}
+      <div className="w-full relative">
+        <main className="pt-4 pb-24">
+          {/* Top 5 Section */}
           <section className="mb-8 px-4">
-            <div className="flex justify-between items-end mb-4">
-              <h2 className="font-bold text-2xl text-gray-900">Hot 5</h2>
-              <span className="text-[12px] font-semibold text-[#0057bd] uppercase tracking-widest cursor-pointer">View All</span>
+            <div className="flex items-end justify-between mb-4">
+              <div>
+                <h2 className="text-2xl font-extrabold font-headline tracking-tight text-on-background">Top 5</h2>
+                <p className="text-on-surface-variant text-sm font-medium">Meet more popular events</p>
+              </div>
+              <span className="text-primary font-bold text-sm flex items-center gap-1 cursor-pointer">View all <span className="material-symbols-outlined text-sm">arrow_forward</span></span>
             </div>
             <div className="flex gap-4 overflow-x-auto no-scrollbar snap-x snap-mandatory">
               {hot5Events.length === 0 ? (
@@ -256,8 +257,11 @@ export default function EventsPage() {
                       <span className="bg-[#0057bd] text-white w-fit px-2 py-0.5 rounded text-[10px] font-bold mb-2 tracking-wider uppercase">
                         {idx === 0 ? 'FEATURED' : idx < 3 ? 'POPULAR' : 'LIMITED'}
                       </span>
-                      <h3 className="font-bold text-white text-lg">{event.title}</h3>
-                      <p className="text-white/80 text-sm flex items-center gap-1.5 mt-1">
+                      <h3 className="font-bold text-white text-lg leading-tight">{event.title}</h3>
+                      {event.titleNative && (
+                        <p className="text-white/90 text-[13px] font-medium leading-tight mt-0.5">{event.titleNative}</p>
+                      )}
+                      <p className="text-white/80 text-sm flex items-center gap-1.5 mt-1.5">
                         {(() => {
                           const flagUrl = getFlagImageUrl(event.location?.split(',').pop()?.trim() || '');
                           return flagUrl ? <img src={flagUrl} alt="flag" className="inline-block w-4 h-3 object-cover rounded-sm shadow-sm" /> : null;
@@ -274,88 +278,88 @@ export default function EventsPage() {
           {/* Upcoming (Calendar) Section */}
           <section className="px-4">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="font-bold text-2xl text-gray-900">Upcoming</h2>
-              <div className="flex items-center gap-1 bg-white px-1 py-1 rounded-xl border border-gray-200 shadow-sm">
-                <button onClick={() => setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))} className="p-1 hover:bg-gray-100 rounded-lg flex items-center justify-center transition-colors">
-                  <span className="material-symbols-outlined text-gray-600 text-lg">chevron_left</span>
+              <div>
+                <h2 className="text-2xl font-extrabold font-headline tracking-tight text-on-background">Upcoming</h2>
+              </div>
+            </div>
+
+            {/* 헤더: < Apr 2026 >  |  📅 ☰ */}
+            <div className="flex items-center justify-between mb-4">
+              {/* 월 네비게이터 */}
+              <div className="flex items-center gap-1 bg-surface-container-lowest px-1 py-1 rounded-xl border border-outline-variant shadow-sm">
+                <button onClick={() => setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))} className="p-1 hover:bg-surface-container rounded-lg flex items-center justify-center transition-colors">
+                  <span className="material-symbols-outlined text-on-surface-variant text-lg">chevron_left</span>
                 </button>
-                <span className="font-bold text-gray-800 text-sm px-2 cursor-pointer select-none" onClick={() => setCurrentDate(new Date())}>
-                  {format(currentDate, 'MMM yyyy')}
+                <span className="font-bold text-on-surface text-sm px-2 cursor-pointer select-none" onClick={() => setCurrentDate(new Date())}>
+                  {format(currentDate, 'MMM, yyyy')}
                 </span>
-                <button onClick={() => setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))} className="p-1 hover:bg-gray-100 rounded-lg flex items-center justify-center transition-colors">
-                  <span className="material-symbols-outlined text-gray-600 text-lg">chevron_right</span>
+                <button onClick={() => setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))} className="p-1 hover:bg-surface-container rounded-lg flex items-center justify-center transition-colors">
+                  <span className="material-symbols-outlined text-on-surface-variant text-lg">chevron_right</span>
+                </button>
+              </div>
+
+              {/* 뷰 토글 */}
+              <div className="flex items-center gap-1 bg-surface-container-lowest border border-outline-variant rounded-xl p-1 shadow-sm">
+                <button
+                  onClick={() => setViewMode('calendar')}
+                  className={`p-1.5 rounded-lg transition-all ${ viewMode === 'calendar' ? 'bg-primary text-white shadow-sm' : 'text-on-surface-variant hover:bg-surface-container' }`}
+                >
+                  <span className="material-symbols-outlined text-[18px] leading-none" style={{ fontVariationSettings: "'FILL' 1" }}>calendar_month</span>
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-1.5 rounded-lg transition-all ${ viewMode === 'list' ? 'bg-primary text-white shadow-sm' : 'text-on-surface-variant hover:bg-surface-container' }`}
+                >
+                  <span className="material-symbols-outlined text-[18px] leading-none" style={{ fontVariationSettings: "'FILL' 1" }}>view_list</span>
                 </button>
               </div>
             </div>
             
-            <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-200">
+            {/* 달력 뷰 */}
+            {viewMode === 'calendar' && (
+            <div className="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm border border-outline-variant">
               {/* Calendar Header Days */}
-              <div className="grid grid-cols-7 bg-gray-50/50 border-b border-gray-200">
+              <div className="grid grid-cols-7 bg-surface-container-low border-b border-outline-variant">
                 {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
-                  <div key={day} className="py-2 text-center text-[12px] font-semibold text-gray-500 uppercase">{day}</div>
+                  <div key={day} className="py-2 text-center text-[12px] font-semibold text-on-surface-variant uppercase">{day}</div>
                 ))}
               </div>
-              
-              {/* Calendar Grid */}
               <div className="calendar-grid">
                 {calendarRange.days.map((date, i) => {
                   const isCurrentMonth = date.getMonth() === currentDate.getMonth();
                   const isToday = isSameDay(date, new Date());
-                  
-                  // Filter events occurring on this specific day
                   const dayEvents = events.filter(e => {
                     const start = getNormalizedDate(e.startDate);
                     const end = getNormalizedDate(e.endDate || e.startDate);
                     return date >= start && date <= end;
                   });
-                  
                   const dayMaxSlot = dayEvents.reduce((max, e) => Math.max(max, eventSlots[e.id] ?? 0), -1);
                   const cellMinHeight = Math.max(100, 28 + (dayMaxSlot + 1) * 26 + 8);
-
                   return (
                     <div key={i} className={`calendar-cell ${!isCurrentMonth ? 'bg-gray-50/30' : ''}`} style={{ minHeight: `${cellMinHeight}px` }}>
                       <span className={`text-[10px] font-bold ${isToday ? 'text-[#0057bd] w-5 h-5 bg-[#d3e4fe] rounded-full flex items-center justify-center' : 'text-gray-400'}`}>
                         {date.getDate()}
                       </span>
-                      
                       <div className="event-container">
                         {dayEvents.map(event => {
                           const start = getNormalizedDate(event.startDate);
                           const end = getNormalizedDate(event.endDate || event.startDate);
-                          
-                          // Only render the bar if it's the start of the event or start of the week
                           const isStartOfBar = isSameDay(date, start) || getDay(date) === 1;
-                          
                           if (isStartOfBar) {
-                            // Calculate how many days this event spans within the current week (up to 7 - dayOfWeek)
-                            const dayOfWeek = (getDay(date) + 6) % 7; // 0-6 (Mon-Sun)
+                            const dayOfWeek = (getDay(date) + 6) % 7;
                             const remainingInWeek = 7 - dayOfWeek;
                             const totalDuration = differenceInCalendarDays(end, date) + 1;
                             const span = Math.min(totalDuration, remainingInWeek);
-                            
                             const slotIdx = eventSlots[event.id] ?? 0;
                             const colorSet = STACK_COLORS[slotIdx % STACK_COLORS.length];
-
                             return (
-                              <div 
-                                key={event.id} 
+                              <div
+                                key={event.id}
                                 onClick={() => setSelectedEvent(event)}
-                                className="event-bar" 
-                                style={{ 
-                                  backgroundColor: colorSet.bg, 
-                                  color: colorSet.text,
-                                  width: `calc(${span * 100}% - 4px)`,
-                                  top: `${slotIdx * 26}px`,
-                                  left: '2px',
-                                  zIndex: 10
-                                }}
+                                className="event-bar"
+                                style={{ backgroundColor: colorSet.bg, color: colorSet.text, width: `calc(${span * 100}% - 4px)`, top: `${slotIdx * 26}px`, left: '2px', zIndex: 10 }}
                               >
-                                {event.location ? (
-                                  (() => {
-                                    const flagUrl = getFlagImageUrl(event.location.split(',').pop()?.trim() || '');
-                                    return flagUrl ? <img src={flagUrl} alt="flag" className="inline-block mr-1 w-3.5 h-[10.5px] object-cover rounded-sm shadow-sm" /> : null;
-                                  })()
-                                ) : null}
+                                {event.location ? (() => { const flagUrl = getFlagImageUrl(event.location.split(',').pop()?.trim() || ''); return flagUrl ? <img src={flagUrl} alt="flag" className="inline-block mr-1 w-3.5 h-[10.5px] object-cover rounded-sm shadow-sm" /> : null; })() : null}
                                 <span className="truncate">{event.title}</span>
                               </div>
                             );
@@ -368,37 +372,70 @@ export default function EventsPage() {
                 })}
               </div>
             </div>
+            )}
+
+            {/* 리스트 뷰 - 해당 월 이벤트만 */}
+            {viewMode === 'list' && (() => {
+              const monthStart = startOfMonth(currentDate);
+              const monthEnd = endOfMonth(currentDate);
+              const monthEvents = sortedEvents.filter(e => {
+                const start = getNormalizedDate(e.startDate);
+                const end = getNormalizedDate(e.endDate || e.startDate);
+                return start <= monthEnd && end >= monthStart;
+              });
+              return monthEvents.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-on-surface-variant">
+                  <span className="material-symbols-outlined text-4xl mb-2 opacity-30">event_busy</span>
+                  <p className="text-sm font-medium">No events this month</p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {monthEvents.map(event => {
+                    const start = getNormalizedDate(event.startDate);
+                    const end = event.endDate ? getNormalizedDate(event.endDate) : null;
+                    const flagUrl = getFlagImageUrl(event.location?.split(',').pop()?.trim() || '');
+                    const dateStr = end && !isSameDay(start, end)
+                      ? `${format(start, 'MMM d')} – ${format(end, 'MMM d')}`
+                      : format(start, 'MMM d, EEE');
+                    return (
+                      <div
+                        key={event.id}
+                        onClick={() => setSelectedEvent(event)}
+                        className="flex gap-3 bg-surface-container-lowest border border-outline-variant rounded-xl p-3 shadow-sm cursor-pointer hover:border-primary/40 active:scale-[0.98] transition-all"
+                      >
+                        {/* 썸네일 */}
+                        <div className="w-16 h-16 rounded-lg overflow-hidden flex-none bg-surface-container">
+                          {event.imageUrl
+                            ? <img src={event.imageUrl} alt={event.title} className="w-full h-full object-cover" />
+                            : <div className="w-full h-full flex items-center justify-center"><span className="material-symbols-outlined text-on-surface-variant text-2xl">event</span></div>
+                          }
+                        </div>
+                        {/* 정보 */}
+                        <div className="flex flex-col justify-center min-w-0">
+                          <span className="text-[10px] font-bold text-primary bg-primary/10 w-fit px-1.5 py-0.5 rounded mb-1 uppercase">{dateStr}</span>
+                          <h3 className="font-bold text-on-background text-sm leading-snug truncate">{event.title}</h3>
+                          {event.titleNative && <p className="text-[11px] text-on-surface-variant truncate">{event.titleNative}</p>}
+                          {event.location && (
+                            <p className="text-[11px] text-on-surface-variant flex items-center gap-1 mt-0.5">
+                              {flagUrl && <img src={flagUrl} alt="flag" className="w-3.5 h-[10.5px] object-cover rounded-sm" />}
+                              {event.location.split(',')[0]}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </section>
         </main>
 
-        {/* Bottom Navigation */}
-        <nav className="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-2 h-20 bg-white border-t border-gray-200 shadow-lg">
-          <button className="flex flex-col items-center justify-center text-gray-500 px-4 py-1 active:opacity-70 transition-all duration-200">
-            <span className="material-symbols-outlined mb-1">dashboard</span>
-            <span className="font-semibold text-[10px]">Dashboard</span>
-          </button>
-          <button className="flex flex-col items-center justify-center bg-[#f2f3fc] text-[#0057bd] rounded-xl px-4 py-1 active:opacity-70 transition-all duration-200">
-            <span className="material-symbols-outlined mb-1">calendar_today</span>
-            <span className="font-semibold text-[10px]">Events</span>
-          </button>
-          <button className="flex flex-col items-center justify-center text-gray-500 px-4 py-1 active:opacity-70 transition-all duration-200">
-            <span className="material-symbols-outlined mb-1">insights</span>
-            <span className="font-semibold text-[10px]">Analytics</span>
-          </button>
-          <button className="flex flex-col items-center justify-center text-gray-500 px-4 py-1 active:opacity-70 transition-all duration-200">
-            <span className="material-symbols-outlined mb-1">terminal</span>
-            <span className="font-semibold text-[10px]">Logs</span>
-          </button>
-          <button className="flex flex-col items-center justify-center text-gray-500 px-4 py-1 active:opacity-70 transition-all duration-200">
-            <span className="material-symbols-outlined mb-1">settings</span>
-            <span className="font-semibold text-[10px]">Settings</span>
-          </button>
-        </nav>
 
-        {/* Floating Add Button (Optional but useful) */}
+        {/* Floating Add Button */}
         <button 
           onClick={() => setShowCreateModal(true)}
-          className="fixed bottom-24 right-6 w-14 h-14 bg-[#0057bd] text-white rounded-full shadow-lg flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50"
+          className="fixed bottom-28 right-6 w-14 h-14 bg-[#0057bd] text-white rounded-full shadow-lg flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50"
         >
           <span className="material-symbols-outlined text-3xl">add</span>
         </button>

@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
+import GlobalNavigation from "@/components/layout/GlobalNavigation";
 import PageWrapper from "@/components/layout/PageWrapper";
 import SWRegister from "@/components/layout/SWRegister";
 
@@ -39,7 +38,7 @@ export default function RootLayout({
     <html lang="en" className="light">
       <head>
         <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       </head>
       <body className="bg-background text-on-surface font-body selection:bg-primary-container selection:text-on-primary-container antialiased">
@@ -50,25 +49,21 @@ export default function RootLayout({
               <NavigationProvider>
                 <ClassCartProvider>
                   <SWRegister />
-                {/* Fixed Header */}
-                <Header />
+                  <GlobalNavigation>
+                    {/* Full Screen Menu */}
+                    <NavigationDrawer />
 
-                {/* Full Screen Menu */}
-                <NavigationDrawer />
+                    {/* Location Selector Bottom Sheet/Modal */}
+                    <LocationSelector />
 
-                {/* Location Selector Bottom Sheet/Modal */}
-                <LocationSelector />
+                    {/* Dynamic Body Content */}
+                    <PageWrapper>
+                      {children}
+                    </PageWrapper>
 
-                {/* Dynamic Body Content */}
-                <PageWrapper>
-                  {children}
-                </PageWrapper>
-
-                {/* Parallel Route Modal Content */}
-                {modal}
-
-                {/* Fixed Footer */}
-                  <Footer />
+                    {/* Parallel Route Modal Content */}
+                    {modal}
+                  </GlobalNavigation>
                 </ClassCartProvider>
               </NavigationProvider>
             </LocationProvider>

@@ -220,7 +220,7 @@ export default function ManageEntry({ isOpen, onClose, isLoaded, initialData, mo
       
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-[2001] bg-white flex justify-between items-center w-full px-6 h-16 border-b border-[#dde4e5]">
-        <button onClick={onClose} className="p-2 hover:bg-[#e8eff0] transition-colors rounded-full"><span className="material-symbols-outlined text-[#161D1E]">close</span></button>
+        <button onClick={onClose} className="p-2 hover:bg-[#e8eff0] transition-colors rounded-full"><span className="material-symbols-rounded text-[#161D1E]">close</span></button>
         <h1 className="font-headline text-[13px] font-black text-[#2D3435] uppercase tracking-widest">
           {mode === 'geo' ? 'Geo Tuning' : initialData ? 'Edit Venue' : 'Register Venue'}
         </h1>
@@ -243,7 +243,7 @@ export default function ManageEntry({ isOpen, onClose, isLoaded, initialData, mo
               </div>
               <div className="group">
                 <label className="block text-[10px] font-bold text-[#596061] mb-2 tracking-widest uppercase">Korean Name (Optional)</label>
-                <input type="text" value={formData.nameKo} onChange={(e) => setFormData({...formData, nameKo: e.target.value})} placeholder="예: 탱고라이프" className="w-full bg-[#e8eff0] border-none rounded-xl px-5 py-4 text-[#2D3435] font-bold focus:bg-white focus:ring-2 focus:ring-[#005BC0]/20 transition-all placeholder:text-[#596061]/30 text-[15px]"/>
+                <input type="text" value={formData.nameKo} onChange={(e) => setFormData({...formData, nameKo: e.target.value})} placeholder="예: 블루호라이즌 스튜디오" className="w-full bg-[#e8eff0] border-none rounded-xl px-5 py-4 text-[#2D3435] font-bold focus:bg-white focus:ring-2 focus:ring-[#005BC0]/20 transition-all placeholder:text-[#596061]/30 text-[15px]"/>
               </div>
             </div>
           </section>
@@ -259,7 +259,7 @@ export default function ManageEntry({ isOpen, onClose, isLoaded, initialData, mo
             <div className="grid grid-cols-3 gap-2.5">
               {categoriesList.map((cat) => (
                 <button key={cat.id} type="button" onClick={() => toggleCategory(cat.id)} className={`flex flex-col items-center justify-center p-4 rounded-xl transition-all ${formData.categories.includes(cat.id) ? 'bg-[#005BC0] text-white shadow-lg scale-105 z-10' : 'bg-[#eef5f6] text-[#596061]'}`}>
-                  <span className="material-symbols-outlined text-[20px] mb-2" style={{ fontVariationSettings: formData.categories.includes(cat.id) ? "'FILL' 1" : "'FILL' 0" }}>{cat.icon}</span>
+                  <span className="material-symbols-rounded text-[20px] mb-2" style={{ fontVariationSettings: formData.categories.includes(cat.id) ? "'FILL' 1" : "'FILL' 0" }}>{cat.icon}</span>
                   <span className="text-[9px] font-black uppercase tracking-tight">{cat.label}</span>
                 </button>
               ))}
@@ -295,7 +295,7 @@ export default function ManageEntry({ isOpen, onClose, isLoaded, initialData, mo
                 />
               </Autocomplete>
             ) : <div className="w-full bg-[#e8eff0] h-14 rounded-2xl animate-pulse"></div>}
-            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#005BC0] text-[20px]">search</span>
+            <span className="material-symbols-rounded absolute left-4 top-1/2 -translate-y-1/2 text-[#005BC0] text-[20px]">search</span>
           </div>
           
           <div className="h-60 w-full bg-[#f4fbfb] rounded-[2rem] overflow-hidden relative border border-[#dde4e5] mb-6">
@@ -339,13 +339,13 @@ export default function ManageEntry({ isOpen, onClose, isLoaded, initialData, mo
             </div>
             <div className="flex gap-4 overflow-x-auto no-scrollbar pb-6 -mx-6 px-6">
               <label className="flex-shrink-0 w-48 h-48 border-2 border-dashed border-[#c2c6d5] rounded-[2rem] flex flex-col items-center justify-center bg-white hover:bg-[#eaf2ff] transition-all cursor-pointer group">
-                <span className="material-symbols-outlined text-[#727784] text-[40px] mb-2 group-hover:scale-110 transition-all">add_a_photo</span>
+                <span className="material-symbols-rounded text-[#727784] text-[40px] mb-2 group-hover:scale-110 transition-all">add_a_photo</span>
                 <input type="file" multiple accept="image/*" onChange={(e) => { if (e.target.files) { const filesArray = Array.from(e.target.files); if (filesArray.length + formData.images.length > 20) return; setFormData(prev => ({ ...prev, images: [...prev.images, ...filesArray] })); } }} className="hidden" />
               </label>
               {formData.images.map((img, idx) => (
                 <div key={idx} className="relative flex-shrink-0 w-48 h-48 rounded-[2rem] bg-[#e2e9ea] overflow-hidden shadow-md">
                   <img src={URL.createObjectURL(img)} className="w-full h-full object-cover" alt="" />
-                  <button type="button" onClick={() => setFormData(prev => ({ ...prev, images: prev.images.filter((_, i) => i !== idx) }))} className="absolute top-3 right-3 w-8 h-8 bg-black/40 text-white rounded-full flex items-center justify-center backdrop-blur-lg hover:bg-[#ba1a1a] transition-colors"><span className="material-symbols-outlined text-[18px]">close</span></button>
+                  <button type="button" onClick={() => setFormData(prev => ({ ...prev, images: prev.images.filter((_, i) => i !== idx) }))} className="absolute top-3 right-3 w-8 h-8 bg-black/40 text-white rounded-full flex items-center justify-center backdrop-blur-lg hover:bg-[#ba1a1a] transition-colors"><span className="material-symbols-rounded text-[18px]">close</span></button>
                 </div>
               ))}
             </div>

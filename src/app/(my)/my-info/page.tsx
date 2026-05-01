@@ -118,14 +118,14 @@ export default function MyInfoPage() {
             <div>
               <p className="text-xs font-bold text-inverse-on-surface uppercase tracking-widest mb-1">Professional Status</p>
               <div className="flex items-center gap-2 mb-4">
-                <h2 className="text-2xl font-bold text-white font-headline">Verified</h2>
+                <h2 className="text-2xl font-bold text-surface-container-lowest font-headline">Verified</h2>
                 <span className="material-symbols-outlined text-primary fill-1" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
               </div>
               <p className="text-xs text-inverse-on-surface italic">Your primary credentials have been verified by our security team.</p>
             </div>
-            <div className="mt-8 pt-6 border-t border-white/10">
+            <div className="mt-8 pt-6 border-t border-surface-container-lowest/10">
               <p className="text-[10px] font-bold text-inverse-on-surface uppercase tracking-widest mb-3">Additional Verification</p>
-              <button className="w-full py-2.5 px-4 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2">
+              <button className="w-full py-2.5 px-4 bg-surface-container-lowest/10 hover:bg-surface-container-lowest/20 border border-surface-container-lowest/20 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2">
                 <span className="material-symbols-outlined text-sm">verified_user</span>
                 Apply for Advanced Badge
               </button>

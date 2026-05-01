@@ -2,7 +2,7 @@ import React from 'react';
 
 export default function PostSkeleton() {
   return (
-    <div className="bg-white rounded-[32px] overflow-hidden shadow-sm animate-pulse">
+    <div className="bg-surface rounded-[32px] overflow-hidden shadow-sm animate-pulse">
       {/* Header Skeleton */}
       <div className="p-4 flex items-center justify-between">
         <div className="flex items-center gap-3">

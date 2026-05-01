@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Social } from '@/types/social';
 import { DualText, getSocialDisplayTitle } from './SocialHeroCard';
+import { useHistoryBack } from '@/hooks/useHistoryBack';
 
 interface SocialEventDetailProps {
   social: Social;
@@ -14,6 +15,7 @@ export default function SocialEventDetail({ social, onClose }: SocialEventDetail
   const [activeTab, setActiveTab] = useState('Info');
   const [isShareMenuOpen, setIsShareMenuOpen] = useState(false);
   const shareMenuRef = React.useRef<HTMLDivElement>(null);
+  const { handleClose } = useHistoryBack(true, onClose);
   
   const tabs = ['Info', 'Photos', 'Event', 'Table', 'Talk'];
   const weekNames = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -110,7 +112,7 @@ export default function SocialEventDetail({ social, onClose }: SocialEventDetail
       {/* TopAppBar */}
       <header className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-4 h-16 bg-white/90 backdrop-blur-md shadow-[0px_12px_32px_rgba(22,29,30,0.06)]">
         <div className="flex items-center gap-4 flex-1 min-w-0 pr-2">
-          <button onClick={onClose} className="hover:bg-gray-100 p-2 transition-colors active:opacity-70 rounded-full shrink-0">
+          <button onClick={handleClose} className="hover:bg-gray-100 p-2 transition-colors active:opacity-70 rounded-full shrink-0">
             <span className="material-symbols-outlined text-gray-900">close</span>
           </button>
           <DualText 

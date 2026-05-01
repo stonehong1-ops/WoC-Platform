@@ -229,3 +229,57 @@
   0%, 100% { transform: perspective(200px) rotateY(0deg); }
   50% { transform: perspective(200px) rotateY(90deg); }
 }
+
+/* ================================================
+   🛡️ KINETIC SKY DESIGN TOKEN ENFORCEMENT LAYER
+   Tailwind 기본 컬러 → Kinetic Sky 토큰 강제 매핑
+   surface-container-low  = #efefff
+   surface-container      = #e4e7ff
+   surface-container-high = #dde1ff
+   on-surface-variant     = #515981
+   on-surface             = #242c51
+   outline-variant        = #a3abd7
+   primary                = #0057bd
+   ================================================ */
+
+/* ── Background Overrides ── */
+.bg-gray-50    { background-color: #efefff !important; }
+.bg-slate-50   { background-color: #efefff !important; }
+.bg-gray-100   { background-color: #e4e7ff !important; }
+.bg-slate-100  { background-color: #e4e7ff !important; }
+.bg-gray-200   { background-color: #dde1ff !important; }
+.bg-slate-200  { background-color: #dde1ff !important; }
+.bg-blue-50    { background-color: #efefff !important; }
+.bg-blue-100   { background-color: #e4e7ff !important; }
+.bg-blue-600   { background-color: #0057bd !important; }
+.bg-blue-700   { background-color: #004ca6 !important; }
+
+/* ── Border Overrides ── */
+.border-gray-50   { border-color: rgba(163,171,215,0.4) !important; }
+.border-gray-100  { border-color: rgba(163,171,215,0.5) !important; }
+.border-gray-200  { border-color: #a3abd7 !important; }
+.border-gray-300  { border-color: #a3abd7 !important; }
+.border-slate-50  { border-color: rgba(163,171,215,0.4) !important; }
+.border-slate-100 { border-color: rgba(163,171,215,0.5) !important; }
+.border-slate-200 { border-color: #a3abd7 !important; }
+
+/* ── Text Overrides ── */
+.text-gray-300  { color: rgba(81,89,129,0.35) !important; }
+.text-slate-300 { color: rgba(81,89,129,0.35) !important; }
+.text-gray-400  { color: rgba(81,89,129,0.55) !important; }
+.text-slate-400 { color: rgba(81,89,129,0.55) !important; }
+.text-gray-500  { color: #515981 !important; }
+.text-slate-500 { color: #515981 !important; }
+.text-gray-600  { color: #515981 !important; }
+.text-slate-600 { color: #515981 !important; }
+.text-gray-700  { color: #242c51 !important; }
+.text-slate-700 { color: #242c51 !important; }
+.text-gray-800  { color: #242c51 !important; }
+.text-slate-800 { color: #242c51 !important; }
+.text-gray-900  { color: #242c51 !important; }
+.text-slate-900 { color: #242c51 !important; }
+.text-blue-500  { color: #0057bd !important; }
+.text-blue-600  { color: #0057bd !important; }
+.text-blue-700  { color: #004ca6 !important; }
+.text-blue-800  { color: #003d8c !important; }
+.text-blue-900  { color: #242c51 !important; }

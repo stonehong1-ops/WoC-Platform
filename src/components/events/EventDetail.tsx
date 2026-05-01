@@ -6,6 +6,9 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { eventService } from '@/lib/firebase/eventService';
 import { format } from 'date-fns';
 import { Timestamp } from 'firebase/firestore';
+import UserProfileClickable from '@/components/common/UserProfileClickable';
+import UserAvatar from '@/components/common/UserAvatar';
+import UserName from '@/components/common/UserName';
 
 interface EventDetailProps {
   event: Event;
@@ -74,15 +77,22 @@ export default function EventDetail({ event, onClose, onEdit, onDelete }: EventD
           <div className="p-8 space-y-8">
             {/* Title & Host */}
             <div>
-              <h2 className="text-3xl font-black text-gray-900 tracking-tighter leading-tight mb-4">{event.title}</h2>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gray-100 overflow-hidden">
-                  <img src={event.hostPhoto || "https://lh3.googleusercontent.com/a/default-user"} alt={event.hostName} className="w-full h-full object-cover"/>
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Hosted by</p>
-                  <p className="text-sm font-bold text-gray-900">{event.hostName}</p>
-                </div>
+              <h2 className="text-3xl font-black text-gray-900 tracking-tighter leading-tight mb-2">{event.title}</h2>
+              {event.titleNative && (
+                <p className="text-gray-500 font-bold mb-4">{event.titleNative}</p>
+              )}
+              <div className={`flex items-center gap-3 ${!event.titleNative ? 'mt-4' : ''}`}>
+                <UserProfileClickable 
+                  uid={event.hostId} 
+                  initialData={{ nickname: event.hostName, nativeNickname: event.hostNameNative, photoURL: event.hostPhoto }}
+                  className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+                >
+                  <UserAvatar photoURL={event.hostPhoto} className="w-10 h-10 rounded-full bg-gray-100 ring-2 ring-white shadow-sm" />
+                  <div className="flex flex-col text-left">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Hosted by</p>
+                    <UserName nickname={event.hostName} nativeNickname={event.hostNameNative} className="text-sm font-bold text-gray-900" nativeClassName="text-[10px] font-medium text-gray-500 ml-1" />
+                  </div>
+                </UserProfileClickable>
               </div>
             </div>
 

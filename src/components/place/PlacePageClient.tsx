@@ -12,48 +12,48 @@ import {
   CheckCircle2
 } from 'lucide-react';
 
-const REGIONS = ['전체', '서울', '경기/인천', '부산/경남', '대구/경북', '광주/전라', '대전/충청', '강원', '제주'];
-const CATEGORIES = ['전체', '스튜디오', '밀롱가 전용', '기타'];
+const REGIONS = ['All', 'Seoul', 'Gyeonggi/Incheon', 'Busan/Gyeongnam', 'Daegu/Gyeongbuk', 'Gwangju/Jeonla', 'Daejeon/Chungcheong', 'Gangwon', 'Jeju'];
+const CATEGORIES = ['All', 'Studio', 'Milonga Venue', 'Other'];
 
 const MOCK_PLACES = [
   {
     id: '1',
-    name: '합정 턴 (Turn)',
-    category: '밀롱가 전용',
-    address: '서울 마포구 합정동 123-4',
-    region: '서울',
+    name: 'Hapjeong Turn',
+    category: 'Milonga Venue',
+    address: 'Hapjeong-dong 123-4, Mapo-gu, Seoul',
+    region: 'Seoul',
     rating: 4.8,
     reviews: 124,
     image: 'https://images.unsplash.com/photo-1545128485-c400e7702796?q=80&w=600&auto=format&fit=crop',
-    tags: ['바닥 좋음', '음향 최고', '역세권']
+    tags: ['Great Floor', 'Best Sound', 'Near Station']
   },
   {
     id: '2',
-    name: '강남 오초 (Ocho)',
-    category: '스튜디오',
-    address: '서울 강남구 역삼동 567-8',
-    region: '서울',
+    name: 'Gangnam Ocho',
+    category: 'Studio',
+    address: 'Yeoksam-dong 567-8, Gangnam-gu, Seoul',
+    region: 'Seoul',
     rating: 4.9,
     reviews: 89,
     image: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?q=80&w=600&auto=format&fit=crop',
-    tags: ['연습실 대관', '거울 큼', '주차가능']
+    tags: ['Practice Room', 'Large Mirror', 'Parking']
   },
   {
     id: '3',
-    name: '부산 탱고아지트',
-    category: '밀롱가 전용',
-    address: '부산 해운대구 우동 99-1',
-    region: '부산/경남',
+    name: 'Busan Tango Azit',
+    category: 'Milonga Venue',
+    address: 'Udong 99-1, Haeundae-gu, Busan',
+    region: 'Busan/Gyeongnam',
     rating: 4.7,
     reviews: 56,
     image: 'https://images.unsplash.com/photo-1516939884489-79bb5580ffef?q=80&w=600&auto=format&fit=crop',
-    tags: ['오션뷰', '분위기 맛집']
+    tags: ['Ocean View', 'Great Atmosphere']
   }
 ];
 
 export default function PlacePageClient() {
-  const [selectedRegion, setSelectedRegion] = useState('전체');
-  const [selectedCategory, setSelectedCategory] = useState('전체');
+  const [selectedRegion, setSelectedRegion] = useState('All');
+  const [selectedCategory, setSelectedCategory] = useState('All');
   const [isRegionOpen, setIsRegionOpen] = useState(false);
 
   useEffect(() => {
@@ -70,8 +70,8 @@ export default function PlacePageClient() {
   };
 
   const filteredPlaces = MOCK_PLACES.filter(place => {
-    const regionMatch = selectedRegion === '전체' || place.region === selectedRegion;
-    const categoryMatch = selectedCategory === '전체' || place.category === selectedCategory;
+    const regionMatch = selectedRegion === 'All' || place.region === selectedRegion;
+    const categoryMatch = selectedCategory === 'All' || place.category === selectedCategory;
     return regionMatch && categoryMatch;
   });
 
@@ -84,7 +84,7 @@ export default function PlacePageClient() {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
             <input 
               type="text" 
-              placeholder="장소 이름이나 주소 검색"
+              placeholder="Search by name or address"
               className="w-full bg-black/5 border-none rounded-2xl pl-12 pr-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 transition-all"
             />
           </div>
@@ -171,7 +171,7 @@ export default function PlacePageClient() {
 
               <div className="pt-2 flex gap-2">
                 <button className="flex-1 bg-primary/5 text-primary text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 hover:bg-primary/10 transition-colors">
-                  <Navigation size={14} /> 길찾기
+                  <Navigation size={14} /> Directions
                 </button>
                 <button className="px-3 bg-black/5 text-muted-foreground rounded-xl hover:bg-black/10 transition-colors">
                   <ExternalLink size={14} />
@@ -188,7 +188,7 @@ export default function PlacePageClient() {
           <div className="w-16 h-16 bg-black/5 rounded-full flex items-center justify-center mx-auto text-muted-foreground/30">
             <MapPin size={32} />
           </div>
-          <div className="text-muted-foreground text-sm font-medium">검색 결과가 없습니다.</div>
+          <div className="text-muted-foreground text-sm font-medium">No results found.</div>
         </div>
       )}
 

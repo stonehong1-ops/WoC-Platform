@@ -48,16 +48,23 @@ export default function CreateProduct({ onClose, onSuccess }: CreateProductProps
       const imageUrl = await plazaService.uploadMedia(mediaFile, (p) => setUploadProgress(Math.round(p)));
 
       // 2. Register Product
-      await shopService.registerProduct({
-        name,
+      await shopService.addProduct({
+        title: name,
         brand,
         price: parseFloat(price),
         category,
         description,
-        imageUrl,
+        images: [imageUrl],
+        groupId: '',
+        groupName: '',
+        currency: 'KRW',
+        options: [],
+        stock: 1,
+        status: 'Active',
+        deliveryType: 'shipping',
         sellerId: user.uid,
         sellerName: user.displayName || 'Anonymous',
-      });
+      } as any);
 
       onSuccess?.();
       onClose();

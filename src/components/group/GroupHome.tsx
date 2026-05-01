@@ -12,7 +12,7 @@ import { groupService } from "@/lib/firebase/groupService";
 import ImageWithFallback from "@/components/common/ImageWithFallback";
 import GroupJoinModal from "./GroupJoinModal";
 
-type TabType = 'home' | 'calendar' | 'feed' | 'board' | 'info' | 'class' | 'class-manager' | 'members' | 'settings' | 'shop' | 'stay' | 'rental';
+type TabType = 'home' | 'calendar' | 'feed' | 'board' | 'info' | 'class' | 'members' | 'settings' | 'shop' | 'stay' | 'rental';
 
 import GroupCalendar from "./GroupCalendar";
 import GroupBoard from "./GroupBoard";
@@ -25,6 +25,13 @@ import GroupShopEditor from "./GroupShopEditor";
 import GroupStayEditor from "./GroupStayEditor";
 import GroupRentalEditor from "./GroupRentalEditor";
 
+import GroupBasicEditor from "./GroupBasicEditor";
+import GroupMembershipEditor from "./GroupMembershipEditor";
+import GroupContactEditor from "./GroupContactEditor";
+import GroupGalleryEditor from "./GroupGalleryEditor";
+import GroupBoardEditor from "./GroupBoardEditor";
+import GroupAccountEditor from "./GroupAccountEditor";
+
 export default function GroupHome({ group, isModal }: { group: Group, isModal?: boolean }) {
   const router = useRouter();
   const { user, profile } = useAuth();
@@ -36,6 +43,7 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
   const [isExiting, setIsExiting] = useState(false);
   const [selectedAdminIndex, setSelectedAdminIndex] = useState(0);
   const [isAdminDropdownOpen, setIsAdminDropdownOpen] = useState(false);
+  const [activePopup, setActivePopup] = useState<string | null>(null);
 
   const handleExit = () => {
     window.location.href = '/groups';
@@ -132,8 +140,9 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
   const contactCompleted = !!(group.address || group.representative);
   const galleryCompleted = !!(group.gallery && group.gallery.length > 0);
   const boardCompleted = !!(group.boards && group.boards.length > 0);
-  const settingsCompletedCount = [profileCompleted, membershipCompleted, contactCompleted, galleryCompleted, boardCompleted].filter(Boolean).length;
-  const settingsProgressPercent = Math.round((settingsCompletedCount / 5) * 100);
+  const accountCompleted = !!(group.bankDetails?.accountNumber);
+  const settingsCompletedCount = [profileCompleted, membershipCompleted, contactCompleted, galleryCompleted, boardCompleted, accountCompleted].filter(Boolean).length;
+  const settingsProgressPercent = Math.round((settingsCompletedCount / 6) * 100);
   const canGoLive = settingsProgressPercent >= 30 || !!(group.coverImage && group.description);
   const [isPublishing, setIsPublishing] = useState(false);
   
@@ -154,7 +163,7 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
 
   const handleClaimAdmin = async () => {
     if (!user) {
-      toast.error("로그인이 필요한 서비스입니다.", { description: "가입 요청 팝업으로 이동합니다.", duration: 3000 });
+      toast.error("Sign-in required.", { description: "Redirecting to join request.", duration: 3000 });
       setTimeout(() => setShowJoinModal(true), 1000);
       return;
     }
@@ -167,13 +176,13 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
       };
 
       await groupService.claimGroupAdmin(group.id, user.uid, memberData);
-      toast.success("어드민 권한을 획득했습니다!", { description: "그룹 세팅을 시작해 주세요." });
+      toast.success("Admin access granted!", { description: "Please start group setup." });
       
       // Auto reload to refresh server component / permissions
       window.location.reload();
     } catch (error) {
       console.error("Error claiming admin:", error);
-      toast.error("어드민 권한 획득 중 오류가 발생했습니다.");
+      toast.error("An error occurred while claiming admin access.");
     } finally {
       setIsClaiming(false);
     }
@@ -181,7 +190,7 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
 
   const handleJoinAction = async () => {
     if (!user) {
-      toast.error("로그인이 필요한 서비스입니다.");
+      toast.error("Sign-in required.");
       return;
     }
 
@@ -210,7 +219,7 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
       }
     } catch (error) {
       console.error("Error joining group:", error);
-      toast.error("가입 처리 중 오류가 발생했습니다.");
+      toast.error("An error occurred while joining.");
     } finally {
       setIsJoining(false);
     }
@@ -225,8 +234,8 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
 
     // 그 외 메뉴는 정회원만 가능
     if (!isFullMember) {
-      toast.error("가입 멤버만 이용 가능한 메뉴입니다.", {
-        description: "가입 요청 팝업으로 이동합니다.",
+      toast.error("This menu is only available to members.", {
+        description: "Redirecting to join request.",
         duration: 3000,
       });
       setTimeout(() => {
@@ -235,10 +244,10 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
       return;
     }
 
-    if (tab === 'class' || tab === 'class-manager') {
+    if (tab === 'class') {
       const isAdminUser = admins.some(a => a.id === user?.uid) || group.ownerId === user?.uid;
       if (!isAdminUser) {
-        toast.error("클래스 관리는 관리자 전용 메뉴입니다.", { duration: 3000 });
+        toast.error("Class management is admin-only.", { duration: 3000 });
         return;
       }
       setActiveTab(tab);
@@ -271,6 +280,19 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
       toast.error("Failed to publish the group.");
     } finally {
       setIsPublishing(false);
+    }
+  };
+
+  const handleToggleService = async (serviceId: string, enabled: boolean) => {
+    try {
+      await groupService.updateGroupMetadata(group.id, {
+        [`activeServices.${serviceId}`]: enabled
+      });
+      toast.success(`${serviceId.toUpperCase()} service has been ${enabled ? 'enabled' : 'disabled'}.`);
+      router.refresh();
+    } catch (error) {
+      console.error("Failed to toggle service:", error);
+      toast.error("Failed to change service status.");
     }
   };
 
@@ -346,7 +368,7 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
             <button 
               onClick={(e) => {
                 e.preventDefault();
-                toast.info('채팅 기능은 준비 중입니다.');
+                toast.info('Chat feature is coming soon.');
               }}
               className="flex-1 flex items-center justify-center gap-1.5 bg-primary/10 hover:bg-primary/20 text-primary py-2 rounded-xl text-xs font-bold transition-colors cursor-not-allowed opacity-60"
             >
@@ -358,7 +380,7 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
               onClick={(e) => {
                 if (!group.representative?.phone) {
                   e.preventDefault();
-                  toast.error('등록된 전화번호가 없습니다.');
+                  toast.error('No phone number registered.');
                 }
               }}
               className="flex-1 flex items-center justify-center gap-1.5 bg-surface-variant hover:bg-on-surface/10 text-on-surface py-2 rounded-xl text-xs font-bold transition-colors"
@@ -420,10 +442,10 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
 
               {/* Toggles */}
               {[
-                { id: 'class', label: 'Class Setting', icon: 'school', enabled: group.activeServices?.class },
-                { id: 'shop', label: 'Shop Setting', icon: 'shopping_bag', enabled: group.activeServices?.shop },
-                { id: 'stay', label: 'Stay Setting', icon: 'bed', enabled: group.activeServices?.stay },
-                { id: 'rental', label: 'Rental Setting', icon: 'key', enabled: group.activeServices?.rental },
+                { id: 'class', label: 'Class Admin', icon: 'school', enabled: group.activeServices?.class },
+                { id: 'shop', label: 'Shop Admin', icon: 'shopping_bag', enabled: group.activeServices?.shop },
+                { id: 'stay', label: 'Stay Admin', icon: 'bed', enabled: group.activeServices?.stay },
+                { id: 'rental', label: 'Rental Admin', icon: 'key', enabled: group.activeServices?.rental },
               ].map((service) => (
                 <button
                   key={service.id}
@@ -434,8 +456,13 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
                     <span className="material-symbols-outlined">{service.icon}</span>
                     <span>{service.label}</span>
                   </div>
-                  <div className={`w-8 h-4 rounded-full relative transition-colors ${service.enabled ? 'bg-primary' : 'bg-outline-variant'}`}>
-                    <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${service.enabled ? 'right-0.5' : 'left-0.5'}`}></div>
+                  <div 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleToggleService(service.id, !service.enabled);
+                    }}
+                    className={`w-8 h-4 rounded-full relative transition-colors cursor-pointer ${service.enabled ? 'bg-primary' : 'bg-outline-variant'}`}>
+                    <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all shadow-sm ${service.enabled ? 'right-0.5' : 'left-0.5'}`}></div>
                   </div>
                 </button>
               ))}
@@ -787,7 +814,7 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
                         <div className="h-full bg-gradient-to-r from-[#3B82F6] to-[#93c5fd]" style={{ width: `${settingsProgressPercent}%` }}></div>
                       </div>
                     </div>
-                    <p className="text-xs font-bold text-[#515981]/60 uppercase tracking-widest">{settingsCompletedCount} of 5 steps finished</p>
+                    <p className="text-xs font-bold text-[#515981]/60 uppercase tracking-widest">{settingsCompletedCount} of 6 steps finished</p>
                   </div>
                 </div>
 
@@ -809,7 +836,7 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
                       <p className="text-sm text-[#515981] leading-relaxed">Manage your business logo, brand colors, and public profile descriptions.</p>
                     </div>
                     <div className="mt-8 pt-6 border-t border-gray-50">
-                      <button onClick={() => setActiveTab('info')} className="w-full py-3 rounded-lg bg-gray-50 text-[#242c51] font-bold text-sm hover:bg-[#3B82F6] hover:text-white transition-all">Edit</button>
+                      <button onClick={() => setActivePopup('profile')} className="w-full py-3 rounded-lg bg-gray-50 text-[#242c51] font-bold text-sm hover:bg-[#3B82F6] hover:text-white transition-all">Edit</button>
                     </div>
                   </div>
 
@@ -830,7 +857,7 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
                       <p className="text-sm text-[#515981] leading-relaxed">Define your membership tiers, access rules, and terms of service for users.</p>
                     </div>
                     <div className="mt-8 pt-6 border-t border-gray-50">
-                      <button onClick={() => setActiveTab('info')} className="w-full py-3 rounded-lg bg-gray-50 text-[#242c51] font-bold text-sm hover:bg-[#3B82F6] hover:text-white transition-all">Edit</button>
+                      <button onClick={() => setActivePopup('membership')} className="w-full py-3 rounded-lg bg-gray-50 text-[#242c51] font-bold text-sm hover:bg-[#3B82F6] hover:text-white transition-all">Edit</button>
                     </div>
                   </div>
 
@@ -851,7 +878,7 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
                       <p className="text-sm text-[#515981] leading-relaxed">Update support emails, physical addresses, and emergency contact details.</p>
                     </div>
                     <div className="mt-8 pt-6 border-t border-gray-50">
-                      <button onClick={() => setActiveTab('info')} className="w-full py-3 rounded-lg bg-gray-50 text-[#242c51] font-bold text-sm hover:bg-[#3B82F6] hover:text-white transition-all">Edit</button>
+                      <button onClick={() => setActivePopup('contact')} className="w-full py-3 rounded-lg bg-gray-50 text-[#242c51] font-bold text-sm hover:bg-[#3B82F6] hover:text-white transition-all">Edit</button>
                     </div>
                   </div>
 
@@ -872,7 +899,7 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
                       <p className="text-sm text-[#515981] leading-relaxed">Upload high-resolution business assets, portfolio images, and media files.</p>
                     </div>
                     <div className="mt-8 pt-6 border-t border-gray-50">
-                      <button onClick={() => setActiveTab('info')} className="w-full py-3 rounded-lg bg-gray-50 text-[#242c51] font-bold text-sm hover:bg-[#3B82F6] hover:text-white transition-all">Edit</button>
+                      <button onClick={() => setActivePopup('gallery')} className="w-full py-3 rounded-lg bg-gray-50 text-[#242c51] font-bold text-sm hover:bg-[#3B82F6] hover:text-white transition-all">Edit</button>
                     </div>
                   </div>
 
@@ -893,7 +920,28 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
                       <p className="text-sm text-[#515981] leading-relaxed">Configure your internal project boards, task tracking, and team permissions.</p>
                     </div>
                     <div className="mt-8 pt-6 border-t border-gray-50">
-                      <button onClick={() => setActiveTab('board')} className="w-full py-3 rounded-lg bg-gray-50 text-[#242c51] font-bold text-sm hover:bg-[#3B82F6] hover:text-white transition-all">Edit</button>
+                      <button onClick={() => setActivePopup('boards')} className="w-full py-3 rounded-lg bg-gray-50 text-[#242c51] font-bold text-sm hover:bg-[#3B82F6] hover:text-white transition-all">Edit</button>
+                    </div>
+                  </div>
+
+                  {/* 6. Account Setting */}
+                  <div className="md:col-span-3 lg:col-span-4 bg-white p-8 rounded-xl shadow-sm flex flex-col h-full border border-gray-100 hover:border-[#3B82F6]/20 transition-all">
+                    <div className="mb-auto">
+                      <div className="flex items-center justify-between mb-6">
+                        <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-[#3B82F6]">
+                          <span className="material-symbols-outlined">account_balance</span>
+                        </div>
+                        {accountCompleted ? (
+                          <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">Completed</span>
+                        ) : (
+                          <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">Needs Edit</span>
+                        )}
+                      </div>
+                      <h3 className="font-headline font-bold text-xl text-[#242c51] mb-2">6. Account Setting</h3>
+                      <p className="text-sm text-[#515981] leading-relaxed">Register your bank account details, including account number and holder name, for settlements.</p>
+                    </div>
+                    <div className="mt-8 pt-6 border-t border-gray-50">
+                      <button onClick={() => setActivePopup('account')} className="w-full py-3 rounded-lg bg-gray-50 text-[#242c51] font-bold text-sm hover:bg-[#3B82F6] hover:text-white transition-all">Edit</button>
                     </div>
                   </div>
                 </div>
@@ -913,15 +961,7 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
             </div>
           )}
 
-          {activeTab === 'class-manager' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="bg-transparent border-2 border-dashed border-gray-300 rounded-[12px] p-10 text-center flex flex-col items-center justify-center m-4">
-                 <span className="material-symbols-outlined text-gray-400 text-4xl mb-2">construction</span>
-                 <p className="text-gray-500 font-bold">Class Manager (TBD)</p>
-                 <p className="text-gray-400 text-sm mt-2">출석관리, 개인상담기록, 온라인코칭 등의 기능이 제공될 예정입니다.</p>
-              </div>
-            </div>
-          )}
+
 
           {activeTab === 'rental' && isFullMember && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -978,16 +1018,7 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
             <span className="text-[9px] font-bold uppercase tracking-tighter">Info</span>
           </button>
         </div>
-        <div className="w-px h-8 bg-slate-300 mx-3"></div>
-        <div className="flex items-center px-2">
-          <button
-            onClick={() => handleTabClick('class-manager')}
-            className={`flex flex-col items-center gap-0.5 transition-all scale-100 active:scale-95 ${activeTab === 'class-manager' ? 'text-blue-600' : 'text-slate-500'}`}
-          >
-            <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: activeTab === 'class-manager' ? "'FILL' 1" : "" }}>school</span>
-            <span className="text-[9px] font-bold uppercase tracking-tighter">Manager</span>
-          </button>
-        </div>
+
         </nav>
       )}
 
@@ -1004,6 +1035,26 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
           setActiveTab('home');
         }}
       />
+
+      {/* Editor Overlays */}
+      {activePopup === "profile" && (
+        <GroupBasicEditor group={group} onClose={() => setActivePopup(null)} />
+      )}
+      {activePopup === "membership" && (
+        <GroupMembershipEditor group={group} onClose={() => setActivePopup(null)} />
+      )}
+      {activePopup === "boards" && (
+        <GroupBoardEditor group={group} onClose={() => setActivePopup(null)} />
+      )}
+      {activePopup === "gallery" && (
+        <GroupGalleryEditor group={group} onClose={() => setActivePopup(null)} />
+      )}
+      {activePopup === "contact" && (
+        <GroupContactEditor group={group} isLoaded={true} onClose={() => setActivePopup(null)} />
+      )}
+      {activePopup === "account" && (
+        <GroupAccountEditor group={group} onClose={() => setActivePopup(null)} />
+      )}
     </div>
   );
 }

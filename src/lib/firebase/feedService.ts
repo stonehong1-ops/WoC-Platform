@@ -138,7 +138,7 @@ export const feedService = {
     try {
       const docRef = await addDoc(collection(db, COLLECTION_NAME), {
         ...postData,
-        likes: 0,
+        likesCount: 0,
         commentsCount: 0,
         createdAt: serverTimestamp()
       });

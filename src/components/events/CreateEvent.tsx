@@ -18,6 +18,7 @@ export default function CreateEvent({ onClose, onSuccess }: CreateEventProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [title, setTitle] = useState('');
+  const [titleNative, setTitleNative] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<EventCategory>('SOCIAL');
   const [startDate, setStartDate] = useState('');
@@ -39,6 +40,7 @@ export default function CreateEvent({ onClose, onSuccess }: CreateEventProps) {
       
       await eventService.createEvent({
         title,
+        titleNative,
         description,
         category,
         location: locationName || `${location?.city || 'Globe'}, ${location?.country || ''}`,
@@ -91,6 +93,17 @@ export default function CreateEvent({ onClose, onSuccess }: CreateEventProps) {
               className="w-full text-[24px] font-black tracking-tighter border-none focus:ring-0 placeholder:text-gray-200 p-0"
               autoFocus
               required
+            />
+          </div>
+
+          {/* Native Name Input */}
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Native Name (Optional)</label>
+            <input
+              value={titleNative}
+              onChange={(e) => setTitleNative(e.target.value)}
+              placeholder="자국어(한글)명 (예: 서울 탱고 페스티벌)"
+              className="w-full text-[16px] font-bold tracking-tight border-none focus:ring-0 placeholder:text-gray-200 p-0"
             />
           </div>
 

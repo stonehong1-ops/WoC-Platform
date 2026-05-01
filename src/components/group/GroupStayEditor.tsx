@@ -1,510 +1,489 @@
 "use client";
 
-import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Group, StaySettings, StayRoom } from "@/types/group";
-import { groupService } from "@/lib/firebase/groupService";
-import { toast } from "sonner";
-import GroupStayRoomEditor from "./GroupStayRoomEditor";
-import ImageWithFallback from "@/components/common/ImageWithFallback";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import Script from "next/script";
+import "@/styles/groupstayeditor.css";
+import { stayService } from "@/lib/firebase/stayService";
+import { plazaService } from "@/lib/firebase/plazaService";
+import { Stay, StayType } from "@/types/stay";
+import { useAuth } from "@/components/providers/AuthProvider";
 
 interface GroupStayEditorProps {
-  group: Group;
+  group?: any;
 }
 
-const GroupStayEditor: React.FC<GroupStayEditorProps> = ({ group }) => {
-  const [activeTab, setActiveTab] = useState<"Rooms" | "Settings">("Rooms");
-  const [activeSubEditor, setActiveSubEditor] = useState<string | null>(null);
-  const [editingRoom, setEditingRoom] = useState<StayRoom | undefined>(undefined);
-  
-  const [settings, setSettings] = useState<StaySettings>(
-    group.staySettings || {
-      frequency: "daily",
-      minStay: 1,
-      currency: "USD",
-      baseAmount: 0,
-      paymentMethod: "bank_transfer",
-      bankDetails: {
-        bankName: "",
-        ownerName: "",
-        accountNumber: "",
-        swiftCode: "",
-        additionalDetails: "",
-      },
-    }
-  );
+export default function GroupStayEditor({ group }: GroupStayEditorProps) {
+  const { user } = useAuth();
 
-  const [isUpdating, setIsUpdating] = useState(false);
+  // ── 로딩/저장 상태 ──
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [existingStayId, setExistingStayId] = useState<string | null>(null);
 
-  const stayRooms: StayRoom[] = group.stayRooms || [];
+  // ── 원본 데이터 (Discard용) ──
+  const [originalData, setOriginalData] = useState<Stay | null>(null);
 
-  const handleSaveSettings = async () => {
-    try {
-      setIsUpdating(true);
-      await groupService.updateGroupMetadata(group.id, {
-        staySettings: settings,
-      });
-      toast.success("Stay Settings saved successfully.");
-    } catch (error) {
-      console.error("Error saving stay settings:", error);
-      toast.error("Failed to save stay settings.");
-    } finally {
-      setIsUpdating(false);
-    }
+  // ── BASIC INFO ──
+  const [title, setTitle] = useState("Tango Stay Hapjeong");
+  const [nativeTitle, setNativeTitle] = useState("");
+  const [headline, setHeadline] = useState("");
+
+  // ── LOCATION ──
+  const [address, setAddress] = useState("396-12 Hapjeong-dong, Mapo-gu, Seoul, South Korea");
+  const [mapImageUrl, setMapImageUrl] = useState("https://lh3.googleusercontent.com/aida-public/AB6AXuCdAjkNACL3KXM11kkFkdmEkvvxjwOR4P6c3HpxJqtm7CvcSBsptBrWAzvgwVRZLaC5h1EoGypAI_Y0Vzg67ChKPVKs7TrI2tAI5uuGYMidaj7WnfECGQT8sjIqB1bqf9rhw91iS61-he3O_skihdUC53y2MHNoAN952CK6v0PBrZmpatOdKhmk2h5E4P8y7-wM81_a1lHXe7E_WP96jpjRz9H5762Asiau3cV30q4IxWGKlkAk8bQ90MOA3-cgCLo6BNmTtwW_T84");
+
+  // ── MEDIA ──
+  const [images, setImages] = useState<string[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // ── RATES ──
+  const [currency, setCurrency] = useState("KRW");
+  const [baseRate, setBaseRate] = useState("120,000");
+  const [weekendSurcharge, setWeekendSurcharge] = useState("45,000");
+  const [extraPersonFee, setExtraPersonFee] = useState("20,000");
+  const [cleaningFee, setCleaningFee] = useState("35,000");
+
+  // ── GUIDES ──
+  const [roomFeatures, setRoomFeatures] = useState("Urban city view through floor-to-ceiling windows. Minimalist interior design with custom-made furniture. High-speed Wi-Fi and dedicated workspace included.");
+  const [gettingHere, setGettingHere] = useState("5-minute walk from Hapjeong Station (Line 2 & 6), Exit 7. Turn left at the first corner and walk straight for 200m.");
+  const [facilityGuide, setFacilityGuide] = useState("Self check-in via smart lock (code sent on check-in day). Quiet hours from 10 PM. Shared rooftop garden available on 12F.");
+
+  // ── HOST ──
+  const [hostName, setHostName] = useState("Me");
+  const [hostPhoto, setHostPhoto] = useState("");
+  const [isEditingHost, setIsEditingHost] = useState(false);
+
+  // ── 숫자 포맷 유틸리티 ──
+  const formatNumber = (num: number | undefined): string => {
+    if (num === undefined || num === null) return "";
+    return num.toLocaleString();
   };
 
-  const updateBankDetail = (field: keyof Required<StaySettings>["bankDetails"], value: string) => {
-    setSettings((prev) => ({
-      ...prev,
-      bankDetails: {
-        ...(prev.bankDetails || {
-          bankName: "",
-          ownerName: "",
-          accountNumber: "",
-          swiftCode: "",
-          additionalDetails: "",
-        }),
-        [field]: value,
-      },
-    }));
+  const parseFormattedNumber = (str: string): number => {
+    return parseInt(str.replace(/,/g, "")) || 0;
   };
 
-  const handleToggleRoomStatus = async (room: StayRoom, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (isUpdating) return;
-    setIsUpdating(true);
-    
-    const newStatus = room.status === "Active" ? "Stopped" : "Active";
-    const promise = (async () => {
-      const updatedRooms = stayRooms.map(sr => 
-        sr.id === room.id ? { ...sr, status: newStatus } : sr
-      );
-      
-      await groupService.updateGroupMetadata(group.id, {
-        stayRooms: updatedRooms
-      } as any);
-    })();
+  // ── Firestore에서 데이터 로드 ──
+  const populateFromStay = useCallback((stay: Stay) => {
+    setExistingStayId(stay.id);
+    setOriginalData(stay);
 
-    toast.promise(promise, {
-      loading: "Updating status...",
-      success: newStatus === "Active" ? "Room is now active." : "Room stopped.",
-      error: "Failed to update status."
+    // Basic Info
+    setTitle(stay.title || "");
+    setNativeTitle(stay.nativeTitle || "");
+    setHeadline(stay.headline || "");
+
+    // Location
+    setAddress(stay.location?.address || "");
+    setMapImageUrl(stay.location?.mapImageUrl || "");
+
+    // Media
+    setImages(stay.images || []);
+
+    // Rates
+    setCurrency(stay.pricing?.currency || "KRW");
+    setBaseRate(formatNumber(stay.pricing?.baseRate));
+    setWeekendSurcharge(formatNumber(stay.pricing?.weekendSurcharge));
+    setExtraPersonFee(formatNumber(stay.pricing?.extraPersonFee));
+    setCleaningFee(formatNumber(stay.pricing?.cleaningFee));
+
+    // Guides
+    setRoomFeatures(stay.guides?.roomFeatures || "");
+    setGettingHere(stay.guides?.gettingHere || "");
+    setFacilityGuide(stay.guides?.facilityGuide || "");
+
+    // Host
+    setHostName(stay.host?.name || "Me");
+    setHostPhoto(stay.host?.photo || "");
+  }, []);
+
+  // ── Firestore 실시간 구독 ──
+  useEffect(() => {
+    if (!group?.id) {
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    const unsubscribe = stayService.subscribeGroupStay(group.id, (stay) => {
+      if (stay) {
+        populateFromStay(stay);
+      }
+      setIsLoading(false);
     });
 
+    return () => unsubscribe();
+  }, [group?.id, populateFromStay]);
+
+  // ── 자동 메시지 숨기기 ──
+  useEffect(() => {
+    if (saveMessage) {
+      const timer = setTimeout(() => setSaveMessage(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [saveMessage]);
+
+  // ── Save 핸들러 ──
+  const handleSave = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+    setSaveMessage(null);
+
     try {
-      await promise;
+      const updates: Partial<Stay> = {
+        title,
+        nativeTitle,
+        headline,
+        location: {
+          address,
+          city: originalData?.location?.city || "Seoul",
+          district: originalData?.location?.district || "",
+          mapImageUrl: mapImageUrl || undefined,
+        },
+        images,
+        pricing: {
+          currency,
+          baseRate: parseFormattedNumber(baseRate),
+          weekendSurcharge: parseFormattedNumber(weekendSurcharge),
+          extraPersonFee: parseFormattedNumber(extraPersonFee),
+          cleaningFee: parseFormattedNumber(cleaningFee),
+        },
+        guides: {
+          roomFeatures,
+          gettingHere,
+          facilityGuide,
+        },
+        host: {
+          ...(originalData?.host || {}),
+          userId: originalData?.host?.userId || user?.uid || "",
+          name: hostName,
+          photo: hostPhoto,
+        } as any,
+      };
+
+      if (existingStayId) {
+        // 기존 Stay 업데이트
+        await stayService.updateStay(existingStayId, updates);
+      } else {
+        // 새 Stay 등록
+        const newStayId = await stayService.registerStay({
+          ...updates,
+          groupId: group?.id || "",
+          type: "1-Room" as StayType,
+          checkInTime: "15:00",
+          checkOutTime: "11:00",
+          maxGuests: 2,
+          doorCode: "9999",
+          payment: {
+            methods: [
+              { type: "bank_domestic", enabled: false },
+              { type: "bank_international", enabled: false },
+              { type: "card", enabled: false },
+            ],
+            transferDeadlineHours: 2,
+          },
+          host: {
+            userId: user?.uid || "",
+            name: hostName || user?.displayName || "Host",
+            photo: hostPhoto || user?.photoURL || "",
+          },
+          isActive: false,
+          isNewlyListed: true,
+        } as any);
+        setExistingStayId(newStayId);
+      }
+
+      setSaveMessage({ type: "success", text: "Changes saved successfully!" });
     } catch (error) {
-      console.error("Error updating room status:", error);
+      console.error("Error saving stay:", error);
+      setSaveMessage({ type: "error", text: "Failed to save. Please try again." });
     } finally {
-      setIsUpdating(false);
+      setIsSaving(false);
     }
   };
 
-  const handleEditRoom = (room: StayRoom) => {
-    setEditingRoom(room);
-    setActiveSubEditor("stay-room-editor");
+  // ── Discard 핸들러 ──
+  const handleDiscard = () => {
+    if (originalData) {
+      populateFromStay(originalData);
+      setSaveMessage({ type: "success", text: "Changes discarded." });
+    }
   };
 
+  // ── 이미지 업로드 핸들러 ──
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    try {
+      const uploadPromises = Array.from(files).map(async (file) => {
+        const url = await plazaService.uploadMedia(file, (p) =>
+          setUploadProgress(Math.round(p))
+        );
+        return url;
+      });
+
+      const urls = await Promise.all(uploadPromises);
+      setImages((prev) => [...prev, ...urls]);
+    } catch (error) {
+      console.error("Image upload error:", error);
+      setSaveMessage({ type: "error", text: "Image upload failed." });
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+      // Reset file input
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  // ── 이미지 삭제 핸들러 ──
+  const handleImageDelete = (index: number) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // ── 로딩 상태 ──
+  if (isLoading) {
+    return (
+      <div className="light font-body-md text-on-background antialiased bg-[#F3F4F6] min-h-screen">
+        <main className="p-6 md:p-12">
+          <div className="max-w-[896px] mx-auto flex items-center justify-center py-32">
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-8 h-8 border-3 border-primary/30 border-t-primary rounded-full animate-spin" />
+              <span className="font-body-md text-on-surface-variant">Loading stay data...</span>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-[#F1F5F9] text-[#242c51] antialiased pb-20 min-h-[max(884px,100dvh)] font-['Inter']">
-      {/* TopAppBar */}
-      <header className="border-b border-slate-100 px-6 py-5 sticky top-0 z-40 bg-slate-50">
-        <div className="max-w-3xl mx-auto flex items-center relative">
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight font-['Plus_Jakarta_Sans']">Stay Management</h1>
-        </div>
-      </header>
+    <>
+      <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+      <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
 
-      <main className="max-w-3xl mx-auto px-4 py-6 space-y-6">
-        {/* Top Segmented Control */}
-        <div className="bg-slate-200/50 p-1 rounded-xl flex items-center justify-between shadow-inner mb-6">
-          <button 
-            onClick={() => setActiveTab("Rooms")}
-            className={`flex-1 py-2 px-4 rounded-lg font-['Plus_Jakarta_Sans'] font-bold text-sm transition-all text-center ${
-              activeTab === "Rooms" 
-                ? "bg-[#ffffff] text-[#0057bd] shadow-sm" 
-                : "text-slate-500 font-semibold hover:text-slate-700"
-            }`}
-          >
-            Rooms
-          </button>
-          <button 
-            onClick={() => setActiveTab("Settings")}
-            className={`flex-1 py-2 px-4 rounded-lg font-['Plus_Jakarta_Sans'] font-bold text-sm transition-all text-center ${
-              activeTab === "Settings" 
-                ? "bg-[#ffffff] text-[#0057bd] shadow-sm" 
-                : "text-slate-500 font-semibold hover:text-slate-700"
-            }`}
-          >
-            Settings
-          </button>
-        </div>
+      {/* 숨김 파일 입력 */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        className="hidden"
+        accept="image/*"
+        multiple
+        onChange={handleImageUpload}
+      />
 
-        <AnimatePresence mode="wait">
-          {activeTab === "Rooms" ? (
-            <motion.div 
-              key="rooms-tab"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="space-y-6"
-            >
-              {/* Primary Action Button */}
-              <button 
-                onClick={() => {
-                  setEditingRoom(undefined);
-                  setActiveSubEditor("stay-room-editor");
-                }}
-                className="w-full bg-[#0057bd] text-white font-['Plus_Jakarta_Sans'] font-bold py-3.5 px-6 rounded-xl shadow-md shadow-[#0057bd]/20 flex items-center justify-center gap-2 hover:bg-[#004ca6] transition-colors active:scale-[0.99]"
-              >
-                <span className="material-symbols-outlined text-sm">add</span>
-                Add Room
-              </button>
+      <div className="light font-body-md text-on-background antialiased bg-[#F3F4F6] min-h-screen">
+        <main className="p-6 md:p-12">
+          <div className="max-w-[896px] mx-auto space-y-10 pb-48 md:pb-32">
+            <header className="flex justify-between items-end mb-12">
+              <div>
+                <h1 className="font-headline-lg text-headline-lg text-on-surface">Stay Editor</h1>
+                <p className="font-body-md text-on-surface-variant mt-1">Manage details for {title || "your stay"}</p>
+              </div>
+              {/* 저장 상태 메시지 */}
+              {saveMessage && (
+                <div className={`px-4 py-2 rounded-lg font-label-sm ${saveMessage.type === 'success' ? 'bg-primary/10 text-primary' : 'bg-error/10 text-error'}`}>
+                  {saveMessage.text}
+                </div>
+              )}
+            </header>
+            {/* 1. BASIC INFO */}
+            <section className="bg-white rounded-[12px] shadow-sm p-6 space-y-6">
+              <div className="flex items-center gap-2 text-primary">
+                <span className="material-symbols-outlined" data-icon="info">info</span>
+                <h2 className="font-title-md text-title-md">BASIC INFO</h2>
+              </div>
+              <div className="grid grid-cols-1 gap-6">
+                <div className="space-y-2">
+                  <label className="font-label-sm text-on-surface-variant">Stay Name (English)</label>
+                  <input className="w-full px-4 py-3 bg-surface-container-low border-transparent rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-body-md transition-all" type="text" value={title} onChange={(e) => setTitle(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <label className="font-label-sm text-on-surface-variant">Native Title (자국어 이름)</label>
+                  <input className="w-full px-4 py-3 bg-surface-container-low border-transparent rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-body-md transition-all" type="text" value={nativeTitle} onChange={(e) => setNativeTitle(e.target.value)} placeholder="e.g. 탱고 스테이 합정" />
+                </div>
+                <div className="space-y-2">
+                  <label className="font-label-sm text-on-surface-variant">Short Headline</label>
+                  <input className="w-full px-4 py-3 bg-surface-container-low border-transparent rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-body-md transition-all" placeholder="e.g. Modern minimalist studio in the heart of Mapo" type="text" value={headline} onChange={(e) => setHeadline(e.target.value)} />
+                </div>
+              </div>
+            </section>
 
-              {/* Room List */}
-              <div className="space-y-4">
-                {stayRooms.map((room) => (
-                  <article 
-                    key={room.id}
-                    onClick={() => handleEditRoom(room)}
-                    className={`bg-[#ffffff] rounded-xl p-4 shadow-sm border border-[#a3abd7]/10 flex gap-4 active:scale-[0.99] transition-transform cursor-pointer ${
-                      room.status === 'Stopped' ? 'opacity-75' : ''
-                    }`}
-                  >
-                    <div className={`w-24 h-24 rounded-lg bg-slate-100 overflow-hidden flex-shrink-0 ${room.status === 'Stopped' ? 'grayscale' : ''}`}>
-                      {room.images?.[0] ? (
-                        <ImageWithFallback 
-                          alt={room.title} 
-                          className="w-full h-full object-cover" 
-                          src={room.images[0]} 
-                          fallbackType="gallery"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-slate-300">
-                          <span className="material-symbols-outlined text-4xl">bed</span>
-                        </div>
-                      )}
+            {/* 3. MEDIA */}
+            <section className="bg-white rounded-[12px] shadow-sm p-6 space-y-6">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2 text-primary">
+                  <span className="material-symbols-outlined" data-icon="photo_library">photo_library</span>
+                  <h2 className="font-title-md text-title-md">MEDIA</h2>
+                </div>
+                <span className="font-label-sm text-on-surface-variant">{images.length} / 20 uploaded</span>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {images.map((imgUrl, index) => (
+                  <div key={index} className="aspect-square relative rounded-lg overflow-hidden group">
+                    <img alt="Interior" className="w-full h-full object-cover" src={imgUrl} />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                      <button onClick={() => handleImageDelete(index)} className="p-1 bg-white rounded-full text-error"><span className="material-symbols-outlined" data-icon="delete">delete</span></button>
                     </div>
-                    <div className="flex-1 flex flex-col justify-between">
-                      <div>
-                        <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full inline-block mb-1 ${
-                          room.status === 'Active' 
-                            ? 'text-[#0057bd] bg-[#6e9fff]/20' 
-                            : 'text-slate-500 bg-slate-200'
-                        }`}>
-                          {room.roomType || "Room"}
-                        </span>
-                        <h3 className={`font-['Plus_Jakarta_Sans'] font-extrabold text-base leading-tight ${
-                          room.status === 'Active' ? 'text-[#242c51]' : 'text-slate-500'
-                        }`}>
-                          {room.title}
-                        </h3>
-                        <p className={`text-xs font-medium mt-0.5 line-clamp-1 ${
-                          room.status === 'Active' ? 'text-[#515981]' : 'text-slate-400'
-                        }`}>
-                          Capacity: {room.capacity} {room.capacity === 1 ? 'Guest' : 'Guests'}
-                        </p>
-                      </div>
-                      <div className="flex items-end justify-between mt-2">
-                        <div className="flex items-center gap-2">
-                          {room.discountPrice ? (
-                            <>
-                              <span className={`font-['Plus_Jakarta_Sans'] font-bold text-lg ${
-                                room.status === 'Active' ? 'text-red-600' : 'text-slate-400'
-                              }`}>
-                                {settings.currency === 'KRW' ? '₩' : settings.currency === 'USD' ? '$' : settings.currency === 'EUR' ? '€' : ''}{room.discountPrice.toLocaleString()}
-                              </span>
-                              <span className="font-['Plus_Jakarta_Sans'] font-medium text-xs text-slate-400 line-through">
-                                {settings.currency === 'KRW' ? '₩' : settings.currency === 'USD' ? '$' : settings.currency === 'EUR' ? '€' : ''}{room.price?.toLocaleString()}
-                              </span>
-                            </>
-                          ) : (
-                            <span className={`font-['Plus_Jakarta_Sans'] font-bold text-lg ${
-                              room.status === 'Active' ? 'text-[#0057bd]' : 'text-slate-400'
-                            }`}>
-                              {settings.currency === 'KRW' ? '₩' : settings.currency === 'USD' ? '$' : settings.currency === 'EUR' ? '€' : ''}{room.price?.toLocaleString()}
-                            </span>
-                          )}
-                          <span className="text-xs text-slate-400 font-medium ml-1">/ {settings.frequency === 'monthly' ? 'mo' : settings.frequency === 'weekly' ? 'wk' : 'night'}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className={`text-[10px] font-bold uppercase tracking-wide ${
-                            room.status === 'Active' ? 'text-green-600' : 'text-slate-400'
-                          }`}>
-                            {room.status === 'Active' ? 'Active' : 'Stopped'}
-                          </span>
-                          {/* Toggle */}
-                          <div 
-                            onClick={(e) => handleToggleRoomStatus(room, e)}
-                            className={`w-10 h-5 rounded-full relative cursor-pointer shadow-inner transition-colors ${
-                              room.status === 'Active' ? 'bg-[#0057bd]' : 'bg-slate-300'
-                            }`}
-                          >
-                            <div className={`w-4 h-4 bg-white rounded-full absolute top-0.5 shadow-sm transition-transform ${
-                              room.status === 'Active' ? 'right-0.5' : 'left-0.5'
-                            }`}></div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </article>
+                  </div>
                 ))}
-                
-                {stayRooms.length === 0 && (
-                  <div className="py-12 text-center bg-white rounded-xl shadow-sm border border-slate-100">
-                    <span className="material-symbols-outlined text-4xl text-slate-300 mb-2">hotel</span>
-                    <p className="text-slate-500 font-medium text-sm">
-                      No rooms registered yet.
-                    </p>
+                {images.length < 20 && (
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="aspect-square relative rounded-lg border-2 border-dashed border-primary/40 bg-primary/5 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-primary/10 transition-colors group"
+                  >
+                    {isUploading ? (
+                      <>
+                        <div className="w-8 h-8 border-3 border-primary/30 border-t-primary rounded-full animate-spin" />
+                        <span className="font-label-sm text-primary font-bold">{uploadProgress}%</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="material-symbols-outlined text-primary group-hover:scale-110 transition-transform" data-icon="add_a_photo">add_a_photo</span>
+                        <span className="font-label-sm text-primary font-bold">Add Photos</span>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
-            </motion.div>
-          ) : (
-            <motion.div 
-              key="settings-tab"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="space-y-6"
-            >
-              <div className="mb-4">
-                <p className="font-body text-[var(--on-surface-variant)] text-sm">Configure global pricing rules, booking criteria, and payment methods for all stays.</p>
+            </section>
+            {/* 4. RATES */}
+            <section className="bg-white rounded-[12px] shadow-sm p-6 space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-primary">
+                  <span className="material-symbols-outlined" data-icon="payments">payments</span>
+                  <h2 className="font-title-md text-title-md">RATES</h2>
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="font-label-sm text-on-surface-variant">Currency</label>
+                  <select className="bg-surface-container-low border-transparent rounded-lg font-label-sm text-on-surface py-1.5 pl-3 pr-8 focus:ring-primary focus:border-primary" value={currency} onChange={(e) => setCurrency(e.target.value)}>
+                    <option value="KRW">KRW (₩)</option>
+                    <option value="USD">USD ($)</option>
+                  </select>
+                </div>
               </div>
-
-              {/* Section 1: Booking Criteria */}
-              <section className="bg-white rounded-xl shadow-sm p-6 border border-slate-200/60">
-                <div className="flex items-center gap-2 mb-6">
-                  <span className="material-symbols-outlined text-[#0057bd]" data-icon="calendar_month">calendar_month</span>
-                  <h3 className="font-['Plus_Jakarta_Sans'] font-bold text-lg text-slate-900">Booking Criteria</h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="font-['Inter'] font-bold text-[11px] uppercase tracking-wider text-slate-500 block">Frequency</label>
-                    <div className="relative">
-                      <select 
-                        value={settings.frequency}
-                        onChange={(e) => setSettings({ ...settings, frequency: e.target.value as any })}
-                        className="w-full bg-slate-50 appearance-none border border-slate-200 rounded-lg px-4 py-3 font-['Inter'] text-[13px] font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0057bd]/50 transition-shadow"
-                      >
-                        <option value="daily">Daily</option>
-                        <option value="weekly">Weekly</option>
-                        <option value="monthly">Monthly</option>
-                      </select>
-                      <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-sm" data-icon="expand_more">expand_more</span>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="font-['Inter'] font-bold text-[11px] uppercase tracking-wider text-slate-500 block">Minimum Stay</label>
-                    <div className="relative">
-                      <input 
-                        value={settings.minStay}
-                        onChange={(e) => setSettings({ ...settings, minStay: parseInt(e.target.value) || 0 })}
-                        className="w-full bg-slate-50 appearance-none border border-slate-200 rounded-lg px-4 py-3 font-['Inter'] text-[13px] font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0057bd]/50 transition-shadow" 
-                        placeholder="e.g., 2" 
-                        type="number"
-                      />
-                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-[13px] pointer-events-none font-medium">Nights</span>
-                    </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="font-label-sm text-on-surface-variant">Weekday Base Rate</label>
+                  <div className="relative">
+                    <input className="w-full pl-4 pr-4 py-3 bg-surface-container-low border-transparent rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-body-md" type="text" value={baseRate} onChange={(e) => setBaseRate(e.target.value)} />
                   </div>
                 </div>
-              </section>
-
-              {/* Section 2: Pricing */}
-              <section className="bg-white rounded-xl shadow-sm p-6 border border-slate-200/60">
-                <div className="flex items-center gap-2 mb-6">
-                  <span className="material-symbols-outlined text-[#0057bd]" data-icon="payments">payments</span>
-                  <h3 className="font-['Plus_Jakarta_Sans'] font-bold text-lg text-slate-900">Global Pricing Setting</h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="space-y-2 md:col-span-1">
-                    <label className="font-['Inter'] font-bold text-[11px] uppercase tracking-wider text-slate-500 block">Currency</label>
-                    <div className="relative">
-                      <select 
-                        value={settings.currency}
-                        onChange={(e) => setSettings({ ...settings, currency: e.target.value })}
-                        className="w-full bg-slate-50 appearance-none border border-slate-200 rounded-lg px-4 py-3 font-['Inter'] text-[13px] font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0057bd]/50 transition-shadow"
-                      >
-                        <option value="USD">USD ($)</option>
-                        <option value="EUR">EUR (€)</option>
-                        <option value="GBP">GBP (£)</option>
-                        <option value="JPY">JPY (¥)</option>
-                        <option value="KRW">KRW (₩)</option>
-                      </select>
-                      <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-sm" data-icon="expand_more">expand_more</span>
-                    </div>
-                  </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <label className="font-['Inter'] font-bold text-[11px] uppercase tracking-wider text-slate-500 block">Base Amount (Default)</label>
-                    <input 
-                      value={settings.baseAmount}
-                      onChange={(e) => setSettings({ ...settings, baseAmount: parseFloat(e.target.value) || 0 })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 font-['Inter'] text-[13px] font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0057bd]/50 transition-shadow" 
-                      placeholder="0.00" 
-                      type="number"
-                    />
+                <div className="space-y-2">
+                  <label className="font-label-sm text-on-surface-variant">Weekend Surcharge</label>
+                  <div className="relative">
+                    <input className="w-full pl-4 pr-4 py-3 bg-surface-container-low border-transparent rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-body-md" type="text" value={weekendSurcharge} onChange={(e) => setWeekendSurcharge(e.target.value)} />
                   </div>
                 </div>
-              </section>
-
-              {/* Section 3: Payment Method */}
-              <section className="bg-white rounded-xl shadow-sm p-6 border border-slate-200/60">
-                <div className="flex items-center gap-2 mb-6">
-                  <span className="material-symbols-outlined text-[#0057bd]" data-icon="account_balance">account_balance</span>
-                  <h3 className="font-['Plus_Jakarta_Sans'] font-bold text-lg text-slate-900">Payment Method</h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Enabled Option */}
-                  <label className="relative cursor-pointer group">
-                    <input 
-                      checked={settings.paymentMethod === "bank_transfer"} 
-                      onChange={() => setSettings({ ...settings, paymentMethod: "bank_transfer" })}
-                      className="peer sr-only" 
-                      name="payment_method" 
-                      type="radio" 
-                      value="bank_transfer"
-                    />
-                    <div className="w-full p-4 border-2 border-slate-200 rounded-xl peer-checked:border-[#0057bd] peer-checked:bg-[#0057bd]/5 hover:bg-slate-50 transition-all">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <span className="material-symbols-outlined text-slate-900" data-icon="account_balance_wallet">account_balance_wallet</span>
-                          <span className="font-['Plus_Jakarta_Sans'] font-bold text-sm text-slate-900">Bank Transfer</span>
-                        </div>
-                        <div className="w-5 h-5 rounded-full border-2 border-slate-300 peer-checked:border-[#0057bd] flex items-center justify-center">
-                          <div className="w-2.5 h-2.5 rounded-full bg-[#0057bd] scale-0 peer-checked:scale-100 transition-transform"></div>
-                        </div>
-                      </div>
-                      <p className="font-['Inter'] text-[13px] text-slate-500 mt-1">Direct transfer to designated accounts.</p>
-                      <div className="mt-3 inline-block px-2 py-1 bg-blue-100/50 rounded-full font-['Inter'] font-bold text-[10px] text-blue-700 uppercase tracking-wide">
-                        Default
-                      </div>
-                    </div>
-                  </label>
-                  {/* Disabled Option */}
-                  <label className="relative cursor-not-allowed opacity-60">
-                    <input disabled className="peer sr-only" name="payment_method" type="radio" value="credit_card"/>
-                    <div className="w-full p-4 border-2 border-slate-200/50 bg-slate-50 rounded-xl">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <span className="material-symbols-outlined text-slate-400" data-icon="credit_card">credit_card</span>
-                          <span className="font-['Plus_Jakarta_Sans'] font-bold text-sm text-slate-400">Credit Card</span>
-                        </div>
-                        <div className="w-5 h-5 rounded-full border-2 border-slate-200"></div>
-                      </div>
-                      <p className="font-['Inter'] text-[13px] text-slate-400 mt-1">Secure online card processing.</p>
-                      <div className="mt-3 inline-block px-2 py-1 bg-slate-200 rounded-full font-['Inter'] font-bold text-[10px] text-slate-500 uppercase tracking-wide">
-                        Coming Soon
-                      </div>
-                    </div>
-                  </label>
-                </div>
-              </section>
-
-              {/* Section 4: Bank Account Details */}
-              {settings.paymentMethod === "bank_transfer" && (
-                <section className="bg-white rounded-xl shadow-sm p-6 border border-slate-200/60">
-                  <div className="flex items-center gap-2 mb-6">
-                    <span className="material-symbols-outlined text-[#0057bd]" data-icon="receipt_long">receipt_long</span>
-                    <h3 className="font-['Plus_Jakarta_Sans'] font-bold text-lg text-slate-900">Bank Account Details</h3>
+                <div className="space-y-2">
+                  <label className="font-label-sm text-on-surface-variant">Extra Person Fee</label>
+                  <div className="relative">
+                    <input className="w-full pl-4 pr-4 py-3 bg-surface-container-low border-transparent rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-body-md" type="text" value={extraPersonFee} onChange={(e) => setExtraPersonFee(e.target.value)} />
                   </div>
-                  <div className="space-y-8">
-                    {/* Domestic Transfer */}
-                    <div className="bg-slate-50 rounded-lg p-5 border border-slate-200/50">
-                      <h4 className="font-['Plus_Jakarta_Sans'] font-bold text-sm text-slate-900 mb-4 flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                        Domestic Transfer
-                      </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                          <label className="font-['Inter'] font-bold text-[11px] uppercase tracking-wider text-slate-500 block">Bank Name</label>
-                          <input 
-                            value={settings.bankDetails?.bankName || ""}
-                            onChange={(e) => updateBankDetail("bankName", e.target.value)}
-                            className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 font-['Inter'] text-[13px] text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#0057bd] transition-shadow" 
-                            placeholder="e.g., Chase Bank" 
-                            type="text"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="font-['Inter'] font-bold text-[11px] uppercase tracking-wider text-slate-500 block">Account Owner Name</label>
-                          <input 
-                            value={settings.bankDetails?.ownerName || ""}
-                            onChange={(e) => updateBankDetail("ownerName", e.target.value)}
-                            className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 font-['Inter'] text-[13px] text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#0057bd] transition-shadow" 
-                            placeholder="Full Legal Name" 
-                            type="text"
-                          />
-                        </div>
-                        <div className="space-y-1 md:col-span-2">
-                          <label className="font-['Inter'] font-bold text-[11px] uppercase tracking-wider text-slate-500 block">Account Number</label>
-                          <input 
-                            value={settings.bankDetails?.accountNumber || ""}
-                            onChange={(e) => updateBankDetail("accountNumber", e.target.value)}
-                            className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 font-['Inter'] text-[13px] text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#0057bd] transition-shadow" 
-                            placeholder="Routing & Account No." 
-                            type="text"
-                          />
-                        </div>
-                      </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="font-label-sm text-on-surface-variant">Cleaning Fee</label>
+                  <div className="relative">
+                    <input className="w-full pl-4 pr-4 py-3 bg-surface-container-low border-transparent rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-body-md" type="text" value={cleaningFee} onChange={(e) => setCleaningFee(e.target.value)} />
+                  </div>
+                </div>
+              </div>
+            </section>
+            {/* 5. GUIDES */}
+            <section className="bg-white rounded-[12px] shadow-sm p-6 space-y-6">
+              <div className="flex items-center gap-2 text-primary">
+                <span className="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+                <h2 className="font-title-md text-title-md">GUIDES</h2>
+              </div>
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <label className="font-label-sm text-on-surface-variant">Room Features</label>
+                  <textarea className="w-full px-4 py-3 bg-surface-container-low border-transparent rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-body-md" rows={3} value={roomFeatures} onChange={(e) => setRoomFeatures(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <label className="font-label-sm text-on-surface-variant">Getting Here</label>
+                  <textarea className="w-full px-4 py-3 bg-surface-container-low border-transparent rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-body-md" rows={3} value={gettingHere} onChange={(e) => setGettingHere(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <label className="font-label-sm text-on-surface-variant">Facility Guide</label>
+                  <textarea className="w-full px-4 py-3 bg-surface-container-low border-transparent rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-body-md" rows={3} value={facilityGuide} onChange={(e) => setFacilityGuide(e.target.value)} />
+                </div>
+              </div>
+            </section>
+            {/* 6. HOST SETTINGS */}
+            <section className="bg-white rounded-[12px] shadow-sm p-6 space-y-6">
+              <div className="flex items-center gap-2 text-primary">
+                <span className="material-symbols-outlined" data-icon="person">person</span>
+                <h2 className="font-title-md text-title-md uppercase">Host Settings</h2>
+              </div>
+              <div className="space-y-2">
+                <label className="font-label-sm text-on-surface-variant">Primary Host</label>
+                {isEditingHost ? (
+                  <div className="p-4 bg-surface-container-low rounded-xl space-y-4">
+                    <div className="space-y-2">
+                      <label className="font-label-sm text-on-surface-variant">Host Name</label>
+                      <input className="w-full px-4 py-2 bg-white border border-outline-variant/30 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-body-md" type="text" value={hostName} onChange={(e) => setHostName(e.target.value)} />
                     </div>
-                    {/* Overseas Transfer */}
-                    <div className="bg-slate-50 rounded-lg p-5 border border-slate-200/50">
-                      <h4 className="font-['Plus_Jakarta_Sans'] font-bold text-sm text-slate-900 mb-4 flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                        Overseas Transfer (Wise)
-                      </h4>
-                      <div className="grid grid-cols-1 gap-4">
-                        <div className="space-y-1">
-                          <label className="font-['Inter'] font-bold text-[11px] uppercase tracking-wider text-slate-500 block">IBAN / SWIFT Code</label>
-                          <input 
-                            value={settings.bankDetails?.swiftCode || ""}
-                            onChange={(e) => updateBankDetail("swiftCode", e.target.value)}
-                            className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 font-['Inter'] text-[13px] text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#0057bd] transition-shadow" 
-                            placeholder="Enter valid SWIFT/BIC" 
-                            type="text"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="font-['Inter'] font-bold text-[11px] uppercase tracking-wider text-slate-500 block">Additional Account Details</label>
-                          <textarea 
-                            value={settings.bankDetails?.additionalDetails || ""}
-                            onChange={(e) => updateBankDetail("additionalDetails", e.target.value)}
-                            className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 font-['Inter'] text-[13px] text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#0057bd] transition-shadow resize-none" 
-                            placeholder="Sort code, branch address, etc." 
-                            rows={3}
-                          ></textarea>
-                        </div>
-                      </div>
+                    <div className="space-y-2">
+                      <label className="font-label-sm text-on-surface-variant">Host Photo URL</label>
+                      <input className="w-full px-4 py-2 bg-white border border-outline-variant/30 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-body-md" type="text" value={hostPhoto} onChange={(e) => setHostPhoto(e.target.value)} placeholder="https://..." />
+                    </div>
+                    <div className="flex justify-end pt-2">
+                      <button onClick={() => setIsEditingHost(false)} className="px-6 py-2 bg-primary text-white rounded-lg font-label-sm hover:bg-primary/90 transition-colors">Done</button>
                     </div>
                   </div>
-                </section>
-              )}
-
-              {/* Prominent Full-Width Action Button */}
-              <div className="pt-4">
-                <button 
-                  onClick={handleSaveSettings}
-                  disabled={isUpdating}
-                  className="w-full bg-[#0057bd] text-white py-4 rounded-xl font-['Plus_Jakarta_Sans'] font-bold text-base hover:bg-[#004ca6] transition-all shadow-lg shadow-[#0057bd]/25 active:scale-[0.98] duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isUpdating ? "Saving..." : "Save Stay Settings"}
+                ) : (
+                  <div className="flex items-center justify-between p-4 bg-surface-container-low rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary overflow-hidden">
+                        {hostPhoto || originalData?.host?.photo ? (
+                          <img src={hostPhoto || originalData?.host?.photo || ""} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="material-symbols-outlined">account_circle</span>
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-body-md text-on-surface">{hostName}</p>
+                        <p className="text-[12px] text-on-surface-variant font-medium">Default Host</p>
+                      </div>
+                    </div>
+                    <button onClick={() => setIsEditingHost(true)} className="px-4 py-2 bg-white border border-outline-variant/50 rounded-lg font-label-sm text-primary hover:bg-surface-container-low transition-colors flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[18px]">person_search</span>
+                      Change
+                    </button>
+                  </div>
+                )}
+                <p className="text-[11px] text-on-surface-variant px-1 mt-2">Search and select from people in your organization to assign a different primary host.</p>
+              </div>
+            </section>
+            {/* ACTION BAR */}
+            <div className="sticky bottom-20 md:bottom-0 left-0 right-0 p-6 bg-[#F3F4F6]/90 backdrop-blur-xl border-t border-outline-variant/30 flex justify-center z-40 mt-12 -mx-6 md:-mx-12">
+              <div className="w-full max-w-[896px] flex justify-end gap-4 px-6 md:px-12">
+                <button onClick={handleDiscard} disabled={isSaving} className="px-8 py-3 rounded-xl bg-outline-variant/20 font-title-md text-body-md hover:bg-outline-variant/40 transition-all">Discard</button>
+                <button onClick={handleSave} disabled={isSaving} className="px-12 py-3 rounded-xl bg-primary text-on-primary font-title-md text-body-md shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-2">
+                  {isSaving ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <span className="material-symbols-outlined" data-icon="save">save</span>
+                      Save Changes
+                    </>
+                  )}
                 </button>
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </main>
-
-      <AnimatePresence>
-        {activeSubEditor === "stay-room-editor" && (
-          <GroupStayRoomEditor 
-            group={group} 
-            onClose={() => setActiveSubEditor(null)} 
-            room={editingRoom}
-          />
-        )}
-      </AnimatePresence>
-    </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </>
   );
-};
-
-export default GroupStayEditor;
+}

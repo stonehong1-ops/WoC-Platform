@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { plazaService } from '@/lib/firebase/plazaService';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useLocation } from '@/components/providers/LocationProvider';
+import { useHistoryBack } from '@/hooks/useHistoryBack';
+import UserAvatar from '@/components/common/UserAvatar';
 
 interface CreatePostProps {
   isOpen: boolean;
@@ -14,6 +16,7 @@ interface CreatePostProps {
 export default function CreatePost({ isOpen, onClose, onSuccess }: CreatePostProps) {
   const { user } = useAuth();
   const { location } = useLocation();
+  const { handleClose } = useHistoryBack(isOpen, onClose);
   const [content, setContent] = useState('');
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [mediaPreviews, setMediaPreviews] = useState<{url: string, type: string}[]>([]);
@@ -107,17 +110,17 @@ export default function CreatePost({ isOpen, onClose, onSuccess }: CreatePostPro
 
   return (
     <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleClose} />
       
-      <div className="relative bg-white w-full max-w-xl rounded-t-[32px] sm:rounded-[32px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-300 flex flex-col max-h-[90vh]">
+      <div className="relative bg-surface w-full max-w-xl rounded-t-[32px] sm:rounded-[32px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-300 flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="p-6 border-b border-gray-50 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10 font-manrope">
+        <div className="p-6 border-b border-gray-50 flex items-center justify-between bg-surface/80 backdrop-blur-md sticky top-0 z-10 font-manrope">
           <div className="flex flex-col">
             <span className="text-[10px] font-black text-primary tracking-[0.25em] uppercase mb-1">New Moment</span>
             <h3 className="text-[20px] font-black text-gray-900 uppercase tracking-tighter">Share Story</h3>
           </div>
           <button 
-            onClick={onClose}
+            onClick={handleClose}
             className="w-10 h-10 rounded-full flex items-center justify-center bg-gray-50 hover:bg-gray-100 transition-all text-gray-400"
           >
             <span className="material-symbols-outlined text-[20px]">close</span>
@@ -126,9 +129,10 @@ export default function CreatePost({ isOpen, onClose, onSuccess }: CreatePostPro
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6 no-scrollbar">
           <div className="flex gap-4">
-            <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex-shrink-0 ring-1 ring-gray-100">
-              <img src={user?.photoURL || "https://lh3.googleusercontent.com/a/default-user"} alt="profile" className="w-full h-full object-cover" />
-            </div>
+            <UserAvatar 
+              photoURL={user?.photoURL} 
+              className="w-12 h-12 shrink-0 ring-1 ring-gray-100" 
+            />
             <div className="flex-1">
               <textarea
                 value={content}
@@ -180,7 +184,7 @@ export default function CreatePost({ isOpen, onClose, onSuccess }: CreatePostPro
             className="hidden"
           />
 
-          <div className="flex items-center justify-between pt-4 sticky bottom-0 bg-white">
+          <div className="flex items-center justify-between pt-4 sticky bottom-0 bg-surface">
             <div className="flex gap-2">
               <button 
                 type="button" 

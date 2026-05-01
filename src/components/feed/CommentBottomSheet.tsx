@@ -6,6 +6,7 @@ import { Comment, Post } from '@/types/feed';
 import { feedService } from '@/lib/firebase/feedService';
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import UserBadge from '../common/UserBadge';
 
 interface CommentBottomSheetProps {
   post: Post;
@@ -41,13 +42,10 @@ export default function CommentBottomSheet({ post, isOpen, onClose, currentUser 
       });
     } else {
       setExpandedComments(prev => new Set(prev).add(commentId));
-      
-      // Fetch replies for this comment if not already fetched or to keep updated
-      if (!replies[commentId]) {
-        feedService.subscribeComments(post.id, (fetchedReplies) => {
-          setReplies(prev => ({ ...prev, [commentId]: fetchedReplies }));
-        }, commentId);
-      }
+      // 항상 구독 시작 (실시간 반영 보장)
+      feedService.subscribeComments(post.id, (fetchedReplies) => {
+        setReplies(prev => ({ ...prev, [commentId]: fetchedReplies }));
+      }, commentId);
     }
   };
 
@@ -65,9 +63,13 @@ export default function CommentBottomSheet({ post, isOpen, onClose, currentUser 
         repliesCount: 0
       });
       
-      // If it's a reply, automatically expand the parent to show the new reply
       if (replyTo) {
-        setExpandedComments(prev => new Set(prev).add(replyTo.id));
+        const parentId = replyTo.id;
+        setExpandedComments(prev => new Set(prev).add(parentId));
+        // 구독 갱신 (즉각 반영)
+        feedService.subscribeComments(post.id, (fetchedReplies) => {
+          setReplies(prev => ({ ...prev, [parentId]: fetchedReplies }));
+        }, parentId);
       }
       
       setNewCommentText('');
@@ -89,20 +91,20 @@ export default function CommentBottomSheet({ post, isOpen, onClose, currentUser 
 
     return (
       <div key={comment.id} className={`flex flex-col ${isReply ? 'ml-10 border-l-2 border-outline-variant/10 pl-4 mb-2' : 'border-b border-outline-variant/5 last:border-0 mb-4'}`}>
-        <div className="flex gap-3 py-2">
-          <img 
-            src={comment.userPhoto || 'https://lh3.googleusercontent.com/a/default-user'} 
-            alt={comment.userName}
-            className="w-8 h-8 rounded-full object-cover shrink-0"
-          />
-          <div className="flex-1 min-w-0">
-            <div className="flex justify-between items-start">
-              <div className="flex items-baseline gap-1 flex-wrap">
-                <h4 className="font-bold text-sm text-on-surface">{comment.userName}</h4>
-                {comment.userNameNative && <span className="text-[11px] font-medium text-on-surface-variant leading-tight">{comment.userNameNative}</span>}
-              </div>
-              <span className="text-[10px] text-on-surface-variant">{timeAgo}</span>
-            </div>
+        <div className="flex flex-col py-2">
+          <div className="flex justify-between items-start w-full">
+            <UserBadge 
+              uid={comment.userId}
+              nickname={comment.userName}
+              nativeNickname={comment.userNameNative}
+              photoURL={comment.userPhoto}
+              avatarSize="w-8 h-8"
+              nameClassName="font-bold text-sm text-on-surface"
+              nativeClassName="text-[11px] font-medium text-on-surface-variant leading-tight ml-1"
+            />
+            <span className="text-[10px] text-on-surface-variant mt-1 shrink-0">{timeAgo}</span>
+          </div>
+          <div className="pl-10 pr-2">
             <p className="text-sm text-on-surface-variant mt-1 leading-relaxed">
               {comment.content}
             </p>

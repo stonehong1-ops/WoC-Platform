@@ -5,14 +5,16 @@ import FeedCreatePopup from './FeedCreatePopup';
 import FeedPostCard from './FeedPostCard';
 import { feedService } from '@/lib/firebase/feedService';
 import { Post } from '@/types/feed';
+import UserAvatar from '@/components/common/UserAvatar';
 
 interface UniversalFeedProps {
   context: any;
   currentUser: any;
   profile?: any;
+  activeFilter?: string;
 }
 
-export default function UniversalFeed({ context, currentUser, profile }: UniversalFeedProps) {
+export default function UniversalFeed({ context, currentUser, profile, activeFilter = 'all' }: UniversalFeedProps) {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
@@ -36,6 +38,33 @@ export default function UniversalFeed({ context, currentUser, profile }: Univers
     return () => unsubscribe();
   }, [context.scopeId]);
 
+  // Derive filtered posts based on activeFilter
+  const filteredPosts = React.useMemo(() => {
+    let result = [...posts];
+    
+    switch (activeFilter) {
+      case 'hot':
+        // Threshold for "Hot": more than 0 interactions, sorted by engagement
+        result = result.filter(p => (p.likesCount || 0) + (p.commentsCount || 0) > 0);
+        result.sort((a, b) => ((b.likesCount || 0) + (b.commentsCount || 0)) - ((a.likesCount || 0) + (a.commentsCount || 0)));
+        break;
+      case 'my':
+        // User's own posts
+        result = result.filter(p => p.userId === currentUser?.uid);
+        break;
+      case 'pinned':
+        // Posts from pinned users
+        const pinnedIds = profile?.pinnedUserIds || [];
+        result = result.filter(p => pinnedIds.includes(p.userId));
+        break;
+      case 'all':
+      default:
+        break;
+    }
+    
+    return result;
+  }, [posts, activeFilter, currentUser, profile]);
+
   return (
     <div className={`text-on-surface font-body relative ${context.scope === 'plaza' ? 'min-h-screen overflow-x-hidden' : ''}`}>
       {/* Ambient Background Effects */}
@@ -50,10 +79,9 @@ export default function UniversalFeed({ context, currentUser, profile }: Univers
           onClick={() => setIsCreateModalOpen(true)}
           className="bg-surface-container-lowest rounded-xl shadow-sm p-4 sm:p-6 flex gap-4 items-start border border-outline-variant/10 cursor-pointer hover:shadow-md transition-all"
         >
-          <img 
-            alt={profile?.nickname || currentUser?.displayName || "Current User"} 
-            className="w-12 h-12 rounded-full object-cover shrink-0 bg-slate-100" 
-            src={profile?.photoURL || profile?.avatar || currentUser?.photoURL || "https://ui-avatars.com/api/?name=User&background=0f172a&color=fff"}
+          <UserAvatar 
+            photoURL={profile?.photoURL || profile?.avatar || currentUser?.photoURL} 
+            className="w-12 h-12 shrink-0" 
           />
           <div className="flex-1 flex flex-col gap-3">
             <div className="w-full bg-surface rounded-lg p-3 text-sm text-on-surface-variant/50 min-h-[60px]">
@@ -86,13 +114,13 @@ export default function UniversalFeed({ context, currentUser, profile }: Univers
                 <div key={i} className="bg-surface-container-lowest h-80 rounded-xl animate-pulse border border-outline-variant/10 shadow-sm" />
               ))}
             </div>
-          ) : posts.length === 0 ? (
+          ) : filteredPosts.length === 0 ? (
             <div className="py-20 text-center bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm">
               <span className="material-symbols-outlined text-outline-variant text-6xl mb-4">post_add</span>
-              <p className="text-on-surface-variant font-medium">No posts yet. Be the first to share!</p>
+              <p className="text-on-surface-variant font-medium">No posts found matching this filter.</p>
             </div>
           ) : (
-            posts.map((post) => (
+            filteredPosts.map((post) => (
               <FeedPostCard 
                 key={post.id} 
                 post={post} 
@@ -123,7 +151,6 @@ export default function UniversalFeed({ context, currentUser, profile }: Univers
           setIsCreateModalOpen(false);
           setEditingPost(null);
         }}
-        currentUser={currentUser}
         context={context}
         editingPost={editingPost}
       />

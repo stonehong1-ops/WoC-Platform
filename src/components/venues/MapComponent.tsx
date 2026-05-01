@@ -21,6 +21,7 @@ interface Venue {
   city: string;
   status: string;
   imageUrl?: string;
+  brand?: string;
 }
 
 const mapContainerStyle = { width: '100%', height: '100dvh' };
@@ -55,9 +56,11 @@ export default function MapComponent({
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [zoom, setZoom] = useState(14);
   const [center, setCenter] = useState<{ lat: number; lng: number } | null>(null);
+  const [selectedBrand, setSelectedBrand] = useState('All');
+  const [showBrandFilter, setShowBrandFilter] = useState(false);
   const router = useRouter();
 
-  const categories = ['All', 'Club', 'Stay', 'Shop', 'Studio', 'Academy', 'Beauty', 'Cafe', 'Eats', 'Other'];
+  const categories = ['All', 'Studio', 'Shop', 'Stay', 'Beauty', 'Club', 'Academy', 'Cafe', 'Eats', 'Other'];
 
   useEffect(() => {
     if (!map) return;
@@ -103,6 +106,11 @@ export default function MapComponent({
     return currentBounds.contains({ lat, lng });
   };
 
+  const brands = useMemo(() => {
+    const bs = Array.from(new Set(venues.map(v => (v as any).brand).filter(Boolean)));
+    return ['All', ...bs.sort()];
+  }, [venues]);
+
   const filteredVenues = useMemo(() => {
     let result = venues;
 
@@ -111,7 +119,12 @@ export default function MapComponent({
       result = result.filter(v => selectedCategories.includes(v.category));
     }
 
-    // 2. Conditional filter: Bounds (only when NO search term)
+    // 2. Filter by brand
+    if (selectedBrand !== 'All') {
+      result = result.filter(v => (v as any).brand === selectedBrand);
+    }
+
+    // 3. Conditional filter: Bounds (only when NO search term)
     if (!searchTerm && map) {
       result = result.filter(v => isWithinBounds(v.coordinates.latitude, v.coordinates.longitude));
     }
@@ -169,15 +182,10 @@ export default function MapComponent({
     if (cat === 'All') {
       setSelectedCategories(['All']);
     } else {
-      setSelectedCategories(prev => {
-        const withoutAll = prev.filter(c => c !== 'All');
-        if (withoutAll.includes(cat)) {
-          const updated = withoutAll.filter(c => c !== cat);
-          return updated.length === 0 ? ['All'] : updated;
-        } else {
-          return [...withoutAll, cat];
-        }
-      });
+      // ?⑥씪 ?좏깮: ?대? ?좏깮??移댄뀒怨좊━ ?대┃ ??All濡?蹂듦?
+      setSelectedCategories(prev =>
+        prev.length === 1 && prev[0] === cat ? ['All'] : [cat]
+      );
     }
   };
 
@@ -245,7 +253,7 @@ export default function MapComponent({
   }, []); // Only once at mount
 
   const categoryIcons: Record<string, string> = {
-    'All': 'apps',
+    'All': '',
     'Club': 'local_bar',
     'Stay': 'bed',
     'Shop': 'shopping_bag',
@@ -255,6 +263,15 @@ export default function MapComponent({
     'Cafe': 'coffee',
     'Eats': 'restaurant',
     'Other': 'more_horiz'
+  };
+
+  // 而ㅽ뀒怨좊━蹂????留덉빱 (null?대㈃ 湲곕낯 ?먰삎)
+  const getCategoryMarker = (category: string): { icon: string; bg: string; color: string } | null => {
+    switch (category) {
+      case 'Shop':  return { icon: 'shopping_bag', bg: '#FF8C42', color: '#fff' };
+      case 'Stay':  return { icon: 'bed',          bg: '#4ECDC4', color: '#fff' };
+      default:      return null;
+    }
   };
 
   return (
@@ -390,7 +407,24 @@ export default function MapComponent({
                       </div>
                     ) : (
                       <div className="flex flex-col items-center">
-                        <div className="w-3 h-3 bg-white border-[3px] border-primary rounded-full shadow-sm mb-1 group-hover:scale-125 transition-transform"></div>
+                        {(() => {
+                          const cm = getCategoryMarker(v.category);
+                          return cm ? (
+                            <div
+                              className="w-5 h-5 rounded-md flex items-center justify-center shadow-md mb-1 group-hover:scale-125 transition-transform border border-white/80"
+                              style={{ backgroundColor: cm.bg }}
+                            >
+                                <span
+                                  className="material-symbols-rounded !text-[11px] leading-none"
+                                  style={{ color: cm.color, fontVariationSettings: "'FILL' 1" }}
+                                >
+                                  {cm.icon}
+                                </span>
+                            </div>
+                          ) : (
+                            <div className="w-3 h-3 bg-white border-[3px] border-primary rounded-full shadow-sm mb-1 group-hover:scale-125 transition-transform" />
+                          );
+                        })()}
                         {zoom >= 13 && (
                           <span className="text-[10px] font-extrabold uppercase tracking-tight map-label text-slate-800 whitespace-nowrap opacity-80 group-hover:opacity-100 transition-opacity">
                             {v.nameKo || v.name}
@@ -431,9 +465,11 @@ export default function MapComponent({
               : 'bg-white/90 text-on-surface hover:bg-white'
             }`}
           >
-            <span className="material-symbols-outlined !text-[18px] leading-none" style={{ fontVariationSettings: "'FILL' 1" }}>
-              {categoryIcons[cat]}
-            </span>
+            {categoryIcons[cat] && (
+              <span className="material-symbols-rounded !text-[18px] leading-none" style={{ fontVariationSettings: "'FILL' 1" }}>
+                {categoryIcons[cat]}
+              </span>
+            )}
             <span className="mt-[1px]">{cat}</span>
           </button>
         ))}
@@ -482,50 +518,114 @@ export default function MapComponent({
           onClick={() => !isExpanded && setIsExpanded(true)}
         >
           {/* Top Row / Summary Bar */}
-          <div className={`px-6 flex items-center justify-between py-3 cursor-pointer ${isExpanded ? 'border-b border-slate-100' : ''}`}>
-            <div className="flex items-center">
+          <div className={`px-4 flex items-center justify-between min-h-[52px] cursor-pointer ${isExpanded ? 'border-b border-slate-100' : ''}`}>
+            <div className="flex items-center flex-1 overflow-hidden">
               <div 
                 onClick={(e) => {
                   e.stopPropagation();
                   setIsExpanded(!isExpanded);
                 }}
-                className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center transition-colors hover:bg-slate-200"
+                className="w-8 h-8 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center transition-colors hover:bg-slate-100 shrink-0"
               >
-                <span className="material-symbols-outlined text-primary text-xl">
+                <span className="material-symbols-rounded text-primary text-xl">
                   {isExpanded ? 'expand_more' : 'expand_less'}
                 </span>
               </div>
               
               {isExpanded ? (
-                <div className="flex items-center ml-3 flex-grow">
+                <div className="flex items-center ml-2 flex-1 overflow-hidden">
+                  {selectedBrand !== 'All' && (
+                    <div 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedBrand('All');
+                      }}
+                      className="flex items-center bg-primary/10 text-primary px-2 py-1 rounded-lg mr-2 whitespace-nowrap cursor-pointer hover:bg-primary/20 transition-colors group shrink-0"
+                    >
+                      <span className="text-[11px] font-bold">Brand: {selectedBrand}</span>
+                      <span className="material-symbols-rounded text-sm ml-1 opacity-60 group-hover:opacity-100">close</span>
+                    </div>
+                  )}
                   <input 
                     type="text"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Search venue.."
+                    onKeyDown={(e) => e.key === 'Enter' && handleEnterKey()}
+                    placeholder={selectedBrand === 'All' ? "Search venue.." : ""}
                     className="bg-transparent border-none p-0 focus:ring-0 text-sm font-medium text-slate-800 placeholder:text-slate-400 w-full outline-none"
                   />
                 </div>
               ) : (
-                <span className="text-sm text-slate-800 font-bold ml-3 tracking-wide">
-                  {filteredVenues.length} IN VIEW
+                <span className="text-sm text-slate-800 font-bold ml-3 tracking-wide truncate">
+                  {selectedBrand !== 'All' ? `${selectedBrand} : ` : ''}{filteredVenues.length} IN VIEW
                 </span>
               )}
             </div>
             
-            <div className="flex items-center gap-4">
-              <div className="h-5 w-[1px] bg-slate-200"></div>
+            <div className="flex items-center gap-1 shrink-0">
+              <div className="h-5 w-[1px] bg-slate-200 mx-1"></div>
+              
+              {/* Brand Filter Button */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowBrandFilter(!showBrandFilter);
+                }}
+                className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
+                  selectedBrand !== 'All' ? 'bg-primary/10 text-primary' : 'text-[#596061] hover:bg-slate-100'
+                }`}
+              >
+                <span className="material-symbols-rounded text-[22px]">filter_center_focus</span>
+              </button>
+
               <button 
                 onClick={(e) => {
                   e.stopPropagation();
-                  setIsExpanded(true);
+                  if (isExpanded && searchTerm) {
+                    handleEnterKey();
+                  } else {
+                    setIsExpanded(!isExpanded);
+                  }
                 }}
-                className="flex items-center justify-center text-primary active:scale-90 transition-transform"
+                className="w-9 h-9 rounded-full flex items-center justify-center text-primary active:scale-90 transition-transform"
               >
-                <span className="material-symbols-outlined text-[24px]">search</span>
+                <span className="material-symbols-rounded text-[24px]">search</span>
               </button>
             </div>
           </div>
+
+          {/* Brand Filter Panel */}
+          <AnimatePresence>
+            {showBrandFilter && brands.length > 1 && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="bg-white border-t border-slate-50 p-4"
+              >
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">Filter by Brand</p>
+                <div className="flex flex-wrap gap-2">
+                  {brands.map(brand => (
+                    <button
+                      key={brand}
+                      onClick={() => { 
+                        setSelectedBrand(brand); 
+                        setShowBrandFilter(false); 
+                        if (!isExpanded) setIsExpanded(true);
+                      }}
+                      className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase transition-all ${
+                        selectedBrand === brand
+                          ? 'text-primary bg-primary/10'
+                          : 'text-[#596061] bg-slate-100 border border-transparent hover:bg-slate-200'
+                      }`}
+                    >
+                      {brand}
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Expanded List area */}
           <AnimatePresence>
@@ -550,7 +650,7 @@ export default function MapComponent({
                           <img src={v.imageUrl} className="w-full h-full object-cover" alt={v.name} />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-slate-300">
-                            <span className="material-symbols-outlined text-xl">image</span>
+                            <span className="material-symbols-rounded text-xl">image</span>
                           </div>
                         )}
                       </div>
@@ -574,7 +674,7 @@ export default function MapComponent({
                         }}
                         className="absolute top-2 right-2 text-slate-400 hover:text-slate-600"
                       >
-                        <span className="material-symbols-outlined text-[18px]">more_vert</span>
+                        <span className="material-symbols-rounded text-[18px]">more_vert</span>
                       </button>
 
                       <AnimatePresence>
@@ -605,7 +705,7 @@ export default function MapComponent({
                               className="w-full px-4 py-2.5 text-left text-xs font-bold text-primary hover:bg-primary/5 border-b border-slate-50 flex items-center justify-between transition-colors"
                             >
                               <span>Geo tuning</span>
-                              <span className="material-symbols-outlined text-[14px]">my_location</span>
+                            <span className="material-symbols-rounded text-[14px]">my_location</span>
                             </button>
                             <button 
                               onClick={(e) => {

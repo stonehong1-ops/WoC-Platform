@@ -25,7 +25,6 @@ export default function ReactionSelector({ onSelect, onClose }: ReactionSelector
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 10, scale: 0.9 }}
       className="absolute bottom-full left-0 mb-2 z-[60]"
-      onMouseLeave={onClose}
     >
       <div className="bg-surface-container-highest/90 backdrop-blur-xl border border-outline-variant/20 rounded-full px-2 py-1.5 shadow-2xl flex items-center gap-1">
         {REACTION_OPTIONS.map((option, index) => (

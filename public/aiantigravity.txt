@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+                  "outline-variant": "#c2c6d5",
+                  "on-error-container": "#93000a",
+                  "tertiary-container": "#883b91",
+                  "on-secondary-container": "#03288f",
+                  "on-primary-fixed": "#001a42",
+                  "surface-bright": "#f9f9ff",
+                  "secondary": "#3d56ba",
+                  "on-secondary-fixed": "#001355",
+                  "on-tertiary-fixed": "#36003e",
+                  "primary-fixed-dim": "#aec6ff",
+                  "inverse-primary": "#aec6ff",
+                  "surface-container-lowest": "#ffffff",
+                  "surface-container-high": "#e7e7f1",
+                  "surface-dim": "#d9d9e2",
+                  "surface-container-low": "#f2f3fc",
+                  "secondary-fixed-dim": "#b8c4ff",
+                  "primary-container": "#0057bd",
+                  "inverse-surface": "#2e3037",
+                  "background": "#f9f9ff",
+                  "surface-container": "#ededf6",
+                  "on-tertiary-container": "#febeff",
+                  "surface-tint": "#0b5ac0",
+                  "primary": "#004190",
+                  "tertiary-fixed-dim": "#fbaaff",
+                  "on-background": "#191b22",
+                  "on-tertiary": "#ffffff",
+                  "on-primary-container": "#c2d3ff",
+                  "on-primary": "#ffffff",
+                  "secondary-fixed": "#dde1ff",
+                  "on-secondary": "#ffffff",
+                  "surface": "#f9f9ff",
+                  "tertiary": "#6d2177",
+                  "error-container": "#ffdad6",
+                  "tertiary-fixed": "#ffd6fd",
+                  "primary-fixed": "#d8e2ff",
+                  "on-tertiary-fixed-variant": "#71257b",
+                  "on-secondary-fixed-variant": "#213da1",
+                  "inverse-on-surface": "#f0f0f9",
+                  "error": "#ba1a1a",
+                  "on-primary-fixed-variant": "#004395",
+                  "on-surface": "#191b22",
+                  "on-surface-variant": "#424753",
+                  "surface-container-highest": "#e1e2eb",
+                  "secondary-container": "#8097ff",
+                  "surface-variant": "#e1e2eb",
+                  "outline": "#727784",
+                  "on-error": "#ffffff"
+          },
+          "borderRadius": {
+                  "DEFAULT": "0.25rem",
+                  "lg": "0.5rem",
+                  "xl": "0.75rem",
+                  "full": "9999px"
+          },
+          "spacing": {
+                  "element-gap": "1rem",
+                  "container-max": "56rem",
+                  "page-margin": "1.5rem",
+                  "inner-padding": "0.5rem",
+                  "section-gap": "2.5rem"
+          },
+          "fontFamily": {
+                  "label-xs": ["Inter"],
+                  "body-md": ["Inter"],
+                  "title-md": ["Plus Jakarta Sans"],
+                  "label-sm": ["Inter"],
+                  "headline-lg": ["Plus Jakarta Sans"],
+                  "display-xl": ["Plus Jakarta Sans"]
+          },
+          "fontSize": {
+                  "label-xs": ["10px", {"lineHeight": "1rem", "fontWeight": "700"}],
+                  "body-md": ["0.875rem", {"lineHeight": "1.25rem", "fontWeight": "500"}],
+                  "title-md": ["1.125rem", {"lineHeight": "1.5rem", "fontWeight": "700"}],
+                  "label-sm": ["0.75rem", {"lineHeight": "1rem", "fontWeight": "600"}],
+                  "headline-lg": ["1.5rem", {"lineHeight": "2rem", "letterSpacing": "-0.025em", "fontWeight": "800"}],
+                  "display-xl": ["6rem", {"lineHeight": "1", "fontWeight": "800"}]
+          }
+        },
+      }
+    }
+  </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen flex items-center justify-center p-page-margin">
+<main class="w-full max-w-[896px] mx-auto">
+<!-- Culture & Canvas Section -->
+<div class="grid grid-cols-2 gap-element-gap">
+<!-- Tango Novel Card -->
+<div class="group relative overflow-hidden bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer active:scale-95">
+<div class="flex flex-col gap-2 relative z-10">
+<div class="flex items-center justify-between">
+<div class="p-3 rounded-xl bg-primary-container/10 text-primary-container">
+<span class="material-symbols-outlined text-[24px]" data-icon="book">book</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant group-hover:text-primary-container transition-colors" data-icon="arrow_outward">arrow_outward</span>
+</div>
+<div class="mt-2">
+<h3 class="font-title-md text-title-md text-on-surface">Tango Novel</h3>
+</div>
+</div>
+<!-- Subtle background "Easter egg" icon as per Style Guidance -->
+<span class="material-symbols-outlined absolute -bottom-4 -right-4 text-8xl opacity-[0.03] text-primary-container pointer-events-none" data-icon="book">book</span>
+</div>
+<!-- Tango Cartoons Card -->
+<div class="group relative overflow-hidden bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer active:scale-95">
+<div class="flex flex-col gap-2 relative z-10">
+<div class="flex items-center justify-between">
+<div class="p-3 rounded-xl bg-primary-container/10 text-primary-container">
+<span class="material-symbols-outlined text-[24px]" data-icon="palette">palette</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant group-hover:text-primary-container transition-colors" data-icon="arrow_outward">arrow_outward</span>
+</div>
+<div class="mt-2">
+<h3 class="font-title-md text-title-md text-on-surface">Tango Cartoons</h3>
+</div>
+</div>
+<!-- Subtle background "Easter egg" icon as per Style Guidance -->
+<span class="material-symbols-outlined absolute -bottom-4 -right-4 text-8xl opacity-[0.03] text-primary-container pointer-events-none" data-icon="palette">palette</span>
+</div>
+</div>
+</main>
+</body></html>

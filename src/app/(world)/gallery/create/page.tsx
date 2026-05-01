@@ -52,7 +52,7 @@ const GalleryCreateContent = () => {
       galleryService.getPost(editId).then(post => {
         if (post) {
           if (user && post.authorId !== user.uid) {
-            alert('수정 권한이 없습니다.');
+            alert('You do not have permission to edit.');
             router.push('/gallery');
             return;
           }
@@ -156,9 +156,9 @@ const GalleryCreateContent = () => {
   };
 
   const handlePost = async () => {
-    if (!user) return alert('로그인이 필요합니다.');
-    if (images.length === 0 && existingImages.length === 0) return alert('최소 1개의 미디어가 필요합니다.');
-    if (!caption.trim()) return alert('설명을 입력해주세요.');
+    if (!user) return alert('Please sign in first.');
+    if (images.length === 0 && existingImages.length === 0) return alert('At least 1 media file is required.');
+    if (!caption.trim()) return alert('Please enter a description.');
 
     setIsUploading(true);
     setUploadProgress(0);

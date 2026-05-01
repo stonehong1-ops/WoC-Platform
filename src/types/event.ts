@@ -4,7 +4,8 @@ export type EventCategory = 'CONFERENCE' | 'WORKSHOP' | 'NETWORKING' | 'PARTY' |
 
 export interface Event {
   id: string;
-  title: string;
+  title: string;           // English title (required)
+  titleNative?: string;    // Native language title (optional)
   description: string;
   category: EventCategory;
   location: string;
@@ -14,6 +15,7 @@ export interface Event {
   color?: string; // Optional custom color for calendar bars
   hostId: string;
   hostName: string;
+  hostNameNative?: string;
   hostPhoto?: string;
   participants: string[];
   capacity?: number;

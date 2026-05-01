@@ -6,9 +6,9 @@ export default function WalletPage() {
   const [activeTab, setActiveTab] = useState('monthly');
 
   return (
-    <div className="min-h-screen bg-[#f8f9fa] pb-24">
+    <div className="min-h-screen bg-background pb-24">
       {/* Header */}
-      <div className="bg-white px-4 py-4 sticky top-0 z-10 border-b border-gray-100">
+      <div className="bg-surface px-4 py-4 sticky top-0 z-10 border-b border-gray-100">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-xl font-extrabold font-manrope">Class Shopping</h1>
           <button className="p-2">
@@ -112,7 +112,7 @@ export default function WalletPage() {
             img: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&q=80',
           },
         ].map((item, i) => (activeTab === 'monthly' || i % 2 === 0) && (
-          <div key={i} className="bg-white rounded-3xl p-4 flex gap-4 shadow-sm border border-gray-50">
+          <div key={i} className="bg-surface rounded-3xl p-4 flex gap-4 shadow-sm border border-gray-50">
             <div className="w-24 h-24 rounded-2xl overflow-hidden flex-shrink-0">
               <img src={item.img} alt="" className="w-full h-full object-cover" />
             </div>

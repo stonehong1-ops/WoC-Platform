@@ -133,7 +133,7 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
       onClick={onClose}
     >
       <div 
-        className="bg-white w-full relative flex flex-col overflow-hidden bottom-sheet-container animate-in slide-in-from-bottom duration-500"
+        className="bg-surface w-full relative flex flex-col overflow-hidden bottom-sheet-container animate-in slide-in-from-bottom duration-500"
         style={{ height: 'calc(100% - 48px)', borderRadius: '24px 24px 0 0' }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -149,16 +149,18 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
             {/* Section 1: Profile Photo */}
             <section className="flex flex-col items-center gap-6">
               <div className="relative group cursor-pointer" onClick={handlePhotoClick}>
-                <div className="w-32 h-32 rounded-squircle overflow-hidden border-4 border-white shadow-sm bg-surface-container">
+                <div className="w-32 h-32 rounded-squircle overflow-hidden border-4 border-surface shadow-sm bg-surface-container relative flex items-center justify-center">
+                  <span className="material-symbols-outlined text-on-surface-variant absolute" style={{ fontSize: '64px', fontVariationSettings: "'FILL' 1" }}>person</span>
                   {uploading ? (
-                    <div className="w-full h-full flex items-center justify-center bg-black/10">
+                    <div className="w-full h-full flex items-center justify-center bg-black/10 relative z-20">
                       <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
                     </div>
-                  ) : (
+                  ) : details.photoURL && details.photoURL !== 'https://lh3.googleusercontent.com/a/default-user' && (
                     <img 
-                      src={details.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(details.nickname || 'User')}&background=1A73E8&color=fff`} 
+                      src={details.photoURL} 
                       alt="Profile" 
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover relative z-10"
+                      onError={(e) => e.currentTarget.style.display = 'none'}
                     />
                   )}
                 </div>
@@ -199,16 +201,16 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
                 <div className="space-y-1.5 col-span-2 md:col-span-1">
                   <label className="text-xs font-semibold uppercase tracking-wider text-outline">Full Name (English)</label>
                   <input 
-                    className="w-full bg-white border border-outline-variant rounded px-4 py-2.5 text-on-surface focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none" 
+                    className="w-full bg-surface border border-outline-variant rounded px-4 py-2.5 text-on-surface focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none" 
                     type="text" 
                     value={details.nickname}
-                    onChange={(e) => setDetails(prev => ({ ...prev, nickname: e.target.value }))}
+                    onChange={(e) => setDetails(prev => ({ ...prev, nickname: e.target.value.replace(/[^a-zA-Z0-9_.\-\s]/g, '') }))}
                   />
                 </div>
                 <div className="space-y-1.5 col-span-2 md:col-span-1">
                   <label className="text-xs font-semibold uppercase tracking-wider text-outline">Native Name (Optional)</label>
                   <input 
-                    className="w-full bg-white border border-outline-variant rounded px-4 py-2.5 text-on-surface focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none" 
+                    className="w-full bg-surface border border-outline-variant rounded px-4 py-2.5 text-on-surface focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none" 
                     placeholder="e.g. ア레크산더" 
                     type="text"
                     value={details.nativeNickname}
@@ -218,7 +220,7 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
                 <div className="space-y-1.5 col-span-2">
                   <label className="text-xs font-semibold uppercase tracking-wider text-outline">Professional Title & Bio</label>
                   <textarea 
-                    className="w-full bg-white border border-outline-variant rounded px-4 py-2.5 text-on-surface focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none resize-none" 
+                    className="w-full bg-surface border border-outline-variant rounded px-4 py-2.5 text-on-surface focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none resize-none" 
                     rows={3}
                     value={details.bio}
                     onChange={(e) => setDetails(prev => ({ ...prev, bio: e.target.value }))}
@@ -251,7 +253,7 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
                   <div className="flex gap-2 w-full">
                     <div className="relative w-28 shrink-0">
                       <select 
-                        className="w-full bg-white border border-outline-variant rounded px-3 py-2.5 text-sm text-on-surface focus:ring-1 focus:ring-primary focus:border-primary appearance-none outline-none"
+                        className="w-full bg-surface border border-outline-variant rounded px-3 py-2.5 text-sm text-on-surface focus:ring-1 focus:ring-primary focus:border-primary appearance-none outline-none"
                         value={details.countryCode}
                         onChange={(e) => setDetails(prev => ({ ...prev, countryCode: e.target.value }))}
                       >
@@ -263,7 +265,7 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
                       <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-outline text-lg">expand_more</span>
                     </div>
                     <input 
-                      className="flex-1 min-w-0 bg-white border border-outline-variant rounded px-4 py-2.5 text-on-surface focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none" 
+                      className="flex-1 min-w-0 bg-surface border border-outline-variant rounded px-4 py-2.5 text-on-surface focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none" 
                       type="tel" 
                       placeholder="01012345678"
                       value={details.phoneNumber}
@@ -285,7 +287,7 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
                     type="button"
                     className={`flex-1 py-2 text-sm font-semibold rounded transition-all ${
                       details.gender === g 
-                        ? 'bg-white text-primary shadow-sm' 
+                        ? 'bg-surface text-primary shadow-sm' 
                         : 'text-on-surface-variant hover:text-on-surface'
                     }`}
                   >
@@ -315,7 +317,7 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
                       className={`group relative flex items-center p-4 border rounded cursor-pointer hover:shadow-md transition-all ${
                         active 
                           ? 'border-primary bg-primary-container' 
-                          : 'border-outline-variant bg-white hover:border-primary'
+                          : 'border-outline-variant bg-surface hover:border-primary'
                       }`}
                     >
                       <div className={`w-10 h-10 flex items-center justify-center rounded shrink-0 transition-colors ${
@@ -362,7 +364,7 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
         </div>
 
         {/* Docked Action Button */}
-        <div className="p-6 bg-white border-t border-gray-100 shrink-0">
+        <div className="p-6 bg-surface border-t border-outline-variant/30 shrink-0">
           <button 
             onClick={handleSave}
             disabled={saving || uploading}

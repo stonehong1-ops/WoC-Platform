@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useHistoryBack } from '@/hooks/useHistoryBack';
 
 interface AppSettingsPopupProps {
   isOpen: boolean;
@@ -48,6 +49,7 @@ const INSTRUCTIONS = [
 
 export default function AppSettingsPopup({ isOpen, onClose }: AppSettingsPopupProps) {
   const [activeTab, setActiveTab] = useState('chrome');
+  const { handleClose } = useHistoryBack(isOpen, onClose);
 
   if (!isOpen) return null;
 
@@ -63,7 +65,7 @@ export default function AppSettingsPopup({ isOpen, onClose }: AppSettingsPopupPr
             <h2 className="font-display text-2xl font-black tracking-tight text-on-surface uppercase">App Setting</h2>
           </div>
           <button 
-            onClick={onClose}
+            onClick={handleClose}
             className="w-10 h-10 flex items-center justify-center rounded-full bg-on-surface/[0.04] text-on-surface/40 hover:bg-on-surface/[0.08]"
           >
             <span className="material-symbols-outlined text-2xl">close</span>

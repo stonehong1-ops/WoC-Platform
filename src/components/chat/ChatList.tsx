@@ -6,6 +6,7 @@ import { ChatRoom } from '@/types/chat';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { safeDate } from '@/lib/utils/safeData';
 
 interface ChatListProps {
   onSelectRoom: (roomId: string) => void;
@@ -60,9 +61,10 @@ export default function ChatList({ onSelectRoom, selectedRoomId }: ChatListProps
           {rooms.map((room) => {
             const isSelected = selectedRoomId === room.id;
             const unreadCount = room.unreadCounts?.[user?.uid || ''] || 0;
-            const lastTime = room.lastMessageTime 
-              ? formatDistanceToNow(room.lastMessageTime.toDate(), { addSuffix: true, locale: ko })
-              : '';
+            const lastTime = (() => {
+              const d = safeDate(room.lastMessageTime);
+              return d ? formatDistanceToNow(d, { addSuffix: true, locale: ko }) : '';
+            })();
 
             return (
               <button
@@ -71,12 +73,16 @@ export default function ChatList({ onSelectRoom, selectedRoomId }: ChatListProps
                 className={`w-full flex items-center gap-4 p-5 transition-all text-left ${isSelected ? 'bg-primary/5' : 'hover:bg-gray-50'}`}
               >
                 <div className="relative shrink-0">
-                  <div className="w-14 h-14 rounded-full overflow-hidden bg-gray-100 ring-1 ring-gray-100 shadow-inner">
-                    <img 
-                      src={room.imageUrl || "https://lh3.googleusercontent.com/a/default-user"} 
-                      alt={room.name} 
-                      className="w-full h-full object-cover" 
-                    />
+                  <div className="w-14 h-14 rounded-full overflow-hidden bg-gray-100 ring-1 ring-gray-100 shadow-inner flex items-center justify-center">
+                    {room.imageUrl ? (
+                      <img 
+                        src={room.imageUrl} 
+                        alt={room.name} 
+                        className="w-full h-full object-cover" 
+                      />
+                    ) : (
+                      <span className="material-symbols-outlined text-gray-400 text-[28px]">person</span>
+                    )}
                   </div>
                   {room.type === 'notice' && (
                     <div className="absolute -top-1 -right-1 bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center border-2 border-white shadow-sm">

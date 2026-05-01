@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useRef } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -56,17 +56,38 @@ export default function CreateStay({ onClose, onSuccess }: CreateStayProps) {
       const imageUrl = await plazaService.uploadMedia(mediaFile, (p) => setUploadProgress(Math.round(p)));
 
       await stayService.registerStay({
+        groupId: '', // Will be set when creating from group context
         title,
         type,
-        location,
-        description,
-        pricePerNight: parseInt(price),
-        imageUrl,
-        hostId: user.uid,
-        hostName: user.displayName || 'Anonymous',
-        hostPhoto: user.photoURL || '',
-        hostRole: 'Hobbyist', // Default or could be input
+        location: {
+          address: location,
+          city: '',
+          district: '',
+        },
+        pricing: {
+          currency: 'KRW',
+          baseRate: parseInt(price),
+        },
+        images: [imageUrl],
+        checkInTime: '15:00',
+        checkOutTime: '11:00',
+        maxGuests: 2,
+        doorCode: '9999',
+        payment: {
+          methods: [
+            { type: 'bank_domestic', enabled: false },
+            { type: 'bank_international', enabled: false },
+            { type: 'card', enabled: false },
+          ],
+          transferDeadlineHours: 2,
+        },
+        host: {
+          userId: user.uid,
+          name: user.displayName || 'Anonymous',
+          photo: user.photoURL || '',
+        },
         amenities,
+        isActive: false,
         isNewlyListed: true,
       });
 
@@ -92,7 +113,7 @@ export default function CreateStay({ onClose, onSuccess }: CreateStayProps) {
             <h3 className="text-[20px] font-black text-gray-900 uppercase tracking-tighter">Host a Stay</h3>
           </div>
           <button onClick={onClose} className="w-10 h-10 rounded-full flex items-center justify-center bg-gray-50 hover:bg-gray-100 transition-all text-gray-400">
-            <span className="material-symbols-outlined text-[20px]">close</span>
+            <span className="material-symbols-rounded text-[20px]">close</span>
           </button>
         </div>
 
@@ -107,7 +128,7 @@ export default function CreateStay({ onClose, onSuccess }: CreateStayProps) {
             ) : (
               <>
                 <div className="w-14 h-14 rounded-full bg-white shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                  <span className="material-symbols-outlined text-gray-300 text-[28px]">add_a_photo</span>
+                  <span className="material-symbols-rounded text-gray-300 text-[28px]">add_a_photo</span>
                 </div>
                 <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest">Main Lobby Photo</span>
               </>
@@ -178,7 +199,7 @@ export default function CreateStay({ onClose, onSuccess }: CreateStayProps) {
                     amenities.includes(opt) ? 'bg-primary text-white scale-105' : 'bg-gray-50 text-gray-400 hover:bg-gray-100'
                   }`}
                 >
-                  <span className="material-symbols-outlined text-[16px]">{opt}</span>
+                  <span className="material-symbols-rounded text-[16px]">{opt}</span>
                   {opt}
                 </button>
               ))}

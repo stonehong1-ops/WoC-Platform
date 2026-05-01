@@ -22,7 +22,7 @@ const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
 
   const getCoverFallback = (cat: string) => {
     const c = cat.toLowerCase();
-    if (c.includes('studio') || c.includes('class')) return "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?auto=format&fit=crop&w=2070&q=80"; // Dance/Yoga Studio
+    if (c.includes('studio') || c.includes('class')) return "https://images.unsplash.com/photo-1545128485-c400e7702796?auto=format&fit=crop&w=2070&q=80"; // Dance/Yoga Studio
     if (c.includes('shop') || c.includes('commerce')) return "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=2070&q=80"; // Shop
     if (c.includes('stay') || c.includes('hotel')) return "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=2070&q=80"; // Stay/Room
     if (c.includes('rental') || c.includes('equipment')) return "https://images.unsplash.com/photo-1599839619722-39751411ea63?auto=format&fit=crop&w=2070&q=80"; // Rental space

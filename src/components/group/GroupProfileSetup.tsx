@@ -8,6 +8,7 @@ import GroupGalleryEditor from "./GroupGalleryEditor";
 import GroupMembershipEditor from "./GroupMembershipEditor";
 import GroupContactEditor from "./GroupContactEditor";
 import GroupBoardEditor from "./GroupBoardEditor";
+import GroupAccountEditor from "./GroupAccountEditor";
 
 interface GroupProfileSetupProps {
   group: Group;
@@ -64,6 +65,15 @@ export default function GroupProfileSetup({ group, isLoaded, onBack }: GroupProf
       bgColor: "#fdf2f8",
       description: "그룹 멤버들이 활동할 게시판 카테고리를 설정하세요. 활동 목적에 맞는 게시판 구성이 필요합니다."
     },
+    { 
+      id: 'account', 
+      title: "6. Account Settings", 
+      subtitle: "Bank Name, Account, Holder", 
+      icon: "account_balance",
+      color: "#8b5cf6",
+      bgColor: "#f3e8ff",
+      description: "그룹의 결제 대금을 정산받을 계좌 정보를 등록하세요. 서비스 활성화를 위한 필수 정보입니다."
+    },
   ];
 
   // Calculate progress based on existing group data
@@ -74,11 +84,12 @@ export default function GroupProfileSetup({ group, isLoaded, onBack }: GroupProf
     if (group.representative?.name || group.address) completed++;
     if (group.gallery && group.gallery.length > 0) completed++;
     if (group.boards && group.boards.length > 0) completed++;
-    return Math.round((completed / 5) * 100);
+    if (group.bankDetails?.bankName && group.bankDetails?.accountNumber) completed++;
+    return Math.round((completed / 6) * 100);
   };
 
   const progress = calculateProgress();
-  const completedCount = Math.round((progress / 100) * 5);
+  const completedCount = Math.round((progress / 100) * 6);
 
   return (
     <div className="flex flex-col min-h-screen bg-white relative">
@@ -126,7 +137,7 @@ export default function GroupProfileSetup({ group, isLoaded, onBack }: GroupProf
                   ></div>
                 </div>
               </div>
-              <p className="text-xs font-bold text-[#515981]/60 uppercase tracking-widest text-right">{completedCount} of 5 steps finished</p>
+              <p className="text-xs font-bold text-[#515981]/60 uppercase tracking-widest text-right">{completedCount} of 6 steps finished</p>
             </div>
           </div>
 
@@ -197,6 +208,9 @@ export default function GroupProfileSetup({ group, isLoaded, onBack }: GroupProf
         )}
         {activePopup === 'boards' && (
           <GroupBoardEditor group={group} onClose={() => setActivePopup(null)} />
+        )}
+        {activePopup === 'account' && (
+          <GroupAccountEditor group={group} onClose={() => setActivePopup(null)} />
         )}
       </AnimatePresence>
     </div>

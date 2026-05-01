@@ -27,7 +27,7 @@ const GroupRoleEditor: React.FC<GroupRoleEditorProps> = ({ group, onClose }) => 
       onClose();
     } catch (error) {
       console.error("Error saving permissions:", error);
-      alert("권한 설정 저장에 실패했습니다.");
+      alert("Failed to save role settings.");
     } finally {
       setIsSaving(false);
     }

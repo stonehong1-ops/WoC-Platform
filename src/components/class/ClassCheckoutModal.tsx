@@ -21,7 +21,7 @@ const ClassCheckoutModal: React.FC<ClassCheckoutModalProps> = ({ isOpen, onClose
 
   const handleRegister = async () => {
     if (!user || !profile) {
-      toast.error("로그인이 필요합니다.");
+      toast.error("Please sign in first.");
       return;
     }
 
@@ -32,7 +32,7 @@ const ClassCheckoutModal: React.FC<ClassCheckoutModalProps> = ({ isOpen, onClose
         groupId: cls.groupId,
         userId: user.uid,
         classTitle: cls.title,
-        applicantName: profile.nickname || profile.nativeNickname || '이름 없음',
+        applicantName: profile.nickname || profile.nativeNickname || 'Unknown',
         userAvatar: profile.photoURL || undefined,
         role: role === 'Solo' ? undefined : role,
         status: 'PAYMENT_PENDING',
@@ -43,11 +43,11 @@ const ClassCheckoutModal: React.FC<ClassCheckoutModalProps> = ({ isOpen, onClose
         contactNumber: profile.phoneNumber || undefined,
       });
       
-      toast.success("클래스 신청이 완료되었습니다!");
+      toast.success("Class registration completed!");
       onClose();
     } catch (error) {
       console.error("클래스 신청 오류:", error);
-      toast.error("클래스 신청에 실패했습니다.");
+      toast.error("Class registration failed.");
     } finally {
       setLoading(false);
     }
@@ -59,7 +59,7 @@ const ClassCheckoutModal: React.FC<ClassCheckoutModalProps> = ({ isOpen, onClose
         
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-outline/10">
-          <h2 className="font-headline font-extrabold text-xl text-on-surface">클래스 신청</h2>
+          <h2 className="font-headline font-extrabold text-xl text-on-surface">Class Registration</h2>
           <button onClick={onClose} className="p-2 rounded-full hover:bg-surface-variant text-on-surface-variant transition-colors">
             <span className="material-symbols-outlined">close</span>
           </button>
@@ -90,7 +90,7 @@ const ClassCheckoutModal: React.FC<ClassCheckoutModalProps> = ({ isOpen, onClose
 
           {/* Registration Options */}
           <div>
-            <h4 className="font-bold text-sm text-on-surface mb-3">역할 선택 (Role)</h4>
+            <h4 className="font-bold text-sm text-on-surface mb-3">Select Role</h4>
             <div className="grid grid-cols-3 gap-2">
               {['Leader', 'Follower', 'Solo'].map(r => (
                 <button
@@ -106,17 +106,17 @@ const ClassCheckoutModal: React.FC<ClassCheckoutModalProps> = ({ isOpen, onClose
 
           {/* Payment Info */}
           <div className="bg-surface-container-lowest border border-outline/20 rounded-xl p-4 space-y-3">
-            <h4 className="font-bold text-sm text-on-surface border-b border-outline/10 pb-2">결제 정보</h4>
+            <h4 className="font-bold text-sm text-on-surface border-b border-outline/10 pb-2">Payment Info</h4>
             <div className="flex justify-between text-sm">
-              <span className="text-on-surface-variant">상품 금액</span>
+              <span className="text-on-surface-variant">Amount</span>
               <span className="font-medium text-on-surface">{(cls.amount || 0).toLocaleString()} {cls.currency || 'KRW'}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-on-surface-variant">할인 금액</span>
+              <span className="text-on-surface-variant">Discount</span>
               <span className="font-medium text-rose-500">- 0 {cls.currency || 'KRW'}</span>
             </div>
             <div className="flex justify-between items-end pt-2 border-t border-outline/10">
-              <span className="font-bold text-on-surface">총 결제 금액</span>
+              <span className="font-bold text-on-surface">Total</span>
               <span className="font-headline font-black text-xl text-primary">{(cls.amount || 0).toLocaleString()} {cls.currency || 'KRW'}</span>
             </div>
           </div>
@@ -130,7 +130,7 @@ const ClassCheckoutModal: React.FC<ClassCheckoutModalProps> = ({ isOpen, onClose
             className="w-full bg-primary text-on-primary font-bold py-4 rounded-xl shadow-md hover:shadow-lg transition-all flex justify-center items-center gap-2 disabled:opacity-50"
           >
             {loading && <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>}
-            결제 및 신청하기
+            Register & Pay
           </button>
         </div>
 

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useHistoryBack } from '@/hooks/useHistoryBack';
 
 interface MediaItem {
   url: string;
@@ -14,6 +15,7 @@ interface MediaViewerProps {
 
 export default function MediaViewer({ items, initialIndex, isOpen, onClose }: MediaViewerProps) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
+  const { handleClose } = useHistoryBack(isOpen, onClose);
 
   // Reset index when opened
   useEffect(() => {
@@ -46,7 +48,7 @@ export default function MediaViewer({ items, initialIndex, isOpen, onClose }: Me
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-0 animate-in fade-in duration-300 font-manrope">
       <div 
         className="absolute inset-0 bg-black/98 backdrop-blur-2xl transition-opacity animate-in fade-in duration-500" 
-        onClick={onClose} 
+        onClick={handleClose} 
       />
       
       {/* Top Header Actions */}
@@ -59,7 +61,7 @@ export default function MediaViewer({ items, initialIndex, isOpen, onClose }: Me
           </div>
         </div>
         <button 
-          onClick={onClose}
+          onClick={handleClose}
           className="pointer-events-auto w-12 h-12 rounded-full bg-white/10 text-white flex items-center justify-center backdrop-blur-md hover:bg-white/20 transition-all active:scale-90"
         >
           <span className="material-symbols-outlined text-[24px]">close</span>

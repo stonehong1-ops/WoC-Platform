@@ -25,7 +25,7 @@ export default function ProfileSetupOverlay() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.nickname_en || !formData.nickname_ko) {
-      alert('닉네임을 입력해주세요.');
+      alert('Please enter a nickname.');
       return;
     }
     localStorage.setItem('woc_user_profile', JSON.stringify({
@@ -68,7 +68,7 @@ export default function ProfileSetupOverlay() {
                 type="text" 
                 placeholder="예: stone_tangogo"
                 value={formData.nickname_en}
-                onChange={(e) => setFormData({...formData, nickname_en: e.target.value.toLowerCase()})}
+                onChange={(e) => setFormData({...formData, nickname_en: e.target.value.replace(/[^a-zA-Z0-9_.\-\s]/g, '').toLowerCase()})}
                 className="w-full bg-glass border border-glass-border rounded-2xl px-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-mono"
               />
             </div>

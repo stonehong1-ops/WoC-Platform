@@ -211,7 +211,7 @@ export default function HistoryPage() {
 
       {/* Scrollable Tab Bar */}
       {!selectedDetail && (
-        <div className="w-full bg-white/90 backdrop-blur-xl border-b border-slate-100 overflow-x-auto sticky top-0 z-30 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <div className="w-full bg-surface/90 backdrop-blur-xl border-b border-slate-100 overflow-x-auto sticky top-0 z-30 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           <div className="flex items-center gap-2 px-4 py-3 min-w-max">
             {TABS.map(tab => (
               <button
@@ -309,7 +309,7 @@ export default function HistoryPage() {
       {/* Detail Overlay */}
       {selectedDetail && (
         <div className="fixed inset-0 bg-surface z-40 overflow-y-auto">
-          <header className="bg-white/80 backdrop-blur-xl docked full-width top-0 border-b border-slate-200 shadow-sm fixed left-0 w-full z-50 flex justify-between items-center px-6 h-16 max-w-[896px] left-1/2 -translate-x-1/2">
+          <header className="bg-surface/80 backdrop-blur-xl docked full-width top-0 border-b border-slate-200 shadow-sm fixed left-0 w-full z-50 flex justify-between items-center px-6 h-16 max-w-[896px] left-1/2 -translate-x-1/2">
             <button 
               onClick={() => setSelectedDetail(null)}
               className="text-[#0057bd] hover:bg-slate-100 transition-colors active:scale-95 duration-200 p-2 -ml-2 rounded-full flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-primary-container"
@@ -523,7 +523,7 @@ export default function HistoryPage() {
 
           {/* Bottom Action Area */}
           {selectedDetail.status === 'PAYMENT_PENDING' && (
-            <div className="fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-md border-t border-surface-container z-40 pb-safe pt-4 px-6 max-w-[896px] left-1/2 -translate-x-1/2">
+            <div className="fixed bottom-0 left-0 w-full bg-surface/90 backdrop-blur-md border-t border-surface-container z-40 pb-safe pt-4 px-6 max-w-[896px] left-1/2 -translate-x-1/2">
               <div className="mb-4">
                 <button 
                   onClick={() => {

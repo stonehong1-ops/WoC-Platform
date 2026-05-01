@@ -34,7 +34,7 @@ export default function GroupBasicEditor({ group, onClose }: GroupBasicEditorPro
       setFormData(prev => ({ ...prev, [field]: downloadURL }));
     } catch (error) {
       console.error("Error uploading image:", error);
-      alert("이미지 업로드에 실패했습니다.");
+      alert("Failed to upload image.");
     } finally {
       setUploadingField(null);
     }
@@ -42,7 +42,7 @@ export default function GroupBasicEditor({ group, onClose }: GroupBasicEditorPro
 
   const handleSave = async () => {
     if (!formData.name || !formData.slug) {
-      alert("이름과 슬러그는 필수 항목입니다.");
+      alert("Name and slug are required.");
       return;
     }
 
@@ -58,7 +58,7 @@ export default function GroupBasicEditor({ group, onClose }: GroupBasicEditorPro
       onClose();
     } catch (error) {
       console.error("Error saving basic info:", error);
-      alert("정보 저장 중 오류가 발생했습니다.");
+      alert("Failed to save information.");
     } finally {
       setIsSaving(false);
     }
