@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { GoogleMap, Marker, Autocomplete } from '@react-google-maps/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from '@/components/providers/LocationProvider';
+import { useNavigation } from '@/components/providers/NavigationProvider';
 import { db } from '@/lib/firebase/clientApp';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { CITY_COORDINATES, DEFAULT_COORDINATES } from '@/lib/constants/locations';
@@ -24,7 +25,7 @@ interface Venue {
   brand?: string;
 }
 
-const mapContainerStyle = { width: '100%', height: '100dvh' };
+const mapContainerStyle = { width: '100%', height: '100%' };
 const CIRCLE_PATH = 0;
 
 const getKakaoMapUrl = (v: Venue) => `https://map.kakao.com/link/map/${v.nameKo || v.name},${v.coordinates.latitude},${v.coordinates.longitude}`;
@@ -43,9 +44,27 @@ export default function MapComponent({
   isLoaded: boolean; 
 }) {
   const { location } = useLocation();
+  const { setHeaderShrink } = useNavigation();
+  const shrinkTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
   const [bounds, setBounds] = useState<google.maps.LatLngBounds | null>(null);
+
+  const triggerHeaderShrink = React.useCallback(() => {
+    setHeaderShrink(true);
+    if (shrinkTimerRef.current) clearTimeout(shrinkTimerRef.current);
+    shrinkTimerRef.current = setTimeout(() => {
+      setHeaderShrink(false);
+    }, 2500);
+  }, [setHeaderShrink]);
+
+  useEffect(() => {
+    return () => {
+      if (shrinkTimerRef.current) clearTimeout(shrinkTimerRef.current);
+      setHeaderShrink(false);
+    };
+  }, [setHeaderShrink]);
   const [mapBounds, setMapBounds] = useState<[number, number, number, number] | null>(null);
   const [venues, setVenues] = useState<Venue[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -275,7 +294,7 @@ export default function MapComponent({
   };
 
   return (
-    <div className="relative w-full h-screen overflow-hidden bg-surface-container select-none font-body">
+    <div className="relative w-full h-full overflow-hidden bg-surface-container select-none font-body">
       {/* Layer 0: Map */}
       <div className="absolute inset-0 z-0">
         {isLoaded ? (
@@ -300,6 +319,7 @@ export default function MapComponent({
               }
             }}
             onBoundsChanged={() => {
+              triggerHeaderShrink();
               if (map) {
                 const c = map.getCenter();
                 const z = map.getZoom();
@@ -454,7 +474,7 @@ export default function MapComponent({
       </div>
 
       {/* Layer 1: Floating Filter Icons (Top) */}
-      <div className="absolute top-36 left-0 right-0 z-20 flex gap-2.5 overflow-x-auto px-6 no-scrollbar pointer-events-auto py-2">
+      <div className="absolute top-2 left-0 right-0 z-20 flex gap-2.5 overflow-x-auto px-6 no-scrollbar pointer-events-auto py-2">
         {categories.map((cat) => (
           <button
             key={cat}
@@ -476,7 +496,7 @@ export default function MapComponent({
       </div>
 
       {/* Layer 3: Search & Venue Area (Kinetic Expansion) */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-48px)] max-w-sm z-30 pointer-events-auto">
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-48px)] max-w-sm z-30 pointer-events-auto">
         
         {/* Floatable Buttons (Hide when expanded) */}
         <AnimatePresence>

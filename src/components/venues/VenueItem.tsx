@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Edit2, Trash2, MapPin, Star, MoreVertical } from 'lucide-react';
@@ -53,8 +53,9 @@ export default function VenueItem({ venue, onEdit, onDelete }: VenueItemProps) {
               </div>
             )}
           </div>
-          <h3 className="font-headline font-bold text-[#2d3435] text-sm truncate uppercase tracking-tight">
+          <h3 className="font-headline font-bold text-[#2d3435] text-sm uppercase tracking-tight truncate">
             {venue.name}
+            {venue.nameKo && <span className="text-[0.8em] font-medium tracking-normal normal-case text-[#596061] ml-1.5">{venue.nameKo}</span>}
           </h3>
           <div className="flex items-center gap-1 mt-1 text-[#596061]">
             <MapPin size={10} />

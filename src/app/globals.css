@@ -2,7 +2,7 @@
 @import "tailwindcss";
 
 :root {
-  --background: #F1F5F9;
+  --background: #FAF8FF;
   --foreground: #242c51;
   --primary: #0057bd;
   --on-surface: #242c51;
@@ -25,7 +25,7 @@
   --color-surface-container: #e4e7ff;
   --color-on-primary: #f0f2ff;
   --color-on-error-container: #570008;
-  --color-background: #F1F5F9;
+  --color-background: #FAF8FF;
   --color-surface-container-low: #efefff;
   --color-secondary-container: #c7cfff;
   --color-surface-container-lowest: #ffffff;
@@ -124,6 +124,8 @@
     min-height: 100dvh;
     overflow-x: hidden;
     font-family: var(--font-body);
+    margin: 0;
+    padding: 0;
   }
 
   h1, h2, h3, h4, .font-headline {
@@ -154,7 +156,6 @@
     word-wrap: normal;
     white-space: nowrap;
     direction: ltr;
-    font-size: 24px;
   }
 
   .font-variation-fill {

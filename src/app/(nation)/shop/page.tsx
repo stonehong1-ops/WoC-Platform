@@ -19,7 +19,7 @@ const SORT_OPTIONS: { key: SortOption; label: string; icon: string }[] = [
 ];
 
 const SHOP_FILTER_DEFS: Record<string, { label: string; fullLabel?: string; icon?: string; categories?: string[] }> = {
-  all: { label: 'All', fullLabel: 'All Products' },
+  all: { label: 'All', fullLabel: 'All' },
   w_shoes: { label: 'Shoes', fullLabel: 'Woman Shoes', icon: 'face_2', categories: ['shoes', 'w_shoes', 'woman shoes', "women's shoes"] },
   m_shoes: { label: 'Shoes', fullLabel: 'Man Shoes', icon: 'footprint', categories: ['m_shoes', 'man shoes', "men's shoes"] },
   w_wear: { label: 'Wear', fullLabel: 'Woman Wear', icon: 'digital_wellbeing', categories: ['wear', 'dress', 'w_wear', 'dresses', 'woman wear', 'yoga wear'] },
@@ -143,12 +143,118 @@ export default function ShopPage() {
   };
 
   return (
-    <main className="max-w-md mx-auto w-full relative">
+    <main className="max-w-md mx-auto w-full relative min-h-screen bg-[#FAF8FF]">
       <style dangerouslySetInnerHTML={{ __html: `
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .material-symbols-rounded { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
       `}} />
+
+      {/* Filter & Sort Bar */}
+      <div className="w-full bg-[#FAF8FF] border-b border-slate-100/50 px-3 py-2 flex flex-col gap-3">
+        {/* Scrollable Tabs */}
+        <div className="w-full flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+          {shopFilters.map((filter) => (
+            <button
+              key={filter.key}
+              onClick={() => setActiveFilter(filter.key)}
+              className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[12px] font-bold tracking-wide transition-all whitespace-nowrap ${
+                activeFilter === filter.key
+                  ? 'bg-[#1E293B] text-white shadow-sm'
+                  : 'bg-slate-50 text-slate-500 border border-slate-100 hover:bg-slate-100'
+              }`}
+            >
+              {filter.fullLabel || filter.label}
+            </button>
+          ))}
+        </div>
+        
+        {/* Bottom Actions (Text + Arrow) */}
+        <div className="w-full flex items-center justify-between px-1">
+          <div className="text-[11px] font-medium text-[#007AFF]">
+            {filteredProducts.length} items
+          </div>
+          
+          <div className="flex items-center gap-4">
+            {/* Brand Filter Trigger */}
+            <button 
+              onClick={() => {
+                setShowBrandFilter(!showBrandFilter);
+                if (!showBrandFilter) setShowSortDropdown(false);
+              }}
+              className={`flex items-center gap-0.5 text-[12px] font-bold transition-all ${
+                activeBrand !== 'All' 
+                  ? 'text-blue-600' 
+                  : 'text-slate-600 hover:text-slate-800'
+              }`}
+            >
+              {activeBrand === 'All' ? 'Brand' : activeBrand}
+              <span className="material-symbols-outlined text-[14px]">expand_more</span>
+            </button>
+
+            {/* Sort Trigger */}
+            <button 
+              onClick={() => {
+                setShowSortDropdown(!showSortDropdown);
+                if (!showSortDropdown) setShowBrandFilter(false);
+              }}
+              className="flex items-center gap-0.5 text-[12px] font-bold text-slate-600 hover:text-slate-800 transition-all"
+            >
+              {SORT_OPTIONS.find(o => o.key === sortOption)?.label || 'Sort'}
+              <span className="material-symbols-outlined text-[14px]">expand_more</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Brand Selector Modal/Dropdown */}
+      {showBrandFilter && (
+        <div className="absolute top-[90px] left-4 right-4 z-40 bg-white rounded-2xl shadow-2xl border border-slate-100 p-4 max-h-[300px] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="flex items-center justify-between mb-3 px-1">
+            <span className="text-[13px] font-bold text-slate-800">Filter by Brand</span>
+            <button onClick={() => setShowBrandFilter(false)} className="text-slate-400 hover:text-slate-600">
+              <span className="material-symbols-outlined text-[18px]">close</span>
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {brands.map(brand => (
+              <button
+                key={brand}
+                onClick={() => {
+                  setActiveBrand(brand);
+                  setShowBrandFilter(false);
+                }}
+                className={`px-3 py-2 rounded-xl text-[12px] font-semibold text-left transition-all ${
+                  activeBrand === brand ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                {brand}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Sort Options Modal/Dropdown */}
+      {showSortDropdown && (
+        <div className="absolute top-[90px] right-4 z-40 bg-white rounded-2xl shadow-2xl border border-slate-100 py-2 min-w-[160px] animate-in fade-in slide-in-from-top-2 duration-300">
+          {SORT_OPTIONS.map(opt => (
+            <button
+              key={opt.key}
+              onClick={() => {
+                setSortOption(opt.key);
+                setShowSortDropdown(false);
+              }}
+              className={`w-full px-4 py-2.5 flex items-center gap-3 hover:bg-slate-50 transition-colors text-left ${
+                sortOption === opt.key ? 'text-blue-600 font-bold' : 'text-slate-600 font-medium'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[18px]">{opt.icon}</span>
+              <span className="text-[13px]">{opt.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* ⑤ Product Grid (필터+정렬 결과) */}
       <div className="pt-4 px-4 mb-10 text-left min-h-[400px]">
@@ -211,17 +317,6 @@ export default function ShopPage() {
                         <span className="text-[10px] text-[#596061] line-through">₩{product.price?.toLocaleString()}</span>
                       )}
                     </div>
-                    <button
-                      onClick={(e) => handleToggleLike(e, product)}
-                      className={`p-1.5 rounded-lg transition-all ${
-                        likedIds.has(product.id) ? 'bg-red-50 text-red-500' : 'bg-[#d8e2ff] text-[#004fa8] hover:bg-primary hover:text-white'
-                      }`}
-                      disabled={togglingLike === product.id}
-                    >
-                      <span className="material-symbols-rounded text-lg leading-none" style={{ fontVariationSettings: likedIds.has(product.id) ? "'FILL' 1" : "'FILL' 0" }}>
-                        favorite
-                      </span>
-                    </button>
                   </div>
                 </div>
               </div>

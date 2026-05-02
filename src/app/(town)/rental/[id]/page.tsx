@@ -9,6 +9,9 @@ import { chatService } from '@/lib/firebase/chatService';
 import { groupService } from '@/lib/firebase/groupService';
 import { RentalSpace } from '@/types/rental';
 import { Group } from '@/types/group';
+import SectionCard from '@/components/ui/SectionCard';
+import InfoRow from '@/components/ui/InfoRow';
+import CollapseSection from '@/components/ui/CollapseSection';
 
 export default function RentalDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -177,7 +180,7 @@ export default function RentalDetailPage({ params }: { params: Promise<{ id: str
   }
 
   return (
-    <main className="max-w-md mx-auto min-h-screen bg-white relative pb-[100px]">
+    <main className="max-w-md mx-auto min-h-[100dvh] bg-white relative z-50">
       <style dangerouslySetInnerHTML={{ __html: `
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -189,17 +192,14 @@ export default function RentalDetailPage({ params }: { params: Promise<{ id: str
         <button onClick={() => router.back()} className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'}`}>
           <span className="material-symbols-rounded text-xl">arrow_back</span>
         </button>
-        <div className={`text-sm font-bold truncate max-w-[180px] transition-opacity ${isScrolled ? 'opacity-100 text-[#2d3435]' : 'opacity-0'}`}>{space.title}</div>
+        <div className={`text-base font-bold truncate max-w-[180px] transition-opacity ${isScrolled ? 'opacity-100 text-[#2d3435]' : 'opacity-0'}`}>{space.title}</div>
         <div className="flex items-center gap-2">
-          <button onClick={handleToggleLike}
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? 'bg-slate-100' : 'bg-black/20 backdrop-blur-sm'} ${isLiked ? 'text-red-500' : isScrolled ? 'text-[#2d3435]' : 'text-white'}`}>
-            <span className="material-symbols-rounded text-xl" style={{ fontVariationSettings: isLiked ? "'FILL' 1" : "'FILL' 0" }}>favorite</span>
-          </button>
+          {/* Heart button removed from header to match Shop */}
         </div>
       </div>
 
-      {/* ━━━ Scrollable Content ━━━ */}
-      <div className="flex-1 w-full overflow-y-auto no-scrollbar pb-[80px]">
+      {/* ━━━ Content ━━━ */}
+      <div className="pb-[100px]">
 
         {/* 1) Image Carousel */}
         <div className="relative aspect-square w-full overflow-hidden bg-[#f2f4f4]">
@@ -228,36 +228,37 @@ export default function RentalDetailPage({ params }: { params: Promise<{ id: str
                 </button>
               )}
               {images.length > 1 && (
-                <div className="absolute bottom-4 left-0 right-0 flex items-center justify-center">
-                  <div className="flex gap-1.5 items-center">
+                <div className="absolute bottom-4 left-4 flex flex-col items-start z-10" onClick={(e) => e.stopPropagation()}>
+                  <span className="bg-black/40 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-0.5 rounded-full mb-1">{currentImg + 1}/{images.length}</span>
+                  <div className="flex gap-1.5 items-center pl-1">
                     {images.map((_, i) => (
-                      <button key={i} onClick={() => setCurrentImg(i)}
+                      <button key={i} onClick={(e) => { e.stopPropagation(); setCurrentImg(i); }}
                         className={`rounded-full transition-all ${i === currentImg ? 'w-5 h-2 bg-white' : 'w-2 h-2 bg-white/50'}`} />
                     ))}
                   </div>
-                  <span className="absolute right-4 bg-black/40 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{currentImg + 1}/{images.length}</span>
                 </div>
               )}
+
+              {/* Stats - Floating on the bottom right (Shop pattern) */}
+              <div className="absolute bottom-4 right-4 flex items-center gap-2 z-20" onClick={(e) => e.stopPropagation()}>
+                <button onClick={(e) => { e.stopPropagation(); handleToggleLike(e); }} className="px-3 h-8 rounded-full bg-black/40 backdrop-blur-sm flex items-center gap-1.5 text-white transition-transform active:scale-95">
+                  <span className="material-symbols-rounded text-[18px]" style={{ fontVariationSettings: isLiked ? "'FILL' 1" : "'FILL' 0", color: isLiked ? '#ef4444' : 'white' }}>favorite</span>
+                  <span className="text-[11px] font-bold">{space.likesCount || 0}</span>
+                </button>
+                <button onClick={(e) => { e.stopPropagation(); }} className="px-3 h-8 rounded-full bg-black/40 backdrop-blur-sm flex items-center gap-1.5 text-white transition-transform active:scale-95">
+                  <span className="material-symbols-rounded text-[18px]">chat_bubble</span>
+                  <span className="text-[11px] font-bold">0</span>
+                </button>
+              </div>
             </div>
           )}
         </div>
 
-        {/* 2) Title & Stats */}
+        {/* 2) Title */}
         <div className="px-4 pt-5 pb-4 flex justify-between items-start border-b border-[#f2f4f4]">
           <div className="flex-1 min-w-0 pr-4">
             <p className="text-[10px] font-black text-[#acb3b4] uppercase tracking-widest leading-none mb-1.5">{group?.name || 'FREESTYLE TANGO'}</p>
             <h1 className="text-xl font-black text-[#2d3435] leading-tight font-headline">{space.title}</h1>
-          </div>
-          <div className="flex items-center gap-3 text-[#acb3b4] shrink-0 mt-3.5">
-            <span className="flex items-center gap-0.5 text-[11px]">
-              <span className="material-symbols-rounded text-xs">visibility</span> {viewerCount}
-            </span>
-            <span className="flex items-center gap-0.5 text-[11px]">
-              <span className="material-symbols-rounded text-xs" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span> {space.likesCount || 0}
-            </span>
-            <span className="flex items-center gap-0.5 text-[11px]">
-              <span className="material-symbols-rounded text-xs">chat_bubble</span> 0
-            </span>
           </div>
         </div>
 
@@ -273,123 +274,104 @@ export default function RentalDetailPage({ params }: { params: Promise<{ id: str
           </div>
         </div>
 
-        {/* 3) Rental Options Form (Matching Fit & Options) */}
-        <div className="mx-4 my-4 border border-[#e0e4e5] rounded-2xl overflow-hidden">
-          <div className="bg-[#f8f9fa] px-4 py-2.5 border-b border-[#e0e4e5] flex items-center gap-2">
-            <span className="material-symbols-rounded text-sm text-primary">calendar_month</span>
-            <p className="text-[10px] font-black text-primary uppercase tracking-widest">Reservation Options</p>
-          </div>
-          <div className="px-4 py-4 space-y-4">
-            <div>
-              <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-2">Desired Date <span className="text-red-400">*</span></p>
-              <input required type="date" value={date} onChange={e => setDate(e.target.value)}
-                className="w-full bg-white border border-[#e0e4e5] rounded-xl px-4 py-3 text-xs font-bold text-[#2d3435] focus:border-primary focus:ring-1 outline-none transition-all" />
-            </div>
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-2">Start Time <span className="text-red-400">*</span></p>
-                <input required type="time" value={startTime} onChange={e => setStartTime(e.target.value)}
-                  className="w-full bg-white border border-[#e0e4e5] rounded-xl px-4 py-3 text-xs font-bold text-[#2d3435] focus:border-primary focus:ring-1 outline-none transition-all" />
+        {/* 4) Rental Options Form */}
+        <div className="mx-4 my-4">
+          <SectionCard icon="calendar_month" title="Reservation Options">
+            <div className="space-y-4">
+              <div>
+                <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-2">Desired Date <span className="text-red-400">*</span></p>
+                <input required type="date" value={date} onChange={e => setDate(e.target.value)}
+                  className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm font-bold text-[#2d3435] focus:border-primary focus:ring-1 outline-none transition-all" />
               </div>
-              <div className="flex-1">
-                <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-2">End Time <span className="text-red-400">*</span></p>
-                <input required type="time" value={endTime} onChange={e => setEndTime(e.target.value)}
-                  className="w-full bg-white border border-[#e0e4e5] rounded-xl px-4 py-3 text-xs font-bold text-[#2d3435] focus:border-primary focus:ring-1 outline-none transition-all" />
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-2">Start Time <span className="text-red-400">*</span></p>
+                  <input required type="time" value={startTime} onChange={e => setStartTime(e.target.value)}
+                    className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm font-bold text-[#2d3435] focus:border-primary focus:ring-1 outline-none transition-all" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-2">End Time <span className="text-red-400">*</span></p>
+                  <input required type="time" value={endTime} onChange={e => setEndTime(e.target.value)}
+                    className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm font-bold text-[#2d3435] focus:border-primary focus:ring-1 outline-none transition-all" />
+                </div>
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-2">Number of People <span className="text-red-400">*</span></p>
+                <div className="flex items-center gap-3">
+                  <button type="button" onClick={() => setHeadcount(Math.max(1, (Number(headcount) || 1) - 1))}
+                    className="w-9 h-9 rounded-full bg-[#f2f4f4] flex items-center justify-center text-[#596061] active:scale-90">
+                    <span className="material-symbols-rounded text-lg">remove</span>
+                  </button>
+                  <span className="text-base font-black text-[#2d3435] min-w-[50px] text-center">{headcount || 1} PPL</span>
+                  <button type="button" onClick={() => setHeadcount((Number(headcount) || 1) + 1)}
+                    className="w-9 h-9 rounded-full bg-[#f2f4f4] flex items-center justify-center text-[#596061] active:scale-90">
+                    <span className="material-symbols-rounded text-lg">add</span>
+                  </button>
+                </div>
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-2">Purpose <span className="text-red-400">*</span></p>
+                <input required type="text" value={purpose} onChange={e => setPurpose(e.target.value)} placeholder="e.g., Dance practice"
+                  className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm font-bold text-[#2d3435] focus:border-primary focus:ring-1 outline-none transition-all" />
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-2">Message</p>
+                <textarea rows={2} value={message} onChange={e => setMessage(e.target.value)} placeholder="Message for the host"
+                  className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm font-bold text-[#2d3435] focus:border-primary focus:ring-1 outline-none transition-all resize-none" />
               </div>
             </div>
-            <div>
-              <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-2">Number of People <span className="text-red-400">*</span></p>
-              <div className="flex items-center gap-3">
-                <button type="button" onClick={() => setHeadcount(Math.max(1, (Number(headcount) || 1) - 1))}
-                  className="w-9 h-9 rounded-full bg-[#f2f4f4] flex items-center justify-center text-[#596061] active:scale-90">
-                  <span className="material-symbols-rounded text-lg">remove</span>
-                </button>
-                <span className="text-base font-black text-[#2d3435] min-w-[50px] text-center">{headcount || 1} PPL</span>
-                <button type="button" onClick={() => setHeadcount((Number(headcount) || 1) + 1)}
-                  className="w-9 h-9 rounded-full bg-[#f2f4f4] flex items-center justify-center text-[#596061] active:scale-90">
-                  <span className="material-symbols-rounded text-lg">add</span>
-                </button>
-              </div>
-            </div>
-            <div>
-              <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-2">Purpose <span className="text-red-400">*</span></p>
-              <input required type="text" value={purpose} onChange={e => setPurpose(e.target.value)} placeholder="e.g., Dance practice"
-                className="w-full bg-white border border-[#e0e4e5] rounded-xl px-4 py-3 text-xs font-bold text-[#2d3435] focus:border-primary focus:ring-1 outline-none transition-all" />
-            </div>
-            <div>
-              <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-2">Message</p>
-              <textarea rows={2} value={message} onChange={e => setMessage(e.target.value)} placeholder="Message for the host"
-                className="w-full bg-white border border-[#e0e4e5] rounded-xl px-4 py-3 text-xs font-bold text-[#2d3435] focus:border-primary focus:ring-1 outline-none transition-all resize-none" />
-            </div>
-          </div>
+          </SectionCard>
         </div>
 
-        {/* 5) Price */}
+        {/* 5) Payment Info */}
         <div className="px-4 py-4 border-b border-[#f2f4f4]">
-          <div className="flex items-end gap-2">
-            <span className="text-2xl font-black text-[#2d3435] font-headline">₩{minMaxPrice.min.toLocaleString()}</span>
-            {minMaxPrice.min !== minMaxPrice.max && (
-              <span className="text-sm text-[#acb3b4] mb-0.5">~ ₩{minMaxPrice.max.toLocaleString()}</span>
-            )}
-            <span className="text-sm font-bold text-[#acb3b4] mb-1">/ hr</span>
-          </div>
-
-          <div className="mt-3 flex items-center gap-2 p-2.5 bg-[#f0f4ff] border border-[#d8e2ff] rounded-xl">
-            <span className="material-symbols-rounded text-primary text-sm">schedule</span>
-            <span className="text-[11px] text-primary font-bold">Minimum {space.minHours} hours required</span>
-          </div>
-
-          {/* Payment method note */}
-          <div className="mt-2 flex items-center gap-2 p-2.5 bg-[#f8f9fa] rounded-xl">
-            <span className="material-symbols-rounded text-sm text-[#596061]">account_balance</span>
-            <span className="text-[11px] text-[#596061] font-medium">Payment: Bank Transfer</span>
+          <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-3">Rental Policy</p>
+          <div className="space-y-4">
+            <InfoRow 
+              icon="schedule" 
+              title="Minimum Hours" 
+              subtitle={`Minimum ${space.minHours} hours required per booking`} 
+            />
+            <InfoRow 
+              icon="account_balance" 
+              title="Payment Method" 
+              subtitle="Bank Transfer only" 
+            />
           </div>
         </div>
 
         {/* 6) Amenities & Info */}
         <div className="px-4 py-4 border-b border-[#f2f4f4]">
           <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-3">Amenities & Info</p>
-          <div className="space-y-2.5">
-            {/* Capacity */}
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-[#f0f4ff] flex items-center justify-center">
-                <span className="material-symbols-rounded text-primary text-sm">group</span>
-              </div>
-              <div>
-                <p className="text-xs font-bold text-[#2d3435]">Capacity</p>
-                <p className="text-[11px] text-[#596061]">Maximum {space.capacity || '?'} people allowed</p>
-              </div>
-            </div>
-            {/* Size */}
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-[#f8f9fa] flex items-center justify-center border border-[#e0e4e5]">
-                <span className="material-symbols-rounded text-[#596061] text-sm">straighten</span>
-              </div>
-              <div>
-                <p className="text-xs font-bold text-[#2d3435]">Space Size</p>
-                <p className="text-[11px] text-[#596061]">{space.size || 'N/A'}</p>
-              </div>
-            </div>
-            {/* Floor Material */}
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-[#edf7ed] flex items-center justify-center">
-                <span className="material-symbols-rounded text-green-600 text-sm">layers</span>
-              </div>
-              <div>
-                <p className="text-xs font-bold text-[#2d3435]">Floor Material</p>
-                <p className="text-[11px] text-[#596061]">{space.floorMaterial || 'Wood'}</p>
-              </div>
-            </div>
-            {/* Mirror */}
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-[#fff3f0] flex items-center justify-center">
-                <span className="material-symbols-rounded text-[#e67700] text-sm">wall_lamp</span>
-              </div>
-              <div>
-                <p className="text-xs font-bold text-[#2d3435]">Mirror</p>
-                <p className="text-[11px] text-[#596061]">{space.hasMirror ? 'Equipped with mirrors' : 'No mirrors available'}</p>
-              </div>
-            </div>
+          <div className="space-y-4">
+            <InfoRow 
+              icon="group" 
+              iconBg="bg-[#f0f4ff]" 
+              iconColor="text-primary" 
+              title="Capacity" 
+              subtitle={`Maximum ${space.capacity || '?'} people allowed`} 
+            />
+            <InfoRow 
+              icon="straighten" 
+              iconBg="bg-[#f8f9fa]" 
+              iconColor="text-[#596061]" 
+              title="Space Size" 
+              subtitle={space.size || 'N/A'} 
+            />
+            <InfoRow 
+              icon="layers" 
+              iconBg="bg-[#edf7ed]" 
+              iconColor="text-green-600" 
+              title="Floor Material" 
+              subtitle={space.floorMaterial || 'Wood'} 
+            />
+            <InfoRow 
+              icon="wall_lamp" 
+              iconBg="bg-[#fff3f0]" 
+              iconColor="text-[#e67700]" 
+              title="Mirror" 
+              subtitle={space.hasMirror ? 'Equipped with mirrors' : 'No mirrors available'} 
+            />
           </div>
           
           {space.facilities && space.facilities.length > 0 && (
@@ -409,12 +391,11 @@ export default function RentalDetailPage({ params }: { params: Promise<{ id: str
 
           {(group?.rentalSettings?.rentalInfo || space.rules) && (
             <div className="mt-4 pt-4 border-t border-[#f2f4f4]">
-              <div className="p-3.5 bg-[#fff3f0] rounded-xl flex gap-2">
-                <span className="material-symbols-rounded text-[#e67700] text-sm mt-0.5">warning</span>
-                <p className="text-[11px] text-[#e67700] font-medium leading-relaxed whitespace-pre-wrap">
+              <CollapseSection icon="warning" title="Rules & Guidelines" defaultOpen={true}>
+                <p className="text-sm text-[#596061] leading-relaxed whitespace-pre-wrap">
                   {group?.rentalSettings?.rentalInfo || space.rules}
                 </p>
-              </div>
+              </CollapseSection>
             </div>
           )}
         </div>
@@ -454,18 +435,23 @@ export default function RentalDetailPage({ params }: { params: Promise<{ id: str
       </div>
 
       {/* ━━━ Fixed Bottom Bar (compact) ━━━ */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-100 px-4 py-2.5 flex items-center gap-3 max-w-md mx-auto pb-safe pt-safe">
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-100 px-4 py-3 flex items-center gap-3 max-w-md mx-auto pb-safe pt-safe">
         <div className="flex-1 min-w-0">
-          <p className="text-lg font-black text-[#2d3435] font-headline leading-tight">₩{minMaxPrice.min.toLocaleString()}</p>
-          <p className="text-[10px] text-[#acb3b4] truncate">Starting price / hr</p>
+          <p className="text-xl font-black text-[#2d3435] font-headline leading-tight">₩{minMaxPrice.min.toLocaleString()}</p>
+          <p className="text-[11px] text-[#acb3b4] truncate font-medium">Starting price / hr</p>
         </div>
-        <button onClick={handleToggleLike}
-          className={`w-11 h-11 rounded-xl flex items-center justify-center border transition-colors active:scale-90 ${isLiked ? 'bg-red-50 border-red-100 text-red-500' : 'bg-white border-[#e0e4e5] text-[#596061]'}`}>
-          <span className="material-symbols-rounded text-xl" style={{ fontVariationSettings: isLiked ? "'FILL' 1" : "'FILL' 0" }}>favorite</span>
-        </button>
         <button onClick={handleRequestSubmit} disabled={isSubmitting}
-          className="flex-shrink-0 bg-primary text-white px-7 py-3 rounded-xl font-black text-sm tracking-wide shadow-lg shadow-primary/20 active:scale-95 transition-transform disabled:opacity-50">
-          {isSubmitting ? 'Processing...' : 'Request'}
+          className="flex-[2] flex flex-col items-center justify-center bg-primary text-white py-3 rounded-xl shadow-lg shadow-primary/20 active:scale-95 transition-transform disabled:opacity-50 min-h-[52px]">
+          {isSubmitting ? (
+            <span className="font-black text-sm">Processing...</span>
+          ) : (date && startTime && endTime) ? (
+            <>
+              <span className="font-black text-[15px]">{date.split('-').slice(1).join('/')}</span>
+              <span className="text-[10px] font-medium text-white/80">{startTime} - {endTime}</span>
+            </>
+          ) : (
+             <span className="font-black text-[15px]">Request Rental</span>
+          )}
         </button>
       </div>
 

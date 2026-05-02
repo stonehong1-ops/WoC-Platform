@@ -33,9 +33,38 @@ export default function VenueForm({ isOpen, onClose, initialData }: VenueFormPro
     district: '',
     status: 'active',
     coordinates: { latitude: 37.5665, longitude: 126.9780 },
+    imageUrl: '',
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isFetchingPhoto, setIsFetchingPhoto] = useState(false);
+  const [fetchedPhotoUrl, setFetchedPhotoUrl] = useState<string | null>(null);
+
+  const handleFetchPhoto = async () => {
+    if (!formData.name && !formData.address) {
+      alert('Please enter a Venue Name or Address first to search for a photo.');
+      return;
+    }
+    
+    setIsFetchingPhoto(true);
+    try {
+      const query = `${formData.name} ${formData.address}`.trim();
+      const res = await fetch(`/api/places/photo?query=${encodeURIComponent(query)}`);
+      const data = await res.json();
+      
+      if (res.ok && data.photoUrl) {
+        setFetchedPhotoUrl(data.photoUrl);
+      } else {
+        alert(data.error || 'Could not find a representative photo for this location.');
+        setFetchedPhotoUrl(null);
+      }
+    } catch (error) {
+      console.error(error);
+      alert('An error occurred while fetching the photo.');
+    } finally {
+      setIsFetchingPhoto(false);
+    }
+  };
 
   useEffect(() => {
     if (initialData) {
@@ -50,7 +79,11 @@ export default function VenueForm({ isOpen, onClose, initialData }: VenueFormPro
         district: initialData.district,
         status: initialData.status,
         coordinates: initialData.coordinates,
+        imageUrl: initialData.imageUrl || '',
       });
+      if (initialData.imageUrl) {
+        setFetchedPhotoUrl(initialData.imageUrl);
+      }
     }
   }, [initialData, isOpen]);
 
@@ -254,6 +287,69 @@ export default function VenueForm({ isOpen, onClose, initialData }: VenueFormPro
                     <span className="material-symbols-rounded text-outline-variant">zoom_in</span>
                   </div>
                 </div>
+              </div>
+            </div>
+          </section>
+
+          {/* 6. Representative Photo */}
+          <section>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-rounded text-primary">image</span>
+                <h3 className="font-headline text-xl font-bold text-on-surface">Representative Photo</h3>
+              </div>
+              <button 
+                type="button"
+                onClick={handleFetchPhoto}
+                disabled={isFetchingPhoto}
+                className="text-primary text-xs font-bold uppercase tracking-wider flex items-center gap-1 hover:underline disabled:opacity-50"
+              >
+                <span className="material-symbols-rounded text-sm">
+                  {isFetchingPhoto ? 'hourglass_empty' : 'sync'}
+                </span>
+                {isFetchingPhoto ? 'Fetching...' : 'Fetch from Google Maps'}
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              {fetchedPhotoUrl ? (
+                <div className="relative rounded-2xl overflow-hidden border border-outline-variant/30 aspect-video bg-surface-container-lowest">
+                  <img src={fetchedPhotoUrl} alt="Venue Representative" className="w-full h-full object-cover" />
+                  <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/60 to-transparent">
+                    <button 
+                      type="button"
+                      onClick={() => setFormData({ ...formData, imageUrl: fetchedPhotoUrl })}
+                      className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-all ${
+                        formData.imageUrl === fetchedPhotoUrl 
+                          ? 'bg-green-500 text-white' 
+                          : 'bg-primary text-on-primary hover:bg-primary/90'
+                      }`}
+                    >
+                      <span className="material-symbols-rounded text-sm">
+                        {formData.imageUrl === fetchedPhotoUrl ? 'check_circle' : 'photo_camera'}
+                      </span>
+                      {formData.imageUrl === fetchedPhotoUrl ? 'Set as Representative' : 'Use this Photo'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="w-full aspect-video bg-surface-container-lowest border-2 border-dashed border-outline-variant/50 rounded-2xl flex flex-col items-center justify-center p-6 text-center">
+                  <span className="material-symbols-rounded text-outline text-4xl mb-2">add_photo_alternate</span>
+                  <p className="text-sm font-medium text-on-surface-variant">No photo selected</p>
+                  <p className="text-xs text-on-surface-variant/70 mt-1">Click "Fetch from Google Maps" to automatically search for a photo using the venue name and address.</p>
+                </div>
+              )}
+              
+              {/* Optional Manual URL Input */}
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-rounded text-outline">link</span>
+                <input 
+                  className="w-full pl-12 pr-4 py-4 bg-surface-container-lowest border-none ring-1 ring-outline-variant focus:ring-2 focus:ring-primary rounded-xl transition-all font-body text-on-surface text-sm" 
+                  placeholder="Or enter image URL manually..." 
+                  type="url" 
+                  value={formData.imageUrl || ''}
+                  onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                />
               </div>
             </div>
           </section>

@@ -15,29 +15,14 @@ const REGIONS = [
         cities: ['SEOUL', 'INCHEON', 'BUSAN', 'JEJU', 'DAEGU', 'DAEJEON', 'GWANGJU'].map(n => ({ name: n }))
       },
       {
-        name: 'JAPAN',
-        flag: '🇯🇵',
-        cities: ['TOKYO', 'OSAKA', 'KYOTO', 'FUKUOKA', 'SAPPORO', 'NAGOYA', 'YOKOHAMA'].map(n => ({ name: n }))
-      },
-      {
         name: 'CHINA',
         flag: '🇨🇳',
         cities: ['BEIJING', 'SHANGHAI', 'SHENZHEN', 'GUANGZHOU', 'CHENGDU', 'HANGZHOU', 'HONG KONG', 'MACAU'].map(n => ({ name: n }))
       },
       {
-        name: 'INDIA',
-        flag: '🇮🇳',
-        cities: ['DELHI', 'MUMBAI', 'BANGALORE', 'RISHIKESH', 'CHENNAI', 'HYDERABAD'].map(n => ({ name: n }))
-      },
-      {
-        name: 'VIETNAM',
-        flag: '🇻🇳',
-        cities: ['HO CHI MINH', 'HANOI', 'DA NANG', 'HAI PHONG', 'NHA TRANG'].map(n => ({ name: n }))
-      },
-      {
-        name: 'THAILAND',
-        flag: '🇹🇭',
-        cities: ['BANGKOK', 'CHIANG MAI', 'PHUKET', 'PATTAYA', 'KOH SAMUI'].map(n => ({ name: n }))
+        name: 'JAPAN',
+        flag: '🇯🇵',
+        cities: ['TOKYO', 'OSAKA', 'KYOTO', 'FUKUOKA', 'SAPPORO', 'NAGOYA', 'YOKOHAMA'].map(n => ({ name: n }))
       },
       {
         name: 'TAIWAN',
@@ -48,6 +33,21 @@ const REGIONS = [
         name: 'SINGAPORE',
         flag: '🇸🇬',
         cities: ['CENTRAL AREA', 'NORTH', 'NORTH-EAST', 'EAST', 'WEST'].map(n => ({ name: n }))
+      },
+      {
+        name: 'VIETNAM',
+        flag: '🇻🇳',
+        cities: ['HO CHI MINH', 'HANOI', 'DA NANG', 'HAI PHONG', 'NHA TRANG'].map(n => ({ name: n }))
+      },
+      {
+        name: 'INDIA',
+        flag: '🇮🇳',
+        cities: ['DELHI', 'MUMBAI', 'BANGALORE', 'RISHIKESH', 'CHENNAI', 'HYDERABAD'].map(n => ({ name: n }))
+      },
+      {
+        name: 'THAILAND',
+        flag: '🇹🇭',
+        cities: ['BANGKOK', 'CHIANG MAI', 'PHUKET', 'PATTAYA', 'KOH SAMUI'].map(n => ({ name: n }))
       },
       {
         name: 'INDONESIA',
@@ -319,40 +319,38 @@ export default function LocationSelector() {
   })).filter(r => r.countries.length > 0);
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center">
+    <div className="fixed inset-0 z-[100] flex items-end justify-center">
       <div 
         className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300"
         onClick={() => setIsSelectorOpen(false)}
       ></div>
 
-      <div className="relative w-full max-w-lg bg-surface sm:rounded-3xl shadow-2xl animate-in slide-in-from-bottom-full duration-500 ease-out flex flex-col max-h-[90vh]">
+      <div className="relative w-full max-w-lg bg-surface rounded-t-3xl shadow-2xl animate-in slide-in-from-bottom duration-300 ease-out flex flex-col h-[80vh]">
         
-        <div className="px-6 pt-8 pb-4">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex flex-col">
-              <span className="font-label text-[9px] font-black text-on-surface/30 tracking-[0.25em] uppercase mb-1">Network</span>
-              <h2 className="font-display text-[22px] font-black tracking-tight text-on-surface uppercase">Select Location</h2>
-            </div>
-            <button 
-              onClick={() => setIsSelectorOpen(false)}
-              className="w-10 h-10 flex items-center justify-center rounded-full bg-on-surface/[0.03] hover:bg-on-surface/[0.08] transition-all"
-            >
-              <span className="material-symbols-outlined text-[20px] text-on-surface/40">close</span>
-            </button>
-          </div>
+        {/* Bottom Sheet Handle */}
+        <div className="w-full pt-3 pb-1 flex justify-center">
+          <div className="w-10 h-1.5 bg-on-surface/20 rounded-full"></div>
+        </div>
 
-          <div className="relative mb-6">
-            <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none">
-              <span className="material-symbols-outlined text-[20px] text-primary">search</span>
+        <div className="px-5 pt-2 pb-3 flex items-center gap-3">
+          <div className="relative flex-1">
+            <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+              <span className="material-symbols-outlined text-[18px] text-primary">search</span>
             </div>
             <input 
               type="text"
               placeholder="Search city or country..."
-              className="w-full h-[56px] pl-14 pr-6 bg-on-surface/[0.03] rounded-3xl border-none focus:ring-1 focus:ring-primary/20 focus:bg-on-surface/[0.06] transition-all font-manrope text-[15px] font-medium text-on-surface placeholder:text-on-surface/30 outline-none"
+              className="w-full h-[42px] pl-11 pr-4 bg-on-surface/[0.04] rounded-full border-none focus:ring-1 focus:ring-primary/20 focus:bg-on-surface/[0.06] transition-all font-manrope text-[14px] font-medium text-on-surface placeholder:text-on-surface/40 outline-none"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
+          <button 
+            onClick={() => setIsSelectorOpen(false)}
+            className="shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-on-surface/[0.04] hover:bg-on-surface/[0.08] transition-all"
+          >
+            <span className="material-symbols-outlined text-[20px] text-on-surface/50">close</span>
+          </button>
         </div>
 
         <div className="px-6 flex gap-6 overflow-x-auto no-scrollbar bg-on-surface/[0.01] border-b border-outline-variant/10">
@@ -361,7 +359,7 @@ export default function LocationSelector() {
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`shrink-0 pt-5 pb-4 text-[9px] font-black tracking-[0.2em] transition-all relative ${
-                activeTab === tab ? 'text-primary' : 'text-on-surface/30 hover:text-on-surface/50'
+                activeTab === tab ? 'text-primary' : 'text-on-surface/60 hover:text-on-surface/90'
               }`}
             >
               {tab}
@@ -375,7 +373,7 @@ export default function LocationSelector() {
         <div className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar">
           {filteredRegions.map((region) => (
             <div key={region.continent}>
-              <h3 className="px-4 mb-2 text-[10px] font-bold tracking-[0.2em] text-on-surface/30 uppercase">{region.continent}</h3>
+              <h3 className="px-4 mb-2 text-[10px] font-bold tracking-[0.2em] text-on-surface/60 uppercase">{region.continent}</h3>
               <div className="space-y-1">
                 {region.countries.map((country) => (
                   <div key={country.name} className="overflow-hidden rounded-2xl group">
@@ -392,7 +390,7 @@ export default function LocationSelector() {
                         </span>
                       </div>
                       <span className={`material-symbols-outlined transition-transform duration-300 ${
-                        expandedCountry === country.name ? 'rotate-180' : 'text-on-surface/40'
+                        expandedCountry === country.name ? 'rotate-180' : 'text-on-surface/60'
                       }`}>
                         expand_more
                       </span>
@@ -407,7 +405,7 @@ export default function LocationSelector() {
                         className={`w-full text-left px-5 py-3 text-[11px] font-black tracking-[0.2em] uppercase transition-all ${
                           location.city === 'ALL' && location.country === country.name
                             ? 'text-primary bg-primary/10' 
-                            : 'text-primary/70 hover:text-primary hover:bg-primary/5'
+                            : 'text-primary hover:text-primary hover:bg-primary/5'
                         }`}
                       >
                         (ALL)
@@ -420,7 +418,7 @@ export default function LocationSelector() {
                           className={`w-full text-left px-5 py-3 text-[12px] font-bold tracking-widest uppercase transition-all ${
                             location.city === city.name && location.country === country.name
                               ? 'text-primary bg-primary/5' 
-                              : 'text-on-surface/50 hover:text-on-surface hover:bg-on-surface/[0.02]'
+                              : 'text-on-surface/70 hover:text-on-surface hover:bg-on-surface/[0.02]'
                           }`}
                         >
                           {city.name}
@@ -434,11 +432,7 @@ export default function LocationSelector() {
           ))}
         </div>
 
-        <div className="p-6 bg-on-surface/[0.02] border-t border-outline-variant/10">
-          <p className="text-[10px] text-center text-on-surface/40 font-medium tracking-widest uppercase">
-            World of Group · Global Network
-          </p>
-        </div>
+
       </div>
     </div>
   );

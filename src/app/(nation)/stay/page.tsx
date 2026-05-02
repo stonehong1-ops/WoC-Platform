@@ -2,9 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import '@/styles/groupstayeditor.css';
 import { stayService } from '@/lib/firebase/stayService';
-import { userService } from '@/lib/firebase/userService';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { Stay, StayLike } from '@/types/stay';
 import StayWishlistTray from '@/components/stay/StayWishlistTray';
@@ -19,14 +17,14 @@ const SORT_OPTIONS: { key: SortOption; label: string; icon: string }[] = [
   { key: 'price_desc', label: 'Price ↓', icon: 'arrow_downward' },
 ];
 
-const STAY_FILTER_DEFS: Record<string, { label: string; fullLabel?: string; icon?: string }> = {
-  all: { label: 'All', fullLabel: 'All Stays' },
-  '1-Room': { label: '1-Room', fullLabel: '1-Room Stays', icon: 'room' },
-  '2-Room': { label: '2-Room', fullLabel: '2-Room Stays', icon: 'bedroom_parent' },
-  '3-Room': { label: '3-Room', fullLabel: '3-Room Stays', icon: 'apartment' },
-  'Pension': { label: 'Pension', fullLabel: 'Pension', icon: 'house' },
-  'Dormitory': { label: 'Dormitory', fullLabel: 'Dormitory', icon: 'meeting_room' },
-  'Couchsurfing': { label: 'Couch', fullLabel: 'Couchsurfing', icon: 'person_pin_circle' },
+const STAY_FILTER_DEFS: Record<string, { label: string; fullLabel?: string }> = {
+  all: { label: 'All', fullLabel: 'All' },
+  '1-Room': { label: '1-Room', fullLabel: '1-Room' },
+  '2-Room': { label: '2-Room', fullLabel: '2-Room' },
+  '3-Room': { label: '3-Room', fullLabel: '3-Room' },
+  'Pension': { label: 'Pension', fullLabel: 'Pension' },
+  'Dormitory': { label: 'Dormitory', fullLabel: 'Dormitory' },
+  'Couchsurfing': { label: 'Couch', fullLabel: 'Couchsurfing' },
 };
 
 const STAY_FILTER_KEYS = ['all', '1-Room', '2-Room', '3-Room', 'Dormitory', 'Couchsurfing', 'Pension'];
@@ -140,14 +138,73 @@ export default function StayPage() {
   };
 
   return (
-    <main className="max-w-md mx-auto w-full relative">
+    <main className="max-w-md mx-auto w-full relative min-h-screen bg-[#FAF8FF]">
       <style dangerouslySetInnerHTML={{ __html: `
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .material-symbols-rounded { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
       `}} />
 
-      {/* ③ Product Grid (Stay Listings) */}
+      {/* Filter & Sort Bar (Shop pattern) */}
+      <div className="w-full bg-[#FAF8FF] border-b border-slate-100/50 px-3 py-2 flex flex-col gap-3">
+        {/* Scrollable Tabs (Shop pattern — no icons, rounded-lg, small) */}
+        <div className="w-full flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+          {stayFilters.map((filter) => (
+            <button
+              key={filter.key}
+              onClick={() => setActiveFilter(filter.key)}
+              className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[12px] font-bold tracking-wide transition-all whitespace-nowrap ${
+                activeFilter === filter.key
+                  ? 'bg-[#1E293B] text-white shadow-sm'
+                  : 'bg-slate-50 text-slate-500 border border-slate-100 hover:bg-slate-100'
+              }`}
+            >
+              {filter.fullLabel || filter.label}
+            </button>
+          ))}
+        </div>
+        
+        {/* Bottom Actions — items count + Sort (Shop pattern) */}
+        <div className="w-full flex items-center justify-between px-1">
+          <div className="text-[11px] font-medium text-[#007AFF]">
+            {filtered.length} items
+          </div>
+          
+          <div className="flex items-center gap-4">
+            {/* Sort Trigger (Shop pattern) */}
+            <button 
+              onClick={() => setShowSortDropdown(!showSortDropdown)}
+              className="flex items-center gap-0.5 text-[12px] font-bold text-slate-600 hover:text-slate-800 transition-all"
+            >
+              {SORT_OPTIONS.find(o => o.key === sortOption)?.label || 'Sort'}
+              <span className="material-symbols-outlined text-[14px]">expand_more</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Sort Options Modal/Dropdown (Shop pattern) */}
+      {showSortDropdown && (
+        <div className="absolute top-[90px] right-4 z-40 bg-white rounded-2xl shadow-2xl border border-slate-100 py-2 min-w-[160px] animate-in fade-in slide-in-from-top-2 duration-300">
+          {SORT_OPTIONS.map(opt => (
+            <button
+              key={opt.key}
+              onClick={() => {
+                setSortOption(opt.key);
+                setShowSortDropdown(false);
+              }}
+              className={`w-full px-4 py-2.5 flex items-center gap-3 hover:bg-slate-50 transition-colors text-left ${
+                sortOption === opt.key ? 'text-blue-600 font-bold' : 'text-slate-600 font-medium'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[18px]">{opt.icon}</span>
+              <span className="text-[13px]">{opt.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* ④ Stay Grid (필터+정렬 결과) */}
       <div className="pt-4 px-4 mb-10 text-left min-h-[400px]">
 
 
@@ -155,10 +212,10 @@ export default function StayPage() {
           <div className="grid grid-cols-2 gap-4">
             {[1, 2, 3, 4].map(i => (
               <div key={i} className="animate-pulse">
-                <div className="aspect-square rounded-xl bg-surface-container-lowest border border-outline-variant/20 mb-3" />
-                <div className="h-3 bg-surface-container rounded w-1/2 mb-2" />
-                <div className="h-4 bg-surface-container-low rounded w-3/4 mb-2" />
-                <div className="h-4 bg-surface-container rounded w-1/3" />
+                <div className="aspect-square rounded-xl bg-[#f2f4f4] mb-3" />
+                <div className="h-3 bg-[#e8eaec] rounded w-1/2 mb-2" />
+                <div className="h-4 bg-[#f2f4f4] rounded w-3/4 mb-2" />
+                <div className="h-4 bg-[#e8eaec] rounded w-1/3" />
               </div>
             ))}
           </div>
@@ -210,23 +267,11 @@ export default function StayPage() {
                   <div className="px-1">
                     <p className="text-[10px] font-bold text-[#5c5f62] uppercase tracking-tighter font-label truncate">{locationStr}</p>
                     <h4 className="text-sm font-semibold text-[#2d3435] font-body truncate">{stay.title}</h4>
-                    <div className="flex items-center justify-between mt-1">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-sm font-bold text-[#2d3435] font-headline">
-                          {formatPrice(stay)}
-                        </span>
-                        <span className="text-[10px] text-[#596061] mt-[2px]">/ night</span>
-                      </div>
-                      <button
-                        onClick={(e) => toggleLike(e, stay.id)}
-                        className={`p-1.5 rounded-lg transition-all ${
-                          likedStayIds.has(stay.id) ? 'bg-red-50 text-red-500' : 'bg-[#d8e2ff] text-[#004fa8] hover:bg-primary hover:text-white'
-                        }`}
-                      >
-                        <span className="material-symbols-rounded text-lg leading-none" style={{ fontVariationSettings: likedStayIds.has(stay.id) ? "'FILL' 1" : "'FILL' 0" }}>
-                          favorite
-                        </span>
-                      </button>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-bold text-[#2d3435] font-headline">
+                        {formatPrice(stay)}
+                      </span>
+                      <span className="text-[10px] text-[#596061] mt-[2px]">/ night</span>
                     </div>
                   </div>
                 </Link>

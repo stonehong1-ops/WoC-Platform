@@ -165,7 +165,7 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
                   )}
                 </div>
                 <div className="absolute inset-0 bg-black/20 rounded-squircle opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <span className="material-symbols-outlined text-white text-3xl">photo_camera</span>
+                  <span className="material-symbols-outlined text-white text-3xl">edit</span>
                 </div>
                 <input 
                   type="file" 

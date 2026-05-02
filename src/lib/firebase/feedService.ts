@@ -150,7 +150,7 @@ export const feedService = {
   },
 
   // 리액션 토글 (좋아요, 최고예요 등 6종)
-  toggleReaction: async (postId: string, userId: string, userName: string, type: ReactionType) => {
+  toggleReaction: async (postId: string, userId: string, userName: string, type: ReactionType, postAuthorId?: string) => {
     try {
       const reactionRef = doc(db, COLLECTION_NAME, postId, 'reactions', userId);
       const reactionSnap = await getDoc(reactionRef);
@@ -189,6 +189,20 @@ export const feedService = {
           [`reactionCounts.${type}`]: increment(1),
           likesCount: increment(1)
         });
+
+        // Update interactedUserIds and likedPostIds
+        if (userId) {
+          try {
+            const { arrayUnion } = await import('firebase/firestore');
+            const userRef = doc(db, 'users', userId);
+            await updateDoc(userRef, {
+              likedPostIds: arrayUnion(postId),
+              ...(postAuthorId && postAuthorId !== userId ? { interactedUserIds: arrayUnion(postAuthorId) } : {})
+            });
+          } catch (e) {
+            console.error('Failed to update user interaction data:', e);
+          }
+        }
       }
     } catch (error) {
       console.error("Error toggling reaction:", error);
@@ -210,7 +224,7 @@ export const feedService = {
   },
 
   // 댓글 추가
-  addComment: async (postId: string, commentData: Omit<Comment, 'id' | 'createdAt'>) => {
+  addComment: async (postId: string, commentData: Omit<Comment, 'id' | 'createdAt'>, postAuthorId?: string) => {
     try {
       const commentsRef = collection(db, COLLECTION_NAME, postId, 'comments');
       
@@ -233,6 +247,20 @@ export const feedService = {
         await updateDoc(parentRef, {
           repliesCount: increment(1)
         });
+      }
+
+      // Update interactedUserIds and commentedPostIds
+      if (commentData.userId) {
+        try {
+          const { arrayUnion } = await import('firebase/firestore');
+          const userRef = doc(db, 'users', commentData.userId);
+          await updateDoc(userRef, {
+            commentedPostIds: arrayUnion(postId),
+            ...(postAuthorId && commentData.userId !== postAuthorId ? { interactedUserIds: arrayUnion(postAuthorId) } : {})
+          });
+        } catch (e) {
+          console.error('Failed to update user interaction data:', e);
+        }
       }
     } catch (error) {
       console.error("Error adding comment:", error);
@@ -366,7 +394,22 @@ export const feedService = {
       });
       return !isPinned;
     } catch (error) {
-      console.error("Error toggling pin:", error);
+      console.error("Error toggling pin user:", error);
+      throw error;
+    }
+  },
+
+  // 게시물 핀(Pin Post) 상태 토글
+  togglePinPost: async (userId: string, postId: string, isPinned: boolean) => {
+    try {
+      const { doc, updateDoc, arrayUnion, arrayRemove } = await import('firebase/firestore');
+      const userRef = doc(db, 'users', userId);
+      await updateDoc(userRef, {
+        pinnedPostIds: isPinned ? arrayRemove(postId) : arrayUnion(postId)
+      });
+      return !isPinned;
+    } catch (error) {
+      console.error("Error toggling pin post:", error);
       throw error;
     }
   },

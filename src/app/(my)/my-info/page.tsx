@@ -6,9 +6,18 @@ import { useRouter } from 'next/navigation';
 import MyInfoBottomSheet from '@/components/profile/MyInfoBottomSheet';
 
 export default function MyInfoPage() {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, signOut } = useAuth();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      router.push('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
 
   if (loading) return null;
 
@@ -29,11 +38,11 @@ export default function MyInfoPage() {
 
   return (
     <div className="bg-surface text-on-surface min-h-screen">
-      <main className="max-w-3xl mx-auto px-6 py-12 md:py-20">
-        {/* Profile Hero Section (Asymmetric Layout) */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-end mb-16">
-          <div className="md:col-span-4 relative group">
-            <div className="aspect-square w-full max-w-[240px] overflow-hidden rounded-squircle border-4 border-surface-container-lowest shadow-xl">
+      <main className="max-w-3xl mx-auto px-6 py-6 md:py-8">
+        {/* Profile Hero Section (Ultra-compact) */}
+        <div className="flex items-center gap-5 mb-8">
+          <div className="relative group shrink-0">
+            <div className="w-16 h-16 md:w-20 md:h-20 overflow-hidden rounded-full border-2 border-surface-container-lowest shadow-md bg-surface-container">
               <img 
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
                 src={profile?.photoURL || user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.nickname || 'User')}&background=1A73E8&color=fff`}
@@ -42,29 +51,32 @@ export default function MyInfoPage() {
             </div>
             <div 
               onClick={() => setIsEditModalOpen(true)}
-              className="absolute bottom-4 right-4 md:right-12 bg-primary text-white p-3 rounded-full shadow-2xl cursor-pointer hover:scale-110 transition-transform flex items-center justify-center z-10"
+              className="absolute -bottom-0.5 -right-0.5 bg-primary text-white p-1.5 rounded-full shadow-lg cursor-pointer hover:scale-110 transition-transform flex items-center justify-center z-10 border-2 border-surface"
             >
-              <span className="material-symbols-outlined !text-[20px]">photo_camera</span>
+              <span className="material-symbols-outlined !text-[14px]">edit</span>
             </div>
           </div>
-          <div className="md:col-span-8 pb-4">
-            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-on-surface mb-2 font-headline">
-              {profile?.nickname || user?.displayName || 'Adventurer'}
-            </h1>
-            <p className="text-on-surface-variant font-medium text-lg">
+          
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-baseline gap-2 mb-0.5">
+              <h1 className="text-xl md:text-2xl font-bold tracking-tight text-on-surface font-headline truncate">
+                {profile?.nickname || user?.displayName || 'Adventurer'}
+              </h1>
+              <div className="flex flex-wrap gap-1">
+                {profile?.isInstructor && (
+                  <span className="px-2 py-0.5 rounded bg-primary-container text-on-primary-container text-[9px] font-bold uppercase tracking-tighter">Instructor</span>
+                )}
+                {profile?.isSeller && (
+                  <span className="px-2 py-0.5 rounded bg-secondary-container text-on-secondary-container text-[9px] font-bold uppercase tracking-tighter">Seller</span>
+                )}
+                {profile?.isServiceProvider && (
+                  <span className="px-2 py-0.5 rounded bg-tertiary-container text-on-tertiary-container text-[9px] font-bold uppercase tracking-tighter">Pro</span>
+                )}
+              </div>
+            </div>
+            <p className="text-on-surface-variant font-medium text-sm line-clamp-1">
               {profile?.bio || 'Senior Group Member'}
             </p>
-            <div className="mt-6 flex flex-wrap gap-2">
-              <span className={`px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider ${profile?.isInstructor ? 'bg-primary-container text-on-primary-container' : 'bg-surface-container-highest text-on-surface-variant'}`}>
-                Instructor
-              </span>
-              <span className={`px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider ${profile?.isSeller ? 'bg-primary-container text-on-primary-container' : 'bg-surface-container-highest text-on-surface-variant'}`}>
-                Seller
-              </span>
-              <span className={`px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider ${profile?.isServiceProvider ? 'bg-primary-container text-on-primary-container' : 'bg-surface-container-highest text-on-surface-variant'}`}>
-                Service Provider
-              </span>
-            </div>
           </div>
         </div>
 
@@ -169,6 +181,17 @@ export default function MyInfoPage() {
               <p className="text-sm text-on-surface-variant leading-relaxed">Ability to list professional services and handle bookings.</p>
             </div>
           </div>
+        </div>
+
+        {/* Action Buttons Section */}
+        <div className="mt-12 pt-8 flex justify-center pb-8">
+          <button 
+            onClick={handleLogout}
+            className="flex items-center gap-2 px-6 py-3 rounded-full text-error font-bold hover:bg-error/10 transition-colors border border-error/20"
+          >
+            <span className="material-symbols-outlined">logout</span>
+            Log Out
+          </button>
         </div>
       </main>
 

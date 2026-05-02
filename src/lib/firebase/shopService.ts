@@ -283,6 +283,56 @@ export const shopService = {
     }
   },
 
+  // Set product as pending (구매협의중)
+  setProductPendingStatus: async (userId: string, productId: string): Promise<void> => {
+    const likeId = `${userId}_${productId}`;
+    const likeRef = doc(db, LIKES_COLLECTION, likeId);
+    const productRef = doc(db, PRODUCTS_COLLECTION, productId);
+
+    try {
+      const likeSnap = await getDoc(likeRef);
+      if (likeSnap.exists()) {
+        await updateDoc(likeRef, { status: 'pending', updatedAt: serverTimestamp() });
+      } else {
+        await setDoc(likeRef, {
+          userId,
+          productId,
+          status: 'pending',
+          createdAt: serverTimestamp()
+        });
+        await updateDoc(productRef, { likesCount: increment(1) });
+      }
+    } catch (error) {
+      console.error('Error setting pending status:', error);
+      throw error;
+    }
+  },
+
+  // Set product as in_progress (주문 완료)
+  setProductInProgressStatus: async (userId: string, productId: string): Promise<void> => {
+    const likeId = `${userId}_${productId}`;
+    const likeRef = doc(db, LIKES_COLLECTION, likeId);
+    const productRef = doc(db, PRODUCTS_COLLECTION, productId);
+
+    try {
+      const likeSnap = await getDoc(likeRef);
+      if (likeSnap.exists()) {
+        await updateDoc(likeRef, { status: 'in_progress', updatedAt: serverTimestamp() });
+      } else {
+        await setDoc(likeRef, {
+          userId,
+          productId,
+          status: 'in_progress',
+          createdAt: serverTimestamp()
+        });
+        await updateDoc(productRef, { likesCount: increment(1) });
+      }
+    } catch (error) {
+      console.error('Error setting in_progress status:', error);
+      throw error;
+    }
+  },
+
   // Subscribe to user's liked products (내 찜 목록 실시간 구독)
   subscribeMyLikes: (userId: string, callback: (likes: ProductLike[]) => void) => {
     const q = query(

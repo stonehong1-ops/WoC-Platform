@@ -93,6 +93,14 @@
       ]
     },
     {
+      "collectionGroup": "stay_likes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "stays",
       "queryScope": "COLLECTION",
       "fields": [

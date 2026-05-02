@@ -87,8 +87,8 @@ export default function UserProfilePopup({ isOpen, onClose, uid, initialData }: 
                 <UserName 
                   nickname={profile.nickname} 
                   nativeNickname={profile.nativeNickname} 
-                  className="text-2xl"
-                  nativeClassName="text-base mt-1 text-on-surface-variant"
+                  className="text-2xl gap-2"
+                  nativeClassName="text-base text-on-surface-variant tracking-normal normal-case"
                 />
               </div>
 

@@ -147,13 +147,19 @@ export default function AuthModal() {
     try {
       setupRecaptcha();
       const appVerifier = (window as any).recaptchaVerifier;
-      // Format number to international if not already
-      const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+82${phoneNumber.replace(/^0/, '')}`;
+      let formattedPhone = phoneNumber;
+      if (!formattedPhone.startsWith('+')) {
+        if (formattedPhone.startsWith('82')) {
+          formattedPhone = '+' + formattedPhone;
+        } else {
+          formattedPhone = `+82${formattedPhone.replace(/^0/, '')}`;
+        }
+      }
       const confirmation = await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
       setConfirmationResult(confirmation);
       setStep('PHONE_VERIFY');
     } catch (error: any) {
-      console.error("SMS sending failed:", error);
+      console.warn("SMS sending failed:", error);
       alert("Failed to send SMS: " + error.message);
       // Reset recaptcha on error
       if ((window as any).recaptchaVerifier) {
@@ -183,7 +189,7 @@ export default function AuthModal() {
         router.push('/social');
       }
     } catch (error: any) {
-      console.error("Verification failed:", error);
+      console.warn("Verification failed:", error);
       alert("Invalid code: " + error.message);
     } finally {
       setIsLoading(false);
@@ -218,7 +224,7 @@ export default function AuthModal() {
         updatedAt: serverTimestamp(),
       });
     } catch (err: any) {
-      console.error(err);
+      console.warn(err);
       alert('Registration failed: ' + err.message);
     } finally {
       setIsLoading(false);
@@ -231,12 +237,6 @@ export default function AuthModal() {
       <header className="fixed top-0 w-full z-50 flex items-center px-4 h-16 bg-white border-b border-gray-100 transition-colors duration-200">
         <div className="flex items-center w-full max-w-2xl mx-auto justify-between">
           <div className="flex items-center gap-4">
-            <button 
-              onClick={() => setShowLogin(false)}
-              className="p-2 hover:bg-gray-50 rounded-full transition-colors duration-200"
-            >
-              <span className="material-symbols-outlined text-blue-600">arrow_back</span>
-            </button>
             <h1 className="font-manrope text-base font-semibold text-gray-900 font-headline">
               {step === 'FORM' ? 'Complete Registration' : 'Sign In / Register'}
             </h1>
@@ -309,8 +309,10 @@ export default function AuthModal() {
               <label className="block text-sm font-bold text-gray-900 mb-2">Phone Number</label>
               <input 
                 type="tel"
+                autoComplete="tel"
+                inputMode="tel"
                 value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
+                onChange={(e) => setPhoneNumber(e.target.value.replace(/[^0-9]/g, ''))}
                 placeholder="01012345678"
                 className="w-full h-14 px-4 bg-gray-50 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
               />
@@ -337,11 +339,16 @@ export default function AuthModal() {
               <label className="block text-sm font-bold text-gray-900 mb-2">Verification Code</label>
               <input 
                 type="text"
+                autoComplete="one-time-code"
+                inputMode="numeric"
                 value={verificationCode}
-                onChange={(e) => setVerificationCode(e.target.value)}
+                onChange={(e) => setVerificationCode(e.target.value.replace(/[^0-9]/g, ''))}
                 placeholder="123456"
                 className="w-full h-14 px-4 text-center tracking-[0.5em] text-xl font-bold bg-gray-50 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
               />
+              <p className="mt-3 text-xs text-gray-500 leading-relaxed font-medium break-keep">
+                대부분의 경우 위 숫자를 터치하면 문자로 온 6자리가 보이고 선택하시면 됩니다. 구글에서 보내지는 문자이기 때문에 해외문자를 차단하신 경우 직접 찾아서 확인하셔야 합니다.
+              </p>
             </div>
             <button 
               disabled={isLoading}
@@ -457,17 +464,6 @@ export default function AuthModal() {
         </div>
       </main>
 
-      {/* Navigation Simulation */}
-      <nav className="md:hidden fixed bottom-0 w-full z-50 flex justify-around items-center px-6 py-2 pb-safe bg-white border-t border-gray-100 shadow-lg">
-        <div onClick={() => setShowLogin(false)} className="flex flex-col items-center p-2 text-gray-400">
-          <span className="material-symbols-outlined">home</span>
-          <span className="text-[10px] font-bold uppercase">Home</span>
-        </div>
-        <div className="flex flex-col items-center p-2 text-blue-600">
-          <span className="material-symbols-outlined">person_add</span>
-          <span className="text-[10px] font-bold uppercase">Join</span>
-        </div>
-      </nav>
     </div>
   );
 }

@@ -50,6 +50,7 @@ export interface ProductLike {
   id: string;             // 문서 ID: {userId}_{productId}
   userId: string;
   productId: string;
+  status?: 'liked' | 'pending' | 'in_progress'; // 추가됨
   createdAt: Timestamp;
 }
 

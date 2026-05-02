@@ -15,9 +15,7 @@ export default function PlazaPage() {
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<string>('all'); // 'all', 'hot', 'pinned', 'my'
 
-  // Context Menu state
-  const [contextMenu, setContextMenu] = useState<{ userId: string, x: number, y: number } | null>(null);
-  const longPressTimer = React.useRef<any>(null);
+
 
   // Plaza Feed Context
   const plazaContext: FeedContext = {
@@ -63,36 +61,7 @@ export default function PlazaPage() {
     return sorted;
   }, [user, profile, storyUsers]);
 
-  // Handle Pinning
-  const handlePinToggle = async (targetId: string) => {
-    if (!user) return;
-    const pinnedIds = (profile as any)?.pinnedUserIds || [];
-    const isCurrentlyPinned = pinnedIds.includes(targetId);
 
-    try {
-      await feedService.togglePinUser(user.uid, targetId, isCurrentlyPinned);
-      setContextMenu(null);
-    } catch (error) {
-      alert("Failed to update pin status.");
-    }
-  };
-
-  // Long-press detection
-  const handleTouchStart = (userId: string, e: any) => {
-    if (userId === user?.uid) return;
-    const x = e.touches ? e.touches[0].clientX : e.clientX;
-    const y = e.touches ? e.touches[0].clientY : e.clientY;
-
-    longPressTimer.current = setTimeout(() => {
-      setContextMenu({ userId, x, y });
-    }, 600);
-  };
-
-  const handleTouchEnd = () => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-    }
-  };
 
   return (
     <PageWrapper>
@@ -102,7 +71,7 @@ export default function PlazaPage() {
           onClose={() => setSelectedProfileId(null)}
         />
       )}
-      <div className="flex flex-col min-h-screen bg-background relative overflow-hidden pt-16" onClick={() => contextMenu && setContextMenu(null)}>
+      <div className="flex flex-col min-h-screen relative overflow-hidden">
         {/* Ambient Background Elements */}
         <div className="fixed inset-0 pointer-events-none z-0">
           <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-primary/5 blur-[120px]" />
@@ -111,90 +80,43 @@ export default function PlazaPage() {
         </div>
 
         <div className="relative z-10 flex flex-col min-h-screen pb-[60px]">
-          {/* Context Menu for Pinning */}
-          <AnimatePresence>
-            {contextMenu && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9, y: 10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                style={{ position: 'fixed', left: contextMenu.x, top: contextMenu.y - 60, zIndex: 1000 }}
-                className="bg-surface-container-lowest shadow-2xl rounded-2xl border border-outline-variant/10 py-2 min-w-[140px]"
-              >
-                <button
-                  onClick={(e) => { e.stopPropagation(); handlePinToggle(contextMenu.userId); }}
-                  className="w-full px-4 py-3 flex items-center gap-2 hover:bg-surface-variant transition-colors text-left"
-                >
-                  <span className="material-symbols-outlined text-[18px] text-primary">
-                    {((profile as any)?.pinnedUserIds || []).includes(contextMenu.userId) ? 'keep_off' : 'keep'}
-                  </span>
-                  <span className="text-[12px] font-bold text-on-surface">
-                    {((profile as any)?.pinnedUserIds || []).includes(contextMenu.userId) ? 'Unpin from Top' : 'Pin to Top'}
-                  </span>
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
 
-          {/* Sticky Filter Chip Bar */}
-          <div className="sticky top-16 z-40 w-full bg-background/80 backdrop-blur-md border-b border-outline-variant/10 px-4 py-3 flex items-center gap-2 overflow-x-auto no-scrollbar shadow-sm">
-            <button 
-              onClick={() => setActiveFilter('all')}
-              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[13px] font-bold tracking-wide transition-all whitespace-nowrap ${activeFilter === 'all' ? 'bg-on-surface text-surface shadow-md scale-105' : 'bg-surface-container-low text-on-surface-variant border border-outline-variant/20 hover:bg-surface-container'}`}
-            >
-              <span className="material-symbols-outlined text-[16px]">public</span>
-              ALL
-            </button>
-            <button 
-              onClick={() => setActiveFilter('hot')}
-              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[13px] font-bold tracking-wide transition-all whitespace-nowrap ${activeFilter === 'hot' ? 'bg-on-surface text-surface shadow-md scale-105' : 'bg-surface-container-low text-on-surface-variant border border-outline-variant/20 hover:bg-surface-container'}`}
-            >
-              <span className="material-symbols-outlined text-[16px]" style={activeFilter === 'hot' ? { fontVariationSettings: "'FILL' 1" } : {}}>local_fire_department</span>
-              HOT
-            </button>
-            <button 
-              onClick={() => setActiveFilter('pinned')}
-              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[13px] font-bold tracking-wide transition-all whitespace-nowrap ${activeFilter === 'pinned' ? 'bg-on-surface text-surface shadow-md scale-105' : 'bg-surface-container-low text-on-surface-variant border border-outline-variant/20 hover:bg-surface-container'}`}
-            >
-              <span className="material-symbols-outlined text-[16px]" style={activeFilter === 'pinned' ? { fontVariationSettings: "'FILL' 1" } : {}}>keep</span>
-              PINNED
-            </button>
-            <button 
-              onClick={() => setActiveFilter('my')}
-              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[13px] font-bold tracking-wide transition-all whitespace-nowrap ${activeFilter === 'my' ? 'bg-on-surface text-surface shadow-md scale-105' : 'bg-surface-container-low text-on-surface-variant border border-outline-variant/20 hover:bg-surface-container'}`}
-            >
-              <span className="material-symbols-outlined text-[16px]" style={activeFilter === 'my' ? { fontVariationSettings: "'FILL' 1" } : {}}>person</span>
-              MY
-            </button>
-            <div className="flex-1 min-w-[8px]"></div> {/* Spacer */}
-            <button 
-              className="flex flex-shrink-0 items-center justify-center w-8 h-8 rounded-full bg-surface-container-low text-on-surface-variant border border-outline-variant/20 hover:bg-surface-container transition-colors ml-auto"
-            >
-              <span className="material-symbols-outlined text-[18px]">tune</span>
-            </button>
+          {/* Sticky Filter Bar (Shop Standard) */}
+          <div className="sticky top-0 w-full bg-[#faf8ff] py-2 px-3 z-50">
+            {/* Scrollable Tabs */}
+            <div className="w-full flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+              {['all', 'hot', 'friends', 'pinned', 'my'].map((filter) => (
+                <button
+                  key={filter}
+                  onClick={() => setActiveFilter(filter)}
+                  className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[12px] font-bold tracking-wide transition-all whitespace-nowrap ${
+                    activeFilter === filter
+                      ? 'bg-[#1E293B] text-white shadow-sm'
+                      : 'bg-[#faf8ff] text-[#64748B] border border-slate-200/60 hover:bg-slate-50'
+                  }`}
+                >
+                  {filter.toUpperCase()}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Stories Section (Profile List View) */}
-          <div className="w-full pt-4 pb-2 px-4 overflow-x-auto no-scrollbar border-b border-outline-variant/20 bg-surface-container-lowest/50 backdrop-blur-md">
+          <div className="w-full py-2 px-4 overflow-x-auto no-scrollbar">
             <div className="flex items-center gap-4 min-w-max">
               {sortedStories.map((storyUser, idx) => {
                 const isPinned = ((profile as any)?.pinnedUserIds || []).includes(storyUser.userId);
                 
                 return (
-                  <div 
-                    key={storyUser.userId || `story-${idx}`}
-                    className="flex flex-col items-center gap-1.5 cursor-pointer relative"
-                    onClick={() => {
-                      if (storyUser.userId && !storyUser.isSelf) {
-                        setSelectedProfileId(storyUser.userId);
-                      }
-                    }}
-                    onTouchStart={(e) => {
-                      if (storyUser.userId) handleTouchStart(storyUser.userId, e);
-                    }}
-                    onTouchEnd={handleTouchEnd}
-                    onTouchMove={handleTouchEnd}
-                  >
+                    <div 
+                      key={storyUser.userId || `story-${idx}`}
+                      className="flex flex-col items-center gap-1.5 cursor-pointer relative"
+                      onClick={() => {
+                        if (storyUser.userId && !storyUser.isSelf) {
+                          setSelectedProfileId(storyUser.userId);
+                        }
+                      }}
+                    >
                     <div className="relative">
                       <div className={`w-16 h-16 rounded-full p-[2px] ${storyUser.hasUnread ? 'bg-gradient-to-tr from-primary to-secondary' : 'bg-outline-variant/30'}`}>
                         <div className="w-full h-full rounded-full border-2 border-surface-container-lowest overflow-hidden">

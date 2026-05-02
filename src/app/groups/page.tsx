@@ -413,8 +413,11 @@ function GroupsContent() {
                     </span>
                   </div>
                   <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 via-black/40 to-transparent z-20 text-white">
-                    <h3 className="text-lg font-bold font-headline mb-0.5">{group.name}</h3>
-                    <p className="text-white/80 text-xs line-clamp-1">{group.memberCount} members • {group.tags?.[0] || 'Community'}</p>
+                    <h3 className="text-lg font-bold font-headline mb-0.5 w-full truncate">
+                      {group.name}
+                      {group.nativeName && <span className="text-[0.8em] font-medium text-white/90 ml-1.5">{group.nativeName}</span>}
+                    </h3>
+                    <p className="text-white/80 text-xs line-clamp-1 mt-1">{group.memberCount} members • {group.tags?.[0] || 'Community'}</p>
                   </div>
                 </div>
               </div>
@@ -523,9 +526,12 @@ function GroupsContent() {
                 </div>
                 <div className="p-6">
                   <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h2 className="text-xl font-bold font-headline text-on-surface mb-1">{group.name}</h2>
-                      <div className="flex items-center gap-2 text-on-surface-variant text-xs">
+                    <div className="min-w-0 flex-1 pr-4">
+                      <h2 className="text-xl font-bold font-headline text-on-surface mb-1 w-full truncate">
+                        {group.name}
+                        {group.nativeName && <span className="text-[0.8em] font-medium text-on-surface-variant ml-1.5">{group.nativeName}</span>}
+                      </h2>
+                      <div className="flex items-center gap-2 text-on-surface-variant text-xs mt-1.5">
                         <span className="material-symbols-outlined text-[14px]">person</span>
                         <span>Owned by {group.representative?.name || 'Community Leader'}</span>
                       </div>
@@ -772,8 +778,11 @@ function GroupsContent() {
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-slate-900 truncate">{group.name}</h3>
-                  <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
+                  <h3 className="font-bold text-slate-900 w-full truncate">
+                    {group.name}
+                    {group.nativeName && <span className="text-[0.8em] font-medium text-slate-500 ml-1.5">{group.nativeName}</span>}
+                  </h3>
+                  <div className="flex items-center gap-2 text-xs text-slate-500 font-medium mt-1">
                     <div className="flex items-center gap-1">
                       <span className="material-symbols-outlined text-[14px]">group</span>
                       <span>{group.memberCount || 0}</span>

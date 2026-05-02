@@ -29,6 +29,8 @@ export interface Coupon {
   issuedCount: number;
   createdAt: Timestamp;
   status: 'ACTIVE' | 'INACTIVE';
+  scope: 'GLOBAL' | 'GROUP';
+  groupId?: string; // Present if scope is GROUP
 }
 
 export interface UserCoupon {
@@ -62,28 +64,43 @@ export const createCoupon = async (data: Omit<Coupon, 'id' | 'issuedCount' | 'cr
 /**
  * Admin/User: List all available coupons for issuance
  */
-export const getActiveCoupons = async () => {
+export const getActiveCoupons = async (options?: { scope?: 'GLOBAL' | 'GROUP', groupId?: string }) => {
   try {
+    let constraints = [where('status', '==', 'ACTIVE')];
+    
+    if (options?.scope) {
+      constraints.push(where('scope', '==', options.scope));
+    }
+    if (options?.groupId) {
+      constraints.push(where('groupId', '==', options.groupId));
+    }
+
     const q = query(
       collection(db, 'coupons'), 
-      where('status', '==', 'ACTIVE'),
+      ...constraints,
       orderBy('createdAt', 'desc')
     );
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Coupon));
   } catch (error: any) {
-    if (error.code === 'failed-precondition') {
-      console.warn('[COUPON WARNING] Missing Index for getActiveCoupons. Falling back.');
-      const qFallback = query(
-        collection(db, 'coupons'),
-        where('status', '==', 'ACTIVE')
-      );
-      const snapshot = await getDocs(qFallback);
-      const results = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Coupon));
-      return results.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
-    }
     console.error("Error fetching active coupons:", error);
-    return [];
+    
+    // Fallback for missing index
+    const qFallback = query(
+      collection(db, 'coupons'),
+      where('status', '==', 'ACTIVE')
+    );
+    const snapshot = await getDocs(qFallback);
+    let results = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Coupon));
+    
+    if (options?.scope) {
+      results = results.filter(c => c.scope === options.scope);
+    }
+    if (options?.groupId) {
+      results = results.filter(c => c.groupId === options.groupId);
+    }
+
+    return results.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
   }
 };
 
@@ -105,30 +122,13 @@ export const deleteCoupon = async (couponId: string) => {
  * userName = user nickname for admin tracking
  */
 export const issueCoupon = async (couponId: string, userId: string, userName: string): Promise<{ success: boolean; message: string }> => {
-  const userCouponCollection = collection(db, 'user_coupons');
-  
   try {
-    // 1. [Pre-check] 7-day Cooldown Check (Any Coupon)
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const cooldownQuery = query(
-      userCouponCollection,
-      where('userId', '==', userId),
-      where('issuedAt', '>=', Timestamp.fromDate(sevenDaysAgo)),
-      orderBy('issuedAt', 'desc'),
-      limit(1)
-    );
-    const cooldownSnapshot = await getDocs(cooldownQuery);
-    if (!cooldownSnapshot.empty) {
-      return { success: false, message: 'COOLDOWN' };
-    }
-
-    // 2. [Transaction] For inventory update and duplicate check
+    // 1. [Transaction] For inventory update and duplicate check
     const couponRef = doc(db, 'coupons', couponId);
     const userCouponRef = doc(db, 'user_coupons', `${userId}_${couponId}`);
 
     return await runTransaction(db, async (transaction) => {
-      // 3. Get current coupon state (Inventory)
+      // 2. Get current coupon state (Inventory)
       const couponDoc = await transaction.get(couponRef);
       if (!couponDoc.exists()) throw new Error("Coupon not found");
       
@@ -137,16 +137,16 @@ export const issueCoupon = async (couponId: string, userId: string, userName: st
         return { success: false, message: 'SOLD_OUT' };
       }
 
-      // 4. Duplicate Check (This specific coupon)
+      // 3. Duplicate Check (This specific coupon)
       const userCouponDoc = await transaction.get(userCouponRef);
       if (userCouponDoc.exists()) {
         return { success: false, message: 'DUPLICATE' };
       }
       
-      // 5. Update inventory
+      // 4. Update inventory
       transaction.update(couponRef, { issuedCount: (couponData.issuedCount || 0) + 1 });
 
-      // 6. Calculate Expiry
+      // 5. Calculate Expiry
       let expiresAt = null;
       if (couponData.duration > 0) {
         const now = new Date();
@@ -154,7 +154,7 @@ export const issueCoupon = async (couponId: string, userId: string, userName: st
         expiresAt = Timestamp.fromDate(now);
       }
 
-      // 7. Create User Coupon document with deterministic ID
+      // 6. Create User Coupon document with deterministic ID
       transaction.set(userCouponRef, {
         userId,
         userName,
@@ -164,8 +164,6 @@ export const issueCoupon = async (couponId: string, userId: string, userName: st
         issuedAt: Timestamp.now(),
         expiresAt: expiresAt
       });
-
-      // Note: Chat notification deferred to future sprint
 
       return { success: true, message: 'SUCCESS' };
     });

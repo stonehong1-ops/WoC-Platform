@@ -18,7 +18,7 @@ export default function CreateResaleItem({ onClose, onSuccess }: CreateResaleIte
   
   const [title, setTitle] = useState('');
   const [price, setPrice] = useState('');
-  const [location, setLocation] = useState('Seoul, Gangnam-gu');
+  const [location, setLocation] = useState('Seoul, Korea');
   const [category, setCategory] = useState('Others');
   const [condition, setCondition] = useState<ItemCondition>('A');
   const [tradeMethod, setTradeMethod] = useState<TradeMethod>('both');

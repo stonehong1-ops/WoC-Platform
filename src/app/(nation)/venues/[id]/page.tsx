@@ -65,14 +65,16 @@ export default function VenueDetailPage() {
             </span>
           </div>
           
-          <h1 className="text-4xl font-black text-[#2D3435] leading-tight mb-2">
-            {venue.name}
+          <h1 className="mb-8 truncate">
+            <span className="text-4xl font-black text-[#2D3435] leading-tight">
+              {venue.name}
+            </span>
+            {venue.nameKo && (
+              <span className="text-xl font-bold text-[#596061] tracking-normal normal-case ml-2">
+                {venue.nameKo}
+              </span>
+            )}
           </h1>
-          {venue.nameKo && (
-            <h2 className="text-xl font-bold text-[#596061] opacity-50 mb-6">
-              {venue.nameKo}
-            </h2>
-          )}
           
           <div className="h-[1px] w-full bg-[#005BC0]/10 my-8" />
           

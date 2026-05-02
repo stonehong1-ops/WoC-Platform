@@ -193,9 +193,12 @@ const GroupInfo = ({ group, isLoaded }: GroupInfoProps) => {
                     <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
                       <span className="material-symbols-outlined text-primary">location_on</span>
                     </div>
-                    <div>
-                      <h3 className="font-bold text-[#002150] text-lg leading-tight">{group.name}</h3>
-                      <p className="text-[#515981] text-sm mt-1">{group.address || "Address not specified"}</p>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-bold text-[#002150] text-lg leading-tight w-full truncate">
+                        {group.name}
+                        {group.nativeName && <span className="text-[0.8em] font-medium text-[#515981] ml-1.5">{group.nativeName}</span>}
+                      </h3>
+                      <p className="text-[#515981] text-sm mt-1 truncate">{group.address || "Address not specified"}</p>
                     </div>
                   </div>
                   {group.address && (

@@ -12,7 +12,7 @@ import { groupService } from "@/lib/firebase/groupService";
 import ImageWithFallback from "@/components/common/ImageWithFallback";
 import GroupJoinModal from "./GroupJoinModal";
 
-type TabType = 'home' | 'calendar' | 'feed' | 'board' | 'info' | 'class' | 'members' | 'settings' | 'shop' | 'stay' | 'rental';
+type TabType = 'home' | 'calendar' | 'feed' | 'board' | 'info' | 'class' | 'members' | 'settings' | 'shop' | 'stay' | 'rental' | 'coupon';
 
 import GroupCalendar from "./GroupCalendar";
 import GroupBoard from "./GroupBoard";
@@ -24,6 +24,7 @@ import UniversalFeed from "../feed/UniversalFeed";
 import GroupShopEditor from "./GroupShopEditor";
 import GroupStayEditor from "./GroupStayEditor";
 import GroupRentalEditor from "./GroupRentalEditor";
+import CouponAdmin from "./CouponAdmin";
 
 import GroupBasicEditor from "./GroupBasicEditor";
 import GroupMembershipEditor from "./GroupMembershipEditor";
@@ -466,6 +467,15 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
                   </div>
                 </button>
               ))}
+
+              {/* Coupon Admin */}
+              <button
+                onClick={() => handleMenuClick("coupon")}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-left ${activeTab === "coupon" ? 'bg-[#efefff] text-[#0057bd] font-bold' : 'text-[#242c51] hover:bg-[#f7f5ff] hover:translate-x-1'}`}
+              >
+                <span className="material-symbols-outlined">confirmation_number</span>
+                <span>Coupon Admin</span>
+              </button>
             </div>
           </div>
 
@@ -766,6 +776,12 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
           {activeTab === 'members' && isFullMember && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               <GroupMemberManager group={group} />
+            </div>
+          )}
+
+          {activeTab === 'coupon' && isFullMember && (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <CouponAdmin group={group} />
             </div>
           )}
 

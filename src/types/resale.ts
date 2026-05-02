@@ -32,5 +32,6 @@ export interface UserReputation {
 export interface ResaleLike {
   userId: string;
   itemId: string;
+  status?: 'liked' | 'pending' | 'in_progress';
   createdAt: Timestamp;
 }

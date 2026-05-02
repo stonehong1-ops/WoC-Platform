@@ -1,6 +1,6 @@
 import React from 'react';
-import StakeholderPage from '@/components/layout/StakeholderPage';
+import AdminVenuePhotoManager from '@/components/venues/AdminVenuePhotoManager';
 
 export default function AdminPlacePage() {
-  return <StakeholderPage title="Admin Place" />;
+  return <AdminVenuePhotoManager />;
 }

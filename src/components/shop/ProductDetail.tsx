@@ -8,6 +8,7 @@ import { shopService } from '@/lib/firebase/shopService';
 import { groupService } from '@/lib/firebase/groupService';
 import { Product, CustomOptionDef } from '@/types/shop';
 import PurchaseFlow from './PurchaseFlow';
+import ChatRoom from '@/components/chat/ChatRoom';
 
 interface ProductDetailProps {
   product: Product;
@@ -39,6 +40,10 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
   const [showPurchase, setShowPurchase] = useState(false);
   const [bankDetails, setBankDetails] = useState<{bankName:string;accountHolder:string;accountNumber:string} | undefined>();
   const scrollRef = useRef<HTMLDivElement>(null);
+  
+  // New States
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [chatRoomId, setChatRoomId] = useState<string | null>(null);
 
   // Scarcity: stable random viewer count per session
   const [viewerCount] = useState(() => Math.floor(Math.random() * 18) + 5);
@@ -137,14 +142,17 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
     const sellerId = product.sellerId || 'adminstone';
     if (user.uid === sellerId) return alert('You cannot chat with yourself');
 
-    const confirmed = window.confirm('이제 판매자와 방이 열리고 이 상품에 대한 문의가 진행됩니다. 계속하시겠습니까?');
+    const confirmed = window.confirm('이제 판매자와 대화방이 열리고 이 상품에 대한 문의가 진행됩니다. 계속하시겠습니까?');
     if (!confirmed) return;
 
     try {
-      // 1. Get or create Business room
+      // 1. Mark as pending in wishlist
+      await shopService.setProductPendingStatus(user.uid, product.id);
+
+      // 2. Get or create Business room
       const roomId = await chatService.getOrCreatePrivateRoom([user.uid, sellerId], user.uid, 'business');
 
-      // 2. Send initial product info message
+      // 3. Send initial product info message
       const productInfo = `[상품 문의]\n상품명: ${product.title || product.name}\n가격: ₩${finalPrice.toLocaleString()}\n브랜드: ${product.brand}\n바로가기: ${window.location.origin}/shop?productId=${product.id}`;
       
       await chatService.sendMessage({
@@ -156,8 +164,8 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
         type: 'text'
       });
 
-      // 3. Navigate to chat
-      router.push(`/chat?roomId=${roomId}`);
+      // 4. Open full popup chat
+      setChatRoomId(roomId);
     } catch (err) {
       console.error("Failed to start chat:", err);
       alert('Failed to start chat. Please try again.');
@@ -257,11 +265,20 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
         <button onClick={onClose} className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'}`}>
           <span className="material-symbols-rounded text-xl">arrow_back</span>
         </button>
-        <div className={`text-sm font-bold truncate max-w-[180px] transition-opacity ${isScrolled ? 'opacity-100 text-[#2d3435]' : 'opacity-0'}`}>{product.title || product.name}</div>
+        <div className={`text-base font-bold truncate max-w-[180px] transition-opacity ${isScrolled ? 'opacity-100 text-[#2d3435]' : 'opacity-0'}`}>{product.title || product.name}</div>
         <div className="flex items-center gap-2">
-          <button onClick={(e) => onToggleLike(e, product)}
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? 'bg-slate-100' : 'bg-black/20 backdrop-blur-sm'} ${isLiked ? 'text-red-500' : isScrolled ? 'text-[#2d3435]' : 'text-white'}`}>
-            <span className="material-symbols-rounded text-xl" style={{ fontVariationSettings: isLiked ? "'FILL' 1" : "'FILL' 0" }}>favorite</span>
+          <button onClick={() => {
+            if (navigator.share) {
+              navigator.share({
+                title: product.title || product.name,
+                url: window.location.href,
+              }).catch(console.error);
+            } else {
+              alert('Share not supported on this browser');
+            }
+          }}
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? 'bg-slate-100' : 'bg-black/20 backdrop-blur-sm'} ${isScrolled ? 'text-[#2d3435]' : 'text-white'}`}>
+            <span className="material-symbols-rounded text-xl">share</span>
           </button>
         </div>
       </div>
@@ -278,7 +295,7 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
           </div>
           {/* Images */}
           {images.length > 0 && (
-            <div className="relative h-full" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+            <div className="relative h-full" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onClick={() => setShowImageModal(true)}>
               <div className="flex h-full transition-transform duration-300 ease-out" style={{ transform: `translateX(-${currentImg * 100}%)` }}>
                 {images.map((img, i) => (
                   <div key={i} className="w-full flex-shrink-0 h-full">
@@ -289,27 +306,41 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
               </div>
               {/* Left/Right Arrows */}
               {images.length > 1 && currentImg > 0 && (
-                <button onClick={() => setCurrentImg(p => p - 1)} className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/25 backdrop-blur-sm flex items-center justify-center text-white active:scale-90 z-10">
+                <button onClick={(e) => { e.stopPropagation(); setCurrentImg(p => p - 1); }} className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/25 backdrop-blur-sm flex items-center justify-center text-white active:scale-90 z-10">
                   <span className="material-symbols-rounded text-lg">chevron_left</span>
                 </button>
               )}
               {images.length > 1 && currentImg < images.length - 1 && (
-                <button onClick={() => setCurrentImg(p => p + 1)} className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/25 backdrop-blur-sm flex items-center justify-center text-white active:scale-90 z-10">
+                <button onClick={(e) => { e.stopPropagation(); setCurrentImg(p => p + 1); }} className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/25 backdrop-blur-sm flex items-center justify-center text-white active:scale-90 z-10">
                   <span className="material-symbols-rounded text-lg">chevron_right</span>
                 </button>
               )}
-              {/* Counter + Dots */}
-              {images.length > 1 && (
-                <div className="absolute bottom-4 left-0 right-0 flex items-center justify-center">
-                  <div className="flex gap-1.5 items-center">
-                    {images.map((_, i) => (
-                      <button key={i} onClick={() => setCurrentImg(i)}
-                        className={`rounded-full transition-all ${i === currentImg ? 'w-5 h-2 bg-white' : 'w-2 h-2 bg-white/50'}`} />
-                    ))}
-                  </div>
-                  <span className="absolute right-4 bg-black/40 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{currentImg + 1}/{images.length}</span>
-                </div>
-              )}
+              {/* Overlay bottom left: Counter + Dots */}
+              <div className="absolute bottom-4 left-4 flex flex-col items-start z-10" onClick={(e) => e.stopPropagation()}>
+                {images.length > 1 && (
+                  <>
+                    <span className="bg-black/40 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-0.5 rounded-full mb-1">{currentImg + 1}/{images.length}</span>
+                    <div className="flex gap-1.5 items-center pl-1">
+                      {images.map((_, i) => (
+                        <button key={i} onClick={(e) => { e.stopPropagation(); setCurrentImg(i); }}
+                          className={`rounded-full transition-all ${i === currentImg ? 'w-5 h-2 bg-white' : 'w-2 h-2 bg-white/50'}`} />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Stats - Floating on the bottom right */}
+              <div className="absolute bottom-4 right-4 flex items-center gap-2 z-20" onClick={(e) => e.stopPropagation()}>
+                <button onClick={(e) => { e.stopPropagation(); onToggleLike(e, product); }} className="px-3 h-8 rounded-full bg-black/40 backdrop-blur-sm flex items-center gap-1.5 text-white transition-transform active:scale-95">
+                  <span className="material-symbols-rounded text-[18px]" style={{ fontVariationSettings: isLiked ? "'FILL' 1" : "'FILL' 0", color: isLiked ? '#ef4444' : 'white' }}>favorite</span>
+                  <span className="text-[11px] font-bold">{product.likesCount || 0}</span>
+                </button>
+                <button onClick={(e) => e.stopPropagation()} className="px-3 h-8 rounded-full bg-black/40 backdrop-blur-sm flex items-center gap-1.5 text-white transition-transform active:scale-95">
+                  <span className="material-symbols-rounded text-[18px]">chat_bubble</span>
+                  <span className="text-[11px] font-bold">0</span>
+                </button>
+              </div>
             </div>
           )}
           {/* Sale badge */}
@@ -318,22 +349,11 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
           )}
         </div>
 
-        {/* 2) Title & Stats — Moved right under image */}
+        {/* 2) Title & Stats */}
         <div className="px-4 pt-5 pb-4 flex justify-between items-start border-b border-[#f2f4f4]">
           <div className="flex-1 min-w-0 pr-4">
             <p className="text-[10px] font-black text-[#acb3b4] uppercase tracking-widest leading-none mb-1.5">{product.brand}</p>
             <h1 className="text-xl font-black text-[#2d3435] leading-tight font-headline">{product.title || product.name}</h1>
-          </div>
-          <div className="flex items-center gap-3 text-[#acb3b4] shrink-0 mt-3.5">
-            <span className="flex items-center gap-0.5 text-[11px]">
-              <span className="material-symbols-rounded text-xs">visibility</span> {product.viewsCount || 0}
-            </span>
-            <span className="flex items-center gap-0.5 text-[11px]">
-              <span className="material-symbols-rounded text-xs" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span> {product.likesCount || 0}
-            </span>
-            <span className="flex items-center gap-0.5 text-[11px]">
-              <span className="material-symbols-rounded text-xs">chat_bubble</span> 0
-            </span>
           </div>
         </div>
 
@@ -687,6 +707,43 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
           onClose={() => setShowPurchase(false)}
           onComplete={() => { setShowPurchase(false); onClose(); }}
         />
+      )}
+
+      {/* ━━━ Full Screen Image Viewer ━━━ */}
+      {showImageModal && (
+        <div className="fixed inset-0 z-[200] bg-black flex flex-col animate-in fade-in duration-200">
+          <div className="absolute top-0 left-0 right-0 z-10 flex justify-end p-4">
+            <button onClick={() => setShowImageModal(false)} className="w-10 h-10 rounded-full bg-black/40 text-white flex items-center justify-center">
+              <span className="material-symbols-rounded text-2xl">close</span>
+            </button>
+          </div>
+          <div className="flex-1 w-full h-full flex items-center justify-center" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+            <div className="flex w-full transition-transform duration-300 ease-out h-full items-center" style={{ transform: `translateX(-${currentImg * 100}%)` }}>
+              {images.map((img, i) => (
+                <div key={i} className="w-full flex-shrink-0 flex items-center justify-center px-4">
+                  <img src={img} alt={`Fullscreen ${i + 1}`} className="w-full max-h-[80vh] object-contain" />
+                </div>
+              ))}
+            </div>
+          </div>
+          {images.length > 1 && (
+            <div className="absolute bottom-10 left-0 right-0 flex justify-center gap-2">
+              {images.map((_, i) => (
+                <div key={i} className={`rounded-full transition-all ${i === currentImg ? 'w-6 h-2 bg-white' : 'w-2 h-2 bg-white/40'}`} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ━━━ Full Screen Chat Room ━━━ */}
+      {chatRoomId && (
+        <div className="fixed inset-0 z-[200] bg-white animate-in slide-in-from-bottom duration-300">
+          <ChatRoom
+            roomId={chatRoomId}
+            onBack={() => setChatRoomId(null)}
+          />
+        </div>
       )}
     </div>
   );

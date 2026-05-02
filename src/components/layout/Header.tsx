@@ -74,40 +74,35 @@ export default function Header() {
   }
 
   return (
-    <header className="fixed top-0 w-full z-50 bg-white border-b border-outline-variant/20 h-16 px-3 flex items-center justify-between">
+    <header className="fixed top-0 w-full z-50 bg-[#FAF8FF]/80 backdrop-blur-md border-b border-slate-100 h-16 px-3 flex items-center justify-between">
       <div className="flex items-center gap-3 shrink-0">
         {/* Hamburger Menu - Re-attached link via toggleDrawer */}
         <button 
           onClick={toggleDrawer}
-          className="hover:opacity-70 transition-opacity active:scale-95 duration-100 flex items-center justify-center p-1"
+          className="hover:opacity-70 transition-opacity active:scale-95 duration-100 flex items-center justify-center w-8 h-8"
           aria-label="Open menu"
         >
-          <span className="material-symbols-outlined text-on-surface" data-icon="menu">menu</span>
+          <span className="material-symbols-outlined text-on-surface !text-[18px]" data-icon="menu">menu</span>
         </button>
-        {/* Title */}
-        <div className="flex flex-col">
-          <h1 className="font-display text-[18px] font-black tracking-tight text-on-surface leading-none">{current.headline}</h1>
-        </div>
       </div>
 
       <div className="flex items-center">
         {/* Action Group */}
         <div className="flex items-center gap-1">
-          {/* Notifications */}
-          <Link 
-            href="/notification" 
-            className="relative hover:opacity-70 transition-opacity active:scale-95 duration-100 flex items-center justify-center w-8 h-8"
+          {/* Map / Location Trigger */}
+          <button 
+            onClick={toggleSelector}
+            className="hover:opacity-70 transition-opacity active:scale-95 duration-100 flex items-center justify-center w-8 h-8"
           >
-            <span className="material-symbols-outlined text-on-surface !text-[20px]" data-icon="notifications">notifications</span>
-            <span className="absolute top-0 right-0 flex h-3 w-3 items-center justify-center rounded-full bg-primary text-[7px] font-black text-white outline outline-1 outline-white">3</span>
-          </Link>
+            <span className="material-symbols-outlined text-on-surface !text-[18px]" data-icon="pin_drop">pin_drop</span>
+          </button>
 
           {/* Chat */}
           <Link 
             href="/chat" 
             className="relative hover:opacity-70 transition-opacity active:scale-95 duration-100 flex items-center justify-center w-8 h-8"
           >
-            <span className="material-symbols-outlined text-on-surface !text-[20px]" data-icon="chat_bubble">chat_bubble</span>
+            <span className="material-symbols-outlined text-on-surface !text-[18px]" data-icon="chat_bubble">chat_bubble</span>
             {unreadCount > 0 && (
               <span className="absolute top-0 right-0 flex h-3 w-3 items-center justify-center rounded-full bg-primary text-[7px] font-black text-white outline outline-1 outline-white animate-in zoom-in">
                 {unreadCount > 99 ? '99+' : unreadCount}
@@ -120,7 +115,7 @@ export default function Header() {
             href="/search" 
             className="hover:opacity-70 transition-opacity active:scale-95 duration-100 flex items-center justify-center w-8 h-8"
           >
-            <span className="material-symbols-outlined text-on-surface !text-[20px]" data-icon="search">search</span>
+            <span className="material-symbols-outlined text-on-surface !text-[18px]" data-icon="search">search</span>
           </Link>
         </div>
 

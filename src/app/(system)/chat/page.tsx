@@ -13,22 +13,16 @@ export default function ChatPage() {
 
   return (
     <PageWrapper>
-      <div className="flex h-[calc(100vh-124px)] bg-white overflow-hidden font-manrope">
+      <div className="flex h-[calc(100vh-124px)] bg-[#FAF8FF] overflow-hidden font-manrope">
         {/* Left Side: Chat List (Hidden on mobile if a room is selected) */}
-        <div className={`w-full md:w-[380px] border-r border-gray-50 flex flex-col ${selectedRoomId ? 'hidden md:flex' : 'flex'}`}>
-          <div className="p-6 border-b border-gray-50">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-[28px] font-black text-gray-900 uppercase tracking-tighter">Messages</h2>
-              <button className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center hover:bg-gray-100 transition-all">
-                <span className="material-symbols-outlined text-[20px] text-gray-500">edit_square</span>
-              </button>
-            </div>
-            <div className="relative mt-4">
+        <div className={`w-full md:w-[380px] border-r border-slate-100 flex flex-col ${selectedRoomId ? 'hidden md:flex' : 'flex'}`}>
+          <div className="p-6">
+            <div className="relative mt-2">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-300 text-[20px]">search</span>
               <input 
                 type="text" 
                 placeholder="Search conversations..."
-                className="w-full pl-12 pr-4 py-3 bg-[#f8f9fa] border-none rounded-2xl text-sm font-medium placeholder:text-gray-300 focus:ring-1 focus:ring-primary/10 transition-all"
+                className="w-full pl-12 pr-4 py-3 bg-white border border-slate-100 rounded-2xl text-sm font-medium placeholder:text-gray-300 focus:ring-1 focus:ring-primary/10 transition-all"
               />
             </div>
           </div>
@@ -39,7 +33,7 @@ export default function ChatPage() {
         </div>
 
         {/* Right Side: Chat Room (Visible on mobile only if a room is selected) */}
-        <div className={`flex-1 flex flex-col bg-[#f8f9fa] ${selectedRoomId ? 'flex' : 'hidden md:flex items-center justify-center'}`}>
+        <div className={`flex-1 flex flex-col bg-[#FAF8FF] ${selectedRoomId ? 'flex' : 'hidden md:flex items-center justify-center'}`}>
           {selectedRoomId ? (
             <ChatRoom 
               roomId={selectedRoomId} 

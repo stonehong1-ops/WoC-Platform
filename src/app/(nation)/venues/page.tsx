@@ -58,7 +58,7 @@ export default function VenuesPage() {
 
   return (
     <PageWrapper>
-      <div className="relative h-screen w-full -mt-16 sm:mt-0 overflow-hidden">
+      <div className="fixed inset-0 w-full overflow-hidden" style={{ top: 'var(--header-height, 120px)', bottom: 'calc(64px + max(env(safe-area-inset-bottom), 12px))' }}>
         <MapComponent 
           isLoaded={isLoaded}
           onRegisterOpen={handleRegisterOpen}

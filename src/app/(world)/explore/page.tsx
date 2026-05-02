@@ -1,13 +1,44 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
+import { useAuth } from '@/components/providers/AuthProvider';
+import { useLocation } from '@/components/providers/LocationProvider';
+import SubFooter from '@/components/SubFooter';
 
 export default function ExplorePage() {
+  const { profile, user } = useAuth();
+  const { location, setIsSelectorOpen } = useLocation();
+  const displayName = profile?.nickname || user?.displayName || 'Stone';
+
   return (
-    <div className="bg-white text-black antialiased w-full pb-32 pt-8">
+    <div className="bg-[#FAF8FF] text-black antialiased w-full pb-32 pt-4">
+      {/* Header Message Section */}
+      <header className="px-6 mb-16 max-w-5xl mx-auto pt-2">
+        <div className="flex justify-between items-start mb-6">
+          <div className="relative inline-block">
+            <h1 className="text-4xl md:text-5xl font-bold italic tracking-tight text-slate-900 leading-tight animate-in fade-in slide-in-from-left-4 duration-1000">
+              Life goes ON<span className="text-[#007AFF] inline-block animate-pulse">_</span>
+            </h1>
+            <div className="h-1 w-16 bg-[#007AFF]/20 rounded-full mt-2"></div>
+          </div>
+
+        </div>
+        
+        <div className="space-y-3 max-w-3xl animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-300">
+          <h1 className="text-xl sm:text-2xl text-on-surface font-medium leading-tight">
+            <span className="font-bold">{displayName},</span> this is a space where everyone on Earth connects through shared hobbies.
+          </h1>
+          <p className="text-sm sm:text-base text-slate-500 font-normal leading-relaxed">
+            Discover new experiences in our diverse societies.
+          </p>
+        </div>
+      </header>
+
       {/* Main Content */}
       <main>
         {/* SECTION 1: STAGE */}
-        <article className="border-b border-gray-100">
+        <article className="border-b border-slate-100/50 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
           <div className="max-w-4xl mx-auto">
             <img 
               alt="Flamenco dance" 
@@ -222,6 +253,9 @@ export default function ExplorePage() {
           </div>
         </article>
       </main>
+
+      {/* Footer Restoration */}
+      <SubFooter />
     </div>
   );
 }

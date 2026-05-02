@@ -9,10 +9,10 @@ interface UserNameProps {
 
 export default function UserName({ nickname, nativeNickname, className = 'font-bold text-on-surface', nativeClassName = 'text-[0.8em] font-medium text-on-surface-variant ml-1.5' }: UserNameProps) {
   return (
-    <div className={`inline-flex items-baseline ${className}`}>
-      <span className="truncate">{nickname || 'Unknown'}</span>
+    <div className={`truncate ${className}`}>
+      {nickname || 'Unknown'}
       {nativeNickname && nativeNickname !== nickname && (
-        <span className={`shrink-0 ${nativeClassName}`}>
+        <span className={nativeClassName}>
           {nativeNickname}
         </span>
       )}

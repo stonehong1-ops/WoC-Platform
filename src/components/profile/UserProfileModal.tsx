@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { PlatformUser } from '@/types/user';
 import { userService } from '@/lib/firebase/userService';
 import { groupService } from '@/lib/firebase/groupService';
+import UserAvatar from '@/components/common/UserAvatar';
 
 interface UserProfileModalProps {
   userId: string;
@@ -75,10 +76,11 @@ export default function UserProfileModal({ userId, onClose }: UserProfileModalPr
             <div className="w-full pt-10 pb-6 flex flex-col items-center">
               <div className="relative mb-6">
                 <div className="w-28 h-28 rounded-full border-4 border-surface-container-high shadow-md overflow-hidden bg-surface-container">
-                  <img 
+                  <UserAvatar 
+                    photoURL={user.photoURL} 
                     alt="User Profile Photo" 
-                    className="w-full h-full object-cover" 
-                    src={user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.nickname || (user as any).displayName || 'User')}&background=0f172a&color=fff&font-size=0.33&bold=true`}
+                    className="w-full h-full"
+                    iconSize="48px"
                   />
                 </div>
                 <button 

@@ -8,6 +8,7 @@ import CreateResaleItem from '@/components/resale/CreateResaleItem';
 import ResaleItemDetail from '@/components/resale/ResaleItemDetail';
 import { AnimatePresence } from 'framer-motion';
 import { safeDate } from '@/lib/utils/safeData';
+import ResaleWishlistTray from '@/components/resale/ResaleWishlistTray';
 
 type SortOption = 'latest' | 'popular' | 'price_asc' | 'price_desc';
 
@@ -19,7 +20,7 @@ const SORT_OPTIONS: { key: SortOption; label: string; icon: string }[] = [
 ];
 
 const RESALE_FILTER_DEFS: Record<string, { label: string; fullLabel?: string; icon?: string }> = {
-  All: { label: 'All', fullLabel: 'All Items' },
+  All: { label: 'All', fullLabel: 'All' },
   Shoes: { label: 'Shoes', fullLabel: 'Shoes', icon: 'steps' },
   Apparel: { label: 'Apparel', fullLabel: 'Apparel', icon: 'checkroom' },
   Accessories: { label: 'Accessories', fullLabel: 'Accessories', icon: 'diamond' },
@@ -59,11 +60,20 @@ export default function ResalePage() {
     return () => unsub();
   }, []);
 
+  const [myLikes, setMyLikes] = useState<any[]>([]);
+
   // Sync likes
   useEffect(() => {
     if (!user) {
       setUserLikes(new Set());
+      setMyLikes([]);
+      return;
     }
+    const unsub = resaleService.subscribeMyLikes(user.uid, (likes) => {
+      setMyLikes(likes);
+      setUserLikes(new Set(likes.map((l: any) => l.itemId)));
+    });
+    return () => unsub();
   }, [user]);
 
   const handleLike = async (e: React.MouseEvent, itemId: string) => {
@@ -136,7 +146,66 @@ export default function ResalePage() {
         .material-symbols-rounded { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
       `}} />
 
-      {/* ③ Product Grid (Resale Listings) */}
+      {/* Filter & Sort Bar */}
+      <div className="w-full bg-white border-b border-slate-100/50 px-3 py-2 flex flex-col gap-3">
+        {/* Scrollable Tabs */}
+        <div className="w-full flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+          {resaleFilters.map((filter) => (
+            <button
+              key={filter.key}
+              onClick={() => setActiveFilter(filter.key)}
+              className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[12px] font-bold tracking-wide transition-all whitespace-nowrap ${
+                activeFilter === filter.key
+                  ? 'bg-[#1E293B] text-white shadow-sm'
+                  : 'bg-slate-50 text-slate-500 border border-slate-100 hover:bg-slate-100'
+              }`}
+            >
+              {filter.fullLabel || filter.label}
+            </button>
+          ))}
+        </div>
+        
+        {/* Bottom Actions (Text + Arrow) */}
+        <div className="w-full flex items-center justify-between px-1">
+          <div className="text-[11px] font-medium text-[#007AFF]">
+            {filtered.length} items
+          </div>
+          
+          <div className="flex items-center gap-4">
+            {/* Sort Trigger */}
+            <button 
+              onClick={() => setShowSortDropdown(!showSortDropdown)}
+              className="flex items-center gap-0.5 text-[12px] font-bold text-slate-600 hover:text-slate-800 transition-all"
+            >
+              {SORT_OPTIONS.find(o => o.key === sortOption)?.label || 'Sort'}
+              <span className="material-symbols-outlined text-[14px]">expand_more</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Sort Options Modal/Dropdown */}
+      {showSortDropdown && (
+        <div className="absolute top-[90px] right-4 z-40 bg-white rounded-2xl shadow-2xl border border-slate-100 py-2 min-w-[160px] animate-in fade-in slide-in-from-top-2 duration-300">
+          {SORT_OPTIONS.map(opt => (
+            <button
+              key={opt.key}
+              onClick={() => {
+                setSortOption(opt.key);
+                setShowSortDropdown(false);
+              }}
+              className={`w-full px-4 py-2.5 flex items-center gap-3 hover:bg-slate-50 transition-colors text-left ${
+                sortOption === opt.key ? 'text-blue-600 font-bold' : 'text-slate-600 font-medium'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[18px]">{opt.icon}</span>
+              <span className="text-[13px]">{opt.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* ⑤ Product Grid (필터+정렬 결과) */}
       <div className="pt-4 px-4 mb-10 text-left min-h-[400px]">
 
 
@@ -197,10 +266,10 @@ export default function ResalePage() {
                     <button
                       onClick={(e) => handleLike(e, item.id)}
                       className={`absolute z-20 top-3 right-3 w-8 h-8 backdrop-blur rounded-full flex items-center justify-center shadow-sm transition-colors active:scale-90 ${
-                        userLikes.has(item.id) || item.likesCount > 0 ? 'bg-red-50 text-red-500' : 'bg-white/90 text-[#2d3435] hover:text-red-500'
+                        userLikes.has(item.id) ? 'bg-red-50 text-red-500' : 'bg-white/90 text-[#2d3435] hover:text-red-500'
                       }`}
                     >
-                      <span className="material-symbols-rounded text-lg" style={{ fontVariationSettings: userLikes.has(item.id) || item.likesCount > 0 ? "'FILL' 1" : "'FILL' 0" }}>favorite</span>
+                      <span className="material-symbols-rounded text-lg" style={{ fontVariationSettings: userLikes.has(item.id) ? "'FILL' 1" : "'FILL' 0" }}>favorite</span>
                     </button>
                   </div>
                   
@@ -209,20 +278,10 @@ export default function ResalePage() {
                       {item.location} • {getRelativeTime(item.createdAt)}
                     </p>
                     <h4 className="text-sm font-semibold text-[#2d3435] font-body truncate">{item.title}</h4>
-                    <div className="flex items-center justify-between mt-1">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-sm font-bold text-[#2d3435] font-headline">
-                          ₩{item.price.toLocaleString()}
-                        </span>
-                      </div>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setSelectedItem(item); }}
-                        className={`p-1.5 rounded-lg transition-all ${
-                          userLikes.has(item.id) || item.likesCount > 0 ? 'bg-red-50 text-red-500' : 'bg-[#d8e2ff] text-[#004fa8] hover:bg-primary hover:text-white'
-                        }`}
-                      >
-                        <span className="material-symbols-rounded text-[18px] leading-none">chat_bubble</span>
-                      </button>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-bold text-[#2d3435] font-headline">
+                        ₩{item.price.toLocaleString()}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -232,13 +291,7 @@ export default function ResalePage() {
         )}
       </div>
 
-      {/* 4. Global Resale FAB */}
-      <button 
-        onClick={() => setShowCreateModal(true)}
-        className="fixed bottom-28 right-6 w-14 h-14 bg-primary text-white rounded-full shadow-lg shadow-primary/30 flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50"
-      >
-        <span className="material-symbols-rounded text-[32px] group-hover:rotate-90 transition-transform duration-300">add</span>
-      </button>
+
 
       {/* Create Modal */}
       <AnimatePresence>
@@ -255,6 +308,18 @@ export default function ResalePage() {
           />
         )}
       </AnimatePresence>
+
+      {user && (
+        <ResaleWishlistTray 
+          likes={myLikes} 
+          userId={user.uid} 
+          onProductClick={(productId) => {
+            const item = items.find(i => i.id === productId);
+            if (item) setSelectedItem(item);
+          }} 
+          onAddClick={() => setShowCreateModal(true)}
+        />
+      )}
     </main>
   );
 }

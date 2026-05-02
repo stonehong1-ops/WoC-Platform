@@ -29,7 +29,7 @@ export default function SocialPage() {
   });
 
   const { location } = useLocation();
-  const { user, profile } = useAuth();
+  const { user, profile, loading, setShowLogin } = useAuth();
   const [viewSocial, setViewSocial] = useState<Social | null>(null);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
@@ -39,6 +39,15 @@ export default function SocialPage() {
       carouselRef.current.scrollLeft = 0;
     }
   }, [activeDayOffset]);
+
+  // Auth Guard for Social Page
+  useEffect(() => {
+    if (!loading) {
+      if (!user || (profile && !profile.isRegistered)) {
+        setShowLogin(true);
+      }
+    }
+  }, [user, profile, loading, setShowLogin]);
 
   const canEdit = (s: Social) => {
     if (!user) return false;

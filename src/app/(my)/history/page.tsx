@@ -207,7 +207,7 @@ export default function HistoryPage() {
     : groupDetails?.classPaymentSettings?.bankDetails;
 
   return (
-    <div className="min-h-screen bg-background text-on-background pb-24 font-['Inter']">
+    <div className="min-h-screen bg-[#FAF8FF] text-on-background pb-24 font-['Inter']">
 
       {/* Scrollable Tab Bar */}
       {!selectedDetail && (

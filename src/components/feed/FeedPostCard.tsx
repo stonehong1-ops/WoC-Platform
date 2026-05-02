@@ -15,11 +15,12 @@ import UserBadge from '@/components/common/UserBadge';
 interface FeedPostCardProps {
   post: Post;
   currentUser?: any;
+  profile?: any;
   onEdit?: (post: Post) => void;
   onDelete?: (postId: string) => void;
 }
 
-export default function FeedPostCard({ post, currentUser, onEdit, onDelete }: FeedPostCardProps) {
+export default function FeedPostCard({ post, currentUser, profile, onEdit, onDelete }: FeedPostCardProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const [isReactionSelectorOpen, setIsReactionSelectorOpen] = useState(false);
@@ -201,9 +202,25 @@ export default function FeedPostCard({ post, currentUser, onEdit, onDelete }: Fe
                   </button>
                 </>
               ) : (
-                <button onClick={() => setIsMenuOpen(false)} className="w-full px-4 py-2 text-left text-sm hover:bg-primary/10 flex items-center gap-3 text-on-surface">
-                  <span className="material-symbols-outlined text-lg">report</span> Report
-                </button>
+                <>
+                  <button onClick={async () => {
+                    setIsMenuOpen(false);
+                    if (!currentUser) return;
+                    const pinnedPostIds = (profile as any)?.pinnedPostIds || [];
+                    const isPinned = pinnedPostIds.includes(post.id);
+                    try {
+                      await feedService.togglePinPost(currentUser.uid, post.id, isPinned);
+                    } catch (error) {
+                      alert("Failed to update pin status.");
+                    }
+                  }} className="w-full px-4 py-2 text-left text-sm hover:bg-primary/10 flex items-center gap-3 text-on-surface">
+                    <span className="material-symbols-outlined text-lg">{((profile as any)?.pinnedPostIds || []).includes(post.id) ? 'keep_off' : 'keep'}</span> 
+                    {((profile as any)?.pinnedPostIds || []).includes(post.id) ? 'Unpin Post' : 'Pin Post'}
+                  </button>
+                  <button onClick={() => setIsMenuOpen(false)} className="w-full px-4 py-2 text-left text-sm hover:bg-primary/10 flex items-center gap-3 text-on-surface">
+                    <span className="material-symbols-outlined text-lg">report</span> Report
+                  </button>
+                </>
               )}
             </div>
           )}
@@ -325,7 +342,7 @@ export default function FeedPostCard({ post, currentUser, onEdit, onDelete }: Fe
     >
       {item.type === 'video' ? (
         <>
-          <video src={item.url} className="w-full h-full object-cover" muted playsInline />
+          <video src={item.url} className="w-full h-full object-cover" autoPlay loop muted playsInline />
           {!showMoreOverlay && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/25 group-hover:bg-black/35 transition-colors">
               <div className="w-11 h-11 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center text-white shadow-lg">

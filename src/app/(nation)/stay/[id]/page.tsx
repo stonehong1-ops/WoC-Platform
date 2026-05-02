@@ -1,13 +1,17 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import '@/styles/groupstayeditor.css';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { stayService } from '@/lib/firebase/stayService';
 import { stayBookingService } from '@/lib/firebase/stayBookingService';
+import { chatService } from '@/lib/firebase/chatService';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { Stay, StayLike } from '@/types/stay';
+import SectionCard from '@/components/ui/SectionCard';
+import InfoRow from '@/components/ui/InfoRow';
+import CollapseSection from '@/components/ui/CollapseSection';
+import ChatRoom from '@/components/chat/ChatRoom';
 import {
   format,
   addMonths,
@@ -31,27 +35,37 @@ export default function StayDetailPage() {
   const [stay, setStay] = useState<Stay | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentImgIdx, setCurrentImgIdx] = useState(0);
-  
-  // Accordion states
-  const [isRoomOpen, setIsRoomOpen] = useState(false);
-  const [isGettingOpen, setIsGettingOpen] = useState(false);
-  const [isFacilityOpen, setIsFacilityOpen] = useState(false);
+  const router = useRouter();
+  const [isChatLoading, setIsChatLoading] = useState(false);
+
+  // Image viewer & Chat state (Shop pattern)
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [chatRoomId, setChatRoomId] = useState<string | null>(null);
+  const touchStartX = useRef(0);
+
+  // Touch handlers for carousel (Shop pattern)
+  const handleTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const diff = touchStartX.current - e.changedTouches[0].clientX;
+    const imgs = stay?.images?.length || 0;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0 && currentImgIdx < imgs - 1) setCurrentImgIdx(p => p + 1);
+      if (diff < 0 && currentImgIdx > 0) setCurrentImgIdx(p => p - 1);
+    }
+  };
 
   // Scroll state
   const [isScrolled, setIsScrolled] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
 
   // Like state
   const [likedStays, setLikedStays] = useState<Set<string>>(new Set());
   const [isLiking, setIsLiking] = useState(false);
 
   useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const handler = () => setIsScrolled(el.scrollTop > 60);
-    el.addEventListener('scroll', handler, { passive: true });
-    return () => el.removeEventListener('scroll', handler);
-  }, [isLoading]);
+    const handler = () => setIsScrolled(window.scrollY > 60);
+    window.addEventListener('scroll', handler, { passive: true });
+    return () => window.removeEventListener('scroll', handler);
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -151,6 +165,19 @@ export default function StayDetailPage() {
     setStartDate(null);
     setEndDate(null);
   };
+
+  // stayId 변경 시 모든 상태 리셋 (캐시 방지)
+  useEffect(() => {
+    setStay(null);
+    setCurrentImgIdx(0);
+    setStartDate(null);
+    setEndDate(null);
+    setIsScrolled(false);
+    setChatRoomId(null);
+    setBookedDates([]);
+    setGroupCoords(null);
+    setVenueNameKo('');
+  }, [stayId]);
 
   useEffect(() => {
     if (!stayId) return;
@@ -284,6 +311,56 @@ export default function StayDetailPage() {
         }
         setEndDate(day);
       }
+    }
+  };
+
+  const handleChatWithHost = async () => {
+    if (!user) {
+      setShowLogin(true);
+      return;
+    }
+    
+    if (!stay?.host?.userId) {
+      alert('Host information is missing.');
+      return;
+    }
+    
+    if (user.uid === stay.host.userId) {
+      alert('You cannot chat with yourself.');
+      return;
+    }
+
+    try {
+      setIsChatLoading(true);
+
+      // 1. Mark as pending in wishlist (Shop pattern)
+      await stayService.setStayPendingStatus(user.uid, stay.id);
+
+      // 2. Get or create Business room
+      const roomId = await chatService.getOrCreatePrivateRoom(
+        [user.uid, stay.host.userId],
+        user.uid,
+        'business'
+      );
+      
+      // 3. Send structured stay info message (Shop pattern)
+      const stayInfo = `🏨 [STAY INQUIRY]\nStay: ${stay.title}\nLocation: ${stay.location?.district ? `${stay.location.district}, ${stay.location.city}` : stay.location?.city || ''}\nRate: ₩${(stay.pricing?.baseRate || 0).toLocaleString()}/night\nLink: ${window.location.origin}/stay/${stay.id}`;
+
+      await chatService.sendMessage({
+        roomId,
+        senderId: user.uid,
+        senderName: user.displayName || 'User',
+        text: stayInfo,
+        type: 'text'
+      });
+      
+      // 4. Open inline chat (Shop pattern — no page navigation)
+      setChatRoomId(roomId);
+    } catch (err) {
+      console.error('Failed to init chat', err);
+      alert('Failed to start chat. Please try again later.');
+    } finally {
+      setIsChatLoading(false);
     }
   };
 
@@ -421,82 +498,84 @@ export default function StayDetailPage() {
   const images = stay.images?.length ? stay.images : ['https://lh3.googleusercontent.com/aida-public/AB6AXuCMx9USYhY1wAK3tXsol1nLIi8LvHOZbRivv88TS6BbbJnUOXTnTgi8ABg6fG7IIMh8OAAHj44IK9TeDNzZ7UpH_MeMZCxZiTBZw1QE8dOcrY5iPbQ9g3Jn6Q437Yz1hu_Zpyn0W3RDsYcUykogZQUtPAjOYsZwQdUI_WNBWXd8Nl_iql6UYkCYFmHx3hJkNuaMED9Q9Ck6wqaUFtqqF699faCWMk7RGlVFuM485UX8HtbTZciYRN-81JBze6'];
 
   return (
-    <div className="bg-white min-h-screen flex flex-col font-sans animate-in slide-in-from-bottom duration-300">
-      <style dangerouslySetInnerHTML={{ __html: `
-        .detail-scrollbar::-webkit-scrollbar { display: none; }
-        .detail-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-      `}} />
+    <div className="bg-white min-h-[100dvh] font-sans animate-in slide-in-from-bottom duration-300 relative z-50">
 
-      {/* ━━━ Header ━━━ */}
+      {/* ━━━ Header (Shop pattern: back + title(scroll) + share only) ━━━ */}
       <div className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 transition-all duration-300 ${isScrolled ? 'bg-white/95 backdrop-blur-md shadow-sm' : 'bg-gradient-to-b from-black/30 to-transparent'}`}>
         <button onClick={() => window.history.back()} className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'}`}>
           <span className="material-symbols-rounded text-xl">arrow_back</span>
         </button>
-        <div className={`flex flex-col items-center flex-1 transition-opacity ${isScrolled ? 'opacity-100' : 'opacity-0'}`}>
-           <span className="text-sm font-bold text-[#2d3435] truncate max-w-[180px]">{stay.title}</span>
-           {(stay.nativeTitle || venueNameKo) && (
-              <span className="text-[11px] font-bold text-slate-500 truncate max-w-[180px]">{stay.nativeTitle || venueNameKo}</span>
-           )}
-        </div>
+        <div className={`text-base font-bold truncate max-w-[180px] transition-opacity ${isScrolled ? 'opacity-100 text-[#2d3435]' : 'opacity-0'}`}>{stay.title}</div>
         <div className="flex items-center gap-2">
-          <button 
-            onClick={handleToggleLike} 
-            disabled={isLiking}
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'}`}
-          >
-            <span className={`material-symbols-rounded text-xl transition-all ${likedStays.has(stayId) ? 'text-red-500 scale-110' : ''}`} style={likedStays.has(stayId) ? { fontVariationSettings: "'FILL' 1" } : undefined}>
-              favorite
-            </span>
-          </button>
-          <button onClick={handleShare} className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'}`}>
+          <button onClick={handleShare} className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? 'bg-slate-100' : 'bg-black/20 backdrop-blur-sm'} ${isScrolled ? 'text-[#2d3435]' : 'text-white'}`}>
             <span className="material-symbols-rounded text-xl">share</span>
           </button>
         </div>
       </div>
 
       {/* ━━━ Scrollable Content ━━━ */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto detail-scrollbar pb-[80px]">
+      <div className="pb-[80px]">
 
-        {/* 1) Image Carousel */}
-        <div className="relative aspect-[4/3] overflow-hidden bg-[#f2f4f4]">
+        {/* 1) Image Carousel (Shop pattern — touch swipe + fullscreen) */}
+        <div className="relative aspect-square overflow-hidden bg-[#f2f4f4]">
+          {/* Fallback */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-[#c4cacc]">
+            <span className="material-symbols-rounded text-5xl mb-1">bed</span>
+            <span className="text-[10px] font-bold tracking-wider uppercase">No Image</span>
+          </div>
           {images.length > 0 && (
-            <div className="relative h-full">
+            <div className="relative h-full" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onClick={() => setShowImageModal(true)}>
               <div className="flex h-full transition-transform duration-300 ease-out" style={{ transform: `translateX(-${currentImgIdx * 100}%)` }}>
                 {images.map((img, i) => (
                   <div key={i} className="w-full flex-shrink-0 h-full">
-                    <img src={img} alt={`${stay.title} ${i + 1}`} className="w-full h-full object-cover" />
+                    <img src={img} alt={`${stay.title} ${i + 1}`} className="w-full h-full object-cover"
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                   </div>
                 ))}
               </div>
               {/* Location Overlay */}
-              <div className="absolute top-16 left-4 bg-black/60 text-white px-3 py-1.5 rounded-full backdrop-blur-md flex items-center gap-1 z-10">
+              <div className="absolute top-16 left-4 bg-black/60 text-white px-3 py-1.5 rounded-full backdrop-blur-md flex items-center gap-1 z-10" onClick={(e) => e.stopPropagation()}>
                 <span className="material-symbols-rounded text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>location_on</span>
                 <span className="text-xs font-bold">{stay.location?.district ? `${stay.location.district}, ${stay.location.city}` : stay.location?.city || stay.location?.address}</span>
               </div>
               
               {/* Left/Right Arrows */}
               {images.length > 1 && currentImgIdx > 0 && (
-                <button onClick={prevImg} className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/25 backdrop-blur-sm flex items-center justify-center text-white active:scale-90 z-10">
+                <button onClick={(e) => { e.stopPropagation(); setCurrentImgIdx(p => p - 1); }} className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/25 backdrop-blur-sm flex items-center justify-center text-white active:scale-90 z-10">
                   <span className="material-symbols-rounded text-lg">chevron_left</span>
                 </button>
               )}
               {images.length > 1 && currentImgIdx < images.length - 1 && (
-                <button onClick={nextImg} className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/25 backdrop-blur-sm flex items-center justify-center text-white active:scale-90 z-10">
+                <button onClick={(e) => { e.stopPropagation(); setCurrentImgIdx(p => p + 1); }} className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/25 backdrop-blur-sm flex items-center justify-center text-white active:scale-90 z-10">
                   <span className="material-symbols-rounded text-lg">chevron_right</span>
                 </button>
               )}
-              {/* Counter + Dots */}
-              {images.length > 1 && (
-                <div className="absolute bottom-4 left-0 right-0 flex items-center justify-center">
-                  <div className="flex gap-1.5 items-center">
-                    {images.map((_, i) => (
-                      <button key={i} onClick={() => setCurrentImgIdx(i)}
-                        className={`rounded-full transition-all ${i === currentImgIdx ? 'w-5 h-2 bg-white' : 'w-2 h-2 bg-white/50'}`} />
-                    ))}
-                  </div>
-                  <span className="absolute right-4 bg-black/40 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{currentImgIdx + 1}/{images.length}</span>
-                </div>
-              )}
+              {/* Overlay bottom left: Counter + Dots (Shop pattern) */}
+              <div className="absolute bottom-4 left-4 flex flex-col items-start z-10" onClick={(e) => e.stopPropagation()}>
+                {images.length > 1 && (
+                  <>
+                    <span className="bg-black/40 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-0.5 rounded-full mb-1">{currentImgIdx + 1}/{images.length}</span>
+                    <div className="flex gap-1.5 items-center pl-1">
+                      {images.map((_, i) => (
+                        <button key={i} onClick={(e) => { e.stopPropagation(); setCurrentImgIdx(i); }}
+                          className={`rounded-full transition-all ${i === currentImgIdx ? 'w-5 h-2 bg-white' : 'w-2 h-2 bg-white/50'}`} />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Stats - Floating on the bottom right (Shop pattern) */}
+              <div className="absolute bottom-4 right-4 flex items-center gap-2 z-20" onClick={(e) => e.stopPropagation()}>
+                <button onClick={(e) => { e.stopPropagation(); handleToggleLike(e); }} className="px-3 h-8 rounded-full bg-black/40 backdrop-blur-sm flex items-center gap-1.5 text-white transition-transform active:scale-95">
+                  <span className="material-symbols-rounded text-[18px]" style={{ fontVariationSettings: likedStays.has(stayId) ? "'FILL' 1" : "'FILL' 0", color: likedStays.has(stayId) ? '#ef4444' : 'white' }}>favorite</span>
+                  <span className="text-[11px] font-bold">{stay.likesCount || 0}</span>
+                </button>
+                <button onClick={(e) => { e.stopPropagation(); }} className="px-3 h-8 rounded-full bg-black/40 backdrop-blur-sm flex items-center gap-1.5 text-white transition-transform active:scale-95">
+                  <span className="material-symbols-rounded text-[18px]">chat_bubble</span>
+                  <span className="text-[11px] font-bold">0</span>
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -518,12 +597,8 @@ export default function StayDetailPage() {
         </div>
 
         {/* 3) Select Dates (Fit & Options style) */}
-        <div className="mx-4 my-4 border border-[#e0e4e5] rounded-2xl overflow-hidden">
-          <div className="bg-[#f8f9fa] px-4 py-2.5 border-b border-[#e0e4e5] flex items-center gap-2">
-            <span className="material-symbols-rounded text-sm text-primary">calendar_month</span>
-            <p className="text-[10px] font-black text-primary uppercase tracking-widest">Select Dates</p>
-          </div>
-          <div className="px-4 py-4">
+        <div className="mx-4 my-4">
+          <SectionCard icon="calendar_month" title="Select Dates">
             <div className="flex justify-between items-center mb-6">
               <button onClick={prevMonth} className="w-10 h-10 flex items-center justify-center rounded-full bg-[#f2f4f4] text-[#596061] active:scale-90 transition-transform">
                 <span className="material-symbols-rounded text-lg">chevron_left</span>
@@ -543,17 +618,8 @@ export default function StayDetailPage() {
             <div className="space-y-1">
               {renderCells()}
             </div>
-            {hasValidRange && (
-              <div className="mt-4 pt-4 border-t border-[#f2f4f4] flex justify-between items-center animate-in fade-in">
-                <div className="text-[#596061] font-bold text-sm">
-                  {format(startDate!, 'MMM d')} - {format(endDate!, 'MMM d')}
-                </div>
-                <div className="font-black text-[#2d3435] text-sm">
-                  {nightCount} Nights
-                </div>
-              </div>
-            )}
-          </div>
+
+          </SectionCard>
         </div>
 
         {/* 4) Pricing Details */}
@@ -563,42 +629,30 @@ export default function StayDetailPage() {
             <span className="text-sm text-[#acb3b4] font-bold mb-0.5">{currency} / night</span>
           </div>
 
-          <div className="mt-4 space-y-2.5">
+          <div className="mt-4 space-y-4">
             {/* Weekend Surcharge */}
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-[#f0f4ff] flex items-center justify-center">
-                <span className="material-symbols-rounded text-primary text-sm">calendar_month</span>
-              </div>
-              <div className="flex-1">
-                <p className="text-xs font-bold text-[#2d3435]">Weekend Surcharge</p>
-                <p className="text-[11px] text-[#596061]">Applied on Fridays & Saturdays</p>
-              </div>
-              <span className="text-xs font-bold text-primary">+{formatRate(stay.pricing?.weekendSurcharge)}</span>
-            </div>
-
-            {/* Extra Person */}
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-[#f0f4ff] flex items-center justify-center">
-                <span className="material-symbols-rounded text-primary text-sm">person</span>
-              </div>
-              <div className="flex-1">
-                <p className="text-xs font-bold text-[#2d3435]">Extra Person Fee</p>
-                <p className="text-[11px] text-[#596061]">Per additional guest (Base: {baseGuests})</p>
-              </div>
-              <span className="text-xs font-bold text-primary">+{formatRate(stay.pricing?.extraPersonFee)}</span>
-            </div>
-
+            <InfoRow 
+              icon="calendar_month" 
+              title="Weekend Surcharge" 
+              subtitle="Applied on Fridays & Saturdays" 
+              right={<span className="text-xs font-bold text-primary">+{formatRate(stay.pricing?.weekendSurcharge)}</span>} 
+            />
+            {/* Extra Person Fee */}
+            <InfoRow 
+              icon="person" 
+              title="Extra Person Fee" 
+              subtitle={`Per additional guest (Base: ${baseGuests})`} 
+              right={<span className="text-xs font-bold text-primary">+{formatRate(stay.pricing?.extraPersonFee)}</span>} 
+            />
             {/* Cleaning Fee */}
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-[#edf7ed] flex items-center justify-center">
-                <span className="material-symbols-rounded text-green-600 text-sm">auto_awesome</span>
-              </div>
-              <div className="flex-1">
-                <p className="text-xs font-bold text-[#2d3435]">Cleaning Fee</p>
-                <p className="text-[11px] text-[#596061]">One-time fee per stay</p>
-              </div>
-              <span className="text-xs font-bold text-green-600">+{formatRate(stay.pricing?.cleaningFee)}</span>
-            </div>
+            <InfoRow 
+              icon="auto_awesome" 
+              iconBg="bg-[#edf7ed]"
+              iconColor="text-green-600"
+              title="Cleaning Fee" 
+              subtitle="One-time fee per stay" 
+              right={<span className="text-xs font-bold text-green-600">+{formatRate(stay.pricing?.cleaningFee)}</span>} 
+            />
           </div>
         </div>
 
@@ -644,49 +698,18 @@ export default function StayDetailPage() {
         {/* 6) Details Accordions */}
         <div className="px-4 py-4 border-b border-[#f2f4f4]">
           <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-3">Stay Details</p>
-          <div className="space-y-2">
-            <div className="bg-[#f8f9fa] rounded-2xl overflow-hidden transition-all duration-300">
-              <button onClick={() => setIsRoomOpen(!isRoomOpen)} className="w-full p-3.5 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-rounded text-primary text-sm">meeting_room</span>
-                  <p className="text-xs font-bold text-[#2d3435]">Room Features</p>
-                </div>
-                <span className="material-symbols-rounded text-[#acb3b4] text-sm transition-transform duration-300" style={{ transform: isRoomOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>expand_more</span>
-              </button>
-              {isRoomOpen && (
-                <div className="px-4 pb-4 pt-1 animate-in fade-in duration-300">
-                  <p className="text-[#596061] text-[11px] leading-relaxed whitespace-pre-wrap">{stay.guides?.roomFeatures || 'No information available.'}</p>
-                </div>
-              )}
-            </div>
-            <div className="bg-[#f8f9fa] rounded-2xl overflow-hidden transition-all duration-300">
-              <button onClick={() => setIsGettingOpen(!isGettingOpen)} className="w-full p-3.5 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-rounded text-primary text-sm">directions_subway</span>
-                  <p className="text-xs font-bold text-[#2d3435]">Getting Here</p>
-                </div>
-                <span className="material-symbols-rounded text-[#acb3b4] text-sm transition-transform duration-300" style={{ transform: isGettingOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>expand_more</span>
-              </button>
-              {isGettingOpen && (
-                <div className="px-4 pb-4 pt-1 animate-in fade-in duration-300">
-                  <p className="text-[#596061] text-[11px] leading-relaxed whitespace-pre-wrap">{stay.guides?.gettingHere || 'No information available.'}</p>
-                </div>
-              )}
-            </div>
-            <div className="bg-[#f8f9fa] rounded-2xl overflow-hidden transition-all duration-300">
-              <button onClick={() => setIsFacilityOpen(!isFacilityOpen)} className="w-full p-3.5 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-rounded text-primary text-sm">concierge</span>
-                  <p className="text-xs font-bold text-[#2d3435]">Facility Guide</p>
-                </div>
-                <span className="material-symbols-rounded text-[#acb3b4] text-sm transition-transform duration-300" style={{ transform: isFacilityOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>expand_more</span>
-              </button>
-              {isFacilityOpen && (
-                <div className="px-4 pb-4 pt-1 animate-in fade-in duration-300">
-                  <p className="text-[#596061] text-[11px] leading-relaxed whitespace-pre-wrap">{stay.guides?.facilityGuide || 'No information available.'}</p>
-                </div>
-              )}
-            </div>
+          <div className="space-y-4">
+            <CollapseSection icon="meeting_room" title="Room Features" defaultOpen={false}>
+              <p className="whitespace-pre-wrap leading-relaxed">{stay.guides?.roomFeatures || 'No information available.'}</p>
+            </CollapseSection>
+            
+            <CollapseSection icon="directions_subway" title="Getting Here">
+              <p className="whitespace-pre-wrap leading-relaxed">{stay.guides?.gettingHere || 'No information available.'}</p>
+            </CollapseSection>
+            
+            <CollapseSection icon="concierge" title="Facility Guide">
+              <p className="whitespace-pre-wrap leading-relaxed">{stay.guides?.facilityGuide || 'No information available.'}</p>
+            </CollapseSection>
           </div>
         </div>
 
@@ -759,12 +782,28 @@ export default function StayDetailPage() {
               </div>
             )}
           </div>
+          
+          <div className="mt-6">
+            <button
+              onClick={handleChatWithHost}
+              disabled={isChatLoading}
+              className="w-full flex items-center justify-center gap-2 py-3.5 bg-[#f2f4f4] hover:bg-[#e8eaec] rounded-2xl transition-colors active:scale-[0.98]"
+            >
+              {isChatLoading ? (
+                <div className="w-5 h-5 border-2 border-[#596061] border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <span className="material-symbols-rounded text-lg text-[#596061]">chat</span>
+              )}
+              <span className="text-sm font-bold text-[#2d3435]">{isChatLoading ? 'Starting Chat...' : 'Chat with Host'}</span>
+            </button>
+            <p className="text-[10px] text-[#acb3b4] text-center mt-1.5">{stay.host?.name || 'Host'} · Stay info will be sent automatically</p>
+          </div>
         </div>
 
       </div>
 
-      {/* ━━━ Fixed Bottom Bar (compact) ━━━ */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-100 px-4 py-2.5 pb-safe flex items-center gap-3 mx-auto h-[68px]">
+      {/* ━━━ Fixed Bottom Bar (compact — Shop pattern) ━━━ */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-100 px-4 py-2.5 pb-safe flex items-center gap-3 max-w-md mx-auto h-[68px]">
         {!startDate ? (
           // Initial State
           <div className="flex-1">
@@ -784,7 +823,7 @@ export default function StayDetailPage() {
           <>
             <div className="flex-1 min-w-0">
               <p className="text-lg font-black text-[#2d3435] font-headline leading-tight">₩{formatRate(totalPrice)}</p>
-              <p className="text-[10px] text-[#acb3b4] truncate">
+              <p className="text-xs font-bold text-[#596061] mt-0.5">
                 {nightCount} nights · {format(endDate, 'd MMM')} out
               </p>
             </div>
@@ -793,13 +832,50 @@ export default function StayDetailPage() {
               <span className="material-symbols-rounded text-xl">close</span>
             </button>
             <Link href={checkoutLink} className="flex-shrink-0">
-              <button className="bg-primary text-white px-6 py-3 rounded-xl font-black text-sm tracking-wide shadow-lg shadow-primary/20 active:scale-95 transition-transform">
+              <button className="bg-primary text-white px-7 py-3 rounded-xl font-black text-sm tracking-wide shadow-lg shadow-primary/20 active:scale-95 transition-transform">
                 Book Now
               </button>
             </Link>
           </>
         )}
       </div>
+
+      {/* ━━━ Full Screen Image Viewer (Shop pattern) ━━━ */}
+      {showImageModal && (
+        <div className="fixed inset-0 z-[200] bg-black flex flex-col animate-in fade-in duration-200">
+          <div className="absolute top-0 left-0 right-0 z-10 flex justify-end p-4">
+            <button onClick={() => setShowImageModal(false)} className="w-10 h-10 rounded-full bg-black/40 text-white flex items-center justify-center">
+              <span className="material-symbols-rounded text-2xl">close</span>
+            </button>
+          </div>
+          <div className="flex-1 w-full h-full flex items-center justify-center" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+            <div className="flex w-full transition-transform duration-300 ease-out h-full items-center" style={{ transform: `translateX(-${currentImgIdx * 100}%)` }}>
+              {images.map((img, i) => (
+                <div key={i} className="w-full flex-shrink-0 flex items-center justify-center px-4">
+                  <img src={img} alt={`Fullscreen ${i + 1}`} className="w-full max-h-[80vh] object-contain" />
+                </div>
+              ))}
+            </div>
+          </div>
+          {images.length > 1 && (
+            <div className="absolute bottom-10 left-0 right-0 flex justify-center gap-2">
+              {images.map((_, i) => (
+                <div key={i} className={`rounded-full transition-all ${i === currentImgIdx ? 'w-6 h-2 bg-white' : 'w-2 h-2 bg-white/40'}`} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ━━━ Full Screen Chat Room (Shop pattern) ━━━ */}
+      {chatRoomId && (
+        <div className="fixed inset-0 z-[200] bg-white animate-in slide-in-from-bottom duration-300">
+          <ChatRoom
+            roomId={chatRoomId}
+            onBack={() => setChatRoomId(null)}
+          />
+        </div>
+      )}
     </div>
   );
 }

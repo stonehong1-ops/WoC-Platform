@@ -61,6 +61,7 @@ export default function AdminOthersPage() {
         discountValue: formType === 'DISCOUNT' ? formDiscountValue : undefined,
         duration: formDuration,
         totalQuantity: formQuantity,
+        scope: 'GLOBAL',
       });
       // Reset form
       setFormTitle('');

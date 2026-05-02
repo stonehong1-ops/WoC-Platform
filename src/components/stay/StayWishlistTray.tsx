@@ -41,7 +41,23 @@ export default function StayWishlistTray({ likes, userId, onStayClick }: StayWis
       const stays = await Promise.all(
         likes.map(like => stayService.getStay(like.stayId))
       );
-      setLikedStays(stays.filter((s): s is Stay => s !== null));
+      
+      // Filter out nulls and attach status (Shop pattern)
+      const validStays = stays
+        .map((s, i) => (s ? { ...s, _likeStatus: likes[i].status } : null))
+        .filter((s): s is Stay & { _likeStatus: 'liked' | 'pending' | 'in_progress' | undefined } => s !== null);
+      
+      // Sort: in_progress first, then pending, then liked (Shop pattern)
+      validStays.sort((a, b) => {
+        const getPriority = (status: string | undefined) => {
+          if (status === 'in_progress') return 1;
+          if (status === 'pending') return 2;
+          return 3;
+        };
+        return getPriority(a._likeStatus) - getPriority(b._likeStatus);
+      });
+      
+      setLikedStays(validStays);
       setLoadingStays(false);
     };
 
@@ -79,7 +95,7 @@ export default function StayWishlistTray({ likes, userId, onStayClick }: StayWis
 
   return (
     <>
-      {/* ===== Map-style Floating FAB Tray ===== */}
+      {/* ===== Map-style Floating FAB Tray (Shop pattern) ===== */}
       <div className="fixed bottom-20 left-1/2 -translate-x-1/2 w-[calc(100%-48px)] max-w-sm z-40 pointer-events-auto">
         <motion.div 
           animate={{ height: isExpanded ? 'auto' : '56px', y: 0, opacity: 1 }}
@@ -88,7 +104,7 @@ export default function StayWishlistTray({ likes, userId, onStayClick }: StayWis
           className="bg-white/95 backdrop-blur-3xl rounded-xl shadow-[0_24px_48px_rgba(0,0,0,0.12)] flex flex-col border border-white/60 overflow-hidden"
           onClick={() => !isExpanded && setTrayState('EXPANDED')}
         >
-          {/* ===== Top Row / Summary Bar ===== */}
+          {/* ===== Top Row / Summary Bar (Shop pattern) ===== */}
           <div className={`px-6 flex items-center justify-between py-3 cursor-pointer ${isExpanded ? 'border-b border-slate-100' : ''}`}>
             <div className="flex items-center">
               {/* Expand/Collapse toggle */}
@@ -102,14 +118,26 @@ export default function StayWishlistTray({ likes, userId, onStayClick }: StayWis
               </div>
 
               {isExpanded ? (
-                /* Expanded: header text */
+                /* Expanded: header text with status counts (Shop pattern) */
                 <span className="text-sm text-slate-800 font-bold ml-3 tracking-wide">
-                  {likes.length} Liked Items
+                  {likes.filter(l => l.status === 'in_progress').length > 0 && (
+                    <span className="text-blue-500">{likes.filter(l => l.status === 'in_progress').length} In Progress, </span>
+                  )}
+                  {likes.filter(l => l.status === 'pending').length > 0 && (
+                    <span className="text-primary">{likes.filter(l => l.status === 'pending').length} Pending, </span>
+                  )}
+                  {likes.filter(l => l.status !== 'pending' && l.status !== 'in_progress').length} Liked Items
                 </span>
               ) : (
-                /* Collapsed: count summary */
-                <span className="text-sm text-slate-800 font-bold ml-3 tracking-wide">
-                  {likes.length} LIKED
+                /* Collapsed: count summary (Shop pattern) */
+                <span className="text-sm text-slate-800 font-bold ml-3 tracking-wide uppercase">
+                  {likes.filter(l => l.status === 'in_progress').length > 0 && (
+                    <span className="text-blue-500">{likes.filter(l => l.status === 'in_progress').length} IN PROGRESS, </span>
+                  )}
+                  {likes.filter(l => l.status === 'pending').length > 0 && (
+                    <span className="text-primary">{likes.filter(l => l.status === 'pending').length} PENDING, </span>
+                  )}
+                  {likes.filter(l => l.status !== 'pending' && l.status !== 'in_progress').length} LIKED
                 </span>
               )}
             </div>
@@ -124,19 +152,10 @@ export default function StayWishlistTray({ likes, userId, onStayClick }: StayWis
                   Clear all
                 </button>
               )}
-              <div className="h-5 w-[1px] bg-slate-200"></div>
-              <button 
-                onClick={handleToggleExpand}
-                className="flex items-center justify-center text-primary active:scale-90 transition-transform"
-              >
-                <span className="material-symbols-rounded text-[24px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-                  favorite
-                </span>
-              </button>
             </div>
           </div>
 
-          {/* ===== Expanded Card List (snap-x scroll) ===== */}
+          {/* ===== Expanded Card List (snap-x scroll, Shop pattern) ===== */}
           <AnimatePresence>
             {isExpanded && (
               <motion.div 
@@ -168,11 +187,21 @@ export default function StayWishlistTray({ likes, userId, onStayClick }: StayWis
                         )}
                       </div>
 
-                      {/* Stay info */}
+                      {/* Stay info with status badge (Shop pattern) */}
                       <div className="flex flex-col min-w-0 pr-8 justify-center">
-                        <span className="text-[10px] font-bold text-primary bg-primary/10 w-fit px-1.5 py-0.5 rounded mb-1 uppercase">
-                          {stay.type}
-                        </span>
+                        {(stay as any)._likeStatus === 'in_progress' ? (
+                          <span className="text-[10px] font-bold text-white bg-blue-500 w-fit px-1.5 py-0.5 rounded mb-1 uppercase">
+                            IN PROGRESS
+                          </span>
+                        ) : (stay as any)._likeStatus === 'pending' ? (
+                          <span className="text-[10px] font-bold text-white bg-primary w-fit px-1.5 py-0.5 rounded mb-1 uppercase">
+                            PENDING
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-bold text-primary bg-primary/10 w-fit px-1.5 py-0.5 rounded mb-1 uppercase">
+                            {stay.type}
+                          </span>
+                        )}
                         <h3 className="text-[17px] font-bold text-on-background truncate leading-tight">
                           {stay.title}
                         </h3>

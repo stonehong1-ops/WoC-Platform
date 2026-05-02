@@ -53,9 +53,17 @@ export default function UniversalFeed({ context, currentUser, profile, activeFil
         result = result.filter(p => p.userId === currentUser?.uid);
         break;
       case 'pinned':
-        // Posts from pinned users
-        const pinnedIds = profile?.pinnedUserIds || [];
-        result = result.filter(p => pinnedIds.includes(p.userId));
+        // Pinned Posts (내가 Pin한 게시물)
+        const pinnedPostIds = profile?.pinnedPostIds || [];
+        result = result.filter(p => pinnedPostIds.includes(p.id));
+        break;
+      case 'friends':
+        // Friends Filter: 내가 좋아요 또는 댓글을 단 포스트 목록
+        const interactedPostIds = new Set([
+          ...(profile?.likedPostIds || []),
+          ...(profile?.commentedPostIds || [])
+        ]);
+        result = result.filter(p => interactedPostIds.has(p.id));
         break;
       case 'all':
       default:
@@ -73,7 +81,7 @@ export default function UniversalFeed({ context, currentUser, profile, activeFil
         <div className="absolute bottom-[20%] right-[-5%] w-[40%] h-[60%] bg-tertiary/5 blur-3xl rounded-full"></div>
       </div>
 
-      <main className={`max-w-3xl mx-auto flex flex-col gap-6 px-4 sm:px-6 ${context.scope === 'plaza' ? 'pt-8' : 'pt-0 pb-16'}`}>
+      <main className={`max-w-3xl mx-auto flex flex-col gap-6 px-4 sm:px-6 ${context.scope === 'plaza' ? 'pt-4' : 'pt-0 pb-16'}`}>
         {/* Feed Header/Composer (Bento Style) */}
         <section 
           onClick={() => setIsCreateModalOpen(true)}
@@ -85,7 +93,7 @@ export default function UniversalFeed({ context, currentUser, profile, activeFil
           />
           <div className="flex-1 flex flex-col gap-3">
             <div className="w-full bg-surface rounded-lg p-3 text-sm text-on-surface-variant/50 min-h-[60px]">
-              Share your latest moves or thoughts...
+              Share your activities...
             </div>
             <div className="flex justify-between items-center">
               <div className="flex gap-2">
@@ -125,6 +133,7 @@ export default function UniversalFeed({ context, currentUser, profile, activeFil
                 key={post.id} 
                 post={post} 
                 currentUser={currentUser}
+                profile={profile}
                 onEdit={(post) => {
                   setEditingPost(post);
                   setIsCreateModalOpen(true);

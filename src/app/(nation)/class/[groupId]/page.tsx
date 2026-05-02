@@ -9,6 +9,7 @@ import { classRegistrationService } from '@/lib/firebase/classRegistrationServic
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { toast } from 'sonner';
+import BottomSheet from '@/components/common/BottomSheet';
 
 const DAY_ORDER = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'] as const;
 const DAY_LABELS: Record<string, string> = {
@@ -56,6 +57,16 @@ export default function ClubClassSelectionPage() {
   const [isApplying, setIsApplying] = useState(false);
   const [selectedRole, setSelectedRole] = useState<'leader' | 'follower' | null>(null);
   const [ownerInfo, setOwnerInfo] = useState<{name: string | null, localName: string | null, avatar: string | null, phone: string | null} | null>(null);
+  
+  const [currentDate, setCurrentDate] = useState<Date>(() => {
+    const d = new Date();
+    if (d.getDate() >= 15) {
+      d.setMonth(d.getMonth() + 1);
+    }
+    return d;
+  });
+  const [sortOption, setSortOption] = useState<'class' | 'name'>('class');
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
   
   const scrollRef = useRef<HTMLDivElement>(null);
   const captureRef = useRef<HTMLDivElement>(null);
@@ -131,14 +142,10 @@ export default function ClubClassSelectionPage() {
     );
   }
 
-  const d = new Date();
-  if (d.getDate() >= 15) {
-    d.setMonth(d.getMonth() + 1);
-  }
-  const currentMonthStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  const currentMonthStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
   
-  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  const monthDisplay = `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+  const monthNamesShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthDisplay = `${monthNamesShort[currentDate.getMonth()]}(${String(currentDate.getMonth() + 1).padStart(2, '0')}), ${currentDate.getFullYear()}`;
 
   const allGroupClasses = group.classes || [];
   const classes = allGroupClasses.filter(cls => !cls.targetMonth || cls.targetMonth === currentMonthStr);
@@ -222,11 +229,16 @@ export default function ClubClassSelectionPage() {
     }
   };
 
-  // Group classes by day of week
+  // Sort and group classes
+  const sortedClasses = [...classes];
+  if (sortOption === 'name') {
+    sortedClasses.sort((a, b) => a.title.localeCompare(b.title));
+  } // 'class' option implies original order from settings
+
   const classesByDay = new Map<string, GroupClass[]>();
   DAY_ORDER.forEach(day => classesByDay.set(day, []));
 
-  classes.forEach(cls => {
+  sortedClasses.forEach(cls => {
     if (cls.schedule && cls.schedule.length > 0) {
       const days = new Set<string>();
       cls.schedule.forEach(s => {
@@ -297,10 +309,18 @@ export default function ClubClassSelectionPage() {
         <div ref={captureRef} className="bg-white px-5 py-6">
           
           {/* Title Banner */}
-          <div className="bg-gradient-to-r from-[#0057bd] to-[#3b82f6] rounded-2xl p-5 mb-6 text-center">
+          <div className="bg-gradient-to-r from-[#0057bd] to-[#3b82f6] rounded-2xl p-5 mb-6 text-center shadow-lg shadow-blue-500/20">
             <p className="text-[10px] font-bold text-blue-200 uppercase tracking-[0.2em] mb-1">CLASS INFORMATION</p>
-            <h1 className="text-xl font-black text-white mb-1">{group.name}</h1>
-            <p className="text-sm font-bold text-blue-100">{monthDisplay}</p>
+            <h1 className="text-xl font-black text-white mb-3">{group.name}</h1>
+            <div className="flex items-center justify-center gap-8">
+              <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))} className="text-white hover:bg-white/20 rounded-full w-8 h-8 flex items-center justify-center transition-colors">
+                <span className="material-symbols-outlined text-sm">arrow_back_ios_new</span>
+              </button>
+              <p className="text-base font-black text-white tracking-widest min-w-[120px] text-center">{monthDisplay}</p>
+              <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))} className="text-white hover:bg-white/20 rounded-full w-8 h-8 flex items-center justify-center transition-colors">
+                <span className="material-symbols-outlined text-sm">arrow_forward_ios</span>
+              </button>
+            </div>
           </div>
 
           {/* Monthly Pass Info */}
@@ -388,113 +408,244 @@ export default function ClubClassSelectionPage() {
             </div>
           )}
 
-          {/* Day-by-Day Schedule */}
-          <div className="space-y-4">
-            {DAY_ORDER.map(day => {
-              const dayClasses = classesByDay.get(day) || [];
-              if (dayClasses.length === 0) return null;
-
-              const color = DAY_COLORS[day];
-
-              return (
-                <div key={day} className="border border-[#e0e4e5] rounded-2xl overflow-hidden">
-                  <div className="px-4 py-2.5 flex items-center gap-2" style={{ backgroundColor: `${color}10` }}>
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
-                    <p className="text-xs font-black uppercase tracking-[0.15em]" style={{ color }}>{DAY_LABELS[day]}</p>
-                    <span className="text-[10px] font-bold text-[#acb3b4] ml-auto">{dayClasses.length} class{dayClasses.length > 1 ? 'es' : ''}</span>
+          {/* Classes Sort & List */}
+          <div className="flex items-center justify-between mb-4 mt-8">
+            <h3 className="text-sm font-black text-[#2d3435]">Class Schedule</h3>
+            <div className="relative">
+              <button
+                onClick={() => setShowSortDropdown(!showSortDropdown)}
+                className="flex items-center gap-1 text-sm font-semibold text-[#596061] hover:text-[#2d3435] transition-colors"
+              >
+                {sortOption === 'class' ? 'Class Order' : 'Name Order'}
+                <span className="material-symbols-outlined text-base">expand_more</span>
+              </button>
+              {showSortDropdown && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowSortDropdown(false)} />
+                  <div className="absolute top-full mt-1 right-0 bg-white rounded-xl shadow-xl border border-slate-100 min-w-[150px] z-50 overflow-hidden">
+                    <button
+                      onClick={() => { setSortOption('class'); setShowSortDropdown(false); }}
+                      className={`w-full text-left px-4 py-2.5 text-sm font-medium flex items-center gap-2 transition-colors ${
+                        sortOption === 'class' ? 'bg-primary/10 text-[#1A73E8] font-bold' : 'text-[#2d3435] hover:bg-slate-50'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-base">format_list_numbered</span>
+                      Class Order
+                    </button>
+                    <button
+                      onClick={() => { setSortOption('name'); setShowSortDropdown(false); }}
+                      className={`w-full text-left px-4 py-2.5 text-sm font-medium flex items-center gap-2 transition-colors ${
+                        sortOption === 'name' ? 'bg-primary/10 text-[#1A73E8] font-bold' : 'text-[#2d3435] hover:bg-slate-50'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-base">sort_by_alpha</span>
+                      Name Order
+                    </button>
                   </div>
+                </>
+              )}
+            </div>
+          </div>
 
-                  <div className="divide-y divide-[#f2f4f4]">
-                    {dayClasses.map(cls => {
-                      const schedDates = formatScheduleDates(cls.schedule);
-                      const instructors = cls.instructors || [];
-                      const startDate = cls.schedule?.[0]?.date;
-                      let startDisplay = '';
-                      if (startDate) {
-                        const cleanDate = startDate.replace(/\./g, '-');
-                        const dd = new Date(cleanDate);
-                        if (!isNaN(dd.getTime())) {
-                          startDisplay = `${dd.getMonth() + 1}/${dd.getDate()}`;
+          <div className="space-y-4">
+            {sortOption === 'class' ? (
+              // Original Day-by-Day View
+              DAY_ORDER.map(day => {
+                const dayClasses = classesByDay.get(day) || [];
+                if (dayClasses.length === 0) return null;
+
+                const color = DAY_COLORS[day];
+
+                return (
+                  <div key={day} className="border border-[#e0e4e5] rounded-2xl overflow-hidden">
+                    <div className="px-4 py-2.5 flex items-center gap-2" style={{ backgroundColor: `${color}10` }}>
+                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+                      <p className="text-xs font-black uppercase tracking-[0.15em]" style={{ color }}>{DAY_LABELS[day]}</p>
+                      <span className="text-[10px] font-bold text-[#acb3b4] ml-auto">{dayClasses.length} class{dayClasses.length > 1 ? 'es' : ''}</span>
+                    </div>
+
+                    <div className="divide-y divide-[#f2f4f4]">
+                      {dayClasses.map(cls => {
+                        const schedDates = formatScheduleDates(cls.schedule);
+                        const instructors = cls.instructors || [];
+                        const startDate = cls.schedule?.[0]?.date;
+                        let startDisplay = '';
+                        if (startDate) {
+                          const cleanDate = startDate.replace(/\./g, '-');
+                          const dd = new Date(cleanDate);
+                          if (!isNaN(dd.getTime())) {
+                            startDisplay = `${dd.getMonth() + 1}/${dd.getDate()}`;
+                          }
                         }
-                      }
-                      const timeDisplay = cls.schedule?.[0]?.timeSlot || (cls.startTime ? `${cls.startTime}${cls.endTime ? ' - ' + cls.endTime : ''}` : '');
+                        const timeDisplay = cls.schedule?.[0]?.timeSlot || (cls.startTime ? `${cls.startTime}${cls.endTime ? ' - ' + cls.endTime : ''}` : '');
 
-                      return (
-                        <div key={cls.id} onClick={() => handleCardClick({ ...cls, itemType: 'class' })} className="p-3 flex gap-3 cursor-pointer hover:bg-[#f8f9fa] transition-colors group">
-                          <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-[#e0e4e5]">
-                            {cls.imageUrl || (cls as any).image || (cls as any).photoURL || (cls as any).avatar ? (
-                              <img src={cls.imageUrl || (cls as any).image || (cls as any).photoURL || (cls as any).avatar} alt={cls.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement!.classList.add('flex', 'items-center', 'justify-center'); e.currentTarget.parentElement!.innerHTML = '<span class="material-symbols-outlined text-[#acb3b4] text-lg">school</span>'; }} />
-                            ) : group.coverImage ? (
-                              <img src={group.coverImage} alt={cls.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement!.classList.add('flex', 'items-center', 'justify-center'); e.currentTarget.parentElement!.innerHTML = '<span class="material-symbols-outlined text-[#acb3b4] text-lg">school</span>'; }} />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <span className="material-symbols-outlined text-[#acb3b4] text-lg">school</span>
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-bold text-[#2d3435] truncate">{cls.title}</p>
-                            <p className="text-[13px] font-black text-[#2d3435] mt-0.5">{cls.amount.toLocaleString()} {cls.currency}</p>
-                            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1">
-                              {startDisplay && (
-                                <span className="text-[11px] font-bold" style={{ color }}>Start: {startDisplay}</span>
-                              )}
-                              {timeDisplay && (
-                                <span className="text-[11px] text-[#596061]">{timeDisplay}</span>
+                        return (
+                          <div key={cls.id} onClick={() => handleCardClick({ ...cls, itemType: 'class' })} className="p-3 flex gap-3 cursor-pointer hover:bg-[#f8f9fa] transition-colors group bg-white">
+                            <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-[#e0e4e5]">
+                              {cls.imageUrl || (cls as any).image || (cls as any).photoURL || (cls as any).avatar ? (
+                                <img src={cls.imageUrl || (cls as any).image || (cls as any).photoURL || (cls as any).avatar} alt={cls.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement!.classList.add('flex', 'items-center', 'justify-center'); e.currentTarget.parentElement!.innerHTML = '<span class="material-symbols-outlined text-[#acb3b4] text-lg">school</span>'; }} />
+                              ) : group.coverImage ? (
+                                <img src={group.coverImage} alt={cls.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement!.classList.add('flex', 'items-center', 'justify-center'); e.currentTarget.parentElement!.innerHTML = '<span class="material-symbols-outlined text-[#acb3b4] text-lg">school</span>'; }} />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <span className="material-symbols-outlined text-[#acb3b4] text-lg">school</span>
+                                </div>
                               )}
                             </div>
-                            {schedDates && (
-                              <p className="text-[10px] text-[#acb3b4] mt-0.5">
-                                Schedule: <span className="font-bold text-[#596061]">{schedDates}</span>
-                              </p>
-                            )}
-                          </div>
 
-                          <div className="flex flex-col items-end flex-shrink-0 ml-1 justify-between py-1">
-                            {instructors.length > 0 && (
-                              <div className="flex flex-row gap-2 items-center justify-end mb-2">
-                                {instructors.slice(0, 2).map((instructor, idx) => (
-                                  <div key={idx} className="flex flex-col items-center w-8">
-                                    <div className="w-7 h-7 rounded-full overflow-hidden bg-[#e0e4e5] border border-[#f2f4f4]">
-                                      {(instructor as any).avatar || (instructor as any).photoURL || (instructor as any).image || (instructor as any).imageUrl ? (
-                                        <img src={(instructor as any).avatar || (instructor as any).photoURL || (instructor as any).image || (instructor as any).imageUrl} alt={instructor.name} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement!.classList.add('flex', 'items-center', 'justify-center', 'text-[9px]', 'font-bold', 'text-[#596061]', 'bg-[#f8f9fa]'); e.currentTarget.parentElement!.innerHTML = instructor.name.substring(0, 2).toUpperCase(); }} />
-                                      ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-[9px] font-bold text-[#596061] bg-[#f8f9fa]">
-                                          {instructor.name.substring(0, 2).toUpperCase()}
-                                        </div>
-                                      )}
-                                    </div>
-                                    <p className="text-[8px] font-bold text-[#596061] mt-0.5 text-center truncate w-full">{instructor.name}</p>
-                                  </div>
-                                ))}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-bold text-[#2d3435] truncate">{cls.title}</p>
+                              <p className="text-[13px] font-black text-[#2d3435] mt-0.5">{cls.amount.toLocaleString()} {cls.currency}</p>
+                              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1">
+                                {startDisplay && (
+                                  <span className="text-[11px] font-bold" style={{ color }}>Start: {startDisplay}</span>
+                                )}
+                                {timeDisplay && (
+                                  <span className="text-[11px] text-[#596061]">{timeDisplay}</span>
+                                )}
                               </div>
-                            )}
+                              {schedDates && (
+                                <p className="text-[10px] text-[#acb3b4] mt-0.5">
+                                  Schedule: <span className="font-bold text-[#596061]">{schedDates}</span>
+                                </p>
+                              )}
+                            </div>
 
-                            {selectedClasses.has(cls.id) ? (
-                              <button 
-                                onClick={(e) => { e.stopPropagation(); handleRemoveFromBasket(cls.id); }}
-                                className="text-[#0057bd] flex items-center justify-center transition-colors"
-                              >
-                                <span className="material-symbols-outlined" style={{ fontSize: '44px' }}>toggle_on</span>
-                              </button>
-                            ) : (
-                              <button 
-                                onClick={(e) => { e.stopPropagation(); handleAddToBasket(cls.id); }}
-                                disabled={isMonthlyPassSelected}
-                                className={`flex items-center justify-center transition-colors ${isMonthlyPassSelected ? 'text-[#e0e4e5] cursor-not-allowed' : 'text-[#acb3b4]'}`}
-                              >
-                                <span className="material-symbols-outlined" style={{ fontSize: '44px' }}>toggle_off</span>
-                              </button>
-                            )}
+                            <div className="flex flex-col items-end flex-shrink-0 ml-1 justify-between py-1">
+                              {instructors.length > 0 && (
+                                <div className="flex flex-row gap-2 items-center justify-end mb-2">
+                                  {instructors.slice(0, 2).map((instructor, idx) => (
+                                    <div key={idx} className="flex flex-col items-center w-8">
+                                      <div className="w-7 h-7 rounded-full overflow-hidden bg-[#e0e4e5] border border-[#f2f4f4]">
+                                        {(instructor as any).avatar || (instructor as any).photoURL || (instructor as any).image || (instructor as any).imageUrl ? (
+                                          <img src={(instructor as any).avatar || (instructor as any).photoURL || (instructor as any).image || (instructor as any).imageUrl} alt={instructor.name} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement!.classList.add('flex', 'items-center', 'justify-center', 'text-[9px]', 'font-bold', 'text-[#596061]', 'bg-[#f8f9fa]'); e.currentTarget.parentElement!.innerHTML = instructor.name.substring(0, 2).toUpperCase(); }} />
+                                        ) : (
+                                          <div className="w-full h-full flex items-center justify-center text-[9px] font-bold text-[#596061] bg-[#f8f9fa]">
+                                            {instructor.name.substring(0, 2).toUpperCase()}
+                                          </div>
+                                        )}
+                                      </div>
+                                      <p className="text-[8px] font-bold text-[#596061] mt-0.5 text-center truncate w-full">{instructor.name}</p>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              {selectedClasses.has(cls.id) ? (
+                                <button 
+                                  onClick={(e) => { e.stopPropagation(); handleRemoveFromBasket(cls.id); }}
+                                  className="text-[#0057bd] flex items-center justify-center transition-colors"
+                                >
+                                  <span className="material-symbols-outlined" style={{ fontSize: '44px' }}>toggle_on</span>
+                                </button>
+                              ) : (
+                                <button 
+                                  onClick={(e) => { e.stopPropagation(); handleAddToBasket(cls.id); }}
+                                  disabled={isMonthlyPassSelected}
+                                  className={`flex items-center justify-center transition-colors ${isMonthlyPassSelected ? 'text-[#e0e4e5] cursor-not-allowed' : 'text-[#acb3b4]'}`}
+                                >
+                                  <span className="material-symbols-outlined" style={{ fontSize: '44px' }}>toggle_off</span>
+                                </button>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            ) : (
+              // Flat List View
+              <div className="border border-[#e0e4e5] rounded-2xl overflow-hidden divide-y divide-[#f2f4f4]">
+                {sortedClasses.map(cls => {
+                  const schedDates = formatScheduleDates(cls.schedule);
+                  const instructors = cls.instructors || [];
+                  const startDate = cls.schedule?.[0]?.date;
+                  let startDisplay = '';
+                  if (startDate) {
+                    const cleanDate = startDate.replace(/\./g, '-');
+                    const dd = new Date(cleanDate);
+                    if (!isNaN(dd.getTime())) {
+                      startDisplay = `${dd.getMonth() + 1}/${dd.getDate()}`;
+                    }
+                  }
+                  const timeDisplay = cls.schedule?.[0]?.timeSlot || (cls.startTime ? `${cls.startTime}${cls.endTime ? ' - ' + cls.endTime : ''}` : '');
+
+                  return (
+                    <div key={cls.id} onClick={() => handleCardClick({ ...cls, itemType: 'class' })} className="p-3 flex gap-3 cursor-pointer hover:bg-[#f8f9fa] transition-colors group bg-white">
+                      <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-[#e0e4e5]">
+                        {cls.imageUrl || (cls as any).image || (cls as any).photoURL || (cls as any).avatar ? (
+                          <img src={cls.imageUrl || (cls as any).image || (cls as any).photoURL || (cls as any).avatar} alt={cls.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement!.classList.add('flex', 'items-center', 'justify-center'); e.currentTarget.parentElement!.innerHTML = '<span class="material-symbols-outlined text-[#acb3b4] text-lg">school</span>'; }} />
+                        ) : group.coverImage ? (
+                          <img src={group.coverImage} alt={cls.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement!.classList.add('flex', 'items-center', 'justify-center'); e.currentTarget.parentElement!.innerHTML = '<span class="material-symbols-outlined text-[#acb3b4] text-lg">school</span>'; }} />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <span className="material-symbols-outlined text-[#acb3b4] text-lg">school</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-[#2d3435] truncate">{cls.title}</p>
+                        <p className="text-[13px] font-black text-[#2d3435] mt-0.5">{cls.amount.toLocaleString()} {cls.currency}</p>
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1">
+                          {startDisplay && (
+                            <span className="text-[11px] font-bold text-[#0057bd]">Start: {startDisplay}</span>
+                          )}
+                          {timeDisplay && (
+                            <span className="text-[11px] text-[#596061]">{timeDisplay}</span>
+                          )}
+                        </div>
+                        {schedDates && (
+                          <p className="text-[10px] text-[#acb3b4] mt-0.5">
+                            Schedule: <span className="font-bold text-[#596061]">{schedDates}</span>
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col items-end flex-shrink-0 ml-1 justify-between py-1">
+                        {instructors.length > 0 && (
+                          <div className="flex flex-row gap-2 items-center justify-end mb-2">
+                            {instructors.slice(0, 2).map((instructor, idx) => (
+                              <div key={idx} className="flex flex-col items-center w-8">
+                                <div className="w-7 h-7 rounded-full overflow-hidden bg-[#e0e4e5] border border-[#f2f4f4]">
+                                  {(instructor as any).avatar || (instructor as any).photoURL || (instructor as any).image || (instructor as any).imageUrl ? (
+                                    <img src={(instructor as any).avatar || (instructor as any).photoURL || (instructor as any).image || (instructor as any).imageUrl} alt={instructor.name} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement!.classList.add('flex', 'items-center', 'justify-center', 'text-[9px]', 'font-bold', 'text-[#596061]', 'bg-[#f8f9fa]'); e.currentTarget.parentElement!.innerHTML = instructor.name.substring(0, 2).toUpperCase(); }} />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-[9px] font-bold text-[#596061] bg-[#f8f9fa]">
+                                      {instructor.name.substring(0, 2).toUpperCase()}
+                                    </div>
+                                  )}
+                                </div>
+                                <p className="text-[8px] font-bold text-[#596061] mt-0.5 text-center truncate w-full">{instructor.name}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {selectedClasses.has(cls.id) ? (
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); handleRemoveFromBasket(cls.id); }}
+                            className="text-[#0057bd] flex items-center justify-center transition-colors"
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: '44px' }}>toggle_on</span>
+                          </button>
+                        ) : (
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); handleAddToBasket(cls.id); }}
+                            disabled={isMonthlyPassSelected}
+                            className={`flex items-center justify-center transition-colors ${isMonthlyPassSelected ? 'text-[#e0e4e5] cursor-not-allowed' : 'text-[#acb3b4]'}`}
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: '44px' }}>toggle_off</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Bank Account Section */}
@@ -811,148 +962,126 @@ export default function ClubClassSelectionPage() {
       )}
 
       {/* Apply/Payment Modal */}
-      {isApplyModalOpen && (() => {
-        const subtotal = Array.from(selectedClasses).reduce((sum, id) => {
-          const item = allItems.find(c => c.id === id);
-          return sum + (item?.amount || 0);
-        }, 0);
-        
-        const currency = selectedClasses.size > 0 
-          ? allItems.find(c => c.id === Array.from(selectedClasses)[0])?.currency || "KRW"
-          : "KRW";
+      <BottomSheet
+        isOpen={isApplyModalOpen}
+        onClose={() => setIsApplyModalOpen(false)}
+        title="Class Registration"
+      >
+        <div className="px-5 pb-8 flex flex-col gap-6">
+          <section className="flex flex-col gap-2">
+             <h3 className="text-[10px] font-black text-[#596061] uppercase tracking-widest">Your Role <span className="text-error">*</span></h3>
+             <div className="flex gap-2 mt-1">
+                 <button 
+                   className={`flex-1 py-3 rounded-xl border text-sm font-bold transition-all ${selectedRole === 'leader' ? 'bg-primary border-primary text-white shadow-md shadow-primary/20' : 'bg-white border-[#e0e4e5] text-[#acb3b4] hover:bg-slate-50 hover:text-[#596061]'}`}
+                   onClick={() => setSelectedRole('leader')}
+                 >
+                   Leader
+                 </button>
+                 <button 
+                   className={`flex-1 py-3 rounded-xl border text-sm font-bold transition-all ${selectedRole === 'follower' ? 'bg-tertiary border-tertiary text-white shadow-md shadow-tertiary/20' : 'bg-white border-[#e0e4e5] text-[#acb3b4] hover:bg-slate-50 hover:text-[#596061]'}`}
+                   onClick={() => setSelectedRole('follower')}
+                 >
+                   Follower
+                 </button>
+             </div>
+          </section>
 
-        return (
-          <>
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[300] animate-in fade-in duration-200"></div>
-            <div className="fixed inset-0 z-[310] flex items-center justify-center p-4">
-              <div className="bg-white rounded-[24px] shadow-2xl overflow-hidden flex flex-col w-full max-w-[400px] max-h-[90vh] animate-in slide-in-from-bottom-4 zoom-in-95 duration-200">
-                <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-white flex-shrink-0">
-                  <h2 className="font-['Plus_Jakarta_Sans'] text-[1.25rem] font-black text-[#2d3435]">Payment Info</h2>
-                  <button onClick={() => setIsApplyModalOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors text-gray-500">
-                    <span className="material-symbols-outlined">close</span>
-                  </button>
-                </div>
-                
-                <div className="px-6 py-6 overflow-y-auto flex flex-col gap-[2.5rem]">
-                  <section className="flex flex-col gap-4">
-                    <h3 className="font-['Plus_Jakarta_Sans'] text-sm font-black text-[#2d3435] uppercase tracking-wider">Your Role <span className="text-error">*</span></h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      <label className="cursor-pointer relative">
-                        <input type="radio" name="user_role" className="peer sr-only" checked={selectedRole === 'leader'} onChange={() => setSelectedRole('leader')} />
-                        <div className="bg-white border-2 border-gray-200 rounded-xl p-4 text-center peer-checked:border-[#0057bd] peer-checked:bg-[#0057bd]/5 transition-all h-full flex items-center justify-center">
-                          <span className="text-sm font-bold text-gray-600 peer-checked:text-[#0057bd]">Leader</span>
-                        </div>
-                      </label>
-                      <label className="cursor-pointer relative">
-                        <input type="radio" name="user_role" className="peer sr-only" checked={selectedRole === 'follower'} onChange={() => setSelectedRole('follower')} />
-                        <div className="bg-white border-2 border-gray-200 rounded-xl p-4 text-center peer-checked:border-[#0057bd] peer-checked:bg-[#0057bd]/5 transition-all h-full flex items-center justify-center">
-                          <span className="text-sm font-bold text-gray-600 peer-checked:text-[#0057bd]">Follower</span>
-                        </div>
-                      </label>
+          <section className="flex flex-col gap-2">
+             <h3 className="text-[10px] font-black text-[#596061] uppercase tracking-widest">Applied Items</h3>
+             <div className="bg-[#f8f9fa] rounded-2xl p-4 border border-[#e0e4e5] mt-1">
+               {Array.from(selectedClasses).map(classId => {
+                  const item = allItems.find(c => c.id === classId);
+                  if (!item) return null;
+                  return (
+                    <div key={classId} className="flex justify-between items-center mb-3 last:mb-0">
+                      <span className="text-sm font-bold text-[#2d3435] truncate mr-2">{item.title}</span>
+                      <span className="text-sm font-black text-[#2d3435] whitespace-nowrap">
+                        {item.amount ? item.amount.toLocaleString() : "0"} {item.currency || "KRW"}
+                      </span>
                     </div>
-                  </section>
+                  );
+               })}
+               <div className="pt-3 mt-3 border-t border-[#e0e4e5] flex justify-between items-center">
+                 <span className="text-[10px] font-black text-[#596061] uppercase tracking-widest">Total</span>
+                 <span className="text-xl font-black text-primary">
+                   {Array.from(selectedClasses).reduce((sum, id) => {
+                     const item = allItems.find(c => c.id === id);
+                     return sum + (item?.amount || 0);
+                   }, 0).toLocaleString()} <span className="text-sm">{selectedClasses.size > 0 ? allItems.find(c => c.id === Array.from(selectedClasses)[0])?.currency || "KRW" : "KRW"}</span>
+                 </span>
+               </div>
+             </div>
+          </section>
 
-                  <section className="flex flex-col gap-4">
-                    <h3 className="font-['Plus_Jakarta_Sans'] text-sm font-black text-[#2d3435] uppercase tracking-wider">Applied Items</h3>
-                    <div className="bg-gray-50 rounded-xl border border-gray-200 overflow-hidden">
-                      <ul className="divide-y divide-gray-200">
-                        {Array.from(selectedClasses).map(classId => {
-                          const item = allItems.find(c => c.id === classId);
-                          if (!item) return null;
-                          return (
-                            <li key={classId} className="p-4 flex justify-between items-center bg-white">
-                              <span className="text-sm font-bold text-gray-700 line-clamp-1 mr-4">{item.title}</span>
-                              <span className="text-sm font-black text-[#2d3435] flex-shrink-0">
-                                {item.amount ? item.amount.toLocaleString() : "0"} {item.currency || "KRW"}
-                              </span>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                      <div className="p-4 bg-[#0057bd]/5 border-t border-[#0057bd]/10 flex justify-between items-center">
-                        <span className="text-sm font-black text-[#0057bd]">Total Amount</span>
-                        <span className="text-xl font-black text-[#0057bd]">
-                          {subtotal.toLocaleString()} {currency}
-                        </span>
-                      </div>
-                    </div>
-                  </section>
+          <section className="flex flex-col gap-2">
+             <h3 className="text-[10px] font-black text-[#596061] uppercase tracking-widest">Payment Method</h3>
+             <div className="flex gap-2 mt-1">
+                 <button 
+                   className={`flex-1 py-3 rounded-xl border text-sm font-bold transition-all ${paymentStatus === 'paid' ? 'bg-[#2d3435] border-[#2d3435] text-white shadow-md' : 'bg-white border-[#e0e4e5] text-[#acb3b4] hover:bg-slate-50 hover:text-[#596061]'}`}
+                   onClick={() => setPaymentStatus('paid')}
+                 >
+                   Already Paid
+                 </button>
+                 <button 
+                   className={`flex-1 py-3 rounded-xl border text-sm font-bold transition-all ${paymentStatus === 'pay_later' ? 'bg-[#2d3435] border-[#2d3435] text-white shadow-md' : 'bg-white border-[#e0e4e5] text-[#acb3b4] hover:bg-slate-50 hover:text-[#596061]'}`}
+                   onClick={() => setPaymentStatus('pay_later')}
+                 >
+                   Pay Later
+                 </button>
+             </div>
+          </section>
+
+          <button 
+            onClick={async () => {
+              if (!user) {
+                toast.error("You need to login first.");
+                return;
+              }
+              if (!selectedRole) {
+                toast.error("Please select a role (Leader/Follower).");
+                return;
+              }
+              setIsApplying(true);
+              try {
+                for (const classId of Array.from(selectedClasses)) {
+                  const item = allItems.find(c => c.id === classId);
+                  if (!item) continue;
                   
-                  <section className="flex flex-col gap-3">
-                    <h3 className="font-['Plus_Jakarta_Sans'] text-sm font-black text-[#2d3435] uppercase tracking-wider">Payment Method</h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      <label className="cursor-pointer relative">
-                        <input type="radio" name="payment_status" className="peer sr-only" checked={paymentStatus === 'paid'} onChange={() => setPaymentStatus('paid')} />
-                        <div className="bg-white border-2 border-gray-200 rounded-xl p-4 text-center peer-checked:border-[#0057bd] peer-checked:bg-[#0057bd]/5 transition-all h-full flex items-center justify-center">
-                          <span className="text-sm font-bold text-gray-600 peer-checked:text-[#0057bd]">Already Paid</span>
-                        </div>
-                      </label>
-                      <label className="cursor-pointer relative">
-                        <input type="radio" name="payment_status" className="peer sr-only" checked={paymentStatus === 'pay_later'} onChange={() => setPaymentStatus('pay_later')} />
-                        <div className="bg-white border-2 border-gray-200 rounded-xl p-4 text-center peer-checked:border-[#0057bd] peer-checked:bg-[#0057bd]/5 transition-all h-full flex items-center justify-center">
-                          <span className="text-sm font-bold text-gray-600 peer-checked:text-[#0057bd]">Pay Later</span>
-                        </div>
-                      </label>
-                    </div>
-                  </section>
-                </div>
-                
-                <div className="p-6 bg-white border-t border-gray-100 flex-shrink-0">
-                  <button 
-                    onClick={async () => {
-                      if (!user) {
-                        toast.error("You need to login first.");
-                        return;
-                      }
-                      if (!selectedRole) {
-                        toast.error("Please select a role (Leader/Follower).");
-                        return;
-                      }
-                      setIsApplying(true);
-                      try {
-                        for (const classId of Array.from(selectedClasses)) {
-                          const item = allItems.find(c => c.id === classId);
-                          if (!item) continue;
-                          
-                          const regData: any = {
-                            classId: item.id,
-                            groupId: groupId,
-                            userId: user.uid,
-                            classTitle: item.title,
-                            applicantName: profile?.nickname || 'Unknown',
-                            status: paymentStatus === 'paid' ? 'PAYMENT_REPORTED' : 'PAYMENT_PENDING',
-                            amount: item.amount || 0,
-                            currency: item.currency || 'KRW',
-                            role: selectedRole === 'leader' ? 'Leader' : 'Follower'
-                          };
+                  const regData: any = {
+                    classId: item.id,
+                    groupId: groupId,
+                    userId: user.uid,
+                    classTitle: item.title,
+                    applicantName: profile?.nickname || 'Unknown',
+                    status: paymentStatus === 'paid' ? 'PAYMENT_REPORTED' : 'PAYMENT_PENDING',
+                    amount: item.amount || 0,
+                    currency: item.currency || 'KRW',
+                    role: selectedRole === 'leader' ? 'Leader' : 'Follower'
+                  };
 
-                          await classRegistrationService.addRegistration(regData);
-                        }
-                        setIsApplyModalOpen(false);
-                        setShowSuccess(true);
-                        setSelectedClasses(new Set());
-                      } catch (error: any) {
-                        console.error("Error applying:", error);
-                        alert(`[Error] Failed to apply.\n\nReason: ${error?.message || 'Unknown'}`);
-                      } finally {
-                        setIsApplying(false);
-                      }
-                    }}
-                    disabled={isApplying}
-                    className="w-full bg-[#0057bd] text-white py-4 rounded-xl font-black text-sm tracking-wide shadow-lg shadow-[#0057bd]/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2"
-                  >
-                    {isApplying ? (
-                      <><span className="material-symbols-outlined animate-spin">progress_activity</span> Processing...</>
-                    ) : (
-                      'Complete Application'
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </>
-        );
-      })()}
+                  await classRegistrationService.addRegistration(regData);
+                }
+                setIsApplyModalOpen(false);
+                setShowSuccess(true);
+                setSelectedClasses(new Set());
+              } catch (error: any) {
+                console.error("Error applying:", error);
+                alert(`[Error] Failed to apply.\n\nReason: ${error?.message || 'Unknown'}`);
+              } finally {
+                setIsApplying(false);
+              }
+            }}
+            disabled={isApplying}
+            className="w-full bg-primary text-white py-4 rounded-xl font-black text-base tracking-wide shadow-lg shadow-primary/30 transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-4 hover:bg-primary/90 active:scale-[0.98]"
+          >
+            {isApplying ? (
+              <><span className="material-symbols-outlined animate-spin">progress_activity</span> Processing...</>
+            ) : (
+              'Complete Application'
+            )}
+          </button>
+        </div>
+      </BottomSheet>
     </div>
   );
 }

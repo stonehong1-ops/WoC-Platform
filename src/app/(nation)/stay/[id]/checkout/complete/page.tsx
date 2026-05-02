@@ -79,73 +79,76 @@ function CompleteContent() {
   };
 
   return (
-    <div className="bg-surface-container-lowest rounded-xxl p-8 max-w-md w-full text-center shadow-lg border border-outline-variant/30">
-      <div className="w-20 h-20 bg-primary-container text-on-primary-container rounded-full flex items-center justify-center mx-auto mb-6">
-        <span className="material-symbols-outlined text-4xl">check_circle</span>
+    <div className="fixed inset-0 z-[200] bg-white flex flex-col items-center justify-center animate-in fade-in duration-500 px-6">
+      {/* Success Icon (Shop pattern) */}
+      <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mb-6 animate-in zoom-in duration-500">
+        <span className="material-symbols-rounded text-4xl text-emerald-600" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
       </div>
-      
-      <h1 className="font-['Plus_Jakarta_Sans'] font-bold text-2xl text-on-surface mb-2">
-        Reservation Applied!
-      </h1>
-      <p className="text-on-surface-variant text-body-md mb-8">
-        Your booking request has been successfully submitted. We have also sent a confirmation SMS to your registered phone number.
+
+      <h2 className="text-xl font-black text-[#2d3435] mb-2">Reservation Applied!</h2>
+      <p className="text-sm text-[#596061] text-center leading-relaxed mb-2">
+        Your booking request has been successfully submitted.
+      </p>
+      <p className="text-xs text-[#acb3b4] text-center leading-relaxed mb-8">
+        We have sent a confirmation SMS to your registered phone number.
+        <br />Track your booking in <span className="font-bold">My {'>'} History</span>.
       </p>
 
+      {/* Summary Card (Shop pattern) */}
       {booking && (
-        <div className="bg-surface-container-low p-4 rounded-xl mb-6 text-left space-y-3">
-          <div className="flex justify-between items-center border-b border-outline-variant/30 pb-2">
-            <span className="text-outline text-label-md uppercase">Stay</span>
-            <span className="font-semibold text-on-surface">{booking.stayTitle}</span>
-          </div>
-          <div className="flex justify-between items-center border-b border-outline-variant/30 pb-2">
-            <span className="text-outline text-label-md uppercase">Dates</span>
-            <span className="font-semibold text-on-surface">
-              {formatDate(booking.checkIn)} - {formatDate(booking.checkOut)}
-            </span>
-          </div>
-          <div className="flex justify-between items-center border-b border-outline-variant/30 pb-2">
-            <span className="text-outline text-label-md uppercase">Guests</span>
-            <span className="font-semibold text-on-surface">{booking.guests} guest(s)</span>
-          </div>
-          <div className="flex justify-between items-center pt-1">
-            <span className="text-outline text-label-md uppercase">Total Price</span>
-            <span className="font-bold text-primary text-title-md">{booking.pricing.grandTotal.toLocaleString()} {booking.pricing.currency}</span>
+        <div className="w-full max-w-sm bg-[#f8f9fa] rounded-2xl p-4 border border-[#e0e4e5] mb-4">
+          <div className="space-y-2.5">
+            <div className="flex justify-between items-center">
+              <span className="text-[10px] font-bold text-[#acb3b4] uppercase tracking-widest">Stay</span>
+              <span className="text-sm font-bold text-[#2d3435] truncate max-w-[200px]">{booking.stayTitle}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-[10px] font-bold text-[#acb3b4] uppercase tracking-widest">Dates</span>
+              <span className="text-xs font-bold text-[#596061]">
+                {formatDate(booking.checkIn)} - {formatDate(booking.checkOut)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-[10px] font-bold text-[#acb3b4] uppercase tracking-widest">Guests</span>
+              <span className="text-xs font-bold text-[#596061]">{booking.guests} guest(s)</span>
+            </div>
+            <div className="flex justify-between items-center pt-2 border-t border-[#e0e4e5]">
+              <span className="text-[10px] font-bold text-[#acb3b4] uppercase tracking-widest">Total</span>
+              <span className="text-base font-black text-primary">{booking.pricing.grandTotal.toLocaleString()} {booking.pricing.currency}</span>
+            </div>
           </div>
         </div>
       )}
 
       {bookingId && (
-        <p className="text-label-sm text-outline mb-6">Booking ID: {bookingId}</p>
+        <p className="text-[10px] text-[#acb3b4] mb-6">Booking ID: {bookingId}</p>
       )}
 
-      <div className="space-y-3">
+      {/* Actions (Shop pattern — single primary action) */}
+      <div className="w-full max-w-sm space-y-3">
         {booking && !paymentReported && booking.status === 'APPLIED' && (
           <button 
             onClick={handlePaymentReport}
             disabled={isReporting}
-            className="w-full bg-tertiary-container text-on-tertiary-container font-headline-md py-4 rounded-xl transition-all active:scale-[0.98] hover:opacity-90 shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-2 py-3.5 bg-[#f2f4f4] hover:bg-[#e8eaec] rounded-2xl transition-colors active:scale-[0.98] disabled:opacity-50"
           >
-            <span className="material-symbols-outlined text-xl">payments</span>
-            {isReporting ? 'Reporting...' : "I've Transferred the Payment"}
+            <span className="material-symbols-rounded text-lg text-[#596061]">payments</span>
+            <span className="text-sm font-bold text-[#2d3435]">
+              {isReporting ? 'Reporting...' : "I've Transferred the Payment"}
+            </span>
           </button>
         )}
         {paymentReported && (
-          <div className="bg-tertiary-container/30 border border-tertiary-container rounded-xl p-3 flex items-center gap-2">
-            <span className="material-symbols-outlined text-tertiary text-lg">check_circle</span>
-            <span className="text-body-sm text-on-surface font-semibold">Payment reported! The host will confirm shortly.</span>
+          <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-100 rounded-xl">
+            <span className="material-symbols-rounded text-emerald-600 text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+            <span className="text-xs font-bold text-[#2d3435]">Payment reported! The host will confirm shortly.</span>
           </div>
         )}
-        <button 
-          onClick={() => router.push(`/stay/${stayId}`)}
-          className="w-full bg-primary text-on-primary font-headline-md py-4 rounded-xl transition-all active:scale-[0.98] hover:bg-primary/90 shadow-md"
+        <button
+          onClick={() => router.push(`/stay`)}
+          className="w-full bg-primary text-white py-4 rounded-2xl font-black text-sm tracking-wide shadow-lg shadow-primary/20 active:scale-[0.98] transition-transform"
         >
-          Back to Stay
-        </button>
-        <button 
-          onClick={() => router.push(`/home`)}
-          className="w-full bg-surface-container-high text-on-surface font-headline-md py-4 rounded-xl transition-all active:scale-[0.98] hover:bg-surface-container-highest"
-        >
-          Go to Home
+          Go to Stays
         </button>
       </div>
     </div>
@@ -154,26 +157,15 @@ function CompleteContent() {
 
 export default function BookingCompletePage() {
   return (
-    <>
-      <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-      <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-      
-      <style jsx global>{`
-        .material-symbols-outlined {
-          font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        }
-      `}</style>
-      
-      <div className="font-body-md text-on-surface bg-background min-h-[max(884px,100dvh)] relative flex flex-col items-center justify-center p-4">
-        <Suspense fallback={
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-8 h-8 border-3 border-primary/30 border-t-primary rounded-full animate-spin" />
-            <span className="font-body-md text-on-surface-variant">Loading...</span>
-          </div>
-        }>
-          <CompleteContent />
-        </Suspense>
+    <Suspense fallback={
+      <div className="bg-white min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-3 border-primary/30 border-t-primary rounded-full animate-spin" />
+          <span className="text-xs font-bold text-[#acb3b4]">Loading...</span>
+        </div>
       </div>
-    </>
+    }>
+      <CompleteContent />
+    </Suspense>
   );
 }

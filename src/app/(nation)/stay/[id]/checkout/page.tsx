@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
-import '@/styles/groupstayeditor.css';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { stayService } from '@/lib/firebase/stayService';
@@ -194,6 +193,13 @@ function CheckoutContent() {
         },
         status: 'APPLIED' as StayBookingStatus,
       });
+
+      // Update wishlist status to in_progress (Shop pattern)
+      try {
+        await stayService.setStayInProgressStatus(user.uid, stay.id);
+      } catch (e) {
+        console.error('Failed to update stay to in_progress:', e);
+      }
 
       // Send SMS
       if (phoneNumber) {

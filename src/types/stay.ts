@@ -102,7 +102,9 @@ export interface StayLike {
   id: string;
   userId: string;
   stayId: string;
+  status?: 'liked' | 'pending' | 'in_progress'; // 비즈니스 파이프라인 상태
   createdAt: any; // Timestamp
+  updatedAt?: any; // Timestamp
 }
 
 

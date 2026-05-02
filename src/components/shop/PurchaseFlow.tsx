@@ -137,6 +137,13 @@ export default function PurchaseFlow({
       const createdId = await shopService.createOrder(orderData);
       setOrderId(createdId);
 
+      // Update wishlist status to in_progress
+      try {
+        await shopService.setProductInProgressStatus(user.uid, product.id);
+      } catch (e) {
+        console.error('Failed to update product to in_progress:', e);
+      }
+
       // Automated Chat Notification to Seller
       try {
         const sellerId = product.sellerId || 'adminstone';
@@ -232,58 +239,7 @@ export default function PurchaseFlow({
             </div>
           </div>
 
-          {/* Fulfillment */}
-          <div className="px-5 pb-4">
-            <div className="flex items-center gap-2 p-3 bg-[#f0f4ff] rounded-xl border border-[#dbeafe]">
-              <span className="material-symbols-outlined text-sm text-[#0057bd]">
-                {fulfillmentType === 'pickup' ? 'store' : 'local_shipping'}
-              </span>
-              <span className="text-xs font-bold text-[#2d3435]">
-                {fulfillmentType === 'pickup' ? 'Store Pickup' : 'Delivery'}
-              </span>
-              {fulfillmentType === 'delivery' && product.sellerPaysShipping && (
-                <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold ml-auto">Free Shipping</span>
-              )}
-            </div>
-          </div>
 
-          {/* Price Breakdown */}
-          <div className="px-5 pb-4 space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-[#596061]">Item Price</span>
-              <span className="text-[#2d3435] font-bold">{sym}{fmt(basePrice)}</span>
-            </div>
-            {extraPrice > 0 && (
-              <div className="flex justify-between text-sm">
-                <span className="text-[#596061]">Custom Options</span>
-                <span className="text-[#2d3435] font-bold">+{sym}{fmt(extraPrice)}</span>
-              </div>
-            )}
-            {fulfillmentType === 'delivery' && (
-              <div className="flex justify-between text-sm">
-                <span className="text-[#596061]">Shipping</span>
-                <span className={`font-bold ${shippingFee === 0 ? 'text-emerald-600' : 'text-[#2d3435]'}`}>
-                  {shippingFee === 0 ? 'Free' : `${sym}${fmt(shippingFee)}`}
-                </span>
-              </div>
-            )}
-            <div className="border-t border-[#e0e4e5] pt-2 flex justify-between">
-              <span className="text-sm font-bold text-[#2d3435]">Total</span>
-              <span className="text-xl font-black text-[#0057bd]">{sym}{fmt(totalAmount)}</span>
-            </div>
-          </div>
-
-          {/* Production Info */}
-          {(product.productionDaysMin || product.productionDaysMax) && (
-            <div className="px-5 pb-4">
-              <div className="flex items-center gap-2 p-3 bg-[#fef9ee] rounded-xl border border-[#fde68a]">
-                <span className="material-symbols-outlined text-sm text-amber-600">schedule</span>
-                <span className="text-xs text-amber-800">
-                  Production: {product.productionDaysMin || '?'}–{product.productionDaysMax || '?'} days
-                </span>
-              </div>
-            </div>
-          )}
 
           {/* Contact Info */}
           <div className="px-5 pb-4">
@@ -507,18 +463,12 @@ export default function PurchaseFlow({
       </div>
 
       {/* Actions */}
-      <div className="w-full max-w-sm space-y-3">
+      <div className="w-full max-w-sm">
         <button
           onClick={onComplete}
           className="w-full bg-[#0057bd] text-white py-4 rounded-2xl font-black text-sm tracking-wide shadow-lg shadow-[#0057bd]/20 active:scale-[0.98] transition-transform"
         >
-          Go to Shop Home
-        </button>
-        <button
-          onClick={onClose}
-          className="w-full bg-[#f2f4f4] text-[#596061] py-3.5 rounded-2xl font-bold text-sm active:scale-[0.98] transition-transform"
-        >
-          Continue Shopping
+          Go to Shopping
         </button>
       </div>
     </div>

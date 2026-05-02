@@ -72,7 +72,7 @@ export const resaleService = {
       batch.delete(likeRef);
       batch.update(itemRef, { likesCount: increment(-1) });
     } else {
-      batch.set(likeRef, { userId, itemId, createdAt: serverTimestamp() });
+      batch.set(likeRef, { userId, itemId, status: 'liked', createdAt: serverTimestamp() });
       batch.update(itemRef, { likesCount: increment(1) });
     }
     
@@ -103,5 +103,86 @@ export const resaleService = {
   updateItemStatus: async (itemId: string, status: 'active' | 'reserved' | 'sold') => {
     const itemRef = doc(db, RESALE_COLLECTION, itemId);
     await updateDoc(itemRef, { status });
+  },
+
+  // Get single item
+  getItem: async (itemId: string): Promise<ResaleItem | null> => {
+    const docRef = doc(db, RESALE_COLLECTION, itemId);
+    const snap = await getDoc(docRef);
+    if (snap.exists()) {
+      return { id: snap.id, ...snap.data() } as ResaleItem;
+    }
+    return null;
+  },
+
+  // Subscribe to My Likes
+  subscribeMyLikes: (userId: string, callback: (likes: any[]) => void) => {
+    const q = query(
+      collection(db, LIKES_COLLECTION),
+      where('userId', '==', userId),
+      orderBy('createdAt', 'desc')
+    );
+    return onSnapshot(q, (snapshot) => {
+      const likes = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      callback(likes);
+    });
+  },
+
+  // Clear all likes
+  clearAllLikes: async (userId: string) => {
+    const q = query(collection(db, LIKES_COLLECTION), where('userId', '==', userId));
+    const snapshot = await getDocs(q);
+    const batch = writeBatch(db);
+
+    snapshot.docs.forEach((docSnap) => {
+      batch.delete(docSnap.ref);
+      const data = docSnap.data();
+      const itemRef = doc(db, RESALE_COLLECTION, data.itemId);
+      batch.update(itemRef, { likesCount: increment(-1) });
+    });
+
+    await batch.commit();
+  },
+
+  setProductPendingStatus: async (userId: string, itemId: string) => {
+    const likeId = `${userId}_${itemId}`;
+    const likeRef = doc(db, LIKES_COLLECTION, likeId);
+    
+    const snap = await getDoc(likeRef);
+    if (!snap.exists()) {
+      // If not liked, create it directly as pending
+      await setDoc(likeRef, {
+        userId,
+        itemId,
+        status: 'pending',
+        createdAt: serverTimestamp(),
+      });
+      const itemRef = doc(db, RESALE_COLLECTION, itemId);
+      await updateDoc(itemRef, { likesCount: increment(1) });
+    } else {
+      await updateDoc(likeRef, { status: 'pending', updatedAt: serverTimestamp() });
+    }
+  },
+
+  setProductInProgressStatus: async (userId: string, itemId: string) => {
+    const likeId = `${userId}_${itemId}`;
+    const likeRef = doc(db, LIKES_COLLECTION, likeId);
+    
+    const snap = await getDoc(likeRef);
+    if (!snap.exists()) {
+      await setDoc(likeRef, {
+        userId,
+        itemId,
+        status: 'in_progress',
+        createdAt: serverTimestamp(),
+      });
+      const itemRef = doc(db, RESALE_COLLECTION, itemId);
+      await updateDoc(itemRef, { likesCount: increment(1) });
+    } else {
+      await updateDoc(likeRef, { status: 'in_progress', updatedAt: serverTimestamp() });
+    }
   }
 };

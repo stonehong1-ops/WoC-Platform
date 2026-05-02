@@ -8,7 +8,7 @@ import { rentalService } from '@/lib/firebase/rentalService';
 interface RentalWishlistTrayProps {
   likes: RentalLike[];
   userId: string;
-  onSpaceClick: (spaceId: string) => void;
+  onSpaceClick: (space: RentalSpace) => void;
 }
 
 type TrayState = 'HIDDEN' | 'COLLAPSED' | 'EXPANDED';
@@ -149,7 +149,7 @@ export default function RentalWishlistTray({ likes, userId, onSpaceClick }: Rent
                   likedSpaces.map((space) => (
                     <div 
                       key={space.id}
-                      onClick={() => onSpaceClick(space.id)}
+                      onClick={() => onSpaceClick(space)}
                       className="flex-none w-[calc(100%-24px)] bg-white rounded-lg p-2 shadow-sm border border-slate-50 flex gap-3 relative snap-center cursor-pointer hover:shadow-md transition-all active:scale-[0.98]"
                     >
                       {/* Space image */}

@@ -41,7 +41,23 @@ export default function WishlistTray({ likes, userId, onProductClick }: Wishlist
       const products = await Promise.all(
         likes.map(like => shopService.getProduct(like.productId))
       );
-      setLikedProducts(products.filter((p): p is Product => p !== null));
+      
+      // Filter out nulls and attach status
+      const validProducts = products
+        .map((p, i) => (p ? { ...p, _likeStatus: likes[i].status } : null))
+        .filter((p): p is Product & { _likeStatus: 'liked' | 'pending' | 'in_progress' | undefined } => p !== null);
+      
+      // Sort: in_progress first, then pending, then liked
+      validProducts.sort((a, b) => {
+        const getPriority = (status: string | undefined) => {
+          if (status === 'in_progress') return 1;
+          if (status === 'pending') return 2;
+          return 3;
+        };
+        return getPriority(a._likeStatus) - getPriority(b._likeStatus);
+      });
+      
+      setLikedProducts(validProducts);
       setLoadingProducts(false);
     };
 
@@ -103,19 +119,31 @@ export default function WishlistTray({ likes, userId, onProductClick }: Wishlist
               </div>
 
               {isExpanded ? (
-                /* Expanded: header text — "N Liked Items" */
+                /* Expanded: header text */
                 <span className="text-sm text-slate-800 font-bold ml-3 tracking-wide">
-                  {likes.length} Liked Items
+                  {likes.filter(l => l.status === 'in_progress').length > 0 && (
+                    <span className="text-blue-500">{likes.filter(l => l.status === 'in_progress').length} In Progress, </span>
+                  )}
+                  {likes.filter(l => l.status === 'pending').length > 0 && (
+                    <span className="text-primary">{likes.filter(l => l.status === 'pending').length} Pending, </span>
+                  )}
+                  {likes.filter(l => l.status !== 'pending' && l.status !== 'in_progress').length} Liked Items
                 </span>
               ) : (
-                /* Collapsed: count summary — Map's "N IN VIEW" pattern (L531-533) */
-                <span className="text-sm text-slate-800 font-bold ml-3 tracking-wide">
-                  {likes.length} LIKED
+                /* Collapsed: count summary */
+                <span className="text-sm text-slate-800 font-bold ml-3 tracking-wide uppercase">
+                  {likes.filter(l => l.status === 'in_progress').length > 0 && (
+                    <span className="text-blue-500">{likes.filter(l => l.status === 'in_progress').length} IN PROGRESS, </span>
+                  )}
+                  {likes.filter(l => l.status === 'pending').length > 0 && (
+                    <span className="text-primary">{likes.filter(l => l.status === 'pending').length} PENDING, </span>
+                  )}
+                  {likes.filter(l => l.status !== 'pending' && l.status !== 'in_progress').length} LIKED
                 </span>
               )}
             </div>
 
-            {/* Right side — Map L537-548 pattern */}
+            {/* Right side */}
             <div className="flex items-center gap-4">
               {isExpanded && (
                 <button
@@ -125,15 +153,6 @@ export default function WishlistTray({ likes, userId, onProductClick }: Wishlist
                   Clear all
                 </button>
               )}
-              <div className="h-5 w-[1px] bg-slate-200"></div>
-              <button 
-                onClick={handleToggleExpand}
-                className="flex items-center justify-center text-primary active:scale-90 transition-transform"
-              >
-                <span className="material-symbols-rounded text-[24px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-                  favorite
-                </span>
-              </button>
             </div>
           </div>
 
@@ -171,9 +190,19 @@ export default function WishlistTray({ likes, userId, onProductClick }: Wishlist
 
                       {/* Product info — Map L578-588 pattern */}
                       <div className="flex flex-col min-w-0 pr-8 justify-center">
-                        <span className="text-[10px] font-bold text-primary bg-primary/10 w-fit px-1.5 py-0.5 rounded mb-1 uppercase">
-                          {product.brand || product.category}
-                        </span>
+                        {(product as any)._likeStatus === 'in_progress' ? (
+                          <span className="text-[10px] font-bold text-white bg-blue-500 w-fit px-1.5 py-0.5 rounded mb-1 uppercase">
+                            IN PROGRESS
+                          </span>
+                        ) : (product as any)._likeStatus === 'pending' ? (
+                          <span className="text-[10px] font-bold text-white bg-primary w-fit px-1.5 py-0.5 rounded mb-1 uppercase">
+                            PENDING
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-bold text-primary bg-primary/10 w-fit px-1.5 py-0.5 rounded mb-1 uppercase">
+                            {product.brand || product.category}
+                          </span>
+                        )}
                         <h3 className="text-[17px] font-bold text-on-background truncate leading-tight">
                           {product.title || product.name}
                         </h3>

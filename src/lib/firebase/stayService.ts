@@ -261,5 +261,55 @@ export const stayService = {
       console.error('Error clearing all likes:', error);
       throw error;
     }
+  },
+
+  // Set stay as pending (호스트와 채팅 시작 — 구매 협의 중)
+  setStayPendingStatus: async (userId: string, stayId: string): Promise<void> => {
+    const likeId = `${userId}_${stayId}`;
+    const likeRef = doc(db, LIKES_COLLECTION, likeId);
+    const stayRef = doc(db, STAYS_COLLECTION, stayId);
+
+    try {
+      const likeSnap = await getDoc(likeRef);
+      if (likeSnap.exists()) {
+        await updateDoc(likeRef, { status: 'pending', updatedAt: serverTimestamp() });
+      } else {
+        await setDoc(likeRef, {
+          userId,
+          stayId,
+          status: 'pending',
+          createdAt: serverTimestamp()
+        });
+        await updateDoc(stayRef, { likesCount: increment(1) });
+      }
+    } catch (error) {
+      console.error('Error setting pending status:', error);
+      throw error;
+    }
+  },
+
+  // Set stay as in_progress (예약 완료 및 진행 중)
+  setStayInProgressStatus: async (userId: string, stayId: string): Promise<void> => {
+    const likeId = `${userId}_${stayId}`;
+    const likeRef = doc(db, LIKES_COLLECTION, likeId);
+    const stayRef = doc(db, STAYS_COLLECTION, stayId);
+
+    try {
+      const likeSnap = await getDoc(likeRef);
+      if (likeSnap.exists()) {
+        await updateDoc(likeRef, { status: 'in_progress', updatedAt: serverTimestamp() });
+      } else {
+        await setDoc(likeRef, {
+          userId,
+          stayId,
+          status: 'in_progress',
+          createdAt: serverTimestamp()
+        });
+        await updateDoc(stayRef, { likesCount: increment(1) });
+      }
+    } catch (error) {
+      console.error('Error setting in_progress status:', error);
+      throw error;
+    }
   }
 };
