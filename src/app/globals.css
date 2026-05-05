@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap');
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
 @import "tailwindcss";
 
 :root {
@@ -69,8 +70,8 @@
   --radius-lg: 0.5rem;
   --radius-DEFAULT: 0.25rem;
   
-  --font-headline: "Plus Jakarta Sans", sans-serif;
-  --font-body: "Inter", sans-serif;
+  --font-headline: "Plus Jakarta Sans", "Pretendard Variable", "Pretendard", sans-serif;
+  --font-body: "Inter", "Pretendard Variable", "Pretendard", sans-serif;
 
   --animate-halo-pulse: halo-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 
