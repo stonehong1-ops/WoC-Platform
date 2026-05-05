@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import React, { useState, useRef, useEffect } from 'react';
 import Portal from '@/components/common/Portal';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -49,7 +49,7 @@ const EMPHASIS_OPTIONS = [
 const KIND_ICON: Record<string, string> = { people: 'person', venue: 'location_on', event: 'event', social: 'share', group: 'groups' };
 const KIND_COLOR: Record<string, string> = { people: 'text-blue-500', venue: 'text-emerald-500', event: 'text-orange-500', social: 'text-purple-500', group: 'text-pink-500' };
 
-export default function FeedCreatePopup({ isOpen, onClose, context, editingPost }: Props) {
+export default function CreateFeedPopup({ isOpen, onClose, context, editingPost }: Props) {
   const { user, profile } = useAuth();
   const { location } = useLocation();
   const { handleClose } = useHistoryBack(isOpen, onClose);

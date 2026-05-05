@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import FeedCreatePopup from './FeedCreatePopup';
+import CreateFeedPopup from './CreateFeedPopup';
 import FeedPostCard from './FeedPostCard';
 import { feedService } from '@/lib/firebase/feedService';
 import { Post } from '@/types/feed';
@@ -189,7 +189,7 @@ export default function UniversalFeed({ context, currentUser, profile, activeFil
       </main>
 
       {/* Full Screen Post Creation Popup */}
-      <FeedCreatePopup
+      <CreateFeedPopup
         isOpen={isCreateModalOpen}
         onClose={closeCreate}
         context={context}
