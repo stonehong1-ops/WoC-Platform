@@ -1,6 +1,6 @@
 'use client';
 
-import StayDetailPage from '@/app/(nation)/stay/[id]/page';
+import StayDetailPage from '@/app/stay/[id]/page';
 
 export default function InterceptedStayPage() {
   return (
