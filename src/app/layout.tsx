@@ -3,6 +3,7 @@ import "./globals.css";
 import GlobalNavigation from "@/components/layout/GlobalNavigation";
 import PageWrapper from "@/components/layout/PageWrapper";
 import SWRegister from "@/components/layout/SWRegister";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 
 export const metadata: Metadata = {
   title: "WoC",
@@ -50,39 +51,41 @@ export default function RootLayout({
       </head>
       <body className="bg-background text-on-surface font-body selection:bg-primary-container selection:text-on-primary-container antialiased">
         <div className="overflow-x-hidden w-full relative flex flex-col min-h-[100dvh]">
-          <AuthProvider>
-            <AuthModal />
-            <AuthGuard>
-              <NotificationProvider>
-                <LocationProvider>
-                  <NavigationProvider>
-                    <ClassCartProvider>
-                      <SWRegister />
-                      <GlobalNavigation>
-                        {/* Full Screen Menu */}
-                        <NavigationDrawer />
+          <LanguageProvider>
+            <AuthProvider>
+              <AuthModal />
+              <AuthGuard>
+                <NotificationProvider>
+                  <LocationProvider>
+                    <NavigationProvider>
+                      <ClassCartProvider>
+                        <SWRegister />
+                        <GlobalNavigation>
+                          {/* Full Screen Menu */}
+                          <NavigationDrawer />
 
-                        {/* Notification Tray */}
-                        <NotificationTray />
+                          {/* Notification Tray */}
+                          <NotificationTray />
 
-                        {/* Location Selector Bottom Sheet/Modal */}
-                        <LocationSelector />
+                          {/* Location Selector Bottom Sheet/Modal */}
+                          <LocationSelector />
 
-                        {/* Dynamic Body Content */}
-                        <PageWrapper>
-                          {children}
-                        </PageWrapper>
+                          {/* Dynamic Body Content */}
+                          <PageWrapper>
+                            {children}
+                          </PageWrapper>
 
-                        {/* Parallel Route Modal Content */}
-                        {modal}
-                      </GlobalNavigation>
-                    </ClassCartProvider>
-                  </NavigationProvider>
-                </LocationProvider>
-              </NotificationProvider>
-            </AuthGuard>
-            <Toaster position="top-center" richColors />
-          </AuthProvider>
+                          {/* Parallel Route Modal Content */}
+                          {modal}
+                        </GlobalNavigation>
+                      </ClassCartProvider>
+                    </NavigationProvider>
+                  </LocationProvider>
+                </NotificationProvider>
+              </AuthGuard>
+              <Toaster position="top-center" richColors />
+            </AuthProvider>
+          </LanguageProvider>
         </div>
       </body>
     </html>

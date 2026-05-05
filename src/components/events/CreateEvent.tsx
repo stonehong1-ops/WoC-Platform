@@ -5,6 +5,7 @@ import { eventService } from '@/lib/firebase/eventService';
 import { EventCategory } from '@/types/event';
 import { Timestamp } from 'firebase/firestore';
 import UniversalCompose from '@/components/common/UniversalCompose';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface CreateEventProps {
   isOpen: boolean;
@@ -15,6 +16,7 @@ interface CreateEventProps {
 export default function CreateEvent({ isOpen, onClose, onSuccess }: CreateEventProps) {
   const { user } = useAuth();
   const { location } = useLocation();
+  const { t } = useLanguage();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [title, setTitle] = useState('');
@@ -27,7 +29,7 @@ export default function CreateEvent({ isOpen, onClose, onSuccess }: CreateEventP
 
   const handleSubmit = async () => {
     if (!user || !title || !startDate) {
-      alert("Please fill in the required fields (Title and Start Date).");
+      alert(t('event.msg_fill_required'));
       return;
     }
 
@@ -56,32 +58,38 @@ export default function CreateEvent({ isOpen, onClose, onSuccess }: CreateEventP
       onClose();
     } catch (error) {
       console.error("Error creating event:", error);
-      alert("Failed to create event. Please try again.");
+      alert(t('event.msg_post_failed'));
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const categories: EventCategory[] = ['CONFERENCE', 'WORKSHOP', 'NETWORKING', 'PARTY', 'SOCIAL'];
+  const categories: { key: EventCategory; labelKey: string }[] = [
+    { key: 'CONFERENCE', labelKey: 'event.cat_conference' },
+    { key: 'WORKSHOP', labelKey: 'event.cat_workshop' },
+    { key: 'NETWORKING', labelKey: 'event.cat_networking' },
+    { key: 'PARTY', labelKey: 'event.cat_party' },
+    { key: 'SOCIAL', labelKey: 'event.cat_social' }
+  ];
 
   return (
     <UniversalCompose
       id="event"
       isOpen={isOpen}
       onClose={onClose}
-      title="Host Event"
-      label="New Experience"
-      submitLabel={isSubmitting ? "Launching..." : "Publish Event"}
+      title={t('event.modal_title')}
+      label={t('event.modal_label')}
+      submitLabel={isSubmitting ? t('event.launching') : t('event.publish')}
       onSubmit={handleSubmit}
       isSubmitting={isSubmitting}
     >
       {/* Title Input */}
       <div className="space-y-2">
-        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Event Title</label>
+        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{t('event.title_label')}</label>
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="What's the name of your event?"
+          placeholder={t('event.title_placeholder')}
           className="w-full text-[24px] font-black tracking-tighter border-none focus:ring-0 placeholder:text-gray-200 p-0"
           autoFocus
           required
@@ -90,31 +98,31 @@ export default function CreateEvent({ isOpen, onClose, onSuccess }: CreateEventP
 
       {/* Native Name Input */}
       <div className="space-y-2">
-        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Native Name (Optional)</label>
+        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{t('event.native_title_label')}</label>
         <input
           value={titleNative}
           onChange={(e) => setTitleNative(e.target.value)}
-          placeholder="자국어(한글)명 (예: 서울 탱고 페스티벌)"
+          placeholder={t('event.native_title_placeholder')}
           className="w-full text-[16px] font-bold tracking-tight border-none focus:ring-0 placeholder:text-gray-200 p-0"
         />
       </div>
 
       {/* Category Selector */}
       <div className="space-y-4">
-        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 text-center block">Category</label>
+        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 text-center block">{t('event.category_label')}</label>
         <div className="flex flex-wrap gap-2 justify-center">
           {categories.map((cat) => (
             <button
-              key={cat}
+              key={cat.key}
               type="button"
-              onClick={() => setCategory(cat)}
+              onClick={() => setCategory(cat.key)}
               className={`px-4 py-2 rounded-full text-[11px] font-black transition-all tracking-tight ${
-                category === cat 
+                category === cat.key 
                   ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-105' 
                   : 'bg-gray-50 text-gray-400 hover:bg-gray-100'
               }`}
             >
-              {cat}
+              {t(cat.labelKey)}
             </button>
           ))}
         </div>
@@ -123,7 +131,7 @@ export default function CreateEvent({ isOpen, onClose, onSuccess }: CreateEventP
       <div className="grid grid-cols-2 gap-8 pt-4">
         {/* Date Input */}
         <div className="space-y-2">
-          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Start Date</label>
+          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{t('event.start_date_label')}</label>
           <input
             type="date"
             value={startDate}
@@ -134,26 +142,26 @@ export default function CreateEvent({ isOpen, onClose, onSuccess }: CreateEventP
         </div>
         {/* End Date Input */}
         <div className="space-y-2">
-          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">End Date</label>
+          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{t('event.end_date_label')}</label>
           <input
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
             className="w-full px-5 py-3.5 bg-gray-50 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-primary/10 transition-all"
-            placeholder="Optional"
+            placeholder={t('event.optional_placeholder')}
           />
         </div>
       </div>
 
       {/* Location Input */}
       <div className="space-y-2">
-        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Location / Venue</label>
+        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{t('event.location_label')}</label>
         <div className="relative">
           <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-300 text-[20px]">location_on</span>
           <input
             value={locationName}
             onChange={(e) => setLocationName(e.target.value)}
-            placeholder="Ex. Seoul, South Korea or Venue Name"
+            placeholder={t('event.location_placeholder')}
             className="w-full pl-12 pr-5 py-3.5 bg-gray-50 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-primary/10 transition-all"
           />
         </div>
@@ -161,11 +169,11 @@ export default function CreateEvent({ isOpen, onClose, onSuccess }: CreateEventP
 
       {/* Description */}
       <div className="space-y-2">
-        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Tell us more</label>
+        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{t('event.description_label')}</label>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="What will happen at this event? Share the vibes..."
+          placeholder={t('event.description_placeholder')}
           className="w-full min-h-[140px] px-5 py-4 bg-gray-50 border-none rounded-3xl text-sm font-medium focus:ring-2 focus:ring-primary/10 transition-all resize-none"
         />
       </div>

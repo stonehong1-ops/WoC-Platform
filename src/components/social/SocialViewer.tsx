@@ -12,6 +12,7 @@ import UniversalFeed from "@/components/feed/UniversalFeed";
 import SocialHomeTab from "./SocialHomeTab";
 import SocialReservationTab from "./SocialReservationTab";
 import EditSocialEvent from "./EditSocialEvent";
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface SocialViewerProps {
   social: Social;
@@ -24,6 +25,7 @@ const ADMIN_UIDS = ["7iaZAmaYY9dNNEShmJmROI8XrtH2"];
 
 export default function SocialViewer({ social: initialSocial, onClose }: SocialViewerProps) {
   const { user, profile } = useAuth();
+  const { t } = useLanguage();
   const [social, setSocial] = useState<Social>(initialSocial);
   const [activeTab, setActiveTab] = useState<TabId>("home");
   const [showEditModal, setShowEditModal] = useState(false);
@@ -80,14 +82,14 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
   useEffect(() => {
     if (!user) return;
     const unsub = socialService.subscribeMyLikes(user.uid, (likes) => {
-      setIsLiked(likes.includes(social.id));
+      setIsLiked(likes.some(l => l.id === social.id));
     });
     return () => unsub();
   }, [user, social.id]);
 
   const handleToggleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!user) return alert("Please login first");
+    if (!user) return alert(t('social.login_first'));
     try { await socialService.toggleLike(user.uid, social.id); } catch (err) { console.error(err); }
   };
 
@@ -117,10 +119,10 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
   };
 
   const handleChatWithOrganizer = async () => {
-    if (!user) return alert("Please login first");
+    if (!user) return alert(t('social.login_first'));
     const organizerId = social.organizerId || "adminstone";
-    if (user.uid === organizerId) return alert("You cannot chat with yourself");
-    if (!confirm("Would you like to send an inquiry chat to the organizer?")) return;
+    if (user.uid === organizerId) return alert(t('social.no_self_chat'));
+    if (!confirm(t('social.confirm_chat'))) return;
     try {
       const roomId = await chatService.getOrCreatePrivateRoom([user.uid, organizerId], user.uid, "business");
       const displayDate = social.type === "regular"
@@ -129,28 +131,28 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
       await chatService.sendMessage({
         roomId, senderId: user.uid, senderName: user.displayName || "User",
         senderPhoto: user.photoURL || undefined,
-        text: `[Event Inquiry]\nTitle: ${social.title}\nDate: ${displayDate}\nLink: ${window.location.origin}/social?id=${social.id}`,
+        text: `${t('social.inquiry_prefix')}\n${t('social.inquiry_title_label')}: ${social.title}\n${t('social.inquiry_date_label')}: ${displayDate}\n${t('social.inquiry_link_label')}: ${window.location.origin}/social?id=${social.id}`,
         type: "text",
       });
       openChat(roomId);
-    } catch (err) { console.error(err); alert("Failed to start chat."); }
+    } catch (err) { console.error(err); alert(t('social.chat_failed')); }
   };
 
   const handleDelete = async () => {
-    if (!confirm("Are you sure you want to delete this social event?")) return;
+    if (!confirm(t('social.confirm_delete'))) return;
     try {
       await socialService.deleteSocial(social.id);
       onClose();
-    } catch (err) { console.error(err); alert("Failed to delete."); }
+    } catch (err) { console.error(err); alert(t('social.delete_failed')); }
   };
 
   const titleStr = social.titleNative || social.title;
-  const brandStr = social.organizerNameNative || social.organizerName || "Organizer";
+  const brandStr = social.organizerNameNative || social.organizerName || t('social.organizer_fallback');
 
   const TABS: { id: TabId; label: string; icon: string }[] = [
-    { id: "home", label: "Home", icon: "home" },
-    { id: "feed", label: "Feed", icon: "forum" },
-    { id: "reservation", label: "Booking", icon: "event_seat" },
+    { id: "home", label: t('social.tab_home'), icon: "home" },
+    { id: "feed", label: t('social.tab_feed'), icon: "forum" },
+    { id: "reservation", label: t('social.tab_booking'), icon: "event_seat" },
   ];
 
   // Tab bar component (reused in both inline and fixed positions)
@@ -194,7 +196,7 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
               </button>
             </>
           )}
-          <button onClick={() => navigator.share ? navigator.share({ title: titleStr, url: window.location.href }).catch(console.error) : alert("Share not supported")}
+          <button onClick={() => navigator.share ? navigator.share({ title: titleStr, url: window.location.href }).catch(console.error) : alert(t('social.share_not_supported'))}
             className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? "bg-slate-100 text-[#2d3435]" : "bg-black/20 backdrop-blur-sm text-white"}`}>
             <span className="material-symbols-rounded text-xl">share</span>
           </button>
@@ -215,7 +217,7 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
           {images.length === 0 && (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-[#c4cacc]">
               <span className="material-symbols-rounded text-5xl mb-1">local_activity</span>
-              <span className="text-[10px] font-bold tracking-wider uppercase">No Image</span>
+              <span className="text-[10px] font-bold tracking-wider uppercase">{t('social.no_image')}</span>
             </div>
           )}
           {images.length > 0 && (
@@ -235,7 +237,7 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
         {/* Description */}
         <div className="px-4 pt-4 pb-4 border-b border-[#f2f4f4]">
           <p className="text-sm text-[#596061] whitespace-pre-wrap leading-relaxed line-clamp-4">
-            {(social as any).description || "This social event does not have a description yet."}
+            {(social as any).description || t('social.no_description')}
           </p>
         </div>
 
@@ -245,15 +247,15 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
             <div className="flex items-start gap-2.5 mb-3">
               <span className="material-symbols-rounded text-lg text-amber-600 mt-0.5">warning</span>
               <div>
-                <p className="text-xs font-bold text-amber-800">No organizer registered yet.</p>
-                <p className="text-[10px] text-amber-600 mt-0.5 leading-relaxed">If this is your social event, claim it below.</p>
+                <p className="text-xs font-bold text-amber-800">{t('social.no_organizer')}</p>
+                <p className="text-[10px] text-amber-600 mt-0.5 leading-relaxed">{t('social.claim_desc')}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={async () => {
                   if (!user) return;
-                  if (!confirm("⚠️ Caution\n\nOnce you claim this social, only you (or an admin) can transfer ownership.\nPlease make sure this is really yours before proceeding.")) return;
+                  if (!confirm(t('social.claim_confirm'))) return;
                   setIsClaiming(true);
                   try {
                     await socialService.claimSocial(social.id, {
@@ -261,15 +263,15 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
                       displayName: user.displayName || "User",
                       nativeNickname: (profile as any)?.nativeNickname || "",
                     }, user.uid);
-                    alert("Successfully claimed! You are now the organizer.");
+                    alert(t('social.claim_success'));
                     onClose();
-                  } catch (err) { console.error(err); alert("Failed to claim."); }
+                  } catch (err) { console.error(err); alert(t('social.claim_failed')); }
                   finally { setIsClaiming(false); }
                 }}
                 disabled={isClaiming}
                 className="flex-1 py-2.5 bg-primary text-white rounded-xl text-xs font-black tracking-wide active:scale-95 transition-transform disabled:opacity-50"
               >
-                {isClaiming ? "Claiming..." : "It's Me"}
+                {isClaiming ? t('social.claiming') : t('social.its_me')}
               </button>
               <button
                 onClick={() => setShowAssignSheet(true)}
@@ -342,8 +344,8 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
           <div className="fixed bottom-0 left-0 right-0 z-[151] bg-white rounded-t-3xl shadow-2xl animate-in slide-in-from-bottom duration-300 max-h-[80vh] overflow-y-auto">
             <div className="w-12 h-1.5 bg-[#e0e4e5] rounded-full mx-auto mt-3 mb-2" />
             <div className="px-5 pb-8">
-              <h3 className="text-lg font-black text-[#2d3435] mb-1">Assign Organizer</h3>
-              <p className="text-[10px] text-[#acb3b4] mb-4">Search and assign the real organizer for this social.</p>
+              <h3 className="text-lg font-black text-[#2d3435] mb-1">{t('social.assign_organizer')}</h3>
+              <p className="text-[10px] text-[#acb3b4] mb-4">{t('social.assign_desc')}</p>
 
               {/* Search */}
               <div className="relative mb-4">
@@ -360,7 +362,7 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
                     }
                   }}
                   className="w-full pl-10 pr-4 py-3 bg-[#f2f4f4] rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary/30"
-                  placeholder="Search by name..."
+                  placeholder={t('social.search_by_name')}
                 />
               </div>
 
@@ -392,13 +394,13 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
               {/* Warning */}
               <div className="flex items-start gap-2 bg-amber-50 rounded-xl px-3 py-2.5 mb-5">
                 <span className="material-symbols-rounded text-sm text-amber-600 mt-0.5">warning</span>
-                <p className="text-[10px] text-amber-700 leading-relaxed">Once assigned, only the new organizer (or admin) can change ownership. Please be careful.</p>
+                <p className="text-[10px] text-amber-700 leading-relaxed">{t('social.assign_warning')}</p>
               </div>
 
               <div className="flex gap-3">
                 <button onClick={() => { setShowAssignSheet(false); setAssignTarget(null); setAssignSearch(""); }}
                   className="flex-1 py-3.5 bg-[#f2f4f4] text-[#596061] rounded-xl font-bold text-sm active:scale-95 transition-transform">
-                  Cancel
+                  {t('social.cancel')}
                 </button>
                 <button
                   onClick={async () => {
@@ -411,16 +413,16 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
                         displayName: assignTarget.nickname || assignTarget.displayName,
                         nativeNickname: assignTarget.nativeNickname || "",
                       }, user.uid);
-                      alert(`Successfully assigned to ${assignTarget.nickname || assignTarget.displayName}!`);
+                      alert(`${t('social.assign_success')} ${assignTarget.nickname || assignTarget.displayName}!`);
                       setShowAssignSheet(false);
                       onClose();
-                    } catch (err) { console.error(err); alert("Failed to assign."); }
+                    } catch (err) { console.error(err); alert(t('social.assign_failed')); }
                     finally { setIsClaiming(false); }
                   }}
                   disabled={!assignTarget || isClaiming}
                   className="flex-1 py-3.5 bg-primary text-white rounded-xl font-black text-sm active:scale-95 transition-transform disabled:opacity-40"
                 >
-                  {isClaiming ? "Assigning..." : assignTarget ? `Assign to ${assignTarget.nickname || 'User'}` : "Select a user"}
+                  {isClaiming ? t('social.assigning') : assignTarget ? `${assignTarget.nickname || 'User'}` : t('social.select_user')}
                 </button>
               </div>
             </div>

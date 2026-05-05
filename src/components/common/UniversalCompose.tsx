@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface UniversalComposeProps {
   id: string; // Unique ID for the event trigger (e.g., 'social')
@@ -22,14 +23,18 @@ export default function UniversalCompose({
   id, 
   title, 
   label,
-  submitLabel = '등록', 
-  submittingLabel = 'Processing...',
+  submitLabel, 
+  submittingLabel,
   onSubmit, 
   children,
   isOpen: externalIsOpen,
   onClose: externalOnClose,
   isSubmitting = false
 }: UniversalComposeProps) {
+  const { t } = useLanguage();
+  const finalSubmitLabel = submitLabel || t('common.submit');
+  const finalSubmittingLabel = submittingLabel || t('common.uploading');
+
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -105,10 +110,10 @@ export default function UniversalCompose({
             {isSubmitting ? (
               <>
                 <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin" />
-                <span>{submittingLabel}</span>
+                <span>{finalSubmittingLabel}</span>
               </>
             ) : (
-              <span>{submitLabel}</span>
+              <span>{finalSubmitLabel}</span>
             )}
           </button>
         </div>

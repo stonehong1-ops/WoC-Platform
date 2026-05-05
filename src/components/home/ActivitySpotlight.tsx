@@ -12,6 +12,7 @@ import { Social } from '@/types/social';
 import { useLocation } from '@/components/providers/LocationProvider';
 import EventDetail from '@/components/events/EventDetail';
 import { AnimatePresence } from 'framer-motion';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 /* ─── 날짜 포맷 헬퍼 ─────────────────────────────── */
 function formatEventDate(ts: Timestamp | undefined): string {
@@ -27,6 +28,7 @@ function Skeleton({ className }: { className: string }) {
 }
 
 export default function ActivitySpotlight() {
+  const { language, t } = useLanguage();
   const { location } = useLocation();
   const [todaySocials, setTodaySocials] = useState<Social[]>([]);
   const [openClassCount, setOpenClassCount] = useState<number | null>(null);
@@ -137,10 +139,10 @@ export default function ActivitySpotlight() {
     <>
       &apos;{firstSocial.title}
       {firstSocial.titleNative && <span style={{ fontSize: '0.85em', marginLeft: '0.25rem' }}>{firstSocial.titleNative}</span>}&apos;
-      {othersCount > 0 ? ` and ${othersCount} other${othersCount > 1 ? 's' : ''}` : ''}
+      {othersCount > 0 ? ` ${t('home.and_others', { count: othersCount, s: othersCount > 1 ? 's' : '' })}` : ''}
     </>
   ) : (
-    'No socials today'
+    t('home.no_socials')
   );
 
   const eventData = upcomingEvent !== 'empty' ? upcomingEvent : null;
@@ -185,7 +187,7 @@ export default function ActivitySpotlight() {
               <>
                 <h3 className="text-white mb-2 leading-tight"
                   style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '1.25rem', lineHeight: '1.75rem', fontWeight: 800 }}>
-                  Social today<br />in {socialCity}
+                  {t('home.social_today')}<br />{t('home.in_city', { city: socialCity })}
                 </h3>
                 <p className="leading-relaxed" style={{ fontFamily: 'Inter, sans-serif', fontSize: '0.9375rem', lineHeight: '1.5rem', color: 'rgba(255,255,255,0.8)' }}>
                   {socialDesc}
@@ -228,12 +230,12 @@ export default function ActivitySpotlight() {
             ) : (
               <>
                 <h3 className="mb-2 leading-tight" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '1.25rem', lineHeight: '1.75rem', fontWeight: 800, color: '#004190' }}>
-                  Open Classes
+                  {t('home.open_classes')}
                 </h3>
                 <p className="leading-relaxed" style={{ fontFamily: 'Inter, sans-serif', fontSize: '0.9375rem', lineHeight: '1.5rem', color: '#424753' }}>
                   {openClassCount !== null
-                    ? `Explore ${openClassCount} open class${openClassCount !== 1 ? 'es' : ''} in Korea`
-                    : 'Browse classes in Korea'}
+                    ? t('home.explore_classes', { count: openClassCount, s: openClassCount !== 1 ? 'es' : '' })
+                    : t('home.browse_classes')}
                 </p>
               </>
             )}
@@ -284,7 +286,7 @@ export default function ActivitySpotlight() {
             <div>
               <span className="inline-block px-6 py-2.5 bg-white font-bold text-sm rounded-xl shadow-md transition-all duration-300"
                 style={{ color: '#004190' }}>
-                Earlybird Register
+                {t('home.earlybird_reg')}
               </span>
             </div>
           </div>
@@ -295,7 +297,7 @@ export default function ActivitySpotlight() {
       ) : (
         /* 이벤트 없을 때 fallback */
         <div className="relative w-full h-32 rounded-3xl overflow-hidden border border-gray-100 flex items-center justify-center bg-gray-50">
-          <p className="text-gray-400 text-sm">No upcoming events</p>
+          <p className="text-gray-400 text-sm">{t('home.no_upcoming_events')}</p>
         </div>
       )}
 

@@ -4,6 +4,7 @@ import { resaleService } from '@/lib/firebase/resaleService';
 import { plazaService } from '@/lib/firebase/plazaService';
 import { ItemCondition, TradeMethod } from '@/types/resale';
 import UniversalCompose from '@/components/common/UniversalCompose';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface CreateResaleItemProps {
   isOpen: boolean;
@@ -13,6 +14,7 @@ interface CreateResaleItemProps {
 
 export default function CreateResaleItem({ isOpen, onClose, onSuccess }: CreateResaleItemProps) {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   
@@ -47,7 +49,7 @@ export default function CreateResaleItem({ isOpen, onClose, onSuccess }: CreateR
 
   const handleSubmit = async () => {
     if (!user || !title || !price || !mediaFile) {
-      alert("Please fill in all required fields and add a photo.");
+      alert(t('resale.msg_fill_required'));
       return;
     }
 
@@ -75,7 +77,7 @@ export default function CreateResaleItem({ isOpen, onClose, onSuccess }: CreateR
       onClose();
     } catch (error) {
       console.error("Error creating resale item:", error);
-      alert("Failed to post item. Please try again.");
+      alert(t('resale.msg_post_failed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -86,9 +88,9 @@ export default function CreateResaleItem({ isOpen, onClose, onSuccess }: CreateR
       id="resale"
       isOpen={isOpen}
       onClose={onClose}
-      title="Post an Echo"
-      label="Pre-owned"
-      submitLabel={isSubmitting ? `Posting ${uploadProgress}%` : "Share My Item"}
+      title={t('resale.create_title')}
+      label={t('resale.create_label')}
+      submitLabel={isSubmitting ? `${t('resale.posting')} ${uploadProgress}%` : t('resale.submit_btn')}
       onSubmit={handleSubmit}
       isSubmitting={isSubmitting}
     >
@@ -104,7 +106,7 @@ export default function CreateResaleItem({ isOpen, onClose, onSuccess }: CreateR
             <div className="w-16 h-16 rounded-full bg-white shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
               <span className="material-symbols-outlined text-gray-300 text-[32px]">camera</span>
             </div>
-            <span className="text-[11px] font-black text-gray-300 uppercase tracking-widest">Add Item Photo</span>
+            <span className="text-[11px] font-black text-gray-300 uppercase tracking-widest">{t('resale.add_photo')}</span>
           </>
         )}
         <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
@@ -113,18 +115,18 @@ export default function CreateResaleItem({ isOpen, onClose, onSuccess }: CreateR
       {/* Core Info */}
       <div className="space-y-6">
         <div className="space-y-2">
-          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">What are you sharing?</label>
+          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{t('resale.what_sharing')}</label>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Ex. Vintage Hand-painted Fan"
+            placeholder={t('resale.title_placeholder')}
             className="w-full text-[24px] font-black tracking-tighter border-none focus:ring-0 placeholder:text-gray-200 p-0"
             required
           />
         </div>
 
         <div className="space-y-2">
-          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Category</label>
+          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{t('resale.category')}</label>
           <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
             {categories.map(c => (
               <button
@@ -137,7 +139,7 @@ export default function CreateResaleItem({ isOpen, onClose, onSuccess }: CreateR
                     : 'bg-gray-50 text-gray-400 hover:bg-gray-100'
                 }`}
               >
-                {c}
+                {t(`resale.cat_${c.toLowerCase()}`)}
               </button>
             ))}
           </div>
@@ -145,7 +147,7 @@ export default function CreateResaleItem({ isOpen, onClose, onSuccess }: CreateR
 
         <div className="grid grid-cols-2 gap-8">
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Price (₩)</label>
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{t('resale.price')}</label>
             <input
               type="number"
               value={price}
@@ -156,10 +158,10 @@ export default function CreateResaleItem({ isOpen, onClose, onSuccess }: CreateR
             />
           </div>
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Location</label>
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{t('resale.location')}</label>
             <div className="w-full bg-gray-50 border-none rounded-2xl px-4 py-3.5 text-sm font-bold flex items-center gap-2">
                <span className="material-symbols-outlined text-[18px] text-primary">location_on</span>
-               <span className="truncate">{location}</span>
+               <span className="truncate">{location === 'Seoul, Gangnam-gu' || location === 'Gangnam' || location === 'Seoul, Korea' ? t('resale.seoul_korea') : location}</span>
             </div>
           </div>
         </div>
@@ -167,7 +169,7 @@ export default function CreateResaleItem({ isOpen, onClose, onSuccess }: CreateR
 
       {/* Condition Selector */}
       <div className="space-y-4">
-         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Condition</label>
+         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{t('resale.condition')}</label>
          <div className="grid grid-cols-4 gap-2">
             {conditions.map(c => (
               <button
@@ -179,7 +181,7 @@ export default function CreateResaleItem({ isOpen, onClose, onSuccess }: CreateR
                 }`}
               >
                 <div className="text-lg leading-tight uppercase">{c.val}</div>
-                <div className="text-[8px] opacity-70 uppercase tracking-tighter">{c.label}</div>
+                <div className="text-[8px] opacity-70 uppercase tracking-tighter">{t(`resale.cond_${c.val.toLowerCase()}`)}</div>
               </button>
             ))}
          </div>
@@ -188,19 +190,19 @@ export default function CreateResaleItem({ isOpen, onClose, onSuccess }: CreateR
       {/* Trade Options */}
       <div className="grid grid-cols-2 gap-8">
         <div className="space-y-2">
-          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Trade Method</label>
+          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{t('resale.trade_method')}</label>
           <select 
             value={tradeMethod}
             onChange={(e) => setTradeMethod(e.target.value as TradeMethod)}
             className="w-full bg-gray-50 border-none rounded-2xl px-4 py-3.5 text-sm font-bold focus:ring-2 focus:ring-primary/10"
           >
-            <option value="direct">Direct Meeting</option>
-            <option value="delivery">Global Delivery</option>
-            <option value="both">Both Available</option>
+            <option value="direct">{t('resale.trade_direct')}</option>
+            <option value="delivery">{t('resale.trade_delivery')}</option>
+            <option value="both">{t('resale.trade_both')}</option>
           </select>
         </div>
         <div className="space-y-2">
-          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Price Offer</label>
+          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{t('resale.price_offer')}</label>
           <button 
             type="button"
             onClick={() => setCanNegotiate(!canNegotiate)}
@@ -208,18 +210,18 @@ export default function CreateResaleItem({ isOpen, onClose, onSuccess }: CreateR
               canNegotiate ? 'border-primary text-primary bg-primary/5' : 'border-gray-100 text-gray-400 bg-gray-50'
             }`}
           >
-            {canNegotiate ? 'Negotiation OK' : 'Fixed Price'}
+            {canNegotiate ? t('resale.negotiation_ok') : t('resale.fixed_price')}
           </button>
         </div>
       </div>
 
       {/* Description */}
       <div className="space-y-2 pb-4">
-        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Story of the Item</label>
+        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{t('resale.story')}</label>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Tell us about the history of this item and its current condition..."
+          placeholder={t('resale.story_placeholder')}
           className="w-full min-h-[120px] bg-gray-50 border-none rounded-[28px] px-5 py-4 text-sm font-medium focus:ring-2 focus:ring-primary/10 resize-none"
         />
       </div>

@@ -11,18 +11,22 @@ import { notificationService } from '@/lib/firebase/notificationService';
 import { ClassRegistration, Group } from '@/types/group';
 import { Notification } from '@/types/notification';
 
+import { useLanguage } from '@/contexts/LanguageContext';
+
 const TABS = ['Needs Action', 'All', 'Class', 'Social', 'Shop', 'Stay'];
+
 
 type StatusKey = 'PAYMENT_PENDING' | 'PAYMENT_REPORTED' | 'PAYMENT_COMPLETED' | 'CANCELED' | string;
 
-function getStatusLabel(status: StatusKey): string {
+function getStatusLabel(status: StatusKey, t: any): string {
   switch (status) {
-    case 'PAYMENT_PENDING':   return 'PAYMENT PENDING';
-    case 'PAYMENT_REPORTED':  return 'CONFIRMING...';
-    case 'PAYMENT_COMPLETED': return 'PAID';
+    case 'PAYMENT_PENDING':   return t('history.status_pending');
+    case 'PAYMENT_REPORTED':  return t('history.status_confirming');
+    case 'PAYMENT_COMPLETED': return t('history.status_paid');
     default: return status.toUpperCase();
   }
 }
+
 
 function getStatusBadgeClass(status: StatusKey): string {
   switch (status) {
@@ -37,28 +41,35 @@ function getStatusBadgeClass(status: StatusKey): string {
   }
 }
 
-function formatDate(reg: ClassRegistration): string {
-  if (!reg.appliedAt) return 'Recently';
+function formatDate(reg: ClassRegistration, t: any, language: string): string {
+  if (!reg.appliedAt) return t('history.date_recently');
   const d = reg.appliedAt.toDate ? reg.appliedAt.toDate() : new Date(reg.appliedAt as any);
-  return d.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+  const locale = language === 'KR' ? 'ko-KR' : 'en-US';
+  return d.toLocaleDateString(locale, { month: 'short', day: '2-digit', year: 'numeric' });
 }
 
-function formatFullDate(date: any): string {
+
+function formatFullDate(date: any, language: string): string {
   if (!date) return '';
   const d = date.toDate ? date.toDate() : new Date(date);
-  return d.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) + ' • ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+  const locale = language === 'KR' ? 'ko-KR' : 'en-US';
+  return d.toLocaleDateString(locale, { month: 'short', day: '2-digit', year: 'numeric' }) + ' • ' + d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
-function formatNotiDate(date: any): string {
-  if (!date) return 'Recently';
+function formatNotiDate(date: any, t: any, language: string): string {
+  if (!date) return t('history.date_recently');
   const d = date.toDate ? date.toDate() : new Date(date);
-  return d.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+  const locale = language === 'KR' ? 'ko-KR' : 'en-US';
+  return d.toLocaleDateString(locale, { month: 'short', day: '2-digit', year: 'numeric' });
 }
+
 
 function HistoryContent() {
+  const { t, language } = useLanguage();
   const { user, profile } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+
   
   const [activeTab, setActiveTab] = useState('Needs Action');
   const [uidRegistrations, setUidRegistrations] = useState<ClassRegistration[]>([]);
@@ -194,9 +205,10 @@ function HistoryContent() {
   const classItems = registrations.map(reg => ({
     ...reg,
     type: 'Class' as const,
-    dateLabel: formatDate(reg),
+    dateLabel: formatDate(reg, t, language),
     status: reg.status as StatusKey,
   }));
+
 
   const allItems = [...classItems];
 
@@ -212,9 +224,10 @@ function HistoryContent() {
   const handlePaymentSubmit = async () => {
     const trimmedName = depositorName.trim();
     if (!trimmedName || !depositDate) {
-      toast.error("입금자명과 입금일을 정확히 입력해주세요.");
+      toast.error(t('history.toast_error_input'));
       return;
     }
+
     if (!paymentTargetId) return;
     try {
       await classRegistrationService.updateRegistration(paymentTargetId, {
@@ -222,7 +235,8 @@ function HistoryContent() {
         depositorName: trimmedName,
         depositDate
       });
-      toast.success("입금 완료 처리가 접수되었습니다.", { description: "관리자 확인 후 최종 완료됩니다." });
+      toast.success(t('history.toast_success_report'), { description: t('history.toast_success_desc') });
+
       setPaymentModalOpen(false);
       setDepositorName('');
       
@@ -236,14 +250,16 @@ function HistoryContent() {
         });
       }
     } catch {
-      toast.error("처리 중 오류가 발생했습니다.");
+      toast.error(t('history.toast_error_process'));
     }
+
   };
 
   const handleCopyAccount = (text: string) => {
     navigator.clipboard.writeText(text).then(() => {
-      toast.success("계좌번호가 복사되었습니다.");
+      toast.success(t('history.toast_copy_account'));
     });
+
   };
 
   // Find class/bundle/pass specific details
@@ -298,7 +314,8 @@ function HistoryContent() {
                     : tab === 'Needs Action' ? 'bg-[#FF3B30]/10 text-[#FF3B30] border border-[#FF3B30]/20 hover:bg-[#FF3B30]/20' : 'bg-slate-50 text-slate-500 border border-slate-100 hover:bg-slate-100'
                 }`}
               >
-                {tab}
+                {t(`history.tab_${tab.toLowerCase().replace(' ', '_')}`)}
+
               </button>
             ))}
           </div>
@@ -316,11 +333,12 @@ function HistoryContent() {
                     {activeTab === 'Needs Action' ? 'task_alt' : 'notifications'}
                   </span>
                   <p className="text-[1.125rem] font-bold leading-[1.5rem] font-['Plus_Jakarta_Sans'] text-on-surface">
-                    {activeTab === 'Needs Action' ? 'No pending tasks.' : 'No alerts yet.'}
+                    {activeTab === 'Needs Action' ? t('history.no_pending') : t('history.no_alerts')}
                   </p>
                   <p className="text-[0.875rem] font-medium leading-[1.25rem] font-['Inter'] text-on-surface-variant">
-                    {activeTab === 'Needs Action' ? "You're all caught up!" : "We'll notify you when there's an update."}
+                    {activeTab === 'Needs Action' ? t('history.caught_up') : t('history.update_notify')}
                   </p>
+
                 </div>
               )}
               {todoNotis.map(noti => (
@@ -368,16 +386,19 @@ function HistoryContent() {
                       <div className="flex items-center justify-between mt-1">
                         <div className="flex items-center gap-1.5 text-on-surface-variant text-[0.75rem] font-semibold leading-[1rem] font-['Inter']">
                           <span className="material-symbols-outlined text-[16px]">schedule</span>
-                          <span>{formatNotiDate(noti.createdAt)}</span>
+                          <span>{formatNotiDate(noti.createdAt, t, language)}</span>
+
                         </div>
                         {noti.baseType === 'TODO' && !noti.isCompleted && (
                           <span className="font-['Inter'] text-[10px] font-bold leading-[1rem] px-2.5 py-1 rounded-full whitespace-nowrap uppercase tracking-wide bg-orange-100 text-orange-800 border border-orange-200">
-                            ACTION REQUIRED
+                            {t('history.action_required')}
+
                           </span>
                         )}
                         {noti.isCompleted && (
                           <span className="font-['Inter'] text-[10px] font-bold leading-[1rem] px-2.5 py-1 rounded-full whitespace-nowrap uppercase tracking-wide bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1">
-                            <span className="material-symbols-outlined text-[12px]">check</span> COMPLETED
+                            <span className="material-symbols-outlined text-[12px]">check</span> {t('history.completed')}
+
                           </span>
                         )}
                       </div>
@@ -392,13 +413,15 @@ function HistoryContent() {
             <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
               <span className="material-symbols-outlined text-outline text-5xl">receipt_long</span>
               <p className="text-[1.125rem] font-bold leading-[1.5rem] font-['Plus_Jakarta_Sans'] text-on-surface">
-                {activeTab === 'All' ? 'No activity history yet.' : `No ${activeTab} history yet.`}
+                {activeTab === 'All' ? t('history.no_history') : t('history.no_tab_history', { tab: t(`history.tab_${activeTab.toLowerCase().replace(' ', '_')}`) })}
+
               </p>
               <p className="text-[0.875rem] font-medium leading-[1.25rem] font-['Inter'] text-on-surface-variant">
                 {activeTab === 'Class'
-                  ? 'When you register for a class, it will appear here.'
-                  : 'This section is coming soon.'}
+                  ? t('history.class_empty_desc')
+                  : t('history.coming_soon')}
               </p>
+
             </div>
           )}
 
@@ -428,7 +451,8 @@ function HistoryContent() {
                   {item.status === 'PAYMENT_COMPLETED' && (
                     <span className="material-symbols-outlined text-[14px]">check_circle</span>
                   )}
-                  {getStatusLabel(item.status)}
+                  {getStatusLabel(item.status, t)}
+
                 </span>
               </div>
 
@@ -443,7 +467,8 @@ function HistoryContent() {
                     className="bg-primary text-on-primary hover:bg-[#0b5ac0] font-['Inter'] text-[0.75rem] font-semibold leading-[1rem] px-5 py-2.5 rounded-lg flex items-center gap-2 shadow-sm transition-all active:scale-95"
                   >
                     <span className="material-symbols-outlined text-[18px]">credit_card</span>
-                    Confirm Payment
+                    {t('history.confirm_payment')}
+
                   </button>
                 </div>
               )}
@@ -452,7 +477,8 @@ function HistoryContent() {
                 <div className="bg-surface-container-low/50 px-4 py-3 border-t border-outline-variant/30 flex justify-end">
                   <span className="text-[0.75rem] font-semibold leading-[1rem] font-['Inter'] text-orange-600 flex items-center gap-1.5">
                     <span className="material-symbols-outlined text-[16px]">hourglass_top</span>
-                    Verifying with admin...
+                    {t('history.verifying')}
+
                   </span>
                 </div>
               )}
@@ -472,7 +498,8 @@ function HistoryContent() {
               <span className="material-symbols-outlined text-[24px]">arrow_back</span>
             </button>
             <h1 className="text-[#0057bd] font-['Plus_Jakarta_Sans'] uppercase italic font-black tracking-tight text-[1.125rem]">
-              Application Details
+              {t('history.app_details')}
+
             </h1>
             <div className="w-10"></div> {/* Spacer for balance */}
           </header>
@@ -491,25 +518,30 @@ function HistoryContent() {
                   ) : (
                     <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>pending</span>
                   )}
-                  {getStatusLabel(selectedDetail.status)}
+                  {getStatusLabel(selectedDetail.status, t)}
+
                 </div>
-                <span className="text-on-surface-variant font-['Inter'] text-[0.75rem] font-semibold leading-[1rem]">{formatDate(selectedDetail)}</span>
+                <span className="text-on-surface-variant font-['Inter'] text-[0.75rem] font-semibold leading-[1rem]">{formatDate(selectedDetail, t, language)}</span>
+
               </div>
               <h2 className="font-['Plus_Jakarta_Sans'] text-[1.5rem] font-bold leading-[2rem] tracking-[-0.025em] text-on-surface mb-1">{selectedDetail.classTitle}</h2>
-              <p className="font-['Inter'] text-[0.875rem] font-medium leading-[1.25rem] text-on-surface-variant">Application ID: #{selectedDetail.id.slice(0,8).toUpperCase()}</p>
+              <p className="font-['Inter'] text-[0.875rem] font-medium leading-[1.25rem] text-on-surface-variant">{t('history.app_id')}: #{selectedDetail.id.slice(0,8).toUpperCase()}</p>
+
             </section>
 
             {/* Status Timeline */}
             <section className="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-surface-container-high">
-              <h3 className="font-['Plus_Jakarta_Sans'] text-[1.125rem] font-bold leading-[1.5rem] text-on-surface mb-4 border-b border-surface-container pb-2">Status Timeline</h3>
+              <h3 className="font-['Plus_Jakarta_Sans'] text-[1.125rem] font-bold leading-[1.5rem] text-on-surface mb-4 border-b border-surface-container pb-2">{t('history.timeline')}</h3>
+
               <div className="relative border-l-2 border-surface-container ml-3 space-y-6 pb-2">
                 
                 {/* Step 1: Application Submitted */}
                 <div className="relative pl-6">
                   <div className="absolute w-3 h-3 bg-primary rounded-full -left-[7px] top-1.5 ring-4 ring-surface-container-lowest"></div>
                   <div className="flex flex-col">
-                    <span className="font-['Inter'] text-[0.875rem] font-bold text-on-surface">Application Submitted</span>
-                    <span className="font-['Inter'] text-[0.75rem] text-on-surface-variant mt-0.5">{formatFullDate(selectedDetail.appliedAt)}</span>
+                    <span className="font-['Inter'] text-[0.875rem] font-bold text-on-surface">{t('history.step_submitted')}</span>
+
+                    <span className="font-['Inter'] text-[0.75rem] text-on-surface-variant mt-0.5">{formatFullDate(selectedDetail.appliedAt, language)}</span>
                   </div>
                 </div>
 
@@ -517,13 +549,16 @@ function HistoryContent() {
                 <div className="relative pl-6">
                   <div className={`absolute w-3 h-3 rounded-full -left-[7px] top-1.5 ring-4 ring-surface-container-lowest transition-colors ${selectedDetail.status !== 'PAYMENT_PENDING' ? 'bg-primary' : 'bg-surface-container border-2 border-outline-variant'}`}></div>
                   <div className="flex flex-col">
-                    <span className={`font-['Inter'] text-[0.875rem] font-bold ${selectedDetail.status !== 'PAYMENT_PENDING' ? 'text-on-surface' : 'text-outline-variant'}`}>Payment Reported</span>
+                    <span className={`font-['Inter'] text-[0.875rem] font-bold ${selectedDetail.status !== 'PAYMENT_PENDING' ? 'text-on-surface' : 'text-outline-variant'}`}>{t('history.step_reported')}</span>
+
                     {selectedDetail.status !== 'PAYMENT_PENDING' ? (
                       <span className="font-['Inter'] text-[0.75rem] text-on-surface-variant mt-0.5">
-                        {selectedDetail.depositDate} • Depositor: {selectedDetail.depositorName}
+                        {selectedDetail.depositDate} • {t('history.depositor_name')}: {selectedDetail.depositorName}
+
                       </span>
                     ) : (
-                      <span className="font-['Inter'] text-[0.75rem] text-outline-variant mt-0.5">Waiting for payment</span>
+                      <span className="font-['Inter'] text-[0.75rem] text-outline-variant mt-0.5">{t('history.waiting_payment')}</span>
+
                     )}
                   </div>
                 </div>
@@ -532,11 +567,13 @@ function HistoryContent() {
                 <div className="relative pl-6">
                   <div className={`absolute w-3 h-3 rounded-full -left-[7px] top-1.5 ring-4 ring-surface-container-lowest transition-colors ${selectedDetail.status === 'PAYMENT_COMPLETED' ? 'bg-primary' : 'bg-surface-container border-2 border-outline-variant'}`}></div>
                   <div className="flex flex-col">
-                    <span className={`font-['Inter'] text-[0.875rem] font-bold ${selectedDetail.status === 'PAYMENT_COMPLETED' ? 'text-on-surface' : 'text-outline-variant'}`}>Registration Complete</span>
+                    <span className={`font-['Inter'] text-[0.875rem] font-bold ${selectedDetail.status === 'PAYMENT_COMPLETED' ? 'text-on-surface' : 'text-outline-variant'}`}>{t('history.step_complete')}</span>
+
                     {selectedDetail.status === 'PAYMENT_COMPLETED' && selectedDetail.confirmedAt ? (
-                      <span className="font-['Inter'] text-[0.75rem] text-on-surface-variant mt-0.5">{formatFullDate(selectedDetail.confirmedAt)}</span>
+                      <span className="font-['Inter'] text-[0.75rem] text-on-surface-variant mt-0.5">{formatFullDate(selectedDetail.confirmedAt, language)}</span>
                     ) : (
-                      <span className="font-['Inter'] text-[0.75rem] text-outline-variant mt-0.5">Pending admin confirmation</span>
+                      <span className="font-['Inter'] text-[0.75rem] text-outline-variant mt-0.5">{t('history.pending_admin')}</span>
+
                     )}
                   </div>
                 </div>
@@ -547,7 +584,8 @@ function HistoryContent() {
             {/* Information Grid */}
             <section className="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-surface-container-high">
               <h3 className="font-['Plus_Jakarta_Sans'] text-[1.125rem] font-bold leading-[1.5rem] text-on-surface mb-4 border-b border-surface-container pb-2">
-                {selectedDetail.itemType === 'discount' ? 'Bundle Information' : selectedDetail.itemType === 'monthlyPass' ? 'Pass Information' : 'Class Information'}
+                {selectedDetail.itemType === 'discount' ? t('history.info_bundle') : selectedDetail.itemType === 'monthlyPass' ? t('history.info_pass') : t('history.info_class')}
+
               </h3>
               <div className="flex flex-col gap-4">
                 
@@ -558,7 +596,8 @@ function HistoryContent() {
                         <span className="material-symbols-outlined">person</span>
                       </div>
                       <div>
-                        <p className="font-['Inter'] text-[0.75rem] font-semibold leading-[1rem] text-on-surface-variant mb-0.5">Instructor</p>
+                        <p className="font-['Inter'] text-[0.75rem] font-semibold leading-[1rem] text-on-surface-variant mb-0.5">{t('history.instructor')}</p>
+
                         <p className="font-['Inter'] text-[0.875rem] font-medium leading-[1.25rem] text-on-surface">
                           {itemInfo.instructors?.map((i: any) => i.name).join(', ') || 'TBD'}
                         </p>
@@ -569,7 +608,8 @@ function HistoryContent() {
                         <span className="material-symbols-outlined">location_on</span>
                       </div>
                       <div>
-                        <p className="font-['Inter'] text-[0.75rem] font-semibold leading-[1rem] text-on-surface-variant mb-0.5">Venue</p>
+                        <p className="font-['Inter'] text-[0.75rem] font-semibold leading-[1rem] text-on-surface-variant mb-0.5">{t('history.venue')}</p>
+
                         <p className="font-['Inter'] text-[0.875rem] font-medium leading-[1.25rem] text-on-surface">{selectedDetail.groupName || 'Freestyle Studio'}</p>
                       </div>
                     </div>
@@ -579,7 +619,8 @@ function HistoryContent() {
                           <span className="material-symbols-outlined">calendar_month</span>
                         </div>
                         <div>
-                          <p className="font-['Inter'] text-[0.75rem] font-semibold leading-[1rem] text-on-surface-variant mb-0.5">Schedule ({itemInfo.schedule.length} Sessions)</p>
+                          <p className="font-['Inter'] text-[0.75rem] font-semibold leading-[1rem] text-on-surface-variant mb-0.5">{t('history.schedule')} ({itemInfo.schedule.length} {t('history.sessions')})</p>
+
                           <ul className="font-['Inter'] text-[0.875rem] font-medium leading-[1.25rem] text-on-surface list-disc list-inside marker:text-surface-variant">
                             {itemInfo.schedule.map((s: any, i: number) => (
                               <li key={i}>{s.date} {s.timeSlot}</li>
@@ -597,7 +638,8 @@ function HistoryContent() {
                       <span className="material-symbols-outlined">list_alt</span>
                     </div>
                     <div>
-                      <p className="font-['Inter'] text-[0.75rem] font-semibold leading-[1rem] text-on-surface-variant mb-0.5">Included Classes</p>
+                      <p className="font-['Inter'] text-[0.75rem] font-semibold leading-[1rem] text-on-surface-variant mb-0.5">{t('history.included_classes')}</p>
+
                       <ul className="font-['Inter'] text-[0.875rem] font-medium leading-[1.25rem] text-on-surface list-disc list-inside marker:text-surface-variant">
                         {itemInfo.includedClassIds?.map((cId: string, idx: number) => {
                           const cls = groupDetails?.classes?.find(c => c.id === cId);
@@ -609,7 +651,8 @@ function HistoryContent() {
                 )}
                 
                 {!itemInfo && (
-                  <p className="font-['Inter'] text-[0.875rem] text-on-surface-variant">Loading details...</p>
+                  <p className="font-['Inter'] text-[0.875rem] text-on-surface-variant">{t('history.loading')}</p>
+
                 )}
 
               </div>
@@ -617,13 +660,16 @@ function HistoryContent() {
 
             {/* Payment Details */}
             <section className="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-surface-container-high">
-              <h3 className="font-['Plus_Jakarta_Sans'] text-[1.125rem] font-bold leading-[1.5rem] text-on-surface mb-4 border-b border-surface-container pb-2">Payment Details</h3>
+              <h3 className="font-['Plus_Jakarta_Sans'] text-[1.125rem] font-bold leading-[1.5rem] text-on-surface mb-4 border-b border-surface-container pb-2">{t('history.payment_details')}</h3>
+
               <div className="flex justify-between items-center mb-3">
-                <span className="font-['Inter'] text-[0.875rem] font-medium leading-[1.25rem] text-on-surface-variant">Method</span>
-                <span className="font-['Inter'] text-[0.875rem] font-semibold leading-[1.25rem] text-on-surface">Bank Transfer</span>
+                <span className="font-['Inter'] text-[0.875rem] font-medium leading-[1.25rem] text-on-surface-variant">{t('history.method')}</span>
+                <span className="font-['Inter'] text-[0.875rem] font-semibold leading-[1.25rem] text-on-surface">{t('history.bank_transfer')}</span>
+
               </div>
               <div className="flex justify-between items-center">
-                <span className="font-['Inter'] text-[0.875rem] font-medium leading-[1.25rem] text-on-surface-variant">Total Amount</span>
+                <span className="font-['Inter'] text-[0.875rem] font-medium leading-[1.25rem] text-on-surface-variant">{t('history.total_amount')}</span>
+
                 <span className="font-['Plus_Jakarta_Sans'] text-[1.125rem] font-bold leading-[1.5rem] text-primary">
                   {selectedDetail.amount.toLocaleString()} {selectedDetail.currency}
                 </span>
@@ -638,16 +684,19 @@ function HistoryContent() {
                 </div>
                 <h4 className="font-['Plus_Jakarta_Sans'] text-[1.125rem] font-bold leading-[1.5rem] text-on-surface mb-3 flex items-center gap-2">
                   <span className="material-symbols-outlined text-[20px] text-primary">info</span>
-                  Transfer Information
+                  {t('history.transfer_info')}
+
                 </h4>
                 <div className="bg-surface-container-lowest rounded-lg p-3 border border-surface-container-high">
                   <div className="grid grid-cols-1 gap-2">
                     <div className="flex justify-between">
-                      <span className="font-['Inter'] text-[0.75rem] font-semibold leading-[1rem] text-on-surface-variant">Bank</span>
+                      <span className="font-['Inter'] text-[0.75rem] font-semibold leading-[1rem] text-on-surface-variant">{t('history.bank')}</span>
+
                       <span className="font-['Inter'] text-[0.875rem] font-medium leading-[1.25rem] text-on-surface">{bankInfo.bankName}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="font-['Inter'] text-[0.75rem] font-semibold leading-[1rem] text-on-surface-variant">Account Number</span>
+                      <span className="font-['Inter'] text-[0.75rem] font-semibold leading-[1rem] text-on-surface-variant">{t('history.account_number')}</span>
+
                       <div className="flex items-center gap-2">
                         <span className="font-['Inter'] text-[0.875rem] font-medium leading-[1.25rem] text-on-surface font-mono">{bankInfo.accountNumber}</span>
                         <button 
@@ -660,14 +709,16 @@ function HistoryContent() {
                       </div>
                     </div>
                     <div className="flex justify-between">
-                      <span className="font-['Inter'] text-[0.75rem] font-semibold leading-[1rem] text-on-surface-variant">Account Holder</span>
+                      <span className="font-['Inter'] text-[0.75rem] font-semibold leading-[1rem] text-on-surface-variant">{t('history.account_holder')}</span>
+
                       <span className="font-['Inter'] text-[0.875rem] font-medium leading-[1.25rem] text-on-surface">{bankInfo.accountHolder}</span>
                     </div>
                   </div>
                 </div>
                 {selectedDetail.status === 'PAYMENT_PENDING' && (
                   <p className="font-['Inter'] text-[10px] font-bold leading-[1rem] text-on-surface-variant mt-3 text-center">
-                    Please complete the transfer to secure your spot.
+                    {t('history.transfer_prompt')}
+
                   </p>
                 )}
               </section>
@@ -685,7 +736,8 @@ function HistoryContent() {
                   }}
                   className="w-full bg-primary-container text-on-primary-container font-['Plus_Jakarta_Sans'] text-[1.125rem] font-bold leading-[1.5rem] py-4 rounded-xl shadow-[0_4px_14px_rgba(0,87,189,0.2)] hover:bg-primary transition-colors active:scale-[0.98] duration-200 flex items-center justify-center gap-2"
                 >
-                  Confirm Payment
+                  {t('history.confirm_payment')}
+
                   <span className="material-symbols-outlined">check_circle</span>
                 </button>
               </div>
@@ -699,25 +751,30 @@ function HistoryContent() {
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-surface-container-lowest rounded-[24px] p-6 w-full max-w-sm shadow-2xl">
             <h3 className="text-[1.125rem] font-bold leading-[1.5rem] font-['Plus_Jakarta_Sans'] text-on-surface mb-1">
-              입금 완료 보고
+              {t('history.modal_title')}
+
             </h3>
             <p className="text-[0.75rem] font-medium leading-[1rem] font-['Inter'] text-on-surface-variant mb-6">
-              입금하신 분의 성함과 입금일을 입력해주세요.
+              {t('history.modal_desc')}
+
             </p>
 
             <div className="space-y-4 mb-6">
               <div>
-                <label className="block text-[0.75rem] font-bold text-on-surface mb-1">입금자명</label>
+                <label className="block text-[0.75rem] font-bold text-on-surface mb-1">{t('history.depositor_name')}</label>
+
                 <input
                   type="text"
                   value={depositorName}
                   onChange={(e) => setDepositorName(e.target.value)}
-                  placeholder="예: 홍길동"
+                  placeholder={t('history.name_placeholder')}
+
                   className="w-full px-4 py-3 bg-surface-container border border-outline-variant rounded-xl text-[0.875rem] font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                 />
               </div>
               <div>
-                <label className="block text-[0.75rem] font-bold text-on-surface mb-1">입금일</label>
+                <label className="block text-[0.75rem] font-bold text-on-surface mb-1">{t('history.deposit_date')}</label>
+
                 <input
                   type="date"
                   value={depositDate}
@@ -732,13 +789,15 @@ function HistoryContent() {
                 onClick={() => { setPaymentModalOpen(false); setDepositorName(''); }}
                 className="flex-1 py-3 bg-surface-container text-on-surface-variant font-bold text-[0.875rem] rounded-xl hover:bg-surface-container-high transition-colors"
               >
-                취소
+                {t('history.cancel')}
+
               </button>
               <button
                 onClick={handlePaymentSubmit}
                 className="flex-1 py-3 bg-primary text-on-primary font-bold text-[0.875rem] rounded-xl hover:bg-[#0b5ac0] transition-colors shadow-lg shadow-primary/20"
               >
-                확인
+                {t('history.confirm')}
+
               </button>
             </div>
           </div>

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { resaleService } from '@/lib/firebase/resaleService';
 import { chatService } from '@/lib/firebase/chatService';
 import { ResaleItem, UserReputation } from '@/types/resale';
@@ -18,6 +19,7 @@ interface ResaleItemDetailProps {
 
 export default function ResaleItemDetail({ item, onClose }: ResaleItemDetailProps) {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sellerReputation, setSellerReputation] = useState<UserReputation | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -66,7 +68,7 @@ export default function ResaleItemDetail({ item, onClose }: ResaleItemDetailProp
       onClose();
     } catch (error) {
       console.error("Failed to update status:", error);
-      alert("Failed to update status.");
+      alert(t('resale.msg_update_failed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -84,26 +86,26 @@ export default function ResaleItemDetail({ item, onClose }: ResaleItemDetailProp
         console.error("Share failed", err);
       }
     } else {
-      alert("Sharing is not supported on this device.");
+      alert(t('resale.msg_share_unsupported'));
     }
   };
 
   const handleChatClick = async () => {
     if (!user) {
-      alert("Please log in to chat.");
+      alert(t('resale.msg_login_chat'));
       return;
     }
     const sellerId = item.sellerId;
-    if (user.uid === sellerId) return alert('You cannot chat with yourself');
+    if (user.uid === sellerId) return alert(t('resale.msg_no_self_chat'));
 
-    if (!confirm("Would you like to start a chat with the seller?")) return;
+    if (!confirm(t('resale.msg_confirm_chat'))) return;
 
     try {
       await resaleService.setProductPendingStatus(user.uid, item.id);
       
       const roomId = await chatService.getOrCreatePrivateRoom([user.uid, sellerId], user.uid, 'business');
 
-      const productInfo = `[상품 문의]\n상품명: ${item.title}\n가격: ₩${item.price.toLocaleString()}\n바로가기: ${window.location.origin}/resale?itemId=${item.id}`;
+      const productInfo = `${t('resale.chat_inquiry_prefix')}\n${t('resale.chat_item_name')}: ${item.title}\n${t('resale.chat_price')}: ₩${item.price.toLocaleString()}\n${t('resale.chat_link')}: ${window.location.origin}/resale?itemId=${item.id}`;
       
       await chatService.sendMessage({
         roomId,
@@ -117,14 +119,14 @@ export default function ResaleItemDetail({ item, onClose }: ResaleItemDetailProp
       setChatRoomId(roomId);
     } catch (error) {
       console.error("Failed to start chat:", error);
-      alert("Failed to initiate chat.");
+      alert(t('resale.msg_chat_failed'));
     }
   };
 
   const handleLikeClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!user) {
-      alert("Please log in to like.");
+      alert(t('resale.msg_login_like'));
       return;
     }
     try {
@@ -135,30 +137,38 @@ export default function ResaleItemDetail({ item, onClose }: ResaleItemDetailProp
   };
 
   const getRelativeTime = (timestamp: any) => {
-    if (!timestamp) return 'Just now';
+    if (!timestamp) return t('resale.just_now');
     const date = safeDate(timestamp);
-    if (!date) return 'Just now';
+    if (!date) return t('resale.just_now');
     
     const now = new Date();
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
     
-    if (diffInSeconds < 60) return 'Just now';
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-    return `${Math.floor(diffInSeconds / 86400)}d ago`;
+    if (diffInSeconds < 60) return t('resale.just_now');
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}${t('resale.mins_ago')}`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}${t('resale.hours_ago')}`;
+    return `${Math.floor(diffInSeconds / 86400)}${t('resale.days_ago')}`;
   };
 
   const conditionLabels: Record<string, string> = {
-    'S': 'New',
-    'A': 'Like New',
-    'B': 'Good',
-    'C': 'Well-used'
+    'S': t('resale.cond_s'),
+    'A': t('resale.cond_a'),
+    'B': t('resale.cond_b'),
+    'C': t('resale.cond_c')
   };
 
   const tradeMethodLabels: Record<string, string> = {
-    'direct': 'Direct Meeting',
-    'delivery': 'Global Delivery',
-    'both': 'Both Available'
+    'direct': t('resale.trade_direct'),
+    'delivery': t('resale.trade_delivery'),
+    'both': t('resale.trade_both')
+  };
+
+  const categoryLabels: Record<string, string> = {
+    'Shoes': t('resale.cat_shoes'),
+    'Apparel': t('resale.cat_apparel'),
+    'Accessories': t('resale.cat_accessories'),
+    'Equipment': t('resale.cat_equipment'),
+    'Others': t('resale.cat_others')
   };
 
   return (
@@ -188,7 +198,7 @@ export default function ResaleItemDetail({ item, onClose }: ResaleItemDetailProp
           <div className="flex gap-2">
             {item.status !== 'active' && (
               <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center ${isScrolled ? 'bg-primary/10 text-primary' : 'bg-primary text-white'}`}>
-                {item.status}
+                {item.status === 'sold' ? t('resale.btn_sold_out') : item.status === 'reserved' ? t('resale.btn_reserve') : item.status}
               </span>
             )}
             <button 
@@ -239,14 +249,14 @@ export default function ResaleItemDetail({ item, onClose }: ResaleItemDetailProp
                 </div>
                 <div>
                   <h4 className="font-headline font-bold text-base text-[#2d3435]">{item.sellerName}</h4>
-                  <div className="text-[11px] font-medium text-[#596061] uppercase tracking-wider">{item.location === 'Seoul, Gangnam-gu' || item.location === 'Gangnam' ? 'Seoul, Korea' : item.location}</div>
+                  <div className="text-[11px] font-medium text-[#596061] uppercase tracking-wider">{item.location === 'Seoul, Gangnam-gu' || item.location === 'Gangnam' ? t('resale.seoul_korea') : item.location}</div>
                 </div>
               </div>
             </UserProfileClickable>
             
             <div className="flex flex-col items-end">
               <div className="flex items-center gap-1">
-                <span className="text-[10px] font-black text-[#596061] uppercase tracking-widest">Manner Temp</span>
+                <span className="text-[10px] font-black text-[#596061] uppercase tracking-widest">{t('resale.manner_temp')}</span>
                 <span className="material-symbols-rounded text-[14px] text-red-500">thermostat</span>
               </div>
               <div className="font-headline font-black text-xl text-primary">
@@ -258,25 +268,25 @@ export default function ResaleItemDetail({ item, onClose }: ResaleItemDetailProp
           {/* Item Details */}
           <div className="space-y-4">
             <div>
-              <span className="inline-block px-2 py-1 bg-surface-container rounded text-[10px] font-bold text-[#596061] mb-2 uppercase tracking-wider">{item.category}</span>
+              <span className="inline-block px-2 py-1 bg-surface-container rounded text-[10px] font-bold text-[#596061] mb-2 uppercase tracking-wider">{categoryLabels[item.category] || item.category}</span>
               <h1 className="text-lg font-black text-[#2d3435] leading-tight font-headline mb-3">
                 {item.title}
               </h1>
               <div className="flex items-center gap-2 text-[11px] font-bold text-[#596061] uppercase tracking-wider">
                 <span>{getRelativeTime(item.createdAt)}</span>
                 <span className="w-1 h-1 rounded-full bg-[#acb3b4]"></span>
-                <span className="flex items-center gap-1">Location: {item.location === 'Seoul, Gangnam-gu' || item.location === 'Gangnam' ? 'Seoul, Korea' : item.location}</span>
+                <span className="flex items-center gap-1">{t('resale.label_location')} {item.location === 'Seoul, Gangnam-gu' || item.location === 'Gangnam' ? t('resale.seoul_korea') : item.location}</span>
               </div>
             </div>
 
             {/* Badges / Specs */}
             <div className="grid grid-cols-2 gap-3 py-4">
               <div className="bg-[#f2f4f4] rounded-2xl p-4 flex flex-col gap-1">
-                <span className="text-[10px] font-black text-[#596061] uppercase tracking-widest">Condition</span>
+                <span className="text-[10px] font-black text-[#596061] uppercase tracking-widest">{t('resale.condition')}</span>
                 <span className="font-bold text-sm text-[#2d3435]">{conditionLabels[item.condition] || item.condition}</span>
               </div>
               <div className="bg-[#f2f4f4] rounded-2xl p-4 flex flex-col gap-1">
-                <span className="text-[10px] font-black text-[#596061] uppercase tracking-widest">Trade Method</span>
+                <span className="text-[10px] font-black text-[#596061] uppercase tracking-widest">{t('resale.trade_method')}</span>
                 <span className="font-bold text-sm text-[#2d3435]">{tradeMethodLabels[item.tradeMethod] || item.tradeMethod}</span>
               </div>
             </div>
@@ -302,9 +312,9 @@ export default function ResaleItemDetail({ item, onClose }: ResaleItemDetailProp
               }`}
             >
               <span className="material-symbols-rounded text-lg text-[#596061]">chat</span>
-              <span className="text-sm font-bold">Chat with Seller</span>
+              <span className="text-sm font-bold">{t('resale.chat_with_seller')}</span>
             </button>
-            <p className="text-[10px] text-[#acb3b4] text-center mt-1.5">{item.sellerName} · Product info will be sent automatically</p>
+            <p className="text-[10px] text-[#acb3b4] text-center mt-1.5">{item.sellerName} · {t('resale.chat_info_auto')}</p>
           </div>
         )}
       </div>
@@ -314,7 +324,7 @@ export default function ResaleItemDetail({ item, onClose }: ResaleItemDetailProp
         <div className="flex-1 min-w-0">
           <p className="text-lg font-black text-[#2d3435] font-headline leading-tight">₩{item.price.toLocaleString()}</p>
           {!item.canNegotiate && (
-            <p className="text-[10px] text-[#acb3b4] truncate mt-0.5">Fixed Price</p>
+            <p className="text-[10px] text-[#acb3b4] truncate mt-0.5">{t('resale.fixed_price')}</p>
           )}
         </div>
         
@@ -326,7 +336,7 @@ export default function ResaleItemDetail({ item, onClose }: ResaleItemDetailProp
                 disabled={isSubmitting}
                 className="px-4 py-3 rounded-xl font-bold text-sm bg-[#f2f4f4] text-[#2d3435] hover:bg-[#e8eaec] transition-all"
               >
-                {item.status === 'reserved' ? 'Cancel' : 'Reserve'}
+                {item.status === 'reserved' ? t('resale.btn_cancel') : t('resale.btn_reserve')}
               </button>
             )}
             {item.status !== 'sold' && (
@@ -335,7 +345,7 @@ export default function ResaleItemDetail({ item, onClose }: ResaleItemDetailProp
                 disabled={isSubmitting}
                 className="bg-primary text-white px-5 py-3 rounded-xl font-black text-sm tracking-wide shadow-lg shadow-primary/20 active:scale-95 transition-transform"
               >
-                Mark Sold
+                {t('resale.btn_mark_sold')}
               </button>
             )}
             {item.status === 'sold' && (
@@ -343,7 +353,7 @@ export default function ResaleItemDetail({ item, onClose }: ResaleItemDetailProp
                 disabled
                 className="px-5 py-3 rounded-xl font-black text-sm tracking-wide bg-[#f2f4f4] text-[#acb3b4] cursor-not-allowed"
               >
-                Sold Out
+                {t('resale.btn_sold_out')}
               </button>
             )}
           </div>
@@ -363,7 +373,7 @@ export default function ResaleItemDetail({ item, onClose }: ResaleItemDetailProp
                   : 'bg-primary text-white shadow-lg shadow-primary/20 active:scale-95'
               }`}
             >
-              {item.status === 'sold' ? 'Sold Out' : 'Buy Now'}
+              {item.status === 'sold' ? t('resale.btn_sold_out') : t('resale.btn_buy_now')}
             </button>
           </>
         )}

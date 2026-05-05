@@ -48,7 +48,7 @@ export const stayBookingService = {
           status: 'APPLIED' as StayBookingStatus,
           changedAt: new Date().toISOString(),
           changedBy: data.userId,
-          note: '예약 신청'
+          note: 'Booking requested'
         }],
         smsLog: [],
         appliedAt: serverTimestamp(),
@@ -62,8 +62,8 @@ export const stayBookingService = {
         targetUserId: data.userId,
         groupId: data.groupId,
         type: 'STAY_BOOKING',
-        title: '숙박 예약 신청',
-        message: `'${data.stayTitle}' 예약이 정상적으로 접수되었습니다.`,
+        title: 'Stay Booking Requested',
+        message: `Your booking for '${data.stayTitle}' has been received.`,
         actionUrl: `/stay/booking/${bookingRef.id}`,
         referenceId: bookingRef.id,
         category: 'STAY'
@@ -73,8 +73,8 @@ export const stayBookingService = {
       await notificationService.createTodoForGroupAdmins(data.groupId, {
         groupId: data.groupId,
         type: 'STAY_BOOKING_ADMIN',
-        title: '신규 숙박 예약',
-        message: `${data.applicantName}님이 '${data.stayTitle}' 숙박을 신청했습니다. 승인 대기 중입니다.`,
+        title: 'New Stay Booking',
+        message: `${data.applicantName} has applied for '${data.stayTitle}'. Awaiting approval.`,
         actionUrl: `/group/${data.groupId}?tab=admin`,
         referenceId: bookingRef.id,
         category: 'STAY'

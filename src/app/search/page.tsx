@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // Placeholder data for design
 const TRENDING_TAGS = ["#TangoShoes", "#Milonga", "#BeginnerClass", "#BuenosAires", "#Festival"];
@@ -29,6 +30,7 @@ const MOCK_GROUP_ITEMS = [
 ];
 
 export default function SearchPage() {
+  const { t } = useLanguage();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
@@ -47,7 +49,7 @@ export default function SearchPage() {
             onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
-            placeholder="Search classes, products, events..."
+            placeholder={t('search.placeholder')}
             className="flex-1 bg-transparent border-none outline-none text-[15px] text-on-surface placeholder:text-on-surface/30 font-bold"
             autoFocus
           />
@@ -64,7 +66,7 @@ export default function SearchPage() {
 
       <div className="flex-1 overflow-y-auto no-scrollbar pb-24">
         <div className="px-5 mt-6 mb-8">
-        <h2 className="text-[12px] font-black text-on-surface/40 mb-3 uppercase tracking-widest">Trending Now</h2>
+        <h2 className="text-[12px] font-black text-on-surface/40 mb-3 uppercase tracking-widest">{t('search.trendingNow')}</h2>
         <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
           {TRENDING_TAGS.map((tag) => (
             <button 
@@ -84,10 +86,10 @@ export default function SearchPage() {
           <div className="flex items-center justify-between px-5 mb-4">
             <h2 className="text-[18px] font-black text-on-surface tracking-tight flex items-center gap-1.5">
               <span className="material-symbols-outlined text-primary text-[20px]">storefront</span>
-              Hot in Shop
+              {t('search.hotInShop')}
             </h2>
             <button className="text-[13px] font-bold text-on-surface/50 flex items-center hover:text-primary transition-colors">
-              View All <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+              {t('search.viewAll')} <span className="material-symbols-outlined text-[16px]">chevron_right</span>
             </button>
           </div>
           <div className="flex gap-4 overflow-x-auto px-5 no-scrollbar pb-4">
@@ -110,10 +112,10 @@ export default function SearchPage() {
           <div className="flex items-center justify-between px-5 mb-4">
             <h2 className="text-[18px] font-black text-on-surface tracking-tight flex items-center gap-1.5">
               <span className="material-symbols-outlined text-primary text-[20px]">school</span>
-              Upcoming Classes
+              {t('search.upcomingClasses')}
             </h2>
             <button className="text-[13px] font-bold text-on-surface/50 flex items-center hover:text-primary transition-colors">
-              View All <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+              {t('search.viewAll')} <span className="material-symbols-outlined text-[16px]">chevron_right</span>
             </button>
           </div>
           <div className="flex gap-4 overflow-x-auto px-5 no-scrollbar pb-4">
@@ -139,10 +141,10 @@ export default function SearchPage() {
           <div className="flex items-center justify-between px-5 mb-4">
             <h2 className="text-[18px] font-black text-on-surface tracking-tight flex items-center gap-1.5">
               <span className="material-symbols-outlined text-primary text-[20px]">calendar_today</span>
-              Events & Social
+              {t('search.eventsSocial')}
             </h2>
             <button className="text-[13px] font-bold text-on-surface/50 flex items-center hover:text-primary transition-colors">
-              View All <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+              {t('search.viewAll')} <span className="material-symbols-outlined text-[16px]">chevron_right</span>
             </button>
           </div>
           <div className="flex flex-col gap-3 px-5">
@@ -168,10 +170,10 @@ export default function SearchPage() {
           <div className="flex items-center justify-between px-5 mb-4">
             <h2 className="text-[18px] font-black text-on-surface tracking-tight flex items-center gap-1.5">
               <span className="material-symbols-outlined text-primary text-[20px]">groups</span>
-              Active Groups
+              {t('search.activeGroups')}
             </h2>
             <button className="text-[13px] font-bold text-on-surface/50 flex items-center hover:text-primary transition-colors">
-              View All <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+              {t('search.viewAll')} <span className="material-symbols-outlined text-[16px]">chevron_right</span>
             </button>
           </div>
           <div className="flex gap-4 overflow-x-auto px-5 no-scrollbar pb-8">
@@ -182,7 +184,7 @@ export default function SearchPage() {
                 </div>
                 <div className="text-center">
                   <h3 className="text-[14px] font-bold text-on-surface leading-tight mb-1">{item.title}</h3>
-                  <p className="text-[12px] font-medium text-on-surface/50">{item.members} members</p>
+                  <p className="text-[12px] font-medium text-on-surface/50">{item.members} {t('search.members')}</p>
                 </div>
               </div>
             ))}

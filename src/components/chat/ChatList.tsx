@@ -8,6 +8,7 @@ import { PlatformUser } from '@/types/user';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { formatDistanceToNow } from 'date-fns';
 import { safeDate } from '@/lib/utils/safeDate';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface ChatListProps {
   onSelectRoom: (roomId: string) => void;
@@ -99,6 +100,7 @@ function RoomName({ room, currentUserId }: { room: ChatRoom; currentUserId?: str
 }
 
 export default function ChatList({ onSelectRoom, selectedRoomId, category = 'Personal' }: ChatListProps) {
+  const { t } = useLanguage();
   const { user } = useAuth();
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
   const [loading, setLoading] = useState(true);
@@ -210,10 +212,13 @@ export default function ChatList({ onSelectRoom, selectedRoomId, category = 'Per
     : filteredRooms;
 
   // Placeholder text per tab
-  const placeholderMap = {
-    Personal: 'Search or start a new chat...',
-    Group: 'Search group chats...',
-    Market: 'Search market chats...',
+  const getPlaceholder = () => {
+    switch (category) {
+      case 'Personal': return t('chat.searchPlaceholder');
+      case 'Group': return t('chat.searchGroupsPlaceholder');
+      case 'Market': return t('chat.searchMarketPlaceholder');
+      default: return t('chat.searchPlaceholder');
+    }
   };
 
   // Should show the search overlay (Personal + focused + has query)
@@ -247,7 +252,7 @@ export default function ChatList({ onSelectRoom, selectedRoomId, category = 'Per
             value={searchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
             onFocus={() => setIsSearchFocused(true)}
-            placeholder={placeholderMap[category]}
+            placeholder={getPlaceholder()}
             className="w-full pl-12 pr-10 py-3 bg-white border border-slate-100 rounded-2xl text-sm font-medium placeholder:text-gray-300 focus:ring-1 focus:ring-primary/10 focus:border-primary/20 transition-all"
           />
           {searchQuery && (
@@ -268,7 +273,7 @@ export default function ChatList({ onSelectRoom, selectedRoomId, category = 'Per
             {searchFilteredRooms.length > 0 && (
               <div>
                 <div className="px-4 pt-4 pb-2">
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Conversations</span>
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('chat.conversations')}</span>
                 </div>
                 {searchFilteredRooms.map(room => (
                   <button
@@ -296,7 +301,7 @@ export default function ChatList({ onSelectRoom, selectedRoomId, category = 'Per
             {/* People search results */}
             <div>
               <div className="px-4 pt-4 pb-2">
-                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">People</span>
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('chat.people')}</span>
               </div>
 
               {searchingUsers ? (
@@ -329,7 +334,7 @@ export default function ChatList({ onSelectRoom, selectedRoomId, category = 'Per
                           <span className="text-[11px] text-gray-400 font-normal">{u.nativeNickname}</span>
                         )}
                       </div>
-                      <p className="text-[11px] text-gray-400 font-medium">Tap to start chatting</p>
+                      <p className="text-[11px] text-gray-400 font-medium">{t('chat.tapToStartChatting')}</p>
                     </div>
                     <div className="shrink-0">
                       {creatingRoom === u.id ? (
@@ -343,11 +348,11 @@ export default function ChatList({ onSelectRoom, selectedRoomId, category = 'Per
               ) : searchQuery.trim().length >= 2 ? (
                 <div className="px-4 py-6 text-center">
                   <span className="material-symbols-outlined text-gray-200 text-[32px] mb-2 block">person_off</span>
-                  <p className="text-[12px] text-gray-400 font-medium">No users found for &ldquo;{searchQuery}&rdquo;</p>
+                  <p className="text-[12px] text-gray-400 font-medium">{t('chat.noUsersFound', { query: searchQuery })}</p>
                 </div>
               ) : (
                 <div className="px-4 py-4 text-center">
-                  <p className="text-[12px] text-gray-300 font-medium">Type at least 2 characters to find people</p>
+                  <p className="text-[12px] text-gray-300 font-medium">{t('chat.typeToSearch')}</p>
                 </div>
               )}
             </div>
@@ -364,11 +369,11 @@ export default function ChatList({ onSelectRoom, selectedRoomId, category = 'Per
           <div className="w-20 h-20 rounded-full bg-gray-50 flex items-center justify-center mb-6">
             <span className="material-symbols-outlined text-gray-200 text-4xl">chat_bubble</span>
           </div>
-          <h3 className="text-lg font-black text-gray-900 mb-2 uppercase tracking-tighter">No Conversations</h3>
+          <h3 className="text-lg font-black text-gray-900 mb-2 uppercase tracking-tighter">{t('chat.noConversations')}</h3>
           <p className="text-xs text-gray-400 font-medium leading-relaxed">
             {category === 'Personal' 
-              ? 'Search for someone above to start a new chat.'
-              : 'No conversations yet in this category.'}
+              ? t('chat.searchToStart')
+              : t('chat.noConversationsCategory')}
           </p>
         </div>
       ) : (

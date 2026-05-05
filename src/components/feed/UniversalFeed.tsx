@@ -9,6 +9,7 @@ import UserAvatar from '@/components/common/UserAvatar';
 import { useModalNavigation } from '@/hooks/useModalNavigation';
 import { useLocation } from '@/components/providers/LocationProvider';
 import { COUNTRY_MAPPING } from '@/lib/constants/locations';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface UniversalFeedProps {
   context: any;
@@ -22,17 +23,18 @@ export default function UniversalFeed({ context, currentUser, profile, activeFil
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [localFilter, setLocalFilter] = useState('all');
+  const { t } = useLanguage();
 
   const isCreateModalOpen = !!createFlowValue;
   const editingPost = createFlowValue && createFlowValue !== 'new' ? posts.find(p => p.id === createFlowValue) || null : null;
 
   const activeFilter = propFilter || localFilter;
   const tabs = [
-    { id: 'all', label: 'All' },
-    { id: 'hot', label: 'Hot' },
-    { id: 'favorites', label: 'Favorites' },
-    { id: 'pin', label: 'Pin' },
-    { id: 'my_log', label: 'My log' },
+    { id: 'all', label: t('plaza.tab_all') },
+    { id: 'hot', label: t('plaza.tab_hot') },
+    { id: 'favorites', label: t('plaza.tab_favorites') },
+    { id: 'pin', label: t('plaza.tab_pin') },
+    { id: 'my_log', label: t('plaza.tab_my_log') },
   ];
 
   useEffect(() => {
@@ -137,7 +139,7 @@ export default function UniversalFeed({ context, currentUser, profile, activeFil
               />
               <div className="flex-1">
                 <span className="text-[15px] font-medium text-slate-400 tracking-tight block">
-                  What's on your mind? People are looking forward to your activity.
+                  {t('plaza.compose_prompt')}
                 </span>
               </div>
             </div>
@@ -156,8 +158,8 @@ export default function UniversalFeed({ context, currentUser, profile, activeFil
               <span className="material-symbols-outlined text-outline-variant text-6xl mb-4">post_add</span>
               <p className="text-on-surface-variant font-medium px-10">
                 {location.country === 'GLOBAL' 
-                  ? "This is the last feed." 
-                  : `${location.city}, ${COUNTRY_MAPPING[location.country.toUpperCase()] || location.country}'s last feed.`}
+                  ? t('plaza.last_feed_global') 
+                  : `${location.city}, ${COUNTRY_MAPPING[location.country.toUpperCase()] || location.country}${t('plaza.last_feed_local')}`}
               </p>
             </div>
           ) : (
@@ -171,11 +173,11 @@ export default function UniversalFeed({ context, currentUser, profile, activeFil
                   openCreate(post.id);
                 }}
                 onDelete={async (postId) => {
-                  if (window.confirm('Are you sure you want to delete this post?')) {
+                  if (window.confirm(t('plaza.confirm_delete_post'))) {
                     try {
                       await feedService.deletePost(postId);
                     } catch (error) {
-                      alert('Failed to delete post');
+                      alert(t('plaza.fail_delete'));
                     }
                   }
                 }}

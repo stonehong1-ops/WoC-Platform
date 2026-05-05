@@ -12,29 +12,31 @@ import ProductDetail from '@/components/shop/ProductDetail';
 import CreateProduct from '@/components/shop/CreateProduct';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useModalNavigation } from '@/hooks/useModalNavigation';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { AnimatePresence } from 'framer-motion';
 
 type SortOption = 'latest' | 'sale' | 'popular' | 'new' | 'price_asc' | 'price_desc';
 
-const SORT_OPTIONS: { key: SortOption; label: string; icon: string }[] = [
-  { key: 'latest', label: 'Latest', icon: 'schedule' },
-  { key: 'sale', label: 'Sale', icon: 'local_offer' },
-  { key: 'popular', label: 'Popular', icon: 'trending_up' },
-  { key: 'new', label: 'New', icon: 'fiber_new' },
-  { key: 'price_asc', label: 'Price ↑', icon: 'arrow_upward' },
-  { key: 'price_desc', label: 'Price ↓', icon: 'arrow_downward' },
+const SORT_OPTIONS: { key: SortOption; label: string; icon: string; tKey: string }[] = [
+  { key: 'latest', label: 'Latest', icon: 'schedule', tKey: 'shop.sort_latest' },
+  { key: 'sale', label: 'Sale', icon: 'local_offer', tKey: 'shop.sort_sale' },
+  { key: 'popular', label: 'Popular', icon: 'trending_up', tKey: 'shop.sort_popular' },
+  { key: 'new', label: 'New', icon: 'fiber_new', tKey: 'shop.sort_new' },
+  { key: 'price_asc', label: 'Price ↑', icon: 'arrow_upward', tKey: 'shop.sort_price_asc' },
+  { key: 'price_desc', label: 'Price ↓', icon: 'arrow_downward', tKey: 'shop.sort_price_desc' },
 ];
 
-const SHOP_FILTER_DEFS: Record<string, { label: string; fullLabel?: string; icon?: string; categories?: string[] }> = {
-  all: { label: 'All', fullLabel: 'All' },
-  w_shoes: { label: 'Shoes', fullLabel: 'Woman Shoes', icon: 'face_2', categories: ['shoes', 'w_shoes', 'woman shoes', "women's shoes"] },
-  m_shoes: { label: 'Shoes', fullLabel: 'Man Shoes', icon: 'footprint', categories: ['m_shoes', 'man shoes', "men's shoes"] },
-  w_wear: { label: 'Wear', fullLabel: 'Woman Wear', icon: 'digital_wellbeing', categories: ['wear', 'dress', 'w_wear', 'dresses', 'woman wear', 'yoga wear'] },
-  m_wear: { label: 'Wear', fullLabel: 'Man Wear', icon: 'styler', categories: ['m_wear', 'man wear', 'suits'] },
-  item: { label: 'Item', fullLabel: 'Item', icon: 'diamond', categories: ['accessories', 'accessory', 'equipment', 'item', 'bag', 'others', 'bikes', 'equipments'] },
+const SHOP_FILTER_DEFS: Record<string, { labelKey: string; fullLabelKey?: string; icon?: string; categories?: string[] }> = {
+  all: { labelKey: 'shop.filter_all', fullLabelKey: 'shop.filter_all' },
+  w_shoes: { labelKey: 'shop.filter_shoes', fullLabelKey: 'shop.filter_woman_shoes', icon: 'face_2', categories: ['shoes', 'w_shoes', 'woman shoes', "women's shoes"] },
+  m_shoes: { labelKey: 'shop.filter_shoes', fullLabelKey: 'shop.filter_man_shoes', icon: 'footprint', categories: ['m_shoes', 'man shoes', "men's shoes"] },
+  w_wear: { labelKey: 'shop.filter_wear', fullLabelKey: 'shop.filter_woman_wear', icon: 'digital_wellbeing', categories: ['wear', 'dress', 'w_wear', 'dresses', 'woman wear', 'yoga wear'] },
+  m_wear: { labelKey: 'shop.filter_wear', fullLabelKey: 'shop.filter_man_wear', icon: 'styler', categories: ['m_wear', 'man wear', 'suits'] },
+  item: { labelKey: 'shop.filter_item', fullLabelKey: 'shop.filter_item', icon: 'diamond', categories: ['accessories', 'accessory', 'equipment', 'item', 'bag', 'others', 'bikes', 'equipments'] },
 };
 
 function ShopPageContent() {
+  const { t } = useLanguage();
   const { user, profile } = useAuth();
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [allVenues, setAllVenues] = useState<Venue[]>([]);
@@ -187,7 +189,7 @@ function ShopPageContent() {
 
   const handleToggleLike = async (e: React.MouseEvent, product: Product) => {
     e.stopPropagation();
-    if (!user) return alert("Please login first");
+    if (!user) return alert(t('shop.msg_login_first'));
     setTogglingLike(product.id);
     try { await shopService.toggleLike(user.uid, product.id); } catch (err) { console.error('Failed to toggle like:', err); }
     setTogglingLike(null);
@@ -209,7 +211,7 @@ function ShopPageContent() {
                   : 'bg-slate-50/50 text-slate-500 border-slate-100 hover:bg-slate-100/80'
               }`}
             >
-              {filter.fullLabel || filter.label}
+              {t(filter.fullLabelKey || filter.labelKey)}
             </button>
           ))}
         </div>
@@ -219,7 +221,7 @@ function ShopPageContent() {
           <div className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
             <div className="text-[11px] font-bold text-slate-600 uppercase tracking-widest">
-              {filteredProducts.length} <span className="text-slate-400 font-medium">Items</span>
+              {filteredProducts.length} <span className="text-slate-400 font-medium">{t('shop.items')}</span>
             </div>
           </div>
           
@@ -236,7 +238,7 @@ function ShopPageContent() {
                   : 'text-slate-600 hover:text-slate-800'
               }`}
             >
-              {activeBrand === 'All' ? 'Brand' : activeBrand}
+              {activeBrand === 'All' ? t('shop.brand') : activeBrand}
               <span className={`material-symbols-outlined text-[16px] transition-transform ${showBrandFilter ? 'rotate-180' : ''}`}>expand_more</span>
             </button>
 
@@ -248,7 +250,7 @@ function ShopPageContent() {
               }}
               className="flex items-center gap-0.5 text-[12px] font-bold text-slate-600 hover:text-slate-800 transition-all"
             >
-              {SORT_OPTIONS.find(o => o.key === sortOption)?.label || 'Sort'}
+              {t(SORT_OPTIONS.find(o => o.key === sortOption)?.tKey || 'shop.sort')}
               <span className={`material-symbols-outlined text-[16px] transition-transform ${showSortDropdown ? 'rotate-180' : ''}`}>expand_more</span>
             </button>
           </div>
@@ -258,7 +260,7 @@ function ShopPageContent() {
         {showBrandFilter && (
           <div className="absolute top-full left-0 right-0 z-40 bg-white shadow-2xl border-t border-slate-100 p-4 max-h-[280px] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-300">
             <div className="flex items-center justify-between mb-4 px-1">
-              <span className="text-[14px] font-black text-slate-800 uppercase tracking-tight">Filter by Brand</span>
+              <span className="text-[14px] font-black text-slate-800 uppercase tracking-tight">{t('shop.filter_by_brand')}</span>
               <button 
                 onClick={() => setShowBrandFilter(false)} 
                 className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:text-slate-600 active:scale-90 transition-all"
@@ -294,7 +296,7 @@ function ShopPageContent() {
                 onClick={() => setShowBrandFilter(false)}
                 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest hover:text-slate-600 transition-colors"
               >
-                Close filter
+                {t('shop.close_filter')}
               </button>
             </div>
           </div>
@@ -315,7 +317,7 @@ function ShopPageContent() {
                 }`}
               >
                 <span className="material-symbols-outlined text-[18px]">{opt.icon}</span>
-                <span className="text-[13px]">{opt.label}</span>
+                <span className="text-[13px]">{t(opt.tKey)}</span>
               </button>
             ))}
           </div>
@@ -345,7 +347,7 @@ function ShopPageContent() {
           <div className="flex flex-col items-center justify-center py-20 text-center opacity-30">
             <span className="material-symbols-rounded text-6xl mb-4">shopping_basket</span>
             <p className="text-xs font-black uppercase tracking-widest">
-              {sortOption === 'sale' ? 'No sale items' : sortOption === 'new' ? 'No new arrivals this week' : 'No products found'}
+              {sortOption === 'sale' ? t('shop.no_sale_items') : sortOption === 'new' ? t('shop.no_new_arrivals') : t('shop.no_products')}
             </p>
           </div>
         ) : (
@@ -356,7 +358,7 @@ function ShopPageContent() {
                   {/* Fallback View */}
                   <div className="absolute inset-0 flex flex-col items-center justify-center text-[#c4cacc]">
                     <span className="material-symbols-outlined text-4xl mb-1">local_mall</span>
-                    <span className="text-[10px] font-bold tracking-wider uppercase">No Image</span>
+                    <span className="text-[10px] font-bold tracking-wider uppercase">{t('shop.no_image')}</span>
                   </div>
                   
                   {/* Actual Image */}
@@ -415,10 +417,10 @@ function ShopPageContent() {
             src="https://lh3.googleusercontent.com/aida-public/AB6AXuCGnfXo5FxY7Zul6jIY3UznjFzl1jJLqKE2i8nVR5RvHsm5xoTCYtFszyXhXFR6rmt_dAR_SGHAAWFgTVbnMvT8OFxYKVT4CTMrjU6XNpoq8boSq1Jc91C4K_VG-3b4bWt3hMHoPlYd0UHkeGoRzsRTEsZZmnNPmD1LEUwwVH2dYsycT5_d1z0wMmwx1dQQxWoDZwtyWwyUrax43L3MBnqZLbhBlEWjD-D_7w_roVUSotZHY1kVtYku-UYAv5d8wg7rAU6TMtA8-isH"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex flex-col justify-end p-6 text-left">
-            <span className="text-[#d8e2ff] font-bold text-xs tracking-widest uppercase mb-1 font-label">New Season</span>
-            <h2 className="text-white font-headline text-2xl font-extrabold leading-tight">Pro Tango Shoes</h2>
-            <p className="text-white/80 text-sm mt-1 font-body">Engineered for grace and precision.</p>
-            <button className="mt-4 bg-[#1A73E8] text-white w-fit px-6 py-2 rounded-full text-xs font-bold font-headline active:scale-95 transition-transform">SHOP COLLECTION</button>
+            <span className="text-[#d8e2ff] font-bold text-xs tracking-widest uppercase mb-1 font-label">{t('shop.new_season')}</span>
+            <h2 className="text-white font-headline text-2xl font-extrabold leading-tight">{t('shop.hero_title')}</h2>
+            <p className="text-white/80 text-sm mt-1 font-body">{t('shop.hero_desc')}</p>
+            <button className="mt-4 bg-[#1A73E8] text-white w-fit px-6 py-2 rounded-full text-xs font-bold font-headline active:scale-95 transition-transform">{t('shop.hero_btn')}</button>
           </div>
         </div>
       </div>

@@ -11,39 +11,41 @@ import CreateProduct from "@/components/shop/CreateProduct";
 import { useNotification } from '@/contexts/NotificationContext';
 import { chatService } from '@/lib/firebase/chatService';
 import { COUNTRY_MAPPING } from "@/lib/constants/locations";
+import { useLanguage } from "@/contexts/LanguageContext";
+
 const NAV_STRUCTURE = {
   World: [
-    { name: "SOCIETY", icon: "radio_button_unchecked", path: "/home" },
-    { name: "PLAZA", icon: "quick_phrases", path: "/plaza" },
-    { name: "MAP", icon: "map", path: "/venues" },
-    { name: "EXPLORE", icon: "explore", path: "/explore" },
-    { name: "ARCADE", icon: "airline_stops", path: "/arcade" },
+    { name: "nav.home", icon: "radio_button_unchecked", path: "/home" },
+    { name: "nav.plaza", icon: "quick_phrases", path: "/plaza" },
+    { name: "nav.venues", icon: "map", path: "/venues" },
+    { name: "nav.explore", icon: "explore", path: "/explore" },
+    { name: "nav.arcade", icon: "airline_stops", path: "/arcade" },
   ],
   Market: [
-    { name: "SHOP", icon: "storefront", path: "/shop" },
-    { name: "RESALE", icon: "cached", path: "/resale" },
-    { name: "RENTAL", icon: "key", path: "/rental" },
-    { name: "STAY", icon: "bed", path: "/stay" },
-    { name: "CLASS", icon: "school", path: "/class" },
+    { name: "nav.shop", icon: "storefront", path: "/shop" },
+    { name: "nav.resale", icon: "cached", path: "/resale" },
+    { name: "nav.rental", icon: "key", path: "/rental" },
+    { name: "nav.stay", icon: "bed", path: "/stay" },
+    { name: "nav.class", icon: "school", path: "/class" },
   ],
   Play: [
-    { name: "SOCIAL", icon: "autoplay", path: "/social" },
-    { name: "EVENT", icon: "calendar_today", path: "/events" },
-    { name: "GALLERY", icon: "cinematic_blur", path: "/gallery" },
-    { name: "LOST", icon: "eye_tracking", path: "/lost-found" },
+    { name: "nav.social", icon: "autoplay", path: "/social" },
+    { name: "nav.events", icon: "calendar_today", path: "/events" },
+    { name: "nav.gallery", icon: "cinematic_blur", path: "/gallery" },
+    { name: "nav.lost_found", icon: "eye_tracking", path: "/lost-found" },
   ],
   Group: [
-    { name: "MY GROUPS", icon: "groups", path: "/groups" },
+    { name: "nav.groups", icon: "groups", path: "/groups" },
   ],
   My: [
-    { name: "HISTORY", icon: "history", path: "/history" },
-    { name: "WALLET", icon: "account_balance_wallet", path: "/wallet" },
-    { name: "PROFILE", icon: "person", path: "/my-info" },
+    { name: "nav.history", icon: "history", path: "/history" },
+    { name: "nav.wallet", icon: "account_balance_wallet", path: "/wallet" },
+    { name: "nav.my_info", icon: "person", path: "/my-info" },
   ],
   Admin: [
-    { name: "PEOPLE", icon: "people", path: "/admin/people" },
-    { name: "PLACE", icon: "place", path: "/admin/place" },
-    { name: "OTHERS", icon: "more_horiz", path: "/admin/others" },
+    { name: "nav.people", icon: "people", path: "/admin/people" },
+    { name: "nav.place", icon: "place", path: "/admin/place" },
+    { name: "nav.others", icon: "more_horiz", path: "/admin/others" },
   ],
 };
 
@@ -58,6 +60,7 @@ const BOTTOM_TABS = [
 ];
 
 export default function GlobalNavigation({ children }: { children: React.ReactNode }) {
+  const { language, toggleLanguage, t } = useLanguage();
   const pathname = usePathname();
   const { user, profile } = useAuth();
   const { isHeaderShrink, subHeader, setSubHeader, subHeaderHeight, isHeaderVisible, setIsHeaderVisible } = useNavigation();
@@ -247,6 +250,14 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
 
             {/* Right Side: Action Icons */}
             <div className="flex items-center gap-1.5">
+              {/* Language Toggle */}
+              <button 
+                onClick={toggleLanguage}
+                className="w-[36px] h-[36px] rounded-full flex items-center justify-center active:scale-95 transition-all bg-[#F1F5F9] text-[#1E293B]"
+              >
+                <span className="font-bold text-[13px] tracking-tight">{language}</span>
+              </button>
+
               {/* Notification */}
               <Link 
                 href="/notification" 
@@ -317,7 +328,7 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
                       className={`flex flex-col items-center justify-end flex-1 pt-3.5 pb-2.5 transition-all duration-300 border-b-[3px] ${isActive ? 'border-[#007AFF]' : 'border-transparent'}`}
                     >
                       <span className={`text-[14px] tracking-tight uppercase transition-all duration-300 ${isActive ? 'font-black text-[#007AFF]' : 'font-bold text-slate-500'}`}>
-                        {item.name}
+                        {t(item.name)}
                       </span>
                     </Link>
                   );
@@ -329,7 +340,7 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
                     href="/admin/people" 
                     className={`flex flex-col items-center justify-end flex-1 pt-3.5 pb-2.5 transition-all duration-300 border-b-[3px] border-transparent`}
                   >
-                    <span className="text-[14px] font-bold text-slate-500 tracking-tight uppercase">ADMIN</span>
+                    <span className="text-[14px] font-bold text-slate-500 tracking-tight uppercase">{t('nav.admin', 'ADMIN')}</span>
                   </Link>
                 )}
               </div>

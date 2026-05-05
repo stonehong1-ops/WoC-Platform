@@ -12,6 +12,7 @@ import { groupService } from '@/lib/firebase/groupService';
 import { FeedContext, Post } from '@/types/feed';
 import { useLocation } from '@/components/providers/LocationProvider';
 import { useHistoryBack } from '@/hooks/useHistoryBack';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 /* ─── Types ─── */
 interface MediaItem {
@@ -53,6 +54,7 @@ export default function FeedCreatePopup({ isOpen, onClose, context, editingPost 
   const { user, profile } = useAuth();
   const { location } = useLocation();
   const { handleClose } = useHistoryBack(isOpen, onClose);
+  const { t } = useLanguage();
 
   const [content, setContent] = useState('');
   const [media, setMedia] = useState<MediaItem[]>([]);
@@ -126,8 +128,8 @@ export default function FeedCreatePopup({ isOpen, onClose, context, editingPost 
     const curVideos = media.filter(m => m.type === 'video').length;
     const curImages = media.filter(m => m.type === 'image').length;
     files.forEach(file => {
-      if (file.type.startsWith('video/') && curVideos >= 1) { alert('You can add up to 1 video.'); return; }
-      if (file.type.startsWith('image/') && curImages >= 20) { alert('You can add up to 20 images.'); return; }
+      if (file.type.startsWith('video/') && curVideos >= 1) { alert(t('plaza.max_video')); return; }
+      if (file.type.startsWith('image/') && curImages >= 20) { alert(t('plaza.max_images')); return; }
       if (file.type.startsWith('video/')) handleUpload(file, 'video');
       else if (file.type.startsWith('image/')) handleUpload(file, 'image');
     });
@@ -157,7 +159,7 @@ export default function FeedCreatePopup({ isOpen, onClose, context, editingPost 
   const handleSubmit = async () => {
     if (!user || isSubmitting) return;
     if (!content.trim() && media.length === 0) return;
-    if (media.some(m => m.status === 'uploading')) { alert('Upload in progress. Please wait and try again.'); return; }
+    if (media.some(m => m.status === 'uploading')) { alert(t('plaza.upload_wait')); return; }
     setIsSubmitting(true);
     try {
       const finalTargets = context?.scope === 'plaza' ? ['plaza', context.scopeId] : [context?.scopeId || 'freestyle-tango'];
@@ -200,14 +202,14 @@ export default function FeedCreatePopup({ isOpen, onClose, context, editingPost 
             <button onClick={handleClose} className="p-2 rounded-full active:scale-95 duration-150 hover:bg-slate-50">
               <span className="material-symbols-outlined text-slate-500">close</span>
             </button>
-            <h1 className="font-title-md text-title-md text-on-surface">{editingPost ? 'Edit Post' : 'Create Post'}</h1>
+            <h1 className="font-title-md text-title-md text-on-surface">{editingPost ? t('plaza.edit_post') : t('plaza.create_post')}</h1>
           </div>
           <button
             onClick={handleSubmit}
             disabled={isSubmitting || (!content.trim() && media.length === 0) || media.some(m => m.status === 'uploading')}
             className="px-5 py-2 rounded-xl bg-primary-container text-white font-title-md text-body-md hover:opacity-90 active:scale-95 duration-150 transition-all disabled:opacity-40"
           >
-            {isSubmitting ? (editingPost ? 'Updating...' : 'Posting...') : (editingPost ? 'Update' : 'Post')}
+            {isSubmitting ? (editingPost ? t('plaza.updating') : t('plaza.posting')) : (editingPost ? t('plaza.update') : t('plaza.post'))}
           </button>
         </header>
 
@@ -252,7 +254,7 @@ export default function FeedCreatePopup({ isOpen, onClose, context, editingPost 
             ) : (
               <textarea
                 className="w-full min-h-[160px] bg-transparent border-none focus:ring-0 text-xl font-body-md text-on-surface placeholder:text-outline/60 resize-none"
-                placeholder="Share your activities related to Tango"
+                placeholder={t('plaza.share_placeholder')}
                 value={content}
                 onChange={e => setContent(e.target.value)}
               />
@@ -271,13 +273,13 @@ export default function FeedCreatePopup({ isOpen, onClose, context, editingPost 
           {showMedia && (
             <section className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-label-xs text-label-xs text-outline tracking-[0.1em] uppercase">MEDIA</h3>
+                <h3 className="font-label-xs text-label-xs text-outline tracking-[0.1em] uppercase">{t('plaza.media')}</h3>
                 {media.length > 0 && (
                   <button
                     onClick={() => mediaInputRef.current?.click()}
                     className="flex items-center gap-1 px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold hover:bg-primary/20 transition-colors"
                   >
-                    <span className="material-symbols-outlined text-sm">add_photo_alternate</span> Add
+                    <span className="material-symbols-outlined text-sm">add_photo_alternate</span> {t('plaza.add')}
                   </button>
                 )}
               </div>
@@ -320,8 +322,8 @@ export default function FeedCreatePopup({ isOpen, onClose, context, editingPost 
                   <div className="w-12 h-12 rounded-full bg-primary-container/10 flex items-center justify-center group-hover:scale-110 transition-transform">
                     <span className="material-symbols-outlined text-primary-container text-[28px]">add_photo_alternate</span>
                   </div>
-                  <p className="font-title-md text-body-md text-on-surface-variant">Add Photos</p>
-                  <span className="text-[10px] text-on-surface-variant/60 font-medium">{imageCount}/20 Photos</span>
+                  <p className="font-title-md text-body-md text-on-surface-variant">{t('plaza.add_photos')}</p>
+                  <span className="text-[10px] text-on-surface-variant/60 font-medium">{imageCount}/20 {t('plaza.photos')}</span>
                   <span className="material-symbols-outlined absolute -bottom-6 -right-6 text-[120px] text-primary-container/5 pointer-events-none select-none">cloud_upload</span>
                 </div>
               )}

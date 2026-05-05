@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Social, SocialSubEvent } from "@/types/social";
 import { socialService } from "@/lib/firebase/socialService";
 import { userService } from "@/lib/firebase/userService";
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Props {
   social: Social;
@@ -45,6 +46,7 @@ export default function SocialHomeTab({ social, onChatWithOrganizer, canEdit }: 
   const [orgProfile, setOrgProfile] = useState<any>(null);
   const [showDjLineup, setShowDjLineup] = useState(false);
   const [showFullDesc, setShowFullDesc] = useState(false);
+  const { t } = useLanguage();
 
   // Auto-fetch venue details
   useEffect(() => {
@@ -81,30 +83,30 @@ export default function SocialHomeTab({ social, onChatWithOrganizer, canEdit }: 
       <div className="mx-4 mt-4 border border-[#e0e4e5] rounded-2xl overflow-hidden">
         <div className="bg-[#f8f9fa] px-4 py-2.5 border-b border-[#e0e4e5] flex items-center gap-2">
           <span className="material-symbols-rounded text-sm text-primary">event</span>
-          <p className="text-[10px] font-black text-primary uppercase tracking-widest">Next Event</p>
+          <p className="text-[10px] font-black text-primary uppercase tracking-widest">{t('social.next_event')}</p>
         </div>
         <div className="px-4 py-4 space-y-3">
           <div className="flex items-start gap-3">
             <span className="material-symbols-rounded text-lg text-[#acb3b4]">calendar_today</span>
-            <div><p className="text-xs font-bold text-[#2d3435]">Date</p><p className="text-xs text-[#596061]">{getNextEventDate(social)}</p></div>
+            <div><p className="text-xs font-bold text-[#2d3435]">{t('social.date')}</p><p className="text-xs text-[#596061]">{getNextEventDate(social)}</p></div>
           </div>
           <div className="flex items-start gap-3">
             <span className="material-symbols-rounded text-lg text-[#acb3b4]">schedule</span>
-            <div><p className="text-xs font-bold text-[#2d3435]">Time</p><p className="text-xs text-[#596061]">{social.startTime} - {social.endTime}</p></div>
+            <div><p className="text-xs font-bold text-[#2d3435]">{t('social.time')}</p><p className="text-xs text-[#596061]">{social.startTime} - {social.endTime}</p></div>
           </div>
           <div className="flex items-center justify-between">
             <div className="flex items-start gap-3">
               <span className="material-symbols-rounded text-lg text-[#acb3b4]">headphones</span>
-              <div><p className="text-xs font-bold text-[#2d3435]">DJ</p><p className="text-xs text-[#596061]">{getDjDisplay(social)}</p></div>
+              <div><p className="text-xs font-bold text-[#2d3435]">{t('social.dj')}</p><p className="text-xs text-[#596061]">{getDjDisplay(social)}</p></div>
             </div>
             <button onClick={() => setShowDjLineup(true)} className="flex items-center gap-1 px-3 py-1.5 bg-white border border-[#e0e4e5] rounded-full active:scale-95 transition-transform hover:bg-[#f8f9fa] shadow-sm">
               <span className="material-symbols-rounded text-sm text-primary">view_list</span>
-              <span className="text-[10px] font-bold text-[#2d3435]">Lineup</span>
+              <span className="text-[10px] font-bold text-[#2d3435]">{t('social.lineup')}</span>
             </button>
           </div>
           <div className="flex items-start gap-3">
             <span className="material-symbols-rounded text-lg text-[#acb3b4]">payments</span>
-            <div><p className="text-xs font-bold text-[#2d3435]">Entry Fee</p><p className="text-xs text-[#596061]">{social.price?.replace(/\d+/, m => parseInt(m).toLocaleString()) || "TBA"}</p></div>
+            <div><p className="text-xs font-bold text-[#2d3435]">{t('social.entry_fee')}</p><p className="text-xs text-[#596061]">{social.price?.replace(/\d+/, m => parseInt(m).toLocaleString()) || t('social.tba')}</p></div>
           </div>
         </div>
       </div>
@@ -121,10 +123,10 @@ export default function SocialHomeTab({ social, onChatWithOrganizer, canEdit }: 
       <div className="mx-4 mt-4 border border-[#e0e4e5] rounded-2xl overflow-hidden">
         <div className="bg-[#f8f9fa] px-4 py-2.5 border-b border-[#e0e4e5] flex items-center gap-2">
           <span className="material-symbols-rounded text-sm text-primary">location_on</span>
-          <p className="text-[10px] font-black text-primary uppercase tracking-widest">Venue</p>
+          <p className="text-[10px] font-black text-primary uppercase tracking-widest">{t('social.venue')}</p>
         </div>
         <div className="px-4 py-4">
-          <p className="text-sm font-bold text-[#2d3435]">{social.venueName || "Venue"}</p>
+          <p className="text-sm font-bold text-[#2d3435]">{social.venueName || t('social.venue')}</p>
           {social.venueNameNative && <p className="text-[10px] font-bold text-[#acb3b4] mt-0.5">{social.venueNameNative}</p>}
           
           <div className="mt-2">
@@ -162,7 +164,7 @@ export default function SocialHomeTab({ social, onChatWithOrganizer, canEdit }: 
       <div className="mx-4 mt-4 border border-[#e0e4e5] rounded-2xl overflow-hidden">
         <div className="bg-[#f8f9fa] px-4 py-2.5 border-b border-[#e0e4e5] flex items-center gap-2">
           <span className="material-symbols-rounded text-sm text-primary">person</span>
-          <p className="text-[10px] font-black text-primary uppercase tracking-widest">Organizer & Staff</p>
+          <p className="text-[10px] font-black text-primary uppercase tracking-widest">{t('social.organizer_staff')}</p>
         </div>
         <div className="px-4 py-4 space-y-3">
           <div className="flex items-center justify-between">
@@ -173,7 +175,7 @@ export default function SocialHomeTab({ social, onChatWithOrganizer, canEdit }: 
               </div>
               <div>
                 <p className="text-sm font-bold text-[#2d3435]">{social.organizerNameNative || social.organizerName}</p>
-                <p className="text-[10px] text-[#acb3b4] font-bold uppercase">Organizer</p>
+                <p className="text-[10px] text-[#acb3b4] font-bold uppercase">{t('social.organizer')}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -196,7 +198,7 @@ export default function SocialHomeTab({ social, onChatWithOrganizer, canEdit }: 
                   </div>
                   <div>
                     <p className="text-xs font-bold text-[#2d3435]">{name}</p>
-                    <p className="text-[10px] text-[#acb3b4]">Staff</p>
+                    <p className="text-[10px] text-[#acb3b4]">{t('social.staff')}</p>
                   </div>
                 </div>
               ))}

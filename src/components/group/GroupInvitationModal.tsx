@@ -5,6 +5,7 @@ import { PlatformUser } from '@/types/user';
 import { userService } from '@/lib/firebase/userService';
 import { notificationService } from '@/lib/firebase/notificationService';
 import { Group } from '@/types/group';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface GroupInvitationModalProps {
   isOpen: boolean;
@@ -14,6 +15,7 @@ interface GroupInvitationModalProps {
 }
 
 const GroupInvitationModal = ({ isOpen, onClose, group, currentUser }: GroupInvitationModalProps) => {
+  const { t } = useLanguage();
   const [searchKeyword, setSearchKeyword] = useState('');
   const [searchResults, setSearchResults] = useState<PlatformUser[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -57,11 +59,11 @@ const GroupInvitationModal = ({ isOpen, onClose, group, currentUser }: GroupInvi
         groupName: group.name
       });
       
-      alert(`Invitation sent to ${selectedUser.nickname}.`);
+      alert(t('group.invite.success', { user: selectedUser.nickname }));
       onClose();
     } catch (error) {
       console.error('Invitation failed:', error);
-      alert('Failed to send invitation.');
+      alert(t('group.invite.fail'));
     } finally {
       setIsSending(false);
     }
@@ -75,8 +77,8 @@ const GroupInvitationModal = ({ isOpen, onClose, group, currentUser }: GroupInvi
         {/* Header */}
         <div className="p-6 border-b border-slate-100 flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-headline font-bold text-[#242c51]">Invite Member</h2>
-            <p className="text-sm text-slate-500 mt-1">Search and invite users to {group.name}</p>
+            <h2 className="text-xl font-headline font-bold text-[#242c51]">{t('group.invite.title')}</h2>
+            <p className="text-sm text-slate-500 mt-1">{t('group.invite.desc', { group: group.name })}</p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-slate-50 rounded-full transition-colors">
             <span className="material-symbols-outlined text-slate-400">close</span>
@@ -93,7 +95,7 @@ const GroupInvitationModal = ({ isOpen, onClose, group, currentUser }: GroupInvi
               value={searchKeyword}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               onChange={(e) => setSearchKeyword(e.target.value)}
-              placeholder="Search by name or email..." 
+              placeholder={t('group.invite.search_placeholder')} 
               className="w-full pl-11 pr-24 py-3 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-[#0057bd]/20 transition-all"
             />
             <button 
@@ -101,7 +103,7 @@ const GroupInvitationModal = ({ isOpen, onClose, group, currentUser }: GroupInvi
               disabled={isSearching}
               className="absolute right-2 top-1.5 bottom-1.5 px-4 bg-[#0057bd] text-white text-xs font-bold rounded-xl hover:bg-[#00469b] transition-colors disabled:opacity-50"
             >
-              {isSearching ? 'Searching...' : 'Search'}
+              {isSearching ? t('group.invite.searching') : t('group.invite.search_btn')}
             </button>
           </div>
 
@@ -110,7 +112,7 @@ const GroupInvitationModal = ({ isOpen, onClose, group, currentUser }: GroupInvi
             {searchResults.length === 0 && !isSearching ? (
               <div className="py-12 text-center">
                 <span className="material-symbols-outlined text-4xl text-slate-200">person_search</span>
-                <p className="text-sm text-slate-400 mt-2">Enter at least 2 characters to search</p>
+                <p className="text-sm text-slate-400 mt-2">{t('group.invite.empty_search')}</p>
               </div>
             ) : (
               searchResults.map((user) => (
@@ -151,9 +153,9 @@ const GroupInvitationModal = ({ isOpen, onClose, group, currentUser }: GroupInvi
 
           {selectedUser && (
             <div className="p-4 bg-[#0057bd]/5 rounded-2xl border border-[#0057bd]/10 space-y-2 animate-in slide-in-from-top-2">
-              <p className="text-xs font-bold text-[#0057bd] uppercase tracking-wider">Preview Invitation</p>
+              <p className="text-xs font-bold text-[#0057bd] uppercase tracking-wider">{t('group.invite.preview_label')}</p>
               <p className="text-sm text-[#242c51] leading-relaxed">
-                <span className="font-bold">"{currentUser.name}님께서 '{group.name}' 그룹에 초대하셨습니다. 승인하시겠습니까?"</span> 메시지가 전송됩니다.
+                {t('group.invite.preview_msg', { user: currentUser.name, group: group.name })}
               </p>
             </div>
           )}
@@ -165,7 +167,7 @@ const GroupInvitationModal = ({ isOpen, onClose, group, currentUser }: GroupInvi
             onClick={onClose}
             className="px-6 py-2.5 text-sm font-bold text-slate-500 hover:text-slate-800 transition-colors"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <button 
             onClick={handleSendInvite}
@@ -175,12 +177,12 @@ const GroupInvitationModal = ({ isOpen, onClose, group, currentUser }: GroupInvi
             {isSending ? (
               <>
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                Sending...
+                {t('group.invite.sending')}
               </>
             ) : (
               <>
                 <span className="material-symbols-outlined text-[18px]">send</span>
-                Send Invite
+                {t('group.invite.send_btn')}
               </>
             )}
           </button>

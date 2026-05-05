@@ -170,8 +170,8 @@ export const socialService = {
       await notificationService.createNotification({
         targetUserId: data.userId,
         type: 'SOCIAL_RESERVATION',
-        title: '소셜 예약 접수',
-        message: `'${social.title}' 예약이 정상적으로 접수되었습니다.`,
+        title: 'Social Event Reservation Received',
+        message: `'${social.title}' reservation has been successfully received.`,
         actionUrl: `/history`, // Route to user history
         referenceId: docRef.id,
         category: 'SOCIAL'
@@ -182,8 +182,8 @@ export const socialService = {
         await notificationService.createTodo({
           targetUserId: social.organizerId,
           type: 'SOCIAL_RESERVATION_ADMIN',
-          title: '신규 예약 접수',
-          message: `${data.userName}님이 '${social.title}'에 예약했습니다.`,
+          title: 'New Reservation Received',
+          message: `${data.userName} has reserved for '${social.title}'.`,
           actionUrl: `/social/${socialId}`, 
           referenceId: docRef.id,
           category: 'SOCIAL'
@@ -243,8 +243,10 @@ export const socialService = {
         return false;
       } else {
         await setDoc(likeRef, {
+          id: likeId,
           userId,
           socialId,
+          status: 'liked',
           createdAt: serverTimestamp()
         });
         await updateDoc(socialRef, { likesCount: increment(1) }).catch(() => {});
@@ -256,15 +258,29 @@ export const socialService = {
     }
   },
 
-  // Subscribe to user's liked socials
-  subscribeMyLikes: (userId: string, callback: (likedSocialIds: string[]) => void) => {
+  // Update like status (liked -> pending -> in_progress)
+  updateLikeStatus: async (userId: string, socialId: string, status: 'liked' | 'pending' | 'in_progress') => {
+    const likeId = `${userId}_${socialId}`;
+    const likeRef = doc(db, LIKES_COLLECTION, likeId);
+    try {
+      const snap = await getDoc(likeRef);
+      if (snap.exists()) {
+        await updateDoc(likeRef, { status, updatedAt: serverTimestamp() });
+      }
+    } catch (error) {
+      console.error('Error updating social like status:', error);
+    }
+  },
+
+  // Subscribe to user's liked socials (Full objects)
+  subscribeMyLikes: (userId: string, callback: (likes: import('@/types/social').SocialLike[]) => void) => {
     const q = query(
       collection(db, LIKES_COLLECTION),
       where('userId', '==', userId)
     );
     return onSnapshot(q, (snapshot) => {
-      const likedIds = snapshot.docs.map(doc => doc.data().socialId as string);
-      callback(likedIds);
+      const likes = snapshot.docs.map(doc => doc.data() as import('@/types/social').SocialLike);
+      callback(likes);
     }, (error) => {
       console.error('Error subscribing to social likes:', error);
     });

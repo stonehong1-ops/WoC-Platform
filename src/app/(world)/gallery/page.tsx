@@ -21,6 +21,7 @@ import {
 import { galleryService, GalleryPost, GalleryComment } from '@/lib/firebase/galleryService';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { safeDate } from '@/lib/utils/safeDate';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 // Helper to determine if a URL is a video
 const isVideoUrl = (url: string) => {
@@ -35,6 +36,7 @@ const GalleryPage = () => {
   const [loading, setLoading] = useState(true);
   const [activeCommentPost, setActiveCommentPost] = useState<string | null>(null);
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [mounted, setMounted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -83,8 +85,8 @@ const GalleryPage = () => {
             <div className="bg-white/10 p-6 rounded-full mb-4 backdrop-blur-md">
               <Plus size={40} />
             </div>
-            <p className="font-bold">No gallery posts yet.</p>
-            <p className="text-sm">Be the first to share a moment!</p>
+            <p className="font-bold">{t('gallery.no_posts')}</p>
+            <p className="text-sm">{t('gallery.be_first')}</p>
           </div>
         )}
 
@@ -120,6 +122,7 @@ const GalleryCard = ({
   onOpenComments: () => void
 }) => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [activeDot, setActiveDot] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -166,7 +169,7 @@ const GalleryCard = ({
 
   const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!user) return alert('Please sign in first.');
+    if (!user) return alert(t('gallery.sign_in_first'));
     const newIsLiked = !isLiked;
     await galleryService.toggleLike(post.id, user.uid, isLiked);
   };
@@ -174,7 +177,7 @@ const GalleryCard = ({
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!user || user.uid !== post.authorId) return;
-    if (confirm('Are you sure you want to delete this post?')) {
+    if (confirm(t('gallery.confirm_delete'))) {
       await galleryService.deletePost(post.id);
     }
   };
@@ -310,6 +313,12 @@ const GalleryCard = ({
 
       {/* Right Side Vertical Actions */}
       <div className="absolute bottom-24 md:bottom-12 right-2 flex flex-col items-center gap-6 z-20">
+        <Link href="/gallery/create" onClick={(e) => e.stopPropagation()} className="flex flex-col items-center gap-1 group">
+          <div className="w-12 h-12 rounded-full flex items-center justify-center bg-primary/80 backdrop-blur-md border border-white/20 text-white transition-transform active:scale-90 shadow-lg">
+            <Plus size={26} />
+          </div>
+        </Link>
+
         <button className="flex flex-col items-center gap-1 group" onClick={handleLike}>
           <div className={`w-12 h-12 rounded-full flex items-center justify-center bg-black/20 backdrop-blur-md border border-white/10 transition-transform active:scale-90 ${isLiked ? 'text-[#ff2d55]' : 'text-white'}`}>
             <Heart size={26} fill={isLiked ? "#ff2d55" : "none"} className={isLiked ? "drop-shadow-[0_0_8px_rgba(255,45,85,0.5)]" : ""} />
@@ -328,7 +337,7 @@ const GalleryCard = ({
           <div className="w-12 h-12 rounded-full flex items-center justify-center bg-black/20 backdrop-blur-md border border-white/10 text-white transition-transform active:scale-90">
             <Send size={24} className="ml-1 drop-shadow-md" />
           </div>
-          <span className="text-white text-xs font-bold drop-shadow-md">Share</span>
+          <span className="text-white text-xs font-bold drop-shadow-md">{t('gallery.share')}</span>
         </button>
 
         <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-white spin-slow mt-2 opacity-80">
@@ -343,6 +352,7 @@ const CommentBottomSheet = ({ postId, onClose }: { postId: string, onClose: () =
   const [comments, setComments] = useState<GalleryComment[]>([]);
   const [inputText, setInputText] = useState('');
   const { user } = useAuth();
+  const { t } = useLanguage();
 
   useEffect(() => {
     const unsubscribe = galleryService.subscribeComments(postId, (data) => {
@@ -352,7 +362,7 @@ const CommentBottomSheet = ({ postId, onClose }: { postId: string, onClose: () =
   }, [postId]);
 
   const handleSubmit = async () => {
-    if (!user) return alert('Please sign in first.');
+    if (!user) return alert(t('gallery.sign_in_first'));
     if (!inputText.trim()) return;
 
     await galleryService.addComment(postId, {
@@ -387,7 +397,7 @@ const CommentBottomSheet = ({ postId, onClose }: { postId: string, onClose: () =
         </div>
         
         <div className="px-6 pb-4 border-b border-outline-variant flex justify-between items-center shrink-0">
-          <h2 className="text-lg font-extrabold text-on-surface font-headline">{comments.length} Comments</h2>
+          <h2 className="text-lg font-extrabold text-on-surface font-headline">{comments.length} {t('gallery.comments')}</h2>
           <button onClick={onClose} className="p-2 rounded-full hover:bg-surface-container transition-colors">
             <X size={20} className="text-on-surface-variant" />
           </button>
@@ -401,12 +411,12 @@ const CommentBottomSheet = ({ postId, onClose }: { postId: string, onClose: () =
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-bold text-sm text-on-surface">{comment.authorName}</span>
                   <span className="text-xs text-on-surface-variant font-medium">
-                    {comment.createdAt ? 'just now' : ''}
+                    {comment.createdAt ? t('gallery.just_now') : ''}
                   </span>
                 </div>
                 <p className="text-sm text-on-surface leading-relaxed">{comment.text}</p>
                 <div className="flex gap-4 mt-2 text-xs font-bold text-on-surface-variant">
-                  <button className="hover:text-on-surface transition-colors">Reply</button>
+                  <button className="hover:text-on-surface transition-colors">{t('gallery.reply')}</button>
                 </div>
               </div>
               <button className="text-outline hover:text-error transition-colors shrink-0 pt-2">
@@ -417,8 +427,8 @@ const CommentBottomSheet = ({ postId, onClose }: { postId: string, onClose: () =
           {comments.length === 0 && (
             <div className="py-20 flex flex-col items-center justify-center text-on-surface-variant">
               <MessageCircle size={40} className="mb-4 opacity-20" />
-              <p className="font-medium">No comments yet.</p>
-              <p className="text-sm opacity-80">Start the conversation.</p>
+              <p className="font-medium">{t('gallery.no_comments')}</p>
+              <p className="text-sm opacity-80">{t('gallery.start_conversation')}</p>
             </div>
           )}
         </div>
@@ -429,7 +439,7 @@ const CommentBottomSheet = ({ postId, onClose }: { postId: string, onClose: () =
             <input 
               type="text" 
               className="flex-1 bg-transparent border-none text-sm focus:outline-none px-2 text-on-surface" 
-              placeholder="Add a comment..." 
+              placeholder={t('gallery.add_comment')} 
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}

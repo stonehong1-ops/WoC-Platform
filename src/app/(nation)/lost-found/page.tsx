@@ -10,28 +10,30 @@ import { useNavigation } from '@/components/providers/NavigationProvider';
 import LostFoundDetail from '@/components/lost/LostFoundDetail';
 import CreateLostItem from '@/components/lost/CreateLostItem';
 import LostFoundWishlistTray from '@/components/lost/LostFoundWishlistTray';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { AnimatePresence } from 'framer-motion';
 
 type SortOption = 'latest' | 'reward_desc' | 'popular';
 
-const SORT_OPTIONS: { key: SortOption; label: string; icon: string }[] = [
-  { key: 'latest', label: 'Latest', icon: 'schedule' },
-  { key: 'reward_desc', label: 'Highest Reward', icon: 'payments' },
-  { key: 'popular', label: 'Most Popular', icon: 'trending_up' },
-];
-
-const LF_FILTER_DEFS: Record<string, { label: string; fullLabel: string; icon: string; type?: LostFoundType }> = {
-  all: { label: 'All', fullLabel: 'All Lost & Found', icon: 'list_alt' },
-  lost: { label: 'Lost', fullLabel: 'Looking for... (LOST)', icon: 'search_off', type: 'LOST' },
-  found: { label: 'Found', fullLabel: 'Looking for owner... (FOUND)', icon: 'wb_incandescent', type: 'FOUND' },
-};
-
 function LostFoundPageContent() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const router = useRouter();
   const { value: modalId, openModal, closeModal } = useModalNavigation('lostId');
   const { isOpen: showCreateModal, openModal: openCreate, closeModal: closeCreate } = useModalNavigation('create');
   const { setSubHeader } = useNavigation();
+
+  const SORT_OPTIONS: { key: SortOption; label: string; icon: string }[] = useMemo(() => [
+    { key: 'latest', label: t('lost.latest'), icon: 'schedule' },
+    { key: 'reward_desc', label: t('lost.highest_reward'), icon: 'payments' },
+    { key: 'popular', label: t('lost.most_popular'), icon: 'trending_up' },
+  ], [t]);
+
+  const LF_FILTER_DEFS: Record<string, { label: string; fullLabel: string; icon: string; type?: LostFoundType }> = useMemo(() => ({
+    all: { label: t('lost.all'), fullLabel: t('lost.all_full'), icon: 'list_alt' },
+    lost: { label: t('lost.lost'), fullLabel: t('lost.lost_full'), icon: 'search_off', type: 'LOST' },
+    found: { label: t('lost.found'), fullLabel: t('lost.found_full'), icon: 'wb_incandescent', type: 'FOUND' },
+  }), [t]);
   
   // Listen to global compose event
   useEffect(() => {
@@ -57,7 +59,7 @@ function LostFoundPageContent() {
 
   const lfFilters = useMemo(() => {
     return ['all', 'lost', 'found'].map(key => ({ key, ...LF_FILTER_DEFS[key] }));
-  }, []);
+  }, [LF_FILTER_DEFS]);
 
   // 1. Subscribe to items
   useEffect(() => {
@@ -66,7 +68,7 @@ function LostFoundPageContent() {
       setAllItems(data);
     });
     return () => unsub();
-  }, [activeFilter]);
+  }, [activeFilter, LF_FILTER_DEFS]);
 
   // 2. Subscribe to my likes
   useEffect(() => {
@@ -123,7 +125,7 @@ function LostFoundPageContent() {
   const handleToggleLike = async (e: React.MouseEvent, item: LostFoundItem) => {
     e.stopPropagation();
     e.preventDefault();
-    if (!user) return alert("Login is required.");
+    if (!user) return alert(t('lost.login_required'));
     setTogglingLike(item.id);
     try { await lostFoundService.toggleLike(user.uid, item.id); } catch (err) { console.error('Failed to toggle like:', err); }
     setTogglingLike(null);
@@ -148,7 +150,7 @@ function LostFoundPageContent() {
               }}
               className={`flex-shrink-0 px-4 py-1.5 rounded-lg text-[12px] font-bold tracking-tight transition-all whitespace-nowrap flex items-center gap-1.5 ${
                 activeFilter === tab.key
-                  ? 'bg-[#1E293B] text-white shadow-sm'
+                   ? 'bg-[#1E293B] text-white shadow-sm'
                   : 'bg-slate-50 text-slate-500 border border-slate-100 hover:bg-slate-100'
               }`}
             >
@@ -162,7 +164,7 @@ function LostFoundPageContent() {
           <div className="text-[11px] font-medium text-slate-400 flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-[#1A73E8]/50" />
             <span className="text-[#1A73E8] font-semibold">{filteredItems.length}</span>
-            <span className="text-slate-500">items listed</span>
+            <span className="text-slate-500">{t('lost.items_listed')}</span>
           </div>
 
           <div className="relative">
@@ -170,7 +172,7 @@ function LostFoundPageContent() {
               onClick={() => setShowSortDropdown(!showSortDropdown)}
               className="flex items-center gap-0.5 text-[12px] font-bold text-slate-600 hover:text-slate-800 transition-all"
             >
-              {SORT_OPTIONS.find(o => o.key === sortOption)?.label || 'Latest'}
+              {SORT_OPTIONS.find(o => o.key === sortOption)?.label || t('lost.latest')}
               <span className={`material-symbols-rounded text-[16px] transition-transform duration-200 ${showSortDropdown ? 'rotate-180' : ''}`}>
                 keyboard_arrow_down
               </span>
@@ -216,7 +218,7 @@ function LostFoundPageContent() {
         {filteredItems.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center opacity-30">
             <span className="material-symbols-rounded text-6xl mb-4">search_off</span>
-            <p className="text-xs font-black uppercase tracking-widest">No items registered</p>
+            <p className="text-xs font-black uppercase tracking-widest">{t('lost.no_items')}</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4">
@@ -243,7 +245,7 @@ function LostFoundPageContent() {
                     item.status === 'RESOLVED' ? 'bg-gray-800 text-white' : 
                     item.type === 'LOST' ? 'bg-red-500 text-white' : 'bg-primary text-white'
                   }`}>
-                    {item.status === 'RESOLVED' ? 'Resolved' : item.type === 'LOST' ? 'Lost' : 'Found'}
+                    {item.status === 'RESOLVED' ? t('lost.resolved') : item.type === 'LOST' ? t('lost.lost') : t('lost.found')}
                   </span>
 
                   <button
@@ -255,6 +257,28 @@ function LostFoundPageContent() {
                   >
                     <span className="material-symbols-rounded text-lg" style={{ fontVariationSettings: likedIds.has(item.id) ? "'FILL' 1" : "'FILL' 0" }}>favorite</span>
                   </button>
+
+                  {/* Interaction Status Badge */}
+                  {(() => {
+                    const userLike = likes.find(l => l.itemId === item.id);
+                    if (userLike?.status === 'pending' || userLike?.status === 'in_progress') {
+                      return (
+                        <div className={`absolute z-20 bottom-3 left-3 px-2 py-1 rounded-lg backdrop-blur-md border shadow-sm flex items-center gap-1 animate-in fade-in zoom-in duration-300 ${
+                          userLike.status === 'in_progress' 
+                            ? 'bg-blue-500/90 border-blue-400/50 text-white' 
+                            : 'bg-primary/90 border-primary/50 text-white'
+                        }`}>
+                          <span className="material-symbols-rounded text-[12px]">
+                            {userLike.status === 'in_progress' ? 'motion_photos_on' : 'hourglass_empty'}
+                          </span>
+                          <span className="text-[10px] font-black uppercase tracking-wider">
+                            {userLike.status === 'in_progress' ? t('shop.status_in_progress') : t('shop.status_pending')}
+                          </span>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
                 <div className="px-1">
                   <p className="text-[10px] font-bold text-[#5c5f62] tracking-tighter font-label flex items-center gap-1">
@@ -268,7 +292,7 @@ function LostFoundPageContent() {
                       {item.reward && item.reward > 0 && (
                         <span className="text-sm font-bold text-[#1A73E8] font-headline mt-0.5 flex items-center gap-1">
                           <span className="material-symbols-rounded text-[14px]">payments</span>
-                          Reward: ${item.reward.toLocaleString()}
+                          {t('lost.reward')}: ${item.reward.toLocaleString()}
                         </span>
                       )}
                     </div>

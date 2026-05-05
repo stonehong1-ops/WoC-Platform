@@ -3,6 +3,7 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { rentalService } from '@/lib/firebase/rentalService';
 import { plazaService } from '@/lib/firebase/plazaService';
 import UniversalCompose from '@/components/common/UniversalCompose';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface CreateRentalSpaceProps {
   isOpen: boolean;
@@ -12,16 +13,17 @@ interface CreateRentalSpaceProps {
 
 export default function CreateRentalSpace({ isOpen, onClose, onSuccess }: CreateRentalSpaceProps) {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   
   const [title, setTitle] = useState('');
   const [studioName, setStudioName] = useState('');
-  const [category, setCategory] = useState('댄스 스튜디오');
+  const [category, setCategory] = useState('rental.category_studio');
   const [pricePerHour, setPricePerHour] = useState('');
   const [minHours, setMinHours] = useState('1');
   const [capacity, setCapacity] = useState('');
-  const [size, setSize] = useState('Medium');
+  const [size, setSize] = useState('rental.size_medium');
   const [location, setLocation] = useState('Seoul, Korea');
   const [address, setAddress] = useState('');
   const [description, setDescription] = useState('');
@@ -33,8 +35,21 @@ export default function CreateRentalSpace({ isOpen, onClose, onSuccess }: Create
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const categories = ['댄스 스튜디오', '연습실', '파티룸', '갤러리', '공연장', '기타'];
-  const sizes = ['Small', 'Medium', 'Large', 'Extra Large'];
+  const categories = [
+    'rental.category_studio', 
+    'rental.category_practice', 
+    'rental.category_party', 
+    'rental.category_gallery', 
+    'rental.category_hall', 
+    'rental.category_other'
+  ];
+  
+  const sizes = [
+    'rental.size_small', 
+    'rental.size_medium', 
+    'rental.size_large', 
+    'rental.size_extra_large'
+  ];
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -57,7 +72,7 @@ export default function CreateRentalSpace({ isOpen, onClose, onSuccess }: Create
 
   const handleSubmit = async () => {
     if (!user || !title || !pricePerHour || !mediaFile) {
-      alert("필수 항목을 모두 입력하고 사진을 등록해주세요.");
+      alert(t('rental.msg_fill_required'));
       return;
     }
 
@@ -73,11 +88,11 @@ export default function CreateRentalSpace({ isOpen, onClose, onSuccess }: Create
         location,
         address,
         images: [imageUrl],
-        category,
+        category: t(category), // Storing the translated version for now, or could store key. Given current structure, translated might be safer for existing data.
         pricePerHour: parseInt(pricePerHour),
         minHours: parseInt(minHours),
         capacity: capacity ? parseInt(capacity) : undefined,
-        size,
+        size: t(size),
         studioName,
         facilities,
         rules,
@@ -89,7 +104,7 @@ export default function CreateRentalSpace({ isOpen, onClose, onSuccess }: Create
       onClose();
     } catch (error) {
       console.error("Error creating rental space:", error);
-      alert("공간 등록에 실패했습니다. 다시 시도해주세요.");
+      alert(t('rental.msg_post_failed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -100,9 +115,9 @@ export default function CreateRentalSpace({ isOpen, onClose, onSuccess }: Create
       id="rental"
       isOpen={isOpen}
       onClose={onClose}
-      title="공간 등록"
+      title={t('rental.create_title')}
       label="Rental Space"
-      submitLabel={isSubmitting ? `등록 중 ${uploadProgress}%` : "공간 공유하기"}
+      submitLabel={isSubmitting ? `${t('common.uploading')} ${uploadProgress}%` : t('rental.share_space')}
       onSubmit={handleSubmit}
       isSubmitting={isSubmitting}
     >
@@ -118,7 +133,7 @@ export default function CreateRentalSpace({ isOpen, onClose, onSuccess }: Create
             <div className="w-16 h-16 rounded-full bg-white shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
               <span className="material-symbols-outlined text-gray-300 text-[32px]">camera</span>
             </div>
-            <span className="text-[11px] font-black text-gray-300 uppercase tracking-widest">공간 사진 추가</span>
+            <span className="text-[11px] font-black text-gray-300 uppercase tracking-widest">{t('rental.add_photo')}</span>
           </>
         )}
         <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
@@ -127,28 +142,28 @@ export default function CreateRentalSpace({ isOpen, onClose, onSuccess }: Create
       {/* Core Info */}
       <div className="space-y-6">
         <div className="space-y-2">
-          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">공간 이름</label>
+          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{t('rental.space_name')}</label>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="예) 강남역 도보 5분 댄스 스튜디오"
+            placeholder={t('rental.space_name_placeholder')}
             className="w-full text-[24px] font-black tracking-tighter border-none focus:ring-0 placeholder:text-gray-200 p-0"
             required
           />
         </div>
 
         <div className="space-y-2">
-          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">스튜디오명 / 브랜드</label>
+          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{t('rental.studio_name')}</label>
           <input
             value={studioName}
             onChange={(e) => setStudioName(e.target.value)}
-            placeholder="예) 원밀리언 댄스"
+            placeholder={t('rental.studio_name_placeholder')}
             className="w-full bg-gray-50 border-none rounded-2xl px-4 py-3.5 text-sm font-bold focus:ring-2 focus:ring-primary/10"
           />
         </div>
 
         <div className="space-y-2">
-          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">카테고리</label>
+          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{t('rental.category_label')}</label>
           <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
             {categories.map(c => (
               <button
@@ -161,7 +176,7 @@ export default function CreateRentalSpace({ isOpen, onClose, onSuccess }: Create
                     : 'bg-gray-50 text-gray-400 hover:bg-gray-100'
                 }`}
               >
-                {c}
+                {t(c)}
               </button>
             ))}
           </div>
@@ -169,7 +184,7 @@ export default function CreateRentalSpace({ isOpen, onClose, onSuccess }: Create
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">시간당 요금 (₩)</label>
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{t('rental.price_per_hour')}</label>
             <input
               type="number"
               value={pricePerHour}
@@ -180,7 +195,7 @@ export default function CreateRentalSpace({ isOpen, onClose, onSuccess }: Create
             />
           </div>
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">최소 예약 시간</label>
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{t('rental.min_booking_time')}</label>
             <input
               type="number"
               value={minHours}
@@ -194,29 +209,29 @@ export default function CreateRentalSpace({ isOpen, onClose, onSuccess }: Create
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">수용 인원</label>
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{t('rental.capacity_label')}</label>
             <input
               type="number"
               value={capacity}
               onChange={(e) => setCapacity(e.target.value)}
-              placeholder="최대 인원수"
+              placeholder={t('rental.capacity_placeholder')}
               className="w-full bg-gray-50 border-none rounded-2xl px-4 py-3.5 text-sm font-bold focus:ring-2 focus:ring-primary/10"
             />
           </div>
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">공간 사이즈</label>
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{t('rental.space_size_label')}</label>
             <select
               value={size}
               onChange={(e) => setSize(e.target.value)}
               className="w-full bg-gray-50 border-none rounded-2xl px-4 py-3.5 text-sm font-bold focus:ring-2 focus:ring-primary/10"
             >
-              {sizes.map(s => <option key={s} value={s}>{s}</option>)}
+              {sizes.map(s => <option key={s} value={s}>{t(s)}</option>)}
             </select>
           </div>
         </div>
 
         <div className="space-y-2">
-          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">위치 및 주소</label>
+          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{t('rental.location_label')}</label>
           <div className="grid grid-cols-2 gap-4">
             <div className="w-full bg-gray-50 border-none rounded-2xl px-4 py-3.5 text-sm font-bold flex items-center gap-2">
                <span className="material-symbols-outlined text-[18px] text-primary">location_on</span>
@@ -225,7 +240,7 @@ export default function CreateRentalSpace({ isOpen, onClose, onSuccess }: Create
             <input
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              placeholder="상세 주소"
+              placeholder={t('rental.detail_address_placeholder')}
               className="w-full bg-gray-50 border-none rounded-2xl px-4 py-3.5 text-sm font-bold focus:ring-2 focus:ring-primary/10"
             />
           </div>
@@ -234,13 +249,13 @@ export default function CreateRentalSpace({ isOpen, onClose, onSuccess }: Create
 
       {/* Facilities */}
       <div className="space-y-4">
-         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">편의 시설</label>
+         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{t('rental.amenities_label')}</label>
          <div className="flex gap-2">
             <input
               value={newFacility}
               onChange={(e) => setNewFacility(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addFacility())}
-              placeholder="예) 전신거울, 오디오, 와이파이"
+              placeholder={t('rental.amenities_placeholder')}
               className="flex-1 bg-gray-50 border-none rounded-2xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-primary/10"
             />
             <button
@@ -263,25 +278,26 @@ export default function CreateRentalSpace({ isOpen, onClose, onSuccess }: Create
 
       {/* Description */}
       <div className="space-y-2">
-        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">공간 설명</label>
+        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{t('rental.description_label')}</label>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="공간의 특징과 장점을 상세히 적어주세요..."
+          placeholder={t('rental.description_placeholder')}
           className="w-full min-h-[120px] bg-gray-50 border-none rounded-[28px] px-5 py-4 text-sm font-medium focus:ring-2 focus:ring-primary/10 resize-none"
         />
       </div>
 
       {/* Rules */}
       <div className="space-y-2 pb-4">
-        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">이용 규칙</label>
+        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{t('rental.rules_label')}</label>
         <textarea
           value={rules}
           onChange={(e) => setRules(e.target.value)}
-          placeholder="이용자가 지켜야 할 매너와 주의사항을 입력해주세요..."
+          placeholder={t('rental.rules_placeholder')}
           className="w-full min-h-[100px] bg-gray-50 border-none rounded-[28px] px-5 py-4 text-sm font-medium focus:ring-2 focus:ring-primary/10 resize-none"
         />
       </div>
     </UniversalCompose>
   );
 }
+

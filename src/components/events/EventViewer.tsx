@@ -12,6 +12,7 @@ import EventHomeTab from "./EventHomeTab";
 import EventProgramTab from "./EventProgramTab";
 import EventRegisterTab from "./EventRegisterTab";
 import EditEvent from "./EditEvent";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface EventViewerProps {
   event: Event;
@@ -24,6 +25,7 @@ const ADMIN_UIDS = ["7iaZAmaYY9dNNEShmJmROI8XrtH2"];
 
 export default function EventViewer({ event: initialEvent, onClose }: EventViewerProps) {
   const { user, profile } = useAuth();
+  const { t } = useLanguage();
   const [event, setEvent] = useState<Event>(initialEvent);
   const [activeTab, setActiveTab] = useState<TabId>("home");
   const [showEdit, setShowEdit] = useState(false);
@@ -93,34 +95,34 @@ export default function EventViewer({ event: initialEvent, onClose }: EventViewe
   };
 
   const handleChatWithHost = async () => {
-    if (!user) return alert("Please login first");
+    if (!user) return alert(t('event.login_first'));
     const hostId = event.hostId;
-    if (user.uid === hostId) return alert("You cannot chat with yourself");
-    if (!confirm("Would you like to send an inquiry chat to the organizer?")) return;
+    if (user.uid === hostId) return alert(t('event.no_self_chat'));
+    if (!confirm(t('event.confirm_chat'))) return;
     try {
       const roomId = await chatService.getOrCreatePrivateRoom([user.uid, hostId], user.uid, "business");
       await chatService.sendMessage({
         roomId, senderId: user.uid, senderName: user.displayName || "User",
         senderPhoto: user.photoURL || undefined,
-        text: `[Event Inquiry]\nTitle: ${event.title}\nLink: ${window.location.origin}/events?id=${event.id}`,
+        text: `${t('event.inquiry_prefix')}\n${t('event.inquiry_title')}: ${event.title}\n${t('event.inquiry_link')}: ${window.location.origin}/events?id=${event.id}`,
         type: "text",
       });
       openChat(roomId);
-    } catch (err) { console.error(err); alert("Failed to start chat."); }
+    } catch (err) { console.error(err); alert(t('event.chat_failed')); }
   };
 
   const handleDelete = async () => {
-    if (!confirm("Are you sure you want to delete this event?")) return;
+    if (!confirm(t('event.confirm_delete'))) return;
     try {
       await eventService.deleteEvent(event.id);
       onClose();
-    } catch (err) { console.error(err); alert("Failed to delete."); }
+    } catch (err) { console.error(err); alert(t('event.delete_failed')); }
   };
 
   const TABS: { id: TabId; label: string; icon: string }[] = [
-    { id: "home", label: "Home", icon: "home" },
-    { id: "program", label: "Program", icon: "calendar_month" },
-    { id: "register", label: "Register", icon: "how_to_reg" },
+    { id: "home", label: t('event.tab_home'), icon: "home" },
+    { id: "program", label: t('event.tab_program'), icon: "calendar_month" },
+    { id: "register", label: t('event.tab_register'), icon: "how_to_reg" },
   ];
 
   // Tab bar component (reused in both inline and fixed positions)
@@ -164,7 +166,7 @@ export default function EventViewer({ event: initialEvent, onClose }: EventViewe
               </button>
             </>
           )}
-          <button onClick={() => navigator.share ? navigator.share({ title: event.title, url: window.location.href }).catch(console.error) : alert("Share not supported")}
+          <button onClick={() => navigator.share ? navigator.share({ title: event.title, url: window.location.href }).catch(console.error) : alert(t('event.share_not_supported'))}
             className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? "bg-slate-100 text-[#2d3435]" : "bg-black/20 backdrop-blur-sm text-white"}`}>
             <span className="material-symbols-rounded text-xl">share</span>
           </button>
@@ -185,7 +187,7 @@ export default function EventViewer({ event: initialEvent, onClose }: EventViewe
           {images.length === 0 && (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-[#c4cacc]">
               <span className="material-symbols-rounded text-5xl mb-1">local_activity</span>
-              <span className="text-[10px] font-bold tracking-wider uppercase">No Image</span>
+              <span className="text-[10px] font-bold tracking-wider uppercase">{t('event.no_image')}</span>
             </div>
           )}
           {images.length > 0 && (
@@ -205,7 +207,7 @@ export default function EventViewer({ event: initialEvent, onClose }: EventViewe
         <div className="px-4 pt-4 pb-4 border-b border-[#f2f4f4]">
           {event.subtitle && <p className="text-xs font-bold text-primary mb-1 italic">"{event.subtitle}"</p>}
           <p className="text-sm text-[#596061] whitespace-pre-wrap leading-relaxed line-clamp-4">
-            {event.description || "This event does not have a description yet."}
+            {event.description || t('event.no_description')}
           </p>
         </div>
 

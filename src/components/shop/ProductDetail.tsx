@@ -10,6 +10,7 @@ import { groupService } from '@/lib/firebase/groupService';
 import { Product, CustomOptionDef } from '@/types/shop';
 import PurchaseFlow from './PurchaseFlow';
 import ChatRoom from '@/components/chat/ChatRoom';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface ProductDetailProps {
   product: Product;
@@ -22,6 +23,7 @@ interface ProductDetailProps {
 export default function ProductDetail({ product, isLiked, onClose, onToggleLike, onChat }: ProductDetailProps) {
   const { user } = useAuth();
   const router = useRouter();
+  const { t } = useLanguage();
 
   // Image carousel
   const [currentImg, setCurrentImg] = useState(0);
@@ -90,16 +92,16 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
     const cat = (product.category || '').toLowerCase();
     if (cat.includes('m_shoes') || cat === 'man shoes') {
       return [
-        { key: 'width', label: 'Width', type: 'enum', values: ['REGULAR','WIDE'], labels: ['Regular','Wide'] },
-        { key: 'heel_height', label: 'Heel Height', type: 'enum', values: ['2.5cm','3cm','3.5cm','4cm'], labels: ['2.5cm','3cm','3.5cm','4cm'] },
-        { key: 'outsole', label: 'Outsole', type: 'enum', values: ['LEATHER','RUBBER','SUEDE'], labels: ['Leather','Rubber','Suede'] },
+        { key: 'width', label: t('shop.opt_width', 'Width'), type: 'enum', values: ['REGULAR','WIDE'], labels: [t('shop.val_regular', 'Regular'),t('shop.val_wide', 'Wide')] },
+        { key: 'heel_height', label: t('shop.opt_heel_height', 'Heel Height'), type: 'enum', values: ['2.5cm','3cm','3.5cm','4cm'], labels: ['2.5cm','3cm','3.5cm','4cm'] },
+        { key: 'outsole', label: t('shop.opt_outsole', 'Outsole'), type: 'enum', values: ['LEATHER','RUBBER','SUEDE'], labels: [t('shop.val_leather', 'Leather'),t('shop.val_rubber', 'Rubber'),t('shop.val_suede', 'Suede')] },
       ];
     }
     if (cat.includes('shoes') || cat.includes('w_shoes') || cat === 'woman shoes') {
       return [
-        { key: 'width', label: 'Width', type: 'enum', values: ['REGULAR','WIDE','EXTRA_WIDE'], labels: ['Regular','Wide','Extra Wide'] },
-        { key: 'heel_height', label: 'Heel Height', type: 'enum', values: ['5cm','6cm','7cm','8cm','9cm'], labels: ['5cm','6cm','7cm','8cm','9cm'] },
-        { key: 'outsole', label: 'Outsole', type: 'enum', values: ['STANDARD','SUEDE'], labels: ['Standard','Suede'] },
+        { key: 'width', label: t('shop.opt_width', 'Width'), type: 'enum', values: ['REGULAR','WIDE','EXTRA_WIDE'], labels: [t('shop.val_regular', 'Regular'),t('shop.val_wide', 'Wide'),t('shop.val_extra_wide', 'Extra Wide')] },
+        { key: 'heel_height', label: t('shop.opt_heel_height', 'Heel Height'), type: 'enum', values: ['5cm','6cm','7cm','8cm','9cm'], labels: ['5cm','6cm','7cm','8cm','9cm'] },
+        { key: 'outsole', label: t('shop.opt_outsole', 'Outsole'), type: 'enum', values: ['STANDARD','SUEDE'], labels: [t('shop.val_standard', 'Standard'),t('shop.val_suede', 'Suede')] },
       ];
     }
     return [];
@@ -142,11 +144,11 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
 
   // Chat with Seller
   const handleChatWithSeller = async () => {
-    if (!user) return alert('Please login first');
+    if (!user) return alert(t('shop.msg_login_first', 'Please login first'));
     const sellerId = product.sellerId || 'adminstone';
-    if (user.uid === sellerId) return alert('You cannot chat with yourself');
+    if (user.uid === sellerId) return alert(t('shop.msg_no_self_chat', 'You cannot chat with yourself'));
 
-    if (!confirm("Would you like to send a product inquiry chat to the seller?")) return;
+    if (!confirm(t('shop.msg_inquiry_chat', "Would you like to send a product inquiry chat to the seller?"))) return;
 
     try {
       // 1. Mark as pending in wishlist
@@ -156,12 +158,12 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
       const roomId = await chatService.getOrCreatePrivateRoom([user.uid, sellerId], user.uid, 'business');
 
       // 3. Send initial product info message
-      const productInfo = `[상품 문의]\n상품명: ${product.title || product.name}\n가격: ₩${finalPrice.toLocaleString()}\n브랜드: ${product.brand}\n바로가기: ${window.location.origin}/shop?productId=${product.id}`;
+      const productInfo = `${t('shop.chat_inquiry_prefix', '[Product Inquiry]')}\n${t('shop.chat_product_name', 'Product')}: ${product.title || product.name}\n${t('shop.chat_price', 'Price')}: ₩${finalPrice.toLocaleString()}\n${t('shop.chat_brand', 'Brand')}: ${product.brand}\n${t('shop.chat_link', 'Link')}: ${window.location.origin}/shop?productId=${product.id}`;
       
       await chatService.sendMessage({
         roomId,
         senderId: user.uid,
-        senderName: user.displayName || 'User',
+        senderName: user.displayName || t('common.user', 'User'),
         senderPhoto: user.photoURL || undefined,
         text: productInfo,
         type: 'text'
@@ -172,14 +174,14 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
       openChat(roomId);
     } catch (err) {
       console.error("Failed to start chat:", err);
-      alert('Failed to start chat. Please try again.');
+      alert(t('shop.msg_chat_failed', 'Failed to start chat. Please try again.'));
     }
   };
 
   // Purchase action
   const handlePurchase = () => {
-    if (!user) return alert('Please login first');
-    if (product.options?.length > 0 && !selectedSize) return alert('Please select a size');
+    if (!user) return alert(t('shop.msg_login_first', 'Please login first'));
+    if (product.options?.length > 0 && !selectedSize) return alert(t('shop.msg_select_size', 'Please select a size'));
     openFlow('purchase');
   };
 
@@ -280,7 +282,7 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
                 url: window.location.href,
               }).catch(console.error);
             } else {
-              alert('Share not supported on this browser');
+              alert(t('common.share_not_supported', 'Share not supported on this browser'));
             }
           }}
             className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? 'bg-slate-100' : 'bg-black/20 backdrop-blur-sm'} ${isScrolled ? 'text-[#2d3435]' : 'text-white'}`}>
@@ -297,7 +299,7 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
           {/* Fallback */}
           <div className="absolute inset-0 flex flex-col items-center justify-center text-[#c4cacc]">
             <span className="material-symbols-rounded text-5xl mb-1">local_mall</span>
-            <span className="text-[10px] font-bold tracking-wider uppercase">No Image</span>
+            <span className="text-[10px] font-bold tracking-wider uppercase">{t('shop.no_image', 'No Image')}</span>
           </div>
           {/* Images */}
           {images.length > 0 && (
@@ -370,18 +372,18 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
           {product.stock <= 5 && product.stock > 0 && (
             <div className="flex items-center gap-1 text-[#e67700]">
               <span className="material-symbols-rounded text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>local_fire_department</span>
-              <span className="text-xs font-bold">Only {product.stock} left</span>
+              <span className="text-xs font-bold">{t('shop.only_left', 'Only')} {product.stock} {t('shop.left', 'left')}</span>
             </div>
           )}
           {product.stock > 5 && (
             <div className="flex items-center gap-1 text-[#596061]">
               <span className="material-symbols-rounded text-sm">inventory_2</span>
-              <span className="text-xs font-medium">In Stock</span>
+              <span className="text-xs font-medium">{t('shop.in_stock', 'In Stock')}</span>
             </div>
           )}
           <div className="flex items-center gap-1 text-[#e67700]">
             <span className="material-symbols-rounded text-sm">visibility</span>
-            <span className="text-xs font-bold">{viewerCount} viewing now</span>
+            <span className="text-xs font-bold">{viewerCount} {t('shop.viewing_now', 'viewing now')}</span>
           </div>
         </div>
 
@@ -389,7 +391,7 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
         <div className="mx-4 my-4 border border-[#e0e4e5] rounded-2xl overflow-hidden">
           <div className="bg-[#f8f9fa] px-4 py-2.5 border-b border-[#e0e4e5] flex items-center gap-2">
             <span className="material-symbols-rounded text-sm text-primary">tune</span>
-            <p className="text-[10px] font-black text-primary uppercase tracking-widest">Fit & Options</p>
+            <p className="text-[10px] font-black text-primary uppercase tracking-widest">{t('shop.fit_options', 'Fit & Options')}</p>
             {hasCustomOptions && (
               <button onClick={() => setShowOptionInfo(true)} className="ml-auto w-6 h-6 rounded-full flex items-center justify-center hover:bg-[#e8eaec] transition-colors active:scale-90">
                 <span className="material-symbols-rounded text-sm text-[#596061]">info</span>
@@ -401,7 +403,7 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
             {product.options && product.options.length > 0 && (
               <div className="mb-4">
                 <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-2">
-                  Size <span className="text-red-400">*</span>
+                  {t('shop.size', 'Size')} <span className="text-red-400">*</span>
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {product.options.map(size => (
@@ -423,8 +425,8 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
               <div className="flex items-center gap-3 p-3 bg-[#f8f9fa] rounded-xl">
                 <span className="material-symbols-rounded text-lg text-[#acb3b4]">info</span>
                 <div>
-                  <p className="text-xs font-semibold text-[#596061]">No customization available for this product</p>
-                  <p className="text-[10px] text-[#acb3b4] mt-0.5">Contact seller for special requests</p>
+                  <p className="text-xs font-semibold text-[#596061]">{t('shop.no_customization', 'No customization available for this product')}</p>
+                  <p className="text-[10px] text-[#acb3b4] mt-0.5">{t('shop.contact_seller_special', 'Contact seller for special requests')}</p>
                 </div>
               </div>
             )}
@@ -432,12 +434,12 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
             {/* Size Guide */}
             <div className="mt-3 pt-3 border-t border-[#f2f4f4]">
               <button onClick={() => setShowSizeGuide(!showSizeGuide)} className="flex items-center gap-1 text-xs font-bold text-primary">
-                <span className="material-symbols-rounded text-sm">straighten</span>Size Guide
+                <span className="material-symbols-rounded text-sm">straighten</span>{t('shop.size_guide', 'Size Guide')}
                 <span className="material-symbols-rounded text-sm">{showSizeGuide ? 'expand_less' : 'expand_more'}</span>
               </button>
               {showSizeGuide && (
                 <div className="mt-2 p-3 bg-[#f2f4f4] rounded-xl text-xs text-[#596061]">
-                  {product.sizeGuide || 'Contact the seller for detailed size information.'}
+                  {product.sizeGuide || t('shop.contact_seller_size', 'Contact the seller for detailed size information.')}
                 </div>
               )}
             </div>
@@ -453,7 +455,7 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
               <div className="px-5 pt-5 pb-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="material-symbols-rounded text-primary text-lg">tune</span>
-                  <h3 className="text-sm font-black text-[#2d3435]">Option Details</h3>
+                  <h3 className="text-sm font-black text-[#2d3435]">{t('shop.option_details', 'Option Details')}</h3>
                 </div>
                 <button onClick={() => setShowOptionInfo(false)} className="w-8 h-8 rounded-full bg-[#f2f4f4] flex items-center justify-center active:scale-90 transition-transform">
                   <span className="material-symbols-rounded text-sm text-[#596061]">close</span>
@@ -467,9 +469,9 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
                   <div className="p-3.5 bg-[#f8f9fa] rounded-2xl">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="material-symbols-rounded text-xs text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>straighten</span>
-                      <p className="text-[10px] font-black text-[#2d3435] uppercase tracking-widest">Size</p>
+                      <p className="text-[10px] font-black text-[#2d3435] uppercase tracking-widest">{t('shop.size', 'Size')}</p>
                     </div>
-                    <p className="text-xs text-[#596061] leading-relaxed">Available sizes for this product.</p>
+                    <p className="text-xs text-[#596061] leading-relaxed">{t('shop.available_sizes', 'Available sizes for this product.')}</p>
                     <div className="flex flex-wrap gap-1.5 mt-2">
                       {product.options.map(s => (
                         <span key={s} className="text-[10px] font-bold bg-white border border-[#e0e4e5] text-[#2d3435] px-2.5 py-1 rounded-lg">{s}</span>
@@ -481,7 +483,6 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
                   </div>
                 )}
 
-                {/* Custom option details */}
                 {effectiveCustomOptions.map(opt => (
                   <div key={opt.key} className="p-3.5 bg-[#f8f9fa] rounded-2xl">
                     <div className="flex items-center gap-2 mb-2">
@@ -489,13 +490,13 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
                         {opt.key === 'width' ? 'width' : opt.key.includes('heel') ? 'height' : opt.key === 'outsole' ? 'layers' : 'settings'}
                       </span>
                       <p className="text-[10px] font-black text-[#2d3435] uppercase tracking-widest">{opt.label}</p>
-                      {opt.required && <span className="text-[9px] bg-red-50 text-red-500 font-black px-1.5 py-0.5 rounded-full">Required</span>}
+                      {opt.required && <span className="text-[9px] bg-red-50 text-red-500 font-black px-1.5 py-0.5 rounded-full">{t('shop.required', 'Required')}</span>}
                     </div>
                     <p className="text-xs text-[#596061] leading-relaxed">
-                      {opt.key === 'width' && 'Choose the width that fits your foot shape. Wide options provide extra room in the toe box.'}
-                      {opt.key.includes('heel') && 'Select your preferred heel height. Higher heels offer a more elegant silhouette for performance.'}
-                      {opt.key === 'outsole' && 'The outsole material affects grip and slide. Suede is popular for indoor dance floors.'}
-                      {!['width', 'outsole'].includes(opt.key) && !opt.key.includes('heel') && `Configure your ${opt.label.toLowerCase()} preference.`}
+                      {opt.key === 'width' && t('shop.width_desc', 'Choose the width that fits your foot shape. Wide options provide extra room in the toe box.')}
+                      {opt.key.includes('heel') && t('shop.heel_desc', 'Select your preferred heel height. Higher heels offer a more elegant silhouette for performance.')}
+                      {opt.key === 'outsole' && t('shop.outsole_desc', 'The outsole material affects grip and slide. Suede is popular for indoor dance floors.')}
+                      {!['width', 'outsole'].includes(opt.key) && !opt.key.includes('heel') && `${t('shop.configure_your', 'Configure your')} ${opt.label.toLowerCase()} ${t('shop.preference', 'preference.')}`}
                     </p>
                     {(opt.type === 'enum' || opt.type === 'multi_enum') && opt.values && (
                       <div className="mt-2 space-y-1">
@@ -508,7 +509,7 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
                               {extra > 0 ? (
                                 <span className="text-primary font-bold">+₩{extra.toLocaleString()}</span>
                               ) : (
-                                <span className="text-[#acb3b4] text-[10px]">Included</span>
+                                <span className="text-[#acb3b4] text-[10px]">{t('shop.included', 'Included')}</span>
                               )}
                             </div>
                           );
@@ -517,7 +518,7 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
                     )}
                     {opt.type === 'number' && (
                       <p className="text-[10px] text-[#acb3b4] mt-1.5">
-                        Range: {opt.min ?? 0}{opt.unit} – {opt.max ?? '∞'}{opt.unit} (step: {opt.step ?? 1}{opt.unit})
+                        {t('shop.opt_range', 'Range')}: {opt.min ?? 0}{opt.unit} – {opt.max ?? '∞'}{opt.unit} ({t('shop.opt_step', 'step')}: {opt.step ?? 1}{opt.unit})
                       </p>
                     )}
                   </div>
@@ -538,7 +539,7 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
             )}
           </div>
           {extraPrice > 0 && (
-            <p className="text-xs text-primary font-semibold mt-1">+ Options ₩{extraPrice.toLocaleString()} → Total ₩{finalPrice.toLocaleString()}</p>
+            <p className="text-xs text-primary font-semibold mt-1">{t('shop.options_add_price', ' · Options +₩')}{extraPrice.toLocaleString()} → Total ₩{finalPrice.toLocaleString()}</p>
           )}
 
           {/* Coupons */}
@@ -553,7 +554,7 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
                   <button className="text-[10px] font-black text-white bg-primary px-3 py-1 rounded-full active:scale-95">Get</button>
                 </div>
               ))}
-              <p className="text-[10px] text-[#acb3b4]">Available for same brand purchases</p>
+              <p className="text-[10px] text-[#acb3b4]">{t('shop.available_same_brand', 'Available for same brand purchases')}</p>
             </div>
           )}
 
@@ -561,16 +562,16 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
           <div className="mt-3 flex items-center gap-2 p-2.5 bg-[#f0f4ff] border border-[#d8e2ff] rounded-xl">
             <span className="material-symbols-rounded text-primary text-sm">confirmation_number</span>
             {product.repurchaseCouponAmount && product.repurchaseCouponAmount > 0 ? (
-              <span className="text-[11px] text-primary font-bold">₩{product.repurchaseCouponAmount.toLocaleString()} repurchase coupon issued · My {'>'} Coupons</span>
+              <span className="text-[11px] text-primary font-bold">₩{product.repurchaseCouponAmount.toLocaleString()} {t('shop.repurchase_coupon_issued', 'repurchase coupon issued · My > Coupons')}</span>
             ) : (
-              <span className="text-[11px] text-[#acb3b4] font-medium">No purchase coupon</span>
+              <span className="text-[11px] text-[#acb3b4] font-medium">{t('shop.no_purchase_coupon', 'No purchase coupon')}</span>
             )}
           </div>
 
           {/* Payment method note */}
           <div className="mt-2 flex items-center gap-2 p-2.5 bg-[#f8f9fa] rounded-xl">
             <span className="material-symbols-rounded text-sm text-[#596061]">account_balance</span>
-            <span className="text-[11px] text-[#596061] font-medium">Payment: Bank Transfer</span>
+            <span className="text-[11px] text-[#596061] font-medium">{t('shop.payment_bank_transfer', 'Payment: Bank Transfer')}</span>
           </div>
         </div>
 
@@ -581,16 +582,16 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
             <button onClick={() => setFulfillment('pickup')}
               className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border text-xs font-bold transition-all ${fulfillment === 'pickup' ? 'bg-primary/5 border-primary text-primary' : 'bg-white border-[#e0e4e5] text-[#596061]'}`}>
               <span className="material-symbols-rounded text-base" style={{ fontVariationSettings: fulfillment === 'pickup' ? "'FILL' 1" : "'FILL' 0" }}>radio_button_checked</span>
-              <span className="material-symbols-rounded text-base">storefront</span>Store Pickup
+              <span className="material-symbols-rounded text-base">storefront</span>{t('shop.store_pickup', 'Store Pickup')}
             </button>
             <button onClick={() => setFulfillment('delivery')}
               className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border text-xs font-bold transition-all ${fulfillment === 'delivery' ? 'bg-primary/5 border-primary text-primary' : 'bg-white border-[#e0e4e5] text-[#596061]'}`}>
               <span className="material-symbols-rounded text-base" style={{ fontVariationSettings: fulfillment === 'delivery' ? "'FILL' 1" : "'FILL' 0" }}>radio_button_checked</span>
-              <span className="material-symbols-rounded text-base">local_shipping</span>Delivery
+              <span className="material-symbols-rounded text-base">local_shipping</span>{t('shop.delivery', 'Delivery')}
             </button>
           </div>
 
-          <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-3">Production & Delivery</p>
+          <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-3">{t('shop.production_delivery', 'Production & Delivery')}</p>
           <div className="space-y-2.5">
             {/* Production period */}
             <div className="flex items-center gap-3">
@@ -598,13 +599,13 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
                 <span className="material-symbols-rounded text-primary text-sm">construction</span>
               </div>
               <div>
-                <p className="text-xs font-bold text-[#2d3435]">Production</p>
+                <p className="text-xs font-bold text-[#2d3435]">{t('shop.production', 'Production')}</p>
                 <p className="text-[11px] text-[#596061]">
                   {product.productionDaysMin && product.productionDaysMax
-                    ? `${product.productionDaysMin}~${product.productionDaysMax} days`
+                    ? `${product.productionDaysMin}~${product.productionDaysMax} ${t('shop.days', 'days')}`
                     : product.productionDays
-                      ? `Approx. ${product.productionDays} days`
-                      : '7~14 days (estimated)'}
+                      ? `${t('shop.approx', 'Approx.')} ${product.productionDays} ${t('shop.days', 'days')}`
+                      : t('shop.default_production_days', '7~14 days (estimated)')}
                 </p>
               </div>
             </div>
@@ -616,8 +617,8 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
                   <span className="material-symbols-rounded text-green-600 text-sm">storefront</span>
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-[#2d3435]">Store Pickup</p>
-                  <p className="text-[11px] text-[#596061]">Available after production · No shipping fee</p>
+                  <p className="text-xs font-bold text-[#2d3435]">{t('shop.store_pickup', 'Store Pickup')}</p>
+                  <p className="text-[11px] text-[#596061]">{t('shop.pickup_desc', 'Available after production · No shipping fee')}</p>
                 </div>
               </div>
             ) : (
@@ -626,14 +627,14 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
                   <span className="material-symbols-rounded text-primary text-sm">local_shipping</span>
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-[#2d3435]">Delivery</p>
+                  <p className="text-xs font-bold text-[#2d3435]">{t('shop.delivery', 'Delivery')}</p>
                   <p className="text-[11px] text-[#596061]">
-                    {product.deliveryDays ? `${product.deliveryDays} days after production` : '2~5 days after production'}
+                    {product.deliveryDays ? `${product.deliveryDays} ${t('shop.days_after_production', 'days after production')}` : t('shop.default_delivery_days', '2~5 days after production')}
                     {product.sellerPaysShipping
-                      ? ' · Shipping paid by seller'
+                      ? t('shop.shipping_paid_by_seller', ' · Shipping paid by seller')
                       : product.shippingFee
-                        ? ` · Shipping ₩${product.shippingFee.toLocaleString()}`
-                        : ' · Free Shipping'}
+                        ? `${t('shop.shipping_fee_prefix', ' · Shipping ₩')}${product.shippingFee.toLocaleString()}`
+                        : t('shop.free_shipping', ' · Free Shipping')}
                   </p>
                 </div>
               </div>
@@ -646,8 +647,8 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
                   <span className="material-symbols-rounded text-[#e67700] text-sm">swap_horiz</span>
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-[#2d3435]">Free Exchange ({product.freeExchangeCount}x)</p>
-                  <p className="text-[11px] text-[#596061]">Exchange if it doesn&apos;t fit</p>
+                  <p className="text-xs font-bold text-[#2d3435]">{t('shop.free_exchange', 'Free Exchange')} ({product.freeExchangeCount}x)</p>
+                  <p className="text-[11px] text-[#596061]">{t('shop.exchange_desc', "Exchange if it doesn't fit")}</p>
                 </div>
               </div>
             )}
@@ -656,13 +657,13 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
 
         {/* 7) Description */}
         <div className="px-4 py-4 border-b border-[#f2f4f4]">
-          <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-2">Description</p>
+          <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-2">{t('shop.description', 'Description')}</p>
           <p className={`text-sm text-[#596061] leading-relaxed whitespace-pre-line ${!showFullDesc ? 'line-clamp-4' : ''}`}>
-            {product.description || 'No description available.'}
+            {product.description || t('shop.no_description', 'No description available.')}
           </p>
           {product.description && product.description.length > 120 && (
             <button onClick={() => setShowFullDesc(!showFullDesc)} className="text-xs font-bold text-primary mt-2 flex items-center gap-0.5">
-              {showFullDesc ? 'Less' : 'More'}
+              {showFullDesc ? t('shop.less', 'Less') : t('shop.more', 'More')}
               <span className="material-symbols-rounded text-sm">{showFullDesc ? 'expand_less' : 'expand_more'}</span>
             </button>
           )}
@@ -674,9 +675,9 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
             className="w-full flex items-center justify-center gap-2 py-3.5 bg-[#f2f4f4] hover:bg-[#e8eaec] rounded-2xl transition-colors active:scale-[0.98]"
           >
             <span className="material-symbols-rounded text-lg text-[#596061]">chat</span>
-            <span className="text-sm font-bold text-[#2d3435]">Chat with Seller</span>
+            <span className="text-sm font-bold text-[#2d3435]">{t('shop.chat_with_seller', 'Chat with Seller')}</span>
           </button>
-          <p className="text-[10px] text-[#acb3b4] text-center mt-1.5">{product.brand} · Product info will be sent automatically</p>
+          <p className="text-[10px] text-[#acb3b4] text-center mt-1.5">{product.brand} · {t('shop.product_info_auto_sent', 'Product info will be sent automatically')}</p>
         </div>
       </div>
 
@@ -686,8 +687,8 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
           <p className="text-lg font-black text-[#2d3435] font-headline leading-tight">₩{finalPrice.toLocaleString()}</p>
           {(discountPercent > 0 || extraPrice > 0) && (
             <p className="text-[10px] text-[#acb3b4] truncate">
-              {discountPercent > 0 && `List ₩${product.price.toLocaleString()}`}
-              {extraPrice > 0 && ` · Options +₩${extraPrice.toLocaleString()}`}
+              {discountPercent > 0 && `${t('shop.list_price', 'List ₩')}${product.price.toLocaleString()}`}
+              {extraPrice > 0 && `${t('shop.options_add_price', ' · Options +₩')}${extraPrice.toLocaleString()}`}
             </p>
           )}
         </div>
@@ -697,7 +698,7 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
         </button>
         <button onClick={handlePurchase}
           className="flex-shrink-0 bg-primary text-white px-7 py-3 rounded-xl font-black text-sm tracking-wide shadow-lg shadow-primary/20 active:scale-95 transition-transform">
-          Purchase
+          {t('shop.purchase', 'Purchase')}
         </button>
       </div>
 

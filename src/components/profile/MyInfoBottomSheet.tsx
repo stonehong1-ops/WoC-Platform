@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { db } from '@/lib/firebase/clientApp';
 import { storageService } from '@/lib/firebase/storageService';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useLanguage } from '@/contexts/LanguageContext';
 import DeactivateBottomSheet from './DeactivateBottomSheet';
 
 interface UserProfile {
@@ -34,6 +35,7 @@ interface MyInfoBottomSheetProps {
 
 export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBottomSheetProps) {
   const { user, signOut } = useAuth();
+  const { t } = useLanguage();
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [isOptimizing, setIsOptimizing] = useState(false);
@@ -81,7 +83,7 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
     const file = e.target.files?.[0];
     if (file && profile) {
       if (file.size > 10 * 1024 * 1024) {
-        toast.error('파일 크기가 너무 큽니다. 최대 10MB까지 가능합니다.');
+        toast.error(t('myinfo.photo_size_error'));
         return;
       }
 
@@ -104,12 +106,12 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
         URL.revokeObjectURL(blobUrl);
         
         setDetails(prev => ({ ...prev, photoURL: downloadURL }));
-        toast.success('사진 업로드 완료! 변경사항 저장을 눌러 완료해주세요.');
+        toast.success(t('myinfo.photo_upload_complete'));
       } catch (err) {
         console.error('Photo handling error:', err);
         // Fallback to original photo on error
         setDetails(prev => ({ ...prev, photoURL: profile.photoURL || '' }));
-        toast.error('사진 업로드에 실패했습니다. 다시 시도해주세요.');
+        toast.error(t('myinfo.photo_upload_fail'));
       } finally {
         setUploading(false);
         setIsOptimizing(false);
@@ -139,10 +141,10 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
         updatedAt: serverTimestamp()
       });
       onClose();
-      toast.success('프로필 정보가 저장되었습니다.');
+      toast.success(t('myinfo.save_success'));
     } catch (error) {
       console.error('Update profile error:', error);
-      toast.error('프로필 저장에 실패했습니다.');
+      toast.error(t('myinfo.save_error'));
     } finally {
       setSaving(false);
     }
@@ -225,7 +227,7 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
                         </span>
                       </div>
                       <p className="text-[9px] text-white/50 font-black mt-3 uppercase tracking-widest">
-                        {isOptimizing ? 'Optimizing...' : 'Uploading...'}
+                        {isOptimizing ? t('myinfo.optimizing') : t('myinfo.uploading')}
                       </p>
                     </div>
                   )}
@@ -248,24 +250,24 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
                   disabled={uploading}
                   className="px-4 py-2 bg-primary text-on-primary font-medium text-sm rounded shadow-sm hover:brightness-110 transition-all disabled:opacity-50"
                 >
-                  {uploading ? (isOptimizing ? '최적화 중...' : '업로드 중...') : '사진 변경'}
+                  {uploading ? (isOptimizing ? t('myinfo.optimizing') : t('myinfo.uploading')) : t('myinfo.photo_change')}
                 </button>
                 <button 
                   onClick={() => setDetails(prev => ({ ...prev, photoURL: '' }))}
                   type="button"
                   className="px-4 py-2 bg-surface-container-high text-on-surface-variant font-medium text-sm rounded hover:bg-surface-dim transition-all"
                 >
-                  삭제
+                  {t('myinfo.photo_delete')}
                 </button>
               </div>
             </section>
 
             {/* Section 2: Personal Details */}
             <section className="space-y-6">
-              <h2 className="font-headline text-lg font-bold text-on-surface">Personal Details</h2>
+              <h2 className="font-headline text-lg font-bold text-on-surface">{t('myinfo.personal_details')}</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5 col-span-2 md:col-span-1">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-outline">Full Name (English)</label>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-outline">{t('myinfo.full_name_en')}</label>
                   <input 
                     className="w-full bg-surface border border-outline-variant rounded px-4 py-2.5 text-on-surface focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none" 
                     type="text" 
@@ -274,17 +276,17 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
                   />
                 </div>
                 <div className="space-y-1.5 col-span-2 md:col-span-1">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-outline">Native Name (Optional)</label>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-outline">{t('myinfo.native_name')}</label>
                   <input 
                     className="w-full bg-surface border border-outline-variant rounded px-4 py-2.5 text-on-surface focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none" 
-                    placeholder="e.g. ア레크산더" 
+                    placeholder={t('myinfo.native_name_placeholder')}
                     type="text"
                     value={details.nativeNickname}
                     onChange={(e) => setDetails(prev => ({ ...prev, nativeNickname: e.target.value }))}
                   />
                 </div>
                 <div className="space-y-1.5 col-span-2">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-outline">Professional Title & Bio</label>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-outline">{t('myinfo.bio')}</label>
                   <textarea 
                     className="w-full bg-surface border border-outline-variant rounded px-4 py-2.5 text-on-surface focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none resize-none" 
                     rows={3}
@@ -297,10 +299,10 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
 
             {/* Section 3: Contact Info */}
             <section className="space-y-6">
-              <h2 className="font-headline text-lg font-bold text-on-surface">Contact Info</h2>
+              <h2 className="font-headline text-lg font-bold text-on-surface">{t('myinfo.contact_info')}</h2>
               <div className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-outline">Email Address</label>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-outline">{t('myinfo.email')}</label>
                   <div className="relative flex items-center">
                     <input 
                       className="w-full bg-surface-container-low border border-outline-variant rounded px-4 py-2.5 text-on-surface-variant cursor-not-allowed pr-32" 
@@ -310,12 +312,12 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
                     />
                     <div className="absolute right-3 flex items-center gap-1.5 bg-blue-50 text-primary px-2 py-1 rounded text-[10px] font-bold border border-blue-100 uppercase tracking-tighter">
                       <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
-                      Verified
+                      {t('myinfo.verified')}
                     </div>
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-outline">Cell Phone</label>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-outline">{t('myinfo.cell_phone')}</label>
                   <div className="flex gap-2 w-full">
                     <div className="relative w-28 shrink-0">
                       <select 
@@ -340,7 +342,7 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
                   </div>
                   <div className="flex flex-col mt-3 p-4 bg-surface-container-lowest border border-outline-variant/30 rounded-lg">
                     <div className="flex items-center justify-between">
-                      <span className="text-[13px] font-bold text-on-surface">전화연결 허용 (Allow Calls)</span>
+                      <span className="text-[13px] font-bold text-on-surface">{t('myinfo.allow_calls')}</span>
                       <div className="flex items-center gap-5">
                         <label className="flex items-center gap-2 cursor-pointer">
                           <input 
@@ -350,7 +352,7 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
                             onChange={() => setDetails(prev => ({ ...prev, allowPhoneCalls: true }))}
                             className="w-4 h-4 border-outline-variant text-primary focus:ring-primary accent-primary cursor-pointer"
                           />
-                          <span className="text-xs font-bold text-on-surface-variant">ON</span>
+                          <span className="text-xs font-bold text-on-surface-variant">{t('myinfo.allow_calls_on')}</span>
                         </label>
                         <label className="flex items-center gap-2 cursor-pointer">
                           <input 
@@ -360,13 +362,12 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
                             onChange={() => setDetails(prev => ({ ...prev, allowPhoneCalls: false }))}
                             className="w-4 h-4 border-outline-variant text-primary focus:ring-primary accent-primary cursor-pointer"
                           />
-                          <span className="text-xs font-bold text-on-surface-variant">OFF</span>
+                          <span className="text-xs font-bold text-on-surface-variant">{t('myinfo.allow_calls_off')}</span>
                         </label>
                       </div>
                     </div>
                     <p className="text-[11px] text-outline font-medium leading-relaxed mt-2.5 bg-surface-container-low p-2.5 rounded">
-                      <span className="font-bold text-primary mr-1">안내:</span> 
-                      ON 설정 시 프로필에 전화걸기 버튼이 생성됩니다. 실제 전화번호는 상대방에게 노출되지 않으며 바로 연결만 지원합니다.
+                      {t('myinfo.allow_calls_desc')}
                     </p>
                   </div>
                 </div>
@@ -375,7 +376,7 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
 
             {/* Section 4: Gender */}
             <section className="space-y-6">
-              <h2 className="font-headline text-lg font-bold text-on-surface">Gender</h2>
+              <h2 className="font-headline text-lg font-bold text-on-surface">{t('myinfo.gender')}</h2>
               <div className="flex bg-surface-container rounded p-1 max-w-md">
                 {['Male', 'Female', 'Other'].map((g) => (
                   <button 
@@ -388,7 +389,7 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
                         : 'text-on-surface-variant hover:text-on-surface'
                     }`}
                   >
-                    {g}
+                    {t(`myinfo.gender_${g.toLowerCase()}`)}
                   </button>
                 ))}
               </div>
@@ -397,14 +398,14 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
             {/* Section 5: Roles */}
             <section className="space-y-6">
               <div className="flex items-center justify-between">
-                <h2 className="font-headline text-lg font-bold text-on-surface">Roles</h2>
-                <span className="text-xs text-outline font-medium">Multi-select enabled</span>
+                <h2 className="font-headline text-lg font-bold text-on-surface">{t('myinfo.roles')}</h2>
+                <span className="text-xs text-outline font-medium">{t('myinfo.roles_multi_select')}</span>
               </div>
               <div className="grid grid-cols-1 gap-3">
                 {[
-                  { id: 'isInstructor', label: 'Instructor', sub: 'Create and manage content', icon: 'school' },
-                  { id: 'isSeller', label: 'Seller', sub: 'List and sell products', icon: 'store' },
-                  { id: 'isServiceProvider', label: 'Service Provider', sub: 'Offer professional services', icon: 'hand_gesture' }
+                  { id: 'isInstructor', label: t('myinfo.role_instructor_label'), sub: t('myinfo.role_instructor_sub'), icon: 'school' },
+                  { id: 'isSeller', label: t('myinfo.role_seller_label'), sub: t('myinfo.role_seller_sub'), icon: 'store' },
+                  { id: 'isServiceProvider', label: t('myinfo.role_pro_label'), sub: t('myinfo.role_pro_sub'), icon: 'hand_gesture' }
                 ].map((role) => {
                   const active = (details as any)[role.id];
                   return (
@@ -443,9 +444,9 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
             <section className="pt-8 border-t border-surface-container-high">
               <div className="bg-error/5 rounded-xl p-6 flex flex-col sm:flex-row items-start justify-between gap-6 border border-error/10">
                 <div className="space-y-2">
-                  <h3 className="font-headline font-bold text-error">Deactivate Account</h3>
+                  <h3 className="font-headline font-bold text-error">{t('myinfo.deactivate_account')}</h3>
                   <p className="text-[11px] text-error/80 leading-relaxed max-w-sm">
-                    Deactivating your account will temporarily disable your profile and remove your name and photo from most things you've shared.
+                    {t('myinfo.deactivate_desc')}
                   </p>
                 </div>
                 <button 
@@ -453,7 +454,7 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
                   type="button"
                   className="px-6 py-2.5 bg-error text-on-error font-bold text-sm rounded-lg shadow-sm hover:brightness-110 active:scale-95 transition-all shrink-0 w-full sm:w-auto"
                 >
-                  Deactivate
+                  {t('myinfo.deactivate_btn')}
                 </button>
               </div>
             </section>
@@ -468,7 +469,7 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
             type="button"
             className="w-full bg-primary text-on-primary py-4 rounded font-headline font-bold text-base shadow-lg active:scale-[0.98] transition-all disabled:opacity-50"
           >
-            {saving ? 'Saving changes...' : 'Save changes'}
+            {saving ? t('myinfo.saving') : t('myinfo.save_changes')}
           </button>
         </div>
       </div>

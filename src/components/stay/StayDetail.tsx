@@ -6,6 +6,7 @@ import { stayService } from '@/lib/firebase/stayService';
 import { stayBookingService } from '@/lib/firebase/stayBookingService';
 import { chatService } from '@/lib/firebase/chatService';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Stay } from '@/types/stay';
 import SectionCard from '@/components/ui/SectionCard';
 import InfoRow from '@/components/ui/InfoRow';
@@ -39,6 +40,7 @@ interface StayDetailProps {
 
 export default function StayDetail({ stayId, onClose, isLiked, onToggleLike }: StayDetailProps) {
   const { user, setShowLogin } = useAuth();
+  const { t } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -149,10 +151,10 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike }: S
 
   const handleChatWithHost = async () => {
     if (!user) { setShowLogin(true); return; }
-    if (!stay?.host?.userId) { alert('Host information is missing.'); return; }
-    if (user.uid === stay.host.userId) { alert('You cannot chat with yourself.'); return; }
+    if (!stay?.host?.userId) { alert(t('stay.host_info_missing', 'Host information is missing.')); return; }
+    if (user.uid === stay.host.userId) { alert(t('stay.no_self_chat', 'You cannot chat with yourself.')); return; }
 
-    if (!confirm("Would you like to start a chat with the host?")) return;
+    if (!confirm(t('stay.confirm_chat', "Would you like to start a chat with the host?"))) return;
 
     try {
       setIsChatLoading(true);
@@ -179,7 +181,7 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike }: S
       openChat(roomId);
     } catch (err) {
       console.error('Failed to init chat', err);
-      alert('Failed to start chat. Please try again later.');
+      alert(t('stay.chat_error', 'Failed to start chat. Please try again later.'));
     } finally {
       setIsChatLoading(false);
     }
@@ -208,7 +210,7 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike }: S
         setStartDate(null);
       } else {
         if (isRangeBlocked(startDate, day)) {
-          alert('Your selected dates include unavailable dates.');
+          alert(t('stay.dates_unavailable', 'Your selected dates include unavailable dates.'));
           return;
         }
         setEndDate(day);
@@ -308,7 +310,7 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike }: S
           {!images.length && (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-on-surface-variant/30">
               <span className="material-symbols-rounded text-5xl mb-1">home</span>
-              <span className="text-[10px] font-bold tracking-wider uppercase">No Image</span>
+              <span className="text-[10px] font-bold tracking-wider uppercase">{t('stay.no_image', 'No Image')}</span>
             </div>
           )}
           
@@ -346,17 +348,17 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike }: S
         <div className="flex items-center gap-4 px-4 py-3 bg-[#fff8f0] border-b border-[#ffe8cc]">
           <div className="flex items-center gap-1 text-[#e67700]">
             <span className="material-symbols-rounded text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>local_fire_department</span>
-            <span className="text-xs font-bold">{Math.floor(Math.random() * 15) + 3} people looking at this now</span>
+            <span className="text-xs font-bold">{Math.floor(Math.random() * 15) + 3} {t('stay.people_looking', 'people looking at this now')}</span>
           </div>
           <div className="flex items-center gap-1 text-[#596061]">
             <span className="material-symbols-rounded text-sm">event_available</span>
-            <span className="text-xs font-medium">Available now</span>
+            <span className="text-xs font-medium">{t('stay.available_now', 'Available now')}</span>
           </div>
         </div>
 
         {/* Calendar */}
         <div className="mx-4 my-4">
-          <SectionCard icon="calendar_month" title="Select Dates">
+          <SectionCard icon="calendar_month" title={t('stay.select_dates', 'Select Dates')}>
             <div className="flex justify-between items-center mb-6">
               <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="w-10 h-10 flex items-center justify-center rounded-full bg-[#f2f4f4] text-[#596061]">
                 <span className="material-symbols-rounded text-lg">chevron_left</span>
@@ -377,31 +379,31 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike }: S
 
         {/* Pricing */}
         <div className="mx-4 my-4">
-          <SectionCard icon="payments" title="Pricing Details">
+          <SectionCard icon="payments" title={t('stay.pricing_details', 'Pricing Details')}>
             <div className="flex items-end gap-2 mb-4 px-1">
               <span className="text-2xl font-black text-[#2d3435] font-headline">{baseRate.toLocaleString()}</span>
-              <span className="text-sm text-[#596061] font-bold mb-0.5">{currency} / night</span>
+              <span className="text-sm text-[#596061] font-bold mb-0.5">{currency} {t('stay.per_night', '/ night')}</span>
             </div>
             <div className="space-y-4">
-              <InfoRow icon="calendar_month" iconColor="text-primary" title="Weekend Surcharge" subtitle="Applied on Fridays & Saturdays" right={<span className="text-xs font-bold text-primary">+{stay.pricing?.weekendSurcharge?.toLocaleString()}</span>} />
-              <InfoRow icon="person" iconColor="text-primary" title="Extra Person Fee" subtitle={`Per additional guest (Base: ${stay.pricing?.baseGuests || 2})`} right={<span className="text-xs font-bold text-primary">+{stay.pricing?.extraPersonFee?.toLocaleString()}</span>} />
-              <InfoRow icon="auto_awesome" iconBg="bg-green-50" iconColor="text-green-600" title="Cleaning Fee" subtitle="One-time fee per stay" right={<span className="text-xs font-bold text-green-600">+{stay.pricing?.cleaningFee?.toLocaleString()}</span>} />
+              <InfoRow icon="calendar_month" iconColor="text-primary" title={t('stay.weekend_surcharge', 'Weekend Surcharge')} subtitle={t('stay.weekend_surcharge_desc', 'Applied on Fridays & Saturdays')} right={<span className="text-xs font-bold text-primary">+{stay.pricing?.weekendSurcharge?.toLocaleString()}</span>} />
+              <InfoRow icon="person" iconColor="text-primary" title={t('stay.extra_person_fee', 'Extra Person Fee')} subtitle={t('stay.extra_person_desc', `Per additional guest (Base: ${stay.pricing?.baseGuests || 2})`).replace('{base}', stay.pricing?.baseGuests?.toString() || '2')} right={<span className="text-xs font-bold text-primary">+{stay.pricing?.extraPersonFee?.toLocaleString()}</span>} />
+              <InfoRow icon="auto_awesome" iconBg="bg-green-50" iconColor="text-green-600" title={t('stay.cleaning_fee', 'Cleaning Fee')} subtitle={t('stay.cleaning_fee_desc', 'One-time fee per stay')} right={<span className="text-xs font-bold text-green-600">+{stay.pricing?.cleaningFee?.toLocaleString()}</span>} />
             </div>
           </SectionCard>
         </div>
 
         {/* Details */}
         <div className="mx-4 my-4">
-          <SectionCard icon="home_work" title="Stay Information">
+          <SectionCard icon="home_work" title={t('stay.stay_information', 'Stay Information')}>
             <div className="space-y-4">
-              <CollapseSection icon="meeting_room" title="Room Features" defaultOpen={false}>
-                <p className="whitespace-pre-wrap leading-relaxed text-sm text-[#596061]">{stay.guides?.roomFeatures || 'No information available.'}</p>
+              <CollapseSection icon="meeting_room" title={t('stay.room_features', 'Room Features')} defaultOpen={false}>
+                <p className="whitespace-pre-wrap leading-relaxed text-sm text-[#596061]">{stay.guides?.roomFeatures || t('stay.no_information', 'No information available.')}</p>
               </CollapseSection>
-              <CollapseSection icon="directions_subway" title="Getting Here">
-                <p className="whitespace-pre-wrap leading-relaxed text-sm text-[#596061]">{stay.guides?.gettingHere || 'No information available.'}</p>
+              <CollapseSection icon="directions_subway" title={t('stay.getting_here', 'Getting Here')}>
+                <p className="whitespace-pre-wrap leading-relaxed text-sm text-[#596061]">{stay.guides?.gettingHere || t('stay.no_information', 'No information available.')}</p>
               </CollapseSection>
-              <CollapseSection icon="concierge" title="Facility Guide">
-                <p className="whitespace-pre-wrap leading-relaxed text-sm text-[#596061]">{stay.guides?.facilityGuide || 'No information available.'}</p>
+              <CollapseSection icon="concierge" title={t('stay.facility_guide', 'Facility Guide')}>
+                <p className="whitespace-pre-wrap leading-relaxed text-sm text-[#596061]">{stay.guides?.facilityGuide || t('stay.no_information', 'No information available.')}</p>
               </CollapseSection>
             </div>
           </SectionCard>
@@ -409,7 +411,7 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike }: S
 
         {/* Host */}
         <div className="mx-4 my-4">
-          <SectionCard icon="person" title="Meet Your Host">
+          <SectionCard icon="person" title={t('stay.meet_your_host', 'Meet Your Host')}>
             <div className="flex items-center gap-4 mb-4 px-1">
               <div className="w-14 h-14 rounded-full overflow-hidden bg-white border border-[#f2f4f4] shadow-sm">
                 {stay.host?.photo ? (
@@ -421,8 +423,8 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike }: S
                 )}
               </div>
               <div>
-                <h3 className="text-sm font-bold text-[#2d3435]">{stay.host?.name || 'Host'}</h3>
-                <p className="text-[10px] text-[#acb3b4] font-black uppercase tracking-widest mt-0.5">Verified Host</p>
+                <h3 className="text-sm font-bold text-[#2d3435]">{stay.host?.name || t('stay.host', 'Host')}</h3>
+                <p className="text-[10px] text-[#acb3b4] font-black uppercase tracking-widest mt-0.5">{t('stay.verified_host', 'Verified Host')}</p>
               </div>
             </div>
             <button
@@ -435,9 +437,9 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike }: S
               ) : (
                 <span className="material-symbols-rounded text-lg text-[#596061]">chat</span>
               )}
-              <span className="text-sm font-bold text-[#2d3435]">{isChatLoading ? 'Starting Chat...' : 'Chat with Host'}</span>
+              <span className="text-sm font-bold text-[#2d3435]">{isChatLoading ? t('stay.starting_chat', 'Starting Chat...') : t('stay.chat_with_host', 'Chat with Host')}</span>
             </button>
-            <p className="text-[10px] text-[#acb3b4] text-center mt-2.5 font-medium">{stay.host?.name || 'Host'} · Stay info will be sent automatically</p>
+            <p className="text-[10px] text-[#acb3b4] text-center mt-2.5 font-medium">{stay.host?.name || t('stay.host', 'Host')} · {t('stay.chat_info_auto', 'Stay info will be sent automatically')}</p>
           </SectionCard>
         </div>
       </div>
@@ -446,13 +448,13 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike }: S
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-100 px-4 py-2.5 flex items-center gap-3 max-w-md mx-auto">
         <div className="flex-1 min-w-0">
           <p className="text-lg font-black text-[#2d3435] font-headline leading-tight">₩{baseRate.toLocaleString()}</p>
-          <p className="text-[10px] text-[#acb3b4]">Starting price / night</p>
+          <p className="text-[10px] text-[#acb3b4]">{t('stay.starting_price_night', 'Starting price / night')}</p>
         </div>
         <button onClick={onToggleLike} className={`w-11 h-11 flex-shrink-0 rounded-xl flex items-center justify-center border transition-all active:scale-90 ${isLiked ? 'bg-red-50 border-red-100 text-red-500' : 'bg-white border-[#e0e4e5] text-[#596061]'}`}>
           <span className="material-symbols-rounded text-xl" style={{ fontVariationSettings: isLiked ? "'FILL' 1" : "'FILL' 0" }}>favorite</span>
         </button>
         <Link href={checkoutLink} className="flex-shrink-0 bg-primary text-white px-7 py-3 rounded-xl font-black text-sm tracking-wide shadow-lg shadow-primary/20 active:scale-95 transition-transform">
-          Checkout
+          {t('stay.checkout', 'Checkout')}
         </Link>
       </div>
 

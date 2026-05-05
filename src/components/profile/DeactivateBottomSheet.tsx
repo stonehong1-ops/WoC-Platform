@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface DeactivateBottomSheetProps {
   isOpen: boolean;
@@ -9,6 +10,7 @@ interface DeactivateBottomSheetProps {
 }
 
 export default function DeactivateBottomSheet({ isOpen, onClose, onConfirm }: DeactivateBottomSheetProps) {
+  const { t } = useLanguage();
   if (!isOpen) return null;
 
   return (
@@ -34,13 +36,13 @@ export default function DeactivateBottomSheet({ isOpen, onClose, onConfirm }: De
           </div>
 
           {/* Headline */}
-          <h2 className="font-headline text-2xl font-extrabold tracking-tight text-on-surface mb-3">Deactivate Account</h2>
+          <h2 className="font-headline text-2xl font-extrabold tracking-tight text-on-surface mb-3">{t('deactivate.title')}</h2>
 
           {/* Warning Description */}
           <div className="bg-surface-container-low p-5 rounded-2xl mb-8">
             <p className="text-on-surface-variant text-sm leading-relaxed">
-              Deactivating your account will hide your profile and information from other users. Some information may still be visible to others, such as messages you sent. 
-              <span className="font-semibold text-on-surface ml-1">This action is reversible by logging back in within 30 days.</span>
+              {t('deactivate.warning_desc')}
+              <span className="font-semibold text-on-surface ml-1">{t('deactivate.warning_grace_period')}</span>
             </p>
           </div>
 
@@ -49,15 +51,15 @@ export default function DeactivateBottomSheet({ isOpen, onClose, onConfirm }: De
             <div className="flex items-start gap-4 text-left">
               <span className="material-symbols-outlined text-on-surface-variant mt-0.5 text-lg">no_accounts</span>
               <div>
-                <p className="text-sm font-semibold text-on-surface">Profile hidden</p>
-                <p className="text-xs text-on-surface-variant">Your photos and details won't be seen.</p>
+                <p className="text-sm font-semibold text-on-surface">{t('deactivate.profile_hidden_label')}</p>
+                <p className="text-xs text-on-surface-variant">{t('deactivate.profile_hidden_desc')}</p>
               </div>
             </div>
             <div className="flex items-start gap-4 text-left">
               <span className="material-symbols-outlined text-on-surface-variant mt-0.5 text-lg">timer</span>
               <div>
-                <p className="text-sm font-semibold text-on-surface">30-day grace period</p>
-                <p className="text-xs text-on-surface-variant">Data is permanently deleted after 30 days.</p>
+                <p className="text-sm font-semibold text-on-surface">{t('deactivate.grace_period_label')}</p>
+                <p className="text-xs text-on-surface-variant">{t('deactivate.grace_period_desc')}</p>
               </div>
             </div>
           </div>
@@ -68,13 +70,13 @@ export default function DeactivateBottomSheet({ isOpen, onClose, onConfirm }: De
               onClick={onConfirm}
               className="w-full py-4 bg-primary text-on-primary font-headline font-bold text-sm rounded-full shadow-lg shadow-primary/20 hover:bg-on-primary-fixed-variant active:scale-95 transition-all"
             >
-              Deactivate Now
+              {t('deactivate.confirm_btn')}
             </button>
             <button 
               onClick={onClose}
               className="w-full py-4 bg-transparent text-on-surface-variant font-body font-medium text-sm rounded-full hover:bg-surface-container transition-colors"
             >
-              Keep my account
+              {t('deactivate.cancel_btn')}
             </button>
           </div>
         </div>

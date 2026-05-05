@@ -11,6 +11,8 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useModalNavigation } from '@/hooks/useModalNavigation';
 import StayDetail from '@/components/stay/StayDetail';
 import CreateStay from '@/components/stay/CreateStay';
+import { useLanguage } from '@/contexts/LanguageContext';
+
 
 type SortOption = 'latest' | 'popular' | 'price_asc' | 'price_desc';
 
@@ -34,6 +36,7 @@ const STAY_FILTER_DEFS: Record<string, { label: string; fullLabel?: string }> = 
 const STAY_FILTER_KEYS = ['all', '1-Room', '2-Room', '3-Room', 'Dormitory', 'Couchsurfing', 'Pension'];
 
 function StayPageContent() {
+  const { t } = useLanguage();
   const [stays, setStays] = useState<Stay[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -193,7 +196,7 @@ function StayPageContent() {
                   : 'bg-slate-50/50 text-slate-500 border-slate-100 hover:bg-slate-100/80 hover:text-slate-700'
               }`}
             >
-              {filter.fullLabel || filter.label}
+              {t(`stay.filter_${filter.key.replace('-', '_').toLowerCase()}_full`)}
             </button>
           ))}
         </div>
@@ -203,7 +206,7 @@ function StayPageContent() {
           <div className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
             <div className="text-[11px] font-bold text-slate-600 uppercase tracking-widest">
-              {filtered.length} <span className="text-slate-400 font-medium">Stays</span>
+              {filtered.length} <span className="text-slate-400 font-medium">{t('stay.stats_stays')}</span>
             </div>
           </div>
           
@@ -215,7 +218,7 @@ function StayPageContent() {
               }}
               className="flex items-center gap-0.5 text-[12px] font-bold text-slate-600 hover:text-slate-800 transition-all"
             >
-              {SORT_OPTIONS.find(o => o.key === sortOption)?.label || 'Sort'}
+              {t(`stay.sort_${sortOption}`) || t('stay.filter_sort')}
               <span className={`material-symbols-outlined text-[16px] transition-transform ${showSortDropdown ? 'rotate-180' : ''}`}>expand_more</span>
             </button>
           </div>
@@ -238,7 +241,7 @@ function StayPageContent() {
                 }`}
               >
                 <span className="material-symbols-outlined text-[18px]">{opt.icon}</span>
-                <span className="text-[13px]">{opt.label}</span>
+                <span className="text-[13px]">{t(`stay.sort_${opt.key}`)}</span>
               </button>
             ))}
           </div>
@@ -279,7 +282,7 @@ function StayPageContent() {
           <div className="flex flex-col items-center justify-center py-20 text-center opacity-30">
             <span className="material-symbols-rounded text-6xl mb-4">bed</span>
             <p className="text-xs font-black uppercase tracking-widest">
-              No stays found
+              {t('stay.no_stays')}
             </p>
           </div>
         ) : (
@@ -287,7 +290,7 @@ function StayPageContent() {
             {filtered.map(stay => {
               const locationStr = stay.location?.city && stay.location?.district 
               ? `${stay.location.city}, ${stay.location.district}` 
-              : stay.location?.city || stay.location?.address || 'Location';
+              : stay.location?.city || stay.location?.address || t('stay.fallback_location');
 
               return (
                 <div 
@@ -299,7 +302,7 @@ function StayPageContent() {
                     {/* Fallback View */}
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-[#c4cacc]">
                       <span className="material-symbols-outlined text-4xl mb-1">bed</span>
-                      <span className="text-[10px] font-bold tracking-wider uppercase">No Image</span>
+                      <span className="text-[10px] font-bold tracking-wider uppercase">{t('stay.no_image')}</span>
                     </div>
                     
                     {/* Actual Image */}
@@ -331,7 +334,7 @@ function StayPageContent() {
                       <span className="text-sm font-bold text-[#2d3435] font-headline">
                         {formatPrice(stay)}
                       </span>
-                      <span className="text-[10px] text-[#596061] mt-[2px]">/ night</span>
+                      <span className="text-[10px] text-[#596061] mt-[2px]">{t('stay.per_night')}</span>
                     </div>
                   </div>
                 </div>

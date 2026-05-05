@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ResaleItem, ResaleLike } from '@/types/resale';
 import { resaleService } from '@/lib/firebase/resaleService';
 import { useNavigation } from '@/components/providers/NavigationProvider';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface ResaleWishlistTrayProps {
   likes: ResaleLike[];
@@ -20,6 +21,7 @@ export default function ResaleWishlistTray({ likes, userId, onProductClick }: Re
   const [loadingProducts, setLoadingProducts] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { isHeaderVisible } = useNavigation();
+  const { t } = useLanguage();
 
 
 
@@ -69,7 +71,7 @@ export default function ResaleWishlistTray({ likes, userId, onProductClick }: Re
 
   const handleClearAll = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm('Are you sure you want to clear your wishlist?')) return;
+    if (!confirm(t('resale.confirm_clear_wishlist'))) return;
     try {
       await resaleService.clearAllLikes(userId);
       setTrayState('COLLAPSED');
@@ -117,15 +119,15 @@ export default function ResaleWishlistTray({ likes, userId, onProductClick }: Re
               </div>
 
               <span className="text-sm text-slate-800 font-bold ml-3 tracking-wide">
-                {likes.length === 0 ? 'No Activity' : (
+                {likes.length === 0 ? t('resale.no_activity') : (
                   <>
                     {likes.filter(l => l.status === 'in_progress').length > 0 && (
-                      <span className="text-blue-500">{likes.filter(l => l.status === 'in_progress').length} In Progress, </span>
+                      <span className="text-blue-500">{likes.filter(l => l.status === 'in_progress').length}{t('resale.in_progress_count')}</span>
                     )}
                     {likes.filter(l => l.status === 'pending').length > 0 && (
-                      <span className="text-primary">{likes.filter(l => l.status === 'pending').length} Pending, </span>
+                      <span className="text-primary">{likes.filter(l => l.status === 'pending').length}{t('resale.pending_count')}</span>
                     )}
-                    {likes.filter(l => l.status !== 'pending' && l.status !== 'in_progress').length} Liked
+                    {likes.filter(l => l.status !== 'pending' && l.status !== 'in_progress').length}{t('resale.liked_count')}
                   </>
                 )}
               </span>
@@ -137,7 +139,7 @@ export default function ResaleWishlistTray({ likes, userId, onProductClick }: Re
                   onClick={handleClearAll}
                   className="text-[12px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-widest transition-colors"
                 >
-                  Clear All
+                  {t('resale.clear_all')}
                 </button>
               )}
               {!isExpanded && (
@@ -212,12 +214,12 @@ export default function ResaleWishlistTray({ likes, userId, onProductClick }: Re
                             
                             {status === 'in_progress' && (
                               <div className="absolute -top-2 -right-2 bg-blue-500 text-white text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded shadow-sm">
-                                IN PROGRESS
+                                {t('resale.badge_in_progress')}
                               </div>
                             )}
                             {status === 'pending' && (
                               <div className="absolute -top-2 -right-2 bg-primary text-white text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded shadow-sm">
-                                PENDING
+                                {t('resale.badge_pending')}
                               </div>
                             )}
                           </div>
@@ -249,7 +251,7 @@ export default function ResaleWishlistTray({ likes, userId, onProductClick }: Re
                     })}
                     {likedProducts.length === 0 && (
                       <div className="py-6 text-center text-slate-400 text-[13px] font-medium">
-                        No activity found.
+                        {t('resale.no_activity_found')}
                       </div>
                     )}
                   </div>

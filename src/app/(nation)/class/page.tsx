@@ -8,6 +8,7 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { useNavigation } from '@/components/providers/NavigationProvider';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { groupService } from '@/lib/firebase/groupService';
 import { venueService } from '@/lib/firebase/venueService';
 import { Group } from '@/types/group';
@@ -20,6 +21,7 @@ type GroupCounts = Record<string, { individual: number; bundle: number; pass: nu
 
 function ClassMenuContent() {
   const router = useRouter();
+  const { t, language } = useLanguage();
   const { value: modalId, openModal, closeModal } = useModalNavigation('groupId');
   
   const [groups, setGroups] = useState<Group[]>([]);
@@ -50,7 +52,7 @@ function ClassMenuContent() {
     setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
   }, []);
   
-  const formattedMonth = currentDate.toLocaleString('en-US', { month: 'short', year: 'numeric' });
+  const formattedMonth = currentDate.toLocaleString(language === 'KR' ? 'ko-KR' : 'en-US', { month: 'short', year: 'numeric' });
 
   useEffect(() => {
     const fetchClassGroups = async () => {
@@ -157,7 +159,7 @@ function ClassMenuContent() {
           onClick={() => setShowSortDropdown(!showSortDropdown)}
           className="flex items-center gap-0.5 text-[12px] font-bold text-slate-600 hover:text-slate-800 transition-all"
         >
-          {sortOrder === 'classes' ? 'By Classes' : 'By Name'}
+          {sortOrder === 'classes' ? t('class.sort_by_classes') : t('class.sort_by_name')}
           <span className={`material-symbols-outlined text-[16px] transition-transform ${showSortDropdown ? 'rotate-180' : ''}`}>expand_more</span>
         </button>
       </div>
@@ -172,7 +174,7 @@ function ClassMenuContent() {
             }`}
           >
             <span className="material-symbols-outlined text-[18px]">sort</span>
-            <span className="text-[13px]">By Classes</span>
+            <span className="text-[13px]">{t('class.sort_by_classes')}</span>
           </button>
           <button
             onClick={() => { setSortOrder('name'); setShowSortDropdown(false); }}
@@ -181,12 +183,12 @@ function ClassMenuContent() {
             }`}
           >
             <span className="material-symbols-outlined text-[18px]">sort_by_alpha</span>
-            <span className="text-[13px]">By Name</span>
+            <span className="text-[13px]">{t('class.sort_by_name')}</span>
           </button>
         </div>
       )}
     </div>
-  ), [formattedMonth, showSortDropdown, sortOrder, handlePrevMonth, handleNextMonth]);
+  ), [formattedMonth, showSortDropdown, sortOrder, handlePrevMonth, handleNextMonth, t]);
 
   // Teleport Filter Bar to Header (Premium Standard: Dual Row)
   useEffect(() => {
@@ -293,7 +295,7 @@ function ClassMenuContent() {
                 <div className="flex items-center gap-3 px-1">
                   <div className="w-1 h-3 bg-blue-500 rounded-full" />
                   <span className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">
-                    {region}
+                    {t(`class.region_${region}`, region)}
                   </span>
                   <div className="flex-1 h-[1px] bg-slate-100" />
                 </div>
@@ -334,7 +336,7 @@ function ClassMenuContent() {
                             <div>
                               <div className="flex items-center justify-between gap-2">
                                 <span className="text-[10px] font-bold text-blue-500 uppercase tracking-wider font-label">
-                                  {type}
+                                  {t(`class.type_${type}`, type)}
                                 </span>
                                 <span className="material-symbols-outlined text-[18px] text-slate-300 group-hover:text-blue-500 transition-colors">
                                   arrow_forward_ios
@@ -355,17 +357,17 @@ function ClassMenuContent() {
                               {individualCount > 0 && (
                                 <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-50 border border-slate-100">
                                   <span className="text-[10px] font-bold text-slate-600">{individualCount}</span>
-                                  <span className="text-[9px] font-medium text-slate-400 uppercase">Classes</span>
+                                  <span className="text-[9px] font-medium text-slate-400 uppercase">{t('class.stats_classes')}</span>
                                 </div>
                               )}
                               {passCount > 0 && (
                                 <div className="px-1.5 py-0.5 rounded-md bg-blue-50 border border-blue-100">
-                                  <span className="text-[9px] font-bold text-blue-600 uppercase">Pass</span>
+                                  <span className="text-[9px] font-bold text-blue-600 uppercase">{t('class.stats_pass')}</span>
                                 </div>
                               )}
                               {bundleCount > 0 && (
                                 <div className="px-1.5 py-0.5 rounded-md bg-amber-50 border border-amber-100">
-                                  <span className="text-[9px] font-bold text-amber-600 uppercase">Bundle</span>
+                                  <span className="text-[9px] font-bold text-amber-600 uppercase">{t('class.stats_bundle')}</span>
                                 </div>
                               )}
                             </div>
@@ -381,7 +383,7 @@ function ClassMenuContent() {
         ) : (
           <div className="text-center py-20 bg-white rounded-xl border-2 border-dashed border-slate-200">
             <span className="material-symbols-outlined text-slate-300 text-4xl mb-2">search_off</span>
-            <p className="text-sm font-bold text-slate-500">No class groups found.</p>
+            <p className="text-sm font-bold text-slate-500">{t('class.no_groups')}</p>
           </div>
         )}
       </div>

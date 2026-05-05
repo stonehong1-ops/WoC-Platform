@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { resaleService } from '@/lib/firebase/resaleService';
 import { chatService } from '@/lib/firebase/chatService';
 import { ResaleItem } from '@/types/resale';
@@ -19,9 +20,17 @@ const fmt = (n: number) => n.toLocaleString();
 
 export default function ResalePurchaseFlow({ item, onClose, onComplete }: ResalePurchaseFlowProps) {
   const { user, profile } = useAuth();
+  const { t } = useLanguage();
   const [step, setStep] = useState<Step>('summary');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [buyerPhone, setBuyerPhone] = useState('');
+
+  const conditionLabels: Record<string, string> = {
+    'S': t('resale.cond_s'),
+    'A': t('resale.cond_a'),
+    'B': t('resale.cond_b'),
+    'C': t('resale.cond_c')
+  };
 
   useEffect(() => {
     if (profile?.phoneNumber) {
@@ -32,7 +41,7 @@ export default function ResalePurchaseFlow({ item, onClose, onComplete }: Resale
   const handleConfirmOrder = async () => {
     if (!user || isSubmitting) return;
     if (!buyerPhone.trim()) {
-      alert("Please enter a contact number so the seller can reach you.");
+      alert(t('resale.msg_enter_phone'));
       return;
     }
 
@@ -48,9 +57,9 @@ export default function ResalePurchaseFlow({ item, onClose, onComplete }: Resale
           const roomId = await chatService.getOrCreatePrivateRoom([user.uid, sellerId], user.uid, 'business');
           
           const orderMsg = `📦 [PURCHASE REQUEST]\n` +
-            `Product: ${item.title}\n` +
-            `Price: ₩${fmt(item.price)}\n` +
-            `Contact: ${buyerPhone}\n` +
+            `${t('resale.chat_item_name')}: ${item.title}\n` +
+            `${t('resale.chat_price')}: ₩${fmt(item.price)}\n` +
+            `${t('resale.contact_number')}: ${buyerPhone}\n` +
             `I would like to purchase this item!`;
 
           await chatService.sendMessage({
@@ -68,7 +77,7 @@ export default function ResalePurchaseFlow({ item, onClose, onComplete }: Resale
       setStep('complete');
     } catch (err) {
       console.error('Purchase request failed:', err);
-      alert('Failed to request purchase. Please try again.');
+      alert(t('resale.msg_purchase_failed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -88,7 +97,7 @@ export default function ResalePurchaseFlow({ item, onClose, onComplete }: Resale
 
           {/* Header */}
           <div className="px-5 pt-2 pb-4 flex items-center justify-between">
-            <h2 className="text-lg font-black text-[#2d3435]">Order Summary</h2>
+            <h2 className="text-lg font-black text-[#2d3435]">{t('resale.order_summary')}</h2>
             <button onClick={onClose} className="w-8 h-8 rounded-full bg-[#f2f4f4] flex items-center justify-center">
               <span className="material-symbols-outlined text-sm text-[#596061]">close</span>
             </button>
@@ -110,7 +119,7 @@ export default function ResalePurchaseFlow({ item, onClose, onComplete }: Resale
                 <p className="text-[10px] font-bold text-[#acb3b4] uppercase">{item.category}</p>
                 <p className="text-sm font-bold text-[#2d3435] truncate">{item.title}</p>
                 <div className="flex flex-wrap gap-1 mt-1">
-                  <span className="text-[10px] bg-[#e8eaec] text-[#596061] px-2 py-0.5 rounded-full font-bold">Condition: {item.condition}</span>
+                  <span className="text-[10px] bg-[#e8eaec] text-[#596061] px-2 py-0.5 rounded-full font-bold">{t('resale.label_condition')} {conditionLabels[item.condition] || item.condition}</span>
                 </div>
               </div>
             </div>
@@ -119,11 +128,11 @@ export default function ResalePurchaseFlow({ item, onClose, onComplete }: Resale
           {/* Contact Info */}
           <div className="px-5 pb-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-[#596061]">Contact Number</label>
+              <label className="text-xs font-bold text-[#596061]">{t('resale.contact_number')}</label>
               <div className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm text-[#2d3435]">
-                {buyerPhone || 'No contact number available'}
+                {buyerPhone || t('resale.no_contact_number')}
               </div>
-              <p className="text-[10px] text-[#acb3b4]">Seller will contact you at this number regarding your purchase.</p>
+              <p className="text-[10px] text-[#acb3b4]">{t('resale.contact_info_desc')}</p>
             </div>
           </div>
 
@@ -134,10 +143,10 @@ export default function ResalePurchaseFlow({ item, onClose, onComplete }: Resale
               disabled={isSubmitting}
               className="w-full bg-[#0057bd] text-white py-4 rounded-2xl font-black text-sm tracking-wide shadow-lg shadow-[#0057bd]/20 active:scale-[0.98] transition-transform disabled:opacity-50"
             >
-              {isSubmitting ? 'Processing...' : `Confirm · ₩${fmt(item.price)}`}
+              {isSubmitting ? t('resale.processing') : `${t('resale.confirm_price')}${fmt(item.price)}`}
             </button>
             <p className="text-[10px] text-[#acb3b4] text-center mt-2">
-              By confirming, you are sending a purchase request to the seller.
+              {t('resale.confirm_desc')}
             </p>
           </div>
         </div>
@@ -153,10 +162,9 @@ export default function ResalePurchaseFlow({ item, onClose, onComplete }: Resale
         <span className="material-symbols-outlined text-4xl text-emerald-600" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
       </div>
 
-      <h2 className="text-xl font-black text-[#2d3435] mb-2">Purchase Requested!</h2>
-      <p className="text-sm text-[#596061] text-center leading-relaxed mb-8">
-        Your purchase request has been sent to the seller.
-        <br />The seller will contact you shortly.
+      <h2 className="text-xl font-black text-[#2d3435] mb-2">{t('resale.purchase_requested')}</h2>
+      <p className="text-sm text-[#596061] text-center leading-relaxed mb-8 whitespace-pre-wrap">
+        {t('resale.purchase_requested_desc')}
       </p>
 
       {/* Actions */}
@@ -165,7 +173,7 @@ export default function ResalePurchaseFlow({ item, onClose, onComplete }: Resale
           onClick={onComplete}
           className="w-full bg-[#0057bd] text-white py-4 rounded-2xl font-black text-sm tracking-wide shadow-lg shadow-[#0057bd]/20 active:scale-[0.98] transition-transform"
         >
-          Go to Resale
+          {t('resale.go_to_resale')}
         </button>
       </div>
     </div>

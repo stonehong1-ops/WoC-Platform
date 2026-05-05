@@ -7,6 +7,8 @@ import { chatService } from '@/lib/firebase/chatService';
 import { lostFoundService } from '@/lib/firebase/lostFoundService';
 import { LostFoundItem } from '@/types/lostFound';
 
+import { useLanguage } from '@/contexts/LanguageContext';
+
 interface LostFoundDetailProps {
   id: string;
   onClose: () => void;
@@ -14,9 +16,11 @@ interface LostFoundDetailProps {
 
 export default function LostFoundDetail({ id, onClose }: LostFoundDetailProps) {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const router = useRouter();
 
   const [item, setItem] = useState<LostFoundItem | null>(null);
+  const [userLike, setUserLike] = useState<any>(null); // Added to track status
   const [isLiked, setIsLiked] = useState(false);
   const [togglingLike, setTogglingLike] = useState(false);
 
@@ -42,7 +46,9 @@ export default function LostFoundDetail({ id, onClose }: LostFoundDetailProps) {
   useEffect(() => {
     if (!user || !id) return;
     const unsub = lostFoundService.subscribeMyLikes(user.uid, (likesData) => {
-      setIsLiked(likesData.some(l => l.itemId === id));
+      const foundLike = likesData.find(l => l.itemId === id);
+      setUserLike(foundLike || null);
+      setIsLiked(!!foundLike);
     });
     return () => unsub();
   }, [user, id]);
@@ -75,23 +81,24 @@ export default function LostFoundDetail({ id, onClose }: LostFoundDetailProps) {
 
   const handleToggleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!user) return alert("Login is required.");
+    if (!user) return alert(t('lost.login_required'));
     setTogglingLike(true);
     try { await lostFoundService.toggleLike(user.uid, item.id); } catch (err) { console.error(err); }
     setTogglingLike(false);
   };
 
   const handleChatWithAuthor = async () => {
-    if (!user) return alert('Login is required.');
+    if (!user) return alert(t('lost.login_required'));
     const authorId = item.authorId;
-    if (user.uid === authorId) return alert('You are the author of this post.');
+    if (user.uid === authorId) return alert(t('lost.author_self_chat'));
 
-    const confirmed = window.confirm('Send a message to the author?');
+    const confirmed = window.confirm(t('lost.confirm_chat'));
     if (!confirmed) return;
 
     try {
       const roomId = await chatService.getOrCreatePrivateRoom([user.uid, authorId], user.uid, 'business');
-      const itemInfo = `[${item.type === 'LOST' ? 'Lost' : 'Found'} Item Inquiry]\nTitle: ${item.title}\nLocation: ${item.location}\nLink: ${window.location.origin}/lost-found?lostId=${item.id}`;
+      const itemTypeLabel = item.type === 'LOST' ? t('lost.lost') : t('lost.found');
+      const itemInfo = `[${t('lost.inquiry_title')}]\n${t('lost.case_title')}: ${item.title}\n${t('lost.location')}: ${item.location}\n${t('lost.inquiry_link')}: ${window.location.origin}/lost-found?lostId=${item.id}`;
       
       await chatService.sendMessage({
         roomId,
@@ -101,23 +108,27 @@ export default function LostFoundDetail({ id, onClose }: LostFoundDetailProps) {
         text: itemInfo,
         type: 'text'
       });
+
+      // Update Like Status to PENDING
+      await lostFoundService.updateLikeStatus(user.uid, item.id, 'pending');
+
       router.push(`/chat?roomId=${roomId}`);
     } catch (err) {
       console.error("Failed to start chat:", err);
-      alert('Failed to create chat room.');
+      alert(t('lost.msg_fail_chat'));
     }
   };
 
   const handleResolve = async () => {
     if (!user || user.uid !== item.authorId) return;
-    const confirmed = window.confirm('Change status to [Resolved]?');
+    const confirmed = window.confirm(t('lost.confirm_resolve'));
     if (!confirmed) return;
     try {
       await lostFoundService.updateItem(item.id, { status: 'RESOLVED' });
-      alert('Status changed to Resolved.');
+      alert(t('lost.resolve_success'));
     } catch(err) {
       console.error(err);
-      alert('Failed to change status');
+      alert(t('lost.msg_fail_resolve'));
     }
   };
 
@@ -152,7 +163,7 @@ export default function LostFoundDetail({ id, onClose }: LostFoundDetailProps) {
           {/* Fallback */}
           <div className="absolute inset-0 flex flex-col items-center justify-center text-[#c4cacc]">
             <span className="material-symbols-rounded text-5xl mb-1">help_outline</span>
-            <span className="text-[10px] font-bold tracking-wider uppercase">No Image</span>
+            <span className="text-[10px] font-bold tracking-wider uppercase">{t('lost.no_image')}</span>
           </div>
           {/* Images */}
           {images.length > 0 && (
@@ -194,8 +205,24 @@ export default function LostFoundDetail({ id, onClose }: LostFoundDetailProps) {
           <span className={`absolute top-16 left-4 z-20 text-white text-xs font-black px-3 py-1 rounded-full ${
             item.status === 'RESOLVED' ? 'bg-gray-800' : item.type === 'LOST' ? 'bg-red-500' : 'bg-primary'
           }`}>
-            {item.status === 'RESOLVED' ? 'Resolved' : item.type === 'LOST' ? 'Lost' : 'Found'}
+            {item.status === 'RESOLVED' ? t('lost.resolved') : item.type === 'LOST' ? t('lost.lost') : t('lost.found')}
           </span>
+
+          {/* User Interaction Status Badge */}
+          {userLike && (userLike.status === 'pending' || userLike.status === 'in_progress') && (
+            <div className={`absolute top-16 right-4 z-20 px-3 py-1 rounded-full backdrop-blur-md border shadow-lg flex items-center gap-1.5 animate-in slide-in-from-right duration-500 ${
+              userLike.status === 'in_progress' 
+                ? 'bg-blue-500/90 border-blue-400 text-white' 
+                : 'bg-primary/90 border-primary/50 text-white'
+            }`}>
+              <span className="material-symbols-rounded text-sm">
+                {userLike.status === 'in_progress' ? 'motion_photos_on' : 'hourglass_empty'}
+              </span>
+              <span className="text-[10px] font-black uppercase tracking-wider">
+                {userLike.status === 'in_progress' ? t('shop.status_in_progress') : t('shop.status_pending')}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* 2) Title & Stats */}
@@ -223,20 +250,20 @@ export default function LostFoundDetail({ id, onClose }: LostFoundDetailProps) {
           {item.reward && item.reward > 0 ? (
             <div className="flex items-center gap-1 text-[#1A73E8]">
               <span className="material-symbols-rounded text-sm">payments</span>
-              <span className="text-xs font-bold">Reward: ${item.reward.toLocaleString()}</span>
+              <span className="text-xs font-bold">{t('lost.reward')}: ${item.reward.toLocaleString()}</span>
             </div>
           ) : null}
         </div>
 
         {/* 4) Description */}
         <div className="px-4 py-4 border-b border-[#f2f4f4]">
-          <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-2">Description</p>
+          <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-2">{t('lost.description')}</p>
           <p className={`text-sm text-[#596061] leading-relaxed whitespace-pre-line ${!showFullDesc ? 'line-clamp-4' : ''}`}>
-            {item.description || 'No description provided.'}
+            {item.description || t('lost.no_description')}
           </p>
           {item.description && item.description.length > 120 && (
             <button onClick={() => setShowFullDesc(!showFullDesc)} className="text-xs font-bold text-primary mt-2 flex items-center gap-0.5">
-              {showFullDesc ? 'Show Less' : 'Show More'}
+              {showFullDesc ? t('lost.show_less') : t('lost.show_more')}
               <span className="material-symbols-rounded text-sm">{showFullDesc ? 'expand_less' : 'expand_more'}</span>
             </button>
           )}
@@ -251,7 +278,7 @@ export default function LostFoundDetail({ id, onClose }: LostFoundDetailProps) {
               className="w-full flex items-center justify-center gap-2 py-3.5 bg-[#f2f4f4] hover:bg-[#e8eaec] rounded-2xl transition-colors active:scale-[0.98] disabled:opacity-50"
             >
               <span className="material-symbols-rounded text-lg text-[#596061]">chat</span>
-              <span className="text-sm font-bold text-[#2d3435]">Chat with Author</span>
+              <span className="text-sm font-bold text-[#2d3435]">{t('lost.chat_author')}</span>
             </button>
           ) : (
             <button
@@ -260,10 +287,10 @@ export default function LostFoundDetail({ id, onClose }: LostFoundDetailProps) {
               className="w-full flex items-center justify-center gap-2 py-3.5 bg-gray-800 text-white rounded-2xl transition-colors active:scale-[0.98] disabled:opacity-50"
             >
               <span className="material-symbols-rounded text-lg">check_circle</span>
-              <span className="text-sm font-bold">Mark as Resolved</span>
+              <span className="text-sm font-bold">{t('lost.mark_resolved')}</span>
             </button>
           )}
-          <p className="text-[10px] text-[#acb3b4] text-center mt-1.5">Item info will be sent automatically when you start chatting.</p>
+          <p className="text-[10px] text-[#acb3b4] text-center mt-1.5">{t('lost.chat_info_auto')}</p>
         </div>
       </div>
 
@@ -282,7 +309,7 @@ export default function LostFoundDetail({ id, onClose }: LostFoundDetailProps) {
         {user?.uid !== item.authorId && (
           <button onClick={handleChatWithAuthor} disabled={item.status === 'RESOLVED'}
             className="flex-shrink-0 bg-primary text-white px-7 py-3 rounded-xl font-black text-sm tracking-wide shadow-lg shadow-primary/20 active:scale-95 transition-transform disabled:opacity-50">
-            {item.status === 'RESOLVED' ? 'Unavailable' : 'Contact'}
+            {item.status === 'RESOLVED' ? t('lost.unavailable') : t('lost.contact')}
           </button>
         )}
       </div>

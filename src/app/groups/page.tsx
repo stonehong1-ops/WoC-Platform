@@ -9,8 +9,9 @@ import { Group, Member } from '@/types/group';
 import Link from 'next/link';
 import ImageWithFallback from '@/components/common/ImageWithFallback';
 import { db } from '@/lib/firebase/clientApp';
-import { updateDoc, doc, collection, getDocs, query } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, getDocs, query } from 'firebase/firestore';
 import MyGroupsTray from '@/components/groups/MyGroupsTray';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 import { Suspense } from 'react';
 
@@ -19,6 +20,7 @@ function GroupsContent() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const { user, profile, setShowLogin } = useAuth();
+  const { t } = useLanguage();
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -137,7 +139,7 @@ function GroupsContent() {
       setGroups(data);
     } catch (err: any) {
       console.error('Error fetching groups:', err);
-      setError(err.message || 'Failed to load groups. Please try again.');
+      setError(err.message || t('groups.alert_create_failed')); // Using failed fallback for general error
     } finally {
       setLoading(false);
     }
@@ -323,7 +325,7 @@ function GroupsContent() {
     }
 
     if (!createForm.name.trim()) {
-      alert('Please enter a group name.');
+      alert(t('groups.alert_name_required'));
       return;
     }
 
@@ -356,7 +358,7 @@ function GroupsContent() {
         tags: [createForm.category],
         ownerId: user.uid,
         representative: {
-          name: profile?.nickname || user.displayName || 'Community Leader',
+          name: profile?.nickname || user.displayName || t('groups.leader_fallback'),
           avatar: profile?.photoURL || user.photoURL || ''
         },
         activeServices,
@@ -368,7 +370,7 @@ function GroupsContent() {
       };
 
       const memberData: Omit<Member, 'id'> = {
-        name: profile?.nickname || user.displayName || 'Community Leader',
+        name: profile?.nickname || user.displayName || t('groups.leader_fallback'),
         avatar: profile?.photoURL || user.photoURL || '',
       };
 
@@ -387,7 +389,7 @@ function GroupsContent() {
       fetchGroups();
     } catch (error) {
       console.error('Error creating group:', error);
-      alert('Failed to create group. Please try again.');
+      alert(t('groups.alert_create_failed'));
     } finally {
       setCreateLoading(false);
     }
@@ -409,13 +411,13 @@ function GroupsContent() {
           <div className="flex items-end justify-between">
             <div>
               <h2 className="text-2xl font-extrabold font-headline tracking-tight text-on-background">What's New</h2>
-              <p className="text-on-surface-variant text-sm font-medium">Discover the latest communities</p>
+              <p className="text-on-surface-variant text-sm font-medium">{t('groups.whats_new_desc')}</p>
             </div>
             <button
               onClick={() => { openCategoryModal('All'); }}
               className="text-primary font-bold text-sm flex items-center gap-1 group"
             >
-              View all <span className="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
+              {t('groups.view_all')} <span className="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
             </button>
           </div>
           <div className="flex overflow-x-auto gap-4 no-scrollbar pb-4 -mx-6 px-6">
@@ -430,7 +432,7 @@ function GroupsContent() {
                   <div className="absolute inset-0 bg-black/10 z-10"></div>
                   <div className="absolute top-3 left-3">
                     <span className="bg-white/90 backdrop-blur px-2.5 py-0.5 rounded-full text-[10px] font-bold text-primary flex items-center gap-1 shadow-sm">
-                      <span className="material-symbols-outlined text-[12px]">location_on</span> {group.address || 'Venue'}
+                      <span className="material-symbols-outlined text-[12px]">location_on</span> {group.address || t('groups.venue_fallback')}
                     </span>
                   </div>
                   <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 via-black/40 to-transparent z-20 text-white">
@@ -438,12 +440,12 @@ function GroupsContent() {
                       {group.name}
                       {group.nativeName && <span className="text-[0.8em] font-medium text-white/90 ml-1.5">{group.nativeName}</span>}
                     </h3>
-                    <p className="text-white/80 text-xs line-clamp-1 mt-1">{group.memberCount} members • {group.tags?.[0] || 'Community'}</p>
+                    <p className="text-white/80 text-xs line-clamp-1 mt-1">{group.memberCount} {t('groups.member_count_label')} • {group.tags?.[0] ? t(`groups.cat_${group.tags[0].toLowerCase()}`) : t('groups.community_fallback')}</p>
                   </div>
                 </div>
               </div>
             )) : (
-              <div className="w-full text-center py-10 text-on-surface-variant/50 font-medium">No groups discovered yet.</div>
+              <div className="w-full text-center py-10 text-on-surface-variant/50 font-medium">{t('groups.no_whats_new')}</div>
             )}
           </div>
         </section>
@@ -451,13 +453,13 @@ function GroupsContent() {
         {/* Integrated Group Action */}
         <div className="px-6 py-2 flex items-center justify-between bg-white border-b border-slate-50">
           <p className="text-[12px] font-bold text-slate-400 uppercase tracking-tight">
-            Start a new community?
+            {t('groups.start_community_label')}
           </p>
           <button 
             onClick={openCreateModal}
             className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 transition-colors py-2"
           >
-            <span className="text-[13px] font-bold">Create Group</span>
+            <span className="text-[13px] font-bold">{t('groups.create_button')}</span>
             <span className="material-symbols-outlined text-[18px]">add_circle</span>
           </button>
         </div>
@@ -466,7 +468,7 @@ function GroupsContent() {
         <section className="space-y-4">
           <div>
             <h2 className="text-2xl font-extrabold font-headline tracking-tight text-on-background">Category Best</h2>
-            <p className="text-on-surface-variant text-sm font-medium">Explore by activity type</p>
+            <p className="text-on-surface-variant text-sm font-medium">{t('groups.category_best_desc')}</p>
           </div>
           <div className="grid grid-cols-2 gap-4">
             {discoveryCategories.map((cat) => (
@@ -483,7 +485,7 @@ function GroupsContent() {
                       {categoryCounts[cat.id as keyof typeof categoryCounts] || 0}
                     </span>
                   </div>
-                  <span className={`${cat.text} font-black font-headline text-lg uppercase italic`}>{cat.id}</span>
+                  <span className={`${cat.text} font-black font-headline text-lg uppercase italic`}>{t(`groups.cat_${cat.id.toLowerCase()}`)}</span>
                 </div>
                 <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition-opacity">
                   <span className={`material-symbols-outlined text-8xl ${cat.text}`}>{cat.icon}</span>
@@ -507,7 +509,7 @@ function GroupsContent() {
                   <span className="material-symbols-outlined">arrow_back</span>
                 </button>
                 <h1 className="text-xl font-bold font-headline text-on-surface">
-                  {selectedCategory === 'All' ? 'Discover All' : `Category: ${selectedCategory}`}
+                  {selectedCategory === 'All' ? t('groups.discover_all') : `${t('groups.category_title_prefix')}${t(`groups.cat_${selectedCategory.toLowerCase()}`)}`}
                 </h1>
               </div>
             </div>
@@ -527,7 +529,7 @@ function GroupsContent() {
                   <GroupCoverImage group={group} className="group-hover:scale-105" />
                   {index === 0 && (
                     <div className="absolute top-4 right-4 bg-primary text-white px-3 py-1 rounded-full text-[10px] font-bold shadow-lg tracking-wider">
-                      FEATURED
+                      {t('groups.featured_badge')}
                     </div>
                   )}
                   <div className="absolute bottom-4 left-4 flex -space-x-2">
@@ -549,7 +551,7 @@ function GroupsContent() {
                       </h2>
                       <div className="flex items-center gap-2 text-on-surface-variant text-xs mt-1.5">
                         <span className="material-symbols-outlined text-[14px]">person</span>
-                        <span>Owned by {group.representative?.name || 'Community Leader'}</span>
+                        <span>{t('groups.owned_by')}{group.representative?.name || t('groups.leader_fallback')}</span>
                       </div>
                     </div>
                     <div className="text-right">
@@ -560,7 +562,7 @@ function GroupsContent() {
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest bg-emerald-50 px-2 py-0.5 rounded-md">Open to Join</span>
+                    <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest bg-emerald-50 px-2 py-0.5 rounded-md">{t('groups.open_to_join')}</span>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -568,7 +570,7 @@ function GroupsContent() {
                       }}
                       className="bg-gradient-to-br from-primary to-[#4d8eff] text-white px-6 py-2 rounded-xl font-bold shadow-lg shadow-blue-100 active:scale-95 transition-all text-sm"
                     >
-                      Join Group
+                      {t('groups.join_button')}
                     </button>
                   </div>
                 </div>
@@ -594,36 +596,36 @@ function GroupsContent() {
               >
                 <span className="material-symbols-outlined">close</span>
               </button>
-              <h1 className="font-headline text-lg font-bold text-on-surface">Create New Group</h1>
+              <h1 className="font-headline text-lg font-bold text-on-surface">{t('groups.create_modal_title')}</h1>
             </div>
             <button
               onClick={handleCreateSubmit}
               disabled={createLoading}
               className="bg-primary text-on-primary px-6 py-2 rounded-lg font-headline font-bold text-sm hover:brightness-110 active:scale-95 transition-all duration-150 shadow-md disabled:opacity-50"
             >
-              {createLoading ? 'Saving...' : 'Save'}
+              {createLoading ? t('groups.save_button_loading') : t('groups.save_button')}
             </button>
           </header>
 
           <main className="pt-8 pb-20 px-6 max-w-[896px] mx-auto space-y-6">
             {/* Section: Basic Info */}
-            <section className="bg-white rounded-[12px] p-6 shadow-sm border border-outline-variant/30">
+             <section className="bg-white rounded-[12px] p-6 shadow-sm border border-outline-variant/30">
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-outline">GROUP NAME</label>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-outline">{t('groups.form_name_label')}</label>
                   <input
                     className="w-full bg-surface-container-low border-transparent focus:border-primary focus:ring-0 rounded-lg p-3 text-on-surface font-medium transition-all"
-                    placeholder="Enter group name..."
+                    placeholder={t('groups.form_name_placeholder')}
                     type="text"
                     value={createForm.name}
                     onChange={(e) => setCreateForm(prev => ({ ...prev, name: e.target.value }))}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-outline">DESCRIPTION</label>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-outline">{t('groups.form_description_label')}</label>
                   <textarea
                     className="w-full bg-surface-container-low border-transparent focus:border-primary focus:ring-0 rounded-lg p-3 text-on-surface font-medium transition-all resize-none"
-                    placeholder="Describe the purpose of this group..."
+                    placeholder={t('groups.form_description_placeholder')}
                     rows={4}
                     value={createForm.description}
                     onChange={(e) => setCreateForm(prev => ({ ...prev, description: e.target.value }))}
@@ -634,7 +636,7 @@ function GroupsContent() {
 
             {/* Section: Category */}
             <section className="bg-white rounded-[12px] p-6 shadow-sm border border-outline-variant/30">
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-outline mb-4">CATEGORY</label>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-outline mb-4">{t('groups.form_category_label')}</label>
               <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
                 {[
                   { id: 'Studio', icon: 'palette' },
@@ -657,7 +659,7 @@ function GroupsContent() {
                       }`}
                   >
                     <span className={`material-symbols-outlined mb-2 ${createForm.category === cat.id ? 'text-primary' : 'text-outline'}`}>{cat.icon}</span>
-                    <span className={`text-[12px] font-semibold ${createForm.category === cat.id ? 'text-primary' : 'text-on-surface-variant'}`}>{cat.id}</span>
+                    <span className={`text-[12px] font-semibold ${createForm.category === cat.id ? 'text-primary' : 'text-on-surface-variant'}`}>{t(`groups.cat_${cat.id.toLowerCase()}`)}</span>
                   </button>
                 ))}
               </div>
@@ -665,12 +667,12 @@ function GroupsContent() {
 
             {/* Section: Membership Strategy */}
             <section className="bg-white rounded-[12px] p-6 shadow-sm border border-outline-variant/30">
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-outline mb-4">JOINING POLICY</label>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-outline mb-4">{t('groups.form_policy_label')}</label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {[
-                  { id: 'open', label: 'Open', icon: 'public', desc: 'Anyone can join the group instantly.' },
-                  { id: 'approval', label: 'Approval', icon: 'verified_user', desc: 'Admin must approve each request.' },
-                  { id: 'invite', label: 'Invitation', icon: 'mail', desc: 'Private selected members only.' }
+                  { id: 'open', label: t('groups.policy_open_label'), icon: 'public', desc: t('groups.policy_open_desc') },
+                  { id: 'approval', label: t('groups.policy_approval_label'), icon: 'verified_user', desc: t('groups.policy_approval_desc') },
+                  { id: 'invite', label: t('groups.policy_invite_label'), icon: 'mail', desc: t('groups.policy_invite_desc') }
                 ].map((policy) => (
                   <div
                     key={policy.id}
@@ -693,7 +695,7 @@ function GroupsContent() {
 
             {/* Section: Media */}
             <section className="bg-white rounded-[12px] p-6 shadow-sm border border-outline-variant/30">
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-outline mb-4">COVER PHOTO</label>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-outline mb-4">{t('groups.form_cover_label')}</label>
               <div className="relative group">
                 <div className={`w-full aspect-[21/9] rounded-xl overflow-hidden border-2 border-dashed flex flex-col items-center justify-center transition-all cursor-pointer ${createForm.previewUrl ? 'border-primary' : 'border-outline-variant bg-surface-container-low hover:bg-surface-container hover:border-primary'
                   }`}>
@@ -704,8 +706,8 @@ function GroupsContent() {
                       <div className="p-4 rounded-full bg-white shadow-sm mb-3">
                         <span className="material-symbols-outlined text-primary text-3xl">upload_file</span>
                       </div>
-                      <p className="font-bold text-sm">Click to upload or drag and drop</p>
-                      <p className="text-[12px] text-outline font-medium mt-1">SVG, PNG, JPG or GIF (max. 800x400px)</p>
+                      <p className="font-bold text-sm">{t('groups.upload_instruction')}</p>
+                      <p className="text-[12px] text-outline font-medium mt-1">{t('groups.upload_limits')}</p>
                     </>
                   )}
                 </div>
@@ -724,7 +726,7 @@ function GroupsContent() {
                   </div>
                   <div>
                     <p className="text-[12px] font-semibold text-on-surface">{createForm.coverImage?.name}</p>
-                    <p className="text-[10px] text-outline font-medium">{(createForm.coverImage?.size || 0 / 1024 / 1024).toFixed(1)} MB • Ready to upload</p>
+                    <p className="text-[10px] text-outline font-medium">{(createForm.coverImage?.size || 0 / 1024 / 1024).toFixed(1)} MB • {t('groups.upload_ready')}</p>
                   </div>
                   <button
                     onClick={() => setCreateForm(prev => ({ ...prev, coverImage: null, previewUrl: null }))}

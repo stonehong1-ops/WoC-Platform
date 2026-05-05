@@ -7,6 +7,7 @@ import { chatService } from '@/lib/firebase/chatService';
 import { Product, ShopOrder } from '@/types/shop';
 import { Timestamp } from 'firebase/firestore';
 import ImageWithFallback from '@/components/common/ImageWithFallback';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 type Step = 'summary' | 'payment' | 'complete';
 
@@ -30,14 +31,14 @@ export default function PurchaseFlow({
   fulfillmentType, bankDetails, groupId, groupName,
   onClose, onComplete
 }: PurchaseFlowProps) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const { t } = useLanguage();
   const [step, setStep] = useState<Step>('summary');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderNumber, setOrderNumber] = useState('');
   const [orderId, setOrderId] = useState<string>('');
   const [copied, setCopied] = useState('');
   const [countdown, setCountdown] = useState(3600); // 60 min
-  const { profile } = useAuth();
   const [buyerPhone, setBuyerPhone] = useState('');
 
   useEffect(() => {
@@ -84,7 +85,7 @@ export default function PurchaseFlow({
   const handleConfirmOrder = async () => {
     if (!user || isSubmitting) return;
     if (!buyerPhone.trim()) {
-      alert("Please enter a contact number so the seller can reach you.");
+      alert(t('shop.msg_enter_contact', "Please enter a contact number so the seller can reach you."));
       return;
     }
 
@@ -108,7 +109,7 @@ export default function PurchaseFlow({
         groupId,
         groupName,
         buyerId: user.uid,
-        buyerName: user.displayName || 'User',
+        buyerName: user.displayName || t('common.user', 'User'),
         buyerPhone: buyerPhone,
         sellerId: product.sellerId || 'adminstone', // Unified fallback with chat notifications
         items: [{
@@ -151,33 +152,33 @@ export default function PurchaseFlow({
           const roomId = await chatService.getOrCreatePrivateRoom([user.uid, sellerId], user.uid, 'business');
           
           // 1. Initial Product Info Message
-          const productInfoMsg = `🛍️ [PRODUCT INQUIRY]\n` +
-            `Brand: ${product.brand}\n` +
-            `Title: ${product.title}\n` +
-            `Price: ${sym}${fmt(itemPrice)}\n` +
+          const productInfoMsg = `🛍️ ${t('shop.chat_inquiry_prefix', '[Product Inquiry]')}\n` +
+            `${t('shop.chat_brand', 'Brand')}: ${product.brand}\n` +
+            `${t('shop.chat_product_name', 'Title')}: ${product.title}\n` +
+            `${t('shop.chat_price', 'Price')}: ${sym}${fmt(itemPrice)}\n` +
             `Image: ${product.images?.[0] || product.imageUrl || ''}\n` +
-            `Link: ${window.location.origin}/shop?productId=${product.id}`;
-
+            `${t('shop.chat_link', 'Link')}: ${window.location.origin}/shop?productId=${product.id}`;
+          
           await chatService.sendMessage({
             roomId,
             senderId: user.uid,
-            senderName: user.displayName || 'User',
+            senderName: user.displayName || t('common.user', 'User'),
             text: productInfoMsg,
             type: 'text'
           });
 
           // 2. Order Placed Message
-          const orderMsg = `📦 [ORDER PLACED]\n` +
-            `Order No: ${num}\n` +
-            `Product: ${product.title}\n` +
-            `Option: ${selectedSize || 'None'}\n` +
-            `Amount: ${sym}${fmt(totalAmount)}\n` +
+          const orderMsg = `📦 ${t('shop.chat_order_prefix', '[ORDER PLACED]')}\n` +
+            `${t('shop.chat_order_no', 'Order No')}: ${num}\n` +
+            `${t('shop.chat_product_name', 'Product')}: ${product.title}\n` +
+            `${t('shop.chat_option', 'Option')}: ${selectedSize || 'None'}\n` +
+            `${t('shop.chat_amount', 'Amount')}: ${sym}${fmt(totalAmount)}\n` +
             `Image: ${product.images?.[0] || product.imageUrl || ''}`;
 
           await chatService.sendMessage({
             roomId,
             senderId: user.uid,
-            senderName: user.displayName || 'User',
+            senderName: user.displayName || t('common.user', 'User'),
             text: orderMsg,
             type: 'text'
           });
@@ -190,7 +191,7 @@ export default function PurchaseFlow({
       setStep('payment');
     } catch (err) {
       console.error('Order creation failed:', err);
-      alert('Failed to create order. Please try again.');
+      alert(t('shop.msg_order_failed', 'Failed to create order. Please try again.'));
     } finally {
       setIsSubmitting(false);
       setShowChatConfirm(false);
@@ -212,7 +213,7 @@ export default function PurchaseFlow({
 
           {/* Header */}
           <div className="px-5 pt-2 pb-4 flex items-center justify-between">
-            <h2 className="text-lg font-black text-[#2d3435]">Order Summary</h2>
+            <h2 className="text-lg font-black text-[#2d3435]">{t('shop.order_summary', 'Order Summary')}</h2>
             <button onClick={onClose} className="w-8 h-8 rounded-full bg-[#f2f4f4] flex items-center justify-center">
               <span className="material-symbols-outlined text-sm text-[#596061]">close</span>
             </button>
@@ -230,7 +231,7 @@ export default function PurchaseFlow({
                 <p className="text-[10px] font-bold text-[#acb3b4] uppercase">{product.brand}</p>
                 <p className="text-sm font-bold text-[#2d3435] truncate">{product.title}</p>
                 <div className="flex flex-wrap gap-1 mt-1">
-                  {selectedSize && <span className="text-[10px] bg-[#e8eaec] text-[#596061] px-2 py-0.5 rounded-full font-bold">Size: {selectedSize}</span>}
+                  {selectedSize && <span className="text-[10px] bg-[#e8eaec] text-[#596061] px-2 py-0.5 rounded-full font-bold">{t('shop.size', 'Size')}: {selectedSize}</span>}
                   {Object.entries(selectedOptions).map(([k, v]) => (
                     <span key={k} className="text-[10px] bg-[#e8eaec] text-[#596061] px-2 py-0.5 rounded-full font-bold">{k}: {String(v)}</span>
                   ))}
@@ -244,7 +245,7 @@ export default function PurchaseFlow({
           {/* Contact Info */}
           <div className="px-5 pb-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-[#596061]">Contact Number <span className="text-red-500">*</span></label>
+              <label className="text-xs font-bold text-[#596061]">{t('shop.contact_number', 'Contact Number')} <span className="text-red-500">*</span></label>
               <input
                 type="tel"
                 value={buyerPhone}
@@ -252,7 +253,7 @@ export default function PurchaseFlow({
                 placeholder="010-0000-0000"
                 className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm text-[#2d3435] focus:outline-none focus:border-[#0057bd] focus:ring-1 focus:ring-[#0057bd] transition-all"
               />
-              <p className="text-[10px] text-[#acb3b4]">Seller will contact you at this number regarding your order.</p>
+              <p className="text-[10px] text-[#acb3b4]">{t('shop.seller_contact_notice', 'Seller will contact you at this number regarding your order.')}</p>
             </div>
           </div>
 
@@ -263,10 +264,10 @@ export default function PurchaseFlow({
               disabled={isSubmitting}
               className="w-full bg-[#0057bd] text-white py-4 rounded-2xl font-black text-sm tracking-wide shadow-lg shadow-[#0057bd]/20 active:scale-[0.98] transition-transform disabled:opacity-50"
             >
-              {isSubmitting ? 'Processing...' : `Confirm · ${sym}${fmt(totalAmount)}`}
+              {isSubmitting ? t('shop.processing', 'Processing...') : `${t('shop.confirm', 'Confirm')} · ${sym}${fmt(totalAmount)}`}
             </button>
             <p className="text-[10px] text-[#acb3b4] text-center mt-2">
-              By confirming, you agree to transfer the amount within 1 hour.
+              {t('shop.confirm_agreement', 'By confirming, you agree to transfer the amount within 1 hour.')}
             </p>
           </div>
 
@@ -283,7 +284,7 @@ export default function PurchaseFlow({
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-[#f2f4f4]">
           <div className="w-10" />
-          <h2 className="text-sm font-black text-[#2d3435]">Payment Instructions</h2>
+          <h2 className="text-sm font-black text-[#2d3435]">{t('shop.payment_instructions', 'Payment Instructions')}</h2>
           <button onClick={() => { setStep('complete'); }} className="w-10 h-10 rounded-full flex items-center justify-center">
             <span className="material-symbols-outlined text-xl text-[#596061]">close</span>
           </button>
@@ -297,19 +298,19 @@ export default function PurchaseFlow({
               <span className="text-2xl font-black text-orange-600 font-mono tracking-wider">{mm}:{ss}</span>
             </div>
             <p className="text-xs text-[#596061] mt-2">
-              Please transfer within 1 hour.<br/>
-              <span className="text-[#acb3b4]">Order may expire if not paid in time.</span>
+              {t('shop.transfer_within_1h', 'Please transfer within 1 hour.')}<br/>
+              <span className="text-[#acb3b4]">{t('shop.order_expire_notice', 'Order may expire if not paid in time.')}</span>
             </p>
           </div>
 
           {/* Order Number */}
           <div className="bg-[#f8f9fa] rounded-2xl p-4 border border-[#e0e4e5]">
-            <p className="text-[10px] font-bold text-[#acb3b4] uppercase tracking-widest mb-1">Order Number</p>
+            <p className="text-[10px] font-bold text-[#acb3b4] uppercase tracking-widest mb-1">{t('shop.order_number', 'Order Number')}</p>
             <div className="flex items-center justify-between">
               <p className="text-base font-black text-[#2d3435] font-mono">{orderNumber}</p>
               <button onClick={() => copyToClipboard(orderNumber, 'order')}
                 className={`text-[10px] font-bold px-3 py-1.5 rounded-full transition-colors ${copied === 'order' ? 'bg-emerald-100 text-emerald-700' : 'bg-[#e8eaec] text-[#596061]'}`}>
-                {copied === 'order' ? '✓ Copied' : 'Copy'}
+                {copied === 'order' ? t('shop.copied', '✓ Copied') : t('shop.copy', 'Copy')}
               </button>
             </div>
           </div>
@@ -318,41 +319,41 @@ export default function PurchaseFlow({
           <div className="border border-[#e0e4e5] rounded-2xl overflow-hidden">
             <div className="bg-[#f8f9fa] px-4 py-2.5 border-b border-[#e0e4e5] flex items-center gap-2">
               <span className="material-symbols-outlined text-sm text-[#0057bd]">account_balance</span>
-              <p className="text-[10px] font-black text-[#0057bd] uppercase tracking-widest">Bank Transfer Details</p>
+              <p className="text-[10px] font-black text-[#0057bd] uppercase tracking-widest">{t('shop.bank_transfer_details', 'Bank Transfer Details')}</p>
             </div>
             <div className="p-4 space-y-3">
               {/* Bank Name */}
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] text-[#acb3b4] uppercase font-bold">Bank</p>
-                  <p className="text-sm font-bold text-[#2d3435]">{bankDetails?.bankName || 'N/A'}</p>
+                  <p className="text-[10px] text-[#acb3b4] uppercase font-bold">{t('shop.bank', 'Bank')}</p>
+                  <p className="text-sm font-bold text-[#2d3435]">{bankDetails?.bankName || t('shop.not_available', 'N/A')}</p>
                 </div>
               </div>
               {/* Account Number */}
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] text-[#acb3b4] uppercase font-bold">Account Number</p>
-                  <p className="text-base font-black text-[#2d3435] font-mono tracking-wide">{bankDetails?.accountNumber || 'N/A'}</p>
+                  <p className="text-[10px] text-[#acb3b4] uppercase font-bold">{t('shop.account_number', 'Account Number')}</p>
+                  <p className="text-base font-black text-[#2d3435] font-mono tracking-wide">{bankDetails?.accountNumber || t('shop.not_available', 'N/A')}</p>
                 </div>
                 <button onClick={() => copyToClipboard(bankDetails?.accountNumber || '', 'account')}
                   className={`text-[10px] font-bold px-3 py-1.5 rounded-full transition-colors ${copied === 'account' ? 'bg-emerald-100 text-emerald-700' : 'bg-[#0057bd] text-white'}`}>
-                  {copied === 'account' ? '✓ Copied' : 'Copy'}
+                  {copied === 'account' ? t('shop.copied', '✓ Copied') : t('shop.copy', 'Copy')}
                 </button>
               </div>
               {/* Account Holder */}
               <div>
-                <p className="text-[10px] text-[#acb3b4] uppercase font-bold">Account Holder</p>
-                <p className="text-sm font-bold text-[#2d3435]">{bankDetails?.accountHolder || 'N/A'}</p>
+                <p className="text-[10px] text-[#acb3b4] uppercase font-bold">{t('shop.account_holder', 'Account Holder')}</p>
+                <p className="text-sm font-bold text-[#2d3435]">{bankDetails?.accountHolder || t('shop.not_available', 'N/A')}</p>
               </div>
               {/* Amount */}
               <div className="bg-[#f0f4ff] rounded-xl p-3 flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] text-[#0057bd] uppercase font-bold">Transfer Amount</p>
+                  <p className="text-[10px] text-[#0057bd] uppercase font-bold">{t('shop.transfer_amount', 'Transfer Amount')}</p>
                   <p className="text-xl font-black text-[#0057bd]">{sym}{fmt(totalAmount)}</p>
                 </div>
                 <button onClick={() => copyToClipboard(String(totalAmount), 'amount')}
                   className={`text-[10px] font-bold px-3 py-1.5 rounded-full transition-colors ${copied === 'amount' ? 'bg-emerald-100 text-emerald-700' : 'bg-[#0057bd] text-white'}`}>
-                  {copied === 'amount' ? '✓ Copied' : 'Copy'}
+                  {copied === 'amount' ? t('shop.copied', '✓ Copied') : t('shop.copy', 'Copy')}
                 </button>
               </div>
             </div>
@@ -362,14 +363,14 @@ export default function PurchaseFlow({
           <div className="border border-[#e0e4e5] rounded-2xl overflow-hidden">
             <div className="bg-[#f8f9fa] px-4 py-2.5 border-b border-[#e0e4e5] flex items-center gap-2">
               <span className="material-symbols-outlined text-sm text-[#596061]">info</span>
-              <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest">How It Works</p>
+              <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest">{t('shop.how_it_works', 'How It Works')}</p>
             </div>
             <div className="p-4 space-y-4">
               {[
-                { num: '1', icon: 'payments', title: 'Transfer the amount', desc: 'Send the exact amount to the bank account above within 1 hour.' },
-                { num: '2', icon: 'verified', title: 'Seller confirms payment', desc: 'The seller will verify your transfer and confirm the order.' },
-                { num: '3', icon: 'precision_manufacturing', title: 'Production begins', desc: `Your item will be crafted in ${product.productionDaysMin || '?'}–${product.productionDaysMax || '?'} days.` },
-                { num: '4', icon: fulfillmentType === 'pickup' ? 'store' : 'local_shipping', title: fulfillmentType === 'pickup' ? 'Pick up at store' : 'Delivery to you', desc: fulfillmentType === 'pickup' ? 'You\'ll be notified when ready for pickup.' : `Delivered within ${product.deliveryDays || '?'} days after production.` },
+                { num: '1', icon: 'payments', title: t('shop.step1_title', 'Transfer the amount'), desc: t('shop.step1_desc', 'Send the exact amount to the bank account above within 1 hour.') },
+                { num: '2', icon: 'verified', title: t('shop.step2_title', 'Seller confirms payment'), desc: t('shop.step2_desc', 'The seller will verify your transfer and confirm the order.') },
+                { num: '3', icon: 'precision_manufacturing', title: t('shop.step3_title', 'Production begins'), desc: t('shop.step3_desc', `Your item will be crafted in {min}–{max} days.`).replace('{min}', product.productionDaysMin?.toString() || '?').replace('{max}', product.productionDaysMax?.toString() || '?') },
+                { num: '4', icon: fulfillmentType === 'pickup' ? 'store' : 'local_shipping', title: fulfillmentType === 'pickup' ? t('shop.step4_pickup_title', 'Pick up at store') : t('shop.step4_delivery_title', 'Delivery to you'), desc: fulfillmentType === 'pickup' ? t('shop.step4_pickup_desc', 'You\'ll be notified when ready for pickup.') : t('shop.step4_delivery_desc', `Delivered within {days} days after production.`).replace('{days}', product.deliveryDays?.toString() || '?') },
               ].map(s => (
                 <div key={s.num} className="flex gap-3">
                   <div className="w-7 h-7 rounded-full bg-[#0057bd] text-white flex items-center justify-center text-xs font-black flex-shrink-0">{s.num}</div>
@@ -386,7 +387,7 @@ export default function PurchaseFlow({
           <div className="flex gap-2 p-3 bg-[#fef2f2] rounded-xl border border-red-100">
             <span className="material-symbols-outlined text-sm text-red-400 flex-shrink-0 mt-0.5">warning</span>
             <p className="text-[11px] text-red-600 leading-relaxed">
-              If payment is not completed within 1 hour, the order will be automatically cancelled.
+              {t('shop.payment_warning', 'If payment is not completed within 1 hour, the order will be automatically cancelled.')}
             </p>
           </div>
         </div>
@@ -398,7 +399,7 @@ export default function PurchaseFlow({
               if (orderId) {
                 try {
                   await shopService.updateOrderStatus(orderId, 'PAYMENT_REPORTED', {
-                    depositorName: user?.displayName || 'User',
+                    depositorName: user?.displayName || t('common.user', 'User'),
                     depositDate: new Date().toISOString().split('T')[0]
                   });
 
@@ -406,11 +407,11 @@ export default function PurchaseFlow({
                   const sellerId = product.sellerId || 'adminstone';
                   if (sellerId && user) {
                     const roomId = await chatService.getOrCreatePrivateRoom([user.uid, sellerId], user.uid, 'business');
-                    const msg = `💸 [PAYMENT REPORTED]\nOrder No: ${orderNumber}\nDepositor: ${user.displayName || 'User'}\nI have transferred the payment. Please confirm!`;
+                    const msg = `💸 ${t('shop.chat_payment_prefix', '[PAYMENT REPORTED]')}\n${t('shop.chat_order_no', 'Order No')}: ${orderNumber}\n${t('shop.chat_depositor', 'Depositor')}: ${user.displayName || t('common.user', 'User')}\n${t('shop.chat_payment_msg', 'I have transferred the payment. Please confirm!')}`;
                     await chatService.sendMessage({
                       roomId,
                       senderId: user.uid,
-                      senderName: user.displayName || 'User',
+                      senderName: user.displayName || t('common.user', 'User'),
                       text: msg,
                       type: 'text'
                     });
@@ -423,7 +424,7 @@ export default function PurchaseFlow({
             }}
             className="w-full bg-[#0057bd] text-white py-4 rounded-2xl font-black text-sm tracking-wide shadow-lg shadow-[#0057bd]/20 active:scale-[0.98] transition-transform"
           >
-            I've Transferred the Payment
+            {t('shop.btn_transferred', "I've Transferred the Payment")}
           </button>
         </div>
       </div>
@@ -438,13 +439,13 @@ export default function PurchaseFlow({
         <span className="material-symbols-outlined text-4xl text-emerald-600" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
       </div>
 
-      <h2 className="text-xl font-black text-[#2d3435] mb-2">Order Placed!</h2>
+      <h2 className="text-xl font-black text-[#2d3435] mb-2">{t('shop.order_placed', 'Order Placed!')}</h2>
       <p className="text-sm text-[#596061] text-center leading-relaxed mb-2">
-        Your order <span className="font-mono font-bold text-[#2d3435]">{orderNumber}</span> has been placed.
+        {t('shop.order_placed_desc1', 'Your order ')}<span className="font-mono font-bold text-[#2d3435]">{orderNumber}</span>{t('shop.order_placed_desc1_after', ' has been placed.')}
       </p>
       <p className="text-xs text-[#acb3b4] text-center leading-relaxed mb-8">
-        You'll receive a notification when the seller confirms your payment.
-        <br />Track your order in <span className="font-bold">My {'>'} Orders</span>.
+        {t('shop.order_placed_desc2', "You'll receive a notification when the seller confirms your payment.")}
+        <br />{t('shop.track_order', 'Track your order in ')}<span className="font-bold">{t('shop.my_orders', 'My > Orders')}</span>.
       </p>
 
       {/* Summary Card */}
@@ -457,7 +458,7 @@ export default function PurchaseFlow({
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold text-[#2d3435] truncate">{product.title}</p>
-            <p className="text-xs text-[#596061]">{selectedSize && `Size ${selectedSize}`} · {sym}{fmt(totalAmount)}</p>
+            <p className="text-xs text-[#596061]">{selectedSize && `${t('shop.size', 'Size')} ${selectedSize}`} · {sym}{fmt(totalAmount)}</p>
           </div>
         </div>
       </div>
@@ -468,7 +469,7 @@ export default function PurchaseFlow({
           onClick={onComplete}
           className="w-full bg-[#0057bd] text-white py-4 rounded-2xl font-black text-sm tracking-wide shadow-lg shadow-[#0057bd]/20 active:scale-[0.98] transition-transform"
         >
-          Go to Shopping
+          {t('shop.go_to_shopping', 'Go to Shopping')}
         </button>
       </div>
     </div>

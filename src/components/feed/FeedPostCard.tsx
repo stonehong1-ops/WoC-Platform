@@ -13,6 +13,7 @@ import MediaViewerPopup from './MediaViewerPopup';
 import { DualText } from '@/components/social/SocialHeroCard';
 import UserBadge from '@/components/common/UserBadge';
 import { useModalNavigation } from '@/hooks/useModalNavigation';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface FeedPostCardProps {
   post: Post;
@@ -26,6 +27,7 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const [isReactionSelectorOpen, setIsReactionSelectorOpen] = useState(false);
+  const { t, language } = useLanguage();
   
   const { openModal: openReactions, closeModal: closeReactions, value: reactionsPostId } = useModalNavigation('reactions');
   const { openModal: openComments, closeModal: closeComments, value: commentsPostId } = useModalNavigation('comments');
@@ -83,14 +85,14 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
   const isAuthor = currentUser?.uid === post.userId;
 
   const getTimeAgo = () => {
-    if (!post.createdAt) return '방금 전';
+    if (!post.createdAt) return t('plaza.just_now');
     try {
       const date = typeof (post.createdAt as any).toDate === 'function' 
         ? (post.createdAt as any).toDate() 
         : new Date(post.createdAt as any);
-      return formatDistanceToNow(date, { addSuffix: true, locale: ko });
+      return formatDistanceToNow(date, { addSuffix: true, locale: language === 'KR' ? ko : undefined });
     } catch (e) {
-      return '최근';
+      return t('plaza.recent');
     }
   };
 
@@ -117,7 +119,7 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
 
   const handleReactionSelect = async (type: ReactionType) => {
     if (!currentUser?.uid) {
-      alert("Please sign in first.");
+      alert(t('plaza.sign_in_first'));
       return;
     }
     
@@ -152,11 +154,11 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
     const shareUrl = `${window.location.origin}/plaza`;
     if (navigator.share) {
       try {
-        await navigator.share({ title: post.userName ? `${post.userName}의 게시물` : 'WoC 게시물', text: post.content?.slice(0, 100), url: shareUrl });
+        await navigator.share({ title: post.userName ? `${post.userName}'s post` : 'WoC Post', text: post.content?.slice(0, 100), url: shareUrl });
       } catch (e) { /* user cancelled */ }
     } else {
       await navigator.clipboard.writeText(shareUrl);
-      alert('Link copied to clipboard.');
+      alert(t('plaza.link_copied'));
     }
   };
 
@@ -190,7 +192,7 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
       <div className="flex items-center gap-2">
         {post.isAnnouncement && (
           <span className="bg-tertiary-container/30 text-on-tertiary-container font-label text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">
-            Announcement
+            {t('plaza.announcement')}
           </span>
         )}
         <div className="relative" ref={menuRef}>
@@ -202,16 +204,16 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
               {isAuthor ? (
                 <>
                   <button onClick={() => { onEdit?.(post); setIsMenuOpen(false); }} className="w-full px-4 py-2 text-left text-sm hover:bg-primary/10 flex items-center gap-3 text-on-surface">
-                    <span className="material-symbols-outlined text-lg">edit</span> Edit Post
+                    <span className="material-symbols-outlined text-lg">edit</span> {t('plaza.edit_post')}
                   </button>
                   <button onClick={() => { onDelete?.(post.id); setIsMenuOpen(false); }} className="w-full px-4 py-2 text-left text-sm hover:bg-error/10 flex items-center gap-3 text-error">
-                    <span className="material-symbols-outlined text-lg">delete</span> Delete Post
+                    <span className="material-symbols-outlined text-lg">delete</span> {t('plaza.delete_post')}
                   </button>
                 </>
               ) : (
                 <>
                   <button onClick={() => setIsMenuOpen(false)} className="w-full px-4 py-2 text-left text-sm hover:bg-primary/10 flex items-center gap-3 text-on-surface">
-                    <span className="material-symbols-outlined text-lg">report</span> Report
+                    <span className="material-symbols-outlined text-lg">report</span> {t('plaza.report')}
                   </button>
                 </>
               )}
@@ -263,7 +265,7 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
         try {
           await feedService.togglePinPost(currentUser.uid, post.id, isPinned);
         } catch (error) {
-          alert("Failed to update pin status.");
+          alert(t('plaza.fail_pin'));
         }
       }} className="transition-transform active:scale-90 flex items-center text-on-surface">
         <span className="material-symbols-outlined text-[24px] font-light">{((profile as any)?.pinnedPostIds || []).includes(post.id) ? 'bookmark' : 'bookmark_border'}</span>
@@ -290,7 +292,7 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
               <span className="text-lg font-headline font-extrabold leading-none">{eventDate.getDate()}</span>
             </div>
             <div>
-              <p className="font-bold text-sm">Official Event / Announcement</p>
+              <p className="font-bold text-sm">{t('plaza.official_event')}</p>
               <p className="text-xs text-on-surface-variant">{eventDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</p>
             </div>
           </div>
@@ -299,7 +301,7 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
           {renderActionBar()}
           {localLikesCount > 0 && (
             <button onClick={() => openReactions(post.id)} className="font-bold text-sm text-on-surface mb-1 hover:underline">
-              {localLikesCount} likes
+              {localLikesCount} {t('plaza.likes')}
             </button>
           )}
           <p className="text-[10px] text-on-surface-variant font-medium tracking-wide uppercase mt-2">{timeAgo}</p>
@@ -338,7 +340,7 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
           {renderActionBar()}
           {localLikesCount > 0 && (
             <button onClick={() => openReactions(post.id)} className="font-bold text-sm text-on-surface mb-1 hover:underline">
-              {localLikesCount} likes
+              {localLikesCount} {t('plaza.likes')}
             </button>
           )}
           <p className="text-[10px] text-on-surface-variant font-medium tracking-wide uppercase mt-2">{timeAgo}</p>
@@ -465,7 +467,7 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
 
         {localLikesCount > 0 && (
           <button onClick={() => openReactions(post.id)} className="font-bold text-sm text-on-surface mb-1 hover:underline">
-            {localLikesCount} likes
+            {localLikesCount} {t('plaza.likes')}
           </button>
         )}
         

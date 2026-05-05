@@ -5,6 +5,7 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { shopService } from '@/lib/firebase/shopService';
 import { plazaService } from '@/lib/firebase/plazaService';
 import UniversalCompose from '@/components/common/UniversalCompose';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface CreateProductProps {
   onClose?: () => void;
@@ -12,6 +13,7 @@ interface CreateProductProps {
 }
 
 export default function CreateProduct({ onClose, onSuccess }: CreateProductProps) {
+  const { t } = useLanguage();
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -38,7 +40,7 @@ export default function CreateProduct({ onClose, onSuccess }: CreateProductProps
 
   const handleSubmit = async () => {
     if (!user || !name || !price || !mediaFile) {
-      alert("Please fill in all required fields and add a photo.");
+      alert(t('shop.msg_fill_required_photo', "Please fill in all required fields and add a photo."));
       return;
     }
 
@@ -80,7 +82,7 @@ export default function CreateProduct({ onClose, onSuccess }: CreateProductProps
       setDescription('');
     } catch (error) {
       console.error("Error creating product:", error);
-      alert("Failed to register product. Please check your connection.");
+      alert(t('shop.msg_fail_register', "Failed to register product. Please check your connection."));
     } finally {
       setIsSubmitting(false);
     }
@@ -89,9 +91,9 @@ export default function CreateProduct({ onClose, onSuccess }: CreateProductProps
   return (
     <UniversalCompose
       id="shop"
-      title="Host a Product"
-      label="Marketplace"
-      submitLabel={isSubmitting ? `Hosting ${uploadProgress}%` : "Register Product"}
+      title={t('shop.host_product', "Host a Product")}
+      label={t('shop.marketplace', "Marketplace")}
+      submitLabel={isSubmitting ? `${t('shop.hosting', 'Hosting')} ${uploadProgress}%` : t('shop.register_product', "Register Product")}
       onSubmit={handleSubmit}
       isSubmitting={isSubmitting}
       onClose={onClose}
@@ -108,7 +110,7 @@ export default function CreateProduct({ onClose, onSuccess }: CreateProductProps
             <div className="w-16 h-16 rounded-full bg-white shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
               <span className="material-symbols-outlined text-gray-300 text-[32px]">add_a_photo</span>
             </div>
-            <span className="text-[11px] font-black text-gray-300 uppercase tracking-widest">Upload Product Photo</span>
+            <span className="text-[11px] font-black text-gray-300 uppercase tracking-widest">{t('shop.upload_photo', 'Upload Product Photo')}</span>
           </>
         )}
         <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
@@ -117,20 +119,20 @@ export default function CreateProduct({ onClose, onSuccess }: CreateProductProps
       {/* Product Basic Info */}
       <div className="space-y-6">
         <div className="space-y-2">
-          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Brand Name</label>
+          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{t('shop.brand_name', 'Brand Name')}</label>
           <input
             value={brand}
             onChange={(e) => setBrand(e.target.value)}
-            placeholder="Ex. Tango Elite"
+            placeholder={t('shop.ex_brand', "Ex. Tango Elite")}
             className="w-full text-[16px] font-bold border-none focus:ring-0 placeholder:text-gray-200 p-0"
           />
         </div>
         <div className="space-y-2">
-          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Product Name</label>
+          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{t('shop.product_name', 'Product Name')}</label>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Ex. Performance Leather Shoes"
+            placeholder={t('shop.ex_product_name', "Ex. Performance Leather Shoes")}
             className="w-full text-[24px] font-black tracking-tighter border-none focus:ring-0 placeholder:text-gray-200 p-0"
             required
           />
@@ -140,18 +142,18 @@ export default function CreateProduct({ onClose, onSuccess }: CreateProductProps
       <div className="grid grid-cols-2 gap-8">
          {/* Category */}
          <div className="space-y-2">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Category</label>
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{t('shop.category', 'Category')}</label>
             <select 
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               className="w-full bg-gray-50 border-none rounded-2xl px-4 py-3.5 text-sm font-bold focus:ring-2 focus:ring-primary/10"
             >
-              {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+              {categories.map(cat => <option key={cat} value={cat}>{t(`shop.cat_${cat.toLowerCase().replace(/ /g, '_')}`, cat)}</option>)}
             </select>
          </div>
          {/* Price */}
          <div className="space-y-2">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Price (₩)</label>
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{t('shop.price_krw', 'Price (₩)')}</label>
             <input
               type="number"
               value={price}
@@ -165,11 +167,11 @@ export default function CreateProduct({ onClose, onSuccess }: CreateProductProps
 
       {/* Description */}
       <div className="space-y-2 pb-4">
-        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Product Story</label>
+        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{t('shop.product_story', 'Product Story')}</label>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Tell us about the condition, materials, and why you're selling..."
+          placeholder={t('shop.product_story_placeholder', "Tell us about the condition, materials, and why you're selling...")}
           className="w-full min-h-[120px] bg-gray-50 border-none rounded-[28px] px-5 py-4 text-sm font-medium focus:ring-2 focus:ring-primary/10 resize-none"
         />
       </div>

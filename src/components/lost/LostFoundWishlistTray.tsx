@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { LostFoundItem, LostFoundLike } from '@/types/lostFound';
 import { lostFoundService } from '@/lib/firebase/lostFoundService';
 import { useNavigation } from '@/components/providers/NavigationProvider';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface LostFoundWishlistTrayProps {
   likes: LostFoundLike[];
@@ -16,6 +17,7 @@ type TrayState = 'COLLAPSED' | 'EXPANDED';
 
 export default function LostFoundWishlistTray({ likes, userId, onItemClick }: LostFoundWishlistTrayProps) {
   const [trayState, setTrayState] = useState<TrayState>('COLLAPSED');
+  const { t } = useLanguage();
   const [likedItems, setLikedItems] = useState<LostFoundItem[]>([]);
   const [loadingItems, setLoadingItems] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -67,7 +69,7 @@ export default function LostFoundWishlistTray({ likes, userId, onItemClick }: Lo
 
   const handleClearAll = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm('Clear all items from your wishlist?')) return;
+    if (!confirm(t('shop.confirm_clear_likes'))) return;
     try {
       await lostFoundService.clearAllLikes(userId);
       setTrayState('COLLAPSED');
@@ -113,15 +115,15 @@ export default function LostFoundWishlistTray({ likes, userId, onItemClick }: Lo
               </div>
 
               <span className="text-sm text-slate-800 font-bold ml-3 tracking-wide">
-                {likes.length === 0 ? 'No Activity' : (
+                {likes.length === 0 ? t('shop.no_activity') : (
                   <>
                     {likes.filter(l => l.status === 'in_progress').length > 0 && (
-                      <span className="text-blue-500">{likes.filter(l => l.status === 'in_progress').length} In Progress, </span>
+                      <span className="text-blue-500">{likes.filter(l => l.status === 'in_progress').length} {t('shop.in_progress')}, </span>
                     )}
                     {likes.filter(l => l.status === 'pending').length > 0 && (
-                      <span className="text-primary">{likes.filter(l => l.status === 'pending').length} Pending, </span>
+                      <span className="text-primary">{likes.filter(l => l.status === 'pending').length} {t('shop.pending')}, </span>
                     )}
-                    {likes.filter(l => l.status !== 'pending' && l.status !== 'in_progress').length} Liked
+                    {likes.filter(l => l.status !== 'pending' && l.status !== 'in_progress').length} {t('shop.liked')}
                   </>
                 )}
               </span>
@@ -133,7 +135,7 @@ export default function LostFoundWishlistTray({ likes, userId, onItemClick }: Lo
                   onClick={handleClearAll}
                   className="text-[12px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-widest transition-colors"
                 >
-                  Clear All
+                  {t('shop.clear_all')}
                 </button>
               )}
               {!isExpanded && (
@@ -167,61 +169,54 @@ export default function LostFoundWishlistTray({ likes, userId, onItemClick }: Lo
             </div>
           </div>
 
-          {/* Expanded List Area */}
+          {/* Expanded Card Scroll Area (Horizontal — Map FAB Style) */}
           <AnimatePresence>
             {isExpanded && (
               <motion.div 
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="max-h-[300px] overflow-y-auto no-scrollbar pb-2"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex items-center overflow-x-auto px-4 gap-3 no-scrollbar snap-x snap-mandatory py-3 h-[130px]"
                 ref={scrollRef}
               >
                 {loadingItems ? (
-                  <div className="flex justify-center items-center py-8">
+                  <div className="flex justify-center items-center w-full">
                     <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
                   </div>
-                ) : (
-                  <div className="p-3 space-y-2">
+                ) : likedItems.length > 0 ? (
+                  <>
                     {likedItems.map(item => {
                       const status = (item as any)._likeStatus;
                       return (
                         <div 
                           key={item.id}
                           onClick={() => onItemClick(item.id)}
-                          className="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer group border border-transparent hover:border-slate-100"
+                          className={`flex-none w-[calc(100%-24px)] bg-white rounded-lg p-2 shadow-sm border flex gap-3 relative snap-center transition-all cursor-pointer ${
+                            status === 'in_progress' ? 'border-blue-200 ring-1 ring-blue-100' :
+                            status === 'pending' ? 'border-primary/20 ring-1 ring-primary/10' : 'border-slate-50'
+                          }`}
                         >
-                          <div className="relative">
-                            <div className={`w-14 h-14 rounded-lg bg-slate-100 overflow-hidden flex-shrink-0 ${
-                              status === 'in_progress' ? 'ring-2 ring-blue-500 ring-offset-2' :
-                              status === 'pending' ? 'ring-2 ring-primary ring-offset-2' : ''
-                            }`}>
-                              {item.images?.[0] ? (
-                                <img src={item.images[0]} alt={item.title} className="w-full h-full object-cover" />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-slate-400">
-                                  <span className="material-symbols-rounded text-xl">image</span>
-                                </div>
-                              )}
-                            </div>
-                            
-                            {status === 'in_progress' && (
-                              <div className="absolute -top-2 -right-2 bg-blue-500 text-white text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded shadow-sm">
-                                IN PROGRESS
-                              </div>
-                            )}
-                            {status === 'pending' && (
-                              <div className="absolute -top-2 -right-2 bg-primary text-white text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded shadow-sm">
-                                PENDING
+                          <div className="w-16 h-16 rounded-lg bg-slate-100 flex-none overflow-hidden">
+                            {item.images?.[0] ? (
+                              <img src={item.images[0]} alt={item.title} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-slate-300">
+                                <span className="material-symbols-rounded text-xl">image</span>
                               </div>
                             )}
                           </div>
-                          
-                          <div className="flex-1 min-w-0">
-                            <h4 className="text-sm font-bold text-slate-800 truncate group-hover:text-primary transition-colors">
+                          <div className="flex flex-col min-w-0 pr-8 justify-center flex-1">
+                            {status && status !== 'liked' && (
+                              <span className={`text-[9px] font-black uppercase tracking-widest w-fit px-1.5 py-0.5 rounded mb-1 ${
+                                status === 'in_progress' ? 'bg-blue-500 text-white' : 'bg-primary text-white'
+                              }`}>
+                                {status === 'in_progress' ? t('shop.status_in_progress') : t('shop.status_pending')}
+                              </span>
+                            )}
+                            <h3 className="text-[14px] font-bold text-slate-800 truncate leading-tight">
                               {item.title}
-                            </h4>
-                            <div className="flex items-center gap-2 mt-1">
+                            </h3>
+                            <div className="flex items-center gap-2 mt-0.5">
                               <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${item.type === 'LOST' ? 'bg-red-50 text-red-500' : 'bg-primary/10 text-primary'}`}>
                                 {item.type}
                               </span>
@@ -231,22 +226,23 @@ export default function LostFoundWishlistTray({ likes, userId, onItemClick }: Lo
                             </div>
                           </div>
                           
+                          {/* Unlike Button — Always visible */}
                           <button 
                             onClick={(e) => handleUnlike(e, item.id)}
-                            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100"
+                            className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center text-red-400 hover:text-red-500 hover:bg-red-50 transition-colors"
                           >
-                            <span className="material-symbols-rounded text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>
+                            <span className="material-symbols-rounded text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>
                               favorite
                             </span>
                           </button>
                         </div>
                       );
                     })}
-                    {likedItems.length === 0 && (
-                      <div className="py-6 text-center text-slate-400 text-[13px] font-medium">
-                        No activity found.
-                      </div>
-                    )}
+                    <div className="flex-none w-6 h-1" />
+                  </>
+                ) : (
+                  <div className="flex items-center justify-center w-full h-full text-slate-400 text-xs font-medium">
+                    {t('shop.no_activity_found')}
                   </div>
                 )}
               </motion.div>

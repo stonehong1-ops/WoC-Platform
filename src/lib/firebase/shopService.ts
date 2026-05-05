@@ -262,8 +262,8 @@ export const shopService = {
         targetUserId: data.buyerId,
         groupId: data.groupId,
         type: 'SHOP_ORDER',
-        title: '주문 접수 완료',
-        message: `'${data.items?.[0]?.title || '상품'}' 등 주문이 정상적으로 접수되었습니다.`,
+        title: 'Order Received',
+        message: `Order for '${data.items?.[0]?.title || 'item'}' has been successfully received.`,
         actionUrl: `/shop/order/${orderRef.id}`,
         referenceId: orderRef.id,
         category: 'SHOP'
@@ -273,8 +273,8 @@ export const shopService = {
       await notificationService.createTodoForGroupAdmins(data.groupId, {
         groupId: data.groupId,
         type: 'SHOP_ORDER_ADMIN',
-        title: '신규 주문',
-        message: `${data.buyerName}님이 '${data.items?.[0]?.title || '상품'}'을(를) 주문했습니다. 내역을 확인해주세요.`,
+        title: 'New Order',
+        message: `${data.buyerName} has placed a new order for '${data.items?.[0]?.title || 'item'}'. Please check the details.`,
         actionUrl: `/group/${data.groupId}?tab=admin`,
         referenceId: orderRef.id,
         category: 'SHOP'

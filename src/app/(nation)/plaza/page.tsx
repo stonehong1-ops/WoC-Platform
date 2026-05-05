@@ -10,6 +10,7 @@ import { FeedContext } from '@/types/feed';
 import UserProfileModal from '@/components/profile/UserProfileModal';
 import { useModalNavigation } from '@/hooks/useModalNavigation';
 import { useNavigation } from '@/components/providers/NavigationProvider';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 
 function PlazaPageContent() {
@@ -17,17 +18,16 @@ function PlazaPageContent() {
   const [storyUsers, setStoryUsers] = useState<any[]>([]);
   const [activeFilter, setActiveFilter] = useState('all');
   const { openModal: openProfile, closeModal: closeProfile, value: selectedProfileId } = useModalNavigation('profileId');
-  const { isOpen: showCreateModal, openModal: openCreate, closeModal: closeCreate } = useModalNavigation('create');
+  const { openModal: openCreate } = useModalNavigation('createFlow');
   const { setSubHeader } = useNavigation();
-
-
+  const { t } = useLanguage();
 
   const tabs = [
-    { id: 'all', label: 'All' },
-    { id: 'hot', label: 'Hot' },
-    { id: 'favorites', label: 'Favorites' },
-    { id: 'pin', label: 'Pin' },
-    { id: 'my_log', label: 'My log' },
+    { id: 'all', label: t('plaza.tab_all') },
+    { id: 'hot', label: t('plaza.tab_hot') },
+    { id: 'favorites', label: t('plaza.tab_favorites') },
+    { id: 'pin', label: t('plaza.tab_pin') },
+    { id: 'my_log', label: t('plaza.tab_my_log') },
   ];
 
   // Plaza Feed Context
@@ -110,6 +110,8 @@ function PlazaPageContent() {
                 onClick={() => {
                   if (storyUser.userId && !storyUser.isSelf) {
                     openProfile(storyUser.userId);
+                  } else if (storyUser.isSelf) {
+                    openCreate('new');
                   }
                 }}
               >
@@ -171,7 +173,12 @@ function PlazaPageContent() {
             <UniversalFeed context={plazaContext} currentUser={user} profile={profile} activeFilter={activeFilter} />
           </div>
 
-
+          <button 
+            onClick={() => openCreate('new')}
+            className="fixed bottom-24 right-6 w-14 h-14 bg-gradient-to-br from-[#9B51E0] to-[#E56860] text-white rounded-full shadow-lg shadow-[#9B51E0]/40 flex items-center justify-center active:scale-95 transition-transform z-40"
+          >
+            <span className="material-symbols-outlined text-3xl">add</span>
+          </button>
         </div>
       </div>
 

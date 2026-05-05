@@ -39,7 +39,7 @@ export const notificationService = {
     }
     
     // 비동기 푸시 발송
-    notificationService.sendFCM(data.targetUserId, data.title || '새로운 알림', data.message, docData);
+    notificationService.sendFCM(data.targetUserId, data.title || 'New Notification', data.message, docData);
     
     return docRef.id;
   },
@@ -65,7 +65,7 @@ export const notificationService = {
     }
 
     // 비동기 푸시 발송
-    notificationService.sendFCM(data.targetUserId, data.title || '새로운 할 일', data.message, docData);
+    notificationService.sendFCM(data.targetUserId, data.title || 'New Task', data.message, docData);
 
     return docRef.id;
   },
@@ -220,7 +220,7 @@ export const notificationService = {
         });
       }
     } catch (e) {
-      console.error('FCM 발송 실패 (격리됨):', e);
+      console.error('FCM sending failed (isolated):', e);
     }
   },
 
@@ -235,8 +235,8 @@ export const notificationService = {
   }): Promise<string> => {
     const { fromUserId, fromUserName, targetUserId, groupId, groupName } = params;
     
-    // Formatted message as requested by USER
-    const message = `${fromUserName}님께서 '${groupName}' 그룹에 초대하였습니다. 승인하시겠습니까?`;
+    // Formatted message
+    const message = `${fromUserName} invited you to the '${groupName}' group. Would you like to approve?`;
 
     const notificationData: Omit<Notification, 'id'> = {
       baseType: 'TODO',
@@ -259,7 +259,7 @@ export const notificationService = {
       createdAt: Timestamp.now() 
     });
 
-    notificationService.sendFCM(targetUserId, '새로운 그룹 초대', message, notificationData);
+    notificationService.sendFCM(targetUserId, 'New Group Invitation', message, notificationData);
 
     return docRef.id;
   }

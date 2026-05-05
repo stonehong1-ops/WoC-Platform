@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Product, ProductLike } from '@/types/shop';
 import { shopService } from '@/lib/firebase/shopService';
 import { useNavigation } from '@/components/providers/NavigationProvider';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface WishlistTrayProps {
   likes: ProductLike[];
@@ -15,6 +16,7 @@ interface WishlistTrayProps {
 type TrayState = 'COLLAPSED' | 'EXPANDED';
 
 export default function WishlistTray({ likes, userId, onProductClick }: WishlistTrayProps) {
+  const { t } = useLanguage();
   const [trayState, setTrayState] = useState<TrayState>('COLLAPSED');
   const [likedProducts, setLikedProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
@@ -67,7 +69,7 @@ export default function WishlistTray({ likes, userId, onProductClick }: Wishlist
 
   const handleClearAll = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm('Clear all items from your wishlist?')) return;
+    if (!confirm(t('shop.confirm_clear_likes', 'Clear all items from your wishlist?'))) return;
     try {
       await shopService.clearAllLikes(userId);
       setTrayState('COLLAPSED');
@@ -113,15 +115,15 @@ export default function WishlistTray({ likes, userId, onProductClick }: Wishlist
               </div>
 
               <span className="text-sm text-slate-800 font-bold ml-3 tracking-wide">
-                {likes.length === 0 ? 'No Activity' : (
+                {likes.length === 0 ? t('shop.no_activity', 'No Activity') : (
                   <>
                     {likes.filter(l => l.status === 'in_progress').length > 0 && (
-                      <span className="text-blue-500">{likes.filter(l => l.status === 'in_progress').length} In Progress, </span>
+                      <span className="text-blue-500">{likes.filter(l => l.status === 'in_progress').length} {t('shop.in_progress', 'In Progress')}, </span>
                     )}
                     {likes.filter(l => l.status === 'pending').length > 0 && (
-                      <span className="text-primary">{likes.filter(l => l.status === 'pending').length} Pending, </span>
+                      <span className="text-primary">{likes.filter(l => l.status === 'pending').length} {t('shop.pending', 'Pending')}, </span>
                     )}
-                    {likes.filter(l => l.status !== 'pending' && l.status !== 'in_progress').length} Liked
+                    {likes.filter(l => l.status !== 'pending' && l.status !== 'in_progress').length} {t('shop.liked', 'Liked')}
                   </>
                 )}
               </span>
@@ -133,7 +135,7 @@ export default function WishlistTray({ likes, userId, onProductClick }: Wishlist
                   onClick={handleClearAll}
                   className="text-[12px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-widest transition-colors"
                 >
-                  Clear All
+                  {t('shop.clear_all', 'Clear All')}
                 </button>
               )}
               {!isExpanded && (
@@ -207,7 +209,7 @@ export default function WishlistTray({ likes, userId, onProductClick }: Wishlist
                               <span className={`text-[9px] font-black uppercase tracking-widest w-fit px-1.5 py-0.5 rounded mb-1 ${
                                 status === 'in_progress' ? 'bg-blue-500 text-white' : 'bg-primary text-white'
                               }`}>
-                                {status === 'in_progress' ? 'IN PROGRESS' : 'PENDING'}
+                                {status === 'in_progress' ? t('shop.status_in_progress', 'IN PROGRESS') : t('shop.status_pending', 'PENDING')}
                               </span>
                             )}
                             <h3 className="text-[14px] font-bold text-slate-800 truncate leading-tight">
@@ -239,7 +241,7 @@ export default function WishlistTray({ likes, userId, onProductClick }: Wishlist
                   </>
                 ) : (
                   <div className="flex items-center justify-center w-full h-full text-slate-400 text-xs font-medium">
-                    No activity found.
+                    {t('shop.no_activity_found', 'No activity found.')}
                   </div>
                 )}
               </motion.div>

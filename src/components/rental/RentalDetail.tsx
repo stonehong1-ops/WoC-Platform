@@ -6,6 +6,7 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { rentalService } from '@/lib/firebase/rentalService';
 import { chatService } from '@/lib/firebase/chatService';
 import { groupService } from '@/lib/firebase/groupService';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { RentalSpace } from '@/types/rental';
 import { Group } from '@/types/group';
 import SectionCard from '@/components/ui/SectionCard';
@@ -23,6 +24,7 @@ interface RentalDetailProps {
 
 export default function RentalDetail({ space, isLiked, onClose, onToggleLike }: RentalDetailProps) {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const router = useRouter();
   
   const [group, setGroup] = useState<Group | null>(null);
@@ -115,16 +117,16 @@ export default function RentalDetail({ space, isLiked, onClose, onToggleLike }: 
   };
 
   const handleChatWithOwner = async () => {
-    if (!user) return alert("Login is required.");
-    if (user.uid === space.hostId) return alert("You cannot inquire about your own space.");
+    if (!user) return alert(t('rental.login_required', "Login is required."));
+    if (user.uid === space.hostId) return alert(t('rental.no_self_inquiry', "You cannot inquire about your own space."));
 
-    if (!confirm("Would you like to send a rental inquiry chat to the host?")) return;
+    if (!confirm(t('rental.confirm_inquiry', "Would you like to send a rental inquiry chat to the host?"))) return;
 
     setIsChatLoading(true);
     try {
       const roomId = await chatService.getOrCreatePrivateRoom([user.uid, space.hostId], user.uid, 'business');
       
-      const spaceInfo = `[Rental Inquiry]\nSpace: ${space.title}\nPrice per hour: ₩${(space.pricePerHour || 0).toLocaleString()}\nLocation: ${space.location}\nLink: ${window.location.origin}/rental?spaceId=${space.id}`;
+      const spaceInfo = `${t('rental.inquiry_prefix', "[Rental Inquiry]")}\nSpace: ${space.title}\nPrice per hour: ₩${(space.pricePerHour || 0).toLocaleString()}\nLocation: ${space.location}\nLink: ${window.location.origin}/rental?spaceId=${space.id}`;
       await chatService.sendMessage({
         roomId,
         senderId: user.uid,
@@ -137,7 +139,7 @@ export default function RentalDetail({ space, isLiked, onClose, onToggleLike }: 
       handleOpenChat(roomId);
     } catch (err) {
       console.error(err);
-      alert('Error connecting to chat room.');
+      alert(t('rental.chat_error', 'Error connecting to chat room.'));
     } finally {
       setIsChatLoading(false);
     }
@@ -193,7 +195,7 @@ export default function RentalDetail({ space, isLiked, onClose, onToggleLike }: 
         <div className="relative aspect-square w-full overflow-hidden bg-[#f2f4f4]">
           <div className="absolute inset-0 flex flex-col items-center justify-center text-[#c4cacc]">
             <span className="material-symbols-rounded text-5xl mb-1">local_mall</span>
-            <span className="text-[10px] font-bold tracking-wider uppercase">No Image</span>
+            <span className="text-[10px] font-bold tracking-wider uppercase">{t('rental.no_image', 'No Image')}</span>
           </div>
           {images.length > 0 && (
             <div className="relative h-full" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onClick={() => setShowImageModal(true)}>
@@ -254,11 +256,11 @@ export default function RentalDetail({ space, isLiked, onClose, onToggleLike }: 
         <div className="flex items-center gap-4 px-4 py-3 bg-[#fff8f0] border-b border-[#ffe8cc]">
           <div className="flex items-center gap-1 text-[#e67700]">
             <span className="material-symbols-rounded text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>local_fire_department</span>
-            <span className="text-xs font-bold">Popular Space</span>
+            <span className="text-xs font-bold">{t('rental.popular_space', 'Popular Space')}</span>
           </div>
           <div className="flex items-center gap-1 text-[#e67700]">
             <span className="material-symbols-rounded text-sm">visibility</span>
-            <span className="text-xs font-bold">{viewerCount} viewing now</span>
+            <span className="text-xs font-bold">{viewerCount} {t('rental.viewing_now', 'viewing now')}</span>
           </div>
         </div>
 
@@ -266,59 +268,59 @@ export default function RentalDetail({ space, isLiked, onClose, onToggleLike }: 
 
         {/* 5) Payment Info */}
         <div className="px-4 py-4 border-b border-[#f2f4f4]">
-          <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-3">Rental Policy</p>
+          <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-3">{t('rental.rental_policy', 'Rental Policy')}</p>
           <div className="space-y-4">
             <InfoRow 
               icon="schedule" 
-              title="Minimum Hours" 
-              subtitle={`Minimum ${space.minHours} hours required per booking`} 
+              title={t('rental.min_hours', 'Minimum Hours')} 
+              subtitle={t('rental.min_hours_desc', `Minimum ${space.minHours} hours required per booking`).replace('{hours}', space.minHours?.toString() || '1')} 
             />
             <InfoRow 
               icon="account_balance" 
-              title="Payment Method" 
-              subtitle="Bank Transfer only" 
+              title={t('rental.payment_method', 'Payment Method')} 
+              subtitle={t('rental.bank_transfer_only', 'Bank Transfer only')} 
             />
           </div>
         </div>
 
         {/* 6) Amenities & Info */}
         <div className="px-4 py-4 border-b border-[#f2f4f4]">
-          <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-3">Amenities & Info</p>
+          <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-3">{t('rental.amenities_info', 'Amenities & Info')}</p>
           <div className="space-y-4">
             <InfoRow 
               icon="group" 
               iconBg="bg-[#f0f4ff]" 
               iconColor="text-primary" 
-              title="Capacity" 
-              subtitle={`Maximum ${space.capacity || '?'} people allowed`} 
+              title={t('rental.capacity', 'Capacity')} 
+              subtitle={t('rental.capacity_desc', `Maximum ${space.capacity || '?'} people allowed`).replace('{capacity}', space.capacity?.toString() || '?')} 
             />
             <InfoRow 
               icon="straighten" 
               iconBg="bg-[#f8f9fa]" 
               iconColor="text-[#596061]" 
-              title="Space Size" 
+              title={t('rental.space_size', 'Space Size')} 
               subtitle={space.size || 'N/A'} 
             />
             <InfoRow 
               icon="layers" 
               iconBg="bg-[#edf7ed]" 
               iconColor="text-green-600" 
-              title="Floor Material" 
+              title={t('rental.floor_material', 'Floor Material')} 
               subtitle={space.floorMaterial || 'Wood'} 
             />
             <InfoRow 
               icon="wall_lamp" 
               iconBg="bg-[#fff3f0]" 
               iconColor="text-[#e67700]" 
-              title="Mirror" 
-              subtitle={space.hasMirror ? 'Equipped with mirrors' : 'No mirrors available'} 
+              title={t('rental.mirror', 'Mirror')} 
+              subtitle={space.hasMirror ? t('rental.mirror_equipped', 'Equipped with mirrors') : t('rental.no_mirror', 'No mirrors available')} 
             />
           </div>
           
           {space.facilities && space.facilities.length > 0 && (
             <div className="mt-4 pt-4 border-t border-[#f2f4f4]">
               <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-2 flex items-center gap-1">
-                Additional Facilities
+                {t('rental.additional_facilities', 'Additional Facilities')}
               </p>
               <div className="flex flex-wrap gap-2">
                 {space.facilities.map(f => (
@@ -332,7 +334,7 @@ export default function RentalDetail({ space, isLiked, onClose, onToggleLike }: 
 
           {(group?.rentalSettings?.rentalInfo || space.rules) && (
             <div className="mt-4 pt-4 border-t border-[#f2f4f4]">
-              <CollapseSection icon="warning" title="Rules & Guidelines" defaultOpen={true}>
+              <CollapseSection icon="warning" title={t('rental.rules_guidelines', 'Rules & Guidelines')} defaultOpen={true}>
                 <p className="text-sm text-[#596061] leading-relaxed whitespace-pre-wrap">
                   {group?.rentalSettings?.rentalInfo || space.rules}
                 </p>
@@ -343,13 +345,13 @@ export default function RentalDetail({ space, isLiked, onClose, onToggleLike }: 
 
         {/* 7) Description */}
         <div className="px-4 py-4 border-b border-[#f2f4f4]">
-          <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-2">Description</p>
+          <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-2">{t('rental.description', 'Description')}</p>
           <p className={`text-sm text-[#596061] leading-relaxed whitespace-pre-line ${!showFullDesc ? 'line-clamp-4' : ''}`}>
-            {space.description || 'No description available.'}
+            {space.description || t('rental.no_description', 'No description available.')}
           </p>
           {space.description && space.description.length > 120 && (
             <button onClick={() => setShowFullDesc(!showFullDesc)} className="text-xs font-bold text-primary mt-2 flex items-center gap-0.5">
-              {showFullDesc ? 'Less' : 'More'}
+              {showFullDesc ? t('rental.less', 'Less') : t('rental.more', 'More')}
               <span className="material-symbols-rounded text-sm">{showFullDesc ? 'expand_less' : 'expand_more'}</span>
             </button>
           )}
@@ -367,11 +369,11 @@ export default function RentalDetail({ space, isLiked, onClose, onToggleLike }: 
             ) : (
               <>
                 <span className="material-symbols-rounded text-lg text-[#596061]">chat</span>
-                <span className="text-sm font-bold text-[#2d3435]">Chat with Host</span>
+                <span className="text-sm font-bold text-[#2d3435]">{t('rental.chat_with_host', 'Chat with Host')}</span>
               </>
             )}
           </button>
-          <p className="text-[10px] text-[#acb3b4] text-center mt-1.5">{group?.name || 'FREESTYLE TANGO'} · Inquiry includes space info</p>
+          <p className="text-[10px] text-[#acb3b4] text-center mt-1.5">{group?.name || 'FREESTYLE TANGO'} · {t('rental.inquiry_includes_info', 'Inquiry includes space info')}</p>
         </div>
       </div>
 
@@ -379,7 +381,7 @@ export default function RentalDetail({ space, isLiked, onClose, onToggleLike }: 
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-100 px-4 py-2.5 flex items-center gap-3 max-w-md mx-auto">
         <div className="flex-1 min-w-0">
           <p className="text-lg font-black text-[#2d3435] font-headline leading-tight">₩{minMaxPrice.min.toLocaleString()}</p>
-          <p className="text-[10px] text-[#acb3b4] truncate">Starting price / hr</p>
+          <p className="text-[10px] text-[#acb3b4] truncate">{t('rental.starting_price_hr', 'Starting price / hr')}</p>
         </div>
         <button onClick={(e) => onToggleLike(e, space)}
           className={`w-11 h-11 flex-shrink-0 rounded-xl flex items-center justify-center border transition-colors active:scale-90 ${isLiked ? 'bg-red-50 border-red-100 text-red-500' : 'bg-white border-[#e0e4e5] text-[#596061]'}`}>
@@ -387,7 +389,7 @@ export default function RentalDetail({ space, isLiked, onClose, onToggleLike }: 
         </button>
         <button onClick={handleOpenRequest}
           className="flex-shrink-0 bg-primary text-white px-7 py-3 rounded-xl font-black text-sm tracking-wide shadow-lg shadow-primary/20 active:scale-95 transition-transform">
-          Request
+          {t('rental.request', 'Request')}
         </button>
       </div>
 

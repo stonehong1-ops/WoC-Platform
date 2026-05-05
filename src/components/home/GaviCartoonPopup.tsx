@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { collection, query, orderBy, getDocs, addDoc, serverTimestamp, onSnapshot, limit, updateDoc, doc, increment } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase/config';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface GaviCartoonPopupProps {
   onClose: () => void;
@@ -25,13 +26,14 @@ interface Review {
   createdAt: any;
 }
 
-const CATEGORIES = [
-  { id: 'imagination', label: '상상 그 이상' },
-  { id: 'wheres_gavi', label: '가비씨 어디가?' },
-  { id: 'fur_mood', label: '에세이 톡' }
+const CATEGORIES = (t: any) => [
+  { id: 'imagination', label: t('home.cartoon.category.imagination') },
+  { id: 'wheres_gavi', label: t('home.cartoon.category.wheres_gavi') },
+  { id: 'fur_mood', label: t('home.cartoon.category.fur_mood') }
 ];
 
 export default function GaviCartoonPopup({ onClose }: GaviCartoonPopupProps) {
+  const { t } = useLanguage();
   const [isAdmin, setIsAdmin] = useState(false);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
@@ -53,9 +55,11 @@ export default function GaviCartoonPopup({ onClose }: GaviCartoonPopupProps) {
   const [likedCartoons, setLikedCartoons] = useState<Set<string>>(new Set());
   
   const [uploadFile, setUploadFile] = useState<File | null>(null);
-  const [uploadCategory, setUploadCategory] = useState<string>(CATEGORIES[0].id);
+  const [uploadCategory, setUploadCategory] = useState<string>('imagination');
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const categories = CATEGORIES(t);
 
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
@@ -355,17 +359,17 @@ export default function GaviCartoonPopup({ onClose }: GaviCartoonPopupProps) {
           <form onSubmit={handleAdminLogin} className="flex items-center gap-2">
             <input 
               type="password" 
-              value={passwordInput}
+               value={passwordInput}
               onChange={(e) => setPasswordInput(e.target.value)}
-              placeholder="Admin Password" 
+              placeholder={t('home.cartoon.admin.passwordPlaceholder')} 
               className="px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-900/20 bg-white/50 w-40 text-sm font-medium"
               autoFocus
             />
             <button type="submit" className="px-4 py-2 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-slate-800 transition-colors shadow-md">
-              Unlock
+              {t('home.cartoon.admin.unlock')}
             </button>
             <button type="button" onClick={() => setShowAdminLogin(false)} className="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200 transition-colors">
-              Cancel
+              {t('home.cartoon.admin.cancel')}
             </button>
           </form>
         </div>
@@ -377,27 +381,27 @@ export default function GaviCartoonPopup({ onClose }: GaviCartoonPopupProps) {
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <span className="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
               <span className="material-symbols-outlined text-primary text-xl">upload_file</span>
-              Upload
+              {t('home.cartoon.admin.upload')}
             </span>
-            <button onClick={() => setIsAdmin(false)} className="text-sm text-slate-400 hover:text-slate-900 font-bold transition-colors">Exit</button>
+            <button onClick={() => setIsAdmin(false)} className="text-sm text-slate-400 hover:text-slate-900 font-bold transition-colors">{t('home.cartoon.admin.exit')}</button>
           </div>
           
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Category</label>
+              <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">{t('home.cartoon.admin.categoryLabel')}</label>
               <select 
                 value={uploadCategory} 
                 onChange={(e) => setUploadCategory(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-900/20 font-medium text-slate-900"
               >
-                {CATEGORIES.map(cat => (
+                {categories.map(cat => (
                   <option key={cat.id} value={cat.id}>{cat.label}</option>
                 ))}
               </select>
             </div>
             
             <div>
-              <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Image File</label>
+              <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">{t('home.cartoon.admin.imageFileLabel')}</label>
               <input 
                 type="file" 
                 accept="image/*"
@@ -418,7 +422,7 @@ export default function GaviCartoonPopup({ onClose }: GaviCartoonPopupProps) {
             ) : (
               <>
                 <span className="material-symbols-outlined text-lg">cloud_upload</span>
-                Upload Episode
+                {t('home.cartoon.admin.uploadEpisode')}
               </>
             )}
           </button>
@@ -431,14 +435,14 @@ export default function GaviCartoonPopup({ onClose }: GaviCartoonPopupProps) {
           {/* Left Sidebar Menu */}
           <div className="w-full md:w-[320px] lg:w-[400px] flex flex-col justify-between p-6 sm:p-10 lg:p-16 h-full pt-16 pb-24 sm:pt-20 sm:pb-32 gap-6 pointer-events-auto">
             <div className="animate-in fade-in slide-in-from-left-8 duration-500 delay-100 fill-mode-both">
-              <span className="px-3 py-1 bg-white/80 text-slate-900 text-[10px] font-bold uppercase tracking-widest rounded-full mb-3 inline-block backdrop-blur-md border border-white/50 shadow-sm">Gavi's Cartoons</span>
+              <span className="px-3 py-1 bg-white/80 text-slate-900 text-[10px] font-bold uppercase tracking-widest rounded-full mb-3 inline-block backdrop-blur-md border border-white/50 shadow-sm">{t('home.cartoon.navTitle')}</span>
               <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 leading-tight font-headline whitespace-nowrap">
-                가비의 만화방
+                {t('home.cartoon.title')}
               </h2>
             </div>
             
             <div className="flex flex-col gap-2">
-              {CATEGORIES.map((cat, i) => (
+              {categories.map((cat, i) => (
                 <button
                   key={cat.id}
                   onClick={() => handleCategorySelect(cat.id)}
@@ -467,7 +471,7 @@ export default function GaviCartoonPopup({ onClose }: GaviCartoonPopupProps) {
             className="flex items-center gap-2 text-[10px] text-slate-900 font-bold uppercase tracking-widest bg-white/90 backdrop-blur-md px-4 py-2 rounded-full shadow-lg border border-slate-200 hover:bg-white hover:scale-105 active:scale-95 transition-all"
           >
             <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-            latest update : {latestGlobalCartoon.createdAt?.toDate ? latestGlobalCartoon.createdAt.toDate().toLocaleDateString('en-US', { day: 'numeric', month: 'short' }).toLowerCase() : 'today'}
+            {t('home.cartoon.viewer.latestUpdate')} : {latestGlobalCartoon.createdAt?.toDate ? latestGlobalCartoon.createdAt.toDate().toLocaleDateString('en-US', { day: 'numeric', month: 'short' }).toLowerCase() : 'today'}
           </button>
         </div>
       )}
@@ -478,7 +482,7 @@ export default function GaviCartoonPopup({ onClose }: GaviCartoonPopupProps) {
           
           <div className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center z-10 pb-20 pointer-events-none">
             <span className="text-white font-black tracking-widest uppercase bg-slate-900/60 px-4 py-2 rounded-full backdrop-blur-md border border-white/20 text-sm pointer-events-auto shadow-lg flex items-center gap-3">
-              <span>{loading ? 'Loading...' : currentCartoon ? `Ep. ${currentCartoon.episodeNumber}` : 'No Episodes'}</span>
+              <span>{loading ? t('home.cartoon.viewer.loading') : currentCartoon ? `${t('home.cartoon.viewer.episodePrefix')} ${currentCartoon.episodeNumber}` : t('home.cartoon.viewer.noEpisodes')}</span>
             </span>
             <button 
               onClick={closeFullscreen}
@@ -524,7 +528,7 @@ export default function GaviCartoonPopup({ onClose }: GaviCartoonPopupProps) {
              ) : (
                 <div className="flex flex-col items-center gap-4 text-white/50">
                    <span className="material-symbols-outlined text-5xl">photo_library</span>
-                   <p className="font-bold">등록된 에피소드가 없습니다.</p>
+                   <p className="font-bold">{t('home.cartoon.viewer.noEpisodes')}</p>
                 </div>
              )}
           </div>
@@ -581,7 +585,7 @@ export default function GaviCartoonPopup({ onClose }: GaviCartoonPopupProps) {
                 {/* Header with Like Button */}
                 <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0">
                   <h3 className="text-xl font-extrabold text-slate-900 font-headline flex items-center gap-2">
-                    Comments
+                    {t('home.cartoon.comments.title')}
                     <span className="px-2.5 py-0.5 bg-slate-100 text-slate-500 rounded-full text-xs font-bold">{reviews.length}</span>
                   </h3>
                   
@@ -595,7 +599,7 @@ export default function GaviCartoonPopup({ onClose }: GaviCartoonPopupProps) {
                     <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: isLiked ? "'FILL' 1" : "'FILL' 0" }}>
                       favorite
                     </span>
-                    좋아요 {currentLikeCount}
+                    {t('home.cartoon.like')} {currentLikeCount}
                   </button>
                 </div>
 
@@ -608,7 +612,7 @@ export default function GaviCartoonPopup({ onClose }: GaviCartoonPopupProps) {
                       <textarea 
                         value={newReview}
                         onChange={(e) => setNewReview(e.target.value)}
-                        placeholder="Leave an anonymous comment..."
+                        placeholder={t('home.cartoon.comments.placeholder')}
                         className="w-full px-4 py-3 rounded-2xl border-none focus:outline-none focus:ring-0 bg-transparent text-slate-900 resize-none h-[50px] min-h-[50px] max-h-[100px] custom-scrollbar text-sm"
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && !e.shiftKey) {
@@ -625,7 +629,7 @@ export default function GaviCartoonPopup({ onClose }: GaviCartoonPopupProps) {
                     >
                       {submittingReview ? (
                         <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-                      ) : 'Post'}
+                      ) : t('home.cartoon.comments.post')}
                     </button>
                   </form>
 
@@ -634,7 +638,7 @@ export default function GaviCartoonPopup({ onClose }: GaviCartoonPopupProps) {
                     {reviews.length === 0 ? (
                       <div className="text-center py-12 bg-slate-50 rounded-[24px] border border-slate-100 border-dashed">
                         <span className="material-symbols-outlined text-4xl text-slate-200 mb-3 block" style={{ fontVariationSettings: "'FILL' 1" }}>chat_bubble</span>
-                        <p className="text-slate-500 text-sm font-medium">Be the first to share your thoughts!</p>
+                        <p className="text-slate-500 text-sm font-medium">{t('home.cartoon.comments.empty')}</p>
                       </div>
                     ) : (
                       reviews.map((review) => (
@@ -644,9 +648,9 @@ export default function GaviCartoonPopup({ onClose }: GaviCartoonPopupProps) {
                           </div>
                           <div className="flex-1">
                             <div className="flex items-center justify-between mb-1">
-                              <span className="font-bold text-slate-900 text-[13px]">Anonymous</span>
+                              <span className="font-bold text-slate-900 text-[13px]">{t('home.cartoon.comments.anonymous')}</span>
                               <span className="text-[11px] text-slate-400 font-medium">
-                                {review.createdAt?.toDate ? review.createdAt.toDate().toLocaleDateString() : 'Just now'}
+                                {review.createdAt?.toDate ? review.createdAt.toDate().toLocaleDateString() : t('home.cartoon.comments.justNow')}
                               </span>
                             </div>
                             <p className="text-slate-600 break-words whitespace-pre-wrap leading-relaxed text-sm">{review.content}</p>

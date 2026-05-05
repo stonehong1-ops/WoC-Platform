@@ -59,8 +59,8 @@ export const classRegistrationService = {
           {
             category: 'CLASS',
             type: 'CLASS_APPLY',
-            title: '신규 클래스 신청',
-            message: `${registration.applicantName || '사용자'}님이 '${registration.classTitle || '클래스'}' 클래스를 신청했습니다. 입금/결제 확인을 진행해주세요.`,
+            title: 'New Class Application',
+            message: `${registration.applicantName || 'User'} has applied for '${registration.classTitle || 'Class'}'. Please verify payment.`,
             actionUrl: `/group/${registration.groupId}?tab=classes`,
             referenceId: regRef.id,
           },
@@ -72,8 +72,8 @@ export const classRegistrationService = {
           targetUserId: registration.userId,
           category: 'CLASS',
           type: 'CLASS_APPLY_INFO',
-          title: '클래스 신청 접수',
-          message: `'${registration.classTitle || '클래스'}' 신청이 접수되었습니다. 결제가 완료되면 승인 처리됩니다.`,
+          title: 'Class Application Received',
+          message: `Application for '${registration.classTitle || 'Class'}' has been received. It will be approved after payment is verified.`,
           actionUrl: `/history`,
           referenceId: regRef.id,
         }, batch);
@@ -110,8 +110,8 @@ export const classRegistrationService = {
               targetUserId: regData.userId,
               category: 'CLASS',
               type: 'CLASS_APPROVED',
-              title: '클래스 승인 완료',
-              message: `'${regData.classTitle || '클래스'}' 승인 및 결제 확인이 완료되었습니다.`,
+              title: 'Class Approved',
+              message: `Approval and payment verification for '${regData.classTitle || 'Class'}' are complete.`,
               actionUrl: `/history`,
               referenceId: registrationId,
             }, batch);

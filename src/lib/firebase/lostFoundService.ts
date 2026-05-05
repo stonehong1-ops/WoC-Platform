@@ -183,15 +183,48 @@ export const lostFoundService = {
         return false;
       } else {
         await setDoc(likeRef, {
+          id: likeId, // Added for atomic management
           userId,
           itemId,
-          createdAt: serverTimestamp()
+          status: 'liked',
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
         });
         await updateDoc(itemRef, { likesCount: increment(1) });
         return true;
       }
     } catch (error) {
       console.error('Error toggling like:', error);
+      throw error;
+    }
+  },
+
+  // Update like status (liked -> pending -> in_progress)
+  updateLikeStatus: async (userId: string, itemId: string, status: 'liked' | 'pending' | 'in_progress') => {
+    const likeId = `${userId}_${itemId}`;
+    const likeRef = doc(db, LIKES_COLLECTION, likeId);
+    try {
+      const snap = await getDoc(likeRef);
+      if (snap.exists()) {
+        await updateDoc(likeRef, { 
+          status,
+          updatedAt: serverTimestamp()
+        });
+      } else {
+        await setDoc(likeRef, {
+          id: likeId, // Added for atomic management
+          userId,
+          itemId,
+          status,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+        // Also increment item likesCount
+        const itemRef = doc(db, LF_COLLECTION, itemId);
+        await updateDoc(itemRef, { likesCount: increment(1) });
+      }
+    } catch (error) {
+      console.error('Error updating like status:', error);
       throw error;
     }
   },

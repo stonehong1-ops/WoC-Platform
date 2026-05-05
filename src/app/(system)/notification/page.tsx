@@ -5,12 +5,19 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { notificationService } from '@/lib/firebase/notificationService';
 import { Notification } from '@/types/notification';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function NotificationPage() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('All');
-  const tabs = ['All', 'Social', 'Events', 'System'];
+  const tabs = [
+    { id: 'All', label: t('notification.tabs.all') },
+    { id: 'Social', label: t('notification.tabs.social') },
+    { id: 'Events', label: t('notification.tabs.events') },
+    { id: 'System', label: t('notification.tabs.system') }
+  ];
   
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
@@ -78,18 +85,18 @@ export default function NotificationPage() {
   };
 
   const formatTimeAgo = (date: any) => {
-    if (!date) return 'Recently';
+    if (!date) return t('notification.time.recently');
     const time = getTime(date);
-    if (time === 0) return 'Recently';
+    if (time === 0) return t('notification.time.recently');
     
     const diffInMins = Math.floor((Date.now() - time) / 60000);
-    if (diffInMins < 1) return 'Just now';
-    if (diffInMins < 60) return `${diffInMins}m ago`;
+    if (diffInMins < 1) return t('notification.time.just_now');
+    if (diffInMins < 60) return t('notification.time.m_ago', { count: diffInMins });
     const diffInHours = Math.floor(diffInMins / 60);
-    if (diffInHours < 24) return `${diffInHours}h ago`;
+    if (diffInHours < 24) return t('notification.time.h_ago', { count: diffInHours });
     const diffInDays = Math.floor(diffInHours / 24);
-    if (diffInDays === 1) return 'Yesterday';
-    return `${diffInDays}d ago`;
+    if (diffInDays === 1) return t('notification.time.yesterday');
+    return t('notification.time.d_ago', { count: diffInDays });
   };
 
   const renderIcon = (noti: Notification) => {
@@ -181,15 +188,15 @@ export default function NotificationPage() {
       <div className="px-4 py-4 w-full flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0 border-b border-slate-100/50 bg-[#FAF8FF]">
         {tabs.map((tab) => (
           <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
             className={`flex-shrink-0 px-4 py-2 rounded-lg text-[12px] font-bold tracking-wide transition-all whitespace-nowrap ${
-              activeTab === tab
+              activeTab === tab.id
                 ? 'bg-[#1E293B] text-white shadow-sm'
                 : 'bg-slate-50 text-slate-500 border border-slate-100 hover:bg-slate-100'
             }`}
           >
-            {tab}
+            {tab.label}
           </button>
         ))}
       </div>
@@ -199,8 +206,8 @@ export default function NotificationPage() {
       {filteredNotis.length === 0 ? (
          <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
             <span className="material-symbols-outlined text-outline text-5xl text-slate-300">notifications</span>
-            <p className="text-[1.125rem] font-bold text-slate-700">No notifications yet</p>
-            <p className="text-sm text-slate-500">When you receive updates, they will appear here.</p>
+            <p className="text-[1.125rem] font-bold text-slate-700">{t('notification.empty_title')}</p>
+            <p className="text-sm text-slate-500">{t('notification.empty_desc')}</p>
          </div>
       ) : (
         <>
@@ -208,12 +215,12 @@ export default function NotificationPage() {
           {todayNotis.length > 0 && (
             <>
               <div className="flex items-center justify-between mb-4 px-2">
-                <h2 className="text-xs font-extrabold uppercase tracking-widest text-[#596061]">Today</h2>
+                <h2 className="text-xs font-extrabold uppercase tracking-widest text-[#596061]">{t('notification.section_today')}</h2>
                 <button 
                   onClick={handleMarkAllAsRead}
                   className="text-xs font-semibold text-[#0058ba] hover:underline"
                 >
-                  Mark all as read
+                  {t('notification.mark_all_read')}
                 </button>
               </div>
               <div className="space-y-1 mb-10">
@@ -231,7 +238,7 @@ export default function NotificationPage() {
                     onClick={handleMarkAllAsRead}
                     className="text-xs font-semibold text-[#0058ba] hover:underline"
                   >
-                    Mark all as read
+                    {t('notification.mark_all_read')}
                   </button>
                 </div>
               )}
@@ -246,7 +253,7 @@ export default function NotificationPage() {
             <span className="inline-block p-2 rounded-full bg-[#ebeeef] mb-3">
               <span className="material-symbols-outlined text-[#757c7d]">check_circle</span>
             </span>
-            <p className="text-xs font-medium text-[#596061]">You've reached the end of your notifications.</p>
+            <p className="text-xs font-medium text-[#596061]">{t('notification.end_of_list')}</p>
           </div>
         </>
       )}

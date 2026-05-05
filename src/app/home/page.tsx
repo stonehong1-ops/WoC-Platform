@@ -18,6 +18,7 @@ import { collection, query, where, orderBy, limit, getDocs, Timestamp } from 'fi
 import { db } from '@/lib/firebase/clientApp';
 import { GalleryPost } from '@/lib/firebase/galleryService';
 import { Social } from '@/types/social';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function HomePage() {
   return (
@@ -28,6 +29,7 @@ export default function HomePage() {
 }
 
 function HomeContent() {
+  const { language, t } = useLanguage();
   const { user, profile } = useAuth();
   const searchParams = useSearchParams();
   const societyId = searchParams.get('society') || 'tango';
@@ -172,7 +174,7 @@ function HomeContent() {
     }, 3000);
   };
 
-  const displayName = profile?.nickname || user?.displayName || 'Dancer';
+  const displayName = profile?.nickname || user?.displayName || t('home.welcome_guest');
 
   return (
     <>
@@ -203,7 +205,7 @@ function HomeContent() {
         <ActivitySpotlight />
 
         {/* Culture & Canvas Section — 4-card grid */}
-        <section className="flex flex-col gap-4">
+        <section className="space-y-4">
           <header className="flex items-center justify-between px-2 md:px-0">
             <h2 className="text-xl md:text-2xl font-extrabold text-slate-900 font-headline">Culture &amp; Canvas</h2>
           </header>
@@ -211,7 +213,7 @@ function HomeContent() {
             {/* Gavi's Cartoons */}
             <div className="relative">
               <div className="absolute -top-8 left-6 z-20 flex flex-col items-center animate-bounce drop-shadow-sm">
-                <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full tracking-wider">HOT</span>
+                <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full tracking-wider">{t('home.hot')}</span>
                 <div className="w-0 h-0 border-l-[4px] border-r-[4px] border-t-[5px] border-l-transparent border-r-transparent border-t-red-500"></div>
               </div>
               <div className="group relative overflow-hidden bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer active:scale-95 h-full" onClick={() => setIsCartoonsOpen(true)}>
@@ -223,8 +225,8 @@ function HomeContent() {
                     <span className="material-symbols-outlined text-outline-variant group-hover:text-primary-container transition-colors">arrow_outward</span>
                   </div>
                   <div className="mt-2">
-                    <h3 className="font-title-md text-title-md text-on-surface">Gavi's Cartoons</h3>
-                    <p className="text-[10px] text-slate-400 font-medium mt-0.5">by Gavi</p>
+                    <h3 className="font-title-md text-title-md text-on-surface">{t('home.cartoon.title')}</h3>
+                    <p className="text-[10px] text-slate-400 font-medium mt-0.5">{t('home.cartoon.author')}</p>
                   </div>
                 </div>
                 <span className="material-symbols-outlined absolute -bottom-4 -right-4 text-8xl opacity-[0.03] text-primary-container pointer-events-none">palette</span>
@@ -241,8 +243,8 @@ function HomeContent() {
                   <span className="material-symbols-outlined text-outline-variant group-hover:text-amber-600 transition-colors">arrow_outward</span>
                 </div>
                 <div className="mt-2">
-                  <h3 className="font-title-md text-title-md text-on-surface">Music 365</h3>
-                  <p className="text-[10px] text-slate-400 font-medium mt-0.5">by Camus</p>
+                  <h3 className="font-title-md text-title-md text-on-surface">{t('home.music_365')}</h3>
+                  <p className="text-[10px] text-slate-400 font-medium mt-0.5">{t('home.music.author')}</p>
                 </div>
               </div>
               <span className="material-symbols-outlined absolute -bottom-4 -right-4 text-8xl opacity-[0.03] text-amber-600 pointer-events-none">music_note</span>
@@ -258,8 +260,8 @@ function HomeContent() {
                   <span className="material-symbols-outlined text-outline-variant group-hover:text-indigo-600 transition-colors">arrow_outward</span>
                 </div>
                 <div className="mt-2">
-                  <h3 className="font-title-md text-title-md text-on-surface">History of Tango</h3>
-                  <p className="text-[10px] text-slate-400 font-medium mt-0.5">by Ddakji</p>
+                  <h3 className="font-title-md text-title-md text-on-surface">{t('home.tango_history')}</h3>
+                  <p className="text-[10px] text-slate-400 font-medium mt-0.5">{t('home.history.author')}</p>
                 </div>
               </div>
               <span className="material-symbols-outlined absolute -bottom-4 -right-4 text-8xl opacity-[0.03] text-indigo-600 pointer-events-none">history_edu</span>
@@ -275,8 +277,8 @@ function HomeContent() {
                   <span className="material-symbols-outlined text-outline-variant group-hover:text-primary-container transition-colors">arrow_outward</span>
                 </div>
                 <div className="mt-2">
-                  <h3 className="font-title-md text-title-md text-on-surface">Tango Novel</h3>
-                  <p className="text-[10px] text-slate-400 font-medium mt-0.5">Coming Soon</p>
+                  <h3 className="font-title-md text-title-md text-on-surface">{t('home.tango_novel')}</h3>
+                  <p className="text-[10px] text-slate-400 font-medium mt-0.5">{t('home.coming_soon')}</p>
                 </div>
               </div>
               <span className="material-symbols-outlined absolute -bottom-4 -right-4 text-8xl opacity-[0.03] text-primary-container pointer-events-none">book</span>
@@ -306,7 +308,7 @@ function HomeContent() {
                 {societyInfo.blog_description}
               </p>
               <button className="mt-4 md:mt-5 px-5 py-2 md:px-6 md:py-3 bg-white text-slate-900 font-bold rounded-xl shadow-lg hover:bg-slate-100 transition-colors text-sm md:text-base">
-                Read Full Story
+                {t('home.read_full_story')}
               </button>
             </div>
           </div>
@@ -355,7 +357,7 @@ function HomeContent() {
                       <p className="text-[9px] md:text-[10px] text-gray-400 font-bold uppercase tracking-widest line-clamp-1">
                         {(member as any).realName && <span className="text-slate-500 mr-1">{(member as any).realName} •</span>}
                         {((member as any).country) && <span className="text-primary mr-1">{(member as any).country} •</span>}
-                        {member.role === 'leader' ? 'HOST' : 'CONTRIBUTOR'} • {visitCounts[i] || 10} VISITS
+                        {member.role === 'leader' ? 'HOST' : 'CONTRIBUTOR'} • {visitCounts[i] || 10} {t('common.members').toUpperCase()}
                       </p>
                     </div>
                     <div className={`text-sm md:text-base font-black ${i === 0 ? 'text-primary' : 'text-slate-300'}`}>#{i + 1}</div>
@@ -367,7 +369,7 @@ function HomeContent() {
               onClick={handleLeaderboardClick}
               className="w-full mt-6 md:mt-8 py-2.5 md:py-3 text-primary text-sm font-bold bg-primary/5 rounded-xl hover:bg-primary/10 transition-colors"
             >
-              Society Leaderboard
+              {t('home.leaderboard_btn')}
             </button>
           </div>
 
@@ -378,20 +380,20 @@ function HomeContent() {
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg md:text-xl font-extrabold flex items-center gap-2 text-slate-900 font-headline">
                     <span className="material-symbols-outlined text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>public</span>
-                    Global Stats
+                    {t('home.global_stats')}
                   </h3>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-500 font-medium">Active Members</span>
+                  <span className="text-slate-500 font-medium">{t('home.active_members')}</span>
                   <span className="font-bold text-slate-900">4,281</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-500 font-medium">Total Stays</span>
+                  <span className="text-slate-500 font-medium">{t('home.total_stays')}</span>
                   <span className="font-bold text-slate-900">156</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-500 font-medium">Monthly Growth</span>
-                  <span className="font-bold text-primary text-xs">+482 New</span>
+                  <span className="text-slate-500 font-medium">{t('home.monthly_growth')}</span>
+                  <span className="font-bold text-primary text-xs">{t('home.new_members', { count: 482 })}</span>
                 </div>
               </div>
             </div>
@@ -400,7 +402,7 @@ function HomeContent() {
               onClick={() => setIsRegionalReportsOpen(true)}
               className="w-full mt-2 md:mt-6 py-2.5 md:py-3 bg-primary/5 text-primary font-bold hover:bg-primary/10 transition-colors rounded-xl text-sm md:text-base"
             >
-              {societyInfo.id.charAt(0).toUpperCase() + societyInfo.id.slice(1).replace('-', ' ')} Hotspots
+              {t('home.hotspots_btn', { name: societyInfo.id.charAt(0).toUpperCase() + societyInfo.id.slice(1).replace('-', ' ') })}
             </button>
           </div>
         </div>
@@ -413,7 +415,7 @@ function HomeContent() {
         <div className="lg:col-span-3 space-y-4 md:space-y-6 px-2">
           <div className="flex items-center justify-between">
             <h2 className="text-xl md:text-2xl font-extrabold text-slate-900 font-headline">Latest Society Stays</h2>
-            <a className="text-primary font-bold text-sm hover:underline" href="/stay">Explore Stay</a>
+            <a className="text-primary font-bold text-sm hover:underline" href="/stay">{t('home.explore_stay')}</a>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="relative group rounded-[24px] md:rounded-[32px] overflow-hidden aspect-[4/3] shadow-md">
@@ -425,7 +427,7 @@ function HomeContent() {
               <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold text-primary shadow-sm border border-white/20">$1,200/mo</div>
               <div className="absolute bottom-0 left-0 right-0 p-4 md:p-5 bg-gradient-to-t from-black/80 to-transparent text-white">
                 <h5 className="font-bold text-base md:text-lg font-headline">The Glass House</h5>
-                <p className="text-[10px] md:text-xs text-white/80 font-medium">3 Member Suites Available • Shared Kitchen</p>
+                <p className="text-[10px] md:text-xs text-white/80 font-medium">{t('home.stay.suites_kitchen')}</p>
               </div>
             </div>
             
@@ -438,7 +440,7 @@ function HomeContent() {
               <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold text-primary shadow-sm border border-white/20">$850/mo</div>
               <div className="absolute bottom-0 left-0 right-0 p-4 md:p-5 bg-gradient-to-t from-black/80 to-transparent text-white">
                 <h5 className="font-bold text-base md:text-lg font-headline">Industrial Loft #42</h5>
-                <p className="text-[10px] md:text-xs text-white/80 font-medium">1 Studio Suite • Private Balcony</p>
+                <p className="text-[10px] md:text-xs text-white/80 font-medium">{t('home.stay.studio_balcony')}</p>
               </div>
             </div>
           </div>
@@ -453,8 +455,8 @@ function HomeContent() {
           </div>
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
           <div className="absolute bottom-6 left-6 right-6">
-            <span className="px-3 py-1 bg-white/20 text-white text-[10px] font-bold uppercase tracking-widest rounded-full mb-2 inline-block backdrop-blur-md border border-white/20">📸 Photogenic Last Night</span>
-            <h3 className="text-xl md:text-2xl font-black text-white font-headline leading-tight">{photogenicPost.caption || 'Last Night\'s Best Moment'}</h3>
+            <span className="px-3 py-1 bg-white/20 text-white text-[10px] font-bold uppercase tracking-widest rounded-full mb-2 inline-block backdrop-blur-md border border-white/20">{t('home.photogenic_title')}</span>
+            <h3 className="text-xl md:text-2xl font-black text-white font-headline leading-tight">{photogenicPost.caption || t('home.photogenic_default_caption')}</h3>
             <div className="flex items-center gap-3 mt-2">
               <span className="text-white/70 text-xs flex items-center gap-1"><span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>{photogenicPost.likesCount || 0}</span>
               <span className="text-white/50 text-xs">{photogenicPost.authorName || 'Anonymous'}</span>
@@ -473,7 +475,7 @@ function HomeContent() {
           <div className="flex gap-2 px-2">
             {(['organizers','instructors','providers'] as const).map(tab => (
               <button key={tab} onClick={() => setPeopleTab(tab)} className={`px-4 py-2 rounded-full text-xs font-bold transition-colors ${peopleTab === tab ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>
-                {tab === 'organizers' ? 'Organizers' : tab === 'instructors' ? 'Instructors' : 'Providers'}
+                {tab === 'organizers' ? t('home.organizers') : tab === 'instructors' ? t('home.instructors') : t('home.providers')}
               </button>
             ))}
           </div>
@@ -488,7 +490,7 @@ function HomeContent() {
               </div>
             ))}
             {(peopleData[peopleTab] || []).length === 0 && (
-              <div className="w-full py-8 text-center text-slate-400 text-sm font-medium">No {peopleTab} found yet.</div>
+              <div className="w-full py-8 text-center text-slate-400 text-sm font-medium">{t('home.no_people_found', { role: peopleTab })}</div>
             )}
           </div>
         </section>
@@ -501,7 +503,7 @@ function HomeContent() {
           <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm overflow-hidden">
             <div className="grid grid-cols-7 text-center border-b border-slate-100">
               {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((d, i) => (
-                <div key={d} className={`py-3 text-[10px] font-bold uppercase tracking-wider ${i === new Date().getDay() ? 'text-primary bg-primary/5' : 'text-slate-400'}`}>{d}</div>
+                <div key={d} className={`py-3 text-[10px] font-bold uppercase tracking-wider ${i === new Date().getDay() ? 'text-primary bg-primary/5' : 'text-slate-400'}`}>{t(`common.days.${d.toLowerCase()}`)}</div>
               ))}
             </div>
             <div className="grid grid-cols-7">
@@ -535,8 +537,8 @@ function HomeContent() {
           </div>
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
           <div className="absolute bottom-6 left-6 right-6">
-            <span className="px-3 py-1 bg-white/20 text-white text-[10px] font-bold uppercase tracking-widest rounded-full mb-2 inline-block backdrop-blur-md border border-white/20">🎬 Videogenic This Month</span>
-            <h3 className="text-xl md:text-2xl font-black text-white font-headline">{videogenicPost.caption || 'Trending Video'}</h3>
+            <span className="px-3 py-1 bg-white/20 text-white text-[10px] font-bold uppercase tracking-widest rounded-full mb-2 inline-block backdrop-blur-md border border-white/20">{t('home.videogenic_title')}</span>
+            <h3 className="text-xl md:text-2xl font-black text-white font-headline">{videogenicPost.caption || t('home.videogenic_default_caption')}</h3>
             <div className="flex items-center gap-3 mt-2">
               <span className="text-white/70 text-xs flex items-center gap-1"><span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>{videogenicPost.likesCount || 0}</span>
               <span className="text-white/50 text-xs">{videogenicPost.authorName || 'Anonymous'}</span>
@@ -555,12 +557,12 @@ function HomeContent() {
                 <span className="material-symbols-outlined text-emerald-600 text-2xl">self_improvement</span>
               </div>
               <div>
-                <h3 className="font-bold text-slate-900 text-sm">Yoga Society</h3>
-                <p className="text-[10px] text-slate-400 font-medium">Coming Soon</p>
+                <h3 className="font-bold text-slate-900 text-sm">{t('home.neighbor.yoga.title')}</h3>
+                <p className="text-[10px] text-slate-400 font-medium">{t('home.coming_soon')}</p>
               </div>
             </div>
-            <p className="text-xs text-slate-500 leading-relaxed">Discover the Yoga community near you. Classes, retreats, and mindful living.</p>
-            <button className="mt-auto px-4 py-2.5 bg-emerald-100 text-emerald-700 rounded-xl text-xs font-bold opacity-50 cursor-not-allowed" disabled>Visit Society</button>
+            <p className="text-xs text-slate-500 leading-relaxed">{t('home.neighbors.yoga_desc')}</p>
+            <button className="mt-auto px-4 py-2.5 bg-emerald-100 text-emerald-700 rounded-xl text-xs font-bold opacity-50 cursor-not-allowed" disabled>{t('home.visit_society')}</button>
           </div>
         </div>
       </section>
@@ -569,10 +571,10 @@ function HomeContent() {
       <section className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-8">
         <div className="bg-primary rounded-[32px] p-8 text-white flex items-center justify-between group overflow-hidden relative shadow-lg">
           <div className="relative z-10">
-            <span className="text-white/80 text-[10px] font-bold uppercase tracking-[0.2em] mb-2 block">Member Marketplace</span>
-            <h3 className="text-2xl font-extrabold mb-4 leading-tight font-headline">Discover Tango Shoes<br/>and Apparel Globally</h3>
+            <span className="text-white/80 text-[10px] font-bold uppercase tracking-[0.2em] mb-2 block">{t('home.marketplace.title')}</span>
+            <h3 className="text-2xl font-extrabold mb-4 leading-tight font-headline">{t('home.marketplace.desc')}</h3>
             <a className="inline-flex items-center gap-2 bg-white text-primary px-5 py-2.5 rounded-xl font-bold text-sm hover:gap-3 transition-all shadow-md" href="/shop">
-              Shop Collection <span className="material-symbols-outlined text-sm font-bold">arrow_forward</span>
+              {t('home.marketplace.button')} <span className="material-symbols-outlined text-sm font-bold">arrow_forward</span>
             </a>
           </div>
           <div className="absolute -right-12 -bottom-12 opacity-10 transform rotate-12 group-hover:scale-110 transition-transform">
@@ -582,10 +584,10 @@ function HomeContent() {
 
         <div className="bg-slate-900 rounded-[32px] p-8 text-white flex items-center justify-between group overflow-hidden relative shadow-lg">
           <div className="relative z-10">
-            <span className="text-white/60 text-[10px] font-bold uppercase tracking-[0.2em] mb-2 block">Tango Collective</span>
-            <h3 className="text-2xl font-extrabold mb-4 leading-tight font-headline">A Premium Multi-Brand<br/>Boutique for Dancers</h3>
+            <span className="text-white/60 text-[10px] font-bold uppercase tracking-[0.2em] mb-2 block">{t('home.collective.title')}</span>
+            <h3 className="text-2xl font-extrabold mb-4 leading-tight font-headline">{t('home.collective.desc')}</h3>
             <a className="inline-flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:gap-3 transition-all shadow-md" href="/arcade">
-              Enter Arcade <span className="material-symbols-outlined text-sm font-bold">sports_esports</span>
+              {t('home.collective.button')} <span className="material-symbols-outlined text-sm font-bold">sports_esports</span>
             </a>
           </div>
           <div className="absolute -right-12 -bottom-12 opacity-10 transform -rotate-12 group-hover:scale-110 transition-transform">
@@ -601,7 +603,7 @@ function HomeContent() {
           <div className="relative w-full max-w-2xl max-h-[85vh] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in duration-300">
             <div className="flex items-center justify-between p-6 border-b border-slate-100">
               <div className="flex items-center gap-3">
-                <span className="px-3 py-1 bg-red-50 text-red-600 text-[10px] font-bold uppercase tracking-widest rounded-full">Zero Tolerance Policy</span>
+                <span className="px-3 py-1 bg-red-50 text-red-600 text-[10px] font-bold uppercase tracking-widest rounded-full">{t('home.policy.zero_tolerance')}</span>
               </div>
               <button 
                 onClick={() => setIsSafeFloorOpen(false)}
@@ -620,7 +622,7 @@ function HomeContent() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/40 to-transparent flex items-end p-8">
                   <h2 className="text-3xl md:text-4xl font-extrabold text-white font-headline leading-tight">
-                    Where Respect is Lacking,<br/>Tango Cannot Exist
+                    {t('home.policy.headline')}
                   </h2>
                 </div>
               </div>
@@ -628,7 +630,7 @@ function HomeContent() {
               <div className="p-8 space-y-8">
                 <div className="prose prose-slate prose-lg max-w-none">
                   <p className="text-xl font-medium text-slate-800 leading-relaxed font-headline italic border-l-4 border-primary pl-6 py-2 bg-slate-50/50 rounded-r-xl">
-                    The essence of tango lies in the 'Abrazo' (embrace), built on deep respect and trust for one another. This beautiful, unspoken dialogue can only be completed when everyone on the floor feels psychologically and physically safe.
+                    {t('home.policy.intro')}
                   </p>
                   
                   <div className="my-10 grid grid-cols-1 sm:grid-cols-2 gap-8 items-center">
@@ -638,41 +640,41 @@ function HomeContent() {
                       className="rounded-3xl shadow-xl w-full h-56 object-cover"
                     />
                     <div className="flex flex-col justify-center">
-                      <h3 className="text-xl font-extrabold text-slate-900 mb-4 font-headline">A Safe Environment</h3>
+                      <h3 className="text-xl font-extrabold text-slate-900 mb-4 font-headline">{t('home.policy.section1.title')}</h3>
                       <p className="text-slate-600 text-[15px] leading-relaxed">
-                        Recent incidents of sexual misconduct and harassment within the tango scene are shaking the foundation of this dance we cherish. Invading another's boundaries using power or status cannot be justified under any circumstances.
+                        {t('home.policy.section1.desc')}
                       </p>
                     </div>
                   </div>
 
                   <h3 className="text-xl md:text-2xl font-extrabold text-slate-900 mt-8 mb-6 font-headline flex items-center gap-3">
                     <span className="material-symbols-outlined text-primary text-2xl md:text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>verified_user</span>
-                    Our Promise for a Safe Embrace
+                    {t('home.policy.promise.title')}
                   </h3>
                   
                   <div className="space-y-3">
                     <div className="bg-white rounded-2xl md:rounded-3xl p-4 sm:p-5 border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
                       <h4 className="font-extrabold text-slate-900 text-base md:text-lg mb-2 flex items-center gap-3">
                         <span className="w-8 h-8 rounded-xl md:rounded-2xl bg-red-50 text-red-600 flex items-center justify-center text-xs md:text-sm font-black">1</span>
-                        Zero Tolerance
+                        {t('home.policy.point1.title')}
                       </h4>
-                      <p className="text-slate-600 pl-11 text-sm md:text-[15px] leading-relaxed">If sexual assault, sexual harassment, or unwanted physical/verbal harassment is confirmed, we will take immediate and permanent expulsion measures from the community, regardless of status or position.</p>
+                      <p className="text-slate-600 pl-11 text-sm md:text-[15px] leading-relaxed">{t('home.policy.point1.desc')}</p>
                     </div>
                     
                     <div className="bg-white rounded-2xl md:rounded-3xl p-4 sm:p-5 border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
                       <h4 className="font-extrabold text-slate-900 text-base md:text-lg mb-2 flex items-center gap-3">
                         <span className="w-8 h-8 rounded-xl md:rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xs md:text-sm font-black">2</span>
-                        Victim Solidarity and Protection
+                        {t('home.policy.point2.title')}
                       </h4>
-                      <p className="text-slate-600 pl-11 text-sm md:text-[15px] leading-relaxed">We will listen to the voices of victims and strictly prohibit secondary victimization (blaming, spreading rumors, etc.). We will stand in solidarity until the end so that those who courageously speak out are not isolated.</p>
+                      <p className="text-slate-600 pl-11 text-sm md:text-[15px] leading-relaxed">{t('home.policy.point2.desc')}</p>
                     </div>
                     
                     <div className="bg-white rounded-2xl md:rounded-3xl p-4 sm:p-5 border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
                       <h4 className="font-extrabold text-slate-900 text-base md:text-lg mb-2 flex items-center gap-3">
                         <span className="w-8 h-8 rounded-xl md:rounded-2xl bg-green-50 text-green-600 flex items-center justify-center text-xs md:text-sm font-black">3</span>
-                        Respect for Clear Boundaries
+                        {t('home.policy.point3.title')}
                       </h4>
-                      <p className="text-slate-600 pl-11 text-sm md:text-[15px] leading-relaxed">When someone expresses rejection, it must be accepted immediately. Tango is a connection formed with consent, and no dance should be continued at the expense of one's comfort.</p>
+                      <p className="text-slate-600 pl-11 text-sm md:text-[15px] leading-relaxed">{t('home.policy.point3.desc')}</p>
                     </div>
                   </div>
 
@@ -680,9 +682,9 @@ function HomeContent() {
                     <div className="absolute inset-0 opacity-20 bg-[url('https://images.unsplash.com/photo-1508807526345-15e9b5f4eaff?q=80&w=1200')] bg-cover bg-center"></div>
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/80 to-transparent"></div>
                     <div className="relative z-10">
-                      <h3 className="text-2xl md:text-3xl font-black font-headline mb-6 leading-tight text-white">We must make the floor<br/>the safest place once again.</h3>
+                      <h3 className="text-2xl md:text-3xl font-black font-headline mb-6 leading-tight text-white">{t('home.policy.footer.title')}</h3>
                       <p className="text-white/80 max-w-xl mx-auto text-[15px] leading-relaxed">
-                        There is no art that blooms on someone's pain. For the day when everyone can make eye contact without fear and embrace each other again in complete trust, the World of Tango community promises to stand in solidarity with resolute action.
+                        {t('home.policy.footer.desc')}
                       </p>
                     </div>
                   </div>
@@ -695,7 +697,7 @@ function HomeContent() {
                 onClick={() => setIsSafeFloorOpen(false)}
                 className="px-6 py-2.5 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-colors"
               >
-                Acknowledge
+                {t('home.policy.acknowledge')}
               </button>
             </div>
           </div>
@@ -722,9 +724,9 @@ function HomeContent() {
                 </button>
               </div>
               <div className="absolute bottom-6 left-6 right-6">
-                <span className="px-3 py-1 bg-white/20 text-white text-[10px] font-bold uppercase tracking-widest rounded-full mb-2 inline-block backdrop-blur-md border border-white/20">Live Data</span>
+                <span className="px-3 py-1 bg-white/20 text-white text-[10px] font-bold uppercase tracking-widest rounded-full mb-2 inline-block backdrop-blur-md border border-white/20">{t('home.stats.live_data')}</span>
                 <h2 className="text-2xl font-extrabold text-white font-headline leading-tight">
-                  Global Member Distribution
+                  {t('home.stats.title')}
                 </h2>
               </div>
             </div>
@@ -754,7 +756,7 @@ function HomeContent() {
                     </div>
                     <div className="text-right">
                       <span className="font-black text-lg text-slate-900">{item.count}</span>
-                      <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">Members</span>
+                      <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">{t('common.members')}</span>
                     </div>
                   </div>
                 ))}
@@ -769,7 +771,7 @@ function HomeContent() {
           <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md" onClick={() => setIsRegistrationOpen(false)} />
           <div className="relative w-full max-w-3xl mx-auto bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in duration-300 h-full max-h-[800px]">
             <div className="flex items-center justify-between p-6 border-b border-slate-100">
-              <h2 className="text-2xl font-extrabold text-slate-900 font-headline">Event Registration</h2>
+              <h2 className="text-2xl font-extrabold text-slate-900 font-headline">{t('home.event_registration.title')}</h2>
               <button 
                 onClick={() => setIsRegistrationOpen(false)}
                 className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
@@ -800,26 +802,26 @@ function HomeContent() {
               )}
 
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-6">
-                <h4 className="font-bold text-slate-900 text-lg">Attendee Information</h4>
+                <h4 className="font-bold text-slate-900 text-lg">{t('home.attendee_info')}</h4>
                 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-1">Full Name</label>
-                    <input type="text" className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-slate-50" placeholder="Enter your full name" disabled />
+                    <label className="block text-sm font-bold text-slate-700 mb-1">{t('home.full_name')}</label>
+                    <input type="text" className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-slate-50" placeholder={t('home.placeholder_name')} disabled />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-1">Email Address</label>
-                    <input type="email" className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-slate-50" placeholder="your@email.com" disabled />
+                    <label className="block text-sm font-bold text-slate-700 mb-1">{t('home.email')}</label>
+                    <input type="email" className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-slate-50" placeholder={t('home.placeholder_email')} disabled />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-1">Special Requirements (Optional)</label>
-                    <textarea className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-slate-50 min-h-[100px]" placeholder="Any dietary requirements or special requests?" disabled></textarea>
+                    <label className="block text-sm font-bold text-slate-700 mb-1">{t('home.special_req')}</label>
+                    <textarea className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-slate-50 min-h-[100px]" placeholder={t('home.placeholder_req')} disabled></textarea>
                   </div>
                 </div>
                 
                 <div className="p-4 bg-amber-50 rounded-xl border border-amber-100 flex gap-3 text-amber-800">
                   <span className="material-symbols-outlined text-amber-600">info</span>
-                  <p className="text-sm font-medium">Registration will open shortly. We are currently configuring the payment gateway for this event.</p>
+                  <p className="text-sm font-medium">{t('home.reg_pending_msg')}</p>
                 </div>
               </div>
             </div>
@@ -829,13 +831,13 @@ function HomeContent() {
                 onClick={() => setIsRegistrationOpen(false)}
                 className="px-6 py-3 text-slate-500 font-bold hover:text-slate-900 transition-colors"
               >
-                Cancel
+                {t('home.cancel')}
               </button>
               <button 
                 className="px-8 py-3 bg-slate-200 text-slate-400 font-bold rounded-xl cursor-not-allowed"
                 disabled
               >
-                Confirm Registration
+                {t('home.confirm_reg')}
               </button>
             </div>
           </div>

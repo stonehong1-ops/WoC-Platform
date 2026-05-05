@@ -12,6 +12,7 @@ import { PlatformUser } from '@/types/user';
 import { Timestamp } from 'firebase/firestore';
 import ProgramEditor from './ProgramEditor';
 import { syncMilongasToSocial, deleteLinkedSocials } from '@/lib/firebase/syncMilongaToSocial';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Props { onClose: () => void; onSuccess?: () => void; eventData?: Event; }
 
@@ -43,6 +44,7 @@ const inputCls = "flex-1 bg-transparent border-none p-0 focus:ring-0 text-sm fon
 const boxCls = "flex items-center px-4 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/20 transition-all";
 
 export default function EditEvent({ onClose, onSuccess, eventData }: Props) {
+  const { t } = useLanguage();
   const { user } = useAuth();
   const { location, openSelectorWithCallback } = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -173,12 +175,12 @@ export default function EditEvent({ onClose, onSuccess, eventData }: Props) {
           .catch(e => console.error('[Sync] Failed:', e));
       }
       onSuccess?.(); onClose();
-    } catch (e) { console.error(e); alert('Save failed.'); }
+    } catch (e) { console.error(e); alert(t('event.save_failed')); }
     finally { setIsSubmitting(false); }
   };
 
   const handleDelete = async () => {
-    if (!eventData?.id || !confirm('Delete this event?')) return;
+    if (!eventData?.id || !confirm(t('event.delete_confirm'))) return;
     try {
       // 연결된 Social popup도 삭제
       await deleteLinkedSocials(eventData.id);
@@ -196,7 +198,7 @@ export default function EditEvent({ onClose, onSuccess, eventData }: Props) {
           <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors">
             <span className="material-symbols-rounded text-[#2d3435]">close</span>
           </button>
-          <h1 className="text-lg font-black font-headline text-[#2d3435]">{eventData ? 'Edit Event' : 'Create Event'}</h1>
+          <h1 className="text-lg font-black font-headline text-[#2d3435]">{eventData ? t('event.edit_title') : t('event.create_title_new')}</h1>
         </div>
         <div className="flex items-center gap-2">
           {eventData && (
@@ -204,23 +206,23 @@ export default function EditEvent({ onClose, onSuccess, eventData }: Props) {
           )}
           <button onClick={handleSave} disabled={isSubmitting}
             className="flex items-center gap-1.5 px-4 py-2 bg-primary text-white rounded-full hover:bg-primary/90 transition-colors disabled:opacity-50 font-bold text-sm shadow-sm">
-            <span className="material-symbols-rounded text-[18px]">{isSubmitting?'sync':'done'}</span>Save
+            <span className="material-symbols-rounded text-[18px]">{isSubmitting?'sync':'done'}</span>{t('event.save_btn')}
           </button>
         </div>
       </header>
 
       <main className="pt-20 pb-4 max-w-2xl mx-auto px-4 space-y-5">
         {/* 1. Gallery */}
-        <Section icon="image" label="Poster & Gallery">
+        <Section icon="image" label={t('event.poster_label')}>
           <div className="py-4 px-8 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] flex justify-center">
             <div onClick={()=>fileInputRef.current?.click()}
               className="relative aspect-[4/5] w-full max-w-[240px] rounded-lg overflow-hidden bg-white border border-[#e0e4e5] flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-all group shadow-sm">
               {images[0] ? (
-                <><img className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src={images[0]} alt="poster"/><div className="absolute top-3 left-3 bg-primary text-white text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded shadow-sm z-10">Primary</div></>
+                <><img className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src={images[0]} alt="poster"/><div className="absolute top-3 left-3 bg-primary text-white text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded shadow-sm z-10">{t('event.primary_image')}</div></>
               ) : (
                 <div className="flex flex-col items-center text-[#acb3b4] group-hover:text-primary transition-colors">
                   <span className="material-symbols-rounded text-4xl mb-2">add_photo_alternate</span>
-                  <span className="text-xs font-bold">Upload Poster</span>
+                  <span className="text-xs font-bold">{t('event.upload_poster')}</span>
                 </div>
               )}
             </div>
@@ -229,37 +231,37 @@ export default function EditEvent({ onClose, onSuccess, eventData }: Props) {
         </Section>
 
         {/* 2. Basic Info */}
-        <Section icon="info" label="Basic Info">
-          <Field label="Event Title (EN)"><div className={boxCls}><input value={title} onChange={e=>setTitle(e.target.value)} className={inputCls} placeholder="e.g. Seoul Tango Festival 2026"/></div></Field>
-          <Field label="Native Title"><div className={boxCls}><input value={titleNative} onChange={e=>setTitleNative(e.target.value)} className={inputCls} placeholder="e.g. 서울 탱고 페스티벌 2026"/></div></Field>
-          <Field label="Description"><div className={boxCls}><textarea value={description} onChange={e=>setDescription(e.target.value)} className={`${inputCls} min-h-[80px] resize-none`} placeholder="Tell us about this event..."/></div></Field>
-          <Field label="Category">
+        <Section icon="info" label={t('event.basic_info')}>
+          <Field label={t('event.title_en_label')}><div className={boxCls}><input value={title} onChange={e=>setTitle(e.target.value)} className={inputCls} placeholder="e.g. Seoul Tango Festival 2026"/></div></Field>
+          <Field label={t('event.title_native_label')}><div className={boxCls}><input value={titleNative} onChange={e=>setTitleNative(e.target.value)} className={inputCls} placeholder="e.g. 서울 탱고 페스티벌 2026"/></div></Field>
+          <Field label={t('event.description_label')}><div className={boxCls}><textarea value={description} onChange={e=>setDescription(e.target.value)} className={`${inputCls} min-h-[80px] resize-none`} placeholder={t('event.description_placeholder_edit')}/></div></Field>
+          <Field label={t('event.category_label')}>
             <div className="flex flex-wrap gap-2">
               {categories.map(c=>(
-                <button key={c} onClick={()=>setCategory(c)} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${category===c?'bg-primary text-white border-primary shadow-sm':'bg-[#f8f9fa] text-[#acb3b4] border-[#e0e4e5] hover:border-primary/50'}`}>{c}</button>
+                <button key={c} onClick={()=>setCategory(c)} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${category===c?'bg-primary text-white border-primary shadow-sm':'bg-[#f8f9fa] text-[#acb3b4] border-[#e0e4e5] hover:border-primary/50'}`}>{t(`event.cat_${c.toLowerCase()}`)}</button>
               ))}
             </div>
           </Field>
         </Section>
 
         {/* 3. Date */}
-        <Section icon="schedule" label="Date">
+        <Section icon="schedule" label={t('event.date_label')}>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Start Date"><div className={boxCls}><input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)} className={inputCls}/></div></Field>
-            <Field label="End Date"><div className={boxCls}><input type="date" value={endDate} onChange={e=>setEndDate(e.target.value)} className={inputCls}/></div></Field>
+            <Field label={t('event.start_date_label')}><div className={boxCls}><input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)} className={inputCls}/></div></Field>
+            <Field label={t('event.end_date_label')}><div className={boxCls}><input type="date" value={endDate} onChange={e=>setEndDate(e.target.value)} className={inputCls}/></div></Field>
           </div>
         </Section>
 
         {/* 4. Location */}
-        <Section icon="location_on" label="Location" z={40}>
+        <Section icon="location_on" label={t('event.venue_label')} z={40}>
           <div className="relative z-50">
-            <Field label="Venue">
+            <Field label={t('event.venue_label')}>
               <div className={boxCls}>
                 <span className="material-symbols-rounded text-[#acb3b4] mr-2">search</span>
                 <input value={venueName} onChange={e=>handleVenueSearch(e.target.value)}
                   onFocus={()=>venueName.length>=1&&setShowVenueResults(venueResults.length>0)}
                   onBlur={()=>setTimeout(()=>setShowVenueResults(false),200)}
-                  className={inputCls} placeholder="Search venue..." />
+                  className={inputCls} placeholder={t('event.venue_search_placeholder')} />
               </div>
             </Field>
             {showVenueResults && (
@@ -273,12 +275,12 @@ export default function EditEvent({ onClose, onSuccess, eventData }: Props) {
               </div>
             )}
           </div>
-          <Field label="Region">
+          <Field label={t('event.region_label')}>
             <button onClick={()=>openSelectorWithCallback((c,ci)=>{setFormCountry(c);setFormCity(ci);})}
               className="w-full flex items-center justify-between px-4 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] hover:bg-[#f2f4f4] transition-colors">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-rounded text-primary">public</span>
-                <div className="text-left"><p className="text-sm font-bold text-[#2d3435]">{formCountry||'Select'}</p><p className="text-[10px] font-medium text-[#acb3b4]">{formCity||'Select'}</p></div>
+                <div className="text-left"><p className="text-sm font-bold text-[#2d3435]">{formCountry||t('event.select_region')}</p><p className="text-[10px] font-medium text-[#acb3b4]">{formCity||t('event.select_region')}</p></div>
               </div>
               <span className="material-symbols-rounded text-[#acb3b4]">chevron_right</span>
             </button>
@@ -286,16 +288,16 @@ export default function EditEvent({ onClose, onSuccess, eventData }: Props) {
         </Section>
 
         {/* 5. Staff */}
-        <Section icon="group" label="Roles & Staff" z={30}>
-          <Field label="Host Name"><div className={boxCls}><span className="material-symbols-rounded text-[#acb3b4] mr-2">person_filled</span><input value={hostName} onChange={e=>setHostName(e.target.value)} className={inputCls} placeholder="Host name"/></div></Field>
+        <Section icon="group" label={t('event.roles_staff_label')} z={30}>
+          <Field label={t('event.host_name_label')}><div className={boxCls}><span className="material-symbols-rounded text-[#acb3b4] mr-2">person_filled</span><input value={hostName} onChange={e=>setHostName(e.target.value)} className={inputCls} placeholder={t('event.host_name_label')}/></div></Field>
           <div className="relative z-10">
-            <Field label="Staff">
+            <Field label={t('event.staff_label')}>
               <div className={boxCls}>
                 <span className="material-symbols-rounded text-[#acb3b4] mr-2">person_add</span>
                 <input value={staffSearch} onChange={e=>{
                   setStaffSearch(e.target.value);
                   if(e.target.value.length>=1){const l=e.target.value.toLowerCase();const f=allUsers.filter(u=>!staffList.find(s=>s.id===u.id)&&(u.nickname?.toLowerCase().includes(l)));setStaffResults(f.slice(0,6));setShowStaffResults(f.length>0);}else setShowStaffResults(false);
-                }} onBlur={()=>setTimeout(()=>setShowStaffResults(false),200)} className={inputCls} placeholder="Search staff..."/>
+                }} onBlur={()=>setTimeout(()=>setShowStaffResults(false),200)} className={inputCls} placeholder={t('event.staff_search_placeholder')}/>
               </div>
             </Field>
             {showStaffResults&&(
@@ -315,8 +317,8 @@ export default function EditEvent({ onClose, onSuccess, eventData }: Props) {
         <ProgramEditor programs={programs} onChange={setPrograms} />
 
         {/* 7. Pricing */}
-        <Section icon="payments" label="Pricing">
-          <Field label="Currency">
+        <Section icon="payments" label={t('event.pricing_label')}>
+          <Field label={t('event.currency_label')}>
             <div className={boxCls}>
               <select value={currency} onChange={e=>setCurrency(e.target.value)} className={`${inputCls} appearance-none`}>
                 <option value="KRW">KRW</option><option value="USD">USD</option><option value="EUR">EUR</option><option value="JPY">JPY</option>
@@ -324,27 +326,27 @@ export default function EditEvent({ onClose, onSuccess, eventData }: Props) {
             </div>
           </Field>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Class Advance"><div className={boxCls}><input type="number" value={classAdv||''} onChange={e=>setClassAdv(parseInt(e.target.value)||0)} className={inputCls} placeholder="0"/></div></Field>
-            <Field label="Class Door"><div className={boxCls}><input type="number" value={classDoor||''} onChange={e=>setClassDoor(parseInt(e.target.value)||0)} className={inputCls} placeholder="0"/></div></Field>
+            <Field label={t('event.class_advance_label')}><div className={boxCls}><input type="number" value={classAdv||''} onChange={e=>setClassAdv(parseInt(e.target.value)||0)} className={inputCls} placeholder="0"/></div></Field>
+            <Field label={t('event.class_door_label')}><div className={boxCls}><input type="number" value={classDoor||''} onChange={e=>setClassDoor(parseInt(e.target.value)||0)} className={inputCls} placeholder="0"/></div></Field>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Milonga Advance"><div className={boxCls}><input type="number" value={milongaAdv||''} onChange={e=>setMilongaAdv(parseInt(e.target.value)||0)} className={inputCls} placeholder="0"/></div></Field>
-            <Field label="Milonga Door"><div className={boxCls}><input type="number" value={milongaDoor||''} onChange={e=>setMilongaDoor(parseInt(e.target.value)||0)} className={inputCls} placeholder="0"/></div></Field>
+            <Field label={t('event.milonga_advance_label')}><div className={boxCls}><input type="number" value={milongaAdv||''} onChange={e=>setMilongaAdv(parseInt(e.target.value)||0)} className={inputCls} placeholder="0"/></div></Field>
+            <Field label={t('event.milonga_door_label')}><div className={boxCls}><input type="number" value={milongaDoor||''} onChange={e=>setMilongaDoor(parseInt(e.target.value)||0)} className={inputCls} placeholder="0"/></div></Field>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Full Pass Advance"><div className={boxCls}><input type="number" value={fullPassAdv||''} onChange={e=>setFullPassAdv(parseInt(e.target.value)||0)} className={inputCls} placeholder="0"/></div></Field>
-            <Field label="Full Pass Door"><div className={boxCls}><input type="number" value={fullPassDoor||''} onChange={e=>setFullPassDoor(parseInt(e.target.value)||0)} className={inputCls} placeholder="0"/></div></Field>
+            <Field label={t('event.full_pass_advance_label')}><div className={boxCls}><input type="number" value={fullPassAdv||''} onChange={e=>setFullPassAdv(parseInt(e.target.value)||0)} className={inputCls} placeholder="0"/></div></Field>
+            <Field label={t('event.full_pass_door_label')}><div className={boxCls}><input type="number" value={fullPassDoor||''} onChange={e=>setFullPassDoor(parseInt(e.target.value)||0)} className={inputCls} placeholder="0"/></div></Field>
           </div>
-          <Field label="Full Pass Label"><div className={boxCls}><input value={fullPassLabel} onChange={e=>setFullPassLabel(e.target.value)} className={inputCls} placeholder="e.g. All Classes + Milongas"/></div></Field>
-          <Field label="Early Bird Deadline"><div className={boxCls}><input type="date" value={earlyBird} onChange={e=>setEarlyBird(e.target.value)} className={inputCls}/></div></Field>
+          <Field label={t('event.full_pass_label_label')}><div className={boxCls}><input value={fullPassLabel} onChange={e=>setFullPassLabel(e.target.value)} className={inputCls} placeholder={t('event.full_pass_label_placeholder')}/></div></Field>
+          <Field label={t('event.early_bird_deadline_label')}><div className={boxCls}><input type="date" value={earlyBird} onChange={e=>setEarlyBird(e.target.value)} className={inputCls}/></div></Field>
         </Section>
 
         {/* 8. Extra */}
-        <Section icon="tune" label="Additional Details">
-          <Field label="Dress Code"><div className={boxCls}><input value={dressCode} onChange={e=>setDressCode(e.target.value)} className={inputCls} placeholder="e.g. Elegant"/></div></Field>
-          <Field label="Website URL"><div className={boxCls}><input value={websiteUrl} onChange={e=>setWebsiteUrl(e.target.value)} className={inputCls} placeholder="https://..." type="url"/></div></Field>
-          <Field label="Registration URL"><div className={boxCls}><input value={registrationUrl} onChange={e=>setRegistrationUrl(e.target.value)} className={inputCls} placeholder="e.g. tally.so link" type="url"/></div></Field>
-          <Field label="Bank Info"><div className={boxCls}><input value={bankInfo} onChange={e=>setBankInfo(e.target.value)} className={inputCls} placeholder="Account info for transfer"/></div></Field>
+        <Section icon="tune" label={t('event.additional_details_label')}>
+          <Field label={t('event.dress_code_label')}><div className={boxCls}><input value={dressCode} onChange={e=>setDressCode(e.target.value)} className={inputCls} placeholder={t('event.dress_code_placeholder')}/></div></Field>
+          <Field label={t('event.website_url_label')}><div className={boxCls}><input value={websiteUrl} onChange={e=>setWebsiteUrl(e.target.value)} className={inputCls} placeholder="https://..." type="url"/></div></Field>
+          <Field label={t('event.registration_url_label')}><div className={boxCls}><input value={registrationUrl} onChange={e=>setRegistrationUrl(e.target.value)} className={inputCls} placeholder="e.g. tally.so link" type="url"/></div></Field>
+          <Field label={t('event.bank_info_label')}><div className={boxCls}><input value={bankInfo} onChange={e=>setBankInfo(e.target.value)} className={inputCls} placeholder={t('event.bank_info_placeholder')}/></div></Field>
         </Section>
       </main>
     </div>

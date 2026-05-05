@@ -10,6 +10,7 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import SocialViewer from '@/components/social/SocialViewer';
 import SocialHeroCard, { DualText, SocialCardImage, getSocialDisplayTitle } from '@/components/social/SocialHeroCard';
 import { useNavigation } from '@/components/providers/NavigationProvider';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 // 대한민국 법정공휴일 (2025-2027)
 const KR_HOLIDAYS: Record<string, string> = {
@@ -57,6 +58,7 @@ export default function SocialPage() {
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
   const { setSubHeader } = useNavigation();
+  const { t } = useLanguage();
   const [likedSocialIds, setLikedSocialIds] = useState<string[]>([]);
 
   useEffect(() => {
@@ -64,7 +66,7 @@ export default function SocialPage() {
       setLikedSocialIds([]);
       return;
     }
-    return socialService.subscribeMyLikes(user.uid, setLikedSocialIds);
+    return socialService.subscribeMyLikes(user.uid, (likes) => setLikedSocialIds(likes.map(l => l.id)));
   }, [user]);
 
   const handleToggleLike = async (e: React.MouseEvent, socialId: string) => {
@@ -114,7 +116,7 @@ export default function SocialPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this social event?')) {
+    if (window.confirm(t('social.confirm_delete'))) {
       await socialService.deleteSocial(id);
       setActiveMenuId(null);
     }
@@ -335,10 +337,10 @@ export default function SocialPage() {
         {/* Row 1: Scrollable Tabs */}
         <div className="w-full px-3 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
           {[
-            { id: 'this_week', label: 'Regular' },
-            { id: 'popup', label: 'Pop-up' },
-            { id: 'overview', label: 'Overview' },
-            { id: 'favorite', label: 'Favorite' }
+            { id: 'this_week', label: t('social.tab_regular') },
+            { id: 'popup', label: t('social.tab_popup') },
+            { id: 'overview', label: t('social.tab_overview') },
+            { id: 'favorite', label: t('social.tab_favorite') }
           ].map((tab) => (
             <button
               key={tab.id}
@@ -362,21 +364,21 @@ export default function SocialPage() {
               onClick={() => { setShowOrganizerFilter(!showOrganizerFilter); if (!showOrganizerFilter) setShowClubFilter(false); }}
               className={`flex items-center gap-0.5 text-[12px] font-bold transition-all ${selectedOrganizer !== 'All' ? 'text-blue-600' : 'text-slate-600 hover:text-slate-800'}`}
             >
-              {selectedOrganizer === 'All' ? 'Organizer' : selectedOrganizer}
+              {selectedOrganizer === 'All' ? t('social.filter_organizer') : selectedOrganizer}
               <span className={`material-symbols-outlined text-[16px] transition-transform ${showOrganizerFilter ? 'rotate-180' : ''}`}>expand_more</span>
             </button>
             <button 
               onClick={() => { setShowClubFilter(!showClubFilter); if (!showClubFilter) setShowOrganizerFilter(false); }}
               className={`flex items-center gap-0.5 text-[12px] font-bold transition-all ${selectedClub !== 'All' ? 'text-blue-600' : 'text-slate-600 hover:text-slate-800'}`}
             >
-              {selectedClub === 'All' ? 'Club' : selectedClub}
+              {selectedClub === 'All' ? t('social.filter_club') : selectedClub}
               <span className={`material-symbols-outlined text-[16px] transition-transform ${showClubFilter ? 'rotate-180' : ''}`}>expand_more</span>
             </button>
         </div>
         {showOrganizerFilter && (
           <div className="absolute top-full left-0 right-0 z-40 bg-white shadow-2xl border-t border-slate-100 p-4 max-h-[280px] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-300">
             <div className="flex items-center justify-between mb-4 px-1">
-              <span className="text-[14px] font-black text-slate-800 uppercase tracking-tight">Filter by Organizer</span>
+              <span className="text-[14px] font-black text-slate-800 uppercase tracking-tight">{t('social.filter_by_organizer')}</span>
               <button onClick={() => setShowOrganizerFilter(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:text-slate-600 active:scale-90 transition-all">
                 <span className="material-symbols-outlined text-[18px]">close</span>
               </button>
@@ -394,7 +396,7 @@ export default function SocialPage() {
         {showClubFilter && (
           <div className="absolute top-full left-0 right-0 z-40 bg-white shadow-2xl border-t border-slate-100 p-4 max-h-[280px] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-300">
             <div className="flex items-center justify-between mb-4 px-1">
-              <span className="text-[14px] font-black text-slate-800 uppercase tracking-tight">Filter by Club</span>
+              <span className="text-[14px] font-black text-slate-800 uppercase tracking-tight">{t('social.filter_by_club')}</span>
               <button onClick={() => setShowClubFilter(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:text-slate-600 active:scale-90 transition-all">
                 <span className="material-symbols-outlined text-[18px]">close</span>
               </button>
@@ -498,7 +500,7 @@ export default function SocialPage() {
               {filterSocials(regulars).filter(s => Number(s.dayOfWeek) === weekDays[activeDayOffset].getDay()).length === 0 ? (
                 <div className="w-full h-40 flex flex-col items-center justify-center opacity-20 bg-white rounded-lg border border-dashed border-gray-200">
                    <span className="material-symbols-outlined text-4xl mb-2">event_busy</span>
-                   <p className="text-xs font-black uppercase tracking-widest">No regular socials today</p>
+                   <p className="text-xs font-black uppercase tracking-widest">{t('social.no_regular_today')}</p>
                 </div>
               ) : (
                 filterSocials(regulars).filter(s => Number(s.dayOfWeek) === weekDays[activeDayOffset].getDay()).map(social => (
@@ -531,13 +533,13 @@ export default function SocialPage() {
             {/* Integrated Social Action */}
             <div className="-mx-4 px-4 py-2 flex items-center justify-between bg-white border-b border-slate-50">
               <p className="text-[12px] font-bold text-slate-400 uppercase tracking-tight">
-                Host a new social?
+                {t('social.host_new')}
               </p>
               <button 
                 onClick={() => setIsCreateOpen(true)}
                 className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 transition-colors py-2"
               >
-                <span className="text-[13px] font-bold">Register</span>
+                <span className="text-[13px] font-bold">{t('social.register')}</span>
                 <span className="material-symbols-outlined text-[18px]">add_circle</span>
               </button>
             </div>
@@ -552,7 +554,7 @@ export default function SocialPage() {
               if (filteredPopups.length === 0) {
                 return (
                   <div className="w-full h-32 flex flex-col items-center justify-center opacity-30 bg-white rounded-lg border border-dashed border-gray-200">
-                     <p className="text-xs font-black uppercase tracking-widest text-primary/40">No popup socials scheduled</p>
+                     <p className="text-xs font-black uppercase tracking-widest text-primary/40">{t('social.no_popup')}</p>
                   </div>
                 );
               }
@@ -642,7 +644,7 @@ export default function SocialPage() {
             {favoriteTimeline.length === 0 ? (
                <div className="flex flex-col items-center justify-center py-20 text-slate-400">
                  <span className="material-symbols-outlined text-4xl mb-2">favorite_border</span>
-                 <p className="text-sm font-medium">No liked socials yet</p>
+                 <p className="text-sm font-medium">{t('social.no_liked')}</p>
                </div>
             ) : (
                favoriteTimeline.map((group, idx) => (
@@ -733,7 +735,7 @@ export default function SocialPage() {
             {overviewTimeline.length === 0 ? (
                <div className="flex flex-col items-center justify-center py-20 text-slate-400">
                  <span className="material-symbols-outlined text-4xl mb-2">event_busy</span>
-                 <p className="text-sm font-medium">No upcoming socials this week</p>
+                 <p className="text-sm font-medium">{t('social.no_upcoming')}</p>
                </div>
             ) : (
                <div className="bg-white rounded-xl shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] border border-slate-100 overflow-hidden">
@@ -747,10 +749,10 @@ export default function SocialPage() {
                        <div className={`px-4 py-2.5 flex items-center justify-between ${isToday ? 'bg-blue-50/50' : 'bg-slate-50/50'}`}>
                          <h3 className={`text-[11px] font-black tracking-widest uppercase flex items-center gap-2 ${isRed ? 'text-red-500' : isToday ? 'text-blue-600' : 'text-slate-500'}`}>
                            {group.date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                           {isToday && <span className="bg-blue-600 text-white px-1.5 py-0.5 rounded text-[9px] leading-none">TODAY</span>}
+                           {isToday && <span className="bg-blue-600 text-white px-1.5 py-0.5 rounded text-[9px] leading-none">{t('social.today')}</span>}
                            {holiday && <span className="bg-red-500 text-white px-1.5 py-0.5 rounded text-[9px] leading-none">{holiday}</span>}
                          </h3>
-                         <span className="text-[10px] font-bold text-slate-400 tracking-wider">{group.socials.length} EVENTS</span>
+                         <span className="text-[10px] font-bold text-slate-400 tracking-wider">{group.socials.length} {t('social.events_count')}</span>
                        </div>
                        <div className="divide-y divide-slate-50">
                          {group.socials.map(social => (

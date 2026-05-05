@@ -6,6 +6,7 @@ import { userService } from "@/lib/firebase/userService";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/clientApp";
 import { format } from "date-fns";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Props {
   event: Event;
@@ -21,6 +22,7 @@ const getNormalizedDate = (val: any): Date => {
 };
 
 export default function EventHomeTab({ event, onChatWithHost, canEdit }: Props) {
+  const { t } = useLanguage();
   const [venue, setVenue] = useState<any>(null);
   const [hostProfile, setHostProfile] = useState<any>(null);
 
@@ -71,26 +73,26 @@ export default function EventHomeTab({ event, onChatWithHost, canEdit }: Props) 
       <div className="mx-4 mt-4 border border-[#e0e4e5] rounded-2xl overflow-hidden">
         <div className="bg-[#f8f9fa] px-4 py-2.5 border-b border-[#e0e4e5] flex items-center gap-2">
           <span className="material-symbols-rounded text-sm text-primary">event</span>
-          <p className="text-[10px] font-black text-primary uppercase tracking-widest">Event Overview</p>
+          <p className="text-[10px] font-black text-primary uppercase tracking-widest">{t('event.overview')}</p>
         </div>
         <div className="px-4 py-4 space-y-3">
           <div className="flex items-start gap-3">
             <span className="material-symbols-rounded text-lg text-[#acb3b4]">calendar_today</span>
-            <div><p className="text-xs font-bold text-[#2d3435]">Date</p><p className="text-xs text-[#596061]">{dateStr}</p></div>
+            <div><p className="text-xs font-bold text-[#2d3435]">{t('event.date')}</p><p className="text-xs text-[#596061]">{dateStr}</p></div>
           </div>
           <div className="flex items-start gap-3">
             <span className="material-symbols-rounded text-lg text-[#acb3b4]">location_on</span>
-            <div><p className="text-xs font-bold text-[#2d3435]">Location</p><p className="text-xs text-[#596061]">{event.location}</p></div>
+            <div><p className="text-xs font-bold text-[#2d3435]">{t('event.location')}</p><p className="text-xs text-[#596061]">{event.location}</p></div>
           </div>
           {(classCount > 0 || milongaCount > 0) && (
             <div className="flex items-start gap-3">
               <span className="material-symbols-rounded text-lg text-[#acb3b4]">school</span>
               <div>
-                <p className="text-xs font-bold text-[#2d3435]">Program</p>
+                <p className="text-xs font-bold text-[#2d3435]">{t('event.program')}</p>
                 <p className="text-xs text-[#596061]">
-                  {classCount > 0 && `${classCount} Classes`}
+                  {classCount > 0 && `${classCount} ${t('event.classes')}`}
                   {classCount > 0 && milongaCount > 0 && " · "}
-                  {milongaCount > 0 && `${milongaCount} Milongas`}
+                  {milongaCount > 0 && `${milongaCount} ${t('event.milongas')}`}
                 </p>
               </div>
             </div>
@@ -98,7 +100,7 @@ export default function EventHomeTab({ event, onChatWithHost, canEdit }: Props) 
           {event.dressCode && (
             <div className="flex items-start gap-3">
               <span className="material-symbols-rounded text-lg text-[#acb3b4]">checkroom</span>
-              <div><p className="text-xs font-bold text-[#2d3435]">Dress Code</p><p className="text-xs text-[#596061]">{event.dressCode}</p></div>
+              <div><p className="text-xs font-bold text-[#2d3435]">{t('event.dress_code')}</p><p className="text-xs text-[#596061]">{event.dressCode}</p></div>
             </div>
           )}
         </div>
@@ -109,13 +111,13 @@ export default function EventHomeTab({ event, onChatWithHost, canEdit }: Props) 
         <div className="mx-4 mt-4 border border-[#e0e4e5] rounded-2xl overflow-hidden">
           <div className="bg-[#f8f9fa] px-4 py-2.5 border-b border-[#e0e4e5] flex items-center gap-2">
             <span className="material-symbols-rounded text-sm text-primary">payments</span>
-            <p className="text-[10px] font-black text-primary uppercase tracking-widest">Pricing</p>
+            <p className="text-[10px] font-black text-primary uppercase tracking-widest">{t('event.pricing')}</p>
           </div>
           <div className="px-4 py-4 space-y-2">
             {pricing.fullPassPrice && (
               <div className="flex items-center justify-between py-2 border-b border-[#f2f4f4]">
                 <div>
-                  <p className="text-xs font-bold text-[#2d3435]">Full Pass</p>
+                  <p className="text-xs font-bold text-[#2d3435]">{t('event.full_pass')}</p>
                   {pricing.fullPassPrice.label && <p className="text-[10px] text-[#acb3b4]">{pricing.fullPassPrice.label}</p>}
                 </div>
                 <div className="text-right">
@@ -126,25 +128,25 @@ export default function EventHomeTab({ event, onChatWithHost, canEdit }: Props) 
             )}
             {pricing.classPrice && (
               <div className="flex items-center justify-between py-2 border-b border-[#f2f4f4]">
-                <p className="text-xs font-bold text-[#2d3435]">Class</p>
+                <p className="text-xs font-bold text-[#2d3435]">{t('event.class')}</p>
                 <div className="text-right">
                   <p className="text-xs font-bold text-[#2d3435]">{formatPrice(pricing.classPrice.advance)}</p>
-                  {pricing.classPrice.door && <p className="text-[10px] text-[#acb3b4]">Door: {formatPrice(pricing.classPrice.door)}</p>}
+                  {pricing.classPrice.door && <p className="text-[10px] text-[#acb3b4]">{t('event.door')}: {formatPrice(pricing.classPrice.door)}</p>}
                 </div>
               </div>
             )}
             {pricing.milongaPrice && (
               <div className="flex items-center justify-between py-2 border-b border-[#f2f4f4]">
-                <p className="text-xs font-bold text-[#2d3435]">Milonga</p>
+                <p className="text-xs font-bold text-[#2d3435]">{t('event.milonga')}</p>
                 <div className="text-right">
                   <p className="text-xs font-bold text-[#2d3435]">{formatPrice(pricing.milongaPrice.advance)}</p>
-                  {pricing.milongaPrice.door && <p className="text-[10px] text-[#acb3b4]">Door: {formatPrice(pricing.milongaPrice.door)}</p>}
+                  {pricing.milongaPrice.door && <p className="text-[10px] text-[#acb3b4]">{t('event.door')}: {formatPrice(pricing.milongaPrice.door)}</p>}
                 </div>
               </div>
             )}
             {pricing.privateLessonPrice && (
               <div className="flex items-center justify-between py-2">
-                <p className="text-xs font-bold text-[#2d3435]">Private Lesson</p>
+                <p className="text-xs font-bold text-[#2d3435]">{t('event.private_lesson')}</p>
                 <p className="text-xs font-bold text-[#2d3435]">{formatPrice(pricing.privateLessonPrice)}</p>
               </div>
             )}
@@ -160,7 +162,7 @@ export default function EventHomeTab({ event, onChatWithHost, canEdit }: Props) 
             {pricing.earlyBirdDeadline && (
               <div className="mt-1 bg-blue-50 rounded-xl px-3 py-2">
                 <p className="text-[10px] font-bold text-blue-700">
-                  🐥 Early Bird until {pricing.earlyBirdDeadline}
+                  🐥 {t('event.early_bird')} {pricing.earlyBirdDeadline}
                 </p>
               </div>
             )}
@@ -172,7 +174,7 @@ export default function EventHomeTab({ event, onChatWithHost, canEdit }: Props) 
       <div className="mx-4 mt-4 border border-[#e0e4e5] rounded-2xl overflow-hidden">
         <div className="bg-[#f8f9fa] px-4 py-2.5 border-b border-[#e0e4e5] flex items-center gap-2">
           <span className="material-symbols-rounded text-sm text-primary">location_on</span>
-          <p className="text-[10px] font-black text-primary uppercase tracking-widest">Venue</p>
+          <p className="text-[10px] font-black text-primary uppercase tracking-widest">{t('event.venue')}</p>
         </div>
         <div className="px-4 py-4">
           <p className="text-sm font-bold text-[#2d3435]">{event.venueName || event.location}</p>
@@ -210,7 +212,7 @@ export default function EventHomeTab({ event, onChatWithHost, canEdit }: Props) 
       <div className="mx-4 mt-4 border border-[#e0e4e5] rounded-2xl overflow-hidden">
         <div className="bg-[#f8f9fa] px-4 py-2.5 border-b border-[#e0e4e5] flex items-center gap-2">
           <span className="material-symbols-rounded text-sm text-primary">person</span>
-          <p className="text-[10px] font-black text-primary uppercase tracking-widest">Organizer</p>
+          <p className="text-[10px] font-black text-primary uppercase tracking-widest">{t('event.organizer')}</p>
         </div>
         <div className="px-4 py-4 space-y-3">
           <div className="flex items-center justify-between">
@@ -221,7 +223,7 @@ export default function EventHomeTab({ event, onChatWithHost, canEdit }: Props) 
               </div>
               <div>
                 <p className="text-sm font-bold text-[#2d3435]">{event.hostNameNative || event.hostName}</p>
-                <p className="text-[10px] text-[#acb3b4] font-bold uppercase">Organizer</p>
+                <p className="text-[10px] text-[#acb3b4] font-bold uppercase">{t('event.organizer')}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -244,7 +246,7 @@ export default function EventHomeTab({ event, onChatWithHost, canEdit }: Props) 
                   </div>
                   <div>
                     <p className="text-xs font-bold text-[#2d3435]">{name}</p>
-                    <p className="text-[10px] text-[#acb3b4]">Staff</p>
+                    <p className="text-[10px] text-[#acb3b4]">{t('event.staff')}</p>
                   </div>
                 </div>
               ))}
@@ -258,22 +260,22 @@ export default function EventHomeTab({ event, onChatWithHost, canEdit }: Props) 
         <div className="mx-4 mt-4 border border-[#e0e4e5] rounded-2xl overflow-hidden">
           <div className="bg-[#f8f9fa] px-4 py-2.5 border-b border-[#e0e4e5] flex items-center gap-2">
             <span className="material-symbols-rounded text-sm text-primary">link</span>
-            <p className="text-[10px] font-black text-primary uppercase tracking-widest">Links & Info</p>
+            <p className="text-[10px] font-black text-primary uppercase tracking-widest">{t('event.links_info')}</p>
           </div>
           <div className="px-4 py-4 space-y-3">
             {event.websiteUrl && (
               <a href={event.websiteUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs font-bold text-primary hover:underline">
-                <span className="material-symbols-rounded text-sm">language</span>Website
+                <span className="material-symbols-rounded text-sm">language</span>{t('event.website')}
               </a>
             )}
             {event.registrationUrl && (
               <a href={event.registrationUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs font-bold text-primary hover:underline">
-                <span className="material-symbols-rounded text-sm">open_in_new</span>External Registration
+                <span className="material-symbols-rounded text-sm">open_in_new</span>{t('event.external_reg')}
               </a>
             )}
             {event.bankInfo && (
               <div className="bg-[#f8f9fa] rounded-xl px-3 py-2">
-                <p className="text-[10px] font-bold text-[#acb3b4] uppercase mb-1">Bank Info</p>
+                <p className="text-[10px] font-bold text-[#acb3b4] uppercase mb-1">{t('event.bank_info')}</p>
                 <p className="text-xs text-[#596061] whitespace-pre-wrap">{event.bankInfo}</p>
               </div>
             )}

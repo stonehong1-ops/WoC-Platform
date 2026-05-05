@@ -11,6 +11,7 @@ import { AnimatePresence } from 'framer-motion';
 import { safeDate } from '@/lib/utils/safeDate';
 import ResaleWishlistTray from '@/components/resale/ResaleWishlistTray';
 import { useModalNavigation } from '@/hooks/useModalNavigation';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 type SortOption = 'latest' | 'popular' | 'price_asc' | 'price_desc';
 
@@ -34,6 +35,7 @@ const RESALE_FILTER_KEYS = ['All', 'Shoes', 'Apparel', 'Accessories', 'Equipment
 
 function ResalePageContent() {
   const { user, setShowLogin } = useAuth();
+  const { t } = useLanguage();
   const { value: itemId, openModal: openDetail, closeModal: closeDetail } = useModalNavigation('itemId');
   const { isOpen: showCreateModal, openModal: openCreate, closeModal: closeCreate } = useModalNavigation('create');
 
@@ -104,7 +106,7 @@ function ResalePageContent() {
   const handleLike = async (e: React.MouseEvent, itemId: string) => {
     e.stopPropagation();
     if (!user) {
-      alert("Please login to like items");
+      alert(t('resale.msg_login_like_items', "Please login to like items"));
       return;
     }
     
@@ -154,16 +156,16 @@ function ResalePageContent() {
   }, [items, activeFilter, activePerson, searchQuery, sortOption]);
 
   const getRelativeTime = (timestamp: any) => {
-    if (!timestamp) return 'Just now';
+    if (!timestamp) return t('resale.just_now', 'Just now');
     const date = safeDate(timestamp);
-    if (!date) return 'Just now';
+    if (!date) return t('resale.just_now', 'Just now');
     const now = new Date();
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
     
-    if (diffInSeconds < 60) return 'Just now';
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-    return `${Math.floor(diffInSeconds / 86400)}d ago`;
+    if (diffInSeconds < 60) return t('resale.just_now', 'Just now');
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}${t('resale.mins_ago', 'm ago')}`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}${t('resale.hours_ago', 'h ago')}`;
+    return `${Math.floor(diffInSeconds / 86400)}${t('resale.days_ago', 'd ago')}`;
   };
 
   // Teleport Filter Bar to Header (Premium Standard: Dual Row)
@@ -182,7 +184,7 @@ function ResalePageContent() {
                   : 'bg-slate-50/50 text-slate-500 border-slate-100 hover:bg-slate-100/80 hover:text-slate-700'
               }`}
             >
-              {filter.fullLabel || filter.label}
+              {t(`resale.cat_${filter.key.toLowerCase()}`, filter.fullLabel || filter.label)}
             </button>
           ))}
         </div>
@@ -192,7 +194,7 @@ function ResalePageContent() {
           <div className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
             <div className="text-[11px] font-bold text-slate-600 uppercase tracking-widest">
-              {filtered.length} <span className="text-slate-400 font-medium">Items</span>
+              {filtered.length} <span className="text-slate-400 font-medium">{t('resale.items_count', 'Items')}</span>
             </div>
           </div>
           
@@ -209,7 +211,7 @@ function ResalePageContent() {
                   : 'text-slate-600 hover:text-slate-800'
               }`}
             >
-              {activePerson === 'All' ? 'Person' : activePerson}
+              {activePerson === 'All' ? t('resale.person', 'Person') : activePerson}
               <span className={`material-symbols-outlined text-[16px] transition-transform ${showPersonFilter ? 'rotate-180' : ''}`}>expand_more</span>
             </button>
 
@@ -221,7 +223,7 @@ function ResalePageContent() {
               }}
               className="flex items-center gap-0.5 text-[12px] font-bold text-slate-600 hover:text-slate-800 transition-all"
             >
-              {SORT_OPTIONS.find(o => o.key === sortOption)?.label || 'Sort'}
+              {t(`resale.sort_${sortOption}`, SORT_OPTIONS.find(o => o.key === sortOption)?.label || 'Sort')}
               <span className={`material-symbols-outlined text-[16px] transition-transform ${showSortDropdown ? 'rotate-180' : ''}`}>expand_more</span>
             </button>
           </div>
@@ -231,7 +233,7 @@ function ResalePageContent() {
         {showPersonFilter && (
           <div className="absolute top-full left-0 right-0 z-40 bg-white shadow-2xl border-t border-slate-100 p-4 max-h-[300px] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-300">
             <div className="flex items-center justify-between mb-3 px-1">
-              <span className="text-[13px] font-bold text-slate-800">Filter by Person</span>
+              <span className="text-[13px] font-bold text-slate-800">{t('resale.filter_by_person', 'Filter by Person')}</span>
               <button onClick={() => setShowPersonFilter(false)} className="text-slate-400 hover:text-slate-600">
                 <span className="material-symbols-outlined text-[18px]">close</span>
               </button>
@@ -270,7 +272,7 @@ function ResalePageContent() {
                 }`}
               >
                 <span className="material-symbols-outlined text-[18px]">{opt.icon}</span>
-                <span className="text-[13px]">{opt.label}</span>
+                <span className="text-[13px]">{t(`resale.sort_${opt.key}`, opt.label)}</span>
               </button>
             ))}
           </div>
@@ -295,13 +297,13 @@ function ResalePageContent() {
       {/* Integrated Registration Action */}
       <div className="px-6 py-2 flex items-center justify-between bg-white border-b border-slate-50">
         <p className="text-[12px] font-bold text-slate-400 uppercase tracking-tight">
-          Have items to share?
+          {t('resale.have_items_share', 'Have items to share?')}
         </p>
         <button 
           onClick={() => openCreate('true')}
           className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 transition-colors py-2"
         >
-          <span className="text-[13px] font-bold">Post Item</span>
+          <span className="text-[13px] font-bold">{t('resale.post_item', 'Post Item')}</span>
           <span className="material-symbols-outlined text-[18px]">add_circle</span>
         </button>
       </div>
@@ -325,7 +327,7 @@ function ResalePageContent() {
           <div className="flex flex-col items-center justify-center py-20 text-center opacity-30">
             <span className="material-symbols-rounded text-6xl mb-4">inventory_2</span>
             <p className="text-xs font-black uppercase tracking-widest">
-              No items found
+              {t('resale.no_items_found', 'No items found')}
             </p>
           </div>
         ) : (
@@ -341,7 +343,7 @@ function ResalePageContent() {
                     {/* Fallback View */}
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-[#c4cacc]">
                       <span className="material-symbols-outlined text-4xl mb-1">image</span>
-                      <span className="text-[10px] font-bold tracking-wider uppercase">No Image</span>
+                      <span className="text-[10px] font-bold tracking-wider uppercase">{t('resale.no_image', 'No Image')}</span>
                     </div>
                     
                     {/* Actual Image */}
@@ -359,7 +361,7 @@ function ResalePageContent() {
                     {item.status !== 'active' && (
                       <div className="absolute inset-0 z-15 bg-black/40 flex items-center justify-center">
                         <span className="text-white text-[10px] font-black uppercase tracking-widest bg-black/60 px-2 py-1 rounded">
-                          {item.status}
+                          {t(`resale.status_${item.status}`, item.status.toUpperCase())}
                         </span>
                       </div>
                     )}

@@ -4,11 +4,13 @@ import React, { useState } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useRouter } from 'next/navigation';
 import MyInfoBottomSheet from '@/components/profile/MyInfoBottomSheet';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function MyInfoPage() {
   const { user, profile, loading, signOut } = useAuth();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const router = useRouter();
+  const { t } = useLanguage();
 
   const handleLogout = async () => {
     try {
@@ -24,13 +26,13 @@ export default function MyInfoPage() {
   if (!user) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen px-6 text-center">
-        <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
-        <p className="text-gray-500 mb-8">Please sign in to view your profile.</p>
+        <h1 className="text-2xl font-bold mb-4">{t('my.access_denied')}</h1>
+        <p className="text-gray-500 mb-8">{t('my.sign_in_required')}</p>
         <button 
           onClick={() => router.push('/')}
           className="px-8 py-3 bg-primary text-white rounded-full font-bold"
         >
-          Go to Home
+          {t('my.go_home')}
         </button>
       </div>
     );
@@ -46,7 +48,7 @@ export default function MyInfoPage() {
               <img 
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
                 src={profile?.photoURL || user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.nickname || 'User')}&background=1A73E8&color=fff`}
-                alt="Profile photo"
+                alt={t('my.profile_photo')}
               />
             </div>
             <div 
@@ -60,22 +62,22 @@ export default function MyInfoPage() {
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-baseline gap-2 mb-0.5">
               <h1 className="text-xl md:text-2xl font-bold tracking-tight text-on-surface font-headline truncate">
-                {profile?.nickname || user?.displayName || 'Adventurer'}
+                {profile?.nickname || user?.displayName || t('my.default_nickname')}
               </h1>
               <div className="flex flex-wrap gap-1">
                 {profile?.isInstructor && (
-                  <span className="px-2 py-0.5 rounded bg-primary-container text-on-primary-container text-[9px] font-bold uppercase tracking-tighter">Instructor</span>
+                  <span className="px-2 py-0.5 rounded bg-primary-container text-on-primary-container text-[9px] font-bold uppercase tracking-tighter">{t('my.role_instructor')}</span>
                 )}
                 {profile?.isSeller && (
-                  <span className="px-2 py-0.5 rounded bg-secondary-container text-on-secondary-container text-[9px] font-bold uppercase tracking-tighter">Seller</span>
+                  <span className="px-2 py-0.5 rounded bg-secondary-container text-on-secondary-container text-[9px] font-bold uppercase tracking-tighter">{t('my.role_seller')}</span>
                 )}
                 {profile?.isServiceProvider && (
-                  <span className="px-2 py-0.5 rounded bg-tertiary-container text-on-tertiary-container text-[9px] font-bold uppercase tracking-tighter">Pro</span>
+                  <span className="px-2 py-0.5 rounded bg-tertiary-container text-on-tertiary-container text-[9px] font-bold uppercase tracking-tighter">{t('my.role_pro')}</span>
                 )}
               </div>
             </div>
             <p className="text-on-surface-variant font-medium text-sm line-clamp-1">
-              {profile?.bio || 'Senior Group Member'}
+              {profile?.bio || t('my.default_bio')}
             </p>
           </div>
         </div>
@@ -88,9 +90,13 @@ export default function MyInfoPage() {
               <div className="w-10 h-10 flex flex-shrink-0 items-center justify-center rounded-lg bg-primary-fixed text-on-primary-fixed">
                 <span className="material-symbols-outlined text-[24px]">account_circle</span>
               </div>
-              <div>
-                <p className="text-xs font-bold text-outline uppercase tracking-widest">Login Method</p>
-                <p className="text-on-surface font-medium">{profile?.authMethod || 'Google'}</p>
+            <div>
+                <p className="text-xs font-bold text-outline uppercase tracking-widest">{t('my.login_method')}</p>
+                <p className="text-on-surface font-medium">
+                  {profile?.authMethod 
+                    ? t(`my.auth_${profile.authMethod.toLowerCase()}`) 
+                    : t('my.auth_google')}
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-4 mb-6">
@@ -98,8 +104,12 @@ export default function MyInfoPage() {
                 <span className="material-symbols-outlined text-[24px]">fingerprint</span>
               </div>
               <div>
-                <p className="text-xs font-bold text-outline uppercase tracking-widest">Gender</p>
-                <p className="text-on-surface font-medium">{profile?.gender || 'Other'}</p>
+                <p className="text-xs font-bold text-outline uppercase tracking-widest">{t('my.gender')}</p>
+                <p className="text-on-surface font-medium">
+                  {profile?.gender 
+                    ? t(`my.gender_${profile.gender.toLowerCase()}`) 
+                    : t('my.gender_other')}
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-4 mb-6">
@@ -107,7 +117,7 @@ export default function MyInfoPage() {
                 <span className="material-symbols-outlined text-[24px]">alternate_email</span>
               </div>
               <div>
-                <p className="text-xs font-bold text-outline uppercase tracking-widest">Email Address</p>
+                <p className="text-xs font-bold text-outline uppercase tracking-widest">{t('my.email_address')}</p>
                 <p className="text-on-surface font-medium truncate max-w-[200px]">{user?.email}</p>
               </div>
             </div>
@@ -116,10 +126,10 @@ export default function MyInfoPage() {
                 <span className="material-symbols-outlined text-[24px]">call</span>
               </div>
               <div className="flex-grow">
-                <p className="text-xs font-bold text-outline uppercase tracking-widest">CELL PHONE</p>
+                <p className="text-xs font-bold text-outline uppercase tracking-widest">{t('my.cell_phone')}</p>
                 <div className="flex gap-2 items-center">
                   <span className="text-on-surface font-medium">{profile?.countryCode}</span>
-                  <span className="text-on-surface font-medium">{profile?.phoneNumber || 'Not linked'}</span>
+                  <span className="text-on-surface font-medium">{profile?.phoneNumber || t('my.not_linked')}</span>
                 </div>
               </div>
             </div>
@@ -128,18 +138,18 @@ export default function MyInfoPage() {
           {/* Account Summary Card */}
           <div className="p-8 rounded-xl bg-on-surface text-surface-container-lowest flex flex-col justify-between">
             <div>
-              <p className="text-xs font-bold text-inverse-on-surface uppercase tracking-widest mb-1">Professional Status</p>
+              <p className="text-xs font-bold text-inverse-on-surface uppercase tracking-widest mb-1">{t('my.pro_status')}</p>
               <div className="flex items-center gap-2 mb-4">
-                <h2 className="text-2xl font-bold text-surface-container-lowest font-headline">Verified</h2>
+                <h2 className="text-2xl font-bold text-surface-container-lowest font-headline">{t('my.verified')}</h2>
                 <span className="material-symbols-outlined text-primary fill-1" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
               </div>
-              <p className="text-xs text-inverse-on-surface italic">Your primary credentials have been verified by our security team.</p>
+              <p className="text-xs text-inverse-on-surface italic">{t('my.verified_desc')}</p>
             </div>
             <div className="mt-8 pt-6 border-t border-surface-container-lowest/10">
-              <p className="text-[10px] font-bold text-inverse-on-surface uppercase tracking-widest mb-3">Additional Verification</p>
+              <p className="text-[10px] font-bold text-inverse-on-surface uppercase tracking-widest mb-3">{t('my.additional_verification')}</p>
               <button className="w-full py-2.5 px-4 bg-surface-container-lowest/10 hover:bg-surface-container-lowest/20 border border-surface-container-lowest/20 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2">
                 <span className="material-symbols-outlined text-sm">verified_user</span>
-                Apply for Advanced Badge
+                {t('my.apply_badge')}
               </button>
             </div>
           </div>
@@ -155,8 +165,8 @@ export default function MyInfoPage() {
                   <span className="material-symbols-outlined">edit_square</span>
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-on-surface font-headline">Modify Profile</h3>
-                  <p className="text-sm text-on-surface-variant">Customize your account appearance and personal information</p>
+                  <h3 className="text-lg font-bold text-on-surface font-headline">{t('my.modify_profile')}</h3>
+                  <p className="text-sm text-on-surface-variant">{t('my.modify_profile_desc')}</p>
                 </div>
               </div>
               <span className="material-symbols-outlined text-outline group-hover:translate-x-1 transition-transform">arrow_forward_ios</span>
@@ -166,19 +176,19 @@ export default function MyInfoPage() {
 
         {/* Role Description Section */}
         <div className="mt-16 border-t border-surface-container pt-12">
-          <h2 className="text-xl font-bold text-on-surface mb-8 font-headline">Access Rights</h2>
+          <h2 className="text-xl font-bold text-on-surface mb-8 font-headline">{t('my.access_rights')}</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             <div className="space-y-3">
-              <p className="text-xs font-bold text-on-primary-fixed-variant uppercase">Instructor</p>
-              <p className="text-sm text-on-surface-variant leading-relaxed">Authorized to host live sessions and manage curriculum content.</p>
+              <p className="text-xs font-bold text-on-primary-fixed-variant uppercase">{t('my.role_instructor')}</p>
+              <p className="text-sm text-on-surface-variant leading-relaxed">{t('my.instructor_desc')}</p>
             </div>
             <div className="space-y-3">
-              <p className="text-xs font-bold text-on-primary-fixed-variant uppercase">Seller</p>
-              <p className="text-sm text-on-surface-variant leading-relaxed">Full access to the marketplace and inventory management tools.</p>
+              <p className="text-xs font-bold text-on-primary-fixed-variant uppercase">{t('my.role_seller')}</p>
+              <p className="text-sm text-on-surface-variant leading-relaxed">{t('my.seller_desc')}</p>
             </div>
             <div className="space-y-3">
-              <p className="text-xs font-bold text-on-primary-fixed-variant uppercase">Service Provider</p>
-              <p className="text-sm text-on-surface-variant leading-relaxed">Ability to list professional services and handle bookings.</p>
+              <p className="text-xs font-bold text-on-primary-fixed-variant uppercase">{t('my.role_pro')}</p>
+              <p className="text-sm text-on-surface-variant leading-relaxed">{t('my.pro_desc')}</p>
             </div>
           </div>
         </div>
@@ -190,7 +200,7 @@ export default function MyInfoPage() {
             className="flex items-center gap-2 px-6 py-3 rounded-full text-error font-bold hover:bg-error/10 transition-colors border border-error/20"
           >
             <span className="material-symbols-outlined">logout</span>
-            Log Out
+            {t('my.logout')}
           </button>
         </div>
       </main>

@@ -83,3 +83,11 @@ export interface SocialWeeklyState {
   closedAt?: Timestamp;
   closedBy?: string;                // Org userId
 }
+// Likes (Favorites)
+export interface SocialLike {
+  id: string;
+  userId: string;
+  socialId: string;
+  status: 'liked' | 'pending' | 'in_progress';
+  createdAt: Timestamp;
+}

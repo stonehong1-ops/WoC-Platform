@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { collection, query, orderBy, getDocs, addDoc, serverTimestamp, onSnapshot, limit, updateDoc, doc, increment } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase/config';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface TangoHistoryPopupProps {
   onClose: () => void;
@@ -29,6 +30,7 @@ interface Review {
 const COLLECTION_NAME = 'tangoHistory';
 
 export default function TangoHistoryPopup({ onClose }: TangoHistoryPopupProps) {
+  const { t } = useLanguage();
   const [isAdmin, setIsAdmin] = useState(false);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
@@ -210,10 +212,10 @@ export default function TangoHistoryPopup({ onClose }: TangoHistoryPopupProps) {
       <div className="absolute top-0 left-0 right-0 p-5 flex justify-between items-center z-30">
         <div className="flex flex-col">
           <span className="px-3 py-1 bg-indigo-500/20 text-indigo-300 text-[10px] font-bold uppercase tracking-widest rounded-full mb-1 inline-block backdrop-blur-md border border-indigo-500/30 w-fit">
-            📜 Ddakji's Series
+            {t('home.history.navTitle')}
           </span>
           <h2 className="text-xl font-black text-white/90 font-headline">
-            History of Tango
+            {t('home.history.subtitle')}
           </h2>
         </div>
 
@@ -233,9 +235,9 @@ export default function TangoHistoryPopup({ onClose }: TangoHistoryPopupProps) {
       {showAdminLogin && !isAdmin && (
         <div className="absolute top-20 right-6 z-40 bg-white/90 backdrop-blur-md p-4 rounded-2xl shadow-xl border border-slate-100 animate-in fade-in zoom-in duration-200">
           <form onSubmit={handleAdminLogin} className="flex items-center gap-2">
-            <input type="password" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} placeholder="Admin Password" className="px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-900/20 bg-white/50 w-40 text-sm font-medium" autoFocus />
-            <button type="submit" className="px-4 py-2 bg-slate-900 text-white rounded-xl font-bold text-sm">Unlock</button>
-            <button type="button" onClick={() => setShowAdminLogin(false)} className="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm">Cancel</button>
+            <input type="password" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} placeholder={t('home.cartoon.admin.passwordPlaceholder')} className="px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-900/20 bg-white/50 w-40 text-sm font-medium" autoFocus />
+            <button type="submit" className="px-4 py-2 bg-slate-900 text-white rounded-xl font-bold text-sm">{t('home.cartoon.admin.unlock')}</button>
+            <button type="button" onClick={() => setShowAdminLogin(false)} className="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm">{t('home.cartoon.admin.cancel')}</button>
           </form>
         </div>
       )}
@@ -246,7 +248,7 @@ export default function TangoHistoryPopup({ onClose }: TangoHistoryPopupProps) {
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <span className="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
               <span className="material-symbols-outlined text-indigo-600 text-xl">upload_file</span>
-              Upload History Post
+              {t('home.history.admin.uploadPost')}
             </span>
             <button onClick={() => setIsAdmin(false)} className="text-sm text-slate-400 hover:text-slate-900 font-bold">Exit</button>
           </div>
@@ -269,7 +271,7 @@ export default function TangoHistoryPopup({ onClose }: TangoHistoryPopupProps) {
             {/* Episode indicator */}
             <div className="absolute top-20 left-1/2 -translate-x-1/2 z-10">
               <span className="text-white/60 font-black tracking-widest uppercase text-xs bg-white/10 px-4 py-2 rounded-full backdrop-blur-md border border-white/10">
-                Chapter {currentEntry.episodeNumber}
+                {t('home.history.viewer.chapterPrefix')} {currentEntry.episodeNumber}
               </span>
             </div>
 
@@ -300,7 +302,7 @@ export default function TangoHistoryPopup({ onClose }: TangoHistoryPopupProps) {
         ) : (
           <div className="flex flex-col items-center gap-4 text-white/50">
             <span className="material-symbols-outlined text-5xl">auto_stories</span>
-            <p className="font-bold">No history chapters yet.</p>
+            <p className="font-bold">{t('home.history.viewer.noPosts')}</p>
           </div>
         )}
       </div>
@@ -329,25 +331,25 @@ export default function TangoHistoryPopup({ onClose }: TangoHistoryPopupProps) {
             </div>
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0">
               <h3 className="text-xl font-extrabold text-slate-900 font-headline flex items-center gap-2">
-                Comments <span className="px-2.5 py-0.5 bg-slate-100 text-slate-500 rounded-full text-xs font-bold">{reviews.length}</span>
+                {t('home.cartoon.comments.title')} <span className="px-2.5 py-0.5 bg-slate-100 text-slate-500 rounded-full text-xs font-bold">{reviews.length}</span>
               </h3>
               <button onClick={toggleLike} className={`flex items-center gap-1.5 px-4 py-2 rounded-full font-bold text-sm transition-colors ${isLiked ? 'bg-red-50 text-red-500' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}>
                 <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: isLiked ? "'FILL' 1" : "'FILL' 0" }}>favorite</span>
-                {currentLikeCount}
+                {t('home.cartoon.like')} {currentLikeCount}
               </button>
             </div>
             <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
               <form onSubmit={handleSubmitReview} className="flex flex-col sm:flex-row items-end gap-3 mb-8 bg-slate-50 p-3 rounded-3xl border border-slate-100 shadow-sm">
-                <textarea value={newReview} onChange={(e) => setNewReview(e.target.value)} placeholder="Leave an anonymous comment..." className="flex-1 w-full px-4 py-3 rounded-2xl border-none focus:outline-none bg-transparent text-slate-900 resize-none h-[50px] text-sm" onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmitReview(e); } }} />
+                <textarea value={newReview} onChange={(e) => setNewReview(e.target.value)} placeholder={t('home.cartoon.comments.placeholder')} className="flex-1 w-full px-4 py-3 rounded-2xl border-none focus:outline-none bg-transparent text-slate-900 resize-none h-[50px] text-sm" onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmitReview(e); } }} />
                 <button type="submit" disabled={!newReview.trim() || submittingReview} className="w-full sm:w-auto h-[44px] px-6 bg-indigo-600 text-white rounded-2xl font-bold text-sm disabled:opacity-50 disabled:bg-slate-200 disabled:text-slate-400 flex items-center justify-center transition-all active:scale-95 shrink-0">
-                  {submittingReview ? <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : 'Post'}
+                  {submittingReview ? <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : t('home.cartoon.comments.post')}
                 </button>
               </form>
               <div className="space-y-3">
                 {reviews.length === 0 ? (
                   <div className="text-center py-12 bg-slate-50 rounded-[24px] border border-slate-100 border-dashed">
                     <span className="material-symbols-outlined text-4xl text-slate-200 mb-3 block" style={{ fontVariationSettings: "'FILL' 1" }}>chat_bubble</span>
-                    <p className="text-slate-500 text-sm font-medium">Be the first to share your thoughts!</p>
+                    <p className="text-slate-500 text-sm font-medium">{t('home.cartoon.comments.empty')}</p>
                   </div>
                 ) : reviews.map((review) => (
                   <div key={review.id} className="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm flex gap-3">
@@ -356,8 +358,8 @@ export default function TangoHistoryPopup({ onClose }: TangoHistoryPopupProps) {
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="font-bold text-slate-900 text-[13px]">Anonymous</span>
-                        <span className="text-[11px] text-slate-400 font-medium">{review.createdAt?.toDate ? review.createdAt.toDate().toLocaleDateString() : 'Just now'}</span>
+                        <span className="font-bold text-slate-900 text-[13px]">{t('home.cartoon.comments.anonymous')}</span>
+                        <span className="text-[11px] text-slate-400 font-medium">{review.createdAt?.toDate ? review.createdAt.toDate().toLocaleDateString() : t('home.cartoon.comments.justNow')}</span>
                       </div>
                       <p className="text-slate-600 break-words whitespace-pre-wrap leading-relaxed text-sm">{review.content}</p>
                     </div>

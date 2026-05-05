@@ -7,6 +7,7 @@ import { feedService } from '@/lib/firebase/feedService';
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import UserBadge from '../common/UserBadge';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface CommentBottomSheetProps {
   post: Post;
@@ -22,6 +23,7 @@ export default function CommentBottomSheet({ post, isOpen, onClose, currentUser 
   const [newCommentText, setNewCommentText] = useState('');
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { t, language } = useLanguage();
 
   useEffect(() => {
     if (isOpen && post.id) {
@@ -83,8 +85,8 @@ export default function CommentBottomSheet({ post, isOpen, onClose, currentUser 
 
   const renderCommentItem = (comment: Comment, isReply = false) => {
     const timeAgo = comment.createdAt 
-      ? formatDistanceToNow((comment.createdAt as any).toDate?.() || new Date(comment.createdAt as any), { addSuffix: true, locale: ko })
-      : '방금 전';
+      ? formatDistanceToNow((comment.createdAt as any).toDate?.() || new Date(comment.createdAt as any), { addSuffix: true, locale: language === 'KR' ? ko : undefined })
+      : t('plaza.just_now');
 
     const isExpanded = expandedComments.has(comment.id);
     const commentReplies = replies[comment.id] || [];
@@ -114,12 +116,12 @@ export default function CommentBottomSheet({ post, isOpen, onClose, currentUser 
                   onClick={() => setReplyTo(comment)}
                   className="text-xs font-bold text-primary/70 hover:text-primary transition-colors"
                 >
-                  답글 달기
+                  {t('plaza.reply')}
                 </button>
               )}
               <button className="text-xs font-medium text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1">
                 <span className="material-symbols-outlined text-sm">favorite</span>
-                <span>좋아요</span>
+                <span>{t('plaza.like')}</span>
               </button>
             </div>
             
@@ -130,7 +132,7 @@ export default function CommentBottomSheet({ post, isOpen, onClose, currentUser 
                 className="mt-3 text-xs font-bold text-on-surface-variant flex items-center gap-2 hover:opacity-70 group"
               >
                 <div className="w-6 h-px bg-outline-variant/30 group-hover:bg-primary/30 transition-colors" />
-                {isExpanded ? '답글 숨기기' : `답글 ${comment.repliesCount}개 보기`}
+                {isExpanded ? t('plaza.hide_replies') : t('plaza.view_replies').replace('{count}', String(comment.repliesCount))}
               </button>
             )}
           </div>
@@ -151,7 +153,7 @@ export default function CommentBottomSheet({ post, isOpen, onClose, currentUser 
       {replyTo && (
         <div className="mb-2 px-3 py-1.5 bg-primary/5 rounded-lg flex justify-between items-center animate-in slide-in-from-bottom-2">
           <span className="text-[11px] text-primary font-medium">
-            <strong>{replyTo.userName}{replyTo.userNameNative ? ` (${replyTo.userNameNative})` : ''}</strong>님에게 답글 남기는 중...
+            <strong>{replyTo.userName}{replyTo.userNameNative ? ` (${replyTo.userNameNative})` : ''}</strong> {t('plaza.replying_to')}
           </span>
           <button onClick={() => setReplyTo(null)} className="material-symbols-outlined text-sm text-on-surface-variant hover:text-on-surface transition-colors">close</button>
         </div>
@@ -160,7 +162,7 @@ export default function CommentBottomSheet({ post, isOpen, onClose, currentUser 
         <div className="flex-1 bg-surface-container-high rounded-2xl px-4 py-2 flex items-center gap-2 border border-outline-variant/10 focus-within:border-primary/30 focus-within:ring-1 focus-within:ring-primary/20 transition-all">
           <input
             type="text"
-            placeholder={replyTo ? "답글을 입력하세요..." : "댓글을 입력하세요..."}
+            placeholder={replyTo ? t('plaza.reply_placeholder') : t('plaza.comment_placeholder')}
             className="flex-1 bg-transparent border-none outline-none text-sm text-on-surface py-1"
             value={newCommentText}
             onChange={(e) => setNewCommentText(e.target.value)}
@@ -183,7 +185,7 @@ export default function CommentBottomSheet({ post, isOpen, onClose, currentUser 
     <BottomSheet 
       isOpen={isOpen} 
       onClose={onClose} 
-      title={`댓글 ${post.commentsCount || 0}`}
+      title={`${t('plaza.comments')} ${post.commentsCount || 0}`}
       footer={footer}
       height="70vh"
     >
@@ -191,7 +193,7 @@ export default function CommentBottomSheet({ post, isOpen, onClose, currentUser 
         {comments.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-on-surface-variant/30">
             <span className="material-symbols-outlined text-6xl mb-3 opacity-20">chat_bubble_outline</span>
-            <p className="text-sm font-medium">첫 번째 댓글을 남겨보세요!</p>
+            <p className="text-sm font-medium">{t('plaza.first_comment')}</p>
           </div>
         ) : (
           comments.map(comment => renderCommentItem(comment))

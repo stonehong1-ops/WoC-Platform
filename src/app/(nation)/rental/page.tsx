@@ -11,6 +11,8 @@ import { useModalNavigation } from '@/hooks/useModalNavigation';
 import RentalWishlistTray from '@/components/rental/RentalWishlistTray';
 import RentalDetail from '@/components/rental/RentalDetail';
 import CreateRentalSpace from '@/components/rental/CreateRentalSpace';
+import { useLanguage } from '@/contexts/LanguageContext';
+
 
 type SortOption = 'latest' | 'price_asc' | 'popular';
 
@@ -31,6 +33,7 @@ const RENTAL_SIZES = [
 
 function RentalPageContent() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const { isOpen: isDetailOpen, value: itemId, openModal: openDetail, closeModal: closeDetail } = useModalNavigation('itemId');
   const { isOpen: isComposeOpen, openModal: openCompose, closeModal: closeCompose } = useModalNavigation('compose');
 
@@ -159,7 +162,7 @@ function RentalPageContent() {
                   : 'bg-slate-50/50 text-slate-500 border-slate-100 hover:bg-slate-100/80'
               }`}
             >
-              {filter.label}
+              {t(`rental.size_${filter.key.toLowerCase()}`)}
             </button>
           ))}
         </div>
@@ -169,7 +172,7 @@ function RentalPageContent() {
           <div className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
             <div className="text-[11px] font-bold text-slate-600 uppercase tracking-widest">
-              {filteredSpaces.length} <span className="text-slate-400 font-medium">spaces</span>
+              {filteredSpaces.length} <span className="text-slate-400 font-medium">{t('rental.stats_spaces')}</span>
             </div>
           </div>
           
@@ -186,7 +189,7 @@ function RentalPageContent() {
                   : 'text-slate-600 hover:text-slate-800'
               }`}
             >
-              {activeStudio === 'All' ? 'Studio' : activeStudio}
+              {activeStudio === 'All' ? t('rental.filter_studio') : activeStudio}
               <span className={`material-symbols-outlined text-[16px] transition-transform ${showStudioFilter ? 'rotate-180' : ''}`}>expand_more</span>
             </button>
 
@@ -198,7 +201,7 @@ function RentalPageContent() {
               }}
               className="flex items-center gap-0.5 text-[12px] font-bold text-slate-600 hover:text-slate-800 transition-all"
             >
-              {SORT_OPTIONS.find(o => o.key === sortOption)?.label.split(':')[0] || 'Sort'}
+              {t(`rental.sort_${sortOption}`).split(':')[0]}
               <span className={`material-symbols-outlined text-[16px] transition-transform ${showSortDropdown ? 'rotate-180' : ''}`}>expand_more</span>
             </button>
           </div>
@@ -208,7 +211,7 @@ function RentalPageContent() {
         {showStudioFilter && (
           <div className="absolute top-full left-0 right-0 z-40 bg-white shadow-2xl border-t border-slate-100 p-4 max-h-[280px] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-300">
             <div className="flex items-center justify-between mb-4 px-1">
-              <span className="text-[14px] font-black text-slate-800 uppercase tracking-tight">Filter by Studio</span>
+              <span className="text-[14px] font-black text-slate-800 uppercase tracking-tight">{t('rental.filter_title_studio')}</span>
               <button 
                 onClick={() => setShowStudioFilter(false)} 
                 className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:text-slate-600 active:scale-90 transition-all"
@@ -244,7 +247,7 @@ function RentalPageContent() {
                 onClick={() => setShowStudioFilter(false)}
                 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest hover:text-slate-600 transition-colors"
               >
-                Close filter
+                {t('rental.filter_close')}
               </button>
             </div>
           </div>
@@ -265,7 +268,7 @@ function RentalPageContent() {
                 }`}
               >
                 <span className="material-symbols-outlined text-[18px]">{opt.icon}</span>
-                <span className="text-[13px]">{opt.label.split(':')[0]}</span>
+                <span className="text-[13px]">{t(`rental.sort_${opt.key}`).split(':')[0]}</span>
               </button>
             ))}
           </div>
@@ -294,7 +297,7 @@ function RentalPageContent() {
         {filteredSpaces.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center opacity-30">
             <span className="material-symbols-rounded text-6xl mb-4">search_off</span>
-            <p className="text-xs font-black uppercase tracking-widest">No spaces registered</p>
+            <p className="text-xs font-black uppercase tracking-widest">{t('rental.no_spaces')}</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4">
@@ -304,7 +307,7 @@ function RentalPageContent() {
                   {/* Fallback View */}
                   <div className="absolute inset-0 flex flex-col items-center justify-center text-[#c4cacc]">
                     <span className="material-symbols-outlined text-4xl mb-1">apartment</span>
-                    <span className="text-[10px] font-bold tracking-wider uppercase">No Image</span>
+                    <span className="text-[10px] font-bold tracking-wider uppercase">{t('rental.no_image')}</span>
                   </div>
 
                   {/* Actual Image */}
@@ -339,12 +342,12 @@ function RentalPageContent() {
                   <div className="flex items-center gap-1 mt-1 mb-1.5 overflow-x-auto no-scrollbar">
                     {space.capacity && (
                       <span className="text-[9px] font-bold text-slate-400 border border-slate-100 px-1.5 py-0.5 rounded-md whitespace-nowrap uppercase">
-                        Max {space.capacity}
+                        {t('rental.tag_max')} {space.capacity}
                       </span>
                     )}
                     {space.hasMirror && (
                       <span className="text-[9px] font-bold text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded-md whitespace-nowrap uppercase">
-                        Mirror
+                        {t('rental.tag_mirror')}
                       </span>
                     )}
                   </div>
@@ -352,7 +355,7 @@ function RentalPageContent() {
                   <div className="flex items-center justify-between mt-1">
                     <span className="text-sm font-bold text-[#2d3435] font-headline">
                       ₩{((space as any).minPrice || space.pricePerHour || 0).toLocaleString()} 
-                      <span className="text-[10px] text-[#596061] font-normal ml-0.5">/hr</span>
+                      <span className="text-[10px] text-[#596061] font-normal ml-0.5">{t('rental.per_hr')}</span>
                     </span>
                   </div>
                 </div>

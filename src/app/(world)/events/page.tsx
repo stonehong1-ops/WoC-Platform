@@ -10,6 +10,7 @@ import EventViewer from '@/components/events/EventViewer';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from '@/components/providers/LocationProvider';
 import { useNavigation } from '@/components/providers/NavigationProvider';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 // Helper to safely convert Firestore timestamp or other date formats and strip time
 const getNormalizedDate = (val: any): Date => {
@@ -59,6 +60,7 @@ export default function EventsPage() {
   const { toggleDrawer, setSubHeader } = useNavigation();
   const { location } = useLocation();
   const { user, profile, setShowLogin } = useAuth();
+  const { t } = useLanguage();
   const [events, setEvents] = useState<Event[]>([]);
   const [likedEventIds, setLikedEventIds] = useState<string[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -206,9 +208,9 @@ export default function EventsPage() {
         {/* Row 1: Scrollable Tabs */}
         <div className="w-full px-3 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar border-b border-slate-100/50">
           {[
-            { id: 'calendar', label: 'Calendar' },
-            { id: 'upcoming', label: 'Upcoming' },
-            { id: 'favorite', label: 'Favorites' }
+            { id: 'calendar', label: t('event.tab_calendar') },
+            { id: 'upcoming', label: t('event.tab_upcoming') },
+            { id: 'favorite', label: t('event.tab_favorites') }
           ].map((tab) => (
             <button
               key={tab.id}
@@ -247,7 +249,7 @@ export default function EventsPage() {
             <div className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
               <div className="text-[11px] font-bold text-slate-600 uppercase tracking-widest">
-                {filteredLocationEvents.length} <span className="text-slate-400 font-medium">Events</span>
+                {filteredLocationEvents.length} <span className="text-slate-400 font-medium">{t('event.events_count')}</span>
               </div>
             </div>
           </div>
@@ -382,7 +384,7 @@ export default function EventsPage() {
                 <div>
                   <span className="inline-block px-5 py-2 bg-white font-bold text-xs rounded-xl shadow-md transition-all duration-300"
                     style={{ color: '#004190' }}>
-                    View Details
+                    {t('event.view_details')}
                   </span>
                 </div>
               </div>
@@ -460,7 +462,7 @@ export default function EventsPage() {
                 {upcomingEvents.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16 text-on-surface-variant">
                     <span className="material-symbols-outlined text-4xl mb-2 opacity-30">event_busy</span>
-                    <p className="text-sm font-medium">No upcoming events</p>
+                    <p className="text-sm font-medium">{t('event.no_upcoming')}</p>
                   </div>
                 ) : (
                   upcomingEvents.map(({ month, events: monthEvents }) => (
@@ -538,8 +540,8 @@ export default function EventsPage() {
                         <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-4">
                           <span className="material-symbols-outlined text-3xl text-red-300">favorite</span>
                         </div>
-                        <h3 className="text-base font-bold text-slate-800 mb-1">No saved events</h3>
-                        <p className="text-xs text-slate-400 max-w-[200px] leading-relaxed">Like events you want to attend to easily find them here later.</p>
+                        <h3 className="text-base font-bold text-slate-800 mb-1">{t('event.no_saved')}</h3>
+                        <p className="text-xs text-slate-400 max-w-[200px] leading-relaxed">{t('event.no_saved_desc')}</p>
                       </div>
                     );
                   }
