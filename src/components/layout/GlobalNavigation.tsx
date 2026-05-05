@@ -32,7 +32,7 @@ const NAV_STRUCTURE = {
     { name: "nav.social", icon: "autoplay", path: "/social" },
     { name: "nav.live", icon: "cinematic_blur", path: "/live" },
     { name: "nav.events", icon: "calendar_today", path: "/events" },
-    { name: "nav.lost_found", icon: "eye_tracking", path: "/lost-found" },
+    { name: "nav.lost_found", icon: "eye_tracking", path: "/lost" },
   ],
   Groups: [
     { name: "nav.groups", icon: "groups", path: "/groups" },
@@ -40,7 +40,7 @@ const NAV_STRUCTURE = {
   My: [
     { name: "nav.history", icon: "history", path: "/history" },
     { name: "nav.wallet", icon: "account_balance_wallet", path: "/wallet" },
-    { name: "nav.my_info", icon: "person", path: "/my-info" },
+    { name: "nav.my_info", icon: "person", path: "/profile" },
   ],
 };
 
@@ -51,7 +51,7 @@ const BOTTOM_TABS = [
   { id: "Market", icon: "redeem", label: "Market", basePath: "/shop" },
   { id: "Now", icon: "contactless", label: "Now", basePath: "/social" },
   { id: "Groups", icon: "communities", label: "Groups", basePath: "/groups" },
-  { id: "My", icon: "photo", label: "My", basePath: "/my-info" },
+  { id: "My", icon: "photo", label: "My", basePath: "/profile" },
 ];
 
 export default function GlobalNavigation({ children }: { children: React.ReactNode }) {
@@ -164,11 +164,11 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
   let activeTab = "World";
   if (pathname.startsWith("/shop") || pathname.startsWith("/resale") || pathname.startsWith("/rental") || pathname.startsWith("/stay") || pathname.startsWith("/class")) {
     activeTab = "Market";
-  } else if (pathname.startsWith("/social") || pathname.startsWith("/events") || pathname.startsWith("/live") || pathname.startsWith("/lost-found")) {
+  } else if (pathname.startsWith("/social") || pathname.startsWith("/events") || pathname.startsWith("/live") || pathname.startsWith("/lost")) {
     activeTab = "Now";
   } else if (pathname.startsWith("/groups") || pathname.startsWith("/group/")) {
     activeTab = "Groups";
-  } else if (pathname.startsWith("/my") || pathname.startsWith("/wallet") || pathname.startsWith("/history") || pathname.startsWith("/my-info")) {
+  } else if (pathname.startsWith("/my") || pathname.startsWith("/wallet") || pathname.startsWith("/history") || pathname.startsWith("/profile")) {
     activeTab = "My";
   } else if (pathname.startsWith("/admin")) {
     activeTab = "My";

@@ -91,7 +91,7 @@ export default function NavigationDrawer() {
               e.preventDefault();
               e.stopPropagation();
               closeDrawer();
-              router.push('/my-info');
+              router.push('/profile');
             }}
           />
         </div>
@@ -166,7 +166,7 @@ export default function NavigationDrawer() {
               {[
                 { icon: 'shopping_bag', label: 'Resale', href: '/resale' },
                 { icon: 'handshake', label: 'Rental', href: '/rental' },
-                { icon: 'find_in_page', label: 'Lost', href: '/lost-found' },
+                { icon: 'find_in_page', label: 'Lost', href: '/lost' },
                 { icon: 'videogame_asset', label: 'Arcade', href: '/arcade' },
               ].map((item) => (
                 <Link 
@@ -189,7 +189,7 @@ export default function NavigationDrawer() {
               {[
                 { icon: 'history', label: 'History', href: '/history' },
                 { icon: 'account_balance_wallet', label: 'Wallet', href: '/wallet' },
-                { icon: 'manage_accounts', label: 'Profile', href: '/my-info' },
+                { icon: 'manage_accounts', label: 'Profile', href: '/profile' },
                 ...(profile?.isAdmin ? [{ icon: 'admin_panel_settings', label: 'Admin', href: '/admin/people' }] : [])
               ].map((item) => (
                 <Link 

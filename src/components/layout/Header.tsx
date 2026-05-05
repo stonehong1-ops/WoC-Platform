@@ -49,13 +49,13 @@ export default function Header() {
     '/service': { headlineKey: 'header.service', sub: 'Activity' },
     
     '/resale': { headlineKey: 'header.resale', sub: 'Town' },
-    '/lost-found': { headlineKey: 'header.lost_found', sub: 'Town' },
+    '/lost': { headlineKey: 'header.lost_found', sub: 'Town' },
     '/arcade': { headlineKey: 'header.arcade', sub: 'Town' },
     
     '/chat': { headlineKey: 'header.chat', sub: 'Social' },
     '/wallet': { headlineKey: 'header.wallet', sub: 'My' },
     '/history': { headlineKey: 'header.history', sub: 'My' },
-    '/my-info': { headlineKey: 'header.my_info', sub: 'My' },
+    '/profile': { headlineKey: 'header.my_info', sub: 'My' },
     '/admin/people': { headlineKey: 'header.people', sub: 'Admin' },
     '/admin/place': { headlineKey: 'header.place', sub: 'Admin' },
     '/admin/others': { headlineKey: 'header.others', sub: 'Admin' },
@@ -69,7 +69,7 @@ export default function Header() {
   if (!current) {
     if (pathname.startsWith('/class/')) {
       current = { headlineKey: 'header.class', sub: 'Activity' };
-    } else if (pathname.startsWith('/lost-found/')) {
+    } else if (pathname.startsWith('/lost/')) {
       current = { headlineKey: 'header.lost_found', sub: 'Town' };
     } else if (pathname.startsWith('/rental/')) {
       current = { headlineKey: 'header.freestyle_tango', sub: 'Activity' };

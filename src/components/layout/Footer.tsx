@@ -46,14 +46,14 @@ export default function Footer() {
           <Section label="Town">
             <NavItem href="/resale" icon="shopping_bag" label="RESALE" active={isActive('/resale')} />
             <NavItem href="/rental" icon="handshake" label="RENTAL" active={isActive('/rental')} />
-            <NavItem href="/lost-found" icon="find_in_page" label="LOST" active={isActive('/lost-found')} />
+            <NavItem href="/lost" icon="find_in_page" label="LOST" active={isActive('/lost')} />
           </Section>
 
           <div className="w-[1px] bg-gray-200/60 my-1.5" />
 
           {/* 4. MY PARTITION */}
           <Section label="My" isLast={!profile?.isAdmin}>
-            <NavItem href="/my-info" icon="manage_accounts" label="MY INFO" active={isActive('/my-info')} />
+            <NavItem href="/profile" icon="manage_accounts" label="MY INFO" active={isActive('/profile')} />
             <NavItem href="/wallet" icon="account_balance_wallet" label="WALLET" active={isActive('/wallet')} />
             <NavItem href="/history" icon="history" label="HISTORY" active={isActive('/history')} />
           </Section>

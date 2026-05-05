@@ -32,11 +32,11 @@ export const NAV_ITEMS: NavItem[] = [
   { id: 'shop', label: '숍', group: 'Space', icon: ShoppingBag, href: '/shop' },
   { id: 'resale', label: '리세일', group: 'Space', icon: Store, href: '/resale' },
   { id: 'stay', label: '스테이', group: 'Space', icon: Tent, href: '/stay' },
-  { id: 'lost', label: '분실물', group: 'Space', icon: MessageSquare, href: '/lost-found' },
+  { id: 'lost', label: '분실물', group: 'Space', icon: MessageSquare, href: '/lost' },
   { id: 'arcade', label: '아케이드', group: 'Space', icon: Cpu, href: '/arcade' },
   
   // My Page
   { id: 'wallet', label: '지갑', group: 'My Page', icon: Wallet, href: '/wallet' },
   { id: 'history', label: '히스토리', group: 'My Page', icon: MessageSquare, href: '/history' },
-  { id: 'my-info', label: '내 정보', group: 'My Page', icon: Settings, href: '/my-info' },
+  { id: 'profile', label: '내 정보', group: 'My Page', icon: Settings, href: '/profile' },
 ];

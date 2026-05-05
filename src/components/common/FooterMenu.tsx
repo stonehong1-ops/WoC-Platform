@@ -52,7 +52,7 @@ export default function FooterMenu() {
               {sector.items.map((item) => {
                 const Icon = item.icon;
                 const isActive = pathname === item.href;
-                const showBadge = item.id === 'my-info' && unreadCount > 0;
+                const showBadge = item.id === 'profile' && unreadCount > 0;
                 
                 return (
                   <Link

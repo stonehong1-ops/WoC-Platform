@@ -260,6 +260,16 @@ export default function ResaleItemDetail({ item, onClose }: ResaleItemDetailProp
           </div>
         </div>
 
+        {/* Price */}
+        <div className="px-4 py-4 border-b border-[#f2f4f4]">
+          <div className="flex items-end gap-2">
+            <span className="text-2xl font-black text-[#2d3435] font-headline">{item.currency || 'KRW'} {item.price.toLocaleString()}</span>
+          </div>
+          <p className="text-[11px] text-[#acb3b4] font-medium mt-1.5">
+            {item.canNegotiate ? t('resale.negotiable', 'Negotiable') : t('resale.fixed_price', 'Fixed Price')}
+          </p>
+        </div>
+
         {/* Location / Seller Info */}
         <div className="px-4 py-4 border-b border-[#f2f4f4]">
           <UserProfileClickable uid={item.sellerId} initialData={{ nickname: item.sellerName }}>
@@ -293,12 +303,6 @@ export default function ResaleItemDetail({ item, onClose }: ResaleItemDetailProp
             <div className="flex flex-col gap-1">
               <span className="text-[10px] font-black text-[#596061] uppercase tracking-widest">{t('resale.trade_method')}</span>
               <span className="font-bold text-sm text-[#2d3435]">{tradeMethodLabels[item.tradeMethod] || item.tradeMethod}</span>
-            </div>
-            <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-black text-[#596061] uppercase tracking-widest">{t('resale.price_negotiation', 'Price Negotiation')}</span>
-              <span className="font-bold text-sm text-[#2d3435]">
-                {item.canNegotiate ? t('resale.negotiable', 'Negotiable') : t('resale.fixed_price', 'Fixed Price')}
-              </span>
             </div>
           </div>
         </div>
