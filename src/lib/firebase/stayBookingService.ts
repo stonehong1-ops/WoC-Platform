@@ -9,10 +9,12 @@ import {
   where,
   orderBy,
   serverTimestamp,
-  onSnapshot
+  onSnapshot,
+  writeBatch
 } from "firebase/firestore";
 import { db } from "./clientApp";
 import { StayBooking, StayBookingStatus, BookingStatusHistoryEntry, BookingSmsLogEntry } from "@/types/stay";
+import { notificationService } from "./notificationService";
 
 const COLLECTION_NAME = "stay_bookings";
 
@@ -32,10 +34,10 @@ export const stayBookingService = {
   // CRUD
   // ──────────────────────────────────────
 
-  // 예약 신청 (사용자 → status: APPLIED)
   addBooking: async (data: Omit<StayBooking, 'id' | 'appliedAt' | 'updatedAt' | 'statusHistory' | 'smsLog'>) => {
     try {
       const bookingRef = doc(collection(db, COLLECTION_NAME));
+      const batch = writeBatch(db);
       const cleanedData = cleanData(data);
 
       const booking = {
@@ -53,7 +55,33 @@ export const stayBookingService = {
         updatedAt: serverTimestamp()
       };
 
-      await setDoc(bookingRef, booking);
+      batch.set(bookingRef, booking);
+
+      // User Notification
+      await notificationService.createNotification({
+        targetUserId: data.userId,
+        groupId: data.groupId,
+        type: 'STAY_BOOKING',
+        title: '숙박 예약 신청',
+        message: `'${data.stayTitle}' 예약이 정상적으로 접수되었습니다.`,
+        actionUrl: `/stay/booking/${bookingRef.id}`,
+        referenceId: bookingRef.id,
+        category: 'STAY'
+      }, batch);
+
+      // Admin Todo
+      await notificationService.createTodoForGroupAdmins(data.groupId, {
+        groupId: data.groupId,
+        type: 'STAY_BOOKING_ADMIN',
+        title: '신규 숙박 예약',
+        message: `${data.applicantName}님이 '${data.stayTitle}' 숙박을 신청했습니다. 승인 대기 중입니다.`,
+        actionUrl: `/group/${data.groupId}?tab=admin`,
+        referenceId: bookingRef.id,
+        category: 'STAY'
+      }, batch);
+
+      await batch.commit();
+      
       return booking as StayBooking;
     } catch (error: any) {
       console.error("Error adding stay booking:", error?.code, error?.message, error);
@@ -89,6 +117,11 @@ export const stayBookingService = {
         statusHistory: [...(existing.statusHistory || []), historyEntry],
         updatedAt: serverTimestamp()
       });
+
+      // Clear related Todos if completed or rejected/cancelled
+      if (['CONFIRMED', 'CANCELLED', 'REJECTED'].includes(newStatus)) {
+         await notificationService.markTodosAsCompletedByReference(bookingId);
+      }
     } catch (error) {
       console.error("Error updating booking status:", error);
       throw error;

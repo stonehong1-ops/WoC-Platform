@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Group, GallerySection } from "@/types/group";
 import { storageService } from "@/lib/firebase/storageService";
 import { groupService } from "@/lib/firebase/groupService";
+import { toast } from "sonner";
 
 interface GroupGalleryEditorProps {
   group: Group;
@@ -24,6 +25,8 @@ export default function GroupGalleryEditor({ group, onClose, onSave }: GroupGall
   ]);
   
   const [uploadingSectionId, setUploadingSectionId] = useState<string | null>(null);
+  const [isOptimizing, setIsOptimizing] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSave = async () => {
@@ -34,9 +37,10 @@ export default function GroupGalleryEditor({ group, onClose, onSave }: GroupGall
       });
       if (onSave) onSave();
       onClose();
+      toast.success("Gallery saved successfully!");
     } catch (error) {
       console.error("Failed to save gallery:", error);
-      alert("Failed to save changes.");
+      toast.error("Failed to save changes.");
     } finally {
       setLoading(false);
     }
@@ -61,11 +65,11 @@ export default function GroupGalleryEditor({ group, onClose, onSave }: GroupGall
 
     // Check limits before triggering upload
     if (section.type === 'photos' && section.media.length >= 10) {
-      alert("Maximum 10 photos allowed per section.");
+      toast.error("Maximum 10 photos allowed per section.");
       return;
     }
     if (section.type === 'videos' && section.media.length >= 1) {
-      alert("Only 1 video allowed per section.");
+      toast.error("Only 1 video allowed per section.");
       return;
     }
 
@@ -80,29 +84,71 @@ export default function GroupGalleryEditor({ group, onClose, onSave }: GroupGall
     const file = e.target.files?.[0];
     if (!file || !uploadingSectionId) return;
 
-    setLoading(true);
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("파일 크기가 너무 큽니다. 최대 10MB까지 가능합니다.");
+      return;
+    }
+
+    const section = sections.find(s => s.id === uploadingSectionId);
+    if (!section) return;
+
+    // Re-verify limits
+    if (section.type === 'photos' && section.media.length >= 10) {
+      toast.error("사진은 최대 10장까지만 업로드 가능합니다.");
+      return;
+    }
+    if (section.type === 'videos' && section.media.length >= 1) {
+      toast.error("비디오는 섹션당 1개만 업로드 가능합니다.");
+      return;
+    }
+
+    // Create a temporary blob URL for immediate preview
+    const blobUrl = URL.createObjectURL(file);
+    
+    // Optimistically add the blob URL to the section
+    setSections(prev => prev.map(s => {
+      if (s.id === uploadingSectionId) {
+        return { ...s, media: [...s.media, blobUrl] };
+      }
+      return s;
+    }));
+
+    setIsOptimizing(true);
+    setUploadProgress(0);
+    
     try {
-      const section = sections.find(s => s.id === uploadingSectionId);
-      if (!section) return;
-
-      // Re-verify limits
-      if (section.type === 'photos' && section.media.length >= 10) throw new Error("Limit exceeded");
-      if (section.type === 'videos' && section.media.length >= 1) throw new Error("Limit exceeded");
-
       const path = `groups/${group.id}/gallery/${uploadingSectionId}/${Date.now()}_${file.name}`;
-      const url = await storageService.uploadFile(file, path);
+      const url = await storageService.uploadFile(file, path, (progress) => {
+        if (progress > 0) setIsOptimizing(false);
+        setUploadProgress(Math.round(progress));
+      });
 
-      setSections(sections.map(s => {
+      // Replace the blob URL with the final download URL
+      setSections(prev => prev.map(s => {
         if (s.id === uploadingSectionId) {
-          return { ...s, media: [...s.media, url] };
+          const newMedia = s.media.map(m => m === blobUrl ? url : m);
+          return { ...s, media: newMedia };
         }
         return s;
       }));
+      
+      // Revoke the blob URL to free up memory
+      URL.revokeObjectURL(blobUrl);
+      
+      toast.success("미디어 업로드 완료!");
     } catch (error: any) {
       console.error("Upload failed:", error);
-      alert(error.message === "Limit exceeded" ? "Section limit reached." : "Upload failed. Please try again.");
+      // Remove the failed blob URL from the section
+      setSections(prev => prev.map(s => {
+        if (s.id === uploadingSectionId) {
+          return { ...s, media: s.media.filter(m => m !== blobUrl) };
+        }
+        return s;
+      }));
+      toast.error("업로드에 실패했습니다. 다시 시도해주세요.");
     } finally {
-      setLoading(false);
+      setIsOptimizing(false);
+      setUploadProgress(0);
       setUploadingSectionId(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
@@ -294,16 +340,56 @@ export default function GroupGalleryEditor({ group, onClose, onSave }: GroupGall
                         <button 
                           onClick={() => triggerUpload(section.id)}
                           disabled={loading}
-                          className="aspect-square rounded-[2.5rem] border-4 border-dashed border-[#f1f3ff] hover:border-[#0057bd]/30 hover:bg-[#0057bd]/5 transition-all flex flex-col items-center justify-center gap-6 group/add disabled:opacity-50"
+                          className="aspect-square rounded-[2.5rem] border-4 border-dashed border-[#f1f3ff] hover:border-[#0057bd]/30 hover:bg-[#0057bd]/5 transition-all flex flex-col items-center justify-center gap-6 group/add disabled:opacity-50 relative overflow-hidden"
                         >
-                          <div className="w-20 h-20 rounded-full bg-[#f8faff] flex items-center justify-center group-hover/add:scale-110 group-hover/add:bg-white shadow-inner transition-all">
-                            <span className="material-symbols-outlined text-5xl text-[#a3abd7] group-hover/add:text-[#0057bd]">
-                              {section.type === 'photos' ? "add_a_photo" : "video_call"}
-                            </span>
-                          </div>
-                          <span className="text-[11px] font-black text-[#a3abd7] uppercase tracking-[0.3em] group-hover/add:text-[#0057bd]">
-                            {loading && uploadingSectionId === section.id ? "Syncing..." : "Add Content"}
-                          </span>
+                          {uploadingSectionId === section.id ? (
+                            <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center z-10 animate-in fade-in duration-300">
+                              <div className="relative w-16 h-16">
+                                <svg className="w-full h-full -rotate-90">
+                                  <circle
+                                    cx="32"
+                                    cy="32"
+                                    r="28"
+                                    stroke="currentColor"
+                                    strokeWidth="3"
+                                    fill="transparent"
+                                    className="text-slate-100"
+                                  />
+                                  <circle
+                                    cx="32"
+                                    cy="32"
+                                    r="28"
+                                    stroke="currentColor"
+                                    strokeWidth="3"
+                                    fill="transparent"
+                                    strokeDasharray={2 * Math.PI * 28}
+                                    strokeDashoffset={2 * Math.PI * 28 * (1 - uploadProgress / 100)}
+                                    className="text-[#0057bd] transition-all duration-300 ease-out"
+                                    strokeLinecap="round"
+                                  />
+                                </svg>
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <span className="text-[12px] font-black text-[#0057bd]">
+                                    {isOptimizing ? "..." : `${uploadProgress}%`}
+                                  </span>
+                                </div>
+                              </div>
+                              <span className="text-[10px] font-black text-[#0057bd] uppercase tracking-widest mt-4">
+                                {isOptimizing ? "Optimizing..." : "Syncing..."}
+                              </span>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="w-20 h-20 rounded-full bg-[#f8faff] flex items-center justify-center group-hover/add:scale-110 group-hover/add:bg-white shadow-inner transition-all">
+                                <span className="material-symbols-outlined text-5xl text-[#a3abd7] group-hover/add:text-[#0057bd]">
+                                  {section.type === 'photos' ? "add_a_photo" : "video_call"}
+                                </span>
+                              </div>
+                              <span className="text-[11px] font-black text-[#a3abd7] uppercase tracking-[0.3em] group-hover/add:text-[#0057bd]">
+                                Add Content
+                              </span>
+                            </>
+                          )}
                         </button>
                       )}
                     </div>

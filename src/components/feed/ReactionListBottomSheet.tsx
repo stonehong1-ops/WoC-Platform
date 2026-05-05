@@ -12,12 +12,12 @@ interface ReactionListBottomSheetProps {
 }
 
 const REACTION_INFO: Record<ReactionType, { emoji: string; label: string; color: string }> = {
-  LIKE: { emoji: '❤️', label: '좋아요', color: 'text-red-500' },
-  LOVE: { emoji: '👍', label: '최고예요', color: 'text-blue-500' },
-  FIRE: { emoji: '🔥', label: '불타올르네', color: 'text-orange-500' },
-  HAHA: { emoji: '😂', label: '웃겨요', color: 'text-yellow-500' },
-  WOW: { emoji: '😮', label: '놀라워요', color: 'text-purple-500' },
-  SAD: { emoji: '😢', label: '슬퍼요', color: 'text-gray-500' },
+  LIKE: { emoji: '❤️', label: 'Like', color: 'text-red-500' },
+  LOVE: { emoji: '👍', label: 'Love', color: 'text-blue-500' },
+  FIRE: { emoji: '🔥', label: 'Fire', color: 'text-orange-500' },
+  HAHA: { emoji: '😂', label: 'Haha', color: 'text-yellow-500' },
+  WOW: { emoji: '😮', label: 'Wow', color: 'text-purple-500' },
+  SAD: { emoji: '😢', label: 'Sad', color: 'text-gray-500' },
 };
 
 export default function ReactionListBottomSheet({ post, isOpen, onClose }: ReactionListBottomSheetProps) {
@@ -45,7 +45,7 @@ export default function ReactionListBottomSheet({ post, isOpen, onClose }: React
   const typesPresent = Object.keys(counts) as ReactionType[];
 
   return (
-    <BottomSheet isOpen={isOpen} onClose={onClose} title="반응" height="60vh">
+    <BottomSheet isOpen={isOpen} onClose={onClose} title="Reactions" height="60vh">
       {/* Tabs */}
       <div className="flex gap-2 overflow-x-auto pb-4 no-scrollbar border-b border-outline-variant/10 mb-2">
         <button 
@@ -55,7 +55,7 @@ export default function ReactionListBottomSheet({ post, isOpen, onClose }: React
             ${activeTab === 'ALL' ? 'bg-primary text-on-primary shadow-lg shadow-primary/20' : 'bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest'}
           `}
         >
-          전체 {reactions.length}
+          All {reactions.length}
         </button>
         {typesPresent.map(type => (
           <button 
@@ -76,7 +76,7 @@ export default function ReactionListBottomSheet({ post, isOpen, onClose }: React
       <div className="py-2">
         {filteredReactions.length === 0 ? (
           <div className="py-20 text-center text-on-surface-variant/50 italic text-sm">
-            반응이 없습니다.
+            No reactions yet.
           </div>
         ) : (
           filteredReactions.map((reaction) => (
@@ -96,7 +96,7 @@ export default function ReactionListBottomSheet({ post, isOpen, onClose }: React
                 </div>
               </div>
               <button className="px-4 py-1.5 rounded-full border border-outline-variant/30 text-xs font-bold text-on-surface-variant hover:bg-surface-container-high transition-colors">
-                팔로우
+                Follow
               </button>
             </div>
           ))

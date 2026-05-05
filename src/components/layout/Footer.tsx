@@ -22,11 +22,11 @@ export default function Footer() {
           
           {/* 1. TANGO WORLD PARTITION */}
           <Section label={<><span className="text-primary">TANGO</span> WORLD</>}>
-            <NavItem href="/plaza" icon="forum" label="PLAZA" active={isActive('/plaza')} />
-            <NavItem href="/home" icon="home" label="HOME" active={isActive('/home')} />
-            <NavItem href="/venues" icon="location_on" label="MAP" active={isActive('/venues')} />
-            <NavItem href="/arcade" icon="videogame_asset" label="ARCADE" active={isActive('/arcade')} />
+            <NavItem href="/home" icon="radio_button_unchecked" label="SOCIETY" active={isActive('/home')} />
+            <NavItem href="/plaza" icon="quick_phrases" label="PLAZA" active={isActive('/plaza')} />
+            <NavItem href="/venues" icon="map" label="MAP" active={isActive('/venues')} />
             <NavItem href="/explore" icon="explore" label="EXPLORE" active={isActive('/explore')} />
+            <NavItem href="/arcade" icon="airline_stops" label="ARCADE" active={isActive('/arcade')} />
           </Section>
 
           <div className="w-[1px] bg-gray-200/60 my-1.5" />

@@ -8,10 +8,16 @@ import { PlatformUser } from '@/types/user';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useSearchParams } from 'next/navigation';
 import societiesData from '../../../woc_societies_data.json';
-import { safeDate } from '@/lib/utils/safeData';
+import { safeDate } from '@/lib/utils/safeDate';
 import ActivitySpotlight from '@/components/home/ActivitySpotlight';
 import UserProfileModal from '@/components/profile/UserProfileModal';
 import GaviCartoonPopup from '@/components/home/GaviCartoonPopup';
+import Music365Popup from '@/components/home/Music365Popup';
+import TangoHistoryPopup from '@/components/home/TangoHistoryPopup';
+import { collection, query, where, orderBy, limit, getDocs, Timestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase/clientApp';
+import { GalleryPost } from '@/lib/firebase/galleryService';
+import { Social } from '@/types/social';
 
 export default function HomePage() {
   return (
@@ -30,6 +36,13 @@ function HomeContent() {
   const [isRegionalReportsOpen, setIsRegionalReportsOpen] = useState(false);
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
   const [isCartoonsOpen, setIsCartoonsOpen] = useState(false);
+  const [isMusic365Open, setIsMusic365Open] = useState(false);
+  const [isTangoHistoryOpen, setIsTangoHistoryOpen] = useState(false);
+  const [photogenicPost, setPhotogenicPost] = useState<GalleryPost | null>(null);
+  const [videogenicPost, setVideogenicPost] = useState<GalleryPost | null>(null);
+  const [djSchedule, setDjSchedule] = useState<{day: number; djName: string; venueName: string; socialId: string}[]>([]);
+  const [peopleData, setPeopleData] = useState<{organizers: any[]; instructors: any[]; providers: any[]}>({organizers:[], instructors:[], providers:[]});
+  const [peopleTab, setPeopleTab] = useState<'organizers'|'instructors'|'providers'>('organizers');
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
   const [upcomingEvent, setUpcomingEvent] = useState<Event | null>(null);
 
@@ -61,8 +74,95 @@ function HomeContent() {
         setLoadingMembers(false);
       }
     };
+    const fetchPhotogenic = async () => {
+      try {
+        const dayAgo = Timestamp.fromMillis(Date.now() - 24 * 60 * 60 * 1000);
+        const q = query(collection(db, 'galleries'), where('createdAt', '>=', dayAgo), orderBy('createdAt', 'desc'));
+        const snap = await getDocs(q);
+        const photos = snap.docs.map(d => ({ id: d.id, ...d.data() } as GalleryPost)).filter(p => !p.mediaTypes || p.mediaTypes[0] !== 'video');
+        if (photos.length > 0) {
+          photos.sort((a, b) => (b.likesCount || 0) - (a.likesCount || 0));
+          setPhotogenicPost(photos[0]);
+        }
+      } catch (e) { console.error('[Photogenic]', e); }
+    };
+    const fetchVideogenic = async () => {
+      try {
+        const monthAgo = Timestamp.fromMillis(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        const q = query(collection(db, 'galleries'), where('createdAt', '>=', monthAgo), orderBy('createdAt', 'desc'));
+        const snap = await getDocs(q);
+        const videos = snap.docs.map(d => ({ id: d.id, ...d.data() } as GalleryPost)).filter(p => p.mediaTypes && p.mediaTypes.includes('video'));
+        if (videos.length > 0) {
+          videos.sort((a, b) => (b.likesCount || 0) - (a.likesCount || 0));
+          setVideogenicPost(videos[0]);
+        }
+      } catch (e) { console.error('[Videogenic]', e); }
+    };
+    const fetchDjSchedule = async () => {
+      try {
+        const snap = await getDocs(collection(db, 'socials'));
+        const allSocials = snap.docs.map(d => ({ id: d.id, ...d.data() } as Social));
+        const schedule: {day: number; djName: string; venueName: string; socialId: string}[] = [];
+        allSocials.forEach(s => {
+          const djName = s.djName || (s.djs && s.djs.length > 0 ? s.djs[0].djName : '');
+          if (!djName) return;
+          if (s.type === 'regular' && s.dayOfWeek !== undefined) {
+            schedule.push({ day: s.dayOfWeek, djName, venueName: s.venueName || '', socialId: s.id });
+          }
+        });
+        schedule.sort((a, b) => a.day - b.day);
+        setDjSchedule(schedule);
+      } catch (e) { console.error('[DjSchedule]', e); }
+    };
+    const fetchPeople = async () => {
+      try {
+        const socialSnap = await getDocs(collection(db, 'socials'));
+        const orgMap = new Map<string, any>();
+        socialSnap.docs.forEach(d => {
+          const s = d.data();
+          if (s.organizerId && !orgMap.has(s.organizerId)) {
+            orgMap.set(s.organizerId, { id: s.organizerId, name: s.organizerName || 'Organizer', role: 'Organizer' });
+          }
+        });
+        const groupSnap = await getDocs(collection(db, 'groups'));
+        const instrMap = new Map<string, any>();
+        groupSnap.docs.forEach(d => {
+          const g = d.data();
+          if (g.classes) {
+            (g.classes as any[]).forEach(cls => {
+              if (cls.instructors) {
+                (cls.instructors as any[]).forEach(inst => {
+                  const key = inst.userId || inst.name;
+                  if (key && !instrMap.has(key)) {
+                    instrMap.set(key, { id: inst.userId || key, name: inst.name, avatar: inst.avatar, role: 'Instructor' });
+                  }
+                });
+              }
+            });
+          }
+        });
+        const providerMap = new Map<string, any>();
+        groupSnap.docs.forEach(d => {
+          const g = d.data();
+          if (g.activeServices && (g.activeServices.shop || g.activeServices.stay || g.activeServices.rental)) {
+            if (g.ownerId && !providerMap.has(g.ownerId)) {
+              providerMap.set(g.ownerId, { id: g.ownerId, name: g.name || 'Provider', role: 'Service Provider' });
+            }
+          }
+        });
+        setPeopleData({
+          organizers: Array.from(orgMap.values()),
+          instructors: Array.from(instrMap.values()),
+          providers: Array.from(providerMap.values()),
+        });
+      } catch (e) { console.error('[People]', e); }
+    };
     fetchEvent();
     fetchMembers();
+    fetchPhotogenic();
+    fetchVideogenic();
+    fetchDjSchedule();
+    fetchPeople();
   }, []);
 
   const handleLeaderboardClick = () => {
@@ -102,13 +202,70 @@ function HomeContent() {
 
         <ActivitySpotlight />
 
-        {/* Culture & Canvas Section */}
+        {/* Culture & Canvas Section — 4-card grid */}
         <section className="flex flex-col gap-4">
           <header className="flex items-center justify-between px-2 md:px-0">
             <h2 className="text-xl md:text-2xl font-extrabold text-slate-900 font-headline">Culture &amp; Canvas</h2>
           </header>
           <div className="grid grid-cols-2 gap-4">
-            {/* Tango Novel Card */}
+            {/* Gavi's Cartoons */}
+            <div className="relative">
+              <div className="absolute -top-8 left-6 z-20 flex flex-col items-center animate-bounce drop-shadow-sm">
+                <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full tracking-wider">HOT</span>
+                <div className="w-0 h-0 border-l-[4px] border-r-[4px] border-t-[5px] border-l-transparent border-r-transparent border-t-red-500"></div>
+              </div>
+              <div className="group relative overflow-hidden bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer active:scale-95 h-full" onClick={() => setIsCartoonsOpen(true)}>
+                <div className="flex flex-col gap-2 relative z-10">
+                  <div className="flex items-center justify-between">
+                    <div className="p-3 rounded-xl bg-primary-container/10 text-primary-container">
+                      <span className="material-symbols-outlined text-[24px]">palette</span>
+                    </div>
+                    <span className="material-symbols-outlined text-outline-variant group-hover:text-primary-container transition-colors">arrow_outward</span>
+                  </div>
+                  <div className="mt-2">
+                    <h3 className="font-title-md text-title-md text-on-surface">Gavi's Cartoons</h3>
+                    <p className="text-[10px] text-slate-400 font-medium mt-0.5">by Gavi</p>
+                  </div>
+                </div>
+                <span className="material-symbols-outlined absolute -bottom-4 -right-4 text-8xl opacity-[0.03] text-primary-container pointer-events-none">palette</span>
+              </div>
+            </div>
+
+            {/* Music 365 */}
+            <div className="group relative overflow-hidden bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer active:scale-95" onClick={() => setIsMusic365Open(true)}>
+              <div className="flex flex-col gap-2 relative z-10">
+                <div className="flex items-center justify-between">
+                  <div className="p-3 rounded-xl bg-amber-100/50 text-amber-700">
+                    <span className="material-symbols-outlined text-[24px]">music_note</span>
+                  </div>
+                  <span className="material-symbols-outlined text-outline-variant group-hover:text-amber-600 transition-colors">arrow_outward</span>
+                </div>
+                <div className="mt-2">
+                  <h3 className="font-title-md text-title-md text-on-surface">Music 365</h3>
+                  <p className="text-[10px] text-slate-400 font-medium mt-0.5">by Camus</p>
+                </div>
+              </div>
+              <span className="material-symbols-outlined absolute -bottom-4 -right-4 text-8xl opacity-[0.03] text-amber-600 pointer-events-none">music_note</span>
+            </div>
+
+            {/* History of Tango */}
+            <div className="group relative overflow-hidden bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer active:scale-95" onClick={() => setIsTangoHistoryOpen(true)}>
+              <div className="flex flex-col gap-2 relative z-10">
+                <div className="flex items-center justify-between">
+                  <div className="p-3 rounded-xl bg-indigo-100/50 text-indigo-700">
+                    <span className="material-symbols-outlined text-[24px]">history_edu</span>
+                  </div>
+                  <span className="material-symbols-outlined text-outline-variant group-hover:text-indigo-600 transition-colors">arrow_outward</span>
+                </div>
+                <div className="mt-2">
+                  <h3 className="font-title-md text-title-md text-on-surface">History of Tango</h3>
+                  <p className="text-[10px] text-slate-400 font-medium mt-0.5">by Ddakji</p>
+                </div>
+              </div>
+              <span className="material-symbols-outlined absolute -bottom-4 -right-4 text-8xl opacity-[0.03] text-indigo-600 pointer-events-none">history_edu</span>
+            </div>
+
+            {/* Tango Novel */}
             <div className="group relative overflow-hidden bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer active:scale-95">
               <div className="flex flex-col gap-2 relative z-10">
                 <div className="flex items-center justify-between">
@@ -119,38 +276,10 @@ function HomeContent() {
                 </div>
                 <div className="mt-2">
                   <h3 className="font-title-md text-title-md text-on-surface">Tango Novel</h3>
+                  <p className="text-[10px] text-slate-400 font-medium mt-0.5">Coming Soon</p>
                 </div>
               </div>
-              {/* Subtle background "Easter egg" icon as per Style Guidance */}
               <span className="material-symbols-outlined absolute -bottom-4 -right-4 text-8xl opacity-[0.03] text-primary-container pointer-events-none">book</span>
-            </div>
-
-            {/* Tango Cartoons Card */}
-            <div className="relative">
-              {/* HOT pointer above the cartoon icon */}
-              <div className="absolute -top-8 left-6 z-20 flex flex-col items-center animate-bounce drop-shadow-sm">
-                <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full tracking-wider">HOT</span>
-                <div className="w-0 h-0 border-l-[4px] border-r-[4px] border-t-[5px] border-l-transparent border-r-transparent border-t-red-500"></div>
-              </div>
-
-              <div 
-                className="group relative overflow-hidden bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer active:scale-95 h-full"
-                onClick={() => setIsCartoonsOpen(true)}
-              >
-                <div className="flex flex-col gap-2 relative z-10">
-                  <div className="flex items-center justify-between">
-                    <div className="p-3 rounded-xl bg-primary-container/10 text-primary-container">
-                      <span className="material-symbols-outlined text-[24px]">palette</span>
-                    </div>
-                    <span className="material-symbols-outlined text-outline-variant group-hover:text-primary-container transition-colors">arrow_outward</span>
-                  </div>
-                  <div className="mt-2">
-                    <h3 className="font-title-md text-title-md text-on-surface">Tango Cartoons</h3>
-                  </div>
-                </div>
-                {/* Subtle background "Easter egg" icon as per Style Guidance */}
-                <span className="material-symbols-outlined absolute -bottom-4 -right-4 text-8xl opacity-[0.03] text-primary-container pointer-events-none">palette</span>
-              </div>
             </div>
           </div>
         </section>
@@ -312,6 +441,126 @@ function HomeContent() {
                 <p className="text-[10px] md:text-xs text-white/80 font-medium">1 Studio Suite • Private Balcony</p>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Photogenic Last Night ── */}
+      {photogenicPost && (
+        <section className="relative overflow-hidden rounded-[32px] shadow-xl group cursor-pointer" onClick={() => window.location.href = '/gallery'}>
+          <div className="aspect-[16/9] sm:aspect-[21/9]">
+            <img src={photogenicPost.media?.[0] || ''} alt="Photogenic Last Night" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+          </div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+          <div className="absolute bottom-6 left-6 right-6">
+            <span className="px-3 py-1 bg-white/20 text-white text-[10px] font-bold uppercase tracking-widest rounded-full mb-2 inline-block backdrop-blur-md border border-white/20">📸 Photogenic Last Night</span>
+            <h3 className="text-xl md:text-2xl font-black text-white font-headline leading-tight">{photogenicPost.caption || 'Last Night\'s Best Moment'}</h3>
+            <div className="flex items-center gap-3 mt-2">
+              <span className="text-white/70 text-xs flex items-center gap-1"><span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>{photogenicPost.likesCount || 0}</span>
+              <span className="text-white/50 text-xs">{photogenicPost.authorName || 'Anonymous'}</span>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── People ── */}
+      {(peopleData.organizers.length > 0 || peopleData.instructors.length > 0 || peopleData.providers.length > 0) && (
+        <section className="flex flex-col gap-4">
+          <header className="flex items-center justify-between px-2">
+            <h2 className="text-xl md:text-2xl font-extrabold text-slate-900 font-headline">People</h2>
+          </header>
+          {/* Tabs */}
+          <div className="flex gap-2 px-2">
+            {(['organizers','instructors','providers'] as const).map(tab => (
+              <button key={tab} onClick={() => setPeopleTab(tab)} className={`px-4 py-2 rounded-full text-xs font-bold transition-colors ${peopleTab === tab ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>
+                {tab === 'organizers' ? 'Organizers' : tab === 'instructors' ? 'Instructors' : 'Providers'}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-3 overflow-x-auto px-2 pb-2 snap-x snap-mandatory custom-scrollbar">
+            {(peopleData[peopleTab] || []).slice(0, 10).map((person: any, i: number) => (
+              <div key={person.id || i} className="min-w-[120px] flex flex-col items-center gap-2 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm snap-start cursor-pointer hover:shadow-md transition-shadow" onClick={() => person.id && setSelectedProfileId(person.id)}>
+                <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden">
+                  {person.avatar ? <img src={person.avatar} alt={person.name} className="w-full h-full object-cover" /> : <span className="material-symbols-outlined text-slate-300 text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>person</span>}
+                </div>
+                <span className="text-xs font-bold text-slate-900 text-center line-clamp-1">{person.name}</span>
+                <span className="text-[10px] text-slate-400 font-medium">{person.role}</span>
+              </div>
+            ))}
+            {(peopleData[peopleTab] || []).length === 0 && (
+              <div className="w-full py-8 text-center text-slate-400 text-sm font-medium">No {peopleTab} found yet.</div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* ── DJ Schedule ── */}
+      {djSchedule.length > 0 && (
+        <section className="flex flex-col gap-4">
+          <header className="px-2"><h2 className="text-xl md:text-2xl font-extrabold text-slate-900 font-headline">DJ Schedule</h2></header>
+          <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm overflow-hidden">
+            <div className="grid grid-cols-7 text-center border-b border-slate-100">
+              {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((d, i) => (
+                <div key={d} className={`py-3 text-[10px] font-bold uppercase tracking-wider ${i === new Date().getDay() ? 'text-primary bg-primary/5' : 'text-slate-400'}`}>{d}</div>
+              ))}
+            </div>
+            <div className="grid grid-cols-7">
+              {[0,1,2,3,4,5,6].map(day => {
+                const djs = djSchedule.filter(s => s.day === day);
+                return (
+                  <div key={day} className={`min-h-[80px] p-1.5 border-r border-slate-50 last:border-r-0 ${day === new Date().getDay() ? 'bg-primary/5' : ''}`}>
+                    {djs.map((dj, j) => (
+                      <div key={j} className="bg-slate-900 text-white rounded-lg p-2 mb-1 text-[10px] leading-tight">
+                        <span className="font-bold block truncate">{dj.djName}</span>
+                        <span className="text-white/50 truncate block">{dj.venueName}</span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── Videogenic This Month ── */}
+      {videogenicPost && (
+        <section className="relative overflow-hidden rounded-[32px] shadow-xl group cursor-pointer" onClick={() => window.location.href = '/gallery'}>
+          <div className="aspect-video bg-slate-900 flex items-center justify-center">
+            {videogenicPost.media?.[0] ? (
+              <video src={videogenicPost.media[0]} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" muted autoPlay loop playsInline />
+            ) : (
+              <span className="material-symbols-outlined text-6xl text-white/20">videocam</span>
+            )}
+          </div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
+          <div className="absolute bottom-6 left-6 right-6">
+            <span className="px-3 py-1 bg-white/20 text-white text-[10px] font-bold uppercase tracking-widest rounded-full mb-2 inline-block backdrop-blur-md border border-white/20">🎬 Videogenic This Month</span>
+            <h3 className="text-xl md:text-2xl font-black text-white font-headline">{videogenicPost.caption || 'Trending Video'}</h3>
+            <div className="flex items-center gap-3 mt-2">
+              <span className="text-white/70 text-xs flex items-center gap-1"><span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>{videogenicPost.likesCount || 0}</span>
+              <span className="text-white/50 text-xs">{videogenicPost.authorName || 'Anonymous'}</span>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── Neighbors ── */}
+      <section className="flex flex-col gap-4">
+        <header className="px-2"><h2 className="text-xl md:text-2xl font-extrabold text-slate-900 font-headline">Neighbors</h2></header>
+        <div className="flex gap-4 overflow-x-auto px-2 pb-2 snap-x custom-scrollbar">
+          <div className="min-w-[260px] bg-gradient-to-br from-emerald-50 to-teal-50 rounded-[24px] border border-emerald-100 p-6 flex flex-col gap-3 snap-start">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center">
+                <span className="material-symbols-outlined text-emerald-600 text-2xl">self_improvement</span>
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-900 text-sm">Yoga Society</h3>
+                <p className="text-[10px] text-slate-400 font-medium">Coming Soon</p>
+              </div>
+            </div>
+            <p className="text-xs text-slate-500 leading-relaxed">Discover the Yoga community near you. Classes, retreats, and mindful living.</p>
+            <button className="mt-auto px-4 py-2.5 bg-emerald-100 text-emerald-700 rounded-xl text-xs font-bold opacity-50 cursor-not-allowed" disabled>Visit Society</button>
           </div>
         </div>
       </section>
@@ -604,6 +853,12 @@ function HomeContent() {
 
       {isCartoonsOpen && (
         <GaviCartoonPopup onClose={() => setIsCartoonsOpen(false)} />
+      )}
+      {isMusic365Open && (
+        <Music365Popup onClose={() => setIsMusic365Open(false)} />
+      )}
+      {isTangoHistoryOpen && (
+        <TangoHistoryPopup onClose={() => setIsTangoHistoryOpen(false)} />
       )}
 
 

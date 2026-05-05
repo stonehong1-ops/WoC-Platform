@@ -55,39 +55,85 @@ const GroupStayRoomEditor: React.FC<GroupStayRoomEditorProps> = ({ group, onClos
     status: room?.status || "Active",
   });
   
-  const [newImages, setNewImages] = useState<File[]>([]);
-  const [displayImageUrls, setDisplayImageUrls] = useState<string[]>(room?.images || []);
+  const [images, setImages] = useState<string[]>(room?.images || []);
+  const [uploadProgressMap, setUploadProgressMap] = useState<Record<number, number>>({});
+  const [isOptimizingMap, setIsOptimizingMap] = useState<Record<number, boolean>>({});
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { id, value } = e.target;
     setFormData(prev => ({ ...prev, [id]: value }));
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const selectedFiles = Array.from(e.target.files);
-      if (displayImageUrls.length + selectedFiles.length > 5) {
+      if (images.length + selectedFiles.length > 5) {
         toast.error("You can upload up to 5 images.");
         return;
       }
       
-      setNewImages(prev => [...prev, ...selectedFiles]);
-      const previewUrls = selectedFiles.map(file => URL.createObjectURL(file));
-      setDisplayImageUrls(prev => [...prev, ...previewUrls]);
+      const startIdx = images.length;
+      const newBlobs = selectedFiles.map(file => URL.createObjectURL(file));
+      setImages(prev => [...prev, ...newBlobs]);
+
+      selectedFiles.forEach(async (file, i) => {
+        const currentIdx = startIdx + i;
+        try {
+          // Start optimization
+          setIsOptimizingMap(prev => ({ ...prev, [currentIdx]: true }));
+          
+          const url = await storageService.uploadFile(
+            file, 
+            `groups/${group.id}/stay/${Date.now()}_${i}`,
+            (progress) => {
+              setIsOptimizingMap(prev => ({ ...prev, [currentIdx]: false }));
+              setUploadProgressMap(prev => ({ ...prev, [currentIdx]: progress }));
+            }
+          );
+
+          setImages(prev => {
+            const next = [...prev];
+            next[currentIdx] = url;
+            return next;
+          });
+          URL.revokeObjectURL(newBlobs[i]);
+        } catch (error) {
+          console.error("Image upload error:", error);
+          toast.error(`Failed to upload ${file.name}`);
+          setImages(prev => prev.filter((_, idx) => idx !== currentIdx));
+        } finally {
+          setUploadProgressMap(prev => {
+            const next = { ...prev };
+            delete next[currentIdx];
+            return next;
+          });
+          setIsOptimizingMap(prev => {
+            const next = { ...prev };
+            delete next[currentIdx];
+            return next;
+          });
+        }
+      });
+      
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
   const handleRemoveImage = (index: number) => {
-    const urlToRemove = displayImageUrls[index];
+    const urlToRemove = images[index];
     if (urlToRemove.startsWith('blob:')) {
-      const blobIndex = displayImageUrls.slice(0, index).filter(url => url.startsWith('blob:')).length;
-      setNewImages(prev => prev.filter((_, i) => i !== blobIndex));
       URL.revokeObjectURL(urlToRemove);
     }
-    setDisplayImageUrls(prev => prev.filter((_, i) => i !== index));
+    setImages(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSave = async () => {
+    const isUploading = Object.keys(uploadProgressMap).length > 0 || Object.keys(isOptimizingMap).length > 0;
+    if (isUploading) {
+      toast.error("Please wait until images are uploaded.");
+      return;
+    }
+
     if (!formData.title || !formData.roomType || formData.price < 0) {
       toast.error("Please fill in required fields (Title, Room Type, Base Rent).");
       return;
@@ -95,14 +141,7 @@ const GroupStayRoomEditor: React.FC<GroupStayRoomEditorProps> = ({ group, onClos
 
     setIsSaving(true);
     try {
-      const uploadedUrls = await Promise.all(
-        newImages.map((file, index) => 
-          storageService.uploadFile(file, `groups/${group.id}/stay/${Date.now()}_${index}`)
-        )
-      );
-
-      const existingUrls = displayImageUrls.filter(url => !url.startsWith('blob:'));
-      const finalImageUrls = [...existingUrls, ...uploadedUrls];
+      const finalImageUrls = images.filter(url => !url.startsWith('blob:'));
 
       const currentRooms = group.stayRooms || [];
       let updatedStayRooms: StayRoom[];
@@ -328,10 +367,10 @@ const GroupStayRoomEditor: React.FC<GroupStayRoomEditorProps> = ({ group, onClos
             </div>
             <div className="flex justify-between items-center">
               <label className="block font-['Inter'] text-[13px] font-medium text-[#515981]">Room Images (Up to 5)</label>
-              <span className="font-['Inter'] text-[11px] text-[#a3abd7] uppercase font-bold tracking-wider">{displayImageUrls.length} / 5</span>
+              <span className="font-['Inter'] text-[11px] text-[#a3abd7] uppercase font-bold tracking-wider">{images.length} / 5</span>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {displayImageUrls.length < 5 && (
+              {images.length < 5 && (
                 <button 
                   onClick={() => fileInputRef.current?.click()}
                   className="aspect-square bg-[#e4e7ff] border-2 border-dashed border-[#a3abd7]/40 rounded-lg flex flex-col items-center justify-center gap-2 hover:bg-[#d6dbff] transition-colors group cursor-pointer active:scale-95 duration-200"
@@ -340,17 +379,53 @@ const GroupStayRoomEditor: React.FC<GroupStayRoomEditorProps> = ({ group, onClos
                   <span className="font-['Inter'] text-[11px] font-bold uppercase tracking-wider text-[#a3abd7] group-hover:text-[#0057bd] transition-colors">Upload</span>
                 </button>
               )}
-              {displayImageUrls.map((url, index) => (
-                <div key={index} className="aspect-square relative group rounded-lg overflow-hidden border border-[#a3abd7]/20">
-                  <img src={url} alt={`preview ${index}`} className="w-full h-full object-cover" />
-                  <button 
-                    onClick={() => handleRemoveImage(index)}
-                    className="absolute top-1 right-1 bg-black/50 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <span className="material-symbols-outlined text-sm">close</span>
-                  </button>
-                </div>
-              ))}
+              {images.map((url, index) => {
+                const isUploadingImg = url.startsWith('blob:');
+                const progress = uploadProgressMap[index] || 0;
+                const isOptimizing = isOptimizingMap[index];
+
+                return (
+                  <div key={index} className="aspect-square relative group rounded-lg overflow-hidden border border-[#a3abd7]/20">
+                    <img src={url} alt={`preview ${index}`} className="w-full h-full object-cover" />
+                    
+                    {/* Upload Progress Overlay */}
+                    {isUploadingImg && (
+                      <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center p-2 text-center backdrop-blur-[1px]">
+                        {isOptimizing ? (
+                          <div className="flex flex-col items-center gap-2">
+                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            <span className="text-[10px] text-white font-bold">Optimizing...</span>
+                          </div>
+                        ) : (
+                          <div className="relative w-12 h-12">
+                            <svg className="w-full h-full transform -rotate-90">
+                              <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="4" fill="transparent" className="text-white/20" />
+                              <circle 
+                                cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="4" fill="transparent" 
+                                strokeDasharray={125.6} 
+                                strokeDashoffset={125.6 * (1 - progress / 100)} 
+                                className="text-white transition-all duration-300" 
+                              />
+                            </svg>
+                            <span className="absolute inset-0 flex items-center justify-center text-[10px] text-white font-bold">
+                              {Math.round(progress)}%
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {!isUploadingImg && (
+                      <button 
+                        onClick={() => handleRemoveImage(index)}
+                        className="absolute top-1 right-1 bg-black/50 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <span className="material-symbols-outlined text-sm">close</span>
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
               <input type="file" ref={fileInputRef} className="hidden" accept="image/*" multiple onChange={handleImageChange} />
             </div>
           </motion.div>

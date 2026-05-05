@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { useModalNavigation } from '@/hooks/useModalNavigation';
 import { chatService } from '@/lib/firebase/chatService';
 import { shopService } from '@/lib/firebase/shopService';
 import { groupService } from '@/lib/firebase/groupService';
@@ -37,13 +38,16 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
   const [showSizeGuide, setShowSizeGuide] = useState(false);
   const [showOptionInfo, setShowOptionInfo] = useState(false);
   const [fulfillment, setFulfillment] = useState<'pickup' | 'delivery'>('pickup');
-  const [showPurchase, setShowPurchase] = useState(false);
   const [bankDetails, setBankDetails] = useState<{bankName:string;accountHolder:string;accountNumber:string} | undefined>();
   const scrollRef = useRef<HTMLDivElement>(null);
-  
-  // New States
-  const [showImageModal, setShowImageModal] = useState(false);
-  const [chatRoomId, setChatRoomId] = useState<string | null>(null);
+
+  const { value: flow, openModal: openFlow, closeModal: handleClosePurchase } = useModalNavigation('flow');
+  const { value: chatId, openModal: openChat, closeModal: handleCloseChat } = useModalNavigation('chatId');
+  const { value: imageModal, openModal: openImageModal, closeModal: closeImageModal } = useModalNavigation('imageModal');
+
+  const showPurchase = flow === 'purchase';
+  const chatRoomId = chatId;
+  const showImageModal = imageModal === 'true';
 
   // Scarcity: stable random viewer count per session
   const [viewerCount] = useState(() => Math.floor(Math.random() * 18) + 5);
@@ -142,8 +146,7 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
     const sellerId = product.sellerId || 'adminstone';
     if (user.uid === sellerId) return alert('You cannot chat with yourself');
 
-    const confirmed = window.confirm('이제 판매자와 대화방이 열리고 이 상품에 대한 문의가 진행됩니다. 계속하시겠습니까?');
-    if (!confirmed) return;
+    if (!confirm("Would you like to send a product inquiry chat to the seller?")) return;
 
     try {
       // 1. Mark as pending in wishlist
@@ -165,7 +168,8 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
       });
 
       // 4. Open full popup chat
-      setChatRoomId(roomId);
+      // 4. Open full popup chat
+      openChat(roomId);
     } catch (err) {
       console.error("Failed to start chat:", err);
       alert('Failed to start chat. Please try again.');
@@ -176,8 +180,10 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
   const handlePurchase = () => {
     if (!user) return alert('Please login first');
     if (product.options?.length > 0 && !selectedSize) return alert('Please select a size');
-    setShowPurchase(true);
+    openFlow('purchase');
   };
+
+  // handleClosePurchase and handleCloseChat are already defined via useModalNavigation
 
   // Render a custom option
   const renderCustomOption = (opt: CustomOptionDef) => {
@@ -295,7 +301,9 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
           </div>
           {/* Images */}
           {images.length > 0 && (
-            <div className="relative h-full" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onClick={() => setShowImageModal(true)}>
+            <div className="relative h-full" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onClick={() => {
+              openImageModal('true');
+            }}>
               <div className="flex h-full transition-transform duration-300 ease-out" style={{ transform: `translateX(-${currentImg * 100}%)` }}>
                 {images.map((img, i) => (
                   <div key={i} className="w-full flex-shrink-0 h-full">
@@ -704,8 +712,8 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
           bankDetails={bankDetails}
           groupId={product.groupId}
           groupName={product.groupName}
-          onClose={() => setShowPurchase(false)}
-          onComplete={() => { setShowPurchase(false); onClose(); }}
+          onClose={handleClosePurchase}
+          onComplete={() => { handleClosePurchase(); onClose(); }}
         />
       )}
 
@@ -713,7 +721,7 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
       {showImageModal && (
         <div className="fixed inset-0 z-[200] bg-black flex flex-col animate-in fade-in duration-200">
           <div className="absolute top-0 left-0 right-0 z-10 flex justify-end p-4">
-            <button onClick={() => setShowImageModal(false)} className="w-10 h-10 rounded-full bg-black/40 text-white flex items-center justify-center">
+            <button onClick={closeImageModal} className="w-10 h-10 rounded-full bg-black/40 text-white flex items-center justify-center">
               <span className="material-symbols-rounded text-2xl">close</span>
             </button>
           </div>
@@ -741,7 +749,7 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
         <div className="fixed inset-0 z-[200] bg-white animate-in slide-in-from-bottom duration-300">
           <ChatRoom
             roomId={chatRoomId}
-            onBack={() => setChatRoomId(null)}
+            onBack={handleCloseChat}
           />
         </div>
       )}

@@ -83,7 +83,7 @@ export default function LostFoundDetailPage() {
     if (!confirmed) return;
 
     try {
-      const roomId = await chatService.getOrCreatePrivateRoom([user.uid, authorId], user.uid, 'personal');
+      const roomId = await chatService.getOrCreatePrivateRoom([user.uid, authorId], user.uid, 'business');
       const itemInfo = `[${item.type === 'LOST' ? 'Lost' : 'Found'} Item Inquiry]\nTitle: ${item.title}\nLocation: ${item.location}\nLink: ${window.location.origin}/lost-found/${item.id}`;
       
       await chatService.sendMessage({

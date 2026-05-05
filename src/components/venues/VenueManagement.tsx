@@ -1,7 +1,9 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import { Plus, Settings, Search, SlidersHorizontal, ChevronLeft, MapPin } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigation } from '@/components/providers/NavigationProvider';
 import { venueService } from '@/lib/firebase/venueService';
 import { Venue } from '@/types/venue';
 import VenueItem from './VenueItem';
@@ -13,6 +15,7 @@ export default function VenueManagement() {
   const [editingVenue, setEditingVenue] = useState<Venue | null>(null);
   const [isManagementMode, setIsManagementMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const { isHeaderVisible } = useNavigation();
 
   useEffect(() => {
     const unsubscribe = venueService.subscribeVenues((data) => {
@@ -54,18 +57,28 @@ export default function VenueManagement() {
         </button>
 
         {/* Global Add Button (Rounded +) - ABSOLUTE BOTTOM RIGHT FLOATING */}
-        <div className="fixed bottom-28 right-6 z-[100]">
-          <button 
-            onClick={() => {
-              setEditingVenue(null);
-              setIsFormOpen(true);
+        <AnimatePresence>
+          <motion.div 
+            initial={false}
+            animate={{ 
+              y: isHeaderVisible ? 0 : 100,
+              opacity: isHeaderVisible ? 1 : 0
             }}
-            className="w-16 h-16 bg-[#1A73E8] text-white rounded-full shadow-[0_12px_24px_rgba(26,115,232,0.4)] flex items-center justify-center hover:scale-110 active:scale-90 transition-all group pointer-events-auto"
-            title="Register New Venue"
+            transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+            className="fixed bottom-28 right-6 z-[100]"
           >
-            <Plus size={32} className="group-hover:rotate-90 transition-transform duration-300" />
-          </button>
-        </div>
+            <button 
+              onClick={() => {
+                setEditingVenue(null);
+                setIsFormOpen(true);
+              }}
+              className="w-16 h-16 bg-[#1A73E8] text-white rounded-full shadow-[0_12px_24px_rgba(26,115,232,0.4)] flex items-center justify-center hover:scale-110 active:scale-90 transition-all group pointer-events-auto"
+              title="Register New Venue"
+            >
+              <Plus size={32} className="group-hover:rotate-90 transition-transform duration-300" />
+            </button>
+          </motion.div>
+        </AnimatePresence>
 
         {/* Venue Form Modal */}
         <VenueForm 
@@ -141,17 +154,27 @@ export default function VenueManagement() {
       </div>
 
       {/* Floating Add Button - Rounded Standard */}
-      <div className="fixed bottom-10 right-6 z-[70]">
-        <button 
-          onClick={() => {
-            setEditingVenue(null);
-            setIsFormOpen(true);
+      <AnimatePresence>
+        <motion.div 
+          initial={false}
+          animate={{ 
+            y: isHeaderVisible ? 0 : 100,
+            opacity: isHeaderVisible ? 1 : 0
           }}
-          className="w-16 h-16 bg-[#1A73E8] text-white rounded-full shadow-2xl shadow-[#1A73E8]/40 flex items-center justify-center hover:scale-110 active:scale-90 transition-all group"
+          transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+          className="fixed bottom-10 right-6 z-[70]"
         >
-          <Plus size={32} className="group-hover:rotate-90 transition-transform duration-300" />
-        </button>
-      </div>
+          <button 
+            onClick={() => {
+              setEditingVenue(null);
+              setIsFormOpen(true);
+            }}
+            className="w-16 h-16 bg-[#1A73E8] text-white rounded-full shadow-2xl shadow-[#1A73E8]/40 flex items-center justify-center hover:scale-110 active:scale-90 transition-all group"
+          >
+            <Plus size={32} className="group-hover:rotate-90 transition-transform duration-300" />
+          </button>
+        </motion.div>
+      </AnimatePresence>
 
       {/* Venue Form Modal */}
       <VenueForm 

@@ -10,12 +10,12 @@ interface ReactionSelectorProps {
 }
 
 const REACTION_OPTIONS: { type: ReactionType; emoji: string; label: string }[] = [
-  { type: 'LIKE', emoji: '❤️', label: '좋아요' },
-  { type: 'LOVE', emoji: '👍', label: '최고예요' },
-  { type: 'FIRE', emoji: '🔥', label: '불타오르네' },
-  { type: 'HAHA', emoji: '😂', label: '웃겨요' },
-  { type: 'WOW', emoji: '😮', label: '놀라워요' },
-  { type: 'SAD', emoji: '😢', label: '슬퍼요' },
+  { type: 'LIKE', emoji: '❤️', label: 'Like' },
+  { type: 'LOVE', emoji: '👍', label: 'Love' },
+  { type: 'FIRE', emoji: '🔥', label: 'Fire' },
+  { type: 'HAHA', emoji: '😂', label: 'Haha' },
+  { type: 'WOW', emoji: '😮', label: 'Wow' },
+  { type: 'SAD', emoji: '😢', label: 'Sad' },
 ];
 
 export default function ReactionSelector({ onSelect, onClose }: ReactionSelectorProps) {

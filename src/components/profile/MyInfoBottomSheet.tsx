@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { doc, updateDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '@/lib/firebase/clientApp';
+import { toast } from 'sonner';
+import { db } from '@/lib/firebase/clientApp';
+import { storageService } from '@/lib/firebase/storageService';
 import { useAuth } from '@/components/providers/AuthProvider';
 import DeactivateBottomSheet from './DeactivateBottomSheet';
 
@@ -22,6 +23,7 @@ interface UserProfile {
   isSeller?: boolean;
   isServiceProvider?: boolean;
   authMethod?: string;
+  allowPhoneCalls?: boolean;
 }
 
 interface MyInfoBottomSheetProps {
@@ -34,6 +36,8 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
   const { user, signOut } = useAuth();
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [isOptimizing, setIsOptimizing] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [isDeactivateOpen, setIsDeactivateOpen] = useState(false);
   const [details, setDetails] = useState({
     nickname: '',
@@ -45,7 +49,8 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
     isInstructor: false,
     isSeller: false,
     isServiceProvider: false,
-    photoURL: ''
+    photoURL: '',
+    allowPhoneCalls: false
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -62,7 +67,8 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
         isInstructor: profile.isInstructor || false,
         isSeller: profile.isSeller || false,
         isServiceProvider: profile.isServiceProvider || false,
-        photoURL: profile.photoURL || ''
+        photoURL: profile.photoURL || '',
+        allowPhoneCalls: profile.allowPhoneCalls || false
       });
     }
   }, [profile, isOpen]);
@@ -74,17 +80,40 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && profile) {
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error('파일 크기가 너무 큽니다. 최대 10MB까지 가능합니다.');
+        return;
+      }
+
+      // Create a temporary blob URL for immediate preview
+      const blobUrl = URL.createObjectURL(file);
+      setDetails(prev => ({ ...prev, photoURL: blobUrl }));
+      
       setUploading(true);
+      setIsOptimizing(true);
+      setUploadProgress(0);
+      
       try {
-        const fileRef = ref(storage, `profiles/${profile.uid}/${Date.now()}_${file.name}`);
-        const snapshot = await uploadBytes(fileRef, file);
-        const downloadURL = await getDownloadURL(snapshot.ref);
+        const path = `profiles/${profile.uid}/${Date.now()}_profile`;
+        const downloadURL = await storageService.uploadFile(file, path, (progress) => {
+          if (progress > 0) setIsOptimizing(false);
+          setUploadProgress(Math.round(progress));
+        });
+        
+        // Revoke the blob URL to free up memory
+        URL.revokeObjectURL(blobUrl);
+        
         setDetails(prev => ({ ...prev, photoURL: downloadURL }));
+        toast.success('사진 업로드 완료! 변경사항 저장을 눌러 완료해주세요.');
       } catch (err) {
-        console.error('Photo upload error:', err);
-        alert('Failed to upload photo.');
+        console.error('Photo handling error:', err);
+        // Fallback to original photo on error
+        setDetails(prev => ({ ...prev, photoURL: profile.photoURL || '' }));
+        toast.error('사진 업로드에 실패했습니다. 다시 시도해주세요.');
       } finally {
         setUploading(false);
+        setIsOptimizing(false);
+        setUploadProgress(0);
       }
     }
   };
@@ -106,12 +135,14 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
         isSeller: details.isSeller,
         isServiceProvider: details.isServiceProvider,
         photoURL: details.photoURL,
+        allowPhoneCalls: details.allowPhoneCalls,
         updatedAt: serverTimestamp()
       });
       onClose();
+      toast.success('프로필 정보가 저장되었습니다.');
     } catch (error) {
       console.error('Update profile error:', error);
-      alert('Failed to update profile.');
+      toast.error('프로필 저장에 실패했습니다.');
     } finally {
       setSaving(false);
     }
@@ -151,17 +182,52 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
               <div className="relative group cursor-pointer" onClick={handlePhotoClick}>
                 <div className="w-32 h-32 rounded-squircle overflow-hidden border-4 border-surface shadow-sm bg-surface-container relative flex items-center justify-center">
                   <span className="material-symbols-outlined text-on-surface-variant absolute" style={{ fontSize: '64px', fontVariationSettings: "'FILL' 1" }}>person</span>
-                  {uploading ? (
-                    <div className="w-full h-full flex items-center justify-center bg-black/10 relative z-20">
-                      <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-                    </div>
-                  ) : details.photoURL && details.photoURL !== 'https://lh3.googleusercontent.com/a/default-user' && (
+                  
+                  {/* Photo Display */}
+                  {details.photoURL && details.photoURL !== 'https://lh3.googleusercontent.com/a/default-user' && (
                     <img 
                       src={details.photoURL} 
                       alt="Profile" 
                       className="w-full h-full object-cover relative z-10"
                       onError={(e) => e.currentTarget.style.display = 'none'}
                     />
+                  )}
+
+                  {/* Upload Overlay */}
+                  {uploading && (
+                    <div className="absolute inset-0 bg-black/60 z-30 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-300">
+                      <div className="relative w-16 h-16">
+                        <svg className="w-full h-full -rotate-90">
+                          <circle
+                            cx="32"
+                            cy="32"
+                            r="28"
+                            stroke="currentColor"
+                            strokeWidth="3"
+                            fill="transparent"
+                            className="text-white/10"
+                          />
+                          <circle
+                            cx="32"
+                            cy="32"
+                            r="28"
+                            stroke="currentColor"
+                            strokeWidth="3"
+                            fill="transparent"
+                            strokeDasharray={2 * Math.PI * 28}
+                            strokeDashoffset={2 * Math.PI * 28 * (1 - uploadProgress / 100)}
+                            className="text-primary transition-all duration-300 ease-out"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                        <span className="absolute inset-0 flex items-center justify-center text-[11px] font-black text-white">
+                          {isOptimizing ? '...' : `${uploadProgress}%`}
+                        </span>
+                      </div>
+                      <p className="text-[9px] text-white/50 font-black mt-3 uppercase tracking-widest">
+                        {isOptimizing ? 'Optimizing...' : 'Uploading...'}
+                      </p>
+                    </div>
                   )}
                 </div>
                 <div className="absolute inset-0 bg-black/20 rounded-squircle opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -182,14 +248,14 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
                   disabled={uploading}
                   className="px-4 py-2 bg-primary text-on-primary font-medium text-sm rounded shadow-sm hover:brightness-110 transition-all disabled:opacity-50"
                 >
-                  {uploading ? 'Uploading...' : 'Update Photo'}
+                  {uploading ? (isOptimizing ? '최적화 중...' : '업로드 중...') : '사진 변경'}
                 </button>
                 <button 
                   onClick={() => setDetails(prev => ({ ...prev, photoURL: '' }))}
                   type="button"
                   className="px-4 py-2 bg-surface-container-high text-on-surface-variant font-medium text-sm rounded hover:bg-surface-dim transition-all"
                 >
-                  Remove
+                  삭제
                 </button>
               </div>
             </section>
@@ -271,6 +337,37 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
                       value={details.phoneNumber}
                       onChange={(e) => setDetails(prev => ({ ...prev, phoneNumber: e.target.value }))}
                     />
+                  </div>
+                  <div className="flex flex-col mt-3 p-4 bg-surface-container-lowest border border-outline-variant/30 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[13px] font-bold text-on-surface">전화연결 허용 (Allow Calls)</span>
+                      <div className="flex items-center gap-5">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input 
+                            type="radio" 
+                            name="allowPhoneCalls"
+                            checked={details.allowPhoneCalls === true}
+                            onChange={() => setDetails(prev => ({ ...prev, allowPhoneCalls: true }))}
+                            className="w-4 h-4 border-outline-variant text-primary focus:ring-primary accent-primary cursor-pointer"
+                          />
+                          <span className="text-xs font-bold text-on-surface-variant">ON</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input 
+                            type="radio" 
+                            name="allowPhoneCalls"
+                            checked={details.allowPhoneCalls === false}
+                            onChange={() => setDetails(prev => ({ ...prev, allowPhoneCalls: false }))}
+                            className="w-4 h-4 border-outline-variant text-primary focus:ring-primary accent-primary cursor-pointer"
+                          />
+                          <span className="text-xs font-bold text-on-surface-variant">OFF</span>
+                        </label>
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-outline font-medium leading-relaxed mt-2.5 bg-surface-container-low p-2.5 rounded">
+                      <span className="font-bold text-primary mr-1">안내:</span> 
+                      ON 설정 시 프로필에 전화걸기 버튼이 생성됩니다. 실제 전화번호는 상대방에게 노출되지 않으며 바로 연결만 지원합니다.
+                    </p>
                   </div>
                 </div>
               </div>

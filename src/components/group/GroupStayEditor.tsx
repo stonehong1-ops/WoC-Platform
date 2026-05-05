@@ -4,9 +4,10 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import Script from "next/script";
 import "@/styles/groupstayeditor.css";
 import { stayService } from "@/lib/firebase/stayService";
-import { plazaService } from "@/lib/firebase/plazaService";
+import { storageService } from "@/lib/firebase/storageService";
 import { Stay, StayType } from "@/types/stay";
 import { useAuth } from "@/components/providers/AuthProvider";
+import { toast } from "sonner";
 
 interface GroupStayEditorProps {
   group?: any;
@@ -15,13 +16,13 @@ interface GroupStayEditorProps {
 export default function GroupStayEditor({ group }: GroupStayEditorProps) {
   const { user } = useAuth();
 
-  // ── 로딩/저장 상태 ──
+  // -- Loading / Saving State --
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [existingStayId, setExistingStayId] = useState<string | null>(null);
 
-  // ── 원본 데이터 (Discard용) ──
+  // -- Original Data (for Discard) --
   const [originalData, setOriginalData] = useState<Stay | null>(null);
 
   // ── BASIC INFO ──
@@ -34,9 +35,9 @@ export default function GroupStayEditor({ group }: GroupStayEditorProps) {
   const [mapImageUrl, setMapImageUrl] = useState("https://lh3.googleusercontent.com/aida-public/AB6AXuCdAjkNACL3KXM11kkFkdmEkvvxjwOR4P6c3HpxJqtm7CvcSBsptBrWAzvgwVRZLaC5h1EoGypAI_Y0Vzg67ChKPVKs7TrI2tAI5uuGYMidaj7WnfECGQT8sjIqB1bqf9rhw91iS61-he3O_skihdUC53y2MHNoAN952CK6v0PBrZmpatOdKhmk2h5E4P8y7-wM81_a1lHXe7E_WP96jpjRz9H5762Asiau3cV30q4IxWGKlkAk8bQ90MOA3-cgCLo6BNmTtwW_T84");
 
   // ── MEDIA ──
-  const [images, setImages] = useState<string[]>([]);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [displayImageUrls, setDisplayImageUrls] = useState<string[]>([]);
+  const [uploadProgress, setUploadProgress] = useState<Record<number, number>>({});
+  const [optimizingSlots, setOptimizingSlots] = useState<Record<number, boolean>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ── RATES ──
@@ -56,7 +57,7 @@ export default function GroupStayEditor({ group }: GroupStayEditorProps) {
   const [hostPhoto, setHostPhoto] = useState("");
   const [isEditingHost, setIsEditingHost] = useState(false);
 
-  // ── 숫자 포맷 유틸리티 ──
+  // -- Number Formatting Utilities --
   const formatNumber = (num: number | undefined): string => {
     if (num === undefined || num === null) return "";
     return num.toLocaleString();
@@ -66,7 +67,7 @@ export default function GroupStayEditor({ group }: GroupStayEditorProps) {
     return parseInt(str.replace(/,/g, "")) || 0;
   };
 
-  // ── Firestore에서 데이터 로드 ──
+  // -- Populate Data from Firestore --
   const populateFromStay = useCallback((stay: Stay) => {
     setExistingStayId(stay.id);
     setOriginalData(stay);
@@ -81,7 +82,7 @@ export default function GroupStayEditor({ group }: GroupStayEditorProps) {
     setMapImageUrl(stay.location?.mapImageUrl || "");
 
     // Media
-    setImages(stay.images || []);
+    setDisplayImageUrls(stay.images || []);
 
     // Rates
     setCurrency(stay.pricing?.currency || "KRW");
@@ -100,7 +101,7 @@ export default function GroupStayEditor({ group }: GroupStayEditorProps) {
     setHostPhoto(stay.host?.photo || "");
   }, []);
 
-  // ── Firestore 실시간 구독 ──
+  // -- Real-time Firestore Subscription --
   useEffect(() => {
     if (!group?.id) {
       setIsLoading(false);
@@ -118,7 +119,7 @@ export default function GroupStayEditor({ group }: GroupStayEditorProps) {
     return () => unsubscribe();
   }, [group?.id, populateFromStay]);
 
-  // ── 자동 메시지 숨기기 ──
+  // -- Auto-hide Status Message --
   useEffect(() => {
     if (saveMessage) {
       const timer = setTimeout(() => setSaveMessage(null), 3000);
@@ -126,7 +127,7 @@ export default function GroupStayEditor({ group }: GroupStayEditorProps) {
     }
   }, [saveMessage]);
 
-  // ── Save 핸들러 ──
+  // -- Save Handler --
   const handleSave = async () => {
     if (isSaving) return;
     setIsSaving(true);
@@ -143,7 +144,7 @@ export default function GroupStayEditor({ group }: GroupStayEditorProps) {
           district: originalData?.location?.district || "",
           mapImageUrl: mapImageUrl || undefined,
         },
-        images,
+        images: displayImageUrls,
         pricing: {
           currency,
           baseRate: parseFormattedNumber(baseRate),
@@ -165,10 +166,10 @@ export default function GroupStayEditor({ group }: GroupStayEditorProps) {
       };
 
       if (existingStayId) {
-        // 기존 Stay 업데이트
+        // Update existing Stay
         await stayService.updateStay(existingStayId, updates);
       } else {
-        // 새 Stay 등록
+        // Register new Stay
         const newStayId = await stayService.registerStay({
           ...updates,
           groupId: group?.id || "",
@@ -197,15 +198,19 @@ export default function GroupStayEditor({ group }: GroupStayEditorProps) {
       }
 
       setSaveMessage({ type: "success", text: "Changes saved successfully!" });
+      toast.success("Changes saved successfully!");
     } catch (error) {
       console.error("Error saving stay:", error);
       setSaveMessage({ type: "error", text: "Failed to save. Please try again." });
+      toast.error("Failed to save. Please try again.");
     } finally {
       setIsSaving(false);
     }
   };
 
-  // ── Discard 핸들러 ──
+  const isUploadingImages = Object.keys(uploadProgress).length > 0 || Object.values(optimizingSlots).some(v => v);
+
+  // -- Discard Handler --
   const handleDiscard = () => {
     if (originalData) {
       populateFromStay(originalData);
@@ -213,41 +218,81 @@ export default function GroupStayEditor({ group }: GroupStayEditorProps) {
     }
   };
 
-  // ── 이미지 업로드 핸들러 ──
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    setIsUploading(true);
-    setUploadProgress(0);
+  // -- Image Upload Handler --
+  const handleImageUpload = async (file: File, index: number) => {
+    const blobUrl = URL.createObjectURL(file);
+    
+    // Optimistic UI Update
+    setDisplayImageUrls(prev => {
+      const next = [...prev];
+      next[index] = blobUrl;
+      return next;
+    });
+    
+    setOptimizingSlots(prev => ({ ...prev, [index]: true }));
 
     try {
-      const uploadPromises = Array.from(files).map(async (file) => {
-        const url = await plazaService.uploadMedia(file, (p) =>
-          setUploadProgress(Math.round(p))
-        );
-        return url;
+      const path = `stays/${group?.id}/${Date.now()}_${index}`;
+      const url = await storageService.uploadFile(file, path, (progress) => {
+        setUploadProgress(prev => ({ ...prev, [index]: progress }));
+        if (progress > 0) {
+          setOptimizingSlots(prev => ({ ...prev, [index]: false }));
+        }
       });
 
-      const urls = await Promise.all(uploadPromises);
-      setImages((prev) => [...prev, ...urls]);
+      setDisplayImageUrls(prev => {
+        const next = [...prev];
+        next[index] = url;
+        return next;
+      });
+      
+      URL.revokeObjectURL(blobUrl);
     } catch (error) {
-      console.error("Image upload error:", error);
-      setSaveMessage({ type: "error", text: "Image upload failed." });
+      console.error("Upload error:", error);
+      toast.error(`Failed to upload ${file.name}`);
+      // Remove preview on failure
+      setDisplayImageUrls(prev => prev.filter((_, i) => i !== index));
+      URL.revokeObjectURL(blobUrl);
     } finally {
-      setIsUploading(false);
-      setUploadProgress(0);
-      // Reset file input
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      setUploadProgress(prev => {
+        const next = { ...prev };
+        delete next[index];
+        return next;
+      });
+      setOptimizingSlots(prev => ({ ...prev, [index]: false }));
     }
   };
 
-  // ── 이미지 삭제 핸들러 ──
-  const handleImageDelete = (index: number) => {
-    setImages((prev) => prev.filter((_, i) => i !== index));
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const selectedFiles = Array.from(files);
+    const totalNewImages = displayImageUrls.length + selectedFiles.length;
+    if (totalNewImages > 20) {
+      toast.error("You can upload up to 20 images.");
+      return;
+    }
+
+    // Start individual uploads
+    for (let i = 0; i < selectedFiles.length; i++) {
+      const targetIdx = displayImageUrls.length + i;
+      await handleImageUpload(selectedFiles[i], targetIdx);
+    }
+
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  // ── 로딩 상태 ──
+  // -- Image Delete Handler --
+  const handleImageDelete = (index: number) => {
+    const urlToRemove = displayImageUrls[index];
+    if (urlToRemove.startsWith('blob:')) {
+      URL.revokeObjectURL(urlToRemove);
+    }
+    setDisplayImageUrls((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // -- Loading State --
   if (isLoading) {
     return (
       <div className="light font-body-md text-on-background antialiased bg-[#F3F4F6] min-h-screen">
@@ -268,14 +313,14 @@ export default function GroupStayEditor({ group }: GroupStayEditorProps) {
       <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
 
-      {/* 숨김 파일 입력 */}
+      {/* Hidden File Input */}
       <input
         type="file"
         ref={fileInputRef}
         className="hidden"
         accept="image/*"
         multiple
-        onChange={handleImageUpload}
+        onChange={handleFileChange}
       />
 
       <div className="light font-body-md text-on-background antialiased bg-[#F3F4F6] min-h-screen">
@@ -286,7 +331,7 @@ export default function GroupStayEditor({ group }: GroupStayEditorProps) {
                 <h1 className="font-headline-lg text-headline-lg text-on-surface">Stay Editor</h1>
                 <p className="font-body-md text-on-surface-variant mt-1">Manage details for {title || "your stay"}</p>
               </div>
-              {/* 저장 상태 메시지 */}
+              {/* Save Status Message */}
               {saveMessage && (
                 <div className={`px-4 py-2 rounded-lg font-label-sm ${saveMessage.type === 'success' ? 'bg-primary/10 text-primary' : 'bg-error/10 text-error'}`}>
                   {saveMessage.text}
@@ -305,8 +350,8 @@ export default function GroupStayEditor({ group }: GroupStayEditorProps) {
                   <input className="w-full px-4 py-3 bg-surface-container-low border-transparent rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-body-md transition-all" type="text" value={title} onChange={(e) => setTitle(e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <label className="font-label-sm text-on-surface-variant">Native Title (자국어 이름)</label>
-                  <input className="w-full px-4 py-3 bg-surface-container-low border-transparent rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-body-md transition-all" type="text" value={nativeTitle} onChange={(e) => setNativeTitle(e.target.value)} placeholder="e.g. 탱고 스테이 합정" />
+                  <label className="font-label-sm text-on-surface-variant">Native Title</label>
+                  <input className="w-full px-4 py-3 bg-surface-container-low border-transparent rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-body-md transition-all" type="text" value={nativeTitle} onChange={(e) => setNativeTitle(e.target.value)} placeholder="Enter native title" />
                 </div>
                 <div className="space-y-2">
                   <label className="font-label-sm text-on-surface-variant">Short Headline</label>
@@ -322,33 +367,60 @@ export default function GroupStayEditor({ group }: GroupStayEditorProps) {
                   <span className="material-symbols-outlined" data-icon="photo_library">photo_library</span>
                   <h2 className="font-title-md text-title-md">MEDIA</h2>
                 </div>
-                <span className="font-label-sm text-on-surface-variant">{images.length} / 20 uploaded</span>
+                <span className="font-label-sm text-on-surface-variant">{displayImageUrls.length} / 20 uploaded</span>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {images.map((imgUrl, index) => (
-                  <div key={index} className="aspect-square relative rounded-lg overflow-hidden group">
-                    <img alt="Interior" className="w-full h-full object-cover" src={imgUrl} />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                      <button onClick={() => handleImageDelete(index)} className="p-1 bg-white rounded-full text-error"><span className="material-symbols-outlined" data-icon="delete">delete</span></button>
+                {displayImageUrls.map((imgUrl, index) => {
+                  const progress = uploadProgress[index];
+                  const isOptimizing = optimizingSlots[index];
+                  const isUploadingImg = progress !== undefined;
+
+                  return (
+                    <div key={index} className="aspect-square relative rounded-lg overflow-hidden group border border-outline-variant/10">
+                      <img alt="Interior" className="w-full h-full object-cover" src={imgUrl} />
+                      
+                      {/* Upload Progress Overlay */}
+                      {(isUploadingImg || isOptimizing) && (
+                        <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center p-2 text-center backdrop-blur-[1px]">
+                          {isOptimizing ? (
+                            <div className="flex flex-col items-center gap-2">
+                              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                              <span className="text-[10px] text-white font-bold uppercase tracking-tighter">Optimizing...</span>
+                            </div>
+                          ) : (
+                            <div className="relative w-12 h-12">
+                              <svg className="w-full h-full transform -rotate-90">
+                                <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="4" fill="transparent" className="text-white/20" />
+                                <circle 
+                                  cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="4" fill="transparent" 
+                                  strokeDasharray={125.6} 
+                                  strokeDashoffset={125.6 * (1 - (progress || 0) / 100)} 
+                                  className="text-white transition-all duration-300" 
+                                />
+                              </svg>
+                              <span className="absolute inset-0 flex items-center justify-center text-[10px] text-white font-bold">
+                                {Math.round(progress || 0)}%
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {!isUploadingImg && !isOptimizing && (
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                          <button onClick={() => handleImageDelete(index)} className="p-1 bg-white rounded-full text-error"><span className="material-symbols-outlined" data-icon="delete">delete</span></button>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
-                {images.length < 20 && (
+                  );
+                })}
+                {displayImageUrls.length < 20 && (
                   <div
                     onClick={() => fileInputRef.current?.click()}
                     className="aspect-square relative rounded-lg border-2 border-dashed border-primary/40 bg-primary/5 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-primary/10 transition-colors group"
                   >
-                    {isUploading ? (
-                      <>
-                        <div className="w-8 h-8 border-3 border-primary/30 border-t-primary rounded-full animate-spin" />
-                        <span className="font-label-sm text-primary font-bold">{uploadProgress}%</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="material-symbols-outlined text-primary group-hover:scale-110 transition-transform" data-icon="add_a_photo">add_a_photo</span>
-                        <span className="font-label-sm text-primary font-bold">Add Photos</span>
-                      </>
-                    )}
+                    <span className="material-symbols-outlined text-primary group-hover:scale-110 transition-transform" data-icon="add_a_photo">add_a_photo</span>
+                    <span className="font-label-sm text-primary font-bold">Add Photos</span>
                   </div>
                 )}
               </div>
@@ -466,11 +538,16 @@ export default function GroupStayEditor({ group }: GroupStayEditorProps) {
             <div className="sticky bottom-20 md:bottom-0 left-0 right-0 p-6 bg-[#F3F4F6]/90 backdrop-blur-xl border-t border-outline-variant/30 flex justify-center z-40 mt-12 -mx-6 md:-mx-12">
               <div className="w-full max-w-[896px] flex justify-end gap-4 px-6 md:px-12">
                 <button onClick={handleDiscard} disabled={isSaving} className="px-8 py-3 rounded-xl bg-outline-variant/20 font-title-md text-body-md hover:bg-outline-variant/40 transition-all">Discard</button>
-                <button onClick={handleSave} disabled={isSaving} className="px-12 py-3 rounded-xl bg-primary text-on-primary font-title-md text-body-md shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-2">
+                <button onClick={handleSave} disabled={isSaving || isUploadingImages} className="px-12 py-3 rounded-xl bg-primary text-on-primary font-title-md text-body-md shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50">
                   {isSaving ? (
                     <>
                       <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                       Saving...
+                    </>
+                  ) : isUploadingImages ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Uploading...
                     </>
                   ) : (
                     <>

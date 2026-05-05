@@ -6,7 +6,7 @@ import { resaleService } from '@/lib/firebase/resaleService';
 import { chatService } from '@/lib/firebase/chatService';
 import { ResaleItem, UserReputation } from '@/types/resale';
 import { motion } from 'framer-motion';
-import { safeDate } from '@/lib/utils/safeData';
+import { safeDate } from '@/lib/utils/safeDate';
 import ResalePurchaseFlow from './ResalePurchaseFlow';
 import ChatRoom from '@/components/chat/ChatRoom';
 import UserProfileClickable from '@/components/common/UserProfileClickable';
@@ -96,8 +96,7 @@ export default function ResaleItemDetail({ item, onClose }: ResaleItemDetailProp
     const sellerId = item.sellerId;
     if (user.uid === sellerId) return alert('You cannot chat with yourself');
 
-    const confirmed = window.confirm('이제 판매자와 대화방이 열리고 이 상품에 대한 문의가 진행됩니다. 계속하시겠습니까?');
-    if (!confirmed) return;
+    if (!confirm("Would you like to start a chat with the seller?")) return;
 
     try {
       await resaleService.setProductPendingStatus(user.uid, item.id);

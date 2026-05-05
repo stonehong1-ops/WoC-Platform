@@ -6,8 +6,6 @@ import { chatService } from './chatService';
 export const rentalService = {
   // --- Rental Spaces ---
   subscribeSpaces: (
-    sizeFilter: string | null,
-    studioFilter: string | null,
     callback: (spaces: RentalSpace[]) => void
   ) => {
     let q = query(collection(db, 'rental_spaces'), orderBy('createdAt', 'desc'));
@@ -51,13 +49,6 @@ export const rentalService = {
 
       // Filter to only include spaces associated with an active studio group
       spaces = spaces.filter(s => s.groupId && activeGroupSettings.has(s.groupId));
-
-      if (sizeFilter && sizeFilter !== 'All') {
-        spaces = spaces.filter(s => s.size === sizeFilter);
-      }
-      if (studioFilter && studioFilter !== 'All') {
-        spaces = spaces.filter(s => (s.studioName || s.location || 'Unknown Studio') === studioFilter);
-      }
 
       callback(spaces);
     };

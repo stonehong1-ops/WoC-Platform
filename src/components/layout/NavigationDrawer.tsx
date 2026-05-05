@@ -187,9 +187,10 @@ export default function NavigationDrawer() {
             <h2 className="px-5 mb-2 text-[9px] font-black tracking-[0.25em] text-on-surface/30 uppercase">MY</h2>
             <div className="space-y-0.5">
               {[
-                { icon: 'manage_accounts', label: 'My Info', href: '/my-info' },
-                { icon: 'account_balance_wallet', label: 'Wallet', href: '/wallet' },
                 { icon: 'history', label: 'History', href: '/history' },
+                { icon: 'account_balance_wallet', label: 'Wallet', href: '/wallet' },
+                { icon: 'manage_accounts', label: 'Profile', href: '/my-info' },
+                ...(profile?.isAdmin ? [{ icon: 'admin_panel_settings', label: 'Admin', href: '/admin/people' }] : [])
               ].map((item) => (
                 <Link 
                   key={item.label}
@@ -203,31 +204,6 @@ export default function NavigationDrawer() {
               ))}
             </div>
           </div>
-
-          {/* Section: ADMIN */}
-          {profile?.isAdmin && (
-            <div className="mb-8">
-              <h2 className="px-5 mb-2 text-[9px] font-black tracking-[0.25em] text-error/80 uppercase">ADMIN</h2>
-              <div className="space-y-0.5">
-                {[
-                  { icon: 'person_search', label: 'People', href: '/admin/people' },
-                  { icon: 'location_city', label: 'Place', href: '/admin/place' },
-                  { icon: 'checklist', label: 'Todo', href: '/admin/todo' },
-                  { icon: 'more_horiz', label: 'Others', href: '/admin/others' },
-                ].map((item) => (
-                  <Link 
-                    key={item.label}
-                    href={item.href}
-                    onClick={closeDrawer}
-                    className="flex items-center gap-4 px-5 py-3 text-error/80 hover:bg-error/10 hover:text-error rounded-2xl font-bold transition-all text-left"
-                  >
-                    <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
-                    <span className="text-[15px] tracking-tight">{item.label}</span>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Section: SUPPORT */}
           <div className="mb-6">

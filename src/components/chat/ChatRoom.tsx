@@ -6,7 +6,7 @@ import type { ChatRoom, ChatMessage, MessageType } from '@/types/chat';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { format, isToday, isYesterday } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import { safeDate } from '@/lib/utils/safeData';
+import { safeDate } from '@/lib/utils/safeDate';
 import VoiceBubble from './VoiceBubble';
 import GroupMembersPopup from './GroupMembersPopup';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -36,12 +36,44 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
   const [recordDuration, setRecordDuration] = useState(0);
   const [otherUser, setOtherUser] = useState<any>(null);
   const [isGroupMembersOpen, setIsGroupMembersOpen] = useState(false);
-  const [selectedMedia, setSelectedMedia] = useState<{url: string, type: 'image' | 'video'} | null>(null);
+  const [selectedMedia, setSelectedMedia] = useState<{msgId: string, url: string, type: 'image' | 'video', isOwn: boolean} | null>(null);
+  const [previewMedia, setPreviewMedia] = useState<{file: File | Blob, url: string, type: 'image' | 'video' | 'voice'} | null>(null);
   const closeSelectedMedia = () => setSelectedMedia(null);
   const { handleClose: handleMediaClose } = useHistoryBack(!!selectedMedia, closeSelectedMedia);
   const [messageLimit, setMessageLimit] = useState(50);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isOtherTyping, setIsOtherTyping] = useState(false);
+  const [translations, setTranslations] = useState<Record<string, string>>({});
+  const [translatingIds, setTranslatingIds] = useState<Set<string>>(new Set());
+
+  const handleTranslate = async (msgId: string, text: string) => {
+    if (translations[msgId]) {
+      const newTrans = { ...translations };
+      delete newTrans[msgId];
+      setTranslations(newTrans);
+      setMenuMsgId(null);
+      return;
+    }
+
+    setTranslatingIds(prev => new Set(prev).add(msgId));
+    setMenuMsgId(null);
+    try {
+      const targetLang = navigator.language.split('-')[0] || 'en';
+      const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`);
+      const data = await res.json();
+      const translatedText = data[0].map((item: any) => item[0]).join('');
+      setTranslations(prev => ({ ...prev, [msgId]: translatedText }));
+    } catch (err) {
+      console.error('Translation failed', err);
+      alert('번역에 실패했습니다.');
+    } finally {
+      setTranslatingIds(prev => {
+        const next = new Set(prev);
+        next.delete(msgId);
+        return next;
+      });
+    }
+  };
   
   const scrollRef = useRef<HTMLDivElement>(null);
   const prevScrollHeightRef = useRef<number>(0);
@@ -162,27 +194,42 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
+    const type: MessageType = file.type.startsWith('image/') ? 'image' : 'video';
+    const url = URL.createObjectURL(file);
+    setPreviewMedia({ file, url, type });
+    e.target.value = '';
+  };
+
+  const confirmAndSendMedia = async () => {
+    if (!previewMedia || !user) return;
     setIsUploading(true);
     setUploadProgress(0);
     try {
-      const type: MessageType = file.type.startsWith('image/') ? 'image' : 'video';
-      const path = `chat/${roomId}/${Date.now()}_${file.name}`;
+      const { file, type } = previewMedia;
+      const extension = type === 'voice' ? 'webm' : (file instanceof File ? file.name.split('.').pop() : 'bin');
+      const path = `chat/${roomId}/${Date.now()}_media.${extension}`;
       const url = await chatService.uploadChatMedia(file, path, (p) => setUploadProgress(Math.round(p)));
 
       await chatService.sendMessage({
         roomId,
         senderId: user.uid,
         senderName: user.displayName || 'Anonymous',
-        text: type === 'image' ? 'Sent a photo' : 'Sent a video',
+        text: type === 'image' ? 'Sent a photo' : type === 'video' ? 'Sent a video' : 'Sent a voice message',
         type,
         mediaUrl: url
       });
+      setPreviewMedia(null);
     } catch (err) {
       console.error("Upload failed:", err);
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
     }
+  };
+
+  const cancelMediaPreview = () => {
+    if (previewMedia?.url) URL.revokeObjectURL(previewMedia.url);
+    setPreviewMedia(null);
   };
 
   // 5. Voice Recording
@@ -198,17 +245,8 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         if (audioBlob.size < 100) return;
 
-        setIsUploading(true);
-        const url = await chatService.uploadChatMedia(audioBlob, `chat/${roomId}/voice_${Date.now()}.webm`);
-        await chatService.sendMessage({
-          roomId,
-          senderId: user?.uid || '',
-          senderName: user?.displayName || 'Anonymous',
-          text: 'Sent a voice message',
-          type: 'voice',
-          mediaUrl: url
-        });
-        setIsUploading(false);
+        const url = URL.createObjectURL(audioBlob);
+        setPreviewMedia({ file: audioBlob, url, type: 'voice' });
       };
 
       recorder.start();
@@ -431,12 +469,31 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
       );
     }
 
-    return text.split('\n').map((line, i) => (
-      <React.Fragment key={i}>
-        {line}
-        {i !== text.split('\n').length - 1 && <br />}
-      </React.Fragment>
-    ));
+    const displayString = translations[msg.id] || text;
+    return (
+      <div className="flex flex-col gap-1">
+        <div>
+          {displayString.split('\n').map((line, i) => (
+            <React.Fragment key={i}>
+              {line}
+              {i !== displayString.split('\n').length - 1 && <br />}
+            </React.Fragment>
+          ))}
+        </div>
+        {translatingIds.has(msg.id) && (
+          <span className="text-[10px] opacity-50 flex items-center gap-1 mt-0.5">
+            <span className="w-2 h-2 rounded-full border border-current border-t-transparent animate-spin" />
+            Translating...
+          </span>
+        )}
+        {translations[msg.id] && (
+          <span className="text-[10px] opacity-50 flex items-center gap-1 mt-0.5">
+            <span className="material-symbols-outlined text-[12px]">g_translate</span>
+            Translated
+          </span>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -465,11 +522,17 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
             />
           </div>
           <div className="flex items-center gap-1">
-            <button className="w-10 h-10 rounded-full flex items-center justify-center text-gray-400 hover:text-primary hover:bg-primary/5 transition-all">
+            <button 
+              onClick={() => {
+                if (otherUser?.allowPhoneCalls && otherUser?.phoneNumber) {
+                  window.location.href = `tel:${otherUser.phoneNumber}`;
+                } else {
+                  alert('사용자가 전화연결을 허용하지 않은 상태입니다');
+                }
+              }}
+              className="w-10 h-10 rounded-full flex items-center justify-center text-gray-400 hover:text-primary hover:bg-primary/5 transition-all"
+            >
               <span className="material-symbols-outlined text-[22px]">call</span>
-            </button>
-            <button className="w-10 h-10 rounded-full flex items-center justify-center text-gray-400 hover:text-primary hover:bg-primary/5 transition-all">
-              <span className="material-symbols-outlined text-[22px]">videocam</span>
             </button>
           </div>
         </div>
@@ -543,13 +606,15 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
                 <div className={`flex items-end gap-2 ${isOwn ? 'flex-row-reverse' : ''}`}>
                   {/* Bubble */}
                   <div 
-                    onClick={() => setMenuMsgId(menuMsgId === msg.id ? null : msg.id)}
+                    onClick={() => { if(!msg.isDeleted) setMenuMsgId(menuMsgId === msg.id ? null : msg.id); }}
                     className={`relative text-[14px] font-medium leading-relaxed shadow-sm transition-all duration-300 ${
-                      msg.type === 'image' || msg.type === 'video'
+                      !msg.isDeleted && (msg.type === 'image' || msg.type === 'video')
                         ? `rounded-[20px] overflow-hidden ${isOwn ? 'rounded-tr-sm' : 'rounded-tl-sm'} bg-transparent`
                         : `px-5 py-3.5 rounded-3xl ${
                             isOwn 
-                              ? 'bg-primary text-white rounded-tr-sm' 
+                              ? (msg.readBy && msg.readBy.some(id => id !== user?.uid)
+                                  ? 'bg-blue-100 text-blue-900 rounded-tr-sm border border-blue-200/50' 
+                                  : 'bg-primary text-white rounded-tr-sm') 
                               : 'bg-white border border-gray-100 text-gray-800 rounded-tl-sm hover:border-primary/20'
                           }`
                     } ${menuMsgId === msg.id ? 'scale-[1.02] shadow-xl' : ''}`}
@@ -566,14 +631,19 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
                       </div>
                     )}
 
-                    {msg.type === 'voice' ? (
+                    {msg.isDeleted ? (
+                      <div className="flex items-center gap-2 opacity-50 py-1">
+                        <span className="material-symbols-outlined text-[16px]">block</span>
+                        <span className="text-[13px] italic">This message was deleted</span>
+                      </div>
+                    ) : msg.type === 'voice' ? (
                       <VoiceBubble url={msg.mediaUrl!} isOwn={isOwn} timestamp={formatTime(msg.timestamp)} />
                     ) : msg.type === 'image' ? (
-                      <div className="relative group bg-gray-100 flex items-center justify-center min-h-[100px] min-w-[100px]" onClick={(e) => { e.stopPropagation(); setSelectedMedia({ url: msg.mediaUrl!, type: 'image' }); }}>
+                      <div className="relative group bg-gray-100 flex items-center justify-center min-h-[100px] min-w-[100px]" onClick={(e) => { e.stopPropagation(); setSelectedMedia({ msgId: msg.id, url: msg.mediaUrl!, type: 'image', isOwn }); }}>
                         <img src={msg.mediaUrl} className="max-w-full max-h-[300px] object-cover hover:scale-105 transition-transform duration-500 cursor-zoom-in block" />
                       </div>
                     ) : msg.type === 'video' ? (
-                      <div className="relative group cursor-pointer bg-gray-100 flex items-center justify-center min-h-[100px] min-w-[100px]" onClick={(e) => { e.stopPropagation(); setSelectedMedia({ url: msg.mediaUrl!, type: 'video' }); }}>
+                      <div className="relative group cursor-pointer bg-gray-100 flex items-center justify-center min-h-[100px] min-w-[100px]" onClick={(e) => { e.stopPropagation(); setSelectedMedia({ msgId: msg.id, url: msg.mediaUrl!, type: 'video', isOwn }); }}>
                         <video src={msg.mediaUrl} className="max-w-full max-h-[300px] object-cover block" />
                         <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                           <span className="material-symbols-outlined text-white text-4xl">play_circle</span>
@@ -595,13 +665,8 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
                     )}
                   </div>
 
-                  {/* Meta (Time/Read) */}
+                  {/* Meta (Time) */}
                   <div className="flex flex-col gap-0.5 items-center justify-end pb-1">
-                    {isOwn && (
-                      <span className={`text-[10px] font-bold uppercase shrink-0 ${msg.readBy && msg.readBy.length > 0 ? 'text-primary' : 'text-gray-300'}`}>
-                        {msg.readBy && msg.readBy.length > 0 ? 'Read' : 'Sent'}
-                      </span>
-                    )}
                     <span className="text-[10px] font-bold text-gray-300 uppercase shrink-0">
                       {formatTime(msg.timestamp)}
                     </span>
@@ -615,35 +680,47 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
                       initial={{ opacity: 0, y: 5 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 5 }}
-                      className={`flex gap-1 mt-3 ${isOwn ? 'justify-end' : 'justify-start'}`}
+                      className={`flex flex-col gap-2 mt-3 ${isOwn ? 'items-end' : 'items-start'}`}
                     >
-                      {REACTION_EMOJIS.map(emoji => (
+                      {/* Functional Buttons Line */}
+                      <div className="flex gap-1 bg-white p-1.5 rounded-full shadow-sm border border-gray-100">
                         <button 
-                          key={emoji}
-                          onClick={() => {
-                            chatService.toggleReaction(msg.id, user?.uid || '', emoji);
-                            setMenuMsgId(null);
-                          }}
-                          className="w-8 h-8 rounded-full bg-white border border-gray-50 shadow-sm flex items-center justify-center hover:scale-125 transition-all text-[16px]"
+                          onClick={() => { setReplyTo(msg); setMenuMsgId(null); }}
+                          className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-100 transition-all text-gray-500"
                         >
-                          {emoji}
+                          <span className="material-symbols-outlined text-[18px]">reply</span>
                         </button>
-                      ))}
-                      <div className="w-px h-8 bg-gray-100 mx-1" />
-                      <button 
-                        onClick={() => { setReplyTo(msg); setMenuMsgId(null); }}
-                        className="w-8 h-8 rounded-full bg-white border border-gray-50 shadow-sm flex items-center justify-center hover:bg-primary hover:text-white transition-all text-gray-400"
-                      >
-                        <span className="material-symbols-outlined text-[16px]">reply</span>
-                      </button>
-                      {isOwn && (
                         <button 
-                          onClick={() => { chatService.updateMessage(msg.id, { isDeleted: true, text: 'Deleted message' }); setMenuMsgId(null); }}
-                          className="w-8 h-8 rounded-full bg-white border border-gray-50 shadow-sm flex items-center justify-center hover:bg-red-500 hover:text-white transition-all text-gray-400"
+                          onClick={() => handleTranslate(msg.id, msg.text)}
+                          className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-100 transition-all text-gray-500"
                         >
-                          <span className="material-symbols-outlined text-[16px]">delete</span>
+                          <span className="material-symbols-outlined text-[18px]">translate</span>
                         </button>
-                      )}
+                        {isOwn && (
+                          <button 
+                            onClick={() => { chatService.updateMessage(msg.id, { isDeleted: true, text: 'Deleted message' }); setMenuMsgId(null); }}
+                            className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-red-50 hover:text-red-500 transition-all text-gray-500"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">delete</span>
+                          </button>
+                        )}
+                      </div>
+                      
+                      {/* Emojis Line */}
+                      <div className="flex gap-1.5 bg-white p-2 rounded-2xl shadow-sm border border-gray-100">
+                        {REACTION_EMOJIS.map(emoji => (
+                          <button 
+                            key={emoji}
+                            onClick={() => {
+                              chatService.toggleReaction(msg.id, user?.uid || '', emoji);
+                              setMenuMsgId(null);
+                            }}
+                            className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center hover:bg-gray-100 hover:scale-110 transition-all text-[18px]"
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -693,6 +770,56 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
               >
                 <span className="material-symbols-outlined text-[18px]">close</span>
               </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Media Preview */}
+        <AnimatePresence>
+          {previewMedia && (
+            <motion.div 
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="bg-white rounded-2xl mb-4 p-4 flex flex-col gap-3 border border-gray-100 shadow-sm"
+            >
+              <div className="flex justify-between items-center">
+                <span className="text-[12px] font-black text-gray-900 uppercase tracking-widest">
+                  {previewMedia.type === 'voice' ? 'Voice Message Preview' : 'Media Preview'}
+                </span>
+                <button 
+                  onClick={cancelMediaPreview}
+                  disabled={isUploading}
+                  className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-50 hover:bg-gray-100 transition-all text-gray-500"
+                >
+                  <span className="material-symbols-outlined text-[18px]">close</span>
+                </button>
+              </div>
+              
+              <div className="flex justify-center bg-gray-50 rounded-xl overflow-hidden min-h-[100px] relative border border-gray-100">
+                {previewMedia.type === 'image' && <img src={previewMedia.url} className="max-h-[200px] object-contain p-2" />}
+                {previewMedia.type === 'video' && <video src={previewMedia.url} controls className="max-h-[200px]" />}
+                {previewMedia.type === 'voice' && <audio src={previewMedia.url} controls className="w-full m-4" />}
+                
+                {isUploading && (
+                  <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center gap-2">
+                    <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                    <span className="text-[10px] font-black text-primary uppercase">{uploadProgress}%</span>
+                  </div>
+                )}
+              </div>
+              
+              {!isUploading && (
+                <div className="flex justify-end">
+                  <button
+                    onClick={confirmAndSendMedia}
+                    className="px-6 py-2.5 bg-primary text-white text-[13px] font-black uppercase tracking-wide rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 flex items-center gap-2"
+                  >
+                    <span>Send {previewMedia.type}</span>
+                    <span className="material-symbols-outlined text-[18px]">send</span>
+                  </button>
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
@@ -809,29 +936,62 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex items-center justify-center"
+            className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex flex-col items-center justify-center"
             onClick={handleMediaClose}
           >
-            <button 
-              className="absolute top-6 right-6 w-12 h-12 rounded-full bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-colors z-[110]"
-              onClick={(e) => { e.stopPropagation(); handleMediaClose(); }}
-            >
-              <span className="material-symbols-outlined text-2xl">close</span>
-            </button>
+            <div className="absolute top-6 right-6 flex flex-col gap-3 z-[110]">
+              <button 
+                className="w-12 h-12 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-white/20 transition-colors backdrop-blur-md"
+                onClick={(e) => { e.stopPropagation(); handleMediaClose(); }}
+              >
+                <span className="material-symbols-outlined text-2xl">close</span>
+              </button>
+              {selectedMedia.isOwn && (
+                <button 
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    chatService.updateMessage(selectedMedia.msgId, { isDeleted: true, text: 'Deleted message' }); 
+                    handleMediaClose(); 
+                  }}
+                  className="w-12 h-12 rounded-full bg-black/40 text-red-400 flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors backdrop-blur-md"
+                >
+                  <span className="material-symbols-outlined text-2xl">delete</span>
+                </button>
+              )}
+            </div>
+
             <motion.div 
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="max-w-[90vw] max-h-[90vh] relative"
+              className="flex-1 w-full flex items-center justify-center p-4 relative"
               onClick={(e) => e.stopPropagation()}
             >
               {selectedMedia.type === 'image' ? (
-                <img src={selectedMedia.url} className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl" />
+                <img src={selectedMedia.url} className="max-w-full max-h-full object-contain rounded-xl" />
               ) : (
-                <video src={selectedMedia.url} controls autoPlay className="max-w-full max-h-[90vh] rounded-xl shadow-2xl" />
+                <video src={selectedMedia.url} controls autoPlay className="max-w-full max-h-full rounded-xl" />
               )}
             </motion.div>
+
+            {/* Bottom Emojis for Media */}
+            <div className="absolute bottom-0 left-0 right-0 p-8 flex justify-center z-[110] bg-gradient-to-t from-black/80 to-transparent" onClick={e => e.stopPropagation()}>
+              <div className="flex gap-3 bg-white/10 backdrop-blur-md p-3 rounded-full border border-white/20">
+                {REACTION_EMOJIS.map(emoji => (
+                  <button 
+                    key={emoji}
+                    onClick={() => {
+                      chatService.toggleReaction(selectedMedia.msgId, user?.uid || '', emoji);
+                      handleMediaClose();
+                    }}
+                    className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-white/20 hover:scale-125 transition-all text-[24px]"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

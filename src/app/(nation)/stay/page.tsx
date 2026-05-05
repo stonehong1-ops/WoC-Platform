@@ -1,12 +1,16 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import Link from 'next/link';
-import { stayService } from '@/lib/firebase/stayService';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useNavigation } from '@/components/providers/NavigationProvider';
+import { stayService } from '@/lib/firebase/stayService';
 import { Stay, StayLike } from '@/types/stay';
 import StayWishlistTray from '@/components/stay/StayWishlistTray';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { useModalNavigation } from '@/hooks/useModalNavigation';
+import StayDetail from '@/components/stay/StayDetail';
+import CreateStay from '@/components/stay/CreateStay';
 
 type SortOption = 'latest' | 'popular' | 'price_asc' | 'price_desc';
 
@@ -29,23 +33,52 @@ const STAY_FILTER_DEFS: Record<string, { label: string; fullLabel?: string }> = 
 
 const STAY_FILTER_KEYS = ['all', '1-Room', '2-Room', '3-Room', 'Dormitory', 'Couchsurfing', 'Pension'];
 
-export default function StayPage() {
+function StayPageContent() {
   const [stays, setStays] = useState<Stay[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
-  const [showLocationFilter, setShowLocationFilter] = useState(false);
+  const [activeCity, setActiveCity] = useState('All');
+  const [showCityFilter, setShowCityFilter] = useState(false);
   const [sortOption, setSortOption] = useState<SortOption>('latest');
   const [showSortDropdown, setShowSortDropdown] = useState(false);
+  const { setSubHeader } = useNavigation();
   
   const { user, setShowLogin } = useAuth();
   const [likes, setLikes] = useState<StayLike[]>([]);
   const [likedStayIds, setLikedStayIds] = useState<Set<string>>(new Set());
-  const router = useRouter();
+  const {
+    isOpen: isDetailOpen,
+    value: itemId,
+    openModal: openDetail,
+    closeModal: handleCloseDetail,
+    searchParams
+  } = useModalNavigation('itemId');
+
+  const {
+    isOpen: showCreateModal,
+    openModal: openCreate,
+    closeModal: closeCreate
+  } = useModalNavigation('create');
+
+  const handleOpenDetail = (id: string) => {
+    openDetail(id);
+  };
 
   const stayFilters = useMemo(() => {
     return STAY_FILTER_KEYS.map(key => ({ key, ...STAY_FILTER_DEFS[key] }));
   }, []);
+
+  // Listen to global compose event
+  useEffect(() => {
+    const handleComposeOpen = (e: CustomEvent) => {
+      if (e.detail?.id === 'stay') {
+        openCreate('true');
+      }
+    };
+    window.addEventListener('woc:compose:open', handleComposeOpen as EventListener);
+    return () => window.removeEventListener('woc:compose:open', handleComposeOpen as EventListener);
+  }, [openCreate]);
 
   useEffect(() => {
     const unsub = stayService.subscribeActiveStays(null, (data) => {
@@ -98,6 +131,12 @@ export default function StayPage() {
     }
   };
 
+  // Dynamic cities from data
+  const cities = useMemo(() => {
+    const cs = Array.from(new Set(stays.map(s => s.location?.city).filter(Boolean)));
+    return ['All', ...cs.sort()];
+  }, [stays]);
+
   const filtered = useMemo(() => {
     let result = stays.filter(s => {
       const matchSearch = !searchQuery ||
@@ -105,7 +144,8 @@ export default function StayPage() {
         s.location?.address?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         s.location?.city?.toLowerCase().includes(searchQuery.toLowerCase());
       const matchType = activeFilter === 'all' || s.type === activeFilter || (activeFilter === 'Couchsurfing' && s.type === 'Couchsurfing');
-      return matchSearch && matchType;
+      const matchCity = activeCity === 'All' || s.location?.city === activeCity;
+      return matchSearch && matchType && matchCity;
     });
 
     switch (sortOption) {
@@ -128,7 +168,7 @@ export default function StayPage() {
         break;
     }
     return result;
-  }, [stays, activeFilter, searchQuery, sortOption]);
+  }, [stays, activeFilter, activeCity, searchQuery, sortOption]);
 
   const formatPrice = (stay: Stay) => {
     const rate = stay.pricing?.baseRate || 0;
@@ -137,26 +177,20 @@ export default function StayPage() {
     return `${symbol}${rate.toLocaleString()}`;
   };
 
-  return (
-    <main className="max-w-md mx-auto w-full relative min-h-screen bg-[#FAF8FF]">
-      <style dangerouslySetInnerHTML={{ __html: `
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .material-symbols-rounded { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-      `}} />
-
-      {/* Filter & Sort Bar (Shop pattern) */}
-      <div className="w-full bg-[#FAF8FF] border-b border-slate-100/50 px-3 py-2 flex flex-col gap-3">
-        {/* Scrollable Tabs (Shop pattern — no icons, rounded-lg, small) */}
-        <div className="w-full flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+  // Teleport Filter Bar to Header (Premium Standard: Dual Row)
+  useEffect(() => {
+    const filterBar = (
+      <div className="relative w-full bg-white flex flex-col shadow-[0_20px_40px_-15px_rgba(0,0,0,0.15)]">
+        {/* Row 1: Scrollable Tabs */}
+        <div className="w-full px-3 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
           {stayFilters.map((filter) => (
             <button
               key={filter.key}
               onClick={() => setActiveFilter(filter.key)}
-              className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[12px] font-bold tracking-wide transition-all whitespace-nowrap ${
+              className={`flex-shrink-0 px-2.5 py-1 rounded-xl text-[12px] font-bold tracking-tight transition-all whitespace-nowrap border ${
                 activeFilter === filter.key
-                  ? 'bg-[#1E293B] text-white shadow-sm'
-                  : 'bg-slate-50 text-slate-500 border border-slate-100 hover:bg-slate-100'
+                  ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-100'
+                  : 'bg-slate-50/50 text-slate-500 border-slate-100 hover:bg-slate-100/80 hover:text-slate-700'
               }`}
             >
               {filter.fullLabel || filter.label}
@@ -164,45 +198,67 @@ export default function StayPage() {
           ))}
         </div>
         
-        {/* Bottom Actions — items count + Sort (Shop pattern) */}
-        <div className="w-full flex items-center justify-between px-1">
-          <div className="text-[11px] font-medium text-[#007AFF]">
-            {filtered.length} items
+        {/* Row 2: Stats & Filters */}
+        <div className="w-full h-11 px-4 flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+            <div className="text-[11px] font-bold text-slate-600 uppercase tracking-widest">
+              {filtered.length} <span className="text-slate-400 font-medium">Stays</span>
+            </div>
           </div>
           
           <div className="flex items-center gap-4">
-            {/* Sort Trigger (Shop pattern) */}
+            {/* Sort Trigger */}
             <button 
-              onClick={() => setShowSortDropdown(!showSortDropdown)}
+              onClick={() => {
+                setShowSortDropdown(!showSortDropdown);
+              }}
               className="flex items-center gap-0.5 text-[12px] font-bold text-slate-600 hover:text-slate-800 transition-all"
             >
               {SORT_OPTIONS.find(o => o.key === sortOption)?.label || 'Sort'}
-              <span className="material-symbols-outlined text-[14px]">expand_more</span>
+              <span className={`material-symbols-outlined text-[16px] transition-transform ${showSortDropdown ? 'rotate-180' : ''}`}>expand_more</span>
             </button>
           </div>
         </div>
-      </div>
 
-      {/* Sort Options Modal/Dropdown (Shop pattern) */}
-      {showSortDropdown && (
-        <div className="absolute top-[90px] right-4 z-40 bg-white rounded-2xl shadow-2xl border border-slate-100 py-2 min-w-[160px] animate-in fade-in slide-in-from-top-2 duration-300">
-          {SORT_OPTIONS.map(opt => (
-            <button
-              key={opt.key}
-              onClick={() => {
-                setSortOption(opt.key);
-                setShowSortDropdown(false);
-              }}
-              className={`w-full px-4 py-2.5 flex items-center gap-3 hover:bg-slate-50 transition-colors text-left ${
-                sortOption === opt.key ? 'text-blue-600 font-bold' : 'text-slate-600 font-medium'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[18px]">{opt.icon}</span>
-              <span className="text-[13px]">{opt.label}</span>
-            </button>
-          ))}
-        </div>
-      )}
+
+  
+        {/* Sort Options Dropdown */}
+        {showSortDropdown && (
+          <div className="absolute top-full right-0 z-40 bg-white shadow-2xl border-t border-slate-100 py-2 min-w-[160px] animate-in fade-in slide-in-from-top-2 duration-300">
+            {SORT_OPTIONS.map(opt => (
+              <button
+                key={opt.key}
+                onClick={() => {
+                  setSortOption(opt.key);
+                  setShowSortDropdown(false);
+                }}
+                className={`w-full px-4 py-2.5 flex items-center gap-3 hover:bg-slate-50 transition-colors text-left ${
+                  sortOption === opt.key ? 'text-blue-600 font-bold' : 'text-slate-600 font-medium'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[18px]">{opt.icon}</span>
+                <span className="text-[13px]">{opt.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+    setSubHeader(filterBar);
+    return () => setSubHeader(null);
+  }, [
+    activeFilter, activeCity, sortOption, filtered.length, 
+    showCityFilter, showSortDropdown, stayFilters, cities, setSubHeader
+  ]);
+
+  return (
+    <main className="max-w-md mx-auto w-full relative min-h-screen bg-[#FAF8FF]">
+      <style dangerouslySetInnerHTML={{ __html: `
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .material-symbols-rounded { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+      `}} />
 
       {/* ④ Stay Grid (필터+정렬 결과) */}
       <div className="pt-4 px-4 mb-10 text-left min-h-[400px]">
@@ -234,7 +290,11 @@ export default function StayPage() {
               : stay.location?.city || stay.location?.address || 'Location';
 
               return (
-                <Link key={stay.id} href={`/stay/${stay.id}`} className="group cursor-pointer animate-in fade-in slide-in-from-bottom-2 duration-500 block">
+                <div 
+                  key={stay.id} 
+                  onClick={() => handleOpenDetail(stay.id)}
+                  className="group cursor-pointer animate-in fade-in slide-in-from-bottom-2 duration-500 block text-left"
+                >
                   <div className="relative aspect-square rounded-xl bg-[#f2f4f4] overflow-hidden mb-3">
                     {/* Fallback View */}
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-[#c4cacc]">
@@ -274,7 +334,7 @@ export default function StayPage() {
                       <span className="text-[10px] text-[#596061] mt-[2px]">/ night</span>
                     </div>
                   </div>
-                </Link>
+                </div>
               );
             })}
           </div>
@@ -285,9 +345,37 @@ export default function StayPage() {
         <StayWishlistTray 
           likes={likes} 
           userId={user.uid} 
-          onStayClick={(id) => router.push(`/stay/${id}`)} 
+          onStayClick={(id) => handleOpenDetail(id)} 
+        />
+      )}
+
+      {showCreateModal && (
+        <CreateStay 
+          isOpen={showCreateModal}
+          onClose={closeCreate}
+        />
+      )}
+
+      {itemId && (
+        <StayDetail 
+          stayId={itemId}
+          isLiked={likedStayIds.has(itemId)}
+          onClose={handleCloseDetail}
+          onToggleLike={(e) => toggleLike(e, itemId)}
         />
       )}
     </main>
+  );
+}
+
+export default function StayPage() {
+  return (
+    <Suspense fallback={
+      <div className="max-w-md mx-auto w-full min-h-screen bg-[#FAF8FF] flex items-center justify-center">
+        <span className="material-symbols-rounded animate-spin text-slate-300 text-4xl">progress_activity</span>
+      </div>
+    }>
+      <StayPageContent />
+    </Suspense>
   );
 }

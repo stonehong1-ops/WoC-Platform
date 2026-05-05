@@ -10,6 +10,7 @@ import Link from 'next/link';
 import ImageWithFallback from '@/components/common/ImageWithFallback';
 import { db } from '@/lib/firebase/clientApp';
 import { updateDoc, doc, collection, getDocs, query } from 'firebase/firestore';
+import MyGroupsTray from '@/components/groups/MyGroupsTray';
 
 import { Suspense } from 'react';
 
@@ -21,7 +22,6 @@ function GroupsContent() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const userJoinedGroups = user ? groups.filter(g => {
     // 1. Check user profile's joinedGroups
     const inJoinedGroups = profile?.joinedGroups && profile.joinedGroups.includes(g.id);
@@ -69,12 +69,57 @@ function GroupsContent() {
     previewUrl: null as string | null
   });
 
-  // My Groups Bottom Sheet State
-  const [sheetState, setSheetState] = useState<'minimized' | 'half'>('minimized');
+  // URL Params based state
+  const selectedCategory = searchParams.get('category');
 
-  // 스크롤 먹통 방지: 모달/팝업 상태에 따른 body overflow 제어 및 언마운트 시 초기화
+  // Navigation Handlers
+  const openCategoryModal = (category: string) => {
+    router.push(`${pathname}?category=${category}`, { scroll: false });
+  };
+
+  const openCreateModal = () => {
+    setIsCreateOpen(true);
+    // Push dummy state for back button handling
+    window.history.pushState({ modal: 'create' }, '');
+  };
+
+  // My groups is now handled entirely by the MyGroupsTray component
+  const openMyGroups = () => {
+    // Left for potential external triggers, though tray handles its own state
+  };
+
+  const closeModals = () => {
+    if (selectedCategory) {
+      // If we are in a URL-based popup, we use router.back()
+      // But if there's no history (direct entry), we replace to base path
+      if (window.history.length <= 1) {
+        router.replace(pathname);
+      } else {
+        router.back();
+      }
+    } else {
+      // For state-based modals, we manually close and pop state if needed
+      setIsCreateOpen(false);
+      if (window.history.state?.modal) {
+        window.history.back();
+      }
+    }
+  };
+
+  // Popstate listener for transient (state-based) modals
   useEffect(() => {
-    if (isCreateOpen || selectedCategory || sheetState === 'half') {
+    const handlePopState = (event: PopStateEvent) => {
+      // If the back button is pressed, close all state-based modals
+      setIsCreateOpen(false);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // 스크롤 먹통 방지
+  useEffect(() => {
+    if (isCreateOpen || selectedCategory) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
@@ -82,25 +127,7 @@ function GroupsContent() {
     return () => {
       document.body.style.overflow = '';
     };
-  }, [isCreateOpen, selectedCategory, sheetState]);
-
-  const openCategoryModal = (category: string) => {
-    setSelectedCategory(category);
-  };
-
-  const openCreateModal = () => {
-    setIsCreateOpen(true);
-  };
-
-  const closeModals = () => {
-    setIsCreateOpen(false);
-    setSelectedCategory(null);
-    setSheetState('minimized');
-    // Clear URL params when closing
-    if (searchParams.get('action') || searchParams.get('view')) {
-      router.replace(pathname);
-    }
-  };
+  }, [isCreateOpen, selectedCategory]);
 
   const fetchGroups = async () => {
     try {
@@ -120,34 +147,28 @@ function GroupsContent() {
     fetchGroups();
   }, []);
 
-  // Handle URL Search Params for specialized header triggers
+  // Handle URL Search Params for specialized header triggers (Initial Load)
   useEffect(() => {
     const action = searchParams.get('action');
     const view = searchParams.get('view');
 
-    if (action === 'create') {
+    if (action === 'create' && !isCreateOpen) {
       setIsCreateOpen(true);
-    } else {
-      setIsCreateOpen(false);
+      window.history.replaceState({ modal: 'create' }, '');
     }
-    
-    if (view === 'my') {
-      setSheetState('half');
-    } else {
-      setSheetState('minimized');
-    }
-  }, [searchParams]);
+  }, [searchParams, isCreateOpen]);
 
-  // Function to close modals and clear params
-  const closeModalsWithParams = () => {
-    setIsCreateOpen(false);
-    setSelectedCategory(null);
-    setSheetState('minimized');
-    // Clear the search params by navigating to the current path
-    if (searchParams.get('action') || searchParams.get('view')) {
-      router.replace(pathname);
-    }
-  };
+  // Listen to global compose event
+  useEffect(() => {
+    const handleComposeOpen = (e: CustomEvent) => {
+      if (e.detail?.id === 'groups') {
+        openCreateModal();
+      }
+    };
+    window.addEventListener('woc:compose:open', handleComposeOpen as EventListener);
+    return () => window.removeEventListener('woc:compose:open', handleComposeOpen as EventListener);
+  }, []);
+
 
   // Admin Auto-Migration Script
   useEffect(() => {
@@ -427,24 +448,19 @@ function GroupsContent() {
           </div>
         </section>
 
-        {/* New Group Action Button */}
-        <section>
-          <button
+        {/* Integrated Group Action */}
+        <div className="px-6 py-2 flex items-center justify-between bg-white border-b border-slate-50">
+          <p className="text-[12px] font-bold text-slate-400 uppercase tracking-tight">
+            Start a new community?
+          </p>
+          <button 
             onClick={openCreateModal}
-            className="w-full bg-primary text-on-primary flex items-center justify-between px-6 py-5 rounded-3xl shadow-lg hover:bg-primary-dim transition-all active:scale-[0.98] group"
+            className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 transition-colors py-2"
           >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
-                <span className="material-symbols-outlined text-3xl">add</span>
-              </div>
-              <div className="text-left">
-                <h3 className="font-bold font-headline text-lg">Create a New Group</h3>
-                <p className="text-on-primary/70 text-sm">Start your own community today</p>
-              </div>
-            </div>
-            <span className="material-symbols-outlined text-on-primary/50 group-hover:text-on-primary transition-colors">chevron_right</span>
+            <span className="text-[13px] font-bold">Create Group</span>
+            <span className="material-symbols-outlined text-[18px]">add_circle</span>
           </button>
-        </section>
+        </div>
 
         {/* Category Best Section */}
         <section className="space-y-4">
@@ -480,8 +496,8 @@ function GroupsContent() {
 
       {/* Category Detail Overlay */}
       {selectedCategory && (
-        <div className="fixed inset-0 z-[100] bg-background overflow-y-auto no-scrollbar animate-in slide-in-from-bottom duration-300">
-          <header className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-md z-50 border-b border-slate-100">
+        <div className="fixed inset-0 z-[110] bg-background overflow-y-auto no-scrollbar animate-in slide-in-from-bottom duration-300 pt-16">
+          <header className="fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-md z-[120] border-b border-slate-100">
             <div className="max-w-2xl mx-auto px-4 h-16 flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <button
@@ -497,7 +513,7 @@ function GroupsContent() {
             </div>
           </header>
 
-          <main className="max-w-2xl mx-auto px-4 space-y-6 pb-8">
+          <main className="max-w-2xl mx-auto px-4 space-y-6 pb-20 pt-8">
             {getFilteredGroups().length > 0 ? getFilteredGroups().map((group, index) => (
               <article
                 key={group.id}
@@ -569,8 +585,8 @@ function GroupsContent() {
 
       {/* Create New Group Overlay */}
       {isCreateOpen && (
-        <div className="fixed inset-0 z-[110] bg-surface overflow-y-auto no-scrollbar animate-in slide-in-from-bottom duration-300">
-          <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm flex justify-between items-center w-full px-6 py-4">
+        <div className="fixed inset-0 z-[130] bg-surface overflow-y-auto no-scrollbar animate-in slide-in-from-bottom duration-300 pt-16">
+          <header className="fixed top-0 left-0 right-0 z-[140] bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm flex justify-between items-center w-full px-6 py-4">
             <div className="flex items-center gap-4">
               <button
                 onClick={closeModals}
@@ -589,7 +605,7 @@ function GroupsContent() {
             </button>
           </header>
 
-          <main className="mt-20 pb-12 px-6 max-w-[896px] mx-auto space-y-6">
+          <main className="pt-8 pb-20 px-6 max-w-[896px] mx-auto space-y-6">
             {/* Section: Basic Info */}
             <section className="bg-white rounded-[12px] p-6 shadow-sm border border-outline-variant/30">
               <div className="space-y-6">
@@ -724,85 +740,10 @@ function GroupsContent() {
           </main>
         </div>
       )}
-      {/* Persistent Bottom Sheet */}
-      {sheetState === 'half' && (
-        <div
-          onClick={() => {
-            setSheetState('minimized');
-            if (searchParams.get('view')) router.replace(pathname);
-          }}
-          className="fixed inset-0 bg-black/40 z-40 pointer-events-auto animate-in fade-in duration-200"
-        />
+      {/* Floating Action Button (Tray) for My Groups */}
+      {userJoinedGroups.length > 0 && (
+        <MyGroupsTray groups={userJoinedGroups} />
       )}
-
-      <div
-        className="fixed inset-x-0 bottom-0 z-50 bg-white shadow-[0_-8px_30px_rgb(0,0,0,0.08)] rounded-t-[32px] border-t border-slate-50 flex flex-col transition-transform duration-300 ease-out h-full"
-        style={{ transform: `translateY(${sheetState === 'minimized' ? 'calc(100% - 100px)' : '50%'})` }}
-      >
-        {/* Handle & Header Section */}
-        <div
-          className="pt-3 px-6 cursor-pointer pb-1 touch-none"
-          onClick={() => {
-            const nextState = sheetState === 'minimized' ? 'half' : 'minimized';
-            setSheetState(nextState);
-            if (nextState === 'minimized' && searchParams.get('view')) {
-              router.replace(pathname);
-            }
-          }}
-        >
-          {/* Handle Bar Container */}
-          <div className="relative flex items-center justify-center mb-6">
-            {/* Handle Bar */}
-            <div className="w-10 h-1.5 bg-slate-200 rounded-full"></div>
-            {/* My Groups Label */}
-            <span className="absolute right-0 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-              My Groups ({userJoinedGroups.length})
-            </span>
-          </div>
-        </div>
-
-        {/* Scrollable Content */}
-        <div className={`flex-1 overflow-y-auto px-6 pb-20 custom-scrollbar touch-pan-y ${sheetState === 'minimized' ? 'overflow-hidden' : ''}`}>
-          <div className="space-y-3">
-            {userJoinedGroups.length > 0 ? userJoinedGroups.map((group) => (
-              <div
-                key={group.id}
-                onClick={() => { router.push(`/group/${group.id}`); }}
-                className="flex items-center p-3 -mx-3 rounded-2xl hover:bg-slate-50 transition-colors group cursor-pointer active:scale-[0.98]"
-              >
-                <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center overflow-hidden mr-4 shadow-sm">
-                  {group.coverImage ? (
-                    <img src={group.coverImage} className="w-full h-full object-cover" alt={group.name} />
-                  ) : (
-                    <span className="material-symbols-outlined text-slate-400">groups</span>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-slate-900 w-full truncate">
-                    {group.name}
-                    {group.nativeName && <span className="text-[0.8em] font-medium text-slate-500 ml-1.5">{group.nativeName}</span>}
-                  </h3>
-                  <div className="flex items-center gap-2 text-xs text-slate-500 font-medium mt-1">
-                    <div className="flex items-center gap-1">
-                      <span className="material-symbols-outlined text-[14px]">group</span>
-                      <span>{group.memberCount || 0}</span>
-                    </div>
-                    <span>•</span>
-                    <span>{group.tags?.[0] || 'Member'}</span>
-                  </div>
-                </div>
-                <div className="text-slate-400 group-hover:text-primary transition-colors">
-                  <span className="material-symbols-outlined">chevron_right</span>
-                </div>
-              </div>
-            )) : (
-              <div className="py-10 text-center space-y-4">
-                <p className="text-slate-400 text-sm font-medium">You haven't joined any groups yet.</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
 
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {

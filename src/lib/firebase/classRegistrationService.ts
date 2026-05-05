@@ -9,7 +9,9 @@ import {
   where,
   orderBy,
   serverTimestamp,
-  onSnapshot
+  onSnapshot,
+  writeBatch,
+  getDoc
 } from "firebase/firestore";
 import { db } from "./config";
 import { ClassRegistration } from "@/types/group";
@@ -31,6 +33,7 @@ export const classRegistrationService = {
   // Add a new registration
   addRegistration: async (data: Omit<ClassRegistration, 'id' | 'appliedAt' | 'updatedAt'>) => {
     try {
+      const batch = writeBatch(db);
       const regRef = doc(collection(db, COLLECTION_NAME));
       
       // Clean undefined/null from data first
@@ -44,7 +47,39 @@ export const classRegistrationService = {
         updatedAt: serverTimestamp()
       };
       
-      await setDoc(regRef, registration);
+      batch.set(regRef, registration);
+
+      // Create Notifications using the same batch
+      if (registration.groupId && registration.userId) {
+        const { notificationService } = await import('@/lib/firebase/notificationService');
+        
+        // 1. Admin Todo
+        await notificationService.createTodoForGroupAdmins(
+          registration.groupId,
+          {
+            category: 'CLASS',
+            type: 'CLASS_APPLY',
+            title: '신규 클래스 신청',
+            message: `${registration.applicantName || '사용자'}님이 '${registration.classTitle || '클래스'}' 클래스를 신청했습니다. 입금/결제 확인을 진행해주세요.`,
+            actionUrl: `/group/${registration.groupId}?tab=classes`,
+            referenceId: regRef.id,
+          },
+          batch
+        );
+
+        // 2. User Info
+        await notificationService.createNotification({
+          targetUserId: registration.userId,
+          category: 'CLASS',
+          type: 'CLASS_APPLY_INFO',
+          title: '클래스 신청 접수',
+          message: `'${registration.classTitle || '클래스'}' 신청이 접수되었습니다. 결제가 완료되면 승인 처리됩니다.`,
+          actionUrl: `/history`,
+          referenceId: regRef.id,
+        }, batch);
+      }
+
+      await batch.commit();
       return registration as ClassRegistration;
     } catch (error: any) {
       console.error("Error adding class registration:", error?.code, error?.message, error);
@@ -55,11 +90,38 @@ export const classRegistrationService = {
   // Update registration (e.g. user reports payment, or admin confirms payment)
   updateRegistration: async (registrationId: string, updates: Partial<Omit<ClassRegistration, 'id' | 'appliedAt'>>) => {
     try {
+      const batch = writeBatch(db);
       const regRef = doc(db, COLLECTION_NAME, registrationId);
-      await updateDoc(regRef, {
+      
+      batch.update(regRef, {
         ...updates,
         updatedAt: serverTimestamp()
       });
+
+      // If marked as COMPLETED, notify user and close Admin Todos
+      if (updates.status === 'PAYMENT_COMPLETED') {
+        const snap = await getDoc(regRef);
+        if (snap.exists()) {
+          const regData = snap.data() as ClassRegistration;
+          if (regData.userId) {
+            const { notificationService } = await import('@/lib/firebase/notificationService');
+            
+            await notificationService.createNotification({
+              targetUserId: regData.userId,
+              category: 'CLASS',
+              type: 'CLASS_APPROVED',
+              title: '클래스 승인 완료',
+              message: `'${regData.classTitle || '클래스'}' 승인 및 결제 확인이 완료되었습니다.`,
+              actionUrl: `/history`,
+              referenceId: registrationId,
+            }, batch);
+
+            await notificationService.markTodosAsCompletedByReference(registrationId, batch);
+          }
+        }
+      }
+
+      await batch.commit();
     } catch (error) {
       console.error("Error updating class registration:", error);
       throw error;

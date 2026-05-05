@@ -32,6 +32,9 @@ interface UserProfile {
   systemRole?: string;
   joinedGroups?: string[];
   lastVisitedAt?: any;
+  pinnedPostIds?: string[];
+  interactedUserIds?: string[];
+  pinnedUserIds?: string[];
 }
 
 interface AuthContextType {
@@ -153,6 +156,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               isAdmin: data.isAdmin || false,
               systemRole: data.systemRole || '',
               joinedGroups: data.joinedGroups || [],
+              pinnedPostIds: data.pinnedPostIds || [],
+              interactedUserIds: data.interactedUserIds || [],
+              pinnedUserIds: data.pinnedUserIds || [],
             });
           } else {
             setProfile({

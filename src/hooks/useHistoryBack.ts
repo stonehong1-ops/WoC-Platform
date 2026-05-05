@@ -1,48 +1,93 @@
 'use client';
 import { useEffect, useRef, useCallback } from 'react';
 
+type PopupEntry = {
+  id: string;
+  onClose: () => void;
+  didPushState: { current: boolean };
+};
+
+class PopupManager {
+  stack: PopupEntry[] = [];
+  ignoreNextPopstate = false;
+  
+  constructor() {
+    if (typeof window !== 'undefined') {
+      window.addEventListener('popstate', this.handlePopState);
+    }
+  }
+
+  handlePopState = (e: PopStateEvent) => {
+    if (this.ignoreNextPopstate) {
+      this.ignoreNextPopstate = false;
+      return;
+    }
+    for (let i = this.stack.length - 1; i >= 0; i--) {
+      const popup = this.stack[i];
+      if (popup.didPushState.current) {
+        popup.didPushState.current = false;
+        popup.onClose();
+        break; // Only close the topmost active popup
+      }
+    }
+  }
+
+  push(entry: PopupEntry) {
+    this.stack.push(entry);
+  }
+
+  remove(id: string) {
+    this.stack = this.stack.filter(p => p.id !== id);
+  }
+}
+
+const manager = new PopupManager();
+
 /**
  * 풀스크린 팝업/모달에서 디바이스 뒤로가기를 인터셉트해 팝업을 닫는 훅.
- * - isOpen=true 시 history.pushState로 더미 상태 추가
- * - popstate(뒤로가기) 발생 시 onClose() 호출
- * - UI 닫기(X버튼 등) 시 handleClose()를 사용하면 더미 상태도 자동 제거
+ * 중첩된 팝업이 있을 경우 전역 스택을 통해 최상위 팝업 하나만 이벤트를 처리하도록 합니다.
  */
 export function useHistoryBack(isOpen: boolean, onClose: () => void) {
+  const popupId = useRef(Math.random().toString(36).substring(2, 9));
   const didPushState = useRef(false);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (isOpen) {
-      history.pushState({ popupOpen: true }, '');
+      history.pushState({ popupOpen: true, id: popupId.current }, '');
       didPushState.current = true;
+      manager.push({
+        id: popupId.current,
+        onClose: () => onCloseRef.current(),
+        didPushState
+      });
     } else {
-      didPushState.current = false;
+      if (didPushState.current) {
+        didPushState.current = false;
+      }
+      manager.remove(popupId.current);
     }
+    
     return () => {
-      // cleanup: 팝업이 언마운트될 때 플래그 리셋
       didPushState.current = false;
+      manager.remove(popupId.current);
     };
   }, [isOpen]);
 
-  useEffect(() => {
-    const handler = () => {
-      if (didPushState.current) {
-        didPushState.current = false;
-        onClose();
-      }
-    };
-    window.addEventListener('popstate', handler);
-    return () => window.removeEventListener('popstate', handler);
-  }, [onClose]);
-
-  // X버튼 등 UI에서 닫을 때 사용 — pushState한 더미를 직접 back()으로 제거
   const handleClose = useCallback(() => {
     if (didPushState.current) {
       didPushState.current = false;
-      history.back(); // → popstate 발생 → handler에서 onClose()
+      manager.ignoreNextPopstate = true;
+      history.back(); // 더미 상태 제거
+      setTimeout(() => onCloseRef.current(), 0);
     } else {
-      onClose();
+      onCloseRef.current();
     }
-  }, [onClose]);
+  }, []);
 
   return { handleClose };
 }

@@ -3,11 +3,15 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 import { classRegistrationService } from '@/lib/firebase/classRegistrationService';
 import { groupService } from '@/lib/firebase/groupService';
+import { notificationService } from '@/lib/firebase/notificationService';
 import { ClassRegistration, Group } from '@/types/group';
+import { Notification } from '@/types/notification';
 
-const TABS = ['All', 'Class', 'Social', 'Shop', 'Stay', 'Service', 'Events'];
+const TABS = ['Needs Action', 'All', 'Class', 'Social', 'Shop', 'Stay'];
 
 type StatusKey = 'PAYMENT_PENDING' | 'PAYMENT_REPORTED' | 'PAYMENT_COMPLETED' | 'CANCELED' | string;
 
@@ -45,11 +49,40 @@ function formatFullDate(date: any): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) + ' • ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
-export default function HistoryPage() {
+function formatNotiDate(date: any): string {
+  if (!date) return 'Recently';
+  const d = date.toDate ? date.toDate() : new Date(date);
+  return d.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+}
+
+function HistoryContent() {
   const { user, profile } = useAuth();
-  const [activeTab, setActiveTab] = useState('All');
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  const [activeTab, setActiveTab] = useState('Needs Action');
   const [uidRegistrations, setUidRegistrations] = useState<ClassRegistration[]>([]);
   const [phoneRegistrations, setPhoneRegistrations] = useState<ClassRegistration[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+
+  // Derived state from URL for Detail Overlay
+  const view = searchParams.get('view');
+  const selectedId = searchParams.get('id');
+  
+  const [selectedDetail, setSelectedDetail] = useState<ClassRegistration | null>(null);
+  const [groupDetails, setGroupDetails] = useState<Group | null>(null);
+
+  // Sync selectedDetail with URL 'id'
+  useEffect(() => {
+    if (view === 'detail' && selectedId) {
+      const found = registrations.find(r => r.id === selectedId);
+      if (found) {
+        setSelectedDetail(found);
+      }
+    } else {
+      setSelectedDetail(null);
+    }
+  }, [view, selectedId, uidRegistrations, phoneRegistrations]);
 
   const registrations = React.useMemo(() => {
     const map = new Map<string, ClassRegistration>();
@@ -62,15 +95,26 @@ export default function HistoryPage() {
     });
   }, [uidRegistrations, phoneRegistrations]);
 
-  // Payment modal state
+  // Payment modal state (Local State + popstate)
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [paymentTargetId, setPaymentTargetId] = useState<string | null>(null);
   const [depositorName, setDepositorName] = useState('');
   const [depositDate, setDepositDate] = useState(new Date().toISOString().split('T')[0]);
 
-  // Detail view state
-  const [selectedDetail, setSelectedDetail] = useState<ClassRegistration | null>(null);
-  const [groupDetails, setGroupDetails] = useState<Group | null>(null);
+  // Handle Device Back Button for Payment Modal
+  useEffect(() => {
+    if (paymentModalOpen) {
+      // Add a dummy entry to history so 'back' can close the modal
+      window.history.pushState({ modal: 'payment' }, '');
+      
+      const handlePopState = () => {
+        setPaymentModalOpen(false);
+      };
+      
+      window.addEventListener('popstate', handlePopState);
+      return () => window.removeEventListener('popstate', handlePopState);
+    }
+  }, [paymentModalOpen]);
 
   useEffect(() => {
     if (!user) return;
@@ -122,10 +166,20 @@ export default function HistoryPage() {
       }
     }
 
+    let unsubNoti: (() => void) | null = null;
+    
+    if (user) {
+      unsubNoti = notificationService.subscribeToUserNotifications(
+        user.uid,
+        (data) => setNotifications(data)
+      );
+    }
+
     return () => {
       unsubUid();
       if (unsubPhone) unsubPhone();
       if (unsubPhone010) unsubPhone010();
+      if (unsubNoti) unsubNoti();
     };
   }, [user, profile?.phoneNumber]);
 
@@ -151,6 +205,9 @@ export default function HistoryPage() {
     : activeTab === 'Class'
       ? classItems
       : [];
+
+  const todoNotis = notifications.filter(n => n.baseType === 'TODO' && !n.isCompleted);
+  const infoNotis = notifications.filter(n => n.baseType === 'INFO' || (n.baseType === 'TODO' && n.isCompleted));
 
   const handlePaymentSubmit = async () => {
     const trimmedName = depositorName.trim();
@@ -206,21 +263,39 @@ export default function HistoryPage() {
     ? { bankName: itemInfo.bankName, accountNumber: itemInfo.accountNumber, accountHolder: itemInfo.accountHolder } 
     : groupDetails?.classPaymentSettings?.bankDetails;
 
+  const handleOpenDetail = (item: ClassRegistration) => {
+    // URL-based open
+    router.push(`/history?view=detail&id=${item.id}`, { scroll: false });
+  };
+
+  const handleCloseDetail = () => {
+    // URL contains ?view=detail&id=...
+    // We want to remove these parameters. Using router.back() is best if we came from the list.
+    // If entered directly via link, we replace to /history.
+    if (view === 'detail') {
+      if (window.history.length > 1) {
+        router.back();
+      } else {
+        router.replace('/history', { scroll: false });
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#FAF8FF] text-on-background pb-24 font-['Inter']">
 
-      {/* Scrollable Tab Bar */}
+      {/* Scrollable Tab Bar - Standardized (Sticky at the top, just below global header) */}
       {!selectedDetail && (
-        <div className="w-full bg-surface/90 backdrop-blur-xl border-b border-slate-100 overflow-x-auto sticky top-0 z-30 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-          <div className="flex items-center gap-2 px-4 py-3 min-w-max">
+        <div className="w-full bg-[#FAF8FF] overflow-x-auto no-scrollbar sticky top-0 z-40 border-b border-slate-100/50">
+          <div className="flex items-center gap-1.5 px-6 py-3 min-w-max">
             {TABS.map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-4 py-1.5 rounded-full text-[0.75rem] font-semibold leading-[1rem] transition-colors whitespace-nowrap ${
+                className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[12px] font-bold tracking-wide transition-all whitespace-nowrap ${
                   activeTab === tab
-                    ? 'bg-primary-container text-on-primary-container shadow-sm border border-transparent'
-                    : 'border border-outline-variant text-on-surface hover:bg-surface-variant'
+                    ? tab === 'Needs Action' ? 'bg-[#FF3B30] text-white shadow-sm' : 'bg-[#1E293B] text-white shadow-sm'
+                    : tab === 'Needs Action' ? 'bg-[#FF3B30]/10 text-[#FF3B30] border border-[#FF3B30]/20 hover:bg-[#FF3B30]/20' : 'bg-slate-50 text-slate-500 border border-slate-100 hover:bg-slate-100'
                 }`}
               >
                 {tab}
@@ -233,7 +308,87 @@ export default function HistoryPage() {
       {/* Main Content */}
       {!selectedDetail && (
         <main className="py-6 max-w-[896px] mx-auto px-6 flex flex-col gap-4">
-          {filteredItems.length === 0 && (
+          {activeTab === 'Needs Action' && (
+            <>
+              {todoNotis.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
+                  <span className="material-symbols-outlined text-outline text-5xl">
+                    {activeTab === 'Needs Action' ? 'task_alt' : 'notifications'}
+                  </span>
+                  <p className="text-[1.125rem] font-bold leading-[1.5rem] font-['Plus_Jakarta_Sans'] text-on-surface">
+                    {activeTab === 'Needs Action' ? 'No pending tasks.' : 'No alerts yet.'}
+                  </p>
+                  <p className="text-[0.875rem] font-medium leading-[1.25rem] font-['Inter'] text-on-surface-variant">
+                    {activeTab === 'Needs Action' ? "You're all caught up!" : "We'll notify you when there's an update."}
+                  </p>
+                </div>
+              )}
+              {todoNotis.map(noti => (
+                <article
+                  key={noti.id}
+                  className={`bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/30 hover:border-outline-variant transition-colors flex flex-col overflow-hidden cursor-pointer ${noti.isRead ? 'opacity-75' : ''}`}
+                  onClick={() => {
+                    if (!noti.isRead) {
+                      notificationService.markAsRead(noti.id);
+                    }
+                    if (noti.referenceId) {
+                      // Attempt to open detail if it's a registration
+                      const foundReg = registrations.find(r => r.id === noti.referenceId);
+                      if (foundReg) {
+                        handleOpenDetail(foundReg);
+                      } else {
+                        // If not found in registrations, maybe another type. For now just toast
+                        if (noti.actionUrl) {
+                          router.push(noti.actionUrl);
+                        }
+                      }
+                    } else if (noti.actionUrl) {
+                       router.push(noti.actionUrl);
+                    }
+                  }}
+                >
+                  <div className="p-4 flex gap-4">
+                    <div className="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shrink-0">
+                      <span className="material-symbols-outlined">
+                        {noti.baseType === 'TODO' ? 'assignment_late' : 'info'}
+                      </span>
+                    </div>
+                    <div className="flex flex-col gap-1.5 flex-1">
+                      {noti.groupName && (
+                        <span className="text-[0.75rem] font-semibold leading-[1rem] font-['Inter'] text-on-surface-variant uppercase tracking-wide">
+                          {noti.groupName}
+                        </span>
+                      )}
+                      <h2 className="text-[1.125rem] font-bold leading-[1.5rem] font-['Plus_Jakarta_Sans'] text-on-surface">
+                        {noti.title}
+                      </h2>
+                      <p className="font-['Inter'] text-[0.875rem] font-medium leading-[1.25rem] text-on-surface-variant">
+                        {noti.message}
+                      </p>
+                      <div className="flex items-center justify-between mt-1">
+                        <div className="flex items-center gap-1.5 text-on-surface-variant text-[0.75rem] font-semibold leading-[1rem] font-['Inter']">
+                          <span className="material-symbols-outlined text-[16px]">schedule</span>
+                          <span>{formatNotiDate(noti.createdAt)}</span>
+                        </div>
+                        {noti.baseType === 'TODO' && !noti.isCompleted && (
+                          <span className="font-['Inter'] text-[10px] font-bold leading-[1rem] px-2.5 py-1 rounded-full whitespace-nowrap uppercase tracking-wide bg-orange-100 text-orange-800 border border-orange-200">
+                            ACTION REQUIRED
+                          </span>
+                        )}
+                        {noti.isCompleted && (
+                          <span className="font-['Inter'] text-[10px] font-bold leading-[1rem] px-2.5 py-1 rounded-full whitespace-nowrap uppercase tracking-wide bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[12px]">check</span> COMPLETED
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </>
+          )}
+
+          {activeTab !== 'Needs Action' && filteredItems.length === 0 && (
             <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
               <span className="material-symbols-outlined text-outline text-5xl">receipt_long</span>
               <p className="text-[1.125rem] font-bold leading-[1.5rem] font-['Plus_Jakarta_Sans'] text-on-surface">
@@ -247,11 +402,11 @@ export default function HistoryPage() {
             </div>
           )}
 
-          {filteredItems.map(item => (
+          {activeTab !== 'Needs Action' && filteredItems.map(item => (
             <article
               key={item.id}
               className={`bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/30 hover:border-outline-variant transition-colors flex flex-col overflow-hidden cursor-pointer ${item.status === 'PAYMENT_COMPLETED' ? 'opacity-75' : ''}`}
-              onClick={() => setSelectedDetail(item as any)}
+              onClick={() => handleOpenDetail(item as any)}
             >
               <div className="p-4 flex justify-between items-start gap-4">
                 <div className="flex flex-col gap-1.5">
@@ -306,22 +461,20 @@ export default function HistoryPage() {
         </main>
       )}
 
-      {/* Detail Overlay */}
+      {/* Detail Overlay - Full Popup */}
       {selectedDetail && (
-        <div className="fixed inset-0 bg-surface z-40 overflow-y-auto">
-          <header className="bg-surface/80 backdrop-blur-xl docked full-width top-0 border-b border-slate-200 shadow-sm fixed left-0 w-full z-50 flex justify-between items-center px-6 h-16 max-w-[896px] left-1/2 -translate-x-1/2">
+        <div className="fixed inset-0 bg-[#FAF8FF] z-[100] overflow-y-auto animate-in slide-in-from-right duration-300">
+          <header className="bg-white/80 backdrop-blur-xl fixed top-0 left-0 w-full z-[101] flex justify-between items-center px-4 h-16 border-b border-slate-100">
             <button 
-              onClick={() => setSelectedDetail(null)}
-              className="text-[#0057bd] hover:bg-slate-100 transition-colors active:scale-95 duration-200 p-2 -ml-2 rounded-full flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-primary-container"
+              onClick={handleCloseDetail}
+              className="text-[#0057bd] hover:bg-slate-100 transition-colors active:scale-95 duration-200 p-2 rounded-full flex items-center justify-center"
             >
-              <span className="material-symbols-outlined">close</span>
+              <span className="material-symbols-outlined text-[24px]">arrow_back</span>
             </button>
-            <h1 className="text-[#0057bd] font-['Plus_Jakarta_Sans'] uppercase italic font-bold tracking-tight text-[1.125rem] leading-[1.5rem]">
+            <h1 className="text-[#0057bd] font-['Plus_Jakarta_Sans'] uppercase italic font-black tracking-tight text-[1.125rem]">
               Application Details
             </h1>
-            <button className="text-[#0057bd] hover:bg-slate-100 transition-colors active:scale-95 duration-200 p-2 -mr-2 rounded-full flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-primary-container">
-              <span className="material-symbols-outlined">more_vert</span>
-            </button>
+            <div className="w-10"></div> {/* Spacer for balance */}
           </header>
 
           <main className="max-w-[896px] mx-auto pt-24 pb-32 px-6 flex flex-col gap-4">
@@ -591,6 +744,22 @@ export default function HistoryPage() {
           </div>
         </div>
       )}
+      <style jsx>{`
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      `}</style>
     </div>
+  );
+}
+
+export default function HistoryPage() {
+  return (
+    <Suspense fallback={
+      <div className="bg-background min-h-screen flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    }>
+      <HistoryContent />
+    </Suspense>
   );
 }

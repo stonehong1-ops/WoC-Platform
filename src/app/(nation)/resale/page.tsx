@@ -2,13 +2,15 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useNavigation } from '@/components/providers/NavigationProvider';
 import { resaleService } from '@/lib/firebase/resaleService';
 import { ResaleItem } from '@/types/resale';
 import CreateResaleItem from '@/components/resale/CreateResaleItem';
 import ResaleItemDetail from '@/components/resale/ResaleItemDetail';
 import { AnimatePresence } from 'framer-motion';
-import { safeDate } from '@/lib/utils/safeData';
+import { safeDate } from '@/lib/utils/safeDate';
 import ResaleWishlistTray from '@/components/resale/ResaleWishlistTray';
+import { useModalNavigation } from '@/hooks/useModalNavigation';
 
 type SortOption = 'latest' | 'popular' | 'price_asc' | 'price_desc';
 
@@ -30,23 +32,46 @@ const RESALE_FILTER_DEFS: Record<string, { label: string; fullLabel?: string; ic
 
 const RESALE_FILTER_KEYS = ['All', 'Shoes', 'Apparel', 'Accessories', 'Equipment', 'Others'];
 
-export default function ResalePage() {
+function ResalePageContent() {
   const { user, setShowLogin } = useAuth();
+  const { value: itemId, openModal: openDetail, closeModal: closeDetail } = useModalNavigation('itemId');
+  const { isOpen: showCreateModal, openModal: openCreate, closeModal: closeCreate } = useModalNavigation('create');
+
   const [items, setItems] = useState<ResaleItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState('All');
+  const [activePerson, setActivePerson] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [showLocationFilter, setShowLocationFilter] = useState(false);
   const [sortOption, setSortOption] = useState<SortOption>('latest');
+  const [showPersonFilter, setShowPersonFilter] = useState(false);
   const [showSortDropdown, setShowSortDropdown] = useState(false);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<ResaleItem | null>(null);
+  const { setSubHeader } = useNavigation();
+  
+  // Listen to global compose event
+  useEffect(() => {
+    const handleComposeOpen = (e: CustomEvent) => {
+      if (e.detail?.id === 'resale') {
+        openCreate('true');
+      }
+    };
+    window.addEventListener('woc:compose:open', handleComposeOpen as EventListener);
+    return () => window.removeEventListener('woc:compose:open', handleComposeOpen as EventListener);
+  }, [openCreate]);
+  
+  // URL-based states
+  const selectedItem = useMemo(() => items.find(i => i.id === itemId) || null, [items, itemId]);
 
   const [userLikes, setUserLikes] = useState<Set<string>>(new Set());
 
   const resaleFilters = useMemo(() => {
     return RESALE_FILTER_KEYS.map(key => ({ key, ...RESALE_FILTER_DEFS[key] }));
   }, []);
+
+  const persons = useMemo(() => {
+    const ps = Array.from(new Set(items.map(i => i.sellerName).filter(Boolean)));
+    return ['All', ...ps.sort()];
+  }, [items]);
 
   // Subscribe to real-time resale items
   useEffect(() => {
@@ -94,13 +119,16 @@ export default function ResalePage() {
     await resaleService.toggleLike(user.uid, itemId);
   };
 
+  // Handlers removed in favor of hook methods
+
   const filtered = useMemo(() => {
     let result = items.filter(s => {
       const matchSearch = !searchQuery ||
         s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         s.location.toLowerCase().includes(searchQuery.toLowerCase());
       const matchType = activeFilter === 'All' || s.category === activeFilter;
-      return matchSearch && matchType;
+      const matchPerson = activePerson === 'All' || s.sellerName === activePerson;
+      return matchSearch && matchType && matchPerson;
     });
 
     switch (sortOption) {
@@ -123,7 +151,7 @@ export default function ResalePage() {
         break;
     }
     return result;
-  }, [items, activeFilter, searchQuery, sortOption]);
+  }, [items, activeFilter, activePerson, searchQuery, sortOption]);
 
   const getRelativeTime = (timestamp: any) => {
     if (!timestamp) return 'Just now';
@@ -138,26 +166,20 @@ export default function ResalePage() {
     return `${Math.floor(diffInSeconds / 86400)}d ago`;
   };
 
-  return (
-    <main className="max-w-md mx-auto w-full relative">
-      <style dangerouslySetInnerHTML={{ __html: `
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .material-symbols-rounded { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-      `}} />
-
-      {/* Filter & Sort Bar */}
-      <div className="w-full bg-white border-b border-slate-100/50 px-3 py-2 flex flex-col gap-3">
-        {/* Scrollable Tabs */}
-        <div className="w-full flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+  // Teleport Filter Bar to Header (Premium Standard: Dual Row)
+  useEffect(() => {
+    const filterBar = (
+      <div className="relative w-full bg-white flex flex-col shadow-[0_20px_40px_-15px_rgba(0,0,0,0.15)]">
+        {/* Row 1: Scrollable Tabs */}
+        <div className="w-full px-3 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
           {resaleFilters.map((filter) => (
             <button
               key={filter.key}
               onClick={() => setActiveFilter(filter.key)}
-              className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[12px] font-bold tracking-wide transition-all whitespace-nowrap ${
+              className={`flex-shrink-0 px-2.5 py-1 rounded-xl text-[12px] font-bold tracking-tight transition-all whitespace-nowrap border ${
                 activeFilter === filter.key
-                  ? 'bg-[#1E293B] text-white shadow-sm'
-                  : 'bg-slate-50 text-slate-500 border border-slate-100 hover:bg-slate-100'
+                  ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-100'
+                  : 'bg-slate-50/50 text-slate-500 border-slate-100 hover:bg-slate-100/80 hover:text-slate-700'
               }`}
             >
               {filter.fullLabel || filter.label}
@@ -165,45 +187,124 @@ export default function ResalePage() {
           ))}
         </div>
         
-        {/* Bottom Actions (Text + Arrow) */}
-        <div className="w-full flex items-center justify-between px-1">
-          <div className="text-[11px] font-medium text-[#007AFF]">
-            {filtered.length} items
+        {/* Row 2: Stats & Filters */}
+        <div className="w-full h-11 px-4 flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+            <div className="text-[11px] font-bold text-slate-600 uppercase tracking-widest">
+              {filtered.length} <span className="text-slate-400 font-medium">Items</span>
+            </div>
           </div>
           
           <div className="flex items-center gap-4">
+            {/* Person Filter Trigger */}
+            <button 
+              onClick={() => {
+                setShowPersonFilter(!showPersonFilter);
+                if (!showPersonFilter) setShowSortDropdown(false);
+              }}
+              className={`flex items-center gap-0.5 text-[12px] font-bold transition-all ${
+                activePerson !== 'All' 
+                  ? 'text-blue-600' 
+                  : 'text-slate-600 hover:text-slate-800'
+              }`}
+            >
+              {activePerson === 'All' ? 'Person' : activePerson}
+              <span className={`material-symbols-outlined text-[16px] transition-transform ${showPersonFilter ? 'rotate-180' : ''}`}>expand_more</span>
+            </button>
+
             {/* Sort Trigger */}
             <button 
-              onClick={() => setShowSortDropdown(!showSortDropdown)}
+              onClick={() => {
+                setShowSortDropdown(!showSortDropdown);
+                if (!showSortDropdown) setShowPersonFilter(false);
+              }}
               className="flex items-center gap-0.5 text-[12px] font-bold text-slate-600 hover:text-slate-800 transition-all"
             >
               {SORT_OPTIONS.find(o => o.key === sortOption)?.label || 'Sort'}
-              <span className="material-symbols-outlined text-[14px]">expand_more</span>
+              <span className={`material-symbols-outlined text-[16px] transition-transform ${showSortDropdown ? 'rotate-180' : ''}`}>expand_more</span>
             </button>
           </div>
         </div>
-      </div>
 
-      {/* Sort Options Modal/Dropdown */}
-      {showSortDropdown && (
-        <div className="absolute top-[90px] right-4 z-40 bg-white rounded-2xl shadow-2xl border border-slate-100 py-2 min-w-[160px] animate-in fade-in slide-in-from-top-2 duration-300">
-          {SORT_OPTIONS.map(opt => (
-            <button
-              key={opt.key}
-              onClick={() => {
-                setSortOption(opt.key);
-                setShowSortDropdown(false);
-              }}
-              className={`w-full px-4 py-2.5 flex items-center gap-3 hover:bg-slate-50 transition-colors text-left ${
-                sortOption === opt.key ? 'text-blue-600 font-bold' : 'text-slate-600 font-medium'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[18px]">{opt.icon}</span>
-              <span className="text-[13px]">{opt.label}</span>
-            </button>
-          ))}
-        </div>
-      )}
+        {/* Person Selector Dropdown */}
+        {showPersonFilter && (
+          <div className="absolute top-full left-0 right-0 z-40 bg-white shadow-2xl border-t border-slate-100 p-4 max-h-[300px] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="flex items-center justify-between mb-3 px-1">
+              <span className="text-[13px] font-bold text-slate-800">Filter by Person</span>
+              <button onClick={() => setShowPersonFilter(false)} className="text-slate-400 hover:text-slate-600">
+                <span className="material-symbols-outlined text-[18px]">close</span>
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {persons.map(person => (
+                <button
+                  key={person}
+                  onClick={() => {
+                    setActivePerson(person);
+                    setShowPersonFilter(false);
+                  }}
+                  className={`px-3 py-2 rounded-xl text-[12px] font-semibold text-left transition-all ${
+                    activePerson === person ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  {person}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Premium Sort Dropdown */}
+        {showSortDropdown && (
+          <div className="absolute top-full right-0 z-40 bg-white shadow-2xl border-t border-slate-100 py-2 min-w-[160px] animate-in fade-in slide-in-from-top-2 duration-300">
+            {SORT_OPTIONS.map(opt => (
+              <button
+                key={opt.key}
+                onClick={() => {
+                  setSortOption(opt.key);
+                  setShowSortDropdown(false);
+                }}
+                className={`w-full px-4 py-2.5 flex items-center gap-3 hover:bg-slate-50 transition-colors text-left ${
+                  sortOption === opt.key ? 'text-blue-600 font-bold' : 'text-slate-600 font-medium'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[18px]">{opt.icon}</span>
+                <span className="text-[13px]">{opt.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+    setSubHeader(filterBar);
+    return () => setSubHeader(null);
+  }, [
+    activeFilter, activePerson, sortOption, filtered.length, 
+    showPersonFilter, showSortDropdown, resaleFilters, persons, setSubHeader
+  ]);
+
+  return (
+    <main className="max-w-md mx-auto w-full relative min-h-screen bg-[#FAF8FF]">
+      <style dangerouslySetInnerHTML={{ __html: `
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .material-symbols-rounded { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+      `}} />
+
+      {/* Integrated Registration Action */}
+      <div className="px-6 py-2 flex items-center justify-between bg-white border-b border-slate-50">
+        <p className="text-[12px] font-bold text-slate-400 uppercase tracking-tight">
+          Have items to share?
+        </p>
+        <button 
+          onClick={() => openCreate('true')}
+          className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 transition-colors py-2"
+        >
+          <span className="text-[13px] font-bold">Post Item</span>
+          <span className="material-symbols-outlined text-[18px]">add_circle</span>
+        </button>
+      </div>
 
       {/* ⑤ Product Grid (필터+정렬 결과) */}
       <div className="pt-4 px-4 mb-10 text-left min-h-[400px]">
@@ -233,7 +334,7 @@ export default function ResalePage() {
               return (
                 <div 
                   key={item.id} 
-                  onClick={() => setSelectedItem(item)}
+                  onClick={() => openDetail(item.id)}
                   className="group cursor-pointer animate-in fade-in slide-in-from-bottom-2 duration-500 block relative"
                 >
                   <div className="relative aspect-square rounded-xl bg-[#f2f4f4] overflow-hidden mb-3">
@@ -297,14 +398,15 @@ export default function ResalePage() {
       <AnimatePresence>
         {showCreateModal && (
           <CreateResaleItem 
-            onClose={() => setShowCreateModal(false)}
+            isOpen={showCreateModal}
+            onClose={closeCreate}
             onSuccess={() => {}}
           />
         )}
         {selectedItem && (
           <ResaleItemDetail 
             item={selectedItem} 
-            onClose={() => setSelectedItem(null)} 
+            onClose={closeDetail} 
           />
         )}
       </AnimatePresence>
@@ -314,12 +416,23 @@ export default function ResalePage() {
           likes={myLikes} 
           userId={user.uid} 
           onProductClick={(productId) => {
-            const item = items.find(i => i.id === productId);
-            if (item) setSelectedItem(item);
+            openDetail(productId);
           }} 
-          onAddClick={() => setShowCreateModal(true)}
         />
       )}
     </main>
   );
 }
+
+export default function ResalePage() {
+  return (
+    <React.Suspense fallback={
+      <div className="max-w-md mx-auto w-full min-h-screen bg-[#FAF8FF] flex items-center justify-center">
+        <span className="material-symbols-outlined animate-spin text-4xl text-blue-500">progress_activity</span>
+      </div>
+    }>
+      <ResalePageContent />
+    </React.Suspense>
+  );
+}
+

@@ -27,6 +27,7 @@ export type RentalLike = {
   userId: string;
   spaceId: string;
   createdAt: any;
+  status?: 'liked' | 'pending' | 'in_progress';
 };
 
 export type RentalRequest = {

@@ -12,6 +12,8 @@ import CommentBottomSheet from './CommentBottomSheet';
 import MediaViewerPopup from './MediaViewerPopup';
 import { DualText } from '@/components/social/SocialHeroCard';
 import UserBadge from '@/components/common/UserBadge';
+import { useModalNavigation } from '@/hooks/useModalNavigation';
+
 interface FeedPostCardProps {
   post: Post;
   currentUser?: any;
@@ -24,11 +26,17 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const [isReactionSelectorOpen, setIsReactionSelectorOpen] = useState(false);
-  const [isReactionListOpen, setIsReactionListOpen] = useState(false);
-  const [isCommentSheetOpen, setIsCommentSheetOpen] = useState(false);
+  
+  const { openModal: openReactions, closeModal: closeReactions, value: reactionsPostId } = useModalNavigation('reactions');
+  const { openModal: openComments, closeModal: closeComments, value: commentsPostId } = useModalNavigation('comments');
+  const { openModal: openMedia, closeModal: closeMedia, value: mediaPostId, searchParams } = useModalNavigation('media');
+  
+  const isReactionListOpen = reactionsPostId === post.id;
+  const isCommentSheetOpen = commentsPostId === post.id;
+  const isMediaViewerOpen = mediaPostId === post.id;
+  const initialMediaIndex = parseInt(searchParams.get('mediaIdx') || '0');
+
   const reactionTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const [isMediaViewerOpen, setIsMediaViewerOpen] = useState(false);
-  const [initialMediaIndex, setInitialMediaIndex] = useState(0);
   const [localMyReaction, setLocalMyReaction] = useState<ReactionType | null>(post.myReaction || null);
   
   useEffect(() => {
@@ -153,19 +161,18 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
   };
 
   const renderHeader = (isOfficial = false) => (
-    <div className="flex justify-between items-start mb-4">
+    <div className="flex justify-between items-center mb-3">
       {isOfficial ? (
         <div className="flex gap-3 items-center">
-          <div className="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold font-headline">
+          <div className="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold font-headline text-xs">
             FT
           </div>
           <div>
             <div className="flex items-baseline gap-1.5 flex-wrap">
-              <h3 className="font-headline font-bold text-on-surface text-sm leading-tight">
+              <h3 className="font-headline font-bold text-on-surface text-[13px] leading-tight">
                 Freestyle Tango Official
               </h3>
             </div>
-            <p className="text-on-surface-variant text-xs font-medium">{timeAgo}</p>
           </div>
         </div>
       ) : (
@@ -174,21 +181,21 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
           nickname={post.userName || (post as any).authorName || 'Unknown User'}
           nativeNickname={post.userNameNative || (post as any).authorNameNative}
           photoURL={post.userPhoto || (post as any).authorPhoto}
-          avatarSize="w-10 h-10"
-          nameClassName="font-headline font-bold text-on-surface text-sm leading-tight"
-          nativeClassName="text-[11px] font-medium text-on-surface-variant leading-tight"
-          subText={<p className="text-on-surface-variant text-xs font-medium">{timeAgo}</p>}
+          avatarSize="w-8 h-8"
+          nameClassName="font-headline font-bold text-on-surface text-[13px] leading-tight"
+          nativeClassName="text-[11px] font-medium text-on-surface-variant leading-tight hidden"
+          subText={null}
         />
       )}
       <div className="flex items-center gap-2">
         {post.isAnnouncement && (
-          <span className="bg-tertiary-container/30 text-on-tertiary-container font-label text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full">
+          <span className="bg-tertiary-container/30 text-on-tertiary-container font-label text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">
             Announcement
           </span>
         )}
         <div className="relative" ref={menuRef}>
-          <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-on-surface-variant hover:bg-surface p-1 rounded-full transition-colors">
-            <span className="material-symbols-outlined">more_horiz</span>
+          <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-on-surface hover:bg-surface-container p-1 rounded-full transition-colors flex items-center">
+            <span className="material-symbols-outlined text-[20px]">more_horiz</span>
           </button>
           {isMenuOpen && (
             <div className="absolute right-0 mt-2 w-48 bg-surface-container-lowest rounded-xl shadow-xl border border-outline-variant/10 z-50 py-1 overflow-hidden">
@@ -203,20 +210,6 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
                 </>
               ) : (
                 <>
-                  <button onClick={async () => {
-                    setIsMenuOpen(false);
-                    if (!currentUser) return;
-                    const pinnedPostIds = (profile as any)?.pinnedPostIds || [];
-                    const isPinned = pinnedPostIds.includes(post.id);
-                    try {
-                      await feedService.togglePinPost(currentUser.uid, post.id, isPinned);
-                    } catch (error) {
-                      alert("Failed to update pin status.");
-                    }
-                  }} className="w-full px-4 py-2 text-left text-sm hover:bg-primary/10 flex items-center gap-3 text-on-surface">
-                    <span className="material-symbols-outlined text-lg">{((profile as any)?.pinnedPostIds || []).includes(post.id) ? 'keep_off' : 'keep'}</span> 
-                    {((profile as any)?.pinnedPostIds || []).includes(post.id) ? 'Unpin Post' : 'Pin Post'}
-                  </button>
                   <button onClick={() => setIsMenuOpen(false)} className="w-full px-4 py-2 text-left text-sm hover:bg-primary/10 flex items-center gap-3 text-on-surface">
                     <span className="material-symbols-outlined text-lg">report</span> Report
                   </button>
@@ -229,12 +222,11 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
     </div>
   );
 
-  const renderFooter = (bgColor = "transparent") => (
-    <div className={`p-4 sm:px-6 border-t border-outline-variant/10 flex justify-between items-center text-on-surface-variant`} style={{ backgroundColor: bgColor }}>
-      <div className="flex gap-6">
-        {/* Reaction 영역: 호버 딜레이로 깜빡임 방지 */}
+  const renderActionBar = () => (
+    <div className="flex justify-between items-center">
+      <div className="flex gap-4 items-center text-on-surface">
         <div
-          className="flex items-center gap-1.5 relative"
+          className="relative flex items-center"
           onMouseEnter={() => { if (reactionTimerRef.current) clearTimeout(reactionTimerRef.current); }}
           onMouseLeave={() => {
             reactionTimerRef.current = setTimeout(() => setIsReactionSelectorOpen(false), 250);
@@ -243,16 +235,13 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
           <button
             onClick={(e) => { e.stopPropagation(); setIsReactionSelectorOpen(prev => !prev); }}
             onMouseEnter={() => { if (!('ontouchstart' in window)) { if (reactionTimerRef.current) clearTimeout(reactionTimerRef.current); setIsReactionSelectorOpen(true); } }}
-            className={`flex items-center transition-all active:scale-90 group ${myReaction.color}`}
+            className={`transition-transform active:scale-90 flex items-center ${localMyReaction || post.myReaction ? myReaction.color : 'text-on-surface'}`}
           >
             {localMyReaction || post.myReaction ? (
-              <span className="text-xl">{myReaction.emoji}</span>
+              <span className="text-[24px] leading-none">{myReaction.emoji}</span>
             ) : (
-              <span className="material-symbols-outlined group-hover:scale-110 transition-transform">favorite</span>
+              <span className="material-symbols-outlined text-[24px] font-light">favorite</span>
             )}
-          </button>
-          <button onClick={() => setIsReactionListOpen(true)} className="text-xs font-bold hover:underline">
-            {localLikesCount}
           </button>
           <AnimatePresence>
             {isReactionSelectorOpen && (
@@ -260,16 +249,28 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
             )}
           </AnimatePresence>
         </div>
-        <button onClick={() => setIsCommentSheetOpen(true)} className="flex items-center gap-2 hover:text-primary transition-colors group">
-          <span className="material-symbols-outlined group-hover:scale-110 transition-transform">chat_bubble</span>
-          <span className="text-xs font-medium">{post.commentsCount || 0}</span>
+        <button onClick={() => openComments(post.id)} className="transition-transform active:scale-90 flex items-center text-on-surface">
+          <span className="material-symbols-outlined text-[24px] font-light">chat_bubble</span>
+        </button>
+        <button onClick={handleShare} className="transition-transform active:scale-90 flex items-center text-on-surface">
+          <span className="material-symbols-outlined text-[24px] font-light">share</span>
         </button>
       </div>
-      <button onClick={handleShare} className="hover:text-primary transition-colors group">
-        <span className="material-symbols-outlined group-hover:scale-110 transition-transform">share</span>
+      <button onClick={async () => {
+        if (!currentUser) return;
+        const pinnedPostIds = (profile as any)?.pinnedPostIds || [];
+        const isPinned = pinnedPostIds.includes(post.id);
+        try {
+          await feedService.togglePinPost(currentUser.uid, post.id, isPinned);
+        } catch (error) {
+          alert("Failed to update pin status.");
+        }
+      }} className="transition-transform active:scale-90 flex items-center text-on-surface">
+        <span className="material-symbols-outlined text-[24px] font-light">{((profile as any)?.pinnedPostIds || []).includes(post.id) ? 'bookmark' : 'bookmark_border'}</span>
       </button>
-      <ReactionListBottomSheet post={post} isOpen={isReactionListOpen} onClose={() => setIsReactionListOpen(false)} />
-      <CommentBottomSheet post={post} isOpen={isCommentSheetOpen} onClose={() => setIsCommentSheetOpen(false)} currentUser={currentUser} />
+
+      <ReactionListBottomSheet post={post} isOpen={isReactionListOpen} onClose={closeReactions} />
+      <CommentBottomSheet post={post} isOpen={isCommentSheetOpen} onClose={closeComments} currentUser={currentUser} />
     </div>
   );
 
@@ -277,13 +278,13 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
   if (post.isAnnouncement) {
     const eventDate = typeof (post.createdAt as any).toDate === 'function' ? (post.createdAt as any).toDate() : new Date(post.createdAt as any);
     return (
-      <article className="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/10 overflow-hidden transform transition-transform hover:scale-[0.99]">
-        <div className="p-4 sm:p-6 pb-3">
+      <article className="w-full bg-surface-container-lowest">
+        <div className="px-4 py-3 pb-3">
           {renderHeader(true)}
-          {post.title && <h4 className="font-headline font-bold text-lg mb-2 text-primary">{post.title}</h4>}
+          {post.title && <h4 className="font-headline font-bold text-[15px] mb-2 text-primary">{post.title}</h4>}
           <p className="text-on-surface text-sm mb-4 leading-relaxed whitespace-pre-wrap">{post.content}</p>
           
-          <div className="bg-surface rounded-lg p-3 flex items-center gap-4 mb-4">
+          <div className="bg-surface rounded-lg p-3 flex items-center gap-4 mb-2">
             <div className="bg-surface-container-lowest w-12 h-12 rounded flex flex-col items-center justify-center border border-outline-variant/20 shadow-sm">
               <span className="text-[10px] font-bold text-error uppercase">{eventDate.toLocaleDateString('en-US', { month: 'short' })}</span>
               <span className="text-lg font-headline font-extrabold leading-none">{eventDate.getDate()}</span>
@@ -292,14 +293,17 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
               <p className="font-bold text-sm">Official Event / Announcement</p>
               <p className="text-xs text-on-surface-variant">{eventDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</p>
             </div>
-            <div className="ml-auto">
-              <button className="bg-secondary-container text-on-secondary-container font-label text-[11px] font-bold uppercase tracking-wider px-4 py-2 rounded-full hover:bg-secondary-container/80 transition-colors">
-                Detail
-              </button>
-            </div>
           </div>
         </div>
-        {renderFooter("rgba(0,0,0,0.02)")}
+        <div className="px-4 pb-3">
+          {renderActionBar()}
+          {localLikesCount > 0 && (
+            <button onClick={() => openReactions(post.id)} className="font-bold text-sm text-on-surface mb-1 hover:underline">
+              {localLikesCount} likes
+            </button>
+          )}
+          <p className="text-[10px] text-on-surface-variant font-medium tracking-wide uppercase mt-2">{timeAgo}</p>
+        </div>
       </article>
     );
   }
@@ -312,11 +316,11 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
       ? `${style.impactClass || 'text-xl font-normal'} ${(style.emphasisClasses || []).join(' ')}`
       : 'text-on-surface text-lg font-headline font-semibold leading-tight';
     return (
-      <article className="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/10 overflow-hidden transform transition-transform hover:scale-[0.99]">
-        <div className="p-4 sm:p-6 pb-0">{renderHeader()}</div>
+      <article className="w-full bg-surface-container-lowest">
+        <div className="px-4 py-3 pb-2">{renderHeader()}</div>
         {hasColorStyle ? (
           <div
-            className="mx-4 sm:mx-6 mb-4 rounded-xl p-6 min-h-[120px] flex items-center justify-center"
+            className="w-full aspect-square p-4 flex flex-col items-center justify-center"
             style={{ background: style.bgColor, color: style.textColor }}
           >
             <p className={`text-center break-words w-full ${contentClass}`} style={{ color: style.textColor }}>
@@ -324,11 +328,21 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
             </p>
           </div>
         ) : (
-          <div className="mx-4 sm:mx-6 mb-4 bg-secondary-container/20 rounded-lg p-4 border border-secondary-container/50">
-            <p className={`text-center ${contentClass}`}>"{post.content}"</p>
+          <div className="px-4">
+             <div className="bg-secondary-container/20 rounded-lg p-6 border border-secondary-container/50 min-h-[160px] flex items-center justify-center">
+               <p className={`text-center ${contentClass}`}>"{post.content}"</p>
+             </div>
           </div>
         )}
-        {renderFooter()}
+        <div className="px-4 py-3">
+          {renderActionBar()}
+          {localLikesCount > 0 && (
+            <button onClick={() => openReactions(post.id)} className="font-bold text-sm text-on-surface mb-1 hover:underline">
+              {localLikesCount} likes
+            </button>
+          )}
+          <p className="text-[10px] text-on-surface-variant font-medium tracking-wide uppercase mt-2">{timeAgo}</p>
+        </div>
       </article>
     );
   }
@@ -338,18 +352,11 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
     <div
       key={index}
       className="relative w-full h-full overflow-hidden cursor-pointer group"
-      onClick={() => { setInitialMediaIndex(index); setIsMediaViewerOpen(true); }}
+      onClick={() => { openMedia(post.id, { mediaIdx: index.toString() }); }}
     >
       {item.type === 'video' ? (
         <>
           <video src={item.url} className="w-full h-full object-cover" autoPlay loop muted playsInline />
-          {!showMoreOverlay && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/25 group-hover:bg-black/35 transition-colors">
-              <div className="w-11 h-11 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center text-white shadow-lg">
-                <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
-              </div>
-            </div>
-          )}
         </>
       ) : (
         <img
@@ -375,7 +382,7 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
     // 1장: 풀 너비, 4:5 세로 비율
     if (count === 1) {
       return (
-        <div className="rounded-xl overflow-hidden border border-outline-variant/10 aspect-[4/5]">
+        <div className="w-full aspect-[4/5] bg-surface-container-low">
           {renderMediaThumb(normalizedMedia[0], 0)}
         </div>
       );
@@ -384,9 +391,9 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
     // 2장: 50:50 나란히, 1:1
     if (count === 2) {
       return (
-        <div className="grid grid-cols-2 gap-1.5">
+        <div className="grid grid-cols-2 gap-[1px]">
           {normalizedMedia.map((item, i) => (
-            <div key={i} className="aspect-square rounded-xl overflow-hidden border border-outline-variant/10">
+            <div key={i} className="aspect-square bg-surface-container-low">
               {renderMediaThumb(item, i)}
             </div>
           ))}
@@ -397,13 +404,13 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
     // 3장: 상단 1장 풀너비(16:9) + 하단 2장 균등(1:1)
     if (count === 3) {
       return (
-        <div className="flex flex-col gap-1.5">
-          <div className="aspect-video rounded-xl overflow-hidden border border-outline-variant/10">
+        <div className="flex flex-col gap-[1px]">
+          <div className="aspect-video bg-surface-container-low">
             {renderMediaThumb(normalizedMedia[0], 0)}
           </div>
-          <div className="grid grid-cols-2 gap-1.5">
+          <div className="grid grid-cols-2 gap-[1px]">
             {[normalizedMedia[1], normalizedMedia[2]].map((item, i) => (
-              <div key={i + 1} className="aspect-square rounded-xl overflow-hidden border border-outline-variant/10">
+              <div key={i + 1} className="aspect-square bg-surface-container-low">
                 {renderMediaThumb(item, i + 1)}
               </div>
             ))}
@@ -415,9 +422,9 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
     // 4장: 2×2 균등 그리드
     if (count === 4) {
       return (
-        <div className="grid grid-cols-2 gap-1.5">
+        <div className="grid grid-cols-2 gap-[1px]">
           {normalizedMedia.map((item, i) => (
-            <div key={i} className="aspect-square rounded-xl overflow-hidden border border-outline-variant/10">
+            <div key={i} className="aspect-square bg-surface-container-low">
               {renderMediaThumb(item, i)}
             </div>
           ))}
@@ -427,13 +434,13 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
 
     // 5장+: 2×2 + 마지막 셀에 +N 오버레이
     return (
-      <div className="grid grid-cols-2 gap-1.5">
+      <div className="grid grid-cols-2 gap-[1px]">
         {normalizedMedia.slice(0, 3).map((item, i) => (
-          <div key={i} className="aspect-square rounded-xl overflow-hidden border border-outline-variant/10">
+          <div key={i} className="aspect-square bg-surface-container-low">
             {renderMediaThumb(item, i)}
           </div>
         ))}
-        <div className="aspect-square rounded-xl overflow-hidden border border-outline-variant/10">
+        <div className="aspect-square bg-surface-container-low relative">
           {renderMediaThumb(normalizedMedia[3], 3, true, count - 4)}
         </div>
       </div>
@@ -442,28 +449,39 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
 
   // Standard / Image Style
   return (
-    <article className="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/10 overflow-hidden transform transition-transform hover:scale-[0.99]">
-      <div className="p-4 sm:p-6 pb-3">
+    <article className="w-full bg-surface-container-lowest">
+      <div className="px-4 pt-3 pb-1">
         {renderHeader()}
-        <p className="text-on-surface text-sm mb-4 leading-relaxed whitespace-pre-wrap">{post.content}</p>
       </div>
 
       {hasMedia && (
-        <div className="px-4 sm:px-6 mb-4">
+        <div className="w-full">
           {renderMediaGrid()}
-          {(post.likesCount || 0) > 10 && (
-            <div className="mt-3 inline-flex items-center gap-1 bg-surface-container-lowest/90 backdrop-blur-md px-3 py-1 rounded-full shadow-sm border border-outline-variant/10">
-              <span className="material-symbols-outlined text-[14px] text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>local_fire_department</span>
-              <span className="font-label text-[10px] font-bold text-primary uppercase tracking-wider">Trending</span>
-            </div>
-          )}
         </div>
       )}
 
-      {renderFooter()}
+      <div className="px-4 py-2">
+        {renderActionBar()}
+
+        {localLikesCount > 0 && (
+          <button onClick={() => openReactions(post.id)} className="font-bold text-sm text-on-surface mb-1 hover:underline">
+            {localLikesCount} likes
+          </button>
+        )}
+        
+        <p className="text-sm text-on-surface leading-normal whitespace-pre-wrap break-words">
+          <span className="font-bold mr-2 text-[13px]">{post.userName || (post as any).authorName || 'Unknown User'}</span>
+          {post.content}
+        </p>
+
+        <p className="text-[10px] text-on-surface-variant font-medium tracking-wide uppercase mt-2">
+          {timeAgo}
+        </p>
+      </div>
+
       <MediaViewerPopup
         isOpen={isMediaViewerOpen}
-        onClose={() => setIsMediaViewerOpen(false)}
+        onClose={closeMedia}
         media={normalizedMedia as any}
         initialIndex={initialMediaIndex}
       />

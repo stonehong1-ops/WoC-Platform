@@ -34,4 +34,5 @@ export interface LostFoundLike {
   userId: string;
   itemId: string;
   createdAt: Timestamp;
+  status?: 'liked' | 'pending' | 'in_progress';
 }

@@ -1,12 +1,16 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { useJsApiLoader } from '@react-google-maps/api';
 import PageWrapper from '@/components/layout/PageWrapper';
 import ManageEntry from '@/components/venues/ManageEntry';
+import VenueDetail from '@/components/venues/VenueDetail';
 import { venueService } from '@/lib/firebase/venueService';
 import { Venue } from '@/types/venue';
+import { useModalNavigation } from '@/hooks/useModalNavigation';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase/clientApp';
 
 // Defensive Architecture 2: Dynamically import MapComponent with ssr: false
 const MapComponent = dynamic(() => import('@/components/venues/MapComponent'), { 
@@ -18,10 +22,32 @@ const MapComponent = dynamic(() => import('@/components/venues/MapComponent'), {
 
 const libraries: ("places" | "drawing" | "geometry" | "visualization")[] = ["places"];
 
-export default function VenuesPage() {
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+function VenuesPageContent() {
+  const { value: venueId, openModal: openDetail, closeModal: closeDetail } = useModalNavigation('venueId');
+  const { isOpen: isEditModalOpen, value: editId, openModal: openEdit, closeModal: closeEdit } = useModalNavigation('editId');
+  
   const [editingVenue, setEditingVenue] = useState<Venue | null>(null);
   const [editMode, setEditMode] = useState<'edit' | 'geo'>('edit');
+
+  // Fetch editing venue if editId is present
+  useEffect(() => {
+    const fetchEditingVenue = async () => {
+      if (!editId) {
+        setEditingVenue(null);
+        return;
+      }
+      try {
+        const docRef = doc(db, "venues", editId);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          setEditingVenue({ id: docSnap.id, ...docSnap.data() } as Venue);
+        }
+      } catch (error) {
+        console.error("Error fetching editing venue:", error);
+      }
+    };
+    fetchEditingVenue();
+  }, [editId]);
 
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
@@ -32,15 +58,23 @@ export default function VenuesPage() {
   const handleRegisterOpen = () => {
     setEditingVenue(null);
     setEditMode('edit');
-    setIsEditModalOpen(true);
+    openEdit('new');
   };
 
+  // Listen to global compose event
+  useEffect(() => {
+    const handleComposeOpen = (e: CustomEvent) => {
+      if (e.detail?.id === 'venues') {
+        handleRegisterOpen();
+      }
+    };
+    window.addEventListener('woc:compose:open', handleComposeOpen as EventListener);
+    return () => window.removeEventListener('woc:compose:open', handleComposeOpen as EventListener);
+  }, [openEdit]);
+
   const handleEdit = (venue: any, mode: 'edit' | 'geo' = 'edit') => {
-    // Map minimal venue type to full Venue type if needed, 
-    // but here we just pass it to ManageEntry which should handle it.
-    setEditingVenue(venue as Venue);
     setEditMode(mode);
-    setIsEditModalOpen(true);
+    openEdit(venue.id);
   };
 
   const handleDelete = async (id: string) => {
@@ -66,10 +100,15 @@ export default function VenuesPage() {
           onDelete={handleDelete}
         />
 
+        <VenueDetail
+          venueId={venueId || ''}
+          onClose={closeDetail}
+        />
+
         <ManageEntry
           isOpen={isEditModalOpen}
           onClose={() => {
-            setIsEditModalOpen(false);
+            closeEdit();
             setEditingVenue(null);
           }}
           isLoaded={isLoaded}
@@ -78,5 +117,17 @@ export default function VenuesPage() {
         />
       </div>
     </PageWrapper>
+  );
+}
+
+export default function VenuesPage() {
+  return (
+    <Suspense fallback={
+      <div className="h-screen w-full bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#005BC0]"></div>
+      </div>
+    }>
+      <VenuesPageContent />
+    </Suspense>
   );
 }

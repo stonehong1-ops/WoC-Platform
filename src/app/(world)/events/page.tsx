@@ -6,7 +6,7 @@ import { eventService } from '@/lib/firebase/eventService';
 import { Event } from '@/types/event';
 import { format, isSameDay, startOfDay, addDays, getDay, startOfWeek, endOfWeek, eachDayOfInterval, differenceInCalendarDays, endOfDay, startOfMonth, endOfMonth } from 'date-fns';
 import CreateEvent from '@/components/events/CreateEvent';
-import EventDetail from '@/components/events/EventDetail';
+import EventViewer from '@/components/events/EventViewer';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from '@/components/providers/LocationProvider';
 import { useNavigation } from '@/components/providers/NavigationProvider';
@@ -56,14 +56,17 @@ const getFlagImageUrl = (countryName: string) => {
 };
 
 export default function EventsPage() {
-  const { toggleDrawer } = useNavigation();
+  const { toggleDrawer, setSubHeader } = useNavigation();
   const { location } = useLocation();
-  const { profile } = useAuth();
+  const { user, profile, setShowLogin } = useAuth();
   const [events, setEvents] = useState<Event[]>([]);
+  const [likedEventIds, setLikedEventIds] = useState<string[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
+  
+  // New Header Filter States
+  const [activeTab, setActiveTab] = useState<'calendar' | 'upcoming' | 'favorite'>('calendar');
 
   // Real-time Subscription
   useEffect(() => {
@@ -72,6 +75,38 @@ export default function EventsPage() {
       setEvents(validEvents);
     });
     return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setLikedEventIds([]);
+      return;
+    }
+    return eventService.subscribeMyLikes(user.uid, setLikedEventIds);
+  }, [user]);
+
+  const handleToggleLike = async (e: React.MouseEvent, eventId: string) => {
+    e.stopPropagation();
+    if (!user) {
+      setShowLogin(true);
+      return;
+    }
+    try {
+      await eventService.toggleLike(user.uid, eventId);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Listen to global compose event
+  useEffect(() => {
+    const handleComposeOpen = (e: CustomEvent) => {
+      if (e.detail?.id === 'events') {
+        setShowCreateModal(true);
+      }
+    };
+    window.addEventListener('woc:compose:open', handleComposeOpen as EventListener);
+    return () => window.removeEventListener('woc:compose:open', handleComposeOpen as EventListener);
   }, []);
 
   // Handle browser back button for modals
@@ -126,14 +161,6 @@ export default function EventsPage() {
     );
   }, [filteredLocationEvents]);
 
-  // Hot 5 Section (Current/Upcoming)
-  const hot5Events = useMemo(() => {
-    const today = startOfDay(new Date());
-    return sortedEvents
-      .filter(e => getNormalizedDate(e.endDate || e.startDate) >= today)
-      .slice(0, 5);
-  }, [sortedEvents]);
-
   // Calendar Logic (Current Month)
   const calendarRange = useMemo(() => {
     const startOfCurrentMonth = startOfMonth(currentDate);
@@ -170,6 +197,69 @@ export default function EventsPage() {
     return slotsMap;
   }, [events]);
 
+  const formattedMonth = currentDate.toLocaleString('en-US', { month: 'short', year: 'numeric' });
+
+  // SubHeader Injection
+  useEffect(() => {
+    const filterBar = (
+      <div className="relative w-full bg-white flex flex-col shadow-[0_20px_40px_-15px_rgba(0,0,0,0.15)] z-30">
+        {/* Row 1: Scrollable Tabs */}
+        <div className="w-full px-3 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar border-b border-slate-100/50">
+          {[
+            { id: 'calendar', label: 'Calendar' },
+            { id: 'upcoming', label: 'Upcoming' },
+            { id: 'favorite', label: 'Favorites' }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`flex-shrink-0 px-2.5 py-1 rounded-xl text-[12px] font-bold tracking-tight transition-all whitespace-nowrap border ${
+                activeTab === tab.id
+                  ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-100'
+                  : 'bg-slate-50/50 text-slate-500 border-slate-100 hover:bg-slate-100/80'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        
+        {/* Row 2: Month Filter (Class-style, only for Calendar tab) */}
+        {activeTab === 'calendar' && (
+          <div className="w-full h-11 px-4 flex items-center justify-between">
+            <div className="flex items-center gap-2 bg-slate-50 rounded-lg px-1.5 py-0.5 border border-slate-100">
+              <button 
+                onClick={() => setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))} 
+                className="w-6 h-6 flex items-center justify-center hover:bg-white rounded-md transition-all text-slate-400"
+              >
+                <span className="material-symbols-outlined text-[16px]">chevron_left</span>
+              </button>
+              <span className="text-[13px] font-bold text-slate-900 uppercase tracking-tight w-[80px] text-center">
+                {formattedMonth}
+              </span>
+              <button 
+                onClick={() => setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))} 
+                className="w-6 h-6 flex items-center justify-center hover:bg-white rounded-md transition-all text-slate-400"
+              >
+                <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+              </button>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+              <div className="text-[11px] font-bold text-slate-600 uppercase tracking-widest">
+                {filteredLocationEvents.length} <span className="text-slate-400 font-medium">Events</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+    
+    const height = activeTab === 'calendar' ? 88 : 44; // Tabs + MonthFilter (44+44) vs Tabs (44)
+    setSubHeader(filterBar, height);
+    return () => setSubHeader(null);
+  }, [activeTab, currentDate, formattedMonth, filteredLocationEvents.length, setSubHeader]);
+
   const STACK_COLORS = [
     { bg: '#0057bd', text: '#ffffff' },   // primary
     { bg: '#3d56ba', text: '#ffffff' },   // secondary
@@ -177,6 +267,31 @@ export default function EventsPage() {
     { bg: '#8097ff', text: '#03288f' },   // secondary-container
     { bg: '#883b91', text: '#ffffff' },   // tertiary
   ];
+
+  // Prepare monthly grouped upcoming events
+  const upcomingEvents = useMemo(() => {
+    const today = startOfDay(new Date());
+    const validEvents = sortedEvents.filter(e => getNormalizedDate(e.endDate || e.startDate) >= today);
+    
+    const grouped: Record<string, Event[]> = {};
+    validEvents.forEach(e => {
+      const startDate = getNormalizedDate(e.startDate);
+      const monthKey = format(startDate, 'MMMM yyyy');
+      if (!grouped[monthKey]) grouped[monthKey] = [];
+      grouped[monthKey].push(e);
+    });
+
+    return Object.entries(grouped).map(([month, evts]) => ({
+      month,
+      events: evts
+    }));
+  }, [sortedEvents]);
+
+  // Featured Banner Event (First upcoming)
+  const featuredEvent = useMemo(() => {
+    const today = startOfDay(new Date());
+    return sortedEvents.find(e => getNormalizedDate(e.endDate || e.startDate) >= today);
+  }, [sortedEvents]);
 
   return (
     <>
@@ -229,232 +344,268 @@ export default function EventsPage() {
         }
       `}} />
 
-      <div className="w-full relative">
-        <main className="pt-4 pb-24">
-          {/* Top 5 Section */}
-          <section className="mb-8 px-4">
-            <div className="flex items-end justify-between mb-4">
-              <div>
-                <h2 className="text-2xl font-extrabold font-headline tracking-tight text-on-background">Top 5</h2>
-                <p className="text-on-surface-variant text-sm font-medium">Meet more popular events</p>
-              </div>
-              <span className="text-primary font-bold text-sm flex items-center gap-1 cursor-pointer">View all <span className="material-symbols-outlined text-sm">arrow_forward</span></span>
-            </div>
-            <div className="flex gap-4 overflow-x-auto no-scrollbar snap-x snap-mandatory">
-              {hot5Events.length === 0 ? (
-                <div className="w-full h-40 bg-white rounded-xl flex items-center justify-center border border-dashed border-gray-300">
-                  <p className="text-gray-400">No events currently featured</p>
+      <div className="w-full relative bg-slate-50/30 min-h-screen">
+        <main className="pb-32 overflow-x-hidden">
+          
+          {/* UPCOMING TAB: FEATURED BANNER */}
+          {activeTab === 'upcoming' && featuredEvent && (
+            <div
+              onClick={() => setSelectedEvent(featuredEvent)}
+              className="relative w-full h-64 rounded-none overflow-hidden shadow-sm group block cursor-pointer mb-6 animate-in fade-in slide-in-from-top-4 duration-500"
+            >
+              <img
+                alt={featuredEvent.title}
+                className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                src={featuredEvent.imageUrl || 'https://lh3.googleusercontent.com/aida-public/AB6AXuAM-qcbRNMJdZLS9Ca7Gp1EjVkOyWQhtKBiYOVV8jYdBKKdmtYDvyKh8uAbGKuFuWSqYG_cwZyguPHzTslh1whMR66-pyycVhSWNYgJjvbFatGIX03BxE1lE-1iBMQjH7_2F8g6-LvoJIcnlB0MGrlKJYOVJZFWQyKma420t8TJpTbYWVZog86VoGm2oqMpqqloZzF_17DT9iJk6dbzfGibveQrX7XmbdfyWCQaGlMZuD8TON4K8v5PG8jgMr8kEfGxpq99xneK9p4'}
+              />
+              <div className="absolute inset-0 flex flex-col justify-end p-6"
+                style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.3) 50%, transparent 100%)' }}>
+                <p className="text-white mb-1 tracking-tight"
+                  style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '1.25rem', lineHeight: '1.75rem', fontWeight: 800, textShadow: '0 2px 10px rgba(0,0,0,0.9), 0 0 4px rgba(0,0,0,0.5)' }}>
+                  {featuredEvent.title}
+                  {featuredEvent.titleNative && (
+                    <span className="ml-2 font-normal" style={{ fontSize: '0.875rem', opacity: 0.85 }}>{featuredEvent.titleNative}</span>
+                  )}
+                </p>
+                <div className="flex flex-col gap-1 mb-4">
+                  <p className="text-white/90 uppercase flex items-center gap-1.5"
+                    style={{ fontFamily: 'Inter, sans-serif', fontSize: '0.75rem', lineHeight: '1.25rem', fontWeight: 600, letterSpacing: '0.05em' }}>
+                    <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'opsz' 20" }}>calendar_today</span>
+                    {format(getNormalizedDate(featuredEvent.startDate), 'MMM dd, yyyy')}
+                  </p>
+                  <p className="text-white/90 flex items-center gap-1.5"
+                    style={{ fontFamily: 'Inter, sans-serif', fontSize: '0.75rem', lineHeight: '1.25rem', fontWeight: 600 }}>
+                    <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'opsz' 20" }}>location_on</span>
+                    {featuredEvent.location}
+                  </p>
                 </div>
-              ) : (
-                hot5Events.map((event, idx) => (
-                  <div key={event.id} onClick={() => setSelectedEvent(event)} className="flex-shrink-0 w-[85%] snap-center rounded-xl overflow-hidden relative aspect-[4/3] shadow-sm cursor-pointer hover:opacity-95 transition-opacity">
-                    <img 
-                      alt={event.title} 
-                      className="w-full h-full object-cover" 
-                      src={event.imageUrl || "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&q=80&w=1000"} 
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4">
-                      <span className="bg-[#0057bd] text-white w-fit px-2 py-0.5 rounded text-[10px] font-bold mb-2 tracking-wider uppercase">
-                        {idx === 0 ? 'FEATURED' : idx < 3 ? 'POPULAR' : 'LIMITED'}
-                      </span>
-                      <h3 className="font-bold text-white text-lg leading-tight">{event.title}</h3>
-                      {event.titleNative && (
-                        <p className="text-white/90 text-[13px] font-medium leading-tight mt-0.5">{event.titleNative}</p>
-                      )}
-                      <p className="text-white/80 text-sm flex items-center gap-1.5 mt-1.5">
-                        {(() => {
-                          const flagUrl = getFlagImageUrl(event.location?.split(',').pop()?.trim() || '');
-                          return flagUrl ? <img src={flagUrl} alt="flag" className="inline-block w-4 h-3 object-cover rounded-sm shadow-sm" /> : null;
-                        })()}
-                        {event.location?.split(',')[0]} • {format(getNormalizedDate(event.startDate), 'MMM dd')}
-                      </p>
-                    </div>
+                <div>
+                  <span className="inline-block px-5 py-2 bg-white font-bold text-xs rounded-xl shadow-md transition-all duration-300"
+                    style={{ color: '#004190' }}>
+                    View Details
+                  </span>
+                </div>
+              </div>
+              <div className="absolute inset-0 pointer-events-none opacity-10 mix-blend-overlay"
+                style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/canvas-orange.png')" }} />
+            </div>
+          )}
+
+          {/* TAB CONTENTS */}
+          <div className="px-4 space-y-6 pt-4">
+
+            {/* CALENDAR TAB */}
+            {activeTab === 'calendar' && (
+              <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm border border-outline-variant">
+                  <div className="grid grid-cols-7 bg-surface-container-low border-b border-outline-variant">
+                    {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
+                      <div key={day} className="py-2 text-center text-[12px] font-semibold text-on-surface-variant uppercase">{day}</div>
+                    ))}
                   </div>
-                ))
-              )}
-            </div>
-          </section>
+                  <div className="calendar-grid">
+                    {calendarRange.days.map((date, i) => {
+                      const isCurrentMonth = date.getMonth() === currentDate.getMonth();
+                      const isToday = isSameDay(date, new Date());
+                      const dayEvents = events.filter(e => {
+                        const start = getNormalizedDate(e.startDate);
+                        const end = getNormalizedDate(e.endDate || e.startDate);
+                        return date >= start && date <= end;
+                      });
+                      const dayMaxSlot = dayEvents.reduce((max, e) => Math.max(max, eventSlots[e.id] ?? 0), -1);
+                      const cellMinHeight = Math.max(100, 28 + (dayMaxSlot + 1) * 26 + 8);
+                      return (
+                        <div key={i} className={`calendar-cell ${!isCurrentMonth ? 'bg-gray-50/30' : ''}`} style={{ minHeight: `${cellMinHeight}px` }}>
+                          <span className={`text-[10px] font-bold ${isToday ? 'text-[#0057bd] w-5 h-5 bg-[#d3e4fe] rounded-full flex items-center justify-center' : 'text-gray-400'}`}>
+                            {date.getDate()}
+                          </span>
+                          <div className="event-container">
+                            {dayEvents.map(event => {
+                              const start = getNormalizedDate(event.startDate);
+                              const end = getNormalizedDate(event.endDate || event.startDate);
+                              const isStartOfBar = isSameDay(date, start) || getDay(date) === 1;
+                              if (isStartOfBar) {
+                                const dayOfWeek = (getDay(date) + 6) % 7;
+                                const remainingInWeek = 7 - dayOfWeek;
+                                const totalDuration = differenceInCalendarDays(end, date) + 1;
+                                const span = Math.min(totalDuration, remainingInWeek);
+                                const slotIdx = eventSlots[event.id] ?? 0;
+                                const colorSet = STACK_COLORS[slotIdx % STACK_COLORS.length];
+                                return (
+                                  <div
+                                    key={event.id}
+                                    onClick={() => setSelectedEvent(event)}
+                                    className="event-bar"
+                                    style={{ backgroundColor: colorSet.bg, color: colorSet.text, width: `calc(${span * 100}% - 4px)`, top: `${slotIdx * 26}px`, left: '2px', zIndex: 10 }}
+                                  >
+                                    {event.location ? (() => { const flagUrl = getFlagImageUrl(event.location.split(',').pop()?.trim() || ''); return flagUrl ? <img src={flagUrl} alt="flag" className="inline-block mr-1 w-3.5 h-[10.5px] object-cover rounded-sm shadow-sm" /> : null; })() : null}
+                                    <span className="truncate">{event.title}</span>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </section>
+            )}
 
-          {/* Upcoming (Calendar) Section */}
-          <section className="px-4">
-            <div className="flex justify-between items-center mb-4">
-              <div>
-                <h2 className="text-2xl font-extrabold font-headline tracking-tight text-on-background">Upcoming</h2>
-              </div>
-            </div>
-
-            {/* 헤더: < Apr 2026 >  |  📅 ☰ */}
-            <div className="flex items-center justify-between mb-4">
-              {/* 월 네비게이터 */}
-              <div className="flex items-center gap-1 bg-surface-container-lowest px-1 py-1 rounded-xl border border-outline-variant shadow-sm">
-                <button onClick={() => setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))} className="p-1 hover:bg-surface-container rounded-lg flex items-center justify-center transition-colors">
-                  <span className="material-symbols-outlined text-on-surface-variant text-lg">chevron_left</span>
-                </button>
-                <span className="font-bold text-on-surface text-sm px-2 cursor-pointer select-none" onClick={() => setCurrentDate(new Date())}>
-                  {format(currentDate, 'MMM, yyyy')}
-                </span>
-                <button onClick={() => setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))} className="p-1 hover:bg-surface-container rounded-lg flex items-center justify-center transition-colors">
-                  <span className="material-symbols-outlined text-on-surface-variant text-lg">chevron_right</span>
-                </button>
-              </div>
-
-              {/* 뷰 토글 */}
-              <div className="flex items-center gap-1 bg-surface-container-lowest border border-outline-variant rounded-xl p-1 shadow-sm">
-                <button
-                  onClick={() => setViewMode('calendar')}
-                  className={`p-1.5 rounded-lg transition-all ${ viewMode === 'calendar' ? 'bg-primary text-white shadow-sm' : 'text-on-surface-variant hover:bg-surface-container' }`}
-                >
-                  <span className="material-symbols-outlined text-[18px] leading-none" style={{ fontVariationSettings: "'FILL' 1" }}>calendar_month</span>
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-1.5 rounded-lg transition-all ${ viewMode === 'list' ? 'bg-primary text-white shadow-sm' : 'text-on-surface-variant hover:bg-surface-container' }`}
-                >
-                  <span className="material-symbols-outlined text-[18px] leading-none" style={{ fontVariationSettings: "'FILL' 1" }}>view_list</span>
-                </button>
-              </div>
-            </div>
-            
-            {/* 달력 뷰 */}
-            {viewMode === 'calendar' && (
-            <div className="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm border border-outline-variant">
-              {/* Calendar Header Days */}
-              <div className="grid grid-cols-7 bg-surface-container-low border-b border-outline-variant">
-                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
-                  <div key={day} className="py-2 text-center text-[12px] font-semibold text-on-surface-variant uppercase">{day}</div>
-                ))}
-              </div>
-              <div className="calendar-grid">
-                {calendarRange.days.map((date, i) => {
-                  const isCurrentMonth = date.getMonth() === currentDate.getMonth();
-                  const isToday = isSameDay(date, new Date());
-                  const dayEvents = events.filter(e => {
-                    const start = getNormalizedDate(e.startDate);
-                    const end = getNormalizedDate(e.endDate || e.startDate);
-                    return date >= start && date <= end;
-                  });
-                  const dayMaxSlot = dayEvents.reduce((max, e) => Math.max(max, eventSlots[e.id] ?? 0), -1);
-                  const cellMinHeight = Math.max(100, 28 + (dayMaxSlot + 1) * 26 + 8);
-                  return (
-                    <div key={i} className={`calendar-cell ${!isCurrentMonth ? 'bg-gray-50/30' : ''}`} style={{ minHeight: `${cellMinHeight}px` }}>
-                      <span className={`text-[10px] font-bold ${isToday ? 'text-[#0057bd] w-5 h-5 bg-[#d3e4fe] rounded-full flex items-center justify-center' : 'text-gray-400'}`}>
-                        {date.getDate()}
-                      </span>
-                      <div className="event-container">
-                        {dayEvents.map(event => {
+            {/* UPCOMING TAB */}
+            {activeTab === 'upcoming' && (
+              <section className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                {upcomingEvents.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-on-surface-variant">
+                    <span className="material-symbols-outlined text-4xl mb-2 opacity-30">event_busy</span>
+                    <p className="text-sm font-medium">No upcoming events</p>
+                  </div>
+                ) : (
+                  upcomingEvents.map(({ month, events: monthEvents }) => (
+                    <div key={month} className="space-y-3">
+                      <div className="flex items-center gap-3 px-1 mb-2">
+                        <div className="w-1 h-3 bg-blue-500 rounded-full" />
+                        <span className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                          {month}
+                        </span>
+                        <div className="flex-1 h-[1px] bg-slate-100" />
+                      </div>
+                      
+                      <div className="flex flex-col gap-3">
+                        {monthEvents.map(event => {
                           const start = getNormalizedDate(event.startDate);
-                          const end = getNormalizedDate(event.endDate || event.startDate);
-                          const isStartOfBar = isSameDay(date, start) || getDay(date) === 1;
-                          if (isStartOfBar) {
-                            const dayOfWeek = (getDay(date) + 6) % 7;
-                            const remainingInWeek = 7 - dayOfWeek;
-                            const totalDuration = differenceInCalendarDays(end, date) + 1;
-                            const span = Math.min(totalDuration, remainingInWeek);
-                            const slotIdx = eventSlots[event.id] ?? 0;
-                            const colorSet = STACK_COLORS[slotIdx % STACK_COLORS.length];
-                            return (
-                              <div
-                                key={event.id}
-                                onClick={() => setSelectedEvent(event)}
-                                className="event-bar"
-                                style={{ backgroundColor: colorSet.bg, color: colorSet.text, width: `calc(${span * 100}% - 4px)`, top: `${slotIdx * 26}px`, left: '2px', zIndex: 10 }}
-                              >
-                                {event.location ? (() => { const flagUrl = getFlagImageUrl(event.location.split(',').pop()?.trim() || ''); return flagUrl ? <img src={flagUrl} alt="flag" className="inline-block mr-1 w-3.5 h-[10.5px] object-cover rounded-sm shadow-sm" /> : null; })() : null}
-                                <span className="truncate">{event.title}</span>
+                          const end = event.endDate ? getNormalizedDate(event.endDate) : null;
+                          const flagUrl = getFlagImageUrl(event.location?.split(',').pop()?.trim() || '');
+                          const dateStr = end && !isSameDay(start, end)
+                            ? `${format(start, 'MMM d')} – ${format(end, 'MMM d')}`
+                            : format(start, 'MMM d, EEE');
+                            
+                          return (
+                            <div
+                              key={event.id}
+                              onClick={() => setSelectedEvent(event)}
+                              className="group relative flex gap-3 bg-white border border-slate-100 rounded-2xl p-3 shadow-sm cursor-pointer hover:border-blue-200 hover:shadow-md transition-all active:scale-[0.98]"
+                            >
+                              <div className="w-20 h-20 rounded-xl overflow-hidden flex-none bg-slate-50 border border-slate-50 relative">
+                                {event.imageUrl
+                                  ? <img src={event.imageUrl} alt={event.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                  : <div className="w-full h-full flex items-center justify-center"><span className="material-symbols-outlined text-slate-300 text-2xl">event</span></div>
+                                }
                               </div>
-                            );
-                          }
-                          return null;
+                              <div className="flex flex-col justify-center min-w-0 flex-1 py-0.5">
+                                <span className="text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-100 w-fit px-1.5 py-0.5 rounded uppercase tracking-wider mb-1.5">{dateStr}</span>
+                                <h3 className="font-bold text-slate-900 text-[14px] leading-snug truncate">{event.title}</h3>
+                                {event.titleNative && <p className="text-[11px] text-slate-400 truncate mt-0.5">{event.titleNative}</p>}
+                                <div className="flex items-center gap-2 mt-1.5 text-[11px] font-medium text-slate-500">
+                                  {event.location && (
+                                    <span className="flex items-center gap-1">
+                                      {flagUrl && <img src={flagUrl} alt="flag" className="w-3 h-2 object-cover rounded-[1px] shadow-sm" />}
+                                      <span className="truncate max-w-[80px]">{event.location.split(',')[0]}</span>
+                                    </span>
+                                  )}
+                                  {event.location && event.hostName && <span className="text-slate-300">•</span>}
+                                  {event.hostName && <span className="truncate max-w-[80px] text-slate-600 font-semibold">{event.hostName}</span>}
+                                </div>
+                              </div>
+                              <button 
+                                onClick={(e) => handleToggleLike(e, event.id)}
+                                className={`absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center transition-colors active:scale-90 ${
+                                  likedEventIds.includes(event.id) ? 'bg-red-50 text-red-500' : 'bg-slate-50 text-slate-300 hover:text-red-400'
+                                }`}
+                              >
+                                <span className="material-symbols-rounded text-[16px]" style={{ fontVariationSettings: likedEventIds.includes(event.id) ? "'FILL' 1" : "'FILL' 0" }}>favorite</span>
+                              </button>
+                            </div>
+                          );
                         })}
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
+                  ))
+                )}
+              </section>
             )}
 
-            {/* 리스트 뷰 - 해당 월 이벤트만 */}
-            {viewMode === 'list' && (() => {
-              const monthStart = startOfMonth(currentDate);
-              const monthEnd = endOfMonth(currentDate);
-              const monthEvents = sortedEvents.filter(e => {
-                const start = getNormalizedDate(e.startDate);
-                const end = getNormalizedDate(e.endDate || e.startDate);
-                return start <= monthEnd && end >= monthStart;
-              });
-              return monthEvents.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-on-surface-variant">
-                  <span className="material-symbols-outlined text-4xl mb-2 opacity-30">event_busy</span>
-                  <p className="text-sm font-medium">No events this month</p>
-                </div>
-              ) : (
-                <div className="flex flex-col gap-3">
-                  {monthEvents.map(event => {
-                    const start = getNormalizedDate(event.startDate);
-                    const end = event.endDate ? getNormalizedDate(event.endDate) : null;
-                    const flagUrl = getFlagImageUrl(event.location?.split(',').pop()?.trim() || '');
-                    const dateStr = end && !isSameDay(start, end)
-                      ? `${format(start, 'MMM d')} – ${format(end, 'MMM d')}`
-                      : format(start, 'MMM d, EEE');
+            {/* FAVORITES TAB */}
+            {activeTab === 'favorite' && (
+              <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                {(() => {
+                  const likedEvents = sortedEvents.filter(e => likedEventIds.includes(e.id));
+                  if (likedEvents.length === 0) {
                     return (
-                      <div
-                        key={event.id}
-                        onClick={() => setSelectedEvent(event)}
-                        className="flex gap-3 bg-surface-container-lowest border border-outline-variant rounded-xl p-3 shadow-sm cursor-pointer hover:border-primary/40 active:scale-[0.98] transition-all"
-                      >
-                        {/* 썸네일 */}
-                        <div className="w-16 h-16 rounded-lg overflow-hidden flex-none bg-surface-container">
-                          {event.imageUrl
-                            ? <img src={event.imageUrl} alt={event.title} className="w-full h-full object-cover" />
-                            : <div className="w-full h-full flex items-center justify-center"><span className="material-symbols-outlined text-on-surface-variant text-2xl">event</span></div>
-                          }
+                      <div className="flex flex-col items-center justify-center py-20 text-center">
+                        <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-4">
+                          <span className="material-symbols-outlined text-3xl text-red-300">favorite</span>
                         </div>
-                        {/* 정보 */}
-                        <div className="flex flex-col justify-center min-w-0">
-                          <span className="text-[10px] font-bold text-primary bg-primary/10 w-fit px-1.5 py-0.5 rounded mb-1 uppercase">{dateStr}</span>
-                          <h3 className="font-bold text-on-background text-sm leading-snug truncate">{event.title}</h3>
-                          {event.titleNative && <p className="text-[11px] text-on-surface-variant truncate">{event.titleNative}</p>}
-                          {event.location && (
-                            <p className="text-[11px] text-on-surface-variant flex items-center gap-1 mt-0.5">
-                              {flagUrl && <img src={flagUrl} alt="flag" className="w-3.5 h-[10.5px] object-cover rounded-sm" />}
-                              {event.location.split(',')[0]}
-                            </p>
-                          )}
-                        </div>
+                        <h3 className="text-base font-bold text-slate-800 mb-1">No saved events</h3>
+                        <p className="text-xs text-slate-400 max-w-[200px] leading-relaxed">Like events you want to attend to easily find them here later.</p>
                       </div>
                     );
-                  })}
-                </div>
-              );
-            })()}
-          </section>
+                  }
+                  
+                  return (
+                    <div className="flex flex-col gap-3">
+                      {likedEvents.map(event => {
+                        const start = getNormalizedDate(event.startDate);
+                        const end = event.endDate ? getNormalizedDate(event.endDate) : null;
+                        const flagUrl = getFlagImageUrl(event.location?.split(',').pop()?.trim() || '');
+                        const dateStr = end && !isSameDay(start, end)
+                          ? `${format(start, 'MMM d')} – ${format(end, 'MMM d')}`
+                          : format(start, 'MMM d, EEE');
+                          
+                        return (
+                          <div
+                            key={event.id}
+                            onClick={() => setSelectedEvent(event)}
+                            className="group relative flex gap-3 bg-white border border-slate-100 rounded-2xl p-3 shadow-sm cursor-pointer hover:border-blue-200 hover:shadow-md transition-all active:scale-[0.98]"
+                          >
+                            <div className="w-20 h-20 rounded-xl overflow-hidden flex-none bg-slate-50 border border-slate-50 relative">
+                              {event.imageUrl
+                                ? <img src={event.imageUrl} alt={event.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                : <div className="w-full h-full flex items-center justify-center"><span className="material-symbols-outlined text-slate-300 text-2xl">event</span></div>
+                              }
+                            </div>
+                            <div className="flex flex-col justify-center min-w-0 flex-1 py-0.5">
+                              <span className="text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-100 w-fit px-1.5 py-0.5 rounded uppercase tracking-wider mb-1.5">{dateStr}</span>
+                              <h3 className="font-bold text-slate-900 text-[14px] leading-snug truncate">{event.title}</h3>
+                              {event.titleNative && <p className="text-[11px] text-slate-400 truncate mt-0.5">{event.titleNative}</p>}
+                              <div className="flex items-center gap-2 mt-1.5 text-[11px] font-medium text-slate-500">
+                                {event.location && (
+                                  <span className="flex items-center gap-1">
+                                    {flagUrl && <img src={flagUrl} alt="flag" className="w-3 h-2 object-cover rounded-[1px] shadow-sm" />}
+                                    <span className="truncate max-w-[80px]">{event.location.split(',')[0]}</span>
+                                  </span>
+                                )}
+                                {event.location && event.hostName && <span className="text-slate-300">•</span>}
+                                {event.hostName && <span className="truncate max-w-[80px] text-slate-600 font-semibold">{event.hostName}</span>}
+                              </div>
+                            </div>
+                            <button 
+                              onClick={(e) => handleToggleLike(e, event.id)}
+                              className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center transition-colors active:scale-90 bg-red-50 text-red-500"
+                            >
+                              <span className="material-symbols-rounded text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </section>
+            )}
+          </div>
         </main>
-
-
-        {/* Floating Add Button */}
-        <button 
-          onClick={() => setShowCreateModal(true)}
-          className="fixed bottom-28 right-6 w-14 h-14 bg-[#0057bd] text-white rounded-full shadow-lg flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50"
-        >
-          <span className="material-symbols-outlined text-3xl">add</span>
-        </button>
 
         <AnimatePresence>
           {showCreateModal && (
-            <CreateEvent onClose={handleCloseCreate} onSuccess={() => {}} />
+            <CreateEvent isOpen={showCreateModal} onClose={handleCloseCreate} onSuccess={() => {}} />
           )}
           {selectedEvent && (
-            <EventDetail 
+            <EventViewer 
               event={selectedEvent} 
               onClose={handleCloseEvent}
-              onDelete={(id) => {
-                setEvents(prev => prev.filter(e => e.id !== id));
-                handleCloseEvent();
-              }}
-              onEdit={(evt) => {
-                alert("Edit functionality coming soon!");
-              }}
             />
           )}
         </AnimatePresence>

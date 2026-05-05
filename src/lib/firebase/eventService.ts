@@ -14,9 +14,11 @@ import {
   getDocs,
   where,
   limit,
-  deleteDoc
+  deleteDoc,
+  setDoc,
+  getDoc
 } from 'firebase/firestore';
-import { Event } from '@/types/event';
+import { Event, EventRegistration } from '@/types/event';
 
 const COLLECTION_NAME = 'events';
 
@@ -37,7 +39,19 @@ export const eventService = {
     });
   },
 
-  // 2. Create a new event
+  // 2. Subscribe to a single event (real-time)
+  subscribeEvent: (eventId: string, callback: (event: Event | null) => void) => {
+    const eventRef = doc(db, COLLECTION_NAME, eventId);
+    return onSnapshot(eventRef, (snapshot) => {
+      if (snapshot.exists()) {
+        callback({ id: snapshot.id, ...snapshot.data() } as Event);
+      } else {
+        callback(null);
+      }
+    });
+  },
+
+  // 3. Create a new event
   createEvent: async (eventData: Omit<Event, 'id' | 'createdAt' | 'participants'>) => {
     try {
       const docRef = await addDoc(collection(db, COLLECTION_NAME), {
@@ -52,7 +66,29 @@ export const eventService = {
     }
   },
 
-  // 3. Toggle RSVP (Join/Leave)
+  // 4. Update Event
+  updateEvent: async (eventId: string, eventData: Partial<Event>) => {
+    try {
+      const eventRef = doc(db, COLLECTION_NAME, eventId);
+      await updateDoc(eventRef, eventData);
+    } catch (error) {
+      console.error("Error updating event:", error);
+      throw error;
+    }
+  },
+
+  // 5. Delete Event
+  deleteEvent: async (eventId: string) => {
+    try {
+      const eventRef = doc(db, COLLECTION_NAME, eventId);
+      await deleteDoc(eventRef);
+    } catch (error) {
+      console.error("Error deleting event:", error);
+      throw error;
+    }
+  },
+
+  // 6. Toggle RSVP (Join/Leave)
   toggleRSVP: async (eventId: string, userId: string, isJoining: boolean) => {
     try {
       const eventRef = doc(db, COLLECTION_NAME, eventId);
@@ -65,29 +101,7 @@ export const eventService = {
     }
   },
 
-  // Update Event
-  updateEvent: async (eventId: string, eventData: Partial<Event>) => {
-    try {
-      const eventRef = doc(db, COLLECTION_NAME, eventId);
-      await updateDoc(eventRef, eventData);
-    } catch (error) {
-      console.error("Error updating event:", error);
-      throw error;
-    }
-  },
-
-  // Delete Event
-  deleteEvent: async (eventId: string) => {
-    try {
-      const eventRef = doc(db, COLLECTION_NAME, eventId);
-      await deleteDoc(eventRef);
-    } catch (error) {
-      console.error("Error deleting event:", error);
-      throw error;
-    }
-  },
-
-  // 4. Search Events by Title
+  // 7. Search Events by Title
   async searchEvents(keyword: string) {
     const q = query(
       collection(db, COLLECTION_NAME),
@@ -101,7 +115,7 @@ export const eventService = {
     })) as Event[];
   },
 
-  // 5. Get Upcoming Events
+  // 8. Get Upcoming Events
   getUpcomingEvents: async (limitCount: number = 3) => {
     const q = query(
       collection(db, COLLECTION_NAME),
@@ -114,5 +128,65 @@ export const eventService = {
       id: doc.id,
       ...doc.data()
     })) as Event[];
-  }
+  },
+
+  // 9. Like Functionality
+  toggleLike: async (userId: string, eventId: string) => {
+    const likeRef = doc(db, 'users', userId, 'likedEvents', eventId);
+    try {
+      const snap = await getDoc(likeRef);
+      if (snap.exists()) {
+        await deleteDoc(likeRef);
+      } else {
+        await setDoc(likeRef, { id: eventId, createdAt: serverTimestamp() });
+      }
+    } catch (e) {
+      console.error("Error toggling like:", e);
+    }
+  },
+
+  subscribeMyLikes: (userId: string, callback: (eventIds: string[]) => void) => {
+    const q = collection(db, 'users', userId, 'likedEvents');
+    return onSnapshot(q, (snapshot) => {
+      callback(snapshot.docs.map(d => d.id));
+    });
+  },
+
+  // === Registration (서브컬렉션) ===
+
+  // 10. Add Registration
+  addRegistration: async (eventId: string, data: Omit<EventRegistration, 'id' | 'registeredAt'>) => {
+    const colRef = collection(db, COLLECTION_NAME, eventId, 'registrations');
+    return await addDoc(colRef, {
+      ...data,
+      registeredAt: serverTimestamp()
+    });
+  },
+
+  // 11. Subscribe to registrations
+  subscribeRegistrations: (eventId: string, callback: (regs: EventRegistration[]) => void) => {
+    const q = query(
+      collection(db, COLLECTION_NAME, eventId, 'registrations'),
+      orderBy('registeredAt', 'desc')
+    );
+    return onSnapshot(q, (snapshot) => {
+      const regs = snapshot.docs.map(d => ({
+        id: d.id,
+        ...d.data()
+      })) as EventRegistration[];
+      callback(regs);
+    });
+  },
+
+  // 12. Update registration status
+  updateRegistrationStatus: async (eventId: string, regId: string, status: 'confirmed' | 'cancelled') => {
+    const regRef = doc(db, COLLECTION_NAME, eventId, 'registrations', regId);
+    await updateDoc(regRef, { status });
+  },
+
+  // 13. Cancel registration
+  cancelRegistration: async (eventId: string, regId: string) => {
+    const regRef = doc(db, COLLECTION_NAME, eventId, 'registrations', regId);
+    await updateDoc(regRef, { status: 'cancelled' });
+  },
 };

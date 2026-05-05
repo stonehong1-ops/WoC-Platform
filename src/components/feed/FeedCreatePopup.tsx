@@ -252,81 +252,20 @@ export default function FeedCreatePopup({ isOpen, onClose, context, editingPost 
             ) : (
               <textarea
                 className="w-full min-h-[160px] bg-transparent border-none focus:ring-0 text-xl font-body-md text-on-surface placeholder:text-outline/60 resize-none"
-                placeholder="What's on your mind?"
+                placeholder="Share your activities related to Tango"
                 value={content}
                 onChange={e => setContent(e.target.value)}
               />
             )}
             {content.length > 0 && (
-              <p className={`text-[10px] mt-1 text-right font-bold tracking-wide ${content.length <= 70 ? 'text-primary' : 'text-outline'}`}>
-                {content.length}/70 {content.length <= 70 ? '✦ Style available' : ''}
+              <p className={`text-[10px] mt-1 text-right font-bold tracking-wide text-outline`}>
+                {content.length}/500
               </p>
             )}
           </section>
 
           {/* Palette + Style Section */}
-          <section className="flex flex-col gap-3 px-1 py-2 animate-in fade-in duration-700">
-          {/* Color Row */}
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold text-outline tracking-wider uppercase shrink-0">Palette</span>
-              <div className="flex items-center gap-[5px] overflow-x-auto scrollbar-none">
-                {COLOR_PALETTE.map((c, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setSelectedColor(selectedColor?.name === c.name ? null : c)}
-                    title={c.name}
-                    className={`rounded-full border-2 flex-shrink-0 transition-all hover:scale-110 active:scale-95 duration-150 ${
-                      selectedColor?.name === c.name
-                        ? 'ring-2 ring-primary ring-offset-1 border-primary scale-110'
-                        : 'border-outline-variant/50'
-                    } ${i === 0 ? 'w-5 h-5' : 'w-[14px] h-[14px]'}`}
-                    style={c.isDefault ? {} : { backgroundColor: c.bg }}
-                  />
-                ))}
-              </div>
-            </div>
 
-            {/* Style Row — Impact + Emphasis 한 줄 (≤70자 시 표시) */}
-            {isShort && (
-              <div className="flex items-center gap-2 pt-2 border-t border-outline-variant/20">
-                <span className="text-[10px] font-bold text-outline tracking-wider uppercase shrink-0">Style</span>
-                <div className="flex items-center gap-1">
-                  {IMPACT_SIZES.map((s, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setSelectedImpact(i)}
-                      title={['Normal', 'Bold', 'Impact'][i]}
-                      style={{ fontWeight: s.weight, fontSize: s.size }}
-                      className={`w-9 h-8 rounded-lg border transition-all active:scale-95 flex items-center justify-center leading-none ${
-                        selectedImpact === i
-                          ? 'bg-primary text-white border-primary shadow-sm'
-                          : 'border-outline-variant/40 text-outline hover:bg-surface-container'
-                      }`}
-                    >
-                      A
-                    </button>
-                  ))}
-                </div>
-                <div className="w-px h-5 bg-outline-variant/30 mx-0.5" />
-                <div className="flex items-center gap-1">
-                  {EMPHASIS_OPTIONS.map((o, i) => (
-                    <button
-                      key={i}
-                      title={o.title}
-                      onClick={() => setSelectedEmphasis(prev => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i])}
-                      className={`w-8 h-8 rounded-lg text-[12px] border transition-all active:scale-95 flex items-center justify-center ${
-                        selectedEmphasis.includes(i)
-                          ? 'bg-primary text-white border-primary shadow-sm'
-                          : 'border-outline-variant/40 text-outline hover:bg-surface-container'
-                      } ${o.cls}`}
-                    >
-                      {o.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </section>
 
           {/* Media Section */}
           {showMedia && (
@@ -381,83 +320,16 @@ export default function FeedCreatePopup({ isOpen, onClose, context, editingPost 
                   <div className="w-12 h-12 rounded-full bg-primary-container/10 flex items-center justify-center group-hover:scale-110 transition-transform">
                     <span className="material-symbols-outlined text-primary-container text-[28px]">add_photo_alternate</span>
                   </div>
-                  <p className="font-title-md text-body-md text-on-surface-variant">Add Photos or Video</p>
-                  <span className="text-[10px] text-on-surface-variant/60 font-medium">{imageCount}/20 Photos · {videoCount}/1 Video</span>
+                  <p className="font-title-md text-body-md text-on-surface-variant">Add Photos</p>
+                  <span className="text-[10px] text-on-surface-variant/60 font-medium">{imageCount}/20 Photos</span>
                   <span className="material-symbols-outlined absolute -bottom-6 -right-6 text-[120px] text-primary-container/5 pointer-events-none select-none">cloud_upload</span>
                 </div>
               )}
-              <input ref={mediaInputRef} type="file" className="hidden" accept="image/*,video/*" multiple onChange={handleMediaSelect} />
+              <input ref={mediaInputRef} type="file" className="hidden" accept="image/*" multiple onChange={handleMediaSelect} />
             </section>
           )}
 
-          {/* Tagging Section */}
-          <section className="space-y-4">
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-outline text-[20px]">sell</span>
-              <h3 className="font-label-xs text-label-xs text-outline tracking-[0.1em] uppercase">TAGS</h3>
-            </div>
 
-            {/* Selected Tags */}
-            {tags.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {tags.map(t => (
-                  <div key={t.id} className="flex items-center gap-1 px-2.5 py-1 bg-primary/10 text-primary rounded-full text-xs font-semibold border border-primary/20">
-                    <span className={`material-symbols-outlined text-[13px] ${KIND_COLOR[t.kind]}`}>{KIND_ICON[t.kind]}</span>
-                    <span>{t.label}</span>
-                    <button onClick={() => removeTag(t.id)} className="ml-0.5 hover:text-red-500 transition-colors">
-                      <span className="material-symbols-outlined text-[13px]">close</span>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Search Input */}
-            <div className="relative group">
-              <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                <span className={`material-symbols-outlined text-outline group-focus-within:text-primary-container transition-colors ${isSearching ? 'animate-spin' : ''}`}>
-                  {isSearching ? 'progress_activity' : 'search'}
-                </span>
-              </div>
-              <input
-                type="text"
-                value={tagKeyword}
-                onChange={e => setTagKeyword(e.target.value)}
-                placeholder="people, group, event, social..."
-                className="w-full h-14 pl-12 pr-4 bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm focus:ring-2 focus:ring-primary-container focus:border-transparent transition-all outline-none font-body-md"
-              />
-            </div>
-
-            {/* Search Results Dropdown */}
-            {tagResults.length > 0 && (
-              <div className="bg-white rounded-xl shadow-lg border border-outline-variant/20 overflow-hidden max-h-64 overflow-y-auto">
-                {tagResults.map(item => (
-                  <button
-                    key={item.id}
-                    onClick={() => addTag(item)}
-                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-surface-container transition-colors text-left"
-                  >
-                    {item.photo
-                      ? <img src={item.photo} alt="" className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
-                      : <div className={`w-8 h-8 rounded-full flex items-center justify-center bg-surface-container flex-shrink-0 ${KIND_COLOR[item.kind]}`}>
-                          <span className="material-symbols-outlined text-base">{KIND_ICON[item.kind]}</span>
-                        </div>
-                    }
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-on-surface truncate">{item.label}</p>
-                      <p className={`text-xs capitalize ${KIND_COLOR[item.kind]}`}>{item.kind}</p>
-                    </div>
-                    {tags.find(t => t.id === item.id) && (
-                      <span className="material-symbols-outlined text-primary text-lg">check_circle</span>
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
-            {tagKeyword.length >= 2 && !isSearching && tagResults.length === 0 && (
-              <p className="text-center text-xs text-outline py-4">검색 결과가 없습니다</p>
-            )}
-          </section>
 
         </main>
       </div>

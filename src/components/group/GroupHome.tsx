@@ -9,6 +9,8 @@ import { Group, Member, Post } from "@/types/group";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { format } from "date-fns";
 import { groupService } from "@/lib/firebase/groupService";
+import { notificationService } from "@/lib/firebase/notificationService";
+import { Notification } from "@/types/notification";
 import ImageWithFallback from "@/components/common/ImageWithFallback";
 import GroupJoinModal from "./GroupJoinModal";
 
@@ -55,6 +57,7 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
   const [noticePost, setNoticePost] = useState<Post | null>(null);
   const [moments, setMoments] = useState<Post[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
+  const [adminTodos, setAdminTodos] = useState<Notification[]>([]);
 
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
@@ -161,6 +164,20 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
   }, [members, group.ownerId, group.representative]);
 
   const currentAdmin = admins[selectedAdminIndex] || admins[0];
+
+  const isAdminUser = React.useMemo(() => {
+    return admins.some(a => a.id === user?.uid) || group.ownerId === user?.uid;
+  }, [admins, user, group.ownerId]);
+
+  useEffect(() => {
+    if (!user || !isAdminUser) return;
+    
+    const unsub = notificationService.subscribeToAdminTodos(user.uid, group.id, (todos) => {
+      setAdminTodos(todos);
+    });
+    
+    return () => unsub();
+  }, [user, isAdminUser, group.id]);
 
   const handleClaimAdmin = async () => {
     if (!user) {
@@ -592,6 +609,42 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
         <div className={`max-w-7xl mx-auto ${activeTab === 'feed' ? 'px-0 md:px-0 mt-0 space-y-0 pb-0' : 'px-4 md:px-8 space-y-10 mt-8 pb-12'}`}>
           {activeTab === 'home' && (
             <>
+              {/* Admin Todo Section */}
+              {isAdminUser && adminTodos.length > 0 && (
+                <section className="bg-orange-50 rounded-xl p-6 shadow-sm border border-orange-200 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-4 opacity-10">
+                    <span className="material-symbols-outlined text-6xl text-orange-600">assignment_late</span>
+                  </div>
+                  <h3 className="font-headline font-bold text-orange-800 mb-4 flex items-center gap-2 text-xl">
+                    <span className="material-symbols-outlined text-orange-600">notification_important</span> Action Required
+                  </h3>
+                  <div className="grid gap-3 relative z-10">
+                    {adminTodos.map(todo => (
+                      <div key={todo.id} className="bg-white rounded-lg p-4 border border-orange-100 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                          <span className="text-[10px] font-bold text-orange-600 uppercase tracking-wide bg-orange-100 px-2 py-0.5 rounded-full mb-2 inline-block">
+                            {todo.category || 'TODO'}
+                          </span>
+                          <h4 className="font-bold text-slate-800 text-sm">{todo.title}</h4>
+                          <p className="text-xs text-slate-500 mt-1">{todo.message}</p>
+                        </div>
+                        <div className="shrink-0 flex gap-2">
+                          <button 
+                            onClick={() => {
+                                notificationService.markTodosAsCompletedByReference(todo.referenceId || todo.id);
+                                toast.success("Task marked as completed");
+                            }}
+                            className="bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors shadow-sm"
+                          >
+                            Mark Completed
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
               {/* Notice Section */}
               <div onClick={() => handleTabClick('board')} className="bg-white rounded-xl p-6 shadow-sm border border-[#a3abd7]/10 hover:shadow-md transition-shadow cursor-pointer">
                 <div className="flex justify-between items-center mb-4">

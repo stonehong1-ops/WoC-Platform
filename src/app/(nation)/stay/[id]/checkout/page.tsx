@@ -12,6 +12,8 @@ import { Group } from '@/types/group';
 import { sendSmsViaSolapi } from '@/app/actions/smsActions';
 
 import { format, addDays } from 'date-fns';
+import SectionCard from '@/components/ui/SectionCard';
+import InfoRow from '@/components/ui/InfoRow';
 
 function CheckoutContent() {
   const router = useRouter();
@@ -151,11 +153,20 @@ function CheckoutContent() {
 
   const handleSubmit = async () => {
     if (!user) {
-      alert("Please sign in first.");
+      alert("로그인이 필요합니다.");
       return;
     }
     if (!applicantName || !phoneNumber || !depositorName) {
-      alert("Please fill in your name, contact number, and depositor name.");
+      alert("신청자 성함, 연락처, 입금자명을 모두 입력해주세요.");
+      return;
+    }
+
+    const currentBankName = bankName;
+    const currentAccountNumber = accountNumber;
+    const currentAccountHolder = accountHolder;
+
+    if (!currentAccountNumber) {
+      alert("결제 계좌 정보가 설정되지 않았습니다. 호스트에게 문의해주세요.");
       return;
     }
 
@@ -166,6 +177,7 @@ function CheckoutContent() {
       const booking = await stayBookingService.addBooking({
         stayId: stay.id,
         groupId: stay.groupId || 'freestyle-tango',
+        hostId: stay.host?.userId || 'adminstone',
         stayTitle: stay.title,
         userId: user.uid,
         applicantName,
@@ -185,11 +197,11 @@ function CheckoutContent() {
         },
         payment: {
           method: 'bank_domestic',
-          bankName: bankName,
-          accountNumber: accountNumber,
-          holderName: accountHolder,
+          bankName: currentBankName,
+          accountNumber: currentAccountNumber,
+          holderName: currentAccountHolder,
           depositorName,
-          depositDate: new Date().toISOString().split('T')[0] // today
+          depositDate: format(new Date(), 'yyyy-MM-dd')
         },
         status: 'APPLIED' as StayBookingStatus,
       });
@@ -209,7 +221,6 @@ function CheckoutContent() {
         }
         
         if (formattedPhone.startsWith('0') && formattedPhone.length >= 10) {
-          // It's likely a domestic phone number, proceed
           const smsContent = `[WoC] 예약이 접수되었습니다.\n숙소: ${stay.title}\n일정: ${formatDate(checkIn)} - ${formatDate(checkOut)}\n예약자: ${applicantName}\n금액: ${grandTotal.toLocaleString()}원\n\n호스트의 확인 후 최종 확정됩니다.`;
           const smsResult = await sendSmsViaSolapi(
             formattedPhone,
@@ -235,7 +246,6 @@ function CheckoutContent() {
           [user.uid, hostId], user.uid, 'business'
         );
 
-        // 1. Stay Booking Info Message
         const stayBookingMsg = `🏨 [STAY BOOKING]\n` +
           `Stay: ${stay.title}\n` +
           `Dates: ${formatDate(checkIn)} - ${formatDate(checkOut)}\n` +
@@ -254,13 +264,12 @@ function CheckoutContent() {
         });
       } catch (chatErr) {
         console.error('Stay booking chat notification failed:', chatErr);
-        // Don't block the flow if chat fails
       }
 
       router.push(`/stay/${stayId}/checkout/complete?bookingId=${booking.id}`);
     } catch (error: any) {
       console.error(error);
-      alert("Booking request failed. " + (error.message || ''));
+      alert("예약 신청에 실패했습니다. " + (error.message || ''));
       setIsSubmitting(false);
     }
   };
@@ -270,9 +279,11 @@ function CheckoutContent() {
   };
 
   const getBankDetails = () => {
-    if (group?.classPaymentSettings?.bankDetails) return group.classPaymentSettings.bankDetails;
-    if (group?.staySettings?.bankDetails) return group.staySettings.bankDetails;
-    if ((group as any)?.bankDetails) return (group as any).bankDetails;
+    // 1. Group Stay Settings
+    if (group?.staySettings?.bankDetails?.accountNumber) return group.staySettings.bankDetails;
+    // 2. Group Class Payment Settings (Legacy Fallback)
+    if (group?.classPaymentSettings?.bankDetails?.accountNumber) return group.classPaymentSettings.bankDetails;
+    // 3. Stay Object Payment Methods
     const stayBank = stay.payment?.methods?.find(m => m.type === 'bank_domestic') || stay.payment?.methods?.[0];
     if (stayBank) return stayBank;
     return null;
@@ -281,100 +292,92 @@ function CheckoutContent() {
   const rawBankMethod = getBankDetails();
   const bankName = rawBankMethod?.bankName || '';
   const accountNumber = rawBankMethod?.accountNumber || '';
-  // Handle different naming conventions in Group vs Stay models
   const accountHolder = (rawBankMethod as any)?.ownerName || (rawBankMethod as any)?.accountHolder || (rawBankMethod as any)?.holderName || '';
 
   return (
-    <div className="font-body-md text-on-surface bg-background min-h-[max(884px,100dvh)] relative">
-      <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-100 dark:border-slate-800 shadow-sm fixed top-0 z-50 w-full">
-        <div className="flex items-center justify-between px-4 h-16 max-w-[896px] mx-auto">
-          <div className="flex items-center gap-4">
-            <button onClick={() => router.back()} className="active:scale-95 duration-200 p-2 hover:bg-slate-50 rounded-full transition-colors">
-              <span className="material-symbols-outlined text-slate-500">arrow_back</span>
-            </button>
-            <h1 className="font-['Plus_Jakarta_Sans'] font-bold text-lg text-on-surface">Confirm Reservation</h1>
-          </div>
+    <div className="font-sans text-[#2d3435] bg-[#f8f9fa] min-h-screen relative">
+      <header className="bg-white/80 backdrop-blur-xl border-b border-[#f2f4f4] fixed top-0 z-50 w-full">
+        <div className="flex items-center justify-between px-4 h-16 max-w-[600px] mx-auto">
+          <button onClick={() => router.back()} className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-[#f2f4f4] transition-colors">
+            <span className="material-symbols-outlined text-[#596061]">arrow_back</span>
+          </button>
+          <h1 className="font-['Plus_Jakarta_Sans'] font-extrabold text-lg text-[#2d3435]">Confirm Reservation</h1>
           <div className="w-10"></div>
         </div>
       </header>
 
-      <main className="pt-20 pb-[200px] px-4 max-w-[896px] mx-auto space-y-6">
-        {/* Reservation Summary Section */}
-        <section className="bg-surface-container-lowest rounded-xxl p-6 custom-shadow">
-          <div className="flex flex-col">
-            <div className="flex flex-col py-1">
-              <div>
-                <span className="inline-block px-2 py-1 bg-primary-fixed text-on-primary-fixed text-[10px] font-bold uppercase tracking-wider rounded mb-2">Selected Stay</span>
-                <h2 className="font-headline-lg text-headline-lg text-on-surface mb-1">{stay.title}</h2>
-              </div>
-              <div className="grid grid-cols-2 gap-4 mt-6">
-                <div>
-                  <p className="text-label-sm text-outline uppercase">Dates</p>
-                  <p className="font-title-md text-on-surface">{formatDate(checkIn)} - {formatDate(checkOut)}</p>
-                  <p className="text-label-sm text-on-surface-variant">{checkIn.getFullYear()} · {nights} nights</p>
-                </div>
-                <div>
-                  <p className="text-label-sm text-outline uppercase">Guests</p>
-                  <p className="font-title-md text-on-surface">{guests} Guests</p>
-                  <p className="text-label-sm text-on-surface-variant">Entire home</p>
-                </div>
+      <main className="pt-20 pb-[200px] px-4 max-w-[600px] mx-auto space-y-4">
+        {/* Reservation Summary */}
+        <SectionCard icon="bed" title="Stay Summary">
+          <div className="flex gap-4 p-4 bg-[#f8f9fa] rounded-2xl border border-[#e0e4e5]">
+            <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-slate-100">
+              {stay.images?.[0] && (
+                <img src={stay.images[0]} alt={stay.title} className="w-full h-full object-cover" />
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] font-black text-[#acb3b4] uppercase tracking-widest mb-1">STAY</p>
+              <h2 className="text-base font-black text-[#2d3435] truncate mb-2">{stay.title}</h2>
+              <div className="flex flex-wrap gap-2">
+                <span className="text-[10px] bg-[#e8eaec] text-[#596061] px-2 py-0.5 rounded-full font-bold">
+                  {formatDate(checkIn)} - {formatDate(checkOut)}
+                </span>
+                <span className="text-[10px] bg-[#e8eaec] text-[#596061] px-2 py-0.5 rounded-full font-bold">
+                  {nights} Nights
+                </span>
               </div>
             </div>
           </div>
-        </section>
+        </SectionCard>
 
-        {/* Guest Information Section (New Form Fields) */}
-        <section className="bg-surface-container-lowest rounded-xxl p-6 custom-shadow">
-          <h3 className="font-title-md text-on-surface mb-4">Guest Information</h3>
+        {/* Guest Information */}
+        <SectionCard icon="person" title="Guest & Contact Info">
           <div className="space-y-4">
-            <div>
-              <label className="block text-label-sm text-outline uppercase mb-2">Number of Guests</label>
-              <div className="flex items-center gap-4 bg-surface-container-low rounded-xl p-2 w-fit border border-outline-variant">
+            <div className="flex items-center justify-between px-1">
+              <label className="text-xs font-bold text-[#596061]">Number of Guests</label>
+              <div className="flex items-center gap-4 bg-[#f2f4f4] rounded-xl p-1.5 border border-[#e0e4e5]">
                 <button 
                   onClick={() => setGuests(Math.max(1, guests - 1))}
                   disabled={guests <= 1}
-                  className="w-10 h-10 flex items-center justify-center rounded-lg bg-surface hover:bg-surface-container-highest disabled:opacity-30 transition-colors"
+                  className="w-8 h-8 flex items-center justify-center rounded-lg bg-white shadow-sm disabled:opacity-30 transition-all active:scale-90"
                 >
-                  <span className="material-symbols-outlined">remove</span>
+                  <span className="material-symbols-outlined text-sm">remove</span>
                 </button>
-                <span className="font-title-lg w-8 text-center">{guests}</span>
+                <span className="font-black text-sm w-4 text-center">{guests}</span>
                 <button 
                   onClick={() => setGuests(Math.min(4, guests + 1))}
                   disabled={guests >= 4}
-                  className="w-10 h-10 flex items-center justify-center rounded-lg bg-surface hover:bg-surface-container-highest disabled:opacity-30 transition-colors"
+                  className="w-8 h-8 flex items-center justify-center rounded-lg bg-white shadow-sm disabled:opacity-30 transition-all active:scale-90"
                 >
-                  <span className="material-symbols-outlined">add</span>
+                  <span className="material-symbols-outlined text-sm">add</span>
                 </button>
               </div>
-              <p className="text-body-sm text-on-surface-variant mt-2">Maximum 4 guests allowed.</p>
             </div>
-            <div className="pt-2 border-t border-surface-variant/50"></div>
-            <div>
-              <label className="block text-label-sm text-outline uppercase mb-1">Applicant Name *</label>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-[#596061]">Applicant Name <span className="text-red-500">*</span></label>
               <input 
                 type="text" 
                 value={applicantName}
                 onChange={(e) => setApplicantName(e.target.value)}
-                className="w-full bg-surface-container-low border border-outline-variant rounded-xl px-4 py-3 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm text-[#2d3435] focus:outline-none focus:border-[#0057bd] transition-all"
                 placeholder="Enter your name"
               />
             </div>
-            <div>
-              <label className="block text-label-sm text-outline uppercase mb-1">Contact Number (For SMS) *</label>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-[#596061]">Contact Number (SMS) <span className="text-red-500">*</span></label>
               <div className="flex gap-2">
                 <select 
                   value={countryCode}
                   onChange={(e) => setCountryCode(e.target.value)}
-                  className="w-[120px] bg-surface-container-low border border-outline-variant rounded-xl px-2 py-3 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  className="w-[110px] bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-2 py-3 text-sm text-[#2d3435] focus:outline-none"
                 >
                   <option value="+82">+82 (KR)</option>
                   <option value="+1">+1 (US/CA)</option>
                   <option value="+81">+81 (JP)</option>
                   <option value="+86">+86 (CN)</option>
                   <option value="+44">+44 (UK)</option>
-                  <option value="+33">+33 (FR)</option>
-                  <option value="+49">+49 (DE)</option>
-                  <option value="+61">+61 (AU)</option>
                   <option value="+886">+886 (TW)</option>
                   <option value="+852">+852 (HK)</option>
                 </select>
@@ -382,157 +385,148 @@ function CheckoutContent() {
                   type="tel" 
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value.replace(/[^0-9-]/g, ''))}
-                  className="flex-1 bg-surface-container-low border border-outline-variant rounded-xl px-4 py-3 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  placeholder="e.g. 010-1234-5678"
+                  className="flex-1 bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm text-[#2d3435] focus:outline-none focus:border-[#0057bd] transition-all"
+                  placeholder="e.g. 010-0000-0000"
                 />
               </div>
             </div>
-            <div>
-              <label className="block text-label-sm text-outline uppercase mb-1">Depositor Name *</label>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-[#596061]">Depositor Name <span className="text-red-500">*</span></label>
               <input 
                 type="text" 
                 value={depositorName}
                 onChange={(e) => setDepositorName(e.target.value)}
-                className="w-full bg-surface-container-low border border-outline-variant rounded-xl px-4 py-3 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm text-[#2d3435] focus:outline-none focus:border-[#0057bd] transition-all"
                 placeholder="Name of person transferring funds"
               />
             </div>
           </div>
-        </section>
+        </SectionCard>
 
-        {/* Price Breakdown Section */}
-        <section className="bg-surface-container-lowest rounded-xxl p-6 custom-shadow">
-          <h3 className="font-title-md text-on-surface mb-4">Price Breakdown</h3>
+        {/* Price Breakdown */}
+        <SectionCard icon="receipt_long" title="Payment Details">
           <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <p className="text-on-surface-variant">Base rate ({nights} nights)</p>
-              <p className="font-semibold">{baseTotal.toLocaleString()} {stay.pricing?.currency || 'KRW'}</p>
-            </div>
+            <InfoRow title={`Base Rate (${nights} nights)`} right={<span className="font-bold text-[#2d3435]">{baseTotal.toLocaleString()} {stay.pricing?.currency || 'KRW'}</span>} />
+            
             {weekendSurcharge > 0 && (
-              <div className="flex justify-between items-center">
-                <p className="text-on-surface-variant">Weekend Surcharge ({weekendNights} nights)</p>
-                <p className="font-semibold">{weekendSurcharge.toLocaleString()} {stay.pricing?.currency || 'KRW'}</p>
-              </div>
+              <InfoRow title="Weekend Surcharge" subtitle={`${weekendNights} night(s)`} right={<span className="font-bold text-[#2d3435]">+{weekendSurcharge.toLocaleString()} {stay.pricing?.currency || 'KRW'}</span>} />
             )}
+            
             {extraPersonTotal > 0 && (
-              <div className="flex justify-between items-center">
-                <p className="text-on-surface-variant">Extra Person Fee ({extraGuests} extra guests)</p>
-                <p className="font-semibold">{extraPersonTotal.toLocaleString()} {stay.pricing?.currency || 'KRW'}</p>
-              </div>
+              <InfoRow title="Extra Person Fee" subtitle={`${extraGuests} extra guest(s)`} right={<span className="font-bold text-[#2d3435]">+{extraPersonTotal.toLocaleString()} {stay.pricing?.currency || 'KRW'}</span>} />
             )}
+            
             {cleaningFee > 0 && (
-              <div className="flex justify-between items-center">
-                <p className="text-on-surface-variant">Cleaning fee</p>
-                <p className="font-semibold">{cleaningFee.toLocaleString()} {stay.pricing?.currency || 'KRW'}</p>
-              </div>
+              <InfoRow title="Cleaning Fee" right={<span className="font-bold text-[#2d3435]">+{cleaningFee.toLocaleString()} {stay.pricing?.currency || 'KRW'}</span>} />
             )}
-            <div className="flex justify-between items-center pt-4 border-t border-surface-variant">
-              <p className="font-bold text-lg">Total Amount</p>
-              <p className="font-extrabold text-2xl text-primary-container">{grandTotal.toLocaleString()} {stay.pricing?.currency || 'KRW'}</p>
-            </div>
-          </div>
-        </section>
 
-        {/* Payment Info Section */}
-        <section className="bg-surface-container-lowest rounded-xxl p-6 custom-shadow">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-title-md text-on-surface">Payment Information</h3>
-            <span className="text-[10px] font-bold bg-secondary-container text-on-secondary-container px-2 py-0.5 rounded-full uppercase">Bank Transfer</span>
-          </div>
-          <div className="bg-surface-container-low rounded-xl p-4 relative group hover:bg-surface-container transition-colors">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <p className="text-label-xs text-outline uppercase mb-1">Bank Name</p>
-                <p className="font-semibold">{bankName || 'Unknown Bank'}</p>
-              </div>
-              <div>
-                <p className="text-label-xs text-outline uppercase mb-1">Account Number</p>
-                <p className="font-semibold">{accountNumber || 'Unknown Account'}</p>
-              </div>
-              <div>
-                <p className="text-label-xs text-outline uppercase mb-1">Holder Name</p>
-                <p className="font-semibold">{accountHolder || 'Unknown Holder'}</p>
-              </div>
+            <div className="flex justify-between items-center pt-4 border-t border-[#f2f4f4]">
+              <p className="text-sm font-black text-[#2d3435]">Total Amount</p>
+              <p className="text-xl font-black text-[#0057bd]">{grandTotal.toLocaleString()} {stay.pricing?.currency || 'KRW'}</p>
             </div>
-            <button 
-              onClick={() => {
-                if (accountNumber) {
-                  navigator.clipboard.writeText(accountNumber);
-                  alert("Account number copied!");
-                }
-              }}
-              className="absolute top-4 right-4 text-primary p-2 hover:bg-primary-fixed rounded-lg transition-all active:scale-90"
-            >
-              <span className="material-symbols-outlined">content_copy</span>
-            </button>
           </div>
-          <p className="text-label-sm text-on-surface-variant mt-3 flex items-center gap-2 italic">
-            <span className="material-symbols-outlined text-[16px]">info</span>
-            Please complete the transfer within {stay.payment?.transferDeadlineHours || 2} hours to secure your booking.
-          </p>
-        </section>
+        </SectionCard>
 
-        {/* Important Notes Section */}
-        <section className="bg-surface-container-lowest rounded-xxl p-6 custom-shadow grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <span className="material-symbols-outlined text-primary-container">key</span>
-              <h3 className="font-title-md text-on-surface">Check-in / Out</h3>
+        {/* Payment Info */}
+        <SectionCard icon="account_balance" title="Bank Transfer" badge="Required">
+          <div className="bg-[#f8f9fa] rounded-2xl p-4 border border-[#e0e4e5] relative group hover:bg-[#f2f4f4] transition-colors">
+            <div className="space-y-3">
+              <div>
+                <p className="text-[10px] font-bold text-[#acb3b4] uppercase tracking-widest mb-1">Bank Name</p>
+                <p className="text-sm font-bold text-[#2d3435]">{bankName || 'Unknown Bank'}</p>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] font-bold text-[#acb3b4] uppercase tracking-widest mb-1">Account Number</p>
+                  <p className="text-base font-black text-[#2d3435] font-mono">{accountNumber || 'Unknown Account'}</p>
+                </div>
+                <button 
+                  onClick={() => {
+                    if (accountNumber) {
+                      navigator.clipboard.writeText(accountNumber);
+                      alert("Account number copied!");
+                    }
+                  }}
+                  className="w-10 h-10 rounded-full bg-[#0057bd] text-white flex items-center justify-center transition-all active:scale-90 shadow-md shadow-[#0057bd]/20"
+                >
+                  <span className="material-symbols-outlined text-sm">content_copy</span>
+                </button>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-[#acb3b4] uppercase tracking-widest mb-1">Account Holder</p>
+                <p className="text-sm font-bold text-[#2d3435]">{accountHolder || 'Unknown Holder'}</p>
+              </div>
             </div>
-            <ul className="space-y-2 text-on-surface-variant text-body-md">
-              <li className="flex items-start gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-outline-variant mt-1.5 shrink-0"></span>
-                Check-in: After {stay.checkInTime || '15:00'}
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-outline-variant mt-1.5 shrink-0"></span>
-                Check-out: Before {stay.checkOutTime || '11:00'}
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-outline-variant mt-1.5 shrink-0"></span>
-                {stay.checkInMethod || 'Self check-in with door code'}
-              </li>
-            </ul>
           </div>
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <span className="material-symbols-outlined text-error">event_busy</span>
-              <h3 className="font-title-md text-on-surface">Cancellation Policy</h3>
+          <div className="flex gap-2 p-3 bg-[#fff7ed] rounded-xl border border-[#fed7aa] mt-4">
+            <span className="material-symbols-outlined text-sm text-orange-500 flex-shrink-0 mt-0.5">info</span>
+            <p className="text-[11px] text-orange-700 leading-relaxed">
+              Please transfer within <span className="font-bold underline">{stay.payment?.transferDeadlineHours || 2} hours</span> to secure your booking.
+            </p>
+          </div>
+        </SectionCard>
+
+        {/* Policy */}
+        <SectionCard icon="policy" title="Reservation Policy">
+          <div className="grid grid-cols-1 gap-6">
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="material-symbols-outlined text-sm text-[#0057bd]">key</span>
+                <p className="text-xs font-bold text-[#2d3435]">Check-in / Out</p>
+              </div>
+              <ul className="space-y-2 text-[11px] text-[#596061]">
+                <li className="flex items-center gap-2">
+                  <div className="w-1 h-1 rounded-full bg-[#acb3b4]" />
+                  Check-in: After {stay.checkInTime || '15:00'}
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-1 h-1 rounded-full bg-[#acb3b4]" />
+                  Check-out: Before {stay.checkOutTime || '11:00'}
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-1 h-1 rounded-full bg-[#acb3b4]" />
+                  {stay.checkInMethod || 'Self check-in with door code'}
+                </li>
+              </ul>
             </div>
-            <ul className="space-y-2 text-on-surface-variant text-body-md">
-              <li className="flex items-start gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-outline-variant mt-1.5 shrink-0"></span>
+            <div className="pt-4 border-t border-[#f2f4f4]">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="material-symbols-outlined text-sm text-red-400">event_busy</span>
+                <p className="text-xs font-bold text-[#2d3435]">Cancellation Policy</p>
+              </div>
+              <p className="text-[11px] text-[#596061] leading-relaxed">
                 {stay.cancellation?.policyText || 'Full refund for cancellations made within 48 hours of booking.'}
-              </li>
-            </ul>
+              </p>
+            </div>
           </div>
-        </section>
+        </SectionCard>
       </main>
 
-      {/* Sticky Bottom Action Button */}
-      <footer className="fixed bottom-0 left-0 right-0 p-6 bg-white/95 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 z-50">
-        <div className="max-w-[896px] mx-auto flex flex-col items-center">
-          <label className="flex items-center gap-3 mb-4 cursor-pointer self-start w-full bg-surface-container-low p-3 rounded-xl border border-outline-variant hover:bg-surface-container transition-colors">
-            <div className="relative flex items-center shrink-0">
+      {/* Sticky Bottom Button */}
+      <footer className="fixed bottom-0 left-0 right-0 p-6 bg-white/95 backdrop-blur-xl border-t border-[#f2f4f4] z-50">
+        <div className="max-w-[600px] mx-auto flex flex-col gap-4">
+          <label className="flex items-start gap-3 cursor-pointer bg-[#f8f9fa] p-3 rounded-2xl border border-[#e0e4e5] hover:bg-[#f2f4f4] transition-colors">
+            <div className="relative flex items-center shrink-0 mt-0.5">
               <input 
                 type="checkbox" 
                 checked={agreedToTerms}
                 onChange={(e) => setAgreedToTerms(e.target.checked)}
-                className="peer w-6 h-6 cursor-pointer appearance-none rounded-md border-2 border-outline checked:border-primary checked:bg-primary transition-all"
+                className="peer w-5 h-5 cursor-pointer appearance-none rounded-md border-2 border-[#e0e4e5] checked:border-[#0057bd] checked:bg-[#0057bd] transition-all"
               />
-              <span className="material-symbols-outlined absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-white text-[18px] opacity-0 peer-checked:opacity-100 pointer-events-none">check</span>
+              <span className="material-symbols-outlined absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-white text-[14px] opacity-0 peer-checked:opacity-100 pointer-events-none">check</span>
             </div>
-            <span className="text-body-md text-on-surface leading-snug">
-              I have read and agree to the <span className="underline font-semibold text-primary">House Rules</span> and <span className="underline font-semibold text-primary">Terms of Service</span>.
+            <span className="text-[11px] text-[#596061] leading-snug">
+              I have read and agree to the <span className="underline font-bold text-[#2d3435]">House Rules</span> and <span className="underline font-bold text-[#2d3435]">Reservation Terms</span>.
             </span>
           </label>
           <button 
             onClick={handleSubmit}
             disabled={isSubmitting || !agreedToTerms}
-            className="w-full bg-primary-container disabled:bg-surface-container-highest disabled:text-on-surface/30 disabled:active:scale-100 text-white font-headline-lg py-4 rounded-xxl shadow-lg hover:bg-primary hover:shadow-xl hover:shadow-primary/20 transition-all active:scale-[0.98] flex items-center justify-center gap-3"
+            className="w-full bg-[#0057bd] disabled:bg-[#e8eaec] disabled:text-[#acb3b4] text-white py-4 rounded-2xl font-black text-sm tracking-wide shadow-lg shadow-[#0057bd]/20 hover:shadow-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2"
           >
-            {isSubmitting ? 'Processing...' : 'Confirm & Submit'}
-            {!isSubmitting && <span className="material-symbols-outlined">send</span>}
+            {isSubmitting ? 'Processing...' : `Confirm · ${grandTotal.toLocaleString()} ${stay.pricing?.currency || 'KRW'}`}
+            {!isSubmitting && <span className="material-symbols-outlined text-sm">send</span>}
           </button>
         </div>
       </footer>

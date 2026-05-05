@@ -122,7 +122,6 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     min-height: 100dvh;
-    overflow-x: hidden;
     font-family: var(--font-body);
     margin: 0;
     padding: 0;

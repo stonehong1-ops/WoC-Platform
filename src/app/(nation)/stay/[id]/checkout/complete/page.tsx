@@ -27,7 +27,7 @@ function CompleteContent() {
 
       // 2. Send chat notification to host
       try {
-        const hostId = 'adminstone'; // Unified host identity
+        const hostId = booking.hostId || 'adminstone'; // Use stored hostId or fallback
         const roomId = await chatService.getOrCreatePrivateRoom(
           [user.uid, hostId], user.uid, 'business'
         );

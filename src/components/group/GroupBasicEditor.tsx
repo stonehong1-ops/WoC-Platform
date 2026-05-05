@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Group } from "@/types/group";
 import { groupService } from "@/lib/firebase/groupService";
 import { storageService } from "@/lib/firebase/storageService";
+import { toast } from "sonner";
 
 interface GroupBasicEditorProps {
   group: Group;
@@ -21,28 +22,56 @@ export default function GroupBasicEditor({ group, onClose }: GroupBasicEditorPro
 
   const [isSaving, setIsSaving] = useState(false);
   const [uploadingField, setUploadingField] = useState<string | null>(null);
+  const [isOptimizing, setIsOptimizing] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'coverImage') => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // File size validation (10MB limit)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("File size is too large. Max 10MB allowed.");
+      return;
+    }
+
+    // Create a temporary blob URL for immediate preview
+    const blobUrl = URL.createObjectURL(file);
+    const originalImage = formData[field];
+    setFormData(prev => ({ ...prev, [field]: blobUrl }));
+    
     setUploadingField(field);
+    setIsOptimizing(true);
+    setUploadProgress(0);
+    
     try {
       const path = `groups/${group.id}/${field}_${Date.now()}`;
-      const downloadURL = await storageService.uploadFile(file, path);
+      const downloadURL = await storageService.uploadFile(file, path, (progress) => {
+        if (progress > 0) setIsOptimizing(false);
+        setUploadProgress(Math.round(progress));
+      });
+      
+      // Revoke the blob URL to free up memory
+      URL.revokeObjectURL(blobUrl);
+      
       setFormData(prev => ({ ...prev, [field]: downloadURL }));
+      toast.success("Image uploaded! Click Save Changes to complete.");
     } catch (error) {
       console.error("Error uploading image:", error);
-      alert("Failed to upload image.");
+      // Fallback to original image on error
+      setFormData(prev => ({ ...prev, [field]: originalImage }));
+      toast.error("Image upload failed. Please try again.");
     } finally {
       setUploadingField(null);
+      setIsOptimizing(false);
+      setUploadProgress(0);
     }
   };
 
   const handleSave = async () => {
     if (!formData.name || !formData.slug) {
-      alert("Name and slug are required.");
+      toast.error("Name and slug are required.");
       return;
     }
 
@@ -55,10 +84,11 @@ export default function GroupBasicEditor({ group, onClose }: GroupBasicEditorPro
         coverImage: formData.coverImage,
         coverImageDescription: formData.coverImageDescription,
       });
+      toast.success("Identity updated successfully!");
       onClose();
     } catch (error) {
       console.error("Error saving basic info:", error);
-      alert("Failed to save information.");
+      toast.error("Failed to save information. Please try again.");
     } finally {
       setIsSaving(false);
     }
@@ -121,7 +151,7 @@ export default function GroupBasicEditor({ group, onClose }: GroupBasicEditorPro
               <span className="w-2 h-10 bg-[#0057bd] rounded-full"></span>
               Branding Assets
             </h2>
-            <p className="text-white/40 font-medium ml-6">커뮤니티의 첫인상을 결정하는 시각적 요소를 설정하세요.</p>
+            <p className="text-white/40 font-medium ml-6">Configure the visual elements that define your community's first impression.</p>
           </div>
 
           <div className="space-y-8 ml-6">
@@ -154,10 +184,47 @@ export default function GroupBasicEditor({ group, onClose }: GroupBasicEditorPro
                   </div>
                 )}
                 {uploadingField === 'coverImage' && (
-                  <div className="absolute inset-0 bg-[#0a0f1d]/80 flex items-center justify-center">
-                    <div className="flex flex-col items-center gap-4">
-                      <div className="w-12 h-12 border-3 border-[#0057bd] border-t-transparent rounded-full animate-spin" />
-                      <span className="text-[10px] font-black tracking-widest text-[#0057bd]">UPLOADING...</span>
+                  <div className="absolute inset-0 bg-[#0a0f1d]/80 backdrop-blur-md flex items-center justify-center z-20 animate-in fade-in duration-300">
+                    <div className="flex flex-col items-center gap-6">
+                      <div className="relative w-20 h-20">
+                        {/* Circular Progress Background */}
+                        <svg className="w-full h-full transform -rotate-90">
+                          <circle
+                            cx="40"
+                            cy="40"
+                            r="36"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                            fill="transparent"
+                            className="text-white/10"
+                          />
+                          <circle
+                            cx="40"
+                            cy="40"
+                            r="36"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                            fill="transparent"
+                            strokeDasharray={2 * Math.PI * 36}
+                            strokeDashoffset={2 * Math.PI * 36 * (1 - uploadProgress / 100)}
+                            className="text-[#0057bd] transition-all duration-300 ease-out"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-white font-black text-sm">
+                            {isOptimizing ? "..." : `${uploadProgress}%`}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-center space-y-1">
+                        <span className="block text-[10px] font-black tracking-[0.2em] text-[#0057bd] uppercase">
+                          {isOptimizing ? "Optimizing..." : "Uploading Hero..."}
+                        </span>
+                        <span className="block text-[9px] text-white/30 font-bold italic">
+                          {isOptimizing ? "Preparing image assets" : "Syncing with cloud storage"}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -174,13 +241,13 @@ export default function GroupBasicEditor({ group, onClose }: GroupBasicEditorPro
                   value={formData.coverImageDescription}
                   onChange={(e) => setFormData(prev => ({ ...prev, coverImageDescription: e.target.value }))}
                   className="w-full bg-white/5 border border-white/10 focus:bg-white/10 focus:border-[#0057bd]/40 outline-none rounded-3xl px-8 py-5 font-headline font-black text-white text-lg transition-all shadow-inner"
-                  placeholder="커뮤니티를 대표하는 강력한 문구를 입력하세요"
+                  placeholder="Enter a powerful catchphrase for your community"
                 />
                 <div className="absolute right-6 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/5 flex items-center justify-center opacity-0 group-focus-within:opacity-100 transition-opacity">
                   <span className="material-symbols-outlined text-white/20 text-sm">edit</span>
                 </div>
               </div>
-              <p className="text-[11px] text-white/30 font-medium ml-2 italic">대시보드 메인 상단에 표시되어 방문자의 시선을 사로잡습니다.</p>
+              <p className="text-[11px] text-white/30 font-medium ml-2 italic">Displayed at the top of the dashboard to catch visitors' attention.</p>
             </div>
           </div>
         </section>
@@ -194,7 +261,7 @@ export default function GroupBasicEditor({ group, onClose }: GroupBasicEditorPro
               <span className="w-2 h-10 bg-[#0057bd] rounded-full"></span>
               Core Identity
             </h2>
-            <p className="text-white/40 font-medium ml-6">공식 명칭과 고유 식별 정보를 관리합니다.</p>
+            <p className="text-white/40 font-medium ml-6">Manage official names and unique identifiers.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 ml-6">
@@ -206,7 +273,7 @@ export default function GroupBasicEditor({ group, onClose }: GroupBasicEditorPro
                 value={formData.name}
                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                 className="w-full bg-white/5 border border-white/10 focus:bg-white/10 focus:border-[#0057bd]/40 outline-none rounded-3xl px-8 py-5 font-headline font-black text-white text-lg transition-all"
-                placeholder="예: Freestyle Tango"
+                placeholder="e.g., Freestyle Tango"
               />
             </div>
 
@@ -218,7 +285,7 @@ export default function GroupBasicEditor({ group, onClose }: GroupBasicEditorPro
                 value={formData.nativeName}
                 onChange={(e) => setFormData(prev => ({ ...prev, nativeName: e.target.value }))}
                 className="w-full bg-white/5 border border-white/10 focus:bg-white/10 focus:border-[#0057bd]/40 outline-none rounded-3xl px-8 py-5 font-headline font-black text-white text-lg transition-all"
-                placeholder="자국어 이름을 입력하세요"
+                placeholder="Enter local identity name"
               />
             </div>
 

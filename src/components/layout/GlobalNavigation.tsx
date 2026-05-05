@@ -7,22 +7,23 @@ import { useAuth } from "@/components/providers/AuthProvider";
 import { useNavigation } from "@/components/providers/NavigationProvider";
 import { useLocation } from "@/components/providers/LocationProvider";
 import UserAvatar from "@/components/common/UserAvatar";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
-import { db } from "@/lib/firebase/clientApp";
-import { chatService } from "@/lib/firebase/chatService";
+import CreateProduct from "@/components/shop/CreateProduct";
+import { useNotification } from '@/contexts/NotificationContext';
+import { chatService } from '@/lib/firebase/chatService';
+import { COUNTRY_MAPPING } from "@/lib/constants/locations";
 const NAV_STRUCTURE = {
   World: [
+    { name: "SOCIETY", icon: "radio_button_unchecked", path: "/home" },
     { name: "PLAZA", icon: "quick_phrases", path: "/plaza" },
     { name: "MAP", icon: "map", path: "/venues" },
-    { name: "ARCADE", icon: "airline_stops", path: "/arcade" },
-    { name: "SOCIETY", icon: "radio_button_unchecked", path: "/home" },
     { name: "EXPLORE", icon: "explore", path: "/explore" },
+    { name: "ARCADE", icon: "airline_stops", path: "/arcade" },
   ],
   Market: [
     { name: "SHOP", icon: "storefront", path: "/shop" },
-    { name: "RESALE", icon: "local_mall", path: "/resale" },
-    { name: "RENTAL", icon: "barefoot", path: "/rental" },
-    { name: "STAY", icon: "night_shelter", path: "/stay" },
+    { name: "RESALE", icon: "cached", path: "/resale" },
+    { name: "RENTAL", icon: "key", path: "/rental" },
+    { name: "STAY", icon: "bed", path: "/stay" },
     { name: "CLASS", icon: "school", path: "/class" },
   ],
   Play: [
@@ -35,10 +36,8 @@ const NAV_STRUCTURE = {
     { name: "MY GROUPS", icon: "groups", path: "/groups" },
   ],
   My: [
-    { name: "NOTI", icon: "notifications", path: "/notification" },
-    { name: "CHAT", icon: "chat", path: "/chat" },
-    { name: "WALLET", icon: "account_balance_wallet", path: "/wallet" },
     { name: "HISTORY", icon: "history", path: "/history" },
+    { name: "WALLET", icon: "account_balance_wallet", path: "/wallet" },
     { name: "PROFILE", icon: "person", path: "/my-info" },
   ],
   Admin: [
@@ -48,50 +47,112 @@ const NAV_STRUCTURE = {
   ],
 };
 
+// COUNTRY_MAPPING moved to constants
+
 const BOTTOM_TABS = [
-  { id: "World", icon: "globe", basePath: "/plaza" },
+  { id: "World", icon: "globe", basePath: "/home" },
   { id: "Market", icon: "redeem", basePath: "/shop" },
   { id: "Play", icon: "contactless", basePath: "/social" },
   { id: "Group", icon: "communities", basePath: "/groups" },
-  { id: "My", icon: "photo", basePath: "/notification" },
+  { id: "My", icon: "photo", basePath: "/my-info" },
 ];
 
 export default function GlobalNavigation({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, profile } = useAuth();
-  const { isHeaderShrink } = useNavigation();
+  const { isHeaderShrink, subHeader, setSubHeader, subHeaderHeight, isHeaderVisible, setIsHeaderVisible } = useNavigation();
   const { location, setIsSelectorOpen } = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
-  const [unreadChatCount, setUnreadChatCount] = useState(0);
-  const [unreadNotiCount, setUnreadNotiCount] = useState(0);
+  const headerRef = React.useRef<HTMLElement>(null);
+  const footerRef = React.useRef<HTMLElement>(null);
+  const currentTranslateY = React.useRef(0);
+  const lastScrollY = React.useRef(0);
+  const accumulatedScrollUp = React.useRef(0);
+  const lastSentVisibility = React.useRef<boolean | null>(null);
+
+
+  const { unreadCount: notiUnreadCount, todoCount } = useNotification();
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
-    if (!user?.uid) return;
-    
-    // Chat unread count
-    const unsubChat = chatService.subscribeTotalUnreadCount(user.uid, (count) => {
-      setUnreadChatCount(count);
+    if (!user) return;
+    const unsub = chatService.subscribeTotalUnreadCount(user.uid, (count) => {
+      setUnreadCount(count);
     });
+    return () => unsub();
+  }, [user]);
 
-    // Notification unread count (status == 'PENDING')
-    const notiQuery = query(
-      collection(db, 'notifications'), 
-      where('targetUserId', '==', user.uid),
-      where('status', '==', 'PENDING')
-    );
-    const unsubNoti = onSnapshot(notiQuery, (snapshot) => {
-      setUnreadNotiCount(snapshot.docs.length);
-    });
-
-    return () => {
-      unsubChat();
-      unsubNoti();
-    };
-  }, [user?.uid]);
+  const totalNotiCount = notiUnreadCount + todoCount;
 
   useEffect(() => {
+    let ticking = false;
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const currentScrollY = window.scrollY;
+          const delta = currentScrollY - lastScrollY.current;
+          const headerHeight = headerRef.current?.offsetHeight || 110;
+          const footerHeight = footerRef.current?.offsetHeight || 80;
+          
+          // Calculate new translation based on delta with threshold
+          let nextTranslateY = currentTranslateY.current;
+          const scrollUpThreshold = 15; // Sensitivity: scroll up this much before showing
+
+          if (delta > 0) {
+            // Scrolling down: Hide immediately
+            accumulatedScrollUp.current = 0;
+            nextTranslateY -= delta;
+          } else {
+            // Scrolling up: Show only after threshold
+            accumulatedScrollUp.current += Math.abs(delta);
+            if (accumulatedScrollUp.current > scrollUpThreshold || currentScrollY <= 10) {
+              nextTranslateY -= delta;
+            }
+          }
+          
+          // Clamp between -headerHeight and 0
+          if (nextTranslateY > 0) nextTranslateY = 0;
+          if (nextTranslateY < -headerHeight) nextTranslateY = -headerHeight;
+          
+          // Force show at the very top
+          if (currentScrollY <= 5) nextTranslateY = 0;
+          
+          currentTranslateY.current = nextTranslateY;
+          
+          // Apply to Header
+          if (headerRef.current) {
+            headerRef.current.style.transform = `translateY(${nextTranslateY}px)`;
+          }
+
+          // Apply to Footer (Synchronized)
+          if (footerRef.current) {
+            // Footer slides DOWN when header goes UP
+            // Ratio-based translation to ensure they hide/show at the same pace relative to their heights
+            const hideRatio = nextTranslateY / -headerHeight; // 0 to 1
+            const footerTranslateY = hideRatio * footerHeight;
+            footerRef.current.style.transform = `translateY(${footerTranslateY}px)`;
+            
+            // Set global variable for other floating UIs (like FABs) to sync
+            document.documentElement.style.setProperty('--woc-bottom-nav-y', `${footerTranslateY}px`);
+
+          }
+          
+          // Update global visibility state for components that need delayed show (like FAB)
+          // Lenient check for zero to handle potential floating point precision issues
+          const isFullyVisible = nextTranslateY >= -1;
+          if (lastSentVisibility.current !== isFullyVisible) {
+            setIsHeaderVisible(isFullyVisible);
+            lastSentVisibility.current = isFullyVisible;
+          }
+          
+          // Shadow logic
+          setIsScrolled(currentScrollY > 40);
+          
+          lastScrollY.current = currentScrollY;
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
     
     window.addEventListener("scroll", handleScroll, { passive: true });
@@ -109,10 +170,12 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
     activeTab = "Play";
   } else if (pathname.startsWith("/groups") || pathname.startsWith("/group/")) {
     activeTab = "Group";
-  } else if (pathname.startsWith("/my") || pathname.startsWith("/notification") || pathname.startsWith("/chat") || pathname.startsWith("/wallet") || pathname.startsWith("/history") || pathname.startsWith("/my-info")) {
+  } else if (pathname.startsWith("/my") || pathname.startsWith("/wallet") || pathname.startsWith("/history") || pathname.startsWith("/my-info")) {
     activeTab = "My";
   } else if (pathname.startsWith("/admin")) {
     activeTab = "Admin";
+  } else if (pathname.startsWith("/notification") || pathname.startsWith("/chat")) {
+    activeTab = "None"; // Don't highlight any main tab for notifications/chat
   }
 
   // Handle default tab for "/"
@@ -121,6 +184,8 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
   }
 
   const isGroupDetailPage = pathname.startsWith("/group/");
+  const isSearchPage = pathname.startsWith("/search");
+  const isNoSubMenuPage = isSearchPage || pathname.startsWith("/groups") || pathname.startsWith("/notification") || pathname.startsWith("/chat");
 
   if (isGroupDetailPage) {
     return (
@@ -133,58 +198,125 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
   }
 
   const subMenu = NAV_STRUCTURE[activeTab as keyof typeof NAV_STRUCTURE] || [];
+  
+  // Calculate placeholder height
+  const baseHeaderHeight = isNoSubMenuPage ? 60 : 110;
+  const placeholderHeight = subHeader ? baseHeaderHeight + subHeaderHeight : baseHeaderHeight;
 
   return (
     <div className="min-h-screen bg-[#faf8ff] font-manrope flex flex-col">
-      {/* Sticky Top Navigation */}
-      <header className={`sticky top-0 left-0 right-0 z-50 bg-white transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${(isScrolled || isHeaderShrink) ? 'shadow-[0_4px_24px_rgba(11,90,192,0.10)]' : 'shadow-[0_2px_12px_rgba(11,90,192,0.05)] border-b border-slate-100/30'}`}>
-        
-        {activeTab === "Group" ? (
-          /* Specialized Group Header */
-          <div className={`flex items-center justify-between px-6 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${(isScrolled || isHeaderShrink) ? 'py-3' : 'py-5'}`}>
-            <Link href="/groups?view=my" className="flex items-center gap-1 cursor-pointer group">
-              <span className="text-[20px] font-bold text-[#1E293B] group-hover:text-[#007AFF] transition-colors">My Group</span>
-              <span className="material-symbols-outlined text-[24px] text-[#007AFF] font-bold">chevron_right</span>
-            </Link>
-            
-            <Link href="/groups?action=create" className="flex items-center gap-1.5 bg-[#007AFF] text-white px-4 py-2 rounded-full text-[13px] font-bold shadow-lg shadow-blue-100 active:scale-95 transition-all">
-              <span className="material-symbols-outlined text-[18px]">add</span>
-              Add Group
-            </Link>
-          </div>
-        ) : (
-          <>
-            {/* Search and Filter Bar */}
-            <div className={`flex items-center gap-3 px-4 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${(isScrolled || isHeaderShrink) ? 'py-2' : 'py-3'}`}>
-              <div className="relative flex-1 flex items-center h-[42px] bg-[#FAF8FF] rounded-full pl-3 pr-1.5 border border-slate-100/50 shadow-sm">
-                <span className="material-symbols-outlined text-[20px] text-[#64748B] mr-2">search</span>
-                
-                <div className="flex-1"></div>
-                
-                {/* Filter Chip */}
-                <div 
-                  onClick={() => setIsSelectorOpen(true)}
-                  className="flex items-center bg-[rgba(0,122,255,0.1)] text-[#007AFF] px-3 py-1.5 rounded-full text-[12px] font-semibold tracking-tight cursor-pointer active:scale-95 transition-all"
-                >
-                  <span className="truncate max-w-[120px]">
-                    {location.city}, {location.country}
-                  </span>
-                  <span className="material-symbols-outlined text-[14px] ml-1 font-bold">expand_more</span>
-                </div>
-              </div>
-            </div>
+      {/* Header Placeholder to prevent layout shift and scroll thrashing */}
+      <div 
+        className="w-full flex-shrink-0 transition-all duration-300" 
+        style={{ 
+          height: `${placeholderHeight}px`
+        }} 
+      />
 
-            {/* Scrolling Sub-Menu */}
-            <nav className={`flex w-full px-0 border-b border-slate-100/60 transition-all duration-300 ${isScrolled ? 'pb-0 pt-0' : 'pb-0 pt-0.5'}`}>
-              <div className="flex w-full items-end justify-between px-2">
+      {/* Fixed Top Navigation */}
+      <header 
+        ref={headerRef}
+        className={`fixed top-0 left-0 right-0 z-50 bg-white transition-shadow duration-300 transform will-change-transform ${
+          (isScrolled || isHeaderShrink) 
+            ? 'shadow-[0_4px_24px_rgba(11,90,192,0.10)]' 
+            : 'shadow-[0_2px_12px_rgba(11,90,192,0.05)] border-b border-slate-100/30'
+        }`}
+        style={{ transition: 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)' }}
+      >
+        
+        <>
+          {/* Exact Image Replication: Header Top Row */}
+          <div className="flex items-center justify-between pl-5 pr-4 h-[60px] border-b border-slate-100/50 bg-white">
+            {/* Left Side: Location */}
+            <button 
+              onClick={() => setIsSelectorOpen(true)}
+              className="flex flex-col justify-center items-start hover:opacity-70 transition-opacity active:scale-95 duration-100"
+            >
+              <div className="flex items-center gap-1">
+                <span className="text-[14px] font-bold text-[#1E293B] leading-none tracking-tight">
+                  {location.country === 'GLOBAL' 
+                    ? "All Tango Society" 
+                    : `${location.city || "Seoul"}, ${COUNTRY_MAPPING[location.country.toUpperCase()] || location.country}`}
+                </span>
+                <span className="material-symbols-outlined !text-[20px] text-[#1E293B] font-medium leading-none">keyboard_arrow_down</span>
+              </div>
+              <span className="text-[11px] font-medium text-slate-500 leading-none uppercase mt-1 tracking-wide">
+                TANGO SOCIETY
+              </span>
+            </button>
+
+            {/* Right Side: Action Icons */}
+            <div className="flex items-center gap-1.5">
+              {/* Notification */}
+              <Link 
+                href="/notification" 
+                className={`w-[36px] h-[36px] rounded-full flex items-center justify-center active:scale-95 transition-all relative ${
+                  pathname === '/notification' ? 'bg-[#007AFF]/10 text-[#007AFF]' : 'bg-[#F1F5F9] text-[#1E293B]'
+                }`}
+              >
+                <span 
+                  className="material-symbols-outlined !text-[20px]"
+                  style={{ fontVariationSettings: pathname === '/notification' ? "'FILL' 1" : "'FILL' 0" }}
+                >
+                  notifications
+                </span>
+                {totalNotiCount > 0 && (
+                  <span className="absolute top-0 right-0 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-[8px] font-black text-white outline outline-2 outline-white animate-in zoom-in">
+                    {totalNotiCount > 99 ? '99+' : totalNotiCount}
+                  </span>
+                )}
+              </Link>
+
+              {/* Chat */}
+              <Link 
+                href="/chat" 
+                className={`w-[36px] h-[36px] rounded-full flex items-center justify-center active:scale-95 transition-all relative ${
+                  pathname.startsWith('/chat') ? 'bg-[#007AFF]/10 text-[#007AFF]' : 'bg-[#F1F5F9] text-[#1E293B]'
+                }`}
+              >
+                <span 
+                  className="material-symbols-outlined !text-[20px]"
+                  style={{ fontVariationSettings: pathname.startsWith('/chat') ? "'FILL' 1" : "'FILL' 0" }}
+                >
+                  chat_bubble
+                </span>
+                {unreadCount > 0 && (
+                  <span className="absolute top-0 right-0 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-[8px] font-black text-white outline outline-2 outline-white animate-in zoom-in">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </Link>
+
+              {/* Search */}
+              <Link 
+                href="/search" 
+                className={`w-[36px] h-[36px] rounded-full flex items-center justify-center active:scale-95 transition-all ${
+                  pathname.startsWith('/search') ? 'bg-[#007AFF]/10 text-[#007AFF]' : 'bg-[#F1F5F9] text-[#1E293B]'
+                }`}
+              >
+                <span 
+                  className="material-symbols-outlined !text-[20px]"
+                  style={{ fontVariationSettings: pathname.startsWith('/search') ? "'FILL' 1" : "'FILL' 0" }}
+                >
+                  search
+                </span>
+              </Link>
+            </div>
+          </div>
+
+          {/* Scrolling Sub-Menu: Refined to match image (Icons Removed) */}
+          {!isNoSubMenuPage && (
+            <nav className="flex w-full px-0 border-b border-slate-100/60 bg-white">
+              <div className="flex w-full items-end justify-between px-3">
                 {subMenu.map((item) => {
                   const isActive = pathname === item.path || (item.path !== "/" && pathname.startsWith(item.path));
                   return (
-                    <Link key={item.name} href={item.path} className={`flex flex-col items-center justify-end flex-1 transition-all duration-300 border-b-2 ${isActive ? 'border-[#007AFF]' : 'border-transparent'}`}>
-                      <span className={`material-symbols-outlined transition-all duration-300 ease-in-out ${isActive ? 'text-[#007AFF]' : 'text-[#1E293B]'} ${(isScrolled || isHeaderShrink) ? 'h-0 opacity-0 mb-0 m-0 overflow-hidden' : '!text-[17px] mb-0.5 opacity-100'}`}>
-                        {item.icon}
-                      </span>
-                      <span className={`text-[11px] tracking-wider pb-1.5 transition-all duration-300 ease-in-out ${isActive ? 'font-bold text-[#007AFF]' : 'font-semibold text-[#1E293B]'} ${(isScrolled || isHeaderShrink) ? 'pt-3 pb-3' : ''}`}>
+                    <Link 
+                      key={item.name} 
+                      href={item.path} 
+                      className={`flex flex-col items-center justify-end flex-1 pt-3.5 pb-2.5 transition-all duration-300 border-b-[3px] ${isActive ? 'border-[#007AFF]' : 'border-transparent'}`}
+                    >
+                      <span className={`text-[14px] tracking-tight uppercase transition-all duration-300 ${isActive ? 'font-black text-[#007AFF]' : 'font-bold text-slate-500'}`}>
                         {item.name}
                       </span>
                     </Link>
@@ -193,28 +325,41 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
                 
                 {/* Show Admin link inside My tab if user is admin */}
                 {activeTab === "My" && profile?.isAdmin && (
-                  <Link href="/admin/people" className={`flex flex-col items-center justify-end flex-1 transition-all duration-300 border-b-2 border-transparent opacity-50`}>
-                    <span className={`material-symbols-outlined transition-all duration-300 ease-in-out text-[#1E293B] ${(isScrolled || isHeaderShrink) ? 'h-0 opacity-0 mb-0 m-0 overflow-hidden' : '!text-[17px] mb-0.5 opacity-100'}`}>admin_panel_settings</span>
-                    <span className={`text-[11px] font-semibold text-[#1E293B] pb-1.5 transition-all duration-300 ease-in-out ${(isScrolled || isHeaderShrink) ? 'pt-3 pb-3' : ''}`}>ADMIN</span>
+                  <Link 
+                    href="/admin/people" 
+                    className={`flex flex-col items-center justify-end flex-1 pt-3.5 pb-2.5 transition-all duration-300 border-b-[3px] border-transparent`}
+                  >
+                    <span className="text-[14px] font-bold text-slate-500 tracking-tight uppercase">ADMIN</span>
                   </Link>
                 )}
               </div>
             </nav>
-          </>
-        )}
+          )}
+
+          {/* Custom Sub-Header Slot (e.g. Shop Filters) */}
+          {subHeader && (
+            <div className="w-full">
+              {subHeader}
+            </div>
+          )}
+        </>
       </header>
 
       {/* Main Content */}
-      <main className={`flex-1 w-full relative bg-[#faf8ff] ${pathname === '/venues' ? 'pb-0' : 'pb-[120px]'}`}>
+      <main className={`flex-1 w-full relative bg-[#faf8ff] ${pathname === '/venues' || pathname.startsWith('/chat') || pathname.startsWith('/notification') || pathname.startsWith('/search') ? 'pb-0' : 'pb-[120px]'}`}>
         {children}
       </main>
 
+
+
       {/* Bottom Navigation Bar */}
       <footer 
-        className="fixed bottom-0 left-0 w-full z-50 bg-white rounded-t-2xl px-6 flex justify-around items-center shadow-[0_-8px_30px_rgba(11,90,192,0.14)]"
+        ref={footerRef}
+        className="fixed bottom-0 left-0 w-full z-50 bg-white rounded-t-2xl px-6 flex justify-around items-center shadow-[0_-8px_30px_rgba(11,90,192,0.14)] will-change-transform"
         style={{ 
           height: 'calc(64px + max(env(safe-area-inset-bottom), 12px))',
-          paddingBottom: 'max(env(safe-area-inset-bottom), 12px)'
+          paddingBottom: 'max(env(safe-area-inset-bottom), 12px)',
+          transition: 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)'
         }}
       >
         {[
@@ -223,7 +368,7 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
         ].map((tab) => {
           const isActive = activeTab === tab.id;
           const isPhotoTab = tab.icon === "photo";
-          const targetPath = (isActive && tab.id === "My") ? "/my-info" : tab.basePath;
+          const targetPath = tab.basePath;
           return (
             <Link 
               key={tab.id} 
@@ -244,26 +389,12 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
                 }}
               />
               {isPhotoTab ? (
-                <div className="relative flex items-center justify-center">
+                <div className="relative flex items-center justify-center w-[32px] h-[32px]">
                   <UserAvatar 
                     photoURL={profile?.photoURL}
                     className={`!w-[32px] !h-[32px] rounded-full transition-all duration-300 ${isActive ? 'ring-[2.5px] ring-[#007AFF] ring-offset-1' : 'opacity-80 hover:opacity-100'}`}
                     iconSize="24px"
                   />
-                  {(unreadNotiCount > 0 || unreadChatCount > 0) && (
-                    <div className="absolute -top-1 -right-2 flex gap-[2px] z-10">
-                      {unreadNotiCount > 0 && (
-                        <span className="flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-[#FF3B30] px-1 text-[8px] font-black text-white outline outline-[1.5px] outline-white shadow-sm">
-                          {unreadNotiCount > 99 ? '99+' : unreadNotiCount}
-                        </span>
-                      )}
-                      {unreadChatCount > 0 && (
-                        <span className="flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-[#007AFF] px-1 text-[8px] font-black text-white outline outline-[1.5px] outline-white shadow-sm">
-                          {unreadChatCount > 99 ? '99+' : unreadChatCount}
-                        </span>
-                      )}
-                    </div>
-                  )}
                 </div>
               ) : (
                 <span 

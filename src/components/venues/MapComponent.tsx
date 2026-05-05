@@ -84,9 +84,18 @@ export default function MapComponent({
   useEffect(() => {
     if (!map) return;
     // Sync map center/zoom when location from context changes via map instance
-    const coords = (location?.city && location.city !== 'ALL' && CITY_COORDINATES[location.city.toUpperCase()])
-      ? CITY_COORDINATES[location.city.toUpperCase()]
-      : (CITY_COORDINATES[location.country.toUpperCase()] || DEFAULT_COORDINATES);
+    let coords;
+    
+    if (location.country === 'GLOBAL') {
+      coords = DEFAULT_COORDINATES;
+    } else if (location.city === 'ALL') {
+      // Prioritize country coordinates for wide view
+      coords = CITY_COORDINATES[location.country.toUpperCase()] || DEFAULT_COORDINATES;
+    } else {
+      coords = CITY_COORDINATES[location.city.toUpperCase()] || 
+               CITY_COORDINATES[location.country.toUpperCase()] || 
+               DEFAULT_COORDINATES;
+    }
     
     map.panTo({ lat: coords.lat, lng: coords.lng });
     map.setZoom(coords.zoom);
@@ -201,7 +210,7 @@ export default function MapComponent({
     if (cat === 'All') {
       setSelectedCategories(['All']);
     } else {
-      // ?⑥씪 ?좏깮: ?대? ?좏깮??移댄뀒怨좊━ ?대┃ ??All濡?蹂듦?
+      // Single selection: Return to 'All' if the same category is clicked again
       setSelectedCategories(prev =>
         prev.length === 1 && prev[0] === cat ? ['All'] : [cat]
       );
@@ -341,9 +350,13 @@ export default function MapComponent({
                 }
               }
             }}
+            onDragStart={() => {
+              window.dispatchEvent(new CustomEvent('woc:immersive:exit'));
+            }}
             onClick={() => {
               setSelectedVenueId(null);
               setIsExpanded(false);
+              window.dispatchEvent(new CustomEvent('woc:immersive:exit'));
             }}
             options={{ 
               disableDefaultUI: true, 
@@ -495,50 +508,36 @@ export default function MapComponent({
         ))}
       </div>
 
+      {/* Layer 1.5: Map Control Group (Top Right - Standard Google Maps Style) */}
+      <div className="absolute top-[80px] right-4 z-40 flex flex-col gap-0.5 pointer-events-auto">
+        <button 
+          onClick={(e) => { e.stopPropagation(); onRegisterOpen(); }}
+          className="w-10 h-10 bg-white text-[#5F6368] shadow-[0_1px_4px_rgba(0,0,0,0.3)] rounded-t-[2px] flex items-center justify-center hover:bg-slate-50 active:bg-slate-100 transition-colors border-b border-slate-100"
+          title="Register Venue"
+        >
+          <span className="material-symbols-rounded !text-[22px]">add_location</span>
+        </button>
+        <button 
+          onClick={(e) => { e.stopPropagation(); findMyLocation(); }}
+          className="w-10 h-10 bg-white text-[#5F6368] shadow-[0_1px_4px_rgba(0,0,0,0.3)] rounded-b-[2px] flex items-center justify-center hover:bg-slate-50 active:bg-slate-100 transition-colors"
+          title="My Location"
+        >
+          <span className="material-symbols-rounded !text-[22px]">my_location</span>
+        </button>
+      </div>
+
       {/* Layer 3: Search & Venue Area (Kinetic Expansion) */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-48px)] max-w-sm z-30 pointer-events-auto">
         
-        {/* Floatable Buttons (Hide when expanded) */}
-        <AnimatePresence>
-          {!isExpanded && (
-            <motion.div 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
-              className="absolute -top-16 left-0 right-0 flex justify-between pointer-events-none"
-            >
-              {/* Find Me (Left) */}
-              <button 
-                onClick={(e) => { e.stopPropagation(); findMyLocation(); }}
-                className="pointer-events-auto w-12 h-12 bg-white shadow-2xl rounded-xl flex items-center justify-center text-primary hover:bg-slate-50 active:scale-95 transition-all border border-white/40"
-              >
-                <div className="flex flex-col items-center leading-none">
-                  <span className="text-[8px] font-bold uppercase">Find</span>
-                  <span className="text-[12px] font-black uppercase">ME</span>
-                </div>
-              </button>
 
-              {/* Venue ADD (Right) */}
-              <button 
-                onClick={(e) => { e.stopPropagation(); onRegisterOpen(); }}
-                className="pointer-events-auto w-12 h-12 bg-white backdrop-blur-md rounded-xl shadow-xl flex items-center justify-center text-primary hover:bg-slate-50 active:scale-95 transition-all border border-white/50"
-              >
-                <div className="flex flex-col items-center leading-none">
-                  <span className="text-[8px] font-bold uppercase">venue</span>
-                  <span className="text-[12px] font-black uppercase">ADD</span>
-                </div>
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         <motion.div 
-          animate={{ height: isExpanded ? 'auto' : '56px' }}
+          animate={{ height: isExpanded ? 'auto' : '64px' }}
           className="bg-white/95 backdrop-blur-3xl rounded-xl shadow-[0_24px_48px_rgba(0,0,0,0.12)] flex flex-col border border-white/60 overflow-hidden transition-all duration-300"
           onClick={() => !isExpanded && setIsExpanded(true)}
         >
           {/* Top Row / Summary Bar */}
-          <div className={`px-4 flex items-center justify-between min-h-[52px] cursor-pointer ${isExpanded ? 'border-b border-slate-100' : ''}`}>
+          <div className={`px-4 flex items-center justify-between min-h-[60px] cursor-pointer ${isExpanded ? 'border-b border-slate-100' : ''}`}>
             <div className="flex items-center flex-1 overflow-hidden">
               <div 
                 onClick={(e) => {

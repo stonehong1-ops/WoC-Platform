@@ -31,8 +31,9 @@ const GroupShopItemEditor: React.FC<GroupShopItemEditorProps> = ({ group, onClos
     status: item?.status || "Active",
   });
   
-  const [newImages, setNewImages] = useState<File[]>([]);
   const [displayImageUrls, setDisplayImageUrls] = useState<string[]>(item?.images || []);
+  const [uploadProgress, setUploadProgress] = useState<Record<number, number>>({});
+  const [optimizingSlots, setOptimizingSlots] = useState<Record<number, boolean>>({});
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { id, value } = e.target;
@@ -52,25 +53,73 @@ const GroupShopItemEditor: React.FC<GroupShopItemEditorProps> = ({ group, onClos
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (file: File, index: number) => {
+    const blobUrl = URL.createObjectURL(file);
+    
+    // Set optimistic UI
+    setDisplayImageUrls(prev => {
+      const newUrls = [...prev];
+      newUrls[index] = blobUrl;
+      return newUrls;
+    });
+    
+    setOptimizingSlots(prev => ({ ...prev, [index]: true }));
+
+    try {
+      const path = `groups/${group.id}/shop/${Date.now()}_${index}`;
+      const downloadUrl = await storageService.uploadFile(file, path, (progress) => {
+        setUploadProgress(prev => ({ ...prev, [index]: progress }));
+        if (progress > 0) {
+          setOptimizingSlots(prev => ({ ...prev, [index]: false }));
+        }
+      });
+
+      setDisplayImageUrls(prev => {
+        const newUrls = [...prev];
+        newUrls[index] = downloadUrl;
+        return newUrls;
+      });
+      
+      URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast.error("Failed to upload image. Please try again.");
+      // Rollback
+      setDisplayImageUrls(prev => prev.filter((_, i) => i !== index));
+      URL.revokeObjectURL(blobUrl);
+    } finally {
+      setUploadProgress(prev => {
+        const next = { ...prev };
+        delete next[index];
+        return next;
+      });
+      setOptimizingSlots(prev => ({ ...prev, [index]: false }));
+    }
+  };
+
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const selectedFiles = Array.from(e.target.files);
-      if (displayImageUrls.length + selectedFiles.length > 5) {
+      const totalCount = displayImageUrls.length + selectedFiles.length;
+      
+      if (totalCount > 5) {
         toast.error("You can upload up to 5 images.");
         return;
       }
-      
-      setNewImages(prev => [...prev, ...selectedFiles]);
-      const previewUrls = selectedFiles.map(file => URL.createObjectURL(file));
-      setDisplayImageUrls(prev => [...prev, ...previewUrls]);
+
+      // Upload each file and update display
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const targetIndex = displayImageUrls.length + i;
+        await handleImageUpload(selectedFiles[i], targetIndex);
+      }
     }
+    // Reset input
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleRemoveImage = (index: number) => {
     const urlToRemove = displayImageUrls[index];
     if (urlToRemove.startsWith('blob:')) {
-      const blobIndex = displayImageUrls.slice(0, index).filter(url => url.startsWith('blob:')).length;
-      setNewImages(prev => prev.filter((_, i) => i !== blobIndex));
       URL.revokeObjectURL(urlToRemove);
     }
     setDisplayImageUrls(prev => prev.filter((_, i) => i !== index));
@@ -82,10 +131,10 @@ const GroupShopItemEditor: React.FC<GroupShopItemEditorProps> = ({ group, onClos
     setIsSaving(true);
     try {
       await shopService.deleteProduct(item.id);
-      toast.success("Item deleted.");
+      toast.success("Item deleted successfully.");
       onClose();
     } catch {
-      toast.error("Failed to delete.");
+      toast.error("Failed to delete item.");
     } finally {
       setIsSaving(false);
     }
@@ -97,16 +146,15 @@ const GroupShopItemEditor: React.FC<GroupShopItemEditorProps> = ({ group, onClos
       return;
     }
 
+    // Check if any uploads are still in progress
+    const isUploading = Object.keys(uploadProgress).length > 0 || Object.values(optimizingSlots).some(v => v);
+    if (isUploading) {
+      toast.error("Please wait for all images to finish uploading.");
+      return;
+    }
+
     setIsSaving(true);
     try {
-      const uploadedUrls = await Promise.all(
-        newImages.map((file, index) => 
-          storageService.uploadFile(file, `groups/${group.id}/shop/${Date.now()}_${index}`)
-        )
-      );
-
-      const existingUrls = displayImageUrls.filter(url => !url.startsWith('blob:'));
-      const finalImageUrls = [...existingUrls, ...uploadedUrls];
       const optionsArray = formData.optionsInput.split(',').map(s => s.trim()).filter(s => s);
 
       const productData = {
@@ -120,7 +168,7 @@ const GroupShopItemEditor: React.FC<GroupShopItemEditorProps> = ({ group, onClos
         price: Number(formData.price),
         discountPrice: formData.discountPrice ? Number(formData.discountPrice) : undefined,
         brand: formData.brand || '',
-        images: finalImageUrls,
+        images: displayImageUrls,
         options: optionsArray,
         stock: Number(formData.stock),
         status: formData.status as 'Active' | 'Stopped',
@@ -166,10 +214,20 @@ const GroupShopItemEditor: React.FC<GroupShopItemEditorProps> = ({ group, onClos
         </div>
         <button 
           onClick={handleSave}
-          disabled={isSaving}
-          className="bg-[#0057bd] text-white font-['Plus_Jakarta_Sans'] font-bold tracking-tight hover:bg-[#0057bd]/90 transition-all duration-200 active:scale-[0.99] px-5 py-2 rounded-lg shadow-sm disabled:opacity-50"
+          disabled={isSaving || Object.keys(uploadProgress).length > 0}
+          className="bg-[#0057bd] text-white font-['Plus_Jakarta_Sans'] font-bold tracking-tight hover:bg-[#0057bd]/90 transition-all duration-200 active:scale-[0.99] px-5 py-2 rounded-lg shadow-sm disabled:opacity-50 flex items-center gap-2"
         >
-          {isSaving ? "Saving..." : "Save"}
+          {isSaving ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <span>Saving...</span>
+            </>
+          ) : Object.keys(uploadProgress).length > 0 ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <span>Uploading...</span>
+            </>
+          ) : "Save"}
         </button>
       </header>
 
@@ -251,17 +309,51 @@ const GroupShopItemEditor: React.FC<GroupShopItemEditorProps> = ({ group, onClos
             )}
 
             {/* Uploaded Images */}
-            {displayImageUrls.map((url, index) => (
-              <div key={index} className="aspect-square relative group rounded-lg overflow-hidden border border-[#a3abd7]/20">
-                <img src={url} alt={`preview ${index}`} className="w-full h-full object-cover" />
-                <button 
-                  onClick={() => handleRemoveImage(index)}
-                  className="absolute top-1 right-1 bg-black/50 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <span className="material-symbols-outlined text-sm">close</span>
-                </button>
-              </div>
-            ))}
+            {displayImageUrls.map((url, index) => {
+              const progress = uploadProgress[index];
+              const isOptimizing = optimizingSlots[index];
+              const isUploading = progress !== undefined;
+
+              return (
+                <div key={index} className="aspect-square relative group rounded-lg overflow-hidden border border-[#a3abd7]/20">
+                  <img src={url} alt={`preview ${index}`} className="w-full h-full object-cover" />
+                  
+                  {(isUploading || isOptimizing) && (
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center flex-col gap-2">
+                      {isOptimizing ? (
+                        <>
+                          <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          <span className="text-[10px] font-bold text-white uppercase tracking-tighter">Optimizing...</span>
+                        </>
+                      ) : (
+                        <div className="relative w-12 h-12">
+                          <svg className="w-full h-full -rotate-90">
+                            <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="4" fill="transparent" className="text-white/20" />
+                            <circle 
+                              cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="4" fill="transparent" 
+                              strokeDasharray={125.6} 
+                              strokeDashoffset={125.6 - (125.6 * (progress || 0)) / 100}
+                              className="text-white transition-all duration-300 ease-out"
+                            />
+                          </svg>
+                          <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white">{Math.round(progress || 0)}%</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {!isUploading && !isOptimizing && (
+                    <button 
+                      onClick={() => handleRemoveImage(index)}
+                      className="absolute top-1 right-1 bg-black/50 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <span className="material-symbols-outlined text-sm">close</span>
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+
 
             {/* Placeholder slots */}
             {Array.from({ length: Math.max(0, 5 - displayImageUrls.length - (displayImageUrls.length < 5 ? 1 : 0)) }).map((_, i) => (

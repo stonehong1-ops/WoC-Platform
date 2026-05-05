@@ -1,725 +1,432 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Social, SocialReservation } from '@/types/social';
-import SocialHeroCard, { DualText, getSocialDisplayTitle } from './SocialHeroCard';
-import { useAuth } from '@/components/providers/AuthProvider';
-import UniversalFeed from '@/components/feed/UniversalFeed';
-import { socialService } from '@/lib/firebase/socialService';
-import { useHistoryBack } from '@/hooks/useHistoryBack';
+"use client";
+
+import React, { useState, useEffect, useRef } from "react";
+import { Social } from "@/types/social";
+import { useAuth } from "@/components/providers/AuthProvider";
+import { socialService } from "@/lib/firebase/socialService";
+import { chatService } from "@/lib/firebase/chatService";
+import { userService } from "@/lib/firebase/userService";
+import { useModalNavigation } from "@/hooks/useModalNavigation";
+import ChatRoom from "@/components/chat/ChatRoom";
+import UniversalFeed from "@/components/feed/UniversalFeed";
+import SocialHomeTab from "./SocialHomeTab";
+import SocialReservationTab from "./SocialReservationTab";
+import EditSocialEvent from "./EditSocialEvent";
 
 interface SocialViewerProps {
   social: Social;
   onClose: () => void;
 }
 
-export default function SocialViewer({ social, onClose }: SocialViewerProps) {
-  const { user } = useAuth();
-  const { handleClose } = useHistoryBack(true, onClose);
-  const images = [social.imageUrl].filter(url => url && url.trim() !== '');
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [activeTab, setActiveTab] = useState('Info');
+type TabId = "home" | "feed" | "reservation";
 
-  const [isShareMenuOpen, setIsShareMenuOpen] = useState(false);
-  const shareMenuRef = useRef<HTMLDivElement>(null);
+const ADMIN_UIDS = ["7iaZAmaYY9dNNEShmJmROI8XrtH2"];
 
-  const [isReservationFormOpen, setIsReservationFormOpen] = useState(false);
-  const [peopleCount, setPeopleCount] = useState(2);
-  const [guests, setGuests] = useState<string[]>(['Maria S.', 'Diego R.']);
-  const [notes, setNotes] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const [reservations, setReservations] = useState<SocialReservation[]>([]);
+export default function SocialViewer({ social: initialSocial, onClose }: SocialViewerProps) {
+  const { user, profile } = useAuth();
+  const [social, setSocial] = useState<Social>(initialSocial);
+  const [activeTab, setActiveTab] = useState<TabId>("home");
+  const [showEditModal, setShowEditModal] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = socialService.subscribeReservations(social.id, (data) => {
-      setReservations(data);
+    const unsub = socialService.subscribeSocial(initialSocial.id, (data) => {
+      if (data) setSocial(data);
     });
-    return () => unsubscribe();
-  }, [social.id]);
+    return () => unsub();
+  }, [initialSocial.id]);
 
+  // Claim ownership state
+  const [showAssignSheet, setShowAssignSheet] = useState(false);
+  const [assignSearch, setAssignSearch] = useState("");
+  const [assignResults, setAssignResults] = useState<any[]>([]);
+  const [assignTarget, setAssignTarget] = useState<any>(null);
+  const [isClaiming, setIsClaiming] = useState(false);
+  const isUnclaimed = ADMIN_UIDS.includes(social.organizerId || "");
+
+  // Image carousel
+  const [currentImg, setCurrentImg] = useState(0);
+  const touchStartX = useRef(0);
+  const images = social.imageUrl ? [social.imageUrl] : [];
+
+  // UI state
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
+  const [isTabStuck, setIsTabStuck] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const tabAnchorRef = useRef<HTMLDivElement>(null);
+
+  const {
+    value: chatId,
+    openModal: openChat,
+    closeModal: handleCloseChat,
+  } = useModalNavigation("chatId");
+  const {
+    value: imageModal,
+    openModal: openImageModal,
+    closeModal: closeImageModal,
+  } = useModalNavigation("imageModal");
+
+  const showImageModal = imageModal === "true";
+
+  // Permission: Org, Staff, or Admin can edit
+  const canEdit = user && (
+    user.uid === social.organizerId ||
+    social.staffIds?.includes(user.uid) ||
+    ADMIN_UIDS.includes(user.uid) ||
+    user.email === "stonehong1@gmail.com"
+  );
+
+  // Likes
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (shareMenuRef.current && !shareMenuRef.current.contains(event.target as Node)) {
-        setIsShareMenuOpen(false);
+    if (!user) return;
+    const unsub = socialService.subscribeMyLikes(user.uid, (likes) => {
+      setIsLiked(likes.includes(social.id));
+    });
+    return () => unsub();
+  }, [user, social.id]);
+
+  const handleToggleLike = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user) return alert("Please login first");
+    try { await socialService.toggleLike(user.uid, social.id); } catch (err) { console.error(err); }
+  };
+
+  // Scroll listener — detect when tab should become fixed
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const handler = () => {
+      setIsScrolled(el.scrollTop > 60);
+      if (tabAnchorRef.current) {
+        const rect = tabAnchorRef.current.getBoundingClientRect();
+        setIsTabStuck(rect.top <= 56);
       }
     };
-    if (isShareMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isShareMenuOpen]);
+    el.addEventListener("scroll", handler, { passive: true });
+    return () => el.removeEventListener("scroll", handler);
+  }, []);
 
-  const handleShareLink = async () => {
-    setIsShareMenuOpen(false);
-    
-    // Create deep link
-    const url = new URL(window.location.href);
-    url.searchParams.set('id', social.id);
-    const shareUrl = url.toString();
-
-    const shareData = {
-      title: social.title,
-      url: shareUrl
-    };
-    if (navigator.share) {
-      try {
-        await navigator.share(shareData);
-      } catch (err) {
-        console.error('Error sharing link:', err);
-      }
-    } else {
-      navigator.clipboard.writeText(shareUrl);
-      alert("Link copied to clipboard.");
+  // Touch handlers
+  const handleTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const diff = touchStartX.current - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0 && currentImg < images.length - 1) setCurrentImg(p => p + 1);
+      if (diff < 0 && currentImg > 0) setCurrentImg(p => p - 1);
     }
   };
 
-  const handleSharePoster = async () => {
-    setIsShareMenuOpen(false);
-    if (!social.imageUrl) {
-      alert("No poster image available to share.");
-      return;
-    }
+  const handleChatWithOrganizer = async () => {
+    if (!user) return alert("Please login first");
+    const organizerId = social.organizerId || "adminstone";
+    if (user.uid === organizerId) return alert("You cannot chat with yourself");
+    if (!confirm("Would you like to send an inquiry chat to the organizer?")) return;
     try {
-      const response = await fetch(social.imageUrl);
-      const blob = await response.blob();
-      const fileExt = blob.type.split('/')[1] || 'jpeg';
-      const file = new File([blob], `poster_${social.id}.${fileExt}`, { type: blob.type });
-
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: social.title
-        });
-      } else {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `poster_${social.id}.${fileExt}`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }
-    } catch (err: any) {
-      console.error('Error sharing poster:', err);
-      if (err.name === 'AbortError') {
-        // User cancelled the share
-        return;
-      }
-      
-      // CORS or network issue caused fetch to fail
-      if (err.name === 'TypeError' || err.message?.includes('fetch')) {
-        alert("Image sharing is restricted due to security settings (CORS). Opening in a new window.");
-        window.open(social.imageUrl, '_blank');
-      } else {
-        alert("An error occurred while sharing the poster: " + (err.message || 'Unknown error'));
-      }
-    }
-  };
-
-  const handleReservationSubmit = async () => {
-    if (!user) {
-      alert("Please sign in first.");
-      return;
-    }
-    
-    setIsSubmitting(true);
-    try {
-      await socialService.addReservation(social.id, {
-        userId: user.uid,
-        userName: user.displayName || 'Unknown User',
-        userPhotoURL: user.photoURL || '',
-        peopleCount,
-        guests,
-        notes,
-        status: 'pending'
+      const roomId = await chatService.getOrCreatePrivateRoom([user.uid, organizerId], user.uid, "business");
+      const displayDate = social.type === "regular"
+        ? `Every ${["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][social.dayOfWeek || 0]}`
+        : "TBA";
+      await chatService.sendMessage({
+        roomId, senderId: user.uid, senderName: user.displayName || "User",
+        senderPhoto: user.photoURL || undefined,
+        text: `[Event Inquiry]\nTitle: ${social.title}\nDate: ${displayDate}\nLink: ${window.location.origin}/social?id=${social.id}`,
+        type: "text",
       });
-      alert("Reservation submitted successfully!");
-      setIsReservationFormOpen(false);
-      setPeopleCount(2);
-      setGuests(['Maria S.', 'Diego R.']);
-      setNotes('');
-    } catch (error) {
-      console.error("Error submitting reservation:", error);
-      alert("An error occurred while submitting the reservation.");
-    } finally {
-      setIsSubmitting(false);
-    }
+      openChat(roomId);
+    } catch (err) { console.error(err); alert("Failed to start chat."); }
   };
 
-  const TABS = ['Info', 'Feed', 'Tables', 'Contact'];
+  const handleDelete = async () => {
+    if (!confirm("Are you sure you want to delete this social event?")) return;
+    try {
+      await socialService.deleteSocial(social.id);
+      onClose();
+    } catch (err) { console.error(err); alert("Failed to delete."); }
+  };
 
-  const displayDate = social.type === 'regular' 
-    ? `Every ${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][social.dayOfWeek || 0]}` 
-    : social.date ? new Date(social.date.toDate ? social.date.toDate() : social.date as any).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : 'TBA';
+  const titleStr = social.titleNative || social.title;
+  const brandStr = social.organizerNameNative || social.organizerName || "Organizer";
 
-  const socialDateObj = social.type === 'regular' ? new Date() : (social.date ? (typeof social.date.toDate === 'function' ? social.date.toDate() : new Date(social.date as any)) : new Date());
-  const socialDay = socialDateObj.getDate();
-  const socialMonth = socialDateObj.toLocaleString('en-US', { month: 'short' });
+  const TABS: { id: TabId; label: string; icon: string }[] = [
+    { id: "home", label: "Home", icon: "home" },
+    { id: "feed", label: "Feed", icon: "forum" },
+    { id: "reservation", label: "Booking", icon: "event_seat" },
+  ];
 
-  const displayTitle = getSocialDisplayTitle(social);
+  // Tab bar component (reused in both inline and fixed positions)
+  const TabBar = () => (
+    <div className="flex bg-white border-b border-[#e0e4e5]">
+      {TABS.map(tab => (
+        <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-bold tracking-wide transition-all border-b-2 ${
+            activeTab === tab.id ? "text-primary border-primary" : "text-[#acb3b4] border-transparent"
+          }`}>
+          <span className="material-symbols-rounded text-base" style={{ fontVariationSettings: activeTab === tab.id ? "'FILL' 1" : "'FILL' 0" }}>{tab.icon}</span>
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  );
 
   return (
-    <div className="fixed inset-0 z-[60] bg-[#f7f9fb] text-[#191c1e] font-body overflow-y-auto pt-[112px] pb-8 flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-300">
-      <style dangerouslySetInnerHTML={{__html: `
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border-top: 1px solid rgba(255, 255, 255, 0.8);
-            border-left: 1px solid rgba(255, 255, 255, 0.8);
-            box-shadow: 0 8px 32px rgba(0, 163, 255, 0.05);
-        }
-        .glass-card {
-            background-color: rgba(255, 255, 255, 0.6);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border-top: 1px solid rgba(255, 255, 255, 0.8);
-            border-left: 1px solid rgba(255, 255, 255, 0.8);
-            box-shadow: 0 8px 32px 0 rgba(0, 163, 255, 0.1);
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, #00A3FF 0%, #00629D 100%);
-            color: #ffffff;
-        }
-        .btn-ghost {
-            background-color: rgba(255, 255, 255, 0.4);
-            backdrop-filter: blur(8px);
-            border: 1px solid #00A3FF;
-            color: #00A3FF;
-        }
-        .hide-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .hide-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-      `}} />
+    <div className="fixed inset-0 z-[100] bg-white flex flex-col animate-in slide-in-from-bottom duration-300">
+      <style dangerouslySetInnerHTML={{ __html: `.detail-scrollbar::-webkit-scrollbar{display:none}.detail-scrollbar{-ms-overflow-style:none;scrollbar-width:none}` }} />
 
-      {/* TopAppBar */}
-      <header className="fixed top-0 left-0 w-full z-[70] flex justify-between items-center px-4 h-16 bg-white/70 backdrop-blur-lg border-b border-sky-100/20 shadow-[0_4px_12px_rgba(0,163,255,0.08)]">
-        <button onClick={handleClose} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-sky-50/50 transition-colors text-sky-500">
-          <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>arrow_back</span>
+      {/* Header */}
+      <div className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 transition-all duration-300 ${isScrolled ? "bg-white/95 backdrop-blur-md shadow-sm" : "bg-gradient-to-b from-black/30 to-transparent"}`}>
+        <button onClick={onClose} className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? "bg-slate-100 text-[#2d3435]" : "bg-black/20 backdrop-blur-sm text-white"}`}>
+          <span className="material-symbols-rounded text-xl">arrow_back</span>
         </button>
-        <div className="flex flex-col items-center justify-center max-w-[200px] flex-1">
-          <DualText 
-            text={displayTitle.primary}
-            subText={displayTitle.secondary}
-            primaryClassName="text-lg font-bold text-sky-600 tracking-tighter truncate w-full text-center leading-tight block"
-            secondaryClassName="text-[11px] font-medium text-sky-500/80 leading-tight truncate w-full text-center block mt-0.5"
-            containerClassName="flex-col items-center gap-0 w-full"
-          />
+        <div className={`flex flex-col items-center max-w-[160px] transition-colors ${isScrolled ? "text-[#2d3435]" : "text-white drop-shadow-md"}`}>
+          <div className="text-base font-bold truncate w-full text-center">{social.title}</div>
+          {social.titleNative && <div className={`text-[10px] font-bold truncate w-full text-center ${isScrolled ? "text-[#acb3b4]" : "text-white/90 drop-shadow-md"}`}>{social.titleNative}</div>}
         </div>
-        <div className="relative" ref={shareMenuRef}>
-          <button onClick={() => setIsShareMenuOpen(!isShareMenuOpen)} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-sky-50/50 transition-colors text-sky-500">
-            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>share</span>
+        <div className="flex items-center gap-1">
+          {canEdit && (
+            <>
+              <button onClick={() => setShowEditModal(true)}
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? "bg-slate-100 text-[#2d3435]" : "bg-black/20 backdrop-blur-sm text-white"}`}>
+                <span className="material-symbols-rounded text-xl">edit</span>
+              </button>
+              <button onClick={handleDelete}
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? "bg-slate-100 text-red-500" : "bg-black/20 backdrop-blur-sm text-white"}`}>
+                <span className="material-symbols-rounded text-xl">delete</span>
+              </button>
+            </>
+          )}
+          <button onClick={() => navigator.share ? navigator.share({ title: titleStr, url: window.location.href }).catch(console.error) : alert("Share not supported")}
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? "bg-slate-100 text-[#2d3435]" : "bg-black/20 backdrop-blur-sm text-white"}`}>
+            <span className="material-symbols-rounded text-xl">share</span>
           </button>
-          
-          {isShareMenuOpen && (
-            <div className="absolute right-0 mt-2 w-48 glass-panel rounded-2xl py-2 shadow-lg animate-in fade-in slide-in-from-top-2 duration-200">
-              <button 
-                onClick={handleSharePoster}
-                className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-sky-50/50 transition-colors"
-              >
-                <span className="material-symbols-outlined text-[#00a3ff]" style={{ fontVariationSettings: "'FILL' 0" }}>image</span>
-                <span className="font-label text-[14px] font-semibold text-[#191c1e]">Share Poster</span>
-              </button>
-              <button 
-                onClick={handleShareLink}
-                className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-sky-50/50 transition-colors"
-              >
-                <span className="material-symbols-outlined text-[#00a3ff]" style={{ fontVariationSettings: "'FILL' 0" }}>link</span>
-                <span className="font-label text-[14px] font-semibold text-[#191c1e]">Share Link</span>
-              </button>
+        </div>
+      </div>
+
+      {/* Fixed Tab Bar — appears when scrolled past anchor */}
+      {isTabStuck && (
+        <div className="fixed top-[56px] left-0 right-0 z-40">
+          <TabBar />
+        </div>
+      )}
+
+      {/* Scrollable Content */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto detail-scrollbar pb-[80px]">
+        {/* Image */}
+        <div className="relative aspect-[4/5] overflow-hidden bg-[#f2f4f4]">
+          {images.length === 0 && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-[#c4cacc]">
+              <span className="material-symbols-rounded text-5xl mb-1">local_activity</span>
+              <span className="text-[10px] font-bold tracking-wider uppercase">No Image</span>
+            </div>
+          )}
+          {images.length > 0 && (
+            <div className="relative h-full" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onClick={() => openImageModal("true")}>
+              <div className="flex h-full transition-transform duration-300 ease-out" style={{ transform: `translateX(-${currentImg * 100}%)` }}>
+                {images.map((img, i) => (
+                  <div key={i} className="w-full flex-shrink-0 h-full">
+                    <img src={img} alt={`${titleStr} ${i + 1}`} className="w-full h-full object-cover" />
+                  </div>
+                ))}
+              </div>
+
             </div>
           )}
         </div>
-      </header>
 
-      {/* Tab Navigation */}
-      <div className="fixed top-16 left-0 w-full z-[65] bg-white/70 backdrop-blur-lg border-b border-sky-100/20 shadow-sm overflow-x-auto hide-scrollbar">
-        <nav className="flex px-2 min-w-max">
-          {TABS.map(tab => (
-            <a
-              key={tab}
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                setActiveTab(tab);
-              }}
-              className={`px-4 py-3 border-b-2 font-label text-[15px] leading-none transition-colors ${
-                activeTab === tab
-                  ? 'border-[#00629d] text-[#00629d] font-semibold'
-                  : 'border-transparent text-[#515f78] hover:text-[#191c1e] font-medium'
-              }`}
-            >
-              {tab}
-            </a>
-          ))}
-        </nav>
+        {/* Description */}
+        <div className="px-4 pt-4 pb-4 border-b border-[#f2f4f4]">
+          <p className="text-sm text-[#596061] whitespace-pre-wrap leading-relaxed line-clamp-4">
+            {(social as any).description || "This social event does not have a description yet."}
+          </p>
+        </div>
+
+        {/* Unclaimed Banner */}
+        {isUnclaimed && user && (
+          <div className="mx-4 mt-3 mb-1 border border-amber-200 bg-amber-50/60 rounded-2xl p-4">
+            <div className="flex items-start gap-2.5 mb-3">
+              <span className="material-symbols-rounded text-lg text-amber-600 mt-0.5">warning</span>
+              <div>
+                <p className="text-xs font-bold text-amber-800">No organizer registered yet.</p>
+                <p className="text-[10px] text-amber-600 mt-0.5 leading-relaxed">If this is your social event, claim it below.</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={async () => {
+                  if (!user) return;
+                  if (!confirm("⚠️ Caution\n\nOnce you claim this social, only you (or an admin) can transfer ownership.\nPlease make sure this is really yours before proceeding.")) return;
+                  setIsClaiming(true);
+                  try {
+                    await socialService.claimSocial(social.id, {
+                      uid: user.uid,
+                      displayName: user.displayName || "User",
+                      nativeNickname: (profile as any)?.nativeNickname || "",
+                    }, user.uid);
+                    alert("Successfully claimed! You are now the organizer.");
+                    onClose();
+                  } catch (err) { console.error(err); alert("Failed to claim."); }
+                  finally { setIsClaiming(false); }
+                }}
+                disabled={isClaiming}
+                className="flex-1 py-2.5 bg-primary text-white rounded-xl text-xs font-black tracking-wide active:scale-95 transition-transform disabled:opacity-50"
+              >
+                {isClaiming ? "Claiming..." : "It's Me"}
+              </button>
+              <button
+                onClick={() => setShowAssignSheet(true)}
+                className="flex-1 py-2.5 bg-white border border-[#e0e4e5] text-[#596061] rounded-xl text-xs font-bold tracking-wide active:scale-95 transition-transform"
+              >
+                Assign Someone
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Tab Anchor — inline tab bar (hidden when stuck) */}
+        <div ref={tabAnchorRef}>
+          {!isTabStuck && <TabBar />}
+          {isTabStuck && <div style={{ height: 44 }} />}
+        </div>
+
+        {/* Tab Content */}
+        {activeTab === "home" && <SocialHomeTab social={social} onChatWithOrganizer={handleChatWithOrganizer} canEdit={!!canEdit} />}
+        {activeTab === "feed" && (
+          <div className="px-4 pb-8 pt-2">
+            <UniversalFeed context={{ scope: "social", scopeId: social.id }} currentUser={user} profile={profile} />
+          </div>
+        )}
+        {activeTab === "reservation" && <SocialReservationTab social={social} />}
       </div>
 
-      <main className="w-full h-full">
-        {/* Info Tab Content */}
-        {activeTab === 'Info' && (
-          <div className="max-w-7xl mx-auto md:px-6 mt-4 w-full pb-32">
-            {/* Hero Header (Slider) */}
-            <div className="relative w-full aspect-[3/4] md:h-[600px] md:w-auto md:max-w-[450px] mx-auto rounded-b-3xl md:rounded-3xl overflow-hidden mb-8 shadow-sm group">
-              <div className="flex w-full h-full overflow-x-auto snap-x snap-mandatory hide-scrollbar">
-                <div className="w-full h-full shrink-0 snap-start relative">
-                  <SocialHeroCard social={social} />
+
+
+      {/* Full Screen Image Viewer */}
+      {showImageModal && (
+        <div className="fixed inset-0 z-[200] bg-black flex flex-col animate-in fade-in duration-200">
+          <div className="absolute top-0 left-0 right-0 z-10 flex justify-end p-4">
+            <button onClick={closeImageModal} className="w-10 h-10 rounded-full bg-black/40 text-white flex items-center justify-center">
+              <span className="material-symbols-rounded text-2xl">close</span>
+            </button>
+          </div>
+          <div className="flex-1 w-full h-full flex items-center justify-center" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+            <div className="flex w-full transition-transform duration-300 ease-out h-full items-center" style={{ transform: `translateX(-${currentImg * 100}%)` }}>
+              {images.map((img, i) => (
+                <div key={i} className="w-full flex-shrink-0 flex items-center justify-center px-4">
+                  <img src={img} alt={`Fullscreen ${i + 1}`} className="w-full max-h-[80vh] object-contain" />
                 </div>
-                {/* Additional slides */}
-                {images.length > 1 && (
-                  <div className="w-full h-full shrink-0 snap-start relative hidden group-hover:block">
-                    <img alt={social.title} className="w-full h-full object-cover" src={images[currentImageIndex]}/>
-                  </div>
-                )}
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Chat Room */}
+      {chatId && (
+        <div className="fixed inset-0 z-[200] bg-white animate-in slide-in-from-bottom duration-300">
+          <ChatRoom roomId={chatId} onBack={handleCloseChat} />
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {showEditModal && (
+        <EditSocialEvent
+          socialData={social}
+          onClose={() => setShowEditModal(false)}
+          onSuccess={() => setShowEditModal(false)}
+        />
+      )}
+
+      {/* Assign Someone Bottom Sheet */}
+      {showAssignSheet && (
+        <>
+          <div className="fixed inset-0 bg-black/40 z-[150] animate-in fade-in duration-200" onClick={() => { setShowAssignSheet(false); setAssignTarget(null); setAssignSearch(""); }} />
+          <div className="fixed bottom-0 left-0 right-0 z-[151] bg-white rounded-t-3xl shadow-2xl animate-in slide-in-from-bottom duration-300 max-h-[80vh] overflow-y-auto">
+            <div className="w-12 h-1.5 bg-[#e0e4e5] rounded-full mx-auto mt-3 mb-2" />
+            <div className="px-5 pb-8">
+              <h3 className="text-lg font-black text-[#2d3435] mb-1">Assign Organizer</h3>
+              <p className="text-[10px] text-[#acb3b4] mb-4">Search and assign the real organizer for this social.</p>
+
+              {/* Search */}
+              <div className="relative mb-4">
+                <span className="material-symbols-rounded absolute left-3 top-1/2 -translate-y-1/2 text-lg text-[#acb3b4]">search</span>
+                <input
+                  value={assignSearch}
+                  onChange={async (e) => {
+                    setAssignSearch(e.target.value);
+                    if (e.target.value.length >= 1) {
+                      const users = await userService.searchUsers(e.target.value);
+                      setAssignResults(users.slice(0, 8));
+                    } else {
+                      setAssignResults([]);
+                    }
+                  }}
+                  className="w-full pl-10 pr-4 py-3 bg-[#f2f4f4] rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary/30"
+                  placeholder="Search by name..."
+                />
               </div>
-              
-              {/* Pagination Dots */}
-              {images.length > 1 && (
-                <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-10">
-                  {images.map((_, idx) => (
-                    <div key={idx} className={`w-2 h-2 rounded-full ${idx === currentImageIndex ? 'bg-white' : 'bg-white/50'}`}></div>
+
+              {/* Results */}
+              {assignResults.length > 0 && (
+                <div className="space-y-1 mb-4 max-h-[200px] overflow-y-auto">
+                  {assignResults.map((u: any) => (
+                    <button
+                      key={u.id}
+                      onClick={() => setAssignTarget(u)}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${
+                        assignTarget?.id === u.id ? "bg-primary/10 border border-primary" : "bg-white hover:bg-[#f8f9fa] border border-transparent"
+                      }`}
+                    >
+                      <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden">
+                        {u.photoURL ? <img src={u.photoURL} className="w-full h-full object-cover" alt="" /> :
+                          <span className="material-symbols-rounded text-sm text-[#acb3b4]">person</span>}
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-[#2d3435]">{u.nickname || u.displayName}</p>
+                        {u.nativeNickname && <p className="text-[10px] text-[#acb3b4]">{u.nativeNickname}</p>}
+                      </div>
+                      {assignTarget?.id === u.id && <span className="material-symbols-rounded text-primary ml-auto">check_circle</span>}
+                    </button>
                   ))}
                 </div>
               )}
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 px-4 md:px-0">
-              <div className="md:col-span-12 max-w-3xl mx-auto w-full space-y-8">
-                {/* Basic Info Section (Bento Grid) */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  
-                  {/* Date & Time */}
-                  <div className="glass-panel rounded-2xl p-6 sm:col-span-2 flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-full bg-[#00a3ff]/10 flex items-center justify-center shrink-0">
-                      <span className="material-symbols-outlined text-[#00a3ff]" style={{ fontVariationSettings: "'FILL' 1" }}>calendar_today</span>
-                    </div>
-                    <div>
-                      <h3 className="font-headline text-[24px] leading-[1.3] font-semibold text-[#191c1e] mb-1">{displayDate}</h3>
-                      <p className="font-body text-[16px] leading-[1.5] text-[#3f4852]">{social.startTime} - {social.endTime}</p>
-                      {social.type === 'regular' && (
-                        <p className="font-label text-[14px] leading-[1.5] text-[#515f78] mt-2">Recurring Event</p>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {/* Location */}
-                  <div className="glass-panel rounded-2xl p-6 flex flex-col justify-between">
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-3">
-                        <span className="material-symbols-outlined text-[#515f78]" style={{ fontVariationSettings: "'FILL' 0" }}>location_on</span>
-                        <div>
-                          <span className="block font-label text-[12px] leading-none tracking-[0.05em] font-bold text-[#515f78] uppercase">Venue</span>
-                          <div className="mt-1">
-                            <DualText 
-                              text={social.venueName}
-                              subText={social.venueNameNative}
-                              primaryClassName="font-label text-[15px] leading-none font-semibold text-[#191c1e]"
-                              secondaryClassName="text-[11px] font-medium text-[#515f78] leading-none mb-[1px]"
-                              containerClassName="flex-wrap items-end"
-                            />
-                          </div>                        </div>
-                      </div>
-                      <div className="w-full h-[1px] bg-[#bec7d4]/30"></div>
-                      <div className="flex items-center gap-3">
-                        <span className="material-symbols-outlined text-[#515f78]" style={{ fontVariationSettings: "'FILL' 0" }}>person</span>
-                        <div>
-                          <span className="block font-label text-[12px] leading-none tracking-[0.05em] font-bold text-[#515f78] uppercase">Organizer</span>
-                          <div className="mt-1">
-                            <DualText 
-                              text={social.organizerName}
-                              subText={social.organizerNameNative}
-                              primaryClassName="font-label text-[15px] leading-none font-semibold text-[#191c1e]"
-                              secondaryClassName="text-[11px] font-medium text-[#515f78] leading-none mb-[1px]"
-                              containerClassName="flex-wrap items-end"
-                            />
-                          </div>                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Dress Code & Price */}
-                  <div className="glass-panel rounded-2xl p-6 flex flex-col justify-between">
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-3">
-                        <span className="material-symbols-outlined text-[#515f78]" style={{ fontVariationSettings: "'FILL' 0" }}>music_note</span>
-                        <div>
-                          <span className="block font-label text-[12px] leading-none tracking-[0.05em] font-bold text-[#515f78] uppercase">DJ</span>
-                          <div className="mt-1">
-                            <DualText 
-                              text={social.djName || 'TBA'}
-                              subText={social.djNameNative}
-                              primaryClassName="font-label text-[15px] leading-none font-semibold text-[#191c1e]"
-                              secondaryClassName="text-[11px] font-medium text-[#515f78] leading-none mb-[1px]"
-                              containerClassName="flex-wrap items-end"
-                            />
-                          </div>                        </div>
-                      </div>
-                      <div className="w-full h-[1px] bg-[#bec7d4]/30"></div>
-                      <div className="flex items-center gap-3">
-                        <span className="material-symbols-outlined text-[#515f78]" style={{ fontVariationSettings: "'FILL' 0" }}>payments</span>
-                        <div>
-                          <span className="block font-label text-[12px] leading-none tracking-[0.05em] font-bold text-[#515f78] uppercase">Entry</span>
-                          <span className="font-label text-[15px] leading-none font-semibold text-[#191c1e] block mt-1">{social.price || 'TBA'}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Description */}
-                {social.description && (
-                  <div className="glass-panel rounded-2xl p-6">
-                    <h3 className="font-label text-[12px] leading-none tracking-[0.05em] font-bold text-[#515f78] uppercase mb-4">Description</h3>
-                    <p className="font-body text-[16px] leading-[1.6] text-[#191c1e] whitespace-pre-wrap">
-                      {social.description}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Tables Tab Content */}
-        {activeTab === 'Tables' && (
-          <div className="max-w-3xl mx-auto md:px-6 px-4 mt-4 w-full space-y-[24px] pb-32">
-            <div className="flex items-center justify-center gap-6 mb-6 py-2 bg-white/40 backdrop-blur-sm rounded-xl border border-white/20 shadow-sm">
-              <button className="p-2 text-[#00629d] hover:bg-[#00629d]/10 rounded-full transition-colors flex items-center justify-center active:scale-90">
-                <span className="material-symbols-outlined text-2xl">chevron_left</span>
-              </button>
-              <div className="flex flex-col items-center">
-                <span className="font-h3 text-xl font-bold text-[#191c1e]">{socialDay}, {socialMonth}</span>
-                <span className="font-label-caps text-[10px] text-[#3f4852] uppercase tracking-widest">Event Date</span>
-              </div>
-              <button className="p-2 text-[#00629d] hover:bg-[#00629d]/10 rounded-full transition-colors flex items-center justify-center active:scale-90">
-                <span className="material-symbols-outlined text-2xl">chevron_right</span>
-              </button>
-            </div>
-
-            <div className="flex items-center justify-between bg-white/60 backdrop-blur-md p-4 rounded-xl border border-white/50 shadow-[0_2px_8px_0_rgba(0,163,255,0.05)]">
-              <div>
-                <h3 className="font-button text-[15px] font-semibold text-[#191c1e]">Manage Reservations</h3>
-                <p className="font-body-sm text-[14px] text-[#3f4852]">Accepting new requests</p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input defaultChecked className="sr-only peer" type="checkbox" value=""/>
-                <div className="w-11 h-6 bg-[#e0e3e5] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#00a3ff]"></div>
-              </label>
-            </div>
-
-            <div className="bg-[#00a3ff]/10 p-4 rounded-xl border border-[#00a3ff]/30 shadow-sm">
-              <ul className="space-y-2">
-                <li className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[#00629d] text-lg">redeem</span>
-                  <span className="font-body-md text-[14px] text-[#3f4852] font-medium">Book a table for 2+1 event</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[#00629d] text-lg">redeem</span>
-                  <span className="font-body-md text-[14px] text-[#3f4852] font-medium">Best dressed wins a bottle of wine</span>
-                </li>
-              </ul>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="font-h3 text-[24px] font-semibold text-[#191c1e]">Table Requests</h3>
-                <span className="bg-[#00a3ff]/10 text-[#00a3ff] px-3 py-1 rounded-full font-label-caps text-[12px] font-bold tracking-[0.05em] uppercase">{reservations.filter(r => r.status === 'pending').length} Pending</span>
+              {/* Warning */}
+              <div className="flex items-start gap-2 bg-amber-50 rounded-xl px-3 py-2.5 mb-5">
+                <span className="material-symbols-rounded text-sm text-amber-600 mt-0.5">warning</span>
+                <p className="text-[10px] text-amber-700 leading-relaxed">Once assigned, only the new organizer (or admin) can change ownership. Please be careful.</p>
               </div>
 
-              {reservations.length === 0 ? (
-                <div className="text-center py-8 bg-white/60 backdrop-blur-md rounded-xl border border-white/50">
-                  <p className="font-body text-[#515f78]">No reservations yet.</p>
-                </div>
-              ) : (
-                reservations.map((res) => {
-                  const isApproved = res.status === 'approved';
-                  const isPending = res.status === 'pending';
-                  
-                  const statusColors = {
-                    approved: { border: 'bg-emerald-500', text: 'text-emerald-600', bg: 'bg-emerald-50', icon: 'check_circle' },
-                    pending: { border: 'bg-amber-400', text: 'text-amber-600', bg: 'bg-amber-50', icon: 'pending' },
-                    rejected: { border: 'bg-rose-500', text: 'text-rose-600', bg: 'bg-rose-50', icon: 'cancel' }
-                  };
-                  const colors = statusColors[res.status] || statusColors.pending;
-                  
-                  return (
-                    <div key={res.id} className="bg-white/80 backdrop-blur-lg p-4 rounded-xl border border-white/40 shadow-[0_4px_20px_0_rgba(0,163,255,0.05)] relative overflow-hidden">
-                      <div className={`absolute top-0 left-0 w-1 h-full ${colors.border}`}></div>
-                      <div className="flex justify-between items-start mb-3">
-                        <div>
-                          <h4 className="font-button text-[15px] font-semibold text-[#191c1e]">{res.userName}</h4>
-                          <p className="font-body-sm text-[14px] text-[#3f4852] flex items-center gap-1 mt-0.5">
-                            <span className="material-symbols-outlined text-[14px]">group</span> {res.peopleCount} People
-                          </p>
-                        </div>
-                        <div className="text-right cursor-pointer" onClick={() => {
-                          const nextStatus = res.status === 'pending' ? 'approved' : res.status === 'approved' ? 'rejected' : 'pending';
-                          if (res.id) socialService.updateReservationStatus(social.id, res.id, nextStatus);
-                        }}>
-                          <span className={`inline-flex items-center gap-1 ${colors.text} ${colors.bg} px-2 py-0.5 rounded text-xs font-semibold hover:opacity-80 transition-opacity`}>
-                            <span className="material-symbols-outlined text-[14px]">{colors.icon}</span> {res.status.charAt(0).toUpperCase() + res.status.slice(1)}
-                          </span>
-                          {res.createdAt && <p className="font-body-sm text-[11px] text-[#3f4852] mt-1">
-                            {new Date(typeof res.createdAt.toMillis === 'function' ? res.createdAt.toMillis() : (res.createdAt as any)).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                          </p>}
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        {res.guests && res.guests.length > 0 && (
-                          <p className="font-body-sm text-[14px] text-[#3f4852]"><span className="font-semibold text-[#191c1e]">Attendees:</span> {res.guests.join(', ')}</p>
-                        )}
-                        {res.notes && (
-                          <div className="bg-[#f7f9fb] p-3 rounded-lg border border-[#e0e3e5]/50">
-                            <p className="font-body-sm text-[14px] text-[#3f4852] italic">"{res.notes}"</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-
-            {/* Floating Action Button (Shows when form is closed) */}
-            {!isReservationFormOpen && (
-              <button
-                onClick={() => setIsReservationFormOpen(true)}
-                className="fixed bottom-6 right-6 w-14 h-14 bg-primary text-white rounded-full shadow-lg shadow-primary/30 flex items-center justify-center hover:scale-105 active:scale-95 transition-transform z-40"
-              >
-                <span className="material-symbols-outlined text-2xl">add</span>
-              </button>
-            )}
-
-            {/* New Reservation Form (Bottom Sheet) */}
-            <div 
-              className={`fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur-xl border-t border-white/40 shadow-[0_-8px_32px_0_rgba(0,163,255,0.1)] z-[80] p-4 pb-8 rounded-t-3xl transition-transform duration-300 ease-in-out ${isReservationFormOpen ? 'translate-y-0' : 'translate-y-full'}`}
-            >
-              {/* Handlebar */}
-              <div 
-                className="w-full flex justify-center mb-6 cursor-pointer"
-                onClick={() => setIsReservationFormOpen(false)}
-              >
-                <div className="w-12 h-1.5 bg-[#e0e3e5] rounded-full"></div>
-              </div>
-
-              <div className="max-w-2xl mx-auto space-y-4">
-                <h3 className="font-h3 text-lg font-semibold text-[#191c1e]">New Reservation</h3>
-                <div className="flex items-center justify-between bg-[#f2f4f6] p-3 rounded-xl border border-[#e0e3e5]/50">
-                  <span className="font-body-md text-[#191c1e] font-medium text-[16px]">People</span>
-                  <div className="flex items-center gap-3">
-                    <button onClick={() => setPeopleCount(Math.max(1, peopleCount - 1))} className="w-8 h-8 rounded-full bg-white border border-[#e0e3e5] flex items-center justify-center text-[#00629d] shadow-sm hover:bg-gray-50 active:scale-95 transition-all">
-                      <span className="material-symbols-outlined text-[18px]">remove</span>
-                    </button>
-                    <span className="font-button text-lg w-4 text-center text-[#191c1e] font-semibold">{peopleCount}</span>
-                    <button onClick={() => setPeopleCount(peopleCount + 1)} className="w-8 h-8 rounded-full bg-white border border-[#e0e3e5] flex items-center justify-center text-[#00629d] shadow-sm hover:bg-gray-50 active:scale-95 transition-all">
-                      <span className="material-symbols-outlined text-[18px]">add</span>
-                    </button>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <span className="font-body-sm text-[#3f4852] ml-1 text-[14px]">Select Guests</span>
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      {guests.map((guest, idx) => (
-                        <span key={idx} className="bg-[#00629d]/10 text-[#00629d] border border-[#00629d]/20 px-3 py-1.5 rounded-full font-body-sm text-sm flex items-center gap-1 cursor-pointer hover:bg-[#00629d]/20 transition-colors" onClick={() => setGuests(guests.filter((_, i) => i !== idx))}>
-                          {guest} <span className="material-symbols-outlined text-[14px]">close</span>
-                        </span>
-                      ))}
-                      <button 
-                        onClick={() => {
-                          const name = prompt("Enter guest name:");
-                          if (name) setGuests([...guests, name]);
-                        }}
-                        className="border border-dashed border-[#bec7d4] text-[#3f4852] px-4 py-1.5 rounded-full font-body-sm text-sm flex items-center gap-1 hover:bg-[#eceef0] transition-colors"
-                      >
-                        <span className="material-symbols-outlined text-[16px]">add</span> Add Guest
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <span className="font-body-sm text-[#3f4852] ml-1 text-[14px]">Notes</span>
-                  <input 
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    className="w-full bg-[#f2f4f6] border border-[#e0e3e5]/50 rounded-xl px-4 py-3 font-body-md text-[#191c1e] placeholder:text-[#3f4852]/50 focus:outline-none focus:ring-2 focus:ring-[#00629d]/50" 
-                    placeholder="Special requests, allergies, etc." 
-                    type="text"
-                  />
-                </div>
-                <button 
-                  onClick={handleReservationSubmit}
-                  disabled={isSubmitting}
-                  className={`w-full bg-gradient-to-r from-[#00a3ff] to-[#00629d] text-white font-button text-[15px] font-semibold py-3.5 rounded-xl shadow-[0_4px_12px_0_rgba(0,163,255,0.2)] transition-all flex items-center justify-center gap-2 mt-2 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : 'hover:shadow-[0_6px_16px_0_rgba(0,163,255,0.3)]'}`}
+              <div className="flex gap-3">
+                <button onClick={() => { setShowAssignSheet(false); setAssignTarget(null); setAssignSearch(""); }}
+                  className="flex-1 py-3.5 bg-[#f2f4f4] text-[#596061] rounded-xl font-bold text-sm active:scale-95 transition-transform">
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!assignTarget || !user) return;
+                    if (!confirm(`Assign ${assignTarget.nickname || assignTarget.displayName} as the organizer?`)) return;
+                    setIsClaiming(true);
+                    try {
+                      await socialService.claimSocial(social.id, {
+                        uid: assignTarget.id,
+                        displayName: assignTarget.nickname || assignTarget.displayName,
+                        nativeNickname: assignTarget.nativeNickname || "",
+                      }, user.uid);
+                      alert(`Successfully assigned to ${assignTarget.nickname || assignTarget.displayName}!`);
+                      setShowAssignSheet(false);
+                      onClose();
+                    } catch (err) { console.error(err); alert("Failed to assign."); }
+                    finally { setIsClaiming(false); }
+                  }}
+                  disabled={!assignTarget || isClaiming}
+                  className="flex-1 py-3.5 bg-primary text-white rounded-xl font-black text-sm active:scale-95 transition-transform disabled:opacity-40"
                 >
-                  {isSubmitting ? (
-                    <span className="material-symbols-outlined animate-spin">refresh</span>
-                  ) : (
-                    <span className="material-symbols-outlined">event_seat</span>
-                  )}
-                  {isSubmitting ? 'Submitting...' : 'Add Reservation'}
+                  {isClaiming ? "Assigning..." : assignTarget ? `Assign to ${assignTarget.nickname || 'User'}` : "Select a user"}
                 </button>
               </div>
             </div>
-
-            {/* Overlay when bottom sheet is open */}
-            {isReservationFormOpen && (
-              <div 
-                className="fixed inset-0 bg-black/20 z-[75] transition-opacity backdrop-blur-sm"
-                onClick={() => setIsReservationFormOpen(false)}
-              ></div>
-            )}
           </div>
-        )}
-
-        {/* Contact Tab Content */}
-        {activeTab === 'Contact' && (
-          <div className="max-w-3xl mx-auto md:px-6 px-4 mt-4 w-full pb-32">
-            <div className="w-full">
-              {/* Map Section */}
-              <section className="mb-[48px]">
-                <div className="glass-card rounded-xl overflow-hidden flex flex-col">
-                  {/* Map Placeholder */}
-                  <div className="relative w-full h-48 md:h-64 bg-[#eceef0]">
-                    <img alt="Location Map" className="w-full h-full object-cover opacity-80" data-alt="Detailed digital map view of a city streets with light blue and soft gray tones, minimal UI" data-location="Buenos Aires" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAfFs-DSxs4MGe523P3png4vc9pITm3rVQxc4rxC6Qfw13zIXZun5HwAjuIuZF5wsOsNiEXQay7SM5kw3cCJvDhjOv-e7fzLEDBfM0SNo2qMTiTkudZ6R-75KJsxjWQdSvuivb2yNjR0JxprQnh91VYmaFAVOLd9vTROm-oAzIPuIVyTbVWMngYJfqK6tSlgcaE_FPwpI8VxroPg-UBp2Xmg3oN7TwvwWcnOBbfIudQbXGxwDAngSWdp8QTFV18KxLqwkFebcpMjjI"/>
-                    {/* Floating Map Actions */}
-                    <div className="absolute bottom-[12px] right-[12px] flex gap-[12px]">
-                      <button className="btn-ghost rounded-full p-[4px] shadow-sm hover:bg-[#f7f9fb] transition-all flex items-center justify-center bg-[#f7f9fb]/80 backdrop-blur-md">
-                        <span className="material-symbols-outlined text-[#00629d] text-[20px]" style={{ fontVariationSettings: "'FILL' 0" }}>my_location</span>
-                      </button>
-                    </div>
-                  </div>
-                  {/* Location Info & Actions */}
-                  <div className="p-[24px] flex flex-col md:flex-row md:items-center justify-between gap-[24px] bg-[#ffffff]/50">
-                    <div>
-                      <div className="mb-[4px]">
-                        <DualText 
-                          text={social.venueName || 'Venue Location'}
-                          subText={social.venueNameNative}
-                          primaryClassName="font-h3 text-[24px] leading-[1.3] font-semibold text-[#191c1e]"
-                          secondaryClassName="font-body-md text-[14px] text-[#515f78] font-medium"
-                          containerClassName="flex-wrap items-baseline gap-2"
-                        />
-                      </div>
-                      <p className="font-body-md text-[16px] leading-[1.5] text-[#3f4852] flex items-center gap-[4px]">
-                        <span className="material-symbols-outlined text-[#00629d] text-[18px]" style={{ fontVariationSettings: "'FILL' 0" }}>location_on</span>
-                        {social.city ? `${social.city}, ${social.country}` : 'Location TBA'}
-                      </p>
-                    </div>
-                    <div className="flex flex-col sm:flex-row gap-[12px]">
-                      <button className="btn-ghost rounded-lg px-[24px] py-[12px] font-button text-[15px] font-semibold flex items-center justify-center gap-[4px] transition-all hover:bg-[#cfe5ff]/30">
-                        <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 0" }}>map</span>
-                        Open in other maps
-                      </button>
-                      <button className="btn-primary rounded-lg px-[24px] py-[12px] font-button text-[15px] font-semibold flex items-center justify-center gap-[4px] shadow-md shadow-[#00a3ff]/20 hover:shadow-lg transition-all">
-                        <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 0" }}>directions</span>
-                        Get Directions
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </section>
-              {/* Divider */}
-              <div className="w-full h-[1px] bg-[#bec7d4]/30 my-[48px] relative">
-                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#f7f9fb] px-[24px] text-[#00629d] font-label-caps text-[12px] font-bold tracking-[0.05em] uppercase">
-                  Contacts
-                </div>
-              </div>
-              {/* Contacts Section */}
-              <section className="space-y-[48px]">
-                {/* Organizer */}
-                <div className="glass-card rounded-xl p-[24px] relative overflow-hidden group">
-                  {/* Highlight line */}
-                  <div className="absolute top-0 left-0 w-full h-[2px] bg-[#c9a900]"></div>
-                  <div className="flex flex-col sm:flex-row items-center sm:items-start gap-[24px]">
-                    <div className="w-24 h-24 rounded-full border-2 border-[#f7f9fb] shadow-sm ring-2 ring-[#00a3ff]/20 bg-gray-100 flex items-center justify-center overflow-hidden">
-                      <span className="material-symbols-outlined text-4xl text-gray-400">person</span>
-                    </div>
-                    <div className="flex-1 text-center sm:text-left">
-                      <div className="inline-flex items-center gap-[4px] bg-[#ffe16d]/30 text-[#4c3e00] px-[12px] py-[4px] rounded-full mb-[12px]">
-                        <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 0" }}>star</span>
-                        <span className="font-label-caps text-[12px] font-bold tracking-[0.05em] uppercase">Organizer</span>
-                      </div>
-                      <div className="mb-[4px] flex justify-center sm:justify-start">
-                        <DualText 
-                          text={social.organizerName || 'Organizer'}
-                          subText={social.organizerNameNative}
-                          primaryClassName="font-h2 text-[30px] leading-[1.2] font-bold text-[#191c1e]"
-                          secondaryClassName="font-body-md text-[16px] text-[#515f78] font-medium"
-                          containerClassName="flex-wrap items-baseline gap-2 sm:flex-nowrap"
-                        />
-                      </div>
-                      <p className="font-body-sm text-[14px] leading-[1.5] text-[#3f4852]">Main Coordinator & Booking</p>
-                    </div>
-                    <div className="flex gap-[12px] mt-[24px] sm:mt-0 w-full sm:w-auto justify-center">
-                      <button className="btn-ghost rounded-full p-[12px] flex items-center justify-center hover:bg-[#cfe5ff]/30 transition-all group-hover:shadow-md">
-                        <span className="material-symbols-outlined text-[24px]" style={{ fontVariationSettings: "'FILL' 0" }}>chat</span>
-                      </button>
-                      <button className="btn-primary rounded-full p-[12px] flex items-center justify-center shadow-md shadow-[#00a3ff]/20 hover:shadow-lg transition-all">
-                        <span className="material-symbols-outlined text-[24px]" style={{ fontVariationSettings: "'FILL' 0" }}>call</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                {/* Staff Grid - Removed as there is no specific Staff data array in Social model yet */}
-                {/* DJ */}
-                {social.djName && (
-                  <div className="glass-card rounded-xl p-[24px] flex flex-col sm:flex-row items-center sm:items-start gap-[24px] border-l-4 border-l-[#00a3ff]">
-                    <div className="w-16 h-16 rounded-lg border border-[#f7f9fb] shadow-sm bg-gray-100 flex items-center justify-center overflow-hidden">
-                      <span className="material-symbols-outlined text-3xl text-gray-400">headphones</span>
-                    </div>
-                    <div className="flex-1 text-center sm:text-left">
-                      <span className="font-label-caps text-[12px] font-bold tracking-[0.05em] text-[#515f78] uppercase mb-[4px] block">Resident DJ</span>
-                      <div className="mb-[4px] flex justify-center sm:justify-start">
-                        <DualText 
-                          text={social.djName}
-                          subText={social.djNameNative}
-                          primaryClassName="font-body-lg text-[18px] leading-[1.6] font-bold text-[#191c1e]"
-                          secondaryClassName="font-body-sm text-[13px] text-[#515f78] font-medium"
-                          containerClassName="flex-wrap items-baseline gap-2 sm:flex-nowrap"
-                        />
-                      </div>
-                      <p className="font-body-sm text-[14px] leading-[1.5] text-[#3f4852]">Musical Director</p>
-                    </div>
-                    <div className="flex gap-[12px] mt-[12px] sm:mt-0">
-                      <button className="text-[#00629d] hover:bg-[#cfe5ff]/30 rounded-full w-10 h-10 flex items-center justify-center transition-all">
-                        <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 0" }}>chat</span>
-                      </button>
-                      <button className="text-[#00629d] hover:bg-[#cfe5ff]/30 rounded-full w-10 h-10 flex items-center justify-center transition-all">
-                        <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 0" }}>call</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </section>
-            </div>
-          </div>
-        )}
-
-        {/* Feed Tab Content */}
-        {activeTab === 'Feed' && (
-          <div className="w-full h-full pb-32">
-            <UniversalFeed context={{ scope: 'social', scopeId: social.id }} currentUser={user} />
-          </div>
-        )}
-
-        {/* Coming Soon fallback for any other unimplemented tab */}
-        {activeTab !== 'Info' && activeTab !== 'Tables' && activeTab !== 'Contact' && activeTab !== 'Feed' && (
-          <div className="max-w-3xl mx-auto md:px-6 px-4 mt-8 w-full">
-            <div className="glass-panel rounded-2xl p-12 flex flex-col items-center justify-center text-center">
-              <span className="material-symbols-outlined text-4xl text-sky-300 mb-4">construction</span>
-              <h3 className="font-headline text-xl font-bold text-sky-900 mb-2">Coming Soon</h3>
-              <p className="text-sky-700/70 font-medium">The {activeTab} section is currently under development.</p>
-            </div>
-          </div>
-        )}
-      </main>
+        </>
+      )}
     </div>
   );
 }

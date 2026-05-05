@@ -11,6 +11,7 @@ export default function VoiceBubble({ url, duration, timestamp, isOwn }: VoiceBu
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
+  const [totalDuration, setTotalDuration] = useState(duration || 0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
@@ -29,12 +30,20 @@ export default function VoiceBubble({ url, duration, timestamp, isOwn }: VoiceBu
       setCurrentTime(0);
     };
 
+    const handleLoadedMetadata = () => {
+      if (audio.duration && audio.duration !== Infinity) {
+        setTotalDuration(audio.duration);
+      }
+    };
+
     audio.addEventListener('timeupdate', updateProgress);
     audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
 
     return () => {
       audio.removeEventListener('timeupdate', updateProgress);
       audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
     };
   }, []);
 
@@ -51,6 +60,7 @@ export default function VoiceBubble({ url, duration, timestamp, isOwn }: VoiceBu
   };
 
   const formatDuration = (seconds: number) => {
+    if (!seconds || isNaN(seconds)) return '0:00';
     const m = Math.floor(seconds / 60);
     const s = Math.floor(seconds % 60);
     return `${m}:${s.toString().padStart(2, '0')}`;
@@ -91,8 +101,8 @@ export default function VoiceBubble({ url, duration, timestamp, isOwn }: VoiceBu
           ))}
         </div>
         <div className="flex justify-between items-center text-[10px] font-bold opacity-60">
-          <span>{isPlaying ? formatDuration(currentTime) : (duration ? formatDuration(duration) : '0:00')}</span>
-          {timestamp && <span>{timestamp}</span>}
+          <span>{formatDuration(currentTime)}</span>
+          <span>{formatDuration(totalDuration)}</span>
         </div>
       </div>
     </div>

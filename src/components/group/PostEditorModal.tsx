@@ -6,6 +6,7 @@ import { groupService } from '@/lib/firebase/groupService';
 import { storageService } from '@/lib/firebase/storageService';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { Group, Post, GroupBoard as GroupBoardType, DEFAULT_BOARDS } from '@/types/group';
+import { toast } from 'sonner';
 
 interface PostEditorModalProps {
   group: Group;
@@ -23,10 +24,11 @@ export default function PostEditorModal({ group, post, isOpen, onClose }: PostEd
   const [bgTheme, setBgTheme] = useState<string | null>(null);
   const [showThemePicker, setShowThemePicker] = useState(false);
   const [type, setType] = useState<Post['type']>('text');
-  const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
+  const [isUploading, setIsSaving] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [isOptimizing, setIsOptimizing] = useState(false);
+  const [isMediaUploading, setIsMediaUploading] = useState(false);
   
   const themes = [
     { id: 'blue-gradient', class: 'bg-gradient-to-br from-[#60a5fa] to-[#3b82f6]' },
@@ -58,19 +60,40 @@ export default function PostEditorModal({ group, post, isOpen, onClose }: PostEd
     }
   }, [post, boards]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setMediaFile(file);
       setBgTheme(null); // 테마 해제
       const isVideo = file.type.startsWith('video/');
       setType(isVideo ? 'video' : 'image');
       
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setMediaPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      // 블롭 URL 생성하여 즉시 프리뷰 표시
+      const blobUrl = URL.createObjectURL(file);
+      setMediaPreview(blobUrl);
+      
+      try {
+        setIsMediaUploading(true);
+        setIsOptimizing(true);
+        
+        const path = `groups/${group.id}/posts/${Date.now()}_${file.name}`;
+        const finalUrl = await storageService.uploadFile(file, path, (progress) => {
+          setIsOptimizing(false);
+          setUploadProgress(progress);
+        });
+        
+        setMediaPreview(finalUrl);
+        URL.revokeObjectURL(blobUrl);
+      } catch (error) {
+        console.error('Media upload failed:', error);
+        toast.error('Failed to upload media. Please try again.');
+        setMediaPreview(null);
+        setType('text');
+      } finally {
+        setIsMediaUploading(false);
+        setIsOptimizing(false);
+        setUploadProgress(0);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }
     }
   };
 
@@ -82,7 +105,6 @@ export default function PostEditorModal({ group, post, isOpen, onClose }: PostEd
       setBgTheme(themeId);
       setType('text-card');
       setMediaPreview(null); // 이미지 제거
-      setMediaFile(null);
     }
   };
 
@@ -93,20 +115,18 @@ export default function PostEditorModal({ group, post, isOpen, onClose }: PostEd
     }
 
     if (!content.trim()) {
-      alert('Content is required');
+      toast.error('Content is required');
       return;
     }
 
-    setIsUploading(true);
+    if (isMediaUploading) {
+      toast.error('Please wait until media is uploaded');
+      return;
+    }
+
+    setIsSaving(true);
     try {
-      let mediaUrl = mediaPreview || '';
-      
-      if (mediaFile) {
-        const path = `groups/${group.id}/posts/${Date.now()}_${mediaFile.name}`;
-        mediaUrl = await storageService.uploadFile(mediaFile, path, (progress) => {
-          setUploadProgress(progress);
-        });
-      }
+      const mediaUrl = mediaPreview || '';
 
       const postData: Partial<Post> = {
         title,
@@ -125,17 +145,18 @@ export default function PostEditorModal({ group, post, isOpen, onClose }: PostEd
 
       if (isEditing && post) {
         await groupService.updatePost(group.id, post.id, postData);
+        toast.success('Post updated successfully');
       } else {
         await groupService.createPost(group.id, postData);
+        toast.success('Post created successfully');
       }
 
       onClose();
     } catch (error) {
       console.error('Failed to save post:', error);
-      alert('Failed to save post. Please try again.');
+      toast.error('Failed to save post. Please try again.');
     } finally {
-      setIsUploading(false);
-      setUploadProgress(0);
+      setIsSaving(false);
     }
   };
 
@@ -232,7 +253,7 @@ export default function PostEditorModal({ group, post, isOpen, onClose }: PostEd
                       <img src={mediaPreview} className="w-full h-full object-contain" alt="Preview" />
                     )}
                     <button 
-                      onClick={() => { setMediaPreview(null); setMediaFile(null); setType('text'); }}
+                      onClick={() => { setMediaPreview(null); setType('text'); }}
                       className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/40 text-white backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
                     >
                       <span className="material-symbols-outlined">close</span>

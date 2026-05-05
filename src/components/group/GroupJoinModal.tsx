@@ -33,15 +33,15 @@ export default function GroupJoinModal({
             <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
               <span className="material-symbols-outlined text-3xl">celebration</span>
             </div>
-            <h3 className="text-xl font-bold text-slate-800 mb-2">환영합니다!</h3>
+            <h3 className="text-xl font-bold text-slate-800 mb-2">Welcome!</h3>
             <p className="text-slate-600 mb-6">
-              <span className="font-bold text-blue-600">{groupName}</span> 그룹에 가입되었습니다.
+              You have successfully joined the <span className="font-bold text-blue-600">{groupName}</span> group.
             </p>
             <button 
               onClick={onConfirm}
               className="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all"
             >
-              바로가기
+              Go to Group
             </button>
           </div>
         );
@@ -51,16 +51,16 @@ export default function GroupJoinModal({
             <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-4">
               <span className="material-symbols-outlined text-3xl">pending_actions</span>
             </div>
-            <h3 className="text-xl font-bold text-slate-800 mb-2">가입 신청 완료</h3>
+            <h3 className="text-xl font-bold text-slate-800 mb-2">Application Submitted</h3>
             <p className="text-slate-600 mb-6 px-4">
-              <span className="font-bold text-blue-600">{groupName}</span> 그룹 가입신청이 완료되었습니다.<br/>
-              관리자 <span className="font-bold text-slate-800">{adminName}</span>님이 곧 승인할 예정입니다.
+              Your application to <span className="font-bold text-blue-600">{groupName}</span> has been submitted.<br/>
+              Admin <span className="font-bold text-slate-800">{adminName}</span> will review and approve it shortly.
             </p>
             <button 
               onClick={onClose}
               className="w-full bg-slate-800 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-slate-200 hover:bg-slate-900 transition-all"
             >
-              확인
+              Confirm
             </button>
           </div>
         );
@@ -71,10 +71,10 @@ export default function GroupJoinModal({
             <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-4">
               <span className="material-symbols-outlined text-3xl">lock</span>
             </div>
-            <h3 className="text-xl font-bold text-slate-800 mb-2">비공개 그룹</h3>
+            <h3 className="text-xl font-bold text-slate-800 mb-2">Private Group</h3>
             <p className="text-slate-600 mb-6 px-4">
-              <span className="font-bold text-blue-600">{groupName}</span> 그룹은 관리자의 직접 요청만 가능한 그룹입니다.<br/>
-              필요시 <span className="font-bold text-slate-800">{adminName}</span>님에게 채팅하시기 바랍니다.
+              <span className="font-bold text-blue-600">{groupName}</span> is a private group accessible only by invitation.<br/>
+              Please contact admin <span className="font-bold text-slate-800">{adminName}</span> for inquiries.
             </p>
             <button 
               onClick={() => {
@@ -84,13 +84,13 @@ export default function GroupJoinModal({
               className="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all flex items-center justify-center gap-2"
             >
               <span className="material-symbols-outlined text-sm">chat</span>
-              관리자에게 채팅하기
+              Chat with Admin
             </button>
             <button 
               onClick={onClose}
               className="w-full mt-3 text-slate-400 font-medium py-2 hover:text-slate-600 transition-all"
             >
-              닫기
+              Close
             </button>
           </div>
         );

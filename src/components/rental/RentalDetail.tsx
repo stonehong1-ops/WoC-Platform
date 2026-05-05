@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { rentalService } from '@/lib/firebase/rentalService';
 import { chatService } from '@/lib/firebase/chatService';
@@ -26,22 +26,58 @@ export default function RentalDetail({ space, isLiked, onClose, onToggleLike }: 
   const router = useRouter();
   
   const [group, setGroup] = useState<Group | null>(null);
-  const [isChatLoading, setIsChatLoading] = useState(false);
-  const [chatRoomId, setChatRoomId] = useState<string | null>(null);
-  
-  // Image carousel
-  const [currentImg, setCurrentImg] = useState(0);
-  const touchStartX = useRef(0);
-  const images = useMemo(() => space?.images?.length ? space.images : [], [space]);
-  const [showImageModal, setShowImageModal] = useState(false);
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
 
   // UI state
   const [isScrolled, setIsScrolled] = useState(false);
   const [showFullDesc, setShowFullDesc] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [showImageModal, setShowImageModal] = useState(false);
 
-  // Form State
+  // Form & Chat State (URL Derived)
   const [showRequestFlow, setShowRequestFlow] = useState(false);
+  const [chatRoomId, setChatRoomId] = useState<string | null>(null);
+  const [isChatLoading, setIsChatLoading] = useState(false);
+
+  // Image carousel
+  const [currentImg, setCurrentImg] = useState(0);
+  const touchStartX = useRef(0);
+  const images = useMemo(() => space?.images?.length ? space.images : [], [space]);
+
+  useEffect(() => {
+    const flow = searchParams.get('flow');
+    const roomId = searchParams.get('roomId');
+    
+    setShowRequestFlow(flow === 'request');
+    setChatRoomId(flow === 'chat' ? roomId : null);
+  }, [searchParams]);
+
+  const handleOpenRequest = () => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('flow', 'request');
+    router.push(`${pathname}?${params.toString()}`);
+  };
+
+  const handleCloseRequest = () => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('flow');
+    router.push(`${pathname}?${params.toString()}`);
+  };
+
+  const handleOpenChat = (roomId: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('flow', 'chat');
+    params.set('roomId', roomId);
+    router.push(`${pathname}?${params.toString()}`);
+  };
+
+  const handleCloseChat = () => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('flow');
+    params.delete('roomId');
+    router.push(`${pathname}?${params.toString()}`);
+  };
 
   // Scarcity mock
   const [viewerCount] = useState(() => Math.floor(Math.random() * 18) + 5);
@@ -82,14 +118,13 @@ export default function RentalDetail({ space, isLiked, onClose, onToggleLike }: 
     if (!user) return alert("Login is required.");
     if (user.uid === space.hostId) return alert("You cannot inquire about your own space.");
 
-    const confirmed = window.confirm('이제 호스트와 대화방이 열리고 이 공간에 대한 문의가 진행됩니다. 계속하시겠습니까?');
-    if (!confirmed) return;
+    if (!confirm("Would you like to send a rental inquiry chat to the host?")) return;
 
     setIsChatLoading(true);
     try {
       const roomId = await chatService.getOrCreatePrivateRoom([user.uid, space.hostId], user.uid, 'business');
       
-      const spaceInfo = `[대관 문의]\n공간명: ${space.title}\n시간당: ₩${(space.pricePerHour || 0).toLocaleString()}\n위치: ${space.location}\n바로가기: ${window.location.origin}/rental?spaceId=${space.id}`;
+      const spaceInfo = `[Rental Inquiry]\nSpace: ${space.title}\nPrice per hour: ₩${(space.pricePerHour || 0).toLocaleString()}\nLocation: ${space.location}\nLink: ${window.location.origin}/rental?spaceId=${space.id}`;
       await chatService.sendMessage({
         roomId,
         senderId: user.uid,
@@ -99,7 +134,7 @@ export default function RentalDetail({ space, isLiked, onClose, onToggleLike }: 
         type: 'text'
       });
       
-      setChatRoomId(roomId);
+      handleOpenChat(roomId);
     } catch (err) {
       console.error(err);
       alert('Error connecting to chat room.');
@@ -350,7 +385,7 @@ export default function RentalDetail({ space, isLiked, onClose, onToggleLike }: 
           className={`w-11 h-11 flex-shrink-0 rounded-xl flex items-center justify-center border transition-colors active:scale-90 ${isLiked ? 'bg-red-50 border-red-100 text-red-500' : 'bg-white border-[#e0e4e5] text-[#596061]'}`}>
           <span className="material-symbols-rounded text-xl" style={{ fontVariationSettings: isLiked ? "'FILL' 1" : "'FILL' 0" }}>favorite</span>
         </button>
-        <button onClick={() => setShowRequestFlow(true)}
+        <button onClick={handleOpenRequest}
           className="flex-shrink-0 bg-primary text-white px-7 py-3 rounded-xl font-black text-sm tracking-wide shadow-lg shadow-primary/20 active:scale-95 transition-transform">
           Request
         </button>
@@ -360,10 +395,13 @@ export default function RentalDetail({ space, isLiked, onClose, onToggleLike }: 
       {showRequestFlow && (
         <RentalRequestFlow
           space={space}
-          onClose={() => setShowRequestFlow(false)}
+          onClose={handleCloseRequest}
           onSuccess={(newChatRoomId) => {
-            setShowRequestFlow(false);
-            if (newChatRoomId) setChatRoomId(newChatRoomId);
+            if (newChatRoomId) {
+              handleOpenChat(newChatRoomId);
+            } else {
+              handleCloseRequest();
+            }
           }}
         />
       )}
@@ -400,7 +438,7 @@ export default function RentalDetail({ space, isLiked, onClose, onToggleLike }: 
         <div className="fixed inset-0 z-[200] bg-white animate-in slide-in-from-bottom duration-300">
           <ChatRoom
             roomId={chatRoomId}
-            onBack={() => setChatRoomId(null)}
+            onBack={handleCloseChat}
           />
         </div>
       )}

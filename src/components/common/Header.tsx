@@ -24,13 +24,6 @@ export default function Header() {
       </div>
       
       <div className="flex items-center gap-1 text-muted-foreground mr-1">
-        <button 
-          onClick={() => window.dispatchEvent(new CustomEvent('woc:compose:open', { detail: { id: pathname.split('/')[1] || 'default' } }))}
-          className="p-2 text-foreground active:scale-95 transition-all"
-          title="추가"
-        >
-          <Plus size={24} strokeWidth={2} />
-        </button>
         <button className="p-2 hover:bg-black/5 rounded-full transition-colors">
           <Bell size={20} />
         </button>

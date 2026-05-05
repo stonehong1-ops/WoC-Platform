@@ -1,6 +1,8 @@
-'use client';
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import imageCompression from 'browser-image-compression';
+import { toast } from 'sonner';
+import { db, storage } from '@/lib/firebase/clientApp';
 import { venueService } from '@/lib/firebase/venueService';
 import { Venue, VenueType } from '@/types/venue';
 
@@ -38,7 +40,10 @@ export default function VenueForm({ isOpen, onClose, initialData }: VenueFormPro
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFetchingPhoto, setIsFetchingPhoto] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [fetchedPhotoUrl, setFetchedPhotoUrl] = useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleFetchPhoto = async () => {
     if (!formData.name && !formData.address) {
@@ -54,15 +59,74 @@ export default function VenueForm({ isOpen, onClose, initialData }: VenueFormPro
       
       if (res.ok && data.photoUrl) {
         setFetchedPhotoUrl(data.photoUrl);
+        setFormData(prev => ({ ...prev, imageUrl: data.photoUrl }));
+        toast.success('Representative photo fetched!');
       } else {
-        alert(data.error || 'Could not find a representative photo for this location.');
+        toast.error(data.error || 'Could not find a representative photo.');
         setFetchedPhotoUrl(null);
       }
     } catch (error) {
       console.error(error);
-      alert('An error occurred while fetching the photo.');
+      toast.error('An error occurred while fetching the photo.');
     } finally {
       setIsFetchingPhoto(false);
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 15 * 1024 * 1024) {
+        toast.error('File size too large (Max 15MB)');
+        return;
+      }
+
+      setIsUploading(true);
+      setUploadProgress(0);
+
+      try {
+        const options = {
+          maxSizeMB: 1,
+          maxWidthOrHeight: 1600,
+          useWebWorker: true,
+          initialQuality: 0.8
+        };
+
+        let fileToUpload: File | Blob = file;
+        try {
+          fileToUpload = await imageCompression(file, options);
+        } catch (err) {
+          console.warn('Compression failed, using original:', err);
+        }
+
+        const fileName = `${Date.now()}_${file.name}`;
+        const storageRef = ref(storage, `venues/${fileName}`);
+        const uploadTask = uploadBytesResumable(storageRef, fileToUpload);
+
+        uploadTask.on(
+          'state_changed',
+          (snapshot) => {
+            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            setUploadProgress(Math.round(progress));
+          },
+          (error) => {
+            console.error('Upload error:', error);
+            toast.error('Upload failed.');
+            setIsUploading(false);
+          },
+          async () => {
+            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+            setFormData(prev => ({ ...prev, imageUrl: downloadURL }));
+            setFetchedPhotoUrl(downloadURL);
+            toast.success('Photo uploaded successfully!');
+            setIsUploading(false);
+          }
+        );
+      } catch (err) {
+        console.error('File handling error:', err);
+        toast.error('Error processing image.');
+        setIsUploading(false);
+      }
     }
   };
 
@@ -97,9 +161,10 @@ export default function VenueForm({ isOpen, onClose, initialData }: VenueFormPro
         await venueService.addVenue(formData);
       }
       onClose();
+      toast.success(initialData ? 'Venue updated!' : 'Venue created!');
     } catch (error) {
       console.error('Failed to save venue:', error);
-      alert('Failed to save venue. Please check your connection and permissions.');
+      toast.error('Failed to save venue.');
     } finally {
       setIsSubmitting(false);
     }
@@ -178,7 +243,7 @@ export default function VenueForm({ isOpen, onClose, initialData }: VenueFormPro
                 <input 
                   className="w-full px-4 py-4 bg-surface-container-lowest border-none ring-1 ring-outline-variant focus:ring-2 focus:ring-primary rounded-xl transition-all font-body text-on-surface" 
                   id="venue-name-ko" 
-                  placeholder="예: 블루호라이즌 스튜디오" 
+                  placeholder="e.g. Blue Horizon Studio" 
                   type="text" 
                   value={formData.nameKo}
                   onChange={(e) => setFormData({ ...formData, nameKo: e.target.value })}
@@ -312,25 +377,59 @@ export default function VenueForm({ isOpen, onClose, initialData }: VenueFormPro
             </div>
             
             <div className="space-y-4">
-              {fetchedPhotoUrl ? (
+              <div className="flex gap-3">
+                <button 
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                  className="flex-1 py-3 bg-surface-container-high text-on-surface font-bold rounded-xl border border-outline-variant hover:bg-surface-dim transition-all flex items-center justify-center gap-2"
+                >
+                  <span className="material-symbols-rounded text-xl">upload</span>
+                  {isUploading ? `Uploading ${uploadProgress}%` : 'Upload Custom Photo'}
+                </button>
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  className="hidden" 
+                  accept="image/*" 
+                  onChange={handleFileUpload}
+                />
+              </div>
+
+              {fetchedPhotoUrl || isUploading ? (
                 <div className="relative rounded-2xl overflow-hidden border border-outline-variant/30 aspect-video bg-surface-container-lowest">
-                  <img src={fetchedPhotoUrl} alt="Venue Representative" className="w-full h-full object-cover" />
-                  <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/60 to-transparent">
-                    <button 
-                      type="button"
-                      onClick={() => setFormData({ ...formData, imageUrl: fetchedPhotoUrl })}
-                      className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-all ${
-                        formData.imageUrl === fetchedPhotoUrl 
-                          ? 'bg-green-500 text-white' 
-                          : 'bg-primary text-on-primary hover:bg-primary/90'
-                      }`}
-                    >
-                      <span className="material-symbols-rounded text-sm">
-                        {formData.imageUrl === fetchedPhotoUrl ? 'check_circle' : 'photo_camera'}
-                      </span>
-                      {formData.imageUrl === fetchedPhotoUrl ? 'Set as Representative' : 'Use this Photo'}
-                    </button>
-                  </div>
+                  {isUploading ? (
+                    <div className="absolute inset-0 z-20 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center">
+                      <div className="relative w-16 h-16">
+                        <svg className="w-full h-full -rotate-90">
+                          <circle cx="32" cy="32" r="28" stroke="currentColor" strokeWidth="4" fill="transparent" className="text-white/20" />
+                          <circle
+                            cx="32"
+                            cy="32"
+                            r="28"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                            fill="transparent"
+                            strokeDasharray={2 * Math.PI * 28}
+                            strokeDashoffset={2 * Math.PI * 28 * (1 - uploadProgress / 100)}
+                            className="text-primary transition-all duration-300"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                        <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white">{uploadProgress}%</span>
+                      </div>
+                      <p className="text-[11px] font-bold text-white mt-3 uppercase tracking-widest">Uploading your photo</p>
+                    </div>
+                  ) : null}
+                  <img src={fetchedPhotoUrl || ''} alt="Venue Representative" className="w-full h-full object-cover" />
+                  {!isUploading && fetchedPhotoUrl && (
+                    <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/60 to-transparent">
+                      <div className="bg-green-500/90 backdrop-blur-md px-4 py-2 rounded-xl text-white text-xs font-bold flex items-center gap-2 w-fit">
+                        <span className="material-symbols-rounded text-sm">check_circle</span>
+                        Photo Selected & Synced
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="w-full aspect-video bg-surface-container-lowest border-2 border-dashed border-outline-variant/50 rounded-2xl flex flex-col items-center justify-center p-6 text-center">

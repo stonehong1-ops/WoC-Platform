@@ -3,7 +3,7 @@ import { classRegistrationService } from '@/lib/firebase/classRegistrationServic
 import { ClassRegistration, Group, GroupClass } from '@/types/group';
 import { GroupClassSelectionPopup } from './GroupClassSelectionPopup';
 import { format, isSameMonth } from 'date-fns';
-import { safeDate } from '@/lib/utils/safeData';
+import { safeDate } from '@/lib/utils/safeDate';
 import UserBadge from '@/components/common/UserBadge';
 import { toast } from 'sonner';
 import { useAuth } from '@/components/providers/AuthProvider';

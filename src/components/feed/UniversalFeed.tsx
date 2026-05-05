@@ -6,6 +6,9 @@ import FeedPostCard from './FeedPostCard';
 import { feedService } from '@/lib/firebase/feedService';
 import { Post } from '@/types/feed';
 import UserAvatar from '@/components/common/UserAvatar';
+import { useModalNavigation } from '@/hooks/useModalNavigation';
+import { useLocation } from '@/components/providers/LocationProvider';
+import { COUNTRY_MAPPING } from '@/lib/constants/locations';
 
 interface UniversalFeedProps {
   context: any;
@@ -14,11 +17,23 @@ interface UniversalFeedProps {
   activeFilter?: string;
 }
 
-export default function UniversalFeed({ context, currentUser, profile, activeFilter = 'all' }: UniversalFeedProps) {
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [editingPost, setEditingPost] = useState<Post | null>(null);
+export default function UniversalFeed({ context, currentUser, profile, activeFilter: propFilter }: UniversalFeedProps) {
+  const { openModal: openCreate, closeModal: closeCreate, value: createFlowValue } = useModalNavigation('createFlow');
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
+  const [localFilter, setLocalFilter] = useState('all');
+
+  const isCreateModalOpen = !!createFlowValue;
+  const editingPost = createFlowValue && createFlowValue !== 'new' ? posts.find(p => p.id === createFlowValue) || null : null;
+
+  const activeFilter = propFilter || localFilter;
+  const tabs = [
+    { id: 'all', label: 'All' },
+    { id: 'hot', label: 'Hot' },
+    { id: 'favorites', label: 'Favorites' },
+    { id: 'pin', label: 'Pin' },
+    { id: 'my_log', label: 'My log' },
+  ];
 
   useEffect(() => {
     const targetId = context.scope === 'plaza' ? 'plaza' : (context.scopeId || 'freestyle-tango');
@@ -38,105 +53,122 @@ export default function UniversalFeed({ context, currentUser, profile, activeFil
     return () => unsubscribe();
   }, [context.scopeId]);
 
+  const { location } = useLocation();
+
   // Derive filtered posts based on activeFilter
   const filteredPosts = React.useMemo(() => {
     let result = [...posts];
-    
+
+    // 1. Regional Filtering (Only for Plaza scope)
+    if (context.scope === 'plaza' && location.country !== 'GLOBAL') {
+      result = result.filter(p => {
+        // If post has no location metadata, skip filtering or decide based on UX (usually skip)
+        if (!p.location?.country) return false; 
+        
+        const countryMatch = p.location.country.toUpperCase() === location.country.toUpperCase();
+        if (location.city === 'ALL') {
+          return countryMatch;
+        }
+        
+        const cityMatch = p.location.city.toUpperCase() === location.city.toUpperCase();
+        return countryMatch && cityMatch;
+      });
+    }
+
+    // 2. Tab Filtering
     switch (activeFilter) {
       case 'hot':
-        // Threshold for "Hot": more than 0 interactions, sorted by engagement
-        result = result.filter(p => (p.likesCount || 0) + (p.commentsCount || 0) > 0);
-        result.sort((a, b) => ((b.likesCount || 0) + (b.commentsCount || 0)) - ((a.likesCount || 0) + (a.commentsCount || 0)));
+        // Ranked by engagement (likes + comments)
+        result.sort((a, b) => {
+          const aScore = (a.likesCount || 0) + (a.commentsCount || 0);
+          const bScore = (b.likesCount || 0) + (b.commentsCount || 0);
+          if (bScore !== aScore) return bScore - aScore;
+          // If scores are equal, sort by date
+          const aTime = a.createdAt?.seconds || 0;
+          const bTime = b.createdAt?.seconds || 0;
+          return bTime - aTime;
+        });
         break;
-      case 'my':
+      case 'my_log':
+      case 'my': // fallback for old filter name
         // User's own posts
         result = result.filter(p => p.userId === currentUser?.uid);
         break;
-      case 'pinned':
-        // Pinned Posts (내가 Pin한 게시물)
+      case 'pin':
+      case 'pinned': // fallback for old filter name
+        // Posts I pinned
         const pinnedPostIds = profile?.pinnedPostIds || [];
         result = result.filter(p => pinnedPostIds.includes(p.id));
         break;
-      case 'friends':
-        // Friends Filter: 내가 좋아요 또는 댓글을 단 포스트 목록
-        const interactedPostIds = new Set([
-          ...(profile?.likedPostIds || []),
-          ...(profile?.commentedPostIds || [])
-        ]);
-        result = result.filter(p => interactedPostIds.has(p.id));
+      case 'favorites':
+      case 'friends': // fallback for old filter name
+        // Authors I interacted with (liked/commented on their posts)
+        const interactedUserIds = profile?.interactedUserIds || [];
+        result = result.filter(p => interactedUserIds.includes(p.userId));
         break;
       case 'all':
       default:
+        // Already chronological by default (subscribePosts orders by createdAt desc)
         break;
     }
-    
+
     return result;
-  }, [posts, activeFilter, currentUser, profile]);
+  }, [posts, activeFilter, currentUser, profile, location, context.scope]);
 
   return (
-    <div className={`text-on-surface font-body relative ${context.scope === 'plaza' ? 'min-h-screen overflow-x-hidden' : ''}`}>
+    <div className={`text-on-surface font-body relative ${context.scope === 'plaza' ? 'min-h-screen' : ''}`}>
       {/* Ambient Background Effects */}
       <div className={`${context.scope === 'plaza' ? 'fixed inset-0 z-[-1] overflow-hidden pointer-events-none' : 'hidden'}`}>
         <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/5 blur-3xl rounded-full"></div>
         <div className="absolute bottom-[20%] right-[-5%] w-[40%] h-[60%] bg-tertiary/5 blur-3xl rounded-full"></div>
       </div>
 
-      <main className={`max-w-3xl mx-auto flex flex-col gap-6 px-4 sm:px-6 ${context.scope === 'plaza' ? 'pt-4' : 'pt-0 pb-16'}`}>
-        {/* Feed Header/Composer (Bento Style) */}
-        <section 
-          onClick={() => setIsCreateModalOpen(true)}
-          className="bg-surface-container-lowest rounded-xl shadow-sm p-4 sm:p-6 flex gap-4 items-start border border-outline-variant/10 cursor-pointer hover:shadow-md transition-all"
-        >
-          <UserAvatar 
-            photoURL={profile?.photoURL || profile?.avatar || currentUser?.photoURL} 
-            className="w-12 h-12 shrink-0" 
-          />
-          <div className="flex-1 flex flex-col gap-3">
-            <div className="w-full bg-surface rounded-lg p-3 text-sm text-on-surface-variant/50 min-h-[60px]">
-              Share your activities...
-            </div>
-            <div className="flex justify-between items-center">
-              <div className="flex gap-2">
-                <button className="text-on-surface-variant hover:text-primary hover:bg-primary/5 p-2 rounded-full transition-colors">
-                  <span className="material-symbols-outlined">image</span>
-                </button>
-                <button className="text-on-surface-variant hover:text-primary hover:bg-primary/5 p-2 rounded-full transition-colors">
-                  <span className="material-symbols-outlined">videocam</span>
-                </button>
-                <button className="text-on-surface-variant hover:text-primary hover:bg-primary/5 p-2 rounded-full transition-colors">
-                  <span className="material-symbols-outlined">location_on</span>
-                </button>
+      <main className={`max-w-[600px] mx-auto flex flex-col ${context.scope === 'plaza' ? 'pt-0' : 'pt-0 pb-16'}`}>
+        <div className="flex flex-col w-full">
+          {/* Action Hub: Inline Compose Bar (Standardized for Plaza/Group/Social) */}
+          {(context.scope === 'plaza' || context.scope === 'group' || context.scope === 'social') && (
+            <div 
+              onClick={() => openCreate('new')}
+              className="mt-4 mb-4 mx-4 p-4 bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-slate-100 flex items-center gap-4 active:scale-[0.99] transition-all cursor-pointer group hover:border-blue-100"
+            >
+              <UserAvatar 
+                photoURL={profile?.photoURL} 
+                className="!w-12 !h-12 rounded-xl ring-2 ring-slate-50 transition-transform group-hover:scale-105" 
+              />
+              <div className="flex-1">
+                <span className="text-[15px] font-medium text-slate-400 tracking-tight block">
+                  What's on your mind? People are looking forward to your activity.
+                </span>
               </div>
-              <button className="bg-primary text-on-primary font-label text-[11px] font-bold uppercase tracking-wider px-6 py-2 rounded-full shadow-md shadow-primary/20 hover:scale-95 transition-transform">
-                Post
-              </button>
             </div>
-          </div>
-        </section>
+          )}
 
         {/* Feed Posts List */}
-        <div className="flex flex-col gap-6 pb-24">
+        <div className="flex flex-col pb-24 w-full">
           {loading ? (
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-0 w-full">
               {[1, 2, 3].map(i => (
-                <div key={i} className="bg-surface-container-lowest h-80 rounded-xl animate-pulse border border-outline-variant/10 shadow-sm" />
+                <div key={i} className="bg-surface-container-lowest h-80 animate-pulse border-b border-outline-variant/10 shadow-sm w-full" />
               ))}
             </div>
           ) : filteredPosts.length === 0 ? (
-            <div className="py-20 text-center bg-surface-container-lowest rounded-xl border border-outline-variant/10 shadow-sm">
+            <div className="py-20 text-center bg-surface-container-lowest border-b border-outline-variant/10 shadow-sm w-full">
               <span className="material-symbols-outlined text-outline-variant text-6xl mb-4">post_add</span>
-              <p className="text-on-surface-variant font-medium">No posts found matching this filter.</p>
+              <p className="text-on-surface-variant font-medium px-10">
+                {location.country === 'GLOBAL' 
+                  ? "This is the last feed." 
+                  : `${location.city}, ${COUNTRY_MAPPING[location.country.toUpperCase()] || location.country}'s last feed.`}
+              </p>
             </div>
           ) : (
             filteredPosts.map((post) => (
-              <FeedPostCard 
-                key={post.id} 
-                post={post} 
+              <FeedPostCard
+                key={post.id}
+                post={post}
                 currentUser={currentUser}
                 profile={profile}
                 onEdit={(post) => {
-                  setEditingPost(post);
-                  setIsCreateModalOpen(true);
+                  openCreate(post.id);
                 }}
                 onDelete={async (postId) => {
                   if (window.confirm('Are you sure you want to delete this post?')) {
@@ -151,15 +183,13 @@ export default function UniversalFeed({ context, currentUser, profile, activeFil
             ))
           )}
         </div>
+        </div>
       </main>
 
       {/* Full Screen Post Creation Popup */}
       <FeedCreatePopup
         isOpen={isCreateModalOpen}
-        onClose={() => {
-          setIsCreateModalOpen(false);
-          setEditingPost(null);
-        }}
+        onClose={closeCreate}
         context={context}
         editingPost={editingPost}
       />

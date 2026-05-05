@@ -3,8 +3,6 @@
 import React, { useState } from 'react';
 import { useLocation } from '@/components/providers/LocationProvider';
 
-const CONTINENTS = ['GLOBAL', 'ASIA & OCEANIA', 'EUROPE', 'MIDDLE EAST & EURASIA', 'AMERICAS', 'AFRICA'];
-
 const REGIONS = [
   {
     continent: 'ASIA & OCEANIA',
@@ -290,8 +288,6 @@ const REGIONS = [
 
 export default function LocationSelector() {
   const { location, setLocation, isSelectorOpen, setIsSelectorOpen, selectorCallback, clearSelectorCallback } = useLocation();
-  const [activeTab, setActiveTab] = useState('GLOBAL');
-  const [searchQuery, setSearchQuery] = useState('');
   const [expandedCountry, setExpandedCountry] = useState<string | null>(location.country);
 
   if (!isSelectorOpen) return null;
@@ -308,130 +304,128 @@ export default function LocationSelector() {
     setIsSelectorOpen(false);
   };
 
-  const filteredRegions = REGIONS.filter(r => 
-    activeTab === 'GLOBAL' || r.continent === activeTab
-  ).map(region => ({
-    ...region,
-    countries: region.countries.filter(c => 
-      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.cities.some(city => city.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    )
-  })).filter(r => r.countries.length > 0);
+  const filteredRegions = REGIONS;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end justify-center">
+    <div className="fixed inset-0 z-[100] flex items-end justify-center pointer-events-none">
       <div 
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300"
+        className="absolute inset-0 bg-transparent transition-opacity duration-300 pointer-events-auto"
         onClick={() => setIsSelectorOpen(false)}
       ></div>
 
-      <div className="relative w-full max-w-lg bg-surface rounded-t-3xl shadow-2xl animate-in slide-in-from-bottom duration-300 ease-out flex flex-col h-[80vh]">
+      <div className="relative w-full max-w-lg bg-surface rounded-t-3xl shadow-[0_-20px_50px_-12px_rgba(0,0,0,0.3)] animate-in slide-in-from-bottom duration-300 ease-out flex flex-col h-[70vh] pointer-events-auto border-t border-outline-variant/20">
         
         {/* Bottom Sheet Handle */}
         <div className="w-full pt-3 pb-1 flex justify-center">
           <div className="w-10 h-1.5 bg-on-surface/20 rounded-full"></div>
         </div>
 
-        <div className="px-5 pt-2 pb-3 flex items-center gap-3">
-          <div className="relative flex-1">
-            <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-              <span className="material-symbols-outlined text-[18px] text-primary">search</span>
-            </div>
-            <input 
-              type="text"
-              placeholder="Search city or country..."
-              className="w-full h-[42px] pl-11 pr-4 bg-on-surface/[0.04] rounded-full border-none focus:ring-1 focus:ring-primary/20 focus:bg-on-surface/[0.06] transition-all font-manrope text-[14px] font-medium text-on-surface placeholder:text-on-surface/40 outline-none"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+        <div className="px-6 py-4 flex items-center justify-between">
+          <div className="flex flex-col">
+            <h2 className="text-[14px] font-black tracking-[0.1em] text-on-surface uppercase mb-1">SELECT LOCATION</h2>
+            <p className="text-[10px] font-bold text-on-surface/40 leading-tight">
+              Selecting a location will limit all content<br/>to that region.
+            </p>
           </div>
           <button 
             onClick={() => setIsSelectorOpen(false)}
-            className="shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-on-surface/[0.04] hover:bg-on-surface/[0.08] transition-all"
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-on-surface/[0.04] hover:bg-on-surface/[0.08] transition-all"
           >
             <span className="material-symbols-outlined text-[20px] text-on-surface/50">close</span>
           </button>
         </div>
 
-        <div className="px-6 flex gap-6 overflow-x-auto no-scrollbar bg-on-surface/[0.01] border-b border-outline-variant/10">
-          {CONTINENTS.map((tab) => (
-            <button 
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`shrink-0 pt-5 pb-4 text-[9px] font-black tracking-[0.2em] transition-all relative ${
-                activeTab === tab ? 'text-primary' : 'text-on-surface/60 hover:text-on-surface/90'
-              }`}
-            >
-              {tab}
-              {activeTab === tab && (
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-t-full"></div>
-              )}
-            </button>
-          ))}
-        </div>
+        <div className="flex-1 flex overflow-hidden border-t border-outline-variant/5">
+          {/* Left Pane: Countries */}
+          <div className="w-[140px] border-r border-outline-variant/10 overflow-y-auto no-scrollbar bg-[#F8F9FA]">
+            {/* GLOBAL Selection */}
+            <div className="py-2 border-b border-outline-variant/5">
+              <button 
+                onClick={() => handleSelect('GLOBAL', 'ALL')}
+                className={`w-full flex flex-col items-start gap-1 px-4 py-4 transition-all relative ${
+                  location.country === 'GLOBAL'
+                    ? 'bg-surface text-primary' 
+                    : 'text-on-surface/60 hover:bg-on-surface/[0.02]'
+                }`}
+              >
+                <span className="material-symbols-rounded text-[20px]">public</span>
+                <span className="font-headline font-black text-[10px] tracking-tighter uppercase text-left leading-none">
+                  All Tango<br/>Society
+                </span>
+                {location.country === 'GLOBAL' && (
+                  <div className="absolute right-0 top-2 bottom-2 w-1 bg-primary rounded-l-full"></div>
+                )}
+              </button>
+            </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar">
-          {filteredRegions.map((region) => (
-            <div key={region.continent}>
-              <h3 className="px-4 mb-2 text-[10px] font-bold tracking-[0.2em] text-on-surface/60 uppercase">{region.continent}</h3>
-              <div className="space-y-1">
+            {filteredRegions.map((region) => (
+              <div key={region.continent} className="py-2">
+                <h3 className="px-4 py-2 text-[9px] font-black tracking-[0.1em] text-on-surface/30 uppercase border-b border-outline-variant/5 mb-1">{region.continent}</h3>
                 {region.countries.map((country) => (
-                  <div key={country.name} className="overflow-hidden rounded-2xl group">
-                    <button 
-                      onClick={() => setExpandedCountry(expandedCountry === country.name ? null : country.name)}
-                      className={`w-full flex items-center justify-between px-5 py-4 transition-all ${
-                        expandedCountry === country.name ? 'bg-primary/5 text-primary' : 'hover:bg-on-surface/[0.02]'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="text-xl grayscale group-hover:grayscale-0 transition-all">{country.flag}</span>
-                        <span className="font-headline font-bold text-base tracking-tight uppercase text-left">
-                          {country.name}
-                        </span>
-                      </div>
-                      <span className={`material-symbols-outlined transition-transform duration-300 ${
-                        expandedCountry === country.name ? 'rotate-180' : 'text-on-surface/60'
-                      }`}>
-                        expand_more
-                      </span>
-                    </button>
-                    
-                    <div className={`grid grid-cols-1 overflow-hidden transition-all duration-300 ${
-                      expandedCountry === country.name ? 'max-h-[1000px] py-1 bg-on-surface/[0.015]' : 'max-h-0'
-                    }`}>
-                      {/* Master (ALL) Selection - Standard Left Align */}
-                      <button 
-                        onClick={() => handleSelect(country.name, 'ALL')}
-                        className={`w-full text-left px-5 py-3 text-[11px] font-black tracking-[0.2em] uppercase transition-all ${
-                          location.city === 'ALL' && location.country === country.name
-                            ? 'text-primary bg-primary/10' 
-                            : 'text-primary hover:text-primary hover:bg-primary/5'
-                        }`}
-                      >
-                        (ALL)
-                      </button>
-
-                      {country.cities.map((city) => (
-                        <button 
-                          key={city.name}
-                          onClick={() => handleSelect(country.name, city.name)}
-                          className={`w-full text-left px-5 py-3 text-[12px] font-bold tracking-widest uppercase transition-all ${
-                            location.city === city.name && location.country === country.name
-                              ? 'text-primary bg-primary/5' 
-                              : 'text-on-surface/70 hover:text-on-surface hover:bg-on-surface/[0.02]'
-                          }`}
-                        >
-                          {city.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                  <button 
+                    key={country.name}
+                    onClick={() => setExpandedCountry(country.name)}
+                    className={`w-full flex items-center gap-3 px-4 py-4 transition-all relative ${
+                      expandedCountry === country.name 
+                        ? 'bg-surface text-primary' 
+                        : 'text-on-surface/60 hover:bg-on-surface/[0.02]'
+                    }`}
+                  >
+                    <span className={`text-lg transition-all ${expandedCountry === country.name ? 'grayscale-0' : 'grayscale opacity-50'}`}>
+                      {country.flag}
+                    </span>
+                    <span className="font-headline font-bold text-[11px] tracking-tight uppercase text-left break-words">
+                      {country.name}
+                    </span>
+                    {expandedCountry === country.name && (
+                      <div className="absolute right-0 top-2 bottom-2 w-1 bg-primary rounded-l-full"></div>
+                    )}
+                  </button>
                 ))}
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
 
+          {/* Right Pane: Cities */}
+          <div className="flex-1 overflow-y-auto p-2 no-scrollbar bg-white">
+            {expandedCountry ? (
+              <div className="space-y-1">
+                {/* Master (ALL) Selection */}
+                <button 
+                  onClick={() => handleSelect(expandedCountry, 'ALL')}
+                  className={`w-full text-left px-5 py-4 rounded-2xl text-[11px] font-black tracking-[0.2em] uppercase transition-all ${
+                    location.city === 'ALL' && location.country === expandedCountry
+                      ? 'text-primary bg-primary/10' 
+                      : 'text-primary hover:bg-primary/5'
+                  }`}
+                >
+                  (ALL) {expandedCountry}
+                </button>
+
+                {REGIONS.flatMap(r => r.countries)
+                  .find(c => c.name === expandedCountry)
+                  ?.cities.map((city) => (
+                    <button 
+                      key={city.name}
+                      onClick={() => handleSelect(expandedCountry, city.name)}
+                      className={`w-full text-left px-5 py-4 rounded-2xl text-[13px] font-bold tracking-tight uppercase transition-all ${
+                        location.city === city.name && location.country === expandedCountry
+                          ? 'text-primary bg-primary/5' 
+                          : 'text-on-surface/70 hover:text-on-surface hover:bg-on-surface/[0.03]'
+                      }`}
+                    >
+                      {city.name}
+                    </button>
+                  ))}
+              </div>
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center opacity-20 px-8 text-center">
+                <span className="material-symbols-outlined text-[48px] mb-4">location_on</span>
+                <p className="text-[12px] font-bold tracking-widest uppercase">Select a country<br/>to see cities</p>
+              </div>
+            )}
+          </div>
+        </div>
 
       </div>
     </div>

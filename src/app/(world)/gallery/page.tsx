@@ -3,6 +3,7 @@
 import './gallery.css';
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Heart, 
@@ -19,7 +20,7 @@ import {
 } from 'lucide-react';
 import { galleryService, GalleryPost, GalleryComment } from '@/lib/firebase/galleryService';
 import { useAuth } from '@/components/providers/AuthProvider';
-import { safeDate } from '@/lib/utils/safeData';
+import { safeDate } from '@/lib/utils/safeDate';
 
 // Helper to determine if a URL is a video
 const isVideoUrl = (url: string) => {
@@ -37,6 +38,8 @@ const GalleryPage = () => {
   const [mounted, setMounted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const router = useRouter();
+
   useEffect(() => {
     setMounted(true);
     const unsubscribe = galleryService.subscribeFeed((data) => {
@@ -45,6 +48,17 @@ const GalleryPage = () => {
     });
     return () => unsubscribe();
   }, []);
+
+  // Listen to global compose event
+  useEffect(() => {
+    const handleComposeOpen = (e: CustomEvent) => {
+      if (e.detail?.id === 'gallery') {
+        router.push('/gallery/create');
+      }
+    };
+    window.addEventListener('woc:compose:open', handleComposeOpen as EventListener);
+    return () => window.removeEventListener('woc:compose:open', handleComposeOpen as EventListener);
+  }, [router]);
 
   if (!mounted) return null;
 
@@ -83,13 +97,7 @@ const GalleryPage = () => {
         ))}
       </div>
 
-      {/* Floating Create Button */}
-      <Link 
-        href="/gallery/create" 
-        className="fixed bottom-28 right-6 w-14 h-14 rounded-full bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/30 z-40 hover:scale-105 active:scale-95 transition-transform"
-      >
-        <Plus size={28} />
-      </Link>
+
 
       {/* Comment Bottom Sheet */}
       <AnimatePresence>

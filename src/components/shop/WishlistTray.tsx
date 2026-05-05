@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Product, ProductLike } from '@/types/shop';
 import { shopService } from '@/lib/firebase/shopService';
+import { useNavigation } from '@/components/providers/NavigationProvider';
 
 interface WishlistTrayProps {
   likes: ProductLike[];
@@ -11,23 +12,14 @@ interface WishlistTrayProps {
   onProductClick: (productId: string) => void;
 }
 
-type TrayState = 'HIDDEN' | 'COLLAPSED' | 'EXPANDED';
+type TrayState = 'COLLAPSED' | 'EXPANDED';
 
 export default function WishlistTray({ likes, userId, onProductClick }: WishlistTrayProps) {
-  const [trayState, setTrayState] = useState<TrayState>('HIDDEN');
+  const [trayState, setTrayState] = useState<TrayState>('COLLAPSED');
   const [likedProducts, setLikedProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-
-  // Determine tray state from likes count
-  useEffect(() => {
-    if (likes.length === 0) {
-      setTrayState('HIDDEN');
-    } else if (trayState === 'HIDDEN') {
-      setTrayState('COLLAPSED');
-    }
-    // If already COLLAPSED or EXPANDED, keep that state
-  }, [likes.length]);
+  const { isHeaderVisible } = useNavigation();
 
   // Fetch product details for liked items
   useEffect(() => {
@@ -44,12 +36,12 @@ export default function WishlistTray({ likes, userId, onProductClick }: Wishlist
       
       // Filter out nulls and attach status
       const validProducts = products
-        .map((p, i) => (p ? { ...p, _likeStatus: likes[i].status } : null))
-        .filter((p): p is Product & { _likeStatus: 'liked' | 'pending' | 'in_progress' | undefined } => p !== null);
+        .map((p, i) => (p ? { ...p, _likeStatus: likes[i].status || 'liked' } : null))
+        .filter((p): p is Product & { _likeStatus: 'liked' | 'pending' | 'in_progress' } => p !== null);
       
       // Sort: in_progress first, then pending, then liked
       validProducts.sort((a, b) => {
-        const getPriority = (status: string | undefined) => {
+        const getPriority = (status: string) => {
           if (status === 'in_progress') return 1;
           if (status === 'pending') return 2;
           return 3;
@@ -75,10 +67,10 @@ export default function WishlistTray({ likes, userId, onProductClick }: Wishlist
 
   const handleClearAll = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm('찜 목록을 모두 비우시겠어요?')) return;
+    if (!confirm('Clear all items from your wishlist?')) return;
     try {
       await shopService.clearAllLikes(userId);
-      setTrayState('HIDDEN');
+      setTrayState('COLLAPSED');
     } catch (err) {
       console.error('Failed to clear likes:', err);
     }
@@ -89,26 +81,28 @@ export default function WishlistTray({ likes, userId, onProductClick }: Wishlist
     setTrayState(prev => prev === 'EXPANDED' ? 'COLLAPSED' : 'EXPANDED');
   };
 
-  if (trayState === 'HIDDEN') return null;
-
   const isExpanded = trayState === 'EXPANDED';
+
+  // Hide tray when no likes
+  if (likes.length === 0) return null;
 
   return (
     <>
-      {/* ===== Map-style Floating FAB Tray ===== */}
-      {/* Position: identical to MapComponent.tsx L464 */}
-      <div className="fixed bottom-20 left-1/2 -translate-x-1/2 w-[calc(100%-48px)] max-w-sm z-40 pointer-events-auto">
+      <div className="fixed bottom-24 left-1/2 -translate-x-1/2 w-[calc(100%-48px)] max-w-sm z-[60] pointer-events-auto">
         <motion.div 
-          animate={{ height: isExpanded ? 'auto' : '56px', y: 0, opacity: 1 }}
+          animate={{ 
+            height: isExpanded ? 'auto' : '64px', 
+            y: isHeaderVisible ? 0 : 120, 
+            opacity: isHeaderVisible ? 1 : 0 
+          }}
           transition={{ type: 'spring', stiffness: 400, damping: 35 }}
-          initial={{ y: 100, opacity: 0 }}
+          initial={false}
           className="bg-white/95 backdrop-blur-3xl rounded-xl shadow-[0_24px_48px_rgba(0,0,0,0.12)] flex flex-col border border-white/60 overflow-hidden"
           onClick={() => !isExpanded && setTrayState('EXPANDED')}
         >
-          {/* ===== Top Row / Summary Bar (Map L506 pattern) ===== */}
-          <div className={`px-6 flex items-center justify-between py-3 cursor-pointer ${isExpanded ? 'border-b border-slate-100' : ''}`}>
+          {/* Top Row / Summary Bar */}
+          <div className={`px-4 flex items-center justify-between min-h-[60px] cursor-pointer ${isExpanded ? 'border-b border-slate-100' : ''}`}>
             <div className="flex items-center">
-              {/* Expand/Collapse toggle — Map L508-518 */}
               <div 
                 onClick={handleToggleExpand}
                 className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center transition-colors hover:bg-slate-200"
@@ -118,129 +112,154 @@ export default function WishlistTray({ likes, userId, onProductClick }: Wishlist
                 </span>
               </div>
 
-              {isExpanded ? (
-                /* Expanded: header text */
-                <span className="text-sm text-slate-800 font-bold ml-3 tracking-wide">
-                  {likes.filter(l => l.status === 'in_progress').length > 0 && (
-                    <span className="text-blue-500">{likes.filter(l => l.status === 'in_progress').length} In Progress, </span>
-                  )}
-                  {likes.filter(l => l.status === 'pending').length > 0 && (
-                    <span className="text-primary">{likes.filter(l => l.status === 'pending').length} Pending, </span>
-                  )}
-                  {likes.filter(l => l.status !== 'pending' && l.status !== 'in_progress').length} Liked Items
-                </span>
-              ) : (
-                /* Collapsed: count summary */
-                <span className="text-sm text-slate-800 font-bold ml-3 tracking-wide uppercase">
-                  {likes.filter(l => l.status === 'in_progress').length > 0 && (
-                    <span className="text-blue-500">{likes.filter(l => l.status === 'in_progress').length} IN PROGRESS, </span>
-                  )}
-                  {likes.filter(l => l.status === 'pending').length > 0 && (
-                    <span className="text-primary">{likes.filter(l => l.status === 'pending').length} PENDING, </span>
-                  )}
-                  {likes.filter(l => l.status !== 'pending' && l.status !== 'in_progress').length} LIKED
-                </span>
-              )}
+              <span className="text-sm text-slate-800 font-bold ml-3 tracking-wide">
+                {likes.length === 0 ? 'No Activity' : (
+                  <>
+                    {likes.filter(l => l.status === 'in_progress').length > 0 && (
+                      <span className="text-blue-500">{likes.filter(l => l.status === 'in_progress').length} In Progress, </span>
+                    )}
+                    {likes.filter(l => l.status === 'pending').length > 0 && (
+                      <span className="text-primary">{likes.filter(l => l.status === 'pending').length} Pending, </span>
+                    )}
+                    {likes.filter(l => l.status !== 'pending' && l.status !== 'in_progress').length} Liked
+                  </>
+                )}
+              </span>
             </div>
 
-            {/* Right side */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
               {isExpanded && (
                 <button
                   onClick={handleClearAll}
-                  className="text-[10px] font-bold text-slate-400 uppercase tracking-wider hover:text-slate-600 transition-colors"
+                  className="text-[12px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-widest transition-colors"
                 >
-                  Clear all
+                  Clear All
                 </button>
+              )}
+              {!isExpanded && (
+                <div className="flex -space-x-2">
+                  {likedProducts.slice(0, 3).map((p, i) => (
+                    <div 
+                      key={p.id} 
+                      className={`w-8 h-8 rounded-full border-2 border-white bg-slate-100 overflow-hidden relative ${
+                        (p as any)._likeStatus === 'in_progress' ? 'ring-2 ring-blue-500 ring-offset-1' :
+                        (p as any)._likeStatus === 'pending' ? 'ring-2 ring-primary ring-offset-1' : ''
+                      }`}
+                      style={{ zIndex: 3 - i }}
+                    >
+                      {(p.images?.[0] || p.imageUrl) ? (
+                        <img src={p.images?.[0] || p.imageUrl} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-slate-200">
+                          <span className="material-symbols-rounded text-[14px] text-slate-400">image</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {likedProducts.length > 3 && (
+                    <div className="w-8 h-8 rounded-full border-2 border-white bg-slate-800 text-white flex items-center justify-center text-[10px] font-bold z-0">
+                      +{likedProducts.length - 3}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           </div>
 
-          {/* ===== Expanded Card List (snap-x scroll, Map L552-663 pattern) ===== */}
+          {/* Expanded Card Scroll Area (Horizontal — Map FAB Style) */}
           <AnimatePresence>
             {isExpanded && (
               <motion.div 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
+                className="flex items-center overflow-x-auto px-4 gap-3 no-scrollbar snap-x snap-mandatory py-3 h-[130px]"
                 ref={scrollRef}
-                className="flex items-center overflow-x-auto px-6 gap-4 no-scrollbar snap-x snap-mandatory py-4 h-[130px]"
               >
-                {likedProducts.length > 0 ? (
-                  likedProducts.map((product) => (
-                    <div 
-                      key={product.id}
-                      onClick={() => onProductClick(product.id)}
-                      className="flex-none w-[calc(100%-24px)] bg-white rounded-lg p-2 shadow-sm border border-slate-50 flex gap-3 relative snap-center cursor-pointer hover:shadow-md transition-all active:scale-[0.98]"
-                    >
-                      {/* Product image — Map L569-577 sizing */}
-                      <div className="w-16 h-16 rounded bg-slate-100 flex-none overflow-hidden">
-                        {product.images?.[0] || product.imageUrl ? (
-                          <img 
-                            src={product.images?.[0] || product.imageUrl} 
-                            className="w-full h-full object-cover" 
-                            alt={product.name} 
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-slate-300">
-                            <span className="material-symbols-rounded text-xl">image</span>
+                {loadingProducts ? (
+                  <div className="flex justify-center items-center w-full">
+                    <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                ) : likedProducts.length > 0 ? (
+                  <>
+                    {likedProducts.map(product => {
+                      const status = (product as any)._likeStatus;
+                      return (
+                        <div 
+                          key={product.id}
+                          onClick={() => onProductClick(product.id)}
+                          className={`flex-none w-[calc(100%-24px)] bg-white rounded-lg p-2 shadow-sm border flex gap-3 relative snap-center transition-all cursor-pointer ${
+                            status === 'in_progress' ? 'border-blue-200 ring-1 ring-blue-100' :
+                            status === 'pending' ? 'border-primary/20 ring-1 ring-primary/10' : 'border-slate-50'
+                          }`}
+                        >
+                          <div className="w-16 h-16 rounded-lg bg-slate-100 flex-none overflow-hidden">
+                            {(product.images?.[0] || product.imageUrl) ? (
+                              <img src={product.images?.[0] || product.imageUrl} alt={product.title || product.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-slate-300">
+                                <span className="material-symbols-rounded text-xl">image</span>
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-
-                      {/* Product info — Map L578-588 pattern */}
-                      <div className="flex flex-col min-w-0 pr-8 justify-center">
-                        {(product as any)._likeStatus === 'in_progress' ? (
-                          <span className="text-[10px] font-bold text-white bg-blue-500 w-fit px-1.5 py-0.5 rounded mb-1 uppercase">
-                            IN PROGRESS
-                          </span>
-                        ) : (product as any)._likeStatus === 'pending' ? (
-                          <span className="text-[10px] font-bold text-white bg-primary w-fit px-1.5 py-0.5 rounded mb-1 uppercase">
-                            PENDING
-                          </span>
-                        ) : (
-                          <span className="text-[10px] font-bold text-primary bg-primary/10 w-fit px-1.5 py-0.5 rounded mb-1 uppercase">
-                            {product.brand || product.category}
-                          </span>
-                        )}
-                        <h3 className="text-[17px] font-bold text-on-background truncate leading-tight">
-                          {product.title || product.name}
-                        </h3>
-                        <p className="text-[11px] text-slate-400 truncate mt-0.5 font-medium">
-                          ₩{product.price?.toLocaleString()}
-                          {product.discountPrice ? (
-                            <span className="ml-1 text-red-400 line-through">₩{product.discountPrice.toLocaleString()}</span>
-                          ) : null}
-                        </p>
-                      </div>
-
-                      {/* Unlike button (replaces Map's more_vert — L591-599) */}
-                      <button 
-                        onClick={(e) => handleUnlike(e, product.id)}
-                        className="absolute top-2 right-2 text-slate-400 hover:text-red-500 transition-colors"
-                      >
-                        <span className="material-symbols-rounded text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>heart_minus</span>
-                      </button>
-                    </div>
-                  ))
+                          <div className="flex flex-col min-w-0 pr-8 justify-center flex-1">
+                            {status && status !== 'liked' && (
+                              <span className={`text-[9px] font-black uppercase tracking-widest w-fit px-1.5 py-0.5 rounded mb-1 ${
+                                status === 'in_progress' ? 'bg-blue-500 text-white' : 'bg-primary text-white'
+                              }`}>
+                                {status === 'in_progress' ? 'IN PROGRESS' : 'PENDING'}
+                              </span>
+                            )}
+                            <h3 className="text-[14px] font-bold text-slate-800 truncate leading-tight">
+                              {product.title || product.name}
+                            </h3>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="text-[12px] font-black text-slate-900">
+                                ₩{product.price?.toLocaleString()}
+                              </span>
+                              <span className="text-[10px] text-slate-400 font-medium truncate">
+                                {product.brand || product.category}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          {/* Unlike Button — Always visible */}
+                          <button 
+                            onClick={(e) => handleUnlike(e, product.id)}
+                            className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center text-red-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                          >
+                            <span className="material-symbols-rounded text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                              favorite
+                            </span>
+                          </button>
+                        </div>
+                      );
+                    })}
+                    <div className="flex-none w-6 h-1" />
+                  </>
                 ) : (
                   <div className="flex items-center justify-center w-full h-full text-slate-400 text-xs font-medium">
-                    {loadingProducts ? 'Loading...' : 'No liked items'}
+                    No activity found.
                   </div>
                 )}
-                {/* Visual nudge for next card — Map L662 */}
-                <div className="flex-none w-10 h-1" />
               </motion.div>
             )}
           </AnimatePresence>
         </motion.div>
       </div>
 
-      {/* No-scrollbar CSS */}
-      <style dangerouslySetInnerHTML={{ __html: `
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-      `}} />
+      {/* Backdrop for expanded state */}
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setTrayState('COLLAPSED')}
+            className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-30"
+          />
+        )}
+      </AnimatePresence>
     </>
   );
 }

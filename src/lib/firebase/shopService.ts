@@ -15,9 +15,11 @@ import {
   deleteDoc,
   setDoc,
   increment,
-  runTransaction
+  runTransaction,
+  writeBatch
 } from 'firebase/firestore';
 import { Product, ProductLike, ShopBanner, ShopOrder, OrderStatus } from '@/types/shop';
+import { notificationService } from './notificationService';
 
 const PRODUCTS_COLLECTION = 'products';
 const LIKES_COLLECTION = 'product_likes';
@@ -219,6 +221,11 @@ export const shopService = {
       }
       
       await updateDoc(ref, updateData);
+
+      // Clear related Todos if completed or canceled
+      if (newStatus === 'COMPLETED' || newStatus === 'CANCELLED') {
+         await notificationService.markTodosAsCompletedByReference(orderId);
+      }
     } catch (error) {
       console.error("Error updating order status:", error);
       throw error;
@@ -238,13 +245,44 @@ export const shopService = {
         paymentDeadline = Timestamp.fromDate(deadline);
       }
 
-      const docRef = await addDoc(collection(db, ORDERS_COLLECTION), {
+      const orderRef = doc(collection(db, ORDERS_COLLECTION));
+      const batch = writeBatch(db);
+
+      const orderData = {
         ...cleaned,
         paymentDeadline,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
-      });
-      return docRef.id;
+      };
+
+      batch.set(orderRef, orderData);
+
+      // User Notification
+      await notificationService.createNotification({
+        targetUserId: data.buyerId,
+        groupId: data.groupId,
+        type: 'SHOP_ORDER',
+        title: '주문 접수 완료',
+        message: `'${data.items?.[0]?.title || '상품'}' 등 주문이 정상적으로 접수되었습니다.`,
+        actionUrl: `/shop/order/${orderRef.id}`,
+        referenceId: orderRef.id,
+        category: 'SHOP'
+      }, batch);
+
+      // Admin Todo
+      await notificationService.createTodoForGroupAdmins(data.groupId, {
+        groupId: data.groupId,
+        type: 'SHOP_ORDER_ADMIN',
+        title: '신규 주문',
+        message: `${data.buyerName}님이 '${data.items?.[0]?.title || '상품'}'을(를) 주문했습니다. 내역을 확인해주세요.`,
+        actionUrl: `/group/${data.groupId}?tab=admin`,
+        referenceId: orderRef.id,
+        category: 'SHOP'
+      }, batch);
+
+      await batch.commit();
+
+      return orderRef.id;
     } catch (error) {
       console.error("Error creating order:", error);
       throw error;

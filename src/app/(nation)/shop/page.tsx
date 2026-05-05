@@ -1,11 +1,18 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useNavigation } from '@/components/providers/NavigationProvider';
 import { shopService } from '@/lib/firebase/shopService';
+import { venueService } from '@/lib/firebase/venueService';
 import { Product, ProductLike } from '@/types/shop';
+import { Venue } from '@/types/venue';
 import WishlistTray from '@/components/shop/WishlistTray';
 import ProductDetail from '@/components/shop/ProductDetail';
+import CreateProduct from '@/components/shop/CreateProduct';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { useModalNavigation } from '@/hooks/useModalNavigation';
+import { AnimatePresence } from 'framer-motion';
 
 type SortOption = 'latest' | 'sale' | 'popular' | 'new' | 'price_asc' | 'price_desc';
 
@@ -27,9 +34,10 @@ const SHOP_FILTER_DEFS: Record<string, { label: string; fullLabel?: string; icon
   item: { label: 'Item', fullLabel: 'Item', icon: 'diamond', categories: ['accessories', 'accessory', 'equipment', 'item', 'bag', 'others', 'bikes', 'equipments'] },
 };
 
-export default function ShopPage() {
+function ShopPageContent() {
   const { user, profile } = useAuth();
   const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [allVenues, setAllVenues] = useState<Venue[]>([]);
   const [activeFilter, setActiveFilter] = useState('all');
   const [activeBrand, setActiveBrand] = useState('All');
   const [sortOption, setSortOption] = useState<SortOption>('latest');
@@ -39,7 +47,41 @@ export default function ShopPage() {
   const [togglingLike, setTogglingLike] = useState<string | null>(null);
   const [showBrandFilter, setShowBrandFilter] = useState(false);
   const [showSortDropdown, setShowSortDropdown] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const { setSubHeader } = useNavigation();
+  
+  const { 
+    isOpen: isDetailOpen, 
+    value: productId, 
+    openModal: openDetail, 
+    closeModal: handleCloseDetail,
+    searchParams 
+  } = useModalNavigation('productId');
+
+  const {
+    isOpen: isCreateOpen,
+    openModal: openCreate,
+    closeModal: closeCreate
+  } = useModalNavigation('create');
+
+  // Listen to global compose event
+  useEffect(() => {
+    const handleComposeOpen = (e: CustomEvent) => {
+      if (e.detail?.id === 'shop') {
+        openCreate('true');
+      }
+    };
+    window.addEventListener('woc:compose:open', handleComposeOpen as EventListener);
+    return () => window.removeEventListener('woc:compose:open', handleComposeOpen as EventListener);
+  }, [openCreate]);
+
+  const selectedProduct = useMemo(() => {
+    if (!productId) return null;
+    return allProducts.find(p => p.id === productId) || null;
+  }, [productId, allProducts]);
+
+  const handleOpenDetail = (product: Product) => {
+    openDetail(product.id);
+  };
 
   const shopFilters = useMemo(() => {
     const isMale = profile?.gender?.toLowerCase() === 'male' || profile?.gender?.toLowerCase() === 'man';
@@ -58,6 +100,11 @@ export default function ShopPage() {
     return () => unsub();
   }, []);
 
+  useEffect(() => {
+    const unsub = venueService.subscribeVenues((data) => setAllVenues(data));
+    return () => unsub();
+  }, []);
+
   // 2. Subscribe to my likes
   useEffect(() => {
     if (!user) return;
@@ -70,9 +117,13 @@ export default function ShopPage() {
 
   // 3. Dynamic brands from data
   const brands = useMemo(() => {
-    const bs = Array.from(new Set(allProducts.map(p => p.brand).filter(Boolean)));
-    return ['All', ...bs.sort()];
-  }, [allProducts]);
+    const shopVenues = allVenues.filter(v => 
+      v.status === 'active' && 
+      (v.types.includes('Shop') || v.types.includes('Service') || v.category === 'Shop' || v.category === 'Service')
+    );
+    const names = Array.from(new Set(shopVenues.map(v => v.name).filter(Boolean)));
+    return ['All', ...names.sort()];
+  }, [allVenues]);
 
   // 4. Filter + Sort
   const filteredProducts = useMemo(() => {
@@ -141,27 +192,21 @@ export default function ShopPage() {
     try { await shopService.toggleLike(user.uid, product.id); } catch (err) { console.error('Failed to toggle like:', err); }
     setTogglingLike(null);
   };
-
-  return (
-    <main className="max-w-md mx-auto w-full relative min-h-screen bg-[#FAF8FF]">
-      <style dangerouslySetInnerHTML={{ __html: `
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .material-symbols-rounded { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-      `}} />
-
-      {/* Filter & Sort Bar */}
-      <div className="w-full bg-[#FAF8FF] border-b border-slate-100/50 px-3 py-2 flex flex-col gap-3">
-        {/* Scrollable Tabs */}
-        <div className="w-full flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+  
+  // Teleport Filter Bar to Header (Premium Standard: Dual Row)
+  useEffect(() => {
+    const filterBar = (
+      <div className="relative w-full bg-white flex flex-col shadow-[0_20px_40px_-15px_rgba(0,0,0,0.15)]">
+        {/* Row 1: Scrollable Tabs */}
+        <div className="w-full px-3 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
           {shopFilters.map((filter) => (
             <button
               key={filter.key}
               onClick={() => setActiveFilter(filter.key)}
-              className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[12px] font-bold tracking-wide transition-all whitespace-nowrap ${
+              className={`flex-shrink-0 px-2.5 py-1 rounded-xl text-[12px] font-bold tracking-tight transition-all whitespace-nowrap border ${
                 activeFilter === filter.key
-                  ? 'bg-[#1E293B] text-white shadow-sm'
-                  : 'bg-slate-50 text-slate-500 border border-slate-100 hover:bg-slate-100'
+                  ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-100'
+                  : 'bg-slate-50/50 text-slate-500 border-slate-100 hover:bg-slate-100/80'
               }`}
             >
               {filter.fullLabel || filter.label}
@@ -169,10 +214,13 @@ export default function ShopPage() {
           ))}
         </div>
         
-        {/* Bottom Actions (Text + Arrow) */}
-        <div className="w-full flex items-center justify-between px-1">
-          <div className="text-[11px] font-medium text-[#007AFF]">
-            {filteredProducts.length} items
+        {/* Row 2: Stats & Filters */}
+        <div className="w-full h-11 px-4 flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+            <div className="text-[11px] font-bold text-slate-600 uppercase tracking-widest">
+              {filteredProducts.length} <span className="text-slate-400 font-medium">Items</span>
+            </div>
           </div>
           
           <div className="flex items-center gap-4">
@@ -189,7 +237,7 @@ export default function ShopPage() {
               }`}
             >
               {activeBrand === 'All' ? 'Brand' : activeBrand}
-              <span className="material-symbols-outlined text-[14px]">expand_more</span>
+              <span className={`material-symbols-outlined text-[16px] transition-transform ${showBrandFilter ? 'rotate-180' : ''}`}>expand_more</span>
             </button>
 
             {/* Sort Trigger */}
@@ -201,60 +249,93 @@ export default function ShopPage() {
               className="flex items-center gap-0.5 text-[12px] font-bold text-slate-600 hover:text-slate-800 transition-all"
             >
               {SORT_OPTIONS.find(o => o.key === sortOption)?.label || 'Sort'}
-              <span className="material-symbols-outlined text-[14px]">expand_more</span>
+              <span className={`material-symbols-outlined text-[16px] transition-transform ${showSortDropdown ? 'rotate-180' : ''}`}>expand_more</span>
             </button>
           </div>
         </div>
-      </div>
 
-      {/* Brand Selector Modal/Dropdown */}
-      {showBrandFilter && (
-        <div className="absolute top-[90px] left-4 right-4 z-40 bg-white rounded-2xl shadow-2xl border border-slate-100 p-4 max-h-[300px] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-300">
-          <div className="flex items-center justify-between mb-3 px-1">
-            <span className="text-[13px] font-bold text-slate-800">Filter by Brand</span>
-            <button onClick={() => setShowBrandFilter(false)} className="text-slate-400 hover:text-slate-600">
-              <span className="material-symbols-outlined text-[18px]">close</span>
-            </button>
+        {/* Brand Selector Dropdown (Premium Grid) */}
+        {showBrandFilter && (
+          <div className="absolute top-full left-0 right-0 z-40 bg-white shadow-2xl border-t border-slate-100 p-4 max-h-[280px] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="flex items-center justify-between mb-4 px-1">
+              <span className="text-[14px] font-black text-slate-800 uppercase tracking-tight">Filter by Brand</span>
+              <button 
+                onClick={() => setShowBrandFilter(false)} 
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:text-slate-600 active:scale-90 transition-all"
+              >
+                <span className="material-symbols-outlined text-[18px]">close</span>
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {brands.map(brand => (
+                <button
+                  key={brand}
+                  onClick={() => {
+                    setActiveBrand(brand);
+                    setShowBrandFilter(false);
+                  }}
+                  className={`px-4 py-3 rounded-2xl text-[12px] font-bold text-left transition-all border ${
+                    activeBrand === brand 
+                      ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-100' 
+                      : 'bg-slate-50/50 text-slate-600 border-transparent hover:bg-slate-100/80'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="truncate pr-2">{brand}</span>
+                    {activeBrand === brand && (
+                      <span className="material-symbols-outlined text-[14px]">check_circle</span>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+            <div className="mt-4 pt-4 border-t border-slate-50 flex justify-center">
+              <button 
+                onClick={() => setShowBrandFilter(false)}
+                className="text-[11px] font-bold text-slate-400 uppercase tracking-widest hover:text-slate-600 transition-colors"
+              >
+                Close filter
+              </button>
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            {brands.map(brand => (
+        )}
+ 
+        {/* Sort Options Dropdown */}
+        {showSortDropdown && (
+          <div className="absolute top-full right-0 z-40 bg-white shadow-2xl border-t border-slate-100 py-2 min-w-[160px] animate-in fade-in slide-in-from-top-2 duration-300">
+            {SORT_OPTIONS.map(opt => (
               <button
-                key={brand}
+                key={opt.key}
                 onClick={() => {
-                  setActiveBrand(brand);
-                  setShowBrandFilter(false);
+                  setSortOption(opt.key);
+                  setShowSortDropdown(false);
                 }}
-                className={`px-3 py-2 rounded-xl text-[12px] font-semibold text-left transition-all ${
-                  activeBrand === brand ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                className={`w-full px-4 py-2.5 flex items-center gap-3 hover:bg-slate-50 transition-colors text-left ${
+                  sortOption === opt.key ? 'text-blue-600 font-bold' : 'text-slate-600 font-medium'
                 }`}
               >
-                {brand}
+                <span className="material-symbols-outlined text-[18px]">{opt.icon}</span>
+                <span className="text-[13px]">{opt.label}</span>
               </button>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
+    );
+    setSubHeader(filterBar);
+    return () => setSubHeader(null);
+  }, [
+    activeFilter, activeBrand, sortOption, filteredProducts.length, 
+    showBrandFilter, showSortDropdown, shopFilters, brands, setSubHeader
+  ]);
 
-      {/* Sort Options Modal/Dropdown */}
-      {showSortDropdown && (
-        <div className="absolute top-[90px] right-4 z-40 bg-white rounded-2xl shadow-2xl border border-slate-100 py-2 min-w-[160px] animate-in fade-in slide-in-from-top-2 duration-300">
-          {SORT_OPTIONS.map(opt => (
-            <button
-              key={opt.key}
-              onClick={() => {
-                setSortOption(opt.key);
-                setShowSortDropdown(false);
-              }}
-              className={`w-full px-4 py-2.5 flex items-center gap-3 hover:bg-slate-50 transition-colors text-left ${
-                sortOption === opt.key ? 'text-blue-600 font-bold' : 'text-slate-600 font-medium'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[18px]">{opt.icon}</span>
-              <span className="text-[13px]">{opt.label}</span>
-            </button>
-          ))}
-        </div>
-      )}
+  return (
+    <main className="max-w-md mx-auto w-full relative min-h-screen bg-[#FAF8FF]">
+      <style dangerouslySetInnerHTML={{ __html: `
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .material-symbols-rounded { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+      `}} />
 
       {/* ⑤ Product Grid (필터+정렬 결과) */}
       <div className="pt-4 px-4 mb-10 text-left min-h-[400px]">
@@ -270,7 +351,7 @@ export default function ShopPage() {
         ) : (
           <div className="grid grid-cols-2 gap-4">
             {filteredProducts.map(product => (
-              <div key={product.id} onClick={() => setSelectedProduct(product)} className="group cursor-pointer animate-in fade-in slide-in-from-bottom-2 duration-500">
+              <div key={product.id} onClick={() => handleOpenDetail(product)} className="group cursor-pointer animate-in fade-in slide-in-from-bottom-2 duration-500">
                 <div className="relative aspect-square rounded-xl bg-[#f2f4f4] overflow-hidden mb-3">
                   {/* Fallback View */}
                   <div className="absolute inset-0 flex flex-col items-center justify-center text-[#c4cacc]">
@@ -349,20 +430,43 @@ export default function ShopPage() {
           userId={user.uid}
           onProductClick={(productId) => {
             const p = allProducts.find(pr => pr.id === productId);
-            if (p) setSelectedProduct(p);
+            if (p) handleOpenDetail(p);
           }}
         />
       )}
 
-      {/* ⑦ Product Detail Modal */}
-      {selectedProduct && (
-        <ProductDetail
-          product={selectedProduct}
-          isLiked={likedIds.has(selectedProduct.id)}
-          onClose={() => setSelectedProduct(null)}
-          onToggleLike={handleToggleLike}
-        />
-      )}
+      {/* ⑦ Modals */}
+      <AnimatePresence>
+        {selectedProduct && (
+          <ProductDetail
+            product={selectedProduct}
+            isLiked={likedIds.has(selectedProduct.id)}
+            onClose={handleCloseDetail}
+            onToggleLike={handleToggleLike}
+          />
+        )}
+        {isCreateOpen && (
+          <CreateProduct 
+            onClose={closeCreate}
+            onSuccess={() => {
+              // Optionally refresh or show success message
+              closeCreate();
+            }}
+          />
+        )}
+      </AnimatePresence>
     </main>
+  );
+}
+
+export default function ShopPage() {
+  return (
+    <Suspense fallback={
+      <div className="max-w-md mx-auto w-full min-h-screen bg-[#FAF8FF] flex items-center justify-center">
+        <span className="material-symbols-rounded animate-spin text-slate-300 text-4xl">progress_activity</span>
+      </div>
+    }>
+      <ShopPageContent />
+    </Suspense>
   );
 }

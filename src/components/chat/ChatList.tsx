@@ -1,22 +1,117 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { chatService } from '@/lib/firebase/chatService';
+import { userService } from '@/lib/firebase/userService';
 import { ChatRoom } from '@/types/chat';
+import { PlatformUser } from '@/types/user';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { formatDistanceToNow } from 'date-fns';
-import { ko } from 'date-fns/locale';
-import { safeDate } from '@/lib/utils/safeData';
+import { safeDate } from '@/lib/utils/safeDate';
 
 interface ChatListProps {
   onSelectRoom: (roomId: string) => void;
   selectedRoomId?: string | null;
+  category?: 'Personal' | 'Group' | 'Market';
 }
 
-export default function ChatList({ onSelectRoom, selectedRoomId }: ChatListProps) {
+function RoomAvatar({ room, currentUserId }: { room: ChatRoom; currentUserId?: string }) {
+  const [otherUser, setOtherUser] = useState<PlatformUser | null>(null);
+
+  useEffect(() => {
+    if (room.imageUrl || (room.type !== 'personal' && room.type !== 'private' && room.type !== 'business')) return;
+    
+    const fetchOtherUser = async () => {
+      const otherId = room.participants.find(id => id !== currentUserId);
+      if (otherId) {
+        const user = await userService.getUserById(otherId);
+        setOtherUser(user);
+      }
+    };
+    fetchOtherUser();
+  }, [room, currentUserId]);
+
+  const displayImage = room.imageUrl || otherUser?.photoURL;
+
+  return (
+    <div className="w-14 h-14 rounded-full overflow-hidden bg-gray-100 ring-1 ring-gray-100 shadow-inner flex items-center justify-center shrink-0">
+      {displayImage ? (
+        <img 
+          src={displayImage} 
+          alt={room.name || otherUser?.nickname || 'Chat'} 
+          className="w-full h-full object-cover" 
+        />
+      ) : (
+        <span className="material-symbols-outlined text-gray-400 text-[28px]">
+          {room.type === 'notice' ? 'campaign' : 'person'}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function RoomName({ room, currentUserId }: { room: ChatRoom; currentUserId?: string }) {
+  const [otherUser, setOtherUser] = useState<PlatformUser | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (room.name || (room.type !== 'personal' && room.type !== 'private' && room.type !== 'business')) {
+      setLoading(false);
+      return;
+    }
+
+    const fetchOtherUser = async () => {
+      const otherId = room.participants.find(id => id !== currentUserId);
+      if (otherId) {
+        try {
+          const user = await userService.getUserById(otherId);
+          setOtherUser(user);
+        } catch (e) {
+          console.error(e);
+        }
+      }
+      setLoading(false);
+    };
+    fetchOtherUser();
+  }, [room, currentUserId]);
+
+  if (room.name) {
+    return <>{room.name}</>;
+  }
+
+  if (loading && (room.type === 'personal' || room.type === 'private' || room.type === 'business')) {
+    return <span className="h-4 w-24 bg-gray-100 rounded animate-pulse inline-block" />;
+  }
+
+  const nickname = otherUser?.nickname || 'Unknown User';
+  const nativeNickname = otherUser?.nativeNickname;
+
+  return (
+    <span className="flex items-baseline gap-1.5">
+      <span>{nickname}</span>
+      {nativeNickname && (
+        <span className="text-[11px] text-gray-400 font-normal lowercase">
+          {nativeNickname}
+        </span>
+      )}
+    </span>
+  );
+}
+
+export default function ChatList({ onSelectRoom, selectedRoomId, category = 'Personal' }: ChatListProps) {
   const { user } = useAuth();
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [searchedUsers, setSearchedUsers] = useState<PlatformUser[]>([]);
+  const [searchingUsers, setSearchingUsers] = useState(false);
+  const [creatingRoom, setCreatingRoom] = useState<string | null>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -29,6 +124,100 @@ export default function ChatList({ onSelectRoom, selectedRoomId }: ChatListProps
 
     return () => unsub();
   }, [user]);
+
+  // Close search overlay on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setIsSearchFocused(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Clear search when tab changes
+  useEffect(() => {
+    setSearchQuery('');
+    setIsSearchFocused(false);
+    setSearchedUsers([]);
+  }, [category]);
+
+  // Debounced user search (Personal tab only)
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchQuery(value);
+
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+
+    if (category === 'Personal' && value.trim().length >= 2) {
+      setSearchingUsers(true);
+      debounceTimer.current = setTimeout(async () => {
+        try {
+          const results = await userService.searchUsers(value.trim());
+          // Exclude self
+          setSearchedUsers(results.filter(u => u.id !== user?.uid));
+        } catch (err) {
+          console.error('User search failed:', err);
+          setSearchedUsers([]);
+        }
+        setSearchingUsers(false);
+      }, 300);
+    } else {
+      setSearchedUsers([]);
+      setSearchingUsers(false);
+    }
+  }, [category, user?.uid]);
+
+  // Create or navigate to 1:1 room
+  const handleUserSelect = async (targetUser: PlatformUser) => {
+    if (!user || creatingRoom) return;
+    setCreatingRoom(targetUser.id);
+    try {
+      const roomId = await chatService.getOrCreatePrivateRoom(
+        [user.uid, targetUser.id],
+        user.uid,
+        'personal'
+      );
+      setIsSearchFocused(false);
+      setSearchQuery('');
+      setSearchedUsers([]);
+      onSelectRoom(roomId);
+    } catch (err) {
+      console.error('Failed to create/get room:', err);
+    }
+    setCreatingRoom(null);
+  };
+
+  const filteredRooms = rooms.filter(room => {
+    if (category === 'Personal') {
+      return room.type === 'personal' || room.type === 'private';
+    }
+    if (category === 'Group') {
+      return room.type === 'group' || room.type === 'groups' || room.type === 'notice' || room.type === 'public';
+    }
+    if (category === 'Market') {
+      return room.type === 'business';
+    }
+    return true;
+  });
+
+  // Filter rooms by search query (name match)
+  const searchFilteredRooms = searchQuery.trim()
+    ? filteredRooms.filter(room => {
+        const name = (room.name || '').toLowerCase();
+        return name.includes(searchQuery.toLowerCase());
+      })
+    : filteredRooms;
+
+  // Placeholder text per tab
+  const placeholderMap = {
+    Personal: 'Search or start a new chat...',
+    Group: 'Search group chats...',
+    Market: 'Search market chats...',
+  };
+
+  // Should show the search overlay (Personal + focused + has query)
+  const showSearchOverlay = category === 'Personal' && isSearchFocused && searchQuery.trim().length > 0;
 
   if (loading) {
     return (
@@ -47,23 +236,149 @@ export default function ChatList({ onSelectRoom, selectedRoomId }: ChatListProps
   }
 
   return (
-    <div className="flex-1 overflow-y-auto no-scrollbar">
-      {rooms.length === 0 ? (
+    <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col">
+      {/* Search Bar */}
+      <div ref={searchRef} className="relative px-6 pb-4">
+        <div className="relative">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-300 text-[20px]">search</span>
+          <input 
+            ref={inputRef}
+            type="text"
+            value={searchQuery}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            onFocus={() => setIsSearchFocused(true)}
+            placeholder={placeholderMap[category]}
+            className="w-full pl-12 pr-10 py-3 bg-white border border-slate-100 rounded-2xl text-sm font-medium placeholder:text-gray-300 focus:ring-1 focus:ring-primary/10 focus:border-primary/20 transition-all"
+          />
+          {searchQuery && (
+            <button 
+              onClick={() => { setSearchQuery(''); setSearchedUsers([]); setIsSearchFocused(false); }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
+            >
+              <span className="material-symbols-outlined text-gray-400 text-[14px]">close</span>
+            </button>
+          )}
+        </div>
+
+        {/* Search Overlay (Personal tab only) */}
+        {showSearchOverlay && (
+          <div className="absolute left-6 right-6 top-full mt-1 bg-white rounded-2xl shadow-xl shadow-black/10 border border-slate-100 z-50 max-h-[60vh] overflow-y-auto no-scrollbar animate-in fade-in slide-in-from-top-2 duration-200">
+            
+            {/* Matching Conversations */}
+            {searchFilteredRooms.length > 0 && (
+              <div>
+                <div className="px-4 pt-4 pb-2">
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Conversations</span>
+                </div>
+                {searchFilteredRooms.map(room => (
+                  <button
+                    key={room.id}
+                    onClick={() => { onSelectRoom(room.id); setIsSearchFocused(false); setSearchQuery(''); }}
+                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-all text-left"
+                  >
+                    <RoomAvatar room={room} currentUserId={user?.uid} />
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-[14px] font-bold text-gray-800 truncate">
+                        <RoomName room={room} currentUserId={user?.uid} />
+                      </h4>
+                      <p className="text-[12px] text-gray-400 truncate">{room.lastMessage}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Divider */}
+            {searchFilteredRooms.length > 0 && (searchedUsers.length > 0 || searchingUsers) && (
+              <div className="border-t border-gray-100 mx-4" />
+            )}
+
+            {/* People search results */}
+            <div>
+              <div className="px-4 pt-4 pb-2">
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">People</span>
+              </div>
+
+              {searchingUsers ? (
+                <div className="flex items-center gap-3 px-4 py-4">
+                  <div className="w-10 h-10 rounded-full bg-gray-100 animate-pulse" />
+                  <div className="flex-1 space-y-1.5">
+                    <div className="h-3.5 bg-gray-100 rounded w-24 animate-pulse" />
+                    <div className="h-3 bg-gray-50 rounded w-16 animate-pulse" />
+                  </div>
+                </div>
+              ) : searchedUsers.length > 0 ? (
+                searchedUsers.map(u => (
+                  <button
+                    key={u.id}
+                    onClick={() => handleUserSelect(u)}
+                    disabled={creatingRoom === u.id}
+                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-primary/5 transition-all text-left group disabled:opacity-60"
+                  >
+                    <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-100 ring-1 ring-gray-100 flex items-center justify-center shrink-0">
+                      {u.photoURL ? (
+                        <img src={u.photoURL} alt={u.nickname} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="material-symbols-outlined text-gray-400 text-[20px]">person</span>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-baseline gap-1.5">
+                        <h4 className="text-[14px] font-bold text-gray-800 truncate">{u.nickname}</h4>
+                        {u.nativeNickname && (
+                          <span className="text-[11px] text-gray-400 font-normal">{u.nativeNickname}</span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-gray-400 font-medium">Tap to start chatting</p>
+                    </div>
+                    <div className="shrink-0">
+                      {creatingRoom === u.id ? (
+                        <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                      ) : (
+                        <span className="material-symbols-outlined text-gray-300 group-hover:text-primary text-[20px] transition-colors">arrow_forward_ios</span>
+                      )}
+                    </div>
+                  </button>
+                ))
+              ) : searchQuery.trim().length >= 2 ? (
+                <div className="px-4 py-6 text-center">
+                  <span className="material-symbols-outlined text-gray-200 text-[32px] mb-2 block">person_off</span>
+                  <p className="text-[12px] text-gray-400 font-medium">No users found for &ldquo;{searchQuery}&rdquo;</p>
+                </div>
+              ) : (
+                <div className="px-4 py-4 text-center">
+                  <p className="text-[12px] text-gray-300 font-medium">Type at least 2 characters to find people</p>
+                </div>
+              )}
+            </div>
+
+            {/* Bottom safe area */}
+            <div className="h-2" />
+          </div>
+        )}
+      </div>
+
+      {/* Room List */}
+      {searchFilteredRooms.length === 0 && !showSearchOverlay ? (
         <div className="flex flex-col items-center justify-center h-[60vh] text-center px-10">
           <div className="w-20 h-20 rounded-full bg-gray-50 flex items-center justify-center mb-6">
             <span className="material-symbols-outlined text-gray-200 text-4xl">chat_bubble</span>
           </div>
           <h3 className="text-lg font-black text-gray-900 mb-2 uppercase tracking-tighter">No Conversations</h3>
-          <p className="text-xs text-gray-400 font-medium leading-relaxed">Start a new dialogue with the group or friends.</p>
+          <p className="text-xs text-gray-400 font-medium leading-relaxed">
+            {category === 'Personal' 
+              ? 'Search for someone above to start a new chat.'
+              : 'No conversations yet in this category.'}
+          </p>
         </div>
       ) : (
         <div className="divide-y divide-gray-50">
-          {rooms.map((room) => {
+          {searchFilteredRooms.map((room) => {
             const isSelected = selectedRoomId === room.id;
             const unreadCount = room.unreadCounts?.[user?.uid || ''] || 0;
             const lastTime = (() => {
               const d = safeDate(room.lastMessageTime);
-              return d ? formatDistanceToNow(d, { addSuffix: true, locale: ko }) : '';
+              return d ? formatDistanceToNow(d, { addSuffix: true }) : '';
             })();
 
             return (
@@ -73,17 +388,7 @@ export default function ChatList({ onSelectRoom, selectedRoomId }: ChatListProps
                 className={`w-full flex items-center gap-4 p-5 transition-all text-left ${isSelected ? 'bg-primary/5' : 'hover:bg-gray-50'}`}
               >
                 <div className="relative shrink-0">
-                  <div className="w-14 h-14 rounded-full overflow-hidden bg-gray-100 ring-1 ring-gray-100 shadow-inner flex items-center justify-center">
-                    {room.imageUrl ? (
-                      <img 
-                        src={room.imageUrl} 
-                        alt={room.name} 
-                        className="w-full h-full object-cover" 
-                      />
-                    ) : (
-                      <span className="material-symbols-outlined text-gray-400 text-[28px]">person</span>
-                    )}
-                  </div>
+                  <RoomAvatar room={room} currentUserId={user?.uid} />
                   {room.type === 'notice' && (
                     <div className="absolute -top-1 -right-1 bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
                       <span className="material-symbols-outlined text-[12px] font-black">campaign</span>
@@ -99,7 +404,7 @@ export default function ChatList({ onSelectRoom, selectedRoomId }: ChatListProps
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-baseline mb-1">
                     <h3 className={`text-[15px] font-black truncate uppercase tracking-tight ${unreadCount > 0 ? 'text-gray-900' : 'text-gray-600'}`}>
-                      {room.name}
+                      <RoomName room={room} currentUserId={user?.uid} />
                     </h3>
                     <span className="text-[10px] text-gray-400 font-bold ml-2 shrink-0">{lastTime}</span>
                   </div>

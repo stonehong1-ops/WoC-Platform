@@ -1,15 +1,39 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { socialService } from '@/lib/firebase/socialService';
 import { Social } from '@/types/social';
-import { safeDate } from '@/lib/utils/safeData';
-import SocialFilterBottomSheet from '@/components/social/SocialFilterBottomSheet';
+import { safeDate } from '@/lib/utils/safeDate';
 import EditSocialEvent from '@/components/social/EditSocialEvent';
 import { useLocation } from '@/components/providers/LocationProvider';
 import { useAuth } from '@/components/providers/AuthProvider';
 import SocialViewer from '@/components/social/SocialViewer';
 import SocialHeroCard, { DualText, SocialCardImage, getSocialDisplayTitle } from '@/components/social/SocialHeroCard';
+import { useNavigation } from '@/components/providers/NavigationProvider';
+
+// 대한민국 법정공휴일 (2025-2027)
+const KR_HOLIDAYS: Record<string, string> = {
+  '2025-01-01':'New Year','2025-01-28':'Seollal','2025-01-29':'Seollal','2025-01-30':'Seollal',
+  '2025-03-01':'Independence Movement','2025-05-05':'Children\'s Day','2025-05-06':'Buddha\'s Birthday',
+  '2025-06-06':'Memorial Day','2025-08-15':'Liberation Day','2025-10-03':'National Foundation',
+  '2025-10-05':'Chuseok','2025-10-06':'Chuseok','2025-10-07':'Chuseok','2025-10-09':'Hangul Day',
+  '2025-12-25':'Christmas',
+  '2026-01-01':'New Year','2026-02-16':'Seollal','2026-02-17':'Seollal','2026-02-18':'Seollal',
+  '2026-03-01':'Independence Movement','2026-05-05':'Children\'s Day','2026-05-24':'Buddha\'s Birthday',
+  '2026-06-06':'Memorial Day','2026-08-15':'Liberation Day','2026-09-24':'Chuseok',
+  '2026-09-25':'Chuseok','2026-09-26':'Chuseok','2026-10-03':'National Foundation','2026-10-09':'Hangul Day',
+  '2026-12-25':'Christmas',
+  '2027-01-01':'New Year','2027-02-06':'Seollal','2027-02-07':'Seollal','2027-02-08':'Seollal',
+  '2027-03-01':'Independence Movement','2027-05-05':'Children\'s Day','2027-05-13':'Buddha\'s Birthday',
+  '2027-06-06':'Memorial Day','2027-08-15':'Liberation Day','2027-10-03':'National Foundation',
+  '2027-10-09':'Hangul Day','2027-10-13':'Chuseok','2027-10-14':'Chuseok','2027-10-15':'Chuseok',
+  '2027-12-25':'Christmas',
+};
+function getDateKey(d: Date) {
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+function isKoreanHoliday(d: Date) { return KR_HOLIDAYS[getDateKey(d)] || null; }
 
 export default function SocialPage() {
   const [regulars, setRegulars] = useState<Social[]>([]);
@@ -18,27 +42,60 @@ export default function SocialPage() {
   const [activeDayOffset, setActiveDayOffset] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSocial, setSelectedSocial] = useState<Social | null>(null);
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [selectedFilters, setSelectedFilters] = useState<{
-    organizers: string[];
-    venues: string[];
-  }>({
-    organizers: [],
-    venues: []
-  });
+  
+  // New Header Filter States
+  const [activeTab, setActiveTab] = useState<'this_week' | 'popup' | 'favorite' | 'overview'>('this_week');
+  const [showOrganizerFilter, setShowOrganizerFilter] = useState(false);
+  const [showClubFilter, setShowClubFilter] = useState(false);
+  const [selectedOrganizer, setSelectedOrganizer] = useState('All');
+  const [selectedClub, setSelectedClub] = useState('All');
 
   const { location } = useLocation();
   const { user, profile, loading, setShowLogin } = useAuth();
   const [viewSocial, setViewSocial] = useState<Social | null>(null);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
+  const { setSubHeader } = useNavigation();
+  const [likedSocialIds, setLikedSocialIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!user) {
+      setLikedSocialIds([]);
+      return;
+    }
+    return socialService.subscribeMyLikes(user.uid, setLikedSocialIds);
+  }, [user]);
+
+  const handleToggleLike = async (e: React.MouseEvent, socialId: string) => {
+    e.stopPropagation();
+    if (!user) {
+      setShowLogin(true);
+      return;
+    }
+    try {
+      await socialService.toggleLike(user.uid, socialId);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   useEffect(() => {
     if (carouselRef.current) {
       carouselRef.current.scrollLeft = 0;
     }
   }, [activeDayOffset]);
+
+  // Listen to global compose event
+  useEffect(() => {
+    const handleComposeOpen = (e: CustomEvent) => {
+      if (e.detail?.id === 'social') {
+        openModal(setIsCreateOpen, true);
+      }
+    };
+    window.addEventListener('woc:compose:open', handleComposeOpen as EventListener);
+    return () => window.removeEventListener('woc:compose:open', handleComposeOpen as EventListener);
+  }, []);
 
   // Auth Guard for Social Page
   useEffect(() => {
@@ -83,7 +140,6 @@ export default function SocialPage() {
       setViewSocial(null);
       setIsCreateOpen(false);
       setSelectedSocial(null);
-      setIsFilterOpen(false);
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
@@ -114,8 +170,16 @@ export default function SocialPage() {
     });
 
     const unsubPopups = socialService.subscribeSocials('popup', (data) => {
-        // Sort popups by date
-        const sorted = [...data].sort((a, b) => {
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        // Sort popups by date and filter future
+        const valid = data.filter(s => {
+          if (!s.date) return false;
+          const sDate = typeof s.date.toDate === 'function' ? s.date.toDate() : new Date(s.date as any);
+          sDate.setHours(0,0,0,0);
+          return sDate.getTime() >= today.getTime();
+        });
+        const sorted = valid.sort((a, b) => {
             const dateA = a.date ? a.date.toMillis() : 0;
             const dateB = b.date ? b.date.toMillis() : 0;
             return dateA - dateB;
@@ -143,7 +207,7 @@ export default function SocialPage() {
   }, []);
 
   // 위치 필터 헬퍼 — strict mode: city 선택 시 city 필드 없는 데이터는 숨김
-  const matchLocation = (s: Social) => {
+  const matchLocation = useCallback((s: Social) => {
     const isGlobal = !location.country || location.country === 'ALL';
     const isCityAll = !location.city || location.city === 'ALL';
     if (isGlobal && isCityAll) return true;
@@ -163,236 +227,566 @@ export default function SocialPage() {
     }
 
     return true;
-  };
+  }, [location.country, location.city]);
 
-  const locationFilteredSocials = [...regulars, ...dailySocials, ...popups].filter(matchLocation);
+  const locationFilteredSocials = useMemo(() => {
+    return [...regulars, ...dailySocials, ...popups].filter(matchLocation);
+  }, [regulars, dailySocials, popups, matchLocation]);
 
-  const organizers = Array.from(new Set(locationFilteredSocials.map(s => s.organizerName).filter(Boolean)));
-  const venues = Array.from(new Set(locationFilteredSocials.map(s => s.venueName).filter(Boolean)));
+  const organizers = useMemo(() => Array.from(new Set(locationFilteredSocials.map(s => s.organizerName).filter(Boolean))), [locationFilteredSocials]);
+  const venues = useMemo(() => Array.from(new Set(locationFilteredSocials.map(s => s.venueName).filter(Boolean))), [locationFilteredSocials]);
+
+  // Calculate favorite timeline
+  const favoriteTimeline = useMemo(() => {
+    if (activeTab !== 'favorite') return [];
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    
+    const liked = [...regulars, ...popups].filter(s => likedSocialIds.includes(s.id));
+    
+    const instances: { date: Date, social: Social }[] = [];
+    
+    liked.forEach(s => {
+      if (s.type === 'popup' && s.date) {
+        const sDate = typeof s.date.toDate === 'function' ? s.date.toDate() : new Date(s.date as any);
+        sDate.setHours(0,0,0,0);
+        if (sDate >= today) {
+          instances.push({ date: sDate, social: s });
+        }
+      } else if (s.type === 'regular' && s.dayOfWeek !== undefined) {
+        // Only show 1 occurrence (this week) instead of 4
+        for(let i=0; i<1; i++) {
+          const d = new Date(today);
+          let offset = Number(s.dayOfWeek) - d.getDay();
+          if (offset < 0) offset += 7;
+          d.setDate(d.getDate() + offset + (i * 7));
+          instances.push({ date: d, social: s });
+        }
+      }
+    });
+    
+    instances.sort((a, b) => a.date.getTime() - b.date.getTime());
+    
+    const grouped: Record<string, { date: Date, socials: Social[] }> = {};
+    instances.forEach(inst => {
+      const dateStr = inst.date.toDateString();
+      if (!grouped[dateStr]) grouped[dateStr] = { date: inst.date, socials: [] };
+      // Deduplicate regular socials on the same date (just in case)
+      if (!grouped[dateStr].socials.find(s => s.id === inst.social.id)) {
+        grouped[dateStr].socials.push(inst.social);
+      }
+    });
+    
+    return Object.values(grouped).sort((a, b) => a.date.getTime() - b.date.getTime());
+  }, [activeTab, regulars, popups, likedSocialIds]);
+
+  // Calculate overview timeline (7 days)
+  const overviewTimeline = useMemo(() => {
+    if (activeTab !== 'overview') return [];
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    
+    const filtered = locationFilteredSocials;
+    const instances: { date: Date, social: Social }[] = [];
+    
+    for (let i = 0; i < 7; i++) {
+      const targetDate = new Date(today);
+      targetDate.setDate(today.getDate() + i);
+      const targetDayOfWeek = targetDate.getDay();
+      const targetDateTime = targetDate.getTime();
+      
+      filtered.forEach(s => {
+        if (s.type === 'regular' && Number(s.dayOfWeek) === targetDayOfWeek) {
+          instances.push({ date: targetDate, social: s });
+        } else if (s.type === 'popup' && s.date) {
+          const sDate = typeof s.date.toDate === 'function' ? s.date.toDate() : new Date(s.date as any);
+          sDate.setHours(0,0,0,0);
+          if (sDate.getTime() === targetDateTime) {
+            instances.push({ date: targetDate, social: s });
+          }
+        }
+      });
+    }
+    
+    const grouped: Record<string, { date: Date, socials: Social[] }> = {};
+    instances.forEach(inst => {
+      const dateStr = inst.date.toDateString();
+      if (!grouped[dateStr]) grouped[dateStr] = { date: inst.date, socials: [] };
+      if (!grouped[dateStr].socials.find(s => s.id === inst.social.id)) {
+        grouped[dateStr].socials.push(inst.social);
+      }
+    });
+
+    const result = Object.values(grouped).sort((a, b) => a.date.getTime() - b.date.getTime());
+    result.forEach(group => {
+      group.socials.sort((a, b) => {
+        const timeA = a.startTime || '00:00';
+        const timeB = b.startTime || '00:00';
+        return timeA.localeCompare(timeB);
+      });
+    });
+    return result;
+  }, [activeTab, locationFilteredSocials]);
+
+  // SubHeader Injection
+  useEffect(() => {
+    const filterBar = (
+      <div className="relative w-full bg-white flex flex-col shadow-[0_20px_40px_-15px_rgba(0,0,0,0.15)] z-30">
+        {/* Row 1: Scrollable Tabs */}
+        <div className="w-full px-3 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
+          {[
+            { id: 'this_week', label: 'Regular' },
+            { id: 'popup', label: 'Pop-up' },
+            { id: 'overview', label: 'Overview' },
+            { id: 'favorite', label: 'Favorite' }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`flex-shrink-0 px-2.5 py-1 rounded-xl text-[12px] font-bold tracking-tight transition-all whitespace-nowrap border ${
+                activeTab === tab.id
+                  ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-100'
+                  : 'bg-slate-50/50 text-slate-500 border-slate-100 hover:bg-slate-100/80'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        
+        {/* Organizer / Club Filters — Overview only */}
+        {activeTab === 'overview' && (
+        <>
+        <div className="w-full h-11 px-4 flex items-center justify-end gap-4">
+            <button 
+              onClick={() => { setShowOrganizerFilter(!showOrganizerFilter); if (!showOrganizerFilter) setShowClubFilter(false); }}
+              className={`flex items-center gap-0.5 text-[12px] font-bold transition-all ${selectedOrganizer !== 'All' ? 'text-blue-600' : 'text-slate-600 hover:text-slate-800'}`}
+            >
+              {selectedOrganizer === 'All' ? 'Organizer' : selectedOrganizer}
+              <span className={`material-symbols-outlined text-[16px] transition-transform ${showOrganizerFilter ? 'rotate-180' : ''}`}>expand_more</span>
+            </button>
+            <button 
+              onClick={() => { setShowClubFilter(!showClubFilter); if (!showClubFilter) setShowOrganizerFilter(false); }}
+              className={`flex items-center gap-0.5 text-[12px] font-bold transition-all ${selectedClub !== 'All' ? 'text-blue-600' : 'text-slate-600 hover:text-slate-800'}`}
+            >
+              {selectedClub === 'All' ? 'Club' : selectedClub}
+              <span className={`material-symbols-outlined text-[16px] transition-transform ${showClubFilter ? 'rotate-180' : ''}`}>expand_more</span>
+            </button>
+        </div>
+        {showOrganizerFilter && (
+          <div className="absolute top-full left-0 right-0 z-40 bg-white shadow-2xl border-t border-slate-100 p-4 max-h-[280px] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="flex items-center justify-between mb-4 px-1">
+              <span className="text-[14px] font-black text-slate-800 uppercase tracking-tight">Filter by Organizer</span>
+              <button onClick={() => setShowOrganizerFilter(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:text-slate-600 active:scale-90 transition-all">
+                <span className="material-symbols-outlined text-[18px]">close</span>
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {['All', ...organizers].map(org => (
+                <button key={org} onClick={() => { setSelectedOrganizer(org); setShowOrganizerFilter(false); }}
+                  className={`px-4 py-3 rounded-2xl text-[12px] font-bold text-left transition-all border ${selectedOrganizer === org ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-100' : 'bg-slate-50/50 text-slate-600 border-transparent hover:bg-slate-100/80'}`}>
+                  <div className="flex items-center justify-between"><span className="truncate pr-2">{org}</span>{selectedOrganizer === org && <span className="material-symbols-outlined text-[14px]">check_circle</span>}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {showClubFilter && (
+          <div className="absolute top-full left-0 right-0 z-40 bg-white shadow-2xl border-t border-slate-100 p-4 max-h-[280px] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="flex items-center justify-between mb-4 px-1">
+              <span className="text-[14px] font-black text-slate-800 uppercase tracking-tight">Filter by Club</span>
+              <button onClick={() => setShowClubFilter(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:text-slate-600 active:scale-90 transition-all">
+                <span className="material-symbols-outlined text-[18px]">close</span>
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {['All', ...venues].map(ven => (
+                <button key={ven} onClick={() => { setSelectedClub(ven); setShowClubFilter(false); }}
+                  className={`px-4 py-3 rounded-2xl text-[12px] font-bold text-left transition-all border ${selectedClub === ven ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-100' : 'bg-slate-50/50 text-slate-600 border-transparent hover:bg-slate-100/80'}`}>
+                  <div className="flex items-center justify-between"><span className="truncate pr-2">{ven}</span>{selectedClub === ven && <span className="material-symbols-outlined text-[14px]">check_circle</span>}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        </>
+        )}
+      </div>
+    );
+    const height = activeTab === 'overview' ? 88 : 44;
+    setSubHeader(filterBar, height);
+  }, [activeTab, selectedOrganizer, selectedClub, showOrganizerFilter, showClubFilter, organizers, venues, setSubHeader]);
+
+  // Dedicated unmount cleanup to avoid flashes during state updates
+  useEffect(() => {
+    return () => setSubHeader(null);
+  }, [setSubHeader]);
+
 
   // Unified Filter Logic
   const filterSocials = (list: Social[]) => {
     return list.filter(s => {
-      // 1. 위치 필터
       if (!matchLocation(s)) return false;
 
-      // 2. Keyword Search
       const search = searchQuery.toLowerCase();
       const matchSearch = !search || 
         String(s.title || '').toLowerCase().includes(search) || 
         String(s.organizerName || '').toLowerCase().includes(search) || 
         String(s.venueName || '').toLowerCase().includes(search);
 
-      // 3. Multi-dimensional Chip Filters
-      const matchOrg = selectedFilters.organizers.length === 0 || selectedFilters.organizers.includes(s.organizerName);
-      const matchVen = selectedFilters.venues.length === 0 || selectedFilters.venues.includes(s.venueName);
+      // 팝업은 Organizer/Club 필터를 무시하고 검색어와 지역 조건만 반영
+      if (s.type === 'popup') {
+        return matchSearch;
+      }
+
+      const matchOrg = selectedOrganizer === 'All' || s.organizerName === selectedOrganizer;
+      const matchVen = selectedClub === 'All' || s.venueName === selectedClub;
       
       return matchSearch && matchOrg && matchVen;
     });
   };
 
   return (
-    <main className="w-full relative pb-32">
-      <div className="px-6 space-y-6 pt-4">
-        {/* 1. Regular Socials Carousel */}
-        <section className="space-y-6">
-          <div className="flex items-end justify-between px-1">
-            <h2 className="text-2xl font-extrabold text-on-surface tracking-tight font-headline">Regular Socials</h2>
-            <div className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-primary/60">
-                <span>{countryDisplay}</span>
-                <span className="material-symbols-outlined text-[12px]">chevron_right</span>
-                <span>{cityDisplay}</span>
+    <main className="w-full relative pb-32 bg-slate-50/30 overflow-x-hidden">
+      <div className="px-4 space-y-6 pt-4">
+        
+        {/* THIS WEEK TAB */}
+        {activeTab === 'this_week' && (
+          <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            
+            {/* Calendar (Date Selector Grid) */}
+            <div className="w-full bg-white rounded-2xl p-2 shadow-sm border border-slate-100 mb-4">
+              <div className="grid grid-cols-7 gap-1">
+                {weekDays.map((date, i) => {
+                  const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                  const holiday = isKoreanHoliday(date);
+                  const isRed = isWeekend || !!holiday;
+                  const isSelected = activeDayOffset === i;
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => setActiveDayOffset(i)}
+                      className={`flex flex-col items-center justify-center py-2 rounded-xl transition-all border ${
+                        isSelected 
+                        ? 'bg-slate-900 text-white border-slate-900 shadow-sm shadow-slate-200' 
+                        : 'bg-transparent border-transparent hover:bg-slate-50 text-slate-500'
+                      }`}
+                    >
+                      <span className={`text-[10px] font-bold uppercase tracking-tighter mb-0.5 ${
+                        isSelected 
+                          ? (isRed ? 'text-red-300' : 'text-slate-100')
+                          : (isRed ? 'text-red-500' : 'text-slate-400')
+                      }`}>
+                        {date.toLocaleDateString('en-US', { weekday: 'short' })}
+                      </span>
+                      <span className={`text-sm font-black tracking-tighter ${
+                        !isSelected && isRed ? 'text-red-600' : ''
+                      }`}>
+                        {date.getDate()}
+                      </span>
+                      {holiday && !isSelected && <span className="w-1 h-1 rounded-full bg-red-500 mt-0.5" />}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
 
-          {/* Day Selector - Moved Here */}
-          <div className="grid grid-cols-7 gap-1.5 py-2">
-            {weekDays.map((date, i) => (
-              <button
-                key={i}
-                onClick={() => setActiveDayOffset(i)}
-                className={`flex flex-col items-center justify-center py-3 rounded-xl transition-all ${
-                  activeDayOffset === i 
-                  ? 'bg-primary text-white shadow-lg shadow-primary/30' 
-                  : 'bg-white text-on-surface-variant border border-[#dde4e5]'
-                }`}
+            <div 
+              ref={carouselRef}
+              className="flex gap-4 overflow-x-auto no-scrollbar pt-2 -mx-4 px-4"
+            >
+              {filterSocials(regulars).filter(s => Number(s.dayOfWeek) === weekDays[activeDayOffset].getDay()).length === 0 ? (
+                <div className="w-full h-40 flex flex-col items-center justify-center opacity-20 bg-white rounded-lg border border-dashed border-gray-200">
+                   <span className="material-symbols-outlined text-4xl mb-2">event_busy</span>
+                   <p className="text-xs font-black uppercase tracking-widest">No regular socials today</p>
+                </div>
+              ) : (
+                filterSocials(regulars).filter(s => Number(s.dayOfWeek) === weekDays[activeDayOffset].getDay()).map(social => (
+                  <div 
+                    key={social.id} 
+                    onClick={() => openModal(setViewSocial, social)}
+                    className="relative flex-shrink-0 w-64 h-80 rounded-lg overflow-hidden group shadow-sm transition-all hover:shadow-md cursor-pointer animate-in zoom-in-95 duration-500 text-left"
+                  >
+                    <SocialHeroCard social={social} />
+                    
+                    <button 
+                      onClick={(e) => handleToggleLike(e, social.id)}
+                      className={`absolute z-20 top-3 right-3 w-8 h-8 backdrop-blur rounded-full flex items-center justify-center shadow-sm transition-colors active:scale-90 ${
+                        likedSocialIds.includes(social.id) ? 'bg-red-50 text-red-500' : 'bg-white/90 text-[#2d3435] hover:text-red-500'
+                      }`}
+                    >
+                      <span 
+                        className="material-symbols-rounded text-lg"
+                        style={{ fontVariationSettings: likedSocialIds.includes(social.id) ? "'FILL' 1" : "'FILL' 0" }}
+                      >
+                        favorite
+                      </span>
+                    </button>
+
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Integrated Social Action */}
+            <div className="-mx-4 px-4 py-2 flex items-center justify-between bg-white border-b border-slate-50">
+              <p className="text-[12px] font-bold text-slate-400 uppercase tracking-tight">
+                Host a new social?
+              </p>
+              <button 
+                onClick={() => setIsCreateOpen(true)}
+                className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 transition-colors py-2"
               >
-                <span className="text-[9px] font-black uppercase tracking-tighter mb-1 opacity-70">
-                  {date.toLocaleDateString('en-US', { weekday: 'short' })}
-                </span>
-                <span className="text-lg font-black tracking-tighter">
-                  {date.getDate()}
-                </span>
+                <span className="text-[13px] font-bold">Register</span>
+                <span className="material-symbols-outlined text-[18px]">add_circle</span>
               </button>
-            ))}
-          </div>
-          
-          <div 
-            ref={carouselRef}
-            className="flex gap-6 overflow-x-auto no-scrollbar pb-4 -mx-6 px-6"
-          >
-            {filterSocials(regulars).filter(s => Number(s.dayOfWeek) === weekDays[activeDayOffset].getDay()).length === 0 ? (
-              <div className="w-full h-40 flex flex-col items-center justify-center opacity-20 bg-white rounded-lg border border-dashed border-gray-200">
-                 <span className="material-symbols-outlined text-4xl mb-2">event_busy</span>
-                 <p className="text-xs font-black uppercase tracking-widest">No regular socials today</p>
-              </div>
-            ) : (
-              filterSocials(regulars).filter(s => Number(s.dayOfWeek) === weekDays[activeDayOffset].getDay()).map(social => (
-                <div 
-                  key={social.id} 
-                  onClick={() => openModal(setViewSocial, social)}
-                  className="relative flex-shrink-0 w-72 h-96 rounded-lg overflow-hidden group shadow-sm transition-all hover:shadow-md cursor-pointer animate-in zoom-in-95 duration-500 text-left"
-                >
-                  <SocialHeroCard social={social} />
-                  
-                  {/* Action Menu for Admins / Organizers */}
-                  {canEdit(social) && (
-                    <div className="absolute top-4 right-4 z-20">
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); setActiveMenuId(activeMenuId === social.id ? null : social.id); }}
-                        className="w-8 h-8 bg-black/40 hover:bg-black/60 rounded-full flex items-center justify-center text-white backdrop-blur-md transition-all"
-                      >
-                        <span className="material-symbols-outlined text-sm">more_vert</span>
-                      </button>
-                      {activeMenuId === social.id && (
-                        <div className="absolute right-0 mt-2 w-32 bg-white rounded-lg shadow-xl overflow-hidden border border-gray-100 py-1 origin-top-right animate-in fade-in zoom-in-95">
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); openModal(setSelectedSocial, social); setActiveMenuId(null); }}
-                            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                          >
-                            <span className="material-symbols-outlined text-[16px]">edit</span> Edit
-                          </button>
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); handleDelete(social.id); }}
-                            className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
-                          >
-                            <span className="material-symbols-outlined text-[16px]">delete</span> Delete
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
-        </section>
+            </div>
+          </section>
+        )}
 
-        {/* 2. Popup Socials List */}
-        <section className="space-y-6 animate-in fade-in slide-in-from-bottom-8 duration-700 text-left">
-          <h2 className="text-2xl font-extrabold text-on-surface tracking-tight font-headline">Popup Socials</h2>
-
-          <div className="space-y-4">
-            {filterSocials(popups).length === 0 ? (
-              <div className="w-full h-32 flex flex-col items-center justify-center opacity-30 bg-white rounded-lg border border-dashed border-gray-200">
-                 <p className="text-xs font-black uppercase tracking-widest text-primary/40">No popup socials scheduled</p>
-              </div>
-            ) : (
-              filterSocials(popups).map(social => {
-                const displayTitle = getSocialDisplayTitle(social);
+        {/* POPUP TAB */}
+        {activeTab === 'popup' && (
+          <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
+            {(() => {
+              const filteredPopups = filterSocials(popups);
+              if (filteredPopups.length === 0) {
                 return (
-                <div 
-                  key={social.id} 
-                  onClick={() => openModal(setViewSocial, social)}
-                  className="relative flex items-center gap-4 p-4 bg-white rounded-lg border border-[#dde4e5] hover:border-primary/30 transition-all cursor-pointer group shadow-sm active:scale-[0.98] text-left"
-                >
-                  <div className="flex flex-col items-center justify-center w-20 h-20 bg-[#F4FBFB] rounded-lg border-l-4 border-primary shrink-0">
-                    {(() => { const d = safeDate(social.date) || new Date(); return (<>
-                    <span className="text-[9px] font-black text-primary uppercase tracking-widest leading-none mb-1">
-                      {d.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()}
-                    </span>
-                    <span className="text-2xl font-black text-on-surface tracking-tighter leading-none mb-1">
-                      {d.getDate()}
-                    </span>
-                    <span className="text-[9px] font-bold text-on-surface-variant uppercase tracking-widest leading-none">
-                      {d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()}
-                    </span>
-                    </>); })()}
+                  <div className="w-full h-32 flex flex-col items-center justify-center opacity-30 bg-white rounded-lg border border-dashed border-gray-200">
+                     <p className="text-xs font-black uppercase tracking-widest text-primary/40">No popup socials scheduled</p>
                   </div>
-                  <div className="flex-1 space-y-0.5 text-left overflow-hidden pr-8">
-                    <DualText 
-                      text={displayTitle.primary}
-                      subText={displayTitle.secondary}
-                      primaryClassName="text-lg font-bold text-on-surface font-headline leading-tight truncate"
-                      secondaryClassName="text-xs text-on-surface-variant font-medium truncate shrink-0"
-                      containerClassName="w-full"
-                    />
-                    <DualText 
-                      text={social.venueName}
-                      primaryClassName="text-sm text-primary font-semibold truncate block mt-1"
-                      secondaryClassName="text-[10px] text-primary/60 truncate block mt-0.5"
-                    />
-                    <p className="text-xs text-on-surface-variant font-medium truncate mt-1">
-                      {social.startTime} - {social.endTime} {social.djName ? `• DJ ${social.djName}` : ''}
-                    </p>
-                  </div>
-
-                  {/* Action Menu for Admins / Organizers */}
-                  {canEdit(social) ? (
-                    <div className="absolute top-4 right-4 z-20">
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); setActiveMenuId(activeMenuId === social.id ? null : social.id); }}
-                        className="w-8 h-8 hover:bg-gray-100 rounded-full flex items-center justify-center text-gray-500 transition-all"
-                      >
-                        <span className="material-symbols-outlined text-sm">more_vert</span>
-                      </button>
-                      {activeMenuId === social.id && (
-                        <div className="absolute right-0 mt-2 w-32 bg-white rounded-lg shadow-xl overflow-hidden border border-gray-100 py-1 origin-top-right animate-in fade-in zoom-in-95">
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); openModal(setSelectedSocial, social); setActiveMenuId(null); }}
-                            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                          >
-                            <span className="material-symbols-outlined text-[16px]">edit</span> Edit
-                          </button>
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); handleDelete(social.id); }}
-                            className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
-                          >
-                            <span className="material-symbols-outlined text-[16px]">delete</span> Delete
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <span className="material-symbols-outlined text-[#dde4e5] group-hover:text-primary transition-all group-hover:translate-x-1 absolute right-4 top-1/2 -translate-y-1/2">chevron_right</span>
-                  )}
-                </div>
                 );
-              })
+              }
+
+              const groupedPopups: Record<string, Social[]> = {};
+              filteredPopups.forEach(social => {
+                const d = safeDate(social.date) || new Date();
+                const monthKey = d.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+                if (!groupedPopups[monthKey]) groupedPopups[monthKey] = [];
+                groupedPopups[monthKey].push(social);
+              });
+
+              return Object.entries(groupedPopups).map(([monthStr, monthSocials]) => (
+                <div key={monthStr} className="space-y-4">
+                  <div className="flex items-center gap-4 py-2">
+                    <h3 className="text-lg font-black text-slate-800 tracking-tight">{monthStr}</h3>
+                    <div className="flex-1 h-px bg-slate-200"></div>
+                  </div>
+                  {monthSocials.map(social => {
+                    const displayTitle = getSocialDisplayTitle(social);
+                    return (
+                    <div 
+                      key={social.id} 
+                      onClick={() => openModal(setViewSocial, social)}
+                      className="relative flex items-center gap-4 p-4 bg-white rounded-lg border border-[#dde4e5] hover:border-primary/30 transition-all cursor-pointer group shadow-sm active:scale-[0.98] text-left"
+                    >
+                      <div className="flex flex-col items-center justify-center w-20 h-20 bg-[#F4FBFB] rounded-lg border-l-4 border-primary shrink-0">
+                        {(() => { const d = safeDate(social.date) || new Date(); return (<>
+                        <span className="text-[9px] font-black text-primary uppercase tracking-widest leading-none mb-1">
+                          {d.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()}
+                        </span>
+                        <span className="text-2xl font-black text-on-surface tracking-tighter leading-none mb-1">
+                          {d.getDate()}
+                        </span>
+                        <span className="text-[9px] font-bold text-on-surface-variant uppercase tracking-widest leading-none">
+                          {d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()}
+                        </span>
+                        </>); })()}
+                      </div>
+                      <div className="flex-1 space-y-0.5 text-left overflow-hidden pr-8">
+                        <DualText 
+                          text={displayTitle.primary}
+                          subText={displayTitle.secondary}
+                          primaryClassName="text-lg font-bold text-on-surface font-headline leading-tight truncate"
+                          secondaryClassName="text-[11px] text-on-surface-variant/60 font-normal truncate shrink-0 ml-1.5"
+                          containerClassName="w-full"
+                        />
+                        <DualText 
+                          text={social.venueName}
+                          subText={social.venueNameNative}
+                          primaryClassName="text-sm text-primary font-semibold truncate"
+                          secondaryClassName="text-[10px] text-primary/50 font-normal truncate ml-1.5"
+                          containerClassName="w-full mt-0.5"
+                        />
+                        <p className="text-xs text-on-surface-variant font-medium truncate mt-1">
+                          {social.startTime} - {social.endTime} {social.djName ? `• DJ ${social.djName}` : ''}
+                        </p>
+                      </div>
+
+                      <button 
+                        onClick={(e) => handleToggleLike(e, social.id)}
+                        className={`absolute z-20 top-3 right-3 w-8 h-8 backdrop-blur rounded-full flex items-center justify-center shadow-sm transition-colors active:scale-90 ${
+                          likedSocialIds.includes(social.id) ? 'bg-red-50 text-red-500' : 'bg-white/90 text-[#2d3435] hover:text-red-500'
+                        }`}
+                      >
+                        <span 
+                          className="material-symbols-rounded text-lg"
+                          style={{ fontVariationSettings: likedSocialIds.includes(social.id) ? "'FILL' 1" : "'FILL' 0" }}
+                        >
+                          favorite
+                        </span>
+                      </button>
+
+                      <span className="material-symbols-outlined text-[#dde4e5] group-hover:text-primary transition-all group-hover:translate-x-1 absolute right-4 top-1/2 -translate-y-1/2">chevron_right</span>
+                    </div>
+                    );
+                  })}
+                </div>
+              ));
+            })()}
+          </section>
+        )}
+
+        {/* FAVORITE TAB */}
+        {activeTab === 'favorite' && (
+          <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
+            {favoriteTimeline.length === 0 ? (
+               <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+                 <span className="material-symbols-outlined text-4xl mb-2">favorite_border</span>
+                 <p className="text-sm font-medium">No liked socials yet</p>
+               </div>
+            ) : (
+               favoriteTimeline.map((group, idx) => (
+                 <div key={idx} className="space-y-4">
+                   <div className="flex items-center gap-4 py-2">
+                     <h3 className="text-lg font-black text-slate-800 tracking-tight">
+                       {group.date.toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric' })}
+                     </h3>
+                     <div className="flex-1 h-px bg-slate-200"></div>
+                   </div>
+                   {group.socials.map((social) => {
+                     const displayTitle = getSocialDisplayTitle(social);
+                     return (
+                      <div 
+                        key={`${social.id}-${group.date.getTime()}`} 
+                        onClick={() => openModal(setViewSocial, social)}
+                        className="relative flex items-center gap-4 p-4 bg-white rounded-lg border border-[#dde4e5] hover:border-primary/30 transition-all cursor-pointer group shadow-sm active:scale-[0.98] text-left"
+                      >
+                        <div className="flex flex-col items-center justify-center w-20 h-20 bg-[#F4FBFB] rounded-lg border-l-4 border-primary shrink-0">
+                          {(() => { const d = group.date; return (<>
+                          <span className="text-[9px] font-black text-primary uppercase tracking-widest leading-none mb-1">
+                            {d.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()}
+                          </span>
+                          <span className="text-2xl font-black text-on-surface tracking-tighter leading-none mb-1">
+                            {d.getDate()}
+                          </span>
+                          <span className="text-[9px] font-bold text-on-surface-variant uppercase tracking-widest leading-none">
+                            {d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()}
+                          </span>
+                          </>); })()}
+                        </div>
+                        <div className="flex-1 space-y-0.5 text-left overflow-hidden pr-8">
+                          <DualText 
+                            text={displayTitle.primary}
+                            subText={displayTitle.secondary}
+                            primaryClassName="text-lg font-bold text-on-surface font-headline leading-tight truncate"
+                            secondaryClassName="text-[11px] text-on-surface-variant/60 font-normal truncate shrink-0 ml-1.5"
+                            containerClassName="w-full"
+                          />
+                          <DualText 
+                            text={social.venueName}
+                            subText={social.venueNameNative}
+                            primaryClassName="text-sm text-primary font-semibold truncate"
+                            secondaryClassName="text-[10px] text-primary/50 font-normal truncate ml-1.5"
+                            containerClassName="w-full mt-0.5"
+                          />
+                          <p className="text-xs text-on-surface-variant font-medium truncate mt-1">
+                            {social.startTime} - {social.endTime} {social.djName ? `• DJ ${social.djName}` : ''}
+                          </p>
+                        </div>
+  
+                        <button 
+                          onClick={(e) => handleToggleLike(e, social.id)}
+                          className={`absolute z-20 top-3 right-3 w-8 h-8 backdrop-blur rounded-full flex items-center justify-center shadow-sm transition-colors active:scale-90 ${
+                            likedSocialIds.includes(social.id) ? 'bg-red-50 text-red-500' : 'bg-white/90 text-[#2d3435] hover:text-red-500'
+                          }`}
+                        >
+                          <span 
+                            className="material-symbols-rounded text-lg"
+                            style={{ fontVariationSettings: likedSocialIds.includes(social.id) ? "'FILL' 1" : "'FILL' 0" }}
+                          >
+                            favorite
+                          </span>
+                        </button>
+  
+                        <span className="material-symbols-outlined text-[#dde4e5] group-hover:text-primary transition-all group-hover:translate-x-1 absolute right-4 top-1/2 -translate-y-1/2">chevron_right</span>
+                      </div>
+                     );
+                   })}
+                 </div>
+               ))
             )}
-          </div>
+          </section>
+        )}
 
-          <div className="flex justify-center pt-8">
-             <button className="px-10 py-3 bg-white border border-[#dde4e5] text-primary font-bold text-sm tracking-widest uppercase rounded-lg hover:bg-primary hover:text-white transition-all active:scale-95 shadow-sm">
-               More Socials
-             </button>
-          </div>
-        </section>
+        {/* OVERVIEW TAB */}
+        {activeTab === 'overview' && (
+          <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 text-left pb-10">
+            {/* Active filter label */}
+            {(selectedOrganizer !== 'All' || selectedClub !== 'All') && (
+              <div className="flex items-center gap-2 px-1">
+                <span className="material-symbols-outlined text-[14px] text-blue-600">filter_alt</span>
+                <span className="text-[11px] font-bold text-blue-600 uppercase tracking-wider">
+                  {selectedOrganizer !== 'All' ? selectedOrganizer : ''}{selectedOrganizer !== 'All' && selectedClub !== 'All' ? ' · ' : ''}{selectedClub !== 'All' ? selectedClub : ''}
+                </span>
+              </div>
+            )}
+            {overviewTimeline.length === 0 ? (
+               <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+                 <span className="material-symbols-outlined text-4xl mb-2">event_busy</span>
+                 <p className="text-sm font-medium">No upcoming socials this week</p>
+               </div>
+            ) : (
+               <div className="bg-white rounded-xl shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] border border-slate-100 overflow-hidden">
+                 {overviewTimeline.map((group, idx) => {
+                   const isToday = group.date.toDateString() === new Date().toDateString();
+                   const holiday = isKoreanHoliday(group.date);
+                   const isWeekend = group.date.getDay() === 0 || group.date.getDay() === 6;
+                   const isRed = isWeekend || !!holiday;
+                   return (
+                     <div key={idx} className="border-b border-slate-100 last:border-0">
+                       <div className={`px-4 py-2.5 flex items-center justify-between ${isToday ? 'bg-blue-50/50' : 'bg-slate-50/50'}`}>
+                         <h3 className={`text-[11px] font-black tracking-widest uppercase flex items-center gap-2 ${isRed ? 'text-red-500' : isToday ? 'text-blue-600' : 'text-slate-500'}`}>
+                           {group.date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                           {isToday && <span className="bg-blue-600 text-white px-1.5 py-0.5 rounded text-[9px] leading-none">TODAY</span>}
+                           {holiday && <span className="bg-red-500 text-white px-1.5 py-0.5 rounded text-[9px] leading-none">{holiday}</span>}
+                         </h3>
+                         <span className="text-[10px] font-bold text-slate-400 tracking-wider">{group.socials.length} EVENTS</span>
+                       </div>
+                       <div className="divide-y divide-slate-50">
+                         {group.socials.map(social => (
+                           <div 
+                             key={social.id}
+                             onClick={() => openModal(setViewSocial, social)}
+                             className="px-4 py-3 flex items-center justify-between hover:bg-slate-50 transition-colors cursor-pointer active:bg-slate-100 group"
+                           >
+                             <div className="flex-1 min-w-0 pr-4">
+                               <h4 className="text-[14px] font-bold text-slate-800 truncate leading-tight flex items-baseline gap-1.5">
+                                 {social.title}
+                                 {social.titleNative && <span className="text-[10px] font-medium text-slate-400 truncate">{social.titleNative}</span>}
+                               </h4>
+                               <p className="text-[11px] font-medium text-slate-500 truncate mt-0.5">
+                                 <span className="inline-flex items-center gap-0.5"><span className="material-symbols-outlined text-[12px]">location_on</span>{social.venueNameNative || social.venueName}</span>
+                               </p>
+                               <p className="text-[11px] font-medium text-slate-500 truncate mt-0.5">
+                                 <span className="inline-flex items-center gap-0.5"><span className="material-symbols-outlined text-[12px]">schedule</span>{social.startTime}-{social.endTime}</span>
+                                 {social.djName && <span className="ml-2 inline-flex items-center gap-0.5"><span className="material-symbols-outlined text-[12px]">headphones</span>DJ {social.djName}</span>}
+                               </p>
+                             </div>
+                             <div className="shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-white shadow-sm border border-slate-100 group-hover:border-blue-200 group-hover:text-blue-600 transition-all">
+                               <span className="material-symbols-outlined text-[16px] text-slate-400 group-hover:text-blue-600">chevron_right</span>
+                             </div>
+                           </div>
+                         ))}
+                       </div>
+                     </div>
+                   );
+                 })}
+               </div>
+            )}
+          </section>
+        )}
+
       </div>
-
-      {/* FAB - 신규 소셜 등록 버튼 */}
-      <button
-        onClick={() => openModal(setIsCreateOpen, true)}
-        className="fixed bottom-24 right-6 z-40 w-14 h-14 bg-primary text-white rounded-full shadow-lg shadow-primary/30 flex items-center justify-center hover:bg-primary/90 active:scale-95 transition-all"
-        aria-label="소셜 등록"
-      >
-        <span className="material-symbols-outlined text-2xl">add</span>
-      </button>
-
-      {/* Overlays */}
-      {isFilterOpen && (
-        <SocialFilterBottomSheet 
-          onClose={() => closeModal(setIsFilterOpen, false)}
-          onApply={(filters) => {
-            setSelectedFilters(filters);
-            closeModal(setIsFilterOpen, false);
-          }}
-          selectedOrganizers={selectedFilters.organizers}
-          selectedVenues={selectedFilters.venues}
-          availableOrganizers={organizers}
-          availableVenues={venues}
-        />
-      )}
 
       {/* 신규 등록 (Create 모드) */}
       {isCreateOpen && (

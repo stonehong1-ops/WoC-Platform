@@ -11,11 +11,16 @@ import {
   deleteDoc,
   doc,
   getDoc,
-  serverTimestamp
+  serverTimestamp,
+  writeBatch,
+  setDoc,
+  increment
 } from 'firebase/firestore';
-import { Social, SocialType } from '@/types/social';
+import { Social, SocialType, SocialReservation, SocialWeeklyState } from '@/types/social';
+import { notificationService } from './notificationService';
 
 const SOCIALS_COLLECTION = 'socials';
+const LIKES_COLLECTION = 'social_likes';
 
 export const socialService = {
   // 1. Subscribe to specific type of socials (Regular or Popup)
@@ -84,6 +89,20 @@ export const socialService = {
     }
   },
 
+  // Subscribe to single social event
+  subscribeSocial: (id: string, callback: (social: Social | null) => void) => {
+    const docRef = doc(db, SOCIALS_COLLECTION, id);
+    return onSnapshot(docRef, (docSnap) => {
+      if (docSnap.exists()) {
+        callback({ id: docSnap.id, ...docSnap.data() } as Social);
+      } else {
+        callback(null);
+      }
+    }, (error) => {
+      console.error("Error subscribing to social:", error);
+    });
+  },
+
   // 3. Admin: Create a new social event
   async saveSocial(data: Omit<Social, 'id' | 'createdAt'>) {
     const docRef = await addDoc(collection(db, SOCIALS_COLLECTION), {
@@ -133,12 +152,46 @@ export const socialService = {
   },
 
   // 8. Add Reservation
-  async addReservation(socialId: string, data: Omit<import('@/types/social').SocialReservation, 'id' | 'socialId' | 'createdAt'>) {
-    const docRef = await addDoc(collection(db, `${SOCIALS_COLLECTION}/${socialId}/reservations`), {
+  async addReservation(socialId: string, data: Omit<SocialReservation, 'id' | 'socialId' | 'createdAt'>) {
+    const docRef = doc(collection(db, `${SOCIALS_COLLECTION}/${socialId}/reservations`));
+    const batch = writeBatch(db);
+
+    batch.set(docRef, {
       ...data,
       socialId,
       createdAt: serverTimestamp(),
     });
+
+    const socialSnap = await getDoc(doc(db, SOCIALS_COLLECTION, socialId));
+    if (socialSnap.exists()) {
+      const social = socialSnap.data() as Social;
+
+      // User Notification
+      await notificationService.createNotification({
+        targetUserId: data.userId,
+        type: 'SOCIAL_RESERVATION',
+        title: '소셜 예약 접수',
+        message: `'${social.title}' 예약이 정상적으로 접수되었습니다.`,
+        actionUrl: `/history`, // Route to user history
+        referenceId: docRef.id,
+        category: 'SOCIAL'
+      }, batch);
+
+      // Organizer Todo Notification
+      if (social.organizerId) {
+        await notificationService.createTodo({
+          targetUserId: social.organizerId,
+          type: 'SOCIAL_RESERVATION_ADMIN',
+          title: '신규 예약 접수',
+          message: `${data.userName}님이 '${social.title}'에 예약했습니다.`,
+          actionUrl: `/social/${socialId}`, 
+          referenceId: docRef.id,
+          category: 'SOCIAL'
+        }, batch);
+      }
+    }
+
+    await batch.commit();
     return docRef.id;
   },
 
@@ -167,5 +220,140 @@ export const socialService = {
       status,
       updatedAt: serverTimestamp(),
     });
-  }
+
+    if (status === 'approved' || status === 'rejected') {
+      await notificationService.markTodosAsCompletedByReference(reservationId);
+    }
+  },
+
+  // ===== LIKES (FAVORITES) =====
+
+  // Toggle like (찜 토글) — atomic transaction
+  toggleLike: async (userId: string, socialId: string): Promise<boolean> => {
+    const likeId = `${userId}_${socialId}`;
+    const likeRef = doc(db, LIKES_COLLECTION, likeId);
+    const socialRef = doc(db, SOCIALS_COLLECTION, socialId);
+
+    try {
+      const likeSnap = await getDoc(likeRef);
+      
+      if (likeSnap.exists()) {
+        await deleteDoc(likeRef);
+        await updateDoc(socialRef, { likesCount: increment(-1) }).catch(() => {});
+        return false;
+      } else {
+        await setDoc(likeRef, {
+          userId,
+          socialId,
+          createdAt: serverTimestamp()
+        });
+        await updateDoc(socialRef, { likesCount: increment(1) }).catch(() => {});
+        return true;
+      }
+    } catch (error) {
+      console.error('Error toggling social like:', error);
+      throw error;
+    }
+  },
+
+  // Subscribe to user's liked socials
+  subscribeMyLikes: (userId: string, callback: (likedSocialIds: string[]) => void) => {
+    const q = query(
+      collection(db, LIKES_COLLECTION),
+      where('userId', '==', userId)
+    );
+    return onSnapshot(q, (snapshot) => {
+      const likedIds = snapshot.docs.map(doc => doc.data().socialId as string);
+      callback(likedIds);
+    }, (error) => {
+      console.error('Error subscribing to social likes:', error);
+    });
+  },
+
+  // ===== WEEKLY RESERVATION MANAGEMENT =====
+
+  // Subscribe to reservations for a specific week date
+  subscribeWeekReservations: (socialId: string, weekStartDate: string, callback: (reservations: SocialReservation[]) => void) => {
+    const q = query(
+      collection(db, `${SOCIALS_COLLECTION}/${socialId}/reservations`),
+      where('weekStartDate', '==', weekStartDate)
+    );
+    return onSnapshot(q, (snapshot) => {
+      const docs = snapshot.docs.map(d => ({
+        id: d.id,
+        ...d.data()
+      })) as SocialReservation[];
+      docs.sort((a, b) => {
+        const tA = a.createdAt ? (typeof a.createdAt.toMillis === 'function' ? a.createdAt.toMillis() : 0) : 0;
+        const tB = b.createdAt ? (typeof b.createdAt.toMillis === 'function' ? b.createdAt.toMillis() : 0) : 0;
+        return tB - tA;
+      });
+      callback(docs);
+    });
+  },
+
+  // Get weekly state (open/closed) for a specific date
+  async getWeeklyState(socialId: string, weekStartDate: string): Promise<SocialWeeklyState | null> {
+    const stateId = `${socialId}_${weekStartDate}`;
+    const stateRef = doc(db, 'social_weekly_states', stateId);
+    const snap = await getDoc(stateRef);
+    if (snap.exists()) {
+      return { id: snap.id, ...snap.data() } as SocialWeeklyState;
+    }
+    return null;
+  },
+
+  // Subscribe to weekly state (real-time)
+  subscribeWeeklyState: (socialId: string, weekStartDate: string, callback: (state: SocialWeeklyState | null) => void) => {
+    const stateId = `${socialId}_${weekStartDate}`;
+    const stateRef = doc(db, 'social_weekly_states', stateId);
+    return onSnapshot(stateRef, (snap) => {
+      if (snap.exists()) {
+        callback({ id: snap.id, ...snap.data() } as SocialWeeklyState);
+      } else {
+        callback(null);
+      }
+    });
+  },
+
+  // Org: close or reopen table for a specific week
+  async setWeekClosed(socialId: string, weekStartDate: string, isClosed: boolean, userId: string) {
+    const stateId = `${socialId}_${weekStartDate}`;
+    const stateRef = doc(db, 'social_weekly_states', stateId);
+    await setDoc(stateRef, {
+      socialId,
+      weekStartDate,
+      isClosed,
+      closedAt: isClosed ? serverTimestamp() : null,
+      closedBy: isClosed ? userId : null,
+    }, { merge: true });
+  },
+
+  // Get venue details by venueId (for address / map link)
+  async getVenueDetails(venueId: string) {
+    if (!venueId) return null;
+    try {
+      const venueRef = doc(db, 'venues', venueId);
+      const snap = await getDoc(venueRef);
+      if (snap.exists()) {
+        return { id: snap.id, ...snap.data() };
+      }
+      return null;
+    } catch (error) {
+      console.error('Error getting venue details:', error);
+      return null;
+    }
+  },
+
+  // Claim ownership of a social
+  claimSocial: async (socialId: string, newOrganizer: { uid: string; displayName: string; nativeNickname?: string }, claimedByUid: string) => {
+    const ref = doc(db, SOCIALS_COLLECTION, socialId);
+    await updateDoc(ref, {
+      organizerId: newOrganizer.uid,
+      organizerName: newOrganizer.displayName,
+      organizerNameNative: newOrganizer.nativeNickname || '',
+      claimedAt: serverTimestamp(),
+      claimedBy: claimedByUid,
+    });
+  },
 };

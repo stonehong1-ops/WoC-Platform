@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { classRegistrationService } from '@/lib/firebase/classRegistrationService';
 import { ClassRegistration, Group, GroupClass } from '@/types/group';
 import { isSameMonth, format } from 'date-fns';
-import { safeDate } from '@/lib/utils/safeData';
+import { safeDate } from '@/lib/utils/safeDate';
 
 interface GroupClassStatsProps {
   group: Group;

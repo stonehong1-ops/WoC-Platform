@@ -4,28 +4,24 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ResaleItem, ResaleLike } from '@/types/resale';
 import { resaleService } from '@/lib/firebase/resaleService';
+import { useNavigation } from '@/components/providers/NavigationProvider';
 
 interface ResaleWishlistTrayProps {
   likes: ResaleLike[];
   userId: string;
   onProductClick: (productId: string) => void;
-  onAddClick?: () => void;
 }
 
 type TrayState = 'COLLAPSED' | 'EXPANDED';
 
-export default function ResaleWishlistTray({ likes, userId, onProductClick, onAddClick }: ResaleWishlistTrayProps) {
+export default function ResaleWishlistTray({ likes, userId, onProductClick }: ResaleWishlistTrayProps) {
   const [trayState, setTrayState] = useState<TrayState>('COLLAPSED');
   const [likedProducts, setLikedProducts] = useState<ResaleItem[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { isHeaderVisible } = useNavigation();
 
-  // Tray is always at least collapsed so the Add button is visible.
-  useEffect(() => {
-    if (likes.length > 0 && trayState === 'EXPANDED') {
-      // Keep it expanded if it already is
-    }
-  }, [likes.length]);
+
 
   // Fetch product details for liked items
   useEffect(() => {
@@ -73,7 +69,7 @@ export default function ResaleWishlistTray({ likes, userId, onProductClick, onAd
 
   const handleClearAll = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm('찜 목록을 모두 비우시겠어요?')) return;
+    if (!confirm('Are you sure you want to clear your wishlist?')) return;
     try {
       await resaleService.clearAllLikes(userId);
       setTrayState('COLLAPSED');
@@ -91,13 +87,20 @@ export default function ResaleWishlistTray({ likes, userId, onProductClick, onAd
 
   const isExpanded = trayState === 'EXPANDED';
 
+  // Hide tray when no likes
+  if (likes.length === 0) return null;
+
   return (
     <>
-      <div className="fixed bottom-20 left-1/2 -translate-x-1/2 w-[calc(100%-48px)] max-w-sm z-40 pointer-events-auto">
+      <div className="fixed bottom-24 left-1/2 -translate-x-1/2 w-[calc(100%-48px)] max-w-sm z-[60] pointer-events-auto">
         <motion.div 
-          animate={{ height: isExpanded ? 'auto' : '56px', y: 0, opacity: 1 }}
+          animate={{ 
+            height: isExpanded ? 'auto' : '64px', 
+            y: isHeaderVisible ? 0 : 120, 
+            opacity: isHeaderVisible ? 1 : 0 
+          }}
           transition={{ type: 'spring', stiffness: 400, damping: 35 }}
-          initial={{ y: 100, opacity: 0 }}
+          initial={false}
           className="bg-white/95 backdrop-blur-3xl rounded-xl shadow-[0_24px_48px_rgba(0,0,0,0.12)] flex flex-col border border-white/60 overflow-hidden"
           onClick={() => !isExpanded && setTrayState('EXPANDED')}
         >
@@ -113,35 +116,19 @@ export default function ResaleWishlistTray({ likes, userId, onProductClick, onAd
                 </span>
               </div>
 
-              {isExpanded ? (
-                <span className="text-sm text-slate-800 font-bold ml-3 tracking-wide">
-                  {likes.length === 0 ? 'No Activity' : (
-                    <>
-                      {likes.filter(l => l.status === 'in_progress').length > 0 && (
-                        <span className="text-blue-500">{likes.filter(l => l.status === 'in_progress').length} IN PROGRESS, </span>
-                      )}
-                      {likes.filter(l => l.status === 'pending').length > 0 && (
-                        <span className="text-primary">{likes.filter(l => l.status === 'pending').length} PENDING, </span>
-                      )}
-                      {likes.filter(l => l.status !== 'pending' && l.status !== 'in_progress').length} LIKED ITEMS
-                    </>
-                  )}
-                </span>
-              ) : (
-                <span className="text-sm text-slate-800 font-bold ml-3 tracking-wide">
-                  {likes.length === 0 ? 'No Activity' : (
-                    <>
-                      {likes.filter(l => l.status === 'in_progress').length > 0 && (
-                        <span className="text-blue-500">{likes.filter(l => l.status === 'in_progress').length} IN PROGRESS, </span>
-                      )}
-                      {likes.filter(l => l.status === 'pending').length > 0 && (
-                        <span className="text-primary">{likes.filter(l => l.status === 'pending').length} PENDING, </span>
-                      )}
-                      {likes.filter(l => l.status !== 'pending' && l.status !== 'in_progress').length} LIKED
-                    </>
-                  )}
-                </span>
-              )}
+              <span className="text-sm text-slate-800 font-bold ml-3 tracking-wide">
+                {likes.length === 0 ? 'No Activity' : (
+                  <>
+                    {likes.filter(l => l.status === 'in_progress').length > 0 && (
+                      <span className="text-blue-500">{likes.filter(l => l.status === 'in_progress').length} In Progress, </span>
+                    )}
+                    {likes.filter(l => l.status === 'pending').length > 0 && (
+                      <span className="text-primary">{likes.filter(l => l.status === 'pending').length} Pending, </span>
+                    )}
+                    {likes.filter(l => l.status !== 'pending' && l.status !== 'in_progress').length} Liked
+                  </>
+                )}
+              </span>
             </div>
 
             <div className="flex items-center gap-4">
@@ -181,17 +168,7 @@ export default function ResaleWishlistTray({ likes, userId, onProductClick, onAd
                 </div>
               )}
               
-              {/* PLUS BUTTON ADDED HERE */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAddClick?.();
-                }}
-                className="h-9 px-4 rounded-full bg-primary text-white flex items-center justify-center gap-1 shadow-md hover:scale-105 active:scale-95 transition-all ml-1"
-              >
-                <span className="font-bold text-xs tracking-wider">ADD</span>
-                <span className="material-symbols-rounded text-[18px]">add</span>
-              </button>
+
             </div>
           </div>
 
@@ -235,12 +212,12 @@ export default function ResaleWishlistTray({ likes, userId, onProductClick, onAd
                             
                             {status === 'in_progress' && (
                               <div className="absolute -top-2 -right-2 bg-blue-500 text-white text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded shadow-sm">
-                                IN PROG
+                                IN PROGRESS
                               </div>
                             )}
                             {status === 'pending' && (
                               <div className="absolute -top-2 -right-2 bg-primary text-white text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded shadow-sm">
-                                PEND
+                                PENDING
                               </div>
                             )}
                           </div>
@@ -250,7 +227,7 @@ export default function ResaleWishlistTray({ likes, userId, onProductClick, onAd
                               {product.title}
                             </h4>
                             <div className="flex items-center gap-2 mt-1">
-                              <span className="text-xs font-black text-slate-900">
+                              <span className="text-[11px] font-black text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded">
                                 ₩{product.price.toLocaleString()}
                               </span>
                               <span className="text-[10px] text-slate-400 font-medium truncate">
@@ -272,7 +249,7 @@ export default function ResaleWishlistTray({ likes, userId, onProductClick, onAd
                     })}
                     {likedProducts.length === 0 && (
                       <div className="py-6 text-center text-slate-400 text-[13px] font-medium">
-                        No activity yet.
+                        No activity found.
                       </div>
                     )}
                   </div>

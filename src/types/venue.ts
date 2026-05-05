@@ -1,6 +1,6 @@
 import { Timestamp } from 'firebase/firestore';
 
-export type VenueType = 'Studio' | 'Club' | 'Academy' | 'Shop' | 'Cafe' | 'Eats' | 'Beauty' | 'Stay' | 'Other';
+export type VenueType = 'Studio' | 'Club' | 'Academy' | 'Shop' | 'Cafe' | 'Eats' | 'Beauty' | 'Stay' | 'Service' | 'Other';
 
 export interface Venue {
   id: string;

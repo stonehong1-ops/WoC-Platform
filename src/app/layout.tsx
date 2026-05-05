@@ -16,16 +16,23 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#005BC0",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 import { NavigationProvider } from "@/components/providers/NavigationProvider";
+import { NotificationProvider } from "@/contexts/NotificationContext";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { LocationProvider } from "@/components/providers/LocationProvider";
 import { ClassCartProvider } from "@/contexts/ClassCartContext";
 import NavigationDrawer from "@/components/layout/NavigationDrawer";
+import NotificationTray from "@/components/layout/NotificationTray";
 import LocationSelector from "@/components/layout/LocationSelector";
 import AuthModal from "@/components/auth/AuthModal";
 import AuthGuard from "@/components/auth/AuthGuard";
+import { Toaster } from "sonner";
 
 export default function RootLayout({
   children,
@@ -42,33 +49,41 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       </head>
       <body className="bg-background text-on-surface font-body selection:bg-primary-container selection:text-on-primary-container antialiased">
-        <AuthProvider>
-          <AuthModal />
-          <AuthGuard>
-            <LocationProvider>
-              <NavigationProvider>
-                <ClassCartProvider>
-                  <SWRegister />
-                  <GlobalNavigation>
-                    {/* Full Screen Menu */}
-                    <NavigationDrawer />
+        <div className="overflow-x-hidden w-full relative flex flex-col min-h-[100dvh]">
+          <AuthProvider>
+            <AuthModal />
+            <AuthGuard>
+              <NotificationProvider>
+                <LocationProvider>
+                  <NavigationProvider>
+                    <ClassCartProvider>
+                      <SWRegister />
+                      <GlobalNavigation>
+                        {/* Full Screen Menu */}
+                        <NavigationDrawer />
 
-                    {/* Location Selector Bottom Sheet/Modal */}
-                    <LocationSelector />
+                        {/* Notification Tray */}
+                        <NotificationTray />
 
-                    {/* Dynamic Body Content */}
-                    <PageWrapper>
-                      {children}
-                    </PageWrapper>
+                        {/* Location Selector Bottom Sheet/Modal */}
+                        <LocationSelector />
 
-                    {/* Parallel Route Modal Content */}
-                    {modal}
-                  </GlobalNavigation>
-                </ClassCartProvider>
-              </NavigationProvider>
-            </LocationProvider>
-          </AuthGuard>
-        </AuthProvider>
+                        {/* Dynamic Body Content */}
+                        <PageWrapper>
+                          {children}
+                        </PageWrapper>
+
+                        {/* Parallel Route Modal Content */}
+                        {modal}
+                      </GlobalNavigation>
+                    </ClassCartProvider>
+                  </NavigationProvider>
+                </LocationProvider>
+              </NotificationProvider>
+            </AuthGuard>
+            <Toaster position="top-center" richColors />
+          </AuthProvider>
+        </div>
       </body>
     </html>
   );

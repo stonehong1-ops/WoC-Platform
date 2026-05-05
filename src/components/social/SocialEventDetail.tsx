@@ -303,17 +303,20 @@ export default function SocialEventDetail({ social, onClose }: SocialEventDetail
                 <label className="block text-[10px] font-black uppercase tracking-[0.15em] text-gray-400">Social Event Schedule</label>
               </div>
               <div className="space-y-4">
-                {(social.socialEvents && social.socialEvents.length > 0) ? social.socialEvents.map((title, i) => (
+                {(social.socialEvents && social.socialEvents.length > 0) ? social.socialEvents.map((ev: any, i: number) => {
+                  const eventTitle = typeof ev === 'string' ? ev : ev.title;
+                  return (
                   <div key={i} className="flex items-center gap-6 p-5 bg-white rounded-xl shadow-sm border border-gray-100">
                     <div className="w-10 h-10 bg-primary/5 text-primary rounded-lg flex items-center justify-center font-black">
                       {i + 1}
                     </div>
                     <div className="flex-1 text-left">
-                      <h4 className="font-bold text-gray-900">{title}</h4>
+                      <h4 className="font-bold text-gray-900">{eventTitle}</h4>
                       <p className="text-[10px] font-bold text-gray-400 uppercase mt-0.5">Program Segment</p>
                     </div>
                   </div>
-                )) : (
+                  );
+                }) : (
                    <div className="py-20 flex flex-col items-center justify-center opacity-20">
                       <span className="material-symbols-outlined text-5xl mb-3">list_alt</span>
                       <p className="text-xs font-black uppercase tracking-widest">No segments scheduled</p>

@@ -31,7 +31,11 @@ export function DualText({ text, subText, primaryClassName, secondaryClassName, 
     );
   }
   
-  return <span className={primaryClassName}>{main || text}</span>;
+  return (
+    <div className={`flex items-baseline min-w-0 ${containerClassName || ''}`}>
+      <span className={primaryClassName}>{main || text}</span>
+    </div>
+  );
 }
 
 export function SocialCardImage({ imageUrl, title }: { imageUrl?: string; title?: string }) {
@@ -79,29 +83,38 @@ export function getSocialDisplayTitle(social: Social) {
 
 export default function SocialHeroCard({ social }: { social: Social }) {
   const displayTitle = getSocialDisplayTitle(social);
+  
   return (
     <>
       <SocialCardImage imageUrl={social.imageUrl} title={social.title} />
+      
+      {/* Top Left Venue Badge */}
+      <div className="absolute top-4 left-4 z-20 flex items-center bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-full pointer-events-none border border-white/10 shadow-sm max-w-[calc(100%-4rem)]">
+        <span className="material-symbols-outlined text-[12px] text-white/90 mr-1 shrink-0">location_on</span>
+        <DualText 
+          text={social.venueName} 
+          subText={social.venueNameNative}
+          primaryClassName="text-white/90 text-[10px] font-bold tracking-wide uppercase truncate" 
+          secondaryClassName="text-white/60 text-[9px] font-medium truncate ml-1" 
+          containerClassName="items-center truncate min-w-0"
+        />
+      </div>
+
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent flex flex-col justify-end p-6 pointer-events-none">
         <div className="space-y-1 w-full text-left">
           <DualText 
             text={displayTitle.primary} 
             subText={displayTitle.secondary}
             primaryClassName="text-white text-xl md:text-3xl font-bold font-headline leading-tight truncate drop-shadow-md" 
-            secondaryClassName="text-white/70 text-xs md:text-sm font-medium truncate shrink-0 drop-shadow-md" 
+            secondaryClassName="text-white/60 text-xs md:text-sm font-normal truncate shrink-0 drop-shadow-md ml-1.5" 
             containerClassName="w-full"
           />
           <DualText 
             text={social.organizerName} 
             subText={social.organizerNameNative}
-            primaryClassName="text-white/80 text-sm md:text-base font-medium block truncate" 
-            secondaryClassName="text-white/50 text-[10px] md:text-xs block truncate mt-0.5" 
-          />
-          <DualText 
-            text={social.venueName} 
-            subText={social.venueNameNative}
-            primaryClassName="text-white/70 text-xs md:text-sm block truncate mt-1" 
-            secondaryClassName="text-white/40 text-[9px] md:text-[10px] block truncate" 
+            primaryClassName="text-white/80 text-sm md:text-base font-medium truncate" 
+            secondaryClassName="text-white/40 text-[10px] md:text-xs font-normal truncate ml-1.5" 
+            containerClassName="w-full"
           />
           <p className="text-white/70 text-xs md:text-sm mt-1">{social.startTime} - {social.endTime}</p>
         </div>

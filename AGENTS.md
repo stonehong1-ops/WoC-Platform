@@ -16,6 +16,7 @@
 5. **Pre-Flight Comparison**: 코드를 실행하기 전, 변환된 JSX와 원본 HTML을 대조하여 클래스명 하나라도 빠졌는지 스스로 검증하고 그 결과를 보고하라.
 
 ## Process & Communication Rules
+0. **Design Stability Guard**: Before modifying any UI/UX or layout, YOU MUST read `STABILITY_GUARD.md` in the root directory. NEVER deviate from the "LOCKED" states defined in that document without explicit, written approval from the USER.
 1. **Honesty and Accuracy**: 절대 거짓말하거나 과장하지 마라 (Never lie or exaggerate). 이전 작업 내용이나 결과를 부풀리지 말고 있는 사실만을 정확하게 보고하라.
 2. **Truncation Check**: 제공받은 HTML 코드나 디자인 에셋이 채팅창 글자 수 제한 등으로 인해 잘려 있는지(truncated) 반드시 가장 먼저 확인하라. 잘려있다면 **절대 임의로 작업을 시작하지 말고**, 사용자에게 전체 파일을 첨부해달라고 즉시 보고하라.
 3. **Plan Approval**: Before starting any task, you MUST summarize your understanding of the request and proposed implementation plan, and wait for USER approval before proceeding with any code modifications.
@@ -25,8 +26,12 @@
      3. **Functional Integrity**: Ensure all interactive elements (toggles, buttons) are fully functional.
 4. **Deployment Reporting**: After every deployment, you MUST confirm the deployment status and explicitly provide the Deployment ID and the live URL link to the USER.
 
+## 🌐 Language & Localization Rules
+1. **English Only**: This platform is an English-based global service. ALL UI text, labels, and system messages MUST be in English. (이 플랫폼은 글로벌 서비스이므로 모든 UI와 시스템 메시지는 영문으로 작성되어야 한다.)
+
 ## Deployment Rules
-1. **Mandatory Production Deployment**: Whenever any code modification is completed, you MUST automatically build and deploy the project to the production environment (`npx -y vercel --prod --yes`).
+1. **Mandatory Production Deployment**: Whenever any code modification is completed, you MUST automatically build and deploy the project to the production environment (e.g., `npx -y vercel --prod --yes`) to ensure the live site reflects the latest changes immediately.
+2. **Deployment Reporting**: After every deployment, you MUST confirm the deployment status (READY/ERROR) and explicitly provide the **Deployment ID, Exit Code, and the live URL link** to the USER. NEVER report success before the deployment process is fully 'DONE' and verified.
 
 ## Error Handling & Debugging Rules
 1. **Firebase Permission Check First**: 에러 발생 시(특히 데이터베이스 저장/수정 관련), 코드를 복잡하게 수정하거나 구조를 뜯어고치기 전에 **반드시 Firebase Firestore Security Rules (권한 설정) 누락 문제인지 가장 먼저 의심하고 확인**하라. (ex: `permission-denied` 에러).

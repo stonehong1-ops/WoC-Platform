@@ -1,10 +1,16 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { lostFoundService } from '@/lib/firebase/lostFoundService';
 import { LostFoundItem, LostFoundLike, LostFoundType } from '@/types/lostFound';
 import { useRouter } from 'next/navigation';
+import { useModalNavigation } from '@/hooks/useModalNavigation';
+import { useNavigation } from '@/components/providers/NavigationProvider';
+import LostFoundDetail from '@/components/lost/LostFoundDetail';
+import CreateLostItem from '@/components/lost/CreateLostItem';
+import LostFoundWishlistTray from '@/components/lost/LostFoundWishlistTray';
+import { AnimatePresence } from 'framer-motion';
 
 type SortOption = 'latest' | 'reward_desc' | 'popular';
 
@@ -20,9 +26,24 @@ const LF_FILTER_DEFS: Record<string, { label: string; fullLabel: string; icon: s
   found: { label: 'Found', fullLabel: 'Looking for owner... (FOUND)', icon: 'wb_incandescent', type: 'FOUND' },
 };
 
-export default function LostFoundPage() {
+function LostFoundPageContent() {
   const { user } = useAuth();
   const router = useRouter();
+  const { value: modalId, openModal, closeModal } = useModalNavigation('lostId');
+  const { isOpen: showCreateModal, openModal: openCreate, closeModal: closeCreate } = useModalNavigation('create');
+  const { setSubHeader } = useNavigation();
+  
+  // Listen to global compose event
+  useEffect(() => {
+    const handleComposeOpen = (e: CustomEvent) => {
+      if (e.detail?.id === 'lost-found') {
+        openCreate('true');
+      }
+    };
+    window.addEventListener('woc:compose:open', handleComposeOpen as EventListener);
+    return () => window.removeEventListener('woc:compose:open', handleComposeOpen as EventListener);
+  }, [openCreate]);
+  
   const [allItems, setAllItems] = useState<LostFoundItem[]>([]);
   const [activeFilter, setActiveFilter] = useState('all');
   const [activeLocation, setActiveLocation] = useState('All');
@@ -109,8 +130,77 @@ export default function LostFoundPage() {
   };
 
   const handleCardClick = (id: string) => {
-    router.push(`/lost-found/${id}`);
+    openModal(id);
   };
+
+  // Teleport Filter Bar to Header (Dual Line Standard)
+  useEffect(() => {
+    const filterBar = (
+      <div className="w-full bg-white border-b border-slate-100/50 px-3 py-2 flex flex-col gap-3">
+        {/* Row 1: Type Filters */}
+        <div className="w-full flex items-center justify-start gap-1.5 overflow-x-auto no-scrollbar">
+          {lfFilters.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => {
+                setActiveFilter(tab.key);
+                window.scrollTo({ top: 0, behavior: 'instant' });
+              }}
+              className={`flex-shrink-0 px-4 py-1.5 rounded-lg text-[12px] font-bold tracking-tight transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                activeFilter === tab.key
+                  ? 'bg-[#1E293B] text-white shadow-sm'
+                  : 'bg-slate-50 text-slate-500 border border-slate-100 hover:bg-slate-100'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Row 2: Info & Sort */}
+        <div className="w-full flex items-center justify-between px-1 relative">
+          <div className="text-[11px] font-medium text-slate-400 flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#1A73E8]/50" />
+            <span className="text-[#1A73E8] font-semibold">{filteredItems.length}</span>
+            <span className="text-slate-500">items listed</span>
+          </div>
+
+          <div className="relative">
+            <button
+              onClick={() => setShowSortDropdown(!showSortDropdown)}
+              className="flex items-center gap-0.5 text-[12px] font-bold text-slate-600 hover:text-slate-800 transition-all"
+            >
+              {SORT_OPTIONS.find(o => o.key === sortOption)?.label || 'Latest'}
+              <span className={`material-symbols-rounded text-[16px] transition-transform duration-200 ${showSortDropdown ? 'rotate-180' : ''}`}>
+                keyboard_arrow_down
+              </span>
+            </button>
+
+            {showSortDropdown && (
+              <div className="absolute top-full right-0 z-[60] bg-white shadow-2xl border border-slate-100 py-1.5 rounded-xl min-w-[160px] animate-in fade-in slide-in-from-top-1 duration-200 mt-1">
+                {SORT_OPTIONS.map(opt => (
+                  <button
+                    key={opt.key}
+                    onClick={() => { setSortOption(opt.key); setShowSortDropdown(false); }}
+                    className={`w-full px-4 py-2.5 flex items-center gap-3 hover:bg-slate-50 transition-colors text-left ${
+                      sortOption === opt.key ? 'text-[#1A73E8] font-bold' : 'text-slate-600 font-medium'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[18px]">{opt.icon}</span>
+                    <span className="text-[13px]">{opt.label}</span>
+                    {sortOption === opt.key && <span className="material-symbols-outlined text-[16px] ml-auto">check</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+
+    setSubHeader(filterBar);
+    return () => setSubHeader(null);
+  }, [activeFilter, filteredItems.length, sortOption, showSortDropdown, setSubHeader, lfFilters]);
 
   return (
     <main className="max-w-md mx-auto w-full relative">
@@ -121,42 +211,7 @@ export default function LostFoundPage() {
       `}} />
 
       {/* ⑤ Items Grid */}
-      <div className="mt-4 px-4 mb-10 text-left min-h-[400px]">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-headline text-lg font-bold text-[#2d3435]">
-            {LF_FILTER_DEFS[activeFilter]?.fullLabel}
-            <span className="text-sm font-normal text-[#596061] ml-1">({filteredItems.length})</span>
-          </h3>
-          {/* Sort Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setShowSortDropdown(!showSortDropdown)}
-              className="flex items-center gap-1 text-sm font-semibold text-[#596061] hover:text-[#2d3435] transition-colors"
-            >
-              {SORT_OPTIONS.find(o => o.key === sortOption)?.label || 'Latest'}
-              <span className="material-symbols-rounded text-base">expand_more</span>
-            </button>
-            {showSortDropdown && (
-              <>
-                <div className="fixed inset-0 z-40" onClick={() => setShowSortDropdown(false)} />
-                <div className="absolute top-full mt-1 right-0 bg-white rounded-xl shadow-xl border border-slate-100 min-w-[150px] z-50 overflow-hidden">
-                  {SORT_OPTIONS.map(opt => (
-                    <button
-                      key={opt.key}
-                      onClick={() => { setSortOption(opt.key); setShowSortDropdown(false); }}
-                      className={`w-full text-left px-4 py-2.5 text-sm font-medium flex items-center gap-2 transition-colors ${
-                        sortOption === opt.key ? 'bg-primary/10 text-[#1A73E8] font-bold' : 'text-[#2d3435] hover:bg-slate-50'
-                      }`}
-                    >
-                      <span className="material-symbols-rounded text-base">{opt.icon}</span>
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        </div>
+      <div className="px-4 mb-10 text-left min-h-[400px]">
 
         {filteredItems.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center opacity-30">
@@ -224,18 +279,36 @@ export default function LostFoundPage() {
           </div>
         )}
       </div>
-
-      {/* Register FAB */}
       {user && (
-        <div className="fixed bottom-24 right-4 z-40">
-          <button 
-            onClick={() => router.push('/lost-found/register')}
-            className="flex items-center justify-center w-14 h-14 bg-primary text-white rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.2)] hover:scale-105 active:scale-95 transition-transform"
-          >
-            <span className="material-symbols-rounded text-3xl">add</span>
-          </button>
-        </div>
+        <LostFoundWishlistTray 
+          likes={likes} 
+          userId={user.uid} 
+          onItemClick={(id) => openModal(id)} 
+        />
       )}
+
+
+      {/* Item Detail Modal */}
+      <AnimatePresence>
+        {modalId && (
+          <LostFoundDetail id={modalId} onClose={closeModal} />
+        )}
+        {showCreateModal && (
+          <CreateLostItem onClose={closeCreate} onSuccess={() => {}} />
+        )}
+      </AnimatePresence>
     </main>
+  );
+}
+
+export default function LostFoundPage() {
+  return (
+    <Suspense fallback={
+      <div className="max-w-md mx-auto w-full min-h-screen bg-[#FAF8FF] flex items-center justify-center">
+        <span className="material-symbols-rounded animate-spin text-slate-300 text-4xl">progress_activity</span>
+      </div>
+    }>
+      <LostFoundPageContent />
+    </Suspense>
   );
 }

@@ -25,33 +25,79 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
   // Form State
   const [title, setTitle] = useState(socialData?.title || '');
   const [titleNative, setTitleNative] = useState(socialData?.titleNative || '');
+  const [description, setDescription] = useState((socialData as any)?.description || '');
   const [titleError, setTitleError] = useState('');
   const [type, setType] = useState<SocialType>(socialData?.type || 'regular');
-  const [startDate, setStartDate] = useState('');
+  
+  // Date & Time
+  const [startDate, setStartDate] = useState(
+    socialData?.date 
+      ? (typeof (socialData.date as any).toDate === 'function' ? (socialData.date as any).toDate().toISOString().split('T')[0] : new Date(socialData.date as any).toISOString().split('T')[0])
+      : new Date().toISOString().split('T')[0]
+  );
   const [startTime, setStartTime] = useState(socialData?.startTime || '19:00');
   const [endTime, setEndTime] = useState(socialData?.endTime || '23:00');
-  const [dayOfWeek, setDayOfWeek] = useState<number>(socialData?.dayOfWeek ?? 5);
+  const [dayOfWeek, setDayOfWeek] = useState<number>(socialData?.dayOfWeek ?? new Date().getDay());
   const [recurrence, setRecurrence] = useState(socialData?.recurrence || 'every');
 
-  // Location State (초기값: 헤더의 전역 location)
+  const getAvailableRecurrences = (dateStr: string) => {
+    const d = dateStr ? new Date(dateStr) : new Date();
+    if (isNaN(d.getTime())) return [{ id: 'every', label: 'Every Week' }];
+    
+    const dateNum = d.getDate();
+    const nth = Math.ceil(dateNum / 7);
+    const nthStr = nth === 1 ? '1st' : nth === 2 ? '2nd' : nth === 3 ? '3rd' : nth === 4 ? '4th' : '5th';
+    
+    const options = [
+      { id: 'every', label: 'Every Week' },
+      { id: nthStr, label: `${nthStr} Week` }
+    ];
+    
+    const nextWeek = new Date(d);
+    nextWeek.setDate(d.getDate() + 7);
+    if (nextWeek.getMonth() !== d.getMonth() && nthStr !== '5th') {
+      options.push({ id: 'last', label: 'Last Week' });
+    }
+    
+    return options;
+  };
+
+  // Location State
   const [formCountry, setFormCountry] = useState(socialData?.country || location.country);
   const [formCity, setFormCity] = useState(socialData?.city || location.city);
 
-  // Venue State (클라이언트 필터링 방식)
+  // Venue State
   const [allVenues, setAllVenues] = useState<Venue[]>([]);
   const [venueName, setVenueName] = useState(socialData?.venueName || '');
   const [venueId, setVenueId] = useState(socialData?.venueId || '');
   const [venueResults, setVenueResults] = useState<Venue[]>([]);
   const [showVenueResults, setShowVenueResults] = useState(false);
 
-  // DJ State (클라이언트 필터링)
+  // Users Data
   const [allUsers, setAllUsers] = useState<PlatformUser[]>([]);
+
+  // Organizer State
+  const [organizerId, setOrganizerId] = useState(socialData?.organizerId || user?.uid || '');
+  const [organizerName, setOrganizerName] = useState(socialData?.organizerName || user?.displayName || 'Anonymous');
+  const [organizerResults, setOrganizerResults] = useState<PlatformUser[]>([]);
+  const [showOrganizerResults, setShowOrganizerResults] = useState(false);
+
+  // DJ State
   const [djName, setDjName] = useState(socialData?.djName || '');
   const [djResults, setDjResults] = useState<PlatformUser[]>([]);
   const [showDjResults, setShowDjResults] = useState(false);
 
-  // Other Fields
-  const [dressCode, setDressCode] = useState('');
+  // Staff State
+  const [staffList, setStaffList] = useState<{ id: string; name: string }[]>(
+    socialData?.staffIds?.map((id, i) => ({ id, name: socialData?.staffNames?.[i] || '' })) || []
+  );
+  const [staffSearch, setStaffSearch] = useState('');
+  const [staffResults, setStaffResults] = useState<PlatformUser[]>([]);
+  const [showStaffResults, setShowStaffResults] = useState(false);
+
+  // Table Capacity & Dress Code
+  const [tableCapacity, setTableCapacity] = useState(socialData?.tableCapacity ?? 15);
+  const [dressCode, setDressCode] = useState((socialData as any)?.dressCode || '');
   
   // Pricing
   const initialCurrency = socialData?.price?.split(' ')[0] || 'KRW';
@@ -65,23 +111,43 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Social Events (Sub-programs)
-  const [socialEvents, setSocialEvents] = useState<{ id: number; title: string }[]>(
-    socialData?.socialEvents?.map((title, i) => ({ id: Date.now() + i, title })) || []
+  const [socialEvents, setSocialEvents] = useState<{ id: number; title: string; description: string; maxParticipants: number; isUnlimited?: boolean }[]>(
+    socialData?.socialEvents?.map((ev: any, i: number) => {
+      const isUnlimited = ev.maxParticipants === 0 || ev.maxParticipants === undefined;
+      if (typeof ev === 'string') return { id: Date.now() + i, title: ev, description: '', maxParticipants: 0, isUnlimited: true };
+      return { id: Date.now() + i, title: ev.title || '', description: ev.description || '', maxParticipants: ev.maxParticipants || 1, isUnlimited };
+    }) || []
   );
 
   const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
   const dayIndices = [1, 2, 3, 4, 5, 6, 0];
 
-  // 마운트 시 전체 Venue & User 1회 로드
   useEffect(() => {
     venueService.getVenues().then(setAllVenues).catch(console.error);
     userService.getAllUsers().then(setAllUsers).catch(console.error);
   }, []);
 
-  // 클라이언트 필터링 - 1글자부터 반응
+  useEffect(() => {
+    if (type === 'regular' && startDate) {
+      const options = getAvailableRecurrences(startDate);
+      if (!options.find(o => o.id === recurrence)) {
+        setRecurrence('every');
+      }
+    }
+  }, [startDate, type]);
+
+  const handleStartTimeChange = (val: string) => {
+    setStartTime(val);
+    if (val) {
+      const [h, m] = val.split(':');
+      const endH = (parseInt(h, 10) + 4) % 24;
+      setEndTime(`${endH.toString().padStart(2, '0')}:${m}`);
+    }
+  };
+
   const handleVenueSearch = (val: string) => {
     setVenueName(val);
-    setVenueId(''); // 검색 중에는 venueId 초기화
+    setVenueId('');
     if (val.length >= 1) {
       const lower = val.toLowerCase();
       const filtered = allVenues.filter(v =>
@@ -100,9 +166,30 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
     setVenueName(v.name);
     setVenueId(v.id || '');
     setShowVenueResults(false);
-    // Venue 선택 시 해당 Venue의 country/city로 자동 업데이트
     if (v.country) setFormCountry(v.country);
     if (v.city) setFormCity(v.city);
+  };
+
+  const handleOrganizerSearch = (val: string) => {
+    setOrganizerName(val);
+    if (val.length >= 1) {
+      const lower = val.toLowerCase();
+      const filtered = allUsers.filter(u =>
+        (u.nickname && u.nickname.toLowerCase().includes(lower)) ||
+        (u.nativeNickname && u.nativeNickname.includes(val))
+      );
+      setOrganizerResults(filtered.slice(0, 6));
+      setShowOrganizerResults(filtered.length > 0);
+    } else {
+      setShowOrganizerResults(false);
+      setOrganizerResults([]);
+    }
+  };
+
+  const handleSelectOrganizer = (u: PlatformUser) => {
+    setOrganizerName(u.nickname || 'Anonymous');
+    setOrganizerId(u.id);
+    setShowOrganizerResults(false);
   };
 
   const handleDjSearch = (val: string) => {
@@ -110,8 +197,8 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
     if (val.length >= 1) {
       const lower = val.toLowerCase();
       const filtered = allUsers.filter(u =>
-        u.nickname?.toLowerCase().includes(lower) ||
-        u.nativeNickname?.includes(val)
+        (u.nickname && u.nickname.toLowerCase().includes(lower)) ||
+        (u.nativeNickname && u.nativeNickname.includes(val))
       );
       setDjResults(filtered.slice(0, 6));
       setShowDjResults(filtered.length > 0);
@@ -122,15 +209,8 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
   };
 
   const handleSelectDj = (u: PlatformUser) => {
-    setDjName(u.nickname);
+    setDjName(u.nickname || '');
     setShowDjResults(false);
-  };
-
-  const handleOpenLocationSelector = () => {
-    openSelectorWithCallback((country, city) => {
-      setFormCountry(country);
-      setFormCity(city);
-    });
   };
 
   const handleTitleChange = (val: string) => {
@@ -142,11 +222,6 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
       setTitle(val);
     }
   };
-
-  const handleAddSocialEvent = () => setSocialEvents([...socialEvents, { id: Date.now(), title: '' }]);
-  const handleRemoveSocialEvent = (id: number) => setSocialEvents(socialEvents.filter(e => e.id !== id));
-  const handleSocialEventTitleChange = (id: number, val: string) =>
-    setSocialEvents(socialEvents.map(e => e.id === id ? { ...e, title: val } : e));
 
   const handleSave = async () => {
     if (!user || !title) return alert('Please enter an event title');
@@ -161,9 +236,11 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
       const finalData: any = {
         title: title || '',
         titleNative: titleNative || '',
+        description: description || '',
         type: type || 'regular',
-        organizerId: user.uid,
-        organizerName: user.displayName || 'Anonymous',
+        organizerId: organizerId,
+        organizerName: organizerName,
+        organizerNameNative: '', // Can be populated if needed
         venueId: venueId || '',
         venueName: venueName || '',
         country: formCountry || '',
@@ -172,8 +249,12 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
         startTime: startTime || '',
         endTime: endTime || '',
         djName: djName || '',
+        dressCode: dressCode || '',
         price: `${currency} ${priceAmount}`,
-        socialEvents: socialEvents.map(e => e.title).filter(t => t.trim() !== ''),
+        socialEvents: socialEvents.filter(e => e.title.trim() !== '').map(e => ({ id: String(e.id), title: e.title, description: e.description, maxParticipants: e.isUnlimited ? 0 : e.maxParticipants })),
+        staffIds: staffList.map(s => s.id),
+        staffNames: staffList.map(s => s.name),
+        tableCapacity: tableCapacity || 0,
       };
 
       if (type === 'regular') {
@@ -182,6 +263,9 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
       } else {
         finalData.dayOfWeek = null;
         finalData.recurrence = null;
+        if (startDate) {
+          finalData.date = new Date(startDate);
+        }
       }
 
       if (socialData?.id) {
@@ -212,95 +296,64 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
   };
 
   return (
-    <div className="fixed inset-0 z-[200] bg-[#f9f9f9] overflow-y-auto animate-in fade-in duration-300">
-      <style dangerouslySetInnerHTML={{ __html: `.material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }` }} />
+    <div className="fixed inset-0 z-[200] bg-white overflow-y-auto animate-in fade-in duration-300">
+      <style dangerouslySetInnerHTML={{ __html: `.material-symbols-rounded { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }` }} />
 
-      {/* TopAppBar */}
-      <header className="fixed top-0 left-0 w-full z-[210] flex justify-between items-center px-4 h-16 bg-white/85 backdrop-blur-md shadow-[0px_12px_32px_rgba(22,29,30,0.06)]">
-        <div className="flex items-center gap-4">
-          <button onClick={onClose} className="hover:bg-[#EEF5F6] p-2 transition-colors active:opacity-70 rounded">
-            <span className="material-symbols-outlined text-[#005BC0]">close</span>
-          </button>
-        </div>
-        <h1 className="text-xl font-bold font-manrope text-[#2D3435]">{socialData ? 'Edit Social' : 'Create Social'}</h1>
+      {/* Header */}
+      <header className="fixed top-0 left-0 w-full z-[210] flex justify-between items-center px-4 h-14 bg-white/95 backdrop-blur-md border-b border-[#f2f4f4]">
         <div className="flex items-center gap-2">
+          <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors">
+            <span className="material-symbols-rounded text-[#2d3435]">close</span>
+          </button>
+          <h1 className="text-lg font-black font-headline text-[#2d3435]">{socialData ? 'Edit Social' : 'Create Social'}</h1>
+        </div>
+        <div className="flex items-center gap-2">
+          {socialData && (
+            <button onClick={handleDelete} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-red-50 text-red-500 transition-colors">
+              <span className="material-symbols-rounded">delete</span>
+            </button>
+          )}
           <button
             onClick={handleSave}
             disabled={isSubmitting}
-            className="flex items-center gap-2 px-3 py-2 hover:bg-[#EEF5F6] transition-colors active:scale-95 rounded text-[#005BC0]"
+            className="flex items-center gap-1.5 px-4 py-2 bg-primary text-white rounded-full hover:bg-primary/90 transition-colors disabled:opacity-50 font-bold text-sm shadow-sm"
           >
-            <span className="material-symbols-outlined">{isSubmitting ? 'sync' : 'save'}</span>
-            <span className="text-sm font-medium">Save</span>
+            <span className="material-symbols-rounded text-[18px]">{isSubmitting ? 'sync' : 'done'}</span>
+            Save
           </button>
-          {socialData && (
-            <button onClick={handleDelete} className="p-2 hover:bg-[#EEF5F6] transition-colors active:opacity-70 rounded">
-              <span className="material-symbols-outlined text-[#ba1a1a]">delete</span>
-            </button>
-          )}
         </div>
-        <div className="absolute bottom-0 left-0 w-full bg-[#EEF5F6] h-[1px]"></div>
       </header>
 
-      <main className="pt-24 pb-20 max-w-3xl mx-auto px-6">
-
-        {/* 1. Event Title */}
-        <section className="mb-12 text-left space-y-4">
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-[#2D3435]/60 mb-3 font-inter">
-              Event Title <span className="text-[#005BC0] font-black">EN</span>
-            </label>
-            <input
-              value={title}
-              onChange={(e) => handleTitleChange(e.target.value)}
-              className={`w-full bg-[#dde4e5] border-none focus:bg-white focus:ring-2 p-4 text-lg font-semibold rounded text-[#2D3435] placeholder:text-[#2D3435]/30 transition-all outline-none ${titleError ? 'ring-2 ring-[#ba1a1a]/40 bg-[#fff8f7]' : 'focus:ring-[#005BC0]/40'}`}
-              placeholder="Enter social name in English..."
-              type="text"
-            />
-            {titleError && <p className="text-[11px] text-[#ba1a1a] font-bold mt-1.5 ml-1">{titleError}</p>}
-          </div>
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-[#2D3435]/60 mb-3 font-inter">
-              Event Title <span className="text-[#2D3435]/40 font-black">Native</span>
-            </label>
-            <input
-              value={titleNative}
-              onChange={(e) => setTitleNative(e.target.value)}
-              className="w-full bg-[#dde4e5] border-none focus:bg-white focus:ring-2 focus:ring-[#005BC0]/40 p-4 text-lg font-semibold rounded text-[#2D3435] placeholder:text-[#2D3435]/30 transition-all outline-none"
-              placeholder="Native title (e.g. 밀롱가 엘 불린)"
-              type="text"
-            />
-          </div>
-        </section>
-
-        {/* 2. Gallery */}
-        <section className="mb-12 text-left">
-          <div className="flex justify-between items-end mb-4">
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-[#2D3435]/60 mb-1 font-inter">Gallery</label>
-              <p className="text-xs text-[#2D3435]/40 font-medium">Up to 20 photos. First image is the Primary Poster.</p>
+      <main className="pt-20 pb-4 max-w-2xl mx-auto px-4 space-y-5">
+        
+        {/* 1. Gallery Section */}
+        <div className="border border-[#e0e4e5] rounded-2xl bg-white">
+          <div className="bg-[#f8f9fa] px-4 py-3 border-b border-[#e0e4e5] flex items-center justify-between rounded-t-[15px]">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-rounded text-sm text-primary">image</span>
+              <p className="text-[10px] font-black text-primary uppercase tracking-widest">Poster & Gallery</p>
             </div>
           </div>
-          <div className="grid grid-cols-4 gap-3">
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              className="col-span-2 row-span-2 relative group aspect-square rounded overflow-hidden bg-white border-2 border-dashed border-[#005BC0]/20 flex flex-col items-center justify-center cursor-pointer hover:border-[#005BC0]/50 transition-all"
-            >
-              {images[0] ? (
-                <>
-                  <img className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" src={images[0]} alt="poster" />
-                  <div className="absolute top-3 left-3 bg-[#005BC0] text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm z-10">PRIMARY POSTER</div>
-                </>
-              ) : (
-                <div className="flex flex-col items-center text-[#2D3435]/20">
-                  <span className="material-symbols-outlined text-4xl mb-1">add_a_photo</span>
-                  <span className="text-[10px] font-bold">Add Cover</span>
-                </div>
-              )}
-              <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white drop-shadow-md z-20">
-                <span className="material-symbols-outlined text-3xl mb-1">add_a_photo</span>
-                <span className="text-xs font-bold">{images[0] ? 'Replace Cover' : 'Add Cover'}</span>
+          <div className="p-4">
+            <div className="py-4 px-8 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] mb-3 flex justify-center">
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="relative aspect-[4/5] w-full max-w-[240px] rounded-lg overflow-hidden bg-white border border-[#e0e4e5] flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-all group shadow-sm"
+              >
+                {images[0] ? (
+                  <>
+                    <img className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src={images[0]} alt="poster" />
+                    <div className="absolute top-3 left-3 bg-primary text-white text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded shadow-sm z-10">Primary</div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center text-[#acb3b4] group-hover:text-primary transition-colors">
+                    <span className="material-symbols-rounded text-4xl mb-2">add_photo_alternate</span>
+                    <span className="text-xs font-bold text-center px-4">Upload Poster<br/><span className="text-[10px] font-medium mt-1">4:5 Ratio Recommended</span></span>
+                  </div>
+                )}
               </div>
             </div>
+            <p className="text-center text-[11px] font-bold text-[#acb3b4]">Optimal ratio for social distribution is 4:5</p>
             <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => {
               const f = e.target.files?.[0];
               if (f) {
@@ -308,240 +361,371 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
                 setImageFile(f);
               }
             }} />
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="aspect-square bg-[#EEF5F6] rounded flex items-center justify-center cursor-pointer border-2 border-transparent hover:border-[#005BC0]/30 transition-all">
-                <span className="material-symbols-outlined text-[#2D3435]/20">add</span>
-              </div>
-            ))}
           </div>
-        </section>
+        </div>
 
-        {/* 3. Event Type */}
-        <section className="mb-12 text-left">
-          <label className="block text-xs font-bold uppercase tracking-wider text-[#2D3435]/60 mb-4 font-inter">Event Type</label>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setType('regular')}
-              className={`flex-1 py-4 rounded font-bold text-sm flex items-center justify-center gap-2 transition-all ${type === 'regular' ? 'bg-[#004493] text-white shadow-md' : 'bg-[#e2e9ea] text-[#2D3435]/60 hover:bg-[#dde4e5]'}`}
-            >
-              <span className="material-symbols-outlined" style={{ fontVariationSettings: type === 'regular' ? "'FILL' 1" : "'FILL' 0" }}>calendar_today</span>
-              Regular
-            </button>
-            <button
-              onClick={() => setType('popup')}
-              className={`flex-1 py-4 rounded font-bold text-sm flex items-center justify-center gap-2 transition-all ${type === 'popup' ? 'bg-[#004493] text-white shadow-md' : 'bg-[#e2e9ea] text-[#2D3435]/60 hover:bg-[#dde4e5]'}`}
-            >
-              <span className="material-symbols-outlined" style={{ fontVariationSettings: type === 'popup' ? "'FILL' 1" : "'FILL' 0" }}>bolt</span>
-              Popup
-            </button>
+        {/* 2. Basic Info Section */}
+        <div className="border border-[#e0e4e5] rounded-2xl bg-white">
+          <div className="bg-[#f8f9fa] px-4 py-3 border-b border-[#e0e4e5] flex items-center gap-2 rounded-t-[15px]">
+            <span className="material-symbols-rounded text-sm text-primary">info</span>
+            <p className="text-[10px] font-black text-primary uppercase tracking-widest">Basic Info</p>
           </div>
-        </section>
-
-        {/* 4. Date & Time */}
-        <section className="mb-12 p-6 bg-[#EEF5F6] rounded text-left">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="p-4 space-y-4">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-[#2D3435]/60 mb-3 font-inter">Start Date</label>
-              <input
-                value={startDate}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setStartDate(val);
-                  if (val) {
-                    const d = new Date(val);
-                    if (!isNaN(d.getTime())) {
-                      setDayOfWeek(d.getDay());
+              <label className="block text-[11px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1.5">Event Title (EN)</label>
+              <div className={`flex items-center px-4 py-3 border rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/20 transition-all ${titleError ? 'border-red-300 ring-2 ring-red-100' : 'border-[#e0e4e5]'}`}>
+                <input value={title} onChange={(e) => handleTitleChange(e.target.value)}
+                  className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-base font-bold text-[#2d3435] placeholder:text-[#acb3b4] outline-none"
+                  placeholder="e.g. Milonga El Bulin" type="text" />
+              </div>
+              {titleError && <p className="text-[10px] font-bold text-red-500 mt-1 ml-1">{titleError}</p>}
+            </div>
+            
+            <div>
+              <label className="block text-[11px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1.5">Native Title (Optional)</label>
+              <div className="flex items-center px-4 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+                <input value={titleNative} onChange={(e) => setTitleNative(e.target.value)}
+                  className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-base font-bold text-[#2d3435] placeholder:text-[#acb3b4] outline-none"
+                  placeholder="e.g. 밀롱가 엘 불린" type="text" />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1.5">Description (Optional)</label>
+              <div className="flex px-4 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+                <textarea value={description} onChange={(e) => setDescription(e.target.value)}
+                  className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-sm font-medium text-[#2d3435] placeholder:text-[#acb3b4] outline-none min-h-[80px] resize-none"
+                  placeholder="Tell us about your social event..." />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-[#acb3b4] uppercase tracking-wider mb-2">Event Type</label>
+              <div className="flex gap-2 p-1 bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl">
+                <button onClick={() => setType('regular')}
+                  className={`flex-1 py-2 rounded-lg font-bold text-sm flex items-center justify-center gap-1.5 transition-all ${type === 'regular' ? 'bg-white text-primary shadow-sm border border-[#e0e4e5]' : 'text-[#acb3b4] hover:text-[#596061]'}`}>
+                  <span className="material-symbols-rounded text-[18px]">event_repeat</span>Regular
+                </button>
+                <button onClick={() => setType('popup')}
+                  className={`flex-1 py-2 rounded-lg font-bold text-sm flex items-center justify-center gap-1.5 transition-all ${type === 'popup' ? 'bg-white text-primary shadow-sm border border-[#e0e4e5]' : 'text-[#acb3b4] hover:text-[#596061]'}`}>
+                  <span className="material-symbols-rounded text-[18px]">bolt</span>Popup
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 3. Date & Time Section */}
+        <div className="border border-[#e0e4e5] rounded-2xl bg-white">
+          <div className="bg-[#f8f9fa] px-4 py-3 border-b border-[#e0e4e5] flex items-center gap-2 rounded-t-[15px]">
+            <span className="material-symbols-rounded text-sm text-primary">schedule</span>
+            <p className="text-[10px] font-black text-primary uppercase tracking-widest">Date & Time</p>
+          </div>
+          <div className="p-4 space-y-5">
+            <div className="flex flex-col gap-4">
+              <div>
+                <label className="block text-[11px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1.5">{type === 'regular' ? 'Start Date' : 'Date'}</label>
+                <div className="flex items-center px-4 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+                  <input value={startDate} onChange={(e) => {
+                    const val = e.target.value;
+                    setStartDate(val);
+                    if (val) {
+                      const d = new Date(val);
+                      if (!isNaN(d.getTime())) {
+                        setDayOfWeek(d.getDay());
+                      }
                     }
-                  }
-                }}
-                className="w-full bg-white border-none p-3 rounded font-semibold text-[#2D3435] focus:ring-2 focus:ring-[#005BC0]/40 outline-none"
-                type="date"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-[#2D3435]/60 mb-3 font-inter">Time Interval</label>
-              <div className="flex items-center gap-3">
-                <input value={startTime} onChange={(e) => setStartTime(e.target.value)} className="flex-1 bg-white border-none p-3 rounded font-semibold text-[#2D3435] focus:ring-2 focus:ring-[#005BC0]/40 outline-none" type="time" />
-                <span className="text-[#2D3435]/30">to</span>
-                <input value={endTime} onChange={(e) => setEndTime(e.target.value)} className="flex-1 bg-white border-none p-3 rounded font-semibold text-[#2D3435] focus:ring-2 focus:ring-[#005BC0]/40 outline-none" type="time" />
+                  }}
+                  className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-sm font-bold text-[#2d3435] outline-none" type="date" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1.5">Time Interval</label>
+                <div className="flex items-center justify-between px-3 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+                  <input value={startTime} onChange={(e) => handleStartTimeChange(e.target.value)} 
+                    className="w-full bg-transparent border-none p-0 focus:ring-0 text-sm font-bold text-[#2d3435] text-center outline-none" type="time" />
+                  <span className="text-[#acb3b4] font-medium text-xs px-4">-</span>
+                  <input value={endTime} onChange={(e) => setEndTime(e.target.value)} 
+                    className="w-full bg-transparent border-none p-0 focus:ring-0 text-sm font-bold text-[#2d3435] text-center outline-none" type="time" />
+                </div>
               </div>
             </div>
-            <div className={`col-span-full transition-opacity ${type === 'regular' ? 'opacity-100' : 'opacity-30 pointer-events-none'}`}>
-              <label className="block text-xs font-bold uppercase tracking-wider text-[#2D3435]/60 mb-3 font-inter">Recurring Day</label>
-              <div className="flex justify-between gap-1 mb-6">
-                {days.map((day, idx) => {
-                  const isActive = dayOfWeek === dayIndices[idx];
-                  return (
-                    <button key={idx} onClick={() => setDayOfWeek(dayIndices[idx])}
-                      className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold transition-all ${isActive ? 'bg-[#004493] text-white shadow-lg' : 'bg-white text-[#2D3435]/40 hover:bg-[#005BC0]/10'}`}>
-                      {day}
-                    </button>
-                  );
-                })}
-              </div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-[#2D3435]/60 mb-3 font-inter">Recurrence Frequency</label>
+
+            <div className={`transition-opacity ${type === 'regular' ? 'opacity-100' : 'hidden'}`}>
+              <label className="block text-[11px] font-bold text-[#acb3b4] uppercase tracking-wider mb-2">Frequency</label>
               <div className="flex flex-wrap gap-2">
-                {[{ id: 'every', label: 'Every Week' }, { id: '1st', label: '1st' }, { id: '2nd', label: '2nd' }, { id: '3rd', label: '3rd' }, { id: '4th', label: '4th' }, { id: 'last', label: 'Last' }].map(r => (
+                {getAvailableRecurrences(startDate).map(r => (
                   <button key={r.id} onClick={() => setRecurrence(r.id)}
-                    className={`px-4 py-2 rounded-full text-xs font-bold transition-all border ${recurrence === r.id ? 'bg-[#005BC0] text-white border-[#005BC0] shadow-sm' : 'bg-white text-[#2D3435]/60 border-gray-200 hover:border-[#005BC0]/30'}`}>
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${recurrence === r.id ? 'bg-primary text-white border-primary shadow-sm' : 'bg-[#f8f9fa] text-[#acb3b4] border-[#e0e4e5] hover:border-primary/50'}`}>
                     {r.label}
                   </button>
                 ))}
               </div>
             </div>
           </div>
-        </section>
+        </div>
 
-        {/* 5. Venue & DJ */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12 text-left">
-          <div className="relative">
-            <label className="block text-xs font-bold uppercase tracking-wider text-[#2D3435]/60 mb-3 font-inter">Venue Selection</label>
-            <div className="relative group">
-              <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#2D3435]/40">location_on</span>
-              <input
-                value={venueName}
-                onChange={(e) => handleVenueSearch(e.target.value)}
-                onFocus={() => venueName.length >= 1 && setShowVenueResults(venueResults.length > 0)}
-                onBlur={() => setTimeout(() => setShowVenueResults(false), 200)}
-                className="w-full pl-12 pr-4 py-4 bg-white border-none rounded shadow-sm focus:ring-2 focus:ring-[#005BC0]/40 font-medium outline-none"
-                placeholder="Search venues..."
-                type="text"
-              />
-            </div>
-            {showVenueResults && (
-              <div className="absolute top-full left-0 w-full bg-white border border-gray-100 rounded-b shadow-xl z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                {venueResults.map(v => (
-                  <button
-                    key={v.id}
-                    onClick={() => handleSelectVenue(v)}
-                    className="w-full text-left px-4 py-3 hover:bg-[#EEF5F6] flex items-center justify-between group transition-colors border-b border-gray-50 last:border-b-0"
-                  >
-                    <div className="flex items-baseline gap-2">
-                      <p className="font-bold text-[#2D3435] group-hover:text-[#005BC0] transition-colors">{v.name}</p>
-                      {v.nameKo && <span className="text-[11px] text-gray-400 font-medium">{v.nameKo}</span>}
-                    </div>
-                    <span className="text-[10px] text-gray-300 font-bold">{v.city}</span>
-                  </button>
-                ))}
-              </div>
-            )}
+        {/* 4. Location Section */}
+        <div className="relative z-40 border border-[#e0e4e5] rounded-2xl bg-white">
+          <div className="bg-[#f8f9fa] px-4 py-3 border-b border-[#e0e4e5] flex items-center gap-2 rounded-t-[15px]">
+            <span className="material-symbols-rounded text-sm text-primary">location_on</span>
+            <p className="text-[10px] font-black text-primary uppercase tracking-widest">Location</p>
           </div>
-          <div className="relative">
-            <label className="block text-xs font-bold uppercase tracking-wider text-[#2D3435]/60 mb-3 font-inter">DJ Selection</label>
-            <div className="relative group">
-              <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#2D3435]/40">person</span>
-              <input
-                value={djName}
-                onChange={(e) => handleDjSearch(e.target.value)}
-                onFocus={() => djName.length >= 1 && setShowDjResults(djResults.length > 0)}
-                onBlur={() => setTimeout(() => setShowDjResults(false), 200)}
-                className="w-full pl-12 pr-4 py-4 bg-white border-none rounded shadow-sm focus:ring-2 focus:ring-[#005BC0]/40 font-medium outline-none"
-                placeholder="Search artists..."
-                type="text"
-              />
-            </div>
-            {showDjResults && (
-              <div className="absolute top-full left-0 w-full bg-white border border-gray-100 rounded-b shadow-xl z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                {djResults.map(u => (
-                  <button
-                    key={u.id}
-                    onClick={() => handleSelectDj(u)}
-                    className="w-full text-left px-4 py-3 hover:bg-[#EEF5F6] flex items-center justify-between group transition-colors border-b border-gray-50 last:border-b-0"
-                  >
-                    <div className="flex items-baseline gap-2">
-                      <p className="font-bold text-[#2D3435] group-hover:text-[#005BC0] transition-colors">{u.nickname}</p>
-                      {u.nativeNickname && <span className="text-[11px] text-gray-400 font-medium">{u.nativeNickname}</span>}
-                    </div>
-                  </button>
-                ))}
+          <div className="p-4 space-y-4">
+            <div className="relative z-50">
+              <label className="block text-[11px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1.5">Venue</label>
+              <div className="relative flex items-center px-4 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+                <span className="material-symbols-rounded text-[#acb3b4] mr-2">search</span>
+                <input value={venueName} onChange={(e) => handleVenueSearch(e.target.value)}
+                  onFocus={() => venueName.length >= 1 && setShowVenueResults(venueResults.length > 0)}
+                  onBlur={() => setTimeout(() => setShowVenueResults(false), 200)}
+                  className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-sm font-bold text-[#2d3435] placeholder:text-[#acb3b4] outline-none"
+                  placeholder="Search venue name..." type="text" />
               </div>
-            )}
-          </div>
-        </section>
+              {showVenueResults && (
+                <div className="absolute top-full left-0 w-full mt-1 bg-white border border-[#e0e4e5] rounded-xl shadow-lg z-50 overflow-hidden">
+                  {venueResults.map(v => (
+                    <button key={v.id} onClick={() => handleSelectVenue(v)}
+                      className="w-full text-left px-4 py-3 hover:bg-[#f8f9fa] flex items-center justify-between group transition-colors border-b border-[#f2f4f4] last:border-0">
+                      <div className="flex items-baseline gap-2">
+                        <p className="font-bold text-[#2d3435] text-sm group-hover:text-primary">{v.name}</p>
+                        {v.nameKo && <span className="text-[10px] text-[#acb3b4] font-medium">{v.nameKo}</span>}
+                      </div>
+                      <span className="text-[10px] text-[#acb3b4] font-bold bg-[#f2f4f4] px-2 py-0.5 rounded-full">{v.city}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
-        {/* 6. Location (City/Country) */}
-        <section className="mb-12 text-left">
-          <label className="block text-xs font-bold uppercase tracking-wider text-[#2D3435]/60 mb-3 font-inter">Location</label>
-          <button 
-            onClick={handleOpenLocationSelector}
-            className="w-full flex items-center justify-between bg-white rounded shadow-sm px-4 py-4 hover:bg-[#EEF5F6] active:scale-[0.99] transition-all text-left"
-          >
-            <div className="flex items-center gap-3">
-              <span className="material-symbols-outlined text-[#005BC0]">public</span>
+            <div>
+              <label className="block text-[11px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1.5">Region (Auto-filled)</label>
+              <button onClick={() => openSelectorWithCallback((country, city) => { setFormCountry(country); setFormCity(city); })}
+                className="w-full flex items-center justify-between px-4 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] hover:bg-[#f2f4f4] transition-colors">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-rounded text-primary">public</span>
+                  <div className="text-left">
+                    <p className="text-sm font-bold text-[#2d3435]">{formCountry || 'Select Country'}</p>
+                    <p className="text-[10px] font-medium text-[#acb3b4]">{formCity || 'Select City'}</p>
+                  </div>
+                </div>
+                <span className="material-symbols-rounded text-[#acb3b4]">chevron_right</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* 5. Roles & Staff */}
+        <div className="relative z-30 border border-[#e0e4e5] rounded-2xl bg-white">
+          <div className="bg-[#f8f9fa] px-4 py-3 border-b border-[#e0e4e5] flex items-center gap-2 rounded-t-[15px]">
+            <span className="material-symbols-rounded text-sm text-primary">group</span>
+            <p className="text-[10px] font-black text-primary uppercase tracking-widest">Roles & Staff</p>
+          </div>
+          <div className="p-4 space-y-4">
+            {/* Organizer */}
+            <div className="relative z-30">
+              <label className="block text-[11px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1.5">Organizer</label>
+              <div className="relative flex items-center px-4 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+                <span className="material-symbols-rounded text-[#acb3b4] mr-2">person_filled</span>
+                <input value={organizerName} onChange={(e) => handleOrganizerSearch(e.target.value)}
+                  onFocus={() => organizerName.length >= 1 && setShowOrganizerResults(organizerResults.length > 0)}
+                  onBlur={() => setTimeout(() => setShowOrganizerResults(false), 200)}
+                  className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-sm font-bold text-[#2d3435] placeholder:text-[#acb3b4] outline-none"
+                  placeholder="Search user..." type="text" />
+              </div>
+              {showOrganizerResults && (
+                <div className="absolute top-full left-0 w-full mt-1 bg-white border border-[#e0e4e5] rounded-xl shadow-lg z-50 overflow-hidden">
+                  {organizerResults.map(u => (
+                    <button key={u.id} onClick={() => handleSelectOrganizer(u)}
+                      className="w-full text-left px-4 py-3 hover:bg-[#f8f9fa] flex items-baseline gap-2 group transition-colors border-b border-[#f2f4f4] last:border-0">
+                      <p className="font-bold text-[#2d3435] text-sm group-hover:text-primary">{u.nickname}</p>
+                      {u.nativeNickname && <span className="text-[10px] text-[#acb3b4]">({u.nativeNickname})</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* DJ */}
+            <div className="relative z-20">
+              <label className="block text-[11px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1.5">DJ</label>
+              <div className="relative flex items-center px-4 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+                <span className="material-symbols-rounded text-[#acb3b4] mr-2">headphones</span>
+                <input value={djName} onChange={(e) => handleDjSearch(e.target.value)}
+                  onFocus={() => djName.length >= 1 && setShowDjResults(djResults.length > 0)}
+                  onBlur={() => setTimeout(() => setShowDjResults(false), 200)}
+                  className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-sm font-bold text-[#2d3435] placeholder:text-[#acb3b4] outline-none"
+                  placeholder="Search DJ..." type="text" />
+              </div>
+              {showDjResults && (
+                <div className="absolute top-full left-0 w-full mt-1 bg-white border border-[#e0e4e5] rounded-xl shadow-lg z-50 overflow-hidden">
+                  {djResults.map(u => (
+                    <button key={u.id} onClick={() => handleSelectDj(u)}
+                      className="w-full text-left px-4 py-3 hover:bg-[#f8f9fa] flex items-baseline gap-2 group transition-colors border-b border-[#f2f4f4] last:border-0">
+                      <p className="font-bold text-[#2d3435] text-sm group-hover:text-primary">{u.nickname}</p>
+                      {u.nativeNickname && <span className="text-[10px] text-[#acb3b4]">({u.nativeNickname})</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Staff */}
+            <div className="relative z-10">
+              <label className="block text-[11px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1.5">Staff Registration</label>
+              <div className="relative flex items-center px-4 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+                <span className="material-symbols-rounded text-[#acb3b4] mr-2">person_add</span>
+                <input value={staffSearch} onChange={(e) => {
+                    setStaffSearch(e.target.value);
+                    if (e.target.value.length >= 1) {
+                      const lower = e.target.value.toLowerCase();
+                      const filtered = allUsers.filter(u =>
+                        !staffList.find(s => s.id === u.id) &&
+                        ((u.nickname && u.nickname.toLowerCase().includes(lower)) ||
+                         (u.nativeNickname && u.nativeNickname.includes(e.target.value)))
+                      );
+                      setStaffResults(filtered.slice(0, 6));
+                      setShowStaffResults(filtered.length > 0);
+                    } else setShowStaffResults(false);
+                  }}
+                  onBlur={() => setTimeout(() => setShowStaffResults(false), 200)}
+                  className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-sm font-bold text-[#2d3435] placeholder:text-[#acb3b4] outline-none"
+                  placeholder="Search and add staff..." type="text" />
+              </div>
+              {showStaffResults && (
+                <div className="absolute top-full left-0 w-full mt-1 bg-white border border-[#e0e4e5] rounded-xl shadow-lg z-50 overflow-hidden">
+                  {staffResults.map(u => (
+                    <button key={u.id} onClick={() => { setStaffList([...staffList, { id: u.id, name: u.nickname || '' }]); setStaffSearch(''); setShowStaffResults(false); }}
+                      className="w-full text-left px-4 py-3 hover:bg-[#f8f9fa] flex items-baseline gap-2 border-b border-[#f2f4f4] last:border-0 group">
+                      <p className="font-bold text-[#2d3435] text-sm group-hover:text-primary">{u.nickname}</p>
+                      {u.nativeNickname && <span className="text-[10px] text-[#acb3b4]">({u.nativeNickname})</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+              
+              {staffList.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-3 p-3 bg-[#f8f9fa] rounded-xl border border-[#e0e4e5]">
+                  {staffList.map(s => (
+                    <div key={s.id} className="flex items-center gap-1.5 bg-white border border-[#e0e4e5] px-3 py-1.5 rounded-full shadow-sm">
+                      <span className="material-symbols-rounded text-[14px] text-primary">person</span>
+                      <span className="text-[11px] font-bold text-[#2d3435]">{s.name}</span>
+                      <button onClick={() => setStaffList(staffList.filter(x => x.id !== s.id))} className="text-[#acb3b4] hover:text-red-500 transition-colors ml-1 flex items-center justify-center">
+                        <span className="material-symbols-rounded text-[14px]">cancel</span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* 6. Ticketing & Details */}
+        <div className="relative z-20 border border-[#e0e4e5] rounded-2xl bg-white">
+          <div className="bg-[#f8f9fa] px-4 py-3 border-b border-[#e0e4e5] flex items-center gap-2 rounded-t-[15px]">
+            <span className="material-symbols-rounded text-sm text-primary">local_activity</span>
+            <p className="text-[10px] font-black text-primary uppercase tracking-widest">Ticketing & Details</p>
+          </div>
+          <div className="p-4 space-y-4">
+            <div className="flex flex-col gap-4">
               <div>
-                <p className="font-bold text-[#2D3435] text-sm">{formCountry}</p>
-                <p className="text-xs text-[#2D3435]/50 font-medium">{formCity}</p>
+                <label className="block text-[11px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1.5">Entry Price</label>
+                <div className="flex items-center gap-2">
+                  <div className="px-3 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/20 transition-all w-24">
+                    <select value={currency} onChange={(e) => setCurrency(e.target.value)}
+                      className="w-full bg-transparent border-none p-0 text-sm font-bold text-[#2d3435] focus:ring-0 outline-none appearance-none">
+                      <option value="KRW">KRW</option>
+                      <option value="USD">USD</option>
+                      <option value="EUR">EUR</option>
+                      <option value="JPY">JPY</option>
+                    </select>
+                  </div>
+                  <div className="flex-1 flex items-center px-4 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+                    <input value={priceAmount} onChange={(e) => setPriceAmount(e.target.value)}
+                      className="w-full bg-transparent border-none p-0 focus:ring-0 text-sm font-bold text-[#2d3435] placeholder:text-[#acb3b4] outline-none" type="number" placeholder="0" />
+                  </div>
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-[11px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1.5">Table Capacity</label>
+                <div className="flex items-center px-4 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+                  <span className="material-symbols-rounded text-[#acb3b4] mr-2">deck</span>
+                  <input value={tableCapacity || ''} onChange={(e) => setTableCapacity(parseInt(e.target.value) || 0)}
+                    className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-sm font-bold text-[#2d3435] placeholder:text-[#acb3b4] outline-none" type="number" placeholder="e.g. 15" min="0" />
+                </div>
               </div>
             </div>
-            <span className="material-symbols-outlined text-[#2D3435]/40">chevron_right</span>
-          </button>
-          <p className="text-[10px] text-[#2D3435]/40 mt-2 ml-1">
-            * Selecting a venue will auto-update the location
-          </p>
-        </section>
 
-        {/* 7. Dress Code */}
-        <section className="mb-12 text-left">
-          <label className="block text-xs font-bold uppercase tracking-wider text-[#2D3435]/60 mb-3 font-inter">Dress Code</label>
-          <div className="relative">
-            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#2D3435]/40">checkroom</span>
-            <input value={dressCode} onChange={(e) => setDressCode(e.target.value)}
-              className="w-full pl-12 pr-4 py-4 bg-white border-none rounded shadow-sm focus:ring-2 focus:ring-[#005BC0]/40 font-medium outline-none"
-              placeholder="e.g. Cocktail Attire, All White..." type="text" />
-          </div>
-        </section>
-
-        {/* 8. Pricing */}
-        <section className="mb-12 text-left">
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 block">Entry Pricing</label>
-            <div className="flex items-center gap-2">
-              <select 
-                value={currency} 
-                onChange={(e) => setCurrency(e.target.value)}
-                className="bg-[#dde4e5] border-none rounded-2xl px-4 py-4 text-sm font-bold focus:ring-2 focus:ring-[#005BC0]/40 outline-none w-28 appearance-none"
-              >
-                <option value="KRW">KRW</option>
-                <option value="USD">USD</option>
-                <option value="EUR">EUR</option>
-                <option value="JPY">JPY</option>
-              </select>
-              <input 
-                value={priceAmount} 
-                onChange={(e) => setPriceAmount(e.target.value)}
-                placeholder="0"
-                type="number"
-                className="flex-1 bg-[#dde4e5] border-none rounded-2xl px-4 py-4 text-sm font-bold focus:ring-2 focus:ring-[#005BC0]/40 outline-none" 
-              />
+            <div>
+              <label className="block text-[11px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1.5">Dress Code</label>
+              <div className="flex items-center px-4 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+                <span className="material-symbols-rounded text-[#acb3b4] mr-2">checkroom</span>
+                <input value={dressCode} onChange={(e) => setDressCode(e.target.value)}
+                  className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-sm font-bold text-[#2d3435] placeholder:text-[#acb3b4] outline-none" placeholder="e.g. Cocktail Attire, All Black..." type="text" />
+              </div>
             </div>
           </div>
-        </section>
+        </div>
 
-        {/* 9. Social Events Schedule */}
-        <section className="mb-20 text-left">
-          <div className="flex items-center justify-between mb-6">
-            <label className="block text-xs font-bold uppercase tracking-wider text-[#2D3435]/60 font-inter">Social Events Schedule</label>
-            <button onClick={handleAddSocialEvent} className="text-xs font-bold text-[#005BC0] flex items-center gap-1 hover:underline active:opacity-70">
-              <span className="material-symbols-outlined text-sm">add_circle</span>
-              ADD SOCIAL EVENT
+        {/* 7. Sub-Events Schedule */}
+        <div className="relative z-10 border border-[#e0e4e5] rounded-2xl bg-white">
+          <div className="bg-[#f8f9fa] px-4 py-3 border-b border-[#e0e4e5] flex items-center justify-between rounded-t-[15px]">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-rounded text-sm text-primary">celebration</span>
+              <p className="text-[10px] font-black text-primary uppercase tracking-widest">Events Schedule</p>
+            </div>
+            <button onClick={() => setSocialEvents([...socialEvents, { id: Date.now(), title: '', description: '', maxParticipants: 1, isUnlimited: true }])}
+              className="text-[10px] font-bold text-primary flex items-center gap-1 bg-primary/10 px-2.5 py-1 rounded-full hover:bg-primary/20 transition-colors">
+              <span className="material-symbols-rounded text-[14px]">add</span> Add Event
             </button>
           </div>
-          <div className="space-y-3">
+          <div className="p-4 space-y-3">
+            {socialEvents.length === 0 && (
+              <div className="text-center py-6 text-[#acb3b4]">
+                <span className="material-symbols-rounded text-3xl mb-1 opacity-50">event_note</span>
+                <p className="text-xs font-bold">No sub-events scheduled</p>
+              </div>
+            )}
             {socialEvents.map(event => (
-              <div key={event.id} className="flex items-center gap-4 bg-white p-4 rounded shadow-sm group animate-in slide-in-from-right-4 duration-300">
-                <div className="flex-1">
-                  <input value={event.title} onChange={(e) => handleSocialEventTitleChange(event.id, e.target.value)}
-                    className="w-full bg-transparent border-none p-0 focus:ring-0 font-bold text-[#2D3435] outline-none"
-                    type="text" placeholder="Enter social event title..." />
-                  <p className="text-[10px] text-[#2D3435]/40 font-bold uppercase mt-1">Social Event Name</p>
-                </div>
-                <button onClick={() => handleRemoveSocialEvent(event.id)} className="p-2 opacity-0 group-hover:opacity-100 text-[#ba1a1a] transition-opacity">
-                  <span className="material-symbols-outlined">remove_circle</span>
+              <div key={event.id} className="p-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] relative group">
+                <button onClick={() => setSocialEvents(socialEvents.filter(e => e.id !== event.id))} 
+                  className="absolute -top-2 -right-2 w-6 h-6 bg-white border border-[#e0e4e5] rounded-full flex items-center justify-center text-[#acb3b4] hover:text-red-500 hover:border-red-200 transition-colors shadow-sm opacity-0 group-hover:opacity-100">
+                  <span className="material-symbols-rounded text-[14px]">close</span>
                 </button>
+                <div className="space-y-2">
+                  <input value={event.title} onChange={(e) => setSocialEvents(socialEvents.map(ev => ev.id === event.id ? { ...ev, title: e.target.value } : ev))}
+                    className="w-full bg-transparent border-b border-[#e0e4e5] pb-1 focus:border-primary focus:ring-0 text-sm font-bold text-[#2d3435] placeholder:text-[#acb3b4] outline-none transition-colors"
+                    type="text" placeholder="Event Title (e.g. DJ Time, Workshop)" />
+                  <input value={event.description} onChange={(e) => setSocialEvents(socialEvents.map(ev => ev.id === event.id ? { ...ev, description: e.target.value } : ev))}
+                    className="w-full bg-transparent border-none p-0 focus:ring-0 text-xs text-[#596061] placeholder:text-[#acb3b4] outline-none"
+                    type="text" placeholder="Short description (optional)" />
+                  <div className="flex items-center justify-between pt-3 border-t border-[#e0e4e5] border-dashed">
+                    <label className="text-[10px] text-[#acb3b4] font-bold uppercase flex items-center gap-2">
+                      <input 
+                        type="checkbox" 
+                        checked={(event as any).isUnlimited}
+                        onChange={(e) => setSocialEvents(socialEvents.map(ev => ev.id === event.id ? { ...ev, isUnlimited: e.target.checked, maxParticipants: e.target.checked ? 0 : 1 } : ev))}
+                        className="rounded border-[#e0e4e5] text-primary focus:ring-primary/20"
+                      />
+                      Unlimited Participants
+                    </label>
+                    {!(event as any).isUnlimited && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-[#acb3b4] font-bold uppercase">Max:</span>
+                        <input value={event.maxParticipants || ''} onChange={(e) => setSocialEvents(socialEvents.map(ev => ev.id === event.id ? { ...ev, maxParticipants: Math.max(1, parseInt(e.target.value) || 1) } : ev))}
+                          className="w-16 bg-white border border-[#e0e4e5] p-1.5 rounded-md text-[11px] font-bold text-[#2d3435] text-center outline-none focus:border-primary"
+                          type="number" min="1" placeholder="1" />
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             ))}
           </div>
-        </section>
+        </div>
+
       </main>
     </div>
   );
