@@ -3,6 +3,8 @@ import "./globals.css";
 import GlobalNavigation from "@/components/layout/GlobalNavigation";
 import PageWrapper from "@/components/layout/PageWrapper";
 import SWRegister from "@/components/layout/SWRegister";
+import { NextIntlClientProvider } from 'next-intl';
+import { getMessages, getLocale } from 'next-intl/server';
 
 export const metadata: Metadata = {
   title: "WoC",
@@ -34,22 +36,26 @@ import AuthModal from "@/components/auth/AuthModal";
 import AuthGuard from "@/components/auth/AuthGuard";
 import { Toaster } from "sonner";
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
   modal,
 }: {
   children: React.ReactNode;
   modal?: React.ReactNode;
 }) {
+  const messages = await getMessages();
+  const locale = await getLocale();
+
   return (
-    <html lang="en" className="light">
+    <html lang={locale} className="light">
       <head>
         <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       </head>
       <body className="bg-background text-on-surface font-body selection:bg-primary-container selection:text-on-primary-container antialiased">
-        <div className="overflow-x-hidden w-full relative flex flex-col min-h-[100dvh]">
+        <NextIntlClientProvider messages={messages} locale={locale}>
+          <div className="overflow-x-hidden w-full relative flex flex-col min-h-[100dvh]">
           <AuthProvider>
             <AuthModal />
             <AuthGuard>
@@ -84,6 +90,7 @@ export default function RootLayout({
             <Toaster position="top-center" richColors />
           </AuthProvider>
         </div>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

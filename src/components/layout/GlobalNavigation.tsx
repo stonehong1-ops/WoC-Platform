@@ -11,6 +11,8 @@ import CreateProduct from "@/components/shop/CreateProduct";
 import { useNotification } from '@/contexts/NotificationContext';
 import { chatService } from '@/lib/firebase/chatService';
 import { COUNTRY_MAPPING } from "@/lib/constants/locations";
+import { useLocale } from 'next-intl';
+
 const NAV_STRUCTURE = {
   World: [
     { name: "SOCIETY", icon: "radio_button_unchecked", path: "/home" },
@@ -73,6 +75,13 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
 
   const { unreadCount: notiUnreadCount, todoCount } = useNotification();
   const [unreadCount, setUnreadCount] = useState(0);
+  
+  const locale = useLocale();
+  const toggleLocale = () => {
+    const nextLocale = locale === 'en' ? 'ko' : 'en';
+    document.cookie = `NEXT_LOCALE=${nextLocale}; path=/; max-age=31536000`;
+    window.location.reload();
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -247,6 +256,14 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
 
             {/* Right Side: Action Icons */}
             <div className="flex items-center gap-1.5">
+              {/* Language Toggle */}
+              <button 
+                onClick={toggleLocale}
+                className="w-[36px] h-[36px] rounded-full flex items-center justify-center active:scale-95 transition-all bg-[#F1F5F9] text-[#1E293B] font-black text-[13px] tracking-tight hover:bg-slate-200"
+              >
+                {locale.toUpperCase()}
+              </button>
+
               {/* Notification */}
               <Link 
                 href="/notification" 
