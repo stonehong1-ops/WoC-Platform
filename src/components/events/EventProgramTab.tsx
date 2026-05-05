@@ -3,12 +3,14 @@
 import React, { useState, useMemo } from "react";
 import { Event, EventProgram } from "@/types/event";
 import { format, parseISO } from "date-fns";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Props {
   event: Event;
 }
 
 export default function EventProgramTab({ event }: Props) {
+  const { t } = useLanguage();
   const programs = event.programs || [];
   const viewMode = event.programViewMode || "by_date";
 
@@ -16,8 +18,8 @@ export default function EventProgramTab({ event }: Props) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-[#acb3b4]">
         <span className="material-symbols-rounded text-4xl mb-2">event_note</span>
-        <p className="text-sm font-bold">No program has been set up yet</p>
-        <p className="text-[10px] mt-1">The organizer will add the program soon.</p>
+        <p className="text-sm font-bold">{t('event.no_programs_yet')}</p>
+        <p className="text-[10px] mt-1">{t('event.organizer_add_soon')}</p>
       </div>
     );
   }
@@ -74,7 +76,7 @@ function ByDateView({ programs, currency }: { programs: EventProgram[]; currency
       <div className="px-4 space-y-3">
         {dayPrograms.length === 0 ? (
           <div className="text-center py-8 text-[#acb3b4]">
-            <p className="text-xs font-bold">No events on this day</p>
+            <p className="text-xs font-bold">{t('event.no_events_day')}</p>
           </div>
         ) : (
           dayPrograms.map(p => <ProgramCard key={p.id} program={p} currency={currency} />)
@@ -130,12 +132,12 @@ function ByCategoryView({ programs, currency }: { programs: EventProgram[]; curr
         <div className="mx-4 mb-3 flex items-center gap-2 flex-wrap">
           {catMeta.maxParticipants > 0 && (
             <span className="text-[10px] font-bold text-[#596061] bg-[#f2f4f4] px-2 py-1 rounded-full">
-              👥 {catMeta.maxParticipants} {catMeta.capacityUnit === "couple" ? "couples" : "people"}
+              👥 {catMeta.maxParticipants} {catMeta.capacityUnit === "couple" ? t('event.couples') : t('event.people')}
             </span>
           )}
           {catMeta.format && (
             <span className="text-[10px] font-bold text-[#596061] bg-[#f2f4f4] px-2 py-1 rounded-full">
-              {catMeta.format === "partner_change" ? "🔄 Partner Change" : catMeta.format === "solo" ? "🧑 Solo" : "👫 Fixed Partner"}
+              {catMeta.format === "partner_change" ? `🔄 ${t('event.partner_change')}` : catMeta.format === "solo" ? `🧑 ${t('event.solo')}` : `👫 ${t('event.fixed_partner')}`}
             </span>
           )}
           {catMeta.duration && (
@@ -172,7 +174,7 @@ function ProgramCard({ program: p, currency, showDates }: { program: EventProgra
               isMilonga ? "bg-amber-500 text-white" : "bg-primary/10 text-primary"
             }`}>{p.id}</span>
             {p.isRecommended && (
-              <span className="text-[9px] font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded-md">⭐ Recommended</span>
+              <span className="text-[9px] font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded-md">⭐ {t('event.recommended')}</span>
             )}
           </div>
           <span className="text-[11px] font-bold text-[#acb3b4]">{p.startTime} – {p.endTime}</span>
@@ -219,12 +221,12 @@ function ProgramCard({ program: p, currency, showDates }: { program: EventProgra
         <div className="flex items-center gap-2 mt-2 flex-wrap">
           {p.price && (
             <span className="text-[10px] font-black text-primary bg-primary/10 px-2 py-1 rounded-full">
-              {p.price.toLocaleString()} {currency} {p.priceUnit === "per_session" ? "/class" : ""}
+              {p.price.toLocaleString()} {currency} {p.priceUnit === "per_session" ? `/${t('event.class')}` : ""}
             </span>
           )}
           {p.level && (
             <span className="text-[10px] font-bold text-[#596061] bg-[#f2f4f4] px-2 py-1 rounded-full">
-              {p.level === "adv" ? "Advanced" : p.level === "intermediate" ? "Intermediate" : "All Levels"}
+              {p.level === "adv" ? t('event.level_advanced') : p.level === "intermediate" ? t('event.level_intermediate') : t('event.level_all')}
             </span>
           )}
         </div>

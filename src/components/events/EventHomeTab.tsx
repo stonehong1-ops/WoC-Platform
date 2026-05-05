@@ -154,7 +154,7 @@ export default function EventHomeTab({ event, onChatWithHost, canEdit }: Props) 
               <div className="mt-2 bg-amber-50 rounded-xl px-3 py-2">
                 {pricing.multiClassDiscount.map((d, i) => (
                   <p key={i} className="text-[10px] font-bold text-amber-700">
-                    📌 {d.minClasses}+ classes → {d.discountPercent}% off
+                    📌 {d.minClasses}+ {t('event.classes_count')} → {d.discountPercent}% {t('event.discount_off')}
                   </p>
                 ))}
               </div>

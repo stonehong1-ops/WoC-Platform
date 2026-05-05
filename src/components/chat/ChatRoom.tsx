@@ -285,20 +285,30 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
       return line ? line.split(':').slice(1).join(':').trim() : null;
     };
 
+    // System Message Tags (Source of truth in code, localized in LanguageContext)
+    const TAGS = {
+      ORDER_PLACED: ['[ORDER PLACED]', '[새 주문 알림]', '[주문 완료]'],
+      PAYMENT_REPORTED: ['[PAYMENT REPORTED]', '[입금 완료 보고]', '[결제 보고됨]'],
+      PRODUCT_INQUIRY: ['[PRODUCT INQUIRY]', '[상품 문의]'],
+      STAY_BOOKING: ['[STAY BOOKING]', '[숙소 예약]', '[스테이 예약]'],
+      STAY_PAYMENT: ['[STAY PAYMENT]', '[숙소 입금]', '[스테이 결제]'],
+      RENTAL_INQUIRY: ['[RENTAL INQUIRY]', '[대관 문의]', '[렌탈 문의]']
+    };
+
     // 1. Order Placed Card
-    if (text.includes('[ORDER PLACED]') || text.includes('[새 주문 알림]')) {
+    if (TAGS.ORDER_PLACED.some(tag => text.includes(tag))) {
       const lines = text.split('\n');
-      const orderNo = getVal(lines, ['Order No', '주문번호']);
+      const orderNo = getVal(lines, ['Order No', '주문번호', '주문 번호']);
       const product = getVal(lines, ['Product', '상품명']);
       const option = getVal(lines, ['Option', '옵션']);
-      const amount = getVal(lines, ['Amount', '결제금액']);
+      const amount = getVal(lines, ['Amount', '결제금액', '수량']);
       const image = getVal(lines, ['Image', '이미지']);
       
       return (
         <div className="flex flex-col gap-3 min-w-[240px]">
           <div className="flex items-center gap-2 pb-2 border-b border-white/20">
             <span className="material-symbols-outlined text-lg">package_2</span>
-            <span className="font-black uppercase tracking-widest text-[10px]">{t('chatroom.orderPlaced')}</span>
+            <span className="font-black uppercase tracking-widest text-[10px]">{t('chatroom.order_placed')}</span>
           </div>
           <div className="flex gap-3">
             {image && (
@@ -307,13 +317,13 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
               </div>
             )}
             <div className="flex-1 space-y-1 min-w-0">
-              <p className="text-[10px] opacity-60 font-bold uppercase tracking-tighter truncate">{t('chatroom.orderNo')}: {orderNo}</p>
+              <p className="text-[10px] opacity-60 font-bold uppercase tracking-tighter truncate">{t('chatroom.label_order_no')}: {orderNo}</p>
               <p className="text-sm font-black leading-tight truncate">{product}</p>
               <p className="text-[11px] font-bold opacity-80 truncate">{option}</p>
             </div>
           </div>
           <div className="bg-white/10 rounded-xl p-3 flex justify-between items-center">
-            <span className="text-[10px] font-bold uppercase">{t('chatroom.total')}</span>
+            <span className="text-[10px] font-bold uppercase">{t('chatroom.label_total')}</span>
             <span className="text-base font-black">{amount}</span>
           </div>
         </div>
@@ -321,28 +331,28 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
     }
 
     // 2. Payment Reported Card
-    if (text.includes('[PAYMENT REPORTED]') || text.includes('[입금 완료 보고]')) {
+    if (TAGS.PAYMENT_REPORTED.some(tag => text.includes(tag))) {
       const lines = text.split('\n');
-      const orderNo = getVal(lines, ['Order No', '주문번호']);
+      const orderNo = getVal(lines, ['Order No', '주문번호', '주문 번호']);
       const depositor = getVal(lines, ['Depositor', '입금자명']);
 
       return (
         <div className="flex flex-col gap-3 min-w-[240px]">
           <div className="flex items-center gap-2 pb-2 border-b border-white/20">
             <span className="material-symbols-outlined text-lg">payments</span>
-            <span className="font-black uppercase tracking-widest text-[10px]">{t('chatroom.paymentReported')}</span>
+            <span className="font-black uppercase tracking-widest text-[10px]">{t('chatroom.payment_reported')}</span>
           </div>
           <div className="space-y-1">
-            <p className="text-[10px] opacity-60 font-bold uppercase tracking-tighter">{t('chatroom.orderNo')}: {orderNo}</p>
-            <p className="text-sm font-bold leading-tight">{t('chatroom.transferReportedBy', { name: depositor })}</p>
+            <p className="text-[10px] opacity-60 font-bold uppercase tracking-tighter">{t('chatroom.label_order_no')}: {orderNo}</p>
+            <p className="text-sm font-bold leading-tight">{t('chatroom.transfer_reported_by', { name: depositor })}</p>
           </div>
-          <div className="text-[10px] bg-white/10 px-3 py-1.5 rounded-full font-bold uppercase self-start">{t('chatroom.pendingConfirmation')}</div>
+          <div className="text-[10px] bg-white/10 px-3 py-1.5 rounded-full font-bold uppercase self-start">{t('chatroom.pending_confirmation')}</div>
         </div>
       );
     }
 
     // 3. Product Inquiry Card
-    if (text.includes('[PRODUCT INQUIRY]') || text.includes('[상품 문의]')) {
+    if (TAGS.PRODUCT_INQUIRY.some(tag => text.includes(tag))) {
       const lines = text.split('\n');
       const brand = getVal(lines, ['Brand', '브랜드']);
       const title = getVal(lines, ['Title', '상품명']);
@@ -354,7 +364,7 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
         <div className="flex flex-col gap-3 min-w-[240px]">
           <div className="flex items-center gap-2 pb-2 border-b border-primary/10">
             <span className="material-symbols-outlined text-lg text-primary">shopping_bag</span>
-            <span className="font-black uppercase tracking-widest text-[10px] text-primary">{t('chatroom.productInquiry')}</span>
+            <span className="font-black uppercase tracking-widest text-[10px] text-primary">{t('chatroom.product_inquiry')}</span>
           </div>
           <div className="flex gap-3">
             {image && (
@@ -375,7 +385,7 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
               rel="noopener noreferrer"
               className="bg-gray-50 hover:bg-gray-100 border border-gray-100 p-3 rounded-xl flex items-center justify-between group transition-all"
             >
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('chatroom.viewProduct')}</span>
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('chatroom.view_product')}</span>
               <span className="material-symbols-outlined text-sm text-gray-400 group-hover:text-primary group-hover:translate-x-0.5 transition-all">arrow_forward_ios</span>
             </a>
           )}
@@ -384,11 +394,11 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
     }
 
     // 4. Stay Booking Card
-    if (text.includes('[STAY BOOKING]') || text.includes('[숙소 예약]')) {
+    if (TAGS.STAY_BOOKING.some(tag => text.includes(tag))) {
       const lines = text.split('\n');
       const stayName = getVal(lines, ['Stay', '숙소']);
       const dates = getVal(lines, ['Dates', '일정']);
-      const nights = getVal(lines, ['Nights', '박']);
+      const nights = getVal(lines, ['Nights', '박', '숙박 일수']);
       const guests = getVal(lines, ['Guests', '인원']);
       const amount = getVal(lines, ['Amount', '금액']);
       const applicant = getVal(lines, ['Applicant', '예약자']);
@@ -398,7 +408,7 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
         <div className="flex flex-col gap-3 min-w-[240px]">
           <div className="flex items-center gap-2 pb-2 border-b border-primary/10">
             <span className="material-symbols-outlined text-lg text-primary">hotel</span>
-            <span className="font-black uppercase tracking-widest text-[10px] text-primary">{t('chatroom.stayBooking')}</span>
+            <span className="font-black uppercase tracking-widest text-[10px] text-primary">{t('chatroom.stay_booking')}</span>
           </div>
           <div className="flex gap-3">
             {image && (
@@ -408,18 +418,18 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
             )}
             <div className="flex-1 space-y-1 min-w-0 flex flex-col justify-center">
               <p className="text-sm font-black text-gray-900 leading-tight line-clamp-2">{stayName}</p>
-              <p className="text-[11px] text-gray-500 font-bold">{dates} · {t('chatroom.nights', { count: nights })}</p>
-              <p className="text-[11px] text-gray-400">{t('chatroom.guests', { count: guests })} · {applicant}</p>
+              <p className="text-[11px] text-gray-500 font-bold">{dates} · {t('chatroom.nights_count', { count: nights })}</p>
+              <p className="text-[11px] text-gray-400">{t('chatroom.guests_count', { count: guests })} · {applicant}</p>
               <p className="text-base font-black text-primary">{amount}</p>
             </div>
           </div>
-          <div className="text-[10px] bg-primary/5 border border-primary/10 text-primary px-3 py-1.5 rounded-full font-bold uppercase self-start">{t('chatroom.reservationApplied')}</div>
+          <div className="text-[10px] bg-primary/5 border border-primary/10 text-primary px-3 py-1.5 rounded-full font-bold uppercase self-start">{t('chatroom.reservation_applied')}</div>
         </div>
       );
     }
 
     // 5. Stay Payment Reported Card
-    if (text.includes('[STAY PAYMENT]') || text.includes('[숙소 입금]')) {
+    if (TAGS.STAY_PAYMENT.some(tag => text.includes(tag))) {
       const lines = text.split('\n');
       const stayName = getVal(lines, ['Stay', '숙소']);
       const dates = getVal(lines, ['Dates', '일정']);
@@ -428,20 +438,20 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
         <div className="flex flex-col gap-3 min-w-[240px] bg-gradient-to-br from-teal-600 to-teal-800 text-white p-4 -m-3 rounded-2xl">
           <div className="flex items-center gap-2 pb-2 border-b border-white/20">
             <span className="material-symbols-outlined text-lg">payments</span>
-            <span className="font-black uppercase tracking-widest text-[10px]">{t('chatroom.stayPayment')}</span>
+            <span className="font-black uppercase tracking-widest text-[10px]">{t('chatroom.stay_payment')}</span>
           </div>
           <div className="space-y-1">
             <p className="text-sm font-bold leading-tight">{stayName}</p>
             {dates && <p className="text-[11px] opacity-70">{dates}</p>}
-            <p className="text-sm font-bold leading-tight mt-1">{t('chatroom.transferReportedConfirm')}</p>
+            <p className="text-sm font-bold leading-tight mt-1">{t('chatroom.transfer_reported_confirm')}</p>
           </div>
-          <div className="text-[10px] bg-white/10 px-3 py-1.5 rounded-full font-bold uppercase self-start">{t('chatroom.pendingConfirmation')}</div>
+          <div className="text-[10px] bg-white/10 px-3 py-1.5 rounded-full font-bold uppercase self-start">{t('chatroom.pending_confirmation')}</div>
         </div>
       );
     }
 
     // 6. Rental Inquiry Card
-    if (text.includes('[RENTAL INQUIRY]') || text.includes('[대관 문의]')) {
+    if (TAGS.RENTAL_INQUIRY.some(tag => text.includes(tag))) {
       const lines = text.split('\n');
       const space = getVal(lines, ['Space', '공간']);
       const date = getVal(lines, ['Date', '날짜']);
@@ -454,21 +464,21 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
         <div className="flex flex-col gap-3 min-w-[240px]">
           <div className="flex items-center gap-2 pb-2 border-b border-primary/10">
             <span className="material-symbols-outlined text-lg text-primary">meeting_room</span>
-            <span className="font-black uppercase tracking-widest text-[10px] text-primary">{t('chatroom.rentalInquiry')}</span>
+            <span className="font-black uppercase tracking-widest text-[10px] text-primary">{t('chatroom.rental_inquiry')}</span>
           </div>
           <div className="space-y-1.5 flex-1 min-w-0">
             {space && <p className="text-sm font-black text-gray-900 leading-tight">{space}</p>}
             <div className="bg-white/50 rounded-xl p-3 border border-gray-100 space-y-1">
-              <p className="text-[11px] text-gray-600"><span className="font-bold text-gray-400 w-12 inline-block">{t('chatroom.date')}</span> {date}</p>
-              <p className="text-[11px] text-gray-600"><span className="font-bold text-gray-400 w-12 inline-block">{t('chatroom.time')}</span> {time}</p>
-              <p className="text-[11px] text-gray-600"><span className="font-bold text-gray-400 w-12 inline-block">{t('chatroom.guestsLabel')}</span> {headcount}</p>
-              <p className="text-[11px] text-gray-600"><span className="font-bold text-gray-400 w-12 inline-block">{t('chatroom.purpose')}</span> {purpose}</p>
+              <p className="text-[11px] text-gray-600"><span className="font-bold text-gray-400 w-12 inline-block">{t('chatroom.label_date')}</span> {date}</p>
+              <p className="text-[11px] text-gray-600"><span className="font-bold text-gray-400 w-12 inline-block">{t('chatroom.label_time')}</span> {time}</p>
+              <p className="text-[11px] text-gray-600"><span className="font-bold text-gray-400 w-12 inline-block">{t('chatroom.label_guests')}</span> {headcount}</p>
+              <p className="text-[11px] text-gray-600"><span className="font-bold text-gray-400 w-12 inline-block">{t('chatroom.label_purpose')}</span> {purpose}</p>
             </div>
             {message && (
               <p className="text-[12px] text-gray-800 bg-gray-50 p-3 rounded-xl mt-2 break-all whitespace-pre-wrap">{message}</p>
             )}
           </div>
-          <div className="text-[10px] bg-primary/5 border border-primary/10 text-primary px-3 py-1.5 rounded-full font-bold uppercase self-start">{t('chatroom.negotiationPending')}</div>
+          <div className="text-[10px] bg-primary/5 border border-primary/10 text-primary px-3 py-1.5 rounded-full font-bold uppercase self-start">{t('chatroom.negotiation_pending')}</div>
         </div>
       );
     }
@@ -547,10 +557,10 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
               <span className="material-symbols-outlined text-[20px]">arrow_back_ios_new</span>
             </button>
             <div className="flex flex-col">
-              <h2 className="text-[18px] font-black text-gray-900 uppercase tracking-tighter line-clamp-1">{room?.name || t('chatroom.roomChat')}</h2>
+              <h2 className="text-[18px] font-black text-gray-900 uppercase tracking-tighter line-clamp-1">{room?.name || t('chatroom.room_chat')}</h2>
               <div className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{room?.participants ? t('chatroom.membersCount', { count: room.participants.length }) : t('chatroom.liveSyncing')}</span>
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{room?.participants ? t('chatroom.members_count', { count: room.participants.length }) : t('chatroom.live_syncing')}</span>
               </div>
             </div>
           </div>
@@ -630,15 +640,15 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
                           ? 'bg-gray-100 border-gray-300 text-gray-800 mx-2 mt-2'
                           : isOwn ? 'bg-white/10 border-white/30' : 'bg-gray-50 border-primary/30'
                       }`}>
-                        <div className="font-black uppercase tracking-tighter mb-0.5 opacity-60">{t('chatroom.repliedToMessage')}</div>
-                        <div className="line-clamp-1 opacity-80">{messages.find(m => m.id === msg.replyTo)?.text || t('chatroom.messageNotFound')}</div>
+                        <div className="font-black uppercase tracking-tighter mb-0.5 opacity-60">{t('chatroom.replied_to_message')}</div>
+                        <div className="line-clamp-1 opacity-80">{messages.find(m => m.id === msg.replyTo)?.text || t('chatroom.message_not_found')}</div>
                       </div>
                     )}
 
                     {msg.isDeleted ? (
                       <div className="flex items-center gap-2 opacity-50 py-1">
                         <span className="material-symbols-outlined text-[16px]">block</span>
-                        <span className="text-[13px] italic">{t('chatroom.messageDeleted')}</span>
+                        <span className="text-[13px] italic">{t('chatroom.message_deleted')}</span>
                       </div>
                     ) : msg.type === 'voice' ? (
                       <VoiceBubble url={msg.mediaUrl!} isOwn={isOwn} timestamp={formatTime(msg.timestamp)} />
@@ -702,7 +712,7 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
                         </button>
                         {isOwn && (
                           <button 
-                            onClick={() => { chatService.updateMessage(msg.id, { isDeleted: true, text: t('chatroom.deletedMessage') }); setMenuMsgId(null); }}
+                            onClick={() => { chatService.updateMessage(msg.id, { isDeleted: true, text: t('chatroom.deleted_message') }); setMenuMsgId(null); }}
                             className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-red-50 hover:text-red-500 transition-all text-gray-500"
                           >
                             <span className="material-symbols-outlined text-[18px]">delete</span>
@@ -748,7 +758,7 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
               <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '150ms' }} />
               <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '300ms' }} />
             </div>
-            {otherUser?.displayName ? t('chatroom.isTyping', { name: otherUser.displayName }) : t('chatroom.someoneIsTyping')}
+            {otherUser?.displayName ? t('chatroom.is_typing', { name: otherUser.displayName }) : t('chatroom.someone_is_typing')}
           </motion.div>
         )}
       </AnimatePresence>
@@ -765,7 +775,7 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
               className="bg-gray-50 rounded-2xl mb-4 p-4 flex items-center justify-between border-l-4 border-primary"
             >
               <div className="flex flex-col">
-                <span className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">{t('chatroom.replyingTo', { name: replyTo.senderName })}</span>
+                <span className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">{t('chatroom.replying_to', { name: replyTo.senderName })}</span>
                 <p className="text-[13px] font-medium text-gray-500 line-clamp-1">{replyTo.text}</p>
               </div>
               <button 
@@ -789,7 +799,7 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
             >
               <div className="flex justify-between items-center">
                 <span className="text-[12px] font-black text-gray-900 uppercase tracking-widest">
-                  {previewMedia.type === 'voice' ? t('chatroom.voiceMessagePreview') : t('chatroom.mediaPreview')}
+                  {previewMedia.type === 'voice' ? t('chatroom.voice_message_preview') : t('chatroom.media_preview')}
                 </span>
                 <button 
                   onClick={cancelMediaPreview}
@@ -819,7 +829,7 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
                     onClick={confirmAndSendMedia}
                     className="px-6 py-2.5 bg-primary text-white text-[13px] font-black uppercase tracking-wide rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 flex items-center gap-2"
                   >
-                    <span>{t('chatroom.sendMedia', { type: t(`chatroom.${previewMedia.type}`) })}</span>
+                    <span>{t('chatroom.send_media', { type: t(`chatroom.${previewMedia.type}`) })}</span>
                     <span className="material-symbols-outlined text-[18px]">send</span>
                   </button>
                 </div>
@@ -862,7 +872,7 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
               }
             }}
             disabled={isRecording}
-            placeholder={isRecording ? t('chatroom.recording') : t('chatroom.typeMessage')}
+            placeholder={isRecording ? t('chatroom.recording') : t('chatroom.type_message')}
             rows={1}
             className="flex-1 min-w-0 min-h-[40px] sm:min-h-[48px] max-h-[120px] bg-transparent border-none focus:ring-0 text-[14px] sm:text-[15px] leading-[20px] sm:leading-[24px] font-medium placeholder:text-gray-300 text-gray-900 resize-none py-2.5 sm:py-3 px-1 sm:px-2 no-scrollbar disabled:opacity-50"
             onKeyDown={(e) => {
@@ -954,7 +964,7 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
                 <button 
                   onClick={(e) => { 
                     e.stopPropagation(); 
-                    chatService.updateMessage(selectedMedia.msgId, { isDeleted: true, text: t('chatroom.deletedMessage') }); 
+                    chatService.updateMessage(selectedMedia.msgId, { isDeleted: true, text: t('chatroom.deleted_message') }); 
                     handleMediaClose(); 
                   }}
                   className="w-12 h-12 rounded-full bg-black/40 text-red-400 flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors backdrop-blur-md"
