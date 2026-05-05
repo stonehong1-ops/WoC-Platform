@@ -9,7 +9,7 @@ export default function PageWrapper({ children }: { children: React.ReactNode })
   const router = useRouter();
   const { user, profile, loading, setShowLogin } = useAuth();
   
-  const isGallery = pathname.startsWith('/gallery');
+  const isLive = pathname.startsWith('/live');
   const isVenues = pathname.startsWith('/venues');
   const isEvents = pathname.startsWith('/events');
   const isSocial = pathname.startsWith('/social');
@@ -20,7 +20,7 @@ export default function PageWrapper({ children }: { children: React.ReactNode })
   const isExplore = pathname.startsWith('/explore');
   const isNation = pathname.startsWith('/class') || pathname.startsWith('/shop') || pathname.startsWith('/resale') || pathname.startsWith('/stay') || pathname.startsWith('/lost') || pathname.startsWith('/arcade');
   
-  const isPublic = isLanding || isLogin || isGallery || isVenues || isEvents || isSocial || isPlaza || isExplore || isNation;
+  const isPublic = isLanding || isLogin || isLive || isVenues || isEvents || isSocial || isPlaza || isExplore || isNation;
 
   useEffect(() => {
     if (!loading && !isPublic && !isSpace && (!user || !profile?.isRegistered)) {

@@ -64,17 +64,18 @@ function ClassMenuContent() {
         
         const venueMap = Object.fromEntries(allVenues.map(v => [v.id, v]));
         
-        const classGroups = allGroups.filter(g => 
-          g.activeServices?.class === true || 
-          g.activeServices?.rental === true ||
-          (g.classes && g.classes.length > 0) ||
-          (g as any).type === 'Studio' ||
-          (g as any).type === 'Academy' ||
-          (g as any).activeServices?.studio === true ||
-          g.name.toLowerCase().includes('studio') ||
-          g.name.toLowerCase().includes('academy') ||
-          g.name.toLowerCase().includes('tango')
-        ).map(g => {
+        const classGroups = allGroups.filter(g => {
+          if (g.activeServices?.class === false) return false;
+          return g.activeServices?.class === true || 
+            g.activeServices?.rental === true ||
+            (g.classes && g.classes.length > 0) ||
+            (g as any).type === 'Studio' ||
+            (g as any).type === 'Academy' ||
+            (g as any).activeServices?.studio === true ||
+            g.name.toLowerCase().includes('studio') ||
+            g.name.toLowerCase().includes('academy') ||
+            g.name.toLowerCase().includes('tango');
+        }).map(g => {
           // If group missing address, try to get from venue
           if (!g.address && g.venueId && venueMap[g.venueId]) {
             const v = venueMap[g.venueId];

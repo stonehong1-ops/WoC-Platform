@@ -212,6 +212,20 @@ function LostFoundPageContent() {
         .material-symbols-rounded { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
       `}} />
 
+      {/* Integrated Registration Action */}
+      <div className="px-6 py-2 flex items-center justify-between bg-white border-b border-slate-50">
+        <p className="text-[12px] font-bold text-slate-400 uppercase tracking-tight">
+          {t('lost.have_items_report')}
+        </p>
+        <button 
+          onClick={() => openCreate('true')}
+          className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 transition-colors py-2"
+        >
+          <span className="text-[13px] font-bold">{t('lost.post_item')}</span>
+          <span className="material-symbols-outlined text-[18px]">add_circle</span>
+        </button>
+      </div>
+
       {/* ⑤ Items Grid */}
       <div className="px-4 mb-10 text-left min-h-[400px]">
 

@@ -1,12 +1,11 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { resaleService } from '@/lib/firebase/resaleService';
 import { chatService } from '@/lib/firebase/chatService';
-import { ResaleItem, UserReputation } from '@/types/resale';
-import { motion } from 'framer-motion';
+import { ResaleItem } from '@/types/resale';
 import { safeDate } from '@/lib/utils/safeDate';
 import ResalePurchaseFlow from './ResalePurchaseFlow';
 import ChatRoom from '@/components/chat/ChatRoom';
@@ -21,7 +20,13 @@ export default function ResaleItemDetail({ item, onClose }: ResaleItemDetailProp
   const { user } = useAuth();
   const { t } = useLanguage();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [sellerReputation, setSellerReputation] = useState<UserReputation | null>(null);
+  
+  // Image carousel
+  const [currentImg, setCurrentImg] = useState(0);
+  const touchStartX = useRef(0);
+  const images = (item.imageUrls?.length ? item.imageUrls : (item.imageUrl ? [item.imageUrl] : []));
+
+  // UI state
   const [isScrolled, setIsScrolled] = useState(false);
   const [isImageExpanded, setIsImageExpanded] = useState(false);
   const [chatRoomId, setChatRoomId] = useState<string | null>(null);
@@ -30,35 +35,24 @@ export default function ResaleItemDetail({ item, onClose }: ResaleItemDetailProp
 
   const isOwner = user?.uid === item.sellerId;
 
+  // Scroll listener for header
   useEffect(() => {
-    // Fetch seller reputation
-    const fetchReputation = async () => {
-      try {
-        const rep = await resaleService.getUserReputation(item.sellerId);
-        setSellerReputation(rep);
-      } catch (error) {
-        console.error("Failed to fetch seller reputation", error);
-      }
-    };
-    fetchReputation();
-  }, [item.sellerId]);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      if (scrollRef.current) {
-        setIsScrolled(scrollRef.current.scrollTop > 50);
-      }
-    };
-    const scrollEl = scrollRef.current;
-    if (scrollEl) {
-      scrollEl.addEventListener('scroll', handleScroll);
-    }
-    return () => {
-      if (scrollEl) {
-        scrollEl.removeEventListener('scroll', handleScroll);
-      }
-    };
+    const el = scrollRef.current;
+    if (!el) return;
+    const handler = () => setIsScrolled(el.scrollTop > 60);
+    el.addEventListener('scroll', handler, { passive: true });
+    return () => el.removeEventListener('scroll', handler);
   }, []);
+
+  // Touch handlers for carousel
+  const handleTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const diff = touchStartX.current - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0 && currentImg < images.length - 1) setCurrentImg(p => p + 1);
+      if (diff < 0 && currentImg > 0) setCurrentImg(p => p - 1);
+    }
+  };
 
   const handleStatusChange = async (newStatus: 'active' | 'reserved' | 'sold') => {
     if (!isOwner) return;
@@ -105,7 +99,7 @@ export default function ResaleItemDetail({ item, onClose }: ResaleItemDetailProp
       
       const roomId = await chatService.getOrCreatePrivateRoom([user.uid, sellerId], user.uid, 'business');
 
-      const productInfo = `${t('resale.chat_inquiry_prefix')}\n${t('resale.chat_item_name')}: ${item.title}\n${t('resale.chat_price')}: ₩${item.price.toLocaleString()}\n${t('resale.chat_link')}: ${window.location.origin}/resale?itemId=${item.id}`;
+      const productInfo = `${t('resale.chat_inquiry_prefix')}\n${t('resale.chat_item_name')}: ${item.title}\n${t('resale.chat_price')}: ${item.currency || 'KRW'} ${item.price.toLocaleString()}\n${t('resale.chat_link')}: ${window.location.origin}/resale?itemId=${item.id}`;
       
       await chatService.sendMessage({
         roomId,
@@ -172,136 +166,154 @@ export default function ResaleItemDetail({ item, onClose }: ResaleItemDetailProp
   };
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 50 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 50 }}
-      transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-      className="fixed inset-0 z-[100] bg-white flex flex-col max-w-md mx-auto h-[100dvh] overflow-hidden"
-    >
+    <div className="fixed inset-0 z-[100] bg-white flex flex-col animate-in slide-in-from-bottom duration-300">
       <style dangerouslySetInnerHTML={{ __html: `
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .material-symbols-rounded { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .detail-scrollbar::-webkit-scrollbar { display: none; }
+        .detail-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}} />
 
-      {/* Header - Glassmorphic / Scroll-responsive */}
-      <div className={`absolute top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white/90 backdrop-blur-md shadow-sm border-b border-surface-container' : 'bg-gradient-to-b from-black/50 to-transparent'}`}>
-        <div className="flex justify-between items-center px-4 py-4 max-w-md mx-auto">
-          <button 
-            onClick={onClose} 
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isScrolled ? 'bg-surface-container text-[#2d3435]' : 'bg-black/20 text-white backdrop-blur-md hover:bg-black/40'}`}
-          >
-            <span className="material-symbols-rounded text-xl leading-none">arrow_back</span>
+      {/* Header */}
+      <div className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 transition-all duration-300 ${isScrolled ? 'bg-white/95 backdrop-blur-md shadow-sm' : 'bg-gradient-to-b from-black/30 to-transparent'}`}>
+        <button onClick={onClose} className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'}`}>
+          <span className="material-symbols-rounded text-xl">arrow_back</span>
+        </button>
+        <div className={`text-base font-bold truncate max-w-[180px] transition-opacity ${isScrolled ? 'opacity-100 text-[#2d3435]' : 'opacity-0'}`}>{item.title}</div>
+        <div className="flex items-center gap-2">
+          {item.status !== 'active' && (
+            <span className={`px-3 h-8 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center ${isScrolled ? 'bg-primary/10 text-primary' : 'bg-primary text-white'}`}>
+              {item.status === 'sold' ? t('resale.btn_sold_out') : item.status === 'reserved' ? t('resale.btn_reserve') : item.status}
+            </span>
+          )}
+          <button onClick={handleShare}
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'}`}>
+            <span className="material-symbols-rounded text-xl">share</span>
           </button>
-          
-          <div className="flex gap-2">
-            {item.status !== 'active' && (
-              <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center ${isScrolled ? 'bg-primary/10 text-primary' : 'bg-primary text-white'}`}>
-                {item.status === 'sold' ? t('resale.btn_sold_out') : item.status === 'reserved' ? t('resale.btn_reserve') : item.status}
-              </span>
-            )}
-            <button 
-              onClick={handleShare}
-              className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isScrolled ? 'bg-surface-container text-[#2d3435]' : 'bg-black/20 text-white backdrop-blur-md hover:bg-black/40'}`}
-            >
-              <span className="material-symbols-rounded text-xl leading-none">share</span>
-            </button>
-          </div>
         </div>
       </div>
 
-      {/* Content Area */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto no-scrollbar scroll-smooth bg-white pb-28">
-        {/* Hero Image */}
-        <div 
-          className="w-full aspect-square relative bg-surface-container cursor-pointer"
-          onClick={() => setIsImageExpanded(true)}
-        >
-          {item.imageUrl ? (
-            <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center bg-surface-container text-[#596061]/50">
-              <span className="material-symbols-rounded text-6xl">image</span>
+      {/* Scrollable Content */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto detail-scrollbar pb-[80px]">
+        {/* Image Carousel */}
+        <div className="relative aspect-square overflow-hidden bg-[#f2f4f4]">
+          {/* Fallback */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-[#c4cacc]">
+            <span className="material-symbols-rounded text-5xl mb-1">image</span>
+            <span className="text-[10px] font-bold tracking-wider uppercase">{t('resale.no_image', 'No Image')}</span>
+          </div>
+          {/* Images */}
+          {images.length > 0 && (
+            <div className="relative h-full" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onClick={() => setIsImageExpanded(true)}>
+              <div className="flex h-full transition-transform duration-300 ease-out" style={{ transform: `translateX(-${currentImg * 100}%)` }}>
+                {images.map((img, i) => (
+                  <div key={i} className="w-full flex-shrink-0 h-full">
+                    <img src={img} alt={`${item.title} ${i + 1}`} className="w-full h-full object-cover"
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                  </div>
+                ))}
+              </div>
+              {/* Left/Right Arrows */}
+              {images.length > 1 && currentImg > 0 && (
+                <button onClick={(e) => { e.stopPropagation(); setCurrentImg(p => p - 1); }} className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/25 backdrop-blur-sm flex items-center justify-center text-white active:scale-90 z-10">
+                  <span className="material-symbols-rounded text-lg">chevron_left</span>
+                </button>
+              )}
+              {images.length > 1 && currentImg < images.length - 1 && (
+                <button onClick={(e) => { e.stopPropagation(); setCurrentImg(p => p + 1); }} className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/25 backdrop-blur-sm flex items-center justify-center text-white active:scale-90 z-10">
+                  <span className="material-symbols-rounded text-lg">chevron_right</span>
+                </button>
+              )}
+              {/* Overlay bottom left: Counter + Dots */}
+              <div className="absolute bottom-4 left-4 flex flex-col items-start z-10" onClick={(e) => e.stopPropagation()}>
+                {images.length > 1 && (
+                  <>
+                    <span className="bg-black/40 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-0.5 rounded-full mb-1">{currentImg + 1}/{images.length}</span>
+                    <div className="flex gap-1.5 items-center pl-1">
+                      {images.map((_, i) => (
+                        <button key={i} onClick={(e) => { e.stopPropagation(); setCurrentImg(i); }}
+                          className={`rounded-full transition-all ${i === currentImg ? 'w-5 h-2 bg-white' : 'w-2 h-2 bg-white/50'}`} />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Stats - Floating on the bottom right */}
+              <div className="absolute bottom-4 right-4 flex items-center gap-2 z-20" onClick={(e) => e.stopPropagation()}>
+                <button onClick={handleLikeClick} className="px-3 h-8 rounded-full bg-black/40 backdrop-blur-sm flex items-center gap-1.5 text-white transition-transform active:scale-95">
+                  <span className="material-symbols-rounded text-[18px]" style={{ fontVariationSettings: item.likesCount && item.likesCount > 0 ? "'FILL' 1" : "'FILL' 0", color: item.likesCount && item.likesCount > 0 ? '#ef4444' : 'white' }}>favorite</span>
+                  <span className="text-[11px] font-bold">{item.likesCount || 0}</span>
+                </button>
+              </div>
             </div>
           )}
-          {/* Stats - Floating on the right side */}
-          <div className="absolute bottom-6 right-4 flex flex-col items-center gap-4 z-20" onClick={(e) => e.stopPropagation()}>
-            <div className="flex flex-col items-center gap-1.5">
-              <button 
-                onClick={handleLikeClick}
-                className="w-10 h-10 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center text-white transition-transform active:scale-90"
-              >
-                <span className="material-symbols-rounded text-2xl" style={{ fontVariationSettings: item.likesCount && item.likesCount > 0 ? "'FILL' 1" : "'FILL' 0", color: item.likesCount && item.likesCount > 0 ? '#ef4444' : 'white' }}>favorite</span>
-              </button>
-              <span className="text-white text-[11px] font-bold drop-shadow-md">{item.likesCount || 0}</span>
+        </div>
+
+        {/* Title & Stats */}
+        <div className="px-4 pt-5 pb-4 flex justify-between items-start border-b border-[#f2f4f4]">
+          <div className="flex-1 min-w-0 pr-4">
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="text-[10px] font-black text-[#acb3b4] uppercase tracking-widest leading-none">{categoryLabels[item.category] || item.category}</span>
+              <span className="w-1 h-1 rounded-full bg-[#acb3b4]"></span>
+              <span className="text-[10px] font-black text-[#acb3b4] uppercase tracking-widest leading-none">{getRelativeTime(item.createdAt)}</span>
+            </div>
+            <h1 className="text-xl font-black text-[#2d3435] leading-tight font-headline">{item.title}</h1>
+          </div>
+        </div>
+
+        {/* Location / Seller Info */}
+        <div className="px-4 py-4 border-b border-[#f2f4f4]">
+          <UserProfileClickable uid={item.sellerId} initialData={{ nickname: item.sellerName }}>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+                <span className="material-symbols-rounded text-xl">person</span>
+              </div>
+              <div className="flex-1">
+                <h4 className="font-headline font-bold text-sm text-[#2d3435]">{item.sellerName}</h4>
+                <div className="flex items-center gap-1 text-[11px] font-medium text-[#596061]">
+                  <span className="material-symbols-rounded text-[12px]">location_on</span>
+                  <span>{item.location === 'Seoul, Gangnam-gu' || item.location === 'Gangnam' ? t('resale.seoul_korea') : item.location}</span>
+                  {item.locationDetail && <span>· {item.locationDetail}</span>}
+                </div>
+              </div>
+            </div>
+          </UserProfileClickable>
+        </div>
+
+        {/* Specs Boxed */}
+        <div className="mx-4 my-4 border border-[#e0e4e5] rounded-2xl overflow-hidden">
+          <div className="bg-[#f8f9fa] px-4 py-2.5 border-b border-[#e0e4e5] flex items-center gap-2">
+            <span className="material-symbols-rounded text-sm text-primary">inventory_2</span>
+            <p className="text-[10px] font-black text-primary uppercase tracking-widest">{t('resale.item_specs', 'Item Specifications')}</p>
+          </div>
+          <div className="p-4 grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-black text-[#596061] uppercase tracking-widest">{t('resale.condition')}</span>
+              <span className="font-bold text-sm text-[#2d3435]">{conditionLabels[item.condition] || item.condition}</span>
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-black text-[#596061] uppercase tracking-widest">{t('resale.trade_method')}</span>
+              <span className="font-bold text-sm text-[#2d3435]">{tradeMethodLabels[item.tradeMethod] || item.tradeMethod}</span>
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-black text-[#596061] uppercase tracking-widest">{t('resale.price_negotiation', 'Price Negotiation')}</span>
+              <span className="font-bold text-sm text-[#2d3435]">
+                {item.canNegotiate ? t('resale.negotiable', 'Negotiable') : t('resale.fixed_price', 'Fixed Price')}
+              </span>
             </div>
           </div>
         </div>
 
-        <div className="p-5 space-y-6">
-          {/* Seller Info Profile */}
-          <div className="flex items-center justify-between pb-6 border-b border-surface-container-highest">
-            <UserProfileClickable uid={item.sellerId} initialData={{ nickname: item.sellerName }}>
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                  <span className="material-symbols-rounded text-2xl">person</span>
-                </div>
-                <div>
-                  <h4 className="font-headline font-bold text-base text-[#2d3435]">{item.sellerName}</h4>
-                  <div className="text-[11px] font-medium text-[#596061] uppercase tracking-wider">{item.location === 'Seoul, Gangnam-gu' || item.location === 'Gangnam' ? t('resale.seoul_korea') : item.location}</div>
-                </div>
-              </div>
-            </UserProfileClickable>
-            
-            <div className="flex flex-col items-end">
-              <div className="flex items-center gap-1">
-                <span className="text-[10px] font-black text-[#596061] uppercase tracking-widest">{t('resale.manner_temp')}</span>
-                <span className="material-symbols-rounded text-[14px] text-red-500">thermostat</span>
-              </div>
-              <div className="font-headline font-black text-xl text-primary">
-                {sellerReputation ? `${sellerReputation.hobbyScore.toFixed(1)}°C` : '...'}
-              </div>
-            </div>
-          </div>
-
-          {/* Item Details */}
-          <div className="space-y-4">
-            <div>
-              <span className="inline-block px-2 py-1 bg-surface-container rounded text-[10px] font-bold text-[#596061] mb-2 uppercase tracking-wider">{categoryLabels[item.category] || item.category}</span>
-              <h1 className="text-lg font-black text-[#2d3435] leading-tight font-headline mb-3">
-                {item.title}
-              </h1>
-              <div className="flex items-center gap-2 text-[11px] font-bold text-[#596061] uppercase tracking-wider">
-                <span>{getRelativeTime(item.createdAt)}</span>
-                <span className="w-1 h-1 rounded-full bg-[#acb3b4]"></span>
-                <span className="flex items-center gap-1">{t('resale.label_location')} {item.location === 'Seoul, Gangnam-gu' || item.location === 'Gangnam' ? t('resale.seoul_korea') : item.location}</span>
-              </div>
-            </div>
-
-            {/* Badges / Specs */}
-            <div className="grid grid-cols-2 gap-3 py-4">
-              <div className="bg-[#f2f4f4] rounded-2xl p-4 flex flex-col gap-1">
-                <span className="text-[10px] font-black text-[#596061] uppercase tracking-widest">{t('resale.condition')}</span>
-                <span className="font-bold text-sm text-[#2d3435]">{conditionLabels[item.condition] || item.condition}</span>
-              </div>
-              <div className="bg-[#f2f4f4] rounded-2xl p-4 flex flex-col gap-1">
-                <span className="text-[10px] font-black text-[#596061] uppercase tracking-widest">{t('resale.trade_method')}</span>
-                <span className="font-bold text-sm text-[#2d3435]">{tradeMethodLabels[item.tradeMethod] || item.tradeMethod}</span>
-              </div>
-            </div>
-
-            <div className="pt-2">
-              <p className="text-sm font-medium text-[#596061] leading-relaxed whitespace-pre-wrap">
-                {item.description}
-              </p>
-            </div>
-          </div>
+        {/* Description */}
+        <div className="px-4 py-4 border-b border-[#f2f4f4]">
+          <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-2">{t('resale.description', 'Description')}</p>
+          <p className="text-sm font-medium text-[#596061] leading-relaxed whitespace-pre-wrap">
+            {item.description || t('resale.no_description', 'No description available.')}
+          </p>
         </div>
 
-        {/* Chat with Seller - Positioned at bottom of content like Shop */}
+        {/* Chat with Seller - Bottom of content */}
         {!isOwner && (
-          <div className="px-5 py-4">
+          <div className="px-4 py-4">
             <button
               onClick={handleChatClick}
               disabled={item.status === 'sold'}
@@ -320,12 +332,14 @@ export default function ResaleItemDetail({ item, onClose }: ResaleItemDetailProp
       </div>
 
       {/* Fixed Bottom Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-100 px-4 py-2.5 flex items-center gap-3 max-w-md mx-auto pb-6">
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-100 px-4 py-2.5 flex items-center gap-3 max-w-md mx-auto">
         <div className="flex-1 min-w-0">
-          <p className="text-lg font-black text-[#2d3435] font-headline leading-tight">₩{item.price.toLocaleString()}</p>
-          {!item.canNegotiate && (
-            <p className="text-[10px] text-[#acb3b4] truncate mt-0.5">{t('resale.fixed_price')}</p>
-          )}
+          <p className="text-lg font-black text-[#2d3435] font-headline leading-tight">
+            {item.currency || 'KRW'} {item.price.toLocaleString()}
+          </p>
+          <p className="text-[10px] text-[#acb3b4] truncate mt-0.5">
+            {item.canNegotiate ? t('resale.negotiable', 'Negotiable') : t('resale.fixed_price', 'Fixed Price')}
+          </p>
         </div>
         
         {isOwner ? (
@@ -361,16 +375,15 @@ export default function ResaleItemDetail({ item, onClose }: ResaleItemDetailProp
           <>
             <button onClick={handleLikeClick}
               className={`w-11 h-11 rounded-xl flex items-center justify-center border transition-colors active:scale-90 flex-shrink-0 ${item.likesCount && item.likesCount > 0 ? 'bg-red-50 border-red-100 text-red-500' : 'bg-white border-[#e0e4e5] text-[#596061]'}`}>
-              {/* Note: since resaleService doesn't pass 'isLiked' bool yet, using likesCount as temporary visual fallback. User will be refactoring this. */}
               <span className="material-symbols-rounded text-xl" style={{ fontVariationSettings: item.likesCount && item.likesCount > 0 ? "'FILL' 1" : "'FILL' 0" }}>favorite</span>
             </button>
             <button
               onClick={() => setShowPurchaseFlow(true)}
               disabled={item.status === 'sold'}
-              className={`flex-shrink-0 px-7 py-3 rounded-xl font-black text-sm tracking-wide transition-transform ${
+              className={`flex-shrink-0 px-7 py-3 rounded-xl font-black text-sm tracking-wide shadow-lg transition-transform ${
                 item.status === 'sold' 
-                  ? 'bg-[#f2f4f4] text-[#acb3b4] cursor-not-allowed'
-                  : 'bg-primary text-white shadow-lg shadow-primary/20 active:scale-95'
+                  ? 'bg-[#f2f4f4] text-[#acb3b4] cursor-not-allowed shadow-none'
+                  : 'bg-primary text-white shadow-primary/20 active:scale-95'
               }`}
             >
               {item.status === 'sold' ? t('resale.btn_sold_out') : t('resale.btn_buy_now')}
@@ -379,19 +392,30 @@ export default function ResaleItemDetail({ item, onClose }: ResaleItemDetailProp
         )}
       </div>
 
-      {/* Full Image Popup */}
-      {isImageExpanded && item.imageUrl && (
-        <div 
-          className="fixed inset-0 z-[200] bg-black flex items-center justify-center animate-in fade-in duration-300"
-          onClick={() => setIsImageExpanded(false)}
-        >
-          <button 
-            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-colors"
-            onClick={(e) => { e.stopPropagation(); setIsImageExpanded(false); }}
-          >
-            <span className="material-symbols-rounded">close</span>
-          </button>
-          <img src={item.imageUrl} alt={item.title} className="max-w-full max-h-full object-contain" />
+      {/* Full Screen Image Viewer */}
+      {isImageExpanded && (
+        <div className="fixed inset-0 z-[200] bg-black flex flex-col animate-in fade-in duration-200">
+          <div className="absolute top-0 left-0 right-0 z-10 flex justify-end p-4">
+            <button onClick={() => setIsImageExpanded(false)} className="w-10 h-10 rounded-full bg-black/40 text-white flex items-center justify-center">
+              <span className="material-symbols-rounded text-2xl">close</span>
+            </button>
+          </div>
+          <div className="flex-1 w-full h-full flex items-center justify-center" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+            <div className="flex w-full transition-transform duration-300 ease-out h-full items-center" style={{ transform: `translateX(-${currentImg * 100}%)` }}>
+              {images.map((img, i) => (
+                <div key={i} className="w-full flex-shrink-0 flex items-center justify-center px-4">
+                  <img src={img} alt={`Fullscreen ${i + 1}`} className="w-full max-h-[80vh] object-contain" />
+                </div>
+              ))}
+            </div>
+          </div>
+          {images.length > 1 && (
+            <div className="absolute bottom-10 left-0 right-0 flex justify-center gap-2">
+              {images.map((_, i) => (
+                <div key={i} className={`rounded-full transition-all ${i === currentImg ? 'w-6 h-2 bg-white' : 'w-2 h-2 bg-white/40'}`} />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -416,6 +440,6 @@ export default function ResaleItemDetail({ item, onClose }: ResaleItemDetailProp
           }}
         />
       )}
-    </motion.div>
+    </div>
   );
 }

@@ -15,6 +15,8 @@ export interface Product {
   currency: string;
   price: number;
   discountPrice?: number;
+  location?: string;
+  locationDetail?: string;
   images: string[];
   imageUrl?: string; // legacy compat (single image)
   options: string[]; // sizes or variants

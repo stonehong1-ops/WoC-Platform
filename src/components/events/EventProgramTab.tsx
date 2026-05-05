@@ -35,6 +35,7 @@ export default function EventProgramTab({ event }: Props) {
 // View Mode A: By Date (단기 이벤트)
 // ========================================
 function ByDateView({ programs, currency }: { programs: EventProgram[]; currency: string }) {
+  const { t } = useLanguage();
   // 모든 unique 날짜 추출
   const allDates = useMemo(() => {
     const dateSet = new Set<string>();
@@ -90,6 +91,7 @@ function ByDateView({ programs, currency }: { programs: EventProgram[]; currency
 // View Mode B: By Category (장기 시리즈)
 // ========================================
 function ByCategoryView({ programs, currency }: { programs: EventProgram[]; currency: string }) {
+  const { t } = useLanguage();
   const categories = useMemo(() => {
     const catMap: Record<string, EventProgram[]> = {};
     programs.forEach(p => {
@@ -160,6 +162,7 @@ function ByCategoryView({ programs, currency }: { programs: EventProgram[]; curr
 // Shared Program Card
 // ========================================
 function ProgramCard({ program: p, currency, showDates }: { program: EventProgram; currency: string; showDates?: boolean }) {
+  const { t } = useLanguage();
   const isMilonga = p.type === "milonga";
 
   return (

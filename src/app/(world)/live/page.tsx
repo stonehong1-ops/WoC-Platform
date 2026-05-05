@@ -1,6 +1,6 @@
 'use client';
 
-import './gallery.css';
+import './live.css';
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Heart, 
   MessageCircle, 
-  Send, 
+  Send,
   MapPin, 
   Calendar, 
   Plus, 
@@ -55,7 +55,7 @@ const GalleryPage = () => {
   useEffect(() => {
     const handleComposeOpen = (e: CustomEvent) => {
       if (e.detail?.id === 'gallery') {
-        router.push('/gallery/create');
+        router.push('/live/create');
       }
     };
     window.addEventListener('woc:compose:open', handleComposeOpen as EventListener);
@@ -259,7 +259,7 @@ const GalleryCard = ({
           {user?.uid === post.authorId && (
             <>
               <Link 
-                href={`/gallery/create?edit=${post.id}`} 
+                href={`/live/create?edit=${post.id}`} 
                 className="w-8 h-8 rounded-full bg-black/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/20 transition-colors"
                 onClick={(e) => e.stopPropagation()}
               >
@@ -312,35 +312,35 @@ const GalleryCard = ({
       </div>
 
       {/* Right Side Vertical Actions */}
-      <div className="absolute bottom-24 md:bottom-12 right-2 flex flex-col items-center gap-6 z-20">
-        <Link href="/gallery/create" onClick={(e) => e.stopPropagation()} className="flex flex-col items-center gap-1 group">
-          <div className="w-12 h-12 rounded-full flex items-center justify-center bg-primary/80 backdrop-blur-md border border-white/20 text-white transition-transform active:scale-90 shadow-lg">
-            <Plus size={26} />
+      <div className="absolute bottom-24 md:bottom-12 right-2 flex flex-col items-center gap-4 z-20">
+        <Link href="/live/create" onClick={(e) => e.stopPropagation()} className="flex flex-col items-center gap-1 group">
+          <div className="w-9 h-9 rounded-full flex items-center justify-center bg-primary/80 backdrop-blur-md border border-white/20 text-white transition-transform active:scale-90 shadow-lg">
+            <Plus size={18} />
           </div>
         </Link>
 
         <button className="flex flex-col items-center gap-1 group" onClick={handleLike}>
-          <div className={`w-12 h-12 rounded-full flex items-center justify-center bg-black/20 backdrop-blur-md border border-white/10 transition-transform active:scale-90 ${isLiked ? 'text-[#ff2d55]' : 'text-white'}`}>
-            <Heart size={26} fill={isLiked ? "#ff2d55" : "none"} className={isLiked ? "drop-shadow-[0_0_8px_rgba(255,45,85,0.5)]" : ""} />
+          <div className={`w-9 h-9 rounded-full flex items-center justify-center bg-black/20 backdrop-blur-md border border-white/10 transition-transform active:scale-90 ${isLiked ? 'text-[#ff2d55]' : 'text-white'}`}>
+            <Heart size={18} fill={isLiked ? "#ff2d55" : "none"} className={isLiked ? "drop-shadow-[0_0_8px_rgba(255,45,85,0.5)]" : ""} />
           </div>
-          <span className="text-white text-xs font-bold drop-shadow-md">{post.likesCount || 0}</span>
+          <span className="text-white text-[10px] font-bold drop-shadow-md">{post.likesCount || 0}</span>
         </button>
 
         <button className="flex flex-col items-center gap-1 group" onClick={onOpenComments}>
-          <div className="w-12 h-12 rounded-full flex items-center justify-center bg-black/20 backdrop-blur-md border border-white/10 text-white transition-transform active:scale-90">
-            <MessageCircle size={26} fill="white" className="text-white drop-shadow-md" />
+          <div className="w-9 h-9 rounded-full flex items-center justify-center bg-black/20 backdrop-blur-md border border-white/10 text-white transition-transform active:scale-90">
+            <MessageCircle size={18} fill="white" className="text-white drop-shadow-md" />
           </div>
-          <span className="text-white text-xs font-bold drop-shadow-md">{post.commentsCount || 0}</span>
+          <span className="text-white text-[10px] font-bold drop-shadow-md">{post.commentsCount || 0}</span>
         </button>
 
         <button className="flex flex-col items-center gap-1 group">
-          <div className="w-12 h-12 rounded-full flex items-center justify-center bg-black/20 backdrop-blur-md border border-white/10 text-white transition-transform active:scale-90">
-            <Send size={24} className="ml-1 drop-shadow-md" />
+          <div className="w-9 h-9 rounded-full flex items-center justify-center bg-black/20 backdrop-blur-md border border-white/10 text-white transition-transform active:scale-90">
+            <span className="material-symbols-outlined text-[18px] drop-shadow-md">share</span>
           </div>
-          <span className="text-white text-xs font-bold drop-shadow-md">{t('gallery.share')}</span>
+          <span className="text-white text-[10px] font-bold drop-shadow-md">{t('gallery.share')}</span>
         </button>
 
-        <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-white spin-slow mt-2 opacity-80">
+        <div className="w-7 h-7 rounded-full overflow-hidden border-2 border-white spin-slow mt-1 opacity-80">
           <img src={post.authorPhoto || '/default-avatar.png'} alt="" className="w-full h-full object-cover" />
         </div>
       </div>

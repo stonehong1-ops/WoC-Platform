@@ -61,8 +61,8 @@ export default function Header() {
     '/admin/others': { headlineKey: 'header.others', sub: 'Admin' },
     '/notification': { headlineKey: 'header.notification', sub: 'System' },
     '/search': { headlineKey: 'header.search', sub: 'System' },
-    '/gallery': { headlineKey: 'header.gallery', sub: 'Activity' },
-    '/gallery/create': { headlineKey: 'header.gallery', sub: 'Activity' },
+    '/live': { headlineKey: 'header.live', sub: 'Activity' },
+    '/live/create': { headlineKey: 'header.live', sub: 'Activity' },
   };
 
   let current = routeMap[pathname];

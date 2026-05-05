@@ -69,6 +69,7 @@ export default function EventsPage() {
   
   // New Header Filter States
   const [activeTab, setActiveTab] = useState<'calendar' | 'upcoming' | 'favorite'>('calendar');
+  const [isWorldEvent, setIsWorldEvent] = useState(false);
 
   // Real-time Subscription
   useEffect(() => {
@@ -147,15 +148,31 @@ export default function EventsPage() {
 
   // Filter events by location
   const filteredLocationEvents = useMemo(() => {
+    if (isWorldEvent) return events;
     if (!location) return events;
+    
+    // Build some common aliases for matching using regex to avoid substring false positives (e.g., 'kr' in 'Frankfurt')
+    const aliases: Record<string, RegExp[]> = {
+      'korea': [/\bkr\b/i, /\bkorea\b/i, /대한민국/, /한국/],
+      'japan': [/\bjp\b/i, /\bjapan\b/i, /일본/],
+      'china': [/\bcn\b/i, /\bchina\b/i, /중국/],
+      'taiwan': [/\btw\b/i, /\btaiwan\b/i, /대만/],
+    };
+    
     return events.filter(e => {
-      const eventLoc = e.location?.toLowerCase() || '';
-      const countryMatch = eventLoc.includes(location.country.toLowerCase());
+      const eventLoc = e.location || '';
+      const locCountry = location.country.toLowerCase();
+      
+      let countryMatch = eventLoc.toLowerCase().includes(locCountry);
+      if (!countryMatch && aliases[locCountry]) {
+        countryMatch = aliases[locCountry].some(regex => regex.test(eventLoc));
+      }
+      
       if (location.city === 'ALL') return countryMatch;
-      const cityMatch = eventLoc.includes(location.city.toLowerCase());
+      const cityMatch = eventLoc.toLowerCase().includes(location.city.toLowerCase());
       return countryMatch && cityMatch;
     });
-  }, [events, location]);
+  }, [events, location, isWorldEvent]);
 
   const sortedEvents = useMemo(() => {
     return [...filteredLocationEvents].sort((a, b) => 
@@ -182,7 +199,7 @@ export default function EventsPage() {
     const slotsMap: { [eventId: string]: number } = {};
     const occupiedUntil: { [slot: number]: Date } = {};
 
-    [...events].sort((a, b) => 
+    [...filteredLocationEvents].sort((a, b) => 
       getNormalizedDate(a.startDate).getTime() - getNormalizedDate(b.startDate).getTime()
     ).forEach(event => {
       const start = getNormalizedDate(event.startDate);
@@ -197,7 +214,7 @@ export default function EventsPage() {
     });
 
     return slotsMap;
-  }, [events]);
+  }, [filteredLocationEvents]);
 
   const formattedMonth = currentDate.toLocaleString('en-US', { month: 'short', year: 'numeric' });
 
@@ -226,41 +243,45 @@ export default function EventsPage() {
           ))}
         </div>
         
-        {/* Row 2: Month Filter (Class-style, only for Calendar tab) */}
-        {activeTab === 'calendar' && (
-          <div className="w-full h-11 px-4 flex items-center justify-between">
-            <div className="flex items-center gap-2 bg-slate-50 rounded-lg px-1.5 py-0.5 border border-slate-100">
-              <button 
-                onClick={() => setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))} 
-                className="w-6 h-6 flex items-center justify-center hover:bg-white rounded-md transition-all text-slate-400"
-              >
-                <span className="material-symbols-outlined text-[16px]">chevron_left</span>
-              </button>
-              <span className="text-[13px] font-bold text-slate-900 uppercase tracking-tight w-[80px] text-center">
-                {formattedMonth}
-              </span>
-              <button 
-                onClick={() => setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))} 
-                className="w-6 h-6 flex items-center justify-center hover:bg-white rounded-md transition-all text-slate-400"
-              >
-                <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-              </button>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-              <div className="text-[11px] font-bold text-slate-600 uppercase tracking-widest">
-                {filteredLocationEvents.length} <span className="text-slate-400 font-medium">{t('event.events_count')}</span>
+        {/* Row 2: Month Filter and/or World Event Toggle */}
+        {(activeTab === 'calendar' || activeTab === 'upcoming') && (
+          <div className={`w-full h-11 px-4 flex items-center ${activeTab === 'calendar' ? 'justify-between' : 'justify-end'}`}>
+            {activeTab === 'calendar' && (
+              <div className="flex items-center gap-2 bg-slate-50 rounded-lg px-1.5 py-0.5 border border-slate-100">
+                <button 
+                  onClick={() => setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))} 
+                  className="w-6 h-6 flex items-center justify-center hover:bg-white rounded-md transition-all text-slate-400"
+                >
+                  <span className="material-symbols-outlined text-[16px]">chevron_left</span>
+                </button>
+                <span className="text-[13px] font-bold text-slate-900 uppercase tracking-tight w-[80px] text-center">
+                  {formattedMonth}
+                </span>
+                <button 
+                  onClick={() => setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))} 
+                  className="w-6 h-6 flex items-center justify-center hover:bg-white rounded-md transition-all text-slate-400"
+                >
+                  <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+                </button>
               </div>
+            )}
+            <div className="flex items-center gap-2 cursor-pointer" onClick={() => setIsWorldEvent(!isWorldEvent)}>
+              <div className={`w-4 h-4 rounded-[4px] flex items-center justify-center border transition-colors ${isWorldEvent ? 'bg-blue-600 border-blue-600' : 'bg-white border-slate-300 shadow-sm'}`}>
+                {isWorldEvent && <span className="material-symbols-outlined text-[12px] text-white font-bold" style={{ fontVariationSettings: "'wght' 700" }}>check</span>}
+              </div>
+              <span className={`text-[11px] font-bold uppercase tracking-widest select-none transition-colors ${isWorldEvent ? 'text-blue-600' : 'text-slate-500'}`}>
+                World Event
+              </span>
             </div>
           </div>
         )}
       </div>
     );
     
-    const height = activeTab === 'calendar' ? 88 : 44; // Tabs + MonthFilter (44+44) vs Tabs (44)
+    const height = (activeTab === 'calendar' || activeTab === 'upcoming') ? 88 : 44; // Tabs + Filter (44+44) vs Tabs (44)
     setSubHeader(filterBar, height);
     return () => setSubHeader(null);
-  }, [activeTab, currentDate, formattedMonth, filteredLocationEvents.length, setSubHeader]);
+  }, [activeTab, currentDate, formattedMonth, isWorldEvent, t, setSubHeader]);
 
   const STACK_COLORS = [
     { bg: '#0057bd', text: '#ffffff' },   // primary
@@ -409,7 +430,7 @@ export default function EventsPage() {
                     {calendarRange.days.map((date, i) => {
                       const isCurrentMonth = date.getMonth() === currentDate.getMonth();
                       const isToday = isSameDay(date, new Date());
-                      const dayEvents = events.filter(e => {
+                      const dayEvents = filteredLocationEvents.filter(e => {
                         const start = getNormalizedDate(e.startDate);
                         const end = getNormalizedDate(e.endDate || e.startDate);
                         return date >= start && date <= end;
@@ -452,6 +473,20 @@ export default function EventsPage() {
                       );
                     })}
                   </div>
+                </div>
+
+                {/* Integrated Event Registration Action */}
+                <div className="-mx-4 px-4 py-2 flex items-center justify-between bg-white border-b border-slate-50 mt-4">
+                  <p className="text-[12px] font-bold text-slate-400 uppercase tracking-tight">
+                    {t('event.host_new')}
+                  </p>
+                  <button 
+                    onClick={() => setShowCreateModal(true)}
+                    className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 transition-colors py-2"
+                  >
+                    <span className="text-[13px] font-bold">{t('event.register')}</span>
+                    <span className="material-symbols-outlined text-[18px]">add_circle</span>
+                  </button>
                 </div>
               </section>
             )}

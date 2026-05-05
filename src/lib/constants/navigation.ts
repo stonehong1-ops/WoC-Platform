@@ -25,7 +25,7 @@ export const NAV_ITEMS: NavItem[] = [
   // Activity
   { id: 'events', label: '이벤트', group: 'Activity', icon: Calendar, href: '/events' },
   { id: 'social', label: '소셜', group: 'Activity', icon: Heart, href: '/social' },
-  { id: 'gallery', label: '갤러리', group: 'Activity', icon: Image, href: '/gallery' },
+  { id: 'live', label: 'Live', group: 'Activity', icon: Image, href: '/live' },
   { id: 'class', label: '클래스', group: 'Activity', icon: Library, href: '/class' },
   
   // Space

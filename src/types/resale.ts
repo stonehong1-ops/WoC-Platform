@@ -8,9 +8,12 @@ export interface ResaleItem {
   title: string;
   description: string;
   price: number;
+  currency?: string; // e.g. 'KRW', 'USD', 'EUR'
   location: string;
+  locationDetail?: string;
   category: string;
   imageUrl: string;
+  imageUrls?: string[]; // Multiple images up to 20
   sellerId: string;
   sellerName: string;
   condition: ItemCondition;

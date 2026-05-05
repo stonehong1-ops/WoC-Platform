@@ -141,7 +141,7 @@ export default function NavigationDrawer() {
             <div className="space-y-0.5">
               {[
                 { icon: 'nightlife', label: 'Social', href: '/social' },
-                { icon: 'photo_library', label: 'Gallery', href: '/gallery' },
+                { icon: 'cinematic_blur', label: 'Live', href: '/live' },
                 { icon: 'event', label: 'Events', href: '/events' },
                 { icon: 'school', label: 'Class', href: '/class' },
                 { icon: 'groups', label: 'Group', href: '/groups' },

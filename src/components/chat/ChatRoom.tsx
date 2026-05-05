@@ -68,7 +68,7 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
       setTranslations(prev => ({ ...prev, [msgId]: translatedText }));
     } catch (err) {
       console.error('Translation failed', err);
-      alert(t('chatroom.translationFailed'));
+      alert(t('chatroom.translation_failed'));
     } finally {
       setTranslatingIds(prev => {
         const next = new Set(prev);
@@ -541,7 +541,7 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
                 if (otherUser?.allowPhoneCalls && otherUser?.phoneNumber) {
                   window.location.href = `tel:${otherUser.phoneNumber}`;
                 } else {
-                  alert(t('chatroom.callNotAllowed'));
+                  alert(t('chatroom.call_not_allowed'));
                 }
               }}
               className="w-10 h-10 rounded-full flex items-center justify-center text-gray-400 hover:text-primary hover:bg-primary/5 transition-all"

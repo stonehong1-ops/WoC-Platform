@@ -28,13 +28,13 @@ const NAV_STRUCTURE = {
     { name: "nav.stay", icon: "bed", path: "/stay" },
     { name: "nav.class", icon: "school", path: "/class" },
   ],
-  Play: [
+  Now: [
     { name: "nav.social", icon: "autoplay", path: "/social" },
+    { name: "nav.live", icon: "cinematic_blur", path: "/live" },
     { name: "nav.events", icon: "calendar_today", path: "/events" },
-    { name: "nav.gallery", icon: "cinematic_blur", path: "/gallery" },
     { name: "nav.lost_found", icon: "eye_tracking", path: "/lost-found" },
   ],
-  Group: [
+  Groups: [
     { name: "nav.groups", icon: "groups", path: "/groups" },
   ],
   My: [
@@ -42,21 +42,16 @@ const NAV_STRUCTURE = {
     { name: "nav.wallet", icon: "account_balance_wallet", path: "/wallet" },
     { name: "nav.my_info", icon: "person", path: "/my-info" },
   ],
-  Admin: [
-    { name: "nav.people", icon: "people", path: "/admin/people" },
-    { name: "nav.place", icon: "place", path: "/admin/place" },
-    { name: "nav.others", icon: "more_horiz", path: "/admin/others" },
-  ],
 };
 
 // COUNTRY_MAPPING moved to constants
 
 const BOTTOM_TABS = [
-  { id: "World", icon: "globe", basePath: "/home" },
-  { id: "Market", icon: "redeem", basePath: "/shop" },
-  { id: "Play", icon: "contactless", basePath: "/social" },
-  { id: "Group", icon: "communities", basePath: "/groups" },
-  { id: "My", icon: "photo", basePath: "/my-info" },
+  { id: "World", icon: "globe", label: "Tango World", basePath: "/home" },
+  { id: "Market", icon: "redeem", label: "Market", basePath: "/shop" },
+  { id: "Now", icon: "contactless", label: "Now", basePath: "/social" },
+  { id: "Groups", icon: "communities", label: "Groups", basePath: "/groups" },
+  { id: "My", icon: "photo", label: "My", basePath: "/my-info" },
 ];
 
 export default function GlobalNavigation({ children }: { children: React.ReactNode }) {
@@ -169,21 +164,21 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
   let activeTab = "World";
   if (pathname.startsWith("/shop") || pathname.startsWith("/resale") || pathname.startsWith("/rental") || pathname.startsWith("/stay") || pathname.startsWith("/class")) {
     activeTab = "Market";
-  } else if (pathname.startsWith("/social") || pathname.startsWith("/events") || pathname.startsWith("/gallery") || pathname.startsWith("/lost-found")) {
-    activeTab = "Play";
+  } else if (pathname.startsWith("/social") || pathname.startsWith("/events") || pathname.startsWith("/live") || pathname.startsWith("/lost-found")) {
+    activeTab = "Now";
   } else if (pathname.startsWith("/groups") || pathname.startsWith("/group/")) {
-    activeTab = "Group";
+    activeTab = "Groups";
   } else if (pathname.startsWith("/my") || pathname.startsWith("/wallet") || pathname.startsWith("/history") || pathname.startsWith("/my-info")) {
     activeTab = "My";
   } else if (pathname.startsWith("/admin")) {
-    activeTab = "Admin";
+    activeTab = "My";
   } else if (pathname.startsWith("/notification") || pathname.startsWith("/chat")) {
     activeTab = "None"; // Don't highlight any main tab for notifications/chat
   }
 
   // Handle default tab for "/"
   if (pathname === "/") {
-    activeTab = "Play";
+    activeTab = "Now";
   }
 
   const isGroupDetailPage = pathname.startsWith("/group/");
@@ -249,30 +244,22 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
             </button>
 
             {/* Right Side: Action Icons */}
-            <div className="flex items-center gap-1.5">
-              {/* Language Toggle */}
-              <button 
-                onClick={toggleLanguage}
-                className="w-[36px] h-[36px] rounded-full flex items-center justify-center active:scale-95 transition-all bg-[#F1F5F9] text-[#1E293B]"
-              >
-                <span className="font-bold text-[13px] tracking-tight">{language}</span>
-              </button>
-
+            <div className="flex items-center gap-1">
               {/* Notification */}
               <Link 
                 href="/notification" 
-                className={`w-[36px] h-[36px] rounded-full flex items-center justify-center active:scale-95 transition-all relative ${
+                className={`w-[32px] h-[32px] rounded-full flex items-center justify-center active:scale-95 transition-all relative ${
                   pathname === '/notification' ? 'bg-[#007AFF]/10 text-[#007AFF]' : 'bg-[#F1F5F9] text-[#1E293B]'
                 }`}
               >
                 <span 
-                  className="material-symbols-outlined !text-[20px]"
+                  className="material-symbols-outlined !text-[18px]"
                   style={{ fontVariationSettings: pathname === '/notification' ? "'FILL' 1" : "'FILL' 0" }}
                 >
                   notifications
                 </span>
                 {totalNotiCount > 0 && (
-                  <span className="absolute top-0 right-0 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-[8px] font-black text-white outline outline-2 outline-white animate-in zoom-in">
+                  <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-[7px] font-black text-white outline outline-2 outline-white animate-in zoom-in">
                     {totalNotiCount > 99 ? '99+' : totalNotiCount}
                   </span>
                 )}
@@ -281,18 +268,18 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
               {/* Chat */}
               <Link 
                 href="/chat" 
-                className={`w-[36px] h-[36px] rounded-full flex items-center justify-center active:scale-95 transition-all relative ${
+                className={`w-[32px] h-[32px] rounded-full flex items-center justify-center active:scale-95 transition-all relative ${
                   pathname.startsWith('/chat') ? 'bg-[#007AFF]/10 text-[#007AFF]' : 'bg-[#F1F5F9] text-[#1E293B]'
                 }`}
               >
                 <span 
-                  className="material-symbols-outlined !text-[20px]"
+                  className="material-symbols-outlined !text-[18px]"
                   style={{ fontVariationSettings: pathname.startsWith('/chat') ? "'FILL' 1" : "'FILL' 0" }}
                 >
                   chat_bubble
                 </span>
                 {unreadCount > 0 && (
-                  <span className="absolute top-0 right-0 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-[8px] font-black text-white outline outline-2 outline-white animate-in zoom-in">
+                  <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-[7px] font-black text-white outline outline-2 outline-white animate-in zoom-in">
                     {unreadCount > 99 ? '99+' : unreadCount}
                   </span>
                 )}
@@ -301,17 +288,28 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
               {/* Search */}
               <Link 
                 href="/search" 
-                className={`w-[36px] h-[36px] rounded-full flex items-center justify-center active:scale-95 transition-all ${
+                className={`w-[32px] h-[32px] rounded-full flex items-center justify-center active:scale-95 transition-all ${
                   pathname.startsWith('/search') ? 'bg-[#007AFF]/10 text-[#007AFF]' : 'bg-[#F1F5F9] text-[#1E293B]'
                 }`}
               >
                 <span 
-                  className="material-symbols-outlined !text-[20px]"
+                  className="material-symbols-outlined !text-[18px]"
                   style={{ fontVariationSettings: pathname.startsWith('/search') ? "'FILL' 1" : "'FILL' 0" }}
                 >
                   search
                 </span>
               </Link>
+
+              {/* Separator */}
+              <div className="w-[1px] h-[20px] bg-slate-200 mx-0.5" />
+
+              {/* Language Toggle - Rightmost */}
+              <button 
+                onClick={toggleLanguage}
+                className="w-[32px] h-[32px] rounded-full flex items-center justify-center active:scale-95 transition-all bg-[#F1F5F9] text-[#1E293B]"
+              >
+                <span className="font-bold text-[11px] tracking-tight">{language.toUpperCase()}</span>
+              </button>
             </div>
           </div>
 
@@ -334,15 +332,6 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
                   );
                 })}
                 
-                {/* Show Admin link inside My tab if user is admin */}
-                {activeTab === "My" && profile?.isAdmin && (
-                  <Link 
-                    href="/admin/people" 
-                    className={`flex flex-col items-center justify-end flex-1 pt-3.5 pb-2.5 transition-all duration-300 border-b-[3px] border-transparent`}
-                  >
-                    <span className="text-[14px] font-bold text-slate-500 tracking-tight uppercase">{t('nav.admin', 'ADMIN')}</span>
-                  </Link>
-                )}
               </div>
             </nav>
           )}
@@ -373,10 +362,7 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
           transition: 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)'
         }}
       >
-        {[
-          ...BOTTOM_TABS,
-          ...(profile?.isAdmin ? [{ id: "Admin", icon: "admin_panel_settings", basePath: "/admin/people" }] : [])
-        ].map((tab) => {
+        {BOTTOM_TABS.map((tab) => {
           const isActive = activeTab === tab.id;
           const isPhotoTab = tab.icon === "photo";
           const targetPath = tab.basePath;
@@ -384,37 +370,28 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
             <Link 
               key={tab.id} 
               href={targetPath} 
-              className={`relative flex flex-col items-center justify-center w-[48px] h-[48px] transition-all duration-300 ${isActive ? 'text-[#007AFF]' : 'text-slate-400 hover:text-slate-600'}`}
+              className={`relative flex flex-col items-center justify-center gap-0.5 min-w-[52px] h-[52px] transition-all duration-300 ${isActive ? 'text-[#007AFF]' : 'text-slate-400 hover:text-slate-600'}`}
             >
-              {/* Aura Background (Same for all tabs) */}
-              <div 
-                className={`absolute top-1/2 left-1/2 z-[-1] rounded-full transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-                  isActive ? 'scale-100 bg-[rgba(0,122,255,0.08)]' : 'scale-0 bg-[rgba(0,122,255,0.08)]'
-                }`}
-                style={{ 
-                  width: '48px', 
-                  height: '48px',
-                  marginTop: '-24px',
-                  marginLeft: '-24px',
-                  transformOrigin: 'center'
-                }}
-              />
               {isPhotoTab ? (
-                <div className="relative flex items-center justify-center w-[32px] h-[32px]">
+                <div className="relative flex items-center justify-center w-[24px] h-[24px]">
                   <UserAvatar 
                     photoURL={profile?.photoURL}
-                    className={`!w-[32px] !h-[32px] rounded-full transition-all duration-300 ${isActive ? 'ring-[2.5px] ring-[#007AFF] ring-offset-1' : 'opacity-80 hover:opacity-100'}`}
-                    iconSize="24px"
+                    className={`!w-[24px] !h-[24px] rounded-full transition-all duration-300 ${isActive ? 'ring-[2px] ring-[#007AFF] ring-offset-1' : 'opacity-80 hover:opacity-100'}`}
+                    iconSize="18px"
                   />
                 </div>
               ) : (
                 <span 
-                  className="material-symbols-outlined !text-[32px] transition-colors duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
+                  className="material-symbols-outlined !text-[22px] transition-colors duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
                   style={{ fontVariationSettings: isActive ? "'FILL' 1, 'wght' 500" : "'FILL' 0, 'wght' 500" }}
                 >
                   {tab.icon}
                 </span>
               )}
+              {/* Hardcoded label - NOT localized */}
+              <span className={`text-[11px] leading-none tracking-tight ${isActive ? 'font-extrabold' : 'font-medium'}`}>
+                {tab.label}
+              </span>
             </Link>
           );
         })}

@@ -9,6 +9,7 @@ export type RentalSpace = {
   images: string[];
   category: string; // e.g., '댄스 스튜디오', '파티룸', '연습실'
   pricePerHour: number;
+  currency?: string;
   minHours: number;
   capacity?: number;
   size?: string;

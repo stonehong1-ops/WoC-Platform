@@ -6,9 +6,16 @@ import { useRouter } from 'next/navigation';
 import MyInfoBottomSheet from '@/components/profile/MyInfoBottomSheet';
 import { useLanguage } from '@/contexts/LanguageContext';
 
+const ADMIN_ITEMS = [
+  { icon: 'person_search', label: 'People', href: '/admin/people' },
+  { icon: 'location_city', label: 'Place', href: '/admin/place' },
+  { icon: 'more_horiz', label: 'Others', href: '/admin/others' },
+];
+
 export default function MyInfoPage() {
   const { user, profile, loading, signOut } = useAuth();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [adminPopupHref, setAdminPopupHref] = useState<string | null>(null);
   const router = useRouter();
   const { t } = useLanguage();
 
@@ -194,7 +201,7 @@ export default function MyInfoPage() {
         </div>
 
         {/* Action Buttons Section */}
-        <div className="mt-12 pt-8 flex justify-center pb-8">
+        <div className="mt-12 pt-8 flex justify-center pb-4">
           <button 
             onClick={handleLogout}
             className="flex items-center gap-2 px-6 py-3 rounded-full text-error font-bold hover:bg-error/10 transition-colors border border-error/20"
@@ -203,7 +210,61 @@ export default function MyInfoPage() {
             {t('my.logout')}
           </button>
         </div>
+
+        {/* Admin Section — Only visible for admin users */}
+        {profile?.isAdmin && (
+          <div className="mt-4 mb-8 border-t border-dashed border-surface-container pt-6">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="material-symbols-outlined !text-[18px] text-error/60">admin_panel_settings</span>
+              <span className="text-[10px] font-black tracking-[0.25em] uppercase text-error/60">Admin Panel</span>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              {ADMIN_ITEMS.map((item) => (
+                <button
+                  key={item.href}
+                  onClick={() => setAdminPopupHref(item.href)}
+                  className="flex flex-col items-center gap-2 p-4 rounded-xl bg-surface-container-lowest border border-surface-container hover:border-error/30 hover:shadow-md transition-all active:scale-95"
+                >
+                  <div className="w-10 h-10 rounded-full bg-error/5 flex items-center justify-center">
+                    <span className="material-symbols-outlined !text-[20px] text-error/70">{item.icon}</span>
+                  </div>
+                  <span className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wide">{item.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </main>
+
+      {/* Admin Full Popup */}
+      {adminPopupHref && (
+        <div className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-200">
+          <div className="relative w-full h-full md:w-[90%] md:h-[90%] md:max-w-4xl md:rounded-2xl bg-white overflow-hidden shadow-2xl animate-in slide-in-from-bottom-4 duration-300">
+            {/* Popup Header */}
+            <div className="flex items-center justify-between px-5 h-14 bg-white border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined !text-[18px] text-error/60">admin_panel_settings</span>
+                <span className="text-sm font-bold text-on-surface uppercase tracking-wide">
+                  {ADMIN_ITEMS.find(a => a.href === adminPopupHref)?.label || 'Admin'}
+                </span>
+              </div>
+              <button 
+                onClick={() => setAdminPopupHref(null)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"
+              >
+                <span className="material-symbols-outlined !text-[18px] text-on-surface">close</span>
+              </button>
+            </div>
+            {/* Popup Content — iframe to admin page */}
+            <iframe 
+              src={adminPopupHref}
+              className="w-full border-0"
+              style={{ height: 'calc(100% - 56px)' }}
+              title="Admin Panel"
+            />
+          </div>
+        </div>
+      )}
 
       {/* Edit Form Bottom Sheet */}
       <MyInfoBottomSheet 

@@ -184,7 +184,7 @@ function HomeContent() {
           onClose={() => setSelectedProfileId(null)}
         />
       )}
-      <main className="py-6 px-4 max-w-7xl mx-auto space-y-10 pb-24">
+      <main className="py-6 px-4 max-w-7xl mx-auto space-y-8 pb-24">
         {/* Welcome Section - simplified */}
         <section className="px-2 flex flex-col gap-3">
           <h1 className="text-xl sm:text-2xl text-on-surface font-medium leading-tight">
@@ -206,8 +206,9 @@ function HomeContent() {
 
         {/* Culture & Canvas Section — 4-card grid */}
         <section className="space-y-4">
-          <header className="flex items-center justify-between px-2 md:px-0">
-            <h2 className="text-xl md:text-2xl font-extrabold text-slate-900 font-headline">Culture &amp; Canvas</h2>
+          <header className="flex items-center gap-2 px-2">
+            <span className="material-symbols-outlined text-[20px] text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>brush</span>
+            <h2 className="text-xl font-extrabold text-slate-900 font-headline">Culture &amp; Canvas</h2>
           </header>
           <div className="grid grid-cols-2 gap-4">
             {/* Gavi's Cartoons */}
@@ -316,7 +317,7 @@ function HomeContent() {
           {/* Sidebar Area: Tastemakers -> Global Stats */}
           <div className="space-y-6">
             {/* Tastemakers (위로 이동) */}
-            <h2 className="text-xl md:text-2xl font-extrabold text-slate-900 font-headline px-2">Tastemakers</h2>
+            <div className="flex items-center gap-2 px-2"><span className="material-symbols-outlined text-[20px] text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>stars</span><h2 className="text-xl font-extrabold text-slate-900 font-headline">Tastemakers</h2></div>
             <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-5 md:p-6">
               <div className="space-y-5 md:space-y-6">
                 {loadingMembers ? (
@@ -414,7 +415,7 @@ function HomeContent() {
         {/* Society Stays */}
         <div className="lg:col-span-3 space-y-4 md:space-y-6 px-2">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl md:text-2xl font-extrabold text-slate-900 font-headline">Latest Society Stays</h2>
+            <div className="flex items-center gap-2"><span className="material-symbols-outlined text-[20px] text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>bed</span><h2 className="text-xl font-extrabold text-slate-900 font-headline">Latest Society Stays</h2></div>
             <a className="text-primary font-bold text-sm hover:underline" href="/stay">{t('home.explore_stay')}</a>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -447,20 +448,56 @@ function HomeContent() {
         </div>
       </section>
 
-      {/* ── Photogenic Last Night ── */}
-      {photogenicPost && (
-        <section className="relative overflow-hidden rounded-[32px] shadow-xl group cursor-pointer" onClick={() => window.location.href = '/gallery'}>
-          <div className="aspect-[16/9] sm:aspect-[21/9]">
-            <img src={photogenicPost.media?.[0] || ''} alt="Photogenic Last Night" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-          </div>
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-          <div className="absolute bottom-6 left-6 right-6">
-            <span className="px-3 py-1 bg-white/20 text-white text-[10px] font-bold uppercase tracking-widest rounded-full mb-2 inline-block backdrop-blur-md border border-white/20">{t('home.photogenic_title')}</span>
-            <h3 className="text-xl md:text-2xl font-black text-white font-headline leading-tight">{photogenicPost.caption || t('home.photogenic_default_caption')}</h3>
-            <div className="flex items-center gap-3 mt-2">
-              <span className="text-white/70 text-xs flex items-center gap-1"><span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>{photogenicPost.likesCount || 0}</span>
-              <span className="text-white/50 text-xs">{photogenicPost.authorName || 'Anonymous'}</span>
-            </div>
+      {/* ── Spotlight: Photogenic & Videogenic ── */}
+      {(photogenicPost || videogenicPost) && (
+        <section className="flex flex-col gap-4">
+          <header className="flex items-center gap-2 px-2">
+            <span className="material-symbols-outlined text-[20px] text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>
+            <h2 className="text-xl font-extrabold text-slate-900 font-headline">Spotlight</h2>
+          </header>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {photogenicPost && (
+              <div className="relative overflow-hidden rounded-2xl shadow-lg group cursor-pointer" onClick={() => window.location.href = '/live'}>
+                <div className="aspect-[4/3]">
+                  <img src={photogenicPost.media?.[0] || ''} alt="Photogenic" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                <div className="absolute bottom-5 left-5 right-5">
+                  <span className="px-3 py-1 bg-white/20 text-white text-[10px] font-bold uppercase tracking-widest rounded-full mb-2 inline-flex items-center gap-1 backdrop-blur-md border border-white/20">
+                    <span className="material-symbols-outlined text-[12px]" style={{ fontVariationSettings: "'FILL' 1" }}>photo_camera</span>
+                    {t('home.photogenic_title')}
+                  </span>
+                  <h3 className="text-lg font-black text-white font-headline leading-tight">{photogenicPost.caption || t('home.photogenic_default_caption')}</h3>
+                  <div className="flex items-center gap-3 mt-2">
+                    <span className="text-white/70 text-xs flex items-center gap-1"><span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>{photogenicPost.likesCount || 0}</span>
+                    <span className="text-white/50 text-xs">{photogenicPost.authorName || 'Anonymous'}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+            {videogenicPost && (
+              <div className="relative overflow-hidden rounded-2xl shadow-lg group cursor-pointer" onClick={() => window.location.href = '/live'}>
+                <div className="aspect-[4/3] bg-slate-900">
+                  {videogenicPost.media?.[0] ? (
+                    <video src={videogenicPost.media[0]} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" muted autoPlay loop playsInline />
+                  ) : (
+                    <span className="material-symbols-outlined text-6xl text-white/20">videocam</span>
+                  )}
+                </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
+                <div className="absolute bottom-5 left-5 right-5">
+                  <span className="px-3 py-1 bg-white/20 text-white text-[10px] font-bold uppercase tracking-widest rounded-full mb-2 inline-flex items-center gap-1 backdrop-blur-md border border-white/20">
+                    <span className="material-symbols-outlined text-[12px]" style={{ fontVariationSettings: "'FILL' 1" }}>videocam</span>
+                    {t('home.videogenic_title')}
+                  </span>
+                  <h3 className="text-lg font-black text-white font-headline">{videogenicPost.caption || t('home.videogenic_default_caption')}</h3>
+                  <div className="flex items-center gap-3 mt-2">
+                    <span className="text-white/70 text-xs flex items-center gap-1"><span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>{videogenicPost.likesCount || 0}</span>
+                    <span className="text-white/50 text-xs">{videogenicPost.authorName || 'Anonymous'}</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </section>
       )}
@@ -469,7 +506,8 @@ function HomeContent() {
       {(peopleData.organizers.length > 0 || peopleData.instructors.length > 0 || peopleData.providers.length > 0) && (
         <section className="flex flex-col gap-4">
           <header className="flex items-center justify-between px-2">
-            <h2 className="text-xl md:text-2xl font-extrabold text-slate-900 font-headline">People</h2>
+            <span className="material-symbols-outlined text-[20px] text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>group</span>
+            <h2 className="text-xl font-extrabold text-slate-900 font-headline">People</h2>
           </header>
           {/* Tabs */}
           <div className="flex gap-2 px-2">
@@ -499,7 +537,10 @@ function HomeContent() {
       {/* ── DJ Schedule ── */}
       {djSchedule.length > 0 && (
         <section className="flex flex-col gap-4">
-          <header className="px-2"><h2 className="text-xl md:text-2xl font-extrabold text-slate-900 font-headline">DJ Schedule</h2></header>
+          <header className="flex items-center gap-2 px-2">
+            <span className="material-symbols-outlined text-[20px] text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>headphones</span>
+            <h2 className="text-xl font-extrabold text-slate-900 font-headline">DJ Schedule</h2>
+          </header>
           <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm overflow-hidden">
             <div className="grid grid-cols-7 text-center border-b border-slate-100">
               {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((d, i) => (
@@ -525,44 +566,83 @@ function HomeContent() {
         </section>
       )}
 
-      {/* ── Videogenic This Month ── */}
-      {videogenicPost && (
-        <section className="relative overflow-hidden rounded-[32px] shadow-xl group cursor-pointer" onClick={() => window.location.href = '/gallery'}>
-          <div className="aspect-video bg-slate-900 flex items-center justify-center">
-            {videogenicPost.media?.[0] ? (
-              <video src={videogenicPost.media[0]} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" muted autoPlay loop playsInline />
-            ) : (
-              <span className="material-symbols-outlined text-6xl text-white/20">videocam</span>
-            )}
-          </div>
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
-          <div className="absolute bottom-6 left-6 right-6">
-            <span className="px-3 py-1 bg-white/20 text-white text-[10px] font-bold uppercase tracking-widest rounded-full mb-2 inline-block backdrop-blur-md border border-white/20">{t('home.videogenic_title')}</span>
-            <h3 className="text-xl md:text-2xl font-black text-white font-headline">{videogenicPost.caption || t('home.videogenic_default_caption')}</h3>
-            <div className="flex items-center gap-3 mt-2">
-              <span className="text-white/70 text-xs flex items-center gap-1"><span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>{videogenicPost.likesCount || 0}</span>
-              <span className="text-white/50 text-xs">{videogenicPost.authorName || 'Anonymous'}</span>
+      {/* ── Tango Column ── */}
+      <section className="flex flex-col gap-4">
+        <header className="flex items-center gap-2 px-2">
+          <span className="material-symbols-outlined text-[20px] text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>article</span>
+          <h2 className="text-xl font-extrabold text-slate-900 font-headline">Tango Column</h2>
+        </header>
+        <div className="flex gap-4 overflow-x-auto px-2 pb-2 snap-x snap-mandatory custom-scrollbar">
+          {/* Safe Floor */}
+          <div 
+            className="min-w-[280px] max-w-[300px] relative overflow-hidden rounded-2xl shadow-md group cursor-pointer snap-start flex-shrink-0"
+            onClick={() => setIsSafeFloorOpen(true)}
+          >
+            <img src="https://images.unsplash.com/photo-1518609878373-06d740f60d8b?q=80&w=600" alt="Safe Floor" className="w-full h-[200px] object-cover group-hover:scale-105 transition-transform duration-500" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+            <div className="absolute bottom-4 left-4 right-4">
+              <span className="px-2 py-0.5 bg-red-600 text-white text-[9px] font-bold uppercase tracking-widest rounded-full mb-1.5 inline-block">{societyInfo.blog_core_keyword}</span>
+              <h3 className="text-base font-black text-white leading-tight">{societyInfo.blog_title}</h3>
+              <p className="text-[10px] text-white/70 mt-1 line-clamp-1">{societyInfo.blog_subtitle}</p>
             </div>
           </div>
-        </section>
-      )}
+          {/* Column placeholder 1 */}
+          <div className="min-w-[280px] max-w-[300px] rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 flex flex-col items-center justify-center gap-3 snap-start flex-shrink-0">
+            <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
+              <span className="material-symbols-outlined text-slate-300 text-2xl">edit_note</span>
+            </div>
+            <h3 className="font-bold text-sm text-slate-400">Column Coming Soon</h3>
+            <p className="text-[10px] text-slate-300 text-center">New tango insights and stories</p>
+          </div>
+          {/* Column placeholder 2 */}
+          <div className="min-w-[280px] max-w-[300px] rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 flex flex-col items-center justify-center gap-3 snap-start flex-shrink-0">
+            <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
+              <span className="material-symbols-outlined text-slate-300 text-2xl">edit_note</span>
+            </div>
+            <h3 className="font-bold text-sm text-slate-400">Column Coming Soon</h3>
+            <p className="text-[10px] text-slate-300 text-center">Community voices and perspectives</p>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Tango Travel ── */}
+      <section className="flex flex-col gap-4">
+        <header className="flex items-center gap-2 px-2">
+          <span className="material-symbols-outlined text-[20px] text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>flight</span>
+          <h2 className="text-xl font-extrabold text-slate-900 font-headline">Tango Travel</h2>
+        </header>
+        <div className="relative overflow-hidden rounded-2xl shadow-md">
+          <img src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200" alt="Tango Travel" className="w-full h-[200px] object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent" />
+          <div className="absolute inset-0 flex flex-col justify-center px-6">
+            <span className="text-[10px] font-black text-white/60 uppercase tracking-[0.2em] mb-1">Coming Soon</span>
+            <h3 className="text-xl font-black text-white font-headline leading-tight">Discover Tango<br/>Around the World</h3>
+            <p className="text-xs text-white/70 mt-2 max-w-[280px]">Curated travel guides, festivals, and milonga maps for tango travelers.</p>
+          </div>
+        </div>
+      </section>
 
       {/* ── Neighbors ── */}
       <section className="flex flex-col gap-4">
-        <header className="px-2"><h2 className="text-xl md:text-2xl font-extrabold text-slate-900 font-headline">Neighbors</h2></header>
+        <header className="flex items-center gap-2 px-2">
+          <span className="material-symbols-outlined text-[20px] text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>diversity_3</span>
+          <h2 className="text-xl font-extrabold text-slate-900 font-headline">Neighbors</h2>
+        </header>
         <div className="flex gap-4 overflow-x-auto px-2 pb-2 snap-x custom-scrollbar">
-          <div className="min-w-[260px] bg-gradient-to-br from-emerald-50 to-teal-50 rounded-[24px] border border-emerald-100 p-6 flex flex-col gap-3 snap-start">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center">
-                <span className="material-symbols-outlined text-emerald-600 text-2xl">self_improvement</span>
+          {/* Yoga Society */}
+          <div className="min-w-[300px] relative overflow-hidden rounded-2xl shadow-md snap-start flex-shrink-0">
+            <img src="https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=600" alt="Yoga Society" className="w-full h-[200px] object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+            <div className="absolute bottom-4 left-4 right-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="material-symbols-outlined text-emerald-300 text-[18px]">self_improvement</span>
+                <h3 className="font-bold text-white text-sm">{t('home.neighbor.yoga.title')}</h3>
               </div>
-              <div>
-                <h3 className="font-bold text-slate-900 text-sm">{t('home.neighbor.yoga.title')}</h3>
-                <p className="text-[10px] text-slate-400 font-medium">{t('home.coming_soon')}</p>
-              </div>
+              <p className="text-[10px] text-white/70 line-clamp-2 mb-3">{t('home.neighbors.yoga_desc')}</p>
+              <button className="px-4 py-2 bg-white/20 backdrop-blur-md text-white rounded-lg text-xs font-bold border border-white/20 cursor-not-allowed opacity-70" disabled>
+                Jump to →
+              </button>
             </div>
-            <p className="text-xs text-slate-500 leading-relaxed">{t('home.neighbors.yoga_desc')}</p>
-            <button className="mt-auto px-4 py-2.5 bg-emerald-100 text-emerald-700 rounded-xl text-xs font-bold opacity-50 cursor-not-allowed" disabled>{t('home.visit_society')}</button>
           </div>
         </div>
       </section>

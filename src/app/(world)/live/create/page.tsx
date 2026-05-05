@@ -1,6 +1,6 @@
 'use client';
 
-import '../gallery.css';
+import '../live.css';
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { 
@@ -53,7 +53,7 @@ const GalleryCreateContent = () => {
         if (post) {
           if (user && post.authorId !== user.uid) {
             alert('You do not have permission to edit.');
-            router.push('/gallery');
+            router.push('/live');
             return;
           }
           setCaption(post.caption);
@@ -222,7 +222,7 @@ const GalleryCreateContent = () => {
         });
       }
 
-      router.push('/gallery');
+      router.push('/live');
     } catch (error) {
       console.error(error);
       alert(isEditMode ? '수정 중 오류가 발생했습니다.' : '게시 중 오류가 발생했습니다.');

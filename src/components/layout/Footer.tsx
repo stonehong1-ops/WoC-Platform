@@ -34,7 +34,7 @@ export default function Footer() {
           {/* 2. ACTIVITY PARTITION */}
           <Section label="Activity">
             <NavItem href="/social" icon="nightlife" label="SOCIAL" active={isActive('/social')} />
-            <NavItem href="/gallery" icon="photo_library" label="GALLERY" active={isActive('/gallery')} />
+            <NavItem href="/live" icon="cinematic_blur" label="LIVE" active={isActive('/live')} />
             <NavItem href="/events" icon="event" label="EVENTS" active={isActive('/events')} />
             <NavItem href="/class" icon="school" label="CLASS" active={isActive('/class')} />
             <NavItem href="/groups" icon="groups" label="GROUP" active={isActive('/groups')} />

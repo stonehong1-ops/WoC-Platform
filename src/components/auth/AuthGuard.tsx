@@ -12,7 +12,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     // If we are not on the landing page, and not loading, and not logged in
     // Show the login modal automatically
     const isPublic = pathname === '/' || 
-                    pathname.startsWith('/gallery') || 
+                    pathname.startsWith('/live') || 
                     pathname.startsWith('/events') || 
                     pathname.startsWith('/social') || 
                     pathname.startsWith('/venues');

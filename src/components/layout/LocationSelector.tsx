@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useLocation } from '@/components/providers/LocationProvider';
 
-const REGIONS = [
+export const REGIONS = [
   {
     continent: 'ASIA & OCEANIA',
     countries: [
