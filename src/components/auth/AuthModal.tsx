@@ -13,11 +13,13 @@ import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase/clientApp';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useRouter } from 'next/navigation';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function AuthModal() {
   const { user, profile, showLogin, setShowLogin } = useAuth();
+  const { language, setLanguage, t } = useLanguage();
   const [isLoading, setIsLoading] = useState(false);
-  const [step, setStep] = useState<'SOCIAL' | 'PHONE_INPUT' | 'PHONE_VERIFY' | 'FORM'>('SOCIAL');
+  const [step, setStep] = useState<'SOCIAL' | 'PHONE_INPUT' | 'PHONE_VERIFY' | 'FORM'>('PHONE_INPUT');
   const [authMethod, setAuthMethod] = useState<string>('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
@@ -34,7 +36,7 @@ export default function AuthModal() {
   // Reset step whenever modal re-opens
   useEffect(() => {
     if (showLogin) {
-      setStep('SOCIAL');
+      setStep('PHONE_INPUT');
       setAuthMethod('');
       setPhoneNumber('');
       setVerificationCode('');
@@ -238,25 +240,48 @@ export default function AuthModal() {
         <div className="flex items-center w-full max-w-2xl mx-auto justify-between">
           <div className="flex items-center gap-4">
             <h1 className="font-manrope text-base font-semibold text-gray-900 font-headline">
-              {step === 'FORM' ? 'Complete Registration' : 'Sign In / Register'}
+              {step === 'FORM' ? t('auth.title_register') : t('auth.title_signin')}
             </h1>
+          </div>
+          {/* Language Toggle */}
+          <div className="flex items-center bg-gray-50 rounded-full border border-gray-200 p-0.5">
+            <button 
+              onClick={() => setLanguage('KR')}
+              className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all ${language === 'KR' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+            >
+              Ko
+            </button>
+            <button 
+              onClick={() => setLanguage('EN')}
+              className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all ${language === 'EN' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+            >
+              En
+            </button>
           </div>
         </div>
       </header>
 
       {/* Main Content Canvas */}
-      <main className="flex-grow pt-[80px] pb-24 px-6 max-w-2xl mx-auto w-full">
+      <main className="flex-grow pt-[64px] pb-24 px-6 max-w-2xl mx-auto w-full relative">
         <div id="recaptcha-container"></div>
-        <div className="mt-20">
+        
+        {/* Floating Wait Message */}
+        {isLoading && step === 'PHONE_INPUT' && (
+          <div className="absolute top-20 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-5 py-2.5 rounded-full text-xs font-bold shadow-xl z-50 animate-bounce whitespace-nowrap">
+            {t('auth.wait_message')}
+          </div>
+        )}
+
+        <div className="mt-4">
           <h2 className="text-3xl font-extrabold tracking-tight text-on-surface mb-2 font-headline">
-            {step === 'FORM' ? 'Tell us more' : step === 'PHONE_INPUT' || step === 'PHONE_VERIFY' ? 'Verify Identity' : 'Join WoC'}
+            {step === 'FORM' ? t('auth.headline_more') : step === 'PHONE_INPUT' || step === 'PHONE_VERIFY' ? t('auth.headline_verify') : t('auth.headline_join')}
           </h2>
           <p className="text-on-surface-variant text-sm mb-8 font-body text-gray-500">
             {step === 'FORM' 
-              ? 'Identity verified! Just a few more details to set up your profile.' 
-              : step === 'PHONE_INPUT' ? 'Enter your phone number to receive a verification code.'
-              : step === 'PHONE_VERIFY' ? 'Enter the 6-digit code sent to your phone.'
-              : 'Create your global identity and start your journey.'}
+              ? t('auth.desc_more') 
+              : step === 'PHONE_INPUT' ? t('auth.desc_input')
+              : step === 'PHONE_VERIFY' ? t('auth.desc_verify')
+              : t('auth.desc_join')}
           </p>
         </div>
 
@@ -270,13 +295,13 @@ export default function AuthModal() {
               className="w-full flex items-center justify-center gap-3 h-16 bg-blue-600 text-white rounded-2xl font-bold text-base shadow-lg shadow-blue-600/20 hover:bg-blue-700 active:scale-[0.98] transition-all disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-[22px]">phone_iphone</span>
-              Continue with Phone
+              {t('auth.continue_phone')}
             </button>
 
             {/* Divider */}
             <div className="flex items-center gap-4 py-2">
               <div className="flex-1 h-px bg-gray-100" />
-              <span className="text-xs font-bold text-gray-300 uppercase tracking-widest">Other Methods</span>
+              <span className="text-xs font-bold text-gray-300 uppercase tracking-widest">{t('auth.other_methods')}</span>
               <div className="flex-1 h-px bg-gray-100" />
             </div>
 
@@ -306,7 +331,7 @@ export default function AuthModal() {
         ) : step === 'PHONE_INPUT' ? (
           <div className="animate-in slide-in-from-bottom-4 duration-500 space-y-6">
             <div>
-              <label className="block text-sm font-bold text-gray-900 mb-2">Phone Number</label>
+              <label className="block text-sm font-bold text-gray-900 mb-2">{t('auth.phone_label')}</label>
               <input 
                 type="tel"
                 autoComplete="tel"
@@ -323,31 +348,32 @@ export default function AuthModal() {
               className="w-full h-14 bg-blue-600 text-white rounded-full font-bold text-lg shadow-lg shadow-blue-600/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {isLoading && <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>}
-              Send Verification Code
+              {t('auth.send_code')}
             </button>
             <button 
               disabled={isLoading}
               onClick={() => setStep('SOCIAL')}
               className="w-full h-14 text-gray-500 font-semibold"
             >
-              Back
+              {t('auth.back')}
             </button>
           </div>
         ) : step === 'PHONE_VERIFY' ? (
           <div className="animate-in slide-in-from-bottom-4 duration-500 space-y-6">
             <div>
-              <label className="block text-sm font-bold text-gray-900 mb-2">Verification Code</label>
+              <label className="block text-sm font-bold text-gray-900 mb-2">{t('auth.code_label')}</label>
               <input 
+                autoFocus
                 type="text"
                 autoComplete="one-time-code"
                 inputMode="numeric"
                 value={verificationCode}
                 onChange={(e) => setVerificationCode(e.target.value.replace(/[^0-9]/g, ''))}
-                placeholder="123456"
-                className="w-full h-14 px-4 text-center tracking-[0.5em] text-xl font-bold bg-gray-50 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                placeholder="●●●●●●"
+                className="w-full h-14 px-4 text-center tracking-[0.5em] text-xl font-bold bg-gray-50 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder-gray-200"
               />
-              <p className="mt-3 text-xs text-gray-500 leading-relaxed font-medium break-keep">
-                대부분의 경우 위 숫자를 터치하면 문자로 온 6자리가 보이고 선택하시면 됩니다. 구글에서 보내지는 문자이기 때문에 해외문자를 차단하신 경우 직접 찾아서 확인하셔야 합니다.
+              <p className="mt-3 text-xs text-blue-600 leading-relaxed font-bold break-keep">
+                {t('auth.code_instruction')}
               </p>
             </div>
             <button 
@@ -356,14 +382,14 @@ export default function AuthModal() {
               className="w-full h-14 bg-blue-600 text-white rounded-full font-bold text-lg shadow-lg shadow-blue-600/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {isLoading && <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>}
-              Verify Code
+              {t('auth.verify_code')}
             </button>
             <button 
               disabled={isLoading}
               onClick={() => setStep('PHONE_INPUT')}
               className="w-full h-14 text-gray-500 font-semibold"
             >
-              Back
+              {t('auth.back')}
             </button>
           </div>
         ) : (
@@ -372,7 +398,7 @@ export default function AuthModal() {
             <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
               <div>
                 <label className="block text-sm font-bold text-gray-900 mb-2">
-                  Country
+                  {t('auth.country')}
                 </label>
                 <div className="relative">
                   <select 
@@ -380,17 +406,17 @@ export default function AuthModal() {
                     onChange={(e) => setDetails({...details, countryCode: e.target.value})}
                     className="w-full h-14 pl-4 pr-12 bg-gray-50 border border-gray-200 rounded-xl appearance-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-gray-700"
                   >
-                    <option value="">Select your country</option>
-                    <option value="KR">South Korea</option>
-                    <option value="US">United States</option>
-                    <option value="GB">United Kingdom</option>
-                    <option value="FR">France</option>
-                    <option value="JP">Japan</option>
-                    <option value="CN">China</option>
-                    <option value="DE">Germany</option>
-                    <option value="CA">Canada</option>
-                    <option value="AU">Australia</option>
-                    <option value="SG">Singapore</option>
+                    <option value="">{t('auth.select_country')}</option>
+                    <option value="KR">{t('auth.country_kr')}</option>
+                    <option value="US">{t('auth.country_us')}</option>
+                    <option value="GB">{t('auth.country_gb')}</option>
+                    <option value="FR">{t('auth.country_fr')}</option>
+                    <option value="JP">{t('auth.country_jp')}</option>
+                    <option value="CN">{t('auth.country_cn')}</option>
+                    <option value="DE">{t('auth.country_de')}</option>
+                    <option value="CA">{t('auth.country_ca')}</option>
+                    <option value="AU">{t('auth.country_au')}</option>
+                    <option value="SG">{t('auth.country_sg')}</option>
                   </select>
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
                     <span className="material-symbols-outlined text-gray-400">expand_more</span>
@@ -401,41 +427,41 @@ export default function AuthModal() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-bold text-gray-900 mb-2">
-                    English Nickname
+                    {t('auth.english_nickname')}
                   </label>
                   <input 
                     value={details.nickname}
                     onChange={(e) => setDetails({...details, nickname: e.target.value.replace(/[^a-zA-Z0-9_.\-\s]/g, '')})}
                     className="w-full h-14 px-4 bg-gray-50 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all" 
-                    placeholder="e.g. Alex" 
+                    placeholder={t('auth.placeholder_en_nick')} 
                     type="text"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-gray-900 mb-2">
-                    Gender
+                    {t('auth.gender')}
                   </label>
                   <select 
                     value={details.gender}
                     onChange={(e) => setDetails({...details, gender: e.target.value})}
                     className="w-full h-14 px-4 bg-gray-50 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
                   >
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
+                    <option value="Male">{t('auth.gender_male')}</option>
+                    <option value="Female">{t('auth.gender_female')}</option>
+                    <option value="Other">{t('auth.gender_other')}</option>
                   </select>
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-bold text-gray-900 mb-2">
-                  Native Nickname
+                  {t('auth.native_nickname')}
                 </label>
                 <input 
                   value={details.nativeNickname}
                   onChange={(e) => setDetails({...details, nativeNickname: e.target.value})}
                   className="w-full h-14 px-4 bg-gray-50 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all" 
-                  placeholder="e.g. 김알렉스" 
+                  placeholder={t('auth.placeholder_ko_nick')} 
                   type="text"
                 />
               </div>
@@ -448,7 +474,7 @@ export default function AuthModal() {
                 className="w-full h-14 bg-blue-600 text-white rounded-full font-bold text-lg shadow-lg shadow-blue-600/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {isLoading && <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>}
-                Complete Registration
+                {t('auth.complete_reg_btn')}
               </button>
             </div>
           </div>
@@ -456,10 +482,10 @@ export default function AuthModal() {
 
         <div className="mt-8">
           <p className="text-center text-xs leading-relaxed text-gray-500 px-4">
-            By continuing, you agree to our 
-            <a className="text-blue-600 font-semibold underline ml-1" href="#">Terms</a> 
-            and 
-            <a className="text-blue-600 font-semibold underline ml-1" href="#">Privacy</a>. 
+            {t('auth.terms_agree')} 
+            <a className="text-blue-600 font-semibold underline ml-1" href="#">{t('auth.terms')}</a> 
+            {t('auth.and')}
+            <a className="text-blue-600 font-semibold underline ml-1" href="#">{t('auth.privacy')}</a>{t('auth.period')}
           </p>
         </div>
       </main>
