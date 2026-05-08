@@ -1,12 +1,13 @@
 const fs = require('fs');
-const text = fs.readFileSync('C:/Users/stone/.gemini/antigravity/brain/5aef59ee-8019-48a7-9bcb-aa09283fa701/.system_generated/logs/overview.txt', 'utf8');
-const regex = /<!DOCTYPE html>[\s\S]*?<\/html>/g;
-const matches = text.match(regex);
-if (matches) {
-    matches.forEach((m, i) => {
-        fs.writeFileSync('C:/Users/stone/.gemini/antigravity/brain/5aef59ee-8019-48a7-9bcb-aa09283fa701/scratch/html_' + i + '.html', m);
-    });
-    console.log('Found ' + matches.length + ' matches');
+const data = fs.readFileSync('C:\\Users\\stone\\.gemini\\antigravity\\brain\\9cc0f354-0e6c-4c1d-85ae-e27867a7a51e\\.system_generated\\steps\\3277\\output.txt', 'utf8');
+const parsed = JSON.parse(data);
+const docsArray = parsed.documents || parsed;
+const ft = docsArray.find(d => d.fields && d.fields.name && d.fields.name.stringValue === 'Freestyle Tango');
+if (ft) {
+  console.log('Found Freestyle Tango group');
+  console.log('Fields keys:', Object.keys(ft.fields));
+  if (ft.fields.venueId) console.log('venueId:', ft.fields.venueId);
+  else console.log('venueId is missing');
 } else {
-    console.log('Not found!');
+  console.log('Not found');
 }

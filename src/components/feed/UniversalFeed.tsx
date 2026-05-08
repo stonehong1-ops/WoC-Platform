@@ -38,7 +38,9 @@ export default function UniversalFeed({ context, currentUser, profile, activeFil
   ];
 
   useEffect(() => {
-    const targetId = context.scope === 'plaza' ? 'plaza' : (context.scopeId || 'freestyle-tango');
+    let targetId = context.scope === 'plaza' ? 'plaza' : (context.scopeId || 'freestyle-tango');
+    if (context.scope === 'helpdesk') targetId = 'helpdesk';
+    
     const unsubscribe = feedService.subscribePosts(
       targetId,
       (newPosts) => {
@@ -127,21 +129,19 @@ export default function UniversalFeed({ context, currentUser, profile, activeFil
 
       <main className={`max-w-[600px] mx-auto flex flex-col ${context.scope === 'plaza' ? 'pt-0' : 'pt-0 pb-16'}`}>
         <div className="flex flex-col w-full">
-          {/* Action Hub: Inline Compose Bar (Standardized for Plaza/Group/Social) */}
-          {(context.scope === 'plaza' || context.scope === 'group' || context.scope === 'social') && (
-            <div 
-              onClick={() => openCreate('new')}
-              className="mt-4 mb-4 mx-4 p-4 bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-slate-100 flex items-center gap-4 active:scale-[0.99] transition-all cursor-pointer group hover:border-blue-100"
-            >
-              <UserAvatar 
-                photoURL={profile?.photoURL} 
-                className="!w-12 !h-12 rounded-xl ring-2 ring-slate-50 transition-transform group-hover:scale-105" 
-              />
-              <div className="flex-1">
-                <span className="text-[15px] font-medium text-slate-400 tracking-tight block">
-                  {t('plaza.compose_prompt')}
-                </span>
-              </div>
+          {/* Action Hub: Inline Compose Bar (Standardized) */}
+          {(context.scope === 'plaza' || context.scope === 'group' || context.scope === 'social' || context.scope === 'helpdesk') && (
+            <div className="mx-4 my-3 px-5 py-3 flex items-center justify-between bg-white rounded-xl border border-slate-100 shadow-sm">
+              <p className="text-[12px] font-bold text-slate-400 uppercase tracking-tight">
+                {t('plaza.compose_prompt', 'Share your thoughts...')}
+              </p>
+              <button 
+                onClick={() => openCreate('new')}
+                className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 transition-colors py-2"
+              >
+                <span className="text-[13px] font-bold">{t('plaza.create_post', 'Post')}</span>
+                <span className="material-symbols-outlined text-[18px]">add_circle</span>
+              </button>
             </div>
           )}
 
@@ -169,6 +169,7 @@ export default function UniversalFeed({ context, currentUser, profile, activeFil
                 post={post}
                 currentUser={currentUser}
                 profile={profile}
+                hideUserInfo={context.scope === 'helpdesk'}
                 onEdit={(post) => {
                   openCreate(post.id);
                 }}

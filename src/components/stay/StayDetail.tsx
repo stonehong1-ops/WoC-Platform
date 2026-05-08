@@ -14,6 +14,7 @@ import CollapseSection from '@/components/ui/CollapseSection';
 import ChatRoom from '@/components/chat/ChatRoom';
 import Link from 'next/link';
 import { useModalNavigation } from '@/hooks/useModalNavigation';
+import { useNavigation } from '@/components/providers/NavigationProvider';
 
 import {
   format,
@@ -41,6 +42,7 @@ interface StayDetailProps {
 export default function StayDetail({ stayId, onClose, isLiked, onToggleLike }: StayDetailProps) {
   const { user, setShowLogin } = useAuth();
   const { t } = useLanguage();
+  const { setGlobalNavHidden } = useNavigation();
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -95,6 +97,11 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike }: S
     });
     return () => unsub();
   }, [stayId]);
+
+  useEffect(() => {
+    setGlobalNavHidden(true);
+    return () => setGlobalNavHidden(false);
+  }, [setGlobalNavHidden]);
 
   useEffect(() => {
     if (!stay?.groupId) return;

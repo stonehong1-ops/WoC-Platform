@@ -11,6 +11,7 @@ import { Product, CustomOptionDef } from '@/types/shop';
 import PurchaseFlow from './PurchaseFlow';
 import ChatRoom from '@/components/chat/ChatRoom';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useNavigation } from '@/components/providers/NavigationProvider';
 
 interface ProductDetailProps {
   product: Product;
@@ -24,6 +25,7 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
   const { user } = useAuth();
   const router = useRouter();
   const { t } = useLanguage();
+  const { setGlobalNavHidden } = useNavigation();
 
   // Image carousel
   const [currentImg, setCurrentImg] = useState(0);
@@ -58,6 +60,11 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
   useEffect(() => {
     shopService.incrementViews(product.id);
   }, [product.id]);
+
+  useEffect(() => {
+    setGlobalNavHidden(true);
+    return () => setGlobalNavHidden(false);
+  }, [setGlobalNavHidden]);
 
   // Fetch bank details from group
   useEffect(() => {

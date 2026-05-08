@@ -1,0 +1,6 @@
+# Antigravity Communication Channel
+
+## 2026-05-08: Feed Translation Update
+- Feed translations updated for English posts in the database.
+- Added translation keys for "See Translation" and "Show Original" buttons.
+- Deployed to Vercel production successfully.

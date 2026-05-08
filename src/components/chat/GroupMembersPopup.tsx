@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { doc, getDoc } from 'firebase/firestore';
+import React, { useState, useEffect, useCallback } from 'react';
+import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
+import { useAuth } from '@/components/providers/AuthProvider';
+import { groupService } from '@/lib/firebase/groupService';
 import { useHistoryBack } from '@/hooks/useHistoryBack';
 import UserBadge from '../common/UserBadge';
 
@@ -9,40 +11,132 @@ interface GroupMembersPopupProps {
   onClose: () => void;
 }
 
+interface MemberInfo {
+  id: string;
+  nickname?: string;
+  nativeNickname?: string;
+  displayName?: string;
+  photoURL?: string;
+  role: 'owner' | 'admin' | 'staff' | 'member';
+}
+
 export default function GroupMembersPopup({ roomId, onClose }: GroupMembersPopupProps) {
-  const [members, setMembers] = useState<any[]>([]);
+  const { user } = useAuth();
+  const [members, setMembers] = useState<MemberInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [room, setRoom] = useState<any>(null);
+  const [linkedGroupId, setLinkedGroupId] = useState<string | null>(null);
+  const [currentUserRole, setCurrentUserRole] = useState<string>('member');
+  const [kickingId, setKickingId] = useState<string | null>(null);
+  const [confirmKickId, setConfirmKickId] = useState<string | null>(null);
   const { handleClose } = useHistoryBack(true, onClose);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const roomDoc = await getDoc(doc(db, 'chat_rooms', roomId));
-        if (roomDoc.exists()) {
-          const roomData = roomDoc.data();
-          setRoom(roomData);
-          
-          const memberPromises = (roomData.participants || []).map(async (uid: string) => {
-            const userDoc = await getDoc(doc(db, 'users', uid));
-            if (userDoc.exists()) {
-              return { id: uid, ...userDoc.data() };
-            }
-            return { id: uid, nickname: 'Unknown' };
-          });
-          
-          const membersData = await Promise.all(memberPromises);
-          setMembers(membersData);
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const roomDoc = await getDoc(doc(db, 'chat_rooms', roomId));
+      if (!roomDoc.exists()) return;
+      
+      const roomData = roomDoc.data();
+      setRoom(roomData);
+      const groupId = roomData.linkedGroupId;
+      setLinkedGroupId(groupId);
+
+      // Fetch group members with roles from subcollection
+      let roleMap: Record<string, string> = {};
+      let groupOwnerId: string | null = null;
+      
+      if (groupId) {
+        const groupDoc = await getDoc(doc(db, 'groups', groupId));
+        if (groupDoc.exists()) {
+          groupOwnerId = groupDoc.data().ownerId || null;
         }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
+        
+        const membersSnap = await getDocs(collection(db, 'groups', groupId, 'members'));
+        membersSnap.forEach(mDoc => {
+          const data = mDoc.data();
+          roleMap[mDoc.id] = data.role || 'member';
+        });
       }
-    };
-    
+
+      // Build members list from room participants
+      const memberPromises = (roomData.participants || []).map(async (uid: string) => {
+        const userDoc = await getDoc(doc(db, 'users', uid));
+        const userData = userDoc.exists() ? userDoc.data() : {};
+        
+        let role: 'owner' | 'admin' | 'staff' | 'member' = 'member';
+        if (uid === groupOwnerId) {
+          role = 'owner';
+        } else if (roleMap[uid] === 'admin' || roleMap[uid] === 'owner') {
+          role = 'admin';
+        } else if (roleMap[uid] === 'staff') {
+          role = 'staff';
+        }
+        
+        return {
+          id: uid,
+          nickname: userData.nickname,
+          nativeNickname: userData.nativeNickname,
+          displayName: userData.displayName,
+          photoURL: userData.photoURL,
+          role
+        } as MemberInfo;
+      });
+      
+      const membersData = await Promise.all(memberPromises);
+      
+      // Sort: owner first, then admin, then staff, then members
+      const roleOrder: Record<string, number> = { owner: 0, admin: 1, staff: 2, member: 3 };
+      membersData.sort((a, b) => (roleOrder[a.role] ?? 3) - (roleOrder[b.role] ?? 3));
+      
+      setMembers(membersData);
+      
+      // Set current user's role
+      if (user) {
+        const myMember = membersData.find(m => m.id === user.uid);
+        setCurrentUserRole(myMember?.role || 'member');
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [roomId, user]);
+
+  useEffect(() => {
     fetchData();
-  }, [roomId]);
+  }, [fetchData]);
+
+  const canKick = currentUserRole === 'owner' || currentUserRole === 'admin' || currentUserRole === 'staff';
+
+  const handleKick = async (targetId: string) => {
+    if (!linkedGroupId) return;
+    setKickingId(targetId);
+    try {
+      await groupService.kickMember(linkedGroupId, targetId);
+      // Refresh member list
+      await fetchData();
+      setConfirmKickId(null);
+    } catch (err) {
+      console.error('Kick failed:', err);
+      alert('Failed to remove member.');
+    } finally {
+      setKickingId(null);
+    }
+  };
+
+  const getRoleBadge = (role: string) => {
+    switch (role) {
+      case 'owner':
+        return <span className="font-['Inter'] font-bold text-[10px] leading-[1rem] text-[#004190] bg-[#d8e2ff] px-2 py-0.5 rounded-full mt-1 w-max">Owner</span>;
+      case 'admin':
+        return <span className="font-['Inter'] font-bold text-[10px] leading-[1rem] text-[#b31b25] bg-[#ffd8d8] px-2 py-0.5 rounded-full mt-1 w-max">Admin</span>;
+      case 'staff':
+        return <span className="font-['Inter'] font-bold text-[10px] leading-[1rem] text-[#6d3b00] bg-[#ffe5c2] px-2 py-0.5 rounded-full mt-1 w-max">Staff</span>;
+      default:
+        return <span className="font-['Inter'] font-bold text-[10px] leading-[1rem] text-[#424753] bg-[#e1e2eb] px-2 py-0.5 rounded-full mt-1 w-max">Member</span>;
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-[10000] bg-[#f9f9ff] text-[#191b22] flex flex-col items-center overflow-y-auto">
@@ -55,19 +149,10 @@ export default function GroupMembersPopup({ roomId, onClose }: GroupMembersPopup
           <span className="material-symbols-outlined">arrow_back</span>
         </button>
         <h1 className="font-['Plus_Jakarta_Sans'] font-bold text-lg text-slate-900 dark:text-slate-50">Group Members</h1>
-        {/* Removed more_vert icon to balance header spacing */}
         <div className="w-10 h-10" />
       </header>
 
       <main className="w-full max-w-[896px] mt-16 px-6 py-8 flex flex-col space-y-10">
-        {/* Invite Section */}
-        <section>
-          <button className="w-full flex items-center justify-center space-x-3 bg-[#0057bd] text-[#c2d3ff] rounded-xl p-4 shadow-sm hover:shadow-md hover:bg-[#0b5ac0] active:scale-95 transition-all duration-200">
-            <span className="material-symbols-outlined">person_add</span>
-            <span className="font-['Plus_Jakarta_Sans'] font-bold text-[1.125rem] leading-[1.5rem]">Invite New Member</span>
-          </button>
-        </section>
-
         {/* Member List */}
         <section className="flex flex-col space-y-2">
           {loading ? (
@@ -89,8 +174,9 @@ export default function GroupMembersPopup({ roomId, onClose }: GroupMembersPopup
               </h2>
               
               {members.map(member => {
-                const isOwner = room?.createdBy === member.id;
-                const displayName = member.nickname || member.nativeNickname || member.displayName || 'Unknown';
+                const isProtected = member.role === 'owner' || member.role === 'admin' || member.role === 'staff';
+                const isSelf = member.id === user?.uid;
+                const showKick = canKick && !isProtected && !isSelf;
                 
                 return (
                   <div key={member.id} className="flex items-center justify-between p-4 bg-[#ffffff] rounded-lg shadow-sm hover:shadow-md hover:outline-[#c2c6d5] hover:outline transition-all group">
@@ -102,14 +188,41 @@ export default function GroupMembersPopup({ roomId, onClose }: GroupMembersPopup
                       avatarSize="w-12 h-12"
                       nameClassName="font-['Inter'] font-medium text-[0.875rem] leading-[1.25rem] text-[#191b22]"
                       nativeClassName="text-[12px] font-medium text-gray-500 normal-case tracking-normal ml-1.5"
-                      subText={
-                        isOwner ? (
-                          <span className="font-['Inter'] font-bold text-[10px] leading-[1rem] text-[#004190] bg-[#d8e2ff] px-2 py-0.5 rounded-full mt-1 w-max">Owner</span>
-                        ) : (
-                          <span className="font-['Inter'] font-bold text-[10px] leading-[1rem] text-[#424753] bg-[#e1e2eb] px-2 py-0.5 rounded-full mt-1 w-max">Member</span>
-                        )
-                      }
+                      subText={getRoleBadge(member.role)}
                     />
+                    
+                    {/* Kick button (visible to owner/admin/staff, not on protected or self) */}
+                    {showKick && (
+                      <div className="flex items-center">
+                        {confirmKickId === member.id ? (
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleKick(member.id)}
+                              disabled={kickingId === member.id}
+                              className="px-3 py-1.5 bg-red-500 text-white text-xs font-bold rounded-lg hover:bg-red-600 active:scale-95 transition-all disabled:opacity-50"
+                            >
+                              {kickingId === member.id ? (
+                                <span className="material-symbols-outlined animate-spin !text-[14px]">progress_activity</span>
+                              ) : 'Remove'}
+                            </button>
+                            <button
+                              onClick={() => setConfirmKickId(null)}
+                              className="px-3 py-1.5 bg-gray-100 text-gray-600 text-xs font-bold rounded-lg hover:bg-gray-200 active:scale-95 transition-all"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setConfirmKickId(member.id)}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded-full hover:bg-red-50 text-gray-400 hover:text-red-500"
+                            title="Remove member"
+                          >
+                            <span className="material-symbols-outlined !text-[20px]">person_remove</span>
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}

@@ -6,9 +6,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Group, RentalSettings } from "@/types/group";
 import { groupService } from "@/lib/firebase/groupService";
 import { toast } from "sonner";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface GroupRentalEditorProps {
   group: Group;
+  onClose?: () => void;
 }
 
 const COLORS = [
@@ -61,8 +63,9 @@ const generateDefaultTimeGrid = () => {
   return grid;
 };
 
-const GroupRentalEditor: React.FC<GroupRentalEditorProps> = ({ group }) => {
+const GroupRentalEditor: React.FC<GroupRentalEditorProps> = ({ group, onClose }) => {
   const router = useRouter();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<typeof TABS[number]["id"]>("settings");
   
   const [settings, setSettings] = useState<RentalSettings>(() => {
@@ -86,28 +89,41 @@ const GroupRentalEditor: React.FC<GroupRentalEditorProps> = ({ group }) => {
   };
 
   const handleSave = async () => {
-    if (!window.confirm("저장하시겠습니까?")) return;
+    if (!window.confirm(t('group.rental.actions.save_confirm') || "Are you sure you want to save?")) return;
     
     try {
       setIsUpdating(true);
       await groupService.updateGroupMetadata(group.id, {
         rentalSettings: settings,
       });
-      toast.success("변경내용이 반영되었습니다");
+      toast.success(t('group.rental.actions.success_msg') || "Changes have been applied.");
     } catch (error) {
       console.error("Error saving rental settings:", error);
-      toast.error("An error occurred while saving settings.");
+      toast.error(t('group.rental.actions.error_msg') || "An error occurred while saving settings.");
     } finally {
       setIsUpdating(false);
     }
   };
 
   return (
-    <div className="text-[var(--on-background)] font-body antialiased bg-white min-h-screen pb-32">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 20 }}
+      className="fixed inset-0 z-[100] text-[var(--on-background)] font-body antialiased bg-white flex flex-col overflow-y-auto no-scrollbar pb-32"
+    >
       {/* Header & Tabs */}
-      <header className="bg-white sticky top-0 z-30 border-b border-[var(--outline-variant)]/20">
-        <div className="px-6 py-6 max-w-4xl mx-auto">
-          <h1 className="font-headline font-extrabold text-2xl tracking-tight text-[#242C51] mb-6">Rental Manager</h1>
+      <header className="bg-white sticky top-0 z-50 border-b border-[var(--outline-variant)]/20">
+        <div className="px-6 pt-6 max-w-4xl mx-auto">
+          <div className="flex items-center gap-4 mb-6">
+            <button 
+              onClick={onClose || (() => router.push(`/groups/${group.id}`))}
+              className="w-10 h-10 rounded-full flex items-center justify-center text-[var(--primary)] hover:bg-[var(--primary)]/5 transition-all"
+            >
+              <span className="material-symbols-outlined text-[var(--primary)]">arrow_back</span>
+            </button>
+            <h1 className="font-headline font-extrabold text-2xl tracking-tight text-[#242C51]">{t('group.rental.title') || "Rental Manager"}</h1>
+          </div>
           
           <div className="flex items-center gap-6">
             {TABS.map((tab) => (
@@ -118,7 +134,7 @@ const GroupRentalEditor: React.FC<GroupRentalEditorProps> = ({ group }) => {
                   activeTab === tab.id ? "text-[var(--primary)]" : "text-[var(--on-surface-variant)] hover:text-[var(--on-surface)]"
                 }`}
               >
-                {tab.label}
+                {t(`group.rental.tabs.${tab.id}`) || tab.label}
                 {activeTab === tab.id && (
                   <motion.div
                     layoutId="rental-tab-indicator"
@@ -132,7 +148,7 @@ const GroupRentalEditor: React.FC<GroupRentalEditorProps> = ({ group }) => {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 pt-6 pb-20">
+      <main className="max-w-4xl w-full mx-auto px-4 sm:px-6 pt-6 pb-20 flex-1">
         {activeTab === "settings" && (
           <motion.div 
             initial={{ opacity: 0, y: 10 }} 
@@ -142,13 +158,13 @@ const GroupRentalEditor: React.FC<GroupRentalEditorProps> = ({ group }) => {
             {/* General Info - Clean Layout */}
             <section className="space-y-4">
               <div>
-                <h3 className="font-headline font-bold text-lg text-[var(--on-surface)] mb-1">General Info</h3>
-                <p className="font-body text-[13px] text-[var(--on-surface-variant)]">Set currency and provide guidelines for your space.</p>
+                <h3 className="font-headline font-bold text-lg text-[var(--on-surface)] mb-1">{t('group.rental.general_info.title') || "General Info"}</h3>
+                <p className="font-body text-[13px] text-[var(--on-surface-variant)]">{t('group.rental.general_info.desc') || "Set currency and provide guidelines for your space."}</p>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2 md:col-span-1">
-                  <label className="font-label font-bold text-[11px] uppercase tracking-wider text-[var(--on-surface-variant)] block">Currency</label>
+                  <label className="font-label font-bold text-[11px] uppercase tracking-wider text-[var(--on-surface-variant)] block">{t('group.rental.general_info.currency_label') || "Currency"}</label>
                   <div className="relative">
                     <select 
                       value={settings.currency}
@@ -166,12 +182,12 @@ const GroupRentalEditor: React.FC<GroupRentalEditorProps> = ({ group }) => {
                 </div>
 
                 <div className="space-y-2 md:col-span-2">
-                  <label className="font-label font-bold text-[11px] uppercase tracking-wider text-[var(--on-surface-variant)] block">Rental Info & Rules</label>
+                  <label className="font-label font-bold text-[11px] uppercase tracking-wider text-[var(--on-surface-variant)] block">{t('group.rental.general_info.rules_label') || "Rental Info & Rules"}</label>
                   <textarea 
                     value={settings.rentalInfo || ""}
                     onChange={(e) => setSettings({ ...settings, rentalInfo: e.target.value })}
                     className="w-full bg-slate-50 border border-[var(--outline-variant)]/20 rounded-xl px-4 py-3 font-body text-[14px] text-[var(--on-surface)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/50 transition-shadow resize-none min-h-[100px]" 
-                    placeholder="Enter facility rules, parking info, access instructions..." 
+                    placeholder={t('group.rental.general_info.rules_placeholder') || "Enter facility rules, parking info, access instructions..."} 
                   ></textarea>
                 </div>
               </div>
@@ -182,8 +198,8 @@ const GroupRentalEditor: React.FC<GroupRentalEditorProps> = ({ group }) => {
             {/* Pricing Palette */}
             <section className="space-y-4">
               <div className="flex flex-col gap-1">
-                <h3 className="font-headline font-bold text-lg text-[var(--on-surface)]">Pricing Palette</h3>
-                <p className="font-body text-[13px] text-[var(--on-surface-variant)]">Set hourly rates for each color tier.</p>
+                <h3 className="font-headline font-bold text-lg text-[var(--on-surface)]">{t('group.rental.pricing_palette.title') || "Pricing Palette"}</h3>
+                <p className="font-body text-[13px] text-[var(--on-surface-variant)]">{t('group.rental.pricing_palette.desc') || "Set hourly rates for each color tier."}</p>
               </div>
               
               <div className="flex justify-between items-start w-full gap-1">
@@ -207,9 +223,9 @@ const GroupRentalEditor: React.FC<GroupRentalEditorProps> = ({ group }) => {
             {/* Time Grid Section - Clean, Box-less */}
             <section className="space-y-4">
               <div className="flex flex-col gap-1">
-                <h3 className="font-headline font-bold text-lg text-[var(--on-surface)]">Time Grid</h3>
+                <h3 className="font-headline font-bold text-lg text-[var(--on-surface)]">{t('group.rental.time_grid.title') || "Time Grid"}</h3>
                 <p className="font-body text-[13px] text-[var(--on-surface-variant)]">
-                  Tap a time slot to select a pricing tier from the toolbar below.
+                  {t('group.rental.time_grid.desc') || "Tap a time slot to select a pricing tier from the toolbar below."}
                 </p>
               </div>
 
@@ -259,21 +275,25 @@ const GroupRentalEditor: React.FC<GroupRentalEditorProps> = ({ group }) => {
             <div className="pt-8 flex gap-3">
               <button 
                 onClick={() => {
-                  if (window.confirm("변경사항을 취소하시겠습니까?")) {
-                    router.push(`/groups/${group.id}`);
+                  if (window.confirm(t('group.rental.actions.cancel_confirm') || "Are you sure you want to cancel your changes?")) {
+                    if (onClose) {
+                      onClose();
+                    } else {
+                      router.push(`/groups/${group.id}`);
+                    }
                   }
                 }}
                 disabled={isUpdating}
                 className="flex-1 bg-slate-100 text-[var(--on-surface-variant)] py-4 rounded-xl font-headline font-bold text-base hover:bg-slate-200 transition-all active:scale-[0.98] duration-200 disabled:opacity-50"
               >
-                Cancel
+                {t('group.rental.actions.cancel') || "Cancel"}
               </button>
               <button 
                 onClick={handleSave}
                 disabled={isUpdating}
                 className="flex-[2] bg-[#242C51] text-white py-4 rounded-xl font-headline font-bold text-base hover:bg-black transition-all shadow-lg active:scale-[0.98] duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isUpdating ? "Saving..." : "Save Settings"}
+                {isUpdating ? (t('group.rental.actions.saving') || "Saving...") : (t('group.rental.actions.save') || "Save Settings")}
               </button>
             </div>
           </motion.div>
@@ -286,8 +306,8 @@ const GroupRentalEditor: React.FC<GroupRentalEditorProps> = ({ group }) => {
             className="flex flex-col items-center justify-center py-20 text-center"
           >
             <span className="material-symbols-outlined text-6xl text-[var(--outline-variant)] mb-4" data-icon="inbox">inbox</span>
-            <h3 className="font-headline font-bold text-xl text-[var(--on-surface)] mb-2">No Rental Requests</h3>
-            <p className="font-body text-[var(--on-surface-variant)]">When members request a rental, it will appear here.</p>
+            <h3 className="font-headline font-bold text-xl text-[var(--on-surface)] mb-2">{t('group.rental.requests.empty_title') || "No Rental Requests"}</h3>
+            <p className="font-body text-[var(--on-surface-variant)]">{t('group.rental.requests.empty_desc') || "When members request a rental, it will appear here."}</p>
           </motion.div>
         )}
       </main>
@@ -303,7 +323,9 @@ const GroupRentalEditor: React.FC<GroupRentalEditorProps> = ({ group }) => {
           >
             <div className="flex items-center justify-between mb-4 max-w-4xl mx-auto w-full">
               <h3 className="font-headline font-bold text-sm text-[var(--on-surface)]">
-                Set color for {DAYS[selectedCell.day]} {selectedCell.hour.toString().padStart(2, '0')}:00
+                {(t('group.rental.time_grid.color_set_title') || "Set color for {{day}} {{hour}}:00")
+                  .replace('{{day}}', DAYS[selectedCell.day])
+                  .replace('{{hour}}', selectedCell.hour.toString().padStart(2, '0'))}
               </h3>
               <button onClick={() => setSelectedCell(null)} className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-[var(--on-surface-variant)] hover:bg-slate-200 transition-colors">
                 <span className="material-symbols-outlined text-sm">close</span>
@@ -344,11 +366,8 @@ const GroupRentalEditor: React.FC<GroupRentalEditorProps> = ({ group }) => {
           margin: 0; 
         }
       `}} />
-    </div>
+    </motion.div>
   );
 };
 
 export default GroupRentalEditor;
-
-
-

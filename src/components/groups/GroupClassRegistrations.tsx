@@ -7,6 +7,7 @@ import { safeDate } from '@/lib/utils/safeDate';
 import UserBadge from '@/components/common/UserBadge';
 import { toast } from 'sonner';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface GroupClassRegistrationsProps {
   group: Group;
@@ -20,7 +21,7 @@ export function GroupClassRegistrations({ group, validClassIds, allClasses = [],
   const [registrations, setRegistrations] = useState<ClassRegistration[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
-  
+  const { t } = useLanguage();  
   // Selection Popup state (for Checkboxes)
   const [selectedPopupReg, setSelectedPopupReg] = useState<ClassRegistration | null>(null);
   const [popupIncludedIds, setPopupIncludedIds] = useState<string[]>([]);
@@ -303,7 +304,7 @@ export function GroupClassRegistrations({ group, validClassIds, allClasses = [],
                         className="w-full text-left px-4 py-3.5 hover:bg-surface-variant/50 transition-colors font-body-md text-on-surface flex items-center gap-3 rounded-lg active:scale-[0.98]"
                       >
                         <span className="material-symbols-outlined text-on-surface-variant text-[20px]">edit</span>
-                        수강 목록 수정
+                        {t('group.class.actions.edit_list') || 'Edit class list'}
                       </button>
                     )}
                     
@@ -314,7 +315,7 @@ export function GroupClassRegistrations({ group, validClassIds, allClasses = [],
                       className="w-full text-left px-4 py-3.5 hover:bg-error-container/50 text-error transition-colors font-body-md flex items-center gap-3 rounded-lg active:scale-[0.98]"
                     >
                       <span className="material-symbols-outlined text-error text-[20px]">delete</span>
-                      내역 삭제
+                      {t('group.class.actions.delete_record') || 'Delete record'}
                     </button>
                   </div>
                 </div>

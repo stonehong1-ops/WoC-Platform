@@ -173,12 +173,6 @@ function PlazaPageContent() {
             <UniversalFeed context={plazaContext} currentUser={user} profile={profile} activeFilter={activeFilter} />
           </div>
 
-          <button 
-            onClick={() => openCreate('new')}
-            className="fixed bottom-24 right-6 w-14 h-14 bg-gradient-to-br from-[#9B51E0] to-[#E56860] text-white rounded-full shadow-lg shadow-[#9B51E0]/40 flex items-center justify-center active:scale-95 transition-transform z-40"
-          >
-            <span className="material-symbols-outlined text-3xl">add</span>
-          </button>
         </div>
       </div>
 

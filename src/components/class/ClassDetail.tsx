@@ -53,7 +53,12 @@ interface ClassDetailProps {
 export default function ClassDetail({ groupId, onClose, isModal = false }: ClassDetailProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { isHeaderVisible } = useNavigation();
+  const { isHeaderVisible, setGlobalNavHidden } = useNavigation();
+  
+  useEffect(() => {
+    setGlobalNavHidden(true);
+    return () => setGlobalNavHidden(false);
+  }, [setGlobalNavHidden]);
   
   const [group, setGroup] = useState<Group | null>(null);
   const [loading, setLoading] = useState(true);

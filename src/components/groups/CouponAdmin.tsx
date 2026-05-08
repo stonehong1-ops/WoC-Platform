@@ -5,12 +5,14 @@ import { Group } from "@/types/group";
 import { Coupon, createCoupon, getActiveCoupons, deleteCoupon } from "@/lib/firebase/couponService";
 import { toast } from "sonner";
 import { Timestamp } from "firebase/firestore";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface CouponAdminProps {
   group: Group;
 }
 
 const CouponAdmin: React.FC<CouponAdminProps> = ({ group }) => {
+  const { t } = useLanguage();
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
@@ -34,7 +36,7 @@ const CouponAdmin: React.FC<CouponAdminProps> = ({ group }) => {
       setCoupons(data);
     } catch (error) {
       console.error("Failed to fetch coupons:", error);
-      toast.error("Failed to load coupons.");
+      toast.error(t('failedToLoadCoupons') || "Failed to load coupons.");
     } finally {
       setIsLoading(false);
     }
@@ -47,13 +49,13 @@ const CouponAdmin: React.FC<CouponAdminProps> = ({ group }) => {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCoupon.title) {
-      toast.error("Please enter a coupon title.");
+      toast.error(t('pleaseEnterCouponTitle') || "Please enter a coupon title.");
       return;
     }
     setIsCreating(true);
     try {
       await createCoupon(newCoupon);
-      toast.success("Coupon created successfully!");
+      toast.success(t('couponCreatedSuccess') || "Coupon created successfully!");
       setNewCoupon({
         ...newCoupon,
         title: "",
@@ -62,21 +64,21 @@ const CouponAdmin: React.FC<CouponAdminProps> = ({ group }) => {
       fetchCoupons();
     } catch (error) {
       console.error("Failed to create coupon:", error);
-      toast.error("Failed to create coupon.");
+      toast.error(t('failedToCreateCoupon') || "Failed to create coupon.");
     } finally {
       setIsCreating(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to deactivate this coupon?")) return;
+    if (!confirm(t('confirmDeactivateCoupon') || "Are you sure you want to deactivate this coupon?")) return;
     try {
       await deleteCoupon(id);
-      toast.success("Coupon deactivated.");
+      toast.success(t('couponDeactivated') || "Coupon deactivated.");
       fetchCoupons();
     } catch (error) {
       console.error("Failed to delete coupon:", error);
-      toast.error("Failed to deactivate coupon.");
+      toast.error(t('failedToDeactivateCoupon') || "Failed to deactivate coupon.");
     }
   };
 
@@ -86,36 +88,36 @@ const CouponAdmin: React.FC<CouponAdminProps> = ({ group }) => {
       <section className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
         <h3 className="font-headline font-bold text-xl text-slate-800 mb-6 flex items-center gap-2">
           <span className="material-symbols-outlined text-blue-600">add_circle</span>
-          Create New Group Coupon
+          {t('createNewGroupCoupon') || "Create New Group Coupon"}
         </h3>
         
         <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Coupon Title</label>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('couponTitle') || "Coupon Title"}</label>
             <input
               type="text"
               value={newCoupon.title}
               onChange={(e) => setNewCoupon({ ...newCoupon, title: e.target.value })}
-              placeholder="e.g. 10% Membership Discount"
+              placeholder={t('couponTitlePlaceholder') || "e.g. 10% Membership Discount"}
               className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Discount Type</label>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('discountType') || "Discount Type"}</label>
             <select
               value={newCoupon.type}
               onChange={(e) => setNewCoupon({ ...newCoupon, type: e.target.value as 'FREE' | 'DISCOUNT' })}
               className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:border-blue-500 outline-none transition-all"
             >
-              <option value="DISCOUNT">Discount Amount (₩)</option>
-              <option value="FREE">Free Pass</option>
+              <option value="DISCOUNT">{t('discountAmountKrw') || "Discount Amount (₩)"}</option>
+              <option value="FREE">{t('freePass') || "Free Pass"}</option>
             </select>
           </div>
 
           {newCoupon.type === 'DISCOUNT' && (
             <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Discount Amount (₩)</label>
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('discountAmountKrw') || "Discount Amount (₩)"}</label>
               <input
                 type="number"
                 value={newCoupon.discountValue}
@@ -126,18 +128,18 @@ const CouponAdmin: React.FC<CouponAdminProps> = ({ group }) => {
           )}
 
           <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Duration (Months)</label>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('durationMonths') || "Duration (Months)"}</label>
             <input
               type="number"
               value={newCoupon.duration}
               onChange={(e) => setNewCoupon({ ...newCoupon, duration: Number(e.target.value) })}
-              placeholder="0 for Unlimited"
+              placeholder={t('zeroForUnlimited') || "0 for Unlimited"}
               className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:border-blue-500 outline-none transition-all"
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Quantity</label>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('totalQuantity') || "Total Quantity"}</label>
             <input
               type="number"
               value={newCoupon.totalQuantity}
@@ -152,7 +154,7 @@ const CouponAdmin: React.FC<CouponAdminProps> = ({ group }) => {
               disabled={isCreating}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-600/20 transition-all active:scale-[0.98] disabled:opacity-50"
             >
-              {isCreating ? "Creating..." : "Create Coupon"}
+              {isCreating ? (t('creating') || "Creating...") : (t('createCoupon') || "Create Coupon")}
             </button>
           </div>
         </form>
@@ -162,14 +164,14 @@ const CouponAdmin: React.FC<CouponAdminProps> = ({ group }) => {
       <section className="space-y-4">
         <h3 className="font-headline font-bold text-xl text-slate-800 px-2 flex items-center gap-2">
           <span className="material-symbols-outlined text-blue-600">confirmation_number</span>
-          Active Coupons
+          {t('activeCoupons') || "Active Coupons"}
         </h3>
         
         {isLoading ? (
-          <div className="p-12 text-center text-slate-400">Loading coupons...</div>
+          <div className="p-12 text-center text-slate-400">{t('loadingCoupons') || "Loading coupons..."}</div>
         ) : coupons.length === 0 ? (
           <div className="p-12 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-300 text-slate-500">
-            No active coupons found for this group.
+            {t('noActiveCouponsFound') || "No active coupons found for this group."}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -180,7 +182,7 @@ const CouponAdmin: React.FC<CouponAdminProps> = ({ group }) => {
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <span className="bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border border-blue-100">
-                      {coupon.type === 'FREE' ? 'Free Pass' : `₩${coupon.discountValue?.toLocaleString()} OFF`}
+                      {coupon.type === 'FREE' ? (t('freePass') || 'Free Pass') : `₩${coupon.discountValue?.toLocaleString()} OFF`}
                     </span>
                     <h4 className="font-headline font-bold text-lg text-slate-800 mt-2">{coupon.title}</h4>
                   </div>
@@ -194,7 +196,7 @@ const CouponAdmin: React.FC<CouponAdminProps> = ({ group }) => {
 
                 <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100">
                   <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase">Quantity</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase">{t('quantity') || "Quantity"}</p>
                     <p className="text-sm font-bold text-slate-700">
                       {coupon.issuedCount} / {coupon.totalQuantity}
                     </p>
@@ -206,9 +208,9 @@ const CouponAdmin: React.FC<CouponAdminProps> = ({ group }) => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase">Validity</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase">{t('validity') || "Validity"}</p>
                     <p className="text-sm font-bold text-slate-700">
-                      {coupon.duration === 0 ? 'Unlimited' : `${coupon.duration} Months`}
+                      {coupon.duration === 0 ? (t('unlimited') || 'Unlimited') : `${coupon.duration} ${t('months') || 'Months'}`}
                     </p>
                   </div>
                 </div>

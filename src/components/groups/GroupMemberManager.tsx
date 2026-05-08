@@ -1,4 +1,6 @@
-"use client";
+'use client';
+import { useLanguage } from '@/contexts/LanguageContext';
+
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Group, Member } from '@/types/group';
@@ -18,6 +20,8 @@ interface MemberWithProfile extends Member {
 }
 
 const GroupMemberManager = ({ group }: { group: Group }) => {
+  const { t } = useLanguage();
+
   const { profile: currentUserProfile } = useAuth();
   const [activeSubTab, setActiveSubTab] = useState('Member');
   const [members, setMembers] = useState<MemberWithProfile[]>([]);
@@ -117,17 +121,17 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
   };
 
   const deleteMember = async (userId: string) => {
-    if (!window.confirm("Are you sure you want to remove this member from the community? This action cannot be undone.")) {
+    if (!window.confirm("Are you sure you want to remove this member from the group? They will also be removed from the group chat.")) {
       return;
     }
 
     try {
-      const memberRef = doc(db, 'groups', group.id, 'members', userId);
-      await deleteDoc(memberRef);
+      await groupService.kickMember(group.id, userId);
       setMembers(prev => prev.filter(m => m.id !== userId));
-      alert("Member has been removed.");
+      setOpenMenuId(null);
+      alert("Member has been removed from the group and chat.");
     } catch (error) {
-      console.error("Error deleting member:", error);
+      console.error("Error kicking member:", error);
       alert("An error occurred while removing the member.");
     }
   };
@@ -304,8 +308,9 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
             {openMenuId === member.id && (
               <div 
                 ref={menuRef}
-                className="absolute right-0 top-8 w-56 bg-white rounded-xl shadow-2xl border border-[#e4e7ff] z-[100] py-2 no-scrollbar max-h-[400px] overflow-y-auto"
+                className="absolute right-0 top-8 w-56 bg-white rounded-xl shadow-2xl border border-[#e4e7ff] z-[100] max-h-[400px] flex flex-col"
               >
+                <div className="flex-1 overflow-y-auto py-2">
                 {/* Section: Dance Role */}
                 <div className="px-4 py-2 border-b border-[#e4e7ff]">
                   <p className="text-[10px] font-bold text-[#6c759e] tracking-widest uppercase mb-2">Dance Role</p>
@@ -367,14 +372,15 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
                   ))}
                 </div>
 
-                {/* Section: Delete */}
-                <div className="px-4 py-2 bg-red-50/30">
+                </div>
+                {/* Section: Delete - sticky bottom */}
+                <div className="px-4 py-2 bg-red-50/30 border-t border-[#e4e7ff] sticky bottom-0 rounded-b-xl">
                   <button 
                     onClick={() => deleteMember(member.id)}
                     className="w-full flex items-center justify-between py-2 text-[13px] font-bold text-[#b31b25] hover:text-[#9f0519] transition-colors"
                   >
-                    Delete Member
-                    <span className="material-symbols-outlined text-lg">delete_forever</span>
+                    Remove from Group
+                    <span className="material-symbols-outlined text-lg">person_remove</span>
                   </button>
                 </div>
               </div>
@@ -515,12 +521,12 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
             {loading ? (
               <div className="col-span-full py-20 text-center text-[#515981] font-medium">
                 <div className="mx-auto w-10 h-10 border-4 border-[#0057bd]/10 border-t-[#0057bd] rounded-full animate-spin mb-4"></div>
-                멤버 목록을 불러오는 중...
+                {t('group.loading_members')}
               </div>
             ) : currentItems.length === 0 ? (
               <div className="col-span-full py-20 text-center text-[#515981] font-medium bg-white rounded-xl">
                 <span className="material-symbols-outlined text-6xl mb-4 block opacity-50">group_off</span>
-                해당하는 멤버가 없습니다.
+                {t('group.no_members')}
               </div>
             ) : (
               <>
@@ -574,16 +580,24 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
             {loading ? (
               <div className="col-span-full py-20 text-center text-[#515981] font-medium">
                 <div className="mx-auto w-10 h-10 border-4 border-[#0057bd]/10 border-t-[#0057bd] rounded-full animate-spin mb-4"></div>
-                멤버 목록을 불러오는 중...
+                {t('group.loading_members')}
               </div>
             ) : currentItems.length === 0 ? (
               <div className="col-span-full py-20 text-center text-[#515981] font-medium bg-white rounded-xl">
                 <span className="material-symbols-outlined text-6xl mb-4 block opacity-50">group_off</span>
-                검색 결과가 없습니다.
+                {t('common.no_results')}
               </div>
             ) : (
               <>
                 {currentItems.map(member => renderMemberCard(member))}
+                {/* Invite New Member Card */}
+                <div
+                  onClick={() => setIsInviteModalOpen(true)}
+                  className="border-2 border-dashed border-slate-300 rounded-xl p-6 flex flex-col items-center justify-center gap-3 text-slate-500 hover:border-[#0057bd] hover:text-[#0057bd] transition-all cursor-pointer bg-slate-50/50 min-h-[180px]"
+                >
+                  <span className="material-symbols-outlined text-4xl">person_add</span>
+                  <span className="font-semibold">Invite New Member</span>
+                </div>
               </>
             )}
           </div>
@@ -619,6 +633,7 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
           onClose={() => setIsInviteModalOpen(false)}
           group={group}
           currentUser={{ id: (currentUserProfile as any).uid, name: currentUserProfile.nickname }}
+          existingMemberIds={members.map(m => m.id)}
         />
       )}
     </div>

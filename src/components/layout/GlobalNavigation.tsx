@@ -18,8 +18,8 @@ const NAV_STRUCTURE = {
     { name: "nav.home", icon: "radio_button_unchecked", path: "/home" },
     { name: "nav.plaza", icon: "quick_phrases", path: "/plaza" },
     { name: "nav.venues", icon: "map", path: "/venues" },
+    { name: "nav.people", icon: "group", path: "/people" },
     { name: "nav.explore", icon: "explore", path: "/explore" },
-    { name: "nav.arcade", icon: "airline_stops", path: "/arcade" },
   ],
   Market: [
     { name: "nav.shop", icon: "storefront", path: "/shop" },
@@ -33,6 +33,7 @@ const NAV_STRUCTURE = {
     { name: "nav.live", icon: "cinematic_blur", path: "/live" },
     { name: "nav.events", icon: "calendar_today", path: "/events" },
     { name: "nav.lost_found", icon: "eye_tracking", path: "/lost" },
+    { name: "nav.hub", icon: "airline_stops", path: "/hub" },
   ],
   Groups: [
     { name: "nav.groups", icon: "groups", path: "/groups" },
@@ -47,18 +48,18 @@ const NAV_STRUCTURE = {
 // COUNTRY_MAPPING moved to constants
 
 const BOTTOM_TABS = [
-  { id: "World", icon: "globe", label: "Tango World", basePath: "/home" },
-  { id: "Market", icon: "redeem", label: "Market", basePath: "/shop" },
-  { id: "Now", icon: "contactless", label: "Now", basePath: "/social" },
-  { id: "Groups", icon: "communities", label: "Groups", basePath: "/groups" },
-  { id: "My", icon: "photo", label: "My", basePath: "/profile" },
+  { id: "World", icon: "globe", label: "nav.tango_world", basePath: "/home" },
+  { id: "Market", icon: "redeem", label: "nav.shop", basePath: "/shop" },
+  { id: "Now", icon: "contactless", label: "nav.now", basePath: "/social" },
+  { id: "Groups", icon: "communities", label: "nav.groups", basePath: "/groups" },
+  { id: "My", icon: "photo", label: "nav.my", basePath: "/profile" },
 ];
 
 export default function GlobalNavigation({ children }: { children: React.ReactNode }) {
   const { language, toggleLanguage, t } = useLanguage();
   const pathname = usePathname();
   const { user, profile } = useAuth();
-  const { isHeaderShrink, subHeader, setSubHeader, subHeaderHeight, isHeaderVisible, setIsHeaderVisible } = useNavigation();
+  const { isHeaderShrink, subHeader, setSubHeader, subHeaderHeight, isHeaderVisible, setIsHeaderVisible, isGlobalNavHidden } = useNavigation();
   const { location, setIsSelectorOpen } = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
   const headerRef = React.useRef<HTMLElement>(null);
@@ -87,6 +88,7 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
     const handleScroll = () => {
       if (!ticking) {
         window.requestAnimationFrame(() => {
+          if (isGlobalNavHidden) return;
           const currentScrollY = window.scrollY;
           const delta = currentScrollY - lastScrollY.current;
           const headerHeight = headerRef.current?.offsetHeight || 110;
@@ -164,9 +166,9 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
   let activeTab = "World";
   if (pathname.startsWith("/shop") || pathname.startsWith("/resale") || pathname.startsWith("/rental") || pathname.startsWith("/stay") || pathname.startsWith("/class")) {
     activeTab = "Market";
-  } else if (pathname.startsWith("/social") || pathname.startsWith("/events") || pathname.startsWith("/live") || pathname.startsWith("/lost")) {
+  } else if (pathname.startsWith("/social") || pathname.startsWith("/events") || pathname.startsWith("/live") || pathname.startsWith("/lost") || pathname.startsWith("/hub")) {
     activeTab = "Now";
-  } else if (pathname.startsWith("/groups") || pathname.startsWith("/group/")) {
+  } else if (pathname.startsWith("/groups")) {
     activeTab = "Groups";
   } else if (pathname.startsWith("/my") || pathname.startsWith("/wallet") || pathname.startsWith("/history") || pathname.startsWith("/profile")) {
     activeTab = "My";
@@ -181,7 +183,7 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
     activeTab = "Now";
   }
 
-  const isGroupDetailPage = pathname.startsWith("/group/");
+  const isGroupDetailPage = pathname.startsWith("/groups/");
   const isSearchPage = pathname.startsWith("/search");
   const isNoSubMenuPage = isSearchPage || pathname.startsWith("/groups") || pathname.startsWith("/notification") || pathname.startsWith("/chat");
 
@@ -201,20 +203,29 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
   const baseHeaderHeight = isNoSubMenuPage ? 60 : 110;
   const placeholderHeight = subHeader ? baseHeaderHeight + subHeaderHeight : baseHeaderHeight;
 
+  // Hide global navigation layout for admin pages (used in popups)
+  if (pathname.startsWith('/admin')) {
+    return <>{children}</>;
+  }
+
   return (
     <div className="min-h-screen bg-[#faf8ff] font-manrope flex flex-col">
       {/* Header Placeholder to prevent layout shift and scroll thrashing */}
-      <div 
-        className="w-full flex-shrink-0 transition-all duration-300" 
-        style={{ 
-          height: `${placeholderHeight}px`
-        }} 
-      />
+      {!isGlobalNavHidden && (
+        <div 
+          className="w-full flex-shrink-0 transition-all duration-300" 
+          style={{ 
+            height: `${placeholderHeight}px`
+          }} 
+        />
+      )}
 
       {/* Fixed Top Navigation */}
       <header 
         ref={headerRef}
         className={`fixed top-0 left-0 right-0 z-50 bg-white transition-shadow duration-300 transform will-change-transform ${
+          isGlobalNavHidden ? 'hidden' : ''
+        } ${
           (isScrolled || isHeaderShrink) 
             ? 'shadow-[0_4px_24px_rgba(11,90,192,0.10)]' 
             : 'shadow-[0_2px_12px_rgba(11,90,192,0.05)] border-b border-slate-100/30'
@@ -300,6 +311,22 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
                 </span>
               </Link>
 
+              {/* Helpdesk */}
+              <Link 
+                href="/helpdesk" 
+                className={`w-[32px] h-[32px] rounded-full flex items-center justify-center active:scale-95 transition-all ${
+                  pathname === '/helpdesk' ? 'bg-[#007AFF]/10 text-[#007AFF]' : 'bg-[#F1F5F9] text-[#1E293B]'
+                }`}
+              >
+                <span 
+                  className="material-symbols-outlined !text-[18px]"
+                  style={{ fontVariationSettings: pathname === '/helpdesk' ? "'FILL' 1" : "'FILL' 0" }}
+                >
+                  support_agent
+                </span>
+              </Link>
+
+
               {/* Separator */}
               <div className="w-[1px] h-[20px] bg-slate-200 mx-0.5" />
 
@@ -355,7 +382,9 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
       {/* Bottom Navigation Bar */}
       <footer 
         ref={footerRef}
-        className="fixed bottom-0 left-0 w-full z-50 bg-white rounded-t-2xl px-6 flex justify-around items-center shadow-[0_-8px_30px_rgba(11,90,192,0.14)] will-change-transform"
+        className={`fixed bottom-0 left-0 w-full z-50 bg-white rounded-t-2xl px-6 flex justify-around items-center shadow-[0_-8px_30px_rgba(11,90,192,0.14)] will-change-transform ${
+          isGlobalNavHidden ? 'hidden' : ''
+        }`}
         style={{ 
           height: 'calc(64px + max(env(safe-area-inset-bottom), 12px))',
           paddingBottom: 'max(env(safe-area-inset-bottom), 12px)',
@@ -388,9 +417,9 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
                   {tab.icon}
                 </span>
               )}
-              {/* Hardcoded label - NOT localized */}
+              {/* Localized label */}
               <span className={`text-[11px] leading-none tracking-tight ${isActive ? 'font-extrabold' : 'font-medium'}`}>
-                {tab.label}
+                {t(tab.label)}
               </span>
             </Link>
           );

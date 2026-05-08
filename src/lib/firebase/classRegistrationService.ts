@@ -61,7 +61,7 @@ export const classRegistrationService = {
             type: 'CLASS_APPLY',
             title: 'New Class Application',
             message: `${registration.applicantName || 'User'} has applied for '${registration.classTitle || 'Class'}'. Please verify payment.`,
-            actionUrl: `/group/${registration.groupId}?tab=classes`,
+            actionUrl: `/groups/${registration.groupId}?tab=classes`,
             referenceId: regRef.id,
           },
           batch

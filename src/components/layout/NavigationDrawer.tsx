@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useNavigation } from '@/components/providers/NavigationProvider';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useLanguage } from '@/contexts/LanguageContext';
 import AppSettingsPopup from './AppSettingsPopup';
 import UserBadge from '../common/UserBadge';
 
@@ -24,6 +25,7 @@ const LANGUAGES = [
 export default function NavigationDrawer() {
   const { isDrawerOpen, closeDrawer } = useNavigation();
   const { profile, user, signOut } = useAuth();
+  const { t } = useLanguage();
   const router = useRouter();
   
   const [isLangOpen, setIsLangOpen] = useState(false);
@@ -35,16 +37,16 @@ export default function NavigationDrawer() {
     await signOut();
   };
 
-  const displayName = profile?.nickname || user?.displayName || 'User';
+  const displayName = profile?.nickname || user?.displayName || t('common.user') || 'User';
   const nativeNickname = profile?.nativeNickname;
   const photoURL = profile?.photoURL || user?.photoURL || null;
   
   const roles = [];
-  if (profile?.isInstructor) roles.push('Instructor');
-  if (profile?.isSeller) roles.push('Seller');
-  if (profile?.isServiceProvider) roles.push('Service');
+  if (profile?.isInstructor) roles.push(t('common.role.instructor') || 'Instructor');
+  if (profile?.isSeller) roles.push(t('my.role_seller') || 'Seller');
+  if (profile?.isServiceProvider) roles.push(t('common.role.provider') || 'Service');
   if (!profile?.isRegistered) roles.push('Guest');
-  else if (roles.length === 0) roles.push('Member');
+  else if (roles.length === 0) roles.push(t('common.members') || 'Member');
 
   const pathname = usePathname();
   if (pathname === '/' || pathname === '/login') return null;
@@ -103,7 +105,7 @@ export default function NavigationDrawer() {
             onClick={closeDrawer}
             className="flex items-center justify-between w-full h-[52px] px-5 bg-gradient-to-r from-primary to-primary-container text-white rounded-2xl shadow-lg shadow-primary/20 active:scale-95 transition-all group"
           >
-            <span className="font-bold text-[13px] tracking-tight">Go to landing page</span>
+            <span className="font-bold text-[13px] tracking-tight">{t('nav.go_to_landing')}</span>
             <span className="material-symbols-outlined text-[18px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
           </Link>
         </div>
@@ -113,14 +115,15 @@ export default function NavigationDrawer() {
           
           {/* Section: TANGO WORLD */}
           <div className="mb-8">
-            <h2 className="px-5 mb-2 text-[9px] font-black tracking-[0.25em] text-on-surface/30 uppercase">TANGO WORLD</h2>
+            <h2 className="px-5 mb-2 text-[9px] font-black tracking-[0.25em] text-on-surface/30 uppercase">{t('nav.tango_world')}</h2>
             <div className="space-y-0.5">
               {[
-                { icon: 'home', label: 'Home', href: '/home' },
-                { icon: 'forum', label: 'Plaza', href: '/plaza' },
-                { icon: 'explore', label: 'Map', href: '/venues' },
-                { icon: 'storefront', label: 'Shop', href: '/shop' },
-                { icon: 'bed', label: 'Stay', href: '/stay' },
+                { icon: 'home', label: t('nav.home'), href: '/home' },
+                { icon: 'forum', label: t('nav.plaza'), href: '/plaza' },
+                { icon: 'explore', label: t('nav.venues'), href: '/venues' },
+                { icon: 'group', label: 'People', href: '/people' },
+                { icon: 'storefront', label: t('nav.shop'), href: '/shop' },
+                { icon: 'bed', label: t('nav.stay'), href: '/stay' },
               ].map((item) => (
                 <Link 
                   key={item.label}
@@ -137,14 +140,15 @@ export default function NavigationDrawer() {
 
           {/* Section: ACTIVITY */}
           <div className="mb-8">
-            <h2 className="px-5 mb-2 text-[9px] font-black tracking-[0.25em] text-on-surface/30 uppercase">ACTIVITY</h2>
+            <h2 className="px-5 mb-2 text-[9px] font-black tracking-[0.25em] text-on-surface/30 uppercase">{t('nav.activity')}</h2>
             <div className="space-y-0.5">
               {[
-                { icon: 'nightlife', label: 'Social', href: '/social' },
-                { icon: 'cinematic_blur', label: 'Live', href: '/live' },
-                { icon: 'event', label: 'Events', href: '/events' },
-                { icon: 'school', label: 'Class', href: '/class' },
-                { icon: 'groups', label: 'Group', href: '/groups' },
+                { icon: 'nightlife', label: t('nav.social'), href: '/social' },
+                { icon: 'cinematic_blur', label: t('nav.live'), href: '/live' },
+                { icon: 'event', label: t('nav.events'), href: '/events' },
+                { icon: 'school', label: t('nav.class'), href: '/class' },
+                { icon: 'groups', label: t('nav.groups'), href: '/groups' },
+                { icon: 'airline_stops', label: t('nav.hub'), href: '/hub' },
               ].map((item) => (
                 <Link 
                   key={item.label}
@@ -161,13 +165,12 @@ export default function NavigationDrawer() {
 
           {/* Section: TOWN */}
           <div className="mb-8">
-            <h2 className="px-5 mb-2 text-[9px] font-black tracking-[0.25em] text-on-surface/30 uppercase">TOWN</h2>
+            <h2 className="px-5 mb-2 text-[9px] font-black tracking-[0.25em] text-on-surface/30 uppercase">{t('nav.town')}</h2>
             <div className="space-y-0.5">
               {[
-                { icon: 'shopping_bag', label: 'Resale', href: '/resale' },
-                { icon: 'handshake', label: 'Rental', href: '/rental' },
-                { icon: 'find_in_page', label: 'Lost', href: '/lost' },
-                { icon: 'videogame_asset', label: 'Arcade', href: '/arcade' },
+                { icon: 'shopping_bag', label: t('nav.resale'), href: '/resale' },
+                { icon: 'handshake', label: t('nav.rental'), href: '/rental' },
+                { icon: 'find_in_page', label: t('nav.lost_found'), href: '/lost' },
               ].map((item) => (
                 <Link 
                   key={item.label}
@@ -184,13 +187,16 @@ export default function NavigationDrawer() {
 
           {/* Section: MY */}
           <div className="mb-8">
-            <h2 className="px-5 mb-2 text-[9px] font-black tracking-[0.25em] text-on-surface/30 uppercase">MY</h2>
+            <h2 className="px-5 mb-2 text-[9px] font-black tracking-[0.25em] text-on-surface/30 uppercase">{t('nav.my')}</h2>
             <div className="space-y-0.5">
               {[
-                { icon: 'history', label: 'History', href: '/history' },
-                { icon: 'account_balance_wallet', label: 'Wallet', href: '/wallet' },
-                { icon: 'manage_accounts', label: 'Profile', href: '/profile' },
-                ...(profile?.isAdmin ? [{ icon: 'admin_panel_settings', label: 'Admin', href: '/admin/people' }] : [])
+                { icon: 'history', label: t('nav.history'), href: '/history' },
+                { icon: 'account_balance_wallet', label: t('nav.wallet'), href: '/wallet' },
+                { icon: 'manage_accounts', label: t('nav.my_info'), href: '/profile' },
+                ...(profile?.isAdmin ? [
+                  { icon: 'admin_panel_settings', label: 'Admin (People)', href: '/admin/people' },
+                  { icon: 'view_carousel', label: 'Admin (Banners)', href: '/admin/banners' }
+                ] : [])
               ].map((item) => (
                 <Link 
                   key={item.label}
@@ -207,7 +213,7 @@ export default function NavigationDrawer() {
 
           {/* Section: SUPPORT */}
           <div className="mb-6">
-            <h2 className="px-5 mb-2 text-[9px] font-black tracking-[0.25em] text-on-surface/30 uppercase">SUPPORT</h2>
+            <h2 className="px-5 mb-2 text-[9px] font-black tracking-[0.25em] text-on-surface/30 uppercase">{t('nav.support')}</h2>
             <div className="space-y-0.5">
               {/* Language Selector */}
               <div className="overflow-hidden">
@@ -216,7 +222,7 @@ export default function NavigationDrawer() {
                   className="w-full flex items-center gap-4 px-5 py-3 text-on-surface/60 hover:bg-on-surface/[0.03] hover:text-on-surface rounded-2xl font-bold transition-all group text-left"
                 >
                   <span className="material-symbols-outlined text-[20px]">language</span>
-                  <span className="text-[15px] tracking-tight flex-1">Language Selector</span>
+                  <span className="text-[15px] tracking-tight flex-1">{t('nav.language_selector')}</span>
                   <span className={`material-symbols-outlined text-on-surface/20 transition-transform ${isLangOpen ? 'rotate-180' : ''}`}>expand_more</span>
                 </button>
                 
@@ -252,7 +258,7 @@ export default function NavigationDrawer() {
                 className="w-full flex items-center gap-4 px-5 py-3 text-on-surface/60 hover:bg-on-surface/[0.03] hover:text-on-surface rounded-2xl font-bold transition-all group text-left"
               >
                 <span className="material-symbols-outlined text-[20px]">settings_suggest</span>
-                <span className="text-[15px] tracking-tight">App Setting</span>
+                <span className="text-[15px] tracking-tight">{t('nav.app_setting')}</span>
               </button>
             </div>
           </div>
@@ -265,7 +271,7 @@ export default function NavigationDrawer() {
             className="w-full flex items-center gap-4 px-6 py-4 bg-error/5 text-error hover:bg-error/10 rounded-[24px] transition-all active:scale-[0.98] font-bold text-left"
           >
             <span className="material-symbols-outlined text-[20px]">logout</span>
-            <span className="text-[14px] tracking-tight">Logout</span>
+            <span className="text-[14px] tracking-tight">{t('nav.logout')}</span>
           </button>
           <div className="mt-4 px-6">
             <p className="text-[8px] font-black tracking-[0.3em] text-on-surface/20 uppercase">World of Group © 2026</p>

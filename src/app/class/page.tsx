@@ -356,19 +356,19 @@ function ClassMenuContent() {
                             {/* Stats Row */}
                             <div className="flex items-center gap-2 mt-2">
                               {individualCount > 0 && (
-                                <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-50 border border-slate-100">
-                                  <span className="text-[10px] font-bold text-slate-600">{individualCount}</span>
-                                  <span className="text-[9px] font-medium text-slate-400 uppercase">{t('class.stats_classes')}</span>
-                                </div>
-                              )}
-                              {passCount > 0 && (
-                                <div className="px-1.5 py-0.5 rounded-md bg-blue-50 border border-blue-100">
-                                  <span className="text-[9px] font-bold text-blue-600 uppercase">{t('class.stats_pass')}</span>
+                                <div className="flex items-center gap-1 h-5 px-2 rounded-md bg-slate-50 border border-slate-100">
+                                  <span className="text-[11px] font-bold text-slate-600">{individualCount}</span>
+                                  <span className="text-[11px] font-medium text-slate-400 uppercase">{t('class.stats_classes')}</span>
                                 </div>
                               )}
                               {bundleCount > 0 && (
-                                <div className="px-1.5 py-0.5 rounded-md bg-amber-50 border border-amber-100">
-                                  <span className="text-[9px] font-bold text-amber-600 uppercase">{t('class.stats_bundle')}</span>
+                                <div className="flex items-center h-5 px-2 rounded-md bg-amber-50 border border-amber-100">
+                                  <span className="text-[11px] font-bold text-amber-600 uppercase">{t('class.stats_bundle')}</span>
+                                </div>
+                              )}
+                              {passCount > 0 && (
+                                <div className="flex items-center h-5 px-2 rounded-md bg-blue-50 border border-blue-100">
+                                  <span className="text-[11px] font-bold text-blue-600 uppercase">{t('class.stats_pass')}</span>
                                 </div>
                               )}
                             </div>

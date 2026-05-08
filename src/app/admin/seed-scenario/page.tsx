@@ -139,7 +139,7 @@ export default function SeedScenarioPage() {
         category: 'GROUP',
         title: '그룹 가입 승인',
         message: `'Tango Life Seoul' 그룹의 가입이 승인되었습니다.`,
-        actionUrl: `/group/${groupId}`,
+        actionUrl: `/groups/${groupId}`,
       });
 
       // 6-2. Admin에게 온 Todo 알림 (TODO) - 관리자 할일 배지용
@@ -149,7 +149,7 @@ export default function SeedScenarioPage() {
         category: 'CLASS',
         title: '새로운 수강 신청',
         message: `${normalUser.nickname}님이 '밀롱가 초급 집중 클래스'에 수강 신청(입금보고)을 하였습니다.`,
-        actionUrl: `/group/${groupId}?tab=admin`,
+        actionUrl: `/groups/${groupId}?tab=admin`,
         referenceId: registrationId
       });
       

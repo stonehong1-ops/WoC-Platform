@@ -46,6 +46,28 @@ export const socialService = {
     });
   },
 
+  // 1-1. Subscribe to socials by venueId
+  subscribeSocialsByVenue: (venueId: string, callback: (socials: Social[]) => void) => {
+    const q = query(
+      collection(db, SOCIALS_COLLECTION),
+      where('venueId', '==', venueId)
+    );
+    
+    return onSnapshot(q, (snapshot) => {
+      const docs = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Social[];
+      
+      docs.sort((a, b) => {
+        const tA = a.createdAt ? (typeof a.createdAt.toMillis === 'function' ? a.createdAt.toMillis() : 0) : 0;
+        const tB = b.createdAt ? (typeof b.createdAt.toMillis === 'function' ? b.createdAt.toMillis() : 0) : 0;
+        return tB - tA;
+      });
+      callback(docs);
+    });
+  },
+
   // 2. Subscribe to socials for a specific day or date
   subscribeDailySocials: (day: number, date?: Date, callback?: (socials: Social[]) => void) => {
     const q = query(

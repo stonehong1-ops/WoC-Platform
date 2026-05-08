@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Group, ServiceItem } from "@/types/group";
 import { groupService } from "@/lib/firebase/groupService";
 import { storageService } from "@/lib/firebase/storageService";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useRef } from "react";
 
 interface GroupHomeConfigProps {
@@ -14,6 +15,7 @@ interface GroupHomeConfigProps {
 }
 
 export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeConfigProps) {
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: group.name || "",
@@ -177,7 +179,7 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
                   value={formData.nativeName}
                   onChange={(e) => setFormData({ ...formData, nativeName: e.target.value })}
                   className="w-full bg-[#f8faff] border border-[#efefff] focus:ring-2 focus:ring-[#0057bd] rounded-2xl px-7 py-6 text-[#242c51] font-bold text-xl placeholder:opacity-20"
-                  placeholder="키네틱 스카이"
+                  placeholder={t('group.homeConfig.placeholder.nativeName', 'e.g. Kinetic Sky (Local)')}
                   type="text"
                 />
               </div>
@@ -186,7 +188,7 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
             <div className="space-y-4 pt-10 border-t border-[#f7f5ff]">
               <label className="text-[10px] font-black text-[#a3abd7] uppercase tracking-[0.3em] ml-1">Unique URL Path</label>
               <div className="flex items-center bg-[#f8faff] border border-[#efefff] rounded-2xl px-7 overflow-hidden focus-within:ring-2 focus-within:ring-[#0057bd] transition-all">
-                <span className="text-[#515981] opacity-30 font-black py-6 text-sm tracking-widest">woc.today/group/</span>
+                <span className="text-[#515981] opacity-30 font-black py-6 text-sm tracking-widest">woc.today/groups/</span>
                 <input
                   value={formData.slug}
                   onChange={(e) => setFormData({ ...formData, slug: e.target.value })}

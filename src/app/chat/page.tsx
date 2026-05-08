@@ -7,20 +7,37 @@ import ChatList from '@/components/chat/ChatList';
 import ChatRoom from '@/components/chat/ChatRoom';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 function ChatContent() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
   const roomIdFromUrl = searchParams.get('roomId');
   
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(roomIdFromUrl);
   const [activeTab, setActiveTab] = useState<'Personal' | 'Group' | 'Market'>('Personal');
+  const [initialTabSet, setInitialTabSet] = useState(false);
   const tabs = ['Personal', 'Group', 'Market'] as const;
 
   useEffect(() => {
     setSelectedRoomId(roomIdFromUrl);
   }, [roomIdFromUrl]);
+
+  const handleRoomsLoaded = (counts: { market: number, group: number, personal: number }) => {
+    // Set tab only once when initial rooms are loaded
+    if (!initialTabSet) {
+      if (counts.market > 0) {
+        setActiveTab('Market');
+      } else if (counts.group > 0) {
+        setActiveTab('Group');
+      } else {
+        setActiveTab('Personal');
+      }
+      setInitialTabSet(true);
+    }
+  };
 
   const handleSelectRoom = (id: string) => {
     router.push(`/chat?roomId=${id}`);
@@ -48,7 +65,7 @@ function ChatContent() {
                       : 'bg-slate-50 text-slate-500 border border-slate-100 hover:bg-slate-100'
                   }`}
                 >
-                  {tab}
+                  {t(`chat.tab_${tab.toLowerCase()}`)}
                 </button>
               ))}
             </div>
@@ -57,6 +74,7 @@ function ChatContent() {
             onSelectRoom={handleSelectRoom} 
             selectedRoomId={selectedRoomId} 
             category={activeTab}
+            onRoomsLoaded={handleRoomsLoaded}
           />
         </div>
 

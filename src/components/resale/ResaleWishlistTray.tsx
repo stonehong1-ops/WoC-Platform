@@ -94,16 +94,22 @@ export default function ResaleWishlistTray({ likes, userId, onProductClick }: Re
 
   return (
     <>
-      <div className="fixed bottom-24 left-1/2 -translate-x-1/2 w-[calc(100%-48px)] max-w-sm z-[60] pointer-events-auto">
+      <div 
+        className="fixed inset-x-0 z-[60] px-6 w-full max-w-sm mx-auto pointer-events-none flex justify-center"
+        style={{ 
+          bottom: 'calc(64px + max(env(safe-area-inset-bottom), 12px) + 3mm)',
+          transform: 'translateY(var(--woc-bottom-nav-y, 0px))',
+          transition: 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)'
+        }}
+      >
         <motion.div 
           animate={{ 
             height: isExpanded ? 'auto' : '64px', 
-            y: isHeaderVisible ? 0 : 120, 
             opacity: isHeaderVisible ? 1 : 0 
           }}
           transition={{ type: 'spring', stiffness: 400, damping: 35 }}
           initial={false}
-          className="bg-white/95 backdrop-blur-3xl rounded-xl shadow-[0_24px_48px_rgba(0,0,0,0.12)] flex flex-col border border-white/60 overflow-hidden"
+          className="w-full max-w-sm bg-white/95 backdrop-blur-3xl rounded-xl shadow-[0_24px_48px_rgba(0,0,0,0.12)] flex flex-col border border-white/60 overflow-hidden pointer-events-auto"
           onClick={() => !isExpanded && setTrayState('EXPANDED')}
         >
           {/* Top Row / Summary Bar */}
@@ -127,7 +133,7 @@ export default function ResaleWishlistTray({ likes, userId, onProductClick }: Re
                     {likes.filter(l => l.status === 'pending').length > 0 && (
                       <span className="text-primary">{likes.filter(l => l.status === 'pending').length}{t('resale.pending_count')}</span>
                     )}
-                    {likes.filter(l => l.status !== 'pending' && l.status !== 'in_progress').length}{t('resale.liked_count')}
+                    {likes.filter(l => l.status !== 'pending' && l.status !== 'in_progress').length}{t('common.liked')}
                   </>
                 )}
               </span>

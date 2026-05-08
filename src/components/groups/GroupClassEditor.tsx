@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { Group, GroupClass, ClassDiscount, MonthlyPass } from "@/types/group";
 import { groupService } from "@/lib/firebase/groupService";
 import { db } from "@/lib/firebase/clientApp";
+import { motion, AnimatePresence } from "framer-motion";
 import { doc, writeBatch, deleteField, Timestamp } from "firebase/firestore";
 
 import { toast } from "sonner";
@@ -13,10 +14,12 @@ import { classRegistrationService } from "@/lib/firebase/classRegistrationServic
 import { useRouter } from "next/navigation";
 import { GroupClassRegistrations } from "./GroupClassRegistrations";
 import { GroupClassStats } from "./GroupClassStats";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface GroupClassEditorProps {
   group: Group;
   onSave?: () => void;
+  onClose?: () => void;
 }
 
 type EditorType = 'add-class' | 'discount' | 'monthly-pass' | 'payment';
@@ -26,7 +29,8 @@ interface EditingState {
   data: any;
 }
 
-const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave }) => {
+const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onClose }) => {
+  const { t } = useLanguage();
   const router = useRouter();
   const [editingState, setEditingState] = useState<EditingState | null>(null);
   const [loading, setLoading] = useState(false);
@@ -90,7 +94,7 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave }) =>
             discounts: deleteField()
           });
           await batch.commit();
-          toast.success("Successfully migrated data to new collections!");
+          toast.success(t('group.class.migrated_success') || "Successfully migrated data to new collections!");
           router.refresh();
         } catch (err) {
           console.error("Migration error:", err);
@@ -123,7 +127,7 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave }) =>
 
   const handleDelete = async (type: 'class' | 'discount' | 'pass', id: string) => {
     setActiveMenuId(null);
-    if (window.confirm("Are you sure you want to delete this item? This action cannot be undone.")) {
+    if (window.confirm(t('group.class.delete_confirm') || "Are you sure you want to delete this item? This action cannot be undone.")) {
       executeDelete(type, id);
     }
   };
@@ -147,9 +151,9 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave }) =>
     })();
 
     toast.promise(promise, {
-      loading: 'Deleting...',
-      success: 'Deleted successfully.',
-      error: 'Failed to delete.',
+      loading: t('group.class.deleting') || 'Deleting...',
+      success: t('group.class.delete_success') || 'Deleted successfully.',
+      error: t('group.class.delete_failed') || 'Failed to delete.',
     });
 
     try {
@@ -187,8 +191,28 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave }) =>
   };
 
   return (
-    <div className="antialiased text-gray-900 bg-[#F3F4F6] min-h-screen font-['Plus_Jakarta_Sans'] pb-20">
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 20 }}
+      className="fixed inset-0 z-[100] antialiased text-gray-900 bg-[#F3F4F6] flex flex-col overflow-y-auto no-scrollbar font-['Plus_Jakarta_Sans'] pb-20"
+    >
+      {/* Top Bar */}
+      <header className="sticky top-0 z-50 bg-[#F3F4F6]/80 backdrop-blur-xl border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between w-full">
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={onClose}
+              className="w-10 h-10 rounded-full flex items-center justify-center text-[#0057bd] hover:bg-[#0057bd]/5 transition-all"
+            >
+              <span className="material-symbols-outlined text-[#0057bd]">arrow_back</span>
+            </button>
+            <h1 className="text-base font-bold text-gray-900">{t('group.class.management') || "Class Management"}</h1>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1">
         {/* Month Navigation & Visibility */}
         <section className="mb-6 bg-white rounded-[16px] shadow-sm border border-gray-100 overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50/50">
@@ -202,13 +226,13 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave }) =>
           </div>
           <div className="p-5 flex items-center justify-between">
             <div>
-              <h3 className="font-bold text-gray-900">Monthly Visibility</h3>
-              <p className="text-sm text-gray-500">Show this month's classes to members</p>
+              <h3 className="font-bold text-gray-900">{t('group.class.monthly_visibility') || "Monthly Visibility"}</h3>
+              <p className="text-sm text-gray-500">{t('group.class.show_this_month') || "Show this month's classes to members"}</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input defaultChecked className="sr-only peer" type="checkbox" value="" />
               <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0057bd]"></div>
-              <span className="ml-3 text-sm font-medium text-gray-900">ON</span>
+              <span className="ml-3 text-sm font-medium text-gray-900">{t('common.on') || "ON"}</span>
             </label>
           </div>
         </section>
@@ -221,7 +245,7 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave }) =>
               activeTab === 'register' ? 'bg-[#0057bd] text-white' : 'text-gray-500 hover:bg-gray-50'
             }`}
           >
-            Register
+            {t('group.class.register') || "Register"}
           </button>
           <button
             onClick={() => setActiveTab('application')}
@@ -229,7 +253,7 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave }) =>
               activeTab === 'application' ? 'bg-[#0057bd] text-white' : 'text-gray-500 hover:bg-gray-50'
             }`}
           >
-            Application
+            {t('group.class.application') || "Application"}
           </button>
           <button
             onClick={() => setActiveTab('stats')}
@@ -237,7 +261,7 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave }) =>
               activeTab === 'stats' ? 'bg-[#0057bd] text-white' : 'text-gray-500 hover:bg-gray-50'
             }`}
           >
-            Stats
+            {t('group.class.stats') || "Stats"}
           </button>
         </div>
 
@@ -250,21 +274,21 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave }) =>
             className="flex-1 flex flex-col items-center justify-center gap-1 px-2 py-3 bg-[#0057bd] text-white rounded-[12px] shadow-sm hover:bg-blue-700 transition-colors active:scale-95"
           >
             <span className="material-symbols-outlined text-xl">school</span>
-            <span className="text-xs font-bold leading-tight text-center">Class</span>
+            <span className="text-xs font-bold leading-tight text-center">{t('group.class.class') || "Class"}</span>
           </button>
           <button
             onClick={() => setEditingState({ type: 'discount', data: null })}
             className="flex-1 flex flex-col items-center justify-center gap-1 px-2 py-3 bg-white text-gray-700 rounded-[12px] border border-gray-100 shadow-sm hover:bg-gray-50 transition-colors active:scale-95"
           >
             <span className="material-symbols-outlined text-xl">sell</span>
-            <span className="text-xs font-bold leading-tight text-center">Bundle<br />discount</span>
+            <span className="text-xs font-bold leading-tight text-center" dangerouslySetInnerHTML={{ __html: t('group.class.bundle_discount') || "Bundle<br />discount" }} />
           </button>
           <button
             onClick={() => setEditingState({ type: 'monthly-pass', data: null })}
             className="flex-1 flex flex-col items-center justify-center gap-1 px-2 py-3 bg-white text-gray-700 rounded-[12px] border border-gray-100 shadow-sm hover:bg-gray-50 transition-colors active:scale-95"
           >
             <span className="material-symbols-outlined text-xl">confirmation_number</span>
-            <span className="text-xs font-bold leading-tight text-center">Monthly<br />Pass</span>
+            <span className="text-xs font-bold leading-tight text-center" dangerouslySetInnerHTML={{ __html: t('group.class.monthly_pass_br') || "Monthly<br />Pass" }} />
           </button>
         </section>
 
@@ -273,7 +297,7 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave }) =>
           {filteredClasses.length === 0 && filteredDiscounts.length === 0 && filteredPasses.length === 0 && (
             <div className="bg-transparent border-2 border-dashed border-gray-300 rounded-[12px] p-10 text-center flex flex-col items-center justify-center">
               <span className="material-symbols-outlined text-gray-400 text-4xl mb-2">inbox</span>
-              <p className="text-gray-500 font-bold">No items registered</p>
+              <p className="text-gray-500 font-bold">{t('group.class.no_items') || "No items registered"}</p>
             </div>
           )}
 
@@ -284,7 +308,7 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave }) =>
                 <div className="flex justify-between items-start mb-1">
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-fuchsia-600 bg-fuchsia-50 px-2 py-0.5 rounded">
-                      Pass
+                      {t('group.class.pass_badge') || "Pass"}
                     </span>
                     <span className="text-xs font-bold text-gray-400">#P-{pass.id.slice(0, 4)}</span>
                   </div>
@@ -293,7 +317,7 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave }) =>
                 <div className="flex flex-col gap-1 text-sm text-gray-600 mb-3">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-gray-600">
-                      Unlimited access for 30 days
+                      {t('group.class.unlimited_access') || "Unlimited access for 30 days"}
                     </span>
                   </div>
                   {pass.includedClassIds && pass.includedClassIds.length > 0 && (
@@ -311,7 +335,7 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave }) =>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500">Monthly Price</span>
+                    <span className="text-xs text-gray-500">{t('group.class.monthly_price') || "Monthly Price"}</span>
                   </div>
                   <span className="text-sm font-bold text-gray-900">{pass.currency === 'KRW' ? '₩' : pass.currency} {pass.amount.toLocaleString()}</span>
                 </div>
@@ -328,8 +352,8 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave }) =>
                 </button>
                 {activeMenuId === pass.id && (
                   <div className="absolute right-0 mt-1 w-32 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden z-20">
-                    <button onClick={() => handleEdit('monthly-pass', pass)} className="w-full px-4 py-2 text-left text-sm font-bold hover:bg-gray-50">Edit</button>
-                    <button onClick={() => handleDelete('pass', pass.id)} className="w-full px-4 py-2 text-left text-sm font-bold text-red-500 hover:bg-red-50">Delete</button>
+                    <button onClick={() => handleEdit('monthly-pass', pass)} className="w-full px-4 py-2 text-left text-sm font-bold hover:bg-gray-50">{t('common.edit') || "Edit"}</button>
+                    <button onClick={() => handleDelete('pass', pass.id)} className="w-full px-4 py-2 text-left text-sm font-bold text-red-500 hover:bg-red-50">{t('common.delete') || "Delete"}</button>
                   </div>
                 )}
               </div>
@@ -343,7 +367,7 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave }) =>
                 <div className="flex justify-between items-start mb-1">
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-rose-600 bg-rose-50 px-2 py-0.5 rounded">
-                      Bundle
+                      {t('group.class.bundle_badge') || "Bundle"}
                     </span>
                     <span className="text-xs font-bold text-gray-400">#D-{discount.id.slice(0, 4)}</span>
                   </div>
@@ -352,7 +376,7 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave }) =>
                 <div className="flex flex-col gap-1 text-sm text-gray-600 mb-3">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-gray-600">
-                      Includes {discount.includedClassIds?.length || 0} classes
+                      {t('group.class.includes_classes')?.replace('{count}', String(discount.includedClassIds?.length || 0)) || `Includes ${discount.includedClassIds?.length || 0} classes`}
                     </span>
                   </div>
                   {discount.includedClassIds && discount.includedClassIds.length > 0 && (
@@ -370,7 +394,7 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave }) =>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500">Discounted Price</span>
+                    <span className="text-xs text-gray-500">{t('group.class.discounted_price') || "Discounted Price"}</span>
                   </div>
                   <span className="text-sm font-bold text-[#0057bd]">{discount.currency === 'KRW' ? '₩' : discount.currency} {discount.amount.toLocaleString()}</span>
                 </div>
@@ -387,8 +411,8 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave }) =>
                 </button>
                 {activeMenuId === discount.id && (
                   <div className="absolute right-0 mt-1 w-32 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden z-20">
-                    <button onClick={() => handleEdit('discount', discount)} className="w-full px-4 py-2 text-left text-sm font-bold hover:bg-gray-50">Edit</button>
-                    <button onClick={() => handleDelete('discount', discount.id)} className="w-full px-4 py-2 text-left text-sm font-bold text-red-500 hover:bg-red-50">Delete</button>
+                    <button onClick={() => handleEdit('discount', discount)} className="w-full px-4 py-2 text-left text-sm font-bold hover:bg-gray-50">{t('common.edit') || "Edit"}</button>
+                    <button onClick={() => handleDelete('discount', discount.id)} className="w-full px-4 py-2 text-left text-sm font-bold text-red-500 hover:bg-red-50">{t('common.delete') || "Delete"}</button>
                   </div>
                 )}
               </div>
@@ -402,7 +426,7 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave }) =>
                 <div className="flex justify-between items-start mb-1">
                   <div className="flex items-center gap-2">
                     <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${getLevelColor(cls.level)}`}>
-                      {cls.level || 'All Levels'}
+                      {cls.level || t('group.class.all_levels') || 'All Levels'}
                     </span>
                     <span className="text-xs font-bold text-gray-400">#C-{cls.id.slice(0, 4)}</span>
                   </div>
@@ -411,16 +435,16 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave }) =>
                 <div className="flex flex-col gap-1 text-sm text-gray-600 mb-3">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-[#0057bd]">
-                      {cls.schedule?.length ? `${cls.schedule[0].date} plus ${cls.schedule.length - 1} sessions` : 'No sessions'}
+                      {cls.schedule?.length ? (t('group.class.plus_sessions')?.replace('{date}', cls.schedule[0].date).replace('{count}', String(cls.schedule.length - 1)) || `${cls.schedule[0].date} plus ${cls.schedule.length - 1} sessions`) : (t('group.class.no_sessions') || 'No sessions')}
                     </span>
                     <span className="ml-2 text-gray-600">{cls.schedule?.[0]?.timeSlot || ''}</span>
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500">Instructor:</span>
+                    <span className="text-xs text-gray-500">{t('group.class.instructor') || "Instructor:"}</span>
                     <span className="text-sm font-semibold text-gray-800">
-                      {cls.instructors?.[0]?.name || 'TBD'}
+                      {cls.instructors?.[0]?.name || t('group.class.tbd') || 'TBD'}
                       {cls.instructors && cls.instructors.length > 1 && ` +${cls.instructors.length - 1}`}
                     </span>
                   </div>
@@ -439,8 +463,8 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave }) =>
                 </button>
                 {activeMenuId === cls.id && (
                   <div className="absolute right-0 mt-1 w-32 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden z-20">
-                    <button onClick={() => handleEdit('add-class', cls)} className="w-full px-4 py-2 text-left text-sm font-bold hover:bg-gray-50">Edit</button>
-                    <button onClick={() => handleDelete('class', cls.id)} className="w-full px-4 py-2 text-left text-sm font-bold text-red-500 hover:bg-red-50">Delete</button>
+                    <button onClick={() => handleEdit('add-class', cls)} className="w-full px-4 py-2 text-left text-sm font-bold hover:bg-gray-50">{t('common.edit') || "Edit"}</button>
+                    <button onClick={() => handleDelete('class', cls.id)} className="w-full px-4 py-2 text-left text-sm font-bold text-red-500 hover:bg-red-50">{t('common.delete') || "Delete"}</button>
                   </div>
                 )}
               </div>
@@ -520,7 +544,7 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave }) =>
           />
         )}
       </>
-    </div>
+      </motion.div>
   );
 };
 

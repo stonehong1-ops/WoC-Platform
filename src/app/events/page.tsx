@@ -69,7 +69,7 @@ export default function EventsPage() {
   
   // New Header Filter States
   const [activeTab, setActiveTab] = useState<'calendar' | 'upcoming' | 'favorite'>('calendar');
-  const [isWorldEvent, setIsWorldEvent] = useState(false);
+  const [isWorldEvent, setIsWorldEvent] = useState(true);
 
   // Real-time Subscription
   useEffect(() => {
@@ -79,6 +79,22 @@ export default function EventsPage() {
     });
     return () => unsub();
   }, []);
+
+  // Check URL search params for specific event ID
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const eventId = urlParams.get('eventId');
+      if (eventId && events.length > 0 && !selectedEvent) {
+        const target = events.find(e => e.id === eventId);
+        if (target) {
+          setSelectedEvent(target);
+          // Clean up the URL
+          window.history.replaceState({}, '', '/events');
+        }
+      }
+    }
+  }, [events, selectedEvent]);
 
   useEffect(() => {
     if (!user) {
@@ -115,6 +131,9 @@ export default function EventsPage() {
   // Handle browser back button for modals
   useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
+      if (e.state && e.state.wocModal) {
+        return; // 중첩 모달 닫힘
+      }
       if (selectedEvent) {
         setSelectedEvent(null);
       } else if (showCreateModal) {
@@ -123,7 +142,8 @@ export default function EventsPage() {
     };
 
     if (selectedEvent || showCreateModal) {
-      window.history.pushState({ modal: true }, '');
+      const currentState = window.history.state || {};
+      window.history.pushState({ ...currentState, wocModal: true }, '');
       window.addEventListener('popstate', handlePopState);
     }
 
@@ -134,14 +154,14 @@ export default function EventsPage() {
 
   const handleCloseEvent = () => {
     setSelectedEvent(null);
-    if (window.history.state?.modal) {
+    if (window.history.state?.wocModal) {
       window.history.back();
     }
   };
 
   const handleCloseCreate = () => {
     setShowCreateModal(false);
-    if (window.history.state?.modal) {
+    if (window.history.state?.wocModal) {
       window.history.back();
     }
   };
@@ -476,7 +496,7 @@ export default function EventsPage() {
                 </div>
 
                 {/* Integrated Event Registration Action */}
-                <div className="-mx-4 px-4 py-2 flex items-center justify-between bg-white border-b border-slate-50 mt-4">
+                <div className="mx-4 my-3 px-5 py-3 flex items-center justify-between bg-white rounded-xl border border-slate-100 shadow-sm mt-4">
                   <p className="text-[12px] font-bold text-slate-400 uppercase tracking-tight">
                     {t('event.host_new')}
                   </p>

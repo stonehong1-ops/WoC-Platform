@@ -90,7 +90,7 @@ export default function LostFoundWishlistTray({ likes, userId, onItemClick }: Lo
 
   return (
     <>
-      <div className="fixed bottom-24 left-1/2 -translate-x-1/2 w-[calc(100%-48px)] max-w-sm z-[60] pointer-events-auto">
+      <div className="fixed bottom-14 inset-x-0 z-[60] px-6 w-full max-w-sm mx-auto pointer-events-none flex justify-center">
         <motion.div 
           animate={{ 
             height: isExpanded ? 'auto' : '64px', 
@@ -99,7 +99,7 @@ export default function LostFoundWishlistTray({ likes, userId, onItemClick }: Lo
           }}
           transition={{ type: 'spring', stiffness: 400, damping: 35 }}
           initial={false}
-          className="bg-white/95 backdrop-blur-3xl rounded-xl shadow-[0_24px_48px_rgba(0,0,0,0.12)] flex flex-col border border-white/60 overflow-hidden"
+          className="w-full max-w-sm bg-white/95 backdrop-blur-3xl rounded-xl shadow-[0_24px_48px_rgba(0,0,0,0.12)] flex flex-col border border-white/60 overflow-hidden pointer-events-auto"
           onClick={() => !isExpanded && setTrayState('EXPANDED')}
         >
           {/* Top Row / Summary Bar */}
@@ -123,7 +123,7 @@ export default function LostFoundWishlistTray({ likes, userId, onItemClick }: Lo
                     {likes.filter(l => l.status === 'pending').length > 0 && (
                       <span className="text-primary">{likes.filter(l => l.status === 'pending').length} {t('shop.pending')}, </span>
                     )}
-                    {likes.filter(l => l.status !== 'pending' && l.status !== 'in_progress').length} {t('shop.liked')}
+                    {likes.filter(l => l.status !== 'pending' && l.status !== 'in_progress').length}{t('common.liked')}
                   </>
                 )}
               </span>
@@ -259,7 +259,7 @@ export default function LostFoundWishlistTray({ likes, userId, onItemClick }: Lo
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setTrayState('COLLAPSED')}
-            className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-30"
+            className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-[45]"
           />
         )}
       </AnimatePresence>

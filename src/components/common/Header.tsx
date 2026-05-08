@@ -3,8 +3,9 @@
 import React from 'react';
 import { usePathname } from 'next/navigation';
 import { NAV_ITEMS } from '@/lib/constants/navigation';
-import { Bell, MessageCircle, Search, Plus } from 'lucide-react';
+import { Bell, MessageCircle, Search, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 export default function Header() {
   const pathname = usePathname();
@@ -30,6 +31,9 @@ export default function Header() {
         <button className="p-2 hover:bg-black/5 rounded-full transition-colors hidden sm:block">
           <MessageCircle size={20} />
         </button>
+        <Link href="/helpdesk" className="p-2 hover:bg-black/5 rounded-full transition-colors">
+          <HelpCircle size={22} className={cn(pathname === '/helpdesk' && "text-primary")} />
+        </Link>
         <button className="p-2 hover:bg-black/5 rounded-full transition-colors text-foreground">
           <Search size={22} />
         </button>

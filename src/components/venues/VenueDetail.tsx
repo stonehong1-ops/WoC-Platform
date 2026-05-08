@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase/clientApp';
 import { doc, getDoc } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigation } from '@/components/providers/NavigationProvider';
 
 interface VenueDetailProps {
   venueId: string;
@@ -13,6 +14,14 @@ interface VenueDetailProps {
 export default function VenueDetail({ venueId, onClose }: VenueDetailProps) {
   const [venue, setVenue] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const { setGlobalNavHidden } = useNavigation();
+
+  useEffect(() => {
+    if (venueId) {
+      setGlobalNavHidden(true);
+      return () => setGlobalNavHidden(false);
+    }
+  }, [venueId, setGlobalNavHidden]);
 
   useEffect(() => {
     const fetchVenue = async () => {

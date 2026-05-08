@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Group, GroupBoard } from "@/types/group";
 import { groupService } from "@/lib/firebase/groupService";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface GroupBoardEditorProps {
   group: Group;
@@ -11,8 +12,9 @@ interface GroupBoardEditorProps {
 }
 
 const GroupBoardEditor: React.FC<GroupBoardEditorProps> = ({ group, onClose }) => {
+  const { t } = useLanguage();
   const [boards, setBoards] = useState<GroupBoard[]>(group.boards || [
-    { id: 'notice', title: "Group Announcements", permission: 'Only Admin', order: 0 }
+    { id: 'notice', title: t('group.board.editor.notice_title') || "Group Announcements", permission: 'Only Admin', order: 0 }
   ]);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -25,7 +27,7 @@ const GroupBoardEditor: React.FC<GroupBoardEditorProps> = ({ group, onClose }) =
       onClose();
     } catch (error) {
       console.error("Error saving boards:", error);
-      alert("Failed to save changes.");
+      alert(t('group.board.editor.error_save') || "Failed to save changes.");
     } finally {
       setIsSaving(false);
     }
@@ -33,7 +35,7 @@ const GroupBoardEditor: React.FC<GroupBoardEditorProps> = ({ group, onClose }) =
 
   const addBoard = () => {
     if (boards.length >= 10) {
-      alert("Maximum 10 boards allowed.");
+      alert(t('group.board.editor.max_boards') || "Maximum 10 boards allowed.");
       return;
     }
     const newBoard: GroupBoard = {
@@ -47,7 +49,7 @@ const GroupBoardEditor: React.FC<GroupBoardEditorProps> = ({ group, onClose }) =
 
   const deleteBoard = (id: string) => {
     if (id === 'notice') {
-      alert("The mandatory notice board cannot be deleted.");
+      alert(t('group.board.editor.mandatory_notice') || "The mandatory notice board cannot be deleted.");
       return;
     }
     setBoards(boards.filter(b => b.id !== id));
@@ -74,7 +76,7 @@ const GroupBoardEditor: React.FC<GroupBoardEditorProps> = ({ group, onClose }) =
             >
               <span className="material-symbols-outlined text-[#0057bd]">arrow_back</span>
             </button>
-            <h1 className="text-base font-headline font-semibold text-[#242c51]">Board Settings</h1>
+            <h1 className="text-base font-headline font-semibold text-[#242c51]">{t('group.board.editor.title') || "Board Settings"}</h1>
           </div>
           <button 
             onClick={handleSave}
@@ -85,7 +87,7 @@ const GroupBoardEditor: React.FC<GroupBoardEditorProps> = ({ group, onClose }) =
                 : "bg-[#0057bd] text-white hover:bg-[#004bb3] shadow-lg shadow-blue-900/10"
             }`}
           >
-            {isSaving ? 'Saving...' : 'Save'}
+            {isSaving ? (t('group.board.editor.saving') || 'Saving...') : (t('group.board.editor.save') || 'Save')}
           </button>
         </div>
       </header>
@@ -95,28 +97,28 @@ const GroupBoardEditor: React.FC<GroupBoardEditorProps> = ({ group, onClose }) =
         <section className="mb-10">
           <div className="flex items-end justify-between mb-4">
             <div>
-              <span className="text-[#515981] font-label text-xs font-semibold uppercase tracking-widest block mb-1">Section 01</span>
-              <h2 className="text-2xl font-extrabold tracking-tight text-[#242c51] font-headline">Notice Board</h2>
+              <span className="text-[#515981] font-label text-xs font-semibold uppercase tracking-widest block mb-1">{t('group.board.editor.section01') || "Section 01"}</span>
+              <h2 className="text-2xl font-extrabold tracking-tight text-[#242c51] font-headline">{t('group.board.editor.notice') || "Notice Board"}</h2>
             </div>
-            <span className="bg-[#f199f7] text-[#5e106a] px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Pinned</span>
+            <span className="bg-[#f199f7] text-[#5e106a] px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">{t('group.board.editor.pinned') || "Pinned"}</span>
           </div>
           <div className="bg-white rounded-xl p-6 shadow-sm ring-1 ring-[#a3abd7]/10">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
               <div>
-                <label className="block text-sm font-semibold text-[#515981] mb-2">Board Title</label>
+                <label className="block text-sm font-semibold text-[#515981] mb-2">{t('group.board.editor.board_title') || "Board Title"}</label>
                 <input 
                   className="w-full bg-[#efefff] border-none rounded-xl px-4 py-3 text-[#242c51] opacity-70 cursor-not-allowed font-medium" 
                   disabled 
                   type="text" 
-                  value="Group Announcements"
+                  value={t('group.board.editor.notice_title') || "Group Announcements"}
                 />
               </div>
               <div className="flex items-center justify-between bg-[#efefff]/50 p-4 rounded-xl">
                 <div>
-                  <p className="text-sm font-bold text-[#242c51]">Who can post?</p>
-                  <p className="text-xs text-[#515981]">Default setting for announcements</p>
+                  <p className="text-sm font-bold text-[#242c51]">{t('group.board.editor.who_can_post') || "Who can post?"}</p>
+                  <p className="text-xs text-[#515981]">{t('group.board.editor.default_setting') || "Default setting for announcements"}</p>
                 </div>
-                <div className="bg-[#0057bd] text-white px-4 py-1.5 rounded-full text-xs font-bold">Only Admin</div>
+                <div className="bg-[#0057bd] text-white px-4 py-1.5 rounded-full text-xs font-bold">{t('group.board.editor.only_admin') || "Only Admin"}</div>
               </div>
             </div>
           </div>
@@ -126,11 +128,11 @@ const GroupBoardEditor: React.FC<GroupBoardEditorProps> = ({ group, onClose }) =
         <section className="mb-10">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <span className="text-[#515981] font-label text-xs font-semibold uppercase tracking-widest block mb-1">Section 02</span>
-              <h2 className="text-2xl font-extrabold tracking-tight text-[#242c51] font-headline">Board List</h2>
+              <span className="text-[#515981] font-label text-xs font-semibold uppercase tracking-widest block mb-1">{t('group.board.editor.section02') || "Section 02"}</span>
+              <h2 className="text-2xl font-extrabold tracking-tight text-[#242c51] font-headline">{t('group.board.editor.board_list') || "Board List"}</h2>
             </div>
             <div className="text-sm font-medium text-[#515981] bg-[#dde1ff] px-3 py-1 rounded-full">
-              {boards.length} / 10 Boards
+              {boards.length} / 10 {t('group.board.editor.boards') || "Boards"}
             </div>
           </div>
           <div className="flex flex-col gap-4">
@@ -138,12 +140,12 @@ const GroupBoardEditor: React.FC<GroupBoardEditorProps> = ({ group, onClose }) =
               <div key={board.id} className="bg-white rounded-xl p-6 shadow-sm group hover:ring-2 hover:ring-[#0057bd]/20 transition-all">
                 <div className="flex flex-col md:flex-row gap-6 md:items-end">
                   <div className="flex-grow">
-                    <label className="block text-sm font-semibold text-[#515981] mb-2">Board Title</label>
+                    <label className="block text-sm font-semibold text-[#515981] mb-2">{t('group.board.editor.board_title') || "Board Title"}</label>
                     <div className="relative">
                       <input 
                         className="w-full bg-[#efefff] focus:bg-white border-none focus:ring-2 focus:ring-[#0057bd] rounded-xl px-4 py-3 text-[#242c51] font-medium transition-all" 
                         type="text" 
-                        placeholder="Enter board title..."
+                        placeholder={t('group.board.editor.enter_title') || "Enter board title..."}
                         value={board.title}
                         onChange={(e) => updateBoard(board.id, { title: e.target.value })}
                       />
@@ -151,19 +153,19 @@ const GroupBoardEditor: React.FC<GroupBoardEditorProps> = ({ group, onClose }) =
                     </div>
                   </div>
                   <div className="md:w-64">
-                    <label className="block text-sm font-semibold text-[#515981] mb-2">Who can post?</label>
+                    <label className="block text-sm font-semibold text-[#515981] mb-2">{t('group.board.editor.who_can_post') || "Who can post?"}</label>
                     <div className="flex bg-[#efefff] p-1 rounded-xl">
                       <button 
                         onClick={() => updateBoard(board.id, { permission: 'Only Admin' })}
                         className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${board.permission === 'Only Admin' ? 'bg-white shadow-sm text-[#0057bd]' : 'text-[#515981] hover:text-[#242c51]'}`}
                       >
-                        Only Admin
+                        {t('group.board.editor.only_admin') || "Only Admin"}
                       </button>
                       <button 
                         onClick={() => updateBoard(board.id, { permission: 'Everyone' })}
                         className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${board.permission === 'Everyone' ? 'bg-white shadow-sm text-[#0057bd]' : 'text-[#515981] hover:text-[#242c51]'}`}
                       >
-                        Everyone
+                        {t('group.board.editor.everyone') || "Everyone"}
                       </button>
                     </div>
                   </div>
@@ -188,7 +190,7 @@ const GroupBoardEditor: React.FC<GroupBoardEditorProps> = ({ group, onClose }) =
             <div className="w-10 h-10 rounded-full bg-[#0057bd]/10 group-hover:bg-[#0057bd] group-hover:text-white flex items-center justify-center transition-colors">
               <span className="material-symbols-outlined">add</span>
             </div>
-            <span className="text-lg font-bold text-[#0057bd]">Add New Board</span>
+            <span className="text-lg font-bold text-[#0057bd]">{t('group.board.editor.add_board') || "Add New Board"}</span>
           </button>
         </section>
       </main>

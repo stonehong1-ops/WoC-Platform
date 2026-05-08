@@ -13,6 +13,7 @@ import EventProgramTab from "./EventProgramTab";
 import EventRegisterTab from "./EventRegisterTab";
 import EditEvent from "./EditEvent";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useNavigation } from "@/components/providers/NavigationProvider";
 
 interface EventViewerProps {
   event: Event;
@@ -26,9 +27,15 @@ const ADMIN_UIDS = ["7iaZAmaYY9dNNEShmJmROI8XrtH2"];
 export default function EventViewer({ event: initialEvent, onClose }: EventViewerProps) {
   const { user, profile } = useAuth();
   const { t } = useLanguage();
+  const { setGlobalNavHidden } = useNavigation();
   const [event, setEvent] = useState<Event>(initialEvent);
   const [activeTab, setActiveTab] = useState<TabId>("home");
   const [showEdit, setShowEdit] = useState(false);
+
+  useEffect(() => {
+    setGlobalNavHidden(true);
+    return () => setGlobalNavHidden(false);
+  }, [setGlobalNavHidden]);
 
   useEffect(() => {
     const unsub = eventService.subscribeEvent(initialEvent.id, (data) => {

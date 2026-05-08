@@ -1,4 +1,6 @@
 'use client';
+import { useLanguage } from '@/contexts/LanguageContext';
+
 
 import React from 'react';
 
@@ -7,6 +9,8 @@ interface TodoPageProps {
 }
 
 export default function TodoPage({ title }: TodoPageProps) {
+  const { t } = useLanguage();
+
   return (
     <div className="flex flex-col items-center justify-center min-h-[70vh] px-6 text-center animate-in">
       <div className="relative mb-8 group">
@@ -19,7 +23,7 @@ export default function TodoPage({ title }: TodoPageProps) {
         {title}
       </h2>
       <p className="text-muted-foreground max-w-sm text-sm font-medium leading-relaxed">
-        죄송합니다. 현재 **{title}** 서비스는 핵심 기능을 설계 중입니다.<br/> 곧 완성도 높은 모습으로 찾아뵙겠습니다!
+        {t('common.todo_message1').replace('{title}', title)}<br/> {t('common.todo_message2')}
       </p>
       <div className="mt-10 flex flex-col items-center gap-3">
         <div className="px-5 py-2 bg-primary/10 border border-primary/20 rounded-full text-[10px] font-bold uppercase tracking-widest text-primary">

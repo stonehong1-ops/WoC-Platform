@@ -6,7 +6,7 @@ import { eventService } from '@/lib/firebase/eventService';
 import { venueService } from '@/lib/firebase/venueService';
 import { userService } from '@/lib/firebase/userService';
 import { storageService } from '@/lib/firebase/storageService';
-import { Event, EventCategory, EventProgram, EventPricing } from '@/types/event';
+import { Event, EventCategory, EventProgram, EventPricing, EventArtist, EventVenueItem, EventPackage, EventScheduleDay } from '@/types/event';
 import { Venue } from '@/types/venue';
 import { PlatformUser } from '@/types/user';
 import { Timestamp } from 'firebase/firestore';
@@ -97,6 +97,13 @@ export default function EditEvent({ onClose, onSuccess, eventData }: Props) {
   const [fullPassLabel, setFullPassLabel] = useState(eventData?.pricing?.fullPassPrice?.label || '');
   const [earlyBird, setEarlyBird] = useState(eventData?.pricing?.earlyBirdDeadline || '');
 
+  // New Sections
+  const [galleryImages, setGalleryImages] = useState<string[]>(eventData?.galleryImages || []);
+  const [artists, setArtists] = useState<EventArtist[]>(eventData?.artists || []);
+  const [eventVenues, setEventVenues] = useState<EventVenueItem[]>(eventData?.eventVenues || []);
+  const [packages, setPackages] = useState<EventPackage[]>(eventData?.packages || []);
+  const [scheduleDays, setScheduleDays] = useState<EventScheduleDay[]>(eventData?.scheduleDays || []);
+
   // Extra
   const [dressCode, setDressCode] = useState(eventData?.dressCode || '');
   const [websiteUrl, setWebsiteUrl] = useState(eventData?.websiteUrl || '');
@@ -156,6 +163,11 @@ export default function EditEvent({ onClose, onSuccess, eventData }: Props) {
         staffIds: staffList.map(s=>s.id),
         staffNames: staffList.map(s=>s.name),
         programs, pricing,
+        galleryImages: galleryImages.filter(Boolean),
+        artists: artists.filter(a => a.name),
+        eventVenues: eventVenues.filter(v => v.name),
+        packages: packages.filter(p => p.name),
+        scheduleDays: scheduleDays.filter(d => d.dayLabel),
         dressCode, websiteUrl, registrationUrl, bankInfo,
       };
 
@@ -233,7 +245,7 @@ export default function EditEvent({ onClose, onSuccess, eventData }: Props) {
         {/* 2. Basic Info */}
         <Section icon="info" label={t('event.basic_info')}>
           <Field label={t('event.title_en_label')}><div className={boxCls}><input value={title} onChange={e=>setTitle(e.target.value)} className={inputCls} placeholder="e.g. Seoul Tango Festival 2026"/></div></Field>
-          <Field label={t('event.title_native_label')}><div className={boxCls}><input value={titleNative} onChange={e=>setTitleNative(e.target.value)} className={inputCls} placeholder="e.g. 서울 탱고 페스티벌 2026"/></div></Field>
+          <Field label={t('event.title_native_label')}><div className={boxCls}><input value={titleNative} onChange={e=>setTitleNative(e.target.value)} className={inputCls} placeholder={t('event.title_native_placeholder', 'e.g. Seoul Tango Festival 2026')}/></div></Field>
           <Field label={t('event.description_label')}><div className={boxCls}><textarea value={description} onChange={e=>setDescription(e.target.value)} className={`${inputCls} min-h-[80px] resize-none`} placeholder={t('event.description_placeholder_edit')}/></div></Field>
           <Field label={t('event.category_label')}>
             <div className="flex flex-wrap gap-2">
@@ -267,9 +279,13 @@ export default function EditEvent({ onClose, onSuccess, eventData }: Props) {
             {showVenueResults && (
               <div className="absolute top-full left-0 w-full mt-1 bg-white border border-[#e0e4e5] rounded-xl shadow-lg z-50 overflow-hidden">
                 {venueResults.map(v=>(
-                  <button key={v.id} onClick={()=>handleSelectVenue(v)} className="w-full text-left px-4 py-3 hover:bg-[#f8f9fa] flex items-baseline gap-2 border-b border-[#f2f4f4] last:border-0">
-                    <p className="font-bold text-[#2d3435] text-sm">{v.name}</p>
-                    <span className="text-[10px] text-[#acb3b4] font-bold bg-[#f2f4f4] px-2 py-0.5 rounded-full">{v.city}</span>
+                  <button key={v.id} onClick={()=>handleSelectVenue(v)} className="w-full text-left px-4 py-3 hover:bg-[#f8f9fa] flex items-center gap-3 group transition-colors border-b border-[#f2f4f4] last:border-0">
+                    <span className="material-symbols-rounded text-[#acb3b4] text-[18px]">location_on</span>
+                    <div className="flex flex-col flex-1 min-w-0">
+                      <p className="font-bold text-[#2d3435] text-sm group-hover:text-primary leading-tight">{v.name}</p>
+                      {v.nameKo && <span className="text-[10px] text-[#acb3b4] font-medium leading-tight">{v.nameKo}</span>}
+                    </div>
+                    <span className="text-[10px] text-[#acb3b4] font-bold bg-[#f2f4f4] px-2 py-0.5 rounded-full shrink-0">{v.city}</span>
                   </button>
                 ))}
               </div>
@@ -296,13 +312,22 @@ export default function EditEvent({ onClose, onSuccess, eventData }: Props) {
                 <span className="material-symbols-rounded text-[#acb3b4] mr-2">person_add</span>
                 <input value={staffSearch} onChange={e=>{
                   setStaffSearch(e.target.value);
-                  if(e.target.value.length>=1){const l=e.target.value.toLowerCase();const f=allUsers.filter(u=>!staffList.find(s=>s.id===u.id)&&(u.nickname?.toLowerCase().includes(l)));setStaffResults(f.slice(0,6));setShowStaffResults(f.length>0);}else setShowStaffResults(false);
+                  if(e.target.value.length>=1){const l=e.target.value.toLowerCase();const f=allUsers.filter(u=>!staffList.find(s=>s.id===u.id)&&(u.nickname?.toLowerCase().includes(l)||u.nativeNickname?.includes(e.target.value)));setStaffResults(f.slice(0,6));setShowStaffResults(f.length>0);}else setShowStaffResults(false);
                 }} onBlur={()=>setTimeout(()=>setShowStaffResults(false),200)} className={inputCls} placeholder={t('event.staff_search_placeholder')}/>
               </div>
             </Field>
             {showStaffResults&&(
               <div className="absolute top-full left-0 w-full mt-1 bg-white border border-[#e0e4e5] rounded-xl shadow-lg z-50 overflow-hidden">
-                {staffResults.map(u=>(<button key={u.id} onClick={()=>{setStaffList([...staffList,{id:u.id,name:u.nickname||''}]);setStaffSearch('');setShowStaffResults(false);}} className="w-full text-left px-4 py-3 hover:bg-[#f8f9fa] border-b border-[#f2f4f4] last:border-0"><p className="font-bold text-sm text-[#2d3435]">{u.nickname}</p></button>))}
+                {staffResults.map(u=>(
+                  <button key={u.id} onClick={()=>{setStaffList([...staffList,{id:u.id,name:u.nickname||''}]);setStaffSearch('');setShowStaffResults(false);}}
+                    className="w-full text-left px-4 py-3 hover:bg-[#f8f9fa] flex items-center gap-3 border-b border-[#f2f4f4] last:border-0 group">
+                    <span className="material-symbols-rounded text-[#acb3b4] text-[18px]">person_add</span>
+                    <div className="flex flex-col">
+                      <p className="font-bold text-sm text-[#2d3435] group-hover:text-primary leading-tight">{u.nickname}</p>
+                      {u.nativeNickname && <span className="text-[10px] text-[#acb3b4] font-medium leading-tight">{u.nativeNickname}</span>}
+                    </div>
+                  </button>
+                ))}
               </div>
             )}
             {staffList.length>0&&(
@@ -315,6 +340,147 @@ export default function EditEvent({ onClose, onSuccess, eventData }: Props) {
 
         {/* 6. Programs */}
         <ProgramEditor programs={programs} onChange={setPrograms} />
+
+        {/* 6.5 Gallery Images */}
+        <Section icon="photo_library" label="Gallery Images">
+          <div className="grid grid-cols-4 gap-2">
+            {galleryImages.map((url, i) => url && (
+              <div key={i} className="relative aspect-square rounded-lg overflow-hidden border border-[#e0e4e5]">
+                <img src={url} alt="" className="w-full h-full object-cover" />
+                <button onClick={() => setGalleryImages(galleryImages.filter((_,j) => j!==i))} className="absolute top-1 right-1 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center">
+                  <span className="material-symbols-rounded text-white text-xs">close</span>
+                </button>
+              </div>
+            ))}
+            <label className="aspect-square rounded-lg border-2 border-dashed border-[#d0d5d6] flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-colors">
+              <span className="material-symbols-rounded text-2xl text-[#acb3b4]">add_photo_alternate</span>
+              <span className="text-[9px] text-[#acb3b4] mt-1">Add Photos</span>
+              <input type="file" accept="image/*" multiple className="hidden" onChange={async (e) => {
+                const files = Array.from(e.target.files || []);
+                for (const file of files) {
+                  const url = await storageService.uploadFile(file, `events/gallery/${Date.now()}_${file.name}`);
+                  setGalleryImages(prev => [...prev, url]);
+                }
+                e.target.value = '';
+              }} />
+            </label>
+          </div>
+        </Section>
+
+        {/* 6.6 Artists */}
+        <Section icon="mic_external_on" label="Artists">
+          {artists.map((a, i) => (
+            <div key={i} className="p-3 border border-[#e0e4e5] rounded-xl space-y-2 relative">
+              <button onClick={() => setArtists(artists.filter((_,j) => j!==i))} className="absolute top-2 right-2 text-red-400 hover:text-red-600"><span className="material-symbols-rounded text-lg">delete</span></button>
+              <div className="flex gap-3">
+                <label className="w-20 h-24 rounded-lg overflow-hidden border border-[#e0e4e5] flex-shrink-0 cursor-pointer relative">
+                  {a.photoUrl ? <img src={a.photoUrl} alt="" className="w-full h-full object-cover" /> :
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-[#f8f9fa]"><span className="material-symbols-rounded text-xl text-[#acb3b4]">add_a_photo</span><span className="text-[8px] text-[#acb3b4] mt-0.5">Photo</span></div>}
+                  <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                    const file = e.target.files?.[0]; if (!file) return;
+                    const url = await storageService.uploadFile(file, `events/artists/${Date.now()}_${file.name}`);
+                    const c=[...artists]; c[i]={...c[i], photoUrl: url}; setArtists(c);
+                  }} />
+                </label>
+                <div className="flex-1 space-y-2">
+                  <div className={boxCls}><input value={a.name} onChange={e => { const c=[...artists]; c[i]={...c[i], name: e.target.value}; setArtists(c); }} className={inputCls} placeholder="Name" /></div>
+                  <select value={a.role} onChange={e => { const c=[...artists]; c[i]={...c[i], role: e.target.value as any}; setArtists(c); }} className={`${boxCls} ${inputCls} appearance-none`}>
+                    <option value="maestro">Maestro</option><option value="dj">DJ</option><option value="performer">Performer</option>
+                  </select>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className={boxCls}><input value={a.country||''} onChange={e => { const c=[...artists]; c[i]={...c[i], country: e.target.value}; setArtists(c); }} className={inputCls} placeholder="Country" /></div>
+                    <div className={boxCls}><input value={a.bio||''} onChange={e => { const c=[...artists]; c[i]={...c[i], bio: e.target.value}; setArtists(c); }} className={inputCls} placeholder="Bio" /></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+          <button onClick={() => setArtists([...artists, { id: `a${Date.now()}`, name: '', role: 'maestro' }])} className="flex items-center gap-1 text-primary text-xs font-bold hover:underline"><span className="material-symbols-rounded text-sm">add</span>Add Artist</button>
+        </Section>
+
+        {/* 6.7 Event Venues */}
+        <Section icon="festival" label="Event Venues">
+          {eventVenues.map((v, i) => (
+            <div key={i} className="p-3 border border-[#e0e4e5] rounded-xl space-y-2 relative">
+              <button onClick={() => setEventVenues(eventVenues.filter((_,j) => j!==i))} className="absolute top-2 right-2 text-red-400 hover:text-red-600"><span className="material-symbols-rounded text-lg">delete</span></button>
+              <label className="block aspect-[16/9] rounded-lg overflow-hidden border border-[#e0e4e5] cursor-pointer">
+                {v.photoUrl ? <img src={v.photoUrl} alt="" className="w-full h-full object-cover" /> :
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-[#f8f9fa]"><span className="material-symbols-rounded text-3xl text-[#acb3b4]">add_a_photo</span><span className="text-[10px] text-[#acb3b4] mt-1">Venue Photo</span></div>}
+                <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                  const file = e.target.files?.[0]; if (!file) return;
+                  const url = await storageService.uploadFile(file, `events/venues/${Date.now()}_${file.name}`);
+                  const c=[...eventVenues]; c[i]={...c[i], photoUrl: url}; setEventVenues(c);
+                }} />
+              </label>
+              <div className={boxCls}><input value={v.name} onChange={e => { const c=[...eventVenues]; c[i]={...c[i], name: e.target.value}; setEventVenues(c); }} className={inputCls} placeholder="Venue Name" /></div>
+              <div className={boxCls}><input value={v.address||''} onChange={e => { const c=[...eventVenues]; c[i]={...c[i], address: e.target.value}; setEventVenues(c); }} className={inputCls} placeholder="Address" /></div>
+            </div>
+          ))}
+          <button onClick={() => setEventVenues([...eventVenues, { id: `v${Date.now()}`, name: '' }])} className="flex items-center gap-1 text-primary text-xs font-bold hover:underline"><span className="material-symbols-rounded text-sm">add</span>Add Venue</button>
+        </Section>
+
+        {/* 6.8 Packages */}
+        <Section icon="confirmation_number" label="Packages">
+          {packages.map((pkg, i) => (
+            <div key={i} className="p-3 border border-[#e0e4e5] rounded-xl space-y-2 relative">
+              <button onClick={() => setPackages(packages.filter((_,j) => j!==i))} className="absolute top-2 right-2 text-red-400 hover:text-red-600"><span className="material-symbols-rounded text-lg">delete</span></button>
+              <div className="flex gap-3">
+                <label className="w-24 h-24 rounded-lg overflow-hidden border border-[#e0e4e5] flex-shrink-0 cursor-pointer relative">
+                  {pkg.photoUrl ? <img src={pkg.photoUrl} alt="" className="w-full h-full object-cover" /> :
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-[#f8f9fa]"><span className="material-symbols-rounded text-2xl text-[#acb3b4]">add_a_photo</span><span className="text-[8px] text-[#acb3b4] mt-0.5">Package Photo</span></div>}
+                  <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                    const file = e.target.files?.[0]; if (!file) return;
+                    const url = await storageService.uploadFile(file, `events/packages/${Date.now()}_${file.name}`);
+                    const c=[...packages]; c[i]={...c[i], photoUrl: url}; setPackages(c);
+                  }} />
+                </label>
+                <div className="flex-1 space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className={boxCls}><input value={pkg.name} onChange={e => { const c=[...packages]; c[i]={...c[i], name: e.target.value}; setPackages(c); }} className={inputCls} placeholder="Package Name" /></div>
+                    <select value={pkg.type||'single'} onChange={e => { const c=[...packages]; c[i]={...c[i], type: e.target.value as any}; setPackages(c); }} className={`${boxCls} ${inputCls} appearance-none`}>
+                      <option value="single">Single</option><option value="couple">Couple</option>
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className={boxCls}><input type="number" value={pkg.price||''} onChange={e => { const c=[...packages]; c[i]={...c[i], price: parseInt(e.target.value)||0}; setPackages(c); }} className={inputCls} placeholder="Price" /></div>
+                    <div className={boxCls}><input type="number" value={pkg.priceUsd||''} onChange={e => { const c=[...packages]; c[i]={...c[i], priceUsd: parseFloat(e.target.value)||0}; setPackages(c); }} className={inputCls} placeholder="USD Price" /></div>
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className={boxCls}><input type="number" value={pkg.totalTickets||''} onChange={e => { const c=[...packages]; c[i]={...c[i], totalTickets: parseInt(e.target.value)||0}; setPackages(c); }} className={inputCls} placeholder="Total Tickets" /></div>
+                <div className={boxCls}><input type="number" value={pkg.includedWorkshopCount||''} onChange={e => { const c=[...packages]; c[i]={...c[i], includedWorkshopCount: parseInt(e.target.value)||0}; setPackages(c); }} className={inputCls} placeholder="Workshops #" /></div>
+              </div>
+              <Field label="Included Items (one per line)">
+                <div className={boxCls}><textarea value={(pkg.includedItems||[]).join('\n')} onChange={e => { const c=[...packages]; c[i]={...c[i], includedItems: e.target.value.split('\n')}; setPackages(c); }} className={`${inputCls} min-h-[60px] resize-none`} placeholder={"Championship Final - June 20th\nICP Gala Dinner"} /></div>
+              </Field>
+            </div>
+          ))}
+          <button onClick={() => setPackages([...packages, { id: `p${Date.now()}`, name: '', price: 0, includedItems: [] }])} className="flex items-center gap-1 text-primary text-xs font-bold hover:underline"><span className="material-symbols-rounded text-sm">add</span>Add Package</button>
+        </Section>
+
+        {/* 6.9 Schedule Days */}
+        <Section icon="calendar_month" label="Schedule Days">
+          {scheduleDays.map((day, i) => (
+            <div key={i} className="p-3 border border-[#e0e4e5] rounded-xl space-y-2 relative">
+              <button onClick={() => setScheduleDays(scheduleDays.filter((_,j) => j!==i))} className="absolute top-1 right-1 text-red-400 hover:text-red-600"><span className="material-symbols-rounded text-lg">delete</span></button>
+              <div className="flex gap-2">
+                <div className={boxCls + ' w-24'}><input value={day.dayLabel} onChange={e => { const c=[...scheduleDays]; c[i]={...c[i], dayLabel: e.target.value}; setScheduleDays(c); }} className={inputCls} placeholder="Day 1" /></div>
+                <div className={boxCls + ' flex-1'}><input type="date" value={day.date||''} onChange={e => { const c=[...scheduleDays]; c[i]={...c[i], date: e.target.value}; setScheduleDays(c); }} className={inputCls} /></div>
+              </div>
+              <label className="block aspect-[16/9] rounded-lg overflow-hidden border border-[#e0e4e5] cursor-pointer">
+                {day.timetableImageUrl ? <img src={day.timetableImageUrl} alt="" className="w-full h-full object-cover" /> :
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-[#f8f9fa]"><span className="material-symbols-rounded text-3xl text-[#acb3b4]">add_a_photo</span><span className="text-[10px] text-[#acb3b4] mt-1">Timetable Image</span></div>}
+                <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                  const file = e.target.files?.[0]; if (!file) return;
+                  const url = await storageService.uploadFile(file, `events/schedule/${Date.now()}_${file.name}`);
+                  const c=[...scheduleDays]; c[i]={...c[i], timetableImageUrl: url}; setScheduleDays(c);
+                }} />
+              </label>
+            </div>
+          ))}
+          <button onClick={() => setScheduleDays([...scheduleDays, { dayLabel: `Day ${scheduleDays.length+1}` }])} className="flex items-center gap-1 text-primary text-xs font-bold hover:underline"><span className="material-symbols-rounded text-sm">add</span>Add Day</button>
+        </Section>
 
         {/* 7. Pricing */}
         <Section icon="payments" label={t('event.pricing_label')}>

@@ -10,6 +10,7 @@ interface Props {
   social: Social;
   onChatWithOrganizer: () => void;
   canEdit?: boolean;
+  onShowImages?: (images: string[], index: number) => void;
 }
 
 // DJ display logic: show next upcoming DJ
@@ -24,29 +25,29 @@ function getDjDisplay(social: Social): string {
   return social.djName ? social.djName : "TBD";
 }
 
-function getNextEventDate(social: Social): string {
+function getNextEventDate(social: Social, language: string): string {
+  const dateLocale = language === 'KR' ? 'ko-KR' : 'en-US';
   if (social.type === "popup" && social.date) {
     const d = typeof social.date.toDate === "function" ? social.date.toDate() : new Date(social.date as any);
-    return d.toLocaleDateString("en-US", { weekday: "short", month: "long", day: "numeric" });
+    return d.toLocaleDateString(dateLocale, { weekday: "short", month: "long", day: "numeric" });
   }
   if (social.type === "regular" && social.dayOfWeek !== undefined) {
     const today = new Date();
     const diff = (social.dayOfWeek - today.getDay() + 7) % 7;
     const next = new Date(today);
     next.setDate(today.getDate() + (diff === 0 ? 0 : diff));
-    return next.toLocaleDateString("en-US", { weekday: "short", month: "long", day: "numeric" });
+    return next.toLocaleDateString(dateLocale, { weekday: "short", month: "long", day: "numeric" });
   }
   return "TBA";
 }
 
 import SocialDjLineupSheet from "./SocialDjLineupSheet";
 
-export default function SocialHomeTab({ social, onChatWithOrganizer, canEdit }: Props) {
+export default function SocialHomeTab({ social, onChatWithOrganizer, canEdit, onShowImages }: Props) {
   const [venue, setVenue] = useState<any>(null);
   const [orgProfile, setOrgProfile] = useState<any>(null);
   const [showDjLineup, setShowDjLineup] = useState(false);
-  const [showFullDesc, setShowFullDesc] = useState(false);
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   // Auto-fetch venue details
   useEffect(() => {
@@ -77,6 +78,8 @@ export default function SocialHomeTab({ social, onChatWithOrganizer, canEdit }: 
   const naverUrl = lat && lng ? `https://map.naver.com/v5/?c=${lng},${lat},15,0,0,0,dh` : addr ? `https://map.naver.com/v5/search/${encodeURIComponent(addr)}` : null;
   const kakaoUrl = lat && lng ? `https://map.kakao.com/link/map/${encodeURIComponent(social.venueName || "Venue")},${lat},${lng}` : addr ? `https://map.kakao.com/link/search/${encodeURIComponent(addr)}` : null;
 
+  const moments = social.moments || [];
+
   return (
     <div className="pb-8">
       {/* Next Event */}
@@ -88,7 +91,7 @@ export default function SocialHomeTab({ social, onChatWithOrganizer, canEdit }: 
         <div className="px-4 py-4 space-y-3">
           <div className="flex items-start gap-3">
             <span className="material-symbols-rounded text-lg text-[#acb3b4]">calendar_today</span>
-            <div><p className="text-xs font-bold text-[#2d3435]">{t('social.date')}</p><p className="text-xs text-[#596061]">{getNextEventDate(social)}</p></div>
+            <div><p className="text-xs font-bold text-[#2d3435]">{t('social.date')}</p><p className="text-xs text-[#596061]">{getNextEventDate(social, language).replace('TBA', t('social.tba'))}</p></div>
           </div>
           <div className="flex items-start gap-3">
             <span className="material-symbols-rounded text-lg text-[#acb3b4]">schedule</span>
@@ -97,7 +100,7 @@ export default function SocialHomeTab({ social, onChatWithOrganizer, canEdit }: 
           <div className="flex items-center justify-between">
             <div className="flex items-start gap-3">
               <span className="material-symbols-rounded text-lg text-[#acb3b4]">headphones</span>
-              <div><p className="text-xs font-bold text-[#2d3435]">{t('social.dj')}</p><p className="text-xs text-[#596061]">{getDjDisplay(social)}</p></div>
+              <div><p className="text-xs font-bold text-[#2d3435]">{t('social.dj')}</p><p className="text-xs text-[#596061]">{getDjDisplay(social).replace('TBD', t('social.tbd'))}</p></div>
             </div>
             <button onClick={() => setShowDjLineup(true)} className="flex items-center gap-1 px-3 py-1.5 bg-white border border-[#e0e4e5] rounded-full active:scale-95 transition-transform hover:bg-[#f8f9fa] shadow-sm">
               <span className="material-symbols-rounded text-sm text-primary">view_list</span>
@@ -140,19 +143,19 @@ export default function SocialHomeTab({ social, onChatWithOrganizer, canEdit }: 
               {googleUrl && (
                 <a href={googleUrl} target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#f2f4f4] text-[10px] font-bold text-[#596061] hover:bg-[#e8eaec] transition-colors">
-                  <span className="material-symbols-rounded text-sm">map</span>Google
+                  <span className="material-symbols-rounded text-sm">map</span>{t('social.google')}
                 </a>
               )}
               {naverUrl && (
                 <a href={naverUrl} target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#2DB400]/10 text-[10px] font-bold text-[#2DB400] hover:bg-[#2DB400]/20 transition-colors">
-                  <span className="text-xs font-black">N</span>Naver
+                  <span className="text-xs font-black">N</span>{t('social.naver')}
                 </a>
               )}
               {kakaoUrl && (
                 <a href={kakaoUrl} target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#FEE500]/30 text-[10px] font-bold text-[#3C1E1E] hover:bg-[#FEE500]/50 transition-colors">
-                  <span className="text-xs font-black">K</span>Kakao
+                  <span className="text-xs font-black">K</span>{t('social.kakao')}
                 </a>
               )}
             </div>
@@ -207,6 +210,28 @@ export default function SocialHomeTab({ social, onChatWithOrganizer, canEdit }: 
         </div>
       </div>
 
+      {/* Moments Gallery */}
+      {moments.length > 0 && (
+        <div className="mx-4 mt-4 border border-[#e0e4e5] rounded-2xl overflow-hidden mb-4">
+          <div className="bg-[#f8f9fa] px-4 py-2.5 border-b border-[#e0e4e5] flex items-center gap-2">
+            <span className="material-symbols-rounded text-sm text-primary">photo_library</span>
+            <p className="text-[10px] font-black text-primary uppercase tracking-widest">{t('social.moments')}</p>
+          </div>
+          <div className="px-4 py-4">
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x">
+              {moments.map((img, i) => (
+                <div 
+                  key={i} 
+                  onClick={() => onShowImages?.(moments, i)}
+                  className="flex-shrink-0 w-32 aspect-[3/4] rounded-xl overflow-hidden border border-[#e0e4e5] bg-slate-50 snap-start active:scale-95 transition-transform"
+                >
+                  <img src={img} alt={`${t('social.moment')} ${i + 1}`} className="w-full h-full object-cover" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

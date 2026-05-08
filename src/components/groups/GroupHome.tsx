@@ -13,12 +13,15 @@ import { notificationService } from "@/lib/firebase/notificationService";
 import { Notification } from "@/types/notification";
 import ImageWithFallback from "@/components/common/ImageWithFallback";
 import GroupJoinModal from "./GroupJoinModal";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useNavigation } from "@/components/providers/NavigationProvider";
 
-type TabType = 'home' | 'calendar' | 'feed' | 'board' | 'info' | 'class' | 'members' | 'settings' | 'shop' | 'stay' | 'rental' | 'coupon';
+type TabType = 'home' | 'calendar' | 'feed' | 'board' | 'about' | 'class' | 'members' | 'settings' | 'shop' | 'stay' | 'rental' | 'coupon';
 
 import GroupCalendar from "./GroupCalendar";
 import GroupBoard from "./GroupBoard";
 import GroupInfo from "./GroupInfo";
+import GroupAbout from "./GroupAbout";
 import GroupClassEditor from "./GroupClassEditor";
 import GroupMemberManager from "./GroupMemberManager";
 import GroupSettings from "./GroupSettings";
@@ -37,19 +40,37 @@ import GroupAccountEditor from "./GroupAccountEditor";
 
 export default function GroupHome({ group, isModal }: { group: Group, isModal?: boolean }) {
   const router = useRouter();
+  const { t } = useLanguage();
   const { user, profile } = useAuth();
+  const { setGlobalNavHidden } = useNavigation();
   const [isJoining, setIsJoining] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('home');
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [memberStatus, setMemberStatus] = useState<'active' | 'pending' | 'rejected' | 'none'>('none');
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isExiting, setIsExiting] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [selectedAdminIndex, setSelectedAdminIndex] = useState(0);
-  const [isAdminDropdownOpen, setIsAdminDropdownOpen] = useState(false);
-  const [activePopup, setActivePopup] = useState<string | null>(null);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [hasSeenHero, setHasSeenHero] = useState(false);
+
+  useEffect(() => {
+    setGlobalNavHidden(true);
+    return () => setGlobalNavHidden(false);
+  }, [setGlobalNavHidden]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleExit = () => {
-    window.location.href = '/groups';
+    if (isModal) {
+      window.history.back();
+    } else {
+      router.push('/groups');
+    }
   };
 
   // 데이터 바인딩용 상태
@@ -58,6 +79,7 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
   const [moments, setMoments] = useState<Post[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
   const [adminTodos, setAdminTodos] = useState<Notification[]>([]);
+  const [liveChats, setLiveChats] = useState<Post[]>([]);
 
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
@@ -95,6 +117,9 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
 
       const momentsPosts = posts.filter(p => !!p.image).slice(0, 5);
       setMoments(momentsPosts);
+
+      const chatPosts = posts.filter(p => p.category !== 'notice' && !p.image).slice(0, 2);
+      setLiveChats(chatPosts);
     });
 
     const unsubscribeEvents = groupService.subscribeCalendarEvents(group.id, (events) => {
@@ -103,15 +128,15 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
       
       const upcoming = events
         .filter(e => {
-          const startTime = typeof e.startDate === 'number' ? e.startDate : new Date(e.startDate || 0).getTime();
-          return startTime >= today.getTime();
+          const endTime = typeof e.endDate === 'number' ? e.endDate : new Date(e.endDate || 0).getTime();
+          return endTime >= today.getTime();
         })
         .sort((a, b) => {
           const timeA = typeof a.startDate === 'number' ? a.startDate : new Date(a.startDate || 0).getTime();
           const timeB = typeof b.startDate === 'number' ? b.startDate : new Date(b.startDate || 0).getTime();
           return timeA - timeB;
         })
-        .slice(0, 3);
+        .slice(0, 10);
       setUpcomingEvents(upcoming);
     });
 
@@ -137,18 +162,6 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
   }, [members]);
 
   const isFullMember = memberStatus === 'active';
-
-  // Profile Setting completion states
-  const profileCompleted = !!(group.name && group.coverImage);
-  const membershipCompleted = !!group.membershipPolicy;
-  const contactCompleted = !!(group.address || group.representative);
-  const galleryCompleted = !!(group.gallery && group.gallery.length > 0);
-  const boardCompleted = !!(group.boards && group.boards.length > 0);
-  const accountCompleted = !!(group.bankDetails?.accountNumber);
-  const settingsCompletedCount = [profileCompleted, membershipCompleted, contactCompleted, galleryCompleted, boardCompleted, accountCompleted].filter(Boolean).length;
-  const settingsProgressPercent = Math.round((settingsCompletedCount / 6) * 100);
-  const canGoLive = settingsProgressPercent >= 30 || !!(group.coverImage && group.description);
-  const [isPublishing, setIsPublishing] = useState(false);
   
   const [isClaiming, setIsClaiming] = useState(false);
   const isOwner = group.ownerId && user && group.ownerId === user.uid;
@@ -244,8 +257,8 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
   };
 
   const handleTabClick = (tab: TabType) => {
-    // 메인(home)과 인포(info)는 누구나 접근 가능
-    if (tab === 'home' || tab === 'info') {
+    // 메인(home)과 About(about)은 누구나 접근 가능
+    if (tab === 'home' || tab === 'about') {
       setActiveTab(tab);
       return;
     }
@@ -280,42 +293,8 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
     setActiveTab(tab);
   };
 
-  const handleMenuClick = (tab: TabType) => {
-    handleTabClick(tab);
-    setIsMenuOpen(false);
-  };
-
-  const handleGoLive = async () => {
-    if (!canGoLive || isPublishing) return;
-    setIsPublishing(true);
-    try {
-      await groupService.publishGroup(group.id);
-      toast.success("Group is now live!");
-      // Optionally router.push to the main platform directory or refresh
-      window.location.href = '/groups';
-    } catch (error) {
-      console.error("Error publishing group:", error);
-      toast.error("Failed to publish the group.");
-    } finally {
-      setIsPublishing(false);
-    }
-  };
-
-  const handleToggleService = async (serviceId: string, enabled: boolean) => {
-    try {
-      await groupService.updateGroupMetadata(group.id, {
-        [`activeServices.${serviceId}`]: enabled
-      });
-      toast.success(`${serviceId.toUpperCase()} service has been ${enabled ? 'enabled' : 'disabled'}.`);
-      router.refresh();
-    } catch (error) {
-      console.error("Failed to toggle service:", error);
-      toast.error("Failed to change service status.");
-    }
-  };
-
   return (
-    <div className="bg-[#F1F5F9] text-[#242c51] min-h-screen font-body relative pb-24">
+    <div className="bg-background text-on-background min-h-screen font-body relative pb-24 antialiased">
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap');
         
@@ -346,216 +325,54 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
         }
       `}</style>
 
-      {/* Navigation Drawer (Sidebar) */}
-      <aside className={`fixed inset-y-0 left-0 z-[100] flex flex-col py-8 bg-[#ffffff] h-full w-80 rounded-r-3xl shadow-2xl shadow-blue-900/10 font-headline text-sm font-medium transition-transform duration-300 ${isMenuOpen ? "translate-x-0" : "-translate-x-full"}`}>
-        {/* Profile Header */}
-        <div className="mx-4 mt-4 mb-6 p-5 bg-gradient-to-br from-[#f7f5ff] to-white rounded-2xl border border-[#a3abd7]/20 shadow-sm flex flex-col gap-4">
-          <div className="flex items-start gap-4">
-            <div className="relative group-header-avatar shrink-0">
-              <div className="absolute -inset-1 bg-gradient-to-tr from-primary to-primary-container rounded-2xl blur opacity-15 group-hover:opacity-30 transition duration-1000"></div>
-              {currentAdmin.avatar ? (
-                <img 
-                  src={currentAdmin.avatar} 
-                  alt={currentAdmin.name} 
-                  className="relative h-14 w-14 rounded-2xl object-cover border-2 border-surface shadow-sm" 
-                />
-              ) : (
-                <div className="relative h-14 w-14 rounded-2xl bg-blue-100 flex items-center justify-center border-2 border-white shadow-sm">
-                  <span className="material-symbols-outlined text-blue-500 text-3xl">person</span>
-                </div>
-              )}
-            </div>
-            
-            <div className="flex flex-col pt-0.5 relative flex-1">
-              <div className="flex items-center gap-1 text-left cursor-default">
-                <h2 className="text-on-surface font-extrabold text-[18px] tracking-tight leading-none mb-1 line-clamp-1">
-                  {currentAdmin.name}
-                </h2>
-              </div>
-              
-              <div className="flex flex-col gap-0.5 mt-1">
-                <span className="text-emerald-700 text-[10px] font-black uppercase tracking-widest bg-emerald-100 border border-emerald-200/50 w-fit px-2 py-0.5 rounded-md shadow-sm">
-                  Group Organizer
-                </span>
-              </div>
-            </div>
-          </div>
-          
-          {/* Action Buttons */}
-          <div className="flex gap-2">
-            <button 
-              onClick={(e) => {
-                e.preventDefault();
-                toast.info('Chat feature is coming soon.');
-              }}
-              className="flex-1 flex items-center justify-center gap-1.5 bg-primary/10 hover:bg-primary/20 text-primary py-2 rounded-xl text-xs font-bold transition-colors cursor-not-allowed opacity-60"
-            >
-              <span className="material-symbols-outlined text-[16px]">chat</span>
-              Chat
-            </button>
-            <a 
-              href={group.representative?.phone ? `tel:${group.representative.phone}` : '#'}
-              onClick={(e) => {
-                if (!group.representative?.phone) {
-                  e.preventDefault();
-                  toast.error('No phone number registered.');
-                }
-              }}
-              className="flex-1 flex items-center justify-center gap-1.5 bg-surface-variant hover:bg-on-surface/10 text-on-surface py-2 rounded-xl text-xs font-bold transition-colors"
-            >
-              <span className="material-symbols-outlined text-[16px]">call</span>
-              Call
-            </a>
-          </div>
-        </div>
-
-        {/* Scrollable Menu Content */}
-        <nav className="flex-1 overflow-y-auto px-4 space-y-6 hide-scrollbar">
-          {/* Section: Navigation */}
-          <div>
-            <h3 className="px-2 mb-2 text-[10px] uppercase tracking-[0.15em] font-bold text-outline-variant">Navigation</h3>
-            <a
-              href="/groups"
-              className="w-full flex items-center gap-3 px-4 py-3 text-[#242c51] hover:bg-[#f7f5ff] rounded-xl hover:translate-x-1 transition-transform duration-200 text-left"
-            >
-              <span className="material-symbols-outlined text-[#0057bd]">keyboard_return</span>
-              <span>Return to Groups</span>
-            </a>
-          </div>
-
-          {/* Section: Menu */}
-          <div>
-            <h3 className="px-2 mb-2 text-[10px] uppercase tracking-[0.15em] font-bold text-outline-variant">Menu</h3>
-            <div className="space-y-1">
-              {[
-                { id: "home", icon: "home", label: "Dashboard" },
-                { id: "calendar", icon: "calendar_today", label: "Calendar" },
-                { id: "feed", icon: "rss_feed", label: "Feed" },
-                { id: "board", icon: "forum", label: "Board" },
-                { id: "info", icon: "info", label: "Info" },
-              ].map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => handleMenuClick(item.id as TabType)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-left ${activeTab === item.id ? 'bg-[#efefff] text-[#0057bd] font-bold' : 'text-[#242c51] hover:bg-[#f7f5ff] hover:translate-x-1'}`}
-                >
-                  <span className="material-symbols-outlined" style={activeTab === item.id ? { fontVariationSettings: "'FILL' 1" } : {}}>{item.icon}</span>
-                  <span>{item.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Section: App Settings */}
-          <div>
-            <h3 className="px-2 mb-2 text-[10px] uppercase tracking-[0.15em] font-bold text-outline-variant">App Settings</h3>
-            <div className="space-y-1">
-              <button
-                onClick={() => handleMenuClick("settings")}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-left ${activeTab === "settings" ? 'bg-[#efefff] text-[#0057bd] font-bold' : 'text-[#242c51] hover:bg-[#f7f5ff] hover:translate-x-1'}`}
-              >
-                <span className="material-symbols-outlined">person_edit</span>
-                <span>Setup Profile</span>
-              </button>
-
-              {/* Toggles */}
-              {[
-                { id: 'class', label: 'Class Admin', icon: 'school', enabled: group.activeServices?.class },
-                { id: 'shop', label: 'Shop Admin', icon: 'shopping_bag', enabled: group.activeServices?.shop },
-                { id: 'stay', label: 'Stay Admin', icon: 'bed', enabled: group.activeServices?.stay },
-                { id: 'rental', label: 'Rental Admin', icon: 'key', enabled: group.activeServices?.rental },
-              ].map((service) => (
-                <button
-                  key={service.id}
-                  onClick={() => handleMenuClick(service.id as TabType)}
-                  className={`w-full flex items-center justify-between px-4 py-3 text-[#242c51] hover:bg-[#f7f5ff] rounded-xl group transition-all text-left ${activeTab === service.id ? 'bg-[#efefff] text-[#0057bd] font-bold' : ''}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="material-symbols-outlined">{service.icon}</span>
-                    <span>{service.label}</span>
-                  </div>
-                  <div 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleToggleService(service.id, !service.enabled);
-                    }}
-                    className={`w-8 h-4 rounded-full relative transition-colors cursor-pointer ${service.enabled ? 'bg-primary' : 'bg-outline-variant'}`}>
-                    <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all shadow-sm ${service.enabled ? 'right-0.5' : 'left-0.5'}`}></div>
-                  </div>
-                </button>
-              ))}
-
-              {/* Coupon Admin */}
-              <button
-                onClick={() => handleMenuClick("coupon")}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-left ${activeTab === "coupon" ? 'bg-[#efefff] text-[#0057bd] font-bold' : 'text-[#242c51] hover:bg-[#f7f5ff] hover:translate-x-1'}`}
-              >
-                <span className="material-symbols-outlined">confirmation_number</span>
-                <span>Coupon Admin</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Section: Admin */}
-          <div className="pb-8">
-            <h3 className="px-2 mb-2 text-[10px] uppercase tracking-[0.15em] font-bold text-outline-variant">Admin</h3>
-            <button
-              onClick={() => handleMenuClick("members")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-left ${activeTab === "members" ? 'bg-[#efefff] text-[#0057bd] font-bold' : 'text-[#242c51] hover:bg-[#f7f5ff] hover:translate-x-1'}`}
-            >
-              <span className="material-symbols-outlined">group</span>
-              <span>Members</span>
-              <span className="ml-auto bg-primary/10 text-primary text-[10px] font-black px-1.5 py-0.5 rounded-md">
-                {group.memberCount || 0}
-              </span>
-            </button>
-          </div>
-        </nav>
-      </aside>
-
-      {/* Sidebar Overlay */}
-      {isMenuOpen && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[90] transition-opacity" onClick={() => setIsMenuOpen(false)} />
-      )}
 
 
       {/* Atmospheric Background Effects */}
       <div className="fixed inset-0 pointer-events-none bg-blur-tertiary -z-10 bg-blur-primary"></div>
 
       {/* Header */}
-      <header className="fixed top-0 w-full bg-slate-50/90 backdrop-blur-xl border-b border-slate-200/20 shadow-sm flex justify-between items-center px-4 h-16 z-50">
+      <header className={`fixed top-0 w-full transition-colors duration-300 z-50 flex justify-between items-center px-page-margin h-14 ${
+        (isScrolled || activeTab !== 'home' || isLocked)
+          ? 'bg-surface/90 backdrop-blur-xl border-b border-outline/15 text-primary'
+          : 'bg-gradient-to-b from-black/60 to-transparent text-white border-transparent'
+      }`}>
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => setIsMenuOpen(true)}
-            className="text-blue-600 hover:bg-slate-200/50 scale-95 active:scale-90 transition-transform p-2 rounded-full flex items-center justify-center"
+          <a
+            href="/groups"
+            className="hover:bg-white/20 active:scale-90 transition-transform p-2 rounded-full flex items-center justify-center"
           >
-            <span className="material-symbols-outlined">menu</span>
-          </button>
-          <h1 className="font-headline font-bold text-lg text-blue-600 truncate max-w-[180px] sm:max-w-xs">{group.name}</h1>
+            <span className="material-symbols-outlined">arrow_back</span>
+          </a>
+          <h1 className="font-headline font-bold text-lg truncate max-w-[200px] flex items-baseline gap-2">
+            <span>{group.name}</span>
+            {group.nativeName && <span className="text-[0.65em] font-bold opacity-100">{group.nativeName}</span>}
+          </h1>
         </div>
         <div className="flex items-center gap-1">
-          <button className="text-blue-600 hover:bg-slate-200/50 scale-95 active:scale-90 transition-transform p-2 rounded-full flex items-center justify-center">
+          {isAdminUser && (
+            <button 
+              onClick={() => setIsSettingsOpen(true)}
+              className="hover:bg-white/20 active:scale-90 transition-all p-2 rounded-full flex items-center justify-center"
+            >
+              <span className="material-symbols-outlined">settings</span>
+            </button>
+          )}
+          <button className="hover:bg-white/20 active:scale-90 transition-transform p-2 rounded-full flex items-center justify-center">
             <span className="material-symbols-outlined">search</span>
           </button>
-          <a 
-            href="/groups"
-            className="text-blue-600 hover:bg-red-50 hover:text-red-500 scale-95 active:scale-90 transition-all p-2 rounded-full flex items-center justify-center"
-          >
-            <span className="material-symbols-outlined">logout</span>
-          </a>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="pt-16">
+      <main className={activeTab === 'home' && !isLocked ? "pt-0 pb-12" : "pt-14 pb-12"}>
         {isLocked ? (
           <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center mt-10">
              <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
                 <span className="material-symbols-outlined text-3xl text-slate-400">lock</span>
              </div>
-             <h2 className="text-xl font-bold text-slate-800 mb-2">아직 세팅되지 않은 그룹입니다</h2>
+             <h2 className="text-xl font-bold text-slate-800 mb-2">{t('group.unsetup.title') || 'This group has not been set up yet'}</h2>
              <p className="text-slate-500 mb-6 max-w-sm">
-                해당 커뮤니티의 어드민이시라면 권한을 획득하고 그룹을 활성화해 보세요.
+                {t('group.unsetup.desc') || 'If you are the admin of this community, please claim your rights and activate the group.'}
              </p>
              {!group.ownerId && (
                <button 
@@ -563,231 +380,333 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
                  disabled={isClaiming}
                  className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-xl transition-colors shadow-sm disabled:opacity-50"
                >
-                 {isClaiming ? "처리 중..." : "내가 여기 어드민입니다"}
+                 {isClaiming ? (t('group.unsetup.claiming') || 'Processing...') : (t('group.unsetup.claim') || 'I am the admin here')}
                </button>
              )}
           </div>
         ) : (
           <>
-            {activeTab === 'home' && (
-          <>
-            {/* Hero Section */}
-            <section className="relative w-full aspect-[16/10] max-h-[500px]">
-              <ImageWithFallback
-                alt={group.name}
-                className="object-cover w-full h-full"
-                src={group.coverImage}
-                fallbackType="cover"
-                category={group.tags?.[0] || ''}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6 md:p-12">
-                <p className="text-white font-body text-base md:text-xl max-w-xl mb-6">
-                  {group.description || "Connect, dance, and express yourself in the heart of our community."}
-                </p>
-                {memberStatus === 'none' || memberStatus === 'rejected' ? (
-                  <button
-                    onClick={handleJoinAction}
-                    disabled={isJoining}
-                    className="bg-[#0057bd] text-white font-bold py-3 px-10 rounded-full shadow-xl hover:bg-[#004ca6] transition-all w-fit uppercase tracking-widest text-sm disabled:opacity-50"
-                  >
-                    {isJoining ? 'Processing...' : 'Join Now'}
-                  </button>
-                ) : memberStatus === 'pending' ? (
-                  <button
-                    className="bg-amber-500 text-white font-bold py-3 px-10 rounded-full shadow-xl transition-all w-fit uppercase tracking-widest text-sm flex items-center gap-2"
-                    onClick={() => setShowJoinModal(true)}
-                  >
-                    <span className="material-symbols-outlined text-sm">schedule</span>
-                    Pending Approval
-                  </button>
-                ) : null}
-              </div>
-            </section>
-          </>
-        )}
+            {activeTab === 'home' && !hasSeenHero && (
+              <section className="relative w-full aspect-[21/9] md:aspect-[3/1] bg-surface-container-high overflow-hidden">
+                <ImageWithFallback
+                  alt={group.name}
+                  className="absolute inset-0 object-cover w-full h-full"
+                  src={group.coverImage}
+                  fallbackType="cover"
+                  category={group.tags?.[0] || ''}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
+                <div className="absolute bottom-0 left-0 w-full px-6 py-6 flex flex-col gap-2">
+                  <div className="font-body text-[18px] text-white font-bold tracking-tight drop-shadow-md flex items-center gap-3">
+                    <span>{t('groups.member_count_label') || 'Members'} <span className="text-primary-fixed font-black">{group.memberCount || members.length || 0}</span></span>
+                    <span className="w-1 h-1 rounded-full bg-white/30"></span>
+                    <span className="text-white/80 text-[14px]">
+                      {t('groups.new_members_label') || 'New this week'} <span className="text-white font-black">{members.filter(m => { const joined = (m as any).joinedAt; return joined && (Date.now() - (typeof joined === 'number' ? joined : new Date(joined).getTime())) < 7 * 24 * 60 * 60 * 1000; }).length}</span>
+                    </span>
+                  </div>
+                  {(memberStatus === 'none' || memberStatus === 'rejected') && (
+                    <button
+                      onClick={handleJoinAction}
+                      disabled={isJoining}
+                      className="bg-primary text-on-primary font-bold py-3 px-10 rounded-full shadow-xl hover:opacity-90 transition-all w-fit uppercase tracking-widest text-sm disabled:opacity-50 mt-2"
+                    >
+                      {isJoining ? 'Processing...' : 'Join Now'}
+                    </button>
+                  )}
+                  {memberStatus === 'pending' && (
+                    <button
+                      className="bg-amber-500 text-white font-bold py-3 px-10 rounded-full shadow-xl transition-all w-fit uppercase tracking-widest text-sm flex items-center gap-2 mt-2"
+                      onClick={() => setShowJoinModal(true)}
+                    >
+                      <span className="material-symbols-outlined text-sm">schedule</span>
+                      Pending Approval
+                    </button>
+                  )}
+                </div>
+              </section>
+            )}
 
-        <div className={`max-w-7xl mx-auto ${activeTab === 'feed' ? 'px-0 md:px-0 mt-0 space-y-0 pb-0' : 'px-4 md:px-8 space-y-10 mt-8 pb-12'}`}>
+            {/* Sticky Horizontal Tab Menu */}
+            <div className="sticky top-14 z-40 bg-surface/95 backdrop-blur-md border-b border-outline/10 shadow-sm">
+              <div className="grid grid-cols-5 w-full">
+                {[
+                  { id: 'home', label: 'DASHBOARD', icon: 'dashboard' },
+                  { id: 'feed', label: 'SOCIAL', icon: 'rss_feed' },
+                  { id: 'calendar', label: 'CALENDAR', icon: 'calendar_today' },
+                  { id: 'board', label: 'NOTICE', icon: 'campaign' },
+                  { id: 'about', label: 'ABOUT', icon: 'info' },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      setHasSeenHero(true);
+                      handleTabClick(tab.id as TabType);
+                    }}
+                    className={`flex flex-col items-center justify-center py-2.5 border-b-2 transition-all ${
+                      activeTab === tab.id
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-on-surface-variant hover:text-on-surface'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[20px] mb-1" style={activeTab === tab.id ? { fontVariationSettings: "'FILL' 1" } : {}}>{tab.icon}</span>
+                    <span className="text-[11px] font-black tracking-tighter leading-none">{tab.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+        <div className={`max-w-7xl mx-auto ${activeTab === 'feed' || activeTab === 'home' ? 'px-0 md:px-0 mt-0 space-y-0 pb-0' : 'px-4 md:px-8 space-y-10 mt-6 pb-12'}`}>
           {activeTab === 'home' && (
-            <>
+            <div className="flex flex-col gap-10 mt-10">
               {/* Admin Todo Section */}
               {isAdminUser && adminTodos.length > 0 && (
-                <section className="bg-orange-50 rounded-xl p-6 shadow-sm border border-orange-200 relative overflow-hidden">
-                  <div className="absolute top-0 right-0 p-4 opacity-10">
-                    <span className="material-symbols-outlined text-6xl text-orange-600">assignment_late</span>
-                  </div>
-                  <h3 className="font-headline font-bold text-orange-800 mb-4 flex items-center gap-2 text-xl">
-                    <span className="material-symbols-outlined text-orange-600">notification_important</span> Action Required
-                  </h3>
-                  <div className="grid gap-3 relative z-10">
-                    {adminTodos.map(todo => (
-                      <div key={todo.id} className="bg-white rounded-lg p-4 border border-orange-100 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div>
-                          <span className="text-[10px] font-bold text-orange-600 uppercase tracking-wide bg-orange-100 px-2 py-0.5 rounded-full mb-2 inline-block">
-                            {todo.category || 'TODO'}
-                          </span>
-                          <h4 className="font-bold text-slate-800 text-sm">{todo.title}</h4>
-                          <p className="text-xs text-slate-500 mt-1">{todo.message}</p>
-                        </div>
-                        <div className="shrink-0 flex gap-2">
+                <section className="px-6">
+                  <div className="bg-orange-50 rounded-xl p-4 border border-orange-200 relative overflow-hidden">
+                    <h3 className="font-headline font-bold text-orange-800 mb-3 flex items-center gap-2 text-base">
+                      <span className="material-symbols-outlined text-orange-600">notification_important</span> Action Required
+                    </h3>
+                    <div className="flex flex-col gap-2">
+                      {adminTodos.map(todo => (
+                        <div key={todo.id} className="bg-white rounded-lg p-3 border border-orange-100 flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <h4 className="font-bold text-on-surface text-sm truncate">{todo.title}</h4>
+                            <p className="text-xs text-on-surface-variant mt-0.5 truncate">{todo.message}</p>
+                          </div>
                           <button 
-                            onClick={() => {
-                                notificationService.markTodosAsCompletedByReference(todo.referenceId || todo.id);
-                                toast.success("Task marked as completed");
-                            }}
-                            className="bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors shadow-sm"
-                          >
-                            Mark Completed
-                          </button>
+                            onClick={() => { notificationService.markTodosAsCompletedByReference(todo.referenceId || todo.id); toast.success("Task completed"); }}
+                            className="bg-orange-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg shrink-0"
+                          >Done</button>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 </section>
               )}
 
-              {/* Notice Section */}
-              <div onClick={() => handleTabClick('board')} className="bg-white rounded-xl p-6 shadow-sm border border-[#a3abd7]/10 hover:shadow-md transition-shadow cursor-pointer">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-headline font-bold text-xl text-[#242c51] flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[#893c92]">campaign</span> Notice
-                  </h3>
-                </div>
-                {noticePost ? (
-                  <div className="flex items-start gap-3 p-3 rounded-lg bg-[#b31b25]/5 border border-[#b31b25]/10">
-                    <div className="bg-[#fb5151] text-[#ffefee] p-2 rounded-lg shrink-0">
-                      <span className="material-symbols-outlined text-sm">priority_high</span>
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-sm text-[#242c51] line-clamp-1">{noticePost.title}</h4>
-                      <p className="text-xs text-[#515981] mt-0.5 line-clamp-1">{noticePost.content}</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-start gap-3 p-3 rounded-lg bg-[#b31b25]/5 border border-[#b31b25]/10">
-                    <div className="bg-[#fb5151] text-[#ffefee] p-2 rounded-lg shrink-0">
-                      <span className="material-symbols-outlined text-sm">priority_high</span>
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-sm text-[#242c51]">Welcome to our new home!</h4>
-                      <p className="text-xs text-[#515981] mt-0.5">Stay tuned for upcoming events and community updates.</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Moments Section */}
-              <section>
-                <div className="flex justify-between items-end mb-4">
-                  <h2 className="font-headline font-extrabold text-2xl text-[#242c51]">Moments</h2>
-                </div>
-                <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar -mx-4 px-4 snap-x">
-                  {moments.length > 0 ? (
-                    moments.map((post) => (
-                      <div key={post.id} onClick={() => handleTabClick('board')} className="shrink-0 w-64 aspect-video rounded-xl overflow-hidden shadow-sm snap-start moments-placeholder relative border border-[#a3abd7]/10 cursor-pointer group">
-                        <ImageWithFallback src={post.image!} alt={post.title || "Moment"} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" fallbackType="gallery" />
-                      </div>
-                    ))
-                  ) : (
-                    [1, 2, 3].map((i) => (
-                      <div key={i} className="shrink-0 w-64 aspect-video rounded-xl overflow-hidden shadow-sm snap-start moments-placeholder relative border border-[#a3abd7]/10">
-                        <span className="material-symbols-outlined text-[#0057bd]/20 text-4xl">image</span>
-                      </div>
-                    ))
-                  )}
+              {/* Notice Board Section */}
+              <section className="px-6">
+                <div className="bg-surface-container rounded-xl p-4 flex flex-col gap-4 cursor-pointer" onClick={() => handleTabClick('board')}>
+                  <h4 className="font-body text-[12px] font-medium uppercase tracking-widest text-on-surface-variant">Notice</h4>
+                  <ul className="flex flex-col gap-3">
+                    {noticePost ? (
+                      <li className="flex flex-col gap-1 border-b border-outline/10 pb-3 last:border-0 last:pb-0">
+                        <span className="font-body text-[16px] font-medium text-on-surface font-bold line-clamp-2">{noticePost.title || noticePost.content?.substring(0, 50) || 'Notice'}</span>
+                        <div className="flex justify-between items-center">
+                          <span className="font-body text-[12px] font-medium text-primary">{noticePost.author?.name || 'Admin'}</span>
+                          <span className="font-body text-[12px] font-medium text-outline">{noticePost.createdAt ? format(typeof noticePost.createdAt === 'number' ? noticePost.createdAt : new Date(noticePost.createdAt).getTime(), 'MMM d') : ''}</span>
+                        </div>
+                      </li>
+                    ) : (
+                      <li className="flex flex-col gap-1 border-b border-outline/10 pb-3 last:border-0 last:pb-0">
+                        <span className="font-body text-[16px] font-medium text-on-surface font-bold">Welcome to our community!</span>
+                        <div className="flex justify-between items-center">
+                          <span className="font-body text-[12px] font-medium text-primary">Admin</span>
+                          <span className="font-body text-[12px] font-medium text-outline">{format(Date.now(), 'MMM d')}</span>
+                        </div>
+                      </li>
+                    )}
+                  </ul>
                 </div>
               </section>
 
-              {/* Schedule Section Preview */}
-              <section>
-                <div className="flex justify-between items-end mb-6">
-                  <div>
-                    <h2 className="font-headline font-extrabold text-[#242c51] text-2xl">Upcoming Schedule</h2>
-                    <p className="text-sm text-[#515981] mt-1">
-                      {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-                    </p>
-                  </div>
+              {/* Today's Flow Section */}
+              <section className="px-6 flex flex-col gap-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="font-headline text-[20px] leading-[1.4] font-bold text-on-background">Today's Flow</h2>
+                  <span className="font-body text-[12px] font-bold text-white bg-primary px-3 py-1 rounded-full shadow-sm">{format(Date.now(), 'MMM d').toUpperCase()}</span>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {upcomingEvents.length > 0 ? (
-                    upcomingEvents.map(event => {
-                      const startTime = typeof event.startDate === 'number' ? event.startDate : new Date(event.startDate || 0).getTime();
-                      const endTime = typeof event.endDate === 'number' ? event.endDate : new Date(event.endDate || 0).getTime();
-                      
-                      return (
-                        <div
-                          key={event.id}
-                          onClick={() => handleTabClick('calendar')}
-                          className="bg-white p-5 rounded-xl border border-[#a3abd7]/10 shadow-sm hover:shadow-md transition-all cursor-pointer relative overflow-hidden group"
-                        >
-                          <div className="absolute top-0 left-0 w-1 h-full bg-[#0057bd] group-hover:w-2 transition-all"></div>
-                          <div className="flex justify-between items-start mb-3 pl-3">
-                            <span className="bg-[#0057bd]/10 text-[#0057bd] font-label font-bold text-[10px] uppercase tracking-wider py-1 px-2 rounded-full">{event.type || 'Community'}</span>
-                            <span className="text-[#515981] text-sm font-medium flex items-center gap-1">
-                              <span className="material-symbols-outlined text-xs">schedule</span> {format(startTime, 'HH:mm')} - {format(endTime, 'HH:mm')}
-                            </span>
+                <div className="flex flex-col gap-4">
+                  {(() => {
+                    const todayStart = new Date();
+                    todayStart.setHours(0, 0, 0, 0);
+                    const todayEnd = new Date(todayStart);
+                    todayEnd.setDate(todayEnd.getDate() + 1);
+                    
+                    const todayEvents = upcomingEvents.filter(e => {
+                      const startTime = typeof e.startDate === 'number' ? e.startDate : new Date(e.startDate || 0).getTime();
+                      return startTime >= todayStart.getTime() && startTime < todayEnd.getTime();
+                    });
+
+                    if (todayEvents.length > 0) {
+                      return todayEvents.map((event, idx) => {
+                        const startTime = typeof event.startDate === 'number' ? event.startDate : new Date(event.startDate || 0).getTime();
+                        const isNow = startTime <= Date.now() && (typeof event.endDate === 'number' ? event.endDate : new Date(event.endDate || 0).getTime()) >= Date.now();
+                        const typeColor = event.type === 'Practica' ? 'text-primary' : (event.type === 'Class' ? 'text-tertiary' : 'text-secondary');
+                        const typeBg = event.type === 'Practica' ? 'bg-primary-container' : (event.type === 'Class' ? 'bg-tertiary-fixed' : 'bg-secondary-container');
+
+                        return (
+                          <div key={event.id} className="flex items-start gap-4 relative" onClick={() => handleTabClick('calendar')}>
+                            {idx < todayEvents.length - 1 && <div className="absolute left-[23px] top-8 bottom-[-24px] w-0.5 bg-outline/15"></div>}
+                            <div className="w-12 pt-2 flex flex-col items-center z-10 bg-background">
+                              <div className={`w-4 h-4 rounded-full relative z-10 shrink-0 ${isNow ? 'bg-error shadow-[0_0_12px_rgba(186,26,26,0.8)]' : 'bg-outline/40 border border-outline/60'}`}></div>
+                              <span className={`font-body text-[13px] font-black mt-1 ${isNow ? 'text-error' : 'text-on-surface'}`}>{format(startTime, 'HH:mm')}</span>
+                            </div>
+                            <div className={`flex-1 rounded-xl p-3 cursor-pointer ${isNow ? 'bg-error-container/20 border border-error/20' : 'bg-surface-container-lowest border border-outline/15'}`}>
+                              <div className="flex justify-between items-start mb-2">
+                                {isNow ? (
+                                  <span className="font-body text-[12px] font-medium text-on-primary bg-primary px-2 py-0.5 rounded-3xl tracking-widest">LIVE NOW</span>
+                                ) : (
+                                  <span className={`font-body text-[11px] font-black px-2.5 py-0.5 rounded-full shadow-sm ${typeColor} ${typeBg}`}>{event.type?.toUpperCase() || 'EVENT'}</span>
+                                )}
+                                <span className="font-body text-[12px] font-bold text-on-surface-variant flex items-center gap-1">
+                                  {isNow && event.type === 'Practica' ? (
+                                    <><span className="material-symbols-outlined text-[14px]">music_note</span> Practica</>
+                                  ) : (
+                                    <><span className="material-symbols-outlined text-[14px]">groups</span> {event.attendeeCount || 0}</>
+                                  )}
+                                </span>
+                              </div>
+                              <h3 className={`font-body ${isNow ? 'text-[18px]' : 'text-[16px]'} font-medium text-on-surface font-bold`}>{event.title}</h3>
+                            </div>
                           </div>
-                          <div className="pl-3">
-                            <h3 className="font-headline font-bold text-lg text-[#242c51] mb-1 line-clamp-1">{event.title}</h3>
-                            <p className="text-sm text-[#515981] mb-0 flex items-center gap-1 line-clamp-1">
-                              <span className="material-symbols-outlined text-xs">location_on</span> {event.location || 'TBA'}
-                            </p>
+                        );
+                      });
+                    } else {
+                      return (
+                        <div className="flex items-start gap-4 relative">
+                          <div className="w-12 pt-2 flex flex-col items-center z-10 bg-background">
+                            <div className="w-4 h-4 rounded-full bg-outline/30 relative z-10 shrink-0 border border-outline/50"></div>
+                            <span className="font-body text-[12px] font-medium text-outline mt-1">--:--</span>
+                          </div>
+                          <div className="flex-1 bg-surface-container-lowest border border-outline/15 rounded-xl p-3">
+                            <h3 className="font-body text-[16px] font-medium text-on-surface-variant font-bold">No upcoming events today</h3>
                           </div>
                         </div>
                       );
-                    })
+                    }
+                  })()}
+                </div>
+              </section>
+
+              {/* NEXT Section (COMING HOT) */}
+              {upcomingEvents.length > 0 && (() => {
+                const todayEnd = new Date();
+                todayEnd.setHours(0, 0, 0, 0);
+                todayEnd.setDate(todayEnd.getDate() + 1);
+                const todayEndMs = todayEnd.getTime();
+
+                const nextEvent = upcomingEvents.find(e => {
+                  const st = typeof e.startDate === 'number' ? e.startDate : new Date(e.startDate || 0).getTime();
+                  return st >= todayEndMs;
+                });
+                if (!nextEvent) return null;
+                const nextStart = typeof nextEvent.startDate === 'number' ? nextEvent.startDate : new Date(nextEvent.startDate || 0).getTime();
+                return (
+                  <section className="px-6">
+                    <h2 className="font-body text-[12px] font-medium uppercase tracking-widest text-on-surface-variant mb-4">COMING HOT</h2>
+                    <div className="bg-surface-container-lowest border border-outline/15 rounded-xl p-4 flex items-center gap-4 cursor-pointer" onClick={() => handleTabClick('calendar')}>
+                      <div className="w-16 h-16 rounded-lg bg-surface-variant shrink-0 flex flex-col items-center justify-center">
+                        <span className="font-body text-[12px] font-medium text-on-surface-variant uppercase">{format(nextStart, 'EEE')}</span>
+                        <span className="font-headline text-[24px] font-extrabold text-on-surface leading-[1.3]">{format(nextStart, 'd')}</span>
+                      </div>
+                      <div>
+                        <h3 className="font-headline text-[20px] font-bold leading-[1.4] text-on-surface">{nextEvent.title}</h3>
+                        <p className="font-body text-[16px] font-medium leading-[1.6] text-on-surface-variant">{nextEvent.location || nextEvent.description || ''}</p>
+                      </div>
+                    </div>
+                  </section>
+                );
+              })()}
+
+              {/* MOMENTS Section */}
+              <section className="px-6">
+                <h2 className="font-body text-[12px] font-medium uppercase tracking-widest text-on-surface-variant mb-4">MOMENTS</h2>
+                <div className="flex gap-4 overflow-x-auto snap-x pb-4 -mx-6 px-6 hide-scrollbar">
+                  {moments.length > 0 ? (
+                    moments.map((post) => (
+                      <div key={post.id} onClick={() => handleTabClick('board')} className="relative w-64 md:w-80 aspect-[16/9] rounded-xl overflow-hidden shrink-0 snap-start bg-surface-container cursor-pointer">
+                        <ImageWithFallback src={post.image!} alt={post.title || "Moment"} className="absolute inset-0 w-full h-full object-cover" fallbackType="gallery" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                        <p className="absolute bottom-4 left-4 right-4 font-body text-[16px] font-medium italic text-white text-sm leading-tight">{post.title || ''}</p>
+                      </div>
+                    ))
                   ) : (
-                    <div
-                      onClick={() => handleTabClick('calendar')}
-                      className="bg-white p-5 rounded-xl border border-[#a3abd7]/10 shadow-sm hover:shadow-md transition-all cursor-pointer relative overflow-hidden group"
-                    >
-                      <div className="absolute top-0 left-0 w-1 h-full bg-[#0057bd] group-hover:w-2 transition-all"></div>
-                      <div className="flex justify-between items-start mb-3 pl-3">
-                        <span className="bg-[#0057bd]/10 text-[#0057bd] font-label font-bold text-[10px] uppercase tracking-wider py-1 px-2 rounded-full">Community</span>
-                        <span className="text-[#515981] text-sm font-medium flex items-center gap-1">
-                          <span className="material-symbols-outlined text-xs">schedule</span> TBA
-                        </span>
-                      </div>
-                      <div className="pl-3">
-                        <h3 className="font-headline font-bold text-lg text-[#242c51] mb-1">No upcoming events</h3>
-                        <p className="text-sm text-[#515981] mb-0 flex items-center gap-1">
-                          <span className="material-symbols-outlined text-xs">info</span> Check back later
-                        </p>
-                      </div>
+                    <div className="relative w-full aspect-[16/9] rounded-xl overflow-hidden shrink-0 snap-start bg-surface-container flex items-center justify-center">
+                      <span className="material-symbols-outlined text-outline/50 text-3xl">photo_camera</span>
                     </div>
                   )}
                 </div>
               </section>
 
-              {/* Community Pulse */}
-              <section className="bg-white rounded-xl p-6 shadow-sm border border-[#a3abd7]/10">
-                <h3 className="font-headline font-bold text-[#242c51] mb-6 flex items-center gap-2 text-2xl">
-                  <span className="material-symbols-outlined text-[#0057bd]">analytics</span> Community Pulse
-                </h3>
-                <div className="space-y-6">
-                  <div>
-                    <div className="flex justify-between text-sm mb-2">
-                      <span className="text-[#515981]">Members (Male / Female)</span>
-                      <span className="font-bold text-[#0057bd]">{genderStats.male}% / {genderStats.female}%</span>
+              {/* LIVE CHATTER Section */}
+              <section className="px-6">
+                <h2 className="font-body text-[12px] font-medium uppercase tracking-widest text-on-surface-variant mb-4">LIVE CHATTER</h2>
+                <div className="flex flex-col gap-3">
+                  {liveChats.length > 0 ? (
+                    liveChats.map((chat, idx) => (
+                      <div key={chat.id || idx} className="bg-surface-container-lowest border border-outline/15 rounded-xl p-4 flex gap-3 items-start cursor-pointer" onClick={() => handleTabClick('feed')}>
+                        {chat.author?.avatar ? (
+                          <img src={chat.author.avatar} alt={chat.author.name} className="w-10 h-10 rounded-full object-cover shrink-0 border border-outline/20" />
+                        ) : (
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 font-bold ${idx === 0 ? 'bg-secondary-container text-on-secondary-container' : 'bg-tertiary-container text-on-tertiary-container'}`}>
+                            {(chat.author?.name || 'U').substring(0, 2).toUpperCase()}
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-baseline gap-2 mb-1">
+                            <span className="font-body text-[14px] font-semibold leading-[1.2] text-on-surface truncate">{chat.author?.name || 'Anonymous'}</span>
+                            <span className="font-body text-[12px] font-medium leading-[1.2] text-outline shrink-0">{chat.createdAt ? format(typeof chat.createdAt === 'number' ? chat.createdAt : new Date(chat.createdAt).getTime(), 'MMM d') : ''}</span>
+                          </div>
+                          <p className="font-body text-[16px] font-medium text-on-surface-variant italic truncate">&quot;{chat.content || '...'}&quot;</p>
+                        </div>
+                      </div>
+                    ))
+                  ) : members.filter(m => m.status === 'active').slice(0, 2).map((member, idx) => (
+                    <div key={member.id || idx} className="bg-surface-container-lowest border border-outline/15 rounded-xl p-4 flex gap-3 items-start">
+                      {member.avatar || member.photoURL ? (
+                        <img src={member.avatar || member.photoURL} alt={member.name} className="w-10 h-10 rounded-full object-cover shrink-0 border border-outline/20" />
+                      ) : (
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 font-bold ${idx === 0 ? 'bg-secondary-container text-on-secondary-container' : 'bg-tertiary-container text-on-tertiary-container'}`}>
+                          {(member.name || 'U').substring(0, 2).toUpperCase()}
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-baseline gap-2 mb-1">
+                          <span className="font-body text-[14px] font-semibold leading-[1.2] text-on-surface truncate">{member.name}</span>
+                          <span className="font-body text-[12px] font-medium leading-[1.2] text-outline shrink-0">{member.role || 'member'}</span>
+                        </div>
+                        <p className="font-body text-[16px] font-medium text-on-surface-variant italic truncate">&quot;{member.role === 'admin' ? 'Managing the community' : 'Active in the community'}&quot;</p>
+                      </div>
                     </div>
-                    <div className="w-full bg-[#e4e7ff] rounded-full h-2.5 overflow-hidden flex">
-                      <div className="bg-[#0057bd] h-full transition-all duration-1000" style={{ width: `${genderStats.male}%` }}></div>
-                      <div className="bg-[#893c92] h-full transition-all duration-1000" style={{ width: `${genderStats.female}%` }}></div>
+                  ))}
+                  {liveChats.length === 0 && members.filter(m => m.status === 'active').length === 0 && (
+                    <div className="bg-surface-container-lowest border border-outline/15 rounded-xl p-4 text-center">
+                      <p className="font-body text-[16px] font-medium text-on-surface-variant">No active chatter yet</p>
                     </div>
-                  </div>
-                  <div className="pt-4 border-t border-[#a3abd7]/10 flex justify-between items-center">
-                    <span className="text-[#515981] text-sm">Total Members</span>
-                    <div className="flex items-center gap-1 font-headline font-bold text-xl text-[#242c51]">
-                      <span className="material-symbols-outlined text-green-500">trending_up</span> {group.memberCount || members.length || 1}
-                    </div>
-                  </div>
+                  )}
                 </div>
               </section>
-            </>
+
+              {/* ACTIVE SPIRITS Section */}
+              <section className="px-6 mb-12">
+                <h2 className="font-body text-[12px] font-medium uppercase tracking-widest text-on-surface-variant mb-4">ACTIVE SPIRITS</h2>
+                <div className="flex flex-col gap-4">
+                  {members.filter(m => m.status === 'active').slice(0, 5).map((member, idx) => (
+                    <div key={member.id || idx} className="flex items-center gap-3">
+                      {member.avatar || member.photoURL ? (
+                        <img src={member.avatar || member.photoURL} alt={member.name} className="w-10 h-10 rounded-full object-cover shrink-0 border border-outline/20" />
+                      ) : (
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 font-bold ${idx % 3 === 0 ? 'bg-primary-container text-on-primary-container' : idx % 3 === 1 ? 'bg-secondary-container text-on-secondary-container' : 'bg-tertiary-container text-on-tertiary-container'}`}>
+                          {(member.name || 'U').substring(0, 2).toUpperCase()}
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-body text-[16px] font-medium text-on-surface truncate">{member.name}</h4>
+                        <p className={`font-body text-[12px] font-medium truncate ${member.role === 'admin' ? 'text-primary' : 'text-on-surface-variant'}`}>{member.role === 'admin' ? 'Group Admin' : 'Active Member'}</p>
+                      </div>
+                    </div>
+                  ))}
+                  {members.filter(m => m.status === 'active').length === 0 && (
+                    <p className="font-body text-[16px] font-medium text-on-surface-variant">No active members yet</p>
+                  )}
+                </div>
+              </section>
+            </div>
           )}
 
-          {activeTab === 'info' && (
+          {activeTab === 'about' && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <GroupInfo group={group} isLoaded={isLoaded} />
+              <GroupAbout group={group} />
             </div>
           )}
 
@@ -816,279 +735,16 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
             </div>
           )}
 
-          {activeTab === 'class' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <GroupClassEditor
-                group={group}
-              />
-            </div>
-          )}
-
-
-
-          {activeTab === 'members' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <GroupMemberManager group={group} />
-            </div>
-          )}
-
-          {activeTab === 'coupon' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <CouponAdmin group={group} />
-            </div>
-          )}
-
-          {activeTab === 'settings' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <header className="bg-[#f7f5ff] flex justify-between items-center px-6 py-4 w-full shadow-sm rounded-xl mb-6">
-                <div className="flex items-center gap-4">
-                  <h1 className="font-headline font-bold tracking-tight text-[#242c51] text-xl">Profile Setting</h1>
-                </div>
-                <div className="flex items-center gap-3">
-                  <button className="hidden md:flex items-center gap-2 px-6 py-2 rounded-full bg-[#e8e6f0] text-[#3B82F6] font-bold text-sm transition-all active:scale-95">
-                    <span className="material-symbols-outlined text-[18px]">visibility</span>
-                    Preview
-                  </button>
-                  {group.isPublished ? (
-                    <button className="flex items-center gap-2 px-6 py-2 rounded-full bg-emerald-100 text-emerald-700 font-bold text-sm cursor-default">
-                      <span className="material-symbols-outlined text-[18px]">check_circle</span>
-                      Published
-                    </button>
-                  ) : (
-                    <button 
-                      onClick={handleGoLive}
-                      disabled={!canGoLive || isPublishing}
-                      className={`flex items-center gap-2 px-6 py-2 rounded-full font-bold text-sm transition-all ${
-                        canGoLive 
-                          ? 'bg-[#3B82F6] text-white hover:bg-blue-600 active:scale-95 cursor-pointer shadow-md hover:shadow-lg' 
-                          : 'bg-[#242c51]/10 text-[#242c51]/40 cursor-not-allowed'
-                      }`}
-                    >
-                      {isPublishing ? 'Publishing...' : 'Go Live'}
-                    </button>
-                  )}
-                </div>
-              </header>
-
-              <section className="p-6 md:p-10 max-w-6xl mx-auto w-full">
-                <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
-                  <div className="max-w-2xl">
-                    <h2 className="font-headline font-bold text-4xl md:text-5xl text-[#242c51] mb-4 leading-tight">Setup your business profile</h2>
-                    <p className="text-[#515981] text-lg max-w-lg">Complete the mandatory configurations below to publish your platform and start accepting users.</p>
-                  </div>
-                  <div className="bg-white p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-[#a3abd7]/10">
-                    <div className="flex items-center gap-4 mb-2">
-                      <span className="text-3xl font-black text-[#3B82F6] font-headline">{settingsProgressPercent}%</span>
-                      <div className="flex-1 h-3 bg-[#e4e7ff] rounded-full overflow-hidden min-w-[120px]">
-                        <div className="h-full bg-gradient-to-r from-[#3B82F6] to-[#93c5fd]" style={{ width: `${settingsProgressPercent}%` }}></div>
-                      </div>
-                    </div>
-                    <p className="text-xs font-bold text-[#515981]/60 uppercase tracking-widest">{settingsCompletedCount} of 6 steps finished</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-6 lg:grid-cols-12 gap-6 items-start">
-                  {/* 1. Profile & Branding */}
-                  <div className="md:col-span-3 lg:col-span-4 bg-white p-8 rounded-xl shadow-sm flex flex-col h-full border border-gray-100 hover:border-[#3B82F6]/20 transition-all">
-                    <div className="mb-auto">
-                      <div className="flex items-center justify-between mb-6">
-                        <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-[#3B82F6]">
-                          <span className="material-symbols-outlined">branding_watermark</span>
-                        </div>
-                        {profileCompleted ? (
-                          <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">Completed</span>
-                        ) : (
-                          <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">Needs Edit</span>
-                        )}
-                      </div>
-                      <h3 className="font-headline font-bold text-xl text-[#242c51] mb-2">1. Profile &amp; Branding</h3>
-                      <p className="text-sm text-[#515981] leading-relaxed">Manage your business logo, brand colors, and public profile descriptions.</p>
-                    </div>
-                    <div className="mt-8 pt-6 border-t border-gray-50">
-                      <button onClick={() => setActivePopup('profile')} className="w-full py-3 rounded-lg bg-gray-50 text-[#242c51] font-bold text-sm hover:bg-[#3B82F6] hover:text-white transition-all">Edit</button>
-                    </div>
-                  </div>
-
-                  {/* 2. Membership Policy */}
-                  <div className="md:col-span-3 lg:col-span-4 bg-white p-8 rounded-xl shadow-sm flex flex-col h-full border border-gray-100 hover:border-[#3B82F6]/20 transition-all">
-                    <div className="mb-auto">
-                      <div className="flex items-center justify-between mb-6">
-                        <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-[#3B82F6]">
-                          <span className="material-symbols-outlined">verified_user</span>
-                        </div>
-                        {membershipCompleted ? (
-                          <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">Completed</span>
-                        ) : (
-                          <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">Needs Edit</span>
-                        )}
-                      </div>
-                      <h3 className="font-headline font-bold text-xl text-[#242c51] mb-2">2. Membership Policy</h3>
-                      <p className="text-sm text-[#515981] leading-relaxed">Define your membership tiers, access rules, and terms of service for users.</p>
-                    </div>
-                    <div className="mt-8 pt-6 border-t border-gray-50">
-                      <button onClick={() => setActivePopup('membership')} className="w-full py-3 rounded-lg bg-gray-50 text-[#242c51] font-bold text-sm hover:bg-[#3B82F6] hover:text-white transition-all">Edit</button>
-                    </div>
-                  </div>
-
-                  {/* 3. Contact Setting */}
-                  <div className="md:col-span-3 lg:col-span-4 bg-white p-8 rounded-xl shadow-sm flex flex-col h-full border border-gray-100 hover:border-[#3B82F6]/20 transition-all">
-                    <div className="mb-auto">
-                      <div className="flex items-center justify-between mb-6">
-                        <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-[#3B82F6]">
-                          <span className="material-symbols-outlined">contact_mail</span>
-                        </div>
-                        {contactCompleted ? (
-                          <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">Completed</span>
-                        ) : (
-                          <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">Needs Edit</span>
-                        )}
-                      </div>
-                      <h3 className="font-headline font-bold text-xl text-[#242c51] mb-2">3. Contact Setting</h3>
-                      <p className="text-sm text-[#515981] leading-relaxed">Update support emails, physical addresses, and emergency contact details.</p>
-                    </div>
-                    <div className="mt-8 pt-6 border-t border-gray-50">
-                      <button onClick={() => setActivePopup('contact')} className="w-full py-3 rounded-lg bg-gray-50 text-[#242c51] font-bold text-sm hover:bg-[#3B82F6] hover:text-white transition-all">Edit</button>
-                    </div>
-                  </div>
-
-                  {/* 4. Gallery Setting */}
-                  <div className="md:col-span-3 lg:col-span-4 bg-white p-8 rounded-xl shadow-sm flex flex-col h-full border border-gray-100 hover:border-[#3B82F6]/20 transition-all">
-                    <div className="mb-auto">
-                      <div className="flex items-center justify-between mb-6">
-                        <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-[#3B82F6]">
-                          <span className="material-symbols-outlined">collections</span>
-                        </div>
-                        {galleryCompleted ? (
-                          <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">Completed</span>
-                        ) : (
-                          <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">Needs Edit</span>
-                        )}
-                      </div>
-                      <h3 className="font-headline font-bold text-xl text-[#242c51] mb-2">4. Gallery Setting</h3>
-                      <p className="text-sm text-[#515981] leading-relaxed">Upload high-resolution business assets, portfolio images, and media files.</p>
-                    </div>
-                    <div className="mt-8 pt-6 border-t border-gray-50">
-                      <button onClick={() => setActivePopup('gallery')} className="w-full py-3 rounded-lg bg-gray-50 text-[#242c51] font-bold text-sm hover:bg-[#3B82F6] hover:text-white transition-all">Edit</button>
-                    </div>
-                  </div>
-
-                  {/* 5. Board Setting */}
-                  <div className="md:col-span-3 lg:col-span-4 bg-white p-8 rounded-xl shadow-sm flex flex-col h-full border border-gray-100 hover:border-[#3B82F6]/20 transition-all">
-                    <div className="mb-auto">
-                      <div className="flex items-center justify-between mb-6">
-                        <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-[#3B82F6]">
-                          <span className="material-symbols-outlined">assignment</span>
-                        </div>
-                        {boardCompleted ? (
-                          <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">Completed</span>
-                        ) : (
-                          <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">Needs Edit</span>
-                        )}
-                      </div>
-                      <h3 className="font-headline font-bold text-xl text-[#242c51] mb-2">5. Board Setting</h3>
-                      <p className="text-sm text-[#515981] leading-relaxed">Configure your internal project boards, task tracking, and team permissions.</p>
-                    </div>
-                    <div className="mt-8 pt-6 border-t border-gray-50">
-                      <button onClick={() => setActivePopup('boards')} className="w-full py-3 rounded-lg bg-gray-50 text-[#242c51] font-bold text-sm hover:bg-[#3B82F6] hover:text-white transition-all">Edit</button>
-                    </div>
-                  </div>
-
-                  {/* 6. Account Setting */}
-                  <div className="md:col-span-3 lg:col-span-4 bg-white p-8 rounded-xl shadow-sm flex flex-col h-full border border-gray-100 hover:border-[#3B82F6]/20 transition-all">
-                    <div className="mb-auto">
-                      <div className="flex items-center justify-between mb-6">
-                        <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-[#3B82F6]">
-                          <span className="material-symbols-outlined">account_balance</span>
-                        </div>
-                        {accountCompleted ? (
-                          <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">Completed</span>
-                        ) : (
-                          <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">Needs Edit</span>
-                        )}
-                      </div>
-                      <h3 className="font-headline font-bold text-xl text-[#242c51] mb-2">6. Account Setting</h3>
-                      <p className="text-sm text-[#515981] leading-relaxed">Register your bank account details, including account number and holder name, for settlements.</p>
-                    </div>
-                    <div className="mt-8 pt-6 border-t border-gray-50">
-                      <button onClick={() => setActivePopup('account')} className="w-full py-3 rounded-lg bg-gray-50 text-[#242c51] font-bold text-sm hover:bg-[#3B82F6] hover:text-white transition-all">Edit</button>
-                    </div>
-                  </div>
-                </div>
-              </section>
-            </div>
-          )}
-
-          {activeTab === 'shop' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <GroupShopEditor group={group} />
-            </div>
-          )}
-
-          {activeTab === 'stay' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <GroupStayEditor group={group} />
-            </div>
-          )}
-
-
-
-          {activeTab === 'rental' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <GroupRentalEditor group={group} />
-            </div>
-          )}
-
-          {/* Footer Credits */}
-          <footer className="pt-8 pb-4 text-center">
-            <p className="text-xs text-[#515981]/60 font-body">© 2026 {group.name}. All rights reserved.</p>
-          </footer>
         </div>
           </>
         )}
       </main>
 
-      {/* Navigation Footer (5+1 Layout) */}
-      {!isLocked && (
-        <nav className="fixed bottom-0 left-0 w-full z-50 flex items-center px-4 bg-slate-50/95 backdrop-blur-2xl border-t border-slate-200/10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] h-16">
-        <div className="flex flex-1 justify-between items-center px-2">
-          <button
-            onClick={() => handleTabClick('home')}
-            className={`flex flex-col items-center gap-0.5 transition-all scale-100 active:scale-95 ${activeTab === 'home' ? 'text-blue-600' : 'text-slate-500'}`}
-          >
-            <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: activeTab === 'home' ? "'FILL' 1" : "" }}>grid_view</span>
-            <span className="text-[9px] font-bold uppercase tracking-tighter">Dashboard</span>
-          </button>
-          <button
-            onClick={() => handleTabClick('calendar')}
-            className={`flex flex-col items-center gap-0.5 transition-all scale-100 active:scale-95 ${activeTab === 'calendar' ? 'text-blue-600' : 'text-slate-500'}`}
-          >
-            <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: activeTab === 'calendar' ? "'FILL' 1" : "" }}>calendar_today</span>
-            <span className="text-[9px] font-bold uppercase tracking-tighter">Schedule</span>
-          </button>
-          <button
-            onClick={() => handleTabClick('feed')}
-            className={`flex flex-col items-center gap-0.5 transition-all scale-100 active:scale-95 ${activeTab === 'feed' ? 'text-blue-600' : 'text-slate-500'}`}
-          >
-            <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: activeTab === 'feed' ? "'FILL' 1" : "" }}>rss_feed</span>
-            <span className="text-[9px] font-bold uppercase tracking-tighter">Feed</span>
-          </button>
-          <button
-            onClick={() => handleTabClick('board')}
-            className={`flex flex-col items-center gap-0.5 transition-all scale-100 active:scale-95 ${activeTab === 'board' ? 'text-blue-600' : 'text-slate-500'}`}
-          >
-            <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: activeTab === 'board' ? "'FILL' 1" : "" }}>forum</span>
-            <span className="text-[9px] font-bold uppercase tracking-tighter">Board</span>
-          </button>
-          <button
-            onClick={() => handleTabClick('info')}
-            className={`flex flex-col items-center gap-0.5 transition-all scale-100 active:scale-95 ${activeTab === 'info' ? 'text-blue-600' : 'text-slate-500'}`}
-          >
-            <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: activeTab === 'info' ? "'FILL' 1" : "" }}>info</span>
-            <span className="text-[9px] font-bold uppercase tracking-tighter">Info</span>
-          </button>
+      {/* Settings Modal */}
+      {isSettingsOpen && (
+        <div className="fixed inset-0 z-[100] bg-background overflow-y-auto">
+          <GroupSettings group={group} onClose={() => setIsSettingsOpen(false)} />
         </div>
-
-        </nav>
       )}
 
       {/* Join Modal */}
@@ -1105,25 +761,7 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
         }}
       />
 
-      {/* Editor Overlays */}
-      {activePopup === "profile" && (
-        <GroupBasicEditor group={group} onClose={() => setActivePopup(null)} />
-      )}
-      {activePopup === "membership" && (
-        <GroupMembershipEditor group={group} onClose={() => setActivePopup(null)} />
-      )}
-      {activePopup === "boards" && (
-        <GroupBoardEditor group={group} onClose={() => setActivePopup(null)} />
-      )}
-      {activePopup === "gallery" && (
-        <GroupGalleryEditor group={group} onClose={() => setActivePopup(null)} />
-      )}
-      {activePopup === "contact" && (
-        <GroupContactEditor group={group} isLoaded={true} onClose={() => setActivePopup(null)} />
-      )}
-      {activePopup === "account" && (
-        <GroupAccountEditor group={group} onClose={() => setActivePopup(null)} />
-      )}
+
     </div>
   );
 }

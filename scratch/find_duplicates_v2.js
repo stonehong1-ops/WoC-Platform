@@ -1,26 +1,32 @@
-
 const fs = require('fs');
-const content = fs.readFileSync('c:\\Users\\stone\\WoC\\src\\contexts\\LanguageContext.tsx', 'utf8');
-
+const content = fs.readFileSync('src/contexts/LanguageContext.tsx', 'utf8');
 const lines = content.split('\n');
-const enStart = lines.findIndex(l => l.includes('EN: {'));
-const krStart = lines.findIndex(l => l.includes('KR: {'));
+let currentSection = null;
+let keys = {};
+const duplicates = [];
 
-function findDuplicates(startLine, endLine) {
-    const keys = {};
-    for (let i = startLine; i < endLine; i++) {
-        const match = lines[i].match(/'([^']+)':/);
+lines.forEach((line, index) => {
+    if (line.match(/^\s*EN: \{/)) {
+        currentSection = 'EN';
+        keys = {};
+    } else if (line.match(/^\s*KR: \{/)) {
+        currentSection = 'KR';
+        keys = {};
+    } else if (line.match(/^\s*\},/)) {
+        // End of section
+    }
+
+    if (currentSection) {
+        const match = line.match(/^\s*'([^']+)':/);
         if (match) {
             const key = match[1];
             if (keys[key]) {
-                console.log(`Duplicate key "${key}" at line ${i + 1} (previous at line ${keys[key]})`);
+                duplicates.push({ section: currentSection, key, first: keys[key], second: index + 1 });
+            } else {
+                keys[key] = index + 1;
             }
-            keys[key] = i + 1;
         }
     }
-}
+});
 
-console.log('--- EN Duplicates ---');
-findDuplicates(enStart + 1, krStart);
-console.log('--- KR Duplicates ---');
-findDuplicates(krStart + 1, lines.length);
+console.log(JSON.stringify(duplicates, null, 2));

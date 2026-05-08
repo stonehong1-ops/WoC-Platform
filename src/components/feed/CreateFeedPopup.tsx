@@ -1,4 +1,6 @@
 'use client';
+import { useLanguage } from '@/contexts/LanguageContext';
+
 import React, { useState, useRef, useEffect } from 'react';
 import Portal from '@/components/common/Portal';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -11,9 +13,10 @@ import { socialService } from '@/lib/firebase/socialService';
 import { groupService } from '@/lib/firebase/groupService';
 import { FeedContext, Post } from '@/types/feed';
 import { useLocation } from '@/components/providers/LocationProvider';
-import { useHistoryBack } from '@/hooks/useHistoryBack';
+import { helpDeskAIService } from '@/lib/ai/helpDeskAI';
 
-/* ??? Types ??? */
+
+/* ?€?€?€ Types ?€?€?€ */
 interface MediaItem {
   id: string; url: string; type: 'image' | 'video';
   progress: number; status: 'uploading' | 'completed' | 'error'; file?: File;
@@ -21,7 +24,7 @@ interface MediaItem {
 interface TagItem { id: string; label: string; kind: 'people' | 'venue' | 'event' | 'social' | 'group'; photo?: string; }
 interface Props { isOpen: boolean; onClose: () => void; context?: FeedContext; editingPost?: Post | null; }
 
-/* ??? Style config ??? */
+/* ?€?€?€ Style config ?€?€?€ */
 const COLOR_PALETTE = [
   { bg: 'transparent', text: '#191b22', name: 'Default', isDefault: true },
   { bg: '#dbeafe', text: '#1e3a8a', name: 'Soft Blue' },
@@ -50,9 +53,12 @@ const KIND_ICON: Record<string, string> = { people: 'person', venue: 'location_o
 const KIND_COLOR: Record<string, string> = { people: 'text-blue-500', venue: 'text-emerald-500', event: 'text-orange-500', social: 'text-purple-500', group: 'text-pink-500' };
 
 export default function CreateFeedPopup({ isOpen, onClose, context, editingPost }: Props) {
+  const { t } = useLanguage();
+
   const { user, profile } = useAuth();
   const { location } = useLocation();
-  const { handleClose } = useHistoryBack(isOpen, onClose);
+  const isHelpDesk = context?.scope === 'helpdesk';
+  const handleClose = onClose;
 
   const [content, setContent] = useState('');
   const [media, setMedia] = useState<MediaItem[]>([]);
@@ -75,7 +81,7 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
   const imageCount = media.filter(m => m.type === 'image').length;
   const videoCount = media.filter(m => m.type === 'video').length;
 
-  /* ? Reset ? */
+  /* ?€ Reset ?€ */
   useEffect(() => {
     if (editingPost) {
       setContent(editingPost.content || '');
@@ -91,7 +97,7 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
     setTagKeyword(''); setTagResults([]);
   }, [editingPost, isOpen]);
 
-  /* ? Tag search ? */
+  /* ?€ Tag search ?€ */
   useEffect(() => {
     if (tagKeyword.trim().length < 2) { setTagResults([]); return; }
     const kw = tagKeyword.trim();
@@ -119,7 +125,7 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
     return () => clearTimeout(timer);
   }, [tagKeyword]);
 
-  /* ? Media ? */
+  /* ?€ Media ?€ */
   const handleMediaSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
@@ -146,14 +152,14 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
   };
   const removeMedia = (id: string) => setMedia(prev => prev.filter(m => m.id !== id));
 
-  /* ? Tags ? */
+  /* ?€ Tags ?€ */
   const addTag = (item: TagItem) => {
     if (!tags.find(t => t.id === item.id)) setTags(prev => [...prev, item]);
     setTagKeyword(''); setTagResults([]);
   };
   const removeTag = (id: string) => setTags(prev => prev.filter(t => t.id !== id));
 
-  /* ? Submit ? */
+  /* ?€ Submit ?€ */
   const handleSubmit = async () => {
     if (!user || isSubmitting) return;
     if (!content.trim() && media.length === 0) return;
@@ -170,17 +176,24 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
         }
       } : {};
       const tagData = { taggedIds: tags.map(t => t.id), tags: tags.map(t => ({ id: t.id, label: t.label, kind: t.kind })) };
+      
       if (editingPost) {
         await feedService.updatePost(editingPost.id, { content, media: mediaData, ...tagData, ...styleData });
       } else {
-        await feedService.createPost({
-          userId: user.uid, userName: profile?.nickname || user.displayName || 'Anonymous',
-          userPhoto: profile?.photoURL || user.photoURL || '',
+        const postId = await feedService.createPost({
+          userId: user.uid, 
+          userName: isHelpDesk ? t('help_desk.anonymous', 'Anonymous') : (profile?.nickname || user.displayName || 'Anonymous'),
+          userPhoto: isHelpDesk ? '' : (profile?.photoURL || user.photoURL || ''),
           content, media: mediaData, taggedUserIds: tags.filter(t => t.kind === 'people').map(t => t.id),
           targets: finalTargets, category: context?.scopeId?.toUpperCase() || 'SOCIAL',
           location: { country: location.country, city: location.city },
           ...tagData, ...styleData,
         });
+
+        // Trigger AI Response for Help Desk
+        if (isHelpDesk) {
+          helpDeskAIService.processNewPost(postId, content);
+        }
       }
       onClose();
     } catch (e: any) {
@@ -194,7 +207,7 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
     <Portal>
       <div className="fixed inset-0 z-[10000] bg-surface-bright text-on-surface font-body-md antialiased flex flex-col">
 
-        {/* ?? TopAppBar ?? */}
+        {/* ?€?€ TopAppBar ?€?€ */}
         <header className="fixed top-0 w-full z-50 flex items-center justify-between px-4 h-16 bg-white shadow-sm border-b border-slate-100">
           <div className="flex items-center gap-3">
             <button onClick={handleClose} className="p-2 rounded-full active:scale-95 duration-150 hover:bg-slate-50">
@@ -211,14 +224,14 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
           </button>
         </header>
 
-        {/* ?? Scrollable Canvas ?? */}
+        {/* ?€?€ Scrollable Canvas ?€?€ */}
         <main className="flex-1 overflow-y-auto pt-20 pb-32 px-[1.5rem] max-w-[56rem] mx-auto w-full space-y-4">
 
           {/* Profile Section */}
           <section className="flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="w-12 h-12 rounded-full shadow-sm border-2 border-primary-container/20 flex-shrink-0 overflow-hidden bg-surface-container relative flex items-center justify-center">
             <span className="material-symbols-outlined text-on-surface-variant absolute" style={{ fontSize: '28px', fontVariationSettings: "'FILL' 1" }}>person</span>
-            {((profile?.photoURL && profile.photoURL !== 'https://lh3.googleusercontent.com/a/default-user') || (user?.photoURL && user.photoURL !== 'https://lh3.googleusercontent.com/a/default-user')) && (
+            {!isHelpDesk && ((profile?.photoURL && profile.photoURL !== 'https://lh3.googleusercontent.com/a/default-user') || (user?.photoURL && user.photoURL !== 'https://lh3.googleusercontent.com/a/default-user')) && (
               <img
                 alt={profile?.nickname || 'User'}
                 className="w-full h-full object-cover relative z-10"
@@ -229,8 +242,8 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
           </div>
             <div className="space-y-0.5">
               <div className="flex items-baseline gap-1">
-                <h2 className="font-title-md text-title-sm">{profile?.nickname || user?.displayName || 'Anonymous'}</h2>
-                {profile?.nativeNickname && <span className="text-[11px] text-on-surface-variant font-medium">({profile.nativeNickname})</span>}
+                <h2 className="font-title-md text-title-sm">{isHelpDesk ? t('help_desk.anonymous', 'Anonymous') : (profile?.nickname || user?.displayName || 'Anonymous')}</h2>
+                {!isHelpDesk && profile?.nativeNickname && <span className="text-[11px] text-on-surface-variant font-medium">({profile.nativeNickname})</span>}
               </div>
               <div className="flex items-center gap-1.5 px-2 py-0.5 bg-surface-container-low rounded-full border border-outline-variant/30 w-fit cursor-default">
                 <span className="material-symbols-outlined text-[16px] text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>groups</span>
@@ -254,7 +267,7 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
             ) : (
               <textarea
                 className="w-full min-h-[120px] bg-transparent border-none focus:ring-0 text-lg font-body-md text-on-surface placeholder:text-outline/60 resize-none"
-                placeholder="What's on your mind?"
+                placeholder={t('plaza.compose_prompt')}
                 value={content}
                 onChange={e => setContent(e.target.value)}
               />
@@ -385,7 +398,7 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
                     <span className="material-symbols-outlined text-primary-container text-[28px]">add_photo_alternate</span>
                   </div>
                   <p className="font-title-md text-body-md text-on-surface-variant">Add Photos or Video</p>
-                  <span className="text-[10px] text-on-surface-variant/60 font-medium">{imageCount}/20 Photos 쨌 {videoCount}/1 Video</span>
+                  <span className="text-[10px] text-on-surface-variant/60 font-medium">{imageCount}/20 Photos · {videoCount}/1 Video</span>
                   <span className="material-symbols-outlined absolute -bottom-6 -right-6 text-[120px] text-primary-container/5 pointer-events-none select-none">cloud_upload</span>
                 </div>
               )}
@@ -458,7 +471,7 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
               </div>
             )}
             {tagKeyword.length >= 2 && !isSearching && tagResults.length === 0 && (
-              <p className="text-center text-xs text-outline py-4">寃??寃곌낵媛 ?놁뒿?덈떎</p>
+              <p className="text-center text-xs text-outline py-4">{t('search.no_results', 'No results found')}</p>
             )}
           </section>
 

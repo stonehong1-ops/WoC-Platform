@@ -5,6 +5,7 @@ import { Group } from "@/types/group";
 import { groupService } from "@/lib/firebase/groupService";
 import { storageService } from "@/lib/firebase/storageService";
 import { toast } from "sonner";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface GroupBasicEditorProps {
   group: Group;
@@ -12,12 +13,16 @@ interface GroupBasicEditorProps {
 }
 
 export default function GroupBasicEditor({ group, onClose }: GroupBasicEditorProps) {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     name: group.name || "",
     nativeName: group.nativeName || "",
     slug: group.slug || "",
+    description: group.description || "",
     coverImage: group.coverImage || "",
     coverImageDescription: group.coverImageDescription || "",
+    operatingHours: group.operatingHours?.map(h => `${h.label}${h.time ? ': ' + h.time : ''}`).join('\n') || "",
+    houseRules: group.houseRules?.join('\n') || "",
   });
 
   const [isSaving, setIsSaving] = useState(false);
@@ -32,7 +37,7 @@ export default function GroupBasicEditor({ group, onClose }: GroupBasicEditorPro
 
     // File size validation (10MB limit)
     if (file.size > 10 * 1024 * 1024) {
-      toast.error("File size is too large. Max 10MB allowed.");
+      toast.error(t('group.basic.file_too_large'));
       return;
     }
 
@@ -56,12 +61,12 @@ export default function GroupBasicEditor({ group, onClose }: GroupBasicEditorPro
       URL.revokeObjectURL(blobUrl);
       
       setFormData(prev => ({ ...prev, [field]: downloadURL }));
-      toast.success("Image uploaded! Click Save Changes to complete.");
+      toast.success(t('group.basic.image_uploaded'));
     } catch (error) {
       console.error("Error uploading image:", error);
       // Fallback to original image on error
       setFormData(prev => ({ ...prev, [field]: originalImage }));
-      toast.error("Image upload failed. Please try again.");
+      toast.error(t('group.basic.upload_failed'));
     } finally {
       setUploadingField(null);
       setIsOptimizing(false);
@@ -71,7 +76,7 @@ export default function GroupBasicEditor({ group, onClose }: GroupBasicEditorPro
 
   const handleSave = async () => {
     if (!formData.name || !formData.slug) {
-      toast.error("Name and slug are required.");
+      toast.error(t('group.basic.name_slug_required'));
       return;
     }
 
@@ -81,14 +86,22 @@ export default function GroupBasicEditor({ group, onClose }: GroupBasicEditorPro
         name: formData.name,
         nativeName: formData.nativeName,
         slug: formData.slug,
+        description: formData.description,
         coverImage: formData.coverImage,
         coverImageDescription: formData.coverImageDescription,
+        operatingHours: formData.operatingHours.split('\n').filter(line => line.trim() !== '').map(line => {
+          const parts = line.split(':');
+          const label = parts.shift()?.trim() || '';
+          const time = parts.join(':').trim() || '';
+          return { label, time };
+        }),
+        houseRules: formData.houseRules.split('\n').filter(line => line.trim() !== ''),
       });
-      toast.success("Identity updated successfully!");
+      toast.success(t('group.basic.identity_updated'));
       onClose();
     } catch (error) {
       console.error("Error saving basic info:", error);
-      toast.error("Failed to save information. Please try again.");
+      toast.error(t('group.basic.save_failed'));
     } finally {
       setIsSaving(false);
     }
@@ -119,8 +132,8 @@ export default function GroupBasicEditor({ group, onClose }: GroupBasicEditorPro
               <span className="material-symbols-outlined group-hover:-translate-x-0.5 transition-transform">arrow_back</span>
             </button>
             <div>
-              <h1 className="text-lg font-headline font-black text-white tracking-tight">Identity & Branding</h1>
-              <p className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em]">Group Core Configuration</p>
+              <h1 className="text-lg font-headline font-black text-white tracking-tight">{t('group.basic.identity_branding')}</h1>
+              <p className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em]">{t('group.basic.core_config')}</p>
             </div>
           </div>
           <button
@@ -134,10 +147,10 @@ export default function GroupBasicEditor({ group, onClose }: GroupBasicEditorPro
             {isSaving ? (
               <>
                 <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                <span>SAVING...</span>
+                <span>{t('group.basic.saving')}</span>
               </>
             ) : (
-              "SAVE CHANGES"
+              t('group.basic.save_changes')
             )}
           </button>
         </div>
@@ -149,15 +162,15 @@ export default function GroupBasicEditor({ group, onClose }: GroupBasicEditorPro
           <div className="space-y-2">
             <h2 className="text-3xl font-headline font-black text-white flex items-center gap-4">
               <span className="w-2 h-10 bg-[#0057bd] rounded-full"></span>
-              Branding Assets
+              {t('group.basic.branding_assets')}
             </h2>
-            <p className="text-white/40 font-medium ml-6">Configure the visual elements that define your community's first impression.</p>
+            <p className="text-white/40 font-medium ml-6">{t('group.basic.branding_assets_desc')}</p>
           </div>
 
           <div className="space-y-8 ml-6">
             {/* Cover Image Upload */}
             <div className="space-y-4">
-              <label className="text-[10px] font-black uppercase tracking-[0.3em] text-[#a3abd7]/40 ml-1">Hero Section Image</label>
+              <label className="text-[10px] font-black uppercase tracking-[0.3em] text-[#a3abd7]/40 ml-1">{t('group.basic.hero_image')}</label>
               <div
                 onClick={() => coverInputRef.current?.click()}
                 className="aspect-[21/9] rounded-[2.5rem] bg-white/5 border border-white/10 hover:border-[#0057bd]/40 transition-all cursor-pointer flex flex-col items-center justify-center relative overflow-hidden group shadow-2xl"
@@ -169,7 +182,7 @@ export default function GroupBasicEditor({ group, onClose }: GroupBasicEditorPro
                       <div className="w-14 h-14 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
                         <span className="material-symbols-outlined text-white text-3xl">photo_camera</span>
                       </div>
-                      <span className="text-white font-headline font-black text-xs tracking-widest">CHANGE COVER</span>
+                      <span className="text-white font-headline font-black text-xs tracking-widest">{t('group.basic.change_cover')}</span>
                     </div>
                   </>
                 ) : (
@@ -178,8 +191,8 @@ export default function GroupBasicEditor({ group, onClose }: GroupBasicEditorPro
                       <span className="material-symbols-outlined text-5xl">panorama</span>
                     </div>
                     <div className="text-center">
-                      <p className="text-xs font-black tracking-widest text-white/40">UPLOAD HERO IMAGE</p>
-                      <p className="text-[10px] font-bold opacity-50 mt-1">Recommended: 1920x820px</p>
+                      <p className="text-xs font-black tracking-widest text-white/40">{t('group.basic.upload_hero_image')}</p>
+                      <p className="text-[10px] font-bold opacity-50 mt-1">{t('group.basic.recommended_size')}</p>
                     </div>
                   </div>
                 )}
@@ -219,10 +232,10 @@ export default function GroupBasicEditor({ group, onClose }: GroupBasicEditorPro
                       </div>
                       <div className="text-center space-y-1">
                         <span className="block text-[10px] font-black tracking-[0.2em] text-[#0057bd] uppercase">
-                          {isOptimizing ? "Optimizing..." : "Uploading Hero..."}
+                          {isOptimizing ? t('group.basic.optimizing') : t('group.basic.uploading_hero')}
                         </span>
                         <span className="block text-[9px] text-white/30 font-bold italic">
-                          {isOptimizing ? "Preparing image assets" : "Syncing with cloud storage"}
+                          {isOptimizing ? t('group.basic.preparing_assets') : t('group.basic.syncing_cloud')}
                         </span>
                       </div>
                     </div>
@@ -234,20 +247,20 @@ export default function GroupBasicEditor({ group, onClose }: GroupBasicEditorPro
 
             {/* Cover Image Description */}
             <div className="space-y-4">
-              <label className="text-[10px] font-black uppercase tracking-[0.3em] text-[#a3abd7]/40 ml-1">Primary Catchphrase (Hero Slogan)</label>
+              <label className="text-[10px] font-black uppercase tracking-[0.3em] text-[#a3abd7]/40 ml-1">{t('group.basic.primary_catchphrase')}</label>
               <div className="relative group">
                 <input
                   type="text"
                   value={formData.coverImageDescription}
                   onChange={(e) => setFormData(prev => ({ ...prev, coverImageDescription: e.target.value }))}
                   className="w-full bg-white/5 border border-white/10 focus:bg-white/10 focus:border-[#0057bd]/40 outline-none rounded-3xl px-8 py-5 font-headline font-black text-white text-lg transition-all shadow-inner"
-                  placeholder="Enter a powerful catchphrase for your community"
+                  placeholder={t('group.basic.catchphrase_placeholder')}
                 />
                 <div className="absolute right-6 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/5 flex items-center justify-center opacity-0 group-focus-within:opacity-100 transition-opacity">
                   <span className="material-symbols-outlined text-white/20 text-sm">edit</span>
                 </div>
               </div>
-              <p className="text-[11px] text-white/30 font-medium ml-2 italic">Displayed at the top of the dashboard to catch visitors' attention.</p>
+              <p className="text-[11px] text-white/30 font-medium ml-2 italic">{t('group.basic.catchphrase_desc')}</p>
             </div>
           </div>
         </section>
@@ -259,39 +272,39 @@ export default function GroupBasicEditor({ group, onClose }: GroupBasicEditorPro
           <div className="space-y-2">
             <h2 className="text-3xl font-headline font-black text-white flex items-center gap-4">
               <span className="w-2 h-10 bg-[#0057bd] rounded-full"></span>
-              Core Identity
+              {t('group.basic.core_identity')}
             </h2>
-            <p className="text-white/40 font-medium ml-6">Manage official names and unique identifiers.</p>
+            <p className="text-white/40 font-medium ml-6">{t('group.basic.core_identity_desc')}</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 ml-6">
             {/* Group Name */}
             <div className="space-y-4">
-              <label className="text-[10px] font-black uppercase tracking-[0.3em] text-[#a3abd7]/40 ml-1">Global Display Name</label>
+              <label className="text-[10px] font-black uppercase tracking-[0.3em] text-[#a3abd7]/40 ml-1">{t('group.basic.global_display_name')}</label>
               <input
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                 className="w-full bg-white/5 border border-white/10 focus:bg-white/10 focus:border-[#0057bd]/40 outline-none rounded-3xl px-8 py-5 font-headline font-black text-white text-lg transition-all"
-                placeholder="e.g., Freestyle Tango"
+                placeholder={t('group.basic.global_display_name_placeholder')}
               />
             </div>
 
             {/* Native Name */}
             <div className="space-y-4">
-              <label className="text-[10px] font-black uppercase tracking-[0.3em] text-[#a3abd7]/40 ml-1">Local Identity Name</label>
+              <label className="text-[10px] font-black uppercase tracking-[0.3em] text-[#a3abd7]/40 ml-1">{t('group.basic.local_identity_name')}</label>
               <input
                 type="text"
                 value={formData.nativeName}
                 onChange={(e) => setFormData(prev => ({ ...prev, nativeName: e.target.value }))}
                 className="w-full bg-white/5 border border-white/10 focus:bg-white/10 focus:border-[#0057bd]/40 outline-none rounded-3xl px-8 py-5 font-headline font-black text-white text-lg transition-all"
-                placeholder="Enter local identity name"
+                placeholder={t('group.basic.local_identity_name_placeholder')}
               />
             </div>
 
             {/* Slug */}
             <div className="space-y-4 md:col-span-2">
-              <label className="text-[10px] font-black uppercase tracking-[0.3em] text-[#a3abd7]/40 ml-1">Unique URL Identifier (Slug)</label>
+              <label className="text-[10px] font-black uppercase tracking-[0.3em] text-[#a3abd7]/40 ml-1">{t('group.basic.unique_slug')}</label>
               <div className="relative overflow-hidden rounded-3xl group">
                 <div className="absolute left-8 top-1/2 -translate-y-1/2 text-white/20 font-black text-lg tracking-tight z-10">
                   woc.today/
@@ -304,9 +317,42 @@ export default function GroupBasicEditor({ group, onClose }: GroupBasicEditorPro
                 />
                 <div className="absolute right-8 top-1/2 -translate-y-1/2 flex items-center gap-2">
                   <span className="material-symbols-outlined text-white/10 text-sm">lock</span>
-                  <span className="text-[9px] font-black text-white/10 uppercase tracking-widest">Permanent</span>
+                  <span className="text-[9px] font-black text-white/10 uppercase tracking-widest">{t('group.basic.permanent')}</span>
                 </div>
               </div>
+            </div>
+            
+            {/* Description */}
+            <div className="space-y-4 md:col-span-2">
+              <label className="text-[10px] font-black uppercase tracking-[0.3em] text-[#a3abd7]/40 ml-1">{t('group.basic.about_us')}</label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                className="w-full bg-white/5 border border-white/10 focus:bg-white/10 focus:border-[#0057bd]/40 outline-none rounded-3xl px-8 py-5 font-headline font-medium text-white text-base transition-all min-h-[120px]"
+                placeholder={t('group.basic.about_us_placeholder')}
+              />
+            </div>
+
+            {/* Operating Hours */}
+            <div className="space-y-4">
+              <label className="text-[10px] font-black uppercase tracking-[0.3em] text-[#a3abd7]/40 ml-1">{t('group.basic.operating_hours')}</label>
+              <textarea
+                value={formData.operatingHours}
+                onChange={(e) => setFormData(prev => ({ ...prev, operatingHours: e.target.value }))}
+                className="w-full bg-white/5 border border-white/10 focus:bg-white/10 focus:border-[#0057bd]/40 outline-none rounded-3xl px-8 py-5 font-headline font-medium text-white text-base transition-all min-h-[120px]"
+                placeholder={t('group.basic.operating_hours_placeholder')}
+              />
+            </div>
+
+            {/* House Rules */}
+            <div className="space-y-4">
+              <label className="text-[10px] font-black uppercase tracking-[0.3em] text-[#a3abd7]/40 ml-1">{t('group.basic.house_rules')}</label>
+              <textarea
+                value={formData.houseRules}
+                onChange={(e) => setFormData(prev => ({ ...prev, houseRules: e.target.value }))}
+                className="w-full bg-white/5 border border-white/10 focus:bg-white/10 focus:border-[#0057bd]/40 outline-none rounded-3xl px-8 py-5 font-headline font-medium text-white text-base transition-all min-h-[120px]"
+                placeholder={t('group.basic.house_rules_placeholder')}
+              />
             </div>
           </div>
         </section>

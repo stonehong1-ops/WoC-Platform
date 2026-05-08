@@ -36,6 +36,7 @@ export interface Post {
   myReaction?: ReactionType | null;
   scheduleId?: string;
   isAnnouncement?: boolean; // New: For official announcements
+  isOfficial?: boolean;     // New: For official badges
   title?: string;          // New: For announcement titles
   createdAt: Timestamp;
 }
@@ -49,11 +50,12 @@ export interface Comment {
   content: string;
   parentId?: string | null; // For nested comments (1-depth limit)
   repliesCount?: number;
+  isOfficial?: boolean;
   createdAt: Timestamp;
 }
 
 export interface FeedContext {
-  scope: 'plaza' | 'group' | 'venue' | 'event';
+  scope: 'plaza' | 'group' | 'venue' | 'event' | 'helpdesk';
   scopeId: string;    // e.g., 'tango', 'salsa' (for plaza) or groupId
   label?: string;
   category?: string;  // Optional category filter

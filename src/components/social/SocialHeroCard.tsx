@@ -105,18 +105,18 @@ export default function SocialHeroCard({ social }: { social: Social }) {
           <DualText 
             text={displayTitle.primary} 
             subText={displayTitle.secondary}
-            primaryClassName="text-white text-xl md:text-3xl font-bold font-headline leading-tight truncate drop-shadow-md" 
-            secondaryClassName="text-white/60 text-xs md:text-sm font-normal truncate shrink-0 drop-shadow-md ml-1.5" 
+            primaryClassName="text-white text-base md:text-lg font-bold font-headline leading-tight truncate drop-shadow-md" 
+            secondaryClassName="text-white/60 text-[10px] md:text-[11px] font-normal truncate shrink-0 drop-shadow-md ml-1.5" 
             containerClassName="w-full"
           />
           <DualText 
             text={social.organizerName} 
             subText={social.organizerNameNative}
-            primaryClassName="text-white/80 text-sm md:text-base font-medium truncate" 
-            secondaryClassName="text-white/40 text-[10px] md:text-xs font-normal truncate ml-1.5" 
+            primaryClassName="text-white/80 text-xs md:text-sm font-medium truncate" 
+            secondaryClassName="text-white/40 text-[9px] md:text-[10px] font-normal truncate ml-1.5" 
             containerClassName="w-full"
           />
-          <p className="text-white/70 text-xs md:text-sm mt-1">{social.startTime} - {social.endTime}</p>
+          <p className="text-white/70 text-[10px] md:text-xs mt-1">{social.startTime} - {social.endTime}</p>
         </div>
       </div>
     </>

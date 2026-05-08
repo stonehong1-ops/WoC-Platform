@@ -295,7 +295,7 @@ function ResalePageContent() {
       `}} />
 
       {/* Integrated Registration Action */}
-      <div className="px-6 py-2 flex items-center justify-between bg-white border-b border-slate-50">
+      <div className="mx-4 my-3 px-5 py-3 flex items-center justify-between bg-white rounded-xl border border-slate-100 shadow-sm">
         <p className="text-[12px] font-bold text-slate-400 uppercase tracking-tight">
           {t('resale.have_items_share', 'Have items to share?')}
         </p>

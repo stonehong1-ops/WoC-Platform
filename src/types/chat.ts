@@ -35,4 +35,8 @@ export interface ChatRoom {
   customName?: string;
   description?: string;
   pinnedBy?: string[];
+  // Group chat fields (type: 'groups' only)
+  linkedGroupId?: string;      // groups module groupId (1:1 mapping)
+  admins?: string[];           // chat room admin list (synced with group owner)
+  joinPolicy?: 'open' | 'approval' | 'invite';  // mirrors group joinStrategy
 }

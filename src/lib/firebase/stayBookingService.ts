@@ -75,7 +75,7 @@ export const stayBookingService = {
         type: 'STAY_BOOKING_ADMIN',
         title: 'New Stay Booking',
         message: `${data.applicantName} has applied for '${data.stayTitle}'. Awaiting approval.`,
-        actionUrl: `/group/${data.groupId}?tab=admin`,
+        actionUrl: `/groups/${data.groupId}?tab=admin`,
         referenceId: bookingRef.id,
         category: 'STAY'
       }, batch);

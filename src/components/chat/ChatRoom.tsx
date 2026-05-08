@@ -18,6 +18,7 @@ import UserName from '../common/UserName';
 import UserBadge from '../common/UserBadge';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { enUS, ko as koLocale } from 'date-fns/locale';
+import { useNavigation } from "@/components/providers/NavigationProvider";
 
 interface ChatRoomProps {
   roomId: string;
@@ -27,6 +28,7 @@ interface ChatRoomProps {
 export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
   const { user } = useAuth();
   const { t, language } = useLanguage();
+  const { setGlobalNavHidden } = useNavigation();
   const currentLocale = language === 'KR' ? koLocale : enUS;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
@@ -39,6 +41,7 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
   const [recordDuration, setRecordDuration] = useState(0);
   const [otherUser, setOtherUser] = useState<any>(null);
   const [isGroupMembersOpen, setIsGroupMembersOpen] = useState(false);
+  const [isAccessBlocked, setIsAccessBlocked] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState<{msgId: string, url: string, type: 'image' | 'video', isOwn: boolean} | null>(null);
   const [previewMedia, setPreviewMedia] = useState<{file: File | Blob, url: string, type: 'image' | 'video' | 'voice'} | null>(null);
   const closeSelectedMedia = () => setSelectedMedia(null);
@@ -48,6 +51,12 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
   const [isOtherTyping, setIsOtherTyping] = useState(false);
   const [translations, setTranslations] = useState<Record<string, string>>({});
   const [translatingIds, setTranslatingIds] = useState<Set<string>>(new Set());
+
+  // Hide global navigation on mount, restore on unmount
+  useEffect(() => {
+    setGlobalNavHidden(true);
+    return () => setGlobalNavHidden(false);
+  }, [setGlobalNavHidden]);
 
   const handleTranslate = async (msgId: string, text: string) => {
     if (translations[msgId]) {
@@ -149,6 +158,23 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
           }
         };
         fetchUser();
+      }
+    }
+
+    // Group chat access control
+    if (room.type === 'groups') {
+      const isAlreadyMember = room.participants?.includes(user.uid);
+      if (room.joinPolicy === 'open' && room.linkedGroupId) {
+        // Open groups: auto-join on entry
+        if (!isAlreadyMember) {
+          chatService.autoJoinGroupChat(room.linkedGroupId, user.uid);
+        }
+        setIsAccessBlocked(false);
+      } else if (!isAlreadyMember) {
+        // Approval/Invite groups: block non-members
+        setIsAccessBlocked(true);
+      } else {
+        setIsAccessBlocked(false);
       }
     }
   }, [room, user]);
@@ -509,6 +535,35 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
       </div>
     );
   };
+
+  // Access blocked screen for non-member group chats
+  if (isAccessBlocked && room) {
+    return (
+      <div className="flex flex-col h-full bg-white relative overflow-hidden font-manrope">
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-4 bg-white/80 backdrop-blur-xl z-20 sticky top-0">
+          <button onClick={onBack} className="w-10 h-10 rounded-full flex items-center justify-center bg-gray-50 hover:bg-gray-100 transition-all text-gray-500">
+            <span className="material-symbols-outlined text-[20px]">arrow_back_ios_new</span>
+          </button>
+          <h2 className="text-lg font-bold text-gray-900 truncate">{room.name || 'Group Chat'}</h2>
+        </div>
+        <div className="flex-1 flex flex-col items-center justify-center px-8 text-center">
+          <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center mb-6">
+            <span className="material-symbols-outlined text-4xl text-slate-400">lock</span>
+          </div>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">Members Only</h3>
+          <p className="text-sm text-gray-500 leading-relaxed max-w-xs">
+            This group chat is only accessible to group members. Join the group first to participate in this chat.
+          </p>
+          <button
+            onClick={onBack}
+            className="mt-8 px-8 py-3 bg-[#0057bd] text-white font-bold rounded-xl hover:bg-[#00469b] active:scale-95 transition-all shadow-lg shadow-blue-900/10"
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full bg-white relative overflow-hidden font-manrope">

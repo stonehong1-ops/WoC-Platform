@@ -10,6 +10,7 @@ import { doc, getDoc, setDoc, deleteDoc, onSnapshot, Timestamp, updateDoc, serve
 import { auth, db } from '@/lib/firebase/clientApp';
 import { toast } from 'sonner';
 import { fcmService } from '@/lib/firebase/fcmService';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface UserProfile {
   uid: string;
@@ -58,6 +59,7 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const { t } = useLanguage();
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -196,21 +198,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       else if (Notification.permission === 'default') {
         // 중복 토스트 방지를 위해 약간 지연
         const timer = setTimeout(() => {
-          const toastId = toast('새로운 채팅 알림을 실시간으로 받으시겠습니까?', {
-            description: '채팅이 오면 알림을 받아볼 수 있습니다.',
+          const toastId = toast(t('auth.push_noti_title'), {
+            description: t('auth.push_noti_desc'),
             duration: 15000, // 15초 후 자동 닫힘
             position: 'top-center',
             action: {
-              label: '알림 켜기',
+              label: t('auth.push_noti_enable'),
               onClick: async () => {
                 toast.dismiss(toastId);
                 try {
                   const token = await fcmService.requestPermissionAndGetToken(user.uid);
                   if (token) {
-                    toast.success('푸시 알림이 성공적으로 켜졌습니다!');
+                    toast.success(t('auth.push_noti_success'));
                   } else {
                     if (Notification.permission === 'denied') {
-                      toast.error('브라우저 알림 권한이 차단되어 설정할 수 없습니다.');
+                      toast.error(t('auth.push_noti_blocked'));
                     }
                   }
                 } catch (error) {
@@ -219,7 +221,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               }
             },
             cancel: {
-              label: '나중에',
+              label: t('common.later'),
               onClick: () => toast.dismiss(toastId)
             }
           });

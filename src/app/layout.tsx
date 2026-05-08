@@ -33,6 +33,8 @@ import NotificationTray from "@/components/layout/NotificationTray";
 import LocationSelector from "@/components/layout/LocationSelector";
 import AuthModal from "@/components/auth/AuthModal";
 import AuthGuard from "@/components/auth/AuthGuard";
+import PWAInstallPrompt from "@/components/layout/PWAInstallPrompt";
+import InAppBrowserGuard from "@/components/layout/InAppBrowserGuard";
 import { Toaster } from "sonner";
 
 export default function RootLayout({
@@ -47,7 +49,7 @@ export default function RootLayout({
       <head>
         <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet" />
-        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        <script src="https://www.google.com/recaptcha/enterprise.js?render=6LcyCd4sAAAAAHDO-jSwgvMkKfgPrs85AFO1Z3mL" async defer></script>
       </head>
       <body className="bg-background text-on-surface font-body selection:bg-primary-container selection:text-on-primary-container antialiased">
         <div className="overflow-x-hidden w-full relative flex flex-col min-h-[100dvh]">
@@ -77,6 +79,12 @@ export default function RootLayout({
 
                           {/* Parallel Route Modal Content */}
                           {modal}
+
+                          {/* In-App Browser Guard (KakaoTalk etc.) */}
+                          <InAppBrowserGuard />
+
+                          {/* PWA Install Prompt (3 days or 3 visits) */}
+                          <PWAInstallPrompt />
                         </GlobalNavigation>
                       </ClassCartProvider>
                     </NavigationProvider>

@@ -36,9 +36,10 @@ export const chatService = {
     const roomsRef = collection(db, ROOMS_COLLECTION);
     let publicRooms: ChatRoom[] = [];
     let privateRooms: ChatRoom[] = [];
+    let groupRooms: ChatRoom[] = [];
 
     const handleSnapshot = () => {
-      const allRooms = [...publicRooms, ...privateRooms];
+      const allRooms = [...publicRooms, ...privateRooms, ...groupRooms];
       const sorted = allRooms.sort((a, b) => {
         if (a.id === SYSTEM_NOTICE_ID) return -1;
         if (b.id === SYSTEM_NOTICE_ID) return 1;
@@ -56,6 +57,7 @@ export const chatService = {
 
     const publicQ = query(roomsRef, where('type', 'in', ['public', 'notice']));
     const privateQ = query(roomsRef, where('participants', 'array-contains', userId));
+    const groupsQ = query(roomsRef, where('type', '==', 'groups'));
 
     const unsubPublic = onSnapshot(publicQ, (snap) => {
       publicRooms = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as ChatRoom));
@@ -67,9 +69,15 @@ export const chatService = {
       handleSnapshot();
     }, (err) => console.error("Private rooms error:", err));
 
+    const unsubGroups = onSnapshot(groupsQ, (snap) => {
+      groupRooms = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as ChatRoom));
+      handleSnapshot();
+    }, (err) => console.error("Groups rooms error:", err));
+
     return () => {
       unsubPublic();
       unsubPrivate();
+      unsubGroups();
     };
   },
 
@@ -446,6 +454,177 @@ export const chatService = {
     } catch (error) {
       console.error("Error nudging room:", error);
       throw error;
+    }
+  },
+
+  // 15. Create Group Chat Room (linked to Groups module 1:1)
+  createGroupChatRoom: async (groupId: string, groupName: string, ownerId: string, options?: {
+    coverImage?: string;
+    description?: string;
+    joinStrategy?: 'open' | 'approval' | 'invite';
+  }) => {
+    const chatRoomId = `group_${groupId}`;
+    const roomRef = doc(db, ROOMS_COLLECTION, chatRoomId);
+
+    // Check if already exists
+    const existing = await getDoc(roomRef);
+    if (existing.exists()) return chatRoomId;
+
+    await setDoc(roomRef, {
+      name: groupName,
+      type: 'groups',
+      participants: [],
+      linkedGroupId: groupId,
+      admins: [ownerId],
+      joinPolicy: options?.joinStrategy || 'open',
+      imageUrl: options?.coverImage || '',
+      description: options?.description || '',
+      createdBy: 'system',
+      createdAt: serverTimestamp(),
+      lastMessageTime: serverTimestamp(),
+      lastMessage: `Welcome to ${groupName} group chat!`,
+    });
+
+    return chatRoomId;
+  },
+
+  // 16. Sync Group Chat Admin (when group owner changes)
+  syncGroupChatAdmin: async (groupId: string, newOwnerId: string) => {
+    try {
+      const chatRoomId = `group_${groupId}`;
+      const roomRef = doc(db, ROOMS_COLLECTION, chatRoomId);
+      const roomSnap = await getDoc(roomRef);
+      if (!roomSnap.exists()) return;
+
+      await updateDoc(roomRef, {
+        admins: [newOwnerId],
+      });
+    } catch (error) {
+      console.error("Error syncing group chat admin:", error);
+    }
+  },
+
+  // 17. Auto-join Group Chat (for open-type groups)
+  autoJoinGroupChat: async (groupId: string, userId: string) => {
+    try {
+      const chatRoomId = `group_${groupId}`;
+      const roomRef = doc(db, ROOMS_COLLECTION, chatRoomId);
+      const roomSnap = await getDoc(roomRef);
+      if (!roomSnap.exists()) return;
+
+      const data = roomSnap.data();
+      const participants = data.participants || [];
+      if (participants.includes(userId)) return; // already a member
+
+      await updateDoc(roomRef, {
+        participants: arrayUnion(userId),
+      });
+
+      // Send join system message
+      await chatService.sendGroupSystemMessage(chatRoomId, userId, 'join');
+    } catch (error) {
+      console.error("Error auto-joining group chat:", error);
+    }
+  },
+
+  // 18. Add/Remove participant from group chat
+  addGroupChatParticipant: async (groupId: string, userId: string) => {
+    try {
+      const chatRoomId = `group_${groupId}`;
+      const roomRef = doc(db, ROOMS_COLLECTION, chatRoomId);
+      await updateDoc(roomRef, {
+        participants: arrayUnion(userId),
+      });
+
+      // Send join system message
+      await chatService.sendGroupSystemMessage(chatRoomId, userId, 'join');
+    } catch (error) {
+      console.error("Error adding group chat participant:", error);
+    }
+  },
+
+  removeGroupChatParticipant: async (groupId: string, userId: string) => {
+    try {
+      const chatRoomId = `group_${groupId}`;
+      const roomRef = doc(db, ROOMS_COLLECTION, chatRoomId);
+      await updateDoc(roomRef, {
+        participants: arrayRemove(userId),
+      });
+
+      // Send leave system message
+      await chatService.sendGroupSystemMessage(chatRoomId, userId, 'leave');
+    } catch (error) {
+      console.error("Error removing group chat participant:", error);
+    }
+  },
+
+  // 18-b. Kick a participant from group chat (admin action)
+  kickGroupChatParticipant: async (groupId: string, userId: string) => {
+    try {
+      const chatRoomId = `group_${groupId}`;
+      const roomRef = doc(db, ROOMS_COLLECTION, chatRoomId);
+      await updateDoc(roomRef, {
+        participants: arrayRemove(userId),
+      });
+
+      // Send kick system message
+      await chatService.sendGroupSystemMessage(chatRoomId, userId, 'kick');
+    } catch (error) {
+      console.error("Error kicking group chat participant:", error);
+    }
+  },
+
+  // 19. Get Group Chat Room
+  getGroupChatRoom: async (groupId: string): Promise<ChatRoom | null> => {
+    try {
+      const chatRoomId = `group_${groupId}`;
+      const roomRef = doc(db, ROOMS_COLLECTION, chatRoomId);
+      const roomSnap = await getDoc(roomRef);
+      if (!roomSnap.exists()) return null;
+      return { id: roomSnap.id, ...roomSnap.data() } as ChatRoom;
+    } catch (error) {
+      console.error("Error getting group chat room:", error);
+      return null;
+    }
+  },
+
+  // 20. Send join/leave/kick system message to group chat
+  sendGroupSystemMessage: async (chatRoomId: string, userId: string, action: 'join' | 'leave' | 'kick') => {
+    try {
+      // Fetch user nickname
+      const userDoc = await getDoc(doc(db, USERS_COLLECTION, userId));
+      const userData = userDoc.exists() ? userDoc.data() : {};
+      const name = userData.nickname || userData.displayName || 'A member';
+
+      let text = '';
+      if (action === 'join') {
+        text = `👋 ${name} joined the group.`;
+      } else if (action === 'leave') {
+        text = `${name} left the group.`;
+      } else if (action === 'kick') {
+        text = `${name} has been removed from the group.`;
+      }
+
+      const messageData = {
+        roomId: chatRoomId,
+        senderId: 'system',
+        senderName: 'System',
+        text,
+        type: 'system',
+        readBy: [],
+        timestamp: serverTimestamp()
+      };
+
+      await addDoc(collection(db, MESSAGES_COLLECTION), messageData);
+
+      const roomRef = doc(db, ROOMS_COLLECTION, chatRoomId);
+      await updateDoc(roomRef, {
+        lastMessage: text,
+        lastMessageTime: serverTimestamp(),
+        lastMessageSenderId: 'system'
+      });
+    } catch (error) {
+      console.error("Error sending group system message:", error);
     }
   }
 };

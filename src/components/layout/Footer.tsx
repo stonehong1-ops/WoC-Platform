@@ -10,12 +10,12 @@ export default function Footer() {
   const { profile } = useAuth();
 
   // Hide on landing page, login page, stay detail, and space detail pages
-  if (pathname === '/' || pathname === '/login' || (pathname.startsWith('/stay/') && pathname !== '/stay') || pathname?.startsWith('/group/')) return null;
+  if (pathname === '/' || pathname === '/login' || (pathname.startsWith('/stay/') && pathname !== '/stay') || pathname?.startsWith('/groups/')) return null;
 
   const isActive = (href: string) => pathname === href;
 
   return (
-    <footer className="fixed bottom-0 left-0 w-full z-50 bg-white shadow-[0_-8px_30px_rgb(0,0,0,0.04)] pt-[12px] pb-[32px] flex flex-col justify-end">
+    <footer className="fixed bottom-0 left-0 w-full z-50 bg-white shadow-[0_-8px_30px_rgb(0,0,0,0.04)] pt-[6px] pb-[16px] flex flex-col justify-end">
       {/* Integrated Scrollable Menu System */}
       <div className="overflow-x-auto no-scrollbar scroll-smooth">
         <div className="flex items-stretch min-w-max px-4 gap-4">
@@ -26,7 +26,7 @@ export default function Footer() {
             <NavItem href="/plaza" icon="quick_phrases" label="PLAZA" active={isActive('/plaza')} />
             <NavItem href="/venues" icon="map" label="MAP" active={isActive('/venues')} />
             <NavItem href="/explore" icon="explore" label="EXPLORE" active={isActive('/explore')} />
-            <NavItem href="/arcade" icon="airline_stops" label="ARCADE" active={isActive('/arcade')} />
+            <NavItem href="/hub" icon="airline_stops" label="HUB" active={isActive('/hub')} />
           </Section>
 
           <div className="w-[1px] bg-gray-200/60 my-1.5" />

@@ -14,6 +14,7 @@ interface ChatListProps {
   onSelectRoom: (roomId: string) => void;
   selectedRoomId?: string | null;
   category?: 'Personal' | 'Group' | 'Market';
+  onRoomsLoaded?: (counts: { market: number, group: number, personal: number }) => void;
 }
 
 function RoomAvatar({ room, currentUserId }: { room: ChatRoom; currentUserId?: string }) {
@@ -99,7 +100,63 @@ function RoomName({ room, currentUserId }: { room: ChatRoom; currentUserId?: str
   );
 }
 
-export default function ChatList({ onSelectRoom, selectedRoomId, category = 'Personal' }: ChatListProps) {
+function RoomItem({ room, userId, selectedRoomId, onSelectRoom }: { room: ChatRoom; userId?: string; selectedRoomId?: string | null; onSelectRoom: (id: string) => void }) {
+  const isSelected = selectedRoomId === room.id;
+  const unreadCount = room.unreadCounts?.[userId || ''] || 0;
+  const lastTime = (() => {
+    const d = safeDate(room.lastMessageTime);
+    return d ? formatDistanceToNow(d, { addSuffix: true }) : '';
+  })();
+
+  return (
+    <button
+      key={room.id}
+      onClick={() => onSelectRoom(room.id)}
+      className={`w-full flex items-center gap-4 p-5 transition-all text-left ${isSelected ? 'bg-primary/5' : 'hover:bg-gray-50'}`}
+    >
+      <div className="relative shrink-0">
+        <RoomAvatar room={room} currentUserId={userId} />
+        {room.type === 'notice' && (
+          <div className="absolute -top-1 -right-1 bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
+            <span className="material-symbols-outlined text-[12px] font-black">campaign</span>
+          </div>
+        )}
+        {(room.type === 'groups' || room.type === 'group') && (
+          <div className="absolute -bottom-0.5 -right-0.5 bg-blue-500 text-white w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">
+            <span className="material-symbols-outlined text-[10px]">group</span>
+          </div>
+        )}
+        {unreadCount > 0 && (
+          <div className="absolute -top-1 -right-1 bg-red-500 text-white min-w-[20px] h-5 rounded-full px-1.5 flex items-center justify-center text-[10px] font-black border-2 border-white animate-in zoom-in">
+            {unreadCount > 99 ? '99+' : unreadCount}
+          </div>
+        )}
+      </div>
+      
+      <div className="flex-1 min-w-0">
+        <div className="flex justify-between items-baseline mb-1">
+          <h3 className={`text-[15px] font-black truncate uppercase tracking-tight ${unreadCount > 0 ? 'text-gray-900' : 'text-gray-600'}`}>
+            <RoomName room={room} currentUserId={userId} />
+          </h3>
+          <span className="text-[10px] text-gray-400 font-bold ml-2 shrink-0">{lastTime}</span>
+        </div>
+        <div className="flex justify-between items-center">
+          <p className={`text-[13px] truncate font-medium ${unreadCount > 0 ? 'text-gray-500' : 'text-gray-400'}`}>
+            {room.lastMessage}
+          </p>
+          {(room.type === 'groups' || room.type === 'group') && room.participants && (
+            <span className="text-[10px] text-gray-300 font-bold ml-2 shrink-0 flex items-center gap-0.5">
+              <span className="material-symbols-outlined text-[12px]">person</span>
+              {room.participants.length}
+            </span>
+          )}
+        </div>
+      </div>
+    </button>
+  );
+}
+
+export default function ChatList({ onSelectRoom, selectedRoomId, category = 'Personal', onRoomsLoaded }: ChatListProps) {
   const { t } = useLanguage();
   const { user } = useAuth();
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
@@ -122,10 +179,17 @@ export default function ChatList({ onSelectRoom, selectedRoomId, category = 'Per
     const unsub = chatService.subscribeRooms(user.uid, (updatedRooms) => {
       setRooms(updatedRooms);
       setLoading(false);
+      
+      if (onRoomsLoaded) {
+        const marketCount = updatedRooms.filter(r => r.type === 'business').reduce((sum, r) => sum + (r.unreadCounts?.[user.uid] || 0), 0);
+        const groupCount = updatedRooms.filter(r => r.type === 'group' || r.type === 'groups' || r.type === 'notice' || r.type === 'public').reduce((sum, r) => sum + (r.unreadCounts?.[user.uid] || 0), 0);
+        const personalCount = updatedRooms.filter(r => r.type === 'personal' || r.type === 'private').reduce((sum, r) => sum + (r.unreadCounts?.[user.uid] || 0), 0);
+        onRoomsLoaded({ market: marketCount, group: groupCount, personal: personalCount });
+      }
     });
 
     return () => unsub();
-  }, [user]);
+  }, [user, onRoomsLoaded]);
 
   // Close search overlay on outside click
   useEffect(() => {
@@ -202,6 +266,11 @@ export default function ChatList({ onSelectRoom, selectedRoomId, category = 'Per
     }
     return true;
   });
+
+  // Group tab sub-sections
+  const publicRooms = filteredRooms.filter(r => r.type === 'notice' || r.type === 'public');
+  const myGroupRooms = filteredRooms.filter(r => (r.type === 'groups' || r.type === 'group') && r.participants?.includes(user?.uid || ''));
+  const discoverGroupRooms = filteredRooms.filter(r => (r.type === 'groups' || r.type === 'group') && !r.participants?.includes(user?.uid || ''));
 
   // Filter rooms by search query (name match)
   const searchFilteredRooms = searchQuery.trim()
@@ -376,50 +445,59 @@ export default function ChatList({ onSelectRoom, selectedRoomId, category = 'Per
               : t('chat.noConversationsCategory')}
           </p>
         </div>
+      ) : category === 'Group' ? (
+        /* === Group Tab: Sectioned Layout === */
+        <div className="flex flex-col">
+          {/* Public Section */}
+          {publicRooms.length > 0 && (
+            <div>
+              <div className="px-6 pt-4 pb-2">
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[14px]">campaign</span>
+                  Public
+                </span>
+              </div>
+              <div className="divide-y divide-gray-50">
+                {publicRooms.map((room) => <RoomItem key={room.id} room={room} userId={user?.uid} selectedRoomId={selectedRoomId} onSelectRoom={onSelectRoom} />)}
+              </div>
+            </div>
+          )}
+
+          {/* My Groups Section */}
+          {myGroupRooms.length > 0 && (
+            <div>
+              <div className="px-6 pt-5 pb-2">
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[14px]">group</span>
+                  My Groups
+                  <span className="ml-1 bg-gray-100 text-gray-500 text-[9px] font-black px-1.5 py-0.5 rounded-full">{myGroupRooms.length}</span>
+                </span>
+              </div>
+              <div className="divide-y divide-gray-50">
+                {myGroupRooms.map((room) => <RoomItem key={room.id} room={room} userId={user?.uid} selectedRoomId={selectedRoomId} onSelectRoom={onSelectRoom} />)}
+              </div>
+            </div>
+          )}
+
+          {/* Discover Section */}
+          {discoverGroupRooms.length > 0 && (
+            <div>
+              <div className="px-6 pt-5 pb-2">
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[14px]">explore</span>
+                  Discover
+                  <span className="ml-1 bg-gray-100 text-gray-500 text-[9px] font-black px-1.5 py-0.5 rounded-full">{discoverGroupRooms.length}</span>
+                </span>
+              </div>
+              <div className="divide-y divide-gray-50">
+                {discoverGroupRooms.map((room) => <RoomItem key={room.id} room={room} userId={user?.uid} selectedRoomId={selectedRoomId} onSelectRoom={onSelectRoom} />)}
+              </div>
+            </div>
+          )}
+        </div>
       ) : (
         <div className="divide-y divide-gray-50">
-          {searchFilteredRooms.map((room) => {
-            const isSelected = selectedRoomId === room.id;
-            const unreadCount = room.unreadCounts?.[user?.uid || ''] || 0;
-            const lastTime = (() => {
-              const d = safeDate(room.lastMessageTime);
-              return d ? formatDistanceToNow(d, { addSuffix: true }) : '';
-            })();
-
-            return (
-              <button
-                key={room.id}
-                onClick={() => onSelectRoom(room.id)}
-                className={`w-full flex items-center gap-4 p-5 transition-all text-left ${isSelected ? 'bg-primary/5' : 'hover:bg-gray-50'}`}
-              >
-                <div className="relative shrink-0">
-                  <RoomAvatar room={room} currentUserId={user?.uid} />
-                  {room.type === 'notice' && (
-                    <div className="absolute -top-1 -right-1 bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
-                      <span className="material-symbols-outlined text-[12px] font-black">campaign</span>
-                    </div>
-                  )}
-                  {unreadCount > 0 && (
-                    <div className="absolute -top-1 -right-1 bg-red-500 text-white min-w-[20px] h-5 rounded-full px-1.5 flex items-center justify-center text-[10px] font-black border-2 border-white animate-in zoom-in">
-                      {unreadCount > 99 ? '99+' : unreadCount}
-                    </div>
-                  )}
-                </div>
-                
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-baseline mb-1">
-                    <h3 className={`text-[15px] font-black truncate uppercase tracking-tight ${unreadCount > 0 ? 'text-gray-900' : 'text-gray-600'}`}>
-                      <RoomName room={room} currentUserId={user?.uid} />
-                    </h3>
-                    <span className="text-[10px] text-gray-400 font-bold ml-2 shrink-0">{lastTime}</span>
-                  </div>
-                  <p className={`text-[13px] truncate font-medium ${unreadCount > 0 ? 'text-gray-500' : 'text-gray-400'}`}>
-                    {room.lastMessage}
-                  </p>
-                </div>
-              </button>
-            );
-          })}
+          {searchFilteredRooms.map((room) => <RoomItem key={room.id} room={room} userId={user?.uid} selectedRoomId={selectedRoomId} onSelectRoom={onSelectRoom} />)}
         </div>
       )}
     </div>

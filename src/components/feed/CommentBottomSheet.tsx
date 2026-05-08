@@ -14,9 +14,11 @@ interface CommentBottomSheetProps {
   isOpen: boolean;
   onClose: () => void;
   currentUser?: any;
+  profile?: any;
+  hideUserInfo?: boolean;
 }
 
-export default function CommentBottomSheet({ post, isOpen, onClose, currentUser }: CommentBottomSheetProps) {
+export default function CommentBottomSheet({ post, isOpen, onClose, currentUser, profile, hideUserInfo }: CommentBottomSheetProps) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [replies, setReplies] = useState<Record<string, Comment[]>>({});
   const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set());
@@ -56,13 +58,18 @@ export default function CommentBottomSheet({ post, isOpen, onClose, currentUser 
 
     setIsLoading(true);
     try {
+      const isOfficial = profile?.isAdmin || profile?.role === 'admin';
+      const userName = isOfficial ? (profile?.nickname || currentUser.displayName || 'Admin') : (hideUserInfo ? t('help_desk.anonymous', 'Anonymous') : (profile?.nickname || currentUser.displayName || 'Anonymous'));
+      const userPhoto = isOfficial ? (profile?.photoURL || currentUser.photoURL || '') : (hideUserInfo ? '' : (profile?.photoURL || currentUser.photoURL || ''));
+
       await feedService.addComment(post.id, {
-        userId: currentUser.uid,
-        userName: currentUser.displayName || 'Anonymous',
-        userPhoto: currentUser.photoURL || '',
+        userId: isOfficial ? currentUser.uid : (hideUserInfo ? '' : currentUser.uid),
+        userName,
+        userPhoto,
         content: newCommentText.trim(),
         parentId: replyTo?.id || null,
-        repliesCount: 0
+        repliesCount: 0,
+        isOfficial
       });
       
       if (replyTo) {
@@ -96,12 +103,12 @@ export default function CommentBottomSheet({ post, isOpen, onClose, currentUser 
         <div className="flex flex-col py-2">
           <div className="flex justify-between items-start w-full">
             <UserBadge 
-              uid={comment.userId}
-              nickname={comment.userName}
-              nativeNickname={comment.userNameNative}
-              photoURL={comment.userPhoto}
+              uid={comment.isOfficial ? '' : (hideUserInfo ? '' : comment.userId)}
+              nickname={comment.isOfficial ? t('help_desk.official') : (hideUserInfo ? t('help_desk.anonymous') : comment.userName)}
+              nativeNickname={comment.isOfficial || hideUserInfo ? undefined : comment.userNameNative}
+              photoURL={comment.isOfficial || hideUserInfo ? undefined : comment.userPhoto}
               avatarSize="w-8 h-8"
-              nameClassName="font-bold text-sm text-on-surface"
+              nameClassName={`font-bold text-sm ${comment.isOfficial ? 'text-primary' : 'text-on-surface'}`}
               nativeClassName="text-[11px] font-medium text-on-surface-variant leading-tight ml-1"
             />
             <span className="text-[10px] text-on-surface-variant mt-1 shrink-0">{timeAgo}</span>
@@ -153,7 +160,7 @@ export default function CommentBottomSheet({ post, isOpen, onClose, currentUser 
       {replyTo && (
         <div className="mb-2 px-3 py-1.5 bg-primary/5 rounded-lg flex justify-between items-center animate-in slide-in-from-bottom-2">
           <span className="text-[11px] text-primary font-medium">
-            <strong>{replyTo.userName}{replyTo.userNameNative ? ` (${replyTo.userNameNative})` : ''}</strong> {t('plaza.replying_to')}
+            <strong>{replyTo.isOfficial ? t('help_desk.official') : (hideUserInfo ? t('help_desk.anonymous') : replyTo.userName)}</strong> {t('plaza.replying_to')}
           </span>
           <button onClick={() => setReplyTo(null)} className="material-symbols-outlined text-sm text-on-surface-variant hover:text-on-surface transition-colors">close</button>
         </div>

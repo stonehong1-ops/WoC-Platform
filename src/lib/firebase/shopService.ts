@@ -275,7 +275,7 @@ export const shopService = {
         type: 'SHOP_ORDER_ADMIN',
         title: 'New Order',
         message: `${data.buyerName} has placed a new order for '${data.items?.[0]?.title || 'item'}'. Please check the details.`,
-        actionUrl: `/group/${data.groupId}?tab=admin`,
+        actionUrl: `/groups/${data.groupId}?tab=admin`,
         referenceId: orderRef.id,
         category: 'SHOP'
       }, batch);

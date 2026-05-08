@@ -39,6 +39,23 @@ export const eventService = {
     });
   },
 
+  // 1-1. Subscribe to events by venueId
+  subscribeEventsByVenue: (venueId: string, callback: (events: Event[]) => void) => {
+    const q = query(
+      collection(db, COLLECTION_NAME),
+      where('venueId', '==', venueId),
+      orderBy('startDate', 'asc')
+    );
+    
+    return onSnapshot(q, (snapshot) => {
+      const events = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Event[];
+      callback(events);
+    });
+  },
+
   // 2. Subscribe to a single event (real-time)
   subscribeEvent: (eventId: string, callback: (event: Event | null) => void) => {
     const eventRef = doc(db, COLLECTION_NAME, eventId);
@@ -128,6 +145,61 @@ export const eventService = {
       id: doc.id,
       ...doc.data()
     })) as Event[];
+  },
+
+  // 8-1. Get Hero Event (Currently ongoing or nearest upcoming)
+  getHeroEvent: async () => {
+    // Check manual selection first
+    try {
+      const bannerDoc = await getDoc(doc(db, 'settings', 'banners'));
+      if (bannerDoc.exists() && bannerDoc.data().heroEventId) {
+        const eventId = bannerDoc.data().heroEventId;
+        const eventDoc = await getDoc(doc(db, COLLECTION_NAME, eventId));
+        if (eventDoc.exists()) {
+          return { id: eventDoc.id, ...eventDoc.data() } as Event;
+        }
+      }
+    } catch (e) {
+      console.log("Error fetching manual hero event, falling back to auto.", e);
+    }
+
+    const now = Timestamp.now();
+    
+    // First, try to find an ongoing event (endDate >= now)
+    // This requires an index on endDate, or it works if endDate is simply the same field as the where clause.
+    const qOngoing = query(
+      collection(db, COLLECTION_NAME),
+      where('endDate', '>=', now),
+      orderBy('endDate', 'asc')
+    );
+    try {
+      const ongoingSnap = await getDocs(qOngoing);
+      const ongoingEvents = ongoingSnap.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }) as Event)
+        .filter(e => e.startDate.toMillis() <= now.toMillis()); // Filter those that have already started
+        
+      if (ongoingEvents.length > 0) {
+        // Return the one that started earliest among the ongoing ones
+        return ongoingEvents.sort((a, b) => a.startDate.toMillis() - b.startDate.toMillis())[0];
+      }
+    } catch (e) {
+      console.log("Error or missing index for ongoing events, falling back to upcoming.");
+    }
+
+    // If no ongoing event (or if it failed), get the nearest upcoming event
+    const qUpcoming = query(
+      collection(db, COLLECTION_NAME),
+      where('startDate', '>=', now),
+      orderBy('startDate', 'asc'),
+      limit(1)
+    );
+    const upcomingSnap = await getDocs(qUpcoming);
+    
+    if (upcomingSnap.docs.length > 0) {
+      return { id: upcomingSnap.docs[0].id, ...upcomingSnap.docs[0].data() } as Event;
+    }
+
+    return null;
   },
 
   // 9. Like Functionality

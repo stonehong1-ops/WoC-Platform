@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 
 const GroupFooter = ({ communityName }: { communityName: string }) => (
   <footer className="w-full bg-white border-t border-outline-variant/10 py-24 px-8 md:px-16 mt-20 rounded-t-[48px]">
@@ -39,7 +39,7 @@ const GroupFooter = ({ communityName }: { communityName: string }) => (
     </div>
     <div className="max-w-7xl mx-auto mt-24 pt-10 border-t border-outline-variant/10 flex flex-col md:flex-row justify-between items-center gap-8">
       <div className="flex flex-col md:flex-row items-center gap-6">
-        <p className="text-[9px] font-black text-on-surface-variant/30 uppercase tracking-[0.25em]">짤 2026 WORLD OF CONNECTION. VERIFIED COMMUNITY SPACE.</p>
+        <p className="text-[9px] font-black text-on-surface-variant/30 uppercase tracking-[0.25em]">© 2026 WORLD OF CONNECTION. VERIFIED COMMUNITY SPACE.</p>
       </div>
       <div className="flex gap-10">
         <span className="material-symbols-outlined text-on-surface-variant/20 hover:text-primary cursor-pointer transition-all hover:scale-125">language</span>

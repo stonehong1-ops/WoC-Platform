@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Group } from "@/types/group";
 import { groupService } from "@/lib/firebase/groupService";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface GroupRoleEditorProps {
   group: Group;
@@ -11,6 +12,7 @@ interface GroupRoleEditorProps {
 }
 
 const GroupRoleEditor: React.FC<GroupRoleEditorProps> = ({ group, onClose }) => {
+  const { t } = useLanguage();
   const [permissions, setPermissions] = useState(group.staffPermissions || {
     managePosts: true,
     manageMembers: true,
@@ -40,26 +42,26 @@ const GroupRoleEditor: React.FC<GroupRoleEditorProps> = ({ group, onClose }) => 
   const roles = [
     {
       id: 'owner',
-      title: 'Owner (소유자)',
+      title: t('group.owner_role'),
       icon: 'stars',
       color: '#0057bd',
-      desc: '그룹의 모든 권한을 가집니다. 결제 관리, 그룹 설정 및 삭제가 가능합니다.',
+      desc: t('group.owner_desc'),
       count: '1 Member'
     },
     {
       id: 'staff',
-      title: 'Staff (운영진)',
+      title: t('group.staff_role'),
       icon: 'shield_person',
       color: '#893c92',
-      desc: '그룹 관리 및 중재 권한을 가집니다. 멤버 관리 및 분석 데이터를 조회할 수 있습니다.',
+      desc: t('group.staff_desc'),
       count: `${group.members?.filter(m => m.role === 'staff').length || 0} Members`
     },
     {
       id: 'member',
-      title: 'Member (일반 멤버)',
+      title: t('group.member_role'),
       icon: 'group',
       color: '#3a53b7',
-      desc: '기본적인 활동 권한을 가집니다. 게시글 작성 및 그룹 내 활동이 가능합니다.',
+      desc: t('group.member_desc'),
       count: `${group.memberCount || 0} Members`
     }
   ];
@@ -89,7 +91,7 @@ const GroupRoleEditor: React.FC<GroupRoleEditorProps> = ({ group, onClose }) => 
             </button>
             <div>
               <h1 className="text-lg font-headline font-black tracking-tight">Role & Permissions</h1>
-              <p className="text-xs text-white/40">멤버 역할 및 스태프 권한 관리</p>
+              <p className="text-xs text-white/40">{t('group.role.settings_desc') || "Manage member roles and staff permissions"}</p>
             </div>
           </div>
           <button 
@@ -101,7 +103,7 @@ const GroupRoleEditor: React.FC<GroupRoleEditorProps> = ({ group, onClose }) => 
                 : "bg-white text-black hover:bg-[#0057bd] hover:text-white"
             }`}
           >
-            {isSaving ? '저장 중...' : '권한 저장'}
+            {isSaving ? (t('group.role.saving') || 'Saving...') : t('group.save_permissions')}
           </button>
         </div>
       </header>
@@ -113,7 +115,7 @@ const GroupRoleEditor: React.FC<GroupRoleEditorProps> = ({ group, onClose }) => 
             <section>
               <header className="mb-8">
                 <h2 className="text-3xl font-headline font-black mb-2">Role Definitions</h2>
-                <p className="text-white/60">그룹 내 멤버들의 핵심 권한 체계를 정의합니다.</p>
+                <p className="text-white/60">{t('group.role_desc1')}</p>
               </header>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -148,14 +150,14 @@ const GroupRoleEditor: React.FC<GroupRoleEditorProps> = ({ group, onClose }) => 
               <div className="absolute top-0 right-0 w-32 h-32 bg-[#0057bd]/10 blur-[60px] rounded-full" />
               <header className="mb-8">
                 <h2 className="text-2xl font-headline font-black mb-2">Staff Permissions</h2>
-                <p className="text-white/40 text-sm">운영진에게 부여할 세부 권한을 선택하세요.</p>
+                <p className="text-white/40 text-sm">{t('group.role_desc2')}</p>
               </header>
               
               <div className="space-y-4">
                 {[
-                  { id: "managePosts", icon: "post_add", label: "게시글 관리", desc: "그룹 내 모든 포스트 수정, 삭제 및 고정 권한" },
-                  { id: "manageMembers", icon: "person_search", label: "멤버 관리", desc: "멤버 초대, 추방 및 블랙리스트 관리 권한" },
-                  { id: "viewAnalytics", icon: "analytics", label: "데이터 분석", desc: "활동 지표 및 리포트 대시보드 접근 권한" },
+                  { id: "managePosts", icon: "post_add", label: t('group.manage_posts'), desc: t('group.manage_posts_desc') },
+                  { id: "manageMembers", icon: "person_search", label: t('group.manage_members'), desc: t('group.manage_members_desc') },
+                  { id: "viewAnalytics", icon: "analytics", label: t('group.view_analytics'), desc: t('group.view_analytics_desc') },
                 ].map((perm) => (
                   <div key={perm.id} className="flex items-center justify-between p-5 bg-white/5 rounded-2xl border border-white/5 hover:border-white/10 transition-all">
                     <div className="flex items-center gap-5">
@@ -213,17 +215,17 @@ const GroupRoleEditor: React.FC<GroupRoleEditorProps> = ({ group, onClose }) => 
                 {(!group.members || group.members.filter(m => m.role === 'staff').length === 0) && (
                   <div className="py-12 text-center border border-dashed border-white/10 rounded-2xl">
                     <span className="material-symbols-outlined text-white/10 text-4xl mb-2">person_off</span>
-                    <p className="text-xs text-white/20">할당된 운영진이 없습니다.</p>
+                    <p className="text-xs text-white/20">{t('group.no_staff')}</p>
                   </div>
                 )}
               </div>
 
               <div className="mt-10 p-5 rounded-2xl bg-[#0057bd]/5 border border-[#0057bd]/10">
                 <p className="text-[11px] text-white/40 leading-relaxed mb-4">
-                  그룹 운영을 도와줄 전문가나 파트너를 운영진으로 초대할 수 있습니다. 초대 링크를 생성하세요.
+                  {t('group.invite_staff')}
                 </p>
                 <button className="w-full py-3 bg-white/5 text-white font-headline font-black text-xs rounded-xl border border-white/10 hover:bg-white hover:text-black transition-all">
-                  Staff Invite Link 생성
+                  {t('group.generate_invite')}
                 </button>
               </div>
             </div>

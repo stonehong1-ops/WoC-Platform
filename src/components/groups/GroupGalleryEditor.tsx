@@ -6,6 +6,7 @@ import { Group, GallerySection } from "@/types/group";
 import { storageService } from "@/lib/firebase/storageService";
 import { groupService } from "@/lib/firebase/groupService";
 import { toast } from "sonner";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface GroupGalleryEditorProps {
   group: Group;
@@ -14,11 +15,12 @@ interface GroupGalleryEditorProps {
 }
 
 export default function GroupGalleryEditor({ group, onClose, onSave }: GroupGalleryEditorProps) {
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [sections, setSections] = useState<GallerySection[]>(group.gallery || [
     {
       id: "1",
-      title: "Milonga Highlights",
+      title: t('group.gallery.editor.milonga') || "Milonga Highlights",
       type: "photos",
       media: []
     }
@@ -37,10 +39,10 @@ export default function GroupGalleryEditor({ group, onClose, onSave }: GroupGall
       });
       if (onSave) onSave();
       onClose();
-      toast.success("Gallery saved successfully!");
+      toast.success(t('group.gallery.editor.success_save') || "Gallery saved successfully!");
     } catch (error) {
       console.error("Failed to save gallery:", error);
-      toast.error("Failed to save changes.");
+      toast.error(t('group.gallery.editor.error_save') || "Failed to save changes.");
     } finally {
       setLoading(false);
     }
@@ -48,7 +50,7 @@ export default function GroupGalleryEditor({ group, onClose, onSave }: GroupGall
 
   const addSection = () => {
     const newId = Math.random().toString(36).substr(2, 9);
-    setSections([...sections, { id: newId, title: "New Gallery Section", type: "photos", media: [] }]);
+    setSections([...sections, { id: newId, title: t('group.gallery.editor.new_section') || "New Gallery Section", type: "photos", media: [] }]);
   };
 
   const removeSection = (id: string) => {
@@ -65,11 +67,11 @@ export default function GroupGalleryEditor({ group, onClose, onSave }: GroupGall
 
     // Check limits before triggering upload
     if (section.type === 'photos' && section.media.length >= 10) {
-      toast.error("Maximum 10 photos allowed per section.");
+      toast.error(t('group.gallery.editor.max_photos') || "Maximum 10 photos allowed per section.");
       return;
     }
     if (section.type === 'videos' && section.media.length >= 1) {
-      toast.error("Only 1 video allowed per section.");
+      toast.error(t('group.gallery.editor.max_videos') || "Only 1 video allowed per section.");
       return;
     }
 
@@ -85,7 +87,7 @@ export default function GroupGalleryEditor({ group, onClose, onSave }: GroupGall
     if (!file || !uploadingSectionId) return;
 
     if (file.size > 10 * 1024 * 1024) {
-      toast.error("파일 크기가 너무 큽니다. 최대 10MB까지 가능합니다.");
+      toast.error(t('group.gallery.editor.file_too_large') || "The file is too large. Max size is 10MB.");
       return;
     }
 
@@ -94,11 +96,11 @@ export default function GroupGalleryEditor({ group, onClose, onSave }: GroupGall
 
     // Re-verify limits
     if (section.type === 'photos' && section.media.length >= 10) {
-      toast.error("사진은 최대 10장까지만 업로드 가능합니다.");
+      toast.error(t('group.gallery.editor.max_photos_ko') || "You can only upload up to 10 photos per section.");
       return;
     }
     if (section.type === 'videos' && section.media.length >= 1) {
-      toast.error("비디오는 섹션당 1개만 업로드 가능합니다.");
+      toast.error(t('group.gallery.editor.max_videos_ko') || "You can only upload 1 video per section.");
       return;
     }
 
@@ -135,7 +137,7 @@ export default function GroupGalleryEditor({ group, onClose, onSave }: GroupGall
       // Revoke the blob URL to free up memory
       URL.revokeObjectURL(blobUrl);
       
-      toast.success("미디어 업로드 완료!");
+      toast.success(t('group.gallery.editor.upload_success') || "Media uploaded successfully!");
     } catch (error: any) {
       console.error("Upload failed:", error);
       // Remove the failed blob URL from the section
@@ -145,7 +147,7 @@ export default function GroupGalleryEditor({ group, onClose, onSave }: GroupGall
         }
         return s;
       }));
-      toast.error("업로드에 실패했습니다. 다시 시도해주세요.");
+      toast.error(t('group.gallery.editor.upload_failed') || "Upload failed. Please try again.");
     } finally {
       setIsOptimizing(false);
       setUploadProgress(0);
@@ -194,7 +196,7 @@ export default function GroupGalleryEditor({ group, onClose, onSave }: GroupGall
             >
               <span className="material-symbols-outlined">arrow_back</span>
             </button>
-            <h1 className="text-base font-headline font-semibold text-[#242c51]">Gallery Settings</h1>
+            <h1 className="text-base font-headline font-semibold text-[#242c51]">{t('group.gallery.editor.title') || "Gallery Settings"}</h1>
           </div>
           <button
             onClick={handleSave}
@@ -205,7 +207,7 @@ export default function GroupGalleryEditor({ group, onClose, onSave }: GroupGall
                 : "bg-[#0057bd] text-white hover:bg-[#004bb3] shadow-lg shadow-blue-900/10"
             }`}
           >
-            {loading ? "Saving..." : "Save"}
+            {loading ? (t('group.gallery.editor.saving') || "Saving...") : (t('group.gallery.editor.save') || "Save")}
           </button>
         </div>
       </header>
@@ -215,14 +217,14 @@ export default function GroupGalleryEditor({ group, onClose, onSave }: GroupGall
         <section className="bg-white p-12 rounded-[3rem] shadow-2xl shadow-blue-900/5 border border-white">
           <div className="flex justify-between items-end mb-8">
             <div>
-              <h2 className="font-headline text-3xl font-black text-[#242c51] tracking-tight">Media Repository</h2>
+              <h2 className="font-headline text-3xl font-black text-[#242c51] tracking-tight">{t('group.gallery.editor.repo_title') || "Media Repository"}</h2>
               <p className="text-[#a3abd7] text-sm font-black uppercase tracking-widest mt-2 opacity-80">
-                {totalMediaCount} Assets Managed
+                {totalMediaCount} {t('group.gallery.editor.assets_managed') || "Assets Managed"}
               </p>
             </div>
             <div className="text-right">
               <span className="text-[#0057bd] font-black text-4xl italic">{storagePercentage}%</span>
-              <p className="text-[10px] font-black text-[#a3abd7] uppercase tracking-tighter mt-1">Storage Quota</p>
+              <p className="text-[10px] font-black text-[#a3abd7] uppercase tracking-tighter mt-1">{t('group.gallery.editor.storage_quota') || "Storage Quota"}</p>
             </div>
           </div>
           <div className="h-5 w-full bg-[#f1f3ff] rounded-full overflow-hidden border border-[#efefff]">
@@ -238,7 +240,7 @@ export default function GroupGalleryEditor({ group, onClose, onSave }: GroupGall
         {/* Gallery Sections */}
         <div className="space-y-10">
           <div className="flex items-center justify-between px-4">
-            <h3 className="font-headline text-2xl font-black text-[#242c51] tracking-tight italic uppercase opacity-40">Layout Sections</h3>
+            <h3 className="font-headline text-2xl font-black text-[#242c51] tracking-tight italic uppercase opacity-40">{t('group.gallery.editor.layout_sections') || "Layout Sections"}</h3>
           </div>
 
           <div className="space-y-24">
@@ -251,19 +253,19 @@ export default function GroupGalleryEditor({ group, onClose, onSave }: GroupGall
                 <div className="p-12 space-y-12">
                   {/* Section Title */}
                   <div className="space-y-4">
-                    <label className="text-[10px] font-black text-[#a3abd7] uppercase tracking-[0.3em] ml-1">Section Identity</label>
+                    <label className="text-[10px] font-black text-[#a3abd7] uppercase tracking-[0.3em] ml-1">{t('group.gallery.editor.section_identity') || "Section Identity"}</label>
                     <input
                       value={section.title}
                       onChange={(e) => updateSection(section.id, { title: e.target.value })}
                       className="w-full bg-[#f8faff] border border-[#efefff] focus:ring-2 focus:ring-[#0057bd] rounded-[1.5rem] px-8 py-6 font-headline font-black text-2xl text-[#242c51] placeholder:opacity-20 transition-all"
                       type="text"
-                      placeholder="e.g. Atmosphere & Vibes"
+                      placeholder={t('group.gallery.editor.section_placeholder') || "e.g. Atmosphere & Vibes"}
                     />
                   </div>
 
                   {/* Media Type Toggle */}
                   <div className="space-y-6">
-                    <label className="text-[10px] font-black text-[#a3abd7] uppercase tracking-[0.3em] ml-1">Media Protocol</label>
+                    <label className="text-[10px] font-black text-[#a3abd7] uppercase tracking-[0.3em] ml-1">{t('group.gallery.editor.media_protocol') || "Media Protocol"}</label>
                     <div className="flex bg-[#f8faff] p-2.5 rounded-[2rem] w-fit border border-[#efefff]">
                       <button 
                         onClick={() => updateSection(section.id, { type: 'photos', media: [] })}
@@ -274,7 +276,7 @@ export default function GroupGalleryEditor({ group, onClose, onSave }: GroupGall
                         }`}
                       >
                         <span className="material-symbols-outlined text-2xl">photo_library</span>
-                        Photos
+                        {t('group.gallery.editor.photos') || "Photos"}
                       </button>
                       <button 
                         onClick={() => updateSection(section.id, { type: 'videos', media: [] })}
@@ -285,11 +287,11 @@ export default function GroupGalleryEditor({ group, onClose, onSave }: GroupGall
                         }`}
                       >
                         <span className="material-symbols-outlined text-2xl">movie</span>
-                        Videos
+                        {t('group.gallery.editor.videos') || "Videos"}
                       </button>
                     </div>
                     <p className="text-[11px] font-black text-[#fb5151] italic ml-1 opacity-70">
-                      * Switching types will clear existing media in this section.
+                      {t('group.gallery.editor.warning_switch_type') || "* Switching types will clear existing media in this section."}
                     </p>
                   </div>
 
@@ -297,14 +299,14 @@ export default function GroupGalleryEditor({ group, onClose, onSave }: GroupGall
                   <div className="space-y-8">
                     <div className="flex items-center justify-between px-1">
                       <label className="text-[10px] font-black text-[#a3abd7] uppercase tracking-[0.3em]">
-                        {section.type === 'photos' ? "Photo Stream (Max 10)" : "Cinema (1 Clip Only)"}
+                        {section.type === 'photos' ? (t('group.gallery.editor.photo_stream') || "Photo Stream (Max 10)") : (t('group.gallery.editor.cinema_stream') || "Cinema (1 Clip Only)")}
                       </label>
                       <span className={`text-[10px] font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-full ${
                         (section.type === 'photos' && section.media.length >= 10) || (section.type === 'videos' && section.media.length >= 1)
                           ? "bg-[#fb5151]/10 text-[#fb5151]" 
                           : "bg-[#0057bd]/10 text-[#0057bd]"
                       }`}>
-                        {section.media.length} / {section.type === 'photos' ? 10 : 1} Slots Occupied
+                        {section.media.length} / {section.type === 'photos' ? 10 : 1} {t('group.gallery.editor.slots_occupied') || "Slots Occupied"}
                       </span>
                     </div>
 
@@ -323,7 +325,7 @@ export default function GroupGalleryEditor({ group, onClose, onSave }: GroupGall
                             <div className="w-full h-full bg-[#242c51] flex items-center justify-center">
                               <span className="material-symbols-outlined text-white text-6xl opacity-40">play_circle</span>
                               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                              <span className="absolute bottom-6 left-6 text-white font-headline font-black text-xs uppercase tracking-widest">Active Clip</span>
+                              <span className="absolute bottom-6 left-6 text-white font-headline font-black text-xs uppercase tracking-widest">{t('group.gallery.editor.active_clip') || "Active Clip"}</span>
                             </div>
                           )}
                           <button 
@@ -375,7 +377,7 @@ export default function GroupGalleryEditor({ group, onClose, onSave }: GroupGall
                                 </div>
                               </div>
                               <span className="text-[10px] font-black text-[#0057bd] uppercase tracking-widest mt-4">
-                                {isOptimizing ? "Optimizing..." : "Syncing..."}
+                                {isOptimizing ? (t('group.gallery.editor.optimizing') || "Optimizing...") : (t('group.gallery.editor.syncing') || "Syncing...")}
                               </span>
                             </div>
                           ) : (
@@ -386,7 +388,7 @@ export default function GroupGalleryEditor({ group, onClose, onSave }: GroupGall
                                 </span>
                               </div>
                               <span className="text-[11px] font-black text-[#a3abd7] uppercase tracking-[0.3em] group-hover/add:text-[#0057bd]">
-                                Add Content
+                                {t('group.gallery.editor.add_content') || "Add Content"}
                               </span>
                             </>
                           )}
@@ -403,7 +405,7 @@ export default function GroupGalleryEditor({ group, onClose, onSave }: GroupGall
                     className="w-full py-8 bg-[#fffafa] text-[#fb5151] font-black uppercase tracking-[0.3em] text-[10px] hover:bg-[#fb5151] hover:text-white transition-all flex items-center justify-center gap-3 border-t border-[#fb5151]/10"
                   >
                     <span className="material-symbols-outlined text-lg">delete_sweep</span>
-                    Terminate Section
+                    {t('group.gallery.editor.terminate_section') || "Terminate Section"}
                   </button>
                 )}
               </motion.div>
@@ -418,8 +420,8 @@ export default function GroupGalleryEditor({ group, onClose, onSave }: GroupGall
                 <span className="material-symbols-outlined text-6xl">add_circle</span>
               </div>
               <div className="text-center space-y-2">
-                <span className="block text-2xl italic uppercase tracking-[0.4em]">Initialize Section</span>
-                <span className="block text-[10px] font-black text-[#a3abd7] uppercase tracking-widest opacity-60">Expand your community story</span>
+                <span className="block text-2xl italic uppercase tracking-[0.4em]">{t('group.gallery.editor.init_section') || "Initialize Section"}</span>
+                <span className="block text-[10px] font-black text-[#a3abd7] uppercase tracking-widest opacity-60">{t('group.gallery.editor.expand_story') || "Expand your community story"}</span>
               </div>
             </button>
           </div>

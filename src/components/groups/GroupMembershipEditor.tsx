@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Group } from "@/types/group";
 import { groupService } from "@/lib/firebase/groupService";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface GroupMembershipEditorProps {
   group: Group;
@@ -11,6 +12,7 @@ interface GroupMembershipEditorProps {
 }
 
 const GroupMembershipEditor: React.FC<GroupMembershipEditorProps> = ({ group, onClose }) => {
+  const { t } = useLanguage();
   const [joinStrategy, setJoinStrategy] = useState<'open' | 'approval' | 'invite'>(
     group.membershipPolicy?.joinStrategy || 'open'
   );
@@ -36,21 +38,21 @@ const GroupMembershipEditor: React.FC<GroupMembershipEditorProps> = ({ group, on
   const strategies = [
     {
       id: 'open',
-      title: 'Open Group (공개 그룹)',
+      title: t('group.open_group'),
       icon: 'public',
-      desc: '누구나 즉시 가입할 수 있는 개방형 커뮤니티입니다. 대규모 공지나 정보 공유 목적에 적합합니다.',
+      desc: t('group.open_group_desc'),
     },
     {
       id: 'approval',
-      title: 'Admin Approval (승인제)',
+      title: t('group.admin_approval'),
       icon: 'verified_user',
-      desc: '가입 신청 후 관리자의 승인이 필요합니다. 커뮤니티의 성격에 맞는 멤버를 선별할 때 유용합니다.',
+      desc: t('group.admin_approval_desc'),
     },
     {
       id: 'invite',
-      title: 'Manager Selection (초대제)',
+      title: t('group.manager_selection'),
       icon: 'lock_person',
-      desc: '관리자가 직접 초대한 멤버만 가입할 수 있습니다. 보안이 중요하거나 소수 정예 모임에 최적화되어 있습니다.',
+      desc: t('group.manager_selection_desc'),
     }
   ];
 
@@ -79,7 +81,7 @@ const GroupMembershipEditor: React.FC<GroupMembershipEditorProps> = ({ group, on
             </button>
             <div>
               <h1 className="text-lg font-headline font-black tracking-tight text-white">Membership Policy</h1>
-              <p className="text-xs text-white/40">커뮤니티 가입 방식 설정</p>
+              <p className="text-xs text-white/40">{t('group.policy.settings_desc') || "Configure community joining methods"}</p>
             </div>
           </div>
           <button 
@@ -94,9 +96,9 @@ const GroupMembershipEditor: React.FC<GroupMembershipEditorProps> = ({ group, on
             {isSaving ? (
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                <span>저장 중...</span>
+                <span>{t('group.policy.saving') || "Saving..."}</span>
               </div>
-            ) : '정책 저장'}
+            ) : t('group.policy_save')}
           </button>
         </div>
       </header>
@@ -112,8 +114,8 @@ const GroupMembershipEditor: React.FC<GroupMembershipEditorProps> = ({ group, on
               Join Strategy
             </h2>
             <p className="text-white/60 text-lg leading-relaxed">
-              새로운 멤버가 커뮤니티에 합류하는 방식을 정의하세요. <br/>
-              운영 목적에 따라 가입 문턱을 조절할 수 있습니다.
+              {t('group.policy_desc1')} <br/>
+              {t('group.policy_desc2')}
             </p>
           </header>
           
@@ -159,8 +161,8 @@ const GroupMembershipEditor: React.FC<GroupMembershipEditorProps> = ({ group, on
             <div className="p-6 rounded-2xl bg-white/5 border border-dashed border-white/10 text-center">
               <span className="material-symbols-outlined text-[#0057bd] mb-3 block">info</span>
               <p className="text-white/40 text-sm">
-                정책 변경 시 기존 대기 중인 가입 신청자들에게는 <br/>
-                새로운 정책이 소급 적용되지 않을 수 있습니다.
+                {t('group.policy_warn1')} <br/>
+                {t('group.policy_warn2')}
               </p>
             </div>
           </footer>

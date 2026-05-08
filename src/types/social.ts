@@ -50,6 +50,7 @@ export interface Social {
   staffNames?: string[];            // Staff display names
   organizerPhone?: string;          // Organizer phone number
   tableCapacity?: number;           // Max table seats (for closure threshold)
+  moments?: string[];               // Up to 20 images (Moments)
   createdAt: Timestamp;
 }
 

@@ -17,6 +17,8 @@ interface NavigationContextType {
   subHeaderHeight: number;
   isHeaderVisible: boolean;
   setIsHeaderVisible: (visible: boolean) => void;
+  isGlobalNavHidden: boolean;
+  setGlobalNavHidden: (hidden: boolean) => void;
 }
 
 const NavigationContext = createContext<NavigationContextType | undefined>(undefined);
@@ -28,6 +30,7 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
   const [subHeader, setSubHeaderState] = useState<React.ReactNode | null>(null);
   const [subHeaderHeight, setSubHeaderHeight] = useState<number>(0);
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+  const [isGlobalNavHidden, setIsGlobalNavHidden] = useState(false);
 
   const openDrawer = useCallback(() => setIsDrawerOpen(true), []);
   const closeDrawer = useCallback(() => setIsDrawerOpen(false), []);
@@ -37,6 +40,7 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
   const closeNotiTray = useCallback(() => setIsNotiTrayOpen(false), []);
   
   const setHeaderShrink = useCallback((shrink: boolean) => setIsHeaderShrink(shrink), []);
+  const setGlobalNavHidden = useCallback((hidden: boolean) => setIsGlobalNavHidden(hidden), []);
 
   const setSubHeader = useCallback((content: React.ReactNode | null, height?: number) => {
     setSubHeaderState(content);
@@ -63,13 +67,16 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
     setSubHeader,
     subHeaderHeight,
     isHeaderVisible,
-    setIsHeaderVisible
+    setIsHeaderVisible,
+    isGlobalNavHidden,
+    setGlobalNavHidden
   }), [
     isDrawerOpen, openDrawer, closeDrawer, toggleDrawer,
     isNotiTrayOpen, openNotiTray, closeNotiTray,
     isHeaderShrink, setHeaderShrink,
     subHeader, setSubHeader, subHeaderHeight,
-    isHeaderVisible, setIsHeaderVisible
+    isHeaderVisible, setIsHeaderVisible,
+    isGlobalNavHidden, setGlobalNavHidden
   ]);
 
   return (

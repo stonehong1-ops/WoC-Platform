@@ -12,6 +12,8 @@ import { userService } from "@/lib/firebase/userService";
 import { PlatformUser } from "@/types/user";
 import { venueService } from "@/lib/firebase/venueService";
 import { Venue } from "@/types/venue";
+import { useLanguage } from "@/contexts/LanguageContext";
+
 interface GroupClassAddEditorProps {
   group: Group;
   onClose: () => void;
@@ -21,6 +23,7 @@ interface GroupClassAddEditorProps {
 }
 
 const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClose, onSave, initialData, targetMonth }) => {
+  const { t } = useLanguage();
   const [isSaving, setIsSaving] = useState(false);
   
   const [imageUploading, setImageUploading] = useState(false);
@@ -168,7 +171,7 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
       URL.revokeObjectURL(blobUrl);
     } catch (error: any) {
       console.error("Image upload failed:", error);
-      toast.error("이미지 업로드에 실패했습니다.");
+      toast.error(t('class.upload_image_failed') || "Failed to upload image.");
       // 실패 시 롤백
       setFormData(prev => ({ ...prev, imageUrl: originalUrl }));
       URL.revokeObjectURL(blobUrl);
@@ -203,7 +206,7 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
       URL.revokeObjectURL(blobUrl);
     } catch (error: any) {
       console.error("Video upload failed:", error);
-      toast.error("비디오 업로드에 실패했습니다.");
+      toast.error(t('class.upload_video_failed') || "Failed to upload video.");
       // 실패 시 롤백
       setFormData(prev => ({ ...prev, videoUrl: originalUrl }));
       URL.revokeObjectURL(blobUrl);
@@ -216,15 +219,15 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
 
   const handleSave = async () => {
     if (!formData.title.trim()) {
-      toast.error("클래스 제목을 입력해주세요.");
+      toast.error(t('class.enter_title'));
       return;
     }
     if (formData.amount < 0) {
-      toast.error("클래스 비용을 확인해주세요.");
+      toast.error(t('class.check_cost'));
       return;
     }
     if (formData.instructors.some(inst => !inst.name.trim())) {
-      toast.error("강사 이름을 모두 입력해주세요.");
+      toast.error(t('class.enter_instructors'));
       return;
     }
 
@@ -244,12 +247,12 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
         await groupService.addClass(group.id, finalData);
       }
       
-      toast.success(isEditMode ? "클래스가 수정되었습니다." : "클래스가 추가되었습니다.");
+      toast.success(isEditMode ? t('class.edited_success') : t('class.added_success'));
       if (onSave) onSave();
       onClose();
     } catch (error) {
       console.error("Failed to save class:", error);
-      toast.error("클래스 저장에 실패했습니다.");
+      toast.error(t('class.save_failed'));
     } finally {
       setIsSaving(false);
     }
@@ -340,10 +343,10 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
         <div className="max-w-md mx-auto w-full flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button onClick={onClose} className="material-symbols-outlined text-on-surface-variant p-2 hover:bg-surface-variant rounded-full transition-colors active-scale">close</button>
-            <h1 className="text-xl font-extrabold tracking-tight text-on-surface headline">{isEditMode ? "클래스 수정" : "클래스 추가"}</h1>
+            <h1 className="text-xl font-extrabold tracking-tight text-on-surface headline">{isEditMode ? t('class.edit_class') : t('class.add_class')}</h1>
           </div>
           <button onClick={handleSave} disabled={isSaving} className="bg-primary text-white font-bold text-sm px-5 py-2 rounded-lg shadow-sm shadow-primary/20 hover:bg-primary/90 transition-all active-scale disabled:opacity-50">
-            {isSaving ? "저장 중..." : "저장"}
+            {isSaving ? t('common.saving') : t('common.save')}
           </button>
         </div>
       </header>
@@ -353,7 +356,7 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
           {/* Title and Description Section */}
           <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline/20 shadow-sm space-y-5">
             <div>
-              <label className="block text-[10px] font-bold text-on-surface-variant mb-2 uppercase tracking-widest opacity-70">클래스 제목</label>
+              <label className="block text-[10px] font-bold text-on-surface-variant mb-2 uppercase tracking-widest opacity-70">{t('class.title_label')}</label>
               <input 
                 value={formData.title}
                 onChange={e => setFormData({...formData, title: e.target.value})}
@@ -363,7 +366,7 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
               />
             </div>
             <div>
-              <label className="block text-[10px] font-bold text-on-surface-variant mb-2 uppercase tracking-widest opacity-70">클래스 설명</label>
+              <label className="block text-[10px] font-bold text-on-surface-variant mb-2 uppercase tracking-widest opacity-70">{t('class.desc_label')}</label>
               <textarea 
                 value={formData.description}
                 onChange={e => setFormData({...formData, description: e.target.value})}
@@ -372,7 +375,7 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
                 rows={4}
               ></textarea>
               <div className="mt-2 flex justify-end">
-                <span className="text-[10px] text-on-surface-variant font-bold opacity-60">{formData.description?.length || 0} / 2000 자</span>
+                <span className="text-[10px] text-on-surface-variant font-bold opacity-60">{formData.description?.length || 0} / 2000 {t('class.characters', 'chars')}</span>
               </div>
             </div>
           </div>
@@ -380,7 +383,7 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
           {/* Classification Section */}
           <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline/20 shadow-sm space-y-4">
             <div>
-              <label className="block text-[10px] font-bold text-on-surface-variant mb-2 uppercase tracking-widest opacity-70">레벨</label>
+              <label className="block text-[10px] font-bold text-on-surface-variant mb-2 uppercase tracking-widest opacity-70">{t('class.level_label')}</label>
               <div className="relative">
                 <select 
                   value={formData.level}
@@ -397,7 +400,7 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
               </div>
             </div>
             <div>
-              <label className="block text-[10px] font-bold text-on-surface-variant mb-2 uppercase tracking-widest opacity-70">클래스 유형 (파트너)</label>
+              <label className="block text-[10px] font-bold text-on-surface-variant mb-2 uppercase tracking-widest opacity-70">{t('class.type_label')}</label>
               <div className="relative">
                 <select 
                   value={formData.classType}
@@ -416,9 +419,9 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
 
           {/* Venue Section */}
           <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline/20 shadow-sm space-y-4">
-            <h2 className="text-sm font-extrabold headline text-on-surface uppercase tracking-widest mb-4">장소</h2>
+            <h2 className="text-sm font-extrabold headline text-on-surface uppercase tracking-widest mb-4">{t('class.venue_label') || "Venue"}</h2>
             <div className="relative z-40">
-              <label className="block text-[10px] font-bold text-on-surface-variant mb-2 uppercase tracking-widest opacity-70">장소 선택</label>
+              <label className="block text-[10px] font-bold text-on-surface-variant mb-2 uppercase tracking-widest opacity-70">{t('class.venue_select')}</label>
               <div className="relative group">
                 <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/40">location_on</span>
                 <input
@@ -427,8 +430,7 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
                   onFocus={() => venueName.length >= 1 && setShowVenueResults(venueResults.length > 0)}
                   onBlur={() => setTimeout(() => setShowVenueResults(false), 200)}
                   className="w-full pl-12 pr-4 py-3 bg-surface-variant/30 border border-outline/30 rounded-lg text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm"
-                  placeholder="Search venues... (영문 또는 한글)"
-                  type="text"
+                  placeholder={t('class.venue_placeholder') || "Search venues..."}
                 />
               </div>
               {showVenueResults && (
@@ -437,20 +439,21 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
                     <button
                       key={v.id}
                       onClick={() => handleSelectVenue(v)}
-                      className="w-full text-left px-4 py-3 hover:bg-slate-50 flex items-center justify-between group transition-colors border-b border-slate-50 last:border-b-0"
+                      className="w-full text-left px-4 py-3 hover:bg-slate-50 flex items-center gap-3 group transition-colors border-b border-slate-50 last:border-b-0"
                     >
-                      <div className="flex items-baseline gap-2">
-                        <p className="font-bold text-[#2D3435] group-hover:text-primary transition-colors">{v.name}</p>
-                        {v.nameKo && <span className="text-[11px] text-gray-400 font-medium">{v.nameKo}</span>}
+                      <span className="material-symbols-outlined text-[18px] text-slate-400 shrink-0">location_on</span>
+                      <div className="flex flex-col">
+                        <p className="font-bold text-sm text-[#242c51] leading-tight group-hover:text-primary transition-colors">{v.name}</p>
+                        {v.nameKo && <span className="text-[10px] text-slate-400 font-medium leading-tight">{v.nameKo}</span>}
                       </div>
-                      <span className="text-[10px] text-gray-300 font-bold">{v.city}</span>
+                      <span className="text-[10px] text-gray-300 font-bold ml-auto shrink-0">{v.city}</span>
                     </button>
                   ))}
                 </div>
               )}
             </div>
             <div>
-              <label className="block text-[10px] font-bold text-on-surface-variant mb-2 uppercase tracking-widest opacity-70">장소 메모</label>
+              <label className="block text-[10px] font-bold text-on-surface-variant mb-2 uppercase tracking-widest opacity-70">{t('class.venue_memo')}</label>
               <input 
                 value={(formData as any).locationMemo || ''}
                 onChange={e => setFormData({...formData, locationMemo: e.target.value} as any)}
@@ -463,7 +466,7 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
 
           {/* Pricing Section */}
           <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline/20 shadow-sm">
-            <h2 className="text-sm font-extrabold headline text-on-surface uppercase tracking-widest mb-4">가격</h2>
+            <h2 className="text-sm font-extrabold headline text-on-surface uppercase tracking-widest mb-4">{t('class.price_label')}</h2>
             <div className="space-y-4">
               <div>
                 <label className="block text-[10px] font-bold text-on-surface-variant mb-2 uppercase tracking-widest opacity-70">Currency</label>
@@ -505,7 +508,7 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
           {/* Capacity Section */}
           <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline/20 shadow-sm">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-sm font-extrabold headline text-on-surface uppercase tracking-widest">정원 관리</h2>
+              <h2 className="text-sm font-extrabold headline text-on-surface uppercase tracking-widest">{t('class.capacity_label')}</h2>
               <div className="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
                 <input 
                   checked={capacityEnabled}
@@ -551,9 +554,9 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
           {/* Instructors Section */}
           <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline/20 shadow-sm">
             <div className="mb-5">
-              <h2 className="text-sm font-extrabold headline text-on-surface uppercase tracking-widest mb-4">강사진</h2>
+              <h2 className="text-sm font-extrabold headline text-on-surface uppercase tracking-widest mb-4">{t('class.instructors_label')}</h2>
               <div className="relative z-30">
-                <label className="block text-[10px] font-bold text-on-surface-variant mb-2 uppercase tracking-widest opacity-70">강사 추가</label>
+                <label className="block text-[10px] font-bold text-on-surface-variant mb-2 uppercase tracking-widest opacity-70">{t('class.add_instructor')}</label>
                 <div className="relative group">
                   <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/40">person_add</span>
                   <input
@@ -568,19 +571,19 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
                 </div>
                 {showInstructorResults && (
                   <div className="absolute top-full left-0 w-full mt-1 bg-white border border-slate-100 rounded-xl shadow-lg z-50 max-h-60 overflow-y-auto animate-in fade-in duration-200">
-                    {instructorResults.map(u => (
-                      <div
-                        key={u.id}
-                        onClick={() => handleSelectInstructor(u)}
-                        className="flex items-center gap-3 p-3 hover:bg-slate-50 cursor-pointer transition-colors border-b border-slate-50 last:border-b-0"
-                      >
-                        <img src={u.photoURL || "https://www.woc.today/images/default-avatar.png"} alt="" className="w-8 h-8 rounded-full object-cover" />
-                        <div>
-                          <p className="font-bold text-sm text-[#242c51]">@{u.nickname || u.id}</p>
-                          {u.nativeNickname && <p className="text-[10px] text-slate-500">{u.nativeNickname}</p>}
-                        </div>
+                  {instructorResults.map(u => (
+                    <div
+                      key={u.id}
+                      onClick={() => handleSelectInstructor(u)}
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 cursor-pointer transition-colors border-b border-slate-50 last:border-b-0"
+                    >
+                      <img src={u.photoURL || "https://www.woc.today/images/default-avatar.png"} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />
+                      <div className="flex flex-col">
+                        <p className="font-bold text-sm text-[#242c51] leading-tight">{u.nickname || u.id}</p>
+                        {u.nativeNickname && <span className="text-[10px] text-slate-400 font-medium leading-tight">{u.nativeNickname}</span>}
                       </div>
-                    ))}
+                    </div>
+                  ))}
                   </div>
                 )}
               </div>
@@ -611,7 +614,7 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
           {/* Schedule Section */}
           <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline/20 shadow-sm">
             <div className="mb-6">
-              <h2 className="text-sm font-extrabold headline text-on-surface uppercase tracking-widest">스케줄</h2>
+              <h2 className="text-sm font-extrabold headline text-on-surface uppercase tracking-widest">{t('class.schedule_label')}</h2>
             </div>
             <div className="space-y-6">
               {formData.schedule.map((entry, index) => (
@@ -693,12 +696,12 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
           {/* Media Section */}
           <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline/20 shadow-sm">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-sm font-extrabold headline text-on-surface uppercase tracking-widest">미디어 (선택)</h2>
+              <h2 className="text-sm font-extrabold headline text-on-surface uppercase tracking-widest">{t('class.media_label')}</h2>
             </div>
             <div className="space-y-6">
               {/* Thumbnail Photo Section */}
               <div>
-                <label className="block text-[10px] font-bold text-on-surface-variant mb-3 uppercase tracking-widest opacity-70">대표 사진 (1)</label>
+                <label className="block text-[10px] font-bold text-on-surface-variant mb-3 uppercase tracking-widest opacity-70">{t('class.main_photo')}</label>
                 <input type="file" ref={imageInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
                 <div 
                   onClick={() => !imageUploading && imageInputRef.current?.click()}
@@ -709,7 +712,7 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
                       {isOptimizingImage ? (
                         <div className="flex flex-col items-center gap-3">
                           <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          <span className="text-xs font-bold text-white tracking-tight">최적화 중...</span>
+                          <span className="text-xs font-bold text-white tracking-tight">{t('class.optimizing')}</span>
                         </div>
                       ) : (
                         <div className="relative w-16 h-16">
@@ -730,14 +733,14 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
                     <>
                       <img src={formData.imageUrl} alt="Thumbnail" className="w-full h-full object-cover absolute inset-0" />
                       <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <span className="text-white font-bold text-sm">사진 변경</span>
+                        <span className="text-white font-bold text-sm">{t('class.change_photo')}</span>
                       </div>
                     </>
                   ) : (
                     <>
                       <span className="material-symbols-outlined text-3xl text-on-surface-variant/50 mb-2">image</span>
-                      <p className="text-sm font-bold text-on-surface mb-1">사진 업로드</p>
-                      <p className="text-[11px] text-on-surface-variant opacity-70">PNG, JPG 최대 5MB</p>
+                      <p className="text-sm font-bold text-on-surface mb-1">{t('class.upload_photo')}</p>
+                      <p className="text-[11px] text-on-surface-variant opacity-70">{t('class.photo_desc')}</p>
                     </>
                   )}
                 </div>
@@ -745,7 +748,7 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
 
               {/* Promo Video Section */}
               <div>
-                <label className="block text-[10px] font-bold text-on-surface-variant mb-3 uppercase tracking-widest opacity-70">프로모션 비디오 (1)</label>
+                <label className="block text-[10px] font-bold text-on-surface-variant mb-3 uppercase tracking-widest opacity-70">{t('class.promo_video')}</label>
                 <input type="file" ref={videoInputRef} className="hidden" accept="video/*" onChange={handleVideoUpload} />
                 <div 
                   onClick={() => !videoUploading && videoInputRef.current?.click()}
@@ -756,7 +759,7 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
                       {isOptimizingVideo ? (
                         <div className="flex flex-col items-center gap-3">
                           <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          <span className="text-xs font-bold text-white tracking-tight">최적화 중...</span>
+                          <span className="text-xs font-bold text-white tracking-tight">{t('class.optimizing')}</span>
                         </div>
                       ) : (
                         <div className="relative w-16 h-16">
@@ -779,14 +782,14 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
                         <span className="material-symbols-outlined text-white text-4xl">play_circle</span>
                       </div>
                       <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <span className="text-white font-bold text-sm">비디오 변경</span>
+                        <span className="text-white font-bold text-sm">{t('class.change_video')}</span>
                       </div>
                     </>
                   ) : (
                     <>
                       <span className="material-symbols-outlined text-3xl text-on-surface-variant/50 mb-2">movie</span>
-                      <p className="text-sm font-bold text-on-surface mb-1">비디오 업로드</p>
-                      <p className="text-[11px] text-on-surface-variant opacity-70">MP4 최대 50MB</p>
+                      <p className="text-sm font-bold text-on-surface mb-1">{t('class.upload_video')}</p>
+                      <p className="text-[11px] text-on-surface-variant opacity-70">{t('class.video_desc')}</p>
                     </>
                   )}
                 </div>

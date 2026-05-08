@@ -22,6 +22,7 @@ import { galleryService, GalleryPost, GalleryComment } from '@/lib/firebase/gall
 import { useAuth } from '@/components/providers/AuthProvider';
 import { safeDate } from '@/lib/utils/safeDate';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useNavigation } from '@/components/providers/NavigationProvider';
 
 // Helper to determine if a URL is a video
 const isVideoUrl = (url: string) => {
@@ -37,10 +38,18 @@ const GalleryPage = () => {
   const [activeCommentPost, setActiveCommentPost] = useState<string | null>(null);
   const { user } = useAuth();
   const { t } = useLanguage();
+  const { setIsHeaderVisible } = useNavigation();
   const [mounted, setMounted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const router = useRouter();
+
+  // 라이브 페이지는 snap-y 내부 스크롤 구조라 window scroll이 발생하지 않으므로
+  // mount 시 즉시 헤더/푸터를 숨기고 unmount 시 복구한다
+  useEffect(() => {
+    setIsHeaderVisible(false);
+    return () => setIsHeaderVisible(true);
+  }, [setIsHeaderVisible]);
 
   useEffect(() => {
     setMounted(true);

@@ -6,6 +6,7 @@ import { GoogleMap, Marker, Autocomplete } from "@react-google-maps/api";
 import { Group } from "@/types/group";
 import { groupService } from "@/lib/firebase/groupService";
 import { storageService } from "@/lib/firebase/storageService";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface GroupContactEditorProps {
   group: Group;
@@ -25,6 +26,7 @@ const mapOptions = {
 };
 
 export default function GroupContactEditor({ group, isLoaded, onClose }: GroupContactEditorProps) {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     representative: group.representative || { name: "", phone: "", avatar: "" },
     address: group.address || "",
@@ -85,7 +87,7 @@ export default function GroupContactEditor({ group, isLoaded, onClose }: GroupCo
       }));
     } catch (error) {
       console.error("Error uploading avatar:", error);
-      alert("Failed to upload image.");
+      alert(t('group.contact.actions.fail_upload') || "Failed to upload image.");
     } finally {
       setIsUploading(false);
     }
@@ -105,7 +107,7 @@ export default function GroupContactEditor({ group, isLoaded, onClose }: GroupCo
       onClose();
     } catch (error) {
       console.error("Error saving contact info:", error);
-      alert("Failed to save information.");
+      alert(t('group.contact.actions.fail_save') || "Failed to save information.");
     } finally {
       setIsSaving(false);
     }
@@ -136,8 +138,8 @@ export default function GroupContactEditor({ group, isLoaded, onClose }: GroupCo
               <span className="material-symbols-outlined group-hover:-translate-x-0.5 transition-transform">arrow_back</span>
             </button>
             <div>
-              <h1 className="text-lg font-headline font-black text-white tracking-tight">Contact Settings</h1>
-              <p className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em]">Location & Networks</p>
+              <h1 className="text-lg font-headline font-black text-white tracking-tight">{t('group.contact.title') || "Contact Settings"}</h1>
+              <p className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em]">{t('group.contact.subtitle') || "Location & Networks"}</p>
             </div>
           </div>
           <button
@@ -152,10 +154,10 @@ export default function GroupContactEditor({ group, isLoaded, onClose }: GroupCo
             {isSaving ? (
               <>
                 <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                <span>SAVING...</span>
+                <span>{t('group.contact.actions.saving') || "SAVING..."}</span>
               </>
             ) : (
-              "SAVE CHANGES"
+              t('group.contact.actions.save') || "SAVE CHANGES"
             )}
           </button>
         </div>
@@ -165,15 +167,15 @@ export default function GroupContactEditor({ group, isLoaded, onClose }: GroupCo
         
         {/* Intro Section */}
         <section className="space-y-4 ml-6">
-          <h2 className="text-4xl font-headline font-black text-white tracking-tight leading-tight">Establish your<br/>presence</h2>
-          <p className="text-white/40 font-medium max-w-xl">커뮤니티의 물리적 위치와 주요 연락처 정보를 설정하여 멤버들이 쉽게 찾아오고 소통할 수 있게 합니다.</p>
+          <h2 className="text-4xl font-headline font-black text-white tracking-tight leading-tight" dangerouslySetInnerHTML={{ __html: t('group.contact.intro_title') || "Establish your<br/>presence" }} />
+          <p className="text-white/40 font-medium max-w-xl">{t('group.contact.intro_desc') || "Configure the physical location and primary contact information to help members easily find and communicate with your community."}</p>
         </section>
 
         {/* Representative Section */}
         <section className="space-y-10">
           <h3 className="text-xl font-headline font-black text-white flex items-center gap-4 ml-6">
             <span className="w-2 h-7 bg-[#0057bd] rounded-full"></span>
-            Representative Identity
+            {t('group.contact.representative.title') || "Representative Identity"}
           </h3>
           <div className="bg-white/[0.03] backdrop-blur-xl p-10 rounded-[3rem] border border-white/5 space-y-8 shadow-2xl ml-6">
             <div className="flex flex-col md:flex-row items-center gap-12">
@@ -198,7 +200,7 @@ export default function GroupContactEditor({ group, isLoaded, onClose }: GroupCo
               
               <div className="flex-1 w-full grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-3">
-                  <label className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 ml-1">Full Representative Name</label>
+                  <label className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 ml-1">{t('group.contact.representative.name_label') || "Full Representative Name"}</label>
                   <input
                     className="w-full bg-white/5 border border-white/5 focus:bg-white/10 focus:border-[#0057bd]/40 outline-none rounded-2xl px-6 py-4 font-headline font-bold text-white transition-all shadow-inner"
                     type="text"
@@ -207,11 +209,11 @@ export default function GroupContactEditor({ group, isLoaded, onClose }: GroupCo
                       ...prev,
                       representative: { ...prev.representative, name: e.target.value }
                     }))}
-                    placeholder="이름 입력"
+                    placeholder={t('group.contact.representative.name_placeholder') || "Enter name"}
                   />
                 </div>
                 <div className="space-y-3">
-                  <label className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 ml-1">Direct Contact Line</label>
+                  <label className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 ml-1">{t('group.contact.representative.phone_label') || "Direct Contact Line"}</label>
                   <input
                     className="w-full bg-white/5 border border-white/5 focus:bg-white/10 focus:border-[#0057bd]/40 outline-none rounded-2xl px-6 py-4 font-headline font-bold text-white transition-all shadow-inner"
                     type="tel"
@@ -220,7 +222,7 @@ export default function GroupContactEditor({ group, isLoaded, onClose }: GroupCo
                       ...prev,
                       representative: { ...prev.representative, phone: e.target.value }
                     }))}
-                    placeholder="+82 10-0000-0000"
+                    placeholder={t('group.contact.representative.phone_placeholder') || "+82 10-0000-0000"}
                   />
                 </div>
               </div>
@@ -232,7 +234,7 @@ export default function GroupContactEditor({ group, isLoaded, onClose }: GroupCo
         <section className="space-y-10">
           <h3 className="text-xl font-headline font-black text-white flex items-center gap-4 ml-6">
             <span className="w-2 h-7 bg-[#0057bd] rounded-full"></span>
-            Physical Location
+            {t('group.contact.location.title') || "Physical Location"}
           </h3>
           <div className="bg-white/[0.03] backdrop-blur-xl rounded-[3rem] border border-white/5 overflow-hidden shadow-2xl ml-6">
             <div className="h-[450px] w-full relative bg-[#0a0f1d]">
@@ -252,7 +254,7 @@ export default function GroupContactEditor({ group, isLoaded, onClose }: GroupCo
                 <div className="w-full h-full flex items-center justify-center">
                   <div className="animate-pulse flex flex-col items-center gap-4 text-white/20">
                     <span className="material-symbols-outlined text-6xl">map</span>
-                    <span className="font-black uppercase tracking-[0.3em] text-[10px]">Synchronizing Maps...</span>
+                    <span className="font-black uppercase tracking-[0.3em] text-[10px]">{t('group.contact.location.syncing') || "Synchronizing Maps..."}</span>
                   </div>
                 </div>
               )}
@@ -267,7 +269,7 @@ export default function GroupContactEditor({ group, isLoaded, onClose }: GroupCo
                     <div className="relative group max-w-2xl mx-auto">
                       <input
                         className="w-full bg-[#0a0f1d]/80 backdrop-blur-3xl border border-white/10 focus:ring-8 focus:ring-[#0057bd]/10 focus:border-[#0057bd]/40 outline-none rounded-[2rem] pl-16 pr-8 py-5 font-headline font-bold text-white transition-all shadow-2xl"
-                        placeholder="커뮤니티 주소를 검색하세요..."
+                        placeholder={t('group.contact.location.search_placeholder') || "Search community address..."}
                         type="text"
                       />
                       <div className="absolute left-6 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#0057bd] flex items-center justify-center shadow-lg shadow-blue-900/40">
@@ -282,33 +284,33 @@ export default function GroupContactEditor({ group, isLoaded, onClose }: GroupCo
             <div className="p-10 grid grid-cols-1 md:grid-cols-2 gap-12">
               <div className="space-y-8">
                 <div className="space-y-3">
-                  <label className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 ml-1">Verified Address</label>
+                  <label className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 ml-1">{t('group.contact.location.address_label') || "Verified Address"}</label>
                   <div className="w-full bg-white/[0.02] border border-white/5 rounded-2xl px-6 py-5 flex items-center gap-4 opacity-50">
                     <span className="material-symbols-outlined text-[#0057bd] text-xl">verified</span>
                     <span className="font-headline font-bold text-white text-sm truncate">
-                      {formData.address || "지도를 통해 주소를 검색하세요"}
+                      {formData.address || (t('group.contact.location.address_fallback') || "Search for an address using the map")}
                     </span>
                   </div>
                 </div>
                 <div className="space-y-3">
-                  <label className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 ml-1">Building Detail / Suite</label>
+                  <label className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 ml-1">{t('group.contact.location.detail_label') || "Building Detail / Suite"}</label>
                   <input
                     className="w-full bg-white/5 border border-white/5 focus:bg-white/10 focus:border-[#0057bd]/40 outline-none rounded-2xl px-6 py-4 font-headline font-bold text-white transition-all"
                     type="text"
                     value={formData.detailedAddress}
                     onChange={(e) => setFormData(prev => ({ ...prev, detailedAddress: e.target.value }))}
-                    placeholder="층수, 호수 또는 주요 랜드마크"
+                    placeholder={t('group.contact.location.detail_placeholder') || "Floor, suite, or major landmark"}
                   />
                 </div>
               </div>
               
               <div className="space-y-3 flex flex-col">
-                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 ml-1">Public Transit Guide</label>
+                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 ml-1">{t('group.contact.location.transit_label') || "Public Transit Guide"}</label>
                 <textarea
                   className="flex-1 min-h-[160px] bg-white/5 border border-white/5 focus:bg-white/10 focus:border-[#0057bd]/40 outline-none rounded-2xl px-6 py-5 font-medium text-white transition-all resize-none leading-relaxed shadow-inner"
                   value={formData.publicTransport}
                   onChange={(e) => setFormData(prev => ({ ...prev, publicTransport: e.target.value }))}
-                  placeholder="대중교통(버스, 지하철) 이용 방법이나 주차 정보를 입력하세요..."
+                  placeholder={t('group.contact.location.transit_placeholder') || "Enter public transit (bus, subway) directions or parking info..."}
                 />
               </div>
             </div>
@@ -319,7 +321,7 @@ export default function GroupContactEditor({ group, isLoaded, onClose }: GroupCo
         <section className="space-y-10">
           <h3 className="text-xl font-headline font-black text-white flex items-center gap-4 ml-6">
             <span className="w-2 h-7 bg-[#0057bd] rounded-full"></span>
-            Social Ecosystem
+            {t('group.contact.social.title') || "Social Ecosystem"}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 ml-6">
             {[

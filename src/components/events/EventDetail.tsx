@@ -9,6 +9,7 @@ import { Timestamp } from 'firebase/firestore';
 import UserProfileClickable from '@/components/common/UserProfileClickable';
 import UserAvatar from '@/components/common/UserAvatar';
 import UserName from '@/components/common/UserName';
+import { useNavigation } from '@/components/providers/NavigationProvider';
 
 interface EventDetailProps {
   event: Event;
@@ -27,6 +28,12 @@ const getNormalizedDate = (val: any): Date => {
 export default function EventDetail({ event, onClose, onEdit, onDelete }: EventDetailProps) {
   const { user } = useAuth();
   const [isDeleting, setIsDeleting] = useState(false);
+  const { setGlobalNavHidden } = useNavigation();
+
+  React.useEffect(() => {
+    setGlobalNavHidden(true);
+    return () => setGlobalNavHidden(false);
+  }, [setGlobalNavHidden]);
   
   const isHost = user?.uid === event.hostId;
   const startDate = getNormalizedDate(event.startDate);

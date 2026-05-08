@@ -13,6 +13,7 @@ import SocialHomeTab from "./SocialHomeTab";
 import SocialReservationTab from "./SocialReservationTab";
 import EditSocialEvent from "./EditSocialEvent";
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useNavigation } from "@/components/providers/NavigationProvider";
 
 interface SocialViewerProps {
   social: Social;
@@ -26,9 +27,16 @@ const ADMIN_UIDS = ["7iaZAmaYY9dNNEShmJmROI8XrtH2"];
 export default function SocialViewer({ social: initialSocial, onClose }: SocialViewerProps) {
   const { user, profile } = useAuth();
   const { t } = useLanguage();
+  const { setGlobalNavHidden } = useNavigation();
   const [social, setSocial] = useState<Social>(initialSocial);
   const [activeTab, setActiveTab] = useState<TabId>("home");
   const [showEditModal, setShowEditModal] = useState(false);
+
+  // Hide global navigation on mount, restore on unmount
+  useEffect(() => {
+    setGlobalNavHidden(true);
+    return () => setGlobalNavHidden(false);
+  }, [setGlobalNavHidden]);
 
   useEffect(() => {
     const unsub = socialService.subscribeSocial(initialSocial.id, (data) => {
@@ -48,7 +56,15 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
   // Image carousel
   const [currentImg, setCurrentImg] = useState(0);
   const touchStartX = useRef(0);
-  const images = social.imageUrl ? [social.imageUrl] : [];
+  const [images, setImages] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (social.imageUrl) {
+      setImages([social.imageUrl]);
+    } else {
+      setImages([]);
+    }
+  }, [social.imageUrl]);
 
   // UI state
   const [isScrolled, setIsScrolled] = useState(false);
@@ -126,7 +142,7 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
     try {
       const roomId = await chatService.getOrCreatePrivateRoom([user.uid, organizerId], user.uid, "business");
       const displayDate = social.type === "regular"
-        ? `Every ${["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][social.dayOfWeek || 0]}`
+        ? `${t('social.every_week')} ${[t('common.sun'), t('common.mon'), t('common.tue'), t('common.wed'), t('common.thu'), t('common.fri'), t('common.sat')][social.dayOfWeek || 0]}`
         : "TBA";
       await chatService.sendMessage({
         roomId, senderId: user.uid, senderName: user.displayName || "User",
@@ -234,9 +250,8 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
           )}
         </div>
 
-        {/* Description */}
         <div className="px-4 pt-4 pb-4 border-b border-[#f2f4f4]">
-          <p className="text-sm text-[#596061] whitespace-pre-wrap leading-relaxed line-clamp-4">
+          <p className="text-sm text-[#596061] whitespace-pre-wrap leading-relaxed line-clamp-none">
             {(social as any).description || t('social.no_description')}
           </p>
         </div>
@@ -271,13 +286,13 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
                 disabled={isClaiming}
                 className="flex-1 py-2.5 bg-primary text-white rounded-xl text-xs font-black tracking-wide active:scale-95 transition-transform disabled:opacity-50"
               >
-                {isClaiming ? t('social.claiming') : t('social.its_me')}
+                {isClaiming ? t('social.its_me_loading') : t('social.its_me')}
               </button>
               <button
                 onClick={() => setShowAssignSheet(true)}
                 className="flex-1 py-2.5 bg-white border border-[#e0e4e5] text-[#596061] rounded-xl text-xs font-bold tracking-wide active:scale-95 transition-transform"
               >
-                Assign Someone
+                {t('social.assign_someone')}
               </button>
             </div>
           </div>
@@ -290,7 +305,18 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
         </div>
 
         {/* Tab Content */}
-        {activeTab === "home" && <SocialHomeTab social={social} onChatWithOrganizer={handleChatWithOrganizer} canEdit={!!canEdit} />}
+        {activeTab === "home" && (
+          <SocialHomeTab 
+            social={social} 
+            onChatWithOrganizer={handleChatWithOrganizer} 
+            canEdit={!!canEdit} 
+            onShowImages={(imgs, idx) => {
+              setImages(imgs);
+              setCurrentImg(idx);
+              openImageModal("true");
+            }}
+          />
+        )}
         {activeTab === "feed" && (
           <div className="px-4 pb-8 pt-2">
             <UniversalFeed context={{ scope: "social", scopeId: social.id }} currentUser={user} profile={profile} />
@@ -405,7 +431,7 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
                 <button
                   onClick={async () => {
                     if (!assignTarget || !user) return;
-                    if (!confirm(`Assign ${assignTarget.nickname || assignTarget.displayName} as the organizer?`)) return;
+                    if (!confirm(t('social.assign_confirm', { name: assignTarget.nickname || assignTarget.displayName }))) return;
                     setIsClaiming(true);
                     try {
                       await socialService.claimSocial(social.id, {
@@ -422,7 +448,7 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
                   disabled={!assignTarget || isClaiming}
                   className="flex-1 py-3.5 bg-primary text-white rounded-xl font-black text-sm active:scale-95 transition-transform disabled:opacity-40"
                 >
-                  {isClaiming ? t('social.assigning') : assignTarget ? `${assignTarget.nickname || 'User'}` : t('social.select_user')}
+                  {isClaiming ? t('social.assigning') : assignTarget ? `${assignTarget.nickname || assignTarget.displayName || 'User'}` : t('social.select_user')}
                 </button>
               </div>
             </div>

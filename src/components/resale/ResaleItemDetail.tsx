@@ -10,6 +10,7 @@ import { safeDate } from '@/lib/utils/safeDate';
 import ResalePurchaseFlow from './ResalePurchaseFlow';
 import ChatRoom from '@/components/chat/ChatRoom';
 import UserProfileClickable from '@/components/common/UserProfileClickable';
+import { useNavigation } from '@/components/providers/NavigationProvider';
 
 interface ResaleItemDetailProps {
   item: ResaleItem;
@@ -19,6 +20,7 @@ interface ResaleItemDetailProps {
 export default function ResaleItemDetail({ item, onClose }: ResaleItemDetailProps) {
   const { user } = useAuth();
   const { t } = useLanguage();
+  const { setGlobalNavHidden } = useNavigation();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Image carousel
@@ -34,6 +36,11 @@ export default function ResaleItemDetail({ item, onClose }: ResaleItemDetailProp
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const isOwner = user?.uid === item.sellerId;
+
+  useEffect(() => {
+    setGlobalNavHidden(true);
+    return () => setGlobalNavHidden(false);
+  }, [setGlobalNavHidden]);
 
   // Scroll listener for header
   useEffect(() => {

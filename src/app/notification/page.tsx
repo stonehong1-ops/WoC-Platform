@@ -6,6 +6,8 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { notificationService } from '@/lib/firebase/notificationService';
 import { Notification } from '@/types/notification';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { classRegistrationService } from '@/lib/firebase/classRegistrationService';
+import { toast } from 'sonner';
 
 export default function NotificationPage() {
   const { user } = useAuth();
@@ -20,6 +22,8 @@ export default function NotificationPage() {
   ];
   
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [selectedNoti, setSelectedNoti] = useState<Notification | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const getTime = (date: any) => {
     if (!date) return 0;
@@ -72,8 +76,63 @@ export default function NotificationPage() {
     if (!noti.isRead) {
       await notificationService.markAsRead(noti.id);
     }
+    
+    // Intercept CLASS_APPLY notifications to show inline confirmation modal
+    if (noti.type === 'CLASS_APPLY' || noti.category === 'CLASS') {
+      if (noti.referenceId && !noti.isCompleted) {
+        setSelectedNoti(noti);
+        return;
+      }
+    }
+
     if (noti.actionUrl) {
-      router.push(noti.actionUrl);
+      // Normalize legacy actionUrl paths (/group/ → /groups/)
+      let url = noti.actionUrl;
+      if (url.startsWith('/group/') && !url.startsWith('/groups/')) {
+        url = url.replace('/group/', '/groups/');
+      }
+      router.push(url);
+    }
+  };
+
+  const handleConfirmPayment = async (targetNoti?: Notification) => {
+    const noti = targetNoti || selectedNoti;
+    if (!noti?.referenceId) return;
+    setIsProcessing(true);
+    try {
+      await classRegistrationService.updateRegistration(noti.referenceId, {
+        status: 'PAYMENT_COMPLETED'
+      });
+      // Mark notification as completed (and other admins' related todos)
+      await notificationService.markTodosAsCompletedByReference(noti.referenceId);
+      toast.success(t('notification.payment_confirmed'));
+      setSelectedNoti(null);
+    } catch (error) {
+      console.error("Failed to confirm payment:", error);
+      toast.error("Failed to confirm payment");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleRejectPayment = async (targetNoti?: Notification) => {
+    const noti = targetNoti || selectedNoti;
+    if (!noti?.referenceId) return;
+    if (!confirm(t('notification.payment_confirmation_msg'))) return;
+    setIsProcessing(true);
+    try {
+      await classRegistrationService.updateRegistration(noti.referenceId, {
+        status: 'CANCELED'
+      });
+      // Mark notification as completed/read
+      await notificationService.markTodosAsCompletedByReference(noti.referenceId);
+      toast.success(t('notification.payment_rejected'));
+      setSelectedNoti(null);
+    } catch (error) {
+      console.error("Failed to reject application:", error);
+      toast.error("Failed to reject application");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -147,6 +206,9 @@ export default function NotificationPage() {
   };
 
   const renderNotification = (noti: Notification) => {
+    const isActionable = (noti.type === 'CLASS_APPLY') && noti.referenceId && !noti.isCompleted;
+    const isCompleted = (noti.type === 'CLASS_APPLY') && noti.isCompleted;
+
     return (
       <div 
         key={noti.id}
@@ -172,6 +234,38 @@ export default function NotificationPage() {
             <span className="material-symbols-outlined text-[14px]">schedule</span>
             {formatTimeAgo(noti.createdAt)}
           </p>
+
+          {/* Inline Action Buttons for CLASS_APPLY */}
+          {isActionable && (
+            <div className="flex items-center gap-2 mt-3" onClick={(e) => e.stopPropagation()}>
+              <button
+                onClick={() => handleConfirmPayment(noti)}
+                disabled={isProcessing}
+                className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-xl text-[12px] font-bold shadow-sm shadow-blue-200 active:scale-[0.97] transition-all disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                {t('notification.confirm_payment')}
+              </button>
+              <button
+                onClick={() => handleRejectPayment(noti)}
+                disabled={isProcessing}
+                className="flex items-center gap-1.5 px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-[12px] font-bold hover:bg-slate-200 active:scale-[0.97] transition-all disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-[16px]">cancel</span>
+                {t('notification.reject')}
+              </button>
+            </div>
+          )}
+
+          {/* Completed Badge */}
+          {isCompleted && (
+            <div className="flex items-center gap-1.5 mt-2.5">
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-lg text-[11px] font-bold">
+                <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                Completed
+              </span>
+            </div>
+          )}
         </div>
         {!noti.isRead && (
           <div className="shrink-0 flex items-center">
@@ -183,7 +277,8 @@ export default function NotificationPage() {
   };
 
   return (
-    <main className="max-w-2xl mx-auto h-[calc(100vh-124px)] flex flex-col overflow-hidden bg-[#FAF8FF]">
+    <>
+      <main className="max-w-2xl mx-auto h-[calc(100vh-124px)] flex flex-col overflow-hidden bg-[#FAF8FF]">
       {/* Tab Control (Fixed) */}
       <div className="px-4 py-4 w-full flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0 border-b border-slate-100/50 bg-[#FAF8FF]">
         {tabs.map((tab) => (
@@ -264,6 +359,52 @@ export default function NotificationPage() {
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
     </main>
+
+      {/* Confirmation Modal */}
+      {selectedNoti && (
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div 
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300"
+            onClick={() => !isProcessing && setSelectedNoti(null)}
+          ></div>
+          <div className="relative w-full max-w-sm bg-white rounded-t-[32px] sm:rounded-[32px] p-8 shadow-2xl animate-in slide-in-from-bottom-full sm:slide-in-from-bottom-4 duration-300">
+            <div className="w-12 h-1.5 bg-slate-100 rounded-full mx-auto mb-8 sm:hidden"></div>
+            
+            <div className="flex flex-col items-center text-center mb-8">
+              <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4">
+                <span className="material-symbols-outlined text-blue-600 text-3xl">payments</span>
+              </div>
+              <h3 className="text-xl font-extrabold text-slate-900 mb-2">{t('notification.payment_confirmation_title')}</h3>
+              <p className="text-slate-500 text-sm leading-relaxed">{selectedNoti.message}</p>
+            </div>
+
+            <div className="space-y-3">
+              <button 
+                onClick={() => handleConfirmPayment()}
+                disabled={isProcessing}
+                className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg shadow-blue-200 active:scale-[0.98] transition-all disabled:opacity-50"
+              >
+                {isProcessing ? '...' : t('notification.confirm_payment')}
+              </button>
+              <button 
+                onClick={() => handleRejectPayment()}
+                disabled={isProcessing}
+                className="w-full py-4 bg-slate-50 text-slate-600 rounded-2xl font-bold hover:bg-slate-100 active:scale-[0.98] transition-all disabled:opacity-50"
+              >
+                {isProcessing ? '...' : t('notification.reject')}
+              </button>
+              <button 
+                onClick={() => setSelectedNoti(null)}
+                disabled={isProcessing}
+                className="w-full py-4 text-slate-400 text-sm font-bold hover:text-slate-600 transition-colors"
+              >
+                {t('common.close') || 'Close'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

@@ -527,13 +527,17 @@ export default function MapComponent({
       </div>
 
       {/* Layer 3: Search & Venue Area (Kinetic Expansion) */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-48px)] max-w-sm z-30 pointer-events-auto">
-        
-
-
+      <div 
+        className="fixed inset-x-0 px-6 z-30 pointer-events-none flex justify-center"
+        style={{ 
+          bottom: 'calc(64px + max(env(safe-area-inset-bottom), 12px) + 3mm)',
+          transform: 'translateY(var(--woc-bottom-nav-y, 0px))',
+          transition: 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)'
+        }}
+      >
         <motion.div 
           animate={{ height: isExpanded ? 'auto' : '64px' }}
-          className="bg-white/95 backdrop-blur-3xl rounded-xl shadow-[0_24px_48px_rgba(0,0,0,0.12)] flex flex-col border border-white/60 overflow-hidden transition-all duration-300"
+          className="w-full max-w-sm bg-white/95 backdrop-blur-3xl rounded-xl shadow-[0_24px_48px_rgba(0,0,0,0.12)] flex flex-col border border-white/60 overflow-hidden transition-all duration-300 pointer-events-auto"
           onClick={() => !isExpanded && setIsExpanded(true)}
         >
           {/* Top Row / Summary Bar */}

@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Group } from "@/types/group";
 import { Product, ShopOrder, OrderStatus } from "@/types/shop";
 import { shopService } from "@/lib/firebase/shopService";
@@ -8,9 +9,11 @@ import { chatService } from "@/lib/firebase/chatService";
 import ImageWithFallback from "@/components/common/ImageWithFallback";
 import GroupShopItemEditor from "./GroupShopItemEditor";
 import { toast } from "sonner";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface GroupShopEditorProps {
   group: Group;
+  onClose?: () => void;
 }
 
 type AdminTab = "products" | "orders" | "info";
@@ -31,7 +34,8 @@ const ORDER_STATUS_CONFIG: Record<string, { label: string; color: string; bg: st
   CANCELLED: { label: "Cancelled", color: "text-red-700", bg: "bg-red-100" },
 };
 
-const GroupShopEditor: React.FC<GroupShopEditorProps> = ({ group }) => {
+const GroupShopEditor: React.FC<GroupShopEditorProps> = ({ group, onClose }) => {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<AdminTab>("products");
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<ShopOrder[]>([]);
@@ -126,22 +130,22 @@ const GroupShopEditor: React.FC<GroupShopEditorProps> = ({ group }) => {
           let chatMsg = "";
           switch (newStatus) {
             case "CONFIRMED":
-              chatMsg = `✅ [입금 확인 완료]\n주문번호: ${targetOrder.orderNumber}\n입금이 확인되었습니다. 곧 제작/배송을 시작합니다. 감사합니다!`;
+              chatMsg = t('shop.order.confirmed_msg', `✅ [Payment Confirmed]\nOrder: ${targetOrder.orderNumber}\nYour payment has been confirmed. Production/shipping will begin shortly. Thank you!`);
               break;
             case "IN_PRODUCTION":
-              chatMsg = `🛠 [제작 시작]\n주문번호: ${targetOrder.orderNumber}\n상품 제작을 시작했습니다. 완료되면 다시 알려드릴게요.`;
+              chatMsg = t('shop.order.in_production_msg', `🛠 [Production Started]\nOrder: ${targetOrder.orderNumber}\nWe have started producing your item. We will notify you when it is complete.`);
               break;
             case "READY_PICKUP":
-              chatMsg = `🏪 [픽업 준비 완료]\n주문번호: ${targetOrder.orderNumber}\n상품이 준비되었습니다! 매장에 방문하여 수령해 주세요.`;
+              chatMsg = t('shop.order.ready_pickup_msg', `🏪 [Ready for Pickup]\nOrder: ${targetOrder.orderNumber}\nYour order is ready! Please visit our store to pick it up.`);
               break;
             case "SHIPPING":
-              chatMsg = `🚚 [배송 시작]\n주문번호: ${targetOrder.orderNumber}\n상품 배송이 시작되었습니다.\n운송장번호: ${extras?.trackingNumber || '정보 없음'}`;
+              chatMsg = t('shop.order.shipping_msg', `🚚 [Shipping Started]\nOrder: ${targetOrder.orderNumber}\nYour order is on the way.\nTracking Number: ${extras?.trackingNumber || t('shop.order.no_tracking_info', 'No Info')}`);
               break;
             case "COMPLETED":
-              chatMsg = `🏁 [거래 완료]\n주문번호: ${targetOrder.orderNumber}\n모든 거래가 완료되었습니다. 이용해 주셔서 감사합니다!`;
+              chatMsg = t('shop.order.completed_msg', `🏁 [Order Completed]\nOrder: ${targetOrder.orderNumber}\nYour transaction is complete. Thank you for your purchase!`);
               break;
             case "CANCELLED":
-              chatMsg = `❌ [주문 취소]\n주문번호: ${targetOrder.orderNumber}\n주문이 취소되었습니다.`;
+              chatMsg = t('shop.order.cancelled_msg', `❌ [Order Cancelled]\nOrder: ${targetOrder.orderNumber}\nYour order has been cancelled.`);
               break;
           }
 
@@ -190,31 +194,44 @@ const GroupShopEditor: React.FC<GroupShopEditorProps> = ({ group }) => {
   ];
 
   return (
-    <div className="bg-[#F1F5F9] text-[#242c51] antialiased pb-20 min-h-[max(884px,100dvh)] font-['Inter']">
-      {/* Tab Bar */}
-      <div className="sticky top-0 z-40 bg-slate-50/95 backdrop-blur-sm border-b border-slate-200">
-        <div className="max-w-3xl mx-auto flex">
-          {tabs.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-sm font-bold transition-all border-b-2 ${
-                activeTab === tab.id
-                  ? "text-[#0057bd] border-[#0057bd]"
-                  : "text-slate-400 border-transparent hover:text-slate-600"
-              }`}
-            >
-              <span className="material-symbols-outlined text-[18px]">{tab.icon}</span>
-              {tab.label}
-              {tab.badge ? (
-                <span className="bg-red-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">{tab.badge}</span>
-              ) : null}
-            </button>
-          ))}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 20 }}
+      className="fixed inset-0 z-[100] bg-[#F1F5F9] text-[#242c51] antialiased flex flex-col overflow-y-auto no-scrollbar pb-20 font-['Inter']"
+    >
+      {/* Top Bar with Back Button */}
+      <header className="sticky top-0 z-50 bg-slate-50/95 backdrop-blur-sm border-b border-slate-200">
+        <div className="max-w-3xl mx-auto flex items-center px-4 h-14">
+          <button 
+            onClick={onClose}
+            className="w-10 h-10 rounded-full flex items-center justify-center text-[#0057bd] hover:bg-[#0057bd]/5 transition-all mr-2"
+          >
+            <span className="material-symbols-outlined text-[#0057bd]">arrow_back</span>
+          </button>
+          <div className="flex flex-1">
+            {tabs.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-sm font-bold transition-all border-b-2 ${
+                  activeTab === tab.id
+                    ? "text-[#0057bd] border-[#0057bd]"
+                    : "text-slate-400 border-transparent hover:text-slate-600"
+                }`}
+              >
+                <span className="material-symbols-outlined text-[18px]">{tab.icon}</span>
+                {tab.label}
+                {tab.badge ? (
+                  <span className="bg-red-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">{tab.badge}</span>
+                ) : null}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      </header>
 
-      <main className="max-w-3xl mx-auto px-4 py-6 space-y-4">
+      <main className="max-w-3xl w-full mx-auto px-4 py-6 space-y-4 flex-1">
         {/* ===== PRODUCTS TAB ===== */}
         {activeTab === "products" && (
           <>
@@ -611,7 +628,7 @@ const GroupShopEditor: React.FC<GroupShopEditorProps> = ({ group }) => {
           item={editingItem}
         />
       )}
-    </div>
+    </motion.div>
   );
 };
 

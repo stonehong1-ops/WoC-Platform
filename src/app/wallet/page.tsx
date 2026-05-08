@@ -108,10 +108,10 @@ export default function WalletPage() {
           <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
           <div className="absolute bottom-0 left-0 w-24 h-24 bg-purple-500/10 rounded-full blur-3xl -ml-12 -mb-12"></div>
           
-          <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-2">{t('wallet.current_balance')}</p>
+          <p className="text-white/70 text-xs font-bold uppercase tracking-widest mb-2">{t('wallet.current_balance')}</p>
           <div className="flex items-end gap-2">
             <span className="text-4xl font-extrabold tracking-tight">₩{balance.toLocaleString()}</span>
-            <span className="text-slate-400 text-sm font-medium mb-1.5">{t('wallet.points')}</span>
+            <span className="text-white/70 text-sm font-medium mb-1.5">{t('wallet.points')}</span>
           </div>
 
           <div className="flex gap-3 mt-8">

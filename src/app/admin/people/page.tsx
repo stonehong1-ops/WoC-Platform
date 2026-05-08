@@ -169,7 +169,12 @@ export default function AdminPeoplePage() {
                   </div>
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-title-md font-title-md text-on-surface">{user.nickname}</h3>
+                      <h3 className="text-title-md font-title-md text-on-surface flex items-baseline gap-1.5">
+                        {user.nickname}
+                        {user.nativeNickname && (
+                          <span className="text-[13px] text-on-surface-variant font-medium">({user.nativeNickname})</span>
+                        )}
+                      </h3>
                       {user.isAdmin && <span className="px-2 py-0.5 bg-error-container text-on-error-container text-[10px] font-bold rounded-md uppercase tracking-wider">ADMIN</span>}
                       {user.role === 'leader' && <span className="px-2 py-0.5 bg-tertiary-container/20 text-on-tertiary-fixed-variant text-[10px] font-bold rounded-md uppercase tracking-wider">Leader</span>}
                       {user.role === 'follower' && <span className="px-2 py-0.5 bg-secondary-container/20 text-on-secondary-fixed-variant text-[10px] font-bold rounded-md uppercase tracking-wider">Follower</span>}

@@ -1,4 +1,5 @@
 import { db } from './clientApp';
+import { chatService } from './chatService';
 import {
   collection,
   doc,
@@ -309,6 +310,11 @@ export const groupService = {
     await updateDoc(userRef, {
       joinedGroups: arrayUnion(groupId)
     });
+
+    // Sync: add to group chat room participants
+    try {
+      await chatService.addGroupChatParticipant(groupId, userId);
+    } catch (e) { console.error('Chat sync error (joinGroup):', e); }
   },
 
   // Request to join a group (for 'approval' strategy)
@@ -344,6 +350,11 @@ export const groupService = {
     await updateDoc(userRef, {
       joinedGroups: arrayUnion(groupId)
     });
+
+    // Sync: add to group chat room participants (approval/invite strategy)
+    try {
+      await chatService.addGroupChatParticipant(groupId, userId);
+    } catch (e) { console.error('Chat sync error (approveMember):', e); }
   },
 
   // Reject a pending member
@@ -375,6 +386,37 @@ export const groupService = {
     await updateDoc(userRef, {
       joinedGroups: arrayRemove(groupId)
     });
+
+    // Sync: remove from group chat room participants
+    try {
+      await chatService.removeGroupChatParticipant(groupId, userId);
+    } catch (e) { console.error('Chat sync error (leaveGroup):', e); }
+  },
+
+  // Kick a member from a group (admin/owner action)
+  kickMember: async (groupId: string, userId: string) => {
+    const groupRef = doc(db, GROUPS_COLLECTION, groupId);
+    const memberRef = doc(db, GROUPS_COLLECTION, groupId, 'members', userId);
+    const userRef = doc(db, 'users', userId);
+    
+    // Remove from members subcollection
+    await deleteDoc(memberRef);
+
+    // Decrement member count and remove from memberIds
+    await updateDoc(groupRef, {
+      memberCount: increment(-1),
+      memberIds: arrayRemove(userId)
+    });
+
+    // Remove from user's joinedGroups
+    await updateDoc(userRef, {
+      joinedGroups: arrayRemove(groupId)
+    });
+
+    // Sync: kick from group chat room participants (sends system message)
+    try {
+      await chatService.kickGroupChatParticipant(groupId, userId);
+    } catch (e) { console.error('Chat sync error (kickMember):', e); }
   },
 
   // Update group metadata
@@ -557,6 +599,18 @@ export const groupService = {
       });
     }
 
+    // 4. Auto-create linked group chat room (1:1 mapping)
+    try {
+      const joinStrategy = (groupData as any).membershipPolicy?.joinStrategy || 'open';
+      await chatService.createGroupChatRoom(docRef.id, groupData.name || docRef.id, userId || 'system1', {
+        coverImage: groupData.coverImage,
+        description: groupData.description,
+        joinStrategy,
+      });
+    } catch (chatErr) {
+      console.error('Failed to create linked group chat room:', chatErr);
+    }
+
     return docRef.id;
   },
 
@@ -596,5 +650,11 @@ export const groupService = {
     await updateDoc(userRef, {
       joinedGroups: arrayUnion(groupId),
     });
+
+    // 4. Sync: update group chat room admin + add as participant
+    try {
+      await chatService.syncGroupChatAdmin(groupId, userId);
+      await chatService.addGroupChatParticipant(groupId, userId);
+    } catch (e) { console.error('Chat sync error (claimGroupAdmin):', e); }
   }
 };

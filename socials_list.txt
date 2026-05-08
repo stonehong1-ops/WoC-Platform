@@ -1,0 +1,79 @@
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/0GatUuTfN8Rndh6WpSIs : Gold Milonga (골드 밀롱가) | venueId: v_manual
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/9otJjlGyOVd5agp0aSo2 : Gold Milonga (골드 밀롱가 (2주 금)) | venueId: v_manual_busan_ideal
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/D9zCsVl5Eo4KiTtCqYXT : yTU (이뚜) | venueId: v_manual_busan_242
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/Dhfd3Xdl8zA18VjLO8kR : JJin Milonga (찐 밀롱가) | venueId: v_manual_daejeon
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/E5Yh2GXZtECUPszVNj1e : El Arranque (엘 아란케) | venueId: v_manual
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/EZuLouKCrDV397eTfReW : La Noche Mil (라 노체 밀) | venueId: v_manual
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/FhUfMtTw6hyg3sdZq734 : Seoul Mil (서울밀) | venueId: v_manual
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/Fhoq5pDlYVK6HI5Hg2l3 : Hang(out) Milonga (행아웃 밀롱가) | venueId: v_manual_busan_ideal
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/GHOyvi4aPUPk62Y4Q1ty : Dal Milonga (달 밀롱가 (2주 일)) | venueId: v_daegu_mariposa_club
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/HqV3j42SsGTROUrmHqHs : Busan Tango Marathon () | venueId: 
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/Hup6ByNeLqtPW3EDphsS : Tanto Loco (딴또 로꼬) | venueId: 
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/IYAJyxOpc63ATw5T2bDA : OPPA Mil (오빠밀) | venueId: v_manual
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/LGC1mxxikTU0h4WUzYpN : Milsa Milonga (밀사 밀롱가) | venueId: v_manual_daejeon
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/LS9d6ZtN74USXvP8PwZW : Big Milonga Estrellas () | venueId: 
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/Mwmi59l3oW3TwrQJJaSP : Arrabal (아라발) | venueId: v_manual_busan_corteno
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/N9OUJZKq1CKp60X42C6i : Me Mil (메밀 (4주차)) | venueId: v_manual
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/O3YwXyH4Z3U5KY8eh4MM : Tango Love (탱고 러브) | venueId: v_manual_daejeon
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/O6Oql4EXX4ZboWkQnBwD : Loca (로까) | venueId: v_manual
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/PxeRaC6Ky260cdfPLFTh : Su Eight Mil (수에잇밀) | venueId: v_manual
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/R1hayB6of65wiDA27Q0U : Vida Mia (비다미아) | venueId: v_manual
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/SL888CXXIGO1s66bQRBr : Gunsan Sunset Tango Marathon () | venueId: 
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/U4jzKx156mQwevPfT1B8 : Tango Olle Prac-Milonga (탱고올레 뿌락밀롱가) | venueId: v_jeju_olle
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/UCukRsRX1D3PVzhfyhvT : Valsamic () | venueId: 
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/Ur3MXsAiN5yuAP3ujbBW : Crew Milonga (크루밀) | venueId: v_manual
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/UyTSS5bCXRBChVFbixok : Mok Dulce (목둘세) | venueId: v_manual
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/VyqVuIEoqv6M06aDLYET : LUCY (밀롱가 루씨) | venueId: 2mvxZZVNWzJ4MwDIAWq3
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/YaKmPBiS0rDCc6nJZ39T : Daejeon Milonga (대전 밀롱가) | venueId: v_manual_daejeon
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/YnLmcdeG2Lsyx5oNkIsL : Monday Prilonga (먼데이쁘롱) | venueId: v_daegu_mariposa_1
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/YtCqTajwGHGCj31BQTyT : Labios (라비오스 (2/3주)) | venueId: v_manual
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/ZIdNlYyBIsJ0S0nFzsh2 : Sinsa Daytime () | venueId: undefined
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/Zgy8EbuCoTdIcgCdKKJ1 : Bul Geum (불금) | venueId: v_manual
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/ZlW7KjN2ZtXvY4fX6Z7a : Monday Afternoon () | venueId: undefined
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/aYc3vPq3EwR2S1d0F9g8 : El Tango () | venueId: undefined
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/bZ5xM4w3V2n1L0k9J8h7 : Incheon Milonga () | venueId: undefined
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/bb1YNxoL4iXtfEdDtUbJ : CASA (까사) | venueId: v_manual
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/brJU2WTgpajn7qZDUkp4 : RoyBeDDong () | venueId: 
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/c8TAG9Zg49ju20CxKaPl : Il Luminoso (일루미) | venueId: v_manual
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/cQ8vP7o6R5s4T3u2W1x0 : Gwangju Milonga () | venueId: undefined
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/dK2mN3l4J5h6G7f8D9s0 : Ulsan Milonga () | venueId: undefined
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/eR1tY2u3I4o5P6a7S8d9 : Gangneung Milonga () | venueId: undefined
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/eoH5L0XrTxkOIojB958u : HappG Mil (헤피지 밀 (1주)) | venueId: v_manual
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/fApjgip6uUZc63E4grqi : Puerto Tango Gathering (푸에르토 탱고 정기모임) | venueId: v_manual_busan_cafedetango
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/fG9h8j7k6l5s4d3f2a1 : Tango Cafe () | venueId: undefined
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/fWIzPkYwXL3IGwPKd6gw : UNO (우노 (매월 첫주)) | venueId: v_manual
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/fushwmIFWeaOATABg5Fi : Saturday Social Milonga (토요 소셜 밀롱가) | venueId: v_daegu_asurajang
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/gCbvVpA7NyogXmUBoZk1 : GoGo Milonga (고고 밀롱가) | venueId: v_manual_daejeon
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/gH0j1k2l3z4x5c6v7b8 : Milonga de Mis Amores () | venueId: undefined
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/hJ9k8l7z6x5c4v3b2n1 : Tango House () | venueId: undefined
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/hun4sDr2y6wyP4rNKFSb : Daejeon Midweek (대전 미드위크) | venueId: v_manual_daejeon_5
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/iF06RrdMugNminjJKb7T : Blanca (블랑카 (마지막 주 금)) | venueId: v_manual_busan_amigo
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/jPQC2p47FiIMU39zlYvk : Solo tango gathering (솔땅 정모) | venueId: v_manual
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/lp3DufRSyK0S49pkOKnE : Tango Fire (탱고 파이어) | venueId: v_manual_busan_ideal
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/lzlGWIJaKxjz9qqYeJkJ : Casita (카시타) | venueId: v_manual
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/mWo82j5uPi2esEU6qvj6 : Pista Night Milonga (피스타심밀) | venueId: xVJsZb5y34WjlqP5iHDr
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/maMVsnmrc6lplGXCIr8D : Mucho Mil (무초밀) | venueId: v_manual
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/mecfAyAzWOmwsnKgCZy6 : Wol ONada (월나다) | venueId: v_manual
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/n4MioMSdxqnA3CVfX53N : Camelia (카멜리아) | venueId: v_manual
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/nUMZ7l8ilMo3XOx0dHaH : Fire (파이어 (화기애애)) | venueId: 4E7HtYTd66dimCLw9NV4
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/oFqiigaztVEnlojaFpuG : RoRa Mil (로라밀 (1주)) | venueId: v_manual
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/oOQT7PhjvQIetwdT9kKc : In the Mood for Tango (인무땅) | venueId: v_manual
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/oVKEV4hnjSuuQlEsGy1q : Mil Mil (밀밀) | venueId: v_manual
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/oWY9ZG7kJr8eMy8JW87c : Gato Practilonga (가토 프락틸롱가) | venueId: v_manual_busan_amigo
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/pBBVhuuZMx7TnRvYbxYH : Uno Domingo (Milonga Uno Domingo (1주 일)) | venueId: v_daegu_abrazo
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/psdzuWNIs9punJGmOsJu : Sueño Dulce (수에뇨 둘세) | venueId: v_manual
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/qCYzOrmSIoGL4HVCcAAP : Monthly Gato Milonga (먼슬리 가토 밀롱가 (1주 금)) | venueId: v_manual_busan_amigo
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/qnoLw2DXfoV816UwtCS4 : Friday Fever (프라이데이 피버) | venueId: v_manual_daejeon_2
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/rCjkoEWEMlhU0G2Wystw : The Pista Milonga (더 피스타 밀롱가) | venueId: v_daegu_mariposa_1
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/sMIEoUSmSRS9UwlxWzvp : Wol Luminoso (월루미) | venueId: v_manual
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/tWWN6YAtlyAKXklr4rQA : La Vida (라비다) | venueId: v_manual_busan_amigo
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/tfPCHGzZrKmFA4Q6cs2H : Geum Ttong Milonga (금똥 밀롱가 (3주 금)) | venueId: v_manual_busan_ideal
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/uAMzMNSH1swFeebgxkuv : Viernes (비에르네스) | venueId: v_manual_busan_cafedetango
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/uMNgwtuDZZajNQ2lkPgV : HappG Mil (헤피지밀 (3주)) | venueId: v_manual
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/vQ4SASAdywi4Nj74SsAm : Club Gricel (클럽 그리셀) | venueId: v_manual
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/wHHEhkROsrYOPIBzcbSs : Salida Milonga (쌀리다밀) | venueId: v_manual
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/wVE1xcRiv16lHo5LUp5m : To Mio (투 미오 밀롱가) | venueId: v_manual_busan_mio
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/xPKHbji68xMB4QegT4Zo : Maipo (마이포) | venueId: v_manual_busan_242
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/yJvRbB04lsWFc6anaGti : Sunday Matinee (선데이 마티네) | venueId: v_manual_daejeon_4
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/zKTJKLFooBEQcDvllyUS : To Eight Mil (투에잇밀 (1주)) | venueId: v_manual
+projects/woc-platform-seoul-1234/databases/(default)/documents/socials/zkZm9gZvHdnSPzSOR5Gp : The PISTA (더 피스타) | venueId: v_manual

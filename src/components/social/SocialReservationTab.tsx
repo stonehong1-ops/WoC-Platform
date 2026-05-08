@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Social, SocialReservation, SocialWeeklyState, SocialSubEvent } from "@/types/social";
 import { socialService } from "@/lib/firebase/socialService";
 import { useAuth } from "@/components/providers/AuthProvider";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Props {
   social: Social;
@@ -35,6 +36,7 @@ function formatDateKey(d: Date): string {
 
 export default function SocialReservationTab({ social }: Props) {
   const { user, profile } = useAuth();
+  const { t, language } = useLanguage();
   const [weekOffset, setWeekOffset] = useState(0);
   const [reservations, setReservations] = useState<SocialReservation[]>([]);
   const [weeklyState, setWeeklyState] = useState<SocialWeeklyState | null>(null);
@@ -81,7 +83,7 @@ export default function SocialReservationTab({ social }: Props) {
   }, [social.id, dateKey]);
 
   const handleBook = async () => {
-    if (!user) return alert("Please login first");
+    if (!user) return alert(t('social.login_first'));
     setIsSubmitting(true);
     try {
       await socialService.addReservation(social.id, {
@@ -96,9 +98,14 @@ export default function SocialReservationTab({ social }: Props) {
       setShowBookSheet(false);
       setPeopleCount(1);
       setSelectedEventId("");
-    } catch (err) {
-      console.error(err);
-      alert("Failed to book.");
+    } catch (err: any) {
+      console.error("Booking error details:", {
+        socialId: social.id,
+        userId: user?.uid,
+        error: err,
+        message: err?.message
+      });
+      alert(t('social.booking_failed', { error: err?.message || t('social.unknown_error') }));
     } finally {
       setIsSubmitting(false);
     }
@@ -107,7 +114,7 @@ export default function SocialReservationTab({ social }: Props) {
   const handleCloseTable = async () => {
     if (!user) return;
     const next = !isClosed;
-    if (next && !confirm("Close the table for this week?")) return;
+    if (next && !confirm(t('social.confirm_close_table'))) return;
     await socialService.setWeekClosed(social.id, dateKey, next, user.uid);
   };
 
@@ -116,7 +123,7 @@ export default function SocialReservationTab({ social }: Props) {
     setShowDetailSheet(null);
   };
 
-  const dateLabel = eventDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+  const dateLabel = eventDate.toLocaleDateString(language === 'KR' ? 'ko-KR' : 'en-US', { weekday: "short", month: "short", day: "numeric" });
 
   return (
     <div className="pb-8 relative">
@@ -128,9 +135,9 @@ export default function SocialReservationTab({ social }: Props) {
         </button>
         <div className="text-center">
           <p className="text-sm font-black text-[#2d3435]">{dateLabel}</p>
-          {weekOffset === 0 && <p className="text-[10px] text-primary font-bold">This Week</p>}
-          {weekOffset === 1 && <p className="text-[10px] text-[#acb3b4] font-bold">Next Week</p>}
-          {weekOffset === -1 && <p className="text-[10px] text-[#acb3b4] font-bold">Last Week</p>}
+          {weekOffset === 0 && <p className="text-[10px] text-primary font-bold">{t('social.this_week')}</p>}
+          {weekOffset === 1 && <p className="text-[10px] text-[#acb3b4] font-bold">{t('social.next_week')}</p>}
+          {weekOffset === -1 && <p className="text-[10px] text-[#acb3b4] font-bold">{t('social.last_week')}</p>}
         </div>
         <button onClick={() => weekOffset < 2 ? setWeekOffset(w => w + 1) : null}
           disabled={weekOffset >= 2}
@@ -144,11 +151,14 @@ export default function SocialReservationTab({ social }: Props) {
         <div className="flex items-center gap-2">
           <span className={`w-2 h-2 rounded-full ${isClosed ? "bg-red-500" : "bg-green-500 animate-pulse"}`} />
           <span className={`text-xs font-bold ${isClosed ? "text-red-600" : "text-green-600"}`}>
-            {isClosed ? "Table Closed" : "Accepting Reservations"}
+            {isClosed ? t('social.table_closed') : t('social.accepting_reservations')}
           </span>
         </div>
         <div className="text-[10px] font-bold text-[#acb3b4]">
-          {totalBooked} booked {social.tableCapacity ? `/ ${social.tableCapacity} seats` : ""}
+          {t('social.booked_status', { 
+            count: totalBooked, 
+            capacity: social.tableCapacity ? `/ ${social.tableCapacity} ${t('social.seats')}` : "" 
+          })}
         </div>
       </div>
 
@@ -156,16 +166,16 @@ export default function SocialReservationTab({ social }: Props) {
       {isOrgOrStaff && subEvents.length > 0 && (
         <div className="mx-4 mt-3 border border-[#e0e4e5] rounded-xl overflow-hidden">
           <div className="bg-[#f8f9fa] px-3 py-2 border-b border-[#e0e4e5]">
-            <p className="text-[10px] font-black text-primary uppercase tracking-widest">Event Capacity</p>
+            <p className="text-[10px] font-black text-primary uppercase tracking-widest">{t('social.event_capacity')}</p>
           </div>
           {subEvents.map(ev => (
             <div key={ev.id} className="px-3 py-2.5 flex items-center justify-between border-b border-[#f2f4f4] last:border-b-0">
               <div>
                 <p className="text-xs font-bold text-[#2d3435]">{ev.title}</p>
-                <p className="text-[10px] text-[#acb3b4]">{ev.liveCount}/{ev.maxParticipants || "∞"} joined</p>
+                <p className="text-[10px] text-[#acb3b4]">{t('social.joined_count', { count: ev.liveCount, max: ev.maxParticipants || "∞" })}</p>
               </div>
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${ev.isFull ? "bg-red-50 text-red-600" : "bg-green-50 text-green-600"}`}>
-                {ev.isFull ? "Full" : "Open"}
+                {ev.isFull ? t('social.full') : t('social.open')}
               </span>
             </div>
           ))}
@@ -177,7 +187,7 @@ export default function SocialReservationTab({ social }: Props) {
         {reservations.length === 0 && (
           <div className="py-12 text-center">
             <span className="material-symbols-rounded text-4xl text-[#e0e4e5] block mb-2">event_seat</span>
-            <p className="text-xs text-[#acb3b4] font-bold">No reservations yet</p>
+            <p className="text-xs text-[#acb3b4] font-bold">{t('social.no_reservations')}</p>
           </div>
         )}
         {reservations.map(r => (
@@ -196,18 +206,18 @@ export default function SocialReservationTab({ social }: Props) {
                 </div>
                 <div>
                   <p className="text-xs font-bold text-[#2d3435]">{r.userName}</p>
-                  <p className="text-[10px] text-[#acb3b4]">+{r.peopleCount} {r.peopleCount > 1 ? "people" : "person"}</p>
+                  <p className="text-[10px] text-[#acb3b4]">+{r.peopleCount} {r.peopleCount > 1 ? t('social.people') : t('social.person')}</p>
                 </div>
               </div>
               <div>
-                {r.status === "pending" && <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">Pending</span>}
-                {r.status === "approved" && <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">✓ Approved</span>}
-                {r.status === "rejected" && <span className="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">Rejected</span>}
+                {r.status === "pending" && <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">{t('social.pending')}</span>}
+                {r.status === "approved" && <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">✓ {t('social.approved')}</span>}
+                {r.status === "rejected" && <span className="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">{t('social.rejected')}</span>}
               </div>
             </div>
             {r.selectedEventId && (
               <p className="text-[10px] text-primary font-bold mt-1.5 ml-10">
-                Event: {subEvents.find(e => e.id === r.selectedEventId)?.title || r.selectedEventId}
+                {t('social.event_label')}: {subEvents.find(e => e.id === r.selectedEventId)?.title || r.selectedEventId}
               </p>
             )}
           </div>
@@ -219,7 +229,7 @@ export default function SocialReservationTab({ social }: Props) {
         <div className="px-4 mt-4">
           <button onClick={() => setShowBookSheet(true)}
             className="w-full py-3.5 bg-primary text-white rounded-xl font-black text-sm tracking-wide shadow-lg shadow-primary/20 active:scale-95 transition-transform">
-            Book Table
+            {t('social.book_table')}
           </button>
         </div>
       )}
@@ -231,7 +241,7 @@ export default function SocialReservationTab({ social }: Props) {
             className={`w-full py-3 rounded-xl font-bold text-sm border transition-all active:scale-95 ${
               isClosed ? "border-green-500 text-green-600 bg-green-50" : "border-red-300 text-red-600 bg-red-50"
             }`}>
-            {isClosed ? "Reopen Table" : "Close Table"}
+            {isClosed ? t('social.reopen_table') : t('social.close_table')}
           </button>
         </div>
       )}
@@ -243,18 +253,18 @@ export default function SocialReservationTab({ social }: Props) {
           <div className="fixed bottom-0 left-0 right-0 z-[151] bg-white rounded-t-3xl shadow-2xl animate-in slide-in-from-bottom duration-300 max-h-[80vh] overflow-y-auto">
             <div className="w-12 h-1.5 bg-[#e0e4e5] rounded-full mx-auto mt-3 mb-2" />
             <div className="px-5 pb-8">
-              <h3 className="text-lg font-black text-[#2d3435] mb-1">Book Table</h3>
+              <h3 className="text-lg font-black text-[#2d3435] mb-1">{t('social.book_table')}</h3>
               <p className="text-xs text-[#acb3b4] mb-5">{dateLabel} · {social.startTime} - {social.endTime}</p>
 
               {/* Guest */}
               <div className="mb-5">
-                <label className="text-[10px] font-bold text-[#596061] uppercase tracking-wider block mb-2">Guest</label>
+                <label className="text-[10px] font-bold text-[#596061] uppercase tracking-wider block mb-2">{t('social.guest')}</label>
                 <p className="text-sm font-bold text-[#2d3435]">{user?.displayName || "User"}</p>
               </div>
 
               {/* Party Size */}
               <div className="mb-5">
-                <label className="text-[10px] font-bold text-[#596061] uppercase tracking-wider block mb-2">Party Size</label>
+                <label className="text-[10px] font-bold text-[#596061] uppercase tracking-wider block mb-2">{t('social.party_size')}</label>
                 <div className="flex items-center gap-3">
                   <button onClick={() => setPeopleCount(Math.max(1, peopleCount - 1))}
                     className="w-10 h-10 rounded-full bg-[#f2f4f4] flex items-center justify-center text-[#596061] active:scale-90">
@@ -271,13 +281,13 @@ export default function SocialReservationTab({ social }: Props) {
               {/* Event Selection */}
               {subEvents.length > 0 && (
                 <div className="mb-6">
-                  <label className="text-[10px] font-bold text-[#596061] uppercase tracking-wider block mb-2">Join Event (Optional)</label>
+                  <label className="text-[10px] font-bold text-[#596061] uppercase tracking-wider block mb-2">{t('social.join_event_optional')}</label>
                   <div className="space-y-2">
                     <button onClick={() => setSelectedEventId("")}
                       className={`w-full text-left px-4 py-3 rounded-xl border text-xs font-bold transition-all ${
                         !selectedEventId ? "border-primary bg-primary/5 text-primary" : "border-[#e0e4e5] text-[#596061]"
                       }`}>
-                      No event
+                      {t('social.no_event')}
                     </button>
                     {subEvents.map(ev => (
                       <button key={ev.id} onClick={() => !ev.isFull && setSelectedEventId(ev.id)}
@@ -290,7 +300,7 @@ export default function SocialReservationTab({ social }: Props) {
                         <div className="flex justify-between items-center">
                           <span>{ev.title}</span>
                           <span className="text-[10px]">
-                            {ev.isFull ? "Full" : ev.maxParticipants > 0 ? `${ev.liveCount}/${ev.maxParticipants}` : "Open"}
+                            {ev.isFull ? t('social.full') : ev.maxParticipants > 0 ? `${ev.liveCount}/${ev.maxParticipants}` : t('social.open')}
                           </span>
                         </div>
                       </button>
@@ -301,7 +311,7 @@ export default function SocialReservationTab({ social }: Props) {
 
               <button onClick={handleBook} disabled={isSubmitting}
                 className="w-full py-4 bg-primary text-white rounded-xl font-black text-sm shadow-lg shadow-primary/20 active:scale-95 transition-transform disabled:opacity-50">
-                {isSubmitting ? "Booking..." : "Confirm Reservation"}
+                {isSubmitting ? t('social.booking_loading') : t('social.confirm_reservation')}
               </button>
             </div>
           </div>
@@ -315,7 +325,7 @@ export default function SocialReservationTab({ social }: Props) {
           <div className="fixed bottom-0 left-0 right-0 z-[151] bg-white rounded-t-3xl shadow-2xl animate-in slide-in-from-bottom duration-300">
             <div className="w-12 h-1.5 bg-[#e0e4e5] rounded-full mx-auto mt-3 mb-2" />
             <div className="px-5 pb-8">
-              <h3 className="text-lg font-black text-[#2d3435] mb-4">Reservation Detail</h3>
+              <h3 className="text-lg font-black text-[#2d3435] mb-4">{t('social.reservation_detail')}</h3>
 
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden">
@@ -324,13 +334,13 @@ export default function SocialReservationTab({ social }: Props) {
                 </div>
                 <div>
                   <p className="text-base font-bold text-[#2d3435]">{showDetailSheet.userName}</p>
-                  <p className="text-xs text-[#acb3b4]">{showDetailSheet.peopleCount} {showDetailSheet.peopleCount > 1 ? "people" : "person"}</p>
+                  <p className="text-xs text-[#acb3b4]">{showDetailSheet.peopleCount} {showDetailSheet.peopleCount > 1 ? t('social.people') : t('social.person')}</p>
                 </div>
               </div>
 
               {showDetailSheet.selectedEventId && (
                 <div className="bg-[#f8f9fa] rounded-xl px-4 py-3 mb-4">
-                  <p className="text-[10px] font-bold text-[#acb3b4] uppercase mb-1">Event</p>
+                  <p className="text-[10px] font-bold text-[#acb3b4] uppercase mb-1">{t('social.event_label')}</p>
                   <p className="text-sm font-bold text-primary">
                     {subEvents.find(e => e.id === showDetailSheet.selectedEventId)?.title || showDetailSheet.selectedEventId}
                   </p>
@@ -338,12 +348,12 @@ export default function SocialReservationTab({ social }: Props) {
               )}
 
               <div className="bg-[#f8f9fa] rounded-xl px-4 py-3 mb-6">
-                <p className="text-[10px] font-bold text-[#acb3b4] uppercase mb-1">Status</p>
+                <p className="text-[10px] font-bold text-[#acb3b4] uppercase mb-1">{t('social.status')}</p>
                 <p className={`text-sm font-bold ${
                   showDetailSheet.status === "approved" ? "text-green-600" :
                   showDetailSheet.status === "rejected" ? "text-red-600" : "text-amber-600"
                 }`}>
-                  {showDetailSheet.status === "approved" ? "✓ Approved" : showDetailSheet.status === "rejected" ? "Rejected" : "⏳ Pending"}
+                  {showDetailSheet.status === "approved" ? `✓ ${t('social.approved')}` : showDetailSheet.status === "rejected" ? t('social.rejected') : `⏳ ${t('social.pending')}`}
                 </p>
               </div>
 
@@ -351,18 +361,18 @@ export default function SocialReservationTab({ social }: Props) {
                 <div className="flex gap-3">
                   <button onClick={() => handleStatusChange(showDetailSheet.id!, "approved")}
                     className="flex-1 py-3.5 bg-green-500 text-white rounded-xl font-black text-sm active:scale-95 transition-transform">
-                    Approve
+                    {t('social.approve')}
                   </button>
                   <button onClick={() => handleStatusChange(showDetailSheet.id!, "rejected")}
                     className="flex-1 py-3.5 bg-red-500 text-white rounded-xl font-black text-sm active:scale-95 transition-transform">
-                    Reject
+                    {t('social.reject')}
                   </button>
                 </div>
               )}
               {showDetailSheet.status !== "pending" && (
                 <button onClick={() => setShowDetailSheet(null)}
                   className="w-full py-3.5 bg-[#f2f4f4] text-[#2d3435] rounded-xl font-bold text-sm active:scale-95 transition-transform">
-                  Close
+                  {t('social.close')}
                 </button>
               )}
             </div>

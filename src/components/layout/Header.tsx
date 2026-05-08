@@ -31,7 +31,7 @@ export default function Header() {
   }, [user]);
 
   // Hide on login page, landing page, stay detail, or space pages (App-in-App)
-  if (pathname === '/login' || pathname === '/' || (pathname.startsWith('/stay/') && pathname !== '/stay') || (pathname.startsWith('/rental/') && pathname !== '/rental') || pathname.startsWith('/group/')) return null;
+  if (pathname === '/login' || pathname === '/' || (pathname.startsWith('/stay/') && pathname !== '/stay') || (pathname.startsWith('/rental/') && pathname !== '/rental') || pathname.startsWith('/groups/')) return null;
 
   const routeMap: Record<string, { headlineKey: string; sub: string }> = {
     '/': { headlineKey: 'header.home', sub: 'SOCIETY' },
@@ -39,6 +39,7 @@ export default function Header() {
     '/plaza': { headlineKey: 'header.plaza', sub: 'SOCIETY' },
     '/venues': { headlineKey: 'header.venues', sub: 'SOCIETY' },
     '/groups': { headlineKey: 'header.groups', sub: 'SOCIETY' },
+    '/explore': { headlineKey: 'header.explore', sub: 'World' },
     
     '/social': { headlineKey: 'header.social', sub: 'Activity' },
     '/class': { headlineKey: 'header.class', sub: 'Activity' },
@@ -50,7 +51,7 @@ export default function Header() {
     
     '/resale': { headlineKey: 'header.resale', sub: 'Town' },
     '/lost': { headlineKey: 'header.lost_found', sub: 'Town' },
-    '/arcade': { headlineKey: 'header.arcade', sub: 'Town' },
+    '/hub': { headlineKey: 'header.hub', sub: 'Activity' },
     
     '/chat': { headlineKey: 'header.chat', sub: 'Social' },
     '/wallet': { headlineKey: 'header.wallet', sub: 'My' },
@@ -127,6 +128,14 @@ export default function Header() {
                 {unreadCount > 99 ? '99+' : unreadCount}
               </span>
             )}
+          </Link>
+
+          {/* Help Desk */}
+          <Link 
+            href="/helpdesk" 
+            className="hover:opacity-70 transition-opacity active:scale-95 duration-100 flex items-center justify-center w-8 h-8"
+          >
+            <span className="material-symbols-outlined text-on-surface !text-[18px]" data-icon="support_agent">support_agent</span>
           </Link>
 
           {/* Search */}

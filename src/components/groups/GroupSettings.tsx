@@ -10,11 +10,23 @@ import GroupHomeConfig from "./GroupHomeConfig";
 import GroupGalleryEditor from "./GroupGalleryEditor";
 import GroupBasicEditor from "./GroupBasicEditor";
 import GroupContactEditor from "./GroupContactEditor";
+import GroupAccountEditor from "./GroupAccountEditor";
+import GroupClassEditor from "./GroupClassEditor";
+import GroupRentalEditor from "./GroupRentalEditor";
+import GroupShopEditor from "./GroupShopEditor";
+import GroupStayEditor from "./GroupStayEditor";
 import { useSearchParams } from "next/navigation";
+import { useLanguage } from "@/contexts/LanguageContext";
 
-const GroupSettings = ({ group }: { group: Group }) => {
+interface GroupSettingsProps {
+  group: Group;
+  onClose?: () => void;
+}
+
+const GroupSettings = ({ group, onClose }: GroupSettingsProps) => {
   const searchParams = useSearchParams();
   const [activePopup, setActivePopup] = useState<string | null>(searchParams.get("popup"));
+  const { t } = useLanguage();
 
   React.useEffect(() => {
     const popup = searchParams.get("popup");
@@ -46,52 +58,112 @@ const GroupSettings = ({ group }: { group: Group }) => {
     {
       id: "profile",
       icon: "badge",
-      status: "CORE",
+      status: t("group.settings.status.core"),
       statusColor: "bg-blue-100 text-blue-700",
-      title: "1. Profile & Branding",
-      desc: "Set your logo, cover, and group identity.",
+      title: t("group.settings.step.profile.title"),
+      desc: t("group.settings.step.profile.desc"),
       accent: "border-blue-100 group-hover:border-blue-200",
       iconBg: "bg-blue-50 text-blue-600",
     },
     {
       id: "membership",
       icon: "security",
-      status: "CORE",
+      status: t("group.settings.status.core"),
       statusColor: "bg-emerald-100 text-emerald-700",
-      title: "2. Membership Policy",
-      desc: "Define join strategies (Open, Approval, or Invite-only) for your group.",
+      title: t("group.settings.step.membership.title"),
+      desc: t("group.settings.step.membership.desc"),
       accent: "border-emerald-100 group-hover:border-emerald-200",
       iconBg: "bg-emerald-50 text-emerald-600",
     },
     {
       id: "boards",
       icon: "dashboard_customize",
-      status: "CORE",
+      status: t("group.settings.status.core"),
       statusColor: "bg-orange-100 text-orange-700",
-      title: "3. Board Settings",
-      desc: "Manage your boards. Create up to 10 boards including mandatory notices.",
+      title: t("group.settings.step.boards.title"),
+      desc: t("group.settings.step.boards.desc"),
       accent: "border-orange-100 group-hover:border-orange-200",
       iconBg: "bg-orange-50 text-orange-600",
     },
     {
       id: "gallery",
       icon: "grid_view",
-      status: "CORE",
+      status: t("group.settings.status.core"),
       statusColor: "bg-purple-100 text-purple-700",
-      title: "4. Gallery Setting",
-      desc: "Manage your photos and videos collections.",
+      title: t("group.settings.step.gallery.title"),
+      desc: t("group.settings.step.gallery.desc"),
       accent: "border-purple-100 group-hover:border-purple-200",
       iconBg: "bg-purple-50 text-purple-600",
     },
     {
       id: "contact",
       icon: "mail",
-      status: "CORE",
+      status: t("group.settings.status.core"),
       statusColor: "bg-rose-100 text-rose-700",
-      title: "5. Contact Setting",
-      desc: "Configure how members can reach you and see location info.",
+      title: t("group.settings.step.contact.title"),
+      desc: t("group.settings.step.contact.desc"),
       accent: "border-rose-100 group-hover:border-rose-200",
       iconBg: "bg-rose-50 text-rose-600",
+    },
+    {
+      id: "account",
+      icon: "account_balance",
+      status: t("group.settings.status.core"),
+      statusColor: "bg-teal-100 text-teal-700",
+      title: t("group.settings.step.account.title"),
+      desc: t("group.settings.step.account.desc"),
+      accent: "border-teal-100 group-hover:border-teal-200",
+      iconBg: "bg-teal-50 text-teal-600",
+    },
+    {
+      id: "role",
+      icon: "manage_accounts",
+      status: t("group.settings.status.optional"),
+      statusColor: "bg-gray-100 text-gray-700",
+      title: t("group.settings.step.role.title"),
+      desc: t("group.settings.step.role.desc"),
+      accent: "border-gray-100 group-hover:border-gray-200",
+      iconBg: "bg-gray-50 text-gray-600",
+    },
+    {
+      id: "class",
+      icon: "school",
+      status: t("group.settings.status.optional"),
+      statusColor: "bg-indigo-100 text-indigo-700",
+      title: t("group.settings.step.class.title"),
+      desc: t("group.settings.step.class.desc"),
+      accent: "border-indigo-100 group-hover:border-indigo-200",
+      iconBg: "bg-indigo-50 text-indigo-600",
+    },
+    {
+      id: "rental",
+      icon: "meeting_room",
+      status: t("group.settings.status.optional"),
+      statusColor: "bg-cyan-100 text-cyan-700",
+      title: t("group.settings.step.rental.title"),
+      desc: t("group.settings.step.rental.desc"),
+      accent: "border-cyan-100 group-hover:border-cyan-200",
+      iconBg: "bg-cyan-50 text-cyan-600",
+    },
+    {
+      id: "shop",
+      icon: "storefront",
+      status: t("group.settings.status.optional"),
+      statusColor: "bg-fuchsia-100 text-fuchsia-700",
+      title: t("group.settings.step.shop.title"),
+      desc: t("group.settings.step.shop.desc"),
+      accent: "border-fuchsia-100 group-hover:border-fuchsia-200",
+      iconBg: "bg-fuchsia-50 text-fuchsia-600",
+    },
+    {
+      id: "stay",
+      icon: "bed",
+      status: t("group.settings.status.optional"),
+      statusColor: "bg-lime-100 text-lime-700",
+      title: t("group.settings.step.stay.title"),
+      desc: t("group.settings.step.stay.desc"),
+      accent: "border-lime-100 group-hover:border-lime-200",
+      iconBg: "bg-lime-50 text-lime-600",
     },
   ];
 
@@ -100,15 +172,20 @@ const GroupSettings = ({ group }: { group: Group }) => {
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md flex justify-between items-center px-6 py-4 w-full border-b border-[#F0F2F9]">
         <div className="flex items-center gap-4">
-          <h1 className="font-headline font-semibold tracking-tight text-[#242c51] text-lg">Group Settings</h1>
+          {onClose && (
+            <button onClick={onClose} className="hover:bg-gray-100 p-2 rounded-full transition-colors flex items-center justify-center">
+              <span className="material-symbols-outlined text-[#242c51]">arrow_back</span>
+            </button>
+          )}
+          <h1 className="font-headline font-semibold tracking-tight text-[#242c51] text-lg">{t("group.settings.title")}</h1>
         </div>
         <div className="flex items-center gap-3">
           <button className="hidden md:flex items-center gap-2 px-6 py-2 rounded-full bg-white text-[#242c51] font-bold text-sm transition-all active:scale-95 border border-gray-100 shadow-sm">
             <span className="material-symbols-outlined text-[18px]">history</span>
-            Audit Logs
+            {t("group.settings.audit_logs")}
           </button>
           <button className="flex items-center gap-2 px-8 py-2 rounded-full bg-[#E2E4F0] text-[#939BB4] font-bold text-sm cursor-not-allowed">
-            Go Live
+            {t("group.settings.go_live")}
           </button>
         </div>
       </header>
@@ -117,8 +194,8 @@ const GroupSettings = ({ group }: { group: Group }) => {
         {/* Title Section */}
         <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-8">
           <div className="max-w-2xl">
-            <h2 className="font-headline font-bold text-4xl md:text-5xl text-[#242c51] mb-5 leading-tight tracking-tight">Setup your group policy</h2>
-            <p className="text-[#515981] text-lg leading-relaxed opacity-80">Complete the mandatory configurations below to define how your group interacts and operates.</p>
+            <h2 className="font-headline font-bold text-4xl md:text-5xl text-[#242c51] mb-5 leading-tight tracking-tight">{t("group.settings.header.title")}</h2>
+            <p className="text-[#515981] text-lg leading-relaxed opacity-80">{t("group.settings.header.desc")}</p>
           </div>
           
           {/* Progress Indicator */}
@@ -132,7 +209,7 @@ const GroupSettings = ({ group }: { group: Group }) => {
                 ></div>
               </div>
             </div>
-            <p className="text-[10px] font-bold text-[#515981]/60 uppercase tracking-[0.1em]">0 of 5 steps completed</p>
+            <p className="text-[10px] font-bold text-[#515981]/60 uppercase tracking-[0.1em]">{t("group.settings.progress", { completed: 0, total: 11 })}</p>
           </div>
         </div>
 
@@ -164,7 +241,7 @@ const GroupSettings = ({ group }: { group: Group }) => {
                   onClick={() => setActivePopup(step.id)}
                   className="w-full py-4 rounded-2xl bg-gray-50 text-[#242c51] font-bold text-sm hover:bg-[#3B82F6] hover:text-white transition-all active:scale-[0.98] shadow-sm hover:shadow-lg hover:shadow-blue-500/20"
                 >
-                  Edit Configuration
+                  {t("group.settings.edit_config")}
                 </button>
               </div>
             </motion.div>
@@ -180,12 +257,12 @@ const GroupSettings = ({ group }: { group: Group }) => {
                  <span className="material-symbols-outlined text-white">info</span>
                </div>
                <div>
-                  <p className="text-lg font-bold">Need help with group settings?</p>
-                  <p className="text-white/60 text-sm">Read our documentation or contact our support team.</p>
+                  <p className="text-lg font-bold">{t("group.settings.help.title")}</p>
+                  <p className="text-white/60 text-sm">{t("group.settings.help.desc")}</p>
                </div>
              </div>
              <button className="px-8 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-sm transition-all border border-white/10 backdrop-blur-md">
-               View Guide
+               {t("group.settings.help.button")}
              </button>
            </div>
         </div>
@@ -207,6 +284,24 @@ const GroupSettings = ({ group }: { group: Group }) => {
         )}
         {activePopup === "contact" && (
           <GroupContactEditor group={group} isLoaded={true} onClose={() => setActivePopup(null)} />
+        )}
+        {activePopup === "account" && (
+          <GroupAccountEditor group={group} onClose={() => setActivePopup(null)} />
+        )}
+        {activePopup === "role" && (
+          <GroupRoleEditor group={group} onClose={() => setActivePopup(null)} />
+        )}
+        {activePopup === "class" && (
+          <GroupClassEditor group={group} onClose={() => setActivePopup(null)} />
+        )}
+        {activePopup === "rental" && (
+          <GroupRentalEditor group={group} onClose={() => setActivePopup(null)} />
+        )}
+        {activePopup === "shop" && (
+          <GroupShopEditor group={group} onClose={() => setActivePopup(null)} />
+        )}
+        {activePopup === "stay" && (
+          <GroupStayEditor group={group} onClose={() => setActivePopup(null)} />
         )}
       </AnimatePresence>
     </div>

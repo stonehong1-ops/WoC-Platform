@@ -7,6 +7,7 @@ import { rentalService } from '@/lib/firebase/rentalService';
 import { chatService } from '@/lib/firebase/chatService';
 import { groupService } from '@/lib/firebase/groupService';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useNavigation } from '@/components/providers/NavigationProvider';
 import { RentalSpace } from '@/types/rental';
 import { Group } from '@/types/group';
 import SectionCard from '@/components/ui/SectionCard';
@@ -25,6 +26,7 @@ interface RentalDetailProps {
 export default function RentalDetail({ space, isLiked, onClose, onToggleLike }: RentalDetailProps) {
   const { user } = useAuth();
   const { t } = useLanguage();
+  const { setGlobalNavHidden } = useNavigation();
   const router = useRouter();
   
   const [group, setGroup] = useState<Group | null>(null);
@@ -83,6 +85,11 @@ export default function RentalDetail({ space, isLiked, onClose, onToggleLike }: 
 
   // Scarcity mock
   const [viewerCount] = useState(() => Math.floor(Math.random() * 18) + 5);
+
+  useEffect(() => {
+    setGlobalNavHidden(true);
+    return () => setGlobalNavHidden(false);
+  }, [setGlobalNavHidden]);
 
   useEffect(() => {
     const fetchGroup = async () => {

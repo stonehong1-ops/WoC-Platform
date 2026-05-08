@@ -1,26 +1,37 @@
-
 const fs = require('fs');
-const content = fs.readFileSync('c:\\Users\\stone\\WoC\\src\\contexts\\LanguageContext.tsx', 'utf8');
+const path = require('path');
 
-const lines = content.split('\n');
-const enStart = lines.findIndex(l => l.includes('EN: {'));
-const krStart = lines.findIndex(l => l.includes('KR: {'));
+const filePath = path.join(process.cwd(), 'src', 'contexts', 'LanguageContext.tsx');
+const content = fs.readFileSync(filePath, 'utf8');
 
-function findDuplicates(startLine, endLine) {
+// Match the dictionaries
+const enMatch = content.match(/const en = \{([\s\S]+?)\};/);
+const krMatch = content.match(/const kr = \{([\s\S]+?)\};/);
+
+function findDuplicates(dictContent, dictName) {
+    const lines = dictContent.split('\n');
     const keys = {};
-    for (let i = startLine; i < endLine; i++) {
-        const match = lines[i].match(/'([^']+)':/);
+    const duplicates = [];
+    lines.forEach((line, index) => {
+        const match = line.match(/'([^']+)'\s*:/);
         if (match) {
             const key = match[1];
             if (keys[key]) {
-                console.log(`Duplicate key "${key}" at line ${i + 1} (previous at line ${keys[key]})`);
+                duplicates.push({ key, line: index + 1, originalLine: keys[key] });
+            } else {
+                keys[key] = index + 1;
             }
-            keys[key] = i + 1;
         }
-    }
+    });
+    return duplicates;
 }
 
-console.log('--- EN Duplicates ---');
-findDuplicates(enStart + 1, krStart);
-console.log('--- KR Duplicates ---');
-findDuplicates(krStart + 1, lines.length);
+if (enMatch) {
+    const enDuplicates = findDuplicates(enMatch[1], 'en');
+    console.log('EN Duplicates:', enDuplicates);
+}
+
+if (krMatch) {
+    const krDuplicates = findDuplicates(krMatch[1], 'kr');
+    console.log('KR Duplicates:', krDuplicates);
+}

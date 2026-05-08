@@ -98,7 +98,7 @@ export default function AuthModal() {
       }
     } catch (err: any) {
       console.error(err);
-      alert('Login failed: ' + err.message);
+      alert(t('auth.alert_login_failed') + err.message);
     } finally {
       setIsLoading(false);
     }
@@ -123,26 +123,37 @@ export default function AuthModal() {
       }
     } catch (err: any) {
       console.error(err);
-      alert('Login failed: ' + err.message);
+      alert(t('auth.alert_login_failed') + err.message);
     } finally {
       setIsLoading(false);
     }
   };
 
   const setupRecaptcha = () => {
-    if (!(window as any).recaptchaVerifier) {
-      (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        'size': 'invisible',
-        'callback': (response: any) => {
-          // reCAPTCHA solved
-        }
-      });
+    // Always clear existing verifier to avoid stale DOM reference
+    if ((window as any).recaptchaVerifier) {
+      try { (window as any).recaptchaVerifier.clear(); } catch (e) { /* ignore */ }
+      (window as any).recaptchaVerifier = null;
     }
+    
+    const container = document.getElementById('recaptcha-container');
+    if (!container) return;
+
+    // Firebase v12.x 규격에 맞춘 Enterprise RecaptchaVerifier 초기화
+    // 첫 번째 인자로 명시적인 auth 객체를 전달하고, 지정된 사이트 키를 반영합니다.
+    (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, container, {
+      'size': 'invisible',
+      'siteKey': '6LcyCd4sAAAAAHDO-jSwgvMkKfgPrs85AFO1Z3mL',
+      'enterprise': true,
+      'callback': (response: any) => {
+        // reCAPTCHA solved
+      }
+    });
   };
 
   const handleSendCode = async () => {
     if (!phoneNumber) {
-      alert("Please enter a valid phone number.");
+      alert(t('auth.alert_invalid_phone'));
       return;
     }
     setIsLoading(true);
@@ -152,7 +163,9 @@ export default function AuthModal() {
       let formattedPhone = phoneNumber;
       if (!formattedPhone.startsWith('+')) {
         if (formattedPhone.startsWith('82')) {
-          formattedPhone = '+' + formattedPhone;
+          // Strip country code, then strip leading 0 if present, re-add +82
+          const afterCC = formattedPhone.slice(2);
+          formattedPhone = `+82${afterCC.replace(/^0/, '')}`;
         } else {
           formattedPhone = `+82${formattedPhone.replace(/^0/, '')}`;
         }
@@ -162,10 +175,10 @@ export default function AuthModal() {
       setStep('PHONE_VERIFY');
     } catch (error: any) {
       console.warn("SMS sending failed:", error);
-      alert("Failed to send SMS: " + error.message);
+      alert(t('auth.alert_sms_failed') + error.message);
       // Reset recaptcha on error
       if ((window as any).recaptchaVerifier) {
-        (window as any).recaptchaVerifier.clear();
+        try { (window as any).recaptchaVerifier.clear(); } catch (e) { /* ignore */ }
         (window as any).recaptchaVerifier = null;
       }
     } finally {
@@ -175,7 +188,7 @@ export default function AuthModal() {
 
   const handleVerifyCode = async () => {
     if (!verificationCode || !confirmationResult) {
-      alert("Please enter the verification code.");
+      alert(t('auth.alert_enter_code'));
       return;
     }
     setIsLoading(true);
@@ -192,7 +205,7 @@ export default function AuthModal() {
       }
     } catch (error: any) {
       console.warn("Verification failed:", error);
-      alert("Invalid code: " + error.message);
+      alert(t('auth.alert_invalid_code') + error.message);
     } finally {
       setIsLoading(false);
     }
@@ -200,12 +213,12 @@ export default function AuthModal() {
 
   const handleCompleteRegistration = async () => {
     if (!user) {
-      alert('Please verify your identity first.');
+      alert(t('auth.alert_verify_first'));
       setStep('SOCIAL');
       return;
     }
-    if (!details.nickname || !details.countryCode || !details.nativeNickname || !details.gender) {
-      alert('Please fill in all required fields.');
+    if (!details.nickname || !details.countryCode || !details.gender) {
+      alert(t('auth.alert_fill_fields'));
       return;
     }
 
@@ -227,7 +240,7 @@ export default function AuthModal() {
       });
     } catch (err: any) {
       console.warn(err);
-      alert('Registration failed: ' + err.message);
+      alert(t('auth.alert_reg_failed') + err.message);
     } finally {
       setIsLoading(false);
     }
@@ -240,18 +253,20 @@ export default function AuthModal() {
         <div className="flex items-center w-full max-w-2xl mx-auto justify-between">
           <div className="flex items-center gap-4">
             <h1 className="font-manrope text-base font-semibold text-gray-900 font-headline">
-              {step === 'FORM' ? t('auth.title_register') : t('auth.title_signin')}
+              {t('auth.title_signin')}
             </h1>
           </div>
           {/* Language Toggle */}
           <div className="flex items-center bg-gray-50 rounded-full border border-gray-200 p-0.5">
             <button 
+              type="button"
               onClick={() => setLanguage('KR')}
               className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all ${language === 'KR' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
             >
               Ko
             </button>
             <button 
+              type="button"
               onClick={() => setLanguage('EN')}
               className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all ${language === 'EN' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
             >
@@ -262,13 +277,11 @@ export default function AuthModal() {
       </header>
 
       {/* Main Content Canvas */}
-      <main className="flex-grow pt-[64px] pb-24 px-6 max-w-2xl mx-auto w-full relative">
-        <div id="recaptcha-container"></div>
-        
+      <main className="flex-grow pt-20 pb-24 px-6 max-w-2xl mx-auto w-full relative">
         {/* Floating Wait Message */}
         {isLoading && step === 'PHONE_INPUT' && (
           <div className="absolute top-20 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-5 py-2.5 rounded-full text-xs font-bold shadow-xl z-50 animate-bounce whitespace-nowrap">
-            {t('auth.wait_message')}
+            {t('auth.sending_code')}
           </div>
         )}
 
@@ -276,11 +289,11 @@ export default function AuthModal() {
           <h2 className="text-3xl font-extrabold tracking-tight text-on-surface mb-2 font-headline">
             {step === 'FORM' ? t('auth.headline_more') : step === 'PHONE_INPUT' || step === 'PHONE_VERIFY' ? t('auth.headline_verify') : t('auth.headline_join')}
           </h2>
-          <p className="text-on-surface-variant text-sm mb-8 font-body text-gray-500">
+          <p className={`text-on-surface-variant text-sm font-body text-gray-500 ${step === 'PHONE_VERIFY' ? 'mb-4' : 'mb-8'}`}>
             {step === 'FORM' 
               ? t('auth.desc_more') 
-              : step === 'PHONE_INPUT' ? t('auth.desc_input')
-              : step === 'PHONE_VERIFY' ? t('auth.desc_verify')
+              : step === 'PHONE_INPUT' ? ''
+              : step === 'PHONE_VERIFY' ? ''
               : t('auth.desc_join')}
           </p>
         </div>
@@ -336,6 +349,7 @@ export default function AuthModal() {
                 type="tel"
                 autoComplete="tel"
                 inputMode="tel"
+                autoFocus
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value.replace(/[^0-9]/g, ''))}
                 placeholder="01012345678"
@@ -359,21 +373,22 @@ export default function AuthModal() {
             </button>
           </div>
         ) : step === 'PHONE_VERIFY' ? (
-          <div className="animate-in slide-in-from-bottom-4 duration-500 space-y-6">
+          <div className="animate-in slide-in-from-bottom-4 duration-500 space-y-4">
             <div>
               <label className="block text-sm font-bold text-gray-900 mb-2">{t('auth.code_label')}</label>
               <input 
                 autoFocus
+                ref={(input) => { if (input) input.focus(); }}
                 type="text"
                 autoComplete="one-time-code"
                 inputMode="numeric"
                 value={verificationCode}
                 onChange={(e) => setVerificationCode(e.target.value.replace(/[^0-9]/g, ''))}
                 placeholder="●●●●●●"
-                className="w-full h-14 px-4 text-center tracking-[0.5em] text-xl font-bold bg-gray-50 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder-gray-200"
+                className="w-full h-14 px-4 text-center tracking-[0.5em] text-xl font-bold bg-gray-50 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder-gray-200/40 text-gray-800"
               />
               <p className="mt-3 text-xs text-blue-600 leading-relaxed font-bold break-keep">
-                {t('auth.code_instruction')}
+                {t('auth.enter_6_digits')}
               </p>
             </div>
             <button 
@@ -433,7 +448,7 @@ export default function AuthModal() {
                     value={details.nickname}
                     onChange={(e) => setDetails({...details, nickname: e.target.value.replace(/[^a-zA-Z0-9_.\-\s]/g, '')})}
                     className="w-full h-14 px-4 bg-gray-50 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all" 
-                    placeholder={t('auth.placeholder_en_nick')} 
+                    placeholder="ex. Scarlet"
                     type="text"
                   />
                 </div>
@@ -461,7 +476,7 @@ export default function AuthModal() {
                   value={details.nativeNickname}
                   onChange={(e) => setDetails({...details, nativeNickname: e.target.value})}
                   className="w-full h-14 px-4 bg-gray-50 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all" 
-                  placeholder={t('auth.placeholder_ko_nick')} 
+                  placeholder="스칼렛"
                   type="text"
                 />
               </div>
@@ -489,7 +504,7 @@ export default function AuthModal() {
           </p>
         </div>
       </main>
-
+      <div id="recaptcha-container"></div>
     </div>
   );
 }

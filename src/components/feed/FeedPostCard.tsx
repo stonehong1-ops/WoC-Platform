@@ -21,9 +21,10 @@ interface FeedPostCardProps {
   profile?: any;
   onEdit?: (post: Post) => void;
   onDelete?: (postId: string) => void;
+  hideUserInfo?: boolean;
 }
 
-export default function FeedPostCard({ post, currentUser, profile, onEdit, onDelete }: FeedPostCardProps) {
+export default function FeedPostCard({ post, currentUser, profile, onEdit, onDelete, hideUserInfo }: FeedPostCardProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const [isReactionSelectorOpen, setIsReactionSelectorOpen] = useState(false);
@@ -179,10 +180,10 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
         </div>
       ) : (
         <UserBadge
-          uid={post.userId || (post as any).authorId || ''}
-          nickname={post.userName || (post as any).authorName || 'Unknown User'}
-          nativeNickname={post.userNameNative || (post as any).authorNameNative}
-          photoURL={post.userPhoto || (post as any).authorPhoto}
+          uid={hideUserInfo ? '' : (post.userId || (post as any).authorId || '')}
+          nickname={hideUserInfo ? t('help_desk.anonymous') : (post.userName || (post as any).authorName || 'Unknown User')}
+          nativeNickname={hideUserInfo ? null : (post.userNameNative || (post as any).authorNameNative)}
+          photoURL={hideUserInfo ? null : (post.userPhoto || (post as any).authorPhoto)}
           avatarSize="w-8 h-8"
           nameClassName="font-headline font-bold text-on-surface text-[13px] leading-tight"
           nativeClassName="text-[11px] font-medium text-on-surface-variant leading-tight hidden"
@@ -272,7 +273,7 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
       </button>
 
       <ReactionListBottomSheet post={post} isOpen={isReactionListOpen} onClose={closeReactions} />
-      <CommentBottomSheet post={post} isOpen={isCommentSheetOpen} onClose={closeComments} currentUser={currentUser} />
+      <CommentBottomSheet post={post} isOpen={isCommentSheetOpen} onClose={closeComments} currentUser={currentUser} profile={profile} hideUserInfo={hideUserInfo} />
     </div>
   );
 
@@ -299,11 +300,18 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
         </div>
         <div className="px-4 pb-3">
           {renderActionBar()}
-          {localLikesCount > 0 && (
-            <button onClick={() => openReactions(post.id)} className="font-bold text-sm text-on-surface mb-1 hover:underline">
-              {localLikesCount} {t('plaza.likes')}
-            </button>
-          )}
+          <div className="flex gap-2 mb-1">
+            {localLikesCount > 0 && (
+              <button onClick={() => openReactions(post.id)} className="font-bold text-sm text-on-surface hover:underline">
+                {localLikesCount} {t('plaza.likes')}
+              </button>
+            )}
+            {post.commentsCount > 0 && (
+              <button onClick={() => openComments(post.id)} className="font-medium text-sm text-on-surface-variant hover:underline">
+                {post.commentsCount} {t('plaza.comments')}
+              </button>
+            )}
+          </div>
           <p className="text-[10px] text-on-surface-variant font-medium tracking-wide uppercase mt-2">{timeAgo}</p>
         </div>
       </article>
@@ -319,7 +327,7 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
       : 'text-on-surface text-lg font-headline font-semibold leading-tight';
     return (
       <article className="w-full bg-surface-container-lowest">
-        <div className="px-4 py-3 pb-2">{renderHeader()}</div>
+        <div className="px-4 py-3 pb-2">{renderHeader(post.isOfficial)}</div>
         {hasColorStyle ? (
           <div
             className="w-full aspect-square p-4 flex flex-col items-center justify-center"
@@ -338,11 +346,18 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
         )}
         <div className="px-4 py-3">
           {renderActionBar()}
-          {localLikesCount > 0 && (
-            <button onClick={() => openReactions(post.id)} className="font-bold text-sm text-on-surface mb-1 hover:underline">
-              {localLikesCount} {t('plaza.likes')}
-            </button>
-          )}
+          <div className="flex gap-2 mb-1">
+            {localLikesCount > 0 && (
+              <button onClick={() => openReactions(post.id)} className="font-bold text-sm text-on-surface hover:underline">
+                {localLikesCount} {t('plaza.likes')}
+              </button>
+            )}
+            {post.commentsCount > 0 && (
+              <button onClick={() => openComments(post.id)} className="font-medium text-sm text-on-surface-variant hover:underline">
+                {post.commentsCount} {t('plaza.comments')}
+              </button>
+            )}
+          </div>
           <p className="text-[10px] text-on-surface-variant font-medium tracking-wide uppercase mt-2">{timeAgo}</p>
         </div>
       </article>
@@ -453,7 +468,7 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
   return (
     <article className="w-full bg-surface-container-lowest">
       <div className="px-4 pt-3 pb-1">
-        {renderHeader()}
+        {renderHeader(post.isOfficial)}
       </div>
 
       {hasMedia && (
@@ -465,14 +480,23 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
       <div className="px-4 py-2">
         {renderActionBar()}
 
-        {localLikesCount > 0 && (
-          <button onClick={() => openReactions(post.id)} className="font-bold text-sm text-on-surface mb-1 hover:underline">
-            {localLikesCount} {t('plaza.likes')}
-          </button>
-        )}
+        <div className="flex gap-2 mb-1">
+          {localLikesCount > 0 && (
+            <button onClick={() => openReactions(post.id)} className="font-bold text-sm text-on-surface hover:underline">
+              {localLikesCount} {t('plaza.likes')}
+            </button>
+          )}
+          {post.commentsCount > 0 && (
+            <button onClick={() => openComments(post.id)} className="font-medium text-sm text-on-surface-variant hover:underline">
+              {post.commentsCount} {t('plaza.comments')}
+            </button>
+          )}
+        </div>
         
         <p className="text-sm text-on-surface leading-normal whitespace-pre-wrap break-words">
-          <span className="font-bold mr-2 text-[13px]">{post.userName || (post as any).authorName || 'Unknown User'}</span>
+          <span className="font-bold mr-2 text-[13px]">
+            {hideUserInfo ? t('help_desk.anonymous') : (post.userName || (post as any).authorName || 'Unknown User')}
+          </span>
           {post.content}
         </p>
 

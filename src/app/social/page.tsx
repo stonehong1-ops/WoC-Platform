@@ -124,12 +124,13 @@ export default function SocialPage() {
 
   // 모달 제어용 (디바이스 뒤로가기 대응)
   const openModal = (setter: Function, value: any) => {
-    window.history.pushState({ modal: true }, '');
+    const currentState = window.history.state || {};
+    window.history.pushState({ ...currentState, wocModal: true }, '');
     setter(value);
   };
 
   const closeModal = (setter: Function, fallbackValue: any = null) => {
-    if (window.history.state?.modal) {
+    if (window.history.state?.wocModal) {
       window.history.back(); // 이 호출이 popstate 이벤트를 발생시킵니다
     } else {
       setter(fallbackValue);
@@ -137,7 +138,10 @@ export default function SocialPage() {
   };
 
   useEffect(() => {
-    const handlePopState = () => {
+    const handlePopState = (e: PopStateEvent) => {
+      if (e.state && e.state.wocModal) {
+        return; // 중첩 모달(모먼트 등)이 닫혔지만 현재 상태는 메인 모달이 열려있어야 함
+      }
       // 뒤로가기 버튼 클릭 시 모든 모달 닫기
       setViewSocial(null);
       setIsCreateOpen(false);
@@ -147,9 +151,9 @@ export default function SocialPage() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  const countryDisplay = location.country.charAt(0).toUpperCase() + location.country.slice(1).toLowerCase();
-  const cityDisplay = location.city === 'ALL' || !location.city ? 'All' : 
-                    location.city.charAt(0).toUpperCase() + location.city.slice(1).toLowerCase();
+  const countryDisplay = location?.country ? (location.country.charAt(0).toUpperCase() + location.country.slice(1).toLowerCase()) : '';
+  const cityDisplay = !location?.city || location.city === 'ALL' ? 'All' : 
+                    (location.city.charAt(0).toUpperCase() + location.city.slice(1).toLowerCase());
 
   // Calculate week days starting from today
   const weekDays = Array.from({ length: 7 }, (_, i) => {
@@ -425,9 +429,16 @@ export default function SocialPage() {
   }, [setSubHeader]);
 
 
+  // District 정렬 우선순위: 강북(0) → 강남(1) → 기타(2)
+  const districtOrder = (d?: string) => {
+    if (d === '강북') return 0;
+    if (d === '강남') return 1;
+    return 2;
+  };
+
   // Unified Filter Logic
   const filterSocials = (list: Social[]) => {
-    return list.filter(s => {
+    const filtered = list.filter(s => {
       if (!matchLocation(s)) return false;
 
       const search = searchQuery.toLowerCase();
@@ -445,6 +456,15 @@ export default function SocialPage() {
       const matchVen = selectedClub === 'All' || s.venueName === selectedClub;
       
       return matchSearch && matchOrg && matchVen;
+    });
+
+    // 강북 → 강남 → 기타 순, 같은 district 내에서는 시작시간순
+    return filtered.sort((a, b) => {
+      const districtDiff = districtOrder(a.district) - districtOrder(b.district);
+      if (districtDiff !== 0) return districtDiff;
+      const timeA = a.startTime || '00:00';
+      const timeB = b.startTime || '00:00';
+      return timeA.localeCompare(timeB);
     });
   };
 
@@ -507,7 +527,7 @@ export default function SocialPage() {
                   <div 
                     key={social.id} 
                     onClick={() => openModal(setViewSocial, social)}
-                    className="relative flex-shrink-0 w-64 h-80 rounded-lg overflow-hidden group shadow-sm transition-all hover:shadow-md cursor-pointer animate-in zoom-in-95 duration-500 text-left"
+                    className="relative flex-shrink-0 w-60 h-80 rounded-lg overflow-hidden group shadow-sm transition-all hover:shadow-md cursor-pointer animate-in zoom-in-95 duration-500 text-left"
                   >
                     <SocialHeroCard social={social} />
                     
@@ -531,7 +551,7 @@ export default function SocialPage() {
             </div>
 
             {/* Integrated Social Action */}
-            <div className="-mx-4 px-4 py-2 flex items-center justify-between bg-white border-b border-slate-50">
+            <div className="mx-4 my-3 px-5 py-3 flex items-center justify-between bg-white rounded-xl border border-slate-100 shadow-sm">
               <p className="text-[12px] font-bold text-slate-400 uppercase tracking-tight">
                 {t('social.host_new')}
               </p>
@@ -738,30 +758,52 @@ export default function SocialPage() {
                  <p className="text-sm font-medium">{t('social.no_upcoming')}</p>
                </div>
             ) : (
-               <div className="bg-white rounded-xl shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] border border-slate-100 overflow-hidden">
+               <div className="space-y-3">
                  {overviewTimeline.map((group, idx) => {
                    const isToday = group.date.toDateString() === new Date().toDateString();
                    const holiday = isKoreanHoliday(group.date);
                    const isWeekend = group.date.getDay() === 0 || group.date.getDay() === 6;
                    const isRed = isWeekend || !!holiday;
                    return (
-                     <div key={idx} className="border-b border-slate-100 last:border-0">
-                       <div className={`px-4 py-2.5 flex items-center justify-between ${isToday ? 'bg-blue-50/50' : 'bg-slate-50/50'}`}>
-                         <h3 className={`text-[11px] font-black tracking-widest uppercase flex items-center gap-2 ${isRed ? 'text-red-500' : isToday ? 'text-blue-600' : 'text-slate-500'}`}>
-                           {group.date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                           {isToday && <span className="bg-blue-600 text-white px-1.5 py-0.5 rounded text-[9px] leading-none">{t('social.today')}</span>}
-                           {holiday && <span className="bg-red-500 text-white px-1.5 py-0.5 rounded text-[9px] leading-none">{holiday}</span>}
-                         </h3>
-                         <span className="text-[10px] font-bold text-slate-400 tracking-wider">{group.socials.length} {t('social.events_count')}</span>
+                     <div key={idx} className="overflow-hidden rounded-xl border border-slate-100 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)]">
+                       {/* Day Header */}
+                       <div className={`flex items-center gap-3 px-4 py-3 border-b border-slate-100 ${isToday ? 'bg-blue-600' : isRed ? 'bg-red-500' : 'bg-slate-800'}`}>
+                         <div className="flex flex-col items-center justify-center w-10 h-10 rounded-lg bg-white/15 shrink-0">
+                           <span className="text-[9px] font-black text-white/80 uppercase tracking-wider leading-none">
+                             {group.date.toLocaleDateString('en-US', { weekday: 'short' })}
+                           </span>
+                           <span className="text-[20px] font-black text-white leading-none tracking-tighter">
+                             {group.date.getDate()}
+                           </span>
+                         </div>
+                         <div className="flex-1 min-w-0">
+                           <h3 className="text-[13px] font-black text-white tracking-tight">
+                             {group.date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+                             {isToday && <span className="ml-2 bg-white text-blue-600 px-1.5 py-0.5 rounded text-[9px] leading-none font-black">{t('social.today')}</span>}
+                             {holiday && <span className="ml-2 bg-white/20 text-white px-1.5 py-0.5 rounded text-[9px] leading-none">{holiday}</span>}
+                           </h3>
+                         </div>
+                         <span className="text-[11px] font-bold text-white/60 tracking-wider shrink-0">{group.socials.length} {t('social.events_count')}</span>
                        </div>
-                       <div className="divide-y divide-slate-50">
+                       {/* Event Rows */}
+                       <div className="bg-white divide-y divide-slate-50">
                          {group.socials.map(social => (
-                           <div 
+                           <div
                              key={social.id}
                              onClick={() => openModal(setViewSocial, social)}
-                             className="px-4 py-3 flex items-center justify-between hover:bg-slate-50 transition-colors cursor-pointer active:bg-slate-100 group"
+                             className="px-4 py-3 flex items-center gap-3 hover:bg-slate-50 transition-colors cursor-pointer active:bg-slate-100 group"
                            >
-                             <div className="flex-1 min-w-0 pr-4">
+                             {/* 소형 썸네일 */}
+                             <div className="shrink-0 w-10 h-10 rounded-lg overflow-hidden bg-slate-100 border border-slate-100">
+                               {social.imageUrl ? (
+                                 <img src={social.imageUrl} alt={social.title} className="w-full h-full object-cover" />
+                               ) : (
+                                 <div className="w-full h-full flex items-center justify-center">
+                                   <span className="material-symbols-outlined text-[18px] text-slate-300">music_note</span>
+                                 </div>
+                               )}
+                             </div>
+                             <div className="flex-1 min-w-0 pr-2">
                                <h4 className="text-[14px] font-bold text-slate-800 truncate leading-tight flex items-baseline gap-1.5">
                                  {social.title}
                                  {social.titleNative && <span className="text-[10px] font-medium text-slate-400 truncate">{social.titleNative}</span>}
@@ -774,7 +816,7 @@ export default function SocialPage() {
                                  {social.djName && <span className="ml-2 inline-flex items-center gap-0.5"><span className="material-symbols-outlined text-[12px]">headphones</span>DJ {social.djName}</span>}
                                </p>
                              </div>
-                             <div className="shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-white shadow-sm border border-slate-100 group-hover:border-blue-200 group-hover:text-blue-600 transition-all">
+                             <div className="shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-white shadow-sm border border-slate-100 group-hover:border-blue-200 transition-all">
                                <span className="material-symbols-outlined text-[16px] text-slate-400 group-hover:text-blue-600">chevron_right</span>
                              </div>
                            </div>

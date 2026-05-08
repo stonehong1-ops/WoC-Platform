@@ -11,6 +11,7 @@ import ImageWithFallback from '@/components/common/ImageWithFallback';
 import { db } from '@/lib/firebase/clientApp';
 import { doc, getDoc, updateDoc, collection, getDocs, query } from 'firebase/firestore';
 import MyGroupsTray from '@/components/groups/MyGroupsTray';
+import GroupDetail from '@/components/groups/GroupDetail';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 import { Suspense } from 'react';
@@ -24,6 +25,7 @@ function GroupsContent() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const userJoinedGroups = user ? groups.filter(g => {
     // 1. Check user profile's joinedGroups
     const inJoinedGroups = profile?.joinedGroups && profile.joinedGroups.includes(g.id);
@@ -85,13 +87,23 @@ function GroupsContent() {
     window.history.pushState({ modal: 'create' }, '');
   };
 
+  const handleGroupSelect = (group: Group) => {
+    setSelectedGroup(group);
+    window.history.pushState({ modal: 'groupDetail' }, '');
+  };
+
   // My groups is now handled entirely by the MyGroupsTray component
   const openMyGroups = () => {
     // Left for potential external triggers, though tray handles its own state
   };
 
   const closeModals = () => {
-    if (selectedCategory) {
+    if (selectedGroup) {
+      setSelectedGroup(null);
+      if (window.history.state?.modal === 'groupDetail') {
+        window.history.back();
+      }
+    } else if (selectedCategory) {
       // If we are in a URL-based popup, we use router.back()
       // But if there's no history (direct entry), we replace to base path
       if (window.history.length <= 1) {
@@ -113,6 +125,7 @@ function GroupsContent() {
     const handlePopState = (event: PopStateEvent) => {
       // If the back button is pressed, close all state-based modals
       setIsCreateOpen(false);
+      setSelectedGroup(null);
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -121,7 +134,7 @@ function GroupsContent() {
 
   // 스크롤 먹통 방지
   useEffect(() => {
-    if (isCreateOpen || selectedCategory) {
+    if (isCreateOpen || selectedCategory || selectedGroup) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
@@ -129,7 +142,7 @@ function GroupsContent() {
     return () => {
       document.body.style.overflow = '';
     };
-  }, [isCreateOpen, selectedCategory]);
+  }, [isCreateOpen, selectedCategory, selectedGroup]);
 
   const fetchGroups = async () => {
     try {
@@ -264,10 +277,10 @@ function GroupsContent() {
   };
 
   const discoveryCategories = [
-    { id: 'Studio', icon: 'palette', color: 'bg-primary-container', text: 'text-on-primary-container' },
-    { id: 'Shop', icon: 'shopping_bag', color: 'bg-secondary-container', text: 'text-on-secondary-container' },
-    { id: 'Stay', icon: 'bed', color: 'bg-tertiary-container', text: 'text-on-tertiary-container' },
-    { id: 'Rental', icon: 'car_rental', color: 'bg-surface-container-highest', text: 'text-on-surface-variant' },
+    { id: 'Studio', icon: 'palette', color: 'bg-primary-container', text: 'text-primary' },
+    { id: 'Shop', icon: 'shopping_bag', color: 'bg-secondary-container', text: 'text-secondary' },
+    { id: 'Stay', icon: 'bed', color: 'bg-tertiary-container', text: 'text-tertiary' },
+    { id: 'Rental', icon: 'car_rental', color: 'bg-slate-100', text: 'text-slate-900' },
     { id: 'Beauty', icon: 'face_retouching_natural', color: 'bg-pink-100', text: 'text-pink-900' },
     { id: 'Wellness', icon: 'self_care', color: 'bg-rose-100', text: 'text-rose-900' },
     { id: 'Restaurant', icon: 'restaurant', color: 'bg-orange-100', text: 'text-orange-900' },
@@ -404,7 +417,7 @@ function GroupsContent() {
   }
 
   return (
-    <div className="bg-background min-h-screen pb-24 relative font-body">
+    <div className="bg-background min-h-screen pb-32 relative font-body">
       <main className="max-w-4xl mx-auto px-6 py-8 space-y-10">
         {/* What's New Carousel */}
         <section className="space-y-4">
@@ -424,7 +437,7 @@ function GroupsContent() {
             {whatsNewGroups.length > 0 ? whatsNewGroups.map((group) => (
               <div
                 key={group.id}
-                onClick={() => { router.push(`/group/${group.id}`); }}
+                onClick={() => { handleGroupSelect(group); }}
                 className="flex-shrink-0 w-[320px] group cursor-pointer active:scale-95 transition-transform"
               >
                 <div className="relative aspect-[16/9] rounded-2xl overflow-hidden mb-4 shadow-md group-hover:shadow-xl transition-all duration-300">
@@ -436,11 +449,13 @@ function GroupsContent() {
                     </span>
                   </div>
                   <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 via-black/40 to-transparent z-20 text-white">
-                    <h3 className="text-lg font-bold font-headline mb-0.5 w-full truncate">
-                      {group.name}
-                      {group.nativeName && <span className="text-[0.8em] font-medium text-white/90 ml-1.5">{group.nativeName}</span>}
+                    <h3 className="text-lg font-bold font-headline mb-0.5 w-full truncate flex items-baseline gap-2">
+                      <span className="text-white">{group.name}</span>
+                      {group.nativeName && <span className="text-[0.7em] font-medium text-white/70">{group.nativeName}</span>}
                     </h3>
-                    <p className="text-white/80 text-xs line-clamp-1 mt-1">{group.memberCount} {t('groups.member_count_label')} • {group.tags?.[0] ? t(`groups.cat_${group.tags[0].toLowerCase()}`) : t('groups.community_fallback')}</p>
+                    <p className="text-white/80 text-[11px] font-medium line-clamp-1 mt-1">
+                      {group.memberCount} {t('groups.member_count_label')} • {group.tags?.[0] ? t(`groups.cat_${group.tags[0].toLowerCase()}`) : t('groups.community_fallback')}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -451,7 +466,7 @@ function GroupsContent() {
         </section>
 
         {/* Integrated Group Action */}
-        <div className="px-6 py-2 flex items-center justify-between bg-white border-b border-slate-50">
+        <div className="mx-4 my-3 px-5 py-3 flex items-center justify-between bg-white rounded-xl border border-slate-100 shadow-sm">
           <p className="text-[12px] font-bold text-slate-400 uppercase tracking-tight">
             {t('groups.start_community_label')}
           </p>
@@ -481,11 +496,11 @@ function GroupsContent() {
                 <div className="absolute inset-0 p-5 flex flex-col justify-between z-10">
                   <div className="flex justify-between items-start">
                     <span className={`material-symbols-outlined ${cat.text} text-3xl`}>{cat.icon}</span>
-                    <span className={`bg-white/40 backdrop-blur-md px-2 py-0.5 rounded-lg text-xs font-bold ${cat.text}`}>
+                    <span className={`bg-white px-2.5 py-0.5 rounded-lg text-[13px] font-black shadow-md ${cat.text} flex items-center justify-center min-w-[28px]`}>
                       {categoryCounts[cat.id as keyof typeof categoryCounts] || 0}
                     </span>
                   </div>
-                  <span className={`${cat.text} font-black font-headline text-lg uppercase italic`}>{t(`groups.cat_${cat.id.toLowerCase()}`)}</span>
+                  <span className={`${cat.text} font-black font-headline text-lg italic`}>{t(`groups.cat_${cat.id.toLowerCase()}`)}</span>
                 </div>
                 <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition-opacity">
                   <span className={`material-symbols-outlined text-8xl ${cat.text}`}>{cat.icon}</span>
@@ -520,8 +535,7 @@ function GroupsContent() {
               <article
                 key={group.id}
                 onClick={() => {
-                  closeModals();
-                  router.push(`/group/${group.id}`);
+                  handleGroupSelect(group);
                 }}
                 className="bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-md hover:shadow-xl transition-shadow group cursor-pointer active:scale-[0.99] transition-all"
               >
@@ -545,9 +559,9 @@ function GroupsContent() {
                 <div className="p-6">
                   <div className="flex justify-between items-start mb-4">
                     <div className="min-w-0 flex-1 pr-4">
-                      <h2 className="text-xl font-bold font-headline text-on-surface mb-1 w-full truncate">
-                        {group.name}
-                        {group.nativeName && <span className="text-[0.8em] font-medium text-on-surface-variant ml-1.5">{group.nativeName}</span>}
+                      <h2 className="text-xl font-bold font-headline text-on-surface mb-1 w-full truncate flex items-baseline gap-2">
+                        <span>{group.name}</span>
+                        {group.nativeName && <span className="text-[0.7em] font-bold text-on-surface-variant/90">{group.nativeName}</span>}
                       </h2>
                       <div className="flex items-center gap-2 text-on-surface-variant text-xs mt-1.5">
                         <span className="material-symbols-outlined text-[14px]">person</span>
@@ -555,14 +569,31 @@ function GroupsContent() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <span className="inline-flex items-center gap-1 text-primary font-bold text-xs bg-primary-container/20 px-2.5 py-1 rounded-lg">
+                      <span className="inline-flex items-center gap-1 text-white font-black text-xs bg-primary px-3 py-1.5 rounded-xl shadow-sm">
                         <span className="material-symbols-outlined text-[14px]">groups</span>
                         {group.memberCount}
                       </span>
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest bg-emerald-50 px-2 py-0.5 rounded-md">{t('groups.open_to_join')}</span>
+                    {(() => {
+                      const strategy = group.membershipPolicy?.joinStrategy || 'open';
+                      if (strategy === 'open') return (
+                        <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest bg-emerald-50 px-2 py-1 rounded-md border border-emerald-100">
+                          {t('groups.policy_open_label') || 'OPEN'}
+                        </span>
+                      );
+                      if (strategy === 'approval') return (
+                        <span className="text-[10px] font-bold text-amber-600 uppercase tracking-widest bg-amber-50 px-2 py-1 rounded-md border border-amber-100">
+                          {t('groups.policy_approval_label') || 'APPROVAL'}
+                        </span>
+                      );
+                      return (
+                        <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest bg-blue-50 px-2 py-1 rounded-md border border-blue-100">
+                          {t('groups.policy_invite_label') || 'INVITE'}
+                        </span>
+                      );
+                    })()}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -587,27 +618,34 @@ function GroupsContent() {
 
       {/* Create New Group Overlay */}
       {isCreateOpen && (
-        <div className="fixed inset-0 z-[130] bg-surface overflow-y-auto no-scrollbar animate-in slide-in-from-bottom duration-300 pt-16">
-          <header className="fixed top-0 left-0 right-0 z-[140] bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm flex justify-between items-center w-full px-6 py-4">
-            <div className="flex items-center gap-4">
+        <div className="fixed inset-0 z-[130] bg-surface-bright text-on-surface font-body-md antialiased flex flex-col animate-in slide-in-from-bottom duration-300">
+          <header className="flex-shrink-0 fixed top-0 w-full z-[140] flex items-center justify-between px-4 h-16 bg-white shadow-sm border-b border-slate-100">
+            <div className="flex items-center gap-3">
               <button
                 onClick={closeModals}
-                className="flex items-center justify-center p-2 rounded-lg hover:bg-gray-200 transition-colors active:scale-95 duration-150 text-gray-500"
+                className="p-2 rounded-full active:scale-95 duration-150 hover:bg-slate-50"
               >
-                <span className="material-symbols-outlined">close</span>
+                <span className="material-symbols-outlined text-slate-500">close</span>
               </button>
-              <h1 className="font-headline text-lg font-bold text-on-surface">{t('groups.create_modal_title')}</h1>
+              <h1 className="font-title-md text-title-md text-on-surface truncate">{t('groups.create_modal_title')}</h1>
             </div>
             <button
               onClick={handleCreateSubmit}
               disabled={createLoading}
-              className="bg-primary text-on-primary px-6 py-2 rounded-lg font-headline font-bold text-sm hover:brightness-110 active:scale-95 transition-all duration-150 shadow-md disabled:opacity-50"
+              className="px-5 py-2 rounded-xl bg-primary-container text-white font-title-md text-body-md hover:opacity-90 active:scale-95 duration-150 transition-all disabled:opacity-40"
             >
-              {createLoading ? t('groups.save_button_loading') : t('groups.save_button')}
+              {createLoading ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>{t('groups.save_button_loading')}</span>
+                </div>
+              ) : (
+                <span>{t('groups.save_button')}</span>
+              )}
             </button>
           </header>
 
-          <main className="pt-8 pb-20 px-6 max-w-[896px] mx-auto space-y-6">
+          <main className="flex-1 overflow-y-auto py-6 pb-32 pt-20 px-[1.5rem] max-w-[56rem] mx-auto w-full no-scrollbar space-y-6">
             {/* Section: Basic Info */}
              <section className="bg-white rounded-[12px] p-6 shadow-sm border border-outline-variant/30">
               <div className="space-y-6">
@@ -742,9 +780,16 @@ function GroupsContent() {
           </main>
         </div>
       )}
+      {/* Group Detail Overlay */}
+      {selectedGroup && (
+        <div className="fixed inset-0 z-[150] bg-background overflow-y-auto no-scrollbar animate-in slide-in-from-bottom duration-300">
+          <GroupDetail group={selectedGroup} isModal={true} />
+        </div>
+      )}
+
       {/* Floating Action Button (Tray) for My Groups */}
       {userJoinedGroups.length > 0 && (
-        <MyGroupsTray groups={userJoinedGroups} />
+        <MyGroupsTray groups={userJoinedGroups} onGroupSelect={handleGroupSelect} />
       )}
 
       <style jsx global>{`

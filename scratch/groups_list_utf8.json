@@ -1,0 +1,665 @@
+﻿
+=== Total Groups: 66 ===
+
+[
+  {
+    "id": "ab-tango",
+    "name": "AB Tango",
+    "nativeName": "?먯씠鍮꾪꺊怨?,
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 2,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "amigo",
+    "name": "Amigo",
+    "nativeName": "?꾨?怨?,
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "andante-seoul",
+    "name": "Andante",
+    "nativeName": "?덈떒??,
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "arte-tango",
+    "name": "Arte Tango",
+    "nativeName": "?꾨Ⅴ?쇳꺊怨?,
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "azucar",
+    "name": "Azucar",
+    "nativeName": "?꾩＜移대Ⅴ",
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "bonita-seoul",
+    "name": "Bonita",
+    "nativeName": "蹂대땲??,
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "cafe-de-tango-busan",
+    "name": "Caf챕 de Tango",
+    "nativeName": "移댄럹?고꺊怨?,
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "caminito",
+    "name": "Caminito",
+    "nativeName": "源뚮??덈삉",
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "chuncheon-tango",
+    "name": "Chuncheon Tango",
+    "nativeName": "異섏쿇?깃퀬",
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "club-pan",
+    "name": "Club PAN",
+    "nativeName": "?대읇??,
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "club-troilo",
+    "name": "Club Troilo",
+    "nativeName": "?대읇?⑤줈?쇰줈",
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "corteno",
+    "name": "Corte챰o",
+    "nativeName": "肄붾Ⅴ?뚮눊",
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "el-tango",
+    "name": "El Tango",
+    "nativeName": "?섎븙怨?,
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "en-paz-studio",
+    "name": "En Paz Studio",
+    "nativeName": "?붾튌??,
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "evenia-seoul",
+    "name": "Evenia",
+    "nativeName": "?대툕?덉븘",
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "fiesta",
+    "name": "Fiesta",
+    "nativeName": "?쇱뿉?ㅽ?(媛뺣궓)",
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "freestyle-tango",
+    "name": "Freestyle Tango",
+    "nativeName": "?꾨━?ㅽ??쇳꺊怨?,
+    "ownerId": "ecOxXTUKdBPXc3Xyl4Ok7blq1zA2",
+    "joinStrategy": "open",
+    "memberCount": 13,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "gwangju-tango",
+    "name": "Gwangju Tango",
+    "nativeName": "愿묒＜?깃퀬?섏슦??,
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "ilsan-tango",
+    "name": "Ilsan Tango",
+    "nativeName": "?쇱궛?깃퀬",
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "incheon-tango-cafe",
+    "name": "Incheon Tango Cafe",
+    "nativeName": "?몄쿇?깃퀬移댄럹",
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "j-shop-dress",
+    "name": "J Shop Dress",
+    "nativeName": "?쒖씠?듬뱶?덉뒪",
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "jeju-fiesta",
+    "name": "Jeju Fiesta",
+    "nativeName": "?쒖＜?쇱뿉?ㅽ?",
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "jinju-tango-people",
+    "name": "Jinju Tango People",
+    "nativeName": "吏꾩＜?깃퀬?쇳뵆",
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "la-loca",
+    "name": "La Loca",
+    "nativeName": "?쇰줈源?,
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "la-ventana",
+    "name": "La Ventana",
+    "nativeName": "?쇰깽?곕굹",
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "laboom-daejeon",
+    "name": "LaBoom",
+    "nativeName": "?쇰텗",
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "lavista",
+    "name": "LaVista",
+    "nativeName": "?쇰퉬?ㅽ?",
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "leona-shoes",
+    "name": "Leona Shoes",
+    "nativeName": "?덉삤?섏뒋利?,
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "magenta",
+    "name": "Magenta",
+    "nativeName": "留덉젨?",
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "mambo-busan",
+    "name": "Mambo (Busan)",
+    "nativeName": "留섎낫",
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "maravilla-j",
+    "name": "Maravilla J",
+    "nativeName": "留덈씪鍮꾩깶?쒖씠",
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "mi-vida-tango-studio",
+    "name": "Mi Vida Tango Studio",
+    "nativeName": "誘몃퉬?ㅽ꺊怨좎뒪?쒕뵒??,
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "ocho",
+    "name": "Ocho",
+    "nativeName": "?ㅼ큹",
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "odile-shoes",
+    "name": "Odile Shoes",
+    "nativeName": "?ㅻ뵜?덉쫰",
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "onada-2",
+    "name": "Onada 2",
+    "nativeName": "?ㅻ굹??",
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "onada-daejeon",
+    "name": "Onada (Daejeon)",
+    "nativeName": "??꾩삤?섎떎",
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "onada-seoul",
+    "name": "Onada",
+    "nativeName": "?ㅻ굹??,
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "otra",
+    "name": "Otra",
+    "nativeName": "?ㅻ쑉??,
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "place-ocean",
+    "name": "Place Ocean",
+    "nativeName": "?뚮젅?댁뒪?ㅼ뀡",
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "querencia",
+    "name": "Querencia",
+    "nativeName": "李쎌썝耳?뚯떆??,
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "sata",
+    "name": "S.A.T.A",
+    "nativeName": "?쒖븘??,
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "sharon-shoes",
+    "name": "Sharon Shoes",
+    "nativeName": "?ㅻ줎?덉쫰",
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "socialtango-academy",
+    "name": "Socialtango Academy",
+    "nativeName": "?뚯뀥?깃퀬?꾩뭅?곕?",
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "soltang-studio",
+    "name": "Soltang Studio",
+    "nativeName": "?붾븙?곗뒿??,
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "studio-242",
+    "name": "Studio 242",
+    "nativeName": "?ㅽ뒠?붿삤242",
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "studio-elly",
+    "name": "Studio Elly",
+    "nativeName": "?ㅽ뒠?붿삤?섎━",
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "t-balance-shoes",
+    "name": "T.Balance Shoes",
+    "nativeName": "?곕갭?곗뒪?깃퀬?덉쫰",
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "tango-bien-daegu",
+    "name": "Tango Bien",
+    "nativeName": "?깃퀬鍮꾩뿏",
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "tango-brujo",
+    "name": "Tango Brujo",
+    "nativeName": "?깃퀬釉뚮（??,
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "tango-cafe-dia",
+    "name": "Tango Cafe Dia",
+    "nativeName": "?깃퀬移댄럹?붿븘",
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "tango-cafe-ideal",
+    "name": "Tango Cafe Ideal",
+    "nativeName": "?깃퀬移댄럹?대뜲??,
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "tango-de-oro",
+    "name": "Tango de Oro",
+    "nativeName": "?몄궛?깃퀬?곗삤濡?,
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "tango-house",
+    "name": "Tango House",
+    "nativeName": "?깃퀬?섏슦??,
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "tango-house-stay",
+    "name": "Tango House Stay",
+    "nativeName": "?깃퀬?섏슦?짻tay",
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "tango-mio",
+    "name": "Tango mio",
+    "nativeName": "?깃퀬誘몄삤",
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "tango-pasion",
+    "name": "Tango Pasion",
+    "nativeName": "?깃퀬?뚯떆??,
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "tango-pista",
+    "name": "Tango Pista",
+    "nativeName": "?쇱뒪?",
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "tango-shoes-korea",
+    "name": "Tango Shoes Korea",
+    "nativeName": "?깃퀬?덉쫰肄붾━??,
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "tango-stay",
+    "name": "Tango Stay",
+    "nativeName": "?깃퀬?ㅽ뀒?대뵒?대━",
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 1,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "tango-stay-canaro",
+    "name": "Tango Stay Canaro",
+    "nativeName": "?깃퀬?ㅽ뀒?닿퉴?섎줈",
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "tangolife",
+    "name": "TangoLife",
+    "nativeName": "?깃퀬?쇱씠??,
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "tangonabi",
+    "name": "Tangonabi",
+    "nativeName": "?깃퀬?섎퉬",
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "todo-tango",
+    "name": "Todo tango",
+    "nativeName": "?먮룄?낃퀬",
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "top-dress",
+    "name": "Top Dress",
+    "nativeName": "?묐뱶?덉뒪",
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "un-poco-de-tango",
+    "name": "Un Poco de Tango",
+    "nativeName": "?댄룷肄붾뜲?깃퀬",
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  },
+  {
+    "id": "vivian-shoes-seoul",
+    "name": "Vivian Shoes",
+    "nativeName": "鍮꾨퉬?덉뒋利?,
+    "ownerId": "system1",
+    "joinStrategy": "NOT_SET",
+    "memberCount": 0,
+    "coverImage": "YES",
+    "logo": "NO"
+  }
+]

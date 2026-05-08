@@ -27,3 +27,8 @@
 6. **Firestore Lifecycle Management**:
    - Firestore와 관련된 코딩을 할 때(새 컬렉션 추가, 필드 변경 등) 반드시 보안 규칙(`firestore.rules`)과 인덱스(`firestore.indexes.json`) 작업을 병행해야 한다.
    - 데이터 구조의 변경이 클라이언트에 즉시 반영될 수 있도록 보안 규칙 배포를 우선순위에 둔다.
+
+7. **📡 Antigravity Communication Channel**:
+   - 매 대화(Conversation) 시작 시 **반드시 `public/antigravity.txt` 파일을 가장 먼저 읽어라**. 사용자가 남긴 메시지나 지시사항이 있으면 현재 요청보다 **우선적으로 처리**한다.
+   - 이 파일은 스토니와 AI(Antigravity) 간의 **비동기 소통 채널**이다. 대화 세션 외부에서도 지시사항 전달이 가능하다.
+   - AI는 중요한 작업 완료 시 이 파일에 상태를 기록하여 다음 세션에서 확인할 수 있도록 한다.

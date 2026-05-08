@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import Script from "next/script";
 import "@/styles/groupstayeditor.css";
 import { stayService } from "@/lib/firebase/stayService";
@@ -11,9 +12,10 @@ import { toast } from "sonner";
 
 interface GroupStayEditorProps {
   group?: any;
+  onClose?: () => void;
 }
 
-export default function GroupStayEditor({ group }: GroupStayEditorProps) {
+export default function GroupStayEditor({ group, onClose }: GroupStayEditorProps) {
   const { user } = useAuth();
 
   // -- Loading / Saving State --
@@ -295,8 +297,28 @@ export default function GroupStayEditor({ group }: GroupStayEditorProps) {
   // -- Loading State --
   if (isLoading) {
     return (
-      <div className="light font-body-md text-on-background antialiased bg-[#F3F4F6] min-h-screen">
-        <main className="p-6 md:p-12">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 20 }}
+        className="fixed inset-0 z-[100] light font-body-md text-on-background antialiased bg-[#F3F4F6] flex flex-col overflow-y-auto no-scrollbar"
+      >
+        {/* Top Bar */}
+        <header className="sticky top-0 z-50 bg-[#F3F4F6]/80 backdrop-blur-xl border-b border-gray-200">
+          <div className="max-w-[896px] mx-auto px-6 md:px-12 py-4 flex items-center justify-between w-full">
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={onClose}
+                className="w-10 h-10 rounded-full flex items-center justify-center text-primary hover:bg-primary/5 transition-all"
+              >
+                <span className="material-symbols-outlined text-primary">arrow_back</span>
+              </button>
+              <h1 className="text-base font-bold text-on-surface">Stay Editor</h1>
+            </div>
+          </div>
+        </header>
+
+        <main className="p-6 md:p-12 flex-1">
           <div className="max-w-[896px] mx-auto flex items-center justify-center py-32">
             <div className="flex flex-col items-center gap-4">
               <div className="w-8 h-8 border-3 border-primary/30 border-t-primary rounded-full animate-spin" />
@@ -304,7 +326,7 @@ export default function GroupStayEditor({ group }: GroupStayEditorProps) {
             </div>
           </div>
         </main>
-      </div>
+      </motion.div>
     );
   }
 
@@ -323,12 +345,32 @@ export default function GroupStayEditor({ group }: GroupStayEditorProps) {
         onChange={handleFileChange}
       />
 
-      <div className="light font-body-md text-on-background antialiased bg-[#F3F4F6] min-h-screen">
-        <main className="p-6 md:p-12">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 20 }}
+        className="fixed inset-0 z-[100] light font-body-md text-on-background antialiased bg-[#F3F4F6] flex flex-col overflow-y-auto no-scrollbar"
+      >
+        {/* Top Bar */}
+        <header className="sticky top-0 z-50 bg-[#F3F4F6]/80 backdrop-blur-xl border-b border-gray-200">
+          <div className="max-w-[896px] mx-auto px-6 md:px-12 py-4 flex items-center justify-between w-full">
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={onClose}
+                className="w-10 h-10 rounded-full flex items-center justify-center text-primary hover:bg-primary/5 transition-all"
+              >
+                <span className="material-symbols-outlined text-primary">arrow_back</span>
+              </button>
+              <h1 className="text-base font-bold text-on-surface">Stay Editor</h1>
+            </div>
+          </div>
+        </header>
+
+        <main className="p-6 md:p-12 flex-1">
           <div className="max-w-[896px] mx-auto space-y-10 pb-48 md:pb-32">
             <header className="flex justify-between items-end mb-12">
               <div>
-                <h1 className="font-headline-lg text-headline-lg text-on-surface">Stay Editor</h1>
+                <h1 className="font-headline-lg text-headline-lg text-on-surface">Manage Details</h1>
                 <p className="font-body-md text-on-surface-variant mt-1">Manage details for {title || "your stay"}</p>
               </div>
               {/* Save Status Message */}
@@ -560,7 +602,7 @@ export default function GroupStayEditor({ group }: GroupStayEditorProps) {
             </div>
           </div>
         </main>
-      </div>
+      </motion.div>
     </>
   );
 }

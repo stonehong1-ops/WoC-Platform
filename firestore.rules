@@ -87,6 +87,10 @@ service cloud.firestore {
     match /socials/{socialId} {
       allow read: if true;
       allow write: if request.auth != null;
+      match /reservations/{resId} {
+        allow read: if true;
+        allow write: if request.auth != null;
+      }
     }
     match /social_likes/{likeId} {
       allow read: if true;
@@ -103,12 +107,10 @@ service cloud.firestore {
     match /groups/{groupId} {
       allow read: if true;
       allow write: if request.auth != null;
-
       match /posts/{postId} {
         allow read: if true;
         allow write: if request.auth != null;
       }
-
       match /members/{memberId} {
         allow read: if true;
         allow write: if request.auth != null;
@@ -130,7 +132,6 @@ service cloud.firestore {
         allow write: if request.auth != null;
       }
     }
-
     match /feeds/{postId} {
       allow read: if true;
       allow write: if request.auth != null;
@@ -143,57 +144,46 @@ service cloud.firestore {
         allow write: if request.auth != null;
       }
     }
-
     match /class_registrations/{registrationId} {
       allow read: if true;
       allow write: if request.auth != null;
     }
-
     match /rental_spaces/{spaceId} {
       allow read: if true;
       allow write: if request.auth != null;
     }
-
     match /rental_likes/{likeId} {
       allow read: if true;
       allow write: if request.auth != null;
     }
-
     match /rental_requests/{requestId} {
       allow read: if true;
       allow write: if request.auth != null;
     }
-
     match /products/{productId} {
       allow read: if true;
       allow write: if request.auth != null;
     }
-
     match /shop_orders/{orderId} {
       allow read: if true;
       allow write: if request.auth != null;
     }
-
     match /product_likes/{likeId} {
       allow read: if true;
       allow write: if request.auth != null;
     }
-
     match /shop_banners/{bannerId} {
       allow read: if true;
       allow write: if request.auth != null;
     }
-
     match /cartoons/{cartoonId} {
       allow read: if true;
       allow write: if true;
-      
       match /reviews/{reviewId} {
         allow read: if true;
         allow write: if true;
       }
     }
-
     match /lost_found_items/{itemId} {
       allow read: if true;
       allow create: if request.auth != null;
@@ -203,16 +193,33 @@ service cloud.firestore {
       allow read: if true;
       allow write: if request.auth != null;
     }
-    
     match /notifications/{notificationId} {
       allow read: if true;
       allow write: if request.auth != null;
     }
-
     match /social_weekly_states/{stateId} {
       allow read: if true;
       allow write: if request.auth != null;
     }
-
+    match /i18n_entries/{entryId} {
+      allow read: if true;
+      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+    match /i18n_meta/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+    match /i18n_versions/{versionId} {
+      allow read: if true;
+      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+    match /people/{personId} {
+      allow read: if true;
+      allow write: if true;
+    }
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
   }
 }

@@ -3,13 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { Post, Comment } from '@/types/group';
 import { motion, AnimatePresence } from 'framer-motion';
-import { formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 import { groupService } from '@/lib/firebase/groupService';
 import { useAuth } from '@/components/providers/AuthProvider';
-import UserBadge from '../common/UserBadge';
-import UserProfileClickable from '../common/UserProfileClickable';
-import UserAvatar from '../common/UserAvatar';
-import UserName from '../common/UserName';
 
 interface PostDetailModalProps {
   groupId: string;
@@ -41,7 +37,7 @@ export default function PostDetailModal({ groupId, post, isOpen, onClose, onEdit
     if (!date) return '';
     try {
       const d = date.toDate ? date.toDate() : new Date(date);
-      return formatDistanceToNow(d, { addSuffix: true });
+      return format(d, 'MMM d, yyyy');
     } catch (e) {
       return '';
     }
@@ -93,190 +89,202 @@ export default function PostDetailModal({ groupId, post, isOpen, onClose, onEdit
   };
 
   const isAuthor = user?.uid === post.author.id;
+  const paragraphs = post.content.split('\n').filter(p => p.trim() !== '');
+  const readTime = Math.max(1, Math.ceil(post.content.length / 500));
 
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center px-4 sm:px-6">
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="absolute inset-0 bg-black/80 backdrop-blur-md"
-          />
-          
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative w-full max-w-5xl bg-[#fcfaff] rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col md:flex-row max-h-[90vh]"
-          >
-            {/* Close Button */}
+        <motion.div 
+          initial={{ opacity: 0, y: '100%' }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: '100%' }}
+          transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+          className="fixed inset-0 z-[120] bg-surface text-on-surface overflow-y-auto w-full h-full"
+        >
+          {/* Top App Bar */}
+          <header className="sticky top-0 w-full z-50 bg-surface border-b border-outline-variant/15 flex justify-between items-center h-16 px-page_margin mx-auto max-w-4xl transition-all">
             <button 
               onClick={onClose}
-              className="absolute top-6 right-6 z-20 w-10 h-10 rounded-full bg-black/10 hover:bg-black/20 text-[#242c51] flex items-center justify-center transition-colors backdrop-blur-md"
+              aria-label="Go back" 
+              className="flex items-center justify-center p-2 rounded-full hover:bg-surface-container-high transition-colors text-on-surface-variant active:scale-95 group"
             >
-              <span className="material-symbols-outlined">close</span>
+              <span className="material-symbols-outlined group-hover:-translate-x-1 transition-transform" data-icon="arrow_back">arrow_back</span>
             </button>
-
-            {/* Media Side */}
-            {(post.image || post.video) && (
-              <div className="w-full md:w-3/5 bg-black flex items-center justify-center overflow-hidden h-64 md:h-auto relative">
-                {post.video ? (
-                  <video 
-                    src={post.video} 
-                    controls 
-                    autoPlay 
-                    className="w-full h-full object-contain"
-                  />
-                ) : (
-                  <img 
-                    src={post.image} 
-                    alt="" 
-                    className="w-full h-full object-contain"
-                  />
-                )}
-                <div className="absolute top-6 left-6 px-4 py-2 bg-black/20 backdrop-blur-md rounded-full text-white text-[10px] font-black uppercase tracking-widest">
-                  {post.type}
-                </div>
-              </div>
-            )}
-
-            {/* Content Side */}
-            <div className={`flex flex-col flex-1 ${post.image || post.video ? 'md:w-2/5' : 'w-full'} bg-white overflow-hidden`}>
-              {/* Header */}
-              <div className="p-8 border-b border-[#a3abd7]/10 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <UserBadge 
-                    uid={post.author.id || (post.author as any).uid} 
-                    nickname={post.author.name} 
-                    photoURL={post.author.avatar} 
-                    avatarSize="w-12 h-12"
-                    nameClassName="font-headline font-black text-[#242c51] text-lg"
-                    nativeClassName="text-xs font-medium text-[#515981] ml-1.5"
-                  />
-                  <div className="flex flex-col ml-1">
-                    <p className="text-[10px] text-[#515981]/50 font-black uppercase tracking-widest mt-1">
-                      {formatDate(post.createdAt)}
-                    </p>
-                  </div>
-                </div>
-
-                {isAuthor && (
-                  <div className="flex items-center gap-2">
-                    <button 
-                      onClick={() => onEdit(post)}
-                      className="w-9 h-9 rounded-xl bg-primary/5 text-primary flex items-center justify-center hover:bg-primary hover:text-white transition-all"
-                    >
-                      <span className="material-symbols-outlined text-lg">edit</span>
-                    </button>
-                    <button 
-                      onClick={handleDeletePost}
-                      className="w-9 h-9 rounded-xl bg-error/5 text-error flex items-center justify-center hover:bg-error hover:text-white transition-all"
-                    >
-                      <span className="material-symbols-outlined text-lg">delete</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Scrollable Content */}
-              <div className="flex-1 overflow-y-auto no-scrollbar p-8">
-                <div className="space-y-6">
-                  {post.title && (
-                    <h2 className="text-2xl font-headline font-black leading-tight text-[#242c51]">
-                      {post.title}
-                    </h2>
-                  )}
-                  <p className="text-lg text-[#515981] leading-relaxed font-medium whitespace-pre-wrap">
-                    {post.content}
-                  </p>
-                </div>
-
-                {/* Stats */}
-                <div className="flex items-center gap-6 mt-10 pt-8 border-t border-[#a3abd7]/10">
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-primary fill-1">favorite</span>
-                    <span className="font-black text-sm text-[#242c51]">{post.likes}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[#515981]/40">visibility</span>
-                    <span className="font-black text-sm text-[#242c51]">{post.views}</span>
-                  </div>
-                  <div className="flex items-center gap-2 ml-auto">
-                    <span className="material-symbols-outlined text-tertiary">chat_bubble</span>
-                    <span className="font-black text-sm text-[#242c51]">{comments.length}</span>
-                  </div>
-                </div>
-
-                {/* Comments List */}
-                <div className="mt-12 space-y-8 pb-10">
-                  <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#515981]/40">Comments</h4>
-                  
-                  {comments.length === 0 ? (
-                    <div className="py-10 text-center">
-                      <p className="text-sm font-bold text-[#515981]/30">No comments yet. Be the first!</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-8">
-                      {comments.map((comment) => (
-                        <div key={comment.id} className="flex gap-4 group/comment">
-                          <UserProfileClickable uid={comment.author.id} initialData={{ nickname: comment.author.name, photoURL: comment.author.avatar }}>
-                            <UserAvatar photoURL={comment.author.avatar} className="w-10 h-10 rounded-xl" />
-                          </UserProfileClickable>
-                          <div className="flex-1 space-y-1.5">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <UserProfileClickable uid={comment.author.id} initialData={{ nickname: comment.author.name, photoURL: comment.author.avatar }}>
-                                  <UserName nickname={comment.author.name} className="text-xs font-black text-[#242c51] hover:underline" />
-                                </UserProfileClickable>
-                                <span className="text-[10px] font-bold text-[#515981]/30">{formatDate(comment.createdAt)}</span>
-                              </div>
-                              {user?.uid === comment.author.id && (
-                                <button 
-                                  onClick={() => handleDeleteComment(comment.id)}
-                                  className="opacity-0 group-hover/comment:opacity-100 transition-opacity text-error hover:scale-110"
-                                >
-                                  <span className="material-symbols-outlined text-sm">delete</span>
-                                </button>
-                              )}
-                            </div>
-                            <p className="text-sm text-[#515981] leading-relaxed font-medium">
-                              {comment.content}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Comment Input */}
-              <div className="p-8 bg-white border-t border-[#a3abd7]/10">
-                <div className="flex gap-4 items-center bg-[#f7f5ff] rounded-[1.5rem] p-2 pl-6 focus-within:ring-2 focus-within:ring-primary transition-all">
-                  <input 
-                    type="text" 
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
-                    placeholder="Write a premium comment..." 
-                    disabled={isSubmitting}
-                    className="bg-transparent border-none focus:ring-0 text-sm font-bold flex-1 text-[#242c51] placeholder:text-slate-300"
-                  />
-                  <button 
-                    onClick={handleAddComment}
-                    disabled={isSubmitting || !newComment.trim()}
-                    className="w-10 h-10 rounded-xl bg-primary text-on-primary flex items-center justify-center shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
-                  >
-                    <span className="material-symbols-outlined text-lg">send</span>
+            <div className="flex items-center gap-4">
+              {isAuthor && (
+                <>
+                  <button onClick={() => onEdit(post)} aria-label="Edit" className="flex items-center justify-center p-2 rounded-full hover:bg-surface-container-high transition-colors text-on-surface-variant active:scale-95">
+                    <span className="material-symbols-outlined">edit</span>
                   </button>
+                  <button onClick={handleDeletePost} aria-label="Delete" className="flex items-center justify-center p-2 rounded-full hover:bg-surface-container-high transition-colors text-error active:scale-95">
+                    <span className="material-symbols-outlined">delete</span>
+                  </button>
+                </>
+              )}
+              <button aria-label="Bookmark" className="flex items-center justify-center p-2 rounded-full hover:bg-surface-container-high transition-colors text-on-surface-variant active:scale-95">
+                <span className="material-symbols-outlined" data-icon="bookmark_border">bookmark_border</span>
+              </button>
+              <button aria-label="Share" className="flex items-center justify-center p-2 rounded-full hover:bg-surface-container-high transition-colors text-on-surface-variant active:scale-95">
+                <span className="material-symbols-outlined" data-icon="share">share</span>
+              </button>
+            </div>
+          </header>
+
+          {/* Main Content Canvas */}
+          <main className="max-w-3xl mx-auto px-page_margin py-section_gap pb-32">
+            <article>
+              {/* Article Header */}
+              <div className="mb-section_gap">
+                <div className="mb-element_gap">
+                  <span className="inline-flex items-center px-4 py-1.5 rounded-full bg-tertiary/10 text-tertiary font-label-sm text-label-sm uppercase tracking-wider">
+                    {post.category === 'notice' ? 'Notice' : post.category || 'General'}
+                  </span>
+                </div>
+                <h1 className="font-display-lg text-display-lg text-on-surface mb-element_gap leading-tight">
+                  {post.title}
+                </h1>
+                
+                <div className="flex items-center gap-element_gap py-element_gap border-t border-b border-outline-variant/15 mt-8">
+                  <div className="w-12 h-12 rounded-full bg-surface-variant flex-shrink-0 overflow-hidden outline outline-1 outline-outline-variant/30 flex items-center justify-center">
+                    {post.author.avatar ? (
+                      <img alt="Author Avatar" className="w-full h-full object-cover" src={post.author.avatar}/>
+                    ) : (
+                      <span className="material-symbols-outlined text-on-surface-variant">person</span>
+                    )}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="font-label-md text-label-md text-on-surface">{post.author.name}</span>
+                    <div className="flex items-center gap-2 font-label-sm text-label-sm text-on-surface-variant mt-0.5">
+                      <time>{formatDate(post.createdAt)}</time>
+                      <span className="w-1 h-1 rounded-full bg-outline-variant"></span>
+                      <span>{readTime} min read</span>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </motion.div>
-        </div>
+
+              {/* Article Body */}
+              <div className="prose prose-lg max-w-none text-on-surface-variant space-y-6">
+                {post.image && (
+                  <div className="rounded-xl overflow-hidden bg-surface-container-low mb-10 outline outline-1 outline-outline-variant/15 flex items-center justify-center p-2">
+                    <img alt="Post cover" className="w-full h-auto object-cover rounded-lg" src={post.image}/>
+                  </div>
+                )}
+                
+                {paragraphs.length > 0 ? (
+                  paragraphs.map((p, i) => (
+                    <p key={i} className={i === 0 
+                      ? "font-body-lg text-body-lg leading-relaxed first-letter:text-5xl first-letter:font-headline-lg first-letter:font-bold first-letter:text-primary first-letter:mr-1 first-letter:float-left" 
+                      : "font-body-md text-body-md leading-relaxed"
+                    }>
+                      {p}
+                    </p>
+                  ))
+                ) : (
+                  <p className="font-body-lg text-body-lg leading-relaxed italic text-on-surface-variant/50">
+                    No content available.
+                  </p>
+                )}
+              </div>
+
+              {/* Engagement/Tags Section */}
+              <div className="mt-section_gap pt-element_gap border-t border-outline-variant/15 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex flex-wrap gap-2">
+                  <span className="px-3 py-1 bg-surface-container rounded-full font-label-sm text-label-sm text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer">#{post.category || 'community'}</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <button className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-surface-container-low hover:bg-primary-container hover:text-on-primary-container text-on-surface-variant transition-colors group">
+                    <span className="material-symbols-outlined group-hover:scale-110 transition-transform" data-icon="favorite">favorite</span>
+                    <span className="font-label-md text-label-md">{post.likes || 0}</span>
+                  </button>
+                  <button className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-surface-container-low hover:bg-surface-container-high text-on-surface-variant transition-colors group">
+                    <span className="material-symbols-outlined group-hover:scale-110 transition-transform" data-icon="chat_bubble">chat_bubble</span>
+                    <span className="font-label-md text-label-md">{comments.length}</span>
+                  </button>
+                  <div className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-surface-container-low text-on-surface-variant">
+                    <span className="material-symbols-outlined" data-icon="visibility">visibility</span>
+                    <span className="font-label-md text-label-md">{post.views || 0}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Comments Section (Adapted as Author Bios Card equivalent for functionality) */}
+              <div className="mt-section_gap bg-surface-container-lowest rounded-xl outline outline-1 outline-outline-variant/15 p-6 flex flex-col gap-6 items-start w-full">
+                <h4 className="font-title-lg text-title-lg text-on-surface mb-2">Comments</h4>
+                
+                {/* Input Area */}
+                <div className="flex gap-4 items-start w-full bg-surface-container-low p-4 rounded-xl">
+                  <div className="w-10 h-10 rounded-full overflow-hidden bg-surface-variant shrink-0">
+                    {profile?.photoURL || user?.photoURL ? (
+                      <img src={profile?.photoURL || user?.photoURL || ''} alt="You" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="material-symbols-outlined w-full h-full flex items-center justify-center text-on-surface-variant">person</span>
+                    )}
+                  </div>
+                  <div className="flex-1 flex flex-col gap-2">
+                    <textarea 
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      placeholder="Share your thoughts..." 
+                      className="w-full bg-transparent border-none focus:ring-0 resize-none font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant/50 outline-none"
+                      rows={2}
+                    />
+                    <div className="flex justify-end">
+                      <button 
+                        onClick={handleAddComment}
+                        disabled={isSubmitting || !newComment.trim()}
+                        className="px-6 py-2 bg-primary text-on-primary rounded-full font-label-md text-label-md shadow-sm hover:shadow-md hover:bg-primary/90 transition-all disabled:opacity-50 disabled:hover:shadow-sm"
+                      >
+                        Post
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Comment List */}
+                <div className="w-full space-y-6 mt-4">
+                  {comments.length === 0 ? (
+                    <p className="font-body-md text-body-md text-on-surface-variant text-center py-6">No comments yet.</p>
+                  ) : (
+                    comments.map((comment) => (
+                      <div key={comment.id} className="flex gap-4 group/comment">
+                        <div className="w-10 h-10 rounded-full bg-surface-variant shrink-0 overflow-hidden outline outline-1 outline-outline-variant/30 flex items-center justify-center">
+                          {comment.author.avatar ? (
+                            <img alt={comment.author.name} className="w-full h-full object-cover" src={comment.author.avatar}/>
+                          ) : (
+                            <span className="material-symbols-outlined text-sm text-on-surface-variant">person</span>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-label-md text-label-md text-on-surface">{comment.author.name}</span>
+                              <span className="font-label-sm text-label-sm text-on-surface-variant">{formatDate(comment.createdAt)}</span>
+                            </div>
+                            {user?.uid === comment.author.id && (
+                              <button 
+                                onClick={() => handleDeleteComment(comment.id)}
+                                className="opacity-0 group-hover/comment:opacity-100 transition-opacity text-error hover:scale-110 p-1"
+                                aria-label="Delete comment"
+                              >
+                                <span className="material-symbols-outlined text-sm">delete</span>
+                              </button>
+                            )}
+                          </div>
+                          <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+                            {comment.content}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+            </article>
+          </main>
+        </motion.div>
       )}
     </AnimatePresence>
   );

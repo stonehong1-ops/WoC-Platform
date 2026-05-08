@@ -108,6 +108,11 @@ export interface Group {
     joinStrategy: 'open' | 'approval' | 'invite';
     onboardingEnabled?: boolean;
   };
+  operatingHours?: {
+    label: string;
+    time: string;
+  }[];
+  houseRules?: string[];
   boards?: GroupBoard[];
   staffPermissions?: {
     managePosts: boolean;
@@ -316,7 +321,7 @@ export interface CalendarEvent {
   startTime?: string; // "18:00"
   endTime?: string;   // "20:00"
   location?: string;
-  type: 'general' | 'class' | 'social' | 'milonga' | 'practice';
+  type: 'general' | 'class' | 'social' | 'milonga' | 'practice' | 'rental';
   color?: string;
   createdBy: string;
   createdAt: any;

@@ -81,6 +81,49 @@ export interface EventRegistration {
   note?: string;
 }
 
+// === Artist (Maestro / DJ) ===
+export interface EventArtist {
+  id: string;
+  name: string;
+  role: 'maestro' | 'dj' | 'performer';
+  photoUrl?: string;
+  country?: string;
+  bio?: string;
+}
+
+// === Event Venue (Multiple venues for festival) ===
+export interface EventVenueItem {
+  id: string;
+  name: string;
+  address?: string;
+  photoUrl?: string;
+  latitude?: number;
+  longitude?: number;
+}
+
+// === Package (Class bundles) ===
+export interface EventPackage {
+  id: string;
+  name: string;
+  type?: 'single' | 'couple';  // Single or Couple
+  description?: string;
+  includedItems: string[];      // List of included events/classes
+  includedWorkshopCount?: number;
+  price: number;
+  priceUsd?: number;
+  currency?: string;
+  totalTickets?: number;
+  soldTickets?: number;
+  photoUrl?: string;
+}
+
+// === Schedule Day (Timetable image per day) ===
+export interface EventScheduleDay {
+  dayLabel: string;              // "Day 1", "Day 2", etc.
+  date?: string;                 // "2026-06-19"
+  timetableImageUrl?: string;    // Uploaded timetable image
+}
+
 // === Event ===
 export interface Event {
   id: string;
@@ -115,6 +158,13 @@ export interface Event {
   organizerPhone?: string;
   staffIds?: string[];
   staffNames?: string[];
+
+  // 새 섹션 데이터
+  galleryImages?: string[];           // 갤러리 사진들 (메인 이미지 외)
+  artists?: EventArtist[];            // 아티스트 (Maestro / DJ)
+  eventVenues?: EventVenueItem[];     // 이벤트 베뉴 (복수)
+  packages?: EventPackage[];          // 패키지 (클래스 번들)
+  scheduleDays?: EventScheduleDay[];  // 스케줄 (일별 시간표 이미지)
 
   // 기타
   dressCode?: string;

@@ -32,8 +32,8 @@ export const NAV_ITEMS: NavItem[] = [
   { id: 'shop', label: '숍', group: 'Space', icon: ShoppingBag, href: '/shop' },
   { id: 'resale', label: '리세일', group: 'Space', icon: Store, href: '/resale' },
   { id: 'stay', label: '스테이', group: 'Space', icon: Tent, href: '/stay' },
-  { id: 'lost', label: '분실물', group: 'Space', icon: MessageSquare, href: '/lost' },
-  { id: 'arcade', label: '아케이드', group: 'Space', icon: Cpu, href: '/arcade' },
+  { id: 'lost', label: '분실물찾기', group: 'Space', icon: MessageSquare, href: '/lost' },
+  { id: 'hub', label: '이동', group: 'Space', icon: Cpu, href: '/hub' },
   
   // My Page
   { id: 'wallet', label: '지갑', group: 'My Page', icon: Wallet, href: '/wallet' },

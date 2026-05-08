@@ -1,0 +1,210 @@
+{
+  "src/components/chat/ChatRoom.tsx": [
+    "308: ORDER_PLACED: ['[ORDER PLACED]', '[새 주문 알림]', '[주문 완료]'],",
+    "309: PAYMENT_REPORTED: ['[PAYMENT REPORTED]', '[입금 완료 보고]', '[결제 보고됨]'],",
+    "310: PRODUCT_INQUIRY: ['[PRODUCT INQUIRY]', '[상품 문의]'],",
+    "311: STAY_BOOKING: ['[STAY BOOKING]', '[숙소 예약]', '[스테이 예약]'],",
+    "312: STAY_PAYMENT: ['[STAY PAYMENT]', '[숙소 입금]', '[스테이 결제]'],",
+    "313: RENTAL_INQUIRY: ['[RENTAL INQUIRY]', '[대관 문의]', '[렌탈 문의]']",
+    "319: const orderNo = getVal(lines, ['Order No', '주문번호', '주문 번호']);",
+    "320: const product = getVal(lines, ['Product', '상품명']);",
+    "321: const option = getVal(lines, ['Option', '옵션']);",
+    "322: const amount = getVal(lines, ['Amount', '결제금액', '수량']);",
+    "323: const image = getVal(lines, ['Image', '이미지']);",
+    "354: const orderNo = getVal(lines, ['Order No', '주문번호', '주문 번호']);",
+    "355: const depositor = getVal(lines, ['Depositor', '입금자명']);",
+    "375: const brand = getVal(lines, ['Brand', '브랜드']);",
+    "376: const title = getVal(lines, ['Title', '상품명']);",
+    "377: const price = getVal(lines, ['Price', '가격']);",
+    "378: const link = getVal(lines, ['Link', '링크', '바로가기']);",
+    "379: const image = getVal(lines, ['Image', '이미지']);",
+    "417: const stayName = getVal(lines, ['Stay', '숙소']);",
+    "418: const dates = getVal(lines, ['Dates', '일정']);",
+    "419: const nights = getVal(lines, ['Nights', '박', '숙박 일수']);",
+    "420: const guests = getVal(lines, ['Guests', '인원']);",
+    "421: const amount = getVal(lines, ['Amount', '금액']);",
+    "422: const applicant = getVal(lines, ['Applicant', '예약자']);",
+    "423: const image = getVal(lines, ['Image', '이미지']);",
+    "452: const stayName = getVal(lines, ['Stay', '숙소']);",
+    "453: const dates = getVal(lines, ['Dates', '일정']);",
+    "474: const space = getVal(lines, ['Space', '공간']);",
+    "475: const date = getVal(lines, ['Date', '날짜']);",
+    "476: const time = getVal(lines, ['Time', '시간']);",
+    "477: const purpose = getVal(lines, ['Purpose', '목적']);",
+    "478: const headcount = getVal(lines, ['Headcount', '인원']);",
+    "479: const message = getVal(lines, ['Message', '메시지']);"
+  ],
+  "src/components/events/EditEvent.tsx": [
+    "169: // Phase 5: milonga → Social popup 자동 동기화 (백그라운드)",
+    "185: // 연결된 Social popup도 삭제"
+  ],
+  "src/components/events/EventProgramTab.tsx": [
+    "35: // View Mode A: By Date (단기 이벤트)",
+    "39: // 모든 unique 날짜 추출",
+    "91: // View Mode B: By Category (장기 시리즈)"
+  ],
+  "src/components/feed/CommentBottomSheet.tsx": [
+    "47: // 항상 구독 시작 (실시간 반영 보장)",
+    "71: // 구독 갱신 (즉각 반영)"
+  ],
+  "src/components/feed/CreateFeedPopup.tsx": [
+    "295: {/* Style Row ??Impact + Emphasis ??以?(??0?????쒖떆) */}"
+  ],
+  "src/components/feed/FeedPostCard.tsx": [
+    "352: // 미디어 아이템 렌더 헬퍼 (비디오 아이콘 + 오버레이 포함)",
+    "379: // 미디어 그리드 레이아웃",
+    "384: // 1장: 풀 너비, 4:5 세로 비율",
+    "393: // 2장: 50:50 나란히, 1:1",
+    "406: // 3장: 상단 1장 풀너비(16:9) + 하단 2장 균등(1:1)",
+    "424: // 4장: 2×2 균등 그리드",
+    "437: // 5장+: 2×2 + 마지막 셀에 +N 오버레이"
+  ],
+  "src/components/feed/MediaViewerPopup.tsx": [
+    "24: // 뒤로가기 인터셉트용 - 우리가 pushState 했는지 추적",
+    "27: // 팝업 열릴 때 더미 히스토리 추가, 닫힐 때 초기화",
+    "34: // 더미 히스토리 상태 push → 뒤로가기가 이 상태를 pop하게 됨",
+    "46: // popstate 이벤트 = 디바이스/브라우저 뒤로가기",
+    "50: // 브라우저가 이미 더미 상태를 pop했으므로 그냥 닫기만 하면 됨",
+    "59: // UI로 닫을 때 (X버튼, 배경 클릭 등) → 우리가 push한 더미 상태를 직접 제거",
+    "63: history.back(); // popstate 발생 → handlePopState에서 onClose() 호출",
+    "92: // 키보드 지원",
+    "104: // 터치 스와이프",
+    "144: {/* 상단 헤더 */}",
+    "157: {/* 미디어 영역 */}",
+    "186: {/* 이전/다음 버튼 */}",
+    "205: {/* 하단 도트 인디케이터 */}"
+  ],
+  "src/components/groups/GroupAccountEditor.tsx": [
+    "121: <option value=\"KB국민은행\" className=\"bg-[#0a0f1d] text-white font-normal\">{t(\"bank.kb\", \"KB Kookmin Bank\")}</option>",
+    "122: <option value=\"신한은행\" className=\"bg-[#0a0f1d] text-white font-normal\">{t(\"bank.shinhan\", \"Shinhan Bank\")}</option>",
+    "123: <option value=\"하나은행\" className=\"bg-[#0a0f1d] text-white font-normal\">{t(\"bank.hana\", \"Hana Bank\")}</option>",
+    "124: <option value=\"우리은행\" className=\"bg-[#0a0f1d] text-white font-normal\">{t(\"bank.woori\", \"Woori Bank\")}</option>",
+    "125: <option value=\"NH농협은행\" className=\"bg-[#0a0f1d] text-white font-normal\">{t(\"bank.nh\", \"NH Nonghyup Bank\")}</option>",
+    "126: <option value=\"IBK기업은행\" className=\"bg-[#0a0f1d] text-white font-normal\">{t(\"bank.ibk\", \"IBK Industrial Bank\")}</option>",
+    "127: <option value=\"카카오뱅크\" className=\"bg-[#0a0f1d] text-white font-normal\">{t(\"bank.kakao\", \"KakaoBank\")}</option>",
+    "128: <option value=\"토스뱅크\" className=\"bg-[#0a0f1d] text-white font-normal\">{t(\"bank.toss\", \"Toss Bank\")}</option>",
+    "129: <option value=\"케이뱅크\" className=\"bg-[#0a0f1d] text-white font-normal\">{t(\"bank.kbank\", \"K Bank\")}</option>",
+    "132: <option value=\"iM뱅크\" className=\"bg-[#0a0f1d] text-white font-normal\">{t(\"bank.im\", \"iM Bank (formerly DGB)\")}</option>",
+    "133: <option value=\"부산은행\" className=\"bg-[#0a0f1d] text-white font-normal\">{t(\"bank.busan\", \"Busan Bank\")}</option>",
+    "134: <option value=\"경남은행\" className=\"bg-[#0a0f1d] text-white font-normal\">{t(\"bank.kyongnam\", \"Kyongnam Bank\")}</option>",
+    "135: <option value=\"광주은행\" className=\"bg-[#0a0f1d] text-white font-normal\">{t(\"bank.kwangju\", \"Kwangju Bank\")}</option>",
+    "136: <option value=\"전북은행\" className=\"bg-[#0a0f1d] text-white font-normal\">{t(\"bank.jeonbuk\", \"Jeonbuk Bank\")}</option>",
+    "137: <option value=\"제주은행\" className=\"bg-[#0a0f1d] text-white font-normal\">{t(\"bank.jeju\", \"Jeju Bank\")}</option>",
+    "140: <option value=\"SC제일은행\" className=\"bg-[#0a0f1d] text-white font-normal\">{t(\"bank.sc\", \"SC First Bank\")}</option>",
+    "141: <option value=\"한국씨티은행\" className=\"bg-[#0a0f1d] text-white font-normal\">{t(\"bank.citi\", \"Citibank Korea\")}</option>",
+    "142: <option value=\"수협은행\" className=\"bg-[#0a0f1d] text-white font-normal\">{t(\"bank.suhyup\", \"Suhyup Bank\")}</option>",
+    "145: <option value=\"우체국\" className=\"bg-[#0a0f1d] text-white font-normal\">{t(\"bank.post\", \"Post Office\")}</option>",
+    "146: <option value=\"새마을금고\" className=\"bg-[#0a0f1d] text-white font-normal\">{t(\"bank.mg\", \"MG Community Credit Cooperatives\")}</option>",
+    "147: <option value=\"신협\" className=\"bg-[#0a0f1d] text-white font-normal\">{t(\"bank.shinhyup\", \"Shinhyup\")}</option>",
+    "148: <option value=\"저축은행\" className=\"bg-[#0a0f1d] text-white font-normal\">{t(\"bank.savings\", \"Savings Bank\")}</option>",
+    "149: <option value=\"산림조합\" className=\"bg-[#0a0f1d] text-white font-normal\">{t(\"bank.forest\", \"Forestry Cooperative\")}</option>"
+  ],
+  "src/components/groups/GroupCalendar.tsx": [
+    "87: type: s.title.toLowerCase().includes('milonga') || s.title.toLowerCase().includes('밀롱가') ? 'milonga' : 'social',",
+    "102: type: s.title.toLowerCase().includes('milonga') || s.title.toLowerCase().includes('밀롱가') ? 'milonga' : 'social',"
+  ],
+  "src/components/groups/GroupClassAddEditor.tsx": [
+    "156: // 즉시 프리뷰 적용 (낙관적 UI)",
+    "170: // 성공 시 블롭 해제",
+    "175: // 실패 시 롤백",
+    "192: // 즉시 프리뷰 적용 (낙관적 UI)",
+    "210: // 실패 시 롤백"
+  ],
+  "src/components/groups/GroupHome.tsx": [
+    "69: // 데이터 바인딩용 상태",
+    "83: // 실시간 멤버 상태 확인",
+    "103: // 대시보드 데이터 연동",
+    "150: if (total === 0) return { male: 45, female: 55 }; // 기본 비율 (데이터 없을 시)",
+    "239: setShowJoinModal(true); // \"환영합니다\" 팝업",
+    "242: setShowJoinModal(true); // \"신청 완료\" 팝업",
+    "253: // 메인(home)과 About(about)은 누구나 접근 가능",
+    "259: // 그 외 메뉴는 정회원만 가능"
+  ],
+  "src/components/groups/GroupMemberManager.tsx": [
+    "187: // Member 탭 = Owner/Staff 포함 전체 active 멤버 표시"
+  ],
+  "src/components/groups/PostEditorModal.tsx": [
+    "66: setBgTheme(null); // 테마 해제",
+    "70: // 블롭 URL 생성하여 즉시 프리뷰 표시",
+    "107: setMediaPreview(null); // 이미지 제거"
+  ],
+  "src/components/home/ActivitySpotlight.tsx": [
+    "17: /* ─── 날짜 포맷 헬퍼 ─────────────────────────────── */",
+    "25: /* ─── 스켈레톤 ────────────────────────────────────── */",
+    "71: // ── 1. 오늘 소셜 (Regular: dayOfWeek 일치) ──",
+    "78: // Popup: 오늘 날짜와 date 필드 일치",
+    "92: // ── 2. Open Classes 카운트 (classes + bundles + monthlyPasses 합산) ──",
+    "109: // ── 3. 가장 가까운 Upcoming Event ──",
+    "133: /* ── 파생 값 ── */",
+    "298: /* 이벤트 없을 때 fallback */"
+  ],
+  "src/components/layout/LocationSelector.tsx": [
+    "297: // 콜백 모드: 전역 location 변경 없이 콜백만 호출",
+    "301: // 기본 모드: 전역 location 변경"
+  ],
+  "src/components/layout/NavigationDrawer.tsx": [
+    "14: { code: 'ko', name: 'Korean', native: '한국어', active: false },"
+  ],
+  "src/components/providers/AuthProvider.tsx": [
+    "72: // 이전 프로필 구독 해제",
+    "81: // [Link Logic] 사전 등록된 데이터가 있는지 확인 (전화번호 기준)",
+    "88: // 처음 로그인하는 사용자라면 전화번호 기반 데이터 검색",
+    "98: // 새로운 UID 문서로 데이터 복사",
+    "107: // [Group Membership Migration] 프리스타일탱고 멤버십 이전",
+    "123: // 기존 전화번호 기반 문서 삭제",
+    "139: // 실시간 프로필 감시 시작",
+    "193: // 이미 허용된 상태라면 백그라운드에서 토큰을 갱신/저장합니다.",
+    "197: // 권한을 아직 묻지 않은 상태(default)일 때만 토스트를 띄웁니다.",
+    "199: // 중복 토스트 방지를 위해 약간 지연",
+    "203: duration: 15000, // 15초 후 자동 닫힘",
+    "228: }, 3000); // 페이지 로딩 후 3초 뒤에 띄움"
+  ],
+  "src/components/providers/LocationProvider.tsx": [
+    "19: // 콜백 모드: 등록폼 등에서 사용. 전역 location 변경 없이 콜백만 호출",
+    "55: // 콜백 모드로 selector 열기 (전역 location 변경 없음)"
+  ],
+  "src/components/shop/ProductDetail.tsx": [
+    "370: {/* 2) Scarcity Bar — 제일 위로 */}"
+  ],
+  "src/components/social/SocialHeroCard.tsx": [
+    "11: const hasKorean = /[가-힣]/.test(text);",
+    "15: main = text.replace(/[가-힣()]+/g, '').replace(/\\s+/g, ' ').trim();",
+    "16: const subMatch = text.match(/[가-힣]+/g);"
+  ],
+  "src/components/ui/ChipSelector.tsx": [
+    "20: * ChipSelector — 칩형 선택 버튼 (단일/다중 선택)",
+    "21: * Size 칩, 커스텀옵션 칩 패턴"
+  ],
+  "src/components/ui/CollapseSection.tsx": [
+    "14: * CollapseSection — 접기/펼치기 섹션",
+    "15: * Size Guide, Description 패턴"
+  ],
+  "src/components/ui/FullScreenModal.tsx": [
+    "15: * FullScreenModal — 풀스크린 오버레이 베이스",
+    "16: * ProductDetail 전체 구조 패턴",
+    "17: * - 스크롤 시 헤더 배경 전환 (투명 → 흰색)",
+    "18: * - 바텀바 고정 영역"
+  ],
+  "src/components/ui/index.ts": [
+    "2: * WoC 공통 UI 컴포넌트",
+    "4: * ProductDetail에서 검증된 디자인 패턴을 재사용 가능한 컴포넌트로 추출.",
+    "5: * Stitch 디자인 시스템의 primary 컬러 토큰은 유지하되,",
+    "6: * 세부 그레이스케일/레이아웃은 직접 관리.",
+    "8: * 사용법:"
+  ],
+  "src/components/ui/InfoRow.tsx": [
+    "16: * InfoRow — 아이콘 원 + 제목 + 설명 한 줄",
+    "17: * Production/Delivery/Exchange 정보 행 패턴"
+  ],
+  "src/components/ui/RadioSelector.tsx": [
+    "19: * RadioSelector — 라디오 버튼 그룹 (카드 스타일)",
+    "20: * Store Pickup / Delivery 선택 패턴"
+  ],
+  "src/components/ui/SectionCard.tsx": [
+    "14: * SectionCard — 아이콘 헤더가 있는 카드 박스",
+    "15: * ProductDetail의 \"Fit & Options\" 박스 패턴"
+  ],
+  "src/components/venues/MapComponent.tsx": [
+    "296: // 而ㅽ뀒怨좊━蹂????留덉빱 (null?대㈃ 湲곕낯 ?먰삎)"
+  ]
+}
