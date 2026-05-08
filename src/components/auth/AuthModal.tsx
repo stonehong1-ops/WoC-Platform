@@ -130,25 +130,16 @@ export default function AuthModal() {
   };
 
   const setupRecaptcha = () => {
-    // Always clear existing verifier to avoid stale DOM reference
-    if ((window as any).recaptchaVerifier) {
-      try { (window as any).recaptchaVerifier.clear(); } catch (e) { /* ignore */ }
-      (window as any).recaptchaVerifier = null;
+    if (!(window as any).recaptchaVerifier) {
+      (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        'size': 'invisible',
+        'siteKey': '6LcyCd4sAAAAAHDO-jSwgvMkKfgPrs85AFO1Z3mL',
+        'enterprise': true,
+        'callback': (response: any) => {
+          // reCAPTCHA solved
+        }
+      });
     }
-    
-    const container = document.getElementById('recaptcha-container');
-    if (!container) return;
-
-    // Firebase v12.x 규격에 맞춘 Enterprise RecaptchaVerifier 초기화
-    // 첫 번째 인자로 명시적인 auth 객체를 전달하고, 지정된 사이트 키를 반영합니다.
-    (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, container, {
-      'size': 'invisible',
-      'siteKey': '6LcyCd4sAAAAAHDO-jSwgvMkKfgPrs85AFO1Z3mL',
-      'enterprise': true,
-      'callback': (response: any) => {
-        // reCAPTCHA solved
-      }
-    });
   };
 
   const handleSendCode = async () => {
@@ -176,11 +167,6 @@ export default function AuthModal() {
     } catch (error: any) {
       console.warn("SMS sending failed:", error);
       alert(t('auth.alert_sms_failed') + error.message);
-      // Reset recaptcha on error
-      if ((window as any).recaptchaVerifier) {
-        try { (window as any).recaptchaVerifier.clear(); } catch (e) { /* ignore */ }
-        (window as any).recaptchaVerifier = null;
-      }
     } finally {
       setIsLoading(false);
     }
@@ -504,7 +490,6 @@ export default function AuthModal() {
           </p>
         </div>
       </main>
-      <div id="recaptcha-container"></div>
     </div>
   );
 }

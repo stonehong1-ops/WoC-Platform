@@ -95,6 +95,7 @@ export default function RootLayout({
             </AuthProvider>
           </LanguageProvider>
         </div>
+        <div id="recaptcha-container"></div>
       </body>
     </html>
   );
