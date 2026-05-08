@@ -28,7 +28,14 @@ export default function InAppBrowserGuard() {
     const isIOS = /iPad|iPhone|iPod/.test(ua);
     const currentUrl = window.location.href;
 
-    // Show guide for both iOS and Android to avoid session loss/forced intent failures
+    if (!isIOS) {
+      // Android: Auto-redirect to Chrome via intent scheme
+      const stripped = currentUrl.replace(/https?:\/\//i, '');
+      window.location.href = `intent://${stripped}#Intent;scheme=https;package=com.android.chrome;end`;
+      return;
+    }
+
+    // iOS: Show guide
     setShowIOSGuide(true);
     setTimeout(() => setIsVisible(true), 50);
   }, []);

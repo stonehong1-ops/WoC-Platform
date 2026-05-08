@@ -18,6 +18,16 @@ import {
 } from 'firebase/firestore';
 import { db } from './config';
 
+export interface GalleryTag {
+  type: 'group' | 'social' | 'event' | 'class' | 'people';
+  id: string;
+  name: string;
+  groupId?: string;       // class가 속한 그룹 ID
+  instructors?: string;   // e.g. "by Geff, Muse"
+  avatar?: string;        // people용 프로필 사진
+  role?: string;          // people: 'me' | 'organizer' | 'instructor'
+}
+
 export interface GalleryPost {
   id: string;
   authorId: string;
@@ -26,13 +36,15 @@ export interface GalleryPost {
   media: string[];
   mediaTypes?: ('image' | 'video')[];
   caption: string;
+  tags?: GalleryTag[];    // Unified TAG system
+  // Legacy fields (backward compat)
   venueId?: string;
   venueName?: string;
   eventId?: string;
   eventName?: string;
   likesCount: number;
   commentsCount: number;
-  likedBy: string[]; // List of user IDs who liked this post
+  likedBy: string[];
   createdAt: any;
   updatedAt: any;
 }

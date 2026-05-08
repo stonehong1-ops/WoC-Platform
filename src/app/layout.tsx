@@ -95,7 +95,7 @@ export default function RootLayout({
             </AuthProvider>
           </LanguageProvider>
         </div>
-        <div id="recaptcha-container"></div>
+        <div id="recaptcha-container" suppressHydrationWarning></div>
       </body>
     </html>
   );

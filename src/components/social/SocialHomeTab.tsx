@@ -11,6 +11,9 @@ interface Props {
   onChatWithOrganizer: () => void;
   canEdit?: boolean;
   onShowImages?: (images: string[], index: number) => void;
+  isUnclaimed?: boolean;
+  isClaiming?: boolean;
+  onClaim?: () => void;
 }
 
 // DJ display logic: show next upcoming DJ
@@ -43,7 +46,7 @@ function getNextEventDate(social: Social, language: string): string {
 
 import SocialDjLineupSheet from "./SocialDjLineupSheet";
 
-export default function SocialHomeTab({ social, onChatWithOrganizer, canEdit, onShowImages }: Props) {
+export default function SocialHomeTab({ social, onChatWithOrganizer, canEdit, onShowImages, isUnclaimed, isClaiming, onClaim }: Props) {
   const [venue, setVenue] = useState<any>(null);
   const [orgProfile, setOrgProfile] = useState<any>(null);
   const [showDjLineup, setShowDjLineup] = useState(false);
@@ -205,6 +208,18 @@ export default function SocialHomeTab({ social, onChatWithOrganizer, canEdit, on
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+          {isUnclaimed && onClaim && (
+            <div className="border-t border-[#f2f4f4] pt-4 mt-2">
+              <button
+                onClick={onClaim}
+                disabled={isClaiming}
+                className="w-full py-2.5 bg-primary/10 text-primary rounded-xl text-xs font-black tracking-wide active:scale-95 transition-transform disabled:opacity-50 border border-primary/20 flex items-center justify-center gap-1.5"
+              >
+                <span className="material-symbols-rounded text-sm">verified_user</span>
+                {isClaiming ? t('social.its_me_loading') : t('social.its_me')}
+              </button>
             </div>
           )}
         </div>

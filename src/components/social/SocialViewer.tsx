@@ -46,10 +46,6 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
   }, [initialSocial.id]);
 
   // Claim ownership state
-  const [showAssignSheet, setShowAssignSheet] = useState(false);
-  const [assignSearch, setAssignSearch] = useState("");
-  const [assignResults, setAssignResults] = useState<any[]>([]);
-  const [assignTarget, setAssignTarget] = useState<any>(null);
   const [isClaiming, setIsClaiming] = useState(false);
   const isUnclaimed = ADMIN_UIDS.includes(social.organizerId || "");
 
@@ -256,48 +252,6 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
           </p>
         </div>
 
-        {/* Unclaimed Banner */}
-        {isUnclaimed && user && (
-          <div className="mx-4 mt-3 mb-1 border border-amber-200 bg-amber-50/60 rounded-2xl p-4">
-            <div className="flex items-start gap-2.5 mb-3">
-              <span className="material-symbols-rounded text-lg text-amber-600 mt-0.5">warning</span>
-              <div>
-                <p className="text-xs font-bold text-amber-800">{t('social.no_organizer')}</p>
-                <p className="text-[10px] text-amber-600 mt-0.5 leading-relaxed">{t('social.claim_desc')}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={async () => {
-                  if (!user) return;
-                  if (!confirm(t('social.claim_confirm'))) return;
-                  setIsClaiming(true);
-                  try {
-                    await socialService.claimSocial(social.id, {
-                      uid: user.uid,
-                      displayName: user.displayName || "User",
-                      nativeNickname: (profile as any)?.nativeNickname || "",
-                    }, user.uid);
-                    alert(t('social.claim_success'));
-                    onClose();
-                  } catch (err) { console.error(err); alert(t('social.claim_failed')); }
-                  finally { setIsClaiming(false); }
-                }}
-                disabled={isClaiming}
-                className="flex-1 py-2.5 bg-primary text-white rounded-xl text-xs font-black tracking-wide active:scale-95 transition-transform disabled:opacity-50"
-              >
-                {isClaiming ? t('social.its_me_loading') : t('social.its_me')}
-              </button>
-              <button
-                onClick={() => setShowAssignSheet(true)}
-                className="flex-1 py-2.5 bg-white border border-[#e0e4e5] text-[#596061] rounded-xl text-xs font-bold tracking-wide active:scale-95 transition-transform"
-              >
-                {t('social.assign_someone')}
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* Tab Anchor — inline tab bar (hidden when stuck) */}
         <div ref={tabAnchorRef}>
           {!isTabStuck && <TabBar />}
@@ -314,6 +268,23 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
               setImages(imgs);
               setCurrentImg(idx);
               openImageModal("true");
+            }}
+            isUnclaimed={isUnclaimed}
+            isClaiming={isClaiming}
+            onClaim={async () => {
+              if (!user) return;
+              if (!confirm(t('social.claim_confirm'))) return;
+              setIsClaiming(true);
+              try {
+                await socialService.claimSocial(social.id, {
+                  uid: user.uid,
+                  displayName: user.displayName || "User",
+                  nativeNickname: (profile as any)?.nativeNickname || "",
+                }, user.uid);
+                alert(t('social.claim_success'));
+                onClose();
+              } catch (err) { console.error(err); alert(t('social.claim_failed')); }
+              finally { setIsClaiming(false); }
             }}
           />
         )}
@@ -363,98 +334,7 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
         />
       )}
 
-      {/* Assign Someone Bottom Sheet */}
-      {showAssignSheet && (
-        <>
-          <div className="fixed inset-0 bg-black/40 z-[150] animate-in fade-in duration-200" onClick={() => { setShowAssignSheet(false); setAssignTarget(null); setAssignSearch(""); }} />
-          <div className="fixed bottom-0 left-0 right-0 z-[151] bg-white rounded-t-3xl shadow-2xl animate-in slide-in-from-bottom duration-300 max-h-[80vh] overflow-y-auto">
-            <div className="w-12 h-1.5 bg-[#e0e4e5] rounded-full mx-auto mt-3 mb-2" />
-            <div className="px-5 pb-8">
-              <h3 className="text-lg font-black text-[#2d3435] mb-1">{t('social.assign_organizer')}</h3>
-              <p className="text-[10px] text-[#acb3b4] mb-4">{t('social.assign_desc')}</p>
 
-              {/* Search */}
-              <div className="relative mb-4">
-                <span className="material-symbols-rounded absolute left-3 top-1/2 -translate-y-1/2 text-lg text-[#acb3b4]">search</span>
-                <input
-                  value={assignSearch}
-                  onChange={async (e) => {
-                    setAssignSearch(e.target.value);
-                    if (e.target.value.length >= 1) {
-                      const users = await userService.searchUsers(e.target.value);
-                      setAssignResults(users.slice(0, 8));
-                    } else {
-                      setAssignResults([]);
-                    }
-                  }}
-                  className="w-full pl-10 pr-4 py-3 bg-[#f2f4f4] rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary/30"
-                  placeholder={t('social.search_by_name')}
-                />
-              </div>
-
-              {/* Results */}
-              {assignResults.length > 0 && (
-                <div className="space-y-1 mb-4 max-h-[200px] overflow-y-auto">
-                  {assignResults.map((u: any) => (
-                    <button
-                      key={u.id}
-                      onClick={() => setAssignTarget(u)}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${
-                        assignTarget?.id === u.id ? "bg-primary/10 border border-primary" : "bg-white hover:bg-[#f8f9fa] border border-transparent"
-                      }`}
-                    >
-                      <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden">
-                        {u.photoURL ? <img src={u.photoURL} className="w-full h-full object-cover" alt="" /> :
-                          <span className="material-symbols-rounded text-sm text-[#acb3b4]">person</span>}
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-[#2d3435]">{u.nickname || u.displayName}</p>
-                        {u.nativeNickname && <p className="text-[10px] text-[#acb3b4]">{u.nativeNickname}</p>}
-                      </div>
-                      {assignTarget?.id === u.id && <span className="material-symbols-rounded text-primary ml-auto">check_circle</span>}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {/* Warning */}
-              <div className="flex items-start gap-2 bg-amber-50 rounded-xl px-3 py-2.5 mb-5">
-                <span className="material-symbols-rounded text-sm text-amber-600 mt-0.5">warning</span>
-                <p className="text-[10px] text-amber-700 leading-relaxed">{t('social.assign_warning')}</p>
-              </div>
-
-              <div className="flex gap-3">
-                <button onClick={() => { setShowAssignSheet(false); setAssignTarget(null); setAssignSearch(""); }}
-                  className="flex-1 py-3.5 bg-[#f2f4f4] text-[#596061] rounded-xl font-bold text-sm active:scale-95 transition-transform">
-                  {t('social.cancel')}
-                </button>
-                <button
-                  onClick={async () => {
-                    if (!assignTarget || !user) return;
-                    if (!confirm(t('social.assign_confirm', { name: assignTarget.nickname || assignTarget.displayName }))) return;
-                    setIsClaiming(true);
-                    try {
-                      await socialService.claimSocial(social.id, {
-                        uid: assignTarget.id,
-                        displayName: assignTarget.nickname || assignTarget.displayName,
-                        nativeNickname: assignTarget.nativeNickname || "",
-                      }, user.uid);
-                      alert(`${t('social.assign_success')} ${assignTarget.nickname || assignTarget.displayName}!`);
-                      setShowAssignSheet(false);
-                      onClose();
-                    } catch (err) { console.error(err); alert(t('social.assign_failed')); }
-                    finally { setIsClaiming(false); }
-                  }}
-                  disabled={!assignTarget || isClaiming}
-                  className="flex-1 py-3.5 bg-primary text-white rounded-xl font-black text-sm active:scale-95 transition-transform disabled:opacity-40"
-                >
-                  {isClaiming ? t('social.assigning') : assignTarget ? `${assignTarget.nickname || assignTarget.displayName || 'User'}` : t('social.select_user')}
-                </button>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
     </div>
   );
 }

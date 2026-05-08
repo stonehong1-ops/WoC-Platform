@@ -283,3 +283,17 @@
 .text-blue-700  { color: #004ca6 !important; }
 .text-blue-800  { color: #003d8c !important; }
 .text-blue-900  { color: #242c51 !important; }
+
+/* ── reCAPTCHA Badge Override ── */
+.grecaptcha-badge {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+  transition: opacity 0.3s ease;
+}
+
+.auth-open .grecaptcha-badge {
+  opacity: 0.6 !important;
+  pointer-events: auto !important;
+  visibility: visible !important;
+}

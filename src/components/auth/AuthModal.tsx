@@ -14,13 +14,24 @@ import { auth, db } from '@/lib/firebase/clientApp';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { COUNTRY_CODES } from '@/lib/constants/countryCodes';
 
 export default function AuthModal() {
   const { user, profile, showLogin, setShowLogin } = useAuth();
   const { language, setLanguage, t } = useLanguage();
+
+  const getRegionName = (isoCode: string) => {
+    try {
+      const locale = language === 'KR' ? 'ko-KR' : 'en-US';
+      return new Intl.DisplayNames([locale], { type: 'region' }).of(isoCode) || isoCode;
+    } catch (e) {
+      return isoCode;
+    }
+  };
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<'SOCIAL' | 'PHONE_INPUT' | 'PHONE_VERIFY' | 'FORM'>('PHONE_INPUT');
   const [authMethod, setAuthMethod] = useState<string>('');
+  const [phoneCountryCode, setPhoneCountryCode] = useState('+82');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
@@ -33,11 +44,11 @@ export default function AuthModal() {
     gender: 'Other'
   });
 
-  // Reset step whenever modal re-opens
   useEffect(() => {
     if (showLogin) {
       setStep('PHONE_INPUT');
       setAuthMethod('');
+      setPhoneCountryCode('+82');
       setPhoneNumber('');
       setVerificationCode('');
       setConfirmationResult(null);
@@ -48,11 +59,14 @@ export default function AuthModal() {
   useEffect(() => {
     if (showLogin) {
       document.body.style.overflow = 'hidden';
+      document.body.classList.add('auth-open');
     } else {
       document.body.style.overflow = 'unset';
+      document.body.classList.remove('auth-open');
     }
     return () => {
       document.body.style.overflow = 'unset';
+      document.body.classList.remove('auth-open');
     };
   }, [showLogin]);
 
@@ -80,6 +94,7 @@ export default function AuthModal() {
   if (!showLogin) return null;
 
   const handleGoogleLogin = async () => {
+    if (isLoading) return;
     setIsLoading(true);
     setAuthMethod('Google');
     try {
@@ -105,6 +120,7 @@ export default function AuthModal() {
   };
 
   const handleFacebookLogin = async () => {
+    if (isLoading) return;
     setIsLoading(true);
     setAuthMethod('Facebook');
     try {
@@ -129,7 +145,7 @@ export default function AuthModal() {
     }
   };
 
-  const setupRecaptcha = () => {
+  const setupRecaptcha = async () => {
     if (!(window as any).recaptchaVerifier) {
       (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
         'size': 'invisible',
@@ -139,33 +155,49 @@ export default function AuthModal() {
           // reCAPTCHA solved
         }
       });
+      await (window as any).recaptchaVerifier.render();
     }
   };
 
   const handleSendCode = async () => {
+    if (isLoading) return;
     if (!phoneNumber) {
       alert(t('auth.alert_invalid_phone'));
       return;
     }
     setIsLoading(true);
     try {
-      setupRecaptcha();
+      await setupRecaptcha();
       const appVerifier = (window as any).recaptchaVerifier;
-      let formattedPhone = phoneNumber;
-      if (!formattedPhone.startsWith('+')) {
-        if (formattedPhone.startsWith('82')) {
-          // Strip country code, then strip leading 0 if present, re-add +82
-          const afterCC = formattedPhone.slice(2);
-          formattedPhone = `+82${afterCC.replace(/^0/, '')}`;
-        } else {
-          formattedPhone = `+82${formattedPhone.replace(/^0/, '')}`;
-        }
+      
+      console.log("RAW_INPUT:", phoneNumber);
+      
+      let cleanedNumber = phoneNumber;
+      const currentCC = phoneCountryCode;
+      const currentCCNumeric = currentCC.replace('+', '');
+      
+      // 1. 방어: 사용자가 +82나 82를 직접 입력한 경우 제거
+      if (cleanedNumber.startsWith(currentCC)) {
+        cleanedNumber = cleanedNumber.slice(currentCC.length);
+      } else if (cleanedNumber.startsWith(currentCCNumeric)) {
+        cleanedNumber = cleanedNumber.slice(currentCCNumeric.length);
       }
-      const confirmation = await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
+      
+      // 2. 방어: 맨 앞의 0 제거 (010 -> 10)
+      cleanedNumber = cleanedNumber.replace(/^0/, '');
+      console.log("NORMALIZED_PHONE:", cleanedNumber);
+      
+      // 3. E.164 포맷 조합
+      const finalPhoneE164 = `${currentCC}${cleanedNumber}`;
+      console.log("FINAL_PHONE_E164:", finalPhoneE164);
+
+      const confirmation = await signInWithPhoneNumber(auth, finalPhoneE164, appVerifier);
       setConfirmationResult(confirmation);
       setStep('PHONE_VERIFY');
+      console.log("SEND_SMS_SUCCESS");
     } catch (error: any) {
       console.warn("SMS sending failed:", error);
+      console.log("SEND_SMS_FAIL");
       alert(t('auth.alert_sms_failed') + error.message);
     } finally {
       setIsLoading(false);
@@ -173,6 +205,7 @@ export default function AuthModal() {
   };
 
   const handleVerifyCode = async () => {
+    if (isLoading) return;
     if (!verificationCode || !confirmationResult) {
       alert(t('auth.alert_enter_code'));
       return;
@@ -198,6 +231,7 @@ export default function AuthModal() {
   };
 
   const handleCompleteRegistration = async () => {
+    if (isLoading) return;
     if (!user) {
       alert(t('auth.alert_verify_first'));
       setStep('SOCIAL');
@@ -331,16 +365,34 @@ export default function AuthModal() {
           <div className="animate-in slide-in-from-bottom-4 duration-500 space-y-6">
             <div>
               <label className="block text-sm font-bold text-gray-900 mb-2">{t('auth.phone_label')}</label>
-              <input 
-                type="tel"
-                autoComplete="tel"
-                inputMode="tel"
-                autoFocus
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value.replace(/[^0-9]/g, ''))}
-                placeholder="01012345678"
-                className="w-full h-14 px-4 bg-gray-50 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
-              />
+              <div className="flex gap-2">
+                <div className="relative w-[125px] shrink-0">
+                  <select 
+                    value={phoneCountryCode}
+                    onChange={(e) => setPhoneCountryCode(e.target.value)}
+                    className="w-full h-14 pl-4 pr-8 bg-gray-50 border border-gray-200 rounded-xl appearance-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-gray-900 font-semibold text-[15px]"
+                  >
+                    {COUNTRY_CODES.map((c, i) => (
+                      <option key={`phone-${c.iso}-${i}`} value={c.code}>
+                        {c.code} ({c.iso})
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <span className="material-symbols-outlined text-gray-400 text-[20px]">expand_more</span>
+                  </div>
+                </div>
+                <input 
+                  type="tel"
+                  autoComplete="tel"
+                  inputMode="tel"
+                  autoFocus
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value.replace(/[^0-9+]/g, ''))}
+                  placeholder="1012345678"
+                  className="flex-1 min-w-0 h-14 px-4 bg-gray-50 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-[15px]"
+                />
+              </div>
             </div>
             <button 
               disabled={isLoading}
@@ -408,16 +460,11 @@ export default function AuthModal() {
                     className="w-full h-14 pl-4 pr-12 bg-gray-50 border border-gray-200 rounded-xl appearance-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-gray-700"
                   >
                     <option value="">{t('auth.select_country')}</option>
-                    <option value="KR">{t('auth.country_kr')}</option>
-                    <option value="US">{t('auth.country_us')}</option>
-                    <option value="GB">{t('auth.country_gb')}</option>
-                    <option value="FR">{t('auth.country_fr')}</option>
-                    <option value="JP">{t('auth.country_jp')}</option>
-                    <option value="CN">{t('auth.country_cn')}</option>
-                    <option value="DE">{t('auth.country_de')}</option>
-                    <option value="CA">{t('auth.country_ca')}</option>
-                    <option value="AU">{t('auth.country_au')}</option>
-                    <option value="SG">{t('auth.country_sg')}</option>
+                    {COUNTRY_CODES.map((c, i) => (
+                      <option key={`reg-${c.iso}-${i}`} value={c.iso}>
+                        {getRegionName(c.iso)}
+                      </option>
+                    ))}
                   </select>
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
                     <span className="material-symbols-outlined text-gray-400">expand_more</span>
@@ -481,12 +528,17 @@ export default function AuthModal() {
           </div>
         )}
 
-        <div className="mt-8">
+        <div className="mt-8 mb-6">
           <p className="text-center text-xs leading-relaxed text-gray-500 px-4">
             {t('auth.terms_agree')} 
             <a className="text-blue-600 font-semibold underline ml-1" href="#">{t('auth.terms')}</a> 
             {t('auth.and')}
             <a className="text-blue-600 font-semibold underline ml-1" href="#">{t('auth.privacy')}</a>{t('auth.period')}
+          </p>
+        </div>
+        <div className="mt-2 pb-6 border-t border-gray-100 pt-4">
+          <p className="text-center text-[10px] leading-relaxed text-gray-400 px-4">
+            This site is protected by reCAPTCHA and the Google <a className="text-blue-500 underline" href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a> and <a className="text-blue-500 underline" href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a> apply.
           </p>
         </div>
       </main>

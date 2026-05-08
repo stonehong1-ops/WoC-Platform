@@ -16,9 +16,12 @@ import {
   MoreVertical,
   Bookmark,
   Trash2,
-  Edit2
+  Edit2,
+  Music,
+  GraduationCap,
+  Building2
 } from 'lucide-react';
-import { galleryService, GalleryPost, GalleryComment } from '@/lib/firebase/galleryService';
+import { galleryService, GalleryPost, GalleryComment, GalleryTag } from '@/lib/firebase/galleryService';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { safeDate } from '@/lib/utils/safeDate';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -300,22 +303,67 @@ const GalleryCard = ({
       {/* Bottom Overlay Info */}
       <div className="absolute bottom-0 left-0 right-16 p-4 pb-20 md:pb-8 bg-gradient-to-t from-black/80 via-black/40 to-transparent z-10 flex flex-col justify-end text-white">
         
-        <div className="flex flex-wrap gap-2 mb-3">
-          {post.venueName && (
-            <Link href={`/venues?id=${post.venueId}`} className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-xs font-semibold border border-white/10" onClick={(e) => e.stopPropagation()}>
-              <MapPin size={12} />
-              <span>{post.venueName}</span>
-            </Link>
+        <div className="flex flex-wrap items-center gap-2 mb-3">
+          {/* Unified TAG v2 rendering */}
+          {(post.tags && post.tags.length > 0) ? (
+            post.tags.filter((tag: GalleryTag) => tag.type !== 'people').map((tag: GalleryTag) => {
+              const href = tag.type === 'group' ? `/groups/${tag.id}` 
+                : tag.type === 'social' ? `/social?id=${tag.id}` 
+                : tag.type === 'event' ? `/events?id=${tag.id}` 
+                : `/groups/${tag.groupId}?class=${tag.id}`;
+              const TagIcon = tag.type === 'group' ? Building2 
+                : tag.type === 'social' ? Music 
+                : tag.type === 'event' ? Calendar 
+                : GraduationCap;
+              return (
+                <Link 
+                  key={`${tag.type}-${tag.id}`} 
+                  href={href} 
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/30 backdrop-blur-md text-xs font-semibold border border-white/20 hover:bg-black/50 transition-colors" 
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <TagIcon size={12} className="text-white/80" />
+                  <span className="text-white drop-shadow-sm">{tag.name}</span>
+                  {tag.instructors && <span className="opacity-70 text-[10px] ml-0.5 border-l border-white/20 pl-1">{tag.instructors}</span>}
+                </Link>
+              );
+            })
+          ) : (
+            /* Legacy fallback for posts without tags[] */
+            <>
+              {post.venueName && (
+                <Link href={`/venues?id=${post.venueId}`} className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/30 backdrop-blur-md text-xs font-semibold border border-white/20" onClick={(e) => e.stopPropagation()}>
+                  <Building2 size={12} className="text-white/80" />
+                  <span className="text-white drop-shadow-sm">{post.venueName}</span>
+                </Link>
+              )}
+              {post.eventName && (
+                <Link href={`/events?id=${post.eventId}`} className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/30 backdrop-blur-md text-xs font-semibold border border-white/20" onClick={(e) => e.stopPropagation()}>
+                  <Calendar size={12} className="text-white/80" />
+                  <span className="text-white drop-shadow-sm">{post.eventName}</span>
+                </Link>
+              )}
+            </>
           )}
-          {post.eventName && (
-            <Link href={`/events?id=${post.eventId}`} className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-xs font-semibold border border-white/10" onClick={(e) => e.stopPropagation()}>
-              <Calendar size={12} />
-              <span>{post.eventName}</span>
-            </Link>
+          {/* People tags */}
+          {post.tags && post.tags.filter((t: GalleryTag) => t.type === 'people').length > 0 && (
+            <div className="flex items-center -space-x-1.5 ml-1">
+              {post.tags.filter((t: GalleryTag) => t.type === 'people').map((t: GalleryTag) => (
+                <div key={t.id} className="relative group/person cursor-pointer" title={t.name}>
+                  {t.avatar 
+                    ? <img src={t.avatar} alt={t.name} className="w-6 h-6 rounded-full border border-white/50 object-cover shadow-sm" />
+                    : <div className="w-6 h-6 rounded-full border border-white/50 bg-black/40 backdrop-blur-sm flex items-center justify-center text-[10px] font-bold text-white shadow-sm">{t.name.charAt(0)}</div>
+                  }
+                  {/* Role Badge (if any) */}
+                  {t.role === 'organizer' && <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-purple-500 rounded-full border border-black/50 flex items-center justify-center text-[7px] font-bold text-white">O</div>}
+                  {t.role === 'instructor' && <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-blue-500 rounded-full border border-black/50 flex items-center justify-center text-[7px] font-bold text-white">I</div>}
+                </div>
+              ))}
+            </div>
           )}
         </div>
         
-        <p className="text-sm font-medium leading-snug line-clamp-3 drop-shadow-md">
+        <p className="text-sm font-medium leading-snug line-clamp-3 drop-shadow-md whitespace-pre-wrap">
           {post.caption}
         </p>
       </div>
