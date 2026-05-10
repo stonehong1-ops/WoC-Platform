@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 /**
  * InAppBrowserGuard
@@ -9,6 +10,7 @@ import React, { useState, useEffect } from 'react';
  * - All other browsers: render nothing
  */
 export default function InAppBrowserGuard() {
+  const { t } = useLanguage();
   const [showIOSGuide, setShowIOSGuide] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -57,7 +59,7 @@ export default function InAppBrowserGuard() {
       await navigator.clipboard.writeText(url);
       setCopied(true);
     } catch {
-      window.prompt('Copy this URL and open in Safari:', url);
+      window.prompt(t('guard.prompt_copy', 'Copy this URL and open in Safari:'), url);
     }
     
     // Attempt Safari open via universal link trick
@@ -100,13 +102,13 @@ export default function InAppBrowserGuard() {
 
         {/* Title */}
         <h2 className="font-['Plus_Jakarta_Sans'] text-xl font-semibold text-on-surface mb-1">
-          Open in Browser
+          {t('guard.title', 'Open in Browser')}
         </h2>
         <p className="font-['Inter'] text-sm leading-relaxed text-secondary mb-6">
-          For the best experience, open this page in your default browser.
+          {t('guard.desc_en', 'For the best experience, open this page in your default browser.')}
           <br />
           <span className="text-xs text-on-surface-variant">
-            외부 브라우저에서 열면 더 안정적으로 이용할 수 있습니다.
+            {t('guard.desc_kr', '외부 브라우저에서 열면 더 안정적으로 이용할 수 있습니다.')}
           </span>
         </p>
 
@@ -118,7 +120,7 @@ export default function InAppBrowserGuard() {
             className="w-full bg-primary text-on-primary font-['Inter'] text-sm font-semibold py-3 px-6 rounded-lg hover:bg-surface-tint transition-colors shadow-sm flex items-center justify-center gap-2"
           >
             <span className="material-symbols-outlined text-lg">ios_share</span>
-            <span>{copied ? 'URL Copied! Paste in Browser' : 'Open in Browser'}</span>
+            <span>{copied ? t('guard.url_copied', 'URL Copied! Paste in Browser') : t('guard.open_btn', 'Open in Browser')}</span>
           </button>
 
           {/* Secondary: Continue in-app */}
@@ -126,7 +128,7 @@ export default function InAppBrowserGuard() {
             onClick={handleContinue}
             className="w-full text-secondary font-['Inter'] text-sm font-semibold py-2 px-4 hover:text-on-surface transition-colors"
           >
-            Continue anyway
+            {t('guard.continue_btn', 'Continue anyway')}
           </button>
         </div>
       </div>

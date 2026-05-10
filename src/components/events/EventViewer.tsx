@@ -11,6 +11,7 @@ import UniversalFeed from "@/components/feed/UniversalFeed";
 import EventHomeTab from "./EventHomeTab";
 import EventProgramTab from "./EventProgramTab";
 import EventRegisterTab from "./EventRegisterTab";
+import LiveFeed from "@/components/live/LiveFeed";
 import EditEvent from "./EditEvent";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useNavigation } from "@/components/providers/NavigationProvider";
@@ -20,7 +21,7 @@ interface EventViewerProps {
   onClose: () => void;
 }
 
-type TabId = "home" | "program" | "register";
+type TabId = "home" | "program" | "feed" | "live" | "register";
 
 const ADMIN_UIDS = ["7iaZAmaYY9dNNEShmJmROI8XrtH2"];
 
@@ -129,6 +130,8 @@ export default function EventViewer({ event: initialEvent, onClose }: EventViewe
   const TABS: { id: TabId; label: string; icon: string }[] = [
     { id: "home", label: t('event.tab_home'), icon: "home" },
     { id: "program", label: t('event.tab_program'), icon: "calendar_month" },
+    { id: "feed", label: t('event.tab_feed'), icon: "rss_feed" },
+    { id: "live", label: t('event.tab_live'), icon: "live_tv" },
     { id: "register", label: t('event.tab_register'), icon: "how_to_reg" },
   ];
 
@@ -227,6 +230,23 @@ export default function EventViewer({ event: initialEvent, onClose }: EventViewe
         {/* Tab Content */}
         {activeTab === "home" && <EventHomeTab event={event} onChatWithHost={handleChatWithHost} canEdit={!!canEdit} />}
         {activeTab === "program" && <EventProgramTab event={event} />}
+        {activeTab === "feed" && (
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <UniversalFeed 
+              context={{ scope: 'event', scopeId: event.id, tag: event.tag }} 
+              currentUser={user} 
+              profile={profile} 
+            />
+          </div>
+        )}
+        {activeTab === "live" && (
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <LiveFeed 
+              entityType="event" 
+              entityId={event.id} 
+            />
+          </div>
+        )}
         {activeTab === "register" && <EventRegisterTab event={event} />}
       </div>
 

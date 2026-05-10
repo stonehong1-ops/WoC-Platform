@@ -191,6 +191,7 @@ export default function NavigationDrawer() {
             <div className="space-y-0.5">
               {[
                 { icon: 'history', label: t('nav.history'), href: '/history' },
+                { icon: 'cinematic_blur', label: t('nav.live'), href: '/live?view=my' },
                 { icon: 'account_balance_wallet', label: t('nav.wallet'), href: '/wallet' },
                 { icon: 'manage_accounts', label: t('nav.my_info'), href: '/profile' },
                 ...(profile?.isAdmin ? [

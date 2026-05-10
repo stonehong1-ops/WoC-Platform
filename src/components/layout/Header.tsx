@@ -82,7 +82,7 @@ export default function Header() {
   const totalNotiCount = notiUnreadCount + todoCount;
 
   return (
-    <header className="fixed top-0 w-full z-50 bg-[#FAF8FF]/80 backdrop-blur-md border-b border-slate-100 h-16 px-3 flex items-center justify-between">
+    <header className="fixed top-0 w-full z-50 bg-[#FAF8FF] border-b border-slate-100 h-16 px-3 flex items-center justify-between">
       <div className="flex items-center gap-3 shrink-0">
         {/* Hamburger Menu - Re-attached link via toggleDrawer */}
         <button 

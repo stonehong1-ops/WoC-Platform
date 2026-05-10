@@ -18,6 +18,8 @@ export default function PeopleDetailPage() {
   const [person, setPerson] = useState<Person | null>(null);
   const [loading, setLoading] = useState(true);
   const [showMenu, setShowMenu] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [showTodo, setShowTodo] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Fullscreen: hide global nav
@@ -33,6 +35,15 @@ export default function PeopleDetailPage() {
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  // Handle scroll for header transition
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 80);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   useEffect(() => {
@@ -79,19 +90,30 @@ export default function PeopleDetailPage() {
       `}} />
 
       {/* Floating Header */}
-      <header className="fixed top-0 w-full z-50 transition-all duration-300 max-w-[480px]">
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 to-transparent h-24" />
-        <div className="relative flex justify-between items-center px-6 py-4">
+      <header className={`fixed top-0 w-full z-50 transition-all duration-300 max-w-[480px] ${
+        scrolled ? 'bg-white shadow-md py-2' : 'bg-transparent py-4'
+      }`}>
+        {!scrolled && <div className="absolute inset-0 bg-gradient-to-b from-black/60 to-transparent h-24" />}
+        <div className="relative flex justify-between items-center px-6">
           <button onClick={() => router.back()}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 backdrop-blur-md text-white active:scale-90 transition-transform">
+            className={`w-10 h-10 flex items-center justify-center rounded-full transition-all ${
+              scrolled ? 'text-[#2d3435] hover:bg-slate-100' : 'bg-white/10 backdrop-blur-md text-white active:scale-90'
+            }`}>
             <span className="material-symbols-outlined">arrow_back</span>
           </button>
-          <div className="flex flex-col items-center">
-            <span className="text-[16px] font-bold text-white tracking-widest uppercase">{person.name}</span>
-            <span className="text-[10px] text-white/70 tracking-tighter">{person.title || person.roles.join(' • ')}</span>
+          
+          <div className={`flex flex-col items-center transition-all duration-300 ${
+            scrolled ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'
+          }`}>
+            <span className="text-[15px] font-bold text-[#2d3435] tracking-tight">{person.name}</span>
+            <span className="text-[10px] text-[#596061] font-medium">{person.title || person.roles[0]}</span>
           </div>
+
           <div className="relative" ref={menuRef}>
-            <button onClick={() => setShowMenu(!showMenu)} className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 backdrop-blur-md text-white active:scale-90 transition-transform">
+            <button onClick={() => setShowMenu(!showMenu)} 
+              className={`w-10 h-10 flex items-center justify-center rounded-full transition-all ${
+                scrolled ? 'text-[#2d3435] hover:bg-slate-100' : 'bg-white/10 backdrop-blur-md text-white active:scale-90'
+              }`}>
               <span className="material-symbols-outlined">more_vert</span>
             </button>
             {showMenu && (
@@ -376,11 +398,40 @@ export default function PeopleDetailPage() {
         </div>
       </footer>
 
-      {/* Book FAB */}
-      <button className="fixed bottom-6 right-6 h-14 px-6 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center gap-2 active:scale-90 transition-transform z-[60]">
-        <span className="material-symbols-outlined">calendar_add_on</span>
-        <span className="text-[13px] font-semibold">Book Session</span>
+      {/* Request FAB */}
+      <button 
+        onClick={() => setShowTodo(true)}
+        className="fixed bottom-6 right-6 h-14 px-6 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center gap-2 active:scale-90 transition-transform z-[60]">
+        <span className="material-symbols-outlined">send</span>
+        <span className="text-[13px] font-semibold">Request for Tour/Private Lesson</span>
       </button>
+
+      {/* Todo Modal */}
+      {showTodo && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center px-6">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowTodo(false)} />
+          <div className="relative w-full max-w-sm bg-white rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="pt-10 pb-8 px-6 text-center">
+              <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                <span className="text-3xl animate-bounce">🏗️</span>
+              </div>
+              <h3 className="text-xl font-bold text-[#2d3435] mb-2">Coming Soon</h3>
+              <p className="text-sm text-[#596061] leading-relaxed mb-8">
+                The <span className="font-bold text-primary">Booking & Request</span> system is currently under architecture definition.<br/>Stay tuned for updates!
+              </p>
+              <button 
+                onClick={() => setShowTodo(false)}
+                className="w-full py-4 bg-[#f8f9fa] text-[#2d3435] font-bold rounded-2xl hover:bg-slate-100 transition-colors">
+                Got it
+              </button>
+            </div>
+            <div className="bg-[#f8f9fa] py-3 px-6 flex justify-between items-center border-t border-slate-100">
+              <span className="text-[10px] font-bold text-primary uppercase tracking-widest">Status: Defined</span>
+              <span className="text-[10px] text-slate-400 font-mono">REF: WOC_PEOPLE_REQ</span>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

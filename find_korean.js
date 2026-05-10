@@ -1,5 +1,5 @@
 const fs = require('fs');
-const glob = require('glob'); // we might not have glob, better use recursion
+// glob removed
 
 function findKoreanInFiles(dir, filelist = []) {
   const files = fs.readdirSync(dir);
@@ -14,7 +14,7 @@ function findKoreanInFiles(dir, filelist = []) {
   return filelist;
 }
 
-const allFiles = findKoreanInFiles('c:/Users/stone/WoC/src/components');
+const allFiles = findKoreanInFiles('c:/Users/stone/WoC/src');
 const koreanRegex = /[\uac00-\ud7a3]/;
 
 const filesWithKoreanUI = [];
@@ -38,4 +38,15 @@ allFiles.forEach(f => {
 });
 
 console.log('Files with UI Korean: ' + filesWithKoreanUI.length);
-filesWithKoreanUI.forEach(f => console.log(f.replace('c:/Users/stone/WoC/src/components/', '')));
+filesWithKoreanUI.forEach(f => {
+  console.log('--- ' + f.replace('c:/Users/stone/WoC/src/', '') + ' ---');
+  const lines = fs.readFileSync(f, 'utf8').split('\n');
+  lines.forEach((line, i) => {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith('//') && !trimmed.startsWith('/*') && !trimmed.startsWith('*') && !trimmed.startsWith('<!--') && !trimmed.startsWith('console.log')) {
+      if (koreanRegex.test(trimmed)) {
+        console.log(`  Line ${i+1}: ${trimmed}`);
+      }
+    }
+  });
+});

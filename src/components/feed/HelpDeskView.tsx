@@ -28,7 +28,7 @@ export default function HelpDeskView() {
     <div className="fixed inset-0 z-[60] bg-white flex flex-col overflow-hidden">
       {/* Header */}
       <header className="h-16 flex items-center px-4 border-b border-slate-100 shrink-0">
-        <button 
+        <button
           onClick={() => router.back()}
           className="w-10 h-10 flex items-center justify-center hover:bg-slate-50 rounded-full transition-colors mr-2"
         >
@@ -49,21 +49,13 @@ export default function HelpDeskView() {
         <div className="max-w-[600px] mx-auto min-h-full bg-white shadow-sm border-x border-slate-100 pb-20">
           {/* Welcome Card */}
           <div className="p-6 bg-gradient-to-br from-primary/5 to-tertiary/5 border-b border-slate-100">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
-                <span className="material-symbols-outlined text-white text-[28px]">support_agent</span>
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-on-surface">{t('help_desk.title')}</h2>
-                <p className="text-sm text-on-surface-variant">{t('help_desk.desc')}</p>
-              </div>
-            </div>
-            <div className="bg-white/60 backdrop-blur-sm p-4 rounded-xl border border-white text-sm text-on-surface-variant leading-relaxed italic">
-              "We're here to help you navigate World of Community. Ask your questions anonymously, and our AI or Support Team will assist you shortly."
+            <div className="bg-white/60 backdrop-blur-sm p-4 rounded-xl border border-white text-sm text-on-surface-variant leading-relaxed italic flex items-start gap-3">
+              <span className="material-symbols-outlined text-primary text-[20px] mt-0.5 shrink-0">support_agent</span>
+              <span>{t('help_desk.welcome')}</span>
             </div>
           </div>
 
-          <UniversalFeed 
+          <UniversalFeed
             context={context}
             currentUser={user}
             profile={profile}

@@ -14,14 +14,6 @@ export default function SWRegister() {
         .catch((error) => {
           console.error('Service Worker registration failed:', error);
         });
-
-      let refreshing = false;
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (!refreshing) {
-          refreshing = true;
-          window.location.reload();
-        }
-      });
     }
   }, []);
 

@@ -40,6 +40,7 @@ const NAV_STRUCTURE = {
   ],
   My: [
     { name: "nav.history", icon: "history", path: "/history" },
+    { name: "nav.live", icon: "cinematic_blur", path: "/live?view=my" },
     { name: "nav.wallet", icon: "account_balance_wallet", path: "/wallet" },
     { name: "nav.my_info", icon: "person", path: "/profile" },
   ],
@@ -58,7 +59,14 @@ const BOTTOM_TABS = [
 export default function GlobalNavigation({ children }: { children: React.ReactNode }) {
   const { language, toggleLanguage, t } = useLanguage();
   const pathname = usePathname();
+  const [isMyView, setIsMyView] = useState(false);
   const { user, profile } = useAuth();
+
+  useEffect(() => {
+    // Detect view mode from URL search params on client side
+    const params = new URLSearchParams(window.location.search);
+    setIsMyView(params.get('view') === 'my');
+  }, [pathname]); // Re-check when navigation occurs
   const { isHeaderShrink, subHeader, setSubHeader, subHeaderHeight, isHeaderVisible, setIsHeaderVisible, isGlobalNavHidden } = useNavigation();
   const { location, setIsSelectorOpen } = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
@@ -166,11 +174,11 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
   let activeTab = "World";
   if (pathname.startsWith("/shop") || pathname.startsWith("/resale") || pathname.startsWith("/rental") || pathname.startsWith("/stay") || pathname.startsWith("/class")) {
     activeTab = "Market";
-  } else if (pathname.startsWith("/social") || pathname.startsWith("/events") || pathname.startsWith("/live") || pathname.startsWith("/lost") || pathname.startsWith("/hub")) {
+  } else if (pathname.startsWith("/social") || pathname.startsWith("/events") || pathname.startsWith("/lost") || pathname.startsWith("/hub") || (pathname.startsWith("/live") && !isMyView)) {
     activeTab = "Now";
   } else if (pathname.startsWith("/groups")) {
     activeTab = "Groups";
-  } else if (pathname.startsWith("/my") || pathname.startsWith("/wallet") || pathname.startsWith("/history") || pathname.startsWith("/profile")) {
+  } else if (pathname.startsWith("/my") || pathname.startsWith("/wallet") || pathname.startsWith("/history") || pathname.startsWith("/profile") || (pathname.startsWith("/live") && isMyView)) {
     activeTab = "My";
   } else if (pathname.startsWith("/admin")) {
     activeTab = "My";

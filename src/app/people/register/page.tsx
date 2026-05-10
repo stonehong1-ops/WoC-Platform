@@ -6,6 +6,7 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { peopleService } from '@/lib/firebase/peopleService';
 import { Person, PersonRole, ActivityEntry, TourStop } from '@/types/people';
 import { storageService } from '@/lib/firebase/storageService';
+import { useNavigation } from '@/components/providers/NavigationProvider';
 
 const ROLE_OPTIONS: PersonRole[] = ['Instructor', 'Organizer', 'Couple', 'Touring', 'Dancer'];
 
@@ -14,6 +15,12 @@ function RegisterPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const editId = searchParams.get('edit');
+  const { setGlobalNavHidden } = useNavigation();
+
+  useEffect(() => {
+    setGlobalNavHidden(true);
+    return () => setGlobalNavHidden(false);
+  }, [setGlobalNavHidden]);
 
   // Basic
   const [name, setName] = useState('');

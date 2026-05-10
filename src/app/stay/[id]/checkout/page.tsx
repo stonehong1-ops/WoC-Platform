@@ -3,6 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { stayService } from '@/lib/firebase/stayService';
 import { stayBookingService } from '@/lib/firebase/stayBookingService';
 import { chatService } from '@/lib/firebase/chatService';
@@ -21,6 +22,7 @@ function CheckoutContent() {
   const searchParams = useSearchParams();
   const stayId = params.id as string;
   const { user, profile } = useAuth();
+  const { t } = useLanguage();
   
   const [stay, setStay] = useState<Stay | null>(null);
   const [group, setGroup] = useState<Group | null>(null);
@@ -109,7 +111,7 @@ function CheckoutContent() {
       <div className="bg-surface font-sans text-on-surface min-h-[max(884px,100dvh)] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4 text-on-surface-variant">
           <span className="material-symbols-outlined text-5xl opacity-30">bed</span>
-          <p className="font-body-md">스테이를 찾을 수 없습니다.</p>
+          <p className="font-body-md">{t('stay.not_found', '스테이를 찾을 수 없습니다.')}</p>
         </div>
       </div>
     );
@@ -153,11 +155,11 @@ function CheckoutContent() {
 
   const handleSubmit = async () => {
     if (!user) {
-      alert("로그인이 필요합니다.");
+      alert(t('auth.login_required', '로그인이 필요합니다.'));
       return;
     }
     if (!applicantName || !phoneNumber || !depositorName) {
-      alert("신청자 성함, 연락처, 입금자명을 모두 입력해주세요.");
+      alert(t('checkout.missing_fields', '신청자 성함, 연락처, 입금자명을 모두 입력해주세요.'));
       return;
     }
 
@@ -166,7 +168,7 @@ function CheckoutContent() {
     const currentAccountHolder = accountHolder;
 
     if (!currentAccountNumber) {
-      alert("결제 계좌 정보가 설정되지 않았습니다. 호스트에게 문의해주세요.");
+      alert(t('checkout.no_payment_info', '결제 계좌 정보가 설정되지 않았습니다. 호스트에게 문의해주세요.'));
       return;
     }
 
@@ -221,7 +223,12 @@ function CheckoutContent() {
         }
         
         if (formattedPhone.startsWith('0') && formattedPhone.length >= 10) {
-          const smsContent = `[WoC] 예약이 접수되었습니다.\n숙소: ${stay.title}\n일정: ${formatDate(checkIn)} - ${formatDate(checkOut)}\n예약자: ${applicantName}\n금액: ${grandTotal.toLocaleString()}원\n\n호스트의 확인 후 최종 확정됩니다.`;
+          const smsContent = t('checkout.sms_content', '[WoC] 예약이 접수되었습니다.\n숙소: {title}\n일정: {checkIn} - {checkOut}\n예약자: {name}\n금액: {amount}원\n\n호스트의 확인 후 최종 확정됩니다.')
+            .replace('{title}', stay.title)
+            .replace('{checkIn}', formatDate(checkIn))
+            .replace('{checkOut}', formatDate(checkOut))
+            .replace('{name}', applicantName)
+            .replace('{amount}', grandTotal.toLocaleString());
           const smsResult = await sendSmsViaSolapi(
             formattedPhone,
             smsContent
@@ -269,7 +276,7 @@ function CheckoutContent() {
       router.push(`/stay/${stayId}/checkout/complete?bookingId=${booking.id}`);
     } catch (error: any) {
       console.error(error);
-      alert("예약 신청에 실패했습니다. " + (error.message || ''));
+      alert(t('checkout.submit_failed', '예약 신청에 실패했습니다. ') + (error.message || ''));
       setIsSubmitting(false);
     }
   };
@@ -445,7 +452,7 @@ function CheckoutContent() {
                   onClick={() => {
                     if (accountNumber) {
                       navigator.clipboard.writeText(accountNumber);
-                      alert("Account number copied!");
+                      alert(t('checkout.account_copied', '계좌번호가 복사되었습니다!'));
                     }
                   }}
                   className="w-10 h-10 rounded-full bg-[#0057bd] text-white flex items-center justify-center transition-all active:scale-90 shadow-md shadow-[#0057bd]/20"

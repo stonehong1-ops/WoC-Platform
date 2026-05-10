@@ -12,7 +12,7 @@ import {
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase/clientApp';
 import { useAuth } from '@/components/providers/AuthProvider';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { COUNTRY_CODES } from '@/lib/constants/countryCodes';
 
@@ -36,6 +36,7 @@ export default function AuthModal() {
   const [verificationCode, setVerificationCode] = useState('');
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
   const router = useRouter();
+  const currentPathname = usePathname();
 
   const [details, setDetails] = useState({
     nickname: '',
@@ -84,12 +85,18 @@ export default function AuthModal() {
       const lastContext = localStorage.getItem('woc_context');
       if (lastContext) {
         localStorage.removeItem('woc_context');
-        router.push(lastContext);
+        // Skip push if already on the target page to prevent flicker
+        if (currentPathname !== lastContext) {
+          router.push(lastContext);
+        }
       } else {
-        router.push('/social');
+        // Skip push if already on /social to prevent flicker
+        if (currentPathname !== '/social') {
+          router.push('/social');
+        }
       }
     }
-  }, [user, profile, showLogin, setShowLogin, router]);
+  }, [user, profile, showLogin, setShowLogin, router, currentPathname]);
 
   if (!showLogin) return null;
 
@@ -509,7 +516,7 @@ export default function AuthModal() {
                   value={details.nativeNickname}
                   onChange={(e) => setDetails({...details, nativeNickname: e.target.value})}
                   className="w-full h-14 px-4 bg-gray-50 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all" 
-                  placeholder="스칼렛"
+                  placeholder={t('auth.native_nickname_placeholder', '스칼렛')}
                   type="text"
                 />
               </div>

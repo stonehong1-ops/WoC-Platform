@@ -37,6 +37,7 @@ export interface GalleryPost {
   mediaTypes?: ('image' | 'video')[];
   caption: string;
   tags?: GalleryTag[];    // Unified TAG system
+  showInLive?: boolean;   // true(default) = show in Live feed, false = tagged entity only
   // Legacy fields (backward compat)
   venueId?: string;
   venueName?: string;
@@ -78,18 +79,43 @@ export const galleryService = {
   },
 
   // 2. Subscribe to Feed
-  subscribeFeed(callback: (posts: GalleryPost[]) => void) {
+  subscribeFeed(callback: (posts: GalleryPost[]) => void, options?: { entityType?: string; entityId?: string; userId?: string }) {
     const q = query(
       collection(db, GALLERY_COLLECTION),
       orderBy('createdAt', 'desc'),
-      limit(50)
+      limit(100) // Increase limit slightly to ensure enough posts after client-side filtering
     );
 
     return onSnapshot(q, (snapshot) => {
-      const posts = snapshot.docs.map(doc => ({
+      let posts = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as GalleryPost[];
+
+      if (options?.userId) {
+        posts = posts.filter(post => {
+          const isAuthor = post.authorId === options.userId;
+          const isTagged = post.tags?.some(tag => tag.type === 'people' && tag.id === options.userId);
+          return isAuthor || isTagged;
+        });
+      }
+
+      if (options?.entityType) {
+        posts = posts.filter(post => {
+          // Check if the post's tags array contains the specified entity
+          if (post.tags && post.tags.length > 0) {
+            return post.tags.some(tag => tag.type === options.entityType && (!options.entityId || tag.id === options.entityId));
+          }
+          // Legacy check for venues and events
+          if (options.entityType === 'venue' && (!options.entityId || post.venueId === options.entityId)) return true;
+          if (options.entityType === 'event' && (!options.entityId || post.eventId === options.entityId)) return true;
+          return false;
+        });
+      } else {
+        // Main Live feed: exclude posts where showInLive is explicitly false
+        posts = posts.filter(post => post.showInLive !== false);
+      }
+
       callback(posts);
     });
   },

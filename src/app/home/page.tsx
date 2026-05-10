@@ -9,6 +9,8 @@ import { eventService } from '@/lib/firebase/eventService';
 import { galleryService, GalleryPost } from '@/lib/firebase/galleryService';
 import { plazaService, Post as PlazaPost } from '@/lib/firebase/plazaService';
 import { userService } from '@/lib/firebase/userService';
+import { db } from '@/lib/firebase/clientApp';
+import { doc, getDoc } from 'firebase/firestore';
 import { Event as EventType } from '@/types/event';
 import { PlatformUser } from '@/types/user';
 import { format } from 'date-fns';
@@ -27,8 +29,10 @@ export default function SocietyPage() {
   const [isAcrossWorldOpen, setIsAcrossWorldOpen] = useState(false);
   const [isFeelMomentOpen, setIsFeelMomentOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [translatedPostIds, setTranslatedPostIds] = useState<Set<string>>(new Set());
+  const [translations, setTranslations] = useState<Record<string, string>>({});
+  const [translatingIds, setTranslatingIds] = useState<Set<string>>(new Set());
   const [isSafeFloorOpen, setIsSafeFloorOpen] = useState(false);
+  const [comingSoonCard, setComingSoonCard] = useState<{title: string; icon: string; desc: string} | null>(null);
 
   const [societyId, setSocietyId] = useState('tango');
   
@@ -55,13 +59,30 @@ export default function SocietyPage() {
     return () => unsub();
   }, []);
 
-  // Fetch popular plaza posts for "Stories from Seoul"
+  // Fetch admin-selected featured plaza posts for "Stories from Seoul"
   useEffect(() => {
-    const unsub = plazaService.subscribePosts((posts) => {
-      const sorted = [...posts].sort((a, b) => (b.likes || 0) - (a.likes || 0));
-      setTopPlazaPosts(sorted.slice(0, 2));
-    });
-    return () => unsub();
+    async function fetchFeaturedPosts() {
+      try {
+        const bannerDoc = await getDoc(doc(db, 'settings', 'banners'));
+        if (bannerDoc.exists() && bannerDoc.data().featuredPlazaPostIds) {
+          const ids = bannerDoc.data().featuredPlazaPostIds as string[];
+          if (ids.length > 0) {
+            const posts = await plazaService.getPostsByIds(ids);
+            setTopPlazaPosts(posts);
+            return;
+          }
+        }
+        // Fallback: if no admin selection, use top liked posts
+        const unsub = plazaService.subscribePosts((posts) => {
+          const sorted = [...posts].sort((a, b) => (b.likes || 0) - (a.likes || 0));
+          setTopPlazaPosts(sorted.slice(0, 2));
+        });
+        return () => unsub();
+      } catch (error) {
+        console.error('Error fetching featured posts:', error);
+      }
+    }
+    fetchFeaturedPosts();
   }, []);
 
   // Fetch featured users (instructors)
@@ -273,37 +294,53 @@ export default function SocietyPage() {
                       </div>
                     </div>
                     <button 
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-[12px] border border-outline-variant/60 bg-primary/5 hover:bg-primary/10 transition-colors" 
-                      onClick={(e) => { 
+                      className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-primary/10 transition-colors" 
+                      title={translations[post.id] ? 'Show Original' : 'Translate'}
+                      onClick={async (e) => { 
                         e.stopPropagation(); 
-                        setTranslatedPostIds(prev => {
-                          const newIds = new Set(prev);
-                          if (newIds.has(post.id)) newIds.delete(post.id);
-                          else newIds.add(post.id);
-                          return newIds;
-                        });
+                        if (translations[post.id]) {
+                          const newTrans = { ...translations };
+                          delete newTrans[post.id];
+                          setTranslations(newTrans);
+                          return;
+                        }
+                        setTranslatingIds(prev => new Set(prev).add(post.id));
+                        try {
+                          const targetLang = language === 'KR' ? 'en' : 'ko';
+                          const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(post.content)}`);
+                          const data = await res.json();
+                          const translatedText = data[0].map((item: any) => item[0]).join('');
+                          setTranslations(prev => ({ ...prev, [post.id]: translatedText }));
+                        } catch (err) {
+                          console.error('Translation failed', err);
+                        } finally {
+                          setTranslatingIds(prev => {
+                            const next = new Set(prev);
+                            next.delete(post.id);
+                            return next;
+                          });
+                        }
                       }}
                     >
-                      <span className="material-symbols-outlined text-[18px] text-primary">translate</span>
-                      <div className="flex flex-col items-start leading-none gap-0.5">
-                        <span className="text-primary text-[11px] font-semibold">
-                          {translatedPostIds.has(post.id) ? t('home.show_original_1', 'Show') : t('home.see_translation_1', 'See')}
-                        </span>
-                        <span className="text-primary text-[11px] font-semibold">
-                          {translatedPostIds.has(post.id) ? t('home.show_original_2', 'Original') : t('home.see_translation_2', 'Translation')}
-                        </span>
-                      </div>
+                      <span className={`material-symbols-outlined text-[20px] ${translations[post.id] ? 'text-primary' : 'text-outline'} ${translatingIds.has(post.id) ? 'animate-spin' : ''}`}
+                        style={{ fontVariationSettings: translations[post.id] ? "'FILL' 1" : "'FILL' 0" }}
+                      >language</span>
                     </button>
                   </div>
                   
                   {/* Content */}
                   <p className="font-body-md text-on-surface leading-[1.6] mb-5">
-                    {translatedPostIds.has(post.id) ? (
-                      (post as any).translatedContent || post.content
-                    ) : (
-                      post.content
-                    )}
+                    {translations[post.id] || post.content}
                   </p>
+                  {translations[post.id] && (
+                    <p className="text-outline font-label-sm text-label-sm mb-3 flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[14px]">g_translate</span>
+                      Translated
+                    </p>
+                  )}
+                  {translatingIds.has(post.id) && (
+                    <p className="text-outline font-label-sm text-label-sm mb-3 animate-pulse">Translating...</p>
+                  )}
                   
                   {post.images && post.images.length > 0 && (
                     <div className="mb-5 flex gap-2 overflow-hidden rounded-lg">
@@ -433,7 +470,7 @@ export default function SocietyPage() {
               </div>
               
               {/* Card 2: Tango Music 365 */}
-              <div className="relative h-[450px] rounded-xl overflow-hidden group cursor-pointer border border-outline/5 shadow-sm">
+              <div className="relative h-[450px] rounded-xl overflow-hidden group cursor-pointer border border-outline/5 shadow-sm" onClick={() => setComingSoonCard({ title: t('home.tango_music'), icon: 'music_note', desc: t('home.tango_music_desc') })}>
                 <span className="absolute top-4 left-4 z-10 bg-white/20 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded tracking-widest">MUSIC</span>
                 <img alt="Tango Music 365" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="/camus.jpg"/>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6">
@@ -445,7 +482,7 @@ export default function SocietyPage() {
               </div>
 
               {/* Card 3: The History of Tango */}
-              <div className="relative h-[450px] rounded-xl overflow-hidden group cursor-pointer border border-outline/5 shadow-sm">
+              <div className="relative h-[450px] rounded-xl overflow-hidden group cursor-pointer border border-outline/5 shadow-sm" onClick={() => setComingSoonCard({ title: t('home.tango_history'), icon: 'history_edu', desc: t('home.tango_history_desc') })}>
                 <span className="absolute top-4 left-4 z-10 bg-white/20 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded tracking-widest">HISTORY</span>
                 <img alt="The History of Tango" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="/ddakji.jpg"/>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6">
@@ -457,7 +494,7 @@ export default function SocietyPage() {
               </div>
 
               {/* Card 4: Tango Novel */}
-              <div className="relative h-[450px] rounded-xl overflow-hidden group cursor-pointer border border-outline/5 shadow-sm">
+              <div className="relative h-[450px] rounded-xl overflow-hidden group cursor-pointer border border-outline/5 shadow-sm" onClick={() => setComingSoonCard({ title: t('home.tango_novel'), icon: 'auto_stories', desc: t('home.tango_novel_desc') })}>
                 <span className="absolute top-4 left-4 z-10 bg-white/20 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded tracking-widest">STORY</span>
                 <img alt="Tango Novel" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="/aaa.jpg"/>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6">
@@ -469,7 +506,7 @@ export default function SocietyPage() {
               </div>
 
               {/* Card 5: Tango Travel by Beto */}
-              <div className="relative h-[450px] rounded-xl overflow-hidden group cursor-pointer border border-outline/5 shadow-sm">
+              <div className="relative h-[450px] rounded-xl overflow-hidden group cursor-pointer border border-outline/5 shadow-sm" onClick={() => setComingSoonCard({ title: t('home.tango_travel'), icon: 'explore', desc: t('home.tango_travel_desc') })}>
                 <span className="absolute top-4 left-4 z-10 bg-white/20 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded tracking-widest">TRAVEL</span>
                 <img alt="Tango Travel" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="/beto.jpg"/>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6">
@@ -534,14 +571,16 @@ export default function SocietyPage() {
           </section>
         </main>
 
-        {/* Footer */}
+        {/* Footer — 번역 미대상 영역 */}
         <footer className="bg-background border-t border-outline/15 py-section_gap">
           <div className="max-w-7xl mx-auto px-page_margin flex flex-col md:flex-row justify-between items-center gap-element_gap">
             <div className="font-headline-md text-headline-md font-extrabold text-on-background">Global Tango Society</div>
             <nav className="flex flex-wrap justify-center gap-6">
-              <a className="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md" href="#">{t('home.footer_rights')}</a>
+              <a className="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md" href="#">About</a>
+              <a className="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md" href="#">Terms</a>
+              <a className="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md" href="#">Privacy</a>
             </nav>
-            <div className="text-on-surface-variant font-label-sm text-label-sm">{t('home.footer_rights')}</div>
+            <div className="text-on-surface-variant font-label-sm text-label-sm">©2026 World of Community. All rights reserved.</div>
           </div>
         </footer>
       </div>
@@ -711,6 +750,42 @@ export default function SocietyPage() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Coming Soon Fullscreen */}
+      {comingSoonCard && (
+        <div className="fixed inset-0 z-[100] bg-black/95 flex flex-col items-center justify-center animate-in fade-in duration-300">
+          <button 
+            onClick={() => setComingSoonCard(null)}
+            className="absolute top-6 right-6 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-all z-10"
+          >
+            <span className="material-symbols-outlined text-[24px]">close</span>
+          </button>
+
+          <div className="flex flex-col items-center text-center px-8 max-w-md animate-in zoom-in-95 duration-500">
+            <div className="w-24 h-24 rounded-[28px] bg-white/10 backdrop-blur-xl flex items-center justify-center mb-8 ring-1 ring-white/10">
+              <span className="material-symbols-outlined text-white/80 text-[48px]">{comingSoonCard.icon}</span>
+            </div>
+            <h2 className="text-3xl font-black text-white mb-3 font-headline tracking-tight">{comingSoonCard.title}</h2>
+            <p className="text-white/60 text-base leading-relaxed mb-10">{comingSoonCard.desc}</p>
+            
+            <div className="flex items-center gap-3 mb-12">
+              <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></div>
+              <span className="text-amber-400 text-sm font-bold uppercase tracking-[0.2em]">Coming Soon</span>
+            </div>
+
+            <p className="text-white/40 text-sm leading-relaxed max-w-xs">
+              We&apos;re working hard to bring this content to you. Stay tuned for updates!
+            </p>
+
+            <button 
+              onClick={() => setComingSoonCard(null)}
+              className="mt-10 px-10 py-4 bg-white/10 hover:bg-white/20 text-white font-bold rounded-2xl transition-all active:scale-95 ring-1 ring-white/10"
+            >
+              Got it
+            </button>
           </div>
         </div>
       )}

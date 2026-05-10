@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { use } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { rentalService } from '@/lib/firebase/rentalService';
 import { chatService } from '@/lib/firebase/chatService';
 import { groupService } from '@/lib/firebase/groupService';
@@ -16,6 +17,7 @@ import CollapseSection from '@/components/ui/CollapseSection';
 export default function RentalDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const { user } = useAuth();
+  const { t } = useLanguage();
   const router = useRouter();
   const [space, setSpace] = useState<RentalSpace | null>(null);
   const [group, setGroup] = useState<Group | null>(null);
@@ -55,7 +57,7 @@ export default function RentalDetailPage({ params }: { params: Promise<{ id: str
             if (groupData) setGroup(groupData);
           }
         } else {
-          alert('Space does not exist.');
+          alert(t('rental.space_not_exist'));
         }
       } catch (err) {
         console.error(err);
@@ -87,20 +89,20 @@ export default function RentalDetailPage({ params }: { params: Promise<{ id: str
 
   const handleToggleLike = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!user) return alert("Please login first");
+    if (!user) return alert(t('rental.login_required'));
     setIsLiked(!isLiked);
   };
 
   const handleChatWithOwner = async () => {
-    if (!user) return alert("Login is required.");
+    if (!user) return alert(t('rental.login_required'));
     if (!space) return;
-    if (user.uid === space.hostId) return alert("You cannot inquire about your own space.");
+    if (user.uid === space.hostId) return alert(t('rental.no_self_inquiry'));
 
     setIsChatLoading(true);
     try {
       const roomId = await chatService.getOrCreatePrivateRoom([user.uid, space.hostId], user.uid, 'business');
       
-      const spaceInfo = `[대관 문의]\n공간명: ${space.title}\n시간당: ₩${(space.pricePerHour || 0).toLocaleString()}\n위치: ${space.location}\n바로가기: ${window.location.origin}/rental/${space.id}`;
+      const spaceInfo = `${t('rental.inquiry_prefix')}\n${t('rental.space_name')}: ${space.title}\n${t('rental.price_per_hour')}: ₩${(space.pricePerHour || 0).toLocaleString()}\n${t('rental.location_label')}: ${space.location}\n${t('common.shortcut')}: ${window.location.origin}/rental/${space.id}`;
       await chatService.sendMessage({
         roomId,
         senderId: user.uid,
@@ -113,7 +115,7 @@ export default function RentalDetailPage({ params }: { params: Promise<{ id: str
       router.push(`/chat/${roomId}`);
     } catch (err) {
       console.error(err);
-      alert('Error connecting to chat room.');
+      alert(t('rental.chat_error'));
     } finally {
       setIsChatLoading(false);
     }
@@ -133,9 +135,9 @@ export default function RentalDetailPage({ params }: { params: Promise<{ id: str
 
   // Reservation Form Handler
   const handleRequestSubmit = async () => {
-    if (!user) return alert('Login is required.');
-    if (user.uid === space?.hostId) return alert('You cannot inquire about your own space.');
-    if (!date || !startTime || !endTime || !headcount || !purpose) return alert('Please fill in all required fields (Date, Time, People, Purpose).');
+    if (!user) return alert(t('rental.login_required'));
+    if (user.uid === space?.hostId) return alert(t('rental.no_self_inquiry'));
+    if (!date || !startTime || !endTime || !headcount || !purpose) return alert(t('rental.fill_required_inquiry'));
 
     setIsSubmitting(true);
     try {
@@ -151,7 +153,7 @@ export default function RentalDetailPage({ params }: { params: Promise<{ id: str
         message
       });
       
-      alert('Your rental inquiry has been sent to the host. Moving to chat room.');
+      alert(t('rental.inquiry_sent'));
       if (result.chatRoomId) {
         router.push(`/chat/${result.chatRoomId}`);
       } else {
@@ -159,7 +161,7 @@ export default function RentalDetailPage({ params }: { params: Promise<{ id: str
       }
     } catch (err) {
       console.error(err);
-      alert('An error occurred during processing.');
+      alert(t('rental.processing_error'));
     } finally {
       setIsSubmitting(false);
     }
@@ -173,8 +175,8 @@ export default function RentalDetailPage({ params }: { params: Promise<{ id: str
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-white">
         <span className="material-symbols-rounded text-6xl text-slate-300 mb-4">error_outline</span>
-        <p className="text-[#596061] font-bold">Space not found.</p>
-        <button onClick={() => router.back()} className="mt-4 px-6 py-2 bg-slate-100 text-[#2d3435] rounded-xl font-bold">Go Back</button>
+        <p className="text-[#596061] font-bold">{t('rental.space_not_found')}</p>
+        <button onClick={() => router.back()} className="mt-4 px-6 py-2 bg-slate-100 text-[#2d3435] rounded-xl font-bold">{t('common.go_back')}</button>
       </div>
     );
   }
@@ -205,7 +207,7 @@ export default function RentalDetailPage({ params }: { params: Promise<{ id: str
         <div className="relative aspect-square w-full overflow-hidden bg-[#f2f4f4]">
           <div className="absolute inset-0 flex flex-col items-center justify-center text-[#c4cacc]">
             <span className="material-symbols-rounded text-5xl mb-1">local_mall</span>
-            <span className="text-[10px] font-bold tracking-wider uppercase">No Image</span>
+            <span className="text-[10px] font-bold tracking-wider uppercase">{t('rental.no_image')}</span>
           </div>
           {images.length > 0 && (
             <div className="relative h-full" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
@@ -266,43 +268,43 @@ export default function RentalDetailPage({ params }: { params: Promise<{ id: str
         <div className="flex items-center gap-4 px-4 py-3 bg-[#fff8f0] border-b border-[#ffe8cc]">
           <div className="flex items-center gap-1 text-[#e67700]">
             <span className="material-symbols-rounded text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>local_fire_department</span>
-            <span className="text-xs font-bold">Popular Space</span>
+            <span className="text-xs font-bold">{t('rental.popular_space')}</span>
           </div>
           <div className="flex items-center gap-1 text-[#e67700]">
             <span className="material-symbols-rounded text-sm">visibility</span>
-            <span className="text-xs font-bold">{viewerCount} viewing now</span>
+            <span className="text-xs font-bold">{viewerCount}{t('rental.viewing_now')}</span>
           </div>
         </div>
 
         {/* 4) Rental Options Form */}
         <div className="mx-4 my-4">
-          <SectionCard icon="calendar_month" title="Reservation Options">
+          <SectionCard icon="calendar_month" title={t('rental.reservation_options')}>
             <div className="space-y-4">
               <div>
-                <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-2">Desired Date <span className="text-red-400">*</span></p>
+                <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-2">{t('rental.desired_date')} <span className="text-red-400">*</span></p>
                 <input required type="date" value={date} onChange={e => setDate(e.target.value)}
                   className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm font-bold text-[#2d3435] focus:border-primary focus:ring-1 outline-none transition-all" />
               </div>
               <div className="flex gap-2">
                 <div className="flex-1">
-                  <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-2">Start Time <span className="text-red-400">*</span></p>
+                  <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-2">{t('rental.start_time')} <span className="text-red-400">*</span></p>
                   <input required type="time" value={startTime} onChange={e => setStartTime(e.target.value)}
                     className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm font-bold text-[#2d3435] focus:border-primary focus:ring-1 outline-none transition-all" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-2">End Time <span className="text-red-400">*</span></p>
+                  <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-2">{t('rental.end_time')} <span className="text-red-400">*</span></p>
                   <input required type="time" value={endTime} onChange={e => setEndTime(e.target.value)}
                     className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm font-bold text-[#2d3435] focus:border-primary focus:ring-1 outline-none transition-all" />
                 </div>
               </div>
               <div>
-                <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-2">Number of People <span className="text-red-400">*</span></p>
+                <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-2">{t('rental.number_of_people')} <span className="text-red-400">*</span></p>
                 <div className="flex items-center gap-3">
                   <button type="button" onClick={() => setHeadcount(Math.max(1, (Number(headcount) || 1) - 1))}
                     className="w-9 h-9 rounded-full bg-[#f2f4f4] flex items-center justify-center text-[#596061] active:scale-90">
                     <span className="material-symbols-rounded text-lg">remove</span>
                   </button>
-                  <span className="text-base font-black text-[#2d3435] min-w-[50px] text-center">{headcount || 1} PPL</span>
+                  <span className="text-base font-black text-[#2d3435] min-w-[50px] text-center">{headcount || 1} {t('rental.ppl')}</span>
                   <button type="button" onClick={() => setHeadcount((Number(headcount) || 1) + 1)}
                     className="w-9 h-9 rounded-full bg-[#f2f4f4] flex items-center justify-center text-[#596061] active:scale-90">
                     <span className="material-symbols-rounded text-lg">add</span>
@@ -310,13 +312,13 @@ export default function RentalDetailPage({ params }: { params: Promise<{ id: str
                 </div>
               </div>
               <div>
-                <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-2">Purpose <span className="text-red-400">*</span></p>
-                <input required type="text" value={purpose} onChange={e => setPurpose(e.target.value)} placeholder="e.g., Dance practice"
+                <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-2">{t('rental.purpose')} <span className="text-red-400">*</span></p>
+                <input required type="text" value={purpose} onChange={e => setPurpose(e.target.value)} placeholder={t('rental.purpose_placeholder')}
                   className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm font-bold text-[#2d3435] focus:border-primary focus:ring-1 outline-none transition-all" />
               </div>
               <div>
-                <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-2">Message</p>
-                <textarea rows={2} value={message} onChange={e => setMessage(e.target.value)} placeholder="Message for the host"
+                <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-2">{t('rental.message')}</p>
+                <textarea rows={2} value={message} onChange={e => setMessage(e.target.value)} placeholder={t('rental.message_placeholder')}
                   className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm font-bold text-[#2d3435] focus:border-primary focus:ring-1 outline-none transition-all resize-none" />
               </div>
             </div>
@@ -325,59 +327,59 @@ export default function RentalDetailPage({ params }: { params: Promise<{ id: str
 
         {/* 5) Payment Info */}
         <div className="px-4 py-4 border-b border-[#f2f4f4]">
-          <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-3">Rental Policy</p>
+          <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-3">{t('rental.rental_policy')}</p>
           <div className="space-y-4">
             <InfoRow 
               icon="schedule" 
-              title="Minimum Hours" 
-              subtitle={`Minimum ${space.minHours} hours required per booking`} 
+              title={t('rental.min_hours')} 
+              subtitle={t('rental.min_hours_desc').replace('{hours}', (space.minHours || 1).toString())} 
             />
             <InfoRow 
               icon="account_balance" 
-              title="Payment Method" 
-              subtitle="Bank Transfer only" 
+              title={t('rental.payment_method')} 
+              subtitle={t('rental.bank_transfer_only')} 
             />
           </div>
         </div>
 
         {/* 6) Amenities & Info */}
         <div className="px-4 py-4 border-b border-[#f2f4f4]">
-          <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-3">Amenities & Info</p>
+          <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-3">{t('rental.amenities_info')}</p>
           <div className="space-y-4">
             <InfoRow 
               icon="group" 
               iconBg="bg-[#f0f4ff]" 
               iconColor="text-primary" 
-              title="Capacity" 
-              subtitle={`Maximum ${space.capacity || '?'} people allowed`} 
+              title={t('rental.capacity')} 
+              subtitle={t('rental.capacity_desc').replace('{capacity}', (space.capacity || '?').toString())} 
             />
             <InfoRow 
               icon="straighten" 
               iconBg="bg-[#f8f9fa]" 
               iconColor="text-[#596061]" 
-              title="Space Size" 
+              title={t('rental.space_size')} 
               subtitle={space.size || 'N/A'} 
             />
             <InfoRow 
               icon="layers" 
               iconBg="bg-[#edf7ed]" 
               iconColor="text-green-600" 
-              title="Floor Material" 
-              subtitle={space.floorMaterial || 'Wood'} 
+              title={t('rental.floor_material')} 
+              subtitle={space.floorMaterial || t('rental.wood')} 
             />
             <InfoRow 
               icon="wall_lamp" 
               iconBg="bg-[#fff3f0]" 
               iconColor="text-[#e67700]" 
-              title="Mirror" 
-              subtitle={space.hasMirror ? 'Equipped with mirrors' : 'No mirrors available'} 
+              title={t('rental.mirror')} 
+              subtitle={space.hasMirror ? t('rental.mirror_equipped') : t('rental.no_mirror')} 
             />
           </div>
           
           {space.facilities && space.facilities.length > 0 && (
             <div className="mt-4 pt-4 border-t border-[#f2f4f4]">
               <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-2 flex items-center gap-1">
-                Additional Facilities
+                {t('rental.additional_facilities')}
               </p>
               <div className="flex flex-wrap gap-2">
                 {space.facilities.map(f => (
@@ -391,7 +393,7 @@ export default function RentalDetailPage({ params }: { params: Promise<{ id: str
 
           {(group?.rentalSettings?.rentalInfo || space.rules) && (
             <div className="mt-4 pt-4 border-t border-[#f2f4f4]">
-              <CollapseSection icon="warning" title="Rules & Guidelines" defaultOpen={true}>
+              <CollapseSection icon="warning" title={t('rental.rules_guidelines')} defaultOpen={true}>
                 <p className="text-sm text-[#596061] leading-relaxed whitespace-pre-wrap">
                   {group?.rentalSettings?.rentalInfo || space.rules}
                 </p>

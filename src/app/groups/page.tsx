@@ -246,21 +246,20 @@ function GroupsContent() {
   }, [user, groups.length]);
 
   // Filter removed: all groups including unpublished ones should appear in the directory
-  const publishedGroups = groups;
+  // Now sorting all groups by latest update to ensure consistent order across category views
+  const publishedGroups = [...groups].sort((a, b) => {
+    const getTime = (val: any) => {
+      if (!val) return 0;
+      if (val instanceof Date) return val.getTime();
+      if (typeof val === 'object' && val.toMillis) return val.toMillis();
+      if (typeof val === 'number') return val;
+      return 0;
+    };
+    return getTime(b.updatedAt) - getTime(a.updatedAt);
+  });
 
   // What's New: Latest 10
-  const whatsNewGroups = [...publishedGroups]
-    .sort((a, b) => {
-      const getTime = (val: any) => {
-        if (!val) return 0;
-        if (val instanceof Date) return val.getTime();
-        if (typeof val === 'object' && val.toMillis) return val.toMillis();
-        if (typeof val === 'number') return val;
-        return 0;
-      };
-      return getTime(b.updatedAt) - getTime(a.updatedAt);
-    })
-    .slice(0, 10);
+  const whatsNewGroups = publishedGroups.slice(0, 10);
 
   // Category counts mapping
   const categoryCounts = {

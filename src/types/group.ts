@@ -146,6 +146,8 @@ export interface Group {
     accountNumber: string;
   };
   isPublished?: boolean;
+  headerThemeColor?: string;
+  selectedFunctions?: string[];
 }
 
 export interface ShopItem {

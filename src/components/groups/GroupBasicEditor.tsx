@@ -6,6 +6,7 @@ import { groupService } from "@/lib/firebase/groupService";
 import { storageService } from "@/lib/firebase/storageService";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { getContrastColor } from "@/lib/utils";
 
 interface GroupBasicEditorProps {
   group: Group;
@@ -23,6 +24,7 @@ export default function GroupBasicEditor({ group, onClose }: GroupBasicEditorPro
     coverImageDescription: group.coverImageDescription || "",
     operatingHours: group.operatingHours?.map(h => `${h.label}${h.time ? ': ' + h.time : ''}`).join('\n') || "",
     houseRules: group.houseRules?.join('\n') || "",
+    headerThemeColor: group.headerThemeColor || "#0057bd",
   });
 
   const [isSaving, setIsSaving] = useState(false);
@@ -96,6 +98,7 @@ export default function GroupBasicEditor({ group, onClose }: GroupBasicEditorPro
           return { label, time };
         }),
         houseRules: formData.houseRules.split('\n').filter(line => line.trim() !== ''),
+        headerThemeColor: formData.headerThemeColor,
       });
       toast.success(t('group.basic.identity_updated'));
       onClose();
@@ -260,7 +263,94 @@ export default function GroupBasicEditor({ group, onClose }: GroupBasicEditorPro
                   <span className="material-symbols-outlined text-white/20 text-sm">edit</span>
                 </div>
               </div>
-              <p className="text-[11px] text-white/30 font-medium ml-2 italic">{t('group.basic.catchphrase_desc')}</p>
+            <p className="text-[11px] text-white/30 font-medium ml-2 italic">{t('group.basic.catchphrase_desc')}</p>
+            </div>
+          </div>
+        </section>
+
+        <div className="h-px bg-gradient-to-r from-transparent via-white/5 to-transparent ml-6" />
+
+        {/* Header Theme Color Section */}
+        <section className="space-y-10">
+          <div className="space-y-2">
+            <h2 className="text-3xl font-headline font-black text-white flex items-center gap-4">
+              <span className="w-2 h-10 bg-[#0057bd] rounded-full"></span>
+              Header Branding
+            </h2>
+            <p className="text-white/40 font-medium ml-6">Select a theme color for your group's header. This will define the visual identity of your "App-in-App" space.</p>
+          </div>
+
+          <div className="ml-6 space-y-8">
+            <div className="flex flex-wrap gap-4">
+              {[
+                "#0057bd", // WoC Blue
+                "#1a1c23", // Dark
+                "#2d3436", // Slate
+                "#636e72", // Steel
+                "#b2bec3", // Silver
+                "#d63031", // Ruby
+                "#e17055", // Coral
+                "#fdcb6e", // Amber
+                "#00b894", // Emerald
+                "#00cec9", // Turquoise
+                "#0984e3", // Azure
+                "#6c5ce7", // Iris
+                "#a29bfe", // Lavender
+                "#e84393", // Fuchsia
+                "#fd79a8", // Rose
+              ].map((color) => (
+                <button
+                  key={color}
+                  onClick={() => setFormData(prev => ({ ...prev, headerThemeColor: color }))}
+                  className={`w-12 h-12 rounded-2xl transition-all relative group flex items-center justify-center ${formData.headerThemeColor === color ? "scale-110 shadow-[0_0_20px_rgba(255,255,255,0.2)] ring-2 ring-white" : "hover:scale-105 opacity-60 hover:opacity-100"}`}
+                  style={{ backgroundColor: color }}
+                >
+                  {formData.headerThemeColor === color && (
+                    <span 
+                      className="material-symbols-outlined text-xl"
+                      style={{ color: getContrastColor(color) === 'black' ? "#0a0f1d" : "#ffffff" }}
+                    >
+                      check
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {/* Preview Banner */}
+            <div className="relative h-20 rounded-3xl overflow-hidden shadow-2xl border border-white/5">
+              <div 
+                className="absolute inset-0 transition-colors duration-500" 
+                style={{ backgroundColor: formData.headerThemeColor }} 
+              />
+              <div className="absolute inset-0 flex items-center px-8 justify-between">
+                <div className="flex items-center gap-4">
+                  <div 
+                    className="w-10 h-10 rounded-xl transition-colors duration-500" 
+                    style={{ backgroundColor: getContrastColor(formData.headerThemeColor) === 'black' ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.1)" }}
+                  />
+                  <div className="space-y-1">
+                    <div 
+                      className="h-4 w-32 rounded-md transition-colors duration-500" 
+                      style={{ backgroundColor: getContrastColor(formData.headerThemeColor) === 'black' ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.2)" }}
+                    />
+                    <div 
+                      className="h-2 w-20 rounded-md transition-colors duration-500" 
+                      style={{ backgroundColor: getContrastColor(formData.headerThemeColor) === 'black' ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.1)" }}
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div 
+                    className="w-8 h-8 rounded-lg transition-colors duration-500" 
+                    style={{ backgroundColor: getContrastColor(formData.headerThemeColor) === 'black' ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.1)" }}
+                  />
+                  <div 
+                    className="w-8 h-8 rounded-lg transition-colors duration-500" 
+                    style={{ backgroundColor: getContrastColor(formData.headerThemeColor) === 'black' ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.1)" }}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </section>

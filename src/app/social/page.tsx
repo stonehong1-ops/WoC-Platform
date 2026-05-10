@@ -101,10 +101,12 @@ export default function SocialPage() {
 
   // Auth Guard for Social Page
   useEffect(() => {
-    if (!loading) {
-      if (!user || (profile && !profile.isRegistered)) {
-        setShowLogin(true);
-      }
+    // Wait until both auth and profile loading are complete
+    // profile can be null while still loading even after user is set
+    if (!loading && !user) {
+      setShowLogin(true);
+    } else if (!loading && user && profile && !profile.isRegistered) {
+      setShowLogin(true);
     }
   }, [user, profile, loading, setShowLogin]);
 

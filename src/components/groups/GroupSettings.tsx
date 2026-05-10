@@ -15,6 +15,7 @@ import GroupClassEditor from "./GroupClassEditor";
 import GroupRentalEditor from "./GroupRentalEditor";
 import GroupShopEditor from "./GroupShopEditor";
 import GroupStayEditor from "./GroupStayEditor";
+import GroupMenuStructure from "./GroupMenuStructure";
 import { useSearchParams } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -55,6 +56,16 @@ const GroupSettings = ({ group, onClose }: GroupSettingsProps) => {
   }, [activePopup]);
 
   const settingsSteps = [
+    {
+      id: "menu",
+      icon: "menu",
+      status: t("group.settings.status.core") || "CORE",
+      statusColor: "bg-blue-100 text-blue-700",
+      title: "Menu Structure",
+      desc: "Organize and reorder group tabs.",
+      accent: "border-blue-100 group-hover:border-blue-200",
+      iconBg: "bg-blue-50 text-blue-600",
+    },
     {
       id: "profile",
       icon: "badge",
@@ -184,7 +195,10 @@ const GroupSettings = ({ group, onClose }: GroupSettingsProps) => {
             <span className="material-symbols-outlined text-[18px]">history</span>
             {t("group.settings.audit_logs")}
           </button>
-          <button className="flex items-center gap-2 px-8 py-2 rounded-full bg-[#E2E4F0] text-[#939BB4] font-bold text-sm cursor-not-allowed">
+          <button 
+            onClick={() => window.location.href = `/groups/${group.id}/review`}
+            className="flex items-center gap-2 px-8 py-2 rounded-full bg-[#0058bc] text-white font-bold text-sm hover:bg-[#004493] transition-all cursor-pointer shadow-sm"
+          >
             {t("group.settings.go_live")}
           </button>
         </div>
@@ -194,8 +208,8 @@ const GroupSettings = ({ group, onClose }: GroupSettingsProps) => {
         {/* Title Section */}
         <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-8">
           <div className="max-w-2xl">
-            <h2 className="font-headline font-bold text-4xl md:text-5xl text-[#242c51] mb-5 leading-tight tracking-tight">{t("group.settings.header.title")}</h2>
-            <p className="text-[#515981] text-lg leading-relaxed opacity-80">{t("group.settings.header.desc")}</p>
+            <h2 className="font-headline font-bold text-xl md:text-2xl text-[#242c51] mb-5 leading-tight tracking-tight">{t("group.settings.header.title")}</h2>
+            <p className="text-[#515981] text-base md:text-lg leading-relaxed opacity-80">{t("group.settings.header.desc")}</p>
           </div>
           
           {/* Progress Indicator */}
@@ -270,6 +284,9 @@ const GroupSettings = ({ group, onClose }: GroupSettingsProps) => {
 
       {/* Editor Overlays */}
       <AnimatePresence>
+        {activePopup === "menu" && (
+          <GroupMenuStructure group={group} onClose={() => setActivePopup(null)} />
+        )}
         {activePopup === "profile" && (
           <GroupBasicEditor group={group} onClose={() => setActivePopup(null)} />
         )}

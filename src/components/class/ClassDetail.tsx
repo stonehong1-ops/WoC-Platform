@@ -48,17 +48,20 @@ interface ClassDetailProps {
   groupId: string;
   onClose?: () => void;
   isModal?: boolean;
+  isEmbedded?: boolean;
 }
 
-export default function ClassDetail({ groupId, onClose, isModal = false }: ClassDetailProps) {
+export default function ClassDetail({ groupId, onClose, isModal = false, isEmbedded = false }: ClassDetailProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isHeaderVisible, setGlobalNavHidden } = useNavigation();
   
   useEffect(() => {
-    setGlobalNavHidden(true);
-    return () => setGlobalNavHidden(false);
-  }, [setGlobalNavHidden]);
+    if (isModal) {
+      setGlobalNavHidden(true);
+      return () => setGlobalNavHidden(false);
+    }
+  }, [setGlobalNavHidden, isModal]);
   
   const [group, setGroup] = useState<Group | null>(null);
   const [loading, setLoading] = useState(true);
@@ -190,7 +193,7 @@ export default function ClassDetail({ groupId, onClose, isModal = false }: Class
 
   if (loading) {
     return (
-      <div className="fixed inset-0 z-[200] bg-white flex justify-center items-center">
+      <div className={isModal ? "fixed inset-0 z-[200] bg-white flex justify-center items-center" : "w-full py-20 flex justify-center items-center"}>
         <span className="material-symbols-outlined animate-spin text-4xl text-primary">progress_activity</span>
       </div>
     );
@@ -198,10 +201,10 @@ export default function ClassDetail({ groupId, onClose, isModal = false }: Class
 
   if (!group) {
     return (
-      <div className="fixed inset-0 z-[200] bg-white flex flex-col justify-center items-center space-y-4">
+      <div className={isModal ? "fixed inset-0 z-[200] bg-white flex flex-col justify-center items-center space-y-4" : "w-full py-20 flex flex-col justify-center items-center space-y-4"}>
         <span className="material-symbols-outlined text-4xl text-outline">error</span>
         <h2 className="font-['Plus_Jakarta_Sans'] text-[1.125rem] font-bold leading-[1.5rem] text-on-surface">Club not found</h2>
-        <button onClick={handleClose} className="text-primary hover:underline">Go back</button>
+        {isModal && <button onClick={handleClose} className="text-primary hover:underline">Go back</button>}
       </div>
     );
   }
@@ -295,7 +298,7 @@ export default function ClassDetail({ groupId, onClose, isModal = false }: Class
 
   if (showSuccess) {
     return (
-      <div className="fixed inset-0 bg-background text-on-background z-[200] flex flex-col justify-center items-center">
+      <div className={isModal ? "fixed inset-0 bg-background text-on-background z-[200] flex flex-col justify-center items-center" : "w-full py-20 flex flex-col justify-center items-center"}>
         <main className="w-full max-w-[56rem] mx-auto px-[1.5rem] py-[2.5rem] flex flex-col items-center text-center">
           <div className="mb-8 relative flex justify-center items-center w-32 h-32 rounded-full bg-primary-container/20 shadow-xl">
             <div className="absolute inset-0 bg-primary-container/10 rounded-full animate-pulse blur-xl"></div>
@@ -323,37 +326,43 @@ export default function ClassDetail({ groupId, onClose, isModal = false }: Class
   }
 
   return (
-    <div className="fixed inset-0 z-[200] bg-white flex flex-col animate-in slide-in-from-bottom duration-300">
+    <div className={isModal ? "fixed inset-0 z-[200] bg-white flex flex-col animate-in slide-in-from-bottom duration-300" : isEmbedded ? "flex flex-col bg-transparent w-full" : "flex flex-col bg-white w-full h-full"}>
       <style dangerouslySetInnerHTML={{ __html: `
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}} />
       
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[#f2f4f4] flex-shrink-0 bg-white z-10">
-        <button onClick={handleClose} className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-[#f2f4f4] transition-colors">
-          <span className="material-symbols-outlined text-xl text-[#596061]">arrow_back</span>
-        </button>
-        <div className="flex flex-col items-center">
-          <h2 className="text-base font-black text-[#2d3435]">Class Schedule</h2>
+      {!isEmbedded && (
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[#f2f4f4] flex-shrink-0 bg-white z-10">
+          {isModal ? (
+            <button onClick={handleClose} className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-[#f2f4f4] transition-colors">
+              <span className="material-symbols-outlined text-xl text-[#596061]">arrow_back</span>
+            </button>
+          ) : (
+            <div className="w-10 h-10" />
+          )}
+          <div className="flex flex-col items-center">
+            <h2 className="text-base font-black text-[#2d3435]">Class Schedule</h2>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleDownload}
+              disabled={isDownloading}
+              className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-[#f0f4ff] transition-colors disabled:opacity-50"
+            >
+              <span className="material-symbols-outlined text-xl text-[#0057bd]">
+                {isDownloading ? 'progress_activity' : 'download'}
+              </span>
+            </button>
+          </div>
         </div>
-        
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleDownload}
-            disabled={isDownloading}
-            className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-[#f0f4ff] transition-colors disabled:opacity-50"
-          >
-            <span className="material-symbols-outlined text-xl text-[#0057bd]">
-              {isDownloading ? 'progress_activity' : 'download'}
-            </span>
-          </button>
-        </div>
-      </div>
+      )}
 
       {/* Scrollable Content */}
-      <div className="flex-1 overflow-y-auto no-scrollbar">
-        <div ref={captureRef} className="bg-white px-5 py-6">
+      <div className={isEmbedded ? "" : "flex-1 overflow-y-auto no-scrollbar"}>
+        <div ref={captureRef} className={`${isEmbedded ? 'px-0 py-2' : 'bg-white px-5 py-6'}`}>
           
           {/* Title Banner */}
           <div className="bg-gradient-to-r from-[#0057bd] to-[#3b82f6] rounded-2xl p-5 mb-6 text-center shadow-lg shadow-blue-500/20">

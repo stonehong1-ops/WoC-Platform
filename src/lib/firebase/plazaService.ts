@@ -167,6 +167,45 @@ export const plazaService = {
     }
   },
 
+  // 최근 N건 포스트 가져오기 (어드민 드롭다운용)
+  getRecentPosts: async (count: number = 100): Promise<Post[]> => {
+    try {
+      const { getDocs, query, collection, orderBy, limit } = await import('firebase/firestore');
+      const q = query(
+        collection(db, COLLECTION_NAME),
+        orderBy('createdAt', 'desc'),
+        limit(count)
+      );
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Post[];
+    } catch (error) {
+      console.error("Error fetching recent posts:", error);
+      return [];
+    }
+  },
+
+  // 특정 ID들로 포스트 가져오기 (Home featured용)
+  getPostsByIds: async (ids: string[]): Promise<Post[]> => {
+    if (!ids || ids.length === 0) return [];
+    try {
+      const { doc, getDoc } = await import('firebase/firestore');
+      const posts: Post[] = [];
+      for (const id of ids) {
+        const docSnap = await getDoc(doc(db, COLLECTION_NAME, id));
+        if (docSnap.exists()) {
+          posts.push({ id: docSnap.id, ...docSnap.data() } as Post);
+        }
+      }
+      return posts;
+    } catch (error) {
+      console.error("Error fetching posts by ids:", error);
+      return [];
+    }
+  },
+
   // 최근 스토리가 있는 유저 목록 가져오기 (24시간 이내)
   getUsersWithRecentPosts: async () => {
     try {

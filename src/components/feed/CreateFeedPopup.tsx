@@ -132,8 +132,8 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
     const curVideos = media.filter(m => m.type === 'video').length;
     const curImages = media.filter(m => m.type === 'image').length;
     files.forEach(file => {
-      if (file.type.startsWith('video/') && curVideos >= 1) { alert('You can add up to 1 video.'); return; }
-      if (file.type.startsWith('image/') && curImages >= 20) { alert('You can add up to 20 images.'); return; }
+      if (file.type.startsWith('video/') && curVideos >= 1) { alert(t('feed.max_video')); return; }
+      if (file.type.startsWith('image/') && curImages >= 20) { alert(t('feed.max_images')); return; }
       if (file.type.startsWith('video/')) handleUpload(file, 'video');
       else if (file.type.startsWith('image/')) handleUpload(file, 'image');
     });
@@ -163,7 +163,7 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
   const handleSubmit = async () => {
     if (!user || isSubmitting) return;
     if (!content.trim() && media.length === 0) return;
-    if (media.some(m => m.status === 'uploading')) { alert('Upload in progress. Please wait and try again.'); return; }
+    if (media.some(m => m.status === 'uploading')) { alert(t('feed.upload_in_progress')); return; }
     setIsSubmitting(true);
     try {
       const finalTargets = context?.scope === 'plaza' ? ['plaza', context.scopeId] : [context?.scopeId || 'freestyle-tango'];
@@ -213,14 +213,14 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
             <button onClick={handleClose} className="p-2 rounded-full active:scale-95 duration-150 hover:bg-slate-50">
               <span className="material-symbols-outlined text-slate-500">close</span>
             </button>
-            <h1 className="font-title-md text-title-md text-on-surface">{editingPost ? 'Edit Post' : 'Create Post'}</h1>
+            <h1 className="font-title-md text-title-md text-on-surface">{editingPost ? t('feed.edit_post') : t('feed.create_post')}</h1>
           </div>
           <button
             onClick={handleSubmit}
             disabled={isSubmitting || (!content.trim() && media.length === 0) || media.some(m => m.status === 'uploading')}
             className="px-5 py-2 rounded-xl bg-primary-container text-white font-title-md text-body-md hover:opacity-90 active:scale-95 duration-150 transition-all disabled:opacity-40"
           >
-            {isSubmitting ? (editingPost ? 'Updating...' : 'Posting...') : (editingPost ? 'Update' : 'Post')}
+            {isSubmitting ? (editingPost ? t('feed.updating') : t('feed.posting')) : (editingPost ? t('feed.update') : t('feed.post'))}
           </button>
         </header>
 
@@ -260,7 +260,7 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
                 className="rounded-2xl p-5 min-h-[120px] flex items-center justify-center transition-all cursor-pointer"
                 style={{ background: selectedColor!.bg, color: selectedColor!.text }}
                 onClick={() => setSelectedColor(null)}
-                title="Click to edit text"
+                title={t('feed.click_to_edit')}
               >
                 <p className={`text-center break-words w-full ${previewClass}`} style={{ color: selectedColor!.text }}>{content}</p>
               </div>
@@ -274,7 +274,7 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
             )}
             {content.length > 0 && (
               <p className={`text-[10px] mt-1 text-right font-bold tracking-wide ${content.length <= 70 ? 'text-primary' : 'text-outline'}`}>
-                {content.length}/70 {content.length <= 70 ? '??Style available' : ''}
+                {content.length}/70 {content.length <= 70 ? t('feed.style_available') : ''}
               </p>
             )}
           </section>
@@ -283,7 +283,7 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
           <section className="flex flex-col gap-2 animate-in fade-in duration-700">
           {/* Color Row */}
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold text-outline tracking-wider uppercase shrink-0 w-[42px]">Palette</span>
+              <span className="text-[10px] font-bold text-outline tracking-wider uppercase shrink-0 w-[42px]">{t('feed.palette')}</span>
               <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-1">
                 {COLOR_PALETTE.map((c, i) => (
                   <button
@@ -305,13 +305,13 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
             {/* Style Row */}
             {isShort && (
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold text-outline tracking-wider uppercase shrink-0 w-[42px]">Style</span>
+                <span className="text-[10px] font-bold text-outline tracking-wider uppercase shrink-0 w-[42px]">{t('feed.style')}</span>
                 <div className="flex items-center gap-1">
                   {IMPACT_SIZES.map((s, i) => (
                     <button
                       key={i}
                       onClick={() => setSelectedImpact(i)}
-                      title={['Normal', 'Bold', 'Impact'][i]}
+                      title={[t('feed.style_normal'), t('feed.style_bold'), t('feed.style_impact')][i]}
                       style={{ fontWeight: s.weight, fontSize: s.size }}
                       className={`w-8 h-7 rounded-md border transition-all active:scale-95 flex items-center justify-center leading-none ${
                         selectedImpact === i
@@ -328,7 +328,7 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
                   {EMPHASIS_OPTIONS.map((o, i) => (
                     <button
                       key={i}
-                      title={o.title}
+                      title={[t('feed.style_bold'), t('feed.style_italic'), t('feed.style_uppercase')][i]}
                       onClick={() => setSelectedEmphasis(prev => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i])}
                       className={`w-7 h-7 rounded-md text-[11px] border transition-all active:scale-95 flex items-center justify-center ${
                         selectedEmphasis.includes(i)
@@ -348,13 +348,13 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
           {showMedia && (
             <section className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-label-xs text-label-xs text-outline tracking-[0.1em] uppercase">MEDIA</h3>
+                <h3 className="font-label-xs text-label-xs text-outline tracking-[0.1em] uppercase">{t('feed.media')}</h3>
                 {media.length > 0 && (
                   <button
                     onClick={() => mediaInputRef.current?.click()}
                     className="flex items-center gap-1 px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold hover:bg-primary/20 transition-colors"
                   >
-                    <span className="material-symbols-outlined text-sm">add_photo_alternate</span> Add
+                    <span className="material-symbols-outlined text-sm">add_photo_alternate</span> {t('feed.add')}
                   </button>
                 )}
               </div>
@@ -397,8 +397,8 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
                   <div className="w-12 h-12 rounded-full bg-primary-container/10 flex items-center justify-center group-hover:scale-110 transition-transform">
                     <span className="material-symbols-outlined text-primary-container text-[28px]">add_photo_alternate</span>
                   </div>
-                  <p className="font-title-md text-body-md text-on-surface-variant">Add Photos or Video</p>
-                  <span className="text-[10px] text-on-surface-variant/60 font-medium">{imageCount}/20 Photos · {videoCount}/1 Video</span>
+                  <p className="font-title-md text-body-md text-on-surface-variant">{t('feed.add_photos_video')}</p>
+                  <span className="text-[10px] text-on-surface-variant/60 font-medium">{imageCount}/20 {t('feed.photo_count')} · {videoCount}/1 {t('feed.video_count')}</span>
                   <span className="material-symbols-outlined absolute -bottom-6 -right-6 text-[120px] text-primary-container/5 pointer-events-none select-none">cloud_upload</span>
                 </div>
               )}
@@ -410,7 +410,7 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
           <section className="space-y-4">
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-outline text-[20px]">sell</span>
-              <h3 className="font-label-xs text-label-xs text-outline tracking-[0.1em] uppercase">TAGS</h3>
+              <h3 className="font-label-xs text-label-xs text-outline tracking-[0.1em] uppercase">{t('feed.tags')}</h3>
             </div>
 
             {/* Selected Tags */}
@@ -439,7 +439,7 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
                 type="text"
                 value={tagKeyword}
                 onChange={e => setTagKeyword(e.target.value)}
-                placeholder="people, group, event, social..."
+                placeholder={t('feed.tag_placeholder')}
                 className="w-full h-14 pl-12 pr-4 bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm focus:ring-2 focus:ring-primary-container focus:border-transparent transition-all outline-none font-body-md"
               />
             </div>

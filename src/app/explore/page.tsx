@@ -5,10 +5,12 @@ import Link from 'next/link';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useLocation } from '@/components/providers/LocationProvider';
 import SubFooter from '@/components/SubFooter';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function ExplorePage() {
   const { profile, user } = useAuth();
   const { location, setIsSelectorOpen } = useLocation();
+  const { t } = useLanguage();
   const displayName = profile?.nickname || user?.displayName || 'Stone';
 
   return (
@@ -27,10 +29,10 @@ export default function ExplorePage() {
         
         <div className="space-y-3 max-w-3xl animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-300">
           <h1 className="text-xl sm:text-2xl text-on-surface font-medium leading-tight">
-            <span className="font-bold">{displayName},</span> this is a space where everyone on Earth connects through shared hobbies.
+            <span className="font-bold">{displayName}{t('explore.welcome_name_suffix')}</span> {t('explore.welcome_body')}
           </h1>
           <p className="text-sm sm:text-base text-slate-500 font-normal leading-relaxed">
-            Discover new experiences in our diverse societies.
+            {t('explore.discover_msg')}
           </p>
         </div>
       </header>

@@ -9,6 +9,7 @@ import { userService } from "@/lib/firebase/userService";
 import { useModalNavigation } from "@/hooks/useModalNavigation";
 import ChatRoom from "@/components/chat/ChatRoom";
 import UniversalFeed from "@/components/feed/UniversalFeed";
+import LiveFeed from "@/components/live/LiveFeed";
 import SocialHomeTab from "./SocialHomeTab";
 import SocialReservationTab from "./SocialReservationTab";
 import EditSocialEvent from "./EditSocialEvent";
@@ -20,7 +21,7 @@ interface SocialViewerProps {
   onClose: () => void;
 }
 
-type TabId = "home" | "feed" | "reservation";
+type TabId = "home" | "live" | "feed" | "reservation";
 
 const ADMIN_UIDS = ["7iaZAmaYY9dNNEShmJmROI8XrtH2"];
 
@@ -163,6 +164,7 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
 
   const TABS: { id: TabId; label: string; icon: string }[] = [
     { id: "home", label: t('social.tab_home'), icon: "home" },
+    { id: "live", label: t('social.tab_live'), icon: "play_circle" },
     { id: "feed", label: t('social.tab_feed'), icon: "forum" },
     { id: "reservation", label: t('social.tab_booking'), icon: "event_seat" },
   ];
@@ -287,6 +289,11 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
               finally { setIsClaiming(false); }
             }}
           />
+        )}
+        {activeTab === "live" && (
+          <div className="w-full h-[calc(100vh-100px)]">
+            <LiveFeed entityType="social" entityId={social.id} />
+          </div>
         )}
         {activeTab === "feed" && (
           <div className="px-4 pb-8 pt-2">

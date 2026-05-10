@@ -496,7 +496,7 @@ export default function EventHomeTab({ event, onChatWithHost, canEdit }: Props) 
       {/* ═══ POPUP: Artist Detail ═══ */}
       {selectedArtist && (
         <div className="fixed inset-0 z-[300] bg-black/70 flex items-end justify-center animate-in fade-in duration-200" onClick={() => setSelectedArtist(null)}>
-          <div className="w-full max-w-md bg-[#1a1a1a] rounded-t-3xl overflow-hidden animate-in slide-in-from-bottom duration-300" onClick={e => e.stopPropagation()}>
+          <div className="w-full max-w-md bg-[#1a1a1a] rounded-t-3xl overflow-hidden animate-in slide-in-from-bottom duration-300 max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="w-12 h-1 bg-[#444] rounded-full mx-auto mt-3" />
             <div className="flex items-start gap-4 p-5">
               <div className="w-24 h-32 rounded-xl overflow-hidden bg-[#222] flex-shrink-0">

@@ -25,9 +25,12 @@
      2. **Data Binding Only**: Connect real-time data without altering the layout.
      3. **Functional Integrity**: Ensure all interactive elements (toggles, buttons) are fully functional.
 4. **Deployment Reporting**: After every deployment, you MUST confirm the deployment status and explicitly provide the Deployment ID and the live URL link to the USER.
+28. **IA Mapping Reference**: Before performing any development task, YOU MUST reference `ia.md` in the root directory to ensure correct file locations and architectural context. This is a mandatory reference point for understanding the system map.
+29. **Question Mark Handling**: 사용자의 요청이 물음표(?)로 끝날 경우, 절대 코딩(코드 수정)을 진행하지 말고, 현재 조사/진행 중인 상태와 원인 파악 내용에 대해서만 답변하라.
 
 ## 🌐 Language & Localization Rules
 1. **English Only**: This platform is an English-based global service. ALL UI text, labels, and system messages MUST be in English. (이 플랫폼은 글로벌 서비스이므로 모든 UI와 시스템 메시지는 영문으로 작성되어야 한다.)
+2. **Exclude Localization**: 로컬화(Localization/i18n) 작업은 현재 작업 영역에서 완전히 제외한다. 모든 기능 구현 및 수정이 완료된 후 나중에 처리할 예정이므로, 사용자가 명시적으로 요청하기 전까지는 절대 로컬라이제이션을 언급하거나 관련 작업을 수행하지 않는다.
 
 ## Deployment Rules
 1. **Mandatory Production Deployment**: Whenever any code modification is completed, you MUST automatically build and deploy the project to the production environment (e.g., `npx -y vercel --prod --yes`) to ensure the live site reflects the latest changes immediately.

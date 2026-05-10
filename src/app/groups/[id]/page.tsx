@@ -42,7 +42,7 @@ export default function GroupPage() {
   }
 
   return (
-    <div className="h-screen w-full bg-zinc-950 text-white overflow-hidden flex flex-col">
+    <div className="min-h-screen w-full bg-background text-on-background flex flex-col">
       <GroupDetail group={group} isModal={false} />
     </div>
   );

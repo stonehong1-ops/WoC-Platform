@@ -54,6 +54,7 @@ const GalleryCreateContent = () => {
   const [selectedGroup, setSelectedGroup] = useState<TagSearchResult | null>(null);
   const [selectedActivity, setSelectedActivity] = useState<TagSearchResult | null>(null);
   const [selectedPeople, setSelectedPeople] = useState<TagSearchResult[]>([]);
+  const [showInLive, setShowInLive] = useState(true);
 
   // Data pools
   const [userGroups, setUserGroups] = useState<TagSearchResult[]>([]);
@@ -183,6 +184,8 @@ const GalleryCreateContent = () => {
           setSelectedPeople(peopleTags.map(t => ({ ...t, subtitle: t.role || '' })));
         }
       }
+      // Restore showInLive (default true for backward compat)
+      setShowInLive(post.showInLive !== false);
     });
   }, [editId, user]);
 
@@ -277,13 +280,14 @@ const GalleryCreateContent = () => {
         mediaTypes: finalTypes,
         caption,
         tags,
+        showInLive,
         venueId: '', venueName: '', eventId: '', eventName: '',
       };
 
       if (isEditMode && editId) {
         await galleryService.updatePost(editId, postData);
       } else {
-        await galleryService.createPost({ authorId: user.uid, authorName: user.displayName || 'Anonymous', authorPhoto: user.photoURL || '', ...postData });
+        await galleryService.createPost({ authorId: user.uid, authorName: user.displayName || profile?.nickname || 'Anonymous', authorPhoto: user.photoURL || '', ...postData });
       }
       router.push('/live');
     } catch (err) {
@@ -473,6 +477,20 @@ const GalleryCreateContent = () => {
                 )}
               </div>
             )}
+          </div>
+
+          {/* ── LIVE TOGGLE ── */}
+          <div className="rounded-xl border border-gray-100 bg-white">
+            <button
+              className="w-full flex items-center gap-2.5 px-3 py-2.5"
+              onClick={() => setShowInLive(!showInLive)}
+            >
+              <span className="material-symbols-outlined text-[16px] text-red-500" style={{ fontVariationSettings: "'FILL' 1" }}>play_circle</span>
+              <span className="text-xs font-bold text-gray-700 flex-1 text-left">Also show in Live</span>
+              <div className={`w-9 h-5 rounded-full transition-colors duration-200 flex items-center px-0.5 ${showInLive ? 'bg-red-500' : 'bg-gray-300'}`}>
+                <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${showInLive ? 'translate-x-4' : 'translate-x-0'}`} />
+              </div>
+            </button>
           </div>
 
           {/* Selected Tags Summary */}

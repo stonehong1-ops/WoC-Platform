@@ -7,7 +7,7 @@ const menus = [
 
 export default function SubHeader() {
   return (
-    <header className="fixed top-0 left-0 right-0 bg-white/90 backdrop-blur-md z-50 border-b border-outline-variant/30 h-14 flex items-center justify-between px-4">
+    <header className="fixed top-0 left-0 right-0 bg-white z-50 border-b border-outline-variant/30 h-14 flex items-center justify-between px-4">
       <div className="flex items-center gap-4 overflow-x-auto no-scrollbar py-2">
         {menus.map((menu) => (
           <Link
