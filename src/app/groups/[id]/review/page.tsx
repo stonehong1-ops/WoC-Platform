@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import { groupService } from "@/lib/firebase/groupService";
 import { Group } from "@/types/group";
 import { FUNCTION_SECTIONS, FunctionCard } from "@/components/groups/functionBuilderData";
+import StepIndicator from "@/components/groups/StepIndicator";
 
 export default function GroupFunctionReviewPage() {
   const router = useRouter();
@@ -49,119 +50,89 @@ export default function GroupFunctionReviewPage() {
 
   if (loading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-[#faf9fe]">
-        <div className="w-8 h-8 border-4 border-[#0058bc] border-t-transparent rounded-full animate-spin"></div>
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   if (!group || selectedCards.length === 0) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-[#faf9fe] flex-col gap-4">
-        <span className="material-symbols-outlined text-6xl text-[#c1c6d7]">info</span>
-        <p className="text-[#414755] text-lg font-semibold">No functions selected</p>
-        <button onClick={handleBack} className="px-6 py-3 bg-[#0058bc] text-white rounded-xl font-bold">Go Back</button>
+      <div className="flex h-screen w-full items-center justify-center bg-background flex-col gap-4">
+        <span className="material-symbols-outlined text-6xl text-outline-variant">info</span>
+        <p className="text-on-surface text-lg font-semibold">No functions selected</p>
+        <button onClick={handleBack} className="px-6 py-3 bg-primary text-on-primary rounded-xl font-bold">Go Back</button>
       </div>
     );
   }
 
   return (
-    <div className="bg-[#faf9fe] text-[#1a1b1f] text-[16px] leading-[1.6] font-normal overflow-hidden min-h-screen relative font-body">
-      {/* Background Content: Function Selection Screen */}
-      <main className="min-h-screen pt-20 pb-32 px-[20px] md:px-[64px]">
-        <header className="mb-[24px]">
-          <h1 className="font-headline text-[32px] leading-[1.2] tracking-[-0.01em] font-semibold text-[#1a1b1f]">WoC Group Function Builder</h1>
-          <p className="text-[16px] leading-[1.6] font-normal text-[#414755] mt-2">Select modules to expand your community's capabilities.</p>
-        </header>
+    <div className="bg-background text-on-surface min-h-screen flex flex-col" style={{ fontFamily: "'Inter', sans-serif" }}>
+      {/* Step Header */}
+      <StepIndicator currentStep={2} groupName={group.name} onBack={handleBack} />
 
-        {/* Bento Grid Selection (Background context) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-[#eeedf3] rounded-xl p-6 border border-[#c1c6d7]/30 flex flex-col gap-4 opacity-50">
-            <span className="material-symbols-outlined text-[#0058bc] text-4xl">inventory_2</span>
-            <h3 className="text-[24px] leading-[1.3] font-semibold text-[#1a1b1f]">Inventory Hub</h3>
-            <p className="text-[14px] leading-[1.4] tracking-[0.01em] font-medium">Manage collective assets with ease.</p>
+      {/* Main Content */}
+      <main className="flex-1 px-5 md:px-16 pt-8 pb-40 max-w-2xl mx-auto w-full">
+        {/* Title */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-[24px] md:text-[28px] leading-[1.2] tracking-[-0.02em] font-bold text-on-surface">Review Selection</h2>
+            <div className="bg-primary/10 text-primary px-3 py-1 rounded-full flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+              <span className="text-[13px] font-semibold">{selectedCards.length} Active</span>
+            </div>
           </div>
-          <div className="bg-[#eeedf3] rounded-xl p-6 border border-[#c1c6d7]/30 flex flex-col gap-4 opacity-50">
-            <span className="material-symbols-outlined text-[#0058bc] text-4xl">analytics</span>
-            <h3 className="text-[24px] leading-[1.3] font-semibold text-[#1a1b1f]">Impact Metrics</h3>
-            <p className="text-[14px] leading-[1.4] tracking-[0.01em] font-medium">Track community growth and engagement.</p>
-          </div>
-          <div className="bg-[#eeedf3] rounded-xl p-6 border border-[#c1c6d7]/30 flex flex-col gap-4 opacity-50">
-            <span className="material-symbols-outlined text-[#0058bc] text-4xl">stadium</span>
-            <h3 className="text-[24px] leading-[1.3] font-semibold text-[#1a1b1f]">Event Master</h3>
-            <p className="text-[14px] leading-[1.4] tracking-[0.01em] font-medium">Professional ticketing and hosting tools.</p>
+          <p className="text-[14px] text-on-surface-variant">Confirm your selected modules and pricing before organizing.</p>
+        </div>
+
+        {/* Function List */}
+        <div className="flex flex-col gap-3 mb-8">
+          {selectedCards.map((card) => (
+            <div key={card.id} className="flex items-center justify-between p-4 bg-surface-container-lowest rounded-xl border border-surface-variant/30 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-primary text-[20px]">{card.icon}</span>
+                </div>
+                <div>
+                  <span className="text-[15px] text-on-surface font-semibold">{card.title}</span>
+                  <p className="text-[12px] text-on-surface-variant">{card.subtitle}</p>
+                </div>
+              </div>
+              <span className="text-[14px] font-bold text-primary">{card.price}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Summary */}
+        <div className="bg-surface-container rounded-2xl p-5 mb-6 border border-surface-variant/20">
+          <div className="flex items-end justify-between">
+            <div>
+              <p className="text-[12px] text-on-surface-variant font-medium uppercase tracking-wider mb-1">Total Estimated</p>
+              <p className="text-[28px] leading-[1.2] font-bold text-on-surface">${totalCost}<span className="text-[16px] font-normal text-on-surface-variant"> / month</span></p>
+            </div>
+            <p className="text-[12px] text-on-surface-variant">Starting next billing cycle</p>
           </div>
         </div>
       </main>
 
-      {/* Bottom Sheet Overlay Container */}
-      <div className="fixed inset-0 bg-[#1a1b1f]/20 z-50 flex flex-col justify-end">
-        {/* The Bottom Sheet */}
-        <section 
-          className="w-full max-w-2xl mx-auto rounded-t-[32px] shadow-[0px_-20px_40px_rgba(0,0,0,0.08)] px-[20px] py-8 md:px-12 flex flex-col animate-slide-up"
-          style={{
-            background: "rgba(255, 255, 255, 0.7)",
-            backdropFilter: "blur(20px)",
-            WebkitBackdropFilter: "blur(20px)",
-            borderTop: "1px solid rgba(255, 255, 255, 0.5)",
-          }}
-        >
-          {/* Handle */}
-          <div className="w-12 h-1.5 bg-[#c1c6d7]/50 rounded-full mx-auto mb-8"></div>
-          
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="font-headline text-[32px] leading-[1.2] tracking-[-0.01em] font-semibold text-[#1a1b1f]">Review Selection</h2>
-            <div className="bg-[#0058bc]/10 text-[#0058bc] px-4 py-1 rounded-full flex items-center gap-2">
-              <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-              <span className="text-[14px] leading-[1.4] tracking-[0.01em] font-medium">{selectedCards.length} Modules Active</span>
-            </div>
-          </div>
-
-          {/* Function List - Real Data */}
-          <div className="flex flex-col gap-4 mb-[80px] overflow-y-auto max-h-[353px]">
-            {selectedCards.map((card) => (
-              <div key={card.id} className="flex items-center justify-between p-4 bg-[#ffffff]/50 rounded-xl border border-white/40">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-[#e2dfff] flex items-center justify-center text-[#0c006a]">
-                    <span className="material-symbols-outlined">{card.icon}</span>
-                  </div>
-                  <span className="text-[18px] leading-[1.6] text-[#1a1b1f] font-semibold">{card.title}</span>
-                </div>
-                <span className="text-[16px] leading-[1.6] font-normal text-[#414755]">{card.price}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Footer Section */}
-          <div className="mt-auto pt-6 border-t border-[#c1c6d7]/20">
-            <div className="flex items-end justify-between mb-8">
-              <div>
-                <p className="font-headline text-[32px] leading-[1.2] tracking-[-0.01em] font-semibold text-[#1a1b1f]">Total: ${totalCost} / month</p>
-                <p className="text-[12px] leading-[1.2] font-semibold text-[#414755] mt-1">Starting next billing cycle</p>
-              </div>
-              <div className="hidden md:flex flex-col items-end opacity-60">
-                <p className="text-[12px] leading-[1.2] font-semibold uppercase tracking-wider">Estimated Growth</p>
-                <p className="text-[16px] leading-[1.6] font-bold text-[#0058bc]">+24% Efficiency</p>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <button 
-                onClick={handleBack}
-                className="w-full py-4 px-8 border border-[#c1c6d7] text-[#1a1b1f] font-semibold rounded-xl hover:bg-[#e3e2e7]/50 transition-all bg-transparent flex items-center justify-center gap-2"
-              >
-                Go back
-              </button>
-              <button 
-                onClick={handleNext}
-                className="w-full py-4 px-8 bg-[#0058bc] text-[#ffffff] font-bold rounded-xl shadow-lg shadow-[#0058bc]/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-              >
-                I agree and keep going
-                <span className="material-symbols-outlined">arrow_forward</span>
-              </button>
-            </div>
-          </div>
-        </section>
+      {/* Fixed Bottom Action */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-surface/90 backdrop-blur-xl border-t border-surface-variant/20 px-5 md:px-16 py-4">
+        <div className="max-w-2xl mx-auto flex gap-3">
+          <button
+            onClick={handleBack}
+            className="flex-1 py-3.5 px-6 border border-surface-variant text-on-surface font-semibold rounded-xl hover:bg-surface-container-high/50 transition-all bg-transparent flex items-center justify-center gap-2"
+          >
+            <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+            Go back
+          </button>
+          <button
+            onClick={handleNext}
+            className="flex-[2] py-3.5 px-6 bg-primary text-on-primary font-bold rounded-xl shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+          >
+            I agree and keep going
+            <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+          </button>
+        </div>
       </div>
     </div>
   );

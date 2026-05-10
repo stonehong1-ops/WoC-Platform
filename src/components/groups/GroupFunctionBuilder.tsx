@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Group } from "@/types/group";
 import { groupService } from "@/lib/firebase/groupService";
 import { FUNCTION_SECTIONS } from "./functionBuilderData";
+import StepIndicator from "./StepIndicator";
 
 interface GroupFunctionBuilderProps {
   group: Group;
@@ -89,30 +90,8 @@ const GroupFunctionBuilder = ({ group, onClose }: GroupFunctionBuilderProps) => 
         }
       `}</style>
 
-      {/* Header */}
-      <header className="sticky top-0 z-50 flex items-center justify-between px-5 md:px-16 h-16 bg-surface/80 backdrop-blur-xl shadow-sm border-b border-surface-variant/20">
-        <div className="flex items-center gap-4">
-          {onClose && (
-            <button onClick={onClose} className="hover:bg-surface-variant/50 p-2 rounded-full transition-colors flex items-center justify-center">
-              <span className="material-symbols-outlined text-on-surface text-[20px]">arrow_back</span>
-            </button>
-          )}
-          <div>
-            <h1 className="font-semibold text-on-surface text-lg leading-tight" style={{ fontFamily: "'Inter', sans-serif" }}>{group.name}</h1>
-            <p className="text-[12px] text-on-surface-variant leading-tight">Active Configuration</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleApply}
-            disabled={isSaving}
-            className="px-6 py-2.5 rounded-full text-[14px] font-medium text-on-primary bg-primary shadow-md hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
-            style={{ fontFamily: "'Inter', sans-serif" }}
-          >
-            {isSaving ? "Saving..." : "Apply Changes"}
-          </button>
-        </div>
-      </header>
+      {/* Step Header */}
+      <StepIndicator currentStep={1} groupName={group.name} onBack={onClose} />
 
       {/* Main Content */}
       <main className="pt-10 pb-40 px-5 md:px-16 max-w-[1440px] mx-auto" style={{ fontFamily: "'Inter', sans-serif" }}>

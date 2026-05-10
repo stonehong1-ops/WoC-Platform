@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { toast } from "sonner";
 import { groupService } from "@/lib/firebase/groupService";
 import { Group } from "@/types/group";
-import { FUNCTION_SECTIONS, FunctionCard } from "@/components/groups/functionBuilderData";
+import { FUNCTION_SECTIONS } from "@/components/groups/functionBuilderData";
+import StepIndicator from "@/components/groups/StepIndicator";
 
 type MenuItem = {
   id: string;
@@ -48,13 +49,11 @@ export default function OrganizeMenuPage() {
       const allCards = FUNCTION_SECTIONS.flatMap((s) => s.cards);
       const menuItems: MenuItem[] = [];
 
-      // Group selected functions by section for initial organization
       let lastSectionId = "";
       group.selectedFunctions.forEach((funcId) => {
         const card = allCards.find((c) => c.id === funcId);
         if (!card) return;
 
-        // Find which section this card belongs to
         const section = FUNCTION_SECTIONS.find((s) => s.cards.some((c) => c.id === funcId));
         if (section && section.id !== lastSectionId && menuItems.length > 0) {
           menuItems.push({ id: `div-${Date.now()}-${Math.random()}`, type: "divider" });
@@ -125,7 +124,6 @@ export default function OrganizeMenuPage() {
         menuOrder: items,
       });
       toast.success("Menu structure saved successfully!");
-      // Navigate back to group home
       router.push(`/groups/${groupId}`);
     } catch (error) {
       console.error("Error saving menu structure:", error);
@@ -154,41 +152,25 @@ export default function OrganizeMenuPage() {
   }
 
   return (
-    <div className="bg-background text-on-surface font-body-md min-h-screen flex flex-col">
+    <div className="bg-background text-on-surface min-h-screen flex flex-col" style={{ fontFamily: "'Inter', sans-serif" }}>
       <style dangerouslySetInnerHTML={{__html: `
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
-        }
-        .drag-handle {
-            cursor: grab;
-        }
-        .drag-handle:active {
-            cursor: grabbing;
-        }
-        
-        /* Fallbacks for typographic classes missing in tailwind.config.ts */
-        .text-label-md { font-size: 14px; line-height: 1.4; letter-spacing: 0.01em; }
-        .font-headline-md { font-size: 24px; line-height: 1.3; font-weight: 600; }
+        .drag-handle { cursor: grab; }
+        .drag-handle:active { cursor: grabbing; }
       `}} />
 
-      {/* Top Bar */}
-      <header className="fixed top-0 w-full z-50 flex items-center justify-between px-margin-mobile h-16 bg-surface/80 backdrop-blur-xl border-b border-surface-variant">
-        <div className="flex items-center gap-3">
-          <span className="material-symbols-outlined text-primary text-2xl">hub</span>
-          <h1 className="text-label-md font-bold text-on-surface">Menu Structure</h1>
-        </div>
-        <button onClick={() => router.back()} className="text-primary font-bold text-label-md">Back</button>
-      </header>
+      {/* Step Header */}
+      <StepIndicator currentStep={3} groupName={group.name} onBack={() => router.back()} />
 
-      <main className="flex-grow pt-20 pb-32 px-margin-mobile max-w-md mx-auto w-full">
+      {/* Main Content */}
+      <main className="flex-1 pt-8 pb-40 px-5 md:px-16 max-w-lg mx-auto w-full">
         <div className="mb-6 flex items-end justify-between">
           <div>
-            <h2 className="font-headline-md text-on-surface">Organize Menu</h2>
-            <p className="text-on-surface-variant text-label-md mt-1">Drag handles to reorder your menu.</p>
+            <h2 className="text-[22px] md:text-[24px] leading-[1.3] font-bold text-on-surface">Organize Menu</h2>
+            <p className="text-on-surface-variant text-[14px] mt-1">Drag handles to reorder your menu.</p>
           </div>
           <button 
             onClick={handleAddDivider}
-            className="flex items-center gap-1.5 px-3 py-2 bg-surface-container-high text-primary rounded-full text-label-sm font-bold active:scale-95 transition-transform"
+            className="flex items-center gap-1.5 px-3 py-2 bg-surface-container-high text-primary rounded-full text-[13px] font-bold active:scale-95 transition-transform"
           >
             <span className="material-symbols-outlined text-[18px]">add_circle</span>
             Add Divider
@@ -206,7 +188,7 @@ export default function OrganizeMenuPage() {
             </div>
             <div className="flex-grow">
               <div className="flex items-center gap-2">
-                <span className="font-bold text-on-surface">Dashboard</span>
+                <span className="font-bold text-on-surface text-[15px]">Dashboard</span>
                 <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Fixed</span>
               </div>
             </div>
@@ -256,7 +238,7 @@ export default function OrganizeMenuPage() {
                   <div className="w-10 h-10 bg-surface-container rounded-full flex items-center justify-center">
                     <span className="material-symbols-outlined text-on-surface-variant">{item.icon}</span>
                   </div>
-                  <div className="flex-grow font-bold text-on-surface">{item.label}</div>
+                  <div className="flex-grow font-bold text-on-surface text-[15px]">{item.label}</div>
                 </div>
               );
             })}
@@ -264,21 +246,18 @@ export default function OrganizeMenuPage() {
         </div>
       </main>
 
-      {/* Bottom Action Button */}
-      <div className="fixed bottom-0 w-full p-6 bg-white/80 backdrop-blur-md border-t border-surface-variant">
-        <button 
-          onClick={handleApplyStructure}
-          disabled={isSaving}
-          className="w-full bg-primary text-on-primary h-14 rounded-2xl font-bold shadow-lg flex items-center justify-center gap-2 hover:bg-primary-container transition-colors active:scale-95 duration-100 disabled:opacity-50"
-        >
-          <span>{isSaving ? "Saving..." : "Apply Structure"}</span>
-          <span className="material-symbols-outlined">check_circle</span>
-        </button>
-      </div>
-
-      {/* Mobile Screen Bottom Nav Spacer */}
-      <div className="md:hidden">
-        <div className="h-28"></div>
+      {/* Fixed Bottom Action */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-surface/90 backdrop-blur-xl border-t border-surface-variant/20 px-5 md:px-16 py-4">
+        <div className="max-w-lg mx-auto">
+          <button 
+            onClick={handleApplyStructure}
+            disabled={isSaving}
+            className="w-full bg-primary text-on-primary h-14 rounded-2xl font-bold shadow-lg flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.98] transition-all disabled:opacity-50"
+          >
+            <span>{isSaving ? "Saving..." : "Apply Structure"}</span>
+            <span className="material-symbols-outlined">check_circle</span>
+          </button>
+        </div>
       </div>
     </div>
   );
