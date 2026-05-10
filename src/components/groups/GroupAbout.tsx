@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Group } from '@/types/group';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { toast } from 'sonner';
 
 interface GroupAboutProps {
   group: Group;
@@ -35,11 +36,11 @@ const GroupAbout: React.FC<GroupAboutProps> = ({ group }) => {
   const teamMembers = group.members?.filter(m => m.role === 'admin' || m.role === 'manager' || m.role === 'owner') || [];
 
   return (
-    <div className="p-4 space-y-[40px]">
+    <div className="p-4 space-y-8">
       {/* Section 1: Atmosphere */}
       <section>
-        <h3 className="font-title-lg text-title-lg text-on-surface mb-6 tracking-tight">{t("group.about.atmosphere")}</h3>
-        <div className="grid grid-cols-6 grid-rows-2 gap-3 h-[320px]">
+        <h3 className="font-title-lg text-title-lg text-on-surface mb-4 tracking-tight">{t("group.about.atmosphere")}</h3>
+        <div className="grid grid-cols-6 grid-rows-2 gap-2 h-[260px]">
           {/* Emotional Moment 1: Large Landscape */}
           <div className="col-span-4 row-span-1 rounded-xl overflow-hidden shadow-sm">
             <img className="w-full h-full object-cover transition-transform duration-700 hover:scale-105" alt="Dance moment" src={img1} />
@@ -63,8 +64,8 @@ const GroupAbout: React.FC<GroupAboutProps> = ({ group }) => {
       </section>
 
       {/* Section 2: Evocative CTA & About */}
-      <section className="space-y-6">
-        <div className="bg-surface-container p-6 rounded-2xl border border-outline-variant/30">
+      <section className="space-y-4">
+        <div className="bg-surface-container p-5 rounded-2xl border border-outline-variant/30">
           <div className="relative">
             <p className={`font-body-md text-body-md text-on-surface-variant ${!isAboutExpanded ? 'line-clamp-3' : ''}`}>
               {group.description || "Welcome to our community. We bridge the gap between traditional social dance and contemporary creative movement. Our community is built on the principles of inclusivity, artistic expression, and professional instruction. Whether you are a seasoned dancer or a curious beginner, you'll find a home on our floor."}
@@ -74,10 +75,13 @@ const GroupAbout: React.FC<GroupAboutProps> = ({ group }) => {
             )}
           </div>
         </div>
-        <div className="bg-primary p-6 rounded-2xl shadow-lg shadow-primary/20">
-          <p className="font-title-lg text-title-lg text-on-primary mb-4">{t("group.about.become_member")}</p>
-          <p className="font-body-md text-on-primary/80 mb-6 text-sm">{t("group.about.join_desc", { name: group.name || 'our vibrant community' })}</p>
-          <button className="w-full py-3.5 bg-on-primary text-primary font-label-md text-label-md rounded-xl active:scale-[0.98] transition-transform">
+        <div className="bg-primary p-5 rounded-2xl shadow-lg shadow-primary/20">
+          <p className="font-title-lg text-title-lg text-on-primary mb-3">{t("group.about.become_member")}</p>
+          <p className="font-body-md text-on-primary/80 mb-4 text-sm">{t("group.about.join_desc", { name: group.name || 'our vibrant community' })}</p>
+          <button 
+            className="w-full py-3 bg-on-primary text-primary font-label-md text-label-md rounded-xl active:scale-[0.98] transition-transform shadow-sm"
+            onClick={() => toast.success(t("group.about.join_requested") || "Join request sent!")}
+          >
             {t("group.about.join_button")}
           </button>
         </div>
@@ -86,23 +90,30 @@ const GroupAbout: React.FC<GroupAboutProps> = ({ group }) => {
       {/* Section 3: Scannable Info (Location) */}
       <section>
         <h3 className="font-title-lg text-title-lg text-on-surface mb-2">{t("group.about.location")}</h3>
-        <p className="font-label-sm text-label-sm text-primary mb-4 flex items-center gap-1.5">
+        <p className="font-label-sm text-label-sm text-primary mb-3 flex items-center gap-1.5">
           <span className="material-symbols-outlined text-[16px]">info</span>
           {group.publicTransport || '합정역 8번 출구에서 10분 (10 mins from Hapjeong St. Exit 8)'}
         </p>
-        <div className="flex items-center justify-between mb-4 p-4 bg-surface-container-low border border-outline-variant/30 rounded-xl">
+        <div className="flex items-center justify-between mb-3 p-3.5 bg-surface-container-low border border-outline-variant/30 rounded-xl">
           <p className="font-body-md text-body-md text-on-surface">{group.address || '3F, 42-1, Gangnam-daero, Seoul'}</p>
           <button
             className="px-4 py-2 bg-primary/10 text-primary font-label-sm text-label-sm rounded-lg active:bg-primary/20"
             onClick={() => {
               navigator.clipboard.writeText(group.address || '3F, 42-1, Gangnam-daero, Seoul');
+              toast.success(t("group.about.copied") || "Copied to clipboard!");
             }}
           >
             {t("group.about.copy")}
           </button>
         </div>
         {/* Stylized Static Map Preview */}
-        <div className="rounded-2xl overflow-hidden border border-outline-variant/30 mb-4 h-56 relative group cursor-pointer shadow-sm">
+        <div 
+          className="rounded-2xl overflow-hidden border border-outline-variant/30 mb-3 h-48 relative group cursor-pointer shadow-sm"
+          onClick={() => {
+            const query = encodeURIComponent(group.address || '강남구 42-1');
+            window.open(`https://map.naver.com/v5/search/${query}`, '_blank');
+          }}
+        >
           <img className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" alt="Map preview" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB3RLqTb_phwlCCEHWGNJ2AMEZ2UR8J9u9Xs1AEaP2F4xVpYR9xvFn4bQa-zbnHGh0vN5DWQrjcHqMKTHeeWn88LuuYQphJw8iFQZ_-iXEPT5q2Frb52W7E51_ValbdBJ3RG1pO3gDrv9PTEnRFjmWZXU_QAbOo8irmkkA_PYc3x2GN7tYv3bZBHbMJhWa2elY3Cvc6pprMEEOzY0kcM4MgQZ-vMQi2wD1dNH9cVPHpN3ydBxDW6RYcNc85W1yIs95Ez2stBBaeJxc" />
           <div className="absolute inset-0 bg-primary/5"></div>
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
@@ -116,9 +127,9 @@ const GroupAbout: React.FC<GroupAboutProps> = ({ group }) => {
           </div>
         </div>
         {/* Map buttons */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-2">
           <button 
-            className="flex flex-col items-center justify-center py-3.5 bg-surface border border-outline-variant/40 rounded-xl active:bg-surface-container transition-colors"
+            className="flex flex-col items-center justify-center py-3 bg-surface border border-outline-variant/40 rounded-xl active:bg-surface-container transition-colors shadow-sm"
             onClick={() => {
               const query = encodeURIComponent(group.address || '강남구 42-1');
               window.open(`https://map.naver.com/v5/search/${query}`, '_blank');
@@ -128,7 +139,7 @@ const GroupAbout: React.FC<GroupAboutProps> = ({ group }) => {
             <span className="text-[10px] font-label-sm text-on-surface-variant">{t("group.about.map.naver")}</span>
           </button>
           <button 
-            className="flex flex-col items-center justify-center py-3.5 bg-surface border border-outline-variant/40 rounded-xl active:bg-surface-container transition-colors"
+            className="flex flex-col items-center justify-center py-3 bg-surface border border-outline-variant/40 rounded-xl active:bg-surface-container transition-colors shadow-sm"
             onClick={() => {
               const query = encodeURIComponent(group.address || '강남구 42-1');
               window.open(`https://map.kakao.com/link/search/${query}`, '_blank');
@@ -138,7 +149,7 @@ const GroupAbout: React.FC<GroupAboutProps> = ({ group }) => {
             <span className="text-[10px] font-label-sm text-on-surface-variant">{t("group.about.map.kakao")}</span>
           </button>
           <button 
-            className="flex flex-col items-center justify-center py-3.5 bg-surface border border-outline-variant/40 rounded-xl active:bg-surface-container transition-colors"
+            className="flex flex-col items-center justify-center py-3 bg-surface border border-outline-variant/40 rounded-xl active:bg-surface-container transition-colors shadow-sm"
             onClick={() => {
               const query = encodeURIComponent(group.address || '강남구 42-1');
               window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
@@ -151,8 +162,8 @@ const GroupAbout: React.FC<GroupAboutProps> = ({ group }) => {
       </section>
 
       {/* Section 4: Hours & Rules (Minimalist Cards) */}
-      <div className="grid grid-cols-1 gap-6">
-        <section className="space-y-4">
+      <div className="grid grid-cols-1 gap-4">
+        <section className="space-y-3">
           <h3 className="font-title-lg text-title-lg text-on-surface">{t("group.about.hours")}</h3>
           <div className="bg-surface border border-outline-variant/20 rounded-2xl divide-y divide-outline-variant/10 shadow-sm">
             {group.operatingHours && group.operatingHours.length > 0 ? (
@@ -176,10 +187,10 @@ const GroupAbout: React.FC<GroupAboutProps> = ({ group }) => {
             )}
           </div>
         </section>
-        <section className="space-y-4">
+        <section className="space-y-3">
           <h3 className="font-title-lg text-title-lg text-on-surface">{t("group.about.rules")}</h3>
-          <div className="bg-surface-container-low p-5 rounded-2xl border border-outline-variant/20">
-            <ul className="space-y-4">
+          <div className="bg-surface-container-low p-4 rounded-2xl border border-outline-variant/20">
+            <ul className="space-y-3">
               {group.houseRules && group.houseRules.length > 0 ? (
                 group.houseRules.map((rule, idx) => (
                   <li key={idx} className="flex gap-4 font-body-md text-body-md text-on-surface-variant">
@@ -210,8 +221,8 @@ const GroupAbout: React.FC<GroupAboutProps> = ({ group }) => {
 
       {/* Section 5: Team */}
       <section>
-        <h3 className="font-title-lg text-title-lg text-on-surface mb-4">{t("group.about.team")}</h3>
-        <div className="space-y-3">
+        <h3 className="font-title-lg text-title-lg text-on-surface mb-3">{t("group.about.team")}</h3>
+        <div className="space-y-2">
           {teamMembers.length > 0 ? (
             teamMembers.map(member => (
               <div key={member.id} className="flex items-center justify-between p-3.5 bg-surface border border-outline-variant/20 rounded-2xl">
@@ -225,7 +236,12 @@ const GroupAbout: React.FC<GroupAboutProps> = ({ group }) => {
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <button className="p-2 text-primary hover:bg-primary-container rounded-full"><span className="material-symbols-outlined">chat</span></button>
+                  <button 
+                    className="p-2 text-primary hover:bg-primary-container rounded-full"
+                    onClick={() => toast.info(t('common.coming_soon') || 'Chat feature coming soon!')}
+                  >
+                    <span className="material-symbols-outlined">chat</span>
+                  </button>
                 </div>
               </div>
             ))
@@ -243,8 +259,24 @@ const GroupAbout: React.FC<GroupAboutProps> = ({ group }) => {
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <button className="p-2 text-primary hover:bg-primary-container rounded-full"><span className="material-symbols-outlined">chat</span></button>
-                  <button className="p-2 text-primary hover:bg-primary-container rounded-full"><span className="material-symbols-outlined">call</span></button>
+                  <button 
+                    className="p-2 text-primary hover:bg-primary-container rounded-full"
+                    onClick={() => toast.info(t('common.coming_soon') || 'Chat feature coming soon!')}
+                  >
+                    <span className="material-symbols-outlined">chat</span>
+                  </button>
+                  <button 
+                    className="p-2 text-primary hover:bg-primary-container rounded-full"
+                    onClick={() => {
+                      if (group.representative?.phone) {
+                        window.location.href = `tel:${group.representative.phone}`;
+                      } else {
+                        toast.info(t('group.about.no_phone') || 'Phone number not available.');
+                      }
+                    }}
+                  >
+                    <span className="material-symbols-outlined">call</span>
+                  </button>
                 </div>
               </div>
               <div className="flex items-center justify-between p-3.5 bg-surface border border-outline-variant/20 rounded-2xl">
@@ -258,7 +290,12 @@ const GroupAbout: React.FC<GroupAboutProps> = ({ group }) => {
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <button className="p-2 text-primary hover:bg-primary-container rounded-full"><span className="material-symbols-outlined">chat</span></button>
+                  <button 
+                    className="p-2 text-primary hover:bg-primary-container rounded-full"
+                    onClick={() => toast.info(t('common.coming_soon') || 'Chat feature coming soon!')}
+                  >
+                    <span className="material-symbols-outlined">chat</span>
+                  </button>
                 </div>
               </div>
             </>
@@ -267,8 +304,8 @@ const GroupAbout: React.FC<GroupAboutProps> = ({ group }) => {
       </section>
 
       {/* Section 6: Payment Info */}
-      <section className="bg-secondary-container/30 p-6 rounded-2xl border border-secondary-fixed-dim/20">
-        <div className="flex items-center gap-2 mb-4">
+      <section className="bg-secondary-container/30 p-5 rounded-2xl border border-secondary-fixed-dim/20">
+        <div className="flex items-center gap-2 mb-3">
           <span className="material-symbols-outlined text-primary filled">account_balance</span>
           <h3 className="font-label-md text-label-md text-on-surface">{t("group.about.payment")}</h3>
         </div>
@@ -281,6 +318,7 @@ const GroupAbout: React.FC<GroupAboutProps> = ({ group }) => {
             className="px-5 py-2.5 bg-primary text-on-primary font-label-sm text-label-sm rounded-xl active:scale-95 transition-transform"
             onClick={() => {
               navigator.clipboard.writeText(group.bankDetails?.accountNumber || '123-456-7890-001');
+              toast.success(t("group.about.copied") || "Copied to clipboard!");
             }}
           >
             {t("group.about.copy")}

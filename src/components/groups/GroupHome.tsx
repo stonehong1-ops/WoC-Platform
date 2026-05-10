@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -11,12 +12,14 @@ import { format } from "date-fns";
 import { groupService } from "@/lib/firebase/groupService";
 import { notificationService } from "@/lib/firebase/notificationService";
 import { Notification } from "@/types/notification";
+import { galleryService, GalleryPost } from "@/lib/firebase/galleryService";
 import ImageWithFallback from "@/components/common/ImageWithFallback";
 import GroupJoinModal from "./GroupJoinModal";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useNavigation } from "@/components/providers/NavigationProvider";
+import { getContrastColor } from "@/lib/utils";
 
-type TabType = 'home' | 'calendar' | 'feed' | 'board' | 'about' | 'class' | 'members' | 'settings' | 'shop' | 'stay' | 'rental' | 'coupon';
+type TabType = 'home' | 'calendar' | 'feed' | 'board' | 'about' | 'class' | 'members' | 'settings' | 'shop' | 'stay' | 'rental' | 'coupon' | 'live';
 
 import GroupCalendar from "./GroupCalendar";
 import GroupBoard from "./GroupBoard";
@@ -24,7 +27,7 @@ import GroupInfo from "./GroupInfo";
 import GroupAbout from "./GroupAbout";
 import GroupClassEditor from "./GroupClassEditor";
 import GroupMemberManager from "./GroupMemberManager";
-import GroupSettings from "./GroupSettings";
+import GroupFunctionBuilder from "./GroupFunctionBuilder";
 import UniversalFeed from "../feed/UniversalFeed";
 import GroupShopEditor from "./GroupShopEditor";
 import GroupStayEditor from "./GroupStayEditor";
@@ -37,8 +40,28 @@ import GroupContactEditor from "./GroupContactEditor";
 import GroupGalleryEditor from "./GroupGalleryEditor";
 import GroupBoardEditor from "./GroupBoardEditor";
 import GroupAccountEditor from "./GroupAccountEditor";
+import LiveFeed from "@/components/live/LiveFeed";
+import ClassDetail from "../class/ClassDetail";
 
-export default function GroupHome({ group, isModal }: { group: Group, isModal?: boolean }) {
+const PALETTE_COLORS = [
+  "#0057bd", // WoC Blue
+  "#1a1c23", // Dark
+  "#2d3436", // Slate
+  "#636e72", // Steel
+  "#b2bec3", // Silver
+  "#d63031", // Ruby
+  "#e17055", // Coral
+  "#fdcb6e", // Amber
+  "#00b894", // Emerald
+  "#00cec9", // Turquoise
+  "#0984e3", // Azure
+  "#6c5ce7", // Iris
+  "#a29bfe", // Lavender
+  "#e84393", // Fuchsia
+  "#fd79a8", // Rose
+];
+
+export default function GroupHome({ group: initialGroup, isModal }: { group: Group, isModal?: boolean }) {
   const router = useRouter();
   const { t } = useLanguage();
   const { user, profile } = useAuth();
@@ -48,21 +71,47 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [memberStatus, setMemberStatus] = useState<'active' | 'pending' | 'rejected' | 'none'>('none');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [selectedAdminIndex, setSelectedAdminIndex] = useState(0);
+  const [isPaletteOpen, setIsPaletteOpen] = useState(false);
+   const [selectedAdminIndex, setSelectedAdminIndex] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [hasSeenHero, setHasSeenHero] = useState(false);
+  const [currentGroup, setCurrentGroup] = useState<Group>(initialGroup);
+
+  // 실시간 그룹 메타데이터 연동
+  useEffect(() => {
+    if (!initialGroup.id) return;
+    const unsubscribe = groupService.subscribeGroup(initialGroup.id, (updatedGroup) => {
+      if (updatedGroup) {
+        setCurrentGroup(updatedGroup);
+      }
+    });
+    return () => unsubscribe();
+  }, [initialGroup.id]);
 
   useEffect(() => {
     setGlobalNavHidden(true);
     return () => setGlobalNavHidden(false);
   }, [setGlobalNavHidden]);
 
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
+      if (containerRef.current) {
+        const top = containerRef.current.getBoundingClientRect().top;
+        // If the container's top is less than -60px, we've scrolled down 60px.
+        setIsScrolled(top < -60);
+      } else {
+        // Fallback to window.scrollY
+        setIsScrolled(window.scrollY > 60);
+      }
     };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    
+    // Use capture: true to catch scroll events from ANY scrollable container
+    window.addEventListener('scroll', handleScroll, { passive: true, capture: true });
+    // Initial check
+    handleScroll();
+    
+    return () => window.removeEventListener('scroll', handleScroll, { capture: true } as EventListenerOptions);
   }, []);
 
   const handleExit = () => {
@@ -76,7 +125,7 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
   // 데이터 바인딩용 상태
   const [members, setMembers] = useState<Member[]>([]);
   const [noticePost, setNoticePost] = useState<Post | null>(null);
-  const [moments, setMoments] = useState<Post[]>([]);
+  const [moments, setMoments] = useState<GalleryPost[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
   const [adminTodos, setAdminTodos] = useState<Notification[]>([]);
   const [liveChats, setLiveChats] = useState<Post[]>([]);
@@ -89,12 +138,12 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
 
   // 실시간 멤버 상태 확인
   useEffect(() => {
-    if (!user || !group.id) {
+    if (!user || !currentGroup.id) {
       setMemberStatus('none');
       return;
     }
 
-    const unsubscribe = groupService.subscribeMembers(group.id, (fetchedMembers) => {
+    const unsubscribe = groupService.subscribeMembers(currentGroup.id, (fetchedMembers) => {
       setMembers(fetchedMembers);
       const myMemberInfo = fetchedMembers.find(m => m.id === user.uid);
       if (myMemberInfo) {
@@ -105,24 +154,25 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
     });
 
     return () => unsubscribe();
-  }, [user, group.id]);
+  }, [user, currentGroup.id]);
 
   // 대시보드 데이터 연동
   useEffect(() => {
-    if (!group.id) return;
+    if (!currentGroup.id) return;
 
-    const unsubscribePosts = groupService.subscribePosts(group.id, (posts) => {
+    const unsubscribePosts = groupService.subscribePosts(currentGroup.id, (posts) => {
       const notice = posts.find(p => p.category?.toLowerCase() === 'notice') || posts[0] || null;
       setNoticePost(notice);
-
-      const momentsPosts = posts.filter(p => !!p.image).slice(0, 5);
-      setMoments(momentsPosts);
 
       const chatPosts = posts.filter(p => p.category !== 'notice' && !p.image).slice(0, 2);
       setLiveChats(chatPosts);
     });
 
-    const unsubscribeEvents = groupService.subscribeCalendarEvents(group.id, (events) => {
+    const unsubscribeGallery = galleryService.subscribeFeed((galleryPosts) => {
+      setMoments(galleryPosts.slice(0, 5));
+    }, { entityType: 'group', entityId: currentGroup.id });
+
+    const unsubscribeEvents = groupService.subscribeCalendarEvents(currentGroup.id, (events) => {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
@@ -142,9 +192,10 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
 
     return () => {
       unsubscribePosts();
+      unsubscribeGallery();
       unsubscribeEvents();
     };
-  }, [group.id]);
+  }, [currentGroup.id]);
 
   const genderStats = React.useMemo(() => {
     let male = 0;
@@ -164,33 +215,33 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
   const isFullMember = memberStatus === 'active';
   
   const [isClaiming, setIsClaiming] = useState(false);
-  const isOwner = group.ownerId && user && group.ownerId === user.uid;
-  const isLocked = group.isPublished === false && !isOwner;
+  const isOwner = currentGroup.ownerId && user && currentGroup.ownerId === user.uid;
+  const isLocked = currentGroup.isPublished === false && !isOwner;
 
   const admins = React.useMemo(() => {
-    const adminMembers = members.filter(m => m.role === 'admin' || m.id === group.ownerId);
+    const adminMembers = members.filter(m => m.role === 'admin' || m.id === currentGroup.ownerId);
     if (adminMembers.length > 0) return adminMembers;
-    if (group.representative) {
-      return [{ id: 'rep', name: group.representative.name, avatar: group.representative.avatar, role: 'admin' }];
+    if (currentGroup.representative) {
+      return [{ id: 'rep', name: currentGroup.representative.name, avatar: currentGroup.representative.avatar, role: 'admin' }];
     }
     return [{ id: 'admin', name: 'Admin', avatar: '', role: 'admin' }];
-  }, [members, group.ownerId, group.representative]);
+  }, [members, currentGroup.ownerId, currentGroup.representative]);
 
   const currentAdmin = admins[selectedAdminIndex] || admins[0];
 
   const isAdminUser = React.useMemo(() => {
-    return admins.some(a => a.id === user?.uid) || group.ownerId === user?.uid;
-  }, [admins, user, group.ownerId]);
+    return admins.some(a => a.id === user?.uid) || currentGroup.ownerId === user?.uid;
+  }, [admins, user, currentGroup.ownerId]);
 
   useEffect(() => {
     if (!user || !isAdminUser) return;
     
-    const unsub = notificationService.subscribeToAdminTodos(user.uid, group.id, (todos) => {
+    const unsub = notificationService.subscribeToAdminTodos(user.uid, currentGroup.id, (todos) => {
       setAdminTodos(todos);
     });
     
     return () => unsub();
-  }, [user, isAdminUser, group.id]);
+  }, [user, isAdminUser, currentGroup.id]);
 
   const handleClaimAdmin = async () => {
     if (!user) {
@@ -206,7 +257,7 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
         avatar: profile?.photoURL || user.photoURL || '',
       };
 
-      await groupService.claimGroupAdmin(group.id, user.uid, memberData);
+      await groupService.claimGroupAdmin(currentGroup.id, user.uid, memberData);
       toast.success("Admin access granted!", { description: "Please start group setup." });
       
       // Auto reload to refresh server component / permissions
@@ -219,13 +270,26 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
     }
   };
 
+  const handleColorChange = async (color: string) => {
+    try {
+      await groupService.updateGroupMetadata(currentGroup.id, {
+        headerThemeColor: color
+      });
+      toast.success("Theme updated");
+      setIsPaletteOpen(false);
+    } catch (error) {
+      console.error("Error updating theme color:", error);
+      toast.error("Failed to update theme");
+    }
+  };
+
   const handleJoinAction = async () => {
     if (!user) {
       toast.error("Sign-in required.");
       return;
     }
 
-    const strategy = group.membershipPolicy?.joinStrategy || 'open';
+    const strategy = currentGroup.membershipPolicy?.joinStrategy || 'open';
 
     if (strategy === 'invite') {
       setShowJoinModal(true);
@@ -242,14 +306,14 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
       };
 
       if (strategy === 'open') {
-        await groupService.joinGroup(group.id, user.uid, memberData);
+        await groupService.joinGroup(currentGroup.id, user.uid, memberData);
         setShowJoinModal(true); // "환영합니다" 팝업
       } else if (strategy === 'approval') {
-        await groupService.requestJoinGroup(group.id, user.uid, memberData);
+        await groupService.requestJoinGroup(currentGroup.id, user.uid, memberData);
         setShowJoinModal(true); // "신청 완료" 팝업
       }
     } catch (error) {
-      console.error("Error joining group:", error);
+      console.error("Error joining currentGroup:", error);
       toast.error("An error occurred while joining.");
     } finally {
       setIsJoining(false);
@@ -260,27 +324,16 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
     // 메인(home)과 About(about)은 누구나 접근 가능
     if (tab === 'home' || tab === 'about') {
       setActiveTab(tab);
+      window.scrollTo(0, 0);
       return;
     }
 
     // 그 외 메뉴는 정회원만 가능
     if (!isFullMember) {
-      toast.error("This menu is only available to members.", {
-        description: "Redirecting to join request.",
-        duration: 3000,
-      });
-      setTimeout(() => {
-        setShowJoinModal(true);
-      }, 1000);
-      return;
+      return; // Do nothing on click, as UI will show a lock
     }
 
     if (tab === 'class') {
-      const isAdminUser = admins.some(a => a.id === user?.uid) || group.ownerId === user?.uid;
-      if (!isAdminUser) {
-        toast.error("Class management is admin-only.", { duration: 3000 });
-        return;
-      }
       setActiveTab(tab);
       return;
     }
@@ -291,10 +344,13 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
     }
 
     setActiveTab(tab);
+    window.scrollTo(0, 0);
   };
 
+  const showSolidHeader = isScrolled || activeTab !== 'home';
+
   return (
-    <div className="bg-background text-on-background min-h-screen font-body relative pb-24 antialiased">
+    <div ref={containerRef} className="bg-background text-on-background min-h-screen font-body relative pb-24 antialiased">
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap');
         
@@ -331,40 +387,108 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
       <div className="fixed inset-0 pointer-events-none bg-blur-tertiary -z-10 bg-blur-primary"></div>
 
       {/* Header */}
-      <header className={`fixed top-0 w-full transition-colors duration-300 z-50 flex justify-between items-center px-page-margin h-14 ${
-        (isScrolled || activeTab !== 'home' || isLocked)
-          ? 'bg-surface/90 backdrop-blur-xl border-b border-outline/15 text-primary'
-          : 'bg-gradient-to-b from-black/60 to-transparent text-white border-transparent'
-      }`}>
+      <header 
+        className={`fixed top-0 w-full z-50 flex justify-between items-center px-page-margin h-16 transition-all duration-300 ${
+          showSolidHeader 
+            ? 'shadow-lg border-b border-white/10' 
+            : 'border-b border-transparent shadow-none'
+        }`}
+        style={{ 
+          backgroundColor: showSolidHeader ? (currentGroup.headerThemeColor || "#1a1c23") : 'transparent',
+          color: (showSolidHeader && getContrastColor(currentGroup.headerThemeColor || "#1a1c23") === 'black')
+            ? "#0a0f1d" 
+            : "#ffffff"
+        }}
+      >
         <div className="flex items-center gap-3">
-          <a
-            href="/groups"
-            className="hover:bg-white/20 active:scale-90 transition-transform p-2 rounded-full flex items-center justify-center"
+          <button
+            onClick={handleExit}
+            className="hover:bg-current/10 active:scale-90 transition-transform p-2 rounded-full flex items-center justify-center"
           >
-            <span className="material-symbols-outlined">arrow_back</span>
-          </a>
-          <h1 className="font-headline font-bold text-lg truncate max-w-[200px] flex items-baseline gap-2">
-            <span>{group.name}</span>
-            {group.nativeName && <span className="text-[0.65em] font-bold opacity-100">{group.nativeName}</span>}
+            <span className="material-symbols-outlined text-[20px]">arrow_back</span>
+          </button>
+          <h1 className="flex flex-col justify-center">
+            <span className="font-headline font-black text-base leading-tight tracking-tight truncate max-w-[200px]">
+              {currentGroup.name}
+            </span>
+            {currentGroup.nativeName && (
+              <span className={`text-[10px] font-bold leading-tight ${showSolidHeader && getContrastColor(currentGroup.headerThemeColor || "#1a1c23") === 'black' ? 'opacity-40' : 'opacity-60'}`}>
+                {currentGroup.nativeName}
+              </span>
+            )}
           </h1>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 relative">
           {isAdminUser && (
-            <button 
-              onClick={() => setIsSettingsOpen(true)}
-              className="hover:bg-white/20 active:scale-90 transition-all p-2 rounded-full flex items-center justify-center"
-            >
-              <span className="material-symbols-outlined">settings</span>
-            </button>
+            <>
+              <button 
+                onClick={() => setIsPaletteOpen(!isPaletteOpen)}
+                className="hover:bg-current/10 active:scale-90 transition-all p-2 rounded-full flex items-center justify-center relative group/palette"
+              >
+                <div className="relative flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[22px]">palette</span>
+                  <div 
+                    className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white shadow-sm transition-transform group-hover/palette:scale-125"
+                    style={{ backgroundColor: currentGroup.headerThemeColor || "#1a1c23" }}
+                  />
+                </div>
+              </button>
+
+              <AnimatePresence>
+                {isPaletteOpen && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-50" 
+                      onClick={() => setIsPaletteOpen(false)}
+                    />
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      className="absolute top-14 right-0 bg-surface-container-high/95 backdrop-blur-3xl border border-white/20 rounded-[2.5rem] p-6 shadow-[0_25px_60px_rgba(0,0,0,0.6)] z-[60] w-[300px]"
+                    >
+                      <div className="flex justify-between items-center mb-5 px-1">
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Theme Customization</span>
+                          <span className="text-[14px] font-bold text-white mt-1">Branding Palette</span>
+                        </div>
+                        <div className="flex gap-1.5">
+                          <div className="w-1.5 h-1.5 rounded-full bg-white/30 animate-pulse"></div>
+                          <div className="w-1.5 h-1.5 rounded-full bg-white/10"></div>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-5 gap-3">
+                        {PALETTE_COLORS.map((color) => (
+                          <button
+                            key={color}
+                            onClick={() => handleColorChange(color)}
+                            className={`w-10 h-10 rounded-full transition-all relative flex items-center justify-center ${currentGroup.headerThemeColor === color ? "ring-2 ring-white scale-110 shadow-lg" : "hover:scale-110 opacity-70 hover:opacity-100"}`}
+                            style={{ backgroundColor: color }}
+                          >
+                            {currentGroup.headerThemeColor === color && (
+                              <span className="material-symbols-outlined text-sm" style={{ color: getContrastColor(color) === 'black' ? "#0a0f1d" : "#ffffff" }}>check</span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+
+              <button 
+                onClick={() => setIsSettingsOpen(true)}
+                className="hover:bg-current/10 active:scale-90 transition-all p-2 rounded-full flex items-center justify-center"
+              >
+                <span className="material-symbols-outlined text-[20px]">settings</span>
+              </button>
+            </>
           )}
-          <button className="hover:bg-white/20 active:scale-90 transition-transform p-2 rounded-full flex items-center justify-center">
-            <span className="material-symbols-outlined">search</span>
-          </button>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className={activeTab === 'home' && !isLocked ? "pt-0 pb-12" : "pt-14 pb-12"}>
+      <main className="pt-16 pb-12">
         {isLocked ? (
           <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center mt-10">
              <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
@@ -374,7 +498,7 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
              <p className="text-slate-500 mb-6 max-w-sm">
                 {t('group.unsetup.desc') || 'If you are the admin of this community, please claim your rights and activate the group.'}
              </p>
-             {!group.ownerId && (
+             {!currentGroup.ownerId && (
                <button 
                  onClick={handleClaimAdmin}
                  disabled={isClaiming}
@@ -386,19 +510,20 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
           </div>
         ) : (
           <>
-            {activeTab === 'home' && !hasSeenHero && (
-              <section className="relative w-full aspect-[21/9] md:aspect-[3/1] bg-surface-container-high overflow-hidden">
+            {activeTab === 'home' && (
+              <section className="relative w-full aspect-[21/9] md:aspect-[3/1] bg-surface-container-high overflow-hidden -mt-16">
                 <ImageWithFallback
-                  alt={group.name}
+                  alt={currentGroup.name}
                   className="absolute inset-0 object-cover w-full h-full"
-                  src={group.coverImage}
+                  src={currentGroup.coverImage}
                   fallbackType="cover"
-                  category={group.tags?.[0] || ''}
+                  category={currentGroup.tags?.[0] || ''}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
+                <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/60 to-transparent pointer-events-none"></div>
                 <div className="absolute bottom-0 left-0 w-full px-6 py-6 flex flex-col gap-2">
                   <div className="font-body text-[18px] text-white font-bold tracking-tight drop-shadow-md flex items-center gap-3">
-                    <span>{t('groups.member_count_label') || 'Members'} <span className="text-primary-fixed font-black">{group.memberCount || members.length || 0}</span></span>
+                    <span>{t('groups.member_count_label') || 'Members'} <span className="text-primary-fixed font-black">{currentGroup.memberCount || members.length || 0}</span></span>
                     <span className="w-1 h-1 rounded-full bg-white/30"></span>
                     <span className="text-white/80 text-[14px]">
                       {t('groups.new_members_label') || 'New this week'} <span className="text-white font-black">{members.filter(m => { const joined = (m as any).joinedAt; return joined && (Date.now() - (typeof joined === 'number' ? joined : new Date(joined).getTime())) < 7 * 24 * 60 * 60 * 1000; }).length}</span>
@@ -427,35 +552,46 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
             )}
 
             {/* Sticky Horizontal Tab Menu */}
-            <div className="sticky top-14 z-40 bg-surface/95 backdrop-blur-md border-b border-outline/10 shadow-sm">
-              <div className="grid grid-cols-5 w-full">
+            <div className="sticky top-16 z-40 bg-surface border-b border-outline/10 shadow-sm overflow-x-auto hide-scrollbar">
+              <div className="flex min-w-full px-2 gap-1">
                 {[
-                  { id: 'home', label: 'DASHBOARD', icon: 'dashboard' },
-                  { id: 'feed', label: 'SOCIAL', icon: 'rss_feed' },
-                  { id: 'calendar', label: 'CALENDAR', icon: 'calendar_today' },
-                  { id: 'board', label: 'NOTICE', icon: 'campaign' },
-                  { id: 'about', label: 'ABOUT', icon: 'info' },
-                ].map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => {
-                      setHasSeenHero(true);
-                      handleTabClick(tab.id as TabType);
-                    }}
-                    className={`flex flex-col items-center justify-center py-2.5 border-b-2 transition-all ${
-                      activeTab === tab.id
-                        ? 'border-primary text-primary'
-                        : 'border-transparent text-on-surface-variant hover:text-on-surface'
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-[20px] mb-1" style={activeTab === tab.id ? { fontVariationSettings: "'FILL' 1" } : {}}>{tab.icon}</span>
-                    <span className="text-[11px] font-black tracking-tighter leading-none">{tab.label}</span>
-                  </button>
-                ))}
+                  { id: 'home', key: 'group.tab.dashboard', icon: 'dashboard' },
+                  { id: 'live', key: 'group.tab.live', icon: 'play_circle' },
+                  { id: 'feed', key: 'group.tab.feed', icon: 'rss_feed', locked: true },
+                  { id: 'calendar', key: 'group.tab.calendar', icon: 'calendar_today', locked: true },
+                  { id: 'class', key: 'group.tab.class', icon: 'school', locked: true },
+                  { id: 'board', key: 'group.tab.notice', icon: 'campaign', locked: true },
+                  { id: 'about', key: 'group.tab.about', icon: 'info' },
+                ].map((tab) => {
+                  const isTabLocked = tab.locked && !isFullMember;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => {
+                        handleTabClick(tab.id as TabType);
+                      }}
+                      className={`flex flex-col items-center justify-center py-2 px-1.5 border-b-2 transition-all shrink-0 min-w-[52px] relative ${
+                        activeTab === tab.id
+                          ? 'border-primary text-primary'
+                          : isTabLocked 
+                            ? 'border-transparent text-outline hover:text-outline cursor-not-allowed opacity-60'
+                            : 'border-transparent text-on-surface-variant hover:text-on-surface'
+                      }`}
+                    >
+                      <div className="relative">
+                        <span className="material-symbols-outlined text-[12px] mb-0.5" style={activeTab === tab.id ? { fontVariationSettings: "'FILL' 1" } : {}}>{tab.icon}</span>
+                        {isTabLocked && (
+                          <span className="material-symbols-outlined text-[10px] absolute -top-1 -right-2 text-outline bg-surface rounded-full">lock</span>
+                        )}
+                      </div>
+                      <span className="text-[7px] font-bold tracking-tight leading-none uppercase">{t(tab.key)}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-        <div className={`max-w-7xl mx-auto ${activeTab === 'feed' || activeTab === 'home' ? 'px-0 md:px-0 mt-0 space-y-0 pb-0' : 'px-4 md:px-8 space-y-10 mt-6 pb-12'}`}>
+        <div className={`max-w-7xl mx-auto ${activeTab === 'feed' || activeTab === 'home' || activeTab === 'live' || activeTab === 'calendar' ? 'px-0 md:px-0 mt-0 space-y-0 pb-0' : 'px-4 md:px-8 space-y-10 mt-6 pb-12'}`}>
           {activeTab === 'home' && (
             <div className="flex flex-col gap-10 mt-10">
               {/* Admin Todo Section */}
@@ -485,8 +621,11 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
 
               {/* Notice Board Section */}
               <section className="px-6">
-                <div className="bg-surface-container rounded-xl p-4 flex flex-col gap-4 cursor-pointer" onClick={() => handleTabClick('board')}>
-                  <h4 className="font-body text-[12px] font-medium uppercase tracking-widest text-on-surface-variant">Notice</h4>
+                <div className={`bg-surface-container rounded-xl p-4 flex flex-col gap-4 ${isFullMember ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}`} onClick={() => handleTabClick('board')}>
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-body text-[12px] font-medium uppercase tracking-widest text-on-surface-variant">Notice</h4>
+                    {!isFullMember && <span className="material-symbols-outlined text-[16px] text-outline">lock</span>}
+                  </div>
                   <ul className="flex flex-col gap-3">
                     {noticePost ? (
                       <li className="flex flex-col gap-1 border-b border-outline/10 pb-3 last:border-0 last:pb-0">
@@ -509,11 +648,18 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
                 </div>
               </section>
 
-              {/* Today's Flow Section */}
+              {/* SCHEDULE Section */}
               <section className="px-6 flex flex-col gap-4">
                 <div className="flex items-center justify-between mb-2">
-                  <h2 className="font-headline text-[20px] leading-[1.4] font-bold text-on-background">Today's Flow</h2>
-                  <span className="font-body text-[12px] font-bold text-white bg-primary px-3 py-1 rounded-full shadow-sm">{format(Date.now(), 'MMM d').toUpperCase()}</span>
+                  <h2 className="font-headline text-[18px] leading-[1.4] font-bold text-on-background">Schedule</h2>
+                  <div className="flex items-center gap-3">
+                    {isFullMember ? (
+                      <span className="font-body text-[12px] font-medium text-primary cursor-pointer flex items-center" onClick={() => handleTabClick('calendar')}>VIEW ALL <span className="material-symbols-outlined text-[14px]">chevron_right</span></span>
+                    ) : (
+                      <span className="font-body text-[12px] font-medium text-outline flex items-center cursor-not-allowed opacity-60"><span className="material-symbols-outlined text-[14px] mr-1">lock</span></span>
+                    )}
+                    <span className="font-body text-[12px] font-bold text-white bg-primary px-3 py-1 rounded-full shadow-sm">{format(Date.now(), 'MMM d').toUpperCase()}</span>
+                  </div>
                 </div>
                 <div className="flex flex-col gap-4">
                   {(() => {
@@ -521,6 +667,7 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
                     todayStart.setHours(0, 0, 0, 0);
                     const todayEnd = new Date(todayStart);
                     todayEnd.setDate(todayEnd.getDate() + 1);
+                    const todayEndMs = todayEnd.getTime();
                     
                     const todayEvents = upcomingEvents.filter(e => {
                       const startTime = typeof e.startDate === 'number' ? e.startDate : new Date(e.startDate || 0).getTime();
@@ -535,7 +682,7 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
                         const typeBg = event.type === 'Practica' ? 'bg-primary-container' : (event.type === 'Class' ? 'bg-tertiary-fixed' : 'bg-secondary-container');
 
                         return (
-                          <div key={event.id} className="flex items-start gap-4 relative" onClick={() => handleTabClick('calendar')}>
+                          <div key={event.id} className={`flex items-start gap-4 relative ${isFullMember ? 'cursor-pointer' : 'cursor-not-allowed opacity-80'}`} onClick={() => handleTabClick('calendar')}>
                             {idx < todayEvents.length - 1 && <div className="absolute left-[23px] top-8 bottom-[-24px] w-0.5 bg-outline/15"></div>}
                             <div className="w-12 pt-2 flex flex-col items-center z-10 bg-background">
                               <div className={`w-4 h-4 rounded-full relative z-10 shrink-0 ${isNow ? 'bg-error shadow-[0_0_12px_rgba(186,26,26,0.8)]' : 'bg-outline/40 border border-outline/60'}`}></div>
@@ -562,80 +709,93 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
                         );
                       });
                     } else {
-                      return (
-                        <div className="flex items-start gap-4 relative">
-                          <div className="w-12 pt-2 flex flex-col items-center z-10 bg-background">
-                            <div className="w-4 h-4 rounded-full bg-outline/30 relative z-10 shrink-0 border border-outline/50"></div>
-                            <span className="font-body text-[12px] font-medium text-outline mt-1">--:--</span>
+                      // Show NEXT event if today is empty
+                      const nextEvent = upcomingEvents.find(e => {
+                        const st = typeof e.startDate === 'number' ? e.startDate : new Date(e.startDate || 0).getTime();
+                        return st >= todayEndMs;
+                      });
+                      
+                      if (nextEvent) {
+                        const nextStart = typeof nextEvent.startDate === 'number' ? nextEvent.startDate : new Date(nextEvent.startDate || 0).getTime();
+                        return (
+                          <div className={`bg-surface-container-lowest border border-outline/15 rounded-xl p-4 flex items-center justify-between gap-4 ${isFullMember ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}`} onClick={() => handleTabClick('calendar')}>
+                            <div className="flex items-center gap-4">
+                              <div className="w-16 h-16 rounded-lg bg-surface-variant shrink-0 flex flex-col items-center justify-center">
+                                <span className="font-body text-[12px] font-medium text-on-surface-variant uppercase">{format(nextStart, 'EEE')}</span>
+                                <span className="font-headline text-[24px] font-extrabold text-on-surface leading-[1.3]">{format(nextStart, 'd')}</span>
+                              </div>
+                              <div>
+                                <h3 className="font-headline text-[20px] font-bold leading-[1.4] text-on-surface">{nextEvent.title}</h3>
+                                <p className="font-body text-[16px] font-medium leading-[1.6] text-on-surface-variant">{nextEvent.location || nextEvent.description || ''}</p>
+                              </div>
+                            </div>
+                            {!isFullMember && <span className="material-symbols-outlined text-[20px] text-outline shrink-0">lock</span>}
                           </div>
-                          <div className="flex-1 bg-surface-container-lowest border border-outline/15 rounded-xl p-3">
-                            <h3 className="font-body text-[16px] font-medium text-on-surface-variant font-bold">No upcoming events today</h3>
+                        );
+                      } else {
+                        return (
+                          <div className="flex items-start gap-4 relative">
+                            <div className="w-12 pt-2 flex flex-col items-center z-10 bg-background">
+                              <div className="w-4 h-4 rounded-full bg-outline/30 relative z-10 shrink-0 border border-outline/50"></div>
+                              <span className="font-body text-[12px] font-medium text-outline mt-1">--:--</span>
+                            </div>
+                            <div className="flex-1 bg-surface-container-lowest border border-outline/15 rounded-xl p-3">
+                              <h3 className="font-body text-[16px] font-medium text-on-surface-variant font-bold">No upcoming events scheduled</h3>
+                            </div>
                           </div>
-                        </div>
-                      );
+                        );
+                      }
                     }
                   })()}
                 </div>
               </section>
 
-              {/* NEXT Section (COMING HOT) */}
-              {upcomingEvents.length > 0 && (() => {
-                const todayEnd = new Date();
-                todayEnd.setHours(0, 0, 0, 0);
-                todayEnd.setDate(todayEnd.getDate() + 1);
-                const todayEndMs = todayEnd.getTime();
-
-                const nextEvent = upcomingEvents.find(e => {
-                  const st = typeof e.startDate === 'number' ? e.startDate : new Date(e.startDate || 0).getTime();
-                  return st >= todayEndMs;
-                });
-                if (!nextEvent) return null;
-                const nextStart = typeof nextEvent.startDate === 'number' ? nextEvent.startDate : new Date(nextEvent.startDate || 0).getTime();
-                return (
-                  <section className="px-6">
-                    <h2 className="font-body text-[12px] font-medium uppercase tracking-widest text-on-surface-variant mb-4">COMING HOT</h2>
-                    <div className="bg-surface-container-lowest border border-outline/15 rounded-xl p-4 flex items-center gap-4 cursor-pointer" onClick={() => handleTabClick('calendar')}>
-                      <div className="w-16 h-16 rounded-lg bg-surface-variant shrink-0 flex flex-col items-center justify-center">
-                        <span className="font-body text-[12px] font-medium text-on-surface-variant uppercase">{format(nextStart, 'EEE')}</span>
-                        <span className="font-headline text-[24px] font-extrabold text-on-surface leading-[1.3]">{format(nextStart, 'd')}</span>
-                      </div>
-                      <div>
-                        <h3 className="font-headline text-[20px] font-bold leading-[1.4] text-on-surface">{nextEvent.title}</h3>
-                        <p className="font-body text-[16px] font-medium leading-[1.6] text-on-surface-variant">{nextEvent.location || nextEvent.description || ''}</p>
-                      </div>
-                    </div>
-                  </section>
-                );
-              })()}
-
               {/* MOMENTS Section */}
               <section className="px-6">
-                <h2 className="font-body text-[12px] font-medium uppercase tracking-widest text-on-surface-variant mb-4">MOMENTS</h2>
-                <div className="flex gap-4 overflow-x-auto snap-x pb-4 -mx-6 px-6 hide-scrollbar">
+                <h2 className="font-body text-[12px] font-medium uppercase tracking-widest text-on-surface-variant mb-4">{t('group.home.moments') || 'MOMENTS'}</h2>
+                <div className="flex flex-col gap-4">
                   {moments.length > 0 ? (
-                    moments.map((post) => (
-                      <div key={post.id} onClick={() => handleTabClick('board')} className="relative w-64 md:w-80 aspect-[16/9] rounded-xl overflow-hidden shrink-0 snap-start bg-surface-container cursor-pointer">
-                        <ImageWithFallback src={post.image!} alt={post.title || "Moment"} className="absolute inset-0 w-full h-full object-cover" fallbackType="gallery" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                        <p className="absolute bottom-4 left-4 right-4 font-body text-[16px] font-medium italic text-white text-sm leading-tight">{post.title || ''}</p>
+                    <div onClick={() => handleTabClick('live')} className="relative w-full aspect-[4/5] rounded-2xl overflow-hidden shrink-0 bg-surface-container cursor-pointer shadow-sm">
+                      <ImageWithFallback src={moments[0].media?.[0] || ''} alt={moments[0].caption || "Moment"} className="absolute inset-0 w-full h-full object-cover" fallbackType="gallery" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+                      <div className="absolute bottom-6 left-5 right-5 flex flex-col gap-2">
+                        <div className="flex items-center gap-2">
+                          {moments[0].authorPhoto ? (
+                            <img src={moments[0].authorPhoto} alt={moments[0].authorName} className="w-8 h-8 rounded-full border-2 border-white/80 object-cover" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-bold text-xs border-2 border-white/80">
+                              {(moments[0].authorName || 'U').substring(0,2).toUpperCase()}
+                            </div>
+                          )}
+                          <span className="font-body text-[14px] font-medium text-white">{moments[0].authorName || 'User'}</span>
+                        </div>
+                        <p className="font-body text-[18px] font-bold text-white leading-[1.3] drop-shadow-md">{moments[0].caption || ''}</p>
                       </div>
-                    ))
+                      <div className="absolute top-4 right-4 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-error animate-pulse"></span>
+                        <span className="font-body text-[11px] font-bold text-white tracking-widest uppercase">LIVE</span>
+                      </div>
+                    </div>
                   ) : (
-                    <div className="relative w-full aspect-[16/9] rounded-xl overflow-hidden shrink-0 snap-start bg-surface-container flex items-center justify-center">
-                      <span className="material-symbols-outlined text-outline/50 text-3xl">photo_camera</span>
+                    <div className="relative w-full aspect-[21/9] rounded-2xl overflow-hidden shrink-0 bg-surface-container flex items-center justify-center border border-outline/10">
+                      <div className="flex flex-col items-center gap-2 opacity-50">
+                        <span className="material-symbols-outlined text-4xl">photo_camera</span>
+                        <span className="font-body text-sm font-medium">No live moments</span>
+                      </div>
                     </div>
                   )}
                 </div>
               </section>
 
-              {/* LIVE CHATTER Section */}
+              {/* RECENT FEED Section */}
               <section className="px-6">
-                <h2 className="font-body text-[12px] font-medium uppercase tracking-widest text-on-surface-variant mb-4">LIVE CHATTER</h2>
+                <h2 className="font-body text-[12px] font-medium uppercase tracking-widest text-on-surface-variant mb-4">{t('group.tab.feed') || 'RECENT FEED'}</h2>
                 <div className="flex flex-col gap-3">
                   {liveChats.length > 0 ? (
                     liveChats.map((chat, idx) => (
-                      <div key={chat.id || idx} className="bg-surface-container-lowest border border-outline/15 rounded-xl p-4 flex gap-3 items-start cursor-pointer" onClick={() => handleTabClick('feed')}>
-                        {chat.author?.avatar ? (
+                      <div key={chat.id || idx} className={`bg-surface-container-lowest border border-outline/15 rounded-xl p-4 flex justify-between items-center ${isFullMember ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}`} onClick={() => handleTabClick('feed')}>
+                        <div className="flex gap-3 items-start flex-1 min-w-0">
+                          {chat.author?.avatar ? (
                           <img src={chat.author.avatar} alt={chat.author.name} className="w-10 h-10 rounded-full object-cover shrink-0 border border-outline/20" />
                         ) : (
                           <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 font-bold ${idx === 0 ? 'bg-secondary-container text-on-secondary-container' : 'bg-tertiary-container text-on-tertiary-container'}`}>
@@ -649,6 +809,8 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
                           </div>
                           <p className="font-body text-[16px] font-medium text-on-surface-variant italic truncate">&quot;{chat.content || '...'}&quot;</p>
                         </div>
+                        </div>
+                        {!isFullMember && <span className="material-symbols-outlined text-[20px] text-outline shrink-0 ml-2">lock</span>}
                       </div>
                     ))
                   ) : members.filter(m => m.status === 'active').slice(0, 2).map((member, idx) => (
@@ -706,20 +868,26 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
 
           {activeTab === 'about' && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <GroupAbout group={group} />
+              <GroupAbout group={currentGroup} />
+            </div>
+          )}
+
+          {activeTab === 'live' && (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 w-full h-[calc(100vh-104px)]">
+              <LiveFeed entityType="group" entityId={currentGroup.id} />
             </div>
           )}
 
           {activeTab === 'calendar' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pt-4">
-              <GroupCalendar group={group} />
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <GroupCalendar group={currentGroup} />
             </div>
           )}
 
           {activeTab === 'feed' && isFullMember && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               <UniversalFeed 
-                context={{ scope: 'group', scopeId: group.id }} 
+                context={{ scope: 'group', scopeId: currentGroup.id }} 
                 currentUser={{
                   uid: user?.uid,
                   displayName: profile?.nickname || user?.displayName || 'Anonymous',
@@ -729,9 +897,15 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
             </div>
           )}
 
+          {activeTab === 'class' && isFullMember && (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
+              <ClassDetail groupId={currentGroup.id} isEmbedded={true} />
+            </div>
+          )}
+
           {activeTab === 'board' && isFullMember && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <GroupBoard group={group} />
+              <GroupBoard group={currentGroup} />
             </div>
           )}
 
@@ -743,7 +917,7 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
       {/* Settings Modal */}
       {isSettingsOpen && (
         <div className="fixed inset-0 z-[100] bg-background overflow-y-auto">
-          <GroupSettings group={group} onClose={() => setIsSettingsOpen(false)} />
+          <GroupFunctionBuilder group={currentGroup} onClose={() => setIsSettingsOpen(false)} />
         </div>
       )}
 
@@ -751,10 +925,10 @@ export default function GroupHome({ group, isModal }: { group: Group, isModal?: 
       <GroupJoinModal
         isOpen={showJoinModal}
         onClose={() => setShowJoinModal(false)}
-        groupName={group.name}
-        adminName={group.representative?.name || 'Admin'}
-        adminId={currentAdmin?.id || group.ownerId}
-        strategy={group.membershipPolicy?.joinStrategy}
+        groupName={currentGroup.name}
+        adminName={currentGroup.representative?.name || 'Admin'}
+        adminId={currentAdmin?.id || currentGroup.ownerId}
+        strategy={currentGroup.membershipPolicy?.joinStrategy}
         onConfirm={() => {
           setShowJoinModal(false);
           setActiveTab('home');
