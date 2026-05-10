@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Group } from "@/types/group";
 import { groupService } from "@/lib/firebase/groupService";
@@ -19,6 +20,7 @@ const STATUS_BADGE: Record<string, { bg: string; text: string }> = {
 };
 
 const GroupFunctionBuilder = ({ group, onClose }: GroupFunctionBuilderProps) => {
+  const router = useRouter();
   const [selectedSet, setSelectedSet] = useState<Set<string>>(new Set());
   const [isSaving, setIsSaving] = useState(false);
 
@@ -42,12 +44,18 @@ const GroupFunctionBuilder = ({ group, onClose }: GroupFunctionBuilderProps) => 
   };
 
   const handleApply = async () => {
+    if (selectedSet.size === 0) {
+      toast.error("Please select at least one function.");
+      return;
+    }
     setIsSaving(true);
     try {
       await groupService.updateGroupMetadata(group.id, {
         selectedFunctions: Array.from(selectedSet),
       });
-      toast.success("Functions saved successfully!");
+      toast.success("Functions saved! Proceeding to review...");
+      // Navigate to Step 2: Review
+      router.push(`/groups/${group.id}/review`);
     } catch (error) {
       console.error("Error saving functions:", error);
       toast.error("Failed to save functions.");

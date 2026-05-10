@@ -1,7 +1,11 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { toast } from "sonner";
+import { groupService } from "@/lib/firebase/groupService";
+import { Group } from "@/types/group";
+import { FUNCTION_SECTIONS, FunctionCard } from "@/components/groups/functionBuilderData";
 
 type MenuItem = {
   id: string;
@@ -15,18 +19,61 @@ export default function OrganizeMenuPage() {
   const params = useParams();
   const groupId = params.id as string;
 
-  const [items, setItems] = useState<MenuItem[]>([
-    { id: "div-1", type: "divider" },
-    { id: "calendar", type: "item", icon: "calendar_today", label: "Calendar" },
-    { id: "feed", type: "item", icon: "rss_feed", label: "Feed" },
-    { id: "live_stream", type: "item", icon: "sensors", label: "Live Stream" },
-    { id: "div-2", type: "divider" },
-    { id: "classes", type: "item", icon: "school", label: "Classes" },
-    { id: "notice", type: "item", icon: "campaign", label: "Notice" },
-    { id: "qa", type: "item", icon: "quiz", label: "Q&A" },
-    { id: "chat", type: "item", icon: "chat_bubble", label: "Chat" },
-    { id: "gallery", type: "item", icon: "photo_library", label: "Gallery" },
-  ]);
+  const [group, setGroup] = useState<Group | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState<MenuItem[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Load group data from Firestore
+  useEffect(() => {
+    if (!groupId) return;
+    groupService.getGroup(groupId).then((g) => {
+      setGroup(g);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, [groupId]);
+
+  // Build menu items from selected functions (or restore saved menuOrder)
+  useEffect(() => {
+    if (!group) return;
+
+    // If there's already a saved menuOrder, use it
+    if (group.menuOrder && group.menuOrder.length > 0) {
+      setItems(group.menuOrder);
+      return;
+    }
+
+    // Otherwise, build from selectedFunctions
+    if (group.selectedFunctions && group.selectedFunctions.length > 0) {
+      const allCards = FUNCTION_SECTIONS.flatMap((s) => s.cards);
+      const menuItems: MenuItem[] = [];
+
+      // Group selected functions by section for initial organization
+      let lastSectionId = "";
+      group.selectedFunctions.forEach((funcId) => {
+        const card = allCards.find((c) => c.id === funcId);
+        if (!card) return;
+
+        // Find which section this card belongs to
+        const section = FUNCTION_SECTIONS.find((s) => s.cards.some((c) => c.id === funcId));
+        if (section && section.id !== lastSectionId && menuItems.length > 0) {
+          menuItems.push({ id: `div-${Date.now()}-${Math.random()}`, type: "divider" });
+          lastSectionId = section.id;
+        } else if (!lastSectionId && section) {
+          lastSectionId = section.id;
+        }
+
+        menuItems.push({
+          id: card.id,
+          type: "item",
+          icon: card.icon,
+          label: card.title,
+        });
+      });
+
+      setItems(menuItems);
+    }
+  }, [group]);
 
   const dragItemIndex = useRef<number | null>(null);
   const dragOverItemIndex = useRef<number | null>(null);
@@ -71,10 +118,40 @@ export default function OrganizeMenuPage() {
     setItems(items.filter((item) => item.id !== id));
   };
 
-  const handleApplyStructure = () => {
-    console.log("Applied Menu Structure:", items);
-    alert("구조가 적용되었습니다. 콘솔에서 데이터를 확인하세요. 다음 단계를 기다립니다.");
+  const handleApplyStructure = async () => {
+    setIsSaving(true);
+    try {
+      await groupService.updateGroupMetadata(groupId, {
+        menuOrder: items,
+      });
+      toast.success("Menu structure saved successfully!");
+      // Navigate back to group home
+      router.push(`/groups/${groupId}`);
+    } catch (error) {
+      console.error("Error saving menu structure:", error);
+      toast.error("Failed to save menu structure.");
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (!group || items.length === 0) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background flex-col gap-4">
+        <span className="material-symbols-outlined text-6xl text-outline-variant">info</span>
+        <p className="text-on-surface text-lg font-semibold">No menu items to organize</p>
+        <button onClick={() => router.back()} className="px-6 py-3 bg-primary text-on-primary rounded-xl font-bold">Go Back</button>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-background text-on-surface font-body-md min-h-screen flex flex-col">
@@ -100,7 +177,7 @@ export default function OrganizeMenuPage() {
           <span className="material-symbols-outlined text-primary text-2xl">hub</span>
           <h1 className="text-label-md font-bold text-on-surface">Menu Structure</h1>
         </div>
-        <button onClick={() => router.back()} className="text-primary font-bold text-label-md">Done</button>
+        <button onClick={() => router.back()} className="text-primary font-bold text-label-md">Back</button>
       </header>
 
       <main className="flex-grow pt-20 pb-32 px-margin-mobile max-w-md mx-auto w-full">
@@ -191,9 +268,10 @@ export default function OrganizeMenuPage() {
       <div className="fixed bottom-0 w-full p-6 bg-white/80 backdrop-blur-md border-t border-surface-variant">
         <button 
           onClick={handleApplyStructure}
-          className="w-full bg-primary text-on-primary h-14 rounded-2xl font-bold shadow-lg flex items-center justify-center gap-2 hover:bg-primary-container transition-colors active:scale-95 duration-100"
+          disabled={isSaving}
+          className="w-full bg-primary text-on-primary h-14 rounded-2xl font-bold shadow-lg flex items-center justify-center gap-2 hover:bg-primary-container transition-colors active:scale-95 duration-100 disabled:opacity-50"
         >
-          <span>Apply Structure</span>
+          <span>{isSaving ? "Saving..." : "Apply Structure"}</span>
           <span className="material-symbols-outlined">check_circle</span>
         </button>
       </div>

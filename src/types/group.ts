@@ -148,6 +148,7 @@ export interface Group {
   isPublished?: boolean;
   headerThemeColor?: string;
   selectedFunctions?: string[];
+  menuOrder?: { id: string; type: 'item' | 'divider'; icon?: string; label?: string }[];
 }
 
 export interface ShopItem {
