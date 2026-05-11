@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { collection, query, orderBy, getDocs, addDoc, serverTimestamp, onSnapshot, limit, updateDoc, doc, increment } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '@/lib/firebase/config';
+import { db, storage } from '@/lib/firebase/clientApp';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Music365PopupProps {

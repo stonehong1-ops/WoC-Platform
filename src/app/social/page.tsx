@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback, Suspense } from 'react';
 import { socialService } from '@/lib/firebase/socialService';
 import { Social } from '@/types/social';
 import { safeDate } from '@/lib/utils/safeDate';
@@ -11,7 +11,7 @@ import SocialViewer from '@/components/social/SocialViewer';
 import SocialHeroCard, { DualText, SocialCardImage, getSocialDisplayTitle } from '@/components/social/SocialHeroCard';
 import { useNavigation } from '@/components/providers/NavigationProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
-
+import { useModalNavigation } from "@/hooks/useModalNavigation";
 // 대한민국 법정공휴일 (2025-2027)
 const KR_HOLIDAYS: Record<string, string> = {
   '2025-01-01':'New Year','2025-01-28':'Seollal','2025-01-29':'Seollal','2025-01-30':'Seollal',
@@ -36,7 +36,7 @@ function getDateKey(d: Date) {
 }
 function isKoreanHoliday(d: Date) { return KR_HOLIDAYS[getDateKey(d)] || null; }
 
-export default function SocialPage() {
+function SocialContent() {
   const [regulars, setRegulars] = useState<Social[]>([]);
   const [popups, setPopups] = useState<Social[]>([]);
   const [dailySocials, setDailySocials] = useState<Social[]>([]);
@@ -92,7 +92,7 @@ export default function SocialPage() {
   useEffect(() => {
     const handleComposeOpen = (e: CustomEvent) => {
       if (e.detail?.id === 'social') {
-        openModal(setIsCreateOpen, true);
+        handleOpenCreate();
       }
     };
     window.addEventListener('woc:compose:open', handleComposeOpen as EventListener);
@@ -124,34 +124,51 @@ export default function SocialPage() {
     }
   };
 
-  // 모달 제어용 (디바이스 뒤로가기 대응)
-  const openModal = (setter: Function, value: any) => {
-    const currentState = window.history.state || {};
-    window.history.pushState({ ...currentState, wocModal: true }, '');
-    setter(value);
-  };
-
-  const closeModal = (setter: Function, fallbackValue: any = null) => {
-    if (window.history.state?.wocModal) {
-      window.history.back(); // 이 호출이 popstate 이벤트를 발생시킵니다
-    } else {
-      setter(fallbackValue);
-    }
-  };
+  const { isOpen: isCreateOpenURL, openModal: openCreateURL, closeModal: closeCreateURL } = useModalNavigation('createSocial');
+  const { isOpen: isViewOpenURL, openModal: openViewURL, closeModal: closeViewURL } = useModalNavigation('viewSocial');
+  const { isOpen: isEditOpenURL, openModal: openEditURL, closeModal: closeEditURL } = useModalNavigation('editSocial');
 
   useEffect(() => {
-    const handlePopState = (e: PopStateEvent) => {
-      if (e.state && e.state.wocModal) {
-        return; // 중첩 모달(모먼트 등)이 닫혔지만 현재 상태는 메인 모달이 열려있어야 함
-      }
-      // 뒤로가기 버튼 클릭 시 모든 모달 닫기
-      setViewSocial(null);
-      setIsCreateOpen(false);
-      setSelectedSocial(null);
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
+    if (!isCreateOpenURL && isCreateOpen) setIsCreateOpen(false);
+  }, [isCreateOpenURL, isCreateOpen]);
+
+  useEffect(() => {
+    if (!isViewOpenURL && viewSocial) setViewSocial(null);
+  }, [isViewOpenURL, viewSocial]);
+
+  useEffect(() => {
+    if (!isEditOpenURL && selectedSocial) setSelectedSocial(null);
+  }, [isEditOpenURL, selectedSocial]);
+
+  const handleOpenCreate = () => {
+    setIsCreateOpen(true);
+    openCreateURL('true');
+  };
+
+  const handleCloseCreate = () => {
+    setIsCreateOpen(false);
+    closeCreateURL();
+  };
+
+  const handleOpenView = (social: Social) => {
+    setViewSocial(social);
+    openViewURL(social.id);
+  };
+
+  const handleCloseView = () => {
+    setViewSocial(null);
+    closeViewURL();
+  };
+
+  const handleOpenEdit = (social: Social) => {
+    setSelectedSocial(social);
+    openEditURL(social.id);
+  };
+
+  const handleCloseEdit = () => {
+    setSelectedSocial(null);
+    closeEditURL();
+  };
 
   const countryDisplay = location?.country ? (location.country.charAt(0).toUpperCase() + location.country.slice(1).toLowerCase()) : '';
   const cityDisplay = !location?.city || location.city === 'ALL' ? 'All' : 
@@ -208,7 +225,7 @@ export default function SocialPage() {
     if (id) {
       socialService.getSocialById(id).then((social) => {
         if (social) {
-          openModal(setViewSocial, social);
+          handleOpenView(social);
         }
       });
     }
@@ -528,7 +545,7 @@ export default function SocialPage() {
                 filterSocials(regulars).filter(s => Number(s.dayOfWeek) === weekDays[activeDayOffset].getDay()).map(social => (
                   <div 
                     key={social.id} 
-                    onClick={() => openModal(setViewSocial, social)}
+                    onClick={() => handleOpenView(social)}
                     className="relative flex-shrink-0 w-60 h-80 rounded-lg overflow-hidden group shadow-sm transition-all hover:shadow-md cursor-pointer animate-in zoom-in-95 duration-500 text-left"
                   >
                     <SocialHeroCard social={social} />
@@ -558,7 +575,7 @@ export default function SocialPage() {
                 {t('social.host_new')}
               </p>
               <button 
-                onClick={() => setIsCreateOpen(true)}
+                onClick={() => handleOpenCreate()}
                 className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 transition-colors py-2"
               >
                 <span className="text-[13px] font-bold">{t('social.register')}</span>
@@ -600,7 +617,7 @@ export default function SocialPage() {
                     return (
                     <div 
                       key={social.id} 
-                      onClick={() => openModal(setViewSocial, social)}
+                      onClick={() => handleOpenView(social)}
                       className="relative flex items-center gap-4 p-4 bg-white rounded-lg border border-[#dde4e5] hover:border-primary/30 transition-all cursor-pointer group shadow-sm active:scale-[0.98] text-left"
                     >
                       <div className="flex flex-col items-center justify-center w-20 h-20 bg-[#F4FBFB] rounded-lg border-l-4 border-primary shrink-0">
@@ -682,7 +699,7 @@ export default function SocialPage() {
                      return (
                       <div 
                         key={`${social.id}-${group.date.getTime()}`} 
-                        onClick={() => openModal(setViewSocial, social)}
+                        onClick={() => handleOpenView(social)}
                         className="relative flex items-center gap-4 p-4 bg-white rounded-lg border border-[#dde4e5] hover:border-primary/30 transition-all cursor-pointer group shadow-sm active:scale-[0.98] text-left"
                       >
                         <div className="flex flex-col items-center justify-center w-20 h-20 bg-[#F4FBFB] rounded-lg border-l-4 border-primary shrink-0">
@@ -792,7 +809,7 @@ export default function SocialPage() {
                          {group.socials.map(social => (
                            <div
                              key={social.id}
-                             onClick={() => openModal(setViewSocial, social)}
+                             onClick={() => handleOpenView(social)}
                              className="px-4 py-3 flex items-center gap-3 hover:bg-slate-50 transition-colors cursor-pointer active:bg-slate-100 group"
                            >
                              {/* 소형 썸네일 */}
@@ -837,8 +854,8 @@ export default function SocialPage() {
       {/* 신규 등록 (Create 모드) */}
       {isCreateOpen && (
         <EditSocialEvent 
-          onClose={() => closeModal(setIsCreateOpen, false)}
-          onSuccess={() => closeModal(setIsCreateOpen, false)}
+          onClose={handleCloseCreate}
+          onSuccess={handleCloseCreate}
         />
       )}
 
@@ -846,7 +863,7 @@ export default function SocialPage() {
       {selectedSocial && (
         <EditSocialEvent 
           socialData={selectedSocial}
-          onClose={() => closeModal(setSelectedSocial, null)}
+          onClose={handleCloseEdit}
         />
       )}
 
@@ -854,9 +871,17 @@ export default function SocialPage() {
       {viewSocial && (
         <SocialViewer 
           social={viewSocial}
-          onClose={() => closeModal(setViewSocial, null)}
+          onClose={handleCloseView}
         />
       )}
     </main>
+  );
+}
+
+export default function SocialPage() {
+  return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}>
+      <SocialContent />
+    </Suspense>
   );
 }

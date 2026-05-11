@@ -11,7 +11,7 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { galleryService, GalleryTag } from '@/lib/firebase/galleryService';
 import { tagSearchService, TagSearchResult } from '@/lib/firebase/tagSearchService';
 import { useLocation } from '@/components/providers/LocationProvider';
-import { storage } from '@/lib/firebase/config';
+import { storage } from '@/lib/firebase/clientApp';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 
 const ICON: Record<string, React.ReactNode> = {

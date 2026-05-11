@@ -1,5 +1,5 @@
 import { collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, serverTimestamp, setDoc, runTransaction } from 'firebase/firestore';
-import { db } from './config';
+import { db } from './clientApp';
 import { RentalSpace, RentalLike, RentalRequest } from '@/types/rental';
 import { chatService } from './chatService';
 

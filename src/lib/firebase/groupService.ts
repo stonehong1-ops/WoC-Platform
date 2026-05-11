@@ -569,8 +569,12 @@ export const groupService = {
   // Create a new group
   createGroup: async (groupData: Partial<Group>, userId?: string, memberData?: Omit<Member, 'id'>): Promise<string> => {
     // 1. Create the group document
+    const defaultFunctions = ['dashboard', 'feed', 'live', 'calendar', 'members', 'notice', 'about', 'brand-setting', 'roles-permissions'];
+    
     const docRef = await addDoc(collection(db, GROUPS_COLLECTION), {
       ...groupData,
+      selectedFunctions: defaultFunctions,
+      menuOrder: defaultFunctions,
       memberCount: 1, // Automatically counting the creator
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),

@@ -14,6 +14,7 @@ interface VenueDetailProps {
 export default function VenueDetail({ venueId, onClose }: VenueDetailProps) {
   const [venue, setVenue] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isScrolled, setIsScrolled] = useState(false);
   const { setGlobalNavHidden } = useNavigation();
 
   useEffect(() => {
@@ -54,12 +55,25 @@ export default function VenueDetail({ venueId, onClose }: VenueDetailProps) {
         className="fixed inset-0 z-[100] bg-[#f8fbfa] flex flex-col"
       >
         {/* Header */}
-        <div className="sticky top-0 bg-white/80 backdrop-blur-xl z-50 px-6 py-4 flex items-center justify-between border-b border-[#005BC0]/10">
-          <button onClick={onClose} className="tap-target -ml-2">
-            <span className="material-symbols-outlined text-[#2D3435]">arrow_back_ios</span>
-          </button>
-          <span className="text-[14px] font-black uppercase tracking-widest text-[#005BC0]">Venue Detail</span>
-          <div className="w-10" />
+        <div className={`absolute top-0 left-0 right-0 z-50 px-4 py-4 flex items-center justify-between transition-all duration-300 ${isScrolled ? 'bg-white/90 backdrop-blur-md shadow-sm border-b border-[#005BC0]/10' : 'bg-transparent pointer-events-none'}`}>
+          <div className="flex-1 flex justify-start pointer-events-auto">
+            <button 
+              onClick={onClose}
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-sm ${isScrolled ? 'bg-gray-100 hover:bg-gray-200 text-[#2d3435]' : 'bg-black/40 hover:bg-black/60 backdrop-blur-md text-white'}`}
+            >
+              <span className="material-symbols-outlined text-[20px] pl-1">arrow_back_ios</span>
+            </button>
+          </div>
+          <div className={`flex-[2] flex justify-center items-center transition-all duration-300 ${isScrolled ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'}`}>
+            <span className="text-[14px] font-black uppercase tracking-widest text-[#005BC0] truncate max-w-[200px]">Venue Detail</span>
+          </div>
+          <div className="flex-1 flex justify-end gap-2 pointer-events-auto">
+             <button 
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-sm ${isScrolled ? 'bg-gray-100 hover:bg-gray-200 text-[#2d3435]' : 'bg-black/40 hover:bg-black/60 backdrop-blur-md text-white'}`}
+            >
+              <span className="material-symbols-rounded text-[20px]">share</span>
+            </button>
+          </div>
         </div>
 
         {loading ? (
@@ -72,17 +86,33 @@ export default function VenueDetail({ venueId, onClose }: VenueDetailProps) {
             <button onClick={onClose} className="text-[#005BC0] font-bold underline">Go Back</button>
           </div>
         ) : (
-          <main className="flex-grow p-6 flex flex-col gap-6 overflow-y-auto no-scrollbar">
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white rounded-[2.5rem] p-8 shadow-[0_32px_80px_rgba(0,91,192,0.08)] border border-[#005BC0]/5"
-            >
-              <div className="flex items-center gap-3 mb-6">
-                <span className="px-3 py-1 bg-[#005BC0] text-white text-[10px] font-black rounded-full uppercase tracking-widest">
-                  {venue.category}
-                </span>
+          <main 
+            className="flex-grow flex flex-col overflow-y-auto no-scrollbar pb-[100px]"
+            onScroll={(e) => setIsScrolled(e.currentTarget.scrollTop > 50)}
+          >
+            {/* Hero Image */}
+            <div className="w-full aspect-[4/5] bg-gray-100 relative select-none shrink-0">
+              <img 
+                src={venue.imageUrl || "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&q=80&w=1000"} 
+                alt={venue.name}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+              <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between pointer-events-none">
+                <div>
+                  <span className="px-3 py-1 bg-[#005BC0] text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-md">
+                    {venue.category || 'VENUE'}
+                  </span>
+                </div>
               </div>
+            </div>
+
+            <div className="p-6 flex flex-col gap-6 -mt-6 relative z-10">
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white rounded-[2.5rem] p-8 shadow-[0_32px_80px_rgba(0,91,192,0.08)] border border-[#005BC0]/5"
+              >
               
               <h1 className="mb-8">
                 <span className="text-3xl font-black text-[#2D3435] leading-tight block">
@@ -109,16 +139,17 @@ export default function VenueDetail({ venueId, onClose }: VenueDetailProps) {
                   </div>
                 )}
               </div>
-            </motion.div>
+              </motion.div>
 
-            {/* Action Buttons */}
-            <div className="grid grid-cols-2 gap-3 mb-10">
-              <button className="bg-[#005BC0] text-white py-5 rounded-3xl font-black text-[13px] uppercase tracking-widest shadow-xl active:scale-95 transition-all">
-                Share
-              </button>
-              <button className="bg-white text-[#005BC0] border border-[#005BC0]/20 py-5 rounded-3xl font-black text-[13px] uppercase tracking-widest active:scale-95 transition-all">
-                Favorite
-              </button>
+              {/* Action Buttons */}
+              <div className="grid grid-cols-2 gap-3 mb-10">
+                <button className="bg-[#005BC0] text-white py-5 rounded-3xl font-black text-[13px] uppercase tracking-widest shadow-xl active:scale-95 transition-all">
+                  Share
+                </button>
+                <button className="bg-white text-[#005BC0] border border-[#005BC0]/20 py-5 rounded-3xl font-black text-[13px] uppercase tracking-widest active:scale-95 transition-all">
+                  Favorite
+                </button>
+              </div>
             </div>
           </main>
         )}

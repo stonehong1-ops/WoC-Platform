@@ -46,6 +46,18 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
 
   const router = useRouter();
 
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      if (isImmersive) {
+        setIsImmersive(false);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [isImmersive]);
+
   // ... (lines 48-78 remain unchanged)
 
   useEffect(() => {
@@ -211,7 +223,7 @@ const GalleryCard = ({
       videoRefs.current.forEach(video => {
         if (video) video.muted = false;
       });
-      window.history.pushState({ immersive: true }, '');
+      window.history.pushState({ immersive: true }, '', window.location.href);
     } else {
       togglePlay();
     }
@@ -219,10 +231,9 @@ const GalleryCard = ({
 
   const handleExitImmersive = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (window.history.state?.immersive) {
-      window.history.back();
-    } else {
+    if (isImmersive) {
       setIsImmersive(false);
+      window.history.back();
     }
   };
 

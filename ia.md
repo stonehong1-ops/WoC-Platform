@@ -26,12 +26,13 @@ This document serves as the mandatory system map for the WoC platform. It includ
 | **Home Popups** | `src/components/home/*Popup.tsx` | Popup | Event banners like `GaviCartoon`, `Music365`, `TangoHistory`. |
 | **Plaza** | `/plaza` | Main Page | Public community feed for posts and interactions. |
 | **Venues** | `/venues` | Main Page | Map and list view of physical locations (Studios, Clubs, Shops). |
-| **Venue Details** | `/venues/[id]` | Full Page | Comprehensive info, photos, and services provided by a venue. |
+| **Venue Details** | `src/components/venues/VenueDetail.tsx` | Full Overlay | Comprehensive info, hero image, services provided by a venue with scroll-triggered header. |
 | **People** | `/people` | Main Page | Directory of community members, instructors, and organizers. |
+| **People Details** | `/people/[id]` | Full Page | Detailed cinematic profile page for individuals. |
 | **Shop** | `/shop` | Main Page | Official commerce marketplace for tango-related products. |
 | **Product Details** | `src/components/shop/ProductDetailView.tsx` | Overlay | Slides in from right/bottom to show product specs and purchase options. |
 | **Stay** | `/stay` | Main Page | Lodging and accommodation directory for community travelers. |
-| **Stay Details** | `/stay/[id]` | Full Page | Room descriptions, amenities, and booking calendar. |
+| **Stay Details** | `src/components/stay/StayDetail.tsx` | Full Overlay | Room descriptions, amenities, and booking calendar. |
 | **Stay Checkout** | `/stay/[id]/checkout` | Full Page | Multi-step reservation and payment flow. |
 
 ---
@@ -46,6 +47,7 @@ This document serves as the mandatory system map for the WoC platform. It includ
 | **Live** | `/live` | Main Page | Real-time streaming or status feed for community activities. |
 | **Events** | `/events` | Main Page | Major events (Festivals, Marathons, Workshops). |
 | **Event Register** | `EventRegister.tsx` | Full Overlay | Detailed registration for multi-day events. |
+| **Event Details** | `src/components/events/EventDetail.tsx` | Full Overlay | Multi-day event info with scroll-triggered sticky header. |
 | **Class** | `/class` | Main Page | Educational directory for lessons and workshops. |
 | **Class Register** | `ClassRegister.tsx` | Full Overlay | Form for instructors to post new classes or schedules. |
 | **Groups** | `/groups` | Main Page | Community hub for clubs, teams, and interest groups. |
@@ -78,10 +80,13 @@ This document serves as the mandatory system map for the WoC platform. It includ
 | **Profile** | `/profile` | Main Page | User settings, bio, and role management (Instructor/Seller/Provider). |
 | **Profile Popup** | `UserProfilePopup.tsx` | Modal | Quick view of another user's profile card. |
 | **Admin Panel** | `/admin/*` | Admin Page | System management for People, Banners, and content moderation. |
+| **Presentation** | `/pt` | Full Page | Fullscreen, slide-based cinematic presentation experience. |
 
 ---
 
 ## 6. IA Principles & Rules
-1. **Full-Page Overlays**: Registration and Details are typically implemented as full-page overlays that hide the Global Header/Footer to maximize focus.
-2. **Dynamic Binding**: Every page mapped here must bind to real-time Firebase data without altering the established Stitch design layout.
-3. **Location Awareness**: All "Main Page" modules respond to the `LocationSelector` context.
+1. **Full-Page Overlays**: Detail Views (Venue, Event, Stay) and Registration forms are implemented as full-page overlays (`fixed inset-0 z-50`) to maximize focus. They must include a scroll-aware header.
+2. **Dedicated Detail Pages**: Certain complex entities like `People` (`/people/[id]`) use a dedicated Next.js routing page structure.
+3. **Dynamic Binding**: Every page mapped here must bind to real-time Firebase data without altering the established Stitch design layout.
+4. **Location Awareness**: All "Main Page" modules respond to the `LocationSelector` context.
+5. **Global Navigation Visibility**: Detail views and fullscreen components MUST correctly signal the global navigation provider (`setGlobalNavHidden(true)`) upon mounting to prevent overlap.

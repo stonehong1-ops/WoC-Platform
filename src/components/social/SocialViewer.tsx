@@ -31,7 +31,7 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
   const { setGlobalNavHidden } = useNavigation();
   const [social, setSocial] = useState<Social>(initialSocial);
   const [activeTab, setActiveTab] = useState<TabId>("home");
-  const [showEditModal, setShowEditModal] = useState(false);
+  const { isOpen: showEditModal, openModal: openEditModal, closeModal: closeEditModal } = useModalNavigation("editMode");
 
   // Hide global navigation on mount, restore on unmount
   useEffect(() => {
@@ -200,7 +200,7 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
         <div className="flex items-center gap-1">
           {canEdit && (
             <>
-              <button onClick={() => setShowEditModal(true)}
+              <button onClick={() => openEditModal('true')}
                 className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? "bg-slate-100 text-[#2d3435]" : "bg-black/20 backdrop-blur-sm text-white"}`}>
                 <span className="material-symbols-rounded text-xl">edit</span>
               </button>
@@ -336,8 +336,8 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
       {showEditModal && (
         <EditSocialEvent
           socialData={social}
-          onClose={() => setShowEditModal(false)}
-          onSuccess={() => setShowEditModal(false)}
+          onClose={closeEditModal}
+          onSuccess={closeEditModal}
         />
       )}
 

@@ -7,7 +7,7 @@ import { Group, GroupClass } from '@/types/group';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { classRegistrationService } from '@/lib/firebase/classRegistrationService';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase/config';
+import { db } from '@/lib/firebase/clientApp';
 import { toast } from 'sonner';
 import BottomSheet from '@/components/common/BottomSheet';
 import { AnimatePresence, motion } from 'framer-motion';

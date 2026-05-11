@@ -39,7 +39,4 @@
 ## Error Handling & Debugging Rules
 1. **Firebase Permission Check First**: 에러 발생 시(특히 데이터베이스 저장/수정 관련), 코드를 복잡하게 수정하거나 구조를 뜯어고치기 전에 **반드시 Firebase Firestore Security Rules (권한 설정) 누락 문제인지 가장 먼저 의심하고 확인**하라. (ex: `permission-denied` 에러).
 
-## 📡 Antigravity Communication Channel
-1. **Mandatory Read on Start**: 매 대화(Conversation) 시작 시 **반드시 `public/antigravity.txt` 파일을 가장 먼저 읽어라**. 사용자가 남긴 메시지나 지시사항이 있으면 현재 요청보다 **우선적으로 처리**한다.
-2. **Async Communication**: 이 파일은 스토니와 AI(Antigravity) 간의 **비동기 소통 채널**이다. 사용자가 대화 세션 외부에서 이 파일에 지시사항을 남길 수 있으며, AI는 이를 반드시 확인하고 반영해야 한다.
-3. **Status Reporting**: AI는 중요한 작업 완료 시 이 파일에 상태를 기록하여 사용자가 다음 세션에서 확인할 수 있도록 한다.
+

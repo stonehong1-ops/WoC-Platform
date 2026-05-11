@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Member Profile - OS_CORE</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-surface-variant": "#414755",
+                    "inverse-primary": "#adc6ff",
+                    "on-background": "#1a1b1f",
+                    "inverse-on-surface": "#f1f0f5",
+                    "on-tertiary-container": "#fffbff",
+                    "primary": "#0058bc",
+                    "outline-variant": "#c1c6d7",
+                    "on-primary-container": "#fefcff",
+                    "surface-container-high": "#e9e7ed",
+                    "secondary-fixed-dim": "#c2c1ff",
+                    "surface-container-highest": "#e3e2e7",
+                    "secondary": "#4c4aca",
+                    "on-tertiary-fixed-variant": "#7201a2",
+                    "on-secondary-container": "#fffbff",
+                    "secondary-fixed": "#e2dfff",
+                    "error-container": "#ffdad6",
+                    "surface-variant": "#e3e2e7",
+                    "tertiary-fixed": "#f6d9ff",
+                    "primary-fixed": "#d8e2ff",
+                    "surface": "#faf9fe",
+                    "on-secondary-fixed": "#0c006a",
+                    "on-primary-fixed": "#001a41",
+                    "tertiary": "#8a2bb9",
+                    "on-secondary-fixed-variant": "#3631b4",
+                    "secondary-container": "#6664e4",
+                    "on-primary-fixed-variant": "#004493",
+                    "on-error-container": "#93000a",
+                    "primary-container": "#0070eb",
+                    "error": "#ba1a1a",
+                    "outline": "#717786",
+                    "on-secondary": "#ffffff",
+                    "on-tertiary": "#ffffff",
+                    "on-primary": "#ffffff",
+                    "surface-dim": "#dad9df",
+                    "surface-container-low": "#f4f3f8",
+                    "primary-fixed-dim": "#adc6ff",
+                    "inverse-surface": "#2f3034",
+                    "background": "#faf9fe",
+                    "surface-container-lowest": "#ffffff",
+                    "tertiary-fixed-dim": "#e8b3ff",
+                    "surface-tint": "#005bc1",
+                    "tertiary-container": "#a649d5",
+                    "surface-container": "#eeedf3",
+                    "on-error": "#ffffff",
+                    "on-tertiary-fixed": "#310048",
+                    "on-surface": "#1a1b1f",
+                    "surface-bright": "#faf9fe"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "margin-tablet": "32px",
+                    "section-gap": "80px",
+                    "margin-mobile": "20px",
+                    "unit": "8px",
+                    "margin-desktop": "64px",
+                    "gutter": "24px",
+                    "container-max": "1440px"
+            },
+            "fontFamily": {
+                    "body-lg": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "label-sm": ["Inter"],
+                    "headline-lg-mobile": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "label-md": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "body-md": ["Inter"]
+            },
+            "fontSize": {
+                    "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-sm": ["12px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                    "headline-lg-mobile": ["28px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "label-md": ["14px", {"lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                    "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+        }
+        .text-shadow-sm {
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body-md min-h-screen selection:bg-primary/20">
+<!-- Top AppBar Navigation -->
+<header class="fixed top-0 w-full z-50 bg-surface/80 dark:bg-surface/80 backdrop-blur-xl border-b border-white/10 shadow-2xl flex justify-between items-center px-margin-desktop h-20 backdrop-blur-md hover:backdrop-blur-lg duration-300">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary text-headline-lg" data-icon="terminal">terminal</span>
+<h1 class="font-headline-lg text-headline-lg font-bold tracking-tighter text-primary dark:text-primary">OS_CORE</h1>
+</div>
+<div class="flex items-center gap-8">
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md" href="#">Workspace</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md" href="#">Templates</a>
+<a class="text-primary font-bold font-label-md text-label-md" href="#">Member Profile</a>
+</nav>
+<div class="w-10 h-10 rounded-full bg-surface-container-high overflow-hidden border-2 border-primary/20">
+<img alt="User Profile Avatar" data-alt="A professional headshot of a creative director in a minimalist studio setting. The lighting is soft and directional, casting subtle shadows that highlight refined features. The color palette is clean, dominated by neutral tones and soft blues, reflecting a high-end digital operating system aesthetic with a focus on serenity and intelligence." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDdYluSK99vJubqqonGr9TibR-HJQJbMyPiH6oeJINrYOwYsUzMwVs0IxU9EYhtocdTqzBldCpMwjdNs2U4IEXIdj5vZKakCv4ngyLBc6Wj6x5kiMFQtcUiYH6iCm5L-hcvd2HqKE63n0998UMD0lz6h2uJEP2v0FGxFHanT0wawyrzHCs_kX0sL3lxBK9fwJr4aWV4KcqNWKKGWAX-cboaiRYc2Vx43Yf-SOJ-S1pPMVYEQfrLW5YIFZNhCb3eKpNYt1PL0kgFKOI"/>
+</div>
+</div>
+</header>
+<!-- Fullscreen Immersive Profile Overlay -->
+<main class="relative min-h-screen pt-20 pb-32">
+<!-- Hero Section: Cinematic Backdrop -->
+<section class="relative h-[530px] w-full overflow-hidden">
+<div class="absolute inset-0 scale-105">
+<img class="w-full h-full object-cover" data-alt="A cinematic, high-resolution portrait of a visionary community leader looking towards the horizon in a bright, modern architectural space. The image is bathed in warm, ethereal light with a soft focus background that suggests a premium, airy environment. The aesthetic is sophisticated and minimalist, using a palette of soft whites and deep primary blues to align with a luxury digital interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCPH4aQKvx8TfO0J0t8yodoEREfX0LX_1ELoD2uMgZ4Pfy4WiR73tX_CiVcKKUaExaO9Aa_e-WtArb4i0gzkvnkKiDMdKNyMr09KGHTXBPFvPRJ-bIgbyehaDL_Uku8wFipapmZFrmqdMbvQrNSXy7fTnwSCRw5sehHFdR38NDc-_R73HtFNCe4FnuVgYLaCMOSX2BHUaH49o4sDBShsoyh8HftiF8gVgTF_TUIgbdkYOcdpC-zDMhopXDqEkvE67Rk1OzO3RK0ZOc"/>
+<div class="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent"></div>
+</div>
+<!-- Profile Info Overlay -->
+<div class="absolute bottom-0 left-0 w-full px-margin-desktop pb-12 flex flex-col md:flex-row md:items-end justify-between gap-8">
+<div class="space-y-4">
+<div class="flex gap-2">
+<span class="bg-primary/10 text-primary px-3 py-1 rounded-full text-label-sm font-label-sm border border-primary/20">Creative Collective</span>
+<span class="bg-secondary/10 text-secondary px-3 py-1 rounded-full text-label-sm font-label-sm border border-secondary/20">Verified Guide</span>
+</div>
+<h2 class="font-display-lg text-display-lg text-on-surface tracking-tighter">Julian Thorne</h2>
+<div class="flex items-center gap-3 text-on-surface-variant">
+<span class="material-symbols-outlined text-primary" data-icon="auto_awesome">auto_awesome</span>
+<p class="font-body-lg text-body-lg italic">"Synthesizing light and logic into digital serenity."</p>
+</div>
+</div>
+<div class="flex gap-4">
+<button class="glass-panel px-8 py-4 rounded-xl text-primary font-semibold hover:bg-white transition-all shadow-sm flex items-center gap-2 group">
+<span class="material-symbols-outlined transition-transform group-hover:scale-110" data-icon="mail">mail</span>
+                        Message
+                    </button>
+<button class="bg-primary text-on-primary px-8 py-4 rounded-xl font-semibold shadow-[0_10px_20px_rgba(0,88,188,0.2)] hover:scale-[1.02] transition-transform active:scale-[0.98]">
+                        Connect
+                    </button>
+</div>
+</div>
+</section>
+<!-- Content Grid: Bento Layout -->
+<section class="max-w-container-max mx-auto px-margin-desktop -mt-8 relative z-10">
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter">
+<!-- Left Column: Mutual Context & History -->
+<div class="md:col-span-4 space-y-gutter">
+<!-- Mutual Context -->
+<div class="glass-panel p-8 rounded-2xl shadow-sm">
+<h3 class="font-headline-md text-headline-md mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary" data-icon="groups">groups</span>
+                            Mutual Context
+                        </h3>
+<div class="space-y-4">
+<div class="flex items-center gap-4 p-4 rounded-xl bg-surface-container-low border border-white/50">
+<div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="hub">hub</span>
+</div>
+<div>
+<p class="font-label-md text-label-md text-on-surface">Design Systems Lab</p>
+<p class="text-xs text-on-surface-variant">Shared Creative Group</p>
+</div>
+</div>
+<div class="flex items-center gap-4 p-4 rounded-xl bg-surface-container-low border border-white/50">
+<div class="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined" data-icon="event_available">event_available</span>
+</div>
+<div>
+<p class="font-label-md text-label-md text-on-surface">Future of UX 2024</p>
+<p class="text-xs text-on-surface-variant">Both attended</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Social & Links -->
+<div class="glass-panel p-8 rounded-2xl shadow-sm">
+<h3 class="font-label-md text-label-md uppercase tracking-widest text-on-surface-variant mb-6">Digital Presence</h3>
+<div class="grid grid-cols-2 gap-4">
+<a class="flex flex-col items-center gap-2 p-4 rounded-xl hover:bg-white transition-colors group" href="#">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary" data-icon="language">language</span>
+<span class="text-xs font-medium">Portfolio</span>
+</a>
+<a class="flex flex-col items-center gap-2 p-4 rounded-xl hover:bg-white transition-colors group" href="#">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary" data-icon="account_tree">account_tree</span>
+<span class="text-xs font-medium">Github</span>
+</a>
+<a class="flex flex-col items-center gap-2 p-4 rounded-xl hover:bg-white transition-colors group" href="#">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary" data-icon="camera">camera</span>
+<span class="text-xs font-medium">Behance</span>
+</a>
+<a class="flex flex-col items-center gap-2 p-4 rounded-xl hover:bg-white transition-colors group" href="#">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary" data-icon="alternate_email">alternate_email</span>
+<span class="text-xs font-medium">X / Twitter</span>
+</a>
+</div>
+</div>
+</div>
+<!-- Right Column: Events & Feed -->
+<div class="md:col-span-8 space-y-gutter">
+<!-- Activity Feed (Glass List) -->
+<div class="glass-panel rounded-2xl p-8 shadow-sm">
+<div class="flex justify-between items-center mb-8">
+<h3 class="font-headline-md text-headline-md">Activity History</h3>
+<button class="text-primary font-label-md text-label-md flex items-center gap-1 hover:underline">
+                                View Archive
+                                <span class="material-symbols-outlined text-sm" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+<div class="space-y-0">
+<!-- Item 1 -->
+<div class="flex gap-6 py-6 border-b border-black/5 last:border-0 hover:bg-white/40 transition-colors -mx-4 px-4 rounded-xl group">
+<div class="mt-1">
+<span class="material-symbols-outlined text-primary" data-icon="edit_note">edit_note</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between mb-1">
+<p class="font-label-md text-label-md text-on-surface">Published a new design resource</p>
+<span class="text-xs text-on-surface-variant">2h ago</span>
+</div>
+<p class="text-on-surface-variant font-body-md text-sm">"Minimalist Component Library v2.0 is now available for all premium members. Focused on glassmorphism and accessibility."</p>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="flex gap-6 py-6 border-b border-black/5 last:border-0 hover:bg-white/40 transition-colors -mx-4 px-4 rounded-xl group">
+<div class="mt-1">
+<span class="material-symbols-outlined text-secondary" data-icon="celebration">celebration</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between mb-1">
+<p class="font-label-md text-label-md text-on-surface">Completed 'Advanced Spatial UI' Certification</p>
+<span class="text-xs text-on-surface-variant">1d ago</span>
+</div>
+<p class="text-on-surface-variant font-body-md text-sm">Recognized as a Lead Educator for the winter cohort.</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Horizontal List: Attended Events -->
+<div class="space-y-6">
+<h3 class="font-headline-md text-headline-md px-2">Attended Events</h3>
+<div class="flex gap-6 overflow-x-auto pb-6 -mx-2 px-2 scroll-smooth">
+<!-- Event Card 1 -->
+<div class="min-w-[300px] bg-white rounded-2xl overflow-hidden shadow-sm border border-white hover:shadow-md transition-shadow group cursor-pointer">
+<div class="h-40 relative">
+<img class="w-full h-full object-cover group-hover:scale-110 duration-500" data-alt="A high-energy tech conference stage illuminated with cool blue and violet neon lights. The audience is silhouetted against the bright, futuristic presentation screens. The atmosphere is electric and modern, perfectly capturing the essence of a premium digital collective event in a high-key light mode style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAd4P1CXETfs6HaqOq6fZHGuHIgWeG_nyJUqJZIOoO16shhP-joZv8NM9F7KYRVBBV8mRxVFDm2bwoBJN1dVJZWT-iRrYQG5A7P8aKBEYNk18TpqohEtSQ3rIINjw17gAdVpRhqIkM9KVBnJVGbYJBCap14Ub4g-tLZMr2Y2c7YMfH-MtlHAECeLX_DYAkp8YZmT-M1xDTjwV6XWz9Zddg1WRBy6Q8eD4taOkGHPEt1Jy5dr-LLjvi4wEscCWWXfhoHpIk7A3hRk0w"/>
+<div class="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-primary">Seminar</div>
+</div>
+<div class="p-6">
+<h4 class="font-label-md text-label-md text-on-surface mb-2">The Zen of Grid Systems</h4>
+<p class="text-xs text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-xs" data-icon="calendar_today">calendar_today</span>
+                                        Oct 12, 2024
+                                    </p>
+</div>
+</div>
+<!-- Event Card 2 -->
+<div class="min-w-[300px] bg-white rounded-2xl overflow-hidden shadow-sm border border-white hover:shadow-md transition-shadow group cursor-pointer">
+<div class="h-40 relative">
+<img class="w-full h-full object-cover group-hover:scale-110 duration-500" data-alt="A bright, airy workshop space where people are collaborating around a minimalist wooden table. Large windows let in soft natural light, creating a serene and productive environment. The aesthetic is clean and modern, with subtle blue accents and plenty of white space, embodying the 'Living OS' design philosophy." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBYl-hxvaPTLkX24kok7VHIytJSC33vNt-89gIos1Unx85KzUm34A-146FoEWERhHiCP9JUiCu2o1UbB7aIyuNttGdIF3A7A7_C5XngosWK3mxLF_kQOy0UZ_P3xgnERRV7CfpMJmAMOAln8AoLjAuRJUkhMBmNFo4vu6kxNIowrPwGpSkYeHnQXwTX-4xol6ODk9EZN0BBhssNlhkEU-gHsD4Vt6CzinmEuyCwi6TT7GCvxSRoyW5HYHzmgycAekiXCJvbN1fiVmg"/>
+<div class="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-secondary">Workshop</div>
+</div>
+<div class="p-6">
+<h4 class="font-label-md text-label-md text-on-surface mb-2">Collaboration in V-OS</h4>
+<p class="text-xs text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-xs" data-icon="calendar_today">calendar_today</span>
+                                        Sep 28, 2024
+                                    </p>
+</div>
+</div>
+<!-- Event Card 3 -->
+<div class="min-w-[300px] bg-white rounded-2xl overflow-hidden shadow-sm border border-white hover:shadow-md transition-shadow group cursor-pointer">
+<div class="h-40 relative">
+<img class="w-full h-full object-cover group-hover:scale-110 duration-500" data-alt="A clean, minimalist digital interface mock-up displayed on a high-resolution screen in a modern studio. The screen shows vibrant data visualizations and sleek typography. The lighting is crisp and bright, highlighting a premium aesthetic of clarity and intelligence, consistent with a high-end digital operating system." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAfJhjIuvtM9zVcaoNLBb-9tLZdvWUoYHmkNwFVZxd8C2qvnz6WBCkrovPkBBhv4JPk1z0WYylDRBEZS_SwljrHiK6JWc09pjH55t-rIaqAyojhjoJGCyOK2p6-5ljLa6H99HgPq0HeI7f49LOtN5PCxLAc71mfWE0ySYmmiw3jAWge6a2s6i71tIPFyMZvJzBQQvsho-x5Jc0ISMN8C-CchkqeEW-IHF7pCXb8B9I4i-pCDUNxaRkPnP0km_aL_zxjWWrl4YnPcmg"/>
+<div class="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-tertiary">Keynote</div>
+</div>
+<div class="p-6">
+<h4 class="font-label-md text-label-md text-on-surface mb-2">The Annual Synthesis</h4>
+<p class="text-xs text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-xs" data-icon="calendar_today">calendar_today</span>
+                                        Aug 15, 2024
+                                    </p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Bar (Floating Pill) -->
+<footer class="fixed bottom-8 left-1/2 -translate-x-1/2 rounded-full w-auto min-w-[320px] bg-surface-container-highest/40 dark:bg-surface-container-highest/40 backdrop-blur-2xl border border-white/10 shadow-[0_0_20px_rgba(76,215,246,0.15)] flex justify-around items-center px-4 py-2 z-50">
+<a class="text-on-surface-variant p-3 hover:scale-110 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+</a>
+<a class="text-on-surface-variant p-3 hover:scale-110 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+</a>
+<a class="bg-primary text-on-primary rounded-full p-3 shadow-[0_0_15px_rgba(76,215,246,0.5)] scale-110" href="#">
+<span class="material-symbols-outlined" data-icon="add_circle">add_circle</span>
+</a>
+<a class="text-on-surface-variant p-3 hover:scale-110 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</a>
+<a class="text-primary font-bold p-3 hover:scale-110 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="person" data-weight="fill">person</span>
+</a>
+</footer>
+</body></html>

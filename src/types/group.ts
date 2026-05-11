@@ -75,6 +75,7 @@ export interface Group {
   services?: ServiceItem[];
   coverImage: string;
   coverImageDescription?: string;
+  aboutPhotos?: string[];
   memberCount: number;
   posts: Post[];
   members: Member[];
@@ -145,6 +146,7 @@ export interface Group {
     accountHolder: string;
     accountNumber: string;
   };
+  businessRegistrationNumber?: string;
   isPublished?: boolean;
   headerThemeColor?: string;
   selectedFunctions?: string[];

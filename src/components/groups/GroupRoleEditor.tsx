@@ -50,11 +50,19 @@ const GroupRoleEditor: React.FC<GroupRoleEditorProps> = ({ group, onClose }) => 
     },
     {
       id: 'staff',
-      title: t('group.staff_role'),
+      title: t('group.staff_role') || 'Staff',
       icon: 'shield_person',
       color: '#893c92',
-      desc: t('group.staff_desc'),
+      desc: t('group.staff_desc') || 'Manage groups and content',
       count: `${group.members?.filter(m => m.role === 'staff').length || 0} Members`
+    },
+    {
+      id: 'instructor',
+      title: t('group.instructor_role') || 'Instructor',
+      icon: 'school',
+      color: '#e65100',
+      desc: t('group.instructor_desc') || 'Manage classes and students',
+      count: `${group.members?.filter(m => m.role === 'instructor').length || 0} Members`
     },
     {
       id: 'member',

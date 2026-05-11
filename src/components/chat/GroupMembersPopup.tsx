@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase/config';
+import { db } from '@/lib/firebase/clientApp';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { groupService } from '@/lib/firebase/groupService';
 import { useHistoryBack } from '@/hooks/useHistoryBack';

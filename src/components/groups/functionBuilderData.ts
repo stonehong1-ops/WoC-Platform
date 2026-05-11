@@ -6,6 +6,7 @@ export interface FunctionCard {
   description: string;
   price: string;
   status: 'INSTALLED' | 'ACTIVE' | 'ALPHA' | 'MIGRATE';
+  mandatory?: boolean;
 }
 
 export interface FunctionSection {
@@ -23,12 +24,11 @@ export const FUNCTION_SECTIONS: FunctionSection[] = [
     subtitle: '운영 관리 시스템',
     accentColor: 'bg-primary',
     cards: [
-      { id: 'brand-setting', icon: 'palette', title: 'Brand Setting', subtitle: '브랜드 설정', description: '브랜드 색상, 로고 및 고유 아이덴티티 구성', price: '$0/mo', status: 'ACTIVE' },
-      { id: 'class-setting', icon: 'school', title: 'Class Setting', subtitle: '수업 설정', description: '수업 커리큘럼 정의 및 강의실 공간 배정', price: '$12/mo', status: 'ALPHA' },
-      { id: 'rental-setting', icon: 'key', title: 'Rental Setting', subtitle: '대여 설정', description: '공간 및 장비 대여 규칙, 보증금 시스템 설정', price: '$8/mo', status: 'MIGRATE' },
-      { id: 'shop-setting', icon: 'storefront', title: 'Shop Setting', subtitle: '상점 설정', description: '커머스 인프라, 결제 게이트웨이 및 배송 정책', price: '$15/mo', status: 'ACTIVE' },
-      { id: 'stay-setting', icon: 'bed', title: 'Stay Setting', subtitle: '스테이 설정', description: '숙박 및 워크스테이 예약 엔진 커스터마이징', price: '$20/mo', status: 'ALPHA' },
-      { id: 'member-permissions', icon: 'admin_panel_settings', title: 'Member Permissions', subtitle: '멤버 권한', description: '운영진 권한 체계 및 핵심 관리 도구 접근 제어', price: '$0/mo', status: 'ACTIVE' },
+      { id: 'brand-setting', icon: 'palette', title: 'Brand Setting', subtitle: '브랜드 설정', description: '브랜드 색상, 로고 및 고유 아이덴티티 구성', price: 'Free', status: 'INSTALLED', mandatory: true },
+      { id: 'class-setting', icon: 'school', title: 'Class Setting', subtitle: '수업 설정', description: '수업 커리큘럼 정의 및 강의실 공간 배정', price: 'Free', status: 'ALPHA' },
+      { id: 'rental-setting', icon: 'key', title: 'Rental Setting', subtitle: '대여 설정', description: '공간 및 장비 대여 규칙, 보증금 시스템 설정', price: 'Free', status: 'MIGRATE' },
+      { id: 'shop-setting', icon: 'storefront', title: 'Shop Setting', subtitle: '상점 설정', description: '커머스 인프라, 결제 게이트웨이 및 배송 정책', price: 'Free', status: 'ACTIVE' },
+      { id: 'stay-setting', icon: 'bed', title: 'Stay Setting', subtitle: '스테이 설정', description: '숙박 및 워크스테이 예약 엔진 커스터마이징', price: 'Free', status: 'ALPHA' },
     ],
   },
   {
@@ -37,15 +37,14 @@ export const FUNCTION_SECTIONS: FunctionSection[] = [
     subtitle: '핵심 기본 시스템',
     accentColor: 'bg-secondary',
     cards: [
-      { id: 'dashboard', icon: 'dashboard', title: 'Dashboard', subtitle: '대시보드', description: '전체 커뮤니티 활동 및 주요 지표 실시간 요약', price: 'Free', status: 'INSTALLED' },
-      { id: 'calendar', icon: 'calendar_today', title: 'Calendar', subtitle: '캘린더', description: '공유 일정 및 커뮤니티 이벤트 타임라인', price: '$5/mo', status: 'ACTIVE' },
-      { id: 'feed', icon: 'dynamic_feed', title: 'Feed', subtitle: '피드', description: '소셜 뉴스피드 및 멤버 간 소통 타임라인', price: '$0/mo', status: 'ACTIVE' },
-      { id: 'live', icon: 'live_tv', title: 'Live', subtitle: '라이브', description: '실시간 스트리밍 및 온라인 세미나 송출', price: '$15/mo', status: 'ACTIVE' },
-      { id: 'chat-rooms', icon: 'chat', title: 'Chat Rooms', subtitle: '채팅룸', description: '실시간 주제별 그룹 채팅 및 DM 시스템', price: '$0/mo', status: 'ACTIVE' },
-      { id: 'notice', icon: 'campaign', title: 'Notice', subtitle: '공지사항', description: '중요 소식 알림 및 아카이빙 게시판', price: '$0/mo', status: 'ACTIVE' },
-      { id: 'about', icon: 'info', title: 'About', subtitle: '소개', description: '커뮤니티 비전 및 가이드라인 소개 페이지', price: '$0/mo', status: 'ACTIVE' },
-      { id: 'members', icon: 'groups', title: 'Members', subtitle: '멤버 목록', description: '참여 멤버 프로필 조회 및 디렉토리', price: '$0/mo', status: 'ACTIVE' },
-      { id: 'roles-permissions', icon: 'security', title: 'Roles & Permissions', subtitle: '역할 및 권한', description: '멤버 등급별 상세 접근 권한 및 역할 제어', price: '$10/mo', status: 'ACTIVE' },
+      { id: 'dashboard', icon: 'dashboard', title: 'Dashboard', subtitle: '대시보드', description: '전체 커뮤니티 활동 및 주요 지표 실시간 요약', price: 'Free', status: 'INSTALLED', mandatory: true },
+      { id: 'calendar', icon: 'calendar_today', title: 'Calendar', subtitle: '캘린더', description: '공유 일정 및 커뮤니티 이벤트 타임라인', price: 'Free', status: 'ACTIVE', mandatory: true },
+      { id: 'feed', icon: 'dynamic_feed', title: 'Feed', subtitle: '피드', description: '소셜 뉴스피드 및 멤버 간 소통 타임라인', price: 'Free', status: 'ACTIVE', mandatory: true },
+      { id: 'live', icon: 'live_tv', title: 'Live', subtitle: '라이브', description: '실시간 스트리밍 및 온라인 세미나 송출', price: 'Free', status: 'ACTIVE', mandatory: true },
+      { id: 'notice', icon: 'campaign', title: 'Notice', subtitle: '공지사항', description: '중요 소식 알림 및 아카이빙 게시판', price: 'Free', status: 'ACTIVE', mandatory: true },
+      { id: 'about', icon: 'info', title: 'About', subtitle: '소개', description: '커뮤니티 비전 및 가이드라인 소개 페이지', price: 'Free', status: 'INSTALLED', mandatory: true },
+      { id: 'members', icon: 'groups', title: 'Members', subtitle: '멤버 목록', description: '참여 멤버 프로필 조회 및 디렉토리', price: 'Free', status: 'ACTIVE', mandatory: true },
+      { id: 'roles-permissions', icon: 'security', title: 'Roles & Permissions', subtitle: '역할 및 권한', description: '멤버 등급별 상세 접근 권한 및 역할 제어', price: 'Free', status: 'INSTALLED', mandatory: true },
     ],
   },
   {
@@ -60,7 +59,6 @@ export const FUNCTION_SECTIONS: FunctionSection[] = [
       { id: 'attendance-check', icon: 'check_circle', title: 'Attendance Check', subtitle: '출석 체크', description: '행사 및 수업 참여 여부 자동 기록', price: '$2/mo', status: 'ACTIVE' },
       { id: 'community-rules', icon: 'gavel', title: 'Community Rules', subtitle: '커뮤니티 규정', description: '가입 동의 및 행동 수칙 선언 페이지', price: '$0/mo', status: 'ACTIVE' },
       { id: 'surveys', icon: 'assignment', title: 'Surveys', subtitle: '설문조사', description: '정기 만족도 조사 및 상세 데이터 수집', price: '$8/mo', status: 'ACTIVE' },
-      { id: 'reactions-emojis', icon: 'add_reaction', title: 'Reactions & Emojis', subtitle: '리액션 및 이모지', description: '게시글 및 채팅 내 비언어적 소통 강화 시스템', price: '$3/mo', status: 'ACTIVE' },
       { id: 'anonymous-posts', icon: 'visibility_off', title: 'Anonymous Posts', subtitle: '익명 게시판', description: '자유로운 의견 개진을 위한 대나무숲 시스템', price: '$0/mo', status: 'ACTIVE' },
     ],
   },

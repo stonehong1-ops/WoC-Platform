@@ -28,6 +28,7 @@ const getNormalizedDate = (val: any): Date => {
 export default function EventDetail({ event, onClose, onEdit, onDelete }: EventDetailProps) {
   const { user } = useAuth();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const { setGlobalNavHidden } = useNavigation();
 
   React.useEffect(() => {
@@ -57,26 +58,34 @@ export default function EventDetail({ event, onClose, onEdit, onDelete }: EventD
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-white animate-in slide-in-from-bottom duration-300">
       <div className="relative bg-white w-full max-w-xl mx-auto flex flex-col flex-1 overflow-hidden">
-        {/* Transparent Floating Header */}
-        <div className="absolute top-0 left-0 right-0 z-50 flex items-center justify-between p-4 pointer-events-none">
-          <div className="flex-1 pointer-events-auto">
+        {/* Floating Header */}
+        <div className={`absolute top-0 left-0 right-0 z-50 flex items-center justify-between p-4 transition-all duration-300 ${isScrolled ? 'bg-white/90 backdrop-blur-md shadow-sm' : 'bg-transparent pointer-events-none'}`}>
+          <div className="flex-1 flex justify-start pointer-events-auto">
             <button 
               onClick={onClose}
-              className="w-10 h-10 rounded-full flex items-center justify-center bg-black/40 hover:bg-black/60 backdrop-blur-md text-white transition-all shadow-sm"
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-sm ${isScrolled ? 'bg-gray-100 hover:bg-gray-200 text-[#2d3435]' : 'bg-black/40 hover:bg-black/60 backdrop-blur-md text-white'}`}
             >
               <span className="material-symbols-outlined text-[20px]">close</span>
             </button>
           </div>
-          <div className="flex items-center gap-2 pointer-events-auto">
+          
+          <div className={`flex-[2] flex justify-center items-center transition-all duration-300 ${isScrolled ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'}`}>
+             <span className="text-[15px] font-bold text-[#2d3435] tracking-tight truncate max-w-[200px]">{event.title}</span>
+          </div>
+
+          <div className="flex-1 flex justify-end gap-2 pointer-events-auto">
              <button 
-              className="w-10 h-10 rounded-full flex items-center justify-center bg-black/40 hover:bg-black/60 backdrop-blur-md text-white transition-all shadow-sm"
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-sm ${isScrolled ? 'bg-gray-100 hover:bg-gray-200 text-[#2d3435]' : 'bg-black/40 hover:bg-black/60 backdrop-blur-md text-white'}`}
             >
               <span className="material-symbols-rounded text-[20px]">share</span>
             </button>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto no-scrollbar scroll-smooth pb-[100px]">
+        <div 
+          className="flex-1 overflow-y-auto no-scrollbar scroll-smooth pb-[100px]"
+          onScroll={(e) => setIsScrolled(e.currentTarget.scrollTop > 50)}
+        >
           {/* Cover Image (4/5 aspect ratio) */}
           <div className="w-full aspect-[4/5] bg-gray-100 relative select-none">
             <img 

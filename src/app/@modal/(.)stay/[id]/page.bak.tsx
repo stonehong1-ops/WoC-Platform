@@ -117,7 +117,7 @@ export default function InterceptedStayPage() {
     if (!stay?.groupId) return;
     const fetchVenueData = async () => {
       try {
-        const { db } = await import('@/lib/firebase/config');
+        const { db } = await import('@/lib/firebase/clientApp');
         const { doc, getDoc } = await import('firebase/firestore');
         const groupRef = doc(db, 'groups', stay.groupId);
         const groupSnap = await getDoc(groupRef);

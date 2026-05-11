@@ -13,7 +13,7 @@ import {
   writeBatch,
   getDoc
 } from "firebase/firestore";
-import { db } from "./config";
+import { db } from "./clientApp";
 import { ClassRegistration } from "@/types/group";
 
 const COLLECTION_NAME = "class_registrations";

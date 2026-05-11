@@ -38,19 +38,82 @@ export default function OrganizeMenuPage() {
   useEffect(() => {
     if (!group) return;
 
-    // If there's already a saved menuOrder, use it
-    if (group.menuOrder && group.menuOrder.length > 0) {
-      setItems(group.menuOrder);
-      return;
-    }
-
-    // Otherwise, build from selectedFunctions
+    // Otherwise, build from selectedFunctions or sync with existing menuOrder
     if (group.selectedFunctions && group.selectedFunctions.length > 0) {
       const allCards = FUNCTION_SECTIONS.flatMap((s) => s.cards);
+
+      // If there's already a saved menuOrder, sync it with selectedFunctions
+      if (group.menuOrder && group.menuOrder.length > 0) {
+        // Exclude dashboard, about, roles-permissions, and all admin section items
+        const adminSection = FUNCTION_SECTIONS.find(s => s.id === 'admin');
+        const adminIds = adminSection ? adminSection.cards.map(c => c.id) : [];
+        const excludedIds = new Set(['dashboard', 'about', 'roles-permissions', ...adminIds]);
+
+        // 1. Keep items that are dividers or whose id is in selectedFunctions (and not excluded)
+        let syncedItems = group.menuOrder.filter(item => 
+          item.type === "divider" || (group.selectedFunctions!.includes(item.id) && !excludedIds.has(item.id))
+        );
+
+        // 2. Map existing items to ensure missing icons and labels are populated
+        syncedItems = syncedItems.map(item => {
+          if (item.type === "item") {
+            const card = allCards.find(c => c.id === item.id);
+            if (card) {
+              return { ...item, icon: card.icon, label: card.title };
+            }
+          }
+          return item;
+        });
+
+        // 3. Find newly added selectedFunctions that are not in syncedItems (and not excluded)
+        const existingItemIds = new Set(syncedItems.filter(i => i.type === "item").map(i => i.id));
+        const newFunctionIds = group.selectedFunctions.filter(id => !existingItemIds.has(id) && !excludedIds.has(id));
+
+        // 4. Append new items
+        if (newFunctionIds.length > 0) {
+          let lastSectionId = "";
+          const lastItem = syncedItems.filter(i => i.type === "item").pop();
+          if (lastItem) {
+            const sec = FUNCTION_SECTIONS.find(s => s.cards.some(c => c.id === lastItem.id));
+            if (sec) lastSectionId = sec.id;
+          }
+
+          newFunctionIds.forEach((funcId) => {
+            const card = allCards.find((c) => c.id === funcId);
+            if (!card) return;
+
+            const section = FUNCTION_SECTIONS.find((s) => s.cards.some((c) => c.id === funcId));
+            if (section && section.id !== lastSectionId && syncedItems.length > 0) {
+              syncedItems.push({ id: `div-${Date.now()}-${Math.random()}`, type: "divider" });
+              lastSectionId = section.id;
+            } else if (!lastSectionId && section) {
+              lastSectionId = section.id;
+            }
+
+            syncedItems.push({
+              id: card.id,
+              type: "item",
+              icon: card.icon,
+              label: card.title,
+            });
+          });
+        }
+
+        setItems(syncedItems);
+        return;
+      }
+
+      // Build fresh from selectedFunctions
       const menuItems: MenuItem[] = [];
+
+      const adminSection = FUNCTION_SECTIONS.find(s => s.id === 'admin');
+      const adminIds = adminSection ? adminSection.cards.map(c => c.id) : [];
+      const excludedIds = new Set(['dashboard', 'about', 'roles-permissions', ...adminIds]);
 
       let lastSectionId = "";
       group.selectedFunctions.forEach((funcId) => {
+        if (excludedIds.has(funcId)) return;
+        
         const card = allCards.find((c) => c.id === funcId);
         if (!card) return;
 

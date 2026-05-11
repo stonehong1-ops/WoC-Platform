@@ -1,0 +1,632 @@
+# WoC PT — Full Slide Blueprint
+
+---
+
+# SECTION 1 — INTRO
+
+---
+
+# 1. WoC
+
+## 목적
+브랜드 선언.
+설명보다 존재감을 남기는 장.
+
+## 구성
+- fullscreen
+- 중앙에 “WoC”만 배치
+- background minimal
+- 아주 약한 texture 가능
+
+## 감정 목표
+“이게 뭐지?”
+
+---
+
+# 2. World of Community
+
+## 목적
+WoC의 전체 이름 공개.
+
+## 구성
+- 중앙 타이포 중심
+- subtitle 최소화
+- world / network texture 약하게 가능
+
+---
+
+# 3. The Operating System For Human Communities
+
+## 목적
+WoC 핵심 정의.
+
+## 구성
+- 선언문처럼 강하게
+- 사람 / activity / community montage 약하게 사용
+- OS 느낌 암시
+
+---
+
+# 4. Life Goes On_
+
+## 목적
+감정 전환 시작.
+
+## 구성
+- 실제 사람들의 활동 장면
+- editorial mood
+- lifestyle montage
+
+---
+
+# 5. Life on STAGE / ROAD / TABLE / MUSE / MIND / DESK
+
+## 목적
+WoC가 다루는 인간 활동 세계를 보여주는 장.
+
+## 메인 구성
+한 장 안에서:
+- STAGE
+- ROAD
+- TABLE
+- MUSE
+- MIND
+- DESK
+
+를 montage 형태로 구성.
+
+## STAGE
+- Tango
+- Salsa
+- Ballet
+- Flamenco
+
+## ROAD
+- Bike
+- Running
+- Trekking
+
+## TABLE
+- Cooking
+- Coffee
+- Pottery
+
+## MUSE
+- BTS
+- Cinema
+- Anime
+
+## MIND
+- Writing
+- Journaling
+- Interior
+
+## DESK
+- Daechi Academy
+- English School
+- Study Group
+
+## 목표
+“아 이건 탱고앱이 아니구나.”
+
+---
+
+# SECTION 2 — WHY WoC
+
+---
+
+# 6. 돈은 여기로 흐른다
+
+## 목적
+인간의 능동 소비 영역 설명.
+
+## 구성
+- 활동 장면 위 typography
+- 클래스
+- 공연
+- 커피
+- 팬덤
+- 여행
+
+등 montage.
+
+## 메시지
+사람들은 스스로 선택한 활동에 돈과 시간을 사용한다.
+
+---
+
+# 7. 세금은 자동이다 / 통신비는 고정이다 / 대출이자는 의무다
+
+## 영문
+Taxes are automatic.
+Telecom bills are fixed.
+Loan interests are mandatory.
+
+## 목적
+기존 소비 구조 contrast.
+
+## 구성
+- 거의 텍스트 중심
+- 차갑고 반복적인 분위기
+
+---
+
+# 8. 하지만 열정은 선택된다
+
+## 영문
+But passions are chosen.
+
+## 목적
+감정 전환.
+
+## 구성
+- 웃고 움직이는 사람들
+- 활동하는 장면
+- 선택된 열정 강조
+
+---
+
+# 9. 사람들은 삶의 상당 부분을 취미와 커뮤니티에 사용한다
+
+## 영문
+Time · Emotion · Free Spending
+
+## 목적
+취미/커뮤니티의 실제 비중 설명.
+
+## 구성
+- 시간
+- 감정
+- 자유 소비
+
+시각화.
+
+---
+
+# 10. 사람은 플랫폼에 머무는 게 아니라 Group에 소속된다
+
+## 영문
+People belong to communities.
+
+## 목적
+WoC 핵심 철학.
+
+## 구성
+작은 community cluster들:
+- Tango Group
+- Yoga Circle
+- Running Crew
+- BTS Fandom
+- Daechi Academy
+
+## 메시지
+WoC는 사람보다 Group을 중심으로 설계된다.
+
+---
+
+# 11. 기존 플랫폼은 콘텐츠를 연결한다 / WoC는 인간 커뮤니티를 연결한다
+
+## 목적
+기존 SNS와 차이 설명.
+
+## 구성
+왼쪽:
+Content Feed 중심 플랫폼
+
+오른쪽:
+Community / Activity / Group 중심 구조
+
+---
+
+# SECTION 3 — COMMUNITY ECONOMY
+
+---
+
+# 12. 작은 커뮤니티 하나에도 거대한 경제가 존재한다
+
+## 영문
+Activity creates economy.
+
+## 목적
+작은 community 안에도 activity economy가 존재함을 설명.
+
+## 구성
+중앙:
+- 클래스
+- 워크샵
+- 공연
+- 여행
+- 커피
+- 공간
+
+주변:
+- Booking
+- Tickets
+- Rentals
+- Membership
+
+## 메시지
+WoC는 인간 활동 경제의 흐름을 연결한다.
+
+---
+
+# 13. 한국 탱고 인구 약 2,000명
+
+## 영문
+A small community already creates a large economy.
+
+## 목적
+실제 숫자 예시.
+
+## 중앙 구성
+Tango Community Ecosystem
+
+주변:
+- 클래스
+- 밀롱가
+- 워크샵
+- 슈즈
+- 의상
+- 여행
+- 숙박
+- 식음료
+- 대관
+
+## 숫자 영역
+1인 평균 월 소비
+약 45만 원
+
+연간 activity economy
+약 108억 원
+
+WoC Connected GMV
+약 32억 원
+
+예상 플랫폼 매출
+약 2.2억 원 / year
+
+## 메시지
+작은 community 하나에도 이미 거대한 경제가 흐르고 있다.
+
+---
+
+# 14. WoC는 이 흐름을 연결한다
+
+## 목적
+WoC revenue structure 설명.
+
+## 구성
+연결 흐름 시각화:
+- 예약
+- 티켓
+- 클래스
+- 대관
+- 숙박
+- 멤버십
+- 상품
+
+## 메시지
+WoC는 activity economy infrastructure를 만든다.
+
+---
+
+# 15. 취미는 소비가 아니라 삶의 경제다
+
+## 목적
+Activity Economy 개념 정리.
+
+## 구성
+사람 중심 montage.
+
+## 메시지
+취미는 단순 소비가 아니라 삶의 일부다.
+
+---
+
+# SECTION 4 — GROUP OPERATING SYSTEM
+
+---
+
+# 16. Group는 단순 커뮤니티가 아니다
+
+## 영문
+Groups become operating systems.
+
+## 목적
+Group Operating System 개념 시작.
+
+## 구성
+Group → System 구조 시각화.
+
+---
+
+# 17. 모든 Group은 서로 다른 workflow를 가진다
+
+## 목적
+Function Builder 필요성 설명.
+
+## 구성
+비교 예시:
+- Tango Studio
+- Academy
+- Startup
+- Fan Community
+
+각기 다른 workflow.
+
+---
+
+# 18. One Platform / Infinite Community Systems
+
+## 목적
+WoC 핵심 시스템 설명.
+
+## 구성
+Function Builder 메인 등장.
+
+50+ Functions
+Build your own community system.
+
+### ADMIN
+- Brand Setting
+- Class Setting
+- Shop Setting
+
+### CORE
+- Dashboard
+- Calendar
+- Feed
+- Live
+- Chat Rooms
+
+### EDUCATION
+- Class Manager
+- Tuition Manager
+- Homework Tracker
+
+### EVENTS
+- Ticket Booking
+- Workshop Registration
+- Venue Booking
+
+### COMMERCE
+- Group Shop
+- Rental System
+- Membership Billing
+
+### OPERATIONS
+- Task Manager
+- Internal Wiki
+- Recruitment
+
+### AI & INTELLIGENCE
+- AI Assistant
+- Auto Translation
+- AI Insights
+
+## 메시지
+모든 Group은 서로 다른 workflow를 가진다.
+
+---
+
+# 19. 하나의 Group은 하나의 살아있는 세계가 된다
+
+## 영문
+A group becomes a living world.
+
+## 구성
+예시:
+- Tango Studio
+- Yoga Brand
+- Daechi Academy
+- Fan Community
+- Startup Team
+
+각 Group:
+- 서로 다른 메뉴
+- 서로 다른 workflow
+- 서로 다른 운영 구조
+
+## 메시지
+WoC는 커뮤니티를 위한 운영체제를 만든다.
+
+---
+
+# SECTION 5 — BUSINESS PENETRATION
+
+---
+
+# 20. Business Penetration
+
+## 영문
+Start from existing communities.
+
+## 구성
+1차:
+- Tango
+- Dance
+- Yoga
+- Running
+
+2차:
+- Academy
+- Fan Community
+- Startup
+
+## 메시지
+WoC는 모든 시장을 동시에 공략하지 않는다.
+
+---
+
+# 21. Tango Community Example
+
+## 영문
+Community penetration structure.
+
+## 구성
+강사:
+- 클래스 등록
+- 결제 승인
+- 워크샵 운영
+
+강사 1명당 약 50명 연결 가능.
+
+오거나이저:
+- 소셜 등록
+- 이벤트 운영
+- 테이블 예약
+- 티켓/결제
+
+오거나이저 1명당 약 100명 연결 가능.
+
+## 메시지
+현재 탱고씬 기준 약 2,000명 규모는 2개월 내 penetration 가능성 예상.
+
+---
+
+# 22. 강사와 오거나이저는 새로운 onboarding node가 된다
+
+## 목적
+Community-based expansion 설명.
+
+## 구성
+Instructor → Students
+Organizer → Participants
+
+Network 구조.
+
+## 메시지
+Group 자체가 onboarding node 역할을 한다.
+
+---
+
+# 23. 2,000명 규모는 2개월 내 penetration 가능성 예상
+
+## 목적
+현실적 초기 성장 시나리오.
+
+## 구성
+단순하고 현실적인 rollout 느낌.
+
+## 메시지
+광고보다 community penetration 중심.
+
+---
+
+# 24. 별도의 마케팅 없이 자연스럽게 회원이 확대된다
+
+## 영문
+Community penetration.
+
+## 구성
+- 강사가 학생을 연결
+- 오거나이저가 참가자를 연결
+
+## 메시지
+WoC는 User Acquisition보다 Community Penetration에 가깝다.
+
+---
+
+# 25. 사람들은 하나의 활동에만 머물지 않는다
+
+## 영문
+Communities naturally overlap.
+
+## 구성
+흐름:
+Tango → Yoga → Running → Coffee → Travel
+
+## 메시지
+WoC는 활동 중심 network structure를 만든다.
+
+---
+
+# 26. WoC는 User Acquisition보다 Community Penetration에 가깝다
+
+## 목적
+WoC 성장 구조 정리.
+
+## 구성
+기존 SNS growth vs WoC penetration.
+
+## 메시지
+WoC는 group 기반으로 확장된다.
+
+---
+
+# SECTION 6 — POSSIBILITY & RISK
+
+---
+
+# 27. 작은 강한 커뮤니티의 시대
+
+## 영문
+The era of small, strong communities.
+
+## 구성
+- fandom
+- class
+- crew
+- local society
+
+## 메시지
+사람들은 giant SNS보다 더 깊은 community를 찾기 시작했다.
+
+---
+
+# 28. Why WoC Could Fail
+
+## 구성
+- workflow complexity
+- onboarding difficulty
+- slow network effects
+- product sprawl
+
+## 메시지
+WoC는 앱 가입보다 운영 시스템 구축에 가깝다.
+
+---
+
+# 29. But if Groups become operating systems, the upside becomes enormous.
+
+## 구성
+- 네이버카페
+- 밴드
+- 디스코드
+- 클래스 플랫폼
+- 예약툴
+- ERP-lite
+- 팬덤 운영
+
+사이의 영역 연결.
+
+## 메시지
+WoC는 Community Infrastructure Layer를 목표로 한다.
+
+---
+
+# 30. 가능성 시나리오
+
+## 구성
+유니콘급 플랫폼
+5~10%
+
+전략적 인수
+15~25%
+
+전문 커뮤니티 인프라 기업
+40~60%
+
+---
+
+# 31. WORLD OF COMMUNITY_ / Life Goes On.
+
+## 목적
+감정적 엔딩.
+
+## 구성
+인간 활동 montage.
+
+## 메시지
+Life Goes On.
+

@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Members - WoC Community</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #faf9fe;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        .online-pulse {
+            position: relative;
+        }
+        .online-pulse::after {
+            content: '';
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            width: 12px;
+            height: 12px;
+            background-color: #10b981;
+            border: 2px solid white;
+            border-radius: 50%;
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-container": "#0070eb",
+                        "tertiary-fixed": "#f6d9ff",
+                        "surface-tint": "#005bc1",
+                        "secondary": "#4c4aca",
+                        "on-primary": "#ffffff",
+                        "inverse-on-surface": "#f1f0f5",
+                        "outline-variant": "#c1c6d7",
+                        "on-surface-variant": "#414755",
+                        "on-secondary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "outline": "#717786",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-fixed": "#001a41",
+                        "surface-container-high": "#e9e7ed",
+                        "primary": "#0058bc",
+                        "surface-container": "#eeedf3",
+                        "on-secondary-fixed-variant": "#3631b4",
+                        "inverse-surface": "#2f3034",
+                        "error": "#ba1a1a",
+                        "tertiary-fixed-dim": "#e8b3ff",
+                        "secondary-fixed": "#e2dfff",
+                        "on-tertiary-fixed": "#310048",
+                        "surface-dim": "#dad9df",
+                        "surface-container-highest": "#e3e2e7",
+                        "on-error-container": "#93000a",
+                        "on-secondary-container": "#fffbff",
+                        "on-surface": "#1a1b1f",
+                        "inverse-primary": "#adc6ff",
+                        "on-tertiary-container": "#fffbff",
+                        "on-primary-fixed-variant": "#004493",
+                        "primary-fixed-dim": "#adc6ff",
+                        "on-primary-container": "#fefcff",
+                        "tertiary-container": "#a649d5",
+                        "surface-container-low": "#f4f3f8",
+                        "secondary-fixed-dim": "#c2c1ff",
+                        "on-background": "#1a1b1f",
+                        "tertiary": "#8a2bb9",
+                        "on-tertiary-fixed-variant": "#7201a2",
+                        "surface-bright": "#faf9fe",
+                        "on-secondary-fixed": "#0c006a",
+                        "secondary-container": "#6664e4",
+                        "surface-variant": "#e3e2e7",
+                        "primary-fixed": "#d8e2ff",
+                        "surface": "#faf9fe",
+                        "background": "#faf9fe",
+                        "on-error": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-mobile": "20px",
+                        "margin-tablet": "32px",
+                        "container-max": "1440px",
+                        "section-gap": "80px",
+                        "margin-desktop": "64px",
+                        "unit": "8px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "label-md": ["14px", {"lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface">
+<!-- Top AppBar (JSON Driven) -->
+<header class="fixed top-0 left-0 w-full z-50 bg-white/70 backdrop-blur-xl border-b border-white/20 shadow-sm flex justify-between items-center px-margin-mobile h-16 w-full">
+<button class="active:scale-95 duration-200 hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined text-primary" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-headline-md text-headline-md text-primary">Members</h1>
+<button class="active:scale-95 duration-200 hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined text-primary" data-icon="search">search</span>
+</button>
+</header>
+<main class="pt-16 pb-24">
+<!-- Hero Section -->
+<section class="relative overflow-hidden pt-12 pb-16 px-margin-mobile flex flex-col items-center text-center bg-gradient-to-b from-primary/5 to-transparent">
+<!-- Background floating avatars -->
+<div class="absolute inset-0 z-0 opacity-10 pointer-events-none">
+<div class="absolute top-10 left-10 w-12 h-12 rounded-full overflow-hidden border-2 border-primary/20">
+<img class="w-full h-full object-cover" data-alt="A portrait of a serene young woman with natural lighting, set against a soft out-of-focus urban background. The aesthetic is clean and modern, following a light-mode color palette with subtle blue hints. High-end professional photography style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAUNe8X7306nS9QGqGSijqlyQH0ir0f6-uRfq2sxkFs0velJm3RJcNiEXPPlEp6e4joOL0WA1YyhxTrABnlYuIfLt4xEXqqI4l5CBHowYY9Qn0t4Hxd0Khf3Jh4VMEpZzBxIj1I2Md3nkf3Cu2uWIZ6oOV-cC7MUddNgnrmjNsSp0mEhFs1eEllujP9ir3DD5BVW0hUS1ioOMmrjRsAYcb4r-j-xkR8hTWn9s9Vq1bgb8B0M2JcXowluElvRtcLat9i6zYZAnqrk8s"/>
+</div>
+<div class="absolute top-40 right-20 w-16 h-16 rounded-full overflow-hidden border-2 border-primary/20">
+<img class="w-full h-full object-cover" data-alt="A minimalist portrait of a man with a friendly expression, captured in high-key soft studio lighting. The background is a clean, neutral white that blends seamlessly into the UI. The overall mood is human-centric and professional with a gentle blue tint in the shadows." src="https://lh3.googleusercontent.com/aida-public/AB6AXuChNS2YUS99NgVpZyFVlNPfSF-5RqBNMlku4bMS1xdagRWYavf0JqMyKJ57nk3v6wGzZr813icA8fUe9T7wJZksJ5sHhaGzV6lFfskUbHhuEwtRKxoarkMw1s2run3OypjG0SdS3n9DcEQ2hEGJmQUZf78-m_av6QisXhWloyjxaSxSjRcMzscS8lol3PEVe7HMgI1VNqlYJbi1ESuTy2whtbOYuu1fv76Rw2OC0JwhKoz-MdXzaiNF_9Dg-jIYq-X8sP83fTPVoTs"/>
+</div>
+<div class="absolute bottom-5 left-1/4 w-10 h-10 rounded-full overflow-hidden border-2 border-primary/20">
+<img class="w-full h-full object-cover" data-alt="Close-up artistic portrait of a creative individual in a bright, airy environment. The lighting is diffused and soft, emphasizing a sense of clarity and digital serenity. The composition uses plenty of whitespace around the subject to maintain the OS-style breathability." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAwB6vnVLDLTBJtLyxcqN_683b-7JBRqXtti5BRjD-gTVdgz8PRCQlTaRkwSDmpgfLG088KzsnqbEjw5PEmU8wUpzNFkxBm94_KtyfLAJGxxoEL79qUw3jaVjr91yVgEe3-Pt5_ljypVYEEC4A04xLqlf-ics65_iKt_ZctT7p9fjdxuMiBb6MidCxmqeXLnN2GAFzjuV3zlgGC2uVSCE2iI5UxLT94puCU_CRLtG3bbTd0tg4m4pCXk1rxfbF0OHUbVTJU3sopqtQ"/>
+</div>
+</div>
+<div class="relative z-10 space-y-2">
+<h2 class="font-display-lg text-display-lg text-primary tracking-tighter">Members</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant opacity-80">237 people in this community</p>
+</div>
+</section>
+<!-- Sticky Segmented Control -->
+<nav class="sticky top-16 z-40 px-margin-mobile py-4 glass-panel">
+<div class="flex p-1 bg-surface-container-low rounded-full">
+<button class="flex-1 py-2 rounded-full font-label-md text-label-md bg-primary text-on-primary shadow-sm transition-all">All</button>
+<button class="flex-1 py-2 rounded-full font-label-md text-label-md text-on-surface-variant hover:text-primary transition-all">Online</button>
+<button class="flex-1 py-2 rounded-full font-label-md text-label-md text-on-surface-variant hover:text-primary transition-all">Staff</button>
+</div>
+</nav>
+<!-- Member Grid -->
+<section class="px-margin-mobile mt-8">
+<div class="grid grid-cols-2 gap-gutter">
+<!-- Member Card 1 -->
+<div class="bg-white p-4 rounded-xl shadow-[0px_10px_30px_rgba(0,0,0,0.03)] border border-white/20 flex flex-col items-center text-center space-y-3 transition-transform active:scale-95 duration-200">
+<div class="online-pulse">
+<div class="w-20 h-20 rounded-full overflow-hidden border-2 border-surface-container">
+<img class="w-full h-full object-cover" data-alt="A bright and airy portrait of a professional woman with a welcoming smile. The scene is illuminated by soft, natural morning light, creating a sense of digital serenity. The background is a minimalist, out-of-focus white space, fitting the Living OS aesthetic perfectly." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAjfTzrNm5qjw1nvBGXvmWQD0UXC5-8a_qxsJt7QA6dE55OHARaFAxG882nezVxUzvPJAPPtfykfWFZ0DtAuhU8WzjyNKShXx27_6RFpDQZBsnEGdJ_s3C3ctsV_A4ktskliO-ciyur0lSwOZM-sXgq3A-p-oJ3558AjS5ZSBfFyN6dZ0zaEwqox6jiPhPnrNXNhATXBtTVvJRTUG4bzigWyBrEoFaagC4ikcvl50V2shlxdoB8uHZSHif130R5YCG5X4s6igH4p-U"/>
+</div>
+</div>
+<div>
+<p class="font-label-md text-label-md text-on-surface">Elena Rossi</p>
+<p class="font-label-sm text-label-sm text-primary">Teacher</p>
+</div>
+</div>
+<!-- Member Card 2 -->
+<div class="bg-white p-4 rounded-xl shadow-[0px_10px_30px_rgba(0,0,0,0.03)] border border-white/20 flex flex-col items-center text-center space-y-3 transition-transform active:scale-95 duration-200">
+<div class="online-pulse">
+<div class="w-20 h-20 rounded-full overflow-hidden border-2 border-surface-container">
+<img class="w-full h-full object-cover" data-alt="A clean, high-key portrait of a young man with a focused expression. The lighting is crisp and even, highlighting a modern, human-centric visual style. The color palette is composed of pristine whites and soft blue accents, embodying a premium digital gallery feel." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB9fEC9kboyI1BLEJjstejqt0QDJlhsqNCNBJG70kZr0zC_nCzigD5i--kg4ueOqUcEu7Rs-aUSBXO9mbuKBZ6BMrLcCDVBkNrczcMp8_jrCTfUM7l7F3hnR2F7Gl7gH9CxJUjoz1FtTy32-OjDBiSYHQrR6B9YBcN1gyYEKAZhXDLWX3EvNckB5wDhR9ZEALTq7tP5hrH6YFwwqXBZ5Y21SN3unxj6CARDAVf_5Z4WatUBeANAOjYVFrHnnB2QmySiyBc8i4AX8qg"/>
+</div>
+</div>
+<div>
+<p class="font-label-md text-label-md text-on-surface">Marcus Chen</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant/60">Recently active</p>
+</div>
+</div>
+<!-- Member Card 3 -->
+<div class="bg-white p-4 rounded-xl shadow-[0px_10px_30px_rgba(0,0,0,0.03)] border border-white/20 flex flex-col items-center text-center space-y-3 transition-transform active:scale-95 duration-200">
+<div class="w-20 h-20 rounded-full overflow-hidden border-2 border-surface-container">
+<img class="w-full h-full object-cover" data-alt="A minimalist headshot of a creative professional against a soft grey background. The lighting is diffused and cinematic, maintaining the breathable and high-end feel of a premium physical gallery. Subtle blue tones are embedded in the highlights for design cohesion." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZm_lqFK5p1feOmNUU-OHAH33IM252LkrfrpD9WVb0lHjTWYJoJ2dioCV8I1yj8WoNgEtrsFt9by83ghrLqgm9nIDl76WQnNVzHk7JN_KLP7pmqc4YL44PCUN6Cxf8rlTmbsgUaNq0BkHjOFOC5K4w7T06B378p5L2_x5N81acPw7U9M42PKCnrf-Ymo0xmVBXPE_1EjuoYOtKD2XB-iSGhmJxUOAex3FuKfk3GskEklP4k5rm5XfVFgl0KC1aitdDIgU7_wTqTsA"/>
+</div>
+<div>
+<p class="font-label-md text-label-md text-on-surface">Sarah J.</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant/60">Member</p>
+</div>
+</div>
+<!-- Member Card 4 -->
+<div class="bg-white p-4 rounded-xl shadow-[0px_10px_30px_rgba(0,0,0,0.03)] border border-white/20 flex flex-col items-center text-center space-y-3 transition-transform active:scale-95 duration-200">
+<div class="online-pulse">
+<div class="w-20 h-20 rounded-full overflow-hidden border-2 border-surface-container">
+<img class="w-full h-full object-cover" data-alt="A bright, human-centric portrait of an individual with an approachable demeanor. The photography uses high-key studio lighting with a clean, minimalist background. The color saturation is kept natural and low to emphasize clarity over complexity in this digital OS environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDlF3Kq4iNFVXY3OQ854ATJ_dMqaQdQC84QQFb1S09pc3tsRDdPw5BJLKthB3QIDlRNMs7qRyeO_0U8O5CBq1hBvCdUkPhIhVC5vcv-qcc-0cTcu4SJ0rZCO1KCXFwBoxDuI8gghHC-c2Li7xz8xsg9K0vW7KcEU5cEqlnmd_IwnVA1IO03v5VfhTZDIiuDkfBw1maqfqyNt7WwMs1kUjd1VCtwjJZG1UCcipwgZ3ireBK2pHDozuJx6KYy_woBWe-pZokgiQfs6xA"/>
+</div>
+</div>
+<div>
+<p class="font-label-md text-label-md text-on-surface">David Kim</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant/60">Moderator</p>
+</div>
+</div>
+<!-- Member Card 5 -->
+<div class="bg-white p-4 rounded-xl shadow-[0px_10px_30px_rgba(0,0,0,0.03)] border border-white/20 flex flex-col items-center text-center space-y-3 transition-transform active:scale-95 duration-200">
+<div class="w-20 h-20 rounded-full overflow-hidden border-2 border-surface-container">
+<img class="w-full h-full object-cover" data-alt="A portrait of a woman with a creative aesthetic, captured in a bright and airy environment. The light is soft and diffused, creating a serene and premium feel. The background is nearly white, allowing the human subject to stand out as the primary focus of the living system." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDFGmEM2WFQCR4Iwol1DohOiNdjxD27ZLEfmjFe83_Vy__sGD59YOTbm2pHbqz2fSn14phK3w8ex_fGsq-z06q21wTLHByq3Bxa05DhjfmUkEuiVE7ne-QBhZLUIgV2XdJFPTA3Wbrx-xeWXI9EhYV5dwQLIUiLH_fS4kR24sZu32OeI_vLz6RrWXoYrH8dmDw5U8s_qWHzEDJdnfz2-Fl9kBkTvCy8x6KsAOx8TRbp-b3dTJRgiWprhNN35yZd0jooYtoIHncRzjA"/>
+</div>
+<div>
+<p class="font-label-md text-label-md text-on-surface">Lila Thorne</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant/60">Designer</p>
+</div>
+</div>
+<!-- Member Card 6 -->
+<div class="bg-white p-4 rounded-xl shadow-[0px_10px_30px_rgba(0,0,0,0.03)] border border-white/20 flex flex-col items-center text-center space-y-3 transition-transform active:scale-95 duration-200">
+<div class="w-20 h-20 rounded-full overflow-hidden border-2 border-surface-container">
+<img class="w-full h-full object-cover" data-alt="A minimalist portrait of a man in a modern office space with large windows and soft natural lighting. The mood is calm and professional, with a light-mode aesthetic that uses expansive white space and subtle blue highlights to create a sense of digital serenity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCDPC8IQcoPd8IM0W4phh9pgGJvw2IucXLxQXChJQqkPYU9myJ5WS25ZktYGRhmjkU6Qr1rjlwN2Iz4Xa9Ryxv22W_OD1qUiiZcshE5n-wo1RPnNmiRstRBN1s80KJmo7hGC9CBjGtIIeEf2uZpqAMD-2iKxoOP-fzXyN8X2fVurYsx_gaTWQBmCXZ9N4-oVEC3k-O69mymE7xL6hE0xOKCAaUiA_Fzon3LBpvXIxDax7VpCaZFBdYR-nu_dxrAlNnSCPHnhX0zidM"/>
+</div>
+<div>
+<p class="font-label-md text-label-md text-on-surface">Alex Rivera</p>
+<p class="font-label-sm text-label-sm text-primary font-bold">Leader</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation (JSON Driven) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 rounded-t-xl bg-white/80 backdrop-blur-2xl border-t border-white/20 shadow-[0px_-10px_30px_rgba(0,0,0,0.03)] flex justify-around items-center h-20 px-4 w-full">
+<button class="flex flex-col items-center justify-center text-on-surface-variant/60 hover:text-primary transition-colors active:scale-90 duration-200">
+<span class="material-symbols-outlined" data-icon="grid_view">grid_view</span>
+<span class="font-label-md text-label-md">Feed</span>
+</button>
+<button class="flex flex-col items-center justify-center text-primary font-bold active:scale-90 duration-200">
+<span class="material-symbols-outlined" data-icon="group" style="font-variation-settings: 'FILL' 1;">group</span>
+<span class="font-label-md text-label-md">Members</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant/60 hover:text-primary transition-colors active:scale-90 duration-200">
+<span class="material-symbols-outlined" data-icon="calendar_today">calendar_today</span>
+<span class="font-label-md text-label-md">Events</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant/60 hover:text-primary transition-colors active:scale-90 duration-200">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-md text-label-md">Profile</span>
+</button>
+</nav>
+</body></html>

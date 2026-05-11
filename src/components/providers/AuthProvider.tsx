@@ -151,7 +151,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               phoneNumber: data.phoneNumber || firebaseUser.phoneNumber || '',
               authMethod: data.authMethod || '',
               gender: data.gender || '',
-              isRegistered: true,
+              isRegistered: data.isRegistered === true,
               isInstructor: data.isInstructor || false,
               isSeller: data.isSeller || false,
               isServiceProvider: data.isServiceProvider || false,

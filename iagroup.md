@@ -55,10 +55,11 @@ Managed via the `activeTab` state in `GroupHome.tsx`. Each tab represents a modu
 Accessed via the **Settings (Gear icon)** and **Palette (Theme Switcher)** in the header.
 
 ### A. Configuration & Policy
-- **Function Builder**: `src/components/groups/GroupFunctionBuilder.tsx` (Master settings page - replaces GroupSettings. Modular function marketplace with cart/select logic. Data: `functionBuilderData.ts`).
+- **Function Builder**: `src/components/groups/GroupFunctionBuilder.tsx` (Modular function marketplace with cart/select logic. Data: `functionBuilderData.ts`).
 - **Basic Info**: `src/components/groups/GroupBasicEditor.tsx` (Name, Category, Theme Color, Cover).
 - **Membership**: `src/components/groups/GroupMembershipEditor.tsx` (Join strategy: Open / Approval / Locked).
 - **Contact**: `src/components/groups/GroupContactEditor.tsx` (Address, Maps, SNS links).
+- **Roles & Permissions**: `src/components/groups/GroupRoleEditor.tsx` (Multi-level staff permissions and member management).
 
 ### B. Content & Business Management
 - **Gallery**: `src/components/groups/GroupGalleryEditor.tsx` (Branding visual management).
@@ -91,7 +92,7 @@ Accessed via the **Settings (Gear icon)** and **Palette (Theme Switcher)** in th
 - [x] **Dynamic Contrast**: Automatic text color adjustment (White/Black) based on theme background.
 - [x] **Hero Section Integration**: Seamless hero-to-header transition with negative margins.
 - [x] **Multi-language Support**: Korean/English toggle for group names and descriptions.
-- [ ] **Multi-level Staff Permissions**: (In Progress - implementing Moderator role).
+- [x] **Multi-level Staff Permissions**: Custom role management via GroupRoleEditor.
 - [ ] **Advanced Analytics Dashboard**: (Planned - member engagement metrics).
-- [ ] **Native Payment Gateway**: (Planned - for Shop/Rental integration).
+- [ ] **Native Payment Gateway**: (Planned - for Shop/Rental integration).p/Rental integration).
 

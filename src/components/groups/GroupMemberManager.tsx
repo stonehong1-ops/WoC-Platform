@@ -178,12 +178,13 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
     if (!nameMatch) return false;
 
     const isAdmin = member.role === 'owner' || member.id === group.ownerId || profile?.systemRole === 'admin' || profile?.isAdmin;
-    const isStaff = profile?.isStaff || profile?.systemRole === 'staff' || 
-                    profile?.isInstructor || profile?.isSeller || 
-                    profile?.isStayHost || profile?.isServiceProvider;
+    const isInstructor = member.role === 'instructor' || profile?.isInstructor;
+    const isStaff = member.role === 'staff' || member.role === 'moderator' || profile?.isStaff || profile?.systemRole === 'staff' || 
+                    profile?.isSeller || profile?.isStayHost || profile?.isServiceProvider;
     
     if (activeSubTab === 'Owner') return isAdmin && member.status === 'active';
-    if (activeSubTab === 'Staff') return isStaff && !isAdmin && member.status === 'active';
+    if (activeSubTab === 'Instructor') return isInstructor && !isAdmin && member.status === 'active';
+    if (activeSubTab === 'Staff') return isStaff && !isAdmin && !isInstructor && member.status === 'active';
     // Member 탭 = Owner/Staff 포함 전체 active 멤버 표시
     if (activeSubTab === 'Member') return member.status === 'active';
     if (activeSubTab === 'Stats') return member.status === 'active';
@@ -494,7 +495,7 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
     <div className="space-y-8">
       {/* Sub-navigation Tabs */}
       <nav className="flex items-center gap-1 bg-[#e4e7ff] p-1 rounded-xl w-fit shadow-sm">
-        {['Stats', 'Owner', 'Staff', 'Member'].map((tab) => (
+        {['Stats', 'Owner', 'Staff', 'Instructor', 'Member'].map((tab) => (
           <button
             key={tab}
             onClick={() => {
@@ -514,8 +515,8 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
       {/* Stats View */}
       {activeSubTab === 'Stats' && renderStats()}
 
-      {/* Staff / Owner Views */}
-      {(activeSubTab === 'Staff' || activeSubTab === 'Owner') && (
+      {/* Staff / Instructor / Owner Views */}
+      {(activeSubTab === 'Staff' || activeSubTab === 'Owner' || activeSubTab === 'Instructor') && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {loading ? (
@@ -534,13 +535,13 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
               </>
             )}
             {/* Add New Staff Placeholder */}
-            {!loading && activeSubTab === 'Staff' && (
+            {!loading && (activeSubTab === 'Staff' || activeSubTab === 'Instructor') && (
               <div
                 onClick={() => setIsInviteModalOpen(true)}
                 className="border-2 border-dashed border-slate-300 rounded-xl p-6 flex flex-col items-center justify-center gap-3 text-slate-500 hover:border-[#0057bd] hover:text-[#0057bd] transition-all cursor-pointer bg-slate-50/50"
               >
                 <span className="material-symbols-outlined text-4xl">person_add</span>
-                <span className="font-semibold">Add New Staff Member</span>
+                <span className="font-semibold">Add New {activeSubTab} Member</span>
               </div>
             )}
           </div>

@@ -25,6 +25,7 @@ export default function GroupBasicEditor({ group, onClose }: GroupBasicEditorPro
     operatingHours: group.operatingHours?.map(h => `${h.label}${h.time ? ': ' + h.time : ''}`).join('\n') || "",
     houseRules: group.houseRules?.join('\n') || "",
     headerThemeColor: group.headerThemeColor || "#0057bd",
+    aboutPhotos: group.aboutPhotos || [],
   });
 
   const [isSaving, setIsSaving] = useState(false);
@@ -32,6 +33,63 @@ export default function GroupBasicEditor({ group, onClose }: GroupBasicEditorPro
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const aboutPhotosInputRef = useRef<HTMLInputElement>(null);
+
+  const handleMultipleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const newFiles = Array.from(files);
+    
+    if (formData.aboutPhotos.length + newFiles.length > 20) {
+      toast.error("You can upload up to 20 photos in the gallery.");
+      return;
+    }
+
+    setUploadingField('aboutPhotos');
+    setIsOptimizing(true);
+    setUploadProgress(0);
+    
+    try {
+      const uploadedUrls: string[] = [];
+      let currentProgress = 0;
+      const progressPerFile = 100 / newFiles.length;
+
+      for (let i = 0; i < newFiles.length; i++) {
+        const file = newFiles[i];
+        if (file.size > 10 * 1024 * 1024) continue;
+
+        const path = `groups/${group.id}/about_${Date.now()}_${i}`;
+        const downloadURL = await storageService.uploadFile(file, path, (p) => {
+          if (p === 100) {
+            currentProgress += progressPerFile;
+            setUploadProgress(Math.round(currentProgress));
+          }
+        });
+        uploadedUrls.push(downloadURL);
+      }
+      
+      setFormData(prev => ({ 
+        ...prev, 
+        aboutPhotos: [...prev.aboutPhotos, ...uploadedUrls] 
+      }));
+      toast.success(`${uploadedUrls.length} photos uploaded.`);
+    } catch (error) {
+      console.error("Error uploading photos:", error);
+      toast.error("Failed to upload some photos.");
+    } finally {
+      setUploadingField(null);
+      setIsOptimizing(false);
+      setUploadProgress(0);
+    }
+  };
+
+  const removeAboutPhoto = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      aboutPhotos: prev.aboutPhotos.filter((_, i) => i !== index)
+    }));
+  };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'coverImage') => {
     const file = e.target.files?.[0];
@@ -99,6 +157,7 @@ export default function GroupBasicEditor({ group, onClose }: GroupBasicEditorPro
         }),
         houseRules: formData.houseRules.split('\n').filter(line => line.trim() !== ''),
         headerThemeColor: formData.headerThemeColor,
+        aboutPhotos: formData.aboutPhotos,
       });
       toast.success(t('group.basic.identity_updated'));
       onClose();
@@ -264,6 +323,55 @@ export default function GroupBasicEditor({ group, onClose }: GroupBasicEditorPro
                 </div>
               </div>
             <p className="text-[11px] text-white/30 font-medium ml-2 italic">{t('group.basic.catchphrase_desc')}</p>
+            </div>
+            
+            {/* About Photos Gallery Upload */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-black uppercase tracking-[0.3em] text-[#a3abd7]/40 ml-1">About Gallery (Max 20)</label>
+                <span className="text-[10px] font-bold text-white/30">{formData.aboutPhotos.length}/20</span>
+              </div>
+              
+              <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
+                {formData.aboutPhotos.map((photo, index) => (
+                  <div key={index} className="aspect-square rounded-[1.5rem] overflow-hidden relative group border border-white/10 shadow-lg">
+                    <img src={photo} alt={`Gallery ${index + 1}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                    <div className="absolute inset-0 bg-[#0a0f1d]/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <button 
+                        onClick={() => removeAboutPhoto(index)}
+                        className="w-10 h-10 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center border border-red-500/30 hover:bg-red-500/40 hover:text-white transition-all hover:scale-110"
+                      >
+                        <span className="material-symbols-outlined text-sm">delete</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                {formData.aboutPhotos.length < 20 && (
+                  <div 
+                    onClick={() => !uploadingField && aboutPhotosInputRef.current?.click()}
+                    className={`aspect-square rounded-[1.5rem] bg-white/5 border border-white/10 border-dashed hover:border-[#0057bd]/40 hover:bg-white/10 transition-all flex flex-col items-center justify-center relative cursor-pointer shadow-inner ${uploadingField === 'aboutPhotos' ? 'pointer-events-none opacity-50' : ''}`}
+                  >
+                    {uploadingField === 'aboutPhotos' ? (
+                      <div className="w-8 h-8 border-2 border-current border-t-transparent rounded-full animate-spin text-[#0057bd]" />
+                    ) : (
+                      <>
+                        <span className="material-symbols-outlined text-white/30 text-3xl mb-2">add_photo_alternate</span>
+                        <span className="text-[10px] font-black tracking-widest text-white/30 uppercase">Add Photos</span>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+              <input 
+                type="file" 
+                ref={aboutPhotosInputRef} 
+                className="hidden" 
+                accept="image/*" 
+                multiple 
+                onChange={handleMultipleImageUpload} 
+              />
+              <p className="text-[11px] text-white/30 font-medium ml-2 italic">These photos will be featured in your group's About section.</p>
             </div>
           </div>
         </section>

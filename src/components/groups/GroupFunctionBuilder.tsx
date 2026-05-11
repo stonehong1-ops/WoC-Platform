@@ -25,14 +25,29 @@ const GroupFunctionBuilder = ({ group, onClose }: GroupFunctionBuilderProps) => 
   const [selectedSet, setSelectedSet] = useState<Set<string>>(new Set());
   const [isSaving, setIsSaving] = useState(false);
 
-  // Restore from Firestore on mount
+  // Collect all mandatory function IDs
+  const mandatoryIds = useMemo(() => {
+    const ids = new Set<string>();
+    FUNCTION_SECTIONS.forEach((section) => {
+      section.cards.forEach((card) => {
+        if (card.mandatory) ids.add(card.id);
+      });
+    });
+    return ids;
+  }, []);
+
+  // Restore from Firestore on mount + always include mandatory
   useEffect(() => {
+    const initial = new Set(mandatoryIds);
     if (group.selectedFunctions && group.selectedFunctions.length > 0) {
-      setSelectedSet(new Set(group.selectedFunctions));
+      group.selectedFunctions.forEach((id: string) => initial.add(id));
     }
-  }, [group.selectedFunctions]);
+    setSelectedSet(initial);
+  }, [group.selectedFunctions, mandatoryIds]);
 
   const toggleFunction = (id: string) => {
+    // Prevent toggling mandatory functions
+    if (mandatoryIds.has(id)) return;
     setSelectedSet((prev) => {
       const next = new Set(prev);
       if (next.has(id)) {
@@ -96,48 +111,69 @@ const GroupFunctionBuilder = ({ group, onClose }: GroupFunctionBuilderProps) => 
       {/* Main Content */}
       <main className="pt-10 pb-40 px-5 md:px-16 max-w-[1440px] mx-auto" style={{ fontFamily: "'Inter', sans-serif" }}>
         {/* Header Text */}
-        <div className="mb-16">
-          <h2 className="text-[28px] md:text-[32px] leading-[1.2] tracking-[-0.02em] font-bold mb-4 text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>WoC Group Function Builder</h2>
-          <p className="text-[16px] leading-[1.6] text-on-surface-variant max-w-3xl">Architect your community ecosystem. Select and configure advanced modules to power your collective's unique workflow.</p>
+        <div className="mb-8">
+          <h2 className="text-[18px] md:text-[20px] leading-[1.2] tracking-[-0.02em] font-bold mb-2 text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>WoC Group Function Builder</h2>
+          <p className="text-[14px] leading-[1.6] text-on-surface-variant max-w-3xl">Architect your community ecosystem. Select and configure advanced modules to power your collective's unique workflow.</p>
         </div>
 
         {/* Sections */}
         {FUNCTION_SECTIONS.map((section) => (
-          <section key={section.id} className="mb-20">
-            <div className="flex items-center gap-3 mb-8">
-              <div className={`h-10 w-1 ${section.accentColor} rounded-full`}></div>
-              <h3 className="text-[32px] leading-[1.2] tracking-[-0.01em] font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>{section.title} <span className="font-normal text-on-surface-variant ml-2 opacity-60">{section.subtitle}</span></h3>
+          <section key={section.id} className="mb-12">
+            <div className="flex items-center gap-2 mb-6">
+              <div className={`h-6 w-1 ${section.accentColor} rounded-full`}></div>
+              <h3 className="text-[18px] md:text-[20px] leading-[1.2] tracking-[-0.01em] font-bold" style={{ fontFamily: "'Inter', sans-serif" }}>{section.title} <span className="font-medium text-on-surface-variant ml-2 opacity-60 text-[14px] md:text-[16px]">{section.subtitle}</span></h3>
             </div>
             <div className="function-grid">
               {section.cards.map((card) => {
+                const isMandatory = card.mandatory === true;
                 const isSelected = selectedSet.has(card.id);
                 return (
                   <div
                     key={card.id}
-                    className={`glass-card p-6 rounded-2xl shadow-sm hover:shadow-lg transition-shadow group flex flex-col justify-between ${isSelected ? 'bg-primary/5 border-primary/20' : ''}`}
+                    className={`p-6 rounded-2xl shadow-sm hover:shadow-lg transition-all group flex flex-col justify-between ${
+                      isMandatory
+                        ? 'bg-primary text-on-primary border border-primary/80 shadow-lg shadow-primary/20'
+                        : isSelected
+                          ? 'glass-card bg-primary/5 border-primary/20'
+                          : 'glass-card'
+                    }`}
                   >
                     <div>
                       <div className="flex justify-between items-start mb-4">
-                        <span className="material-symbols-outlined text-primary text-3xl">{card.icon}</span>
-                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${isSelected ? STATUS_BADGE.INSTALLED.bg : STATUS_BADGE[card.status].bg}`}>
-                          {isSelected ? "INSTALLED" : card.status}
+                        <span className={`material-symbols-outlined text-3xl ${isMandatory ? 'text-on-primary' : 'text-primary'}`}>{card.icon}</span>
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${
+                          isMandatory
+                            ? 'bg-white/20 text-white'
+                            : isSelected
+                              ? STATUS_BADGE.INSTALLED.bg
+                              : STATUS_BADGE[card.status].bg
+                        }`}>
+                          {isMandatory ? 'REQUIRED' : isSelected ? 'INSTALLED' : card.status}
                         </span>
                       </div>
-                      <h4 className="text-[18px] font-semibold mb-1" style={{ fontFamily: "'Inter', sans-serif" }}>{card.title} <span className="text-on-surface-variant/50 font-normal">{card.subtitle}</span></h4>
-                      <p className="text-[14px] leading-[1.4] text-on-surface-variant/70 mb-4 leading-snug">{card.description}</p>
+                      <h4 className={`text-[18px] font-semibold mb-1 ${isMandatory ? 'text-on-primary' : ''}`} style={{ fontFamily: "'Inter', sans-serif" }}>{card.title} <span className={isMandatory ? 'text-on-primary/60 font-normal' : 'text-on-surface-variant/50 font-normal'}>{card.subtitle}</span></h4>
+                      <p className={`text-[14px] leading-[1.4] mb-4 leading-snug ${isMandatory ? 'text-on-primary/70' : 'text-on-surface-variant/70'}`}>{card.description}</p>
                     </div>
                     <div className="flex items-center justify-between mt-4">
-                      <span className="text-[14px] text-primary font-bold">{card.price}</span>
-                      <button
-                        onClick={() => toggleFunction(card.id)}
-                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                          isSelected
-                            ? 'bg-primary text-white shadow-lg'
-                            : 'bg-surface-container-high text-primary group-hover:bg-primary group-hover:text-white'
-                        }`}
-                      >
-                        <span className="material-symbols-outlined text-[20px]">{isSelected ? 'check' : 'add'}</span>
-                      </button>
+                      {card.price !== 'Free' && (
+                        <span className={`text-[14px] font-bold ${isMandatory ? 'text-on-primary/80' : 'text-primary'}`}>{card.price}</span>
+                      )}
+                      {isMandatory ? (
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white/20">
+                          <span className="material-symbols-outlined text-[20px] text-on-primary">lock</span>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => toggleFunction(card.id)}
+                          className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                            isSelected
+                              ? 'bg-primary text-white shadow-lg'
+                              : 'bg-surface-container-high text-primary group-hover:bg-primary group-hover:text-white'
+                          }`}
+                        >
+                          <span className="material-symbols-outlined text-[20px]">{isSelected ? 'check' : 'add'}</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 );

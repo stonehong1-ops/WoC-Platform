@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { collection, getDocs, addDoc, serverTimestamp, updateDoc, doc, query, where } from 'firebase/firestore';
-import { db } from '@/lib/firebase/config';
+import { db } from '@/lib/firebase/clientApp';
 
 const defaultPalette = {
   tier7: 40000,

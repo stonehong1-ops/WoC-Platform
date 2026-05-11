@@ -1,4 +1,4 @@
-import { db } from './config';
+import { db } from './clientApp';
 import { 
   collection, 
   addDoc, 

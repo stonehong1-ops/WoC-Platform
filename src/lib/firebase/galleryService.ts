@@ -16,7 +16,7 @@ import {
   onSnapshot,
   Timestamp
 } from 'firebase/firestore';
-import { db } from './config';
+import { db } from './clientApp';
 
 export interface GalleryTag {
   type: 'group' | 'social' | 'event' | 'class' | 'people';

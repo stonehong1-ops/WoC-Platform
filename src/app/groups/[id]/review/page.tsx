@@ -45,7 +45,7 @@ export default function GroupFunctionReviewPage() {
   };
 
   const handleBack = () => {
-    router.back();
+    router.push(`/groups/${groupId}?setup=1`);
   };
 
   if (loading) {
@@ -98,7 +98,9 @@ export default function GroupFunctionReviewPage() {
                   <p className="text-[12px] text-on-surface-variant">{card.subtitle}</p>
                 </div>
               </div>
-              <span className="text-[14px] font-bold text-primary">{card.price}</span>
+              {card.price !== 'Free' && (
+                <span className="text-[14px] font-bold text-primary">{card.price}</span>
+              )}
             </div>
           ))}
         </div>

@@ -7,12 +7,15 @@ import { useNotification } from '@/contexts/NotificationContext';
 import { notificationService } from '@/lib/firebase/notificationService';
 import { useRouter } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
+import { useHistoryBack } from '@/hooks/useHistoryBack';
 
 export default function NotificationTray() {
   const { isNotiTrayOpen, closeNotiTray } = useNavigation();
   const { notifications, loading } = useNotification();
   const [activeTab, setActiveTab] = useState<'INFO' | 'TODO'>('TODO');
   const router = useRouter();
+  
+  const { handleClose } = useHistoryBack(isNotiTrayOpen, closeNotiTray);
 
   const infoNotis = notifications.filter(n => n.baseType === 'INFO' || (n.type !== 'GROUP_INVITE' && !n.baseType));
   const todoNotis = notifications.filter(n => n.baseType === 'TODO' || n.type === 'GROUP_INVITE');
@@ -25,8 +28,10 @@ export default function NotificationTray() {
     }
     
     if (noti.actionUrl) {
-      closeNotiTray();
-      router.push(noti.actionUrl);
+      handleClose();
+      setTimeout(() => {
+        router.push(noti.actionUrl);
+      }, 50);
     }
   };
 
@@ -38,7 +43,7 @@ export default function NotificationTray() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={closeNotiTray}
+            onClick={handleClose}
             className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60]"
           />
           <motion.div 
@@ -51,7 +56,7 @@ export default function NotificationTray() {
             <div className="px-5 py-4 border-b border-outline-variant/30 flex items-center justify-between">
               <h2 className="text-[18px] font-black tracking-tight text-on-background">Notifications</h2>
               <button 
-                onClick={closeNotiTray}
+                onClick={handleClose}
                 className="w-8 h-8 flex items-center justify-center rounded-full bg-surface-variant/50 text-on-surface hover:bg-surface-variant transition-colors"
               >
                 <span className="material-symbols-outlined text-[20px]">close</span>

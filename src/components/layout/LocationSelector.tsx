@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useLocation } from '@/components/providers/LocationProvider';
+import { useHistoryBack } from '@/hooks/useHistoryBack';
 
 export const REGIONS = [
   {
@@ -290,6 +291,8 @@ export default function LocationSelector() {
   const { location, setLocation, isSelectorOpen, setIsSelectorOpen, selectorCallback, clearSelectorCallback } = useLocation();
   const [expandedCountry, setExpandedCountry] = useState<string | null>(location.country);
 
+  const { handleClose } = useHistoryBack(isSelectorOpen, () => setIsSelectorOpen(false));
+
   if (!isSelectorOpen) return null;
 
   const handleSelect = (country: string, city: string) => {
@@ -301,7 +304,7 @@ export default function LocationSelector() {
       // 기본 모드: 전역 location 변경
       setLocation({ country, city, zone: undefined });
     }
-    setIsSelectorOpen(false);
+    handleClose();
   };
 
   const filteredRegions = REGIONS;
@@ -310,7 +313,7 @@ export default function LocationSelector() {
     <div className="fixed inset-0 z-[100] flex items-end justify-center pointer-events-none">
       <div 
         className="absolute inset-0 bg-transparent transition-opacity duration-300 pointer-events-auto"
-        onClick={() => setIsSelectorOpen(false)}
+        onClick={handleClose}
       ></div>
 
       <div className="relative w-full max-w-lg bg-surface rounded-t-3xl shadow-[0_-20px_50px_-12px_rgba(0,0,0,0.3)] animate-in slide-in-from-bottom duration-300 ease-out flex flex-col h-[70vh] pointer-events-auto border-t border-outline-variant/20">
@@ -328,7 +331,7 @@ export default function LocationSelector() {
             </p>
           </div>
           <button 
-            onClick={() => setIsSelectorOpen(false)}
+            onClick={handleClose}
             className="w-10 h-10 flex items-center justify-center rounded-full bg-on-surface/[0.04] hover:bg-on-surface/[0.08] transition-all"
           >
             <span className="material-symbols-outlined text-[20px] text-on-surface/50">close</span>
