@@ -15,14 +15,15 @@ import { Venue } from "@/types/venue";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 interface GroupClassAddEditorProps {
-  group: Group;
+  group: Group | null;
   onClose: () => void;
   onSave?: () => void;
   initialData?: GroupClass;
   targetMonth?: string;
+  isSpecial?: boolean;
 }
 
-const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClose, onSave, initialData, targetMonth }) => {
+const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClose, onSave, initialData, targetMonth, isSpecial }) => {
   const { t } = useLanguage();
   const [isSaving, setIsSaving] = useState(false);
   
@@ -121,7 +122,7 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
     imageUrl: "",
     videoUrl: "",
     instructorProfile: "",
-    classType: "Partner Class",
+    classType: isSpecial ? "special" : "Partner Class",
     leaderCount: 0,
     followerCount: 0,
     maxCapacity: 0,
@@ -160,7 +161,8 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
     setIsOptimizingImage(true);
 
     try {
-      const path = `groups/${group.id}/classes/images/${uuidv4()}_${file.name}`;
+      const groupId = group?.id || 'special';
+      const path = `groups/${groupId}/classes/images/${uuidv4()}_${file.name}`;
       const url = await storageService.uploadFile(file, path, (progress) => {
         setIsOptimizingImage(false);
         setImageProgress(Math.round(progress));
@@ -196,7 +198,8 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
     setIsOptimizingVideo(true);
 
     try {
-      const path = `groups/${group.id}/classes/videos/${uuidv4()}_${file.name}`;
+      const groupId = group?.id || 'special';
+      const path = `groups/${groupId}/classes/videos/${uuidv4()}_${file.name}`;
       const url = await storageService.uploadFile(file, path, (progress) => {
         setIsOptimizingVideo(false);
         setVideoProgress(Math.round(progress));
@@ -233,7 +236,7 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
 
     setIsSaving(true);
     try {
-      const currentClasses = group.classes || [];
+      const currentClasses = group?.classes || [];
       let updatedClasses: GroupClass[];
       const finalData = { ...formData };
       if (!capacityEnabled) {
@@ -241,10 +244,11 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
         finalData.followerCount = 0;
       }
       
+      const groupId = group?.id || 'special';
       if (isEditMode) {
-        await groupService.updateClass(group.id, formData.id, finalData);
+        await groupService.updateClass(groupId, formData.id, finalData);
       } else {
-        await groupService.addClass(group.id, finalData);
+        await groupService.addClass(groupId, finalData);
       }
       
       toast.success(isEditMode ? t('class.edited_success') : t('class.added_success'));
@@ -399,6 +403,7 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
                 <span className="material-symbols-outlined absolute right-3 top-3 pointer-events-none text-on-surface-variant">expand_more</span>
               </div>
             </div>
+            {!isSpecial && (
             <div>
               <label className="block text-[10px] font-bold text-on-surface-variant mb-2 uppercase tracking-widest opacity-70">{t('class.type_label')}</label>
               <div className="relative">
@@ -411,10 +416,12 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
                   <option value="Partner Class">Partner Class</option>
                   <option value="Partner Class with Change">Partner Class with Change</option>
                   <option value="Training">Training</option>
+                  <option value="special">Special Event</option>
                 </select>
                 <span className="material-symbols-outlined absolute right-3 top-3 pointer-events-none text-on-surface-variant">expand_more</span>
               </div>
             </div>
+            )}
           </div>
 
           {/* Venue Section */}
@@ -630,7 +637,7 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
                           type="date" 
                         />
                       </div>
-                      {formData.schedule.length > 1 && (
+                      {!isSpecial && formData.schedule.length > 1 && (
                         <button onClick={() => removeWeek(index)} className="ml-3 mb-1 material-symbols-outlined text-on-surface-variant/40 hover:text-error transition-colors">delete</button>
                       )}
                     </div>
@@ -673,6 +680,7 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
               ))}
             </div>
             
+            {!isSpecial && (
             <div className="mt-6 flex items-center gap-4">
               <div className="relative w-24">
                 <select 
@@ -691,6 +699,7 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
                 Add weeks
               </button>
             </div>
+            )}
           </div>
 
           {/* Media Section */}

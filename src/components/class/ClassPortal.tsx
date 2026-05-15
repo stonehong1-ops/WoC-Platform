@@ -16,6 +16,7 @@ import { db } from '@/lib/firebase/clientApp';
 import { useBookingEngine } from '@/hooks/useBookingEngine';
 import UnifiedCheckoutModal from '@/components/common/UnifiedCheckoutModal';
 import Portal from '@/components/common/Portal';
+import GroupClassAddEditor from '@/components/groups/GroupClassAddEditor';
 
 export default function ClassPortal() {
   const router = useRouter();
@@ -29,7 +30,7 @@ export default function ClassPortal() {
   const [allClasses, setAllClasses] = useState<any[]>([]);
   const [specialClasses, setSpecialClasses] = useState<any[]>([]);
   
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   
   const [weekOffset, setWeekOffset] = useState(0);
 
@@ -49,6 +50,10 @@ export default function ClassPortal() {
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
   const [checkoutClass, setCheckoutClass] = useState<any>(null);
   const [checkoutRole, setCheckoutRole] = useState<'leader' | 'follower'>('leader');
+
+  const [isAddingSpecialClass, setIsAddingSpecialClass] = useState(false);
+  const [selectedGroupForAdd, setSelectedGroupForAdd] = useState<Group | null>(null);
+  const [showGroupSelector, setShowGroupSelector] = useState(false);
 
   const { createBooking, reportPayment, isLoading: isBooking } = useBookingEngine();
   
@@ -379,6 +384,17 @@ export default function ClassPortal() {
     }
   };
 
+  const handleAddSpecialClick = () => {
+    if (!user) return;
+    const isAdminOrOwner = profile?.systemRole === 'admin' || profile?.isAdmin || groups.some(g => g.ownerId === user.uid);
+    if (!isAdminOrOwner) {
+      alert("You don't have permission to add special events.");
+      return;
+    }
+    // No group selection needed for special classes
+    setIsAddingSpecialClass(true);
+  };
+
   const handleCheckoutClick = (cls: any) => {
     setCheckoutClass(cls);
     setCheckoutRole('leader'); // Default role
@@ -442,7 +458,7 @@ export default function ClassPortal() {
                   // Past or starting soon
                   const isPast = now.getTime() > classTime.getTime();
                   const isStartingSoon = !isPast && (classTime.getTime() - now.getTime() < 2 * 60 * 60 * 1000); // within 2 hours
-                  const isInstructor = user && ((user as any).role === 'admin' || cls.instructors?.some((i: any) => i.userId === user.uid || i.name === user.displayName) || cls.group?.ownerId === user.uid);
+                  const isInstructor = user && (profile?.systemRole === 'admin' || profile?.isAdmin || cls.instructors?.some((i: any) => i.userId === user.uid || i.name === user.displayName) || cls.group?.ownerId === user.uid);
                   
                   return (
                     <div 
@@ -610,7 +626,7 @@ export default function ClassPortal() {
                     const isPast = now.getTime() > classTime.getTime();
                     const isStartingSoon = !isPast && (classTime.getTime() - now.getTime() < 2 * 60 * 60 * 1000) && isToday;
                     
-                    const isInstructor = user && ((user as any).role === 'admin' || cls.instructors?.some((i: any) => i.userId === user.uid || i.name === user.displayName) || cls.group?.ownerId === user.uid);
+                    const isInstructor = user && (profile?.systemRole === 'admin' || profile?.isAdmin || cls.instructors?.some((i: any) => i.userId === user.uid || i.name === user.displayName) || cls.group?.ownerId === user.uid);
                     
                     return (
                     <div 
@@ -771,8 +787,26 @@ export default function ClassPortal() {
     </div>
   );
 
-  const renderSpecialTab = () => (
+  const renderSpecialTab = () => {
+    const isAdminOrOwner = user && (profile?.systemRole === 'admin' || profile?.isAdmin || groups.some(g => g.ownerId === user.uid));
+    
+    return (
     <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+      {isAdminOrOwner && (
+        <div className="px-5 py-3 flex items-center justify-between bg-white rounded-xl border border-slate-100 shadow-sm">
+          <p className="text-[12px] font-bold text-slate-400 uppercase tracking-tight">
+            Have special events to host?
+          </p>
+          <button 
+            onClick={handleAddSpecialClick}
+            className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 transition-colors py-2"
+          >
+            <span className="text-[13px] font-bold">Register Event</span>
+            <span className="material-symbols-outlined text-[18px]">add_circle</span>
+          </button>
+        </div>
+      )}
+
       {specialClasses.length > 0 ? (
         specialClasses.map((cls) => {
           const group = groups.find(g => g.id === cls.groupId);
@@ -824,7 +858,7 @@ export default function ClassPortal() {
         </div>
       )}
     </div>
-  );
+  )};
 
   if (loading) {
     return (
@@ -999,6 +1033,68 @@ export default function ClassPortal() {
             </div>
           </div>
         </UnifiedCheckoutModal>
+      )}
+
+      {/* Add Special Class Editor Modal */}
+      {isAddingSpecialClass && (
+        <Portal>
+          <div className="fixed inset-0 z-[1000] bg-white overflow-y-auto">
+            <GroupClassAddEditor 
+              group={null}
+              isSpecial={true}
+              onClose={() => setIsAddingSpecialClass(false)}
+              onSave={async () => {
+                setIsAddingSpecialClass(false);
+                setLoading(true);
+                try {
+                  const [allData, specialData] = await Promise.all([
+                    groupService.getGlobalClassesAll(),
+                    groupService.getGlobalSpecialClasses()
+                  ]);
+                  setAllClasses(allData);
+                  setSpecialClasses(specialData);
+                } finally {
+                  setLoading(false);
+                }
+              }}
+            />
+          </div>
+        </Portal>
+      )}
+
+      {/* Group Selector Modal */}
+      {showGroupSelector && (
+        <Portal>
+          <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="w-full max-w-sm bg-white rounded-[32px] p-6 shadow-2xl">
+              <h3 className="text-[18px] font-black text-slate-800 mb-4">Select Studio</h3>
+              <div className="flex flex-col gap-2 max-h-[60vh] overflow-y-auto">
+                {groups.filter(g => g.ownerId === user?.uid || profile?.systemRole === 'admin' || profile?.isAdmin).map(g => (
+                  <button 
+                    key={g.id}
+                    onClick={() => {
+                      setSelectedGroupForAdd(g);
+                      setShowGroupSelector(false);
+                      setIsAddingSpecialClass(true);
+                    }}
+                    className="flex items-center gap-3 p-3 rounded-2xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all text-left"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-slate-100 overflow-hidden shrink-0">
+                      {(g.logo || g.coverImage) && <img src={g.logo || g.coverImage || ''} alt="" className="w-full h-full object-cover" />}
+                    </div>
+                    <span className="font-bold text-slate-700 text-[14px]">{g.name}</span>
+                  </button>
+                ))}
+              </div>
+              <button 
+                onClick={() => setShowGroupSelector(false)}
+                className="mt-4 w-full py-3 bg-slate-100 text-slate-500 font-bold text-[14px] rounded-2xl hover:bg-slate-200 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </Portal>
       )}
     </div>
   );

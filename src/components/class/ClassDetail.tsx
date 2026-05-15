@@ -863,12 +863,24 @@ export default function ClassDetail({ groupId, onClose, isModal = false, isEmbed
                   {selectedClassDetail.amount?.toLocaleString()} {selectedClassDetail.currency || "KRW"}
                 </p>
               </div>
-              <button 
-                onClick={() => handleAddToBasket(selectedClassDetail.id)}
-                className="flex-shrink-0 bg-primary text-white px-7 py-3 rounded-xl font-black text-sm tracking-wide shadow-lg shadow-primary/20 active:scale-95 transition-transform flex items-center gap-1"
-              >
-                Add
-              </button>
+              {selectedClassDetail.classType === 'special' ? (
+                <button 
+                  onClick={() => {
+                    handleClose();
+                    setTimeout(() => handleJoinClass(selectedClassDetail), 100);
+                  }}
+                  className="flex-shrink-0 bg-white text-[#2d3435] px-8 py-3 rounded-xl font-black text-sm tracking-wide shadow-lg shadow-black/10 border border-slate-200 active:scale-95 transition-transform flex items-center justify-center gap-1"
+                >
+                  RESERVE
+                </button>
+              ) : (
+                <button 
+                  onClick={() => handleAddToBasket(selectedClassDetail.id)}
+                  className="flex-shrink-0 bg-primary text-white px-7 py-3 rounded-xl font-black text-sm tracking-wide shadow-lg shadow-primary/20 active:scale-95 transition-transform flex items-center gap-1"
+                >
+                  Add
+                </button>
+              )}
             </div>
           </motion.div>
         )}
