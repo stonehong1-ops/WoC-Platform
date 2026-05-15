@@ -199,6 +199,7 @@ export const notificationService = {
   // FCM 공통 전송 모듈 (Private처럼 사용)
   sendFCM: async (targetUserId: string, title: string, message: string, dataPayload: any) => {
     try {
+      if (!targetUserId) return;
       const userDoc = await getDoc(doc(db, 'users', targetUserId));
       const userData = userDoc.data();
       const tokens = userData?.fcmTokens;

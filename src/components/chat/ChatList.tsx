@@ -6,7 +6,6 @@ import { userService } from '@/lib/firebase/userService';
 import { ChatRoom } from '@/types/chat';
 import { PlatformUser } from '@/types/user';
 import { useAuth } from '@/components/providers/AuthProvider';
-import { formatDistanceToNow } from 'date-fns';
 import { safeDate } from '@/lib/utils/safeDate';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -101,11 +100,12 @@ function RoomName({ room, currentUserId }: { room: ChatRoom; currentUserId?: str
 }
 
 function RoomItem({ room, userId, selectedRoomId, onSelectRoom }: { room: ChatRoom; userId?: string; selectedRoomId?: string | null; onSelectRoom: (id: string) => void }) {
+  const { formatRelativeTime } = useLanguage();
   const isSelected = selectedRoomId === room.id;
   const unreadCount = room.unreadCounts?.[userId || ''] || 0;
   const lastTime = (() => {
     const d = safeDate(room.lastMessageTime);
-    return d ? formatDistanceToNow(d, { addSuffix: true }) : '';
+    return d ? formatRelativeTime(d) : '';
   })();
 
   return (

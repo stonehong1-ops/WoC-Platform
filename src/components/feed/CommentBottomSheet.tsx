@@ -4,8 +4,7 @@ import React, { useState, useEffect } from 'react';
 import BottomSheet from '../common/BottomSheet';
 import { Comment, Post } from '@/types/feed';
 import { feedService } from '@/lib/firebase/feedService';
-import { formatDistanceToNow } from 'date-fns';
-import { ko } from 'date-fns/locale';
+
 import UserBadge from '../common/UserBadge';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -25,7 +24,7 @@ export default function CommentBottomSheet({ post, isOpen, onClose, currentUser,
   const [newCommentText, setNewCommentText] = useState('');
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const { t, language } = useLanguage();
+  const { t, language, formatRelativeTime } = useLanguage();
 
   useEffect(() => {
     if (isOpen && post.id) {
@@ -92,7 +91,7 @@ export default function CommentBottomSheet({ post, isOpen, onClose, currentUser,
 
   const renderCommentItem = (comment: Comment, isReply = false) => {
     const timeAgo = comment.createdAt 
-      ? formatDistanceToNow((comment.createdAt as any).toDate?.() || new Date(comment.createdAt as any), { addSuffix: true, locale: language === 'KR' ? ko : undefined })
+      ? formatRelativeTime(comment.createdAt)
       : t('plaza.just_now');
 
     const isExpanded = expandedComments.has(comment.id);

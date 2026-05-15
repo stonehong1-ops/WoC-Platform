@@ -1,9 +1,16 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Member } from "@/types/group";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useLanguage } from '@/contexts/LanguageContext';
+import React, { useState, useEffect } from 'react';
+import { Member } from '@/types/group';
+import { UserProfile } from '@/types/user';
+import UserBadge from '@/components/common/UserBadge';
+import { useAuth } from '@/components/providers/AuthProvider';
+
+interface MemberWithProfile extends Member {
+  profile?: UserProfile | null;
+  nickname?: string;
+}
 
 interface GroupMembersProps {
   members: Member[];
@@ -12,196 +19,293 @@ interface GroupMembersProps {
   onClose: () => void;
 }
 
-type FilterCategory = 'all' | 'owner' | 'staff' | 'instructor' | 'member';
-
 export default function GroupMembers({ members, memberCount, onMemberClick, onClose }: GroupMembersProps) {
-  const { t } = useLanguage();
-  const [activeFilter, setActiveFilter] = useState<FilterCategory>('all');
+  const { t, formatDate, formatRelativeTime } = useLanguage();
+  const [activeSubTab, setActiveSubTab] = useState('Member');
+  const [membersWithProfiles, setMembersWithProfiles] = useState<MemberWithProfile[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  const { user, profile } = useAuth();
 
-  const activeMembers = useMemo(() => {
-    return members.filter(m => m.status === 'active' || !m.status);
+  const isViewerAdmin = React.useMemo(() => {
+    if (!user) return false;
+    if (profile?.isAdmin || profile?.systemRole === 'admin') return true;
+    const me = members.find(m => m.id === user.uid);
+    return me?.role === 'owner' || me?.role === 'admin';
+  }, [user, profile, members]);
+  
+  // Pagination & Sorting State
+  const [pageSize, setPageSize] = useState(20);
+  const [sortBy, setSortBy] = useState<'joinedAt' | 'lastVisitedAt'>('joinedAt');
+
+  // Fetch all members with profiles
+  useEffect(() => {
+    let isMounted = true;
+    const fetchProfiles = async () => {
+      setLoading(true);
+      const withProfiles = await Promise.all(members.map(async (member) => {
+        try {
+          const { userService } = await import('@/lib/firebase/userService');
+          const userProfile = await userService.getUserById(member.id);
+          return {
+            ...member,
+            profile: userProfile
+          };
+        } catch (error) {
+          console.error(`Failed to fetch profile for user ${member.id}:`, error);
+          return { ...member, profile: null };
+        }
+      }));
+      if (isMounted) {
+        setMembersWithProfiles(withProfiles);
+        setLoading(false);
+      }
+    };
+    fetchProfiles();
+    return () => { isMounted = false; };
   }, [members]);
 
-  const filteredMembers = useMemo(() => {
-    let result = activeMembers;
-
-    if (activeFilter === 'owner') {
-      result = result.filter(m => m.role === 'admin' || m.role === 'owner');
-    } else if (activeFilter === 'staff') {
-      result = result.filter(m => m.role === 'staff' || m.role === 'moderator');
-    } else if (activeFilter === 'instructor') {
-      result = result.filter(m => m.role === 'instructor');
-    } else if (activeFilter === 'member') {
-      result = result.filter(m => !m.role || m.role === 'member');
-    }
-
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(m => m.name?.toLowerCase().includes(q) || (m as any).nickname?.toLowerCase().includes(q));
-    }
-
-    return result;
-  }, [activeMembers, activeFilter, searchQuery]);
-
-  const getRoleBadge = (member: Member) => {
-    if (member.role === 'admin' || member.role === 'owner') return { label: 'OWNER', color: '#0057bd', icon: 'stars' };
-    if (member.role === 'staff' || member.role === 'moderator') return { label: 'STAFF', color: '#893c92', icon: 'shield_person' };
-    if (member.role === 'instructor') return { label: 'INSTRUCTOR', color: '#e65100', icon: 'school' };
-    return { label: 'MEMBER', color: '#3a53b7', icon: 'group' };
+  const getMillis = (date: any) => {
+    if (!date) return 0;
+    if (typeof date === 'number') return date;
+    if (typeof date.toMillis === 'function') return date.toMillis();
+    if (typeof date.toDate === 'function') return date.toDate().getTime();
+    return 0;
   };
 
-  const filters: { id: FilterCategory; label: string; icon: string }[] = [
-    { id: 'all', label: 'All', icon: 'grid_view' },
-    { id: 'owner', label: 'Owner', icon: 'stars' },
-    { id: 'staff', label: 'Staff', icon: 'shield_person' },
-    { id: 'instructor', label: 'Instructor', icon: 'school' },
-    { id: 'member', label: 'Member', icon: 'group' }
-  ];
+  const filteredMembers = membersWithProfiles.filter(member => {
+    const profile = member.profile;
+    const nickname = profile?.nickname || member.name || member.nickname || '';
+    const email = profile?.email || '';
+    
+    const nameMatch = nickname.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                      email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      member.id.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    if (!nameMatch) return false;
 
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] bg-[#0a0f1d] flex flex-col overflow-y-auto no-scrollbar font-body text-white"
-    >
-      {/* Background Atmosphere */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-5%] left-[-5%] w-[40%] h-[40%] bg-[#0057bd]/10 blur-[100px] rounded-full" />
-        <div className="absolute bottom-[-5%] right-[-5%] w-[30%] h-[30%] bg-purple-900/10 blur-[80px] rounded-full" />
-      </div>
+    // Determine roles for filtering
+    const isAdmin = member.role === 'owner' || profile?.systemRole === 'admin' || profile?.isAdmin;
+    const isInstructor = member.role === 'instructor' || profile?.isInstructor;
+    const isStaff = member.role === 'staff' || member.role === 'moderator' || profile?.isStaff || profile?.systemRole === 'staff' || 
+                    profile?.isSeller || profile?.isStayHost || profile?.isServiceProvider;
+    
+    if (activeSubTab === 'Owner') return isAdmin && member.status === 'active';
+    if (activeSubTab === 'Staff') return isStaff && !isAdmin && !isInstructor && member.status === 'active';
+    if (activeSubTab === 'Instructor') return isInstructor && !isAdmin && member.status === 'active';
+    // Member 탭 = Owner/Staff 포함 전체 active 멤버 표시
+    if (activeSubTab === 'Member') return member.status === 'active';
+    
+    return member.status === 'active';
+  }).sort((a, b) => {
+    if (sortBy === 'joinedAt') {
+      return getMillis(b.joinedAt) - getMillis(a.joinedAt);
+    } else if (sortBy === 'lastVisitedAt') {
+      const dateA = getMillis(a.profile?.updatedAt || a.profile?.createdAt);
+      const dateB = getMillis(b.profile?.updatedAt || b.profile?.createdAt);
+      return dateB - dateA;
+    }
+    return 0;
+  });
 
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-[#0a0f1d]/80 backdrop-blur-2xl border-b border-white/10">
-        <div className="max-w-screen-xl mx-auto px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 w-full">
-          <div className="flex items-center gap-4">
-            <button 
-              onClick={onClose}
-              className="w-10 h-10 rounded-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-all shrink-0"
-            >
-              <span className="material-symbols-outlined">arrow_back</span>
-            </button>
-            <div>
-              <h1 className="text-lg font-headline font-black tracking-tight">Member Directory</h1>
-              <p className="text-xs text-white/40">Manage and view all {memberCount || activeMembers.length} community members.</p>
+  const currentItems = filteredMembers.slice(0, pageSize);
+
+  const loadMore = () => {
+    setPageSize(prev => prev + 20);
+  };
+
+  const getLastVisitText = (member: MemberWithProfile) => {
+    const lastVisitMillis = getMillis(member.profile?.updatedAt || member.profile?.createdAt);
+    if (!lastVisitMillis) return '-';
+    try {
+      return formatRelativeTime(lastVisitMillis);
+    } catch {
+      return '-';
+    }
+  };
+
+  const renderMemberCard = (member: MemberWithProfile) => {
+    const isEnglish = (str: string) => /^[a-zA-Z0-9\s._-]+$/.test(str);
+    let primaryNickname = member.profile?.nickname || member.name || member.nickname || 'Unknown';
+    let secondaryNickname = member.profile?.nativeNickname || '';
+    if (primaryNickname && !isEnglish(primaryNickname)) {
+      if (!secondaryNickname) secondaryNickname = primaryNickname;
+      primaryNickname = member.id.substring(0, 8); 
+    }
+
+    const user = {
+      id: member.id,
+      nickname: primaryNickname,
+      nativeNickname: secondaryNickname,
+      photoURL: member.profile?.photoURL || member.photoURL || member.avatar,
+      danceRole: member.profile?.role,
+      groupRole: member.role,
+      gender: member.profile?.gender,
+      isAdmin: member.profile?.isAdmin || member.profile?.systemRole === 'admin' || member.role === 'owner',
+      isStaff: member.profile?.isStaff || member.profile?.systemRole === 'staff',
+      isInstructor: member.profile?.isInstructor,
+    };
+
+    let effectiveRole = user.danceRole?.toLowerCase();
+    if (!effectiveRole && user.gender) {
+      if (user.gender === 'male') effectiveRole = 'leader';
+      if (user.gender === 'female' || user.gender === 'others') effectiveRole = 'follower';
+    }
+
+    const isLeader = effectiveRole === 'leader';
+    const isFollower = effectiveRole === 'follower';
+
+    return (
+      <div 
+        key={member.id} 
+        onClick={() => onMemberClick?.(member)}
+        className={`bg-white p-6 rounded-xl shadow-[0_4px_20px_-4px_rgba(36,44,81,0.08)] border border-white hover:shadow-md transition-shadow ${onMemberClick ? 'cursor-pointer active:scale-[0.98]' : ''}`}
+      >
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex flex-col gap-2">
+            <UserBadge
+              uid={user.id}
+              nickname={user.nickname}
+              nativeNickname={user.nativeNickname}
+              photoURL={user.photoURL}
+              avatarSize="w-14 h-14"
+              nameClassName="font-bold text-[#242c51] leading-tight"
+              nativeClassName="text-[11px] text-[#515981] font-medium ml-1.5"
+            />
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {user.isAdmin && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-red-100 text-red-700">
+                  Owner
+                </span>
+              )}
+              {user.isStaff && !user.isAdmin && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-100 text-blue-700">
+                  Staff
+                </span>
+              )}
+              {user.isInstructor && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-purple-100 text-purple-700">
+                  Instructor
+                </span>
+              )}
             </div>
           </div>
-          
-          <div className="relative w-full md:w-72">
-            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-white/40">search</span>
-            <input
-              type="text"
-              placeholder="Search members..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-white/30 focus:bg-white/10 transition-all font-medium text-sm"
-            />
-            {searchQuery && (
-              <button 
-                onClick={() => setSearchQuery('')}
-                className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-              >
-                <span className="material-symbols-outlined text-[12px] text-white/70">close</span>
-              </button>
-            )}
+        </div>
+        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-[#e4e7ff]">
+          {isViewerAdmin && (
+            <>
+              <div>
+                <p className="text-[10px] uppercase font-bold text-[#6c759e] tracking-wider mb-0.5">Join Date</p>
+                <p className="text-sm font-medium">{member.joinedAt ? formatDate(getMillis(member.joinedAt), 'dateOnly') : '-'}</p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase font-bold text-[#6c759e] tracking-wider mb-0.5">Last Visit</p>
+                <p className="text-sm font-medium">{getLastVisitText(member)}</p>
+              </div>
+            </>
+          )}
+          <div className="col-span-2">
+            <p className="text-[10px] uppercase font-bold text-[#6c759e] tracking-wider mb-1">Dance Role</p>
+            <div className="flex items-center gap-2">
+              <span className={`text-xl font-extrabold ${isLeader ? 'text-[#0057bd]' : isFollower ? 'text-[#893c92]' : 'text-[#515981]'}`}>
+                {effectiveRole ? effectiveRole.charAt(0).toUpperCase() + effectiveRole.slice(1) : 'Not Set'}
+              </span>
+            </div>
           </div>
         </div>
-      </header>
+      </div>
+    );
+  };
 
-      <main className="relative z-10 max-w-screen-xl mx-auto px-6 py-12 w-full flex-1 flex flex-col">
-        {/* Filters */}
-        <div className="flex flex-wrap items-center gap-3 mb-12">
-          {filters.map((filter) => (
+  return (
+    <div className="space-y-8 pb-24 px-5 pt-6 bg-[#f4f6fc]">
+      {/* Sub-navigation Tabs */}
+      <div className="w-full overflow-x-auto scrollbar-hide pb-2 -mb-2">
+        <nav className="flex items-center gap-1 bg-[#e4e7ff] p-1 rounded-xl w-max shadow-sm">
+          {['Member', 'Owner', 'Staff', 'Instructor'].map((tab) => (
             <button
-              key={filter.id}
-              onClick={() => setActiveFilter(filter.id)}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all duration-300 ${
-                activeFilter === filter.id
-                  ? 'bg-white text-[#0a0f1d] shadow-[0_0_20px_rgba(255,255,255,0.3)] scale-105'
-                  : 'bg-white/5 text-white/50 border border-white/10 hover:bg-white/10 hover:text-white'
-              }`}
+              key={tab}
+              onClick={() => {
+                setActiveSubTab(tab);
+                setPageSize(20);
+              }}
+              className={`px-6 py-2.5 text-sm font-semibold transition-colors rounded-lg ${activeSubTab === tab
+                  ? "bg-white text-[#0057bd] shadow-sm"
+                  : "text-[#515981] hover:text-[#242c51]"
+                }`}
             >
-              <span className="material-symbols-outlined text-[16px]">{filter.icon}</span>
-              {filter.label}
+              {tab}
             </button>
           ))}
-        </div>
+        </nav>
+      </div>
 
-        {/* Member Grid */}
-        <AnimatePresence mode="popLayout">
-          {filteredMembers.length > 0 ? (
-            <motion.div 
-              layout
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+      {/* Header and Filters */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="relative w-full md:w-72">
+          <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#a3abd7]">search</span>
+          <input
+            type="text"
+            placeholder="Search members..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-11 pr-10 py-2.5 rounded-xl bg-white border border-[#e4e7ff] text-[#242c51] placeholder-[#a3abd7] focus:outline-none focus:border-[#0057bd] focus:shadow-[0_0_0_4px_rgba(0,87,189,0.1)] transition-all font-medium text-sm"
+          />
+          {searchQuery && (
+            <button 
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full hover:bg-[#e4e7ff] transition-colors text-[#6c759e]"
             >
-              {filteredMembers.map((member, idx) => {
-                const badge = getRoleBadge(member);
-                return (
-                  <motion.div
-                    layout
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ duration: 0.2, delay: Math.min(idx * 0.05, 0.5) }}
-                    key={member.id}
-                    onClick={() => onMemberClick?.(member)}
-                    className="group bg-white/5 border border-white/10 hover:border-white/20 hover:bg-white/10 rounded-3xl p-5 flex items-center gap-4 cursor-pointer transition-all active:scale-95 relative overflow-hidden"
-                  >
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-white/5 to-transparent blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
-                    
-                    <div className="relative shrink-0">
-                      <div className="w-14 h-14 rounded-full overflow-hidden border border-white/20 bg-white/10 flex items-center justify-center">
-                        {(member.avatar || member.photoURL) ? (
-                          <img className="w-full h-full object-cover" src={member.avatar || member.photoURL} alt={member.name} />
-                        ) : (
-                          <span className="font-bold text-white/70 text-lg">
-                            {(member.name || (member as any).nickname || 'U').substring(0, 2).toUpperCase()}
-                          </span>
-                        )}
-                      </div>
-                      <div 
-                        className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center border-2 border-[#0a0f1d]"
-                        style={{ backgroundColor: badge.color }}
-                      >
-                        <span className="material-symbols-outlined text-[10px] text-white">{badge.icon}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-headline font-bold text-base text-white truncate group-hover:text-white/90 transition-colors">
-                        {member.name || (member as any).nickname}
-                      </h4>
-                      <p 
-                        className="text-[10px] font-black uppercase tracking-widest mt-1"
-                        style={{ color: badge.color }}
-                      >
-                        {badge.label}
-                      </p>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </motion.div>
-          ) : (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex-1 flex flex-col items-center justify-center py-20 text-center border border-dashed border-white/10 rounded-3xl bg-white/5 min-h-[300px]"
-            >
-              <span className="material-symbols-outlined text-6xl text-white/10 mb-4 block">group_off</span>
-              <h3 className="text-xl font-headline font-black text-white/70 mb-2">No members found</h3>
-              <p className="text-white/40 text-sm max-w-md">
-                {searchQuery 
-                  ? `We couldn't find any members matching "${searchQuery}". Try adjusting your search or filter.`
-                  : `There are currently no members in the ${activeFilter} category.`}
-              </p>
-            </motion.div>
+              <span className="material-symbols-outlined text-[16px]">close</span>
+            </button>
           )}
-        </AnimatePresence>
-      </main>
-    </motion.div>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Sorting options removed for non-admins. Admins use GroupMemberManager. */}
+        </div>
+      </div>
+
+      {/* Member Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        {loading ? (
+          <div className="col-span-full py-20 text-center text-[#515981] font-medium">
+            <div className="mx-auto w-10 h-10 border-4 border-[#0057bd]/10 border-t-[#0057bd] rounded-full animate-spin mb-4"></div>
+            {t('group.loading_members')}
+          </div>
+        ) : currentItems.length === 0 ? (
+          <div className="col-span-full py-20 text-center text-[#515981] font-medium bg-white rounded-xl">
+            <span className="material-symbols-outlined text-6xl mb-4 block opacity-50">group_off</span>
+            {t('common.no_results')}
+          </div>
+        ) : (
+          <>
+            {currentItems.map(member => renderMemberCard(member))}
+          </>
+        )}
+      </div>
+
+      {/* Load More */}
+      {!loading && filteredMembers.length > pageSize && (
+        <div className="mt-12 flex justify-center">
+          <button 
+            onClick={loadMore}
+            className="flex items-center gap-2 px-8 py-3 bg-[#0057bd] text-[#f0f2ff] font-bold rounded-xl shadow-lg shadow-[#0057bd]/20 hover:translate-y-[-2px] active:scale-95 transition-all"
+          >
+            Load More Members
+            <span className="material-symbols-outlined">expand_more</span>
+          </button>
+        </div>
+      )}
+
+      {!loading && filteredMembers.length <= pageSize && filteredMembers.length > 0 && (
+        <div className="flex items-center justify-center py-8">
+          <div className="flex items-center gap-3 text-[#a3abd7]">
+            <span className="material-symbols-outlined text-sm">check_circle</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest">You&apos;ve reached the end of the list</span>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
-

@@ -27,7 +27,7 @@ export default function MemberProfileOverlay({ member, onClose }: MemberProfileO
 
   return (
     <motion.div
-      className="fixed inset-0 z-[110] bg-background text-on-surface overflow-y-auto"
+      className="fixed inset-0 z-[110] bg-white text-on-surface overflow-y-auto"
       initial={{ opacity: 0, y: 40 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 40 }}
@@ -72,7 +72,7 @@ export default function MemberProfileOverlay({ member, onClose }: MemberProfileO
                 </span>
               </div>
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-white via-white/40 to-transparent"></div>
           </div>
           {/* Profile Info Overlay */}
           <div className="absolute bottom-0 left-0 w-full px-5 md:px-16 pb-12 flex flex-col md:flex-row md:items-end justify-between gap-8">

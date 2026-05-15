@@ -1,587 +1,313 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import PresentationHeader from '@/components/presentation/PresentationHeader';
 import PresentationFooter from '@/components/presentation/PresentationFooter';
 import { useNavigation } from '@/components/providers/NavigationProvider';
 
+import { Slide0, Slide1, Slide2, Slide3, Slide4, Slide5 } from './slides-s1';
+import { Slide6, Slide7, Slide8, Slide9, Slide10, Slide11, Slide12 } from './slides-s2';
+import { Slide13, Slide14, Slide15, Slide16, Slide17 } from './slides-s3';
+import { Slide18, Slide19, Slide20, Slide21, Slide22 } from './slides-s4';
+import { Slide23, Slide24, Slide25, Slide26, Slide27, Slide28, Slide29, Slide30 } from './slides-s5';
+import { Slide31, Slide32, Slide33, Slide34, Slide35, Slide36 } from './slides-s6';
 
-// Slide 0: Section: SECTION 1 — INTRO
-const Slide0 = () => (
-  <div className="relative z-10 flex flex-col items-center justify-center text-center w-full h-full bg-[#1c1b1b]">
-    <h2 className="font-['Space_Grotesk'] text-[48px] md:text-[80px] font-bold text-white tracking-widest px-10 leading-tight break-keep">
-      SECTION 1 — INTRO
-    </h2>
-  </div>
-);
+const SLIDES = [
+  Slide0, Slide1, Slide2, Slide3, Slide4, Slide5,
+  Slide6, Slide7, Slide8, Slide9, Slide10, Slide11, Slide12,
+  Slide13, Slide14, Slide15, Slide16, Slide17,
+  Slide18, Slide19, Slide20, Slide21, Slide22,
+  Slide23, Slide24, Slide25, Slide26, Slide27, Slide28, Slide29, Slide30,
+  Slide31, Slide32, Slide33, Slide34, Slide35, Slide36,
+];
 
-// Slide 1: WoC
-const Slide1 = () => (
-  <div className="relative z-10 flex flex-col items-center justify-center text-center w-full max-w-[1400px] px-[80px] h-full">
-    <h2 className="text-[80px] md:text-[140px] font-bold text-[#1c1b1b] leading-[1.1] tracking-tight break-keep">
-      WoC
-    </h2>
-  </div>
-);
+const SLIDE_URLS: Record<number, string> = {
+  7: '/groups/freestyletango?tab=calendar', // Slide 7: Calendar / 돈은 여기로 흐른다
+  14: '/groups/freestyletango?tab=class', // Slide 14: Booking / 커뮤니티 거대 경제
+  21: '/groups/freestyletango?tab=settings', // Slide 21: Function Builder / One Platform
+};
 
-// Slide 2: WORLD OF COMMUNITY
-const Slide2 = () => (
-  <div className="relative z-10 flex flex-col items-center justify-center text-center w-full max-w-[1400px] px-[80px] h-full">
-    <h2 className="text-[80px] md:text-[140px] font-bold text-[#1c1b1b] leading-[1.1] tracking-tight break-keep">
-      WORLD OF COMMUNITY
-    </h2>
-  </div>
-);
+const GLOBAL_ANIMATIONS = `
+  @keyframes pt1-slideEnter { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes pt1-fadeUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes pt1-fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes pt1-scaleIn { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+  @keyframes pt1-lineGrow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  @keyframes pt1-slideRight { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
+  @keyframes pt1-slideLeft { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: translateX(0); } }
+  @keyframes pt1-slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes pt1-donutReveal { from { transform: rotate(-90deg) scale(0.8); opacity: 0; } to { transform: rotate(0deg) scale(1); opacity: 1; } }
+  @keyframes pt1-counterUp { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+  @keyframes pt1-shimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
+  @keyframes pt1-pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.02); opacity: 0.85; } }
+  @keyframes pt1-glowPulse { 0%, 100% { text-shadow: 0 0 20px rgba(255,255,255,0.1); } 50% { text-shadow: 0 0 40px rgba(255,255,255,0.3); } }
+  @keyframes pt1-startGlow { 0%, 100% { box-shadow: 0 0 40px rgba(255,255,255,0.05); } 50% { box-shadow: 0 0 80px rgba(255,255,255,0.15), 0 0 120px rgba(255,255,255,0.05); } }
+  @keyframes pt1-dotPulse { 0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0,0,0,0.3); } 50% { transform: scale(1.3); box-shadow: 0 0 0 8px rgba(0,0,0,0); } }
+  @keyframes pt1-drawUnderline { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  @keyframes pt1-bgDrift { 0% { transform: scale(1.02); } 100% { transform: scale(1.08) translate(-0.5%, -0.5%); } }
 
-// Slide 3: The Operating System For Human Communities.
-const Slide3 = () => (
-  <div className="relative z-10 flex flex-col items-center justify-center text-center w-full max-w-[1400px] px-[80px] h-full">
-    <h2 className="text-[80px] md:text-[140px] font-bold text-[#1c1b1b] leading-[1.1] tracking-tight break-keep">
-      The Operating System For Human Communities.
-    </h2>
-  </div>
-);
+  .pt1-enter { animation: pt1-slideEnter 0.6s cubic-bezier(0.16,1,0.3,1) both; }
+  .pt1-fu { animation: pt1-fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) both; }
+  .pt1-fi { animation: pt1-fadeIn 0.6s ease-out both; }
+  .pt1-si { animation: pt1-scaleIn 0.7s cubic-bezier(0.16,1,0.3,1) both; }
+  .pt1-lg { animation: pt1-lineGrow 1s cubic-bezier(0.16,1,0.3,1) both; transform-origin: left; }
+  .pt1-sr { animation: pt1-slideRight 0.7s cubic-bezier(0.16,1,0.3,1) both; }
+  .pt1-sl { animation: pt1-slideLeft 0.7s cubic-bezier(0.16,1,0.3,1) both; }
+  .pt1-sd { animation: pt1-slideDown 0.6s cubic-bezier(0.16,1,0.3,1) both; }
+  .pt1-dr { animation: pt1-donutReveal 1.2s cubic-bezier(0.16,1,0.3,1) both; }
+  .pt1-cu { animation: pt1-counterUp 0.7s cubic-bezier(0.16,1,0.3,1) both; }
+  .pt1-p { animation: pt1-pulse 3s ease-in-out infinite; }
+  .pt1-gp { animation: pt1-glowPulse 3s ease-in-out infinite; }
+  .pt1-dp { animation: pt1-dotPulse 2s ease-in-out infinite; }
+  .pt1-du { animation: pt1-drawUnderline 0.8s cubic-bezier(0.16,1,0.3,1) both; transform-origin: left; }
 
-// Slide 4: Life Goes On_
-const Slide4 = () => (
-  <div className="relative z-10 flex flex-col items-center justify-center text-center w-full max-w-[1400px] px-[80px] h-full">
-    <h2 className="text-[80px] md:text-[140px] font-bold text-[#1c1b1b] leading-[1.1] tracking-tight break-keep">
-      Life Goes On_
-    </h2>
-  </div>
-);
+  .pt1-d1 { animation-delay: 100ms; }
+  .pt1-d2 { animation-delay: 200ms; }
+  .pt1-d3 { animation-delay: 300ms; }
+  .pt1-d4 { animation-delay: 400ms; }
+  .pt1-d5 { animation-delay: 500ms; }
+  .pt1-d6 { animation-delay: 600ms; }
+  .pt1-d7 { animation-delay: 700ms; }
+  .pt1-d8 { animation-delay: 800ms; }
+  .pt1-d9 { animation-delay: 900ms; }
+  .pt1-d10 { animation-delay: 1000ms; }
+  .pt1-d12 { animation-delay: 1200ms; }
+  .pt1-d15 { animation-delay: 1500ms; }
 
-// Slide 5: Life on STAGE / ROAD / TABLE / MUSE / MIND / DESK
-const Slide5 = () => (
-  <div className="relative z-10 flex flex-col items-center justify-center text-center w-full max-w-[1400px] px-[80px] h-full">
-    <h2 className="text-[48px] md:text-[72px] font-bold text-[#1c1b1b] leading-[1.2] tracking-tight break-keep mb-16">
-      Life on STAGE / ROAD / TABLE / MUSE / MIND / DESK
-    </h2>
-    <div className="flex flex-col gap-4 items-center justify-center w-full max-w-[1000px]">
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">STAGE: Tango, Salsa, Ballet, Flamenco</p>
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">ROAD: Bike, Running, Trekking</p>
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">TABLE: Cooking, Coffee, Pottery</p>
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">MUSE: BTS, Cinema, Anime</p>
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">MIND: Writing, Journaling, Interior</p>
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">DESK: Daechi Academy, English School, Study Group</p>
-    </div>
-  </div>
-);
-
-// Slide 6: Section: SECTION 2 — WHY WoC
-const Slide6 = () => (
-  <div className="relative z-10 flex flex-col items-center justify-center text-center w-full h-full bg-[#1c1b1b]">
-    <h2 className="font-['Space_Grotesk'] text-[48px] md:text-[80px] font-bold text-white tracking-widest px-10 leading-tight break-keep">
-      SECTION 2 — WHY WoC
-    </h2>
-  </div>
-);
-
-// Slide 7: 돈은 여기로 흐른다
-const Slide7 = () => (
-  <div className="relative z-10 flex flex-col items-center justify-center text-center w-full max-w-[1400px] px-[80px] h-full">
-    <h2 className="text-[48px] md:text-[72px] font-bold text-[#1c1b1b] leading-[1.2] tracking-tight break-keep mb-16">
-      돈은 여기로 흐른다
-    </h2>
-    <div className="flex flex-col gap-4 items-center justify-center w-full max-w-[1000px]">
-      <p className="text-[20px] md:text-[28px] text-[#444748] font-medium leading-relaxed break-keep">클래스 / 공연 / 커피 / 팬덤 / 여행</p>
-      <div className="h-4"></div>
-      <p className="text-[20px] md:text-[28px] text-[#444748] font-medium leading-relaxed break-keep">사람들은 스스로 선택한 활동에</p>
-      <p className="text-[20px] md:text-[28px] text-[#444748] font-medium leading-relaxed break-keep">돈과 시간을 사용한다.</p>
-    </div>
-  </div>
-);
-
-// Slide 8: 세금은 자동이다 통신비는 고정이다 대출이자는 의무다
-const Slide8 = () => (
-  <div className="relative z-10 flex flex-col items-center justify-center text-center w-full max-w-[1400px] px-[80px] h-full">
-    <h2 className="text-[48px] md:text-[72px] font-bold text-[#1c1b1b] leading-[1.2] tracking-tight break-keep mb-16">
-      세금은 자동이다<br/>통신비는 고정이다<br/>대출이자는 의무다
-    </h2>
-    <div className="flex flex-col gap-4 items-center justify-center w-full max-w-[1000px]">
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">Taxes are automatic.</p>
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">Telecom bills are fixed.</p>
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">Loan interests are mandatory.</p>
-    </div>
-  </div>
-);
-
-// Slide 9: 하지만 열정은 선택된다
-const Slide9 = () => (
-  <div className="relative z-10 flex flex-col items-center justify-center text-center w-full max-w-[1400px] px-[80px] h-full">
-    <h2 className="text-[48px] md:text-[72px] font-bold text-[#1c1b1b] leading-[1.2] tracking-tight break-keep mb-16">
-      하지만 열정은 선택된다
-    </h2>
-    <div className="flex flex-col gap-4 items-center justify-center w-full max-w-[1000px]">
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">But passions are chosen.</p>
-    </div>
-  </div>
-);
-
-// Slide 10: 사람들은 삶의 상당 부분을 취미와 커뮤니티에 사용한다
-const Slide10 = () => (
-  <div className="relative z-10 flex flex-col items-center justify-center text-center w-full max-w-[1400px] px-[80px] h-full">
-    <h2 className="text-[48px] md:text-[72px] font-bold text-[#1c1b1b] leading-[1.2] tracking-tight break-keep mb-16">
-      사람들은 삶의 상당 부분을<br/>취미와 커뮤니티에 사용한다
-    </h2>
-    <div className="flex flex-col gap-4 items-center justify-center w-full max-w-[1000px]">
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">Time · Emotion · Free Spending</p>
-    </div>
-  </div>
-);
-
-// Slide 11: 사람은 플랫폼에 머무는 게 아니라 Group에 소속된다
-const Slide11 = () => (
-  <div className="relative z-10 flex flex-col items-center justify-center text-center w-full max-w-[1400px] px-[80px] h-full">
-    <h2 className="text-[48px] md:text-[72px] font-bold text-[#1c1b1b] leading-[1.2] tracking-tight break-keep mb-16">
-      사람은 플랫폼에 머무는 게 아니라<br/>Group에 소속된다
-    </h2>
-    <div className="flex flex-col gap-4 items-center justify-center w-full max-w-[1000px]">
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">People belong to communities.</p>
-      <div className="h-4"></div>
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">Tango Group / Yoga Circle / Running Crew / BTS Fandom / Daechi Academy</p>
-      <div className="h-4"></div>
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">WoC는 사람보다 Group을 중심으로 설계된다.</p>
-    </div>
-  </div>
-);
-
-// Slide 12: 기존 플랫폼은 콘텐츠를 연결한다 WoC는 인간 커뮤니티를 연결한다
-const Slide12 = () => (
-  <div className="relative z-10 flex flex-col items-center justify-center text-center w-full max-w-[1400px] px-[80px] h-full">
-    <h2 className="text-[48px] md:text-[72px] font-bold text-[#1c1b1b] leading-[1.2] tracking-tight break-keep mb-16">
-      기존 플랫폼은 콘텐츠를 연결한다<br/>WoC는 인간 커뮤니티를 연결한다
-    </h2>
-    <div className="flex flex-col gap-4 items-center justify-center w-full max-w-[1000px]">
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">Content Feed vs Community / Activity / Group</p>
-    </div>
-  </div>
-);
-
-// Slide 13: Section: SECTION 3 — COMMUNITY ECONOMY
-const Slide13 = () => (
-  <div className="relative z-10 flex flex-col items-center justify-center text-center w-full h-full bg-[#1c1b1b]">
-    <h2 className="font-['Space_Grotesk'] text-[48px] md:text-[80px] font-bold text-white tracking-widest px-10 leading-tight break-keep">
-      SECTION 3 — COMMUNITY ECONOMY
-    </h2>
-  </div>
-);
-
-// Slide 14: 작은 커뮤니티 하나에도 거대한 경제가 존재한다
-const Slide14 = () => (
-  <div className="relative z-10 flex flex-col items-center justify-center text-center w-full max-w-[1400px] px-[80px] h-full">
-    <h2 className="text-[48px] md:text-[72px] font-bold text-[#1c1b1b] leading-[1.2] tracking-tight break-keep mb-16">
-      작은 커뮤니티 하나에도<br/>거대한 경제가 존재한다
-    </h2>
-    <div className="flex flex-col gap-4 items-center justify-center w-full max-w-[1000px]">
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">Activity creates economy.</p>
-      <div className="h-4"></div>
-      <p className="text-[20px] md:text-[28px] text-[#444748] font-medium leading-relaxed break-keep">클래스 / 워크샵 / 공연 / 여행 / 커피 / 공간</p>
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">Booking / Tickets / Rentals / Membership</p>
-      <div className="h-4"></div>
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">WoC는 인간 활동 경제의 흐름을 연결한다.</p>
-    </div>
-  </div>
-);
-
-// Slide 15: 한국 탱고 인구 약 2,000명
-const Slide15 = () => (
-  <div className="relative z-10 flex flex-col items-center justify-center text-center w-full max-w-[1400px] px-[80px] h-full">
-    <h2 className="text-[48px] md:text-[72px] font-bold text-[#1c1b1b] leading-[1.2] tracking-tight break-keep mb-16">
-      한국 탱고 인구 약 2,000명
-    </h2>
-    <div className="flex flex-col gap-4 items-center justify-center w-full max-w-[1000px]">
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">A small community already creates a large economy.</p>
-      <div className="h-4"></div>
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">Tango Community Ecosystem</p>
-      <p className="text-[20px] md:text-[28px] text-[#444748] font-medium leading-relaxed break-keep">클래스 / 밀롱가 / 워크샵 / 슈즈 / 의상 / 여행 / 숙박 / 식음료 / 대관</p>
-      <div className="h-4"></div>
-      <p className="text-[20px] md:text-[28px] text-[#444748] font-medium leading-relaxed break-keep">1인 평균 월 소비: 약 45만 원</p>
-      <p className="text-[20px] md:text-[28px] text-[#444748] font-medium leading-relaxed break-keep">연간 activity economy: 약 108억 원</p>
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">WoC Connected GMV: 약 32억 원</p>
-      <p className="text-[20px] md:text-[28px] text-[#444748] font-medium leading-relaxed break-keep">예상 플랫폼 매출: 약 2.2억 원 / year</p>
-      <div className="h-4"></div>
-      <p className="text-[20px] md:text-[28px] text-[#444748] font-medium leading-relaxed break-keep">작은 community 하나에도</p>
-      <p className="text-[20px] md:text-[28px] text-[#444748] font-medium leading-relaxed break-keep">이미 거대한 경제가 흐르고 있다.</p>
-    </div>
-  </div>
-);
-
-// Slide 16: WoC는 이 흐름을 연결한다
-const Slide16 = () => (
-  <div className="relative z-10 flex flex-col items-center justify-center text-center w-full max-w-[1400px] px-[80px] h-full">
-    <h2 className="text-[48px] md:text-[72px] font-bold text-[#1c1b1b] leading-[1.2] tracking-tight break-keep mb-16">
-      WoC는 이 흐름을 연결한다
-    </h2>
-    <div className="flex flex-col gap-4 items-center justify-center w-full max-w-[1000px]">
-      <p className="text-[20px] md:text-[28px] text-[#444748] font-medium leading-relaxed break-keep">예약 / 티켓 / 클래스 / 대관 / 숙박 / 멤버십 / 상품</p>
-      <div className="h-4"></div>
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">WoC는 activity economy infrastructure를 만든다.</p>
-    </div>
-  </div>
-);
-
-// Slide 17: 취미는 소비가 아니라 삶의 경제다
-const Slide17 = () => (
-  <div className="relative z-10 flex flex-col items-center justify-center text-center w-full max-w-[1400px] px-[80px] h-full">
-    <h2 className="text-[80px] md:text-[140px] font-bold text-[#1c1b1b] leading-[1.1] tracking-tight break-keep">
-      취미는 소비가 아니라 삶의 경제다
-    </h2>
-  </div>
-);
-
-// Slide 18: Section: SECTION 4 — GROUP OPERATING SYSTEM
-const Slide18 = () => (
-  <div className="relative z-10 flex flex-col items-center justify-center text-center w-full h-full bg-[#1c1b1b]">
-    <h2 className="font-['Space_Grotesk'] text-[48px] md:text-[80px] font-bold text-white tracking-widest px-10 leading-tight break-keep">
-      SECTION 4 — GROUP OPERATING SYSTEM
-    </h2>
-  </div>
-);
-
-// Slide 19: Group은 단순 커뮤니티가 아니다
-const Slide19 = () => (
-  <div className="relative z-10 flex flex-col items-center justify-center text-center w-full max-w-[1400px] px-[80px] h-full">
-    <h2 className="text-[48px] md:text-[72px] font-bold text-[#1c1b1b] leading-[1.2] tracking-tight break-keep mb-16">
-      Group은 단순 커뮤니티가 아니다
-    </h2>
-    <div className="flex flex-col gap-4 items-center justify-center w-full max-w-[1000px]">
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">Groups become operating systems.</p>
-    </div>
-  </div>
-);
-
-// Slide 20: 모든 Group은 서로 다른 workflow를 가진다
-const Slide20 = () => (
-  <div className="relative z-10 flex flex-col items-center justify-center text-center w-full max-w-[1400px] px-[80px] h-full">
-    <h2 className="text-[48px] md:text-[72px] font-bold text-[#1c1b1b] leading-[1.2] tracking-tight break-keep mb-16">
-      모든 Group은 서로 다른 workflow를 가진다
-    </h2>
-    <div className="flex flex-col gap-4 items-center justify-center w-full max-w-[1000px]">
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">Tango Studio / Academy / Startup / Fan Community</p>
-    </div>
-  </div>
-);
-
-// Slide 21: One Platform Infinite Community Systems
-const Slide21 = () => (
-  <div className="relative z-10 flex flex-col items-center justify-center text-center w-full max-w-[1400px] px-[80px] h-full">
-    <h2 className="text-[48px] md:text-[72px] font-bold text-[#1c1b1b] leading-[1.2] tracking-tight break-keep mb-16">
-      One Platform<br/>Infinite Community Systems
-    </h2>
-    <div className="flex flex-col gap-4 items-center justify-center w-full max-w-[1000px]">
-      <p className="text-[20px] md:text-[28px] text-[#444748] font-medium leading-relaxed break-keep">50+ Functions</p>
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">Build your own community system.</p>
-      <div className="h-4"></div>
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">ADMIN: Brand Setting, Class Setting, Shop Setting</p>
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">CORE: Dashboard, Calendar, Feed, Live, Chat Rooms</p>
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">EDUCATION: Class Manager, Tuition Manager, Homework Tracker</p>
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">EVENTS: Ticket Booking, Workshop Registration, Venue Booking</p>
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">COMMERCE: Group Shop, Rental System, Membership Billing</p>
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">OPERATIONS: Task Manager, Internal Wiki, Recruitment</p>
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">AI & INTELLIGENCE: AI Assistant, Auto Translation, AI Insights</p>
-    </div>
-  </div>
-);
-
-// Slide 22: 하나의 Group은 하나의 살아있는 세계가 된다
-const Slide22 = () => (
-  <div className="relative z-10 flex flex-col items-center justify-center text-center w-full max-w-[1400px] px-[80px] h-full">
-    <h2 className="text-[48px] md:text-[72px] font-bold text-[#1c1b1b] leading-[1.2] tracking-tight break-keep mb-16">
-      하나의 Group은 하나의 살아있는 세계가 된다
-    </h2>
-    <div className="flex flex-col gap-4 items-center justify-center w-full max-w-[1000px]">
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">A group becomes a living world.</p>
-      <div className="h-4"></div>
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">Tango Studio / Yoga Brand / Daechi Academy / Fan Community / Startup Team</p>
-      <div className="h-4"></div>
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">WoC는 커뮤니티를 위한 운영체제를 만든다.</p>
-    </div>
-  </div>
-);
-
-// Slide 23: Section: SECTION 5 — BUSINESS PENETRATION
-const Slide23 = () => (
-  <div className="relative z-10 flex flex-col items-center justify-center text-center w-full h-full bg-[#1c1b1b]">
-    <h2 className="font-['Space_Grotesk'] text-[48px] md:text-[80px] font-bold text-white tracking-widest px-10 leading-tight break-keep">
-      SECTION 5 — BUSINESS PENETRATION
-    </h2>
-  </div>
-);
-
-// Slide 24: Business Penetration
-const Slide24 = () => (
-  <div className="relative z-10 flex flex-col items-center justify-center text-center w-full max-w-[1400px] px-[80px] h-full">
-    <h2 className="text-[48px] md:text-[72px] font-bold text-[#1c1b1b] leading-[1.2] tracking-tight break-keep mb-16">
-      Business Penetration
-    </h2>
-    <div className="flex flex-col gap-4 items-center justify-center w-full max-w-[1000px]">
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">Start from existing communities.</p>
-      <div className="h-4"></div>
-      <p className="text-[20px] md:text-[28px] text-[#444748] font-medium leading-relaxed break-keep">1차: Tango / Dance / Yoga / Running</p>
-      <p className="text-[20px] md:text-[28px] text-[#444748] font-medium leading-relaxed break-keep">2차: Academy / Fan Community / Startup</p>
-      <div className="h-4"></div>
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">WoC는 모든 시장을 동시에 공략하지 않는다.</p>
-    </div>
-  </div>
-);
-
-// Slide 25: Tango Community Example
-const Slide25 = () => (
-  <div className="relative z-10 flex flex-col items-center justify-center text-center w-full max-w-[1400px] px-[80px] h-full">
-    <h2 className="text-[48px] md:text-[72px] font-bold text-[#1c1b1b] leading-[1.2] tracking-tight break-keep mb-16">
-      Tango Community Example
-    </h2>
-    <div className="flex flex-col gap-4 items-center justify-center w-full max-w-[1000px]">
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">Community penetration structure.</p>
-      <div className="h-4"></div>
-      <p className="text-[20px] md:text-[28px] text-[#444748] font-medium leading-relaxed break-keep">강사: 클래스 등록 / 결제 승인 / 워크샵 운영</p>
-      <p className="text-[20px] md:text-[28px] text-[#444748] font-medium leading-relaxed break-keep">(강사 1명당 약 50명 연결 가능)</p>
-      <div className="h-4"></div>
-      <p className="text-[20px] md:text-[28px] text-[#444748] font-medium leading-relaxed break-keep">오거나이저: 소셜 등록 / 티켓 / 이벤트 운영 / 테이블 예약</p>
-      <p className="text-[20px] md:text-[28px] text-[#444748] font-medium leading-relaxed break-keep">(오거나이저 1명당 약 100명 연결 가능)</p>
-    </div>
-  </div>
-);
-
-// Slide 26: 강사와 오거나이저는 새로운 onboarding node가 된다
-const Slide26 = () => (
-  <div className="relative z-10 flex flex-col items-center justify-center text-center w-full max-w-[1400px] px-[80px] h-full">
-    <h2 className="text-[48px] md:text-[72px] font-bold text-[#1c1b1b] leading-[1.2] tracking-tight break-keep mb-16">
-      강사와 오거나이저는 새로운 onboarding node가 된다
-    </h2>
-    <div className="flex flex-col gap-4 items-center justify-center w-full max-w-[1000px]">
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">Instructor → Students</p>
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">Organizer → Participants</p>
-      <div className="h-4"></div>
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">Group 자체가 onboarding node 역할을 한다.</p>
-    </div>
-  </div>
-);
-
-// Slide 27: 2,000명 규모는 2개월 내 penetration 가능성 예상
-const Slide27 = () => (
-  <div className="relative z-10 flex flex-col items-center justify-center text-center w-full max-w-[1400px] px-[80px] h-full">
-    <h2 className="text-[48px] md:text-[72px] font-bold text-[#1c1b1b] leading-[1.2] tracking-tight break-keep mb-16">
-      2,000명 규모는 2개월 내 penetration 가능성 예상
-    </h2>
-    <div className="flex flex-col gap-4 items-center justify-center w-full max-w-[1000px]">
-      <p className="text-[20px] md:text-[28px] text-[#444748] font-medium leading-relaxed break-keep">광고보다 community penetration 중심.</p>
-    </div>
-  </div>
-);
-
-// Slide 28: 별도의 마케팅 없이 자연스럽게 회원이 확대된다
-const Slide28 = () => (
-  <div className="relative z-10 flex flex-col items-center justify-center text-center w-full max-w-[1400px] px-[80px] h-full">
-    <h2 className="text-[48px] md:text-[72px] font-bold text-[#1c1b1b] leading-[1.2] tracking-tight break-keep mb-16">
-      별도의 마케팅 없이 자연스럽게 회원이 확대된다
-    </h2>
-    <div className="flex flex-col gap-4 items-center justify-center w-full max-w-[1000px]">
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">Community penetration.</p>
-      <div className="h-4"></div>
-      <p className="text-[20px] md:text-[28px] text-[#444748] font-medium leading-relaxed break-keep">강사가 학생을 연결하고, 오거나이저가 참가자를 연결한다.</p>
-      <div className="h-4"></div>
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">WoC는 User Acquisition보다 Community Penetration에 가깝다.</p>
-    </div>
-  </div>
-);
-
-// Slide 29: 사람들은 하나의 활동에만 머물지 않는다
-const Slide29 = () => (
-  <div className="relative z-10 flex flex-col items-center justify-center text-center w-full max-w-[1400px] px-[80px] h-full">
-    <h2 className="text-[48px] md:text-[72px] font-bold text-[#1c1b1b] leading-[1.2] tracking-tight break-keep mb-16">
-      사람들은 하나의 활동에만 머물지 않는다
-    </h2>
-    <div className="flex flex-col gap-4 items-center justify-center w-full max-w-[1000px]">
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">Communities naturally overlap.</p>
-      <div className="h-4"></div>
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">Tango → Yoga → Running → Coffee → Travel</p>
-      <div className="h-4"></div>
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">WoC는 활동 중심 network structure를 만든다.</p>
-    </div>
-  </div>
-);
-
-// Slide 30: WoC는 User Acquisition보다 Community Penetration에 가깝다
-const Slide30 = () => (
-  <div className="relative z-10 flex flex-col items-center justify-center text-center w-full max-w-[1400px] px-[80px] h-full">
-    <h2 className="text-[48px] md:text-[72px] font-bold text-[#1c1b1b] leading-[1.2] tracking-tight break-keep mb-16">
-      WoC는 User Acquisition보다<br/>Community Penetration에 가깝다
-    </h2>
-    <div className="flex flex-col gap-4 items-center justify-center w-full max-w-[1000px]">
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">WoC는 group 기반으로 확장된다.</p>
-    </div>
-  </div>
-);
-
-// Slide 31: Section: SECTION 6 — POSSIBILITY & RISK
-const Slide31 = () => (
-  <div className="relative z-10 flex flex-col items-center justify-center text-center w-full h-full bg-[#1c1b1b]">
-    <h2 className="font-['Space_Grotesk'] text-[48px] md:text-[80px] font-bold text-white tracking-widest px-10 leading-tight break-keep">
-      SECTION 6 — POSSIBILITY & RISK
-    </h2>
-  </div>
-);
-
-// Slide 32: 작은 강한 커뮤니티의 시대
-const Slide32 = () => (
-  <div className="relative z-10 flex flex-col items-center justify-center text-center w-full max-w-[1400px] px-[80px] h-full">
-    <h2 className="text-[48px] md:text-[72px] font-bold text-[#1c1b1b] leading-[1.2] tracking-tight break-keep mb-16">
-      작은 강한 커뮤니티의 시대
-    </h2>
-    <div className="flex flex-col gap-4 items-center justify-center w-full max-w-[1000px]">
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">The era of small, strong communities.</p>
-      <div className="h-4"></div>
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">Fandom / Class / Crew / Local Society</p>
-      <div className="h-4"></div>
-      <p className="text-[20px] md:text-[28px] text-[#444748] font-medium leading-relaxed break-keep">사람들은 giant SNS보다 더 깊은 community를 찾기 시작했다.</p>
-    </div>
-  </div>
-);
-
-// Slide 33: Why WoC Could Fail
-const Slide33 = () => (
-  <div className="relative z-10 flex flex-col items-center justify-center text-center w-full max-w-[1400px] px-[80px] h-full">
-    <h2 className="text-[48px] md:text-[72px] font-bold text-[#1c1b1b] leading-[1.2] tracking-tight break-keep mb-16">
-      Why WoC Could Fail
-    </h2>
-    <div className="flex flex-col gap-4 items-center justify-center w-full max-w-[1000px]">
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">Workflow Complexity</p>
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">Onboarding Difficulty</p>
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">Slow Network Effects</p>
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">Product Sprawl</p>
-      <div className="h-4"></div>
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">WoC는 앱 가입보다 운영 시스템 구축에 가깝다.</p>
-    </div>
-  </div>
-);
-
-// Slide 34: But if Groups become operating systems, the upside becomes enormous.
-const Slide34 = () => (
-  <div className="relative z-10 flex flex-col items-center justify-center text-center w-full max-w-[1400px] px-[80px] h-full">
-    <h2 className="text-[48px] md:text-[72px] font-bold text-[#1c1b1b] leading-[1.2] tracking-tight break-keep mb-16">
-      But if Groups become operating systems,<br/>the upside becomes enormous.
-    </h2>
-    <div className="flex flex-col gap-4 items-center justify-center w-full max-w-[1000px]">
-      <p className="text-[20px] md:text-[28px] text-[#444748] font-medium leading-relaxed break-keep">네이버카페 / 밴드 / 디스코드 / 클래스 플랫폼 / 예약툴 / ERP-lite / 팬덤 운영</p>
-      <p className="text-[20px] md:text-[28px] text-[#444748] font-medium leading-relaxed break-keep">사이의 영역 연결.</p>
-      <div className="h-4"></div>
-      <p className="font-['Space_Grotesk'] text-[24px] md:text-[32px] text-[#444748] font-bold tracking-widest leading-relaxed uppercase break-keep">WoC는 Community Infrastructure Layer를 목표로 한다.</p>
-    </div>
-  </div>
-);
-
-// Slide 35: 가능성 시나리오
-const Slide35 = () => (
-  <div className="relative z-10 flex flex-col items-center justify-center text-center w-full max-w-[1400px] px-[80px] h-full">
-    <h2 className="text-[48px] md:text-[72px] font-bold text-[#1c1b1b] leading-[1.2] tracking-tight break-keep mb-16">
-      가능성 시나리오
-    </h2>
-    <div className="flex flex-col gap-4 items-center justify-center w-full max-w-[1000px]">
-      <p className="text-[20px] md:text-[28px] text-[#444748] font-medium leading-relaxed break-keep">유니콘급 플랫폼: 5~10%</p>
-      <p className="text-[20px] md:text-[28px] text-[#444748] font-medium leading-relaxed break-keep">전략적 인수: 15~25%</p>
-      <p className="text-[20px] md:text-[28px] text-[#444748] font-medium leading-relaxed break-keep">전문 커뮤니티 인프라 기업: 40~60%</p>
-    </div>
-  </div>
-);
-
-// Slide 36: WORLD OF COMMUNITY_ Life Goes On.
-const Slide36 = () => (
-  <div className="relative z-10 flex flex-col items-center justify-center text-center w-full max-w-[1400px] px-[80px] h-full">
-    <h2 className="text-[80px] md:text-[140px] font-bold text-[#1c1b1b] leading-[1.1] tracking-tight break-keep">
-      WORLD OF COMMUNITY_<br/>Life Goes On.
-    </h2>
-  </div>
-);
-
+  .pt1-shimmer-text {
+    background: linear-gradient(90deg, #ffffff 40%, rgba(255,255,255,0.5) 50%, #ffffff 60%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: pt1-shimmer 4s linear infinite;
+  }
+`;
 
 const PresentationPage = () => {
   const { setGlobalNavHidden, setIsHeaderVisible } = useNavigation();
   const [currentSlide, setCurrentSlide] = useState(0);
-  const totalSlides = 37;
+  const [showStartScreen, setShowStartScreen] = useState(true);
+  const [isFocusMode, setIsFocusMode] = useState(true);
+  
+  // Iframe states
+  const [iframeUrl, setIframeUrl] = useState('/groups/freestyletango');
+  const [fadeIframe, setFadeIframe] = useState(false);
 
-  const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % totalSlides);
-  const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + totalSlides) % totalSlides);
+  const totalSlides = SLIDES.length;
+
+  const isScrollingRef = useRef(false);
+  const touchStartYRef = useRef(0);
+  const touchStartXRef = useRef(0);
+
+  const nextSlide = useCallback(() => setCurrentSlide((prev) => (prev + 1) % totalSlides), [totalSlides]);
+  const prevSlide = useCallback(() => setCurrentSlide((prev) => (prev - 1 + totalSlides) % totalSlides), [totalSlides]);
   const jumpToSlide = (index: number) => setCurrentSlide(index);
+
+  // Sync iframe URL when slide changes (semi-sync)
+  useEffect(() => {
+    const newUrl = SLIDE_URLS[currentSlide];
+    if (newUrl && newUrl !== iframeUrl) {
+      setFadeIframe(true);
+      setTimeout(() => {
+        setIframeUrl(newUrl);
+        setFadeIframe(false);
+      }, 300);
+    }
+  }, [currentSlide, iframeUrl]);
 
   useEffect(() => {
     setGlobalNavHidden(true);
     setIsHeaderVisible(false);
 
+    if (!showStartScreen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
-      if (e.key === 'ArrowLeft') prevSlide();
+      if (showStartScreen) return;
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown') nextSlide();
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prevSlide();
+      if (e.key === 'd' || e.key === 'D') setIsFocusMode(prev => !prev);
     };
+
+    const handleWheel = (e: WheelEvent) => {
+      if (showStartScreen) return;
+      if (isScrollingRef.current) return;
+
+      // Don't trigger slide change if scrolling inside the iframe area
+      // The iframe handles its own scroll, but just in case.
+      isScrollingRef.current = true;
+      if (e.deltaY > 50) {
+        nextSlide();
+      } else if (e.deltaY < -50) {
+        prevSlide();
+      }
+      setTimeout(() => { isScrollingRef.current = false; }, 800);
+    };
+
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartYRef.current = e.touches[0].clientY;
+      touchStartXRef.current = e.touches[0].clientX;
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (showStartScreen) return;
+      if (isScrollingRef.current) return;
+      
+      const touchEndY = e.changedTouches[0].clientY;
+      const touchEndX = e.changedTouches[0].clientX;
+      const diffY = touchStartYRef.current - touchEndY;
+      const diffX = touchStartXRef.current - touchEndX;
+
+      if (Math.abs(diffY) > 50 || Math.abs(diffX) > 50) {
+        isScrollingRef.current = true;
+        if (Math.abs(diffX) > Math.abs(diffY)) {
+          if (diffX > 0) nextSlide();
+          else prevSlide();
+        } else {
+          if (diffY > 0) nextSlide();
+          else prevSlide();
+        }
+        setTimeout(() => { isScrollingRef.current = false; }, 800);
+      }
+    };
+
     window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('wheel', handleWheel, { passive: true }); 
+    window.addEventListener('touchstart', handleTouchStart, { passive: true });
+    window.addEventListener('touchend', handleTouchEnd, { passive: true });
     
     return () => {
       setGlobalNavHidden(false);
       setIsHeaderVisible(true);
+      document.body.style.overflow = '';
       window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('wheel', handleWheel);
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [setGlobalNavHidden, setIsHeaderVisible]);
+  }, [setGlobalNavHidden, setIsHeaderVisible, nextSlide, prevSlide, showStartScreen]);
 
-  const renderSlide = () => {
-    switch (currentSlide) {
-      case 0: return <Slide0 />;
-      case 1: return <Slide1 />;
-      case 2: return <Slide2 />;
-      case 3: return <Slide3 />;
-      case 4: return <Slide4 />;
-      case 5: return <Slide5 />;
-      case 6: return <Slide6 />;
-      case 7: return <Slide7 />;
-      case 8: return <Slide8 />;
-      case 9: return <Slide9 />;
-      case 10: return <Slide10 />;
-      case 11: return <Slide11 />;
-      case 12: return <Slide12 />;
-      case 13: return <Slide13 />;
-      case 14: return <Slide14 />;
-      case 15: return <Slide15 />;
-      case 16: return <Slide16 />;
-      case 17: return <Slide17 />;
-      case 18: return <Slide18 />;
-      case 19: return <Slide19 />;
-      case 20: return <Slide20 />;
-      case 21: return <Slide21 />;
-      case 22: return <Slide22 />;
-      case 23: return <Slide23 />;
-      case 24: return <Slide24 />;
-      case 25: return <Slide25 />;
-      case 26: return <Slide26 />;
-      case 27: return <Slide27 />;
-      case 28: return <Slide28 />;
-      case 29: return <Slide29 />;
-      case 30: return <Slide30 />;
-      case 31: return <Slide31 />;
-      case 32: return <Slide32 />;
-      case 33: return <Slide33 />;
-      case 34: return <Slide34 />;
-      case 35: return <Slide35 />;
-      case 36: return <Slide36 />;
-
-      default: return null;
+  const handleStartPresentation = () => {
+    const elem = document.documentElement;
+    if (elem.requestFullscreen) {
+      elem.requestFullscreen().catch(err => {
+        console.log(`Error attempting to enable full-screen mode: ${err.message}`);
+      });
     }
+    setShowStartScreen(false);
   };
 
+  const CurrentSlideComponent = SLIDES[currentSlide];
+
   return (
-    <div className="min-h-screen bg-[#fcf8f8] text-[#1c1b1b] font-['Manrope'] selection:bg-[#c6c6c7] overflow-hidden relative">
+    <div className="min-h-screen bg-[#050505] text-white font-['Manrope'] selection:bg-[#c6c6c7] overflow-hidden relative flex w-full">
       <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Space+Grotesk:wght@300..700&family=Manrope:wght@200..800&display=swap" rel="stylesheet"/>
+      <style>{GLOBAL_ANIMATIONS}</style>
       
-      <PresentationHeader />
-
-      <main className="relative h-screen w-full flex items-center justify-center overflow-hidden">
-        <div className="w-full h-full flex items-center justify-center transition-opacity duration-500">
-          {renderSlide()}
+      {showStartScreen ? (
+        <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-[#050505]">
+          {/* Ambient glow */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="w-[600px] h-[600px] rounded-full bg-white/[0.02] blur-[120px]" style={{ animation: 'pt1-startGlow 4s ease-in-out infinite' }} />
+          </div>
+          <div className="mb-12 flex flex-col items-center relative pt1-fu">
+            <h1 className="text-4xl font-bold tracking-tighter text-white mb-4">WoC Presentation</h1>
+            <p className="text-white/60">Live Ecosystem Demo</p>
+          </div>
+          <button 
+            onClick={handleStartPresentation}
+            className="px-8 py-4 bg-white text-black rounded-full text-lg font-bold hover:bg-gray-200 transition-all transform hover:scale-105 shadow-xl flex items-center gap-3 pt1-fu pt1-d3"
+            style={{ animation: 'pt1-fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) 300ms both, pt1-startGlow 3s ease-in-out infinite 1s' }}
+          >
+            <span className="material-symbols-outlined">fullscreen</span>
+            Start Presentation
+          </button>
         </div>
-      </main>
+      ) : null}
 
-      <PresentationFooter 
-        currentSlide={currentSlide} 
-        totalSlides={totalSlides}
-      />
+      {/* Presentation Left Side */}
+      <div className={`w-full lg:flex-1 h-screen relative flex flex-col bg-[#fcf8f8] text-[#1c1b1b] overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] z-10 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${isFocusMode ? 'rounded-none' : 'lg:rounded-r-[40px]'}`}>
+        <PresentationHeader />
+
+        <main className="relative flex-1 w-full flex items-center justify-center overflow-hidden">
+          <div key={currentSlide} className="w-full h-full flex items-center justify-center pt1-enter">
+            {CurrentSlideComponent ? <CurrentSlideComponent /> : null}
+          </div>
+        </main>
+
+        <PresentationFooter 
+          currentSlide={currentSlide} 
+          totalSlides={totalSlides}
+          onJump={jumpToSlide}
+        />
+      </div>
+
+      {/* Live App Right Side */}
+      <div 
+        className={`hidden lg:flex shrink-0 h-screen bg-[#050505] flex-col items-center justify-center relative z-0 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${isFocusMode ? 'w-[40px] xl:w-[60px] cursor-pointer hover:bg-[#111]' : 'w-[420px] xl:w-[480px] 2xl:w-[560px]'}`} 
+        onClick={() => isFocusMode && setIsFocusMode(false)}
+      >
+        {isFocusMode ? (
+          // Collapsed State
+          <div className="h-full w-full flex flex-col items-center justify-center py-10 opacity-50 hover:opacity-100 transition-opacity">
+            <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse shadow-[0_0_5px_rgba(239,68,68,1)] mb-8"></div>
+            <div className="text-[10px] text-white/50 tracking-[0.3em] font-bold uppercase -rotate-90 whitespace-nowrap origin-center">
+              Live Demo
+            </div>
+          </div>
+        ) : (
+          // Expanded State
+          <>
+            {/* Collapse Toggle Button */}
+            <button 
+              onClick={(e) => { e.stopPropagation(); setIsFocusMode(true); }}
+              className="absolute top-8 right-8 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/70 transition-colors z-50 backdrop-blur-md"
+              title="Focus Mode"
+            >
+              <span className="material-symbols-outlined text-xl">fullscreen</span>
+            </button>
+
+            {/* LIVE DEMO Badge */}
+            <div className="absolute top-10 flex items-center justify-center pointer-events-none">
+               <div className="px-3 py-1.5 bg-red-500/10 text-red-500 text-[10px] font-bold rounded-full uppercase tracking-widest flex items-center gap-2 border border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.2)]">
+                  <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse shadow-[0_0_5px_rgba(239,68,68,1)]"></span>
+                  LIVE DEMO
+               </div>
+            </div>
+
+            {/* iPhone Pro Max Frame (430x932) */}
+            <div className="relative w-[430px] h-[932px] rounded-[55px] border-[14px] border-[#1a1a1a] shadow-[0_0_60px_rgba(0,0,0,0.8)] overflow-hidden bg-black scale-[0.7] xl:scale-[0.8] 2xl:scale-[0.9] origin-center transition-transform duration-500 hover:scale-[0.72] xl:hover:scale-[0.82] 2xl:hover:scale-[0.92]">
+                {/* Half Notch attached to top */}
+                <div className="absolute top-0 inset-x-0 flex justify-center z-50 pointer-events-none">
+                  <div className="w-[100px] h-[14px] bg-black rounded-b-[14px] flex justify-center items-end pb-1 shadow-[0_4px_12px_rgba(0,0,0,0.5)]">
+                     <div className="w-2.5 h-2.5 bg-[#1a1a1a] rounded-full relative ml-2">
+                       <div className="absolute inset-[1px] bg-blue-500/20 rounded-full"></div>
+                     </div>
+                  </div>
+                </div>
+
+                {/* Inner iframe container to hide browser scrollbars cleanly */}
+                <div className="w-full h-full overflow-hidden bg-background">
+                   <iframe 
+                       src={iframeUrl} 
+                       className={`w-full h-full border-0 bg-background transition-opacity duration-500 ${fadeIframe ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}
+                       style={{ pointerEvents: 'auto' }}
+                       title="WoC Live Demo"
+                   />
+                </div>
+            </div>
+
+            <div className="absolute bottom-10 px-6 text-center pointer-events-none">
+               <p className="text-white/30 text-[11px] font-medium tracking-wider">
+                 Fully functional live ecosystem.<br/>Changes are not mocked.
+               </p>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 };

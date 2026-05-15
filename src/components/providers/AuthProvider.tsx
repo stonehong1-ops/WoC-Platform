@@ -28,7 +28,7 @@ interface UserProfile {
   isInstructor?: boolean;
   isSeller?: boolean;
   isServiceProvider?: boolean;
-  role?: string;
+  role?: 'leader' | 'follower';
   isAdmin?: boolean;
   systemRole?: string;
   joinedGroups?: string[];
@@ -151,6 +151,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               phoneNumber: data.phoneNumber || firebaseUser.phoneNumber || '',
               authMethod: data.authMethod || '',
               gender: data.gender || '',
+              role: (data.role as 'leader' | 'follower') || undefined,
               isRegistered: data.isRegistered === true,
               isInstructor: data.isInstructor || false,
               isSeller: data.isSeller || false,

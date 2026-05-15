@@ -19,21 +19,24 @@ const NAV_STRUCTURE = {
     { name: "nav.plaza", icon: "quick_phrases", path: "/plaza" },
     { name: "nav.venues", icon: "map", path: "/venues" },
     { name: "nav.people", icon: "group", path: "/people" },
-    { name: "nav.explore", icon: "explore", path: "/explore" },
   ],
   Market: [
     { name: "nav.shop", icon: "storefront", path: "/shop" },
     { name: "nav.resale", icon: "cached", path: "/resale" },
     { name: "nav.rental", icon: "key", path: "/rental" },
     { name: "nav.stay", icon: "bed", path: "/stay" },
-    { name: "nav.class", icon: "school", path: "/class" },
   ],
   Now: [
     { name: "nav.social", icon: "autoplay", path: "/social" },
     { name: "nav.live", icon: "cinematic_blur", path: "/live" },
+    { name: "nav.class", icon: "school", path: "/class" },
     { name: "nav.events", icon: "calendar_today", path: "/events" },
-    { name: "nav.lost_found", icon: "eye_tracking", path: "/lost" },
+  ],
+  Lounge: [
+    { name: "nav.pics", icon: "photo_library", path: "/pics" },
+    { name: "nav.lost_found", icon: "find_in_page", path: "/lost" },
     { name: "nav.hub", icon: "airline_stops", path: "/hub" },
+    { name: "nav.explore", icon: "explore", path: "/explore" },
   ],
   Groups: [
     { name: "nav.groups", icon: "groups", path: "/groups" },
@@ -49,9 +52,10 @@ const NAV_STRUCTURE = {
 // COUNTRY_MAPPING moved to constants
 
 const BOTTOM_TABS = [
-  { id: "World", icon: "globe", label: "nav.tango_world", basePath: "/home" },
-  { id: "Market", icon: "redeem", label: "nav.shop", basePath: "/shop" },
+  { id: "World", icon: "globe", label: "nav.world", basePath: "/home" },
+  { id: "Market", icon: "redeem", label: "nav.market", basePath: "/shop" },
   { id: "Now", icon: "contactless", label: "nav.now", basePath: "/social" },
+  { id: "Lounge", icon: "weekend", label: "nav.lounge", basePath: "/pics" },
   { id: "Groups", icon: "communities", label: "nav.groups", basePath: "/groups" },
   { id: "My", icon: "photo", label: "nav.my", basePath: "/profile" },
 ];
@@ -172,10 +176,12 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
   
   // Determine active primary tab based on pathname
   let activeTab = "World";
-  if (pathname.startsWith("/shop") || pathname.startsWith("/resale") || pathname.startsWith("/rental") || pathname.startsWith("/stay") || pathname.startsWith("/class")) {
+  if (pathname.startsWith("/shop") || pathname.startsWith("/resale") || pathname.startsWith("/rental") || pathname.startsWith("/stay")) {
     activeTab = "Market";
-  } else if (pathname.startsWith("/social") || pathname.startsWith("/events") || pathname.startsWith("/lost") || pathname.startsWith("/hub") || (pathname.startsWith("/live") && !isMyView)) {
+  } else if (pathname.startsWith("/social") || pathname.startsWith("/events") || pathname.startsWith("/class") || (pathname.startsWith("/live") && !isMyView)) {
     activeTab = "Now";
+  } else if (pathname.startsWith("/pics") || pathname.startsWith("/lost") || pathname.startsWith("/hub") || pathname.startsWith("/explore")) {
+    activeTab = "Lounge";
   } else if (pathname.startsWith("/groups")) {
     activeTab = "Groups";
   } else if (pathname.startsWith("/my") || pathname.startsWith("/wallet") || pathname.startsWith("/history") || pathname.startsWith("/profile") || (pathname.startsWith("/live") && isMyView)) {
@@ -219,14 +225,13 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
   return (
     <div className="min-h-screen bg-[#faf8ff] font-manrope flex flex-col">
       {/* Header Placeholder to prevent layout shift and scroll thrashing */}
-      {!isGlobalNavHidden && (
-        <div 
-          className="w-full flex-shrink-0 transition-all duration-300" 
-          style={{ 
-            height: `${placeholderHeight}px`
-          }} 
-        />
-      )}
+      <div 
+        className="w-full flex-shrink-0 transition-all duration-300" 
+        style={{ 
+          height: `${placeholderHeight}px`,
+          visibility: isGlobalNavHidden ? 'hidden' : 'visible'
+        }} 
+      />
 
       {/* Fixed Top Navigation */}
       <header 
@@ -354,10 +359,13 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
               <div className="flex w-full items-end justify-between px-3">
                 {subMenu.map((item) => {
                   const isActive = pathname === item.path || (item.path !== "/" && pathname.startsWith(item.path));
+                  // Preserve society context for /events link
+                  const society = typeof window !== 'undefined' ? (new URLSearchParams(window.location.search).get('society') || sessionStorage.getItem('woc_society')) : null;
+                  const resolvedPath = item.path === '/events' && society ? `/events?society=${society}` : item.path;
                   return (
                     <Link 
                       key={item.name} 
-                      href={item.path} 
+                      href={resolvedPath} 
                       className={`flex flex-col items-center justify-end flex-1 pt-3.5 pb-2.5 transition-all duration-300 border-b-[3px] ${isActive ? 'border-[#007AFF]' : 'border-transparent'}`}
                     >
                       <span className={`text-[14px] tracking-tight uppercase transition-all duration-300 ${isActive ? 'font-black text-[#007AFF]' : 'font-bold text-slate-500'}`}>

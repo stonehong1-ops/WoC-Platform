@@ -45,7 +45,7 @@ const TYPE_STYLE: Record<string, { bg: string; text: string }> = {
   free: { bg: "bg-emerald-500/10", text: "text-emerald-600" },
 };
 
-export default function RetreatPlanner() {
+export default function RetreatPlanner({ members = [] }: { members?: any[] }) {
   const [tab, setTab] = useState<"schedule" | "rooms" | "participants">("schedule");
   const [activeDay, setActiveDay] = useState(0);
 

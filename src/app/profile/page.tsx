@@ -9,6 +9,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 
 const ADMIN_ITEMS = [
   { icon: 'view_carousel', label: 'BANNERS', href: '/admin/banners' },
+  { icon: 'wallpaper', label: 'PICs', href: '/admin/pics' },
   { icon: 'person_search', label: 'People', href: '/admin/people' },
   { icon: 'location_city', label: 'Place', href: '/admin/place' },
   { icon: 'more_horiz', label: 'Others', href: '/admin/others' },
@@ -218,7 +219,7 @@ export default function MyInfoPage() {
           </button>
         </div>
 
-        {/* Admin Section — Only visible for admin users */}
+        {/* Admin Section ??Only visible for admin users */}
         {profile?.isAdmin && (
           <div className="mt-4 mb-8 border-t border-dashed border-surface-container pt-6">
             <div className="flex items-center gap-2 mb-4">
@@ -243,7 +244,7 @@ export default function MyInfoPage() {
         )}
       </main>
 
-      {/* Admin Full Popup — Fullscreen */}
+      {/* Admin Full Popup ??Fullscreen */}
       {mounted && adminPopupHref && createPortal(
         <div className="fixed inset-0 z-[99999] bg-white flex flex-col animate-in fade-in duration-200">
           {/* Popup Header */}
@@ -261,7 +262,7 @@ export default function MyInfoPage() {
               <span className="material-symbols-outlined !text-[18px] text-on-surface">close</span>
             </button>
           </div>
-          {/* Popup Content — iframe to admin page */}
+          {/* Popup Content ??iframe to admin page */}
           <iframe 
             src={adminPopupHref}
             className="w-full flex-1 border-0"

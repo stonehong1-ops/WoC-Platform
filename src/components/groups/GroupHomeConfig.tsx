@@ -24,9 +24,10 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
     slug: group.slug || "",
     story: group.story || "",
     coverImage: group.coverImage || "",
-    logo: group.logo || "",
+    aboutPhotos: group.aboutPhotos || [],
     bankDetails: group.bankDetails || { bankName: "", accountHolder: "", accountNumber: "" },
     businessRegistrationNumber: group.businessRegistrationNumber || "",
+    representativeName: group.representativeName || "",
     services: group.services && group.services.length > 0 ? group.services : [
       {
         title: "The core services of this group",
@@ -37,7 +38,7 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
     ]
   });
 
-  const [uploadingType, setUploadingType] = useState<"cover" | "logo" | null>(null);
+  const [uploadingType, setUploadingType] = useState<"cover" | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
@@ -89,7 +90,7 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
     setFormData(prev => ({ ...prev, services: updated }));
   };
 
-  const triggerUpload = (type: "cover" | "logo") => {
+  const triggerUpload = (type: "cover") => {
     setUploadingType(type);
     if (fileInputRef.current) {
       fileInputRef.current.accept = "image/*";
@@ -108,9 +109,9 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
       
       setFormData(prev => ({
         ...prev,
-        [uploadingType === "cover" ? "coverImage" : "logo"]: url
+        coverImage: url
       }));
-      toast.success(`${uploadingType === "cover" ? "Cover" : "Logo"} uploaded!`);
+      toast.success("Cover image uploaded!");
     } catch (error) {
       console.error("Upload failed:", error);
       toast.error("Image upload failed. Please try again.");
@@ -121,8 +122,57 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
     }
   };
 
+  const aboutPhotosInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAboutPhotosUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    if (formData.aboutPhotos.length + files.length > 20) {
+      toast.error("You can upload a maximum of 20 photos.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const uploadPromises = files.map(async (file) => {
+        const path = `groups/${group.id}/branding/about_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
+        return await storageService.uploadFile(file, path);
+      });
+      
+      const uploadedUrls = await Promise.all(uploadPromises);
+      
+      setFormData(prev => ({
+        ...prev,
+        aboutPhotos: [...prev.aboutPhotos, ...uploadedUrls]
+      }));
+      toast.success(`${uploadedUrls.length} photo(s) uploaded!`);
+    } catch (error) {
+      console.error("About photos upload failed:", error);
+      toast.error("Photo upload failed. Please try again.");
+    } finally {
+      setLoading(false);
+      if (aboutPhotosInputRef.current) aboutPhotosInputRef.current.value = "";
+    }
+  };
+
+  const removeAboutPhoto = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      aboutPhotos: prev.aboutPhotos.filter((_, i) => i !== index)
+    }));
+  };
+
   return (
     <div className="bg-background text-on-surface min-h-screen pb-32">
+      <input 
+        type="file" 
+        multiple
+        accept="image/*"
+        ref={aboutPhotosInputRef} 
+        onChange={handleAboutPhotosUpload} 
+        className="hidden" 
+      />
       <input 
         type="file" 
         ref={fileInputRef} 
@@ -131,35 +181,15 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
       />
 
       {/* Section Header */}
-      <div className="px-5 pt-6 pb-8">
-        <div className="flex items-center justify-between mb-2">
-          <div>
-            <h2 className="text-[24px] leading-[1.3] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>Brand Settings</h2>
-            <p className="text-[14px] leading-[1.4] tracking-[0.01em] font-medium text-on-surface-variant mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>Manage your community&apos;s identity and presence</p>
-          </div>
-          <button
-            onClick={handleSave}
-            disabled={loading}
-            className="bg-primary text-on-primary px-6 py-3 rounded-full text-[14px] leading-[1.4] tracking-[0.01em] font-medium shadow-sm hover:opacity-90 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2"
-            style={{ fontFamily: "'Inter', sans-serif" }}
-          >
-            {loading ? (
-              <>
-                <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
-                Saving...
-              </>
-            ) : (
-              <>
-                <span className="material-symbols-outlined text-[18px]">check</span>
-                Save
-              </>
-            )}
-          </button>
+      <div className="px-4 pt-4 pb-6">
+        <div className="mb-2">
+          <h2 className="text-[24px] leading-[1.3] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>Brand Settings</h2>
+          <p className="text-[14px] leading-[1.4] tracking-[0.01em] font-medium text-on-surface-variant mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>Manage your community&apos;s identity and presence</p>
         </div>
       </div>
 
       {/* Section 1: Brand Identity */}
-      <section className="px-5 mb-8">
+      <section className="px-4 mb-6">
         <div className="bg-white rounded-2xl shadow-[0px_10px_30px_rgba(0,0,0,0.03)] border border-white/20 overflow-hidden">
           {/* Section Title */}
           <div className="px-6 pt-6 pb-4 border-b border-outline/5">
@@ -218,33 +248,13 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
               <p className="text-[11px] text-on-surface-variant/60 font-medium ml-1" style={{ fontFamily: "'Inter', sans-serif" }}>This slug defines your group&apos;s permanent direct link.</p>
             </div>
 
-            {/* Logo & Cover */}
-            <div className="grid grid-cols-2 gap-4 pt-2">
-              <div className="space-y-2">
-                <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>Logo</label>
-                <div 
-                  onClick={() => triggerUpload("logo")}
-                  className="relative aspect-square w-full max-w-[120px] bg-surface-container-low border-2 border-dashed border-outline/15 rounded-2xl overflow-hidden group/logo cursor-pointer hover:border-primary/30 transition-all"
-                >
-                  {formData.logo ? (
-                    <img src={formData.logo} alt="Logo" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center gap-1">
-                      <span className="material-symbols-outlined text-on-surface-variant/30 text-[28px]">add_photo_alternate</span>
-                      <span className="text-[10px] text-on-surface-variant/40 font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>Upload</span>
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/logo:opacity-100 flex items-center justify-center transition-opacity rounded-2xl">
-                    <span className="material-symbols-outlined text-white text-[20px]">edit</span>
-                  </div>
-                </div>
-              </div>
-              
+            {/* Cover */}
+            <div className="pt-2">
               <div className="space-y-2">
                 <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>Cover Image</label>
                 <div 
                   onClick={() => triggerUpload("cover")}
-                  className="relative aspect-video bg-surface-container-low border-2 border-dashed border-outline/15 rounded-2xl overflow-hidden group/cover cursor-pointer hover:border-primary/30 transition-all"
+                  className="relative aspect-[21/9] bg-surface-container-low border-2 border-dashed border-outline/15 rounded-2xl overflow-hidden group/cover cursor-pointer hover:border-primary/30 transition-all"
                 >
                   {formData.coverImage ? (
                     <img src={formData.coverImage} alt="Cover" className="w-full h-full object-cover" />
@@ -265,7 +275,7 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
       </section>
 
       {/* Section 2: Brand Story */}
-      <section className="px-5 mb-8">
+      <section className="px-4 mb-6">
         <div className="bg-white rounded-2xl shadow-[0px_10px_30px_rgba(0,0,0,0.03)] border border-white/20 overflow-hidden">
           <div className="px-6 pt-6 pb-4 border-b border-outline/5">
             <div className="flex items-center gap-3">
@@ -290,8 +300,54 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
         </div>
       </section>
 
+      {/* Section 2.5: About Photos */}
+      <section className="px-4 mb-6">
+        <div className="bg-white rounded-2xl shadow-[0px_10px_30px_rgba(0,0,0,0.03)] border border-white/20 overflow-hidden">
+          <div className="px-6 pt-6 pb-4 border-b border-outline/5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <span className="material-symbols-outlined text-primary text-[20px]">collections</span>
+              </div>
+              <div>
+                <h3 className="text-[16px] leading-[1.6] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>About Photos</h3>
+                <p className="text-[12px] leading-[1.2] font-medium text-on-surface-variant" style={{ fontFamily: "'Inter', sans-serif" }}>Atmosphere and space (Up to 20)</p>
+              </div>
+            </div>
+          </div>
+          <div className="p-6 space-y-4">
+            <div className="grid grid-cols-3 gap-3">
+              {formData.aboutPhotos.map((photo, index) => (
+                <div key={index} className="relative aspect-square rounded-xl overflow-hidden group">
+                  <img src={photo} alt={`About photo ${index + 1}`} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                    <button 
+                      onClick={() => removeAboutPhoto(index)}
+                      className="w-8 h-8 rounded-full bg-error text-white flex items-center justify-center"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">delete</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {formData.aboutPhotos.length < 20 && (
+                <button
+                  onClick={() => aboutPhotosInputRef.current?.click()}
+                  className="aspect-square rounded-xl border-2 border-dashed border-outline/15 bg-surface-container-low hover:border-primary/30 flex flex-col items-center justify-center gap-1 transition-all"
+                >
+                  <span className="material-symbols-outlined text-on-surface-variant/30 text-[24px]">add_photo_alternate</span>
+                  <span className="text-[10px] text-on-surface-variant/40 font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>Add Photo</span>
+                </button>
+              )}
+            </div>
+            <p className="text-[11px] text-on-surface-variant/60 font-medium text-right" style={{ fontFamily: "'Inter', sans-serif" }}>
+              {formData.aboutPhotos.length} / 20 photos uploaded
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* Section 3: Core Services */}
-      <section className="px-5 mb-8">
+      <section className="px-4 mb-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-tertiary/10 flex items-center justify-center">
@@ -358,7 +414,7 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
       </section>
 
       {/* Section 4: Payment & Business Info */}
-      <section className="px-5 mb-8">
+      <section className="px-4 mb-6">
         <div className="bg-white rounded-2xl shadow-[0px_10px_30px_rgba(0,0,0,0.03)] border border-white/20 overflow-hidden">
           <div className="px-6 pt-6 pb-4 border-b border-outline/5">
             <div className="flex items-center gap-3">
@@ -366,8 +422,8 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
                 <span className="material-symbols-outlined text-error text-[20px]">account_balance</span>
               </div>
               <div>
-                <h3 className="text-[16px] leading-[1.6] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>Payment & Business</h3>
-                <p className="text-[12px] leading-[1.2] font-medium text-on-surface-variant" style={{ fontFamily: "'Inter', sans-serif" }}>Financial and official details</p>
+                <h3 className="text-[16px] leading-[1.6] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>Financial Details</h3>
+                <p className="text-[12px] leading-[1.2] font-medium text-on-surface-variant" style={{ fontFamily: "'Inter', sans-serif" }}>Bank account information</p>
               </div>
             </div>
           </div>
@@ -407,8 +463,38 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
                 style={{ fontFamily: "'Inter', sans-serif" }}
               />
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Section 5: Business Identity */}
+      <section className="px-4 mb-6">
+        <div className="bg-white rounded-2xl shadow-[0px_10px_30px_rgba(0,0,0,0.03)] border border-white/20 overflow-hidden">
+          <div className="px-6 pt-6 pb-4 border-b border-outline/5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                <span className="material-symbols-outlined text-blue-500 text-[20px]">domain</span>
+              </div>
+              <div>
+                <h3 className="text-[16px] leading-[1.6] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>Business Identity</h3>
+                <p className="text-[12px] leading-[1.2] font-medium text-on-surface-variant" style={{ fontFamily: "'Inter', sans-serif" }}>Official representative and registration</p>
+              </div>
+            </div>
+          </div>
+          <div className="p-6 space-y-5">
             <div className="space-y-2">
-              <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>Business Registration No.</label>
+              <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>Representative Name</label>
+              <input
+                value={formData.representativeName}
+                onChange={(e) => setFormData({ ...formData, representativeName: e.target.value })}
+                className="w-full bg-surface-container-low border border-outline/10 focus:ring-2 focus:ring-primary/30 focus:border-primary rounded-xl px-4 py-3.5 text-on-surface text-[16px] font-medium placeholder:text-on-surface-variant/30"
+                placeholder="e.g. John Doe"
+                type="text"
+                style={{ fontFamily: "'Inter', sans-serif" }}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>Business Registration No. <span className="text-on-surface-variant/50 lowercase font-normal tracking-normal">(optional)</span></label>
               <input
                 value={formData.businessRegistrationNumber}
                 onChange={(e) => setFormData({ ...formData, businessRegistrationNumber: e.target.value })}

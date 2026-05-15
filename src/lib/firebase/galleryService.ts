@@ -64,6 +64,27 @@ export interface GalleryComment {
 const GALLERY_COLLECTION = 'galleries';
 const COMMENTS_COLLECTION = 'gallery_comments';
 
+const _convertTimestamps = (data: any): any => {
+  if (!data) return data;
+
+  if (typeof data.toMillis === 'function') return data.toMillis();
+  if (data.seconds !== undefined && data.nanoseconds !== undefined) {
+    return data.seconds * 1000 + Math.floor(data.nanoseconds / 1000000);
+  }
+  if (data instanceof Date) return data.getTime();
+
+  if (Array.isArray(data)) return data.map(item => _convertTimestamps(item));
+
+  if (typeof data === 'object' && (data.constructor === Object || !data.constructor)) {
+    const converted: any = {};
+    for (const [key, value] of Object.entries(data)) {
+      converted[key] = _convertTimestamps(value);
+    }
+    return converted;
+  }
+  return data;
+};
+
 export const galleryService = {
   // 1. Create Post
   async createPost(post: Omit<GalleryPost, 'id' | 'likesCount' | 'commentsCount' | 'likedBy' | 'createdAt' | 'updatedAt'>) {
@@ -79,23 +100,23 @@ export const galleryService = {
   },
 
   // 2. Subscribe to Feed
-  subscribeFeed(callback: (posts: GalleryPost[]) => void, options?: { entityType?: string; entityId?: string; userId?: string }) {
+  subscribeFeed(callback: (posts: GalleryPost[]) => void, options?: { entityType?: string; entityId?: string; userId?: string }, errorCallback?: (error: any) => void) {
     const q = query(
       collection(db, GALLERY_COLLECTION),
       orderBy('createdAt', 'desc'),
-      limit(100) // Increase limit slightly to ensure enough posts after client-side filtering
+      limit(1000) // Increase limit to ensure enough posts after client-side filtering
     );
 
     return onSnapshot(q, (snapshot) => {
       let posts = snapshot.docs.map(doc => ({
         id: doc.id,
-        ...doc.data()
+        ..._convertTimestamps(doc.data())
       })) as GalleryPost[];
 
       if (options?.userId) {
         posts = posts.filter(post => {
           const isAuthor = post.authorId === options.userId;
-          const isTagged = post.tags?.some(tag => tag.type === 'people' && tag.id === options.userId);
+          const isTagged = Array.isArray(post.tags) ? post.tags.some(tag => tag && tag.type === 'people' && tag.id === options.userId) : false;
           return isAuthor || isTagged;
         });
       }
@@ -103,20 +124,26 @@ export const galleryService = {
       if (options?.entityType) {
         posts = posts.filter(post => {
           // Check if the post's tags array contains the specified entity
-          if (post.tags && post.tags.length > 0) {
-            return post.tags.some(tag => tag.type === options.entityType && (!options.entityId || tag.id === options.entityId));
+          if (Array.isArray(post.tags) && post.tags.length > 0) {
+            const hasTag = post.tags.some(tag => tag && tag.type === options.entityType && (!options.entityId || tag.id === options.entityId));
+            if (hasTag) return true;
           }
           // Legacy check for venues and events
           if (options.entityType === 'venue' && (!options.entityId || post.venueId === options.entityId)) return true;
           if (options.entityType === 'event' && (!options.entityId || post.eventId === options.entityId)) return true;
+          if (options.entityType === 'group' && (!options.entityId || (post as any).groupId === options.entityId)) return true;
+          if (options.entityType === 'social' && (!options.entityId || (post as any).socialId === options.entityId)) return true;
           return false;
         });
-      } else {
-        // Main Live feed: exclude posts where showInLive is explicitly false
+      } else if (!options?.userId) {
+        // Main Live feed (Now): exclude posts where showInLive is explicitly false
         posts = posts.filter(post => post.showInLive !== false);
       }
 
       callback(posts);
+    }, (error) => {
+      console.error("Error in subscribeFeed:", error);
+      if (errorCallback) errorCallback(error);
     });
   },
 
@@ -147,7 +174,7 @@ export const galleryService = {
   },
 
   // 5. Subscribe to Comments
-  subscribeComments(postId: string, callback: (comments: GalleryComment[]) => void) {
+  subscribeComments(postId: string, callback: (comments: GalleryComment[]) => void, errorCallback?: (error: any) => void) {
     const q = query(
       collection(db, COMMENTS_COLLECTION),
       where('postId', '==', postId),
@@ -157,9 +184,12 @@ export const galleryService = {
     return onSnapshot(q, (snapshot) => {
       const comments = snapshot.docs.map(doc => ({
         id: doc.id,
-        ...doc.data()
+        ..._convertTimestamps(doc.data())
       })) as GalleryComment[];
       callback(comments);
+    }, (error) => {
+      console.error("Error in subscribeComments:", error);
+      if (errorCallback) errorCallback(error);
     });
   },
 

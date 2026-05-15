@@ -14,7 +14,7 @@ import { groupService } from '@/lib/firebase/groupService';
 import { FeedContext, Post } from '@/types/feed';
 import { useLocation } from '@/components/providers/LocationProvider';
 import { helpDeskAIService } from '@/lib/ai/helpDeskAI';
-
+import { KIND_ICON, KIND_COLOR } from '@/constants/tags';
 
 /* ?€?€?€ Types ?€?€?€ */
 interface MediaItem {
@@ -49,8 +49,6 @@ const EMPHASIS_OPTIONS = [
   { label: 'I', cls: 'italic', title: 'Italic' },
   { label: 'AA', cls: 'uppercase tracking-widest', title: 'Uppercase' },
 ];
-const KIND_ICON: Record<string, string> = { people: 'person', venue: 'location_on', event: 'event', social: 'share', group: 'groups' };
-const KIND_COLOR: Record<string, string> = { people: 'text-blue-500', venue: 'text-emerald-500', event: 'text-orange-500', social: 'text-purple-500', group: 'text-pink-500' };
 
 export default function CreateFeedPopup({ isOpen, onClose, context, editingPost }: Props) {
   const { t } = useLanguage();
@@ -71,6 +69,13 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
   const [tagResults, setTagResults] = useState<TagItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const mediaInputRef = useRef<HTMLInputElement>(null);
+  const tagCacheRef = useRef<{
+    people: { id: string; nickname: string; nativeNickname?: string; photoURL?: string }[];
+    venues: { id: string; name: string }[];
+    socials: { id: string; title: string; organizerName?: string }[];
+    groups: { id: string; name: string }[];
+  }>({ people: [], venues: [], socials: [], groups: [] });
+  const tagCacheLoaded = useRef(false);
 
   const isShort = content.length <= 70 && content.length > 0;
   const colorActive = selectedColor && !selectedColor.isDefault;
@@ -81,7 +86,7 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
   const imageCount = media.filter(m => m.type === 'image').length;
   const videoCount = media.filter(m => m.type === 'video').length;
 
-  /* ?€ Reset ?€ */
+  /* ⚙ Reset ⚙ */
   useEffect(() => {
     if (editingPost) {
       setContent(editingPost.content || '');
@@ -97,31 +102,65 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
     setTagKeyword(''); setTagResults([]);
   }, [editingPost, isOpen]);
 
-  /* ?€ Tag search ?€ */
+  /* ⚙ Tag Cache (load all once on open) ⚙ */
+  useEffect(() => {
+    if (!isOpen || tagCacheLoaded.current) return;
+    Promise.allSettled([
+      userService.getAllUsers(),
+      venueService.getVenues(),
+      socialService.searchSocials(''),
+      groupService.getGroups(),
+    ]).then(([usersRes, venuesRes, socialsRes, groupsRes]) => {
+      if (usersRes.status === 'fulfilled') {
+        tagCacheRef.current.people = usersRes.value.map((u: any) => ({
+          id: u.id, nickname: u.nickname || '', nativeNickname: u.nativeNickname || '',
+          photoURL: u.photoURL && u.photoURL !== 'https://lh3.googleusercontent.com/a/default-user' ? u.photoURL : undefined,
+        }));
+      }
+      if (venuesRes.status === 'fulfilled') {
+        tagCacheRef.current.venues = (venuesRes.value as any[]).map(v => ({ id: v.id, name: v.name || '' }));
+      }
+      if (socialsRes.status === 'fulfilled') {
+        tagCacheRef.current.socials = (socialsRes.value as any[]).map(s => ({ id: s.id, title: s.title || '', organizerName: s.organizerName || '' }));
+      }
+      if (groupsRes.status === 'fulfilled') {
+        tagCacheRef.current.groups = (groupsRes.value as any[]).map(g => ({ id: g.id, name: g.name || '' }));
+      }
+      tagCacheLoaded.current = true;
+    });
+  }, [isOpen]);
+
+  /* ⚙ Tag search (cached, case-insensitive, Korean-aware) ⚙ */
   useEffect(() => {
     if (tagKeyword.trim().length < 2) { setTagResults([]); return; }
-    const kw = tagKeyword.trim();
-    const timer = setTimeout(async () => {
+    const kw = tagKeyword.trim().toLowerCase();
+    const timer = setTimeout(() => {
       setIsSearching(true);
       try {
-        const [users, venues, events, socials, groups] = await Promise.allSettled([
-          userService.searchUsers(kw, 5),
-          venueService.searchVenues(kw),
-          eventService.searchEvents(kw),
-          socialService.searchSocials(kw),
-          groupService.getGroups(),
-        ]);
         const results: TagItem[] = [];
-        if (users.status === 'fulfilled') users.value.slice(0, 5).forEach(u => results.push({ id: u.id, label: u.nickname || u.id, kind: 'people', photo: u.photoURL && u.photoURL !== 'https://lh3.googleusercontent.com/a/default-user' ? u.photoURL : undefined }));
-        if (venues.status === 'fulfilled') (venues.value as any[]).slice(0, 3).forEach(v => results.push({ id: v.id, label: v.name, kind: 'venue' }));
-        if (events.status === 'fulfilled') (events.value as any[]).slice(0, 3).forEach(e => results.push({ id: e.id, label: e.title || e.titleNative, kind: 'event' }));
-        if (socials.status === 'fulfilled') (socials.value as any[]).slice(0, 3).forEach(s => results.push({ id: s.id, label: s.title, kind: 'social' }));
-        if (groups.status === 'fulfilled') {
-          (groups.value as any[]).filter(g => g.name?.toLowerCase().includes(kw.toLowerCase())).slice(0, 3).forEach(g => results.push({ id: g.id, label: g.name, kind: 'group' }));
-        }
+        // People: match nickname (EN) or nativeNickname (KR), case-insensitive
+        tagCacheRef.current.people
+          .filter(u => u.nickname?.toLowerCase().includes(kw) || u.nativeNickname?.toLowerCase().includes(kw))
+          .slice(0, 5)
+          .forEach(u => results.push({ id: u.id, label: u.nickname || u.id, kind: 'people', photo: u.photoURL }));
+        // Venues: match name, case-insensitive
+        tagCacheRef.current.venues
+          .filter(v => v.name?.toLowerCase().includes(kw))
+          .slice(0, 3)
+          .forEach(v => results.push({ id: v.id, label: v.name, kind: 'venue' }));
+        // Socials: match title or organizerName, case-insensitive
+        tagCacheRef.current.socials
+          .filter(s => s.title?.toLowerCase().includes(kw) || s.organizerName?.toLowerCase().includes(kw))
+          .slice(0, 3)
+          .forEach(s => results.push({ id: s.id, label: s.title, kind: 'social' }));
+        // Groups: match name, case-insensitive
+        tagCacheRef.current.groups
+          .filter(g => g.name?.toLowerCase().includes(kw))
+          .slice(0, 3)
+          .forEach(g => results.push({ id: g.id, label: g.name, kind: 'group' }));
         setTagResults(results);
       } finally { setIsSearching(false); }
-    }, 350);
+    }, 150);
     return () => clearTimeout(timer);
   }, [tagKeyword]);
 

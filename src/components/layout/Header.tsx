@@ -39,7 +39,7 @@ export default function Header() {
     '/plaza': { headlineKey: 'header.plaza', sub: 'SOCIETY' },
     '/venues': { headlineKey: 'header.venues', sub: 'SOCIETY' },
     '/groups': { headlineKey: 'header.groups', sub: 'SOCIETY' },
-    '/explore': { headlineKey: 'header.explore', sub: 'World' },
+    '/explore': { headlineKey: 'header.explore', sub: 'Lounge' },
     
     '/social': { headlineKey: 'header.social', sub: 'Activity' },
     '/class': { headlineKey: 'header.class', sub: 'Activity' },
@@ -50,8 +50,9 @@ export default function Header() {
     '/service': { headlineKey: 'header.service', sub: 'Activity' },
     
     '/resale': { headlineKey: 'header.resale', sub: 'Town' },
-    '/lost': { headlineKey: 'header.lost_found', sub: 'Town' },
-    '/hub': { headlineKey: 'header.hub', sub: 'Activity' },
+    '/lost': { headlineKey: 'header.lost_found', sub: 'Lounge' },
+    '/hub': { headlineKey: 'header.hub', sub: 'Lounge' },
+    '/pics': { headlineKey: 'header.pics', sub: 'Lounge' },
     
     '/chat': { headlineKey: 'header.chat', sub: 'Social' },
     '/wallet': { headlineKey: 'header.wallet', sub: 'My' },
@@ -60,6 +61,7 @@ export default function Header() {
     '/admin/people': { headlineKey: 'header.people', sub: 'Admin' },
     '/admin/place': { headlineKey: 'header.place', sub: 'Admin' },
     '/admin/others': { headlineKey: 'header.others', sub: 'Admin' },
+    '/admin/pics': { headlineKey: 'header.pics', sub: 'Admin' },
     '/notification': { headlineKey: 'header.notification', sub: 'System' },
     '/search': { headlineKey: 'header.search', sub: 'System' },
     '/live': { headlineKey: 'header.live', sub: 'Activity' },

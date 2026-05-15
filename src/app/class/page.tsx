@@ -1,7 +1,10 @@
-'use client';
-
 import React, { Suspense } from 'react';
-import ClassDetail from '@/components/class/ClassDetail';
+import ClassPortal from '@/components/class/ClassPortal';
+
+export const metadata = {
+  title: 'World Class Portal | WoC',
+  description: 'Explore community classes, workshops, and special events across all WoC groups.',
+};
 
 export default function ClassPage() {
   return (
@@ -10,7 +13,7 @@ export default function ClassPage() {
         <span className="material-symbols-outlined animate-spin text-4xl text-primary">progress_activity</span>
       </div>
     }>
-      <ClassDetail groupId="freestyle-tango" isModal={false} />
+      <ClassPortal />
     </Suspense>
   );
 }

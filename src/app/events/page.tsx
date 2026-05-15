@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { eventService } from '@/lib/firebase/eventService';
 import { Event } from '@/types/event';
-import { format, isSameDay, startOfDay, addDays, getDay, startOfWeek, endOfWeek, eachDayOfInterval, differenceInCalendarDays, endOfDay, startOfMonth, endOfMonth } from 'date-fns';
+import { isSameDay, startOfDay, addDays, getDay, startOfWeek, endOfWeek, eachDayOfInterval, differenceInCalendarDays, endOfDay, startOfMonth, endOfMonth, format } from 'date-fns';
 import CreateEvent from '@/components/events/CreateEvent';
 import EventViewer from '@/components/events/EventViewer';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -71,14 +71,29 @@ export default function EventsPage() {
   const [activeTab, setActiveTab] = useState<'calendar' | 'upcoming' | 'favorite'>('calendar');
   const [isWorldEvent, setIsWorldEvent] = useState(true);
 
-  // Real-time Subscription
+  // Society context: URL param → sessionStorage fallback
+  const [societyId, setSocietyId] = useState('tango');
   useEffect(() => {
-    const unsub = eventService.subscribeEvents((data) => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlSociety = params.get('society');
+      const storedSociety = sessionStorage.getItem('woc_society');
+      const sId = urlSociety || storedSociety;
+      console.log('[WoC Debug] Events page society detection:', { urlSociety, storedSociety, resolved: sId });
+      if (sId) setSocietyId(sId);
+    }
+  }, []);
+
+  // Real-time Subscription (society-aware)
+  useEffect(() => {
+    console.log('[WoC Debug] Subscribing events for societyId:', societyId);
+    const unsub = eventService.subscribeEventsBySociety(societyId, (data) => {
       const validEvents = data.filter(e => e.startDate);
+      console.log('[WoC Debug] Received events:', validEvents.length, 'for society:', societyId);
       setEvents(validEvents);
     });
     return () => unsub();
-  }, []);
+  }, [societyId]);
 
   // Check URL search params for specific event ID
   useEffect(() => {

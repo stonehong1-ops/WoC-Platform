@@ -12,14 +12,15 @@ export const rentalService = {
     
     // First, let's keep a local cache of groups with rental enabled
     const fetchActiveGroupsAndSpaces = async (snapshotDocs: any[]) => {
-      // Fetch all groups to check rental settings and calculate min/max prices
       const groupsSnap = await getDocs(collection(db, 'groups'));
       const activeGroupSettings = new Map<string, any>();
+      const groupDataMap = new Map<string, any>();
       
       groupsSnap.forEach(doc => {
         const data = doc.data();
         if (data.activeServices?.rental === true) {
           activeGroupSettings.set(doc.id, data.rentalSettings || {});
+          groupDataMap.set(doc.id, data);
         }
       });
 
@@ -27,6 +28,8 @@ export const rentalService = {
         const sData = doc.data();
         let minPrice = sData.pricePerHour || 0;
         let maxPrice = sData.pricePerHour || 0;
+        let groupCoverImage = '';
+        let groupCategory = '';
 
         if (sData.groupId && activeGroupSettings.has(sData.groupId)) {
           const settings = activeGroupSettings.get(sData.groupId);
@@ -37,15 +40,23 @@ export const rentalService = {
                maxPrice = Math.max(...prices);
              }
           }
+          
+          const groupData = groupDataMap.get(sData.groupId);
+          if (groupData) {
+            groupCoverImage = groupData.coverImage || '';
+            groupCategory = groupData.tags?.[0] || '';
+          }
         }
 
         return {
           id: doc.id,
           ...sData,
           minPrice,
-          maxPrice
+          maxPrice,
+          groupCoverImage,
+          groupCategory
         };
-      }) as (RentalSpace & { minPrice?: number, maxPrice?: number })[];
+      }) as (RentalSpace & { minPrice?: number, maxPrice?: number, groupCoverImage?: string, groupCategory?: string })[];
 
       // Filter to only include spaces associated with an active studio group
       spaces = spaces.filter(s => s.groupId && activeGroupSettings.has(s.groupId));

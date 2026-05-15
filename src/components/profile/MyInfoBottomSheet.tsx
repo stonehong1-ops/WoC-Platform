@@ -25,6 +25,7 @@ interface UserProfile {
   isServiceProvider?: boolean;
   authMethod?: string;
   allowPhoneCalls?: boolean;
+  role?: 'leader' | 'follower';
 }
 
 interface MyInfoBottomSheetProps {
@@ -52,7 +53,8 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
     isSeller: false,
     isServiceProvider: false,
     photoURL: '',
-    allowPhoneCalls: false
+    allowPhoneCalls: false,
+    role: 'follower' as 'leader' | 'follower'
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -70,7 +72,8 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
         isSeller: profile.isSeller || false,
         isServiceProvider: profile.isServiceProvider || false,
         photoURL: profile.photoURL || '',
-        allowPhoneCalls: profile.allowPhoneCalls || false
+        allowPhoneCalls: profile.allowPhoneCalls || false,
+        role: profile.role || 'follower'
       });
     }
   }, [profile, isOpen]);
@@ -131,6 +134,7 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
         nativeNickname: details.nativeNickname,
         bio: details.bio,
         gender: details.gender,
+        role: details.role,
         phoneNumber: details.phoneNumber,
         countryCode: details.countryCode,
         isInstructor: details.isInstructor,
@@ -390,6 +394,27 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
                     }`}
                   >
                     {t(`myinfo.gender_${g.toLowerCase()}`)}
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            {/* Section 4.5: Dance Role */}
+            <section className="space-y-6">
+              <h2 className="font-headline text-lg font-bold text-on-surface">{t('myinfo.dance_role')}</h2>
+              <div className="flex bg-surface-container rounded p-1 max-w-md">
+                {['leader', 'follower'].map((r) => (
+                  <button 
+                    key={r}
+                    onClick={() => setDetails(prev => ({ ...prev, role: r as 'leader' | 'follower' }))}
+                    type="button"
+                    className={`flex-1 py-2 text-sm font-semibold rounded transition-all ${
+                      details.role === r 
+                        ? 'bg-surface text-primary shadow-sm' 
+                        : 'text-on-surface-variant hover:text-on-surface'
+                    }`}
+                  >
+                    {t(`myinfo.dance_role_${r}`)}
                   </button>
                 ))}
               </div>

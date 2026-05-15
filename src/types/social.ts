@@ -51,6 +51,8 @@ export interface Social {
   organizerPhone?: string;          // Organizer phone number
   tableCapacity?: number;           // Max table seats (for closure threshold)
   moments?: string[];               // Up to 20 images (Moments)
+  posterLayoutId?: string;           // Selected poster template layout ID
+  posterExportUrl?: string;          // Pre-generated poster image URL for quick download/share
   createdAt: Timestamp;
 }
 

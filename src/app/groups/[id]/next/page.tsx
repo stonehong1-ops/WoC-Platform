@@ -47,7 +47,7 @@ export default function OrganizeMenuPage() {
         // Exclude dashboard, about, roles-permissions, and all admin section items
         const adminSection = FUNCTION_SECTIONS.find(s => s.id === 'admin');
         const adminIds = adminSection ? adminSection.cards.map(c => c.id) : [];
-        const excludedIds = new Set(['dashboard', 'about', 'roles-permissions', ...adminIds]);
+        const excludedIds = new Set(['dashboard', 'about', 'roles-permissions', 'brand-setting']);
 
         // 1. Keep items that are dividers or whose id is in selectedFunctions (and not excluded)
         let syncedItems = group.menuOrder.filter(item => 
@@ -108,7 +108,7 @@ export default function OrganizeMenuPage() {
 
       const adminSection = FUNCTION_SECTIONS.find(s => s.id === 'admin');
       const adminIds = adminSection ? adminSection.cards.map(c => c.id) : [];
-      const excludedIds = new Set(['dashboard', 'about', 'roles-permissions', ...adminIds]);
+      const excludedIds = new Set(['dashboard', 'about', 'roles-permissions', 'brand-setting']);
 
       let lastSectionId = "";
       group.selectedFunctions.forEach((funcId) => {

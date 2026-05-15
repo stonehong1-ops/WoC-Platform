@@ -4,7 +4,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { chatService } from '@/lib/firebase/chatService';
 import type { ChatRoom, ChatMessage, MessageType } from '@/types/chat';
 import { useAuth } from '@/components/providers/AuthProvider';
-import { format, isToday, isYesterday } from 'date-fns';
 import { safeDate } from '@/lib/utils/safeDate';
 import VoiceBubble from './VoiceBubble';
 import GroupMembersPopup from './GroupMembersPopup';
@@ -17,8 +16,8 @@ import UserAvatar from '../common/UserAvatar';
 import UserName from '../common/UserName';
 import UserBadge from '../common/UserBadge';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { enUS, ko as koLocale } from 'date-fns/locale';
 import { useNavigation } from "@/components/providers/NavigationProvider";
+import { useBookingEngine } from '@/hooks/useBookingEngine';
 
 interface ChatRoomProps {
   roomId: string;
@@ -27,9 +26,9 @@ interface ChatRoomProps {
 
 export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
   const { user } = useAuth();
-  const { t, language } = useLanguage();
+  const { t, formatDate } = useLanguage();
   const { setGlobalNavHidden } = useNavigation();
-  const currentLocale = language === 'KR' ? koLocale : enUS;
+  const { handleBookingAction } = useBookingEngine();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [room, setRoom] = useState<ChatRoom | null>(null);
@@ -297,9 +296,9 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
 
   // UI Helpers
   const formatTime = (ts: any) => {
-    if (!ts) return '';
-    const date = ts.toDate ? ts.toDate() : new Date(ts);
-    return format(date, 'HH:mm', { locale: currentLocale });
+    const date = safeDate(ts);
+    if (!date) return '';
+    return formatDate(date, 'timeOnly');
   };
 
   const renderMessageText = (msg: ChatMessage) => {
@@ -362,6 +361,9 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
       const orderNo = getVal(lines, ['Order No', '주문번호', '주문 번호']);
       const depositor = getVal(lines, ['Depositor', '입금자명']);
 
+      const isActionable = msg.metadata?.actionType === 'booking_approval' && msg.metadata?.status === 'WAITING_CONFIRMATION';
+      const isHost = user?.uid !== msg.senderId;
+
       return (
         <div className="flex flex-col gap-3 min-w-[240px]">
           <div className="flex items-center gap-2 pb-2 border-b border-white/20">
@@ -372,7 +374,31 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
             <p className="text-[10px] opacity-60 font-bold uppercase tracking-tighter">{t('chatroom.label_order_no')}: {orderNo}</p>
             <p className="text-sm font-bold leading-tight">{t('chatroom.transfer_reported_by', { name: depositor })}</p>
           </div>
-          <div className="text-[10px] bg-white/10 px-3 py-1.5 rounded-full font-bold uppercase self-start">{t('chatroom.pending_confirmation')}</div>
+          
+          {isActionable ? (
+            isHost ? (
+              <div className="flex gap-2 mt-2">
+                <button 
+                  onClick={(e) => { e.stopPropagation(); if (msg.metadata?.bookingId) handleBookingAction(msg.metadata.bookingId, 'SELLER_REJECTED', msg.id, msg.roomId); }}
+                  className="flex-1 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-bold transition-colors"
+                >
+                  거절
+                </button>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); if (msg.metadata?.bookingId) handleBookingAction(msg.metadata.bookingId, 'SELLER_CONFIRMED', msg.id, msg.roomId); }}
+                  className="flex-1 py-2 bg-white text-primary rounded-lg text-xs font-bold shadow-sm hover:bg-gray-50 transition-colors"
+                >
+                  승인
+                </button>
+              </div>
+            ) : (
+              <div className="text-[10px] bg-white/10 px-3 py-1.5 rounded-full font-bold self-start">검토 후 답변드리겠습니다.</div>
+            )
+          ) : (
+            <div className="text-[10px] bg-white/10 px-3 py-1.5 rounded-full font-bold uppercase self-start">
+              {msg.metadata?.status === 'CONFIRMED' ? '승인 완료' : msg.metadata?.status === 'REJECTED' ? '승인 거절' : t('chatroom.pending_confirmation')}
+            </div>
+          )}
         </div>
       );
     }
@@ -651,9 +677,13 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
                     {(() => {
                       const d = safeDate(msg.timestamp);
                       if (!d) return t('chatroom.today');
-                      if (isToday(d)) return t('chatroom.today');
-                      if (isYesterday(d)) return t('chatroom.yesterday');
-                      return format(d, 'MMMM d, yyyy', { locale: currentLocale });
+                      const now = new Date();
+                      const isSameDay = (d1: Date, d2: Date) => d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
+                      const yesterday = new Date(now);
+                      yesterday.setDate(yesterday.getDate() - 1);
+                      if (isSameDay(d, now)) return t('chatroom.today');
+                      if (isSameDay(d, yesterday)) return t('chatroom.yesterday');
+                      return formatDate(d, 'dateOnly');
                     })()}
                   </div>
                 </div>

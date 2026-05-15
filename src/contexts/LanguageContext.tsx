@@ -1,7 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-
+import { format, formatDistanceToNow } from 'date-fns';
+import { enUS, ko } from 'date-fns/locale';
 type Language = 'EN' | 'KR';
 
 interface LanguageContextType {
@@ -9,6 +10,8 @@ interface LanguageContextType {
   toggleLanguage: () => void;
   setLanguage: (lang: Language) => void;
   t: (key: string, params?: any) => string;
+  formatDate: (date: any, formatStr?: string) => string;
+  formatRelativeTime: (date: any) => string;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -26,6 +29,7 @@ const dictionary: Record<Language, Record<string, string>> = {
     'nav.explore': 'JUMP',
     'nav.hub': 'HUB',
     'nav.resale': 'RESALE',
+    'nav.pics': 'PICS',
     'nav.class': 'CLASS',
     'nav.now': 'NOW',
     'nav.social': 'SOCIAL',
@@ -38,7 +42,9 @@ const dictionary: Record<Language, Record<string, string>> = {
     'nav.people': 'PEOPLE',
     'nav.place': 'PLACE',
     'nav.others': 'OTHERS',
-    'nav.tango_world': 'TANGO WORLD',
+    'nav.world': 'WORLD',
+    'nav.market': 'MARKET',
+    'nav.lounge': 'LOUNGE',
     'nav.activity': 'ACTIVITY',
     'nav.town': 'TOWN',
     'nav.my': 'MY',
@@ -98,6 +104,7 @@ const dictionary: Record<Language, Record<string, string>> = {
     'header.resale': 'RESALE',
     'header.lost_found': 'LOST & FOUND',
     'header.hub': 'HUB',
+    'header.pics': 'PICS',
     'header.chat': 'CHAT',
     'header.wallet': 'WALLET',
     'header.history': 'HISTORY',
@@ -2198,6 +2205,10 @@ const dictionary: Record<Language, Record<string, string>> = {
     'nav.place': '장소(맵)',
     'nav.others': '기타',
     'nav.tango_world': '탱고 월드',
+    'nav.world': '월드',
+    'nav.market': '마켓',
+    'nav.lounge': '라운지',
+    'nav.pics': 'PICS',
     'nav.activity': '액티비티',
     'nav.town': '타운',
     'nav.my': 'My',
@@ -4374,8 +4385,28 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     return text;
   };
 
+  const formatDate = (date: any, formatStr: string = 'yyyy-MM-dd') => {
+    if (!date) return '';
+    try {
+      const d = typeof date?.toDate === 'function' ? date.toDate() : new Date(date);
+      return format(d, formatStr, { locale: language === 'KR' ? ko : enUS });
+    } catch (e) {
+      return '';
+    }
+  };
+
+  const formatRelativeTime = (date: any) => {
+    if (!date) return '';
+    try {
+      const d = typeof date?.toDate === 'function' ? date.toDate() : new Date(date);
+      return formatDistanceToNow(d, { addSuffix: true, locale: language === 'KR' ? ko : enUS });
+    } catch (e) {
+      return '';
+    }
+  };
+
   return (
-    <LanguageContext.Provider value={{ language, toggleLanguage, setLanguage, t }}>
+    <LanguageContext.Provider value={{ language, toggleLanguage, setLanguage, t, formatDate, formatRelativeTime }}>
       {children}
     </LanguageContext.Provider>
   );

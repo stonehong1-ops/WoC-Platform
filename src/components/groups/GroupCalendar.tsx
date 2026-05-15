@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-  format, addMonths, subMonths, startOfMonth, endOfMonth, 
+  addMonths, subMonths, startOfMonth, endOfMonth, 
   startOfWeek, endOfWeek, isSameMonth, isSameDay, addDays, 
-  startOfDay, isToday, parseISO
+  startOfDay, isToday, parseISO, format
 } from 'date-fns';
 import { groupService } from '@/lib/firebase/groupService';
 import { eventService } from '@/lib/firebase/eventService';
@@ -12,6 +12,7 @@ import { socialService } from '@/lib/firebase/socialService';
 import { CalendarEvent, Group, GroupClass } from '@/types/group';
 import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useHistoryBack } from '@/hooks/useHistoryBack';
 
 interface GroupCalendarProps {
   group: Group;
@@ -20,10 +21,10 @@ interface GroupCalendarProps {
 type ViewMode = 'day' | 'week' | 'month';
 
 const GroupCalendar: React.FC<GroupCalendarProps> = ({ group }) => {
-  const { t } = useLanguage();
+  const { t, formatDate } = useLanguage();
   const [viewMode, setViewMode] = useState<ViewMode>('day');
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(new Date()));
+  const [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [selectedDate, setSelectedDate] = useState(new Date());
   
   const [groupCalendarEvents, setGroupCalendarEvents] = useState<CalendarEvent[]>([]);
@@ -34,13 +35,15 @@ const GroupCalendar: React.FC<GroupCalendarProps> = ({ group }) => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
+
+  const { handleClose: handleFormClose } = useHistoryBack(isFormOpen, () => setIsFormOpen(false));
   
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    startDate: format(new Date(), 'yyyy-MM-dd'),
+    startDate: formatDate(new Date(), 'iso'),
     startTime: '19:00',
-    endDate: format(new Date(), 'yyyy-MM-dd'),
+    endDate: formatDate(new Date(), 'iso'),
     endTime: '21:00',
     type: 'general' as CalendarEvent['type'],
   });
@@ -165,7 +168,15 @@ const GroupCalendar: React.FC<GroupCalendarProps> = ({ group }) => {
   const nextWeek = () => setCurrentWeekStart(addDays(currentWeekStart, 7));
   const prevWeek = () => setCurrentWeekStart(addDays(currentWeekStart, -7));
 
-  const onDateClick = (day: Date) => { setSelectedDate(day); };
+  const handleNext = () => {
+    if (viewMode === 'week') nextWeek();
+    else nextMonth();
+  };
+
+  const handlePrev = () => {
+    if (viewMode === 'week') prevWeek();
+    else prevMonth();
+  };
 
   const handleOpenForm = (event?: CalendarEvent) => {
     if (event) {
@@ -173,16 +184,16 @@ const GroupCalendar: React.FC<GroupCalendarProps> = ({ group }) => {
       const eventDate = new Date(event.startDate);
       setFormData({
         title: event.title, description: event.description || '',
-        startDate: format(eventDate, 'yyyy-MM-dd'), startTime: event.startTime || '19:00',
-        endDate: format(eventDate, 'yyyy-MM-dd'), endTime: event.endTime || '21:00',
+        startDate: formatDate(eventDate, 'iso'), startTime: event.startTime || '19:00',
+        endDate: formatDate(eventDate, 'iso'), endTime: event.endTime || '21:00',
         type: event.type,
       });
     } else {
       setEditingEvent(null);
       setFormData({
         title: '', description: '',
-        startDate: format(selectedDate, 'yyyy-MM-dd'), startTime: '19:00',
-        endDate: format(selectedDate, 'yyyy-MM-dd'), endTime: '21:00',
+        startDate: formatDate(selectedDate, 'iso'), startTime: '19:00',
+        endDate: formatDate(selectedDate, 'iso'), endTime: '21:00',
         type: 'general',
       });
     }
@@ -212,7 +223,7 @@ const GroupCalendar: React.FC<GroupCalendarProps> = ({ group }) => {
         await groupService.addCalendarEvent(group.id, eventPayload);
         toast.success(t('calendar.scheduleAddedSuccessfully') || "Schedule added successfully.");
       }
-      setIsFormOpen(false);
+      handleFormClose();
     } catch (error: any) { 
       console.error("Error saving event:", error);
       if (error.code === 'permission-denied') {
@@ -249,28 +260,16 @@ const GroupCalendar: React.FC<GroupCalendarProps> = ({ group }) => {
 
   const getTypeBadgeClass = (type: string) => {
     switch(type) {
-      case 'class': return 'bg-tertiary-container text-on-tertiary-container';
-      case 'social': return 'bg-secondary-container text-on-secondary-container';
-      case 'milonga': return 'bg-primary-container text-on-primary-container';
-      case 'practice': return 'bg-surface-tint text-on-primary';
-      case 'rental': return 'bg-tertiary-fixed text-on-tertiary-fixed';
-      default: return 'bg-surface-variant text-on-surface-variant';
+      case 'class': return 'bg-[#ba1a1a]/10 text-[#ba1a1a]';
+      case 'social': return 'bg-[#004190]/10 text-[#004190]';
+      case 'milonga': return 'bg-[#004190]/10 text-[#004190]';
+      case 'practice': return 'bg-[#ba1a1a]/10 text-[#ba1a1a]';
+      case 'rental': return 'bg-[#765b00]/10 text-[#765b00]';
+      default: return 'bg-slate-200 text-slate-600';
     }
   };
 
   const getTypeDotClass = (type: string) => {
-    switch(type) {
-      case 'class': return 'bg-tertiary';
-      case 'social': return 'bg-secondary';
-      case 'milonga': return 'bg-primary';
-      case 'practice': return 'bg-primary-container';
-      case 'rental': return 'bg-tertiary-fixed-dim';
-      default: return 'bg-outline';
-    }
-  };
-
-  // event-red=#ba1a1a (Class), event-blue=#004190 (Social/Milonga), event-yellow=#765b00 (General/etc)
-  const getWeekDotClass = (type: string) => {
     switch(type) {
       case 'class': case 'practice': return 'bg-[#ba1a1a]';
       case 'social': case 'milonga': return 'bg-[#004190]';
@@ -278,30 +277,15 @@ const GroupCalendar: React.FC<GroupCalendarProps> = ({ group }) => {
     }
   };
 
-  // Month view dot: bg-error(class), bg-primary-container(social/milonga), bg-tertiary-container(practice/general)
-  const getMonthDotClass = (type: string) => {
-    switch(type) {
-      case 'class': return 'bg-error';
-      case 'social': case 'milonga': return 'bg-primary-container';
-      default: return 'bg-tertiary-container';
+  const formatTime = (time: string) => {
+    if (!time) return '';
+    try {
+      const d = new Date(`2000-01-01T${time}`);
+      return formatDate(d, 'timeOnly');
+    } catch {
+      return time;
     }
   };
-
-  const formatTime12h = (time: string) => {
-    const [h, m] = time.split(':').map(Number);
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    const hour12 = h % 12 || 12;
-    return `${hour12}:${m.toString().padStart(2, '0')} ${ampm}`;
-  };
-
-  // Build day-view calendar grid
-  const monthStart = startOfMonth(currentMonth);
-  const monthEnd = endOfMonth(monthStart);
-  const calStartDate = startOfWeek(monthStart);
-  const calEndDate = endOfWeek(monthEnd);
-  const calendarDays: Date[] = [];
-  let day = calStartDate;
-  while (day <= calEndDate) { calendarDays.push(day); day = addDays(day, 1); }
 
   const selectedDayEvents = events.filter(e => isSameDay(new Date(e.startDate), selectedDate));
   selectedDayEvents.sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
@@ -310,8 +294,8 @@ const GroupCalendar: React.FC<GroupCalendarProps> = ({ group }) => {
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart, i));
   const weekEnd = addDays(currentWeekStart, 6);
   const weekHeaderText = isSameMonth(currentWeekStart, weekEnd)
-    ? `${format(currentWeekStart, 'MMM d')} - ${format(weekEnd, 'd')}`
-    : `${format(currentWeekStart, 'MMM d')} - ${format(weekEnd, 'MMM d')}`;
+    ? `${formatDate(currentWeekStart, 'shortMonthDay')} - ${formatDate(weekEnd, 'dayOnly')}`
+    : `${formatDate(currentWeekStart, 'shortMonthDay')} - ${formatDate(weekEnd, 'shortMonthDay')}`;
 
   // Build month-view weekly groupings
   const monthViewEvents = events
@@ -325,6 +309,19 @@ const GroupCalendar: React.FC<GroupCalendarProps> = ({ group }) => {
   });
   const maxWeek = Math.ceil(endOfMonth(currentMonth).getDate() / 7);
 
+  // Build calendar grid days (week starts Monday)
+  const monthStartGrid = startOfMonth(currentMonth);
+  const monthEndGrid = endOfMonth(monthStartGrid);
+  const startDateGrid = startOfWeek(monthStartGrid, { weekStartsOn: 1 });
+  const endDateGrid = endOfWeek(monthEndGrid, { weekStartsOn: 1 });
+
+  const calendarDays = [];
+  let dayGrid = startDateGrid;
+  while (dayGrid <= endDateGrid) {
+    calendarDays.push(dayGrid);
+    dayGrid = addDays(dayGrid, 1);
+  }
+
   // ============================================================
   // FORM VIEW (Design 2: Schedule Register)
   // ============================================================
@@ -332,7 +329,7 @@ const GroupCalendar: React.FC<GroupCalendarProps> = ({ group }) => {
     return (
       <div className="fixed inset-0 z-[100] bg-surface text-on-surface flex flex-col">
         <header className="flex items-center gap-4 px-6 md:px-8 py-4 w-full h-16 bg-surface border-b border-outline/10 sticky top-0 z-50 transition-colors duration-200 ease-in-out">
-          <button onClick={() => setIsFormOpen(false)} className="flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high/50 w-10 h-10 rounded-full transition-colors">
+          <button onClick={handleFormClose} className="flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high/50 w-10 h-10 rounded-full transition-colors">
             <span className="material-symbols-outlined">arrow_back</span>
           </button>
           <h1 className="font-headline-md text-headline-md font-extrabold text-on-surface flex-grow">{t('calendar.scheduleRegister') || "Schedule Register"}</h1>
@@ -361,16 +358,25 @@ const GroupCalendar: React.FC<GroupCalendarProps> = ({ group }) => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-2">
                   <label className="font-label-sm text-label-sm text-on-surface-variant" htmlFor="start-date">{t('calendar.startsLabel') || "Starts"}</label>
-                  <div className="flex gap-2">
-                    <input className="flex-grow rounded border border-outline/20 bg-surface focus:border-primary focus:ring-1 focus:ring-primary font-body-md text-body-md text-on-surface py-3 px-4" id="start-date" type="date" value={formData.startDate} onChange={(e) => setFormData({...formData, startDate: e.target.value})} />
-                    <input className="w-1/3 rounded border border-outline/20 bg-surface focus:border-primary focus:ring-1 focus:ring-primary font-body-md text-body-md text-on-surface py-3 px-4" id="start-time" type="time" value={formData.startTime} onChange={(e) => setFormData({...formData, startTime: e.target.value})} />
+                  <div className="flex gap-2 w-full">
+                    <input className="w-full flex-[3] rounded border border-outline/20 bg-surface focus:border-primary focus:ring-1 focus:ring-primary font-body-md text-body-md text-on-surface py-3 px-3 min-w-0" id="start-date" type="date" value={formData.startDate} onChange={(e) => setFormData({...formData, startDate: e.target.value})} />
+                    <input className="w-full flex-[2] rounded border border-outline/20 bg-surface focus:border-primary focus:ring-1 focus:ring-primary font-body-md text-body-md text-on-surface py-3 px-2 min-w-0" id="start-time" type="time" value={formData.startTime} onChange={(e) => {
+                      const newStartTime = e.target.value;
+                      let newEndTime = formData.endTime;
+                      if (newStartTime) {
+                        const [h, m] = newStartTime.split(':').map(Number);
+                        const endH = (h + 1) % 24;
+                        newEndTime = `${endH.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+                      }
+                      setFormData({...formData, startTime: newStartTime, endTime: newEndTime});
+                    }} />
                   </div>
                 </div>
                 <div className="flex flex-col gap-2">
                   <label className="font-label-sm text-label-sm text-on-surface-variant" htmlFor="end-date">{t('calendar.endsLabel') || "Ends"}</label>
-                  <div className="flex gap-2">
-                    <input className="flex-grow rounded border border-outline/20 bg-surface focus:border-primary focus:ring-1 focus:ring-primary font-body-md text-body-md text-on-surface py-3 px-4" id="end-date" type="date" value={formData.endDate} onChange={(e) => setFormData({...formData, endDate: e.target.value})} />
-                    <input className="w-1/3 rounded border border-outline/20 bg-surface focus:border-primary focus:ring-1 focus:ring-primary font-body-md text-body-md text-on-surface py-3 px-4" id="end-time" type="time" value={formData.endTime} onChange={(e) => setFormData({...formData, endTime: e.target.value})} />
+                  <div className="flex gap-2 w-full">
+                    <input className="w-full flex-[3] rounded border border-outline/20 bg-surface focus:border-primary focus:ring-1 focus:ring-primary font-body-md text-body-md text-on-surface py-3 px-3 min-w-0" id="end-date" type="date" value={formData.endDate} onChange={(e) => setFormData({...formData, endDate: e.target.value})} />
+                    <input className="w-full flex-[2] rounded border border-outline/20 bg-surface focus:border-primary focus:ring-1 focus:ring-primary font-body-md text-body-md text-on-surface py-3 px-2 min-w-0" id="end-time" type="time" value={formData.endTime} onChange={(e) => setFormData({...formData, endTime: e.target.value})} />
                   </div>
                 </div>
               </div>
@@ -386,38 +392,61 @@ const GroupCalendar: React.FC<GroupCalendarProps> = ({ group }) => {
   }
 
   // ============================================================
-  // WEEK VIEW (Design from aiantigravity.txt)
+  // UNIFIED VIEW RENDERING
   // ============================================================
-  if (viewMode === 'week') {
-    return (
-      <div className="max-w-7xl mx-auto w-full pb-20">
-        {/* View Toggle Filter */}
-        <section className="mb-2 flex justify-center mt-2">
-          <div className="flex bg-surface-container-high/30 rounded-full p-1 items-center gap-1 inline-flex">
-            <button onClick={() => setViewMode('day')} className="px-4 py-1.5 rounded-full text-on-surface-variant bg-transparent hover:bg-surface-container-high/50 font-label-md text-label-md transition-all">{t('common.dayLabel') || 'Day'}</button>
-            <button className="px-4 py-1.5 rounded-full bg-primary text-on-primary font-label-md text-label-md shadow-sm transition-all">{t('common.weekLabel') || 'Week'}</button>
-            <button onClick={() => setViewMode('month')} className="px-4 py-1.5 rounded-full text-on-surface-variant bg-transparent hover:bg-surface-container-high/50 font-label-md text-label-md transition-all">{t('common.monthLabel') || 'Month'}</button>
-          </div>
-        </section>
-
-        {/* Current Week Header */}
-        <header className="mb-3 px-3 flex items-center justify-between">
-          <h1 className="font-title-md text-title-md font-bold text-on-surface">{weekHeaderText}</h1>
-          <div className="flex gap-2">
-            <button onClick={prevWeek} className="w-8 h-8 flex items-center justify-center rounded-full bg-transparent hover:bg-surface-container-highest/10 transition-colors">
-              <span className="material-symbols-outlined text-on-surface text-[20px]">chevron_left</span>
+  return (
+    <div className="max-w-3xl mx-auto w-full pb-20 bg-[#f4f6fc] min-h-screen">
+      {/* 1. Header: Tabs + Add Button */}
+      <div className="flex justify-between items-end px-4 pt-4 mb-6 border-b border-slate-200">
+        {/* Sub-navigation Tabs */}
+        <div className="flex gap-6">
+          {(['day', 'week', 'month'] as ViewMode[]).map((mode) => (
+            <button
+              key={mode}
+              onClick={() => setViewMode(mode)}
+              className={`pb-3 text-sm font-bold transition-all border-b-2 -mb-[1px] ${
+                viewMode === mode
+                  ? "text-[#0057bd] border-[#0057bd]"
+                  : "text-slate-400 border-transparent hover:text-slate-600"
+              }`}
+            >
+              {mode === 'day' ? (t('common.dayLabel') || 'Day') : mode === 'week' ? (t('common.weekLabel') || 'Week') : (t('common.monthLabel') || 'Month')}
             </button>
-            <button onClick={nextWeek} className="w-8 h-8 flex items-center justify-center rounded-full bg-transparent hover:bg-surface-container-highest/10 transition-colors">
-              <span className="material-symbols-outlined text-on-surface text-[20px]">chevron_right</span>
-            </button>
-          </div>
-        </header>
+          ))}
+        </div>
 
-        {/* Week Grid Layout */}
-        <div className="grid grid-cols-1 md:grid-cols-7 gap-y-3 px-3">
+        {/* Add Event Button (Simplified Shop style) */}
+        <button 
+          onClick={() => handleOpenForm()} 
+          className="bg-[#0057bd] text-white font-['Plus_Jakarta_Sans'] font-bold py-1.5 px-3 rounded-lg shadow-sm shadow-[#0057bd]/20 flex items-center justify-center gap-1.5 hover:bg-[#004ca6] transition-colors active:scale-[0.99] text-xs mb-2"
+        >
+          <span className="material-symbols-outlined text-[14px]">add</span>
+          {t('calendar.addSchedule') || 'Add Schedule'}
+        </button>
+      </div>
+
+      {/* 2. Unified Calendar Navigation – week/month only */}
+      {viewMode !== 'day' && (
+        <div className="flex justify-center items-center gap-6 mb-6 px-4">
+          <button onClick={handlePrev} className="w-8 h-8 rounded-full hover:bg-slate-200/80 transition-colors text-slate-500 flex items-center justify-center active:scale-95">
+            <span className="material-symbols-outlined text-[20px]">chevron_left</span>
+          </button>
+          <h2 className="text-lg font-bold text-[#242c51] min-w-[150px] text-center tracking-tight">
+            {viewMode === 'week' ? weekHeaderText : formatDate(currentMonth, 'monthYear')}
+          </h2>
+          <button onClick={handleNext} className="w-8 h-8 rounded-full hover:bg-slate-200/80 transition-colors text-slate-500 flex items-center justify-center active:scale-95">
+            <span className="material-symbols-outlined text-[20px]">chevron_right</span>
+          </button>
+        </div>
+      )}
+
+      {/* 3. View Content Rendering */}
+      
+      {viewMode === 'week' && (
+        <div className="grid grid-cols-1 gap-y-3 px-4">
           {weekDays.map((wd, idx) => {
-            const dayName = format(wd, 'EEE');
-            const dayNum = format(wd, 'd');
+            const dayName = formatDate(wd, 'shortWeekday');
+            const dayNum = formatDate(wd, 'dayOnly');
             const isTodayDate = isToday(wd);
             const dayEvents = events
               .filter(e => isSameDay(new Date(e.startDate), wd))
@@ -426,9 +455,9 @@ const GroupCalendar: React.FC<GroupCalendarProps> = ({ group }) => {
             return (
               <div key={idx} className="flex flex-col gap-4">
                 {/* Day Header */}
-                <div className="flex flex-col items-center md:items-start border-b border-outline/10 pb-2">
-                  <span className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">{dayName}</span>
-                  <span className={`font-title-lg text-title-lg ${isTodayDate ? 'text-primary' : 'text-on-surface'}`}>{dayNum}</span>
+                <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+                  <span className={`font-bold text-lg ${isTodayDate ? 'text-[#0057bd]' : 'text-[#242c51]'}`}>{dayNum}</span>
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{dayName}</span>
                 </div>
 
                 {/* Events */}
@@ -436,259 +465,176 @@ const GroupCalendar: React.FC<GroupCalendarProps> = ({ group }) => {
                   <div className="flex flex-col gap-3">
                     {dayEvents.map((event) => (
                       <div key={event.id}
-                        onClick={() => { setSelectedDate(wd); setViewMode('month'); }}
-                        className={`bg-surface-container-lowest p-3 rounded-lg cursor-pointer ${isTodayDate ? 'border border-primary/30 shadow-sm relative overflow-hidden' : 'border border-outline/10 hover:shadow-sm transition-shadow'}`}>
-                        {isTodayDate && <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>}
+                        onClick={() => { setSelectedDate(wd); setCurrentMonth(startOfMonth(wd)); setViewMode('day'); }}
+                        className={`bg-white p-3 rounded-xl cursor-pointer ${isTodayDate ? 'border border-[#0057bd]/30 shadow-sm relative overflow-hidden' : 'border border-slate-100 shadow-sm hover:shadow-md transition-shadow'}`}>
+                        {isTodayDate && <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#0057bd]"></div>}
                         <div className={`flex items-center gap-2 mb-1 ${isTodayDate ? 'pl-2' : ''}`}>
-                          <span className={`w-2 h-2 rounded-full ${getWeekDotClass(event.type)}`}></span>
-                          <span className="font-label-sm text-label-sm text-on-surface-variant">{event.startTime ? formatTime12h(event.startTime) : ''}</span>
+                          <span className={`w-2 h-2 rounded-full ${getTypeDotClass(event.type)}`}></span>
+                          <span className="text-xs font-bold text-slate-500">{event.startTime ? formatTime(event.startTime) : ''}</span>
                         </div>
-                        <p className={`font-label-md text-label-md text-on-surface ${isTodayDate ? 'pl-2' : ''}`}>{event.title}</p>
+                        <p className={`text-sm font-bold text-[#242c51] ${isTodayDate ? 'pl-2' : ''}`}>{event.title}</p>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="flex flex-col gap-3 justify-center items-center h-full text-on-surface-variant/50 pt-4">
-                    <span className="material-symbols-outlined text-[32px]">bedtime</span>
-                    <span className="font-label-sm text-label-sm">{t('calendar.noEvents') || 'No Events'}</span>
+                  <div className="flex gap-3 justify-center items-center py-4 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                    <span className="material-symbols-outlined text-[20px] text-slate-300">bedtime</span>
+                    <span className="text-xs font-bold text-slate-400">{t('calendar.noEvents') || 'No Events'}</span>
                   </div>
                 )}
               </div>
             );
           })}
         </div>
+      )}
 
-        {/* Legend */}
-        <div className="mt-6 flex justify-center gap-6 border-t border-outline/10 pt-4">
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-[#ba1a1a]"></span>
-            <span className="font-label-sm text-label-sm text-on-surface-variant">{t('calendar.classLabel') || 'Class'}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-[#004190]"></span>
-            <span className="font-label-sm text-label-sm text-on-surface-variant">{t('calendar.socialLabel') || 'Social'}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-[#765b00]"></span>
-            <span className="font-label-sm text-label-sm text-on-surface-variant">{t('calendar.generalLabel') || 'General'}</span>
-          </div>
-        </div>
-
-        {/* FAB */}
-        <div 
-          className="fixed left-0 right-0 flex justify-center z-50 px-page-margin pointer-events-none"
-          style={{ 
-            bottom: 'calc(64px + max(env(safe-area-inset-bottom), 12px) + 3mm)',
-            transform: 'translateY(var(--woc-bottom-nav-y, 0px))',
-            transition: 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)'
-          }}
-        >
-          <button onClick={() => handleOpenForm()} className="w-full max-w-[250px] h-[48px] bg-[#4f378a] text-white rounded-lg shadow-md flex items-center justify-center gap-2 hover:bg-[#4f378a]/90 transition-colors pointer-events-auto">
-            <span className="material-symbols-outlined text-[20px]">add</span>
-            <span className="font-label-md text-label-md">{t('calendar.addSchedule') || 'Add Schedule'}</span>
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // ============================================================
-  // MONTH VIEW (Weekly Groupings from aiantigravity.txt)
-  // ============================================================
-  if (viewMode === 'month') {
-    return (
-      <div className="max-w-7xl mx-auto pb-20">
-        {/* View Toggle Pills */}
-        <div className="mb-2 flex justify-center mt-2">
-          <div className="flex bg-surface-container-high/30 rounded-full p-1 items-center gap-1 inline-flex">
-            <button onClick={() => setViewMode('day')} className="px-4 py-1.5 rounded-full text-on-surface-variant bg-transparent hover:bg-surface-container-high/50 font-label-md text-label-md transition-all">{t('common.dayLabel') || 'Day'}</button>
-            <button onClick={() => setViewMode('week')} className="px-4 py-1.5 rounded-full text-on-surface-variant bg-transparent hover:bg-surface-container-high/50 font-label-md text-label-md transition-all">{t('common.weekLabel') || 'Week'}</button>
-            <button className="px-4 py-1.5 rounded-full bg-primary text-on-primary font-label-md text-label-md shadow-sm transition-all">{t('common.monthLabel') || 'Month'}</button>
-          </div>
-        </div>
-        {/* Month Navigation Header */}
-        <div className="flex justify-between items-center mb-2 px-3">
-          <button onClick={prevMonth} className="p-1 rounded-full hover:bg-surface-container-highest transition-colors text-on-surface-variant">
-            <span className="material-symbols-outlined">chevron_left</span>
-          </button>
-          <h2 className="font-title-md text-title-md font-bold text-on-surface">{format(currentMonth, 'MMMM yyyy')}</h2>
-          <button onClick={nextMonth} className="p-1 rounded-full hover:bg-surface-container-highest transition-colors text-on-surface-variant">
-            <span className="material-symbols-outlined">chevron_right</span>
-          </button>
-        </div>
-        {/* Weekly Groupings Container */}
-        <div className="flex flex-col gap-6">
+      {viewMode === 'month' && (
+        <div className="flex flex-col gap-6 px-4">
           {Array.from({ length: maxWeek }, (_, i) => i + 1).map(wn => {
             const wEvents = weekGroups[wn] || [];
             return (
-              <section key={wn} className="flex flex-col gap-4">
-                <h3 className="font-title-lg text-title-lg text-primary border-b border-outline-variant/[0.15] pb-2">{t('common.weekLabel') || 'Week'} {wn}</h3>
-                <div className="flex flex-col gap-element-gap">
+              <section key={wn} className="flex flex-col gap-3">
+                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider border-b border-slate-200 pb-2">{t('common.weekLabel') || 'Week'} {wn}</h3>
+                <div className="flex flex-col gap-3">
                   {wEvents.length > 0 ? wEvents.map(event => {
                     const ed = new Date(event.startDate);
                     return (
-                      <div key={event.id} onClick={() => { setSelectedDate(ed); setViewMode('day'); }} className="bg-surface-container-lowest rounded-xl p-4 border border-outline/[0.15] flex gap-4 items-center hover:shadow-[0_4px_8px_rgba(0,0,0,0.05)] transition-shadow cursor-pointer">
-                        <div className="flex flex-col items-center justify-center min-w-[60px] border-r border-outline-variant/[0.15] pr-4">
-                          <span className="font-label-sm text-label-sm text-on-surface-variant uppercase">{format(ed, 'MMM')}</span>
-                          <span className="font-headline-md text-headline-md text-on-background">{format(ed, 'd')}</span>
+                      <div key={event.id} onClick={() => { setSelectedDate(ed); setCurrentMonth(startOfMonth(ed)); setViewMode('day'); }} className="bg-white rounded-xl p-4 border border-slate-100 shadow-sm flex gap-4 items-center hover:shadow-md transition-shadow cursor-pointer">
+                        <div className="flex flex-col items-center justify-center min-w-[50px] border-r border-slate-100 pr-4">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase">{formatDate(ed, 'shortMonth')}</span>
+                          <span className="text-xl font-extrabold text-[#242c51]">{formatDate(ed, 'dayOnly')}</span>
                         </div>
-                        <div className="flex-1 flex flex-col gap-1">
+                        <div className="flex-1 flex flex-col gap-1.5">
                           <div className="flex items-center gap-2">
-                            <span className={`w-2 h-2 rounded-full ${getMonthDotClass(event.type)}`}></span>
-                            <span className="font-body-md text-body-md text-on-background font-semibold">{event.title}</span>
+                            <span className={`w-2 h-2 rounded-full ${getTypeDotClass(event.type)}`}></span>
+                            <span className="text-sm font-bold text-[#242c51]">{event.title}</span>
                           </div>
-                          <div className="flex items-center gap-1 text-on-surface-variant">
-                            <span className="material-symbols-outlined text-[16px]">schedule</span>
-                            <span className="font-label-md text-label-md">{event.startTime || ''}{event.endTime ? ` - ${event.endTime}` : ''}</span>
+                          <div className="flex items-center gap-1 text-slate-500">
+                            <span className="material-symbols-outlined text-[14px]">schedule</span>
+                            <span className="text-xs font-medium">{event.startTime || ''}{event.endTime ? ` - ${event.endTime}` : ''}</span>
                           </div>
                         </div>
                       </div>
                     );
                   }) : (
-                    <p className="font-label-md text-label-md text-on-surface-variant/50 py-2">{t('calendar.noEventsThisWeek') || 'No events this week'}</p>
+                    <div className="flex gap-3 justify-center items-center py-4 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                      <span className="text-xs font-bold text-slate-400">{t('calendar.noEventsThisWeek') || 'No events this week'}</span>
+                    </div>
                   )}
                 </div>
               </section>
             );
           })}
         </div>
-        {/* FAB */}
-        <div 
-          className="fixed left-0 right-0 flex justify-center z-50 px-page-margin pointer-events-none"
-          style={{ 
-            bottom: 'calc(64px + max(env(safe-area-inset-bottom), 12px) + 3mm)',
-            transform: 'translateY(var(--woc-bottom-nav-y, 0px))',
-            transition: 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)'
-          }}
-        >
-          <button onClick={() => handleOpenForm()} className="w-full max-w-[250px] h-[48px] bg-[#4f378a] text-white rounded-lg shadow-md flex items-center justify-center gap-2 hover:bg-[#4f378a]/90 transition-colors pointer-events-auto">
-            <span className="material-symbols-outlined text-[20px]">add</span>
-            <span className="font-label-md text-label-md">{t('calendar.addSchedule') || 'Add Schedule'}</span>
-          </button>
-        </div>
-      </div>
-    );
-  }
+      )}
 
-  // ============================================================
-  // DAY VIEW (Calendar Grid + Daily Timeline) - from aiantigravity.txt
-  // ============================================================
-  // Build the week containing selectedDate for the single-week calendar
-  const selectedWeekStart = startOfWeek(selectedDate);
-  const selectedWeekDays = Array.from({ length: 7 }, (_, i) => addDays(selectedWeekStart, i));
+      {viewMode === 'day' && (
+        <section className="px-4 flex flex-col gap-4">
+          {/* Calendar Grid */}
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm px-3 pt-2 pb-2">
+            {/* Month navigator inside calendar */}
+            <div className="flex justify-center items-center gap-4 mb-1 py-1">
+              <button onClick={handlePrev} className="w-7 h-7 rounded-full hover:bg-slate-100 transition-colors text-slate-500 flex items-center justify-center active:scale-95">
+                <span className="material-symbols-outlined text-[18px]">chevron_left</span>
+              </button>
+              <h2 className="text-[13px] font-bold text-[#242c51] min-w-[110px] text-center tracking-tight">
+                {formatDate(currentMonth, 'monthYear')}
+              </h2>
+              <button onClick={handleNext} className="w-7 h-7 rounded-full hover:bg-slate-100 transition-colors text-slate-500 flex items-center justify-center active:scale-95">
+                <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+              </button>
+            </div>
+            {/* Days of week header: Mon–Sun */}
+            <div className="grid grid-cols-7 mb-1">
+              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d, i) => (
+                <div key={d} className={`text-center text-[9px] font-bold py-0.5 uppercase ${i >= 5 ? 'text-red-400' : 'text-slate-400'}`}>{d}</div>
+              ))}
+            </div>
+            {/* Calendar Grid */}
+            <div className="grid grid-cols-7 gap-y-0.5 gap-x-0.5">
+              {calendarDays.map((d, i) => {
+                const isCurrentMonth = isSameMonth(d, currentMonth);
+                const isSelected = isSameDay(d, selectedDate);
+                const isTodayDate = isToday(d);
+                const dayEvents = events.filter(e => isSameDay(new Date(e.startDate), d));
+                // col index 0=Mon…5=Sat,6=Sun
+                const colIdx = i % 7;
+                const isWeekend = colIdx === 5 || colIdx === 6;
+                const textColor = !isCurrentMonth ? 'text-slate-300'
+                  : isSelected ? 'text-white'
+                  : isTodayDate ? 'text-[#0057bd]'
+                  : isWeekend ? 'text-red-500'
+                  : 'text-[#242c51]';
 
-  return (
-    <div className="w-full pb-20">
-      {/* Header / Filter Area */}
-      <header className="flex justify-center mb-2 mt-2">
-        {/* View Toggles */}
-        <div className="flex bg-surface-container-high/30 rounded-full p-1 items-center gap-1 inline-flex">
-          <button className="px-4 py-1.5 rounded-full bg-primary text-on-primary font-label-md text-label-md shadow-sm transition-all">{t('common.dayLabel') || 'Day'}</button>
-          <button onClick={() => setViewMode('week')} className="px-4 py-1.5 rounded-full text-on-surface-variant bg-transparent hover:bg-surface-container-high/50 font-label-md text-label-md transition-all">{t('common.weekLabel') || 'Week'}</button>
-          <button onClick={() => setViewMode('month')} className="px-4 py-1.5 rounded-full text-on-surface-variant bg-transparent hover:bg-surface-container-high/50 font-label-md text-label-md transition-all">{t('common.monthLabel') || 'Month'}</button>
-        </div>
-      </header>
-      {/* Minimalist Calendar Widget */}
-      <section className="bg-surface-container-lowest py-2 border-b border-outline/10 mb-3">
-        <div className="flex justify-between items-center mb-1 px-4">
-          <h2 className="font-title-sm text-title-sm font-bold text-on-surface">{format(currentMonth, 'MMMM yyyy')}</h2>
-          <div className="flex gap-1">
-            <button onClick={prevMonth} className="p-1 hover:bg-surface-container-high rounded-full transition-colors">
-              <span className="material-symbols-outlined text-on-surface-variant text-[18px]">chevron_left</span>
-            </button>
-            <button onClick={nextMonth} className="p-1 hover:bg-surface-container-high rounded-full transition-colors">
-              <span className="material-symbols-outlined text-on-surface-variant text-[18px]">chevron_right</span>
-            </button>
-          </div>
-        </div>
-        {/* Days Header */}
-        <div className="grid grid-cols-7 mb-0.5 text-center">
-          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
-            <div key={i} className="font-label-sm text-[10px] text-on-surface-variant">{d}</div>
-          ))}
-        </div>
-        {/* Calendar Grid - Month */}
-        <div className="grid grid-cols-7 gap-y-0 text-center px-2">
-          {calendarDays.map((calDay, idx) => {
-            const isCurrentMonth = isSameMonth(calDay, currentMonth);
-            const isSelected = isSameDay(calDay, selectedDate);
-            const dayEvents = events.filter(e => isSameDay(new Date(e.startDate), calDay));
-            return (
-              <div key={idx} onClick={() => onDateClick(calDay)}
-                className={`flex flex-col items-center justify-start gap-0.5 cursor-pointer transition-transform active:scale-95 py-1 ${!isCurrentMonth ? 'opacity-30' : ''}`}>
-                <span className={`${isSelected ? 'font-label-md font-bold' : 'font-body-sm text-[13px]'} w-6 h-6 flex items-center justify-center rounded-full transition-colors ${
-                  isSelected ? 'bg-primary text-on-primary shadow-sm' : 'hover:bg-surface-container-high text-on-surface'
-                }`}>
-                  {format(calDay, 'd')}
-                </span>
-                <div className="flex gap-0.5 h-1">
-                  {dayEvents.length > 0 && dayEvents.slice(0, 3).map((ev, i) => (
-                    <div key={i} className={`w-1 h-1 rounded-full ${getTypeDotClass(ev.type)}`}></div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-      {/* Daily Timeline */}
-      <section className="px-4">
-        <h3 className="font-title-sm text-title-sm font-bold text-on-surface mb-3 flex items-center justify-between">
-          <span>{isToday(selectedDate) ? `${t('calendar.todayComma') || 'Today, '}${format(selectedDate, 'MMM d')}` : format(selectedDate, 'EEEE, MMM d')}</span>
-          <span className="text-primary text-[12px] font-normal">{selectedDayEvents.length} {t('calendar.events') || 'Events'}</span>
-        </h3>
-        {selectedDayEvents.length > 0 ? (
-          <div className="relative border-l border-outline-variant/30 ml-4 pl-8 flex flex-col gap-8">
-            {selectedDayEvents.map((event) => (
-              <div key={event.id} className="relative group">
-                <div className={`absolute -left-[41px] top-1 w-4 h-4 rounded-full ${getTypeDotClass(event.type)} ring-4 ring-surface`}></div>
-                <div className="flex flex-col md:flex-row md:items-baseline gap-2 md:gap-4 mb-2">
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="font-label-md text-label-md text-on-surface-variant w-20">{event.startTime ? formatTime12h(event.startTime) : ''}</span>
-                    <span className={`px-2 py-0.5 rounded-full font-label-sm text-label-sm ${getTypeBadgeClass(event.type)}`}>
-                      {getTypeLabel(event.type)}
-                    </span>
-                  </div>
-                  <div className="flex flex-col">
-                    <h4 className="font-title-lg text-title-lg text-on-surface">{event.title}</h4>
-                    {event.description && (
-                      <p className="font-body-md text-body-md text-on-surface-variant mt-1 whitespace-pre-wrap">
-                        {event.description}
-                      </p>
+                return (
+                  <div
+                    key={i}
+                    onClick={() => {
+                      setSelectedDate(d);
+                      if (!isCurrentMonth) setCurrentMonth(startOfMonth(d));
+                    }}
+                    className={`h-8 flex flex-col items-center justify-center relative rounded-full cursor-pointer transition-colors ${isSelected ? 'bg-[#0057bd] shadow-md' : isTodayDate ? 'bg-slate-100' : 'hover:bg-slate-50'} ${textColor}`}
+                  >
+                    <span className={`text-[12px] ${isSelected || isTodayDate ? 'font-bold' : 'font-medium'}`}>{formatDate(d, 'dayOnly')}</span>
+                    {dayEvents.length > 0 && (
+                      <div className="flex gap-[2px] absolute bottom-0.5">
+                        {dayEvents.slice(0, 3).map((e, ei) => (
+                          <span key={ei} className={`w-[3px] h-[3px] rounded-full ${isSelected ? 'bg-white' : getTypeDotClass(e.type)}`}></span>
+                        ))}
+                      </div>
                     )}
                   </div>
-                </div>
-                {/* Edit/Delete Actions */}
-                {event.createdBy !== 'system' && (
-                  <div className="flex gap-2 mt-2 opacity-0 group-hover:opacity-100 transition-opacity md:justify-end">
-                    <button onClick={() => handleOpenForm(event)} className="text-sm font-medium text-primary hover:underline">{t('calendar.edit') || 'Edit'}</button>
-                    <button onClick={() => handleDeleteEvent(event.id)} className="text-sm font-medium text-error hover:underline">{t('calendar.delete') || 'Delete'}</button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Selected Date Header */}
+          <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+            <h3 className="text-lg font-bold text-[#242c51]">
+              {formatDate(selectedDate, 'shortMonthDay')} <span className="text-sm text-slate-400 font-medium ml-1">{formatDate(selectedDate, 'weekday')}</span>
+            </h3>
+          </div>
+
+          {selectedDayEvents.length > 0 ? (
+            <div className="relative border-l-2 border-slate-200 ml-4 pl-6 flex flex-col gap-8 py-2">
+              {selectedDayEvents.map((event) => (
+                <div key={event.id} className="relative group">
+                  <div className={`absolute -left-[33px] top-1 w-4 h-4 rounded-full ${getTypeDotClass(event.type)} ring-4 ring-[#f4f6fc]`}></div>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-xs font-bold text-slate-500 min-w-[60px]">{event.startTime ? formatTime(event.startTime) : ''}</span>
+                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wide uppercase ${getTypeBadgeClass(event.type)}`}>
+                        {getTypeLabel(event.type)}
+                      </span>
+                    </div>
+                    <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                      <h4 className="text-base font-bold text-[#242c51]">{event.title}</h4>
+                      {event.description && (
+                        <p className="text-sm font-medium text-slate-500 mt-2 whitespace-pre-wrap">
+                          {event.description}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                )}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-12 bg-surface-container-lowest rounded-xl ring-1 ring-outline/10">
-            <span className="material-symbols-outlined text-4xl text-outline-variant mb-2 block">event_busy</span>
-            <p className="text-sm text-on-surface-variant">{t('calendar.noEventsScheduledForThisDay') || 'No events scheduled for this day'}</p>
-          </div>
-        )}
-      </section>
-      {/* Add Schedule Button - Fixed Bottom */}
-      <div 
-        className="fixed left-0 right-0 flex justify-center z-50 px-page-margin pointer-events-none"
-        style={{ 
-          bottom: 'calc(64px + max(env(safe-area-inset-bottom), 12px) + 3mm)',
-          transform: 'translateY(var(--woc-bottom-nav-y, 0px))',
-          transition: 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)'
-        }}
-      >
-        <button onClick={() => handleOpenForm()} className="w-full max-w-[250px] h-[48px] bg-[#4f378a] text-white rounded-lg shadow-md flex items-center justify-center gap-2 hover:bg-[#4f378a]/90 transition-colors pointer-events-auto">
-          <span className="material-symbols-outlined text-[20px]">add</span>
-          <span className="font-label-md text-label-md">{t('calendar.addSchedule') || 'Add Schedule'}</span>
-        </button>
-      </div>
+                  {/* Edit/Delete Actions */}
+                  {event.createdBy !== 'system' && (
+                    <div className="flex gap-3 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => handleOpenForm(event)} className="text-xs font-bold text-[#0057bd] hover:underline">{t('calendar.edit') || 'Edit'}</button>
+                      <button onClick={() => handleDeleteEvent(event.id)} className="text-xs font-bold text-red-500 hover:underline">{t('calendar.delete') || 'Delete'}</button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-16 bg-white rounded-xl border border-slate-100 shadow-sm mt-4">
+              <span className="material-symbols-outlined text-5xl text-slate-300 mb-3 block">event_busy</span>
+              <p className="text-sm font-bold text-slate-500">{t('calendar.noEventsScheduledForThisDay') || 'No events scheduled for this day'}</p>
+            </div>
+          )}
+        </section>
+      )}
     </div>
   );
 };

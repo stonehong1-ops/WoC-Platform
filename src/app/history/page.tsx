@@ -8,42 +8,87 @@ import { Suspense } from 'react';
 import { classRegistrationService } from '@/lib/firebase/classRegistrationService';
 import { groupService } from '@/lib/firebase/groupService';
 import { notificationService } from '@/lib/firebase/notificationService';
+import { bookingService } from '@/lib/firebase/bookingService';
 import { ClassRegistration, Group } from '@/types/group';
 import { Notification } from '@/types/notification';
+import { BaseBooking } from '@/types/booking';
 
 import { useLanguage } from '@/contexts/LanguageContext';
+import { chatService } from '@/lib/firebase/chatService';
+import ChatRoom from '@/components/chat/ChatRoom';
+import { useModalNavigation } from '@/hooks/useModalNavigation';
 
-const TABS = ['Needs Action', 'All', 'Class', 'Social', 'Shop', 'Stay'];
+const getTimestamp = (val: any) => {
+  if (!val) return 0;
+  if (typeof val.toMillis === 'function') return val.toMillis();
+  if (val.seconds) return val.seconds * 1000;
+  return new Date(val).getTime();
+};
+
+const TABS = ['All', 'Class', 'Social', 'Shop', 'Stay'];
 
 
-type StatusKey = 'PAYMENT_PENDING' | 'PAYMENT_REPORTED' | 'PAYMENT_COMPLETED' | 'CANCELED' | string;
+type StatusKey = 'SUBMITTED' | 'BANK_TRANSFERRED' | 'SELLER_CONFIRMED' | 'SELLER_REJECTED' | 'REFUNDED' | 'DELIVERED' | string;
 
 function getStatusLabel(status: StatusKey, t: any): string {
   switch (status) {
-    case 'PAYMENT_PENDING':   return t('history.status_pending');
-    case 'PAYMENT_REPORTED':  return t('history.status_confirming');
-    case 'PAYMENT_COMPLETED': return t('history.status_paid');
-    default: return status.toUpperCase();
+    case 'SUBMITTED':
+    case 'PENDING':
+    case 'PAYMENT_PENDING':
+      return 'Submitted';
+    case 'BANK_TRANSFERRED':
+    case 'WAITING_CONFIRMATION':
+    case 'PAYMENT_REPORTED':
+      return 'Bank Transferred';
+    case 'SELLER_CONFIRMED':
+    case 'CONFIRMED':
+    case 'PAYMENT_COMPLETED':
+      return 'Seller Confirmed';
+    case 'SELLER_REJECTED':
+    case 'REJECTED':
+      return 'Seller Rejected';
+    case 'REFUNDED':
+      return 'Refunded';
+    case 'DELIVERED':
+      return 'Delivered';
+    case 'CANCELLED':
+    case 'CANCELED':
+      return 'Cancelled';
+    default: return status.replace(/_/g, ' ').toUpperCase();
   }
 }
 
-
 function getStatusBadgeClass(status: StatusKey): string {
   switch (status) {
+    case 'SUBMITTED':
+    case 'PENDING':
     case 'PAYMENT_PENDING':
-      return 'bg-amber-100 text-amber-800 border-amber-200';
+      return 'bg-slate-100 text-slate-800 border-slate-200';
+    case 'BANK_TRANSFERRED':
+    case 'WAITING_CONFIRMATION':
     case 'PAYMENT_REPORTED':
       return 'bg-orange-100 text-orange-800 border-orange-200';
+    case 'SELLER_CONFIRMED':
+    case 'CONFIRMED':
     case 'PAYMENT_COMPLETED':
+    case 'DELIVERED':
       return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+    case 'SELLER_REJECTED':
+    case 'REJECTED':
+      return 'bg-red-100 text-red-800 border-red-200';
+    case 'REFUNDED':
+    case 'CANCELLED':
+    case 'CANCELED':
+      return 'bg-slate-100 text-slate-500 border-slate-200';
     default:
       return 'bg-surface-container text-on-surface-variant border-outline-variant';
   }
 }
 
-function formatDate(reg: ClassRegistration, t: any, language: string): string {
-  if (!reg.appliedAt) return t('history.date_recently');
-  const d = reg.appliedAt.toDate ? reg.appliedAt.toDate() : new Date(reg.appliedAt as any);
+function formatDate(reg: ClassRegistration | any, t: any, language: string): string {
+  const appliedAt = reg.appliedAt || reg.createdAt;
+  if (!appliedAt) return t('history.date_recently') || 'Recently';
+  const d = appliedAt.toDate ? appliedAt.toDate() : new Date(appliedAt as any);
   const locale = language === 'KR' ? 'ko-KR' : 'en-US';
   return d.toLocaleDateString(locale, { month: 'short', day: '2-digit', year: 'numeric' });
 }
@@ -63,6 +108,23 @@ function formatNotiDate(date: any, t: any, language: string): string {
   return d.toLocaleDateString(locale, { month: 'short', day: '2-digit', year: 'numeric' });
 }
 
+function formatOrderId(domain: string, id: string, rawOrderNumber?: string): string {
+  if (rawOrderNumber) return `#${rawOrderNumber}`;
+  const prefixMap: Record<string, string> = {
+    'class': 'CLS',
+    'class_legacy': 'CLS',
+    'class_daily': 'CLS',
+    'class_4w': 'CLS',
+    'shop': 'SHP',
+    'stay': 'STY',
+    'rental': 'RNT'
+  };
+  const prefix = prefixMap[domain?.toLowerCase()] || 'ORD';
+  const year = new Date().getFullYear();
+  const shortId = id.slice(-6).toUpperCase();
+  return `#${prefix}-${year}-${shortId}`;
+}
+
 
 function HistoryContent() {
   const { t, language } = useLanguage();
@@ -71,67 +133,102 @@ function HistoryContent() {
   const searchParams = useSearchParams();
 
   
-  const [activeTab, setActiveTab] = useState('Needs Action');
+  const [activeTab, setActiveTab] = useState('All');
   const [uidRegistrations, setUidRegistrations] = useState<ClassRegistration[]>([]);
   const [phoneRegistrations, setPhoneRegistrations] = useState<ClassRegistration[]>([]);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [bookings, setBookings] = useState<BaseBooking[]>([]);
 
   // Derived state from URL for Detail Overlay
   const view = searchParams.get('view');
   const selectedId = searchParams.get('id');
   
-  const [selectedDetail, setSelectedDetail] = useState<ClassRegistration | null>(null);
+  const [selectedDetail, setSelectedDetail] = useState<any | null>(null);
   const [groupDetails, setGroupDetails] = useState<Group | null>(null);
+  const [isScrolled, setIsScrolled] = useState(false);
+  
+  const { value: chatId, openModal: openChat, closeModal: handleCloseChat } = useModalNavigation('chatId');
+  const chatRoomId = chatId;
+
+  const unifiedItems = React.useMemo(() => {
+    const items: any[] = [];
+    
+    // Legacy Registrations (Monthly Pass, Old Classes)
+    const regMap = new Map<string, ClassRegistration>();
+    uidRegistrations.forEach(r => regMap.set(r.id, r));
+    phoneRegistrations.forEach(r => regMap.set(r.id, r));
+    
+    Array.from(regMap.values()).forEach(reg => {
+      items.push({
+        id: reg.id,
+        raw: reg,
+        source: 'registration',
+        type: 'Class',
+        domain: 'class_legacy',
+        title: reg.classTitle || (reg as any).itemName || 'Class',
+        groupName: reg.groupName || (reg as any).payload?.groupName || '',
+        dateLabel: formatDate(reg, t, language),
+        timestamp: getTimestamp(reg.appliedAt || (reg as any).createdAt),
+        status: reg.status as StatusKey,
+        amount: reg.amount || (reg as any).totalAmount || 0,
+        currency: reg.currency,
+        appliedAt: reg.appliedAt,
+        confirmedAt: reg.confirmedAt,
+        imageUrl: (reg as any).imageUrl || ''
+      });
+    });
+
+    // New Bookings (Daily Class, Shop, Stay, Rental)
+    bookings.forEach(b => {
+      let domainType = 'All';
+      if (b.domain === 'class_daily' || b.domain === 'class_4w') domainType = 'Class';
+      else if (b.domain === 'shop') domainType = 'Shop';
+      else if (b.domain === 'stay') domainType = 'Stay';
+      else if (b.domain === 'rental') domainType = 'Rental';
+
+      items.push({
+        id: b.id,
+        raw: b,
+        source: 'booking',
+        type: domainType,
+        domain: b.domain,
+        title: b.itemName,
+        groupName: b.payload?.groupName || '', 
+        dateLabel: formatDate(b, t, language),
+        timestamp: getTimestamp(b.createdAt),
+        status: b.status as StatusKey,
+        amount: b.totalAmount,
+        currency: b.currency,
+        appliedAt: b.createdAt,
+        confirmedAt: b.confirmedAt,
+        imageUrl: b.itemImageUrl || b.payload?.images?.[0] || b.payload?.imageUrl || ''
+      });
+    });
+
+    return items.sort((a, b) => b.timestamp - a.timestamp);
+  }, [uidRegistrations, phoneRegistrations, bookings, t, language]);
 
   // Sync selectedDetail with URL 'id'
   useEffect(() => {
     if (view === 'detail' && selectedId) {
-      const found = registrations.find(r => r.id === selectedId);
+      const found = unifiedItems.find(r => r.id === selectedId);
       if (found) {
         setSelectedDetail(found);
       }
     } else {
       setSelectedDetail(null);
     }
-  }, [view, selectedId, uidRegistrations, phoneRegistrations]);
-
-  const registrations = React.useMemo(() => {
-    const map = new Map<string, ClassRegistration>();
-    uidRegistrations.forEach(r => map.set(r.id, r));
-    phoneRegistrations.forEach(r => map.set(r.id, r));
-    return Array.from(map.values()).sort((a, b) => {
-      const timeA = a.appliedAt?.toMillis?.() || 0;
-      const timeB = b.appliedAt?.toMillis?.() || 0;
-      return timeB - timeA;
-    });
-  }, [uidRegistrations, phoneRegistrations]);
-
-  // Payment modal state (Local State + popstate)
-  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-  const [paymentTargetId, setPaymentTargetId] = useState<string | null>(null);
-  const [depositorName, setDepositorName] = useState('');
-  const [depositDate, setDepositDate] = useState(new Date().toISOString().split('T')[0]);
-
-  // Handle Device Back Button for Payment Modal
-  useEffect(() => {
-    if (paymentModalOpen) {
-      // Add a dummy entry to history so 'back' can close the modal
-      window.history.pushState({ modal: 'payment' }, '');
-      
-      const handlePopState = () => {
-        setPaymentModalOpen(false);
-      };
-      
-      window.addEventListener('popstate', handlePopState);
-      return () => window.removeEventListener('popstate', handlePopState);
-    }
-  }, [paymentModalOpen]);
+  }, [view, selectedId, unifiedItems]);
 
   useEffect(() => {
     if (!user) return;
     const unsubUid = classRegistrationService.subscribeToUserRegistrations(
       user.uid,
       (data) => setUidRegistrations(data)
+    );
+
+    const unsubBookings = bookingService.subscribeToUserBookings(
+      user.uid,
+      (data) => setBookings(data)
     );
 
     let unsubPhone: (() => void) | null = null;
@@ -177,83 +274,41 @@ function HistoryContent() {
       }
     }
 
-    let unsubNoti: (() => void) | null = null;
-    
-    if (user) {
-      unsubNoti = notificationService.subscribeToUserNotifications(
-        user.uid,
-        (data) => setNotifications(data)
-      );
-    }
-
     return () => {
       unsubUid();
+      unsubBookings();
       if (unsubPhone) unsubPhone();
       if (unsubPhone010) unsubPhone010();
-      if (unsubNoti) unsubNoti();
     };
   }, [user, profile?.phoneNumber]);
 
   useEffect(() => {
-    if (selectedDetail?.groupId) {
-      groupService.getGroup(selectedDetail.groupId).then(g => setGroupDetails(g));
+    const groupId = selectedDetail?.raw?.groupId || selectedDetail?.raw?.payload?.groupId;
+    if (groupId) {
+      groupService.getGroup(groupId).then(g => setGroupDetails(g));
     } else {
       setGroupDetails(null);
     }
   }, [selectedDetail]);
 
-  const classItems = registrations.map(reg => ({
-    ...reg,
-    type: 'Class' as const,
-    dateLabel: formatDate(reg, t, language),
-    status: reg.status as StatusKey,
-  }));
-
-
-  const allItems = [...classItems];
-
   const filteredItems = activeTab === 'All'
-    ? allItems
-    : activeTab === 'Class'
-      ? classItems
-      : [];
+    ? unifiedItems
+    : unifiedItems.filter(item => item.type === activeTab);
 
-  const todoNotis = notifications.filter(n => n.baseType === 'TODO' && !n.isCompleted);
-  const infoNotis = notifications.filter(n => n.baseType === 'INFO' || (n.baseType === 'TODO' && n.isCompleted));
-
-  const handlePaymentSubmit = async () => {
-    const trimmedName = depositorName.trim();
-    if (!trimmedName || !depositDate) {
-      toast.error(t('history.toast_error_input'));
-      return;
-    }
-
-    if (!paymentTargetId) return;
-    try {
-      await classRegistrationService.updateRegistration(paymentTargetId, {
-        status: 'PAYMENT_REPORTED',
-        depositorName: trimmedName,
-        depositDate
-      });
-      toast.success(t('history.toast_success_report'), { description: t('history.toast_success_desc') });
-
-      setPaymentModalOpen(false);
-      setDepositorName('');
-      
-      // Update selected detail if it's currently open
-      if (selectedDetail?.id === paymentTargetId) {
-        setSelectedDetail({
-          ...selectedDetail,
-          status: 'PAYMENT_REPORTED',
-          depositorName: trimmedName,
-          depositDate
-        });
+  const groupedItems = React.useMemo(() => {
+    const groups: { date: string, items: any[] }[] = [];
+    let currentDate = '';
+    
+    filteredItems.forEach(item => {
+      if (item.dateLabel !== currentDate) {
+        currentDate = item.dateLabel;
+        groups.push({ date: currentDate, items: [item] });
+      } else {
+        groups[groups.length - 1].items.push(item);
       }
-    } catch {
-      toast.error(t('history.toast_error_process'));
-    }
-
-  };
+    });
+    return groups;
+  }, [filteredItems]);
 
   const handleCopyAccount = (text: string) => {
     navigator.clipboard.writeText(text).then(() => {
@@ -265,13 +320,22 @@ function HistoryContent() {
   // Find class/bundle/pass specific details
   let itemInfo: any = null;
   if (selectedDetail && groupDetails) {
-    if (selectedDetail.itemType === 'discount') {
-      itemInfo = groupDetails.discounts?.find(d => d.id === selectedDetail.classId);
-    } else if (selectedDetail.itemType === 'monthlyPass') {
-      itemInfo = groupDetails.monthlyPasses?.find(p => p.id === selectedDetail.classId);
+    const raw = selectedDetail.raw;
+    const itemType = raw.itemType || selectedDetail.domain;
+    const classId = raw.classId || raw.itemId;
+    
+    if (itemType === 'discount') {
+      itemInfo = groupDetails.discounts?.find(d => d.id === classId);
+    } else if (itemType === 'monthlyPass') {
+      itemInfo = groupDetails.monthlyPasses?.find(p => p.id === classId);
     } else {
-      itemInfo = groupDetails.classes?.find(c => c.id === selectedDetail.classId);
+      itemInfo = groupDetails.classes?.find(c => c.id === classId);
     }
+  }
+
+  // Fallback to payload for newer bookings without groupDetails
+  if (!itemInfo && selectedDetail?.raw?.payload) {
+    itemInfo = selectedDetail.raw.payload;
   }
 
   // Use group payment settings or class specific
@@ -279,7 +343,7 @@ function HistoryContent() {
     ? { bankName: itemInfo.bankName, accountNumber: itemInfo.accountNumber, accountHolder: itemInfo.accountHolder } 
     : groupDetails?.classPaymentSettings?.bankDetails;
 
-  const handleOpenDetail = (item: ClassRegistration) => {
+  const handleOpenDetail = (item: any) => {
     // URL-based open
     router.push(`/history?view=detail&id=${item.id}`, { scroll: false });
   };
@@ -297,6 +361,39 @@ function HistoryContent() {
     }
   };
 
+  const handleChatWithSeller = async () => {
+    if (!user || !selectedDetail) return;
+    
+    // Attempt to resolve sellerId. Fallback to admin if none found.
+    const sellerId = selectedDetail.raw?.sellerId || selectedDetail.raw?.hostId || selectedDetail.raw?.payload?.ownerId || groupDetails?.ownerId || 'adminstone';
+    
+    if (user.uid === sellerId) return alert(t('shop.msg_no_self_chat', 'You cannot chat with yourself'));
+
+    try {
+      const roomId = await chatService.getOrCreatePrivateRoom([user.uid, sellerId], user.uid, 'business');
+      
+      const orderId = formatOrderId(selectedDetail.domain, selectedDetail.id, selectedDetail.raw?.orderNumber);
+      const itemType = selectedDetail.type;
+      const title = selectedDetail.title;
+      
+      const infoText = `${t('history.chat_inquiry_prefix', '[Order Inquiry]')}\n${t('history.chat_order_id', 'Order ID')}: ${orderId}\n${t('history.chat_item', 'Item')}: [${itemType}] ${title}\n${t('history.chat_status', 'Status')}: ${getStatusLabel(selectedDetail.status, t)}`;
+
+      await chatService.sendMessage({
+        roomId,
+        senderId: user.uid,
+        senderName: user.displayName || t('common.user', 'User'),
+        senderPhoto: user.photoURL || undefined,
+        text: infoText,
+        type: 'text'
+      });
+      
+      openChat(roomId);
+    } catch (err) {
+      console.error("Failed to start chat:", err);
+      alert(t('shop.msg_chat_failed', 'Failed to start chat. Please try again.'));
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#FAF8FF] text-on-background pb-24 font-['Inter']">
 
@@ -310,8 +407,8 @@ function HistoryContent() {
                 onClick={() => setActiveTab(tab)}
                 className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[12px] font-bold tracking-wide transition-all whitespace-nowrap ${
                   activeTab === tab
-                    ? tab === 'Needs Action' ? 'bg-[#FF3B30] text-white shadow-sm' : 'bg-[#1E293B] text-white shadow-sm'
-                    : tab === 'Needs Action' ? 'bg-[#FF3B30]/10 text-[#FF3B30] border border-[#FF3B30]/20 hover:bg-[#FF3B30]/20' : 'bg-slate-50 text-slate-500 border border-slate-100 hover:bg-slate-100'
+                    ? 'bg-[#1E293B] text-white shadow-sm'
+                    : 'bg-slate-50 text-slate-500 border border-slate-100 hover:bg-slate-100'
                 }`}
               >
                 {t(`history.tab_${tab.toLowerCase().replace(' ', '_')}`)}
@@ -325,91 +422,7 @@ function HistoryContent() {
       {/* Main Content */}
       {!selectedDetail && (
         <main className="py-6 max-w-[896px] mx-auto px-6 flex flex-col gap-4">
-          {activeTab === 'Needs Action' && (
-            <>
-              {todoNotis.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
-                  <span className="material-symbols-outlined text-outline text-5xl">
-                    {activeTab === 'Needs Action' ? 'task_alt' : 'notifications'}
-                  </span>
-                  <p className="text-[1.125rem] font-bold leading-[1.5rem] font-['Plus_Jakarta_Sans'] text-on-surface">
-                    {activeTab === 'Needs Action' ? t('history.no_pending') : t('history.no_alerts')}
-                  </p>
-                  <p className="text-[0.875rem] font-medium leading-[1.25rem] font-['Inter'] text-on-surface-variant">
-                    {activeTab === 'Needs Action' ? t('history.caught_up') : t('history.update_notify')}
-                  </p>
-
-                </div>
-              )}
-              {todoNotis.map(noti => (
-                <article
-                  key={noti.id}
-                  className={`bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/30 hover:border-outline-variant transition-colors flex flex-col overflow-hidden cursor-pointer ${noti.isRead ? 'opacity-75' : ''}`}
-                  onClick={() => {
-                    if (!noti.isRead) {
-                      notificationService.markAsRead(noti.id);
-                    }
-                    if (noti.referenceId) {
-                      // Attempt to open detail if it's a registration
-                      const foundReg = registrations.find(r => r.id === noti.referenceId);
-                      if (foundReg) {
-                        handleOpenDetail(foundReg);
-                      } else {
-                        // If not found in registrations, maybe another type. For now just toast
-                        if (noti.actionUrl) {
-                          router.push(noti.actionUrl);
-                        }
-                      }
-                    } else if (noti.actionUrl) {
-                       router.push(noti.actionUrl);
-                    }
-                  }}
-                >
-                  <div className="p-4 flex gap-4">
-                    <div className="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shrink-0">
-                      <span className="material-symbols-outlined">
-                        {noti.baseType === 'TODO' ? 'assignment_late' : 'info'}
-                      </span>
-                    </div>
-                    <div className="flex flex-col gap-1.5 flex-1">
-                      {noti.groupName && (
-                        <span className="text-[0.75rem] font-semibold leading-[1rem] font-['Inter'] text-on-surface-variant uppercase tracking-wide">
-                          {noti.groupName}
-                        </span>
-                      )}
-                      <h2 className="text-[1.125rem] font-bold leading-[1.5rem] font-['Plus_Jakarta_Sans'] text-on-surface">
-                        {noti.title}
-                      </h2>
-                      <p className="font-['Inter'] text-[0.875rem] font-medium leading-[1.25rem] text-on-surface-variant">
-                        {noti.message}
-                      </p>
-                      <div className="flex items-center justify-between mt-1">
-                        <div className="flex items-center gap-1.5 text-on-surface-variant text-[0.75rem] font-semibold leading-[1rem] font-['Inter']">
-                          <span className="material-symbols-outlined text-[16px]">schedule</span>
-                          <span>{formatNotiDate(noti.createdAt, t, language)}</span>
-
-                        </div>
-                        {noti.baseType === 'TODO' && !noti.isCompleted && (
-                          <span className="font-['Inter'] text-[10px] font-bold leading-[1rem] px-2.5 py-1 rounded-full whitespace-nowrap uppercase tracking-wide bg-orange-100 text-orange-800 border border-orange-200">
-                            {t('history.action_required')}
-
-                          </span>
-                        )}
-                        {noti.isCompleted && (
-                          <span className="font-['Inter'] text-[10px] font-bold leading-[1rem] px-2.5 py-1 rounded-full whitespace-nowrap uppercase tracking-wide bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1">
-                            <span className="material-symbols-outlined text-[12px]">check</span> {t('history.completed')}
-
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </>
-          )}
-
-          {activeTab !== 'Needs Action' && filteredItems.length === 0 && (
+          {filteredItems.length === 0 && (
             <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
               <span className="material-symbols-outlined text-outline text-5xl">receipt_long</span>
               <p className="text-[1.125rem] font-bold leading-[1.5rem] font-['Plus_Jakarta_Sans'] text-on-surface">
@@ -425,205 +438,225 @@ function HistoryContent() {
             </div>
           )}
 
-          {activeTab !== 'Needs Action' && filteredItems.map(item => (
-            <article
-              key={item.id}
-              className={`bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/30 hover:border-outline-variant transition-colors flex flex-col overflow-hidden cursor-pointer ${item.status === 'PAYMENT_COMPLETED' ? 'opacity-75' : ''}`}
-              onClick={() => handleOpenDetail(item as any)}
-            >
-              <div className="p-4 flex justify-between items-start gap-4">
-                <div className="flex flex-col gap-1.5">
-                  {item.groupName && (
-                    <span className="text-[0.75rem] font-semibold leading-[1rem] font-['Inter'] text-on-surface-variant uppercase tracking-wide">
-                      {item.groupName}
-                    </span>
-                  )}
-                  <h2 className="text-[1.125rem] font-bold leading-[1.5rem] font-['Plus_Jakarta_Sans'] text-on-surface">
-                    {item.classTitle}
-                  </h2>
-                  <div className="flex items-center gap-1.5 text-on-surface-variant text-[0.75rem] font-semibold leading-[1rem] font-['Inter']">
-                    <span className="material-symbols-outlined text-[16px]">calendar_today</span>
-                    <span>{item.dateLabel}</span>
-                  </div>
-                </div>
-
-                <span className={`font-['Inter'] text-[10px] font-bold leading-[1rem] px-2.5 py-1 rounded-full whitespace-nowrap uppercase tracking-wide flex items-center gap-1 ${getStatusBadgeClass(item.status)}`}>
-                  {item.status === 'PAYMENT_COMPLETED' && (
-                    <span className="material-symbols-outlined text-[14px]">check_circle</span>
-                  )}
-                  {getStatusLabel(item.status, t)}
-
-                </span>
+          {groupedItems.map(group => (
+            <div key={group.date} className="flex flex-col gap-4">
+              <div className="flex items-center gap-4 py-2 mt-2 first:mt-0">
+                <h3 className="font-['Plus_Jakarta_Sans'] text-[1rem] font-bold text-on-surface-variant min-w-max">
+                  {group.date}
+                </h3>
+                <div className="h-px bg-outline-variant/30 flex-1"></div>
               </div>
+              <div className="grid grid-cols-2 gap-4">
+                {group.items.map(item => {
+                  const displayId = formatOrderId(item.domain, item.id, item.raw?.orderNumber);
+                  return (
+                    <div 
+                      key={item.id} 
+                      onClick={() => handleOpenDetail(item as any)} 
+                      className={`group cursor-pointer animate-in fade-in slide-in-from-bottom-2 duration-500 ${item.status === 'PAYMENT_COMPLETED' || item.status === 'DELIVERED' || item.status === 'SELLER_CONFIRMED' ? 'opacity-75' : ''}`}
+                    >
+                      <div className="relative aspect-square rounded-xl bg-[#f2f4f4] overflow-hidden mb-3 shadow-sm border border-slate-100">
+                        {/* Fallback View */}
+                        <div className="absolute inset-0 flex flex-col items-center justify-center text-[#c4cacc]">
+                          <span className="material-symbols-outlined text-4xl mb-1">
+                            {item.type === 'Class' ? 'sports_gymnastics' : item.type === 'Shop' ? 'local_mall' : item.type === 'Stay' ? 'bed' : 'receipt_long'}
+                          </span>
+                          <span className="text-[10px] font-bold tracking-wider uppercase">{item.type}</span>
+                        </div>
+                        
+                        {/* Actual Image */}
+                        {item.imageUrl && (
+                          <img
+                            alt={item.title}
+                            className="absolute inset-0 z-10 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 bg-[#f2f4f4]"
+                            src={item.imageUrl}
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        )}
 
-              {item.status === 'PAYMENT_PENDING' && (
-                <div className="bg-surface-container-low/50 px-4 py-3 border-t border-outline-variant/30 flex justify-end">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setPaymentTargetId(item.id);
-                      setPaymentModalOpen(true);
-                    }}
-                    className="bg-primary text-on-primary hover:bg-[#0b5ac0] font-['Inter'] text-[0.75rem] font-semibold leading-[1rem] px-5 py-2.5 rounded-lg flex items-center gap-2 shadow-sm transition-all active:scale-95"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">credit_card</span>
-                    {t('history.confirm_payment')}
-
-                  </button>
-                </div>
-              )}
-
-              {item.status === 'PAYMENT_REPORTED' && (
-                <div className="bg-surface-container-low/50 px-4 py-3 border-t border-outline-variant/30 flex justify-end">
-                  <span className="text-[0.75rem] font-semibold leading-[1rem] font-['Inter'] text-orange-600 flex items-center gap-1.5">
-                    <span className="material-symbols-outlined text-[16px]">hourglass_top</span>
-                    {t('history.verifying')}
-
-                  </span>
-                </div>
-              )}
-            </article>
+                        {/* Status Badge */}
+                        <span className={`absolute z-20 top-3 left-3 px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1 shadow-sm backdrop-blur-sm bg-white/90 ${
+                          (item.status === 'PAYMENT_COMPLETED' || item.status === 'SELLER_CONFIRMED' || item.status === 'DELIVERED') ? 'text-emerald-600' : 
+                          (item.status === 'BANK_TRANSFERRED' || item.status === 'WAITING_CONFIRMATION') ? 'text-orange-600' : 'text-slate-600'
+                        }`}>
+                          {(item.status === 'PAYMENT_COMPLETED' || item.status === 'SELLER_CONFIRMED' || item.status === 'DELIVERED') && (
+                            <span className="material-symbols-outlined text-[10px]">check_circle</span>
+                          )}
+                          {getStatusLabel(item.status, t)}
+                        </span>
+                      </div>
+                      <div className="px-1">
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter font-['Inter'] truncate">
+                          {item.groupName || item.type} • {displayId}
+                        </p>
+                        <h4 className="text-[13px] font-semibold text-slate-800 font-['Plus_Jakarta_Sans'] truncate mt-0.5">
+                          {item.title}
+                        </h4>
+                        <div className="flex items-center justify-between mt-1">
+                          <span className="text-[13px] font-black text-slate-800 font-['Inter']">
+                            {item.currency === 'KRW' ? '₩' : (item.currency === 'USD' ? '$' : '')}{item.amount?.toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           ))}
         </main>
       )}
 
-      {/* Detail Overlay - Full Popup */}
+      {/* Detail Overlay - Full Screen (Shop Style) */}
       {selectedDetail && (
-        <div className="fixed inset-0 bg-[#FAF8FF] z-[100] overflow-y-auto animate-in slide-in-from-right duration-300">
-          <header className="bg-white/80 backdrop-blur-xl fixed top-0 left-0 w-full z-[101] flex justify-between items-center px-4 h-16 border-b border-slate-100">
-            <button 
-              onClick={handleCloseDetail}
-              className="text-[#0057bd] hover:bg-slate-100 transition-colors active:scale-95 duration-200 p-2 rounded-full flex items-center justify-center"
-            >
-              <span className="material-symbols-outlined text-[24px]">arrow_back</span>
+        <div className="fixed inset-0 z-[100] bg-white flex flex-col animate-in slide-in-from-bottom duration-300">
+          <style dangerouslySetInnerHTML={{ __html: `
+            .detail-scrollbar::-webkit-scrollbar { display: none; }
+            .detail-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+          `}} />
+
+          {/* ━━━ Header ━━━ */}
+          <div className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 transition-all duration-300 ${isScrolled ? 'bg-white/95 backdrop-blur-md shadow-sm' : 'bg-gradient-to-b from-black/30 to-transparent'} max-w-md mx-auto`}>
+            <button onClick={handleCloseDetail} className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors active:scale-90 ${isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'}`}>
+              <span className="material-symbols-outlined text-xl">arrow_back</span>
             </button>
-            <h1 className="text-[#0057bd] font-['Plus_Jakarta_Sans'] uppercase italic font-black tracking-tight text-[1.125rem]">
-              {t('history.app_details')}
+            <div className={`text-base font-bold truncate max-w-[180px] transition-opacity ${isScrolled ? 'opacity-100 text-[#2d3435]' : 'opacity-0'}`}>{selectedDetail.title}</div>
+            <div className="w-10"></div> {/* Placeholder to balance the flex-between */}
+          </div>
 
-            </h1>
-            <div className="w-10"></div> {/* Spacer for balance */}
-          </header>
-
-          <main className="max-w-[896px] mx-auto pt-24 pb-32 px-6 flex flex-col gap-4">
-            
-            {/* Summary Card */}
-            <section className="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-surface-container-high relative overflow-hidden group hover:shadow-md transition-shadow">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-surface-container-highest rounded-bl-full -z-10 opacity-50"></div>
-              <div className="flex justify-between items-start mb-4">
-                <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded font-['Inter'] text-[10px] font-bold leading-[1rem] tracking-wide uppercase border ${getStatusBadgeClass(selectedDetail.status)}`}>
-                  {selectedDetail.status === 'PAYMENT_COMPLETED' ? (
-                     <span className="material-symbols-outlined text-[14px]">check_circle</span>
-                  ) : selectedDetail.status === 'PAYMENT_REPORTED' ? (
-                     <span className="material-symbols-outlined text-[14px]">hourglass_top</span>
-                  ) : (
-                    <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>pending</span>
-                  )}
-                  {getStatusLabel(selectedDetail.status, t)}
-
-                </div>
-                <span className="text-on-surface-variant font-['Inter'] text-[0.75rem] font-semibold leading-[1rem]">{formatDate(selectedDetail, t, language)}</span>
-
+          {/* ━━━ Scrollable Content ━━━ */}
+          <div 
+            className="flex-1 overflow-y-auto detail-scrollbar pb-[100px] max-w-md mx-auto w-full"
+            onScroll={(e) => setIsScrolled(e.currentTarget.scrollTop > 60)}
+          >
+            {/* 1) Image Carousel / Hero */}
+            <div className="relative aspect-square overflow-hidden bg-[#f2f4f4]">
+              {/* Fallback */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-[#c4cacc]">
+                <span className="material-symbols-outlined text-5xl mb-1">receipt_long</span>
+                <span className="text-[10px] font-bold tracking-wider uppercase">{selectedDetail.type || 'Order'}</span>
               </div>
-              <h2 className="font-['Plus_Jakarta_Sans'] text-[1.5rem] font-bold leading-[2rem] tracking-[-0.025em] text-on-surface mb-1">{selectedDetail.classTitle}</h2>
-              <p className="font-['Inter'] text-[0.875rem] font-medium leading-[1.25rem] text-on-surface-variant">{t('history.app_id')}: #{selectedDetail.id.slice(0,8).toUpperCase()}</p>
-
-            </section>
-
-            {/* Status Timeline */}
-            <section className="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-surface-container-high">
-              <h3 className="font-['Plus_Jakarta_Sans'] text-[1.125rem] font-bold leading-[1.5rem] text-on-surface mb-4 border-b border-surface-container pb-2">{t('history.timeline')}</h3>
-
-              <div className="relative border-l-2 border-surface-container ml-3 space-y-6 pb-2">
-                
-                {/* Step 1: Application Submitted */}
-                <div className="relative pl-6">
-                  <div className="absolute w-3 h-3 bg-primary rounded-full -left-[7px] top-1.5 ring-4 ring-surface-container-lowest"></div>
-                  <div className="flex flex-col">
-                    <span className="font-['Inter'] text-[0.875rem] font-bold text-on-surface">{t('history.step_submitted')}</span>
-
-                    <span className="font-['Inter'] text-[0.75rem] text-on-surface-variant mt-0.5">{formatFullDate(selectedDetail.appliedAt, language)}</span>
-                  </div>
+              
+              {/* Actual Image */}
+              {selectedDetail.imageUrl && (
+                <div className="relative w-full h-full">
+                  <img
+                    alt={selectedDetail.title}
+                    className="absolute inset-0 z-10 w-full h-full object-cover bg-[#f2f4f4]"
+                    src={selectedDetail.imageUrl}
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
                 </div>
+              )}
+              {/* Status badge */}
+              <span className={`absolute z-20 top-16 left-4 px-3 py-1.5 rounded-full text-[11px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-sm backdrop-blur-sm ${
+                (selectedDetail.status === 'PAYMENT_COMPLETED' || selectedDetail.status === 'SELLER_CONFIRMED' || selectedDetail.status === 'DELIVERED') ? 'bg-emerald-500 text-white' : 
+                (selectedDetail.status === 'BANK_TRANSFERRED' || selectedDetail.status === 'WAITING_CONFIRMATION') ? 'bg-orange-500 text-white' : 'bg-white/90 text-slate-800'
+              }`}>
+                {(selectedDetail.status === 'PAYMENT_COMPLETED' || selectedDetail.status === 'SELLER_CONFIRMED' || selectedDetail.status === 'DELIVERED') && (
+                  <span className="material-symbols-outlined text-[14px]">check_circle</span>
+                )}
+                {getStatusLabel(selectedDetail.status, t)}
+              </span>
+            </div>
 
-                {/* Step 2: Payment Reported */}
-                <div className="relative pl-6">
-                  <div className={`absolute w-3 h-3 rounded-full -left-[7px] top-1.5 ring-4 ring-surface-container-lowest transition-colors ${selectedDetail.status !== 'PAYMENT_PENDING' ? 'bg-primary' : 'bg-surface-container border-2 border-outline-variant'}`}></div>
-                  <div className="flex flex-col">
-                    <span className={`font-['Inter'] text-[0.875rem] font-bold ${selectedDetail.status !== 'PAYMENT_PENDING' ? 'text-on-surface' : 'text-outline-variant'}`}>{t('history.step_reported')}</span>
+            {/* 2) Title & Stats */}
+            <div className="px-4 pt-5 pb-4 flex justify-between items-start border-b border-[#f2f4f4]">
+              <div className="flex-1 min-w-0 pr-4">
+                <p className="text-[10px] font-black text-[#acb3b4] uppercase tracking-widest leading-none mb-1.5">{selectedDetail.dateLabel} · {formatOrderId(selectedDetail.domain, selectedDetail.id, selectedDetail.raw?.orderNumber)}</p>
+                <h1 className="text-xl font-black text-[#2d3435] leading-tight font-['Plus_Jakarta_Sans']">{selectedDetail.title}</h1>
+              </div>
+            </div>
 
-                    {selectedDetail.status !== 'PAYMENT_PENDING' ? (
-                      <span className="font-['Inter'] text-[0.75rem] text-on-surface-variant mt-0.5">
-                        {selectedDetail.depositDate} • {t('history.depositor_name')}: {selectedDetail.depositorName}
+            {/* 3) Status Timeline */}
+            <div className="mx-4 my-4 border border-[#e0e4e5] rounded-2xl overflow-hidden">
+              <div className="bg-[#f8f9fa] px-4 py-2.5 border-b border-[#e0e4e5] flex items-center gap-2">
+                <span className="material-symbols-outlined text-sm text-blue-500">schedule</span>
+                <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">{t('history.timeline')}</p>
+              </div>
+              <div className="px-4 py-5">
+                <div className="relative border-l-2 border-slate-200 ml-2 space-y-6">
+                  {/* Step 1: Application Submitted */}
+                  <div className="relative pl-6">
+                    <div className="absolute w-3 h-3 bg-blue-500 rounded-full -left-[7px] top-1 ring-4 ring-white"></div>
+                    <div className="flex flex-col">
+                      <span className="font-['Inter'] text-[13px] font-bold text-[#2d3435]">{t('history.step_submitted')}</span>
+                      <span className="font-['Inter'] text-[11px] text-[#596061] mt-0.5">{formatFullDate(selectedDetail.appliedAt, language)}</span>
+                    </div>
+                  </div>
 
+                  {/* Step 2: Processing in Chat */}
+                  <div className="relative pl-6">
+                    <div className={`absolute w-3 h-3 rounded-full -left-[7px] top-1 ring-4 ring-white transition-colors ${(selectedDetail.status !== 'PAYMENT_PENDING' && selectedDetail.status !== 'PENDING' && selectedDetail.status !== 'SUBMITTED') ? 'bg-blue-500' : 'bg-slate-200'}`}></div>
+                    <div className="flex flex-col">
+                      <span className={`font-['Inter'] text-[13px] font-bold ${(selectedDetail.status !== 'PAYMENT_PENDING' && selectedDetail.status !== 'PENDING' && selectedDetail.status !== 'SUBMITTED') ? 'text-[#2d3435]' : 'text-slate-400'}`}>
+                        {language === 'KR' ? '처리 중' : 'Processing'}
                       </span>
-                    ) : (
-                      <span className="font-['Inter'] text-[0.75rem] text-outline-variant mt-0.5">{t('history.waiting_payment')}</span>
+                      <span className="font-['Inter'] text-[11px] text-[#596061] mt-0.5">
+                        {language === 'KR' ? '진행 상황은 채팅(Chat)을 통해 안내됩니다.' : 'Updates will be provided via Chat.'}
+                      </span>
+                    </div>
+                  </div>
 
-                    )}
+                  {/* Step 3: Registration Complete */}
+                  <div className="relative pl-6">
+                    <div className={`absolute w-3 h-3 rounded-full -left-[7px] top-1 ring-4 ring-white transition-colors ${(selectedDetail.status === 'PAYMENT_COMPLETED' || selectedDetail.status === 'CONFIRMED' || selectedDetail.status === 'SELLER_CONFIRMED' || selectedDetail.status === 'DELIVERED') ? 'bg-blue-500' : 'bg-slate-200'}`}></div>
+                    <div className="flex flex-col">
+                      <span className={`font-['Inter'] text-[13px] font-bold ${(selectedDetail.status === 'PAYMENT_COMPLETED' || selectedDetail.status === 'CONFIRMED' || selectedDetail.status === 'SELLER_CONFIRMED' || selectedDetail.status === 'DELIVERED') ? 'text-[#2d3435]' : 'text-slate-400'}`}>{t('history.step_complete')}</span>
+                      {((selectedDetail.status === 'PAYMENT_COMPLETED' || selectedDetail.status === 'CONFIRMED' || selectedDetail.status === 'SELLER_CONFIRMED' || selectedDetail.status === 'DELIVERED') && selectedDetail.confirmedAt) ? (
+                        <span className="font-['Inter'] text-[11px] text-[#596061] mt-0.5">{formatFullDate(selectedDetail.confirmedAt, language)}</span>
+                      ) : (
+                        <span className="font-['Inter'] text-[11px] text-slate-400 mt-0.5">{t('history.pending_admin')}</span>
+                      )}
+                    </div>
                   </div>
                 </div>
-
-                {/* Step 3: Registration Complete */}
-                <div className="relative pl-6">
-                  <div className={`absolute w-3 h-3 rounded-full -left-[7px] top-1.5 ring-4 ring-surface-container-lowest transition-colors ${selectedDetail.status === 'PAYMENT_COMPLETED' ? 'bg-primary' : 'bg-surface-container border-2 border-outline-variant'}`}></div>
-                  <div className="flex flex-col">
-                    <span className={`font-['Inter'] text-[0.875rem] font-bold ${selectedDetail.status === 'PAYMENT_COMPLETED' ? 'text-on-surface' : 'text-outline-variant'}`}>{t('history.step_complete')}</span>
-
-                    {selectedDetail.status === 'PAYMENT_COMPLETED' && selectedDetail.confirmedAt ? (
-                      <span className="font-['Inter'] text-[0.75rem] text-on-surface-variant mt-0.5">{formatFullDate(selectedDetail.confirmedAt, language)}</span>
-                    ) : (
-                      <span className="font-['Inter'] text-[0.75rem] text-outline-variant mt-0.5">{t('history.pending_admin')}</span>
-
-                    )}
-                  </div>
-                </div>
-
               </div>
-            </section>
+            </div>
 
-            {/* Information Grid */}
-            <section className="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-surface-container-high">
-              <h3 className="font-['Plus_Jakarta_Sans'] text-[1.125rem] font-bold leading-[1.5rem] text-on-surface mb-4 border-b border-surface-container pb-2">
-                {selectedDetail.itemType === 'discount' ? t('history.info_bundle') : selectedDetail.itemType === 'monthlyPass' ? t('history.info_pass') : t('history.info_class')}
-
-              </h3>
-              <div className="flex flex-col gap-4">
-                
-                {selectedDetail.itemType === 'class' && itemInfo && (
+            {/* 4) Information Grid */}
+            <div className="mx-4 my-4 border border-[#e0e4e5] rounded-2xl overflow-hidden">
+              <div className="bg-[#f8f9fa] px-4 py-2.5 border-b border-[#e0e4e5] flex items-center gap-2">
+                <span className="material-symbols-outlined text-sm text-blue-500">info</span>
+                <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">{selectedDetail.raw?.itemType === 'discount' ? t('history.info_bundle') : selectedDetail.raw?.itemType === 'monthlyPass' ? t('history.info_pass') : t('history.info_class')}</p>
+              </div>
+              <div className="px-4 py-4 flex flex-col gap-4">
+                {selectedDetail.type === 'Class' && itemInfo && (
                   <>
                     <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center shrink-0 text-primary">
-                        <span className="material-symbols-outlined">person</span>
+                      <div className="w-8 h-8 rounded-full bg-[#f2f4f4] flex items-center justify-center shrink-0 text-[#596061]">
+                        <span className="material-symbols-outlined text-[16px]">person</span>
                       </div>
-                      <div>
-                        <p className="font-['Inter'] text-[0.75rem] font-semibold leading-[1rem] text-on-surface-variant mb-0.5">{t('history.instructor')}</p>
-
-                        <p className="font-['Inter'] text-[0.875rem] font-medium leading-[1.25rem] text-on-surface">
+                      <div className="pt-0.5">
+                        <p className="font-['Inter'] text-[10px] font-black uppercase tracking-wider text-[#acb3b4] mb-0.5">{t('history.instructor')}</p>
+                        <p className="font-['Inter'] text-[13px] font-bold text-[#2d3435]">
                           {itemInfo.instructors?.map((i: any) => i.name).join(', ') || 'TBD'}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center shrink-0 text-primary">
-                        <span className="material-symbols-outlined">location_on</span>
+                      <div className="w-8 h-8 rounded-full bg-[#f2f4f4] flex items-center justify-center shrink-0 text-[#596061]">
+                        <span className="material-symbols-outlined text-[16px]">location_on</span>
                       </div>
-                      <div>
-                        <p className="font-['Inter'] text-[0.75rem] font-semibold leading-[1rem] text-on-surface-variant mb-0.5">{t('history.venue')}</p>
-
-                        <p className="font-['Inter'] text-[0.875rem] font-medium leading-[1.25rem] text-on-surface">{selectedDetail.groupName || 'Freestyle Studio'}</p>
+                      <div className="pt-0.5">
+                        <p className="font-['Inter'] text-[10px] font-black uppercase tracking-wider text-[#acb3b4] mb-0.5">{t('history.venue')}</p>
+                        <p className="font-['Inter'] text-[13px] font-bold text-[#2d3435]">{selectedDetail.groupName || 'Freestyle Studio'}</p>
                       </div>
                     </div>
                     {itemInfo.schedule && itemInfo.schedule.length > 0 && (
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center shrink-0 text-primary">
-                          <span className="material-symbols-outlined">calendar_month</span>
+                        <div className="w-8 h-8 rounded-full bg-[#f2f4f4] flex items-center justify-center shrink-0 text-[#596061]">
+                          <span className="material-symbols-outlined text-[16px]">calendar_month</span>
                         </div>
-                        <div>
-                          <p className="font-['Inter'] text-[0.75rem] font-semibold leading-[1rem] text-on-surface-variant mb-0.5">{t('history.schedule')} ({itemInfo.schedule.length} {t('history.sessions')})</p>
-
-                          <ul className="font-['Inter'] text-[0.875rem] font-medium leading-[1.25rem] text-on-surface list-disc list-inside marker:text-surface-variant">
+                        <div className="pt-0.5">
+                          <p className="font-['Inter'] text-[10px] font-black uppercase tracking-wider text-[#acb3b4] mb-0.5">{t('history.schedule')} ({itemInfo.schedule.length} {t('history.sessions')})</p>
+                          <ul className="font-['Inter'] text-[13px] font-medium text-[#596061] mt-1 space-y-1">
                             {itemInfo.schedule.map((s: any, i: number) => (
-                              <li key={i}>{s.date} {s.timeSlot}</li>
+                              <li key={i}>{s.date} <span className="font-mono text-xs">{s.timeSlot}</span></li>
                             ))}
                           </ul>
                         </div>
@@ -632,15 +665,14 @@ function HistoryContent() {
                   </>
                 )}
 
-                {(selectedDetail.itemType === 'discount' || selectedDetail.itemType === 'monthlyPass') && itemInfo && (
+                {(selectedDetail.raw?.itemType === 'discount' || selectedDetail.raw?.itemType === 'monthlyPass') && itemInfo && (
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center shrink-0 text-primary">
-                      <span className="material-symbols-outlined">list_alt</span>
+                    <div className="w-8 h-8 rounded-full bg-[#f2f4f4] flex items-center justify-center shrink-0 text-[#596061]">
+                      <span className="material-symbols-outlined text-[16px]">list_alt</span>
                     </div>
-                    <div>
-                      <p className="font-['Inter'] text-[0.75rem] font-semibold leading-[1rem] text-on-surface-variant mb-0.5">{t('history.included_classes')}</p>
-
-                      <ul className="font-['Inter'] text-[0.875rem] font-medium leading-[1.25rem] text-on-surface list-disc list-inside marker:text-surface-variant">
+                    <div className="pt-0.5">
+                      <p className="font-['Inter'] text-[10px] font-black uppercase tracking-wider text-[#acb3b4] mb-0.5">{t('history.included_classes')}</p>
+                      <ul className="font-['Inter'] text-[13px] font-medium text-[#596061] list-disc list-inside mt-1 space-y-1">
                         {itemInfo.includedClassIds?.map((cId: string, idx: number) => {
                           const cls = groupDetails?.classes?.find(c => c.id === cId);
                           return <li key={idx}>{cls?.title || 'Unknown Class'}</li>;
@@ -651,158 +683,103 @@ function HistoryContent() {
                 )}
                 
                 {!itemInfo && (
-                  <p className="font-['Inter'] text-[0.875rem] text-on-surface-variant">{t('history.loading')}</p>
-
+                  <p className="font-['Inter'] text-[13px] text-slate-500">{t('history.loading')}</p>
                 )}
-
               </div>
-            </section>
+            </div>
 
-            {/* Payment Details */}
-            <section className="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-surface-container-high">
-              <h3 className="font-['Plus_Jakarta_Sans'] text-[1.125rem] font-bold leading-[1.5rem] text-on-surface mb-4 border-b border-surface-container pb-2">{t('history.payment_details')}</h3>
-
-              <div className="flex justify-between items-center mb-3">
-                <span className="font-['Inter'] text-[0.875rem] font-medium leading-[1.25rem] text-on-surface-variant">{t('history.method')}</span>
-                <span className="font-['Inter'] text-[0.875rem] font-semibold leading-[1.25rem] text-on-surface">{t('history.bank_transfer')}</span>
-
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="font-['Inter'] text-[0.875rem] font-medium leading-[1.25rem] text-on-surface-variant">{t('history.total_amount')}</span>
-
-                <span className="font-['Plus_Jakarta_Sans'] text-[1.125rem] font-bold leading-[1.5rem] text-primary">
-                  {selectedDetail.amount.toLocaleString()} {selectedDetail.currency}
-                </span>
-              </div>
-            </section>
-
-            {/* Bank Transfer Info Card */}
-            {bankInfo && (
-              <section className="bg-surface-container-low rounded-xl p-4 border border-surface-variant relative">
-                <div className="absolute top-4 right-4 text-primary opacity-20">
-                  <span className="material-symbols-outlined text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>account_balance</span>
+            {/* 5) Payment & Bank Transfer */}
+            <div className="px-4 py-4 border-b border-[#f2f4f4]">
+              <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-3">{t('history.payment_details')}</p>
+              
+              <div className="space-y-2.5 mb-4">
+                <div className="flex justify-between items-center">
+                  <span className="font-['Inter'] text-[13px] font-medium text-[#596061]">{t('history.method')}</span>
+                  <span className="font-['Inter'] text-[13px] font-bold text-[#2d3435]">{t('history.bank_transfer')}</span>
                 </div>
-                <h4 className="font-['Plus_Jakarta_Sans'] text-[1.125rem] font-bold leading-[1.5rem] text-on-surface mb-3 flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[20px] text-primary">info</span>
-                  {t('history.transfer_info')}
+                <div className="flex justify-between items-center">
+                  <span className="font-['Inter'] text-[13px] font-medium text-[#596061]">{t('history.total_amount')}</span>
+                  <span className="font-['Plus_Jakarta_Sans'] text-[16px] font-black text-blue-600">
+                    {selectedDetail.currency === 'KRW' ? '₩' : (selectedDetail.currency === 'USD' ? '$' : '')}{selectedDetail.amount.toLocaleString()}
+                  </span>
+                </div>
+              </div>
 
-                </h4>
-                <div className="bg-surface-container-lowest rounded-lg p-3 border border-surface-container-high">
-                  <div className="grid grid-cols-1 gap-2">
-                    <div className="flex justify-between">
-                      <span className="font-['Inter'] text-[0.75rem] font-semibold leading-[1rem] text-on-surface-variant">{t('history.bank')}</span>
-
-                      <span className="font-['Inter'] text-[0.875rem] font-medium leading-[1.25rem] text-on-surface">{bankInfo.bankName}</span>
+              {bankInfo && (
+                <div className="bg-[#f0f4ff] rounded-xl p-4 border border-[#d8e2ff]">
+                  <h4 className="font-['Plus_Jakarta_Sans'] text-[12px] font-bold text-blue-800 mb-2 flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[16px]">account_balance</span>
+                    {t('history.transfer_info')}
+                  </h4>
+                  <div className="grid grid-cols-1 gap-2.5">
+                    <div className="flex justify-between items-center">
+                      <span className="font-['Inter'] text-[11px] font-bold text-slate-500 uppercase tracking-wider">{t('history.bank')}</span>
+                      <span className="font-['Inter'] text-[13px] font-bold text-slate-800">{bankInfo.bankName}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="font-['Inter'] text-[0.75rem] font-semibold leading-[1rem] text-on-surface-variant">{t('history.account_number')}</span>
-
-                      <div className="flex items-center gap-2">
-                        <span className="font-['Inter'] text-[0.875rem] font-medium leading-[1.25rem] text-on-surface font-mono">{bankInfo.accountNumber}</span>
+                      <span className="font-['Inter'] text-[11px] font-bold text-slate-500 uppercase tracking-wider">{t('history.account_number')}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-['Inter'] text-[13px] font-bold text-slate-800 font-mono tracking-tight">{bankInfo.accountNumber}</span>
                         <button 
                           onClick={() => handleCopyAccount(bankInfo.accountNumber)}
-                          aria-label="Copy account number" 
-                          className="text-primary hover:text-primary-container transition-colors focus:outline-none"
+                          className="text-blue-600 hover:text-blue-800 active:scale-95 transition-all w-6 h-6 flex items-center justify-center rounded bg-white border border-blue-100 shadow-sm"
                         >
-                          <span className="material-symbols-outlined text-[16px]">content_copy</span>
+                          <span className="material-symbols-outlined text-[13px]">content_copy</span>
                         </button>
                       </div>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="font-['Inter'] text-[0.75rem] font-semibold leading-[1rem] text-on-surface-variant">{t('history.account_holder')}</span>
-
-                      <span className="font-['Inter'] text-[0.875rem] font-medium leading-[1.25rem] text-on-surface">{bankInfo.accountHolder}</span>
+                    <div className="flex justify-between items-center">
+                      <span className="font-['Inter'] text-[11px] font-bold text-slate-500 uppercase tracking-wider">{t('history.account_holder')}</span>
+                      <span className="font-['Inter'] text-[13px] font-bold text-slate-800">{bankInfo.accountHolder}</span>
                     </div>
                   </div>
+                  {(selectedDetail.status === 'PAYMENT_PENDING' || selectedDetail.status === 'PENDING' || selectedDetail.status === 'SUBMITTED') && (
+                    <p className="font-['Inter'] text-[11px] font-bold text-blue-600 mt-3 text-center bg-white/60 py-1.5 rounded-lg border border-blue-100/50">
+                      {t('history.transfer_prompt')}
+                    </p>
+                  )}
                 </div>
-                {selectedDetail.status === 'PAYMENT_PENDING' && (
-                  <p className="font-['Inter'] text-[10px] font-bold leading-[1rem] text-on-surface-variant mt-3 text-center">
-                    {t('history.transfer_prompt')}
-
-                  </p>
-                )}
-              </section>
-            )}
-          </main>
-
-          {/* Bottom Action Area */}
-          {selectedDetail.status === 'PAYMENT_PENDING' && (
-            <div className="fixed bottom-0 left-0 w-full bg-surface/90 backdrop-blur-md border-t border-surface-container z-40 pb-safe pt-4 px-6 max-w-[896px] left-1/2 -translate-x-1/2">
-              <div className="mb-4">
-                <button 
-                  onClick={() => {
-                    setPaymentTargetId(selectedDetail.id);
-                    setPaymentModalOpen(true);
-                  }}
-                  className="w-full bg-primary-container text-on-primary-container font-['Plus_Jakarta_Sans'] text-[1.125rem] font-bold leading-[1.5rem] py-4 rounded-xl shadow-[0_4px_14px_rgba(0,87,189,0.2)] hover:bg-primary transition-colors active:scale-[0.98] duration-200 flex items-center justify-center gap-2"
-                >
-                  {t('history.confirm_payment')}
-
-                  <span className="material-symbols-outlined">check_circle</span>
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Payment Modal */}
-      {paymentModalOpen && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-surface-container-lowest rounded-[24px] p-6 w-full max-w-sm shadow-2xl">
-            <h3 className="text-[1.125rem] font-bold leading-[1.5rem] font-['Plus_Jakarta_Sans'] text-on-surface mb-1">
-              {t('history.modal_title')}
-
-            </h3>
-            <p className="text-[0.75rem] font-medium leading-[1rem] font-['Inter'] text-on-surface-variant mb-6">
-              {t('history.modal_desc')}
-
-            </p>
-
-            <div className="space-y-4 mb-6">
-              <div>
-                <label className="block text-[0.75rem] font-bold text-on-surface mb-1">{t('history.depositor_name')}</label>
-
-                <input
-                  type="text"
-                  value={depositorName}
-                  onChange={(e) => setDepositorName(e.target.value)}
-                  placeholder={t('history.name_placeholder')}
-
-                  className="w-full px-4 py-3 bg-surface-container border border-outline-variant rounded-xl text-[0.875rem] font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-[0.75rem] font-bold text-on-surface mb-1">{t('history.deposit_date')}</label>
-
-                <input
-                  type="date"
-                  value={depositDate}
-                  onChange={(e) => setDepositDate(e.target.value)}
-                  className="w-full px-4 py-3 bg-surface-container border border-outline-variant rounded-xl text-[0.875rem] font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                />
-              </div>
+              )}
             </div>
 
-            <div className="flex gap-2">
+            {/* Chat Action */}
+            <div className="px-4 py-4">
               <button
-                onClick={() => { setPaymentModalOpen(false); setDepositorName(''); }}
-                className="flex-1 py-3 bg-surface-container text-on-surface-variant font-bold text-[0.875rem] rounded-xl hover:bg-surface-container-high transition-colors"
+                onClick={handleChatWithSeller}
+                className="w-full flex items-center justify-center gap-2 py-3.5 bg-[#f2f4f4] hover:bg-[#e8eaec] rounded-2xl transition-colors active:scale-[0.98]"
               >
-                {t('history.cancel')}
-
+                <span className="material-symbols-outlined text-lg text-[#596061]">chat</span>
+                <span className="text-sm font-bold text-[#2d3435]">{t('shop.chat_with_seller', 'Chat with Seller')}</span>
               </button>
-              <button
-                onClick={handlePaymentSubmit}
-                className="flex-1 py-3 bg-primary text-on-primary font-bold text-[0.875rem] rounded-xl hover:bg-[#0b5ac0] transition-colors shadow-lg shadow-primary/20"
-              >
-                {t('history.confirm')}
-
-              </button>
+              <p className="text-[10px] text-[#acb3b4] text-center mt-1.5">{selectedDetail.groupName} · {t('shop.product_info_auto_sent', 'Product info will be sent automatically')}</p>
             </div>
+          </div>
+
+          {/* ━━━ Fixed Bottom Bar ━━━ */}
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-100 px-4 py-2.5 flex items-center gap-3 max-w-md mx-auto pb-safe">
+            <div className="flex-1 min-w-0">
+              <p className="text-lg font-black text-[#2d3435] font-['Plus_Jakarta_Sans'] leading-tight">
+                {selectedDetail.currency === 'KRW' ? '₩' : (selectedDetail.currency === 'USD' ? '$' : '')}{selectedDetail.amount.toLocaleString()}
+              </p>
+              <p className="text-[10px] text-[#acb3b4] truncate">{getStatusLabel(selectedDetail.status, t)}</p>
+            </div>
+            <button 
+              onClick={handleCloseDetail}
+              className="flex-shrink-0 bg-[#2d3435] text-white px-7 py-3 rounded-xl font-black text-sm tracking-wide active:scale-95 transition-transform"
+            >
+              Close
+            </button>
           </div>
         </div>
       )}
+
+      {/* Chat Room Modal */}
+      {chatRoomId && (
+        <div className="fixed inset-0 z-[200] bg-white animate-in slide-in-from-right duration-300">
+          <ChatRoom roomId={chatRoomId as string} onBack={handleCloseChat} />
+        </div>
+      )}
+
       <style jsx>{`
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

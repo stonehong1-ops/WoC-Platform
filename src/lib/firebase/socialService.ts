@@ -23,6 +23,24 @@ const SOCIALS_COLLECTION = 'socials';
 const LIKES_COLLECTION = 'social_likes';
 
 export const socialService = {
+  // 1-0. Subscribe to all socials (for unified list)
+  subscribeAllSocials: (callback: (socials: Social[]) => void) => {
+    const q = query(collection(db, SOCIALS_COLLECTION));
+    return onSnapshot(q, (snapshot) => {
+      const docs = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Social[];
+      
+      docs.sort((a, b) => {
+        const tA = a.createdAt ? (typeof a.createdAt.toMillis === 'function' ? a.createdAt.toMillis() : 0) : 0;
+        const tB = b.createdAt ? (typeof b.createdAt.toMillis === 'function' ? b.createdAt.toMillis() : 0) : 0;
+        return tB - tA;
+      });
+      callback(docs);
+    });
+  },
+
   // 1. Subscribe to specific type of socials (Regular or Popup)
   // NOTE: orderBy 제거 — where + orderBy 복합 인덱스 불필요. 정렬은 클라이언트에서 처리.
   subscribeSocials: (type: SocialType, callback: (socials: Social[]) => void) => {

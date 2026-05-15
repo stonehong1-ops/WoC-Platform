@@ -47,7 +47,22 @@ export default function RentalDetail({ space, isLiked, onClose, onToggleLike }: 
   // Image carousel
   const [currentImg, setCurrentImg] = useState(0);
   const touchStartX = useRef(0);
-  const images = useMemo(() => space?.images?.length ? space.images : [], [space]);
+  const images = useMemo(() => {
+    let imgs = space?.images || (space as any)?.imageUrls || (typeof (space as any)?.image === 'string' ? [(space as any).image] : []);
+    imgs = Array.isArray(imgs) ? imgs.filter(img => typeof img === 'string' && img.trim() !== '') : [];
+
+    // Fallback to group's cover image if space has no images
+    if (imgs.length === 0) {
+      if ((space as any).groupCoverImage) {
+        imgs = [(space as any).groupCoverImage];
+      } else if (group?.coverImage) {
+        imgs = [group.coverImage];
+      } else {
+        imgs = [""]; // Force empty string to trigger ImageWithFallback category fallback
+      }
+    }
+    return imgs;
+  }, [space, group]);
 
   useEffect(() => {
     const flow = searchParams.get('flow');
@@ -200,17 +215,12 @@ export default function RentalDetail({ space, isLiked, onClose, onToggleLike }: 
 
         {/* 1) Image Carousel */}
         <div className="relative aspect-square w-full overflow-hidden bg-[#f2f4f4]">
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-[#c4cacc]">
-            <span className="material-symbols-rounded text-5xl mb-1">local_mall</span>
-            <span className="text-[10px] font-bold tracking-wider uppercase">{t('rental.no_image', 'No Image')}</span>
-          </div>
           {images.length > 0 && (
             <div className="relative h-full" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onClick={() => setShowImageModal(true)}>
               <div className="flex h-full transition-transform duration-300 ease-out" style={{ transform: `translateX(-${currentImg * 100}%)` }}>
                 {images.map((img, i) => (
-                  <div key={i} className="w-full flex-shrink-0 h-full">
-                    <img src={img} alt={`${space.title} ${i + 1}`} className="w-full h-full object-cover"
-                      onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                  <div key={i} className="min-w-full shrink-0 h-full">
+                    <img src={img} alt={`${space.title} ${i + 1}`} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                   </div>
                 ))}
               </div>
@@ -426,7 +436,7 @@ export default function RentalDetail({ space, isLiked, onClose, onToggleLike }: 
           <div className="flex-1 w-full h-full flex items-center justify-center" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
             <div className="flex w-full transition-transform duration-300 ease-out h-full items-center" style={{ transform: `translateX(-${currentImg * 100}%)` }}>
               {images.map((img, i) => (
-                <div key={i} className="w-full flex-shrink-0 flex items-center justify-center px-4">
+                <div key={i} className="min-w-full shrink-0 flex items-center justify-center px-4">
                   <img src={img} alt={`Fullscreen ${i + 1}`} className="w-full max-h-[80vh] object-contain" />
                 </div>
               ))}

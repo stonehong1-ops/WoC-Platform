@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import { Event, EventProgram } from "@/types/event";
-import { format, parseISO } from "date-fns";
+import { parseISO } from "date-fns";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Props {
@@ -35,7 +35,7 @@ export default function EventProgramTab({ event }: Props) {
 // View Mode A: By Date (단기 이벤트)
 // ========================================
 function ByDateView({ programs, currency }: { programs: EventProgram[]; currency: string }) {
-  const { t } = useLanguage();
+  const { t, formatDate } = useLanguage();
   // 모든 unique 날짜 추출
   const allDates = useMemo(() => {
     const dateSet = new Set<string>();
@@ -65,9 +65,9 @@ function ByDateView({ programs, currency }: { programs: EventProgram[]; currency
                   ? "bg-primary text-white border-primary shadow-md"
                   : "bg-white text-[#596061] border-[#e0e4e5] hover:bg-[#f2f4f4]"
               }`}>
-              <span className="text-[9px] font-black uppercase tracking-wider">{format(dt, "EEE")}</span>
-              <span className="text-lg font-black">{format(dt, "d")}</span>
-              <span className="text-[8px] font-bold uppercase">{format(dt, "MMM")}</span>
+              <span className="text-[9px] font-black uppercase tracking-wider">{formatDate(dt, "shortWeekday")}</span>
+              <span className="text-lg font-black">{formatDate(dt, "dayOnly")}</span>
+              <span className="text-[8px] font-bold uppercase">{formatDate(dt, "shortMonth")}</span>
             </button>
           );
         })}
@@ -162,7 +162,7 @@ function ByCategoryView({ programs, currency }: { programs: EventProgram[]; curr
 // Shared Program Card
 // ========================================
 function ProgramCard({ program: p, currency, showDates }: { program: EventProgram; currency: string; showDates?: boolean }) {
-  const { t } = useLanguage();
+  const { t, formatDate } = useLanguage();
   const isMilonga = p.type === "milonga";
 
   return (
@@ -215,7 +215,7 @@ function ProgramCard({ program: p, currency, showDates }: { program: EventProgra
           <div className="mt-2 flex items-center gap-1 flex-wrap">
             <span className="material-symbols-rounded text-sm text-[#acb3b4]">event</span>
             <span className="text-[10px] text-[#acb3b4]">
-              {p.dates.map(d => format(parseISO(d), "M/d")).join(", ")}
+              {p.dates.map(d => formatDate(parseISO(d), "shortMonthDay")).join(", ")}
             </span>
           </div>
         )}

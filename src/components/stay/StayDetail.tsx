@@ -17,7 +17,6 @@ import { useModalNavigation } from '@/hooks/useModalNavigation';
 import { useNavigation } from '@/components/providers/NavigationProvider';
 
 import {
-  format,
   addMonths,
   subMonths,
   startOfMonth,
@@ -41,7 +40,7 @@ interface StayDetailProps {
 
 export default function StayDetail({ stayId, onClose, isLiked, onToggleLike }: StayDetailProps) {
   const { user, setShowLogin } = useAuth();
-  const { t } = useLanguage();
+  const { t, formatDate } = useLanguage();
   const { setGlobalNavHidden } = useNavigation();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -237,7 +236,7 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike }: S
 
     while (day <= endDateView) {
       for (let i = 0; i < 7; i++) {
-        const formattedDate = format(day, 'd');
+        const formattedDate = formatDate(day, 'dayOnly');
         const cloneDay = day;
         const isPast = isBefore(day, startOfDay(new Date()));
         const isBooked = isDateBooked(day);
@@ -287,7 +286,7 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike }: S
   const currency = stay.pricing?.currency || 'KRW';
 
   let checkoutLink = `/stay/${stayId}/checkout`;
-  if (startDate && endDate) checkoutLink += `?start=${format(startDate, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}`;
+  if (startDate && endDate) checkoutLink += `?start=${formatDate(startDate, 'iso')}&end=${formatDate(endDate, 'iso')}`;
 
   return (
     <div className="fixed inset-0 z-[100] bg-white flex flex-col animate-in slide-in-from-bottom duration-300">
@@ -312,7 +311,17 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike }: S
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto detail-scrollbar pb-[80px]">
         {/* Images */}
-        <div className="relative aspect-square bg-surface-container">
+        <div 
+          className="relative aspect-square bg-surface-container overflow-hidden w-full"
+          onTouchStart={(e) => touchStartX.current = e.touches[0].clientX}
+          onTouchEnd={(e) => {
+            const diff = touchStartX.current - e.changedTouches[0].clientX;
+            if (Math.abs(diff) > 50) {
+              if (diff > 0 && currentImgIdx < images.length - 1) setCurrentImgIdx(p => p + 1);
+              if (diff < 0 && currentImgIdx > 0) setCurrentImgIdx(p => p - 1);
+            }
+          }}
+        >
           {/* Fallback */}
           {!images.length && (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-on-surface-variant/30">
@@ -323,7 +332,9 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike }: S
           
           <div className="flex h-full transition-transform duration-300 ease-out" style={{ transform: `translateX(-${currentImgIdx * 100}%)` }}>
             {images.map((img, i) => (
-              <img key={i} src={img} className="w-full h-full object-cover flex-shrink-0" onClick={() => openModal('images')} />
+              <div key={i} className="w-full flex-shrink-0 h-full" onClick={() => openModal('images')}>
+                <img src={img} className="w-full h-full object-cover" />
+              </div>
             ))}
           </div>
 
@@ -370,7 +381,7 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike }: S
               <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="w-10 h-10 flex items-center justify-center rounded-full bg-[#f2f4f4] text-[#596061]">
                 <span className="material-symbols-rounded text-lg">chevron_left</span>
               </button>
-              <h3 className="font-bold text-[#2d3435] text-[15px]">{format(currentMonth, 'MMMM yyyy')}</h3>
+              <h3 className="font-bold text-[#2d3435] text-[15px]">{formatDate(currentMonth, 'monthYear')}</h3>
               <button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} className="w-10 h-10 flex items-center justify-center rounded-full bg-[#f2f4f4] text-[#596061]">
                 <span className="material-symbols-rounded text-lg">chevron_right</span>
               </button>

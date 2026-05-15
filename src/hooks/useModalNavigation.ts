@@ -28,15 +28,14 @@ export function useModalNavigation(key: string) {
   const closeModal = useCallback(() => {
     if (!isOpen) return;
 
-    // 현재 윈도우 히스토리 상태를 확인하여 안전하게 뒤로가기 시도
-    // 만약 이전 히스토리가 없거나 앱 외부라면 replace를 통해 파라미터만 제거
-    if (typeof window !== 'undefined' && window.history.length > 1) {
-      router.back();
-    } else {
-      const params = new URLSearchParams(searchParams.toString());
-      params.delete(key);
-      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-    }
+    // router.back() 대신 replace()로 현재 파라미터만 제거.
+    // 임베드 컴포넌트(GroupHome 등)에서 router.back()을 쓰면
+    // 히스토리 스택을 거슬러 올라가 엉뚱한 페이지로 이동하는 버그가 있어,
+    // 항상 replace로 해당 key만 URL에서 지워 모달을 닫는다.
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete(key);
+    const newQuery = params.toString();
+    router.replace(`${pathname}${newQuery ? `?${newQuery}` : ''}`, { scroll: false });
   }, [router, searchParams, pathname, key, isOpen]);
 
   return {

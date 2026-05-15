@@ -56,6 +56,34 @@ export const eventService = {
     });
   },
 
+  // 1-2. Subscribe to events by societyId
+  subscribeEventsBySociety: (societyId: string, callback: (events: Event[]) => void) => {
+    // For 'tango' (default), include events with no societyId OR societyId='tango'
+    if (!societyId || societyId === 'tango') {
+      const q = query(
+        collection(db, COLLECTION_NAME),
+        orderBy('startDate', 'asc')
+      );
+      return onSnapshot(q, (snapshot) => {
+        const events = snapshot.docs
+          .map(doc => ({ id: doc.id, ...doc.data() }) as Event)
+          .filter(e => !e.societyId || e.societyId === 'tango');
+        callback(events);
+      });
+    }
+    // For other societies, filter client-side to avoid compound index requirement
+    const q = query(
+      collection(db, COLLECTION_NAME),
+      orderBy('startDate', 'asc')
+    );
+    return onSnapshot(q, (snapshot) => {
+      const events = snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }) as Event)
+        .filter(e => e.societyId === societyId);
+      callback(events);
+    });
+  },
+
   // 2. Subscribe to a single event (real-time)
   subscribeEvent: (eventId: string, callback: (event: Event | null) => void) => {
     const eventRef = doc(db, COLLECTION_NAME, eventId);
@@ -147,16 +175,28 @@ export const eventService = {
     })) as Event[];
   },
 
-  // 8-1. Get Hero Event (Currently ongoing or nearest upcoming)
-  getHeroEvent: async () => {
+  // 8-1. Get Hero Event (Currently ongoing or nearest upcoming, society-aware)
+  getHeroEvent: async (societyId?: string) => {
+    const effectiveSociety = societyId || 'tango';
+    
+    // Helper: check if event belongs to the target society
+    const matchesSociety = (e: Event) => {
+      if (effectiveSociety === 'tango') return !e.societyId || e.societyId === 'tango';
+      return e.societyId === effectiveSociety;
+    };
+
     // Check manual selection first
     try {
       const bannerDoc = await getDoc(doc(db, 'settings', 'banners'));
-      if (bannerDoc.exists() && bannerDoc.data().heroEventId) {
-        const eventId = bannerDoc.data().heroEventId;
-        const eventDoc = await getDoc(doc(db, COLLECTION_NAME, eventId));
-        if (eventDoc.exists()) {
-          return { id: eventDoc.id, ...eventDoc.data() } as Event;
+      if (bannerDoc.exists()) {
+        const data = bannerDoc.data();
+        // Try society-specific heroEventIds first, then fallback to legacy heroEventId
+        const heroId = data.heroEventIds?.[effectiveSociety] || (effectiveSociety === 'tango' ? data.heroEventId : null);
+        if (heroId) {
+          const eventDoc = await getDoc(doc(db, COLLECTION_NAME, heroId));
+          if (eventDoc.exists()) {
+            return { id: eventDoc.id, ...eventDoc.data() } as Event;
+          }
         }
       }
     } catch (e) {
@@ -166,7 +206,6 @@ export const eventService = {
     const now = Timestamp.now();
     
     // First, try to find an ongoing event (endDate >= now)
-    // This requires an index on endDate, or it works if endDate is simply the same field as the where clause.
     const qOngoing = query(
       collection(db, COLLECTION_NAME),
       where('endDate', '>=', now),
@@ -176,30 +215,28 @@ export const eventService = {
       const ongoingSnap = await getDocs(qOngoing);
       const ongoingEvents = ongoingSnap.docs
         .map(doc => ({ id: doc.id, ...doc.data() }) as Event)
-        .filter(e => e.startDate.toMillis() <= now.toMillis()); // Filter those that have already started
+        .filter(e => e.startDate.toMillis() <= now.toMillis() && matchesSociety(e));
         
       if (ongoingEvents.length > 0) {
-        // Return the one that started earliest among the ongoing ones
         return ongoingEvents.sort((a, b) => a.startDate.toMillis() - b.startDate.toMillis())[0];
       }
     } catch (e) {
       console.log("Error or missing index for ongoing events, falling back to upcoming.");
     }
 
-    // If no ongoing event (or if it failed), get the nearest upcoming event
+    // If no ongoing event, get the nearest upcoming event for this society
     const qUpcoming = query(
       collection(db, COLLECTION_NAME),
       where('startDate', '>=', now),
       orderBy('startDate', 'asc'),
-      limit(1)
+      limit(20)
     );
     const upcomingSnap = await getDocs(qUpcoming);
+    const match = upcomingSnap.docs
+      .map(d => ({ id: d.id, ...d.data() }) as Event)
+      .find(e => matchesSociety(e));
     
-    if (upcomingSnap.docs.length > 0) {
-      return { id: upcomingSnap.docs[0].id, ...upcomingSnap.docs[0].data() } as Event;
-    }
-
-    return null;
+    return match || null;
   },
 
   // 9. Like Functionality

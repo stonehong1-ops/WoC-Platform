@@ -15,7 +15,7 @@ const MOCK_BROADCASTS = [
   { id: "4", title: "Monthly Report Available", message: "April report: 156 events, 89% participation, 23 new members.", priority: "info" as const, author: "Admin Team", pinned: false, createdAt: "1 day ago", readCount: 19, totalMembers: 48 },
 ];
 
-export default function GroupBroadcastCenter() {
+export default function GroupBroadcastCenter({ members = [] }: { members?: any[] }) {
   return (
     <div className="px-4 py-6 space-y-5 max-w-2xl mx-auto">
       <div className="flex items-center justify-between">

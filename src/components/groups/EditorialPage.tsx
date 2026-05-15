@@ -9,7 +9,7 @@ const MOCK_ARTICLES = [
   { id: 5, title: '10 Tips for Managing Remote Teams Effectively', category: 'Thought Leadership', author: 'Elena Rodriguez', date: 'Oct 10, 2023', readTime: '6 min read', image: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&h=400&fit=crop', excerpt: 'Practical advice for keeping remote and distributed teams aligned, motivated, and productive.', featured: false },
 ];
 
-export default function EditorialPage() {
+export default function EditorialPage({ members = [] }: { members?: any[] }) {
   const [activeCategory, setActiveCategory] = useState('All');
   
   const featuredArticle = MOCK_ARTICLES.find(a => a.featured) || MOCK_ARTICLES[0];

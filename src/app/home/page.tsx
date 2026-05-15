@@ -13,12 +13,41 @@ import { db } from '@/lib/firebase/clientApp';
 import { doc, getDoc } from 'firebase/firestore';
 import { Event as EventType } from '@/types/event';
 import { PlatformUser } from '@/types/user';
-import { format } from 'date-fns';
 import { useLanguage } from '@/contexts/LanguageContext';
 import societiesData from '../../../woc_societies_data.json';
 
 export default function SocietyPage() {
   const { t, language, setLanguage } = useLanguage();
+
+  const formatDate = (date: Date, formatType: string) => {
+    try {
+      if (formatType === 'dateOnly') {
+        return date.toLocaleDateString(language === 'KR' ? 'ko-KR' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+      }
+      return date.toLocaleDateString(language === 'KR' ? 'ko-KR' : 'en-US', { month: 'short', day: 'numeric' });
+    } catch {
+      return '';
+    }
+  };
+
+  const formatRelativeTime = (date: Date) => {
+    try {
+      const rtf = new Intl.RelativeTimeFormat(language === 'KR' ? 'ko-KR' : 'en', { numeric: 'auto' });
+      const daysDifference = Math.round((date.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+      if (Math.abs(daysDifference) < 1) {
+        const hoursDifference = Math.round((date.getTime() - new Date().getTime()) / (1000 * 60 * 60));
+        if (Math.abs(hoursDifference) < 1) {
+            const minutesDifference = Math.round((date.getTime() - new Date().getTime()) / (1000 * 60));
+            return rtf.format(minutesDifference, 'minute');
+        }
+        return rtf.format(hoursDifference, 'hour');
+      }
+      return rtf.format(daysDifference, 'day');
+    } catch {
+      return '';
+    }
+  };
+
   const [isCartoonsOpen, setIsCartoonsOpen] = useState(false);
   const [twReady, setTwReady] = useState(false);
   const [heroEvent, setHeroEvent] = useState<EventType | null>(null);
@@ -39,17 +68,21 @@ export default function SocietyPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const sId = params.get('society');
-    if (sId) setSocietyId(sId);
+    if (sId) {
+      setSocietyId(sId);
+      // Persist society context for cross-page navigation
+      sessionStorage.setItem('woc_society', sId);
+    }
   }, []);
 
   const societyInfo = societiesData.find((s: any) => s.id === societyId) || societiesData[0];
 
-  // Fetch nearest upcoming or ongoing event for Hero
+  // Fetch nearest upcoming or ongoing event for Hero (society-aware)
   useEffect(() => {
-    eventService.getHeroEvent().then((event) => {
+    eventService.getHeroEvent(societyId).then((event) => {
       if (event) setHeroEvent(event);
     }).catch(console.error);
-  }, []);
+  }, [societyId]);
 
   // Fetch gallery posts for "Live in Seoul"
   useEffect(() => {
@@ -216,7 +249,7 @@ export default function SocietyPage() {
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <span className="bg-primary text-white px-3 py-1 rounded-lg font-label-md text-label-md mb-element_gap inline-block">
                   {heroEvent.startDate
-                    ? format(typeof heroEvent.startDate.toDate === 'function' ? heroEvent.startDate.toDate() : new Date(heroEvent.startDate as any), 'MMM dd, yyyy')
+                    ? formatDate(typeof heroEvent.startDate.toDate === 'function' ? heroEvent.startDate.toDate() : new Date(heroEvent.startDate as any), 'dateOnly')
                     : t('home.hero_upcoming')}
                 </span>
                 <h1 className="font-body-lg text-body-lg md:font-title-lg md:text-title-lg text-white mb-4">{heroEvent.title}</h1>
@@ -288,7 +321,7 @@ export default function SocietyPage() {
                       <div className="flex flex-col">
                         <h4 className="font-title-lg text-title-lg font-bold text-on-surface">{post.userName}</h4>
                         <p className="text-outline font-label-sm text-label-sm mt-0.5">
-                          {post.createdAt ? (() => { try { const d = typeof post.createdAt.toDate === 'function' ? post.createdAt.toDate() : new Date(post.createdAt as any); const diff = Math.floor((Date.now() - d.getTime()) / 3600000); return diff < 1 ? 'Just now' : diff < 24 ? `${diff} hours ago` : format(d, 'MMM dd'); } catch { return ''; } })() : ''}
+                          {post.createdAt ? (() => { try { const d = typeof post.createdAt.toDate === 'function' ? post.createdAt.toDate() : new Date(post.createdAt as any); const diff = Math.floor((Date.now() - d.getTime()) / 3600000); return diff < 24 ? formatRelativeTime(d) : formatDate(d, 'shortMonthDay'); } catch { return ''; } })() : ''}
                           {(post as any).venueName ? ` • ${(post as any).venueName}` : ''}
                         </p>
                       </div>
@@ -501,7 +534,7 @@ export default function SocietyPage() {
                   <span className="material-symbols-outlined text-white mb-2">auto_stories</span>
                   <h3 className="text-white font-title-lg text-title-lg mb-1">{t('home.tango_novel')}</h3>
                   <p className="text-white/80 font-body-md text-sm mb-3">{t('home.tango_novel_desc')}</p>
-                  <span className="text-outline-variant/60 text-[11px] font-bold tracking-wider">COMING SOON</span>
+                  <span className="text-outline-variant/60 text-[11px] font-bold tracking-wider">{t('common.coming_soon')}</span>
                 </div>
               </div>
 
@@ -513,19 +546,19 @@ export default function SocietyPage() {
                   <span className="material-symbols-outlined text-white mb-2">explore</span>
                   <h3 className="text-white font-title-lg text-title-lg mb-1">{t('home.tango_travel')}</h3>
                   <p className="text-white/80 font-body-md text-sm mb-3">{t('home.tango_travel_desc')}</p>
-                  <span className="text-[#0A84FF] text-[11px] font-bold tracking-wider">NEW</span>
+                  <span className="text-[#0A84FF] text-[11px] font-bold tracking-wider">{t('common.new')}</span>
                 </div>
               </div>
 
               {/* Card 6: FOCUS (Safe Floor) */}
               <div className="relative h-[450px] rounded-xl overflow-hidden group cursor-pointer border border-outline/5 shadow-sm" onClick={() => setIsSafeFloorOpen(true)}>
-                <span className="absolute top-4 left-4 z-10 bg-red-500/80 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded tracking-widest">FOCUS</span>
+                <span className="absolute top-4 left-4 z-10 bg-red-500/80 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded tracking-widest">{t('common.focus')}</span>
                 <img alt="Safe Floor" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="https://images.unsplash.com/photo-1518609878373-06d740f60d8b?q=80&w=800"/>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6">
                   <span className="material-symbols-outlined text-white mb-2">verified_user</span>
                   <h3 className="text-white font-title-lg text-title-lg mb-1">{societyInfo.blog_title}</h3>
                   <p className="text-white/80 font-body-md text-sm mb-3">{societyInfo.blog_description?.substring(0, 100)}...</p>
-                  <span className="text-red-400 text-[11px] font-bold tracking-wider">{societyInfo.blog_core_keyword || 'IMPORTANT'}</span>
+                  <span className="text-red-400 text-[11px] font-bold tracking-wider">{societyInfo.blog_core_keyword || t('common.important')}</span>
                 </div>
               </div>
             </div>
@@ -544,7 +577,7 @@ export default function SocietyPage() {
                     <img alt={user.nickname} className="w-full h-full object-cover rounded-full" src={user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.nickname)}&background=6750a4&color=fff&size=128`}/>
                   </div>
                   <h4 className="font-title-lg text-title-lg text-body-md">{user.nickname}</h4>
-                  <p className="text-outline font-label-sm text-label-sm">{user.isInstructor ? 'Instructor' : 'Member'}</p>
+                  <p className="text-outline font-label-sm text-label-sm">{user.isInstructor ? t('common.instructor') : t('common.member')}</p>
                 </div>
               ))}
             </div>
@@ -574,13 +607,13 @@ export default function SocietyPage() {
         {/* Footer — 번역 미대상 영역 */}
         <footer className="bg-background border-t border-outline/15 py-section_gap">
           <div className="max-w-7xl mx-auto px-page_margin flex flex-col md:flex-row justify-between items-center gap-element_gap">
-            <div className="font-headline-md text-headline-md font-extrabold text-on-background">Global Tango Society</div>
+            <div className="font-headline-md text-headline-md font-extrabold text-on-background">{t('home.global_tango_society')}</div>
             <nav className="flex flex-wrap justify-center gap-6">
-              <a className="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md" href="#">About</a>
-              <a className="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md" href="#">Terms</a>
-              <a className="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md" href="#">Privacy</a>
+              <a className="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md" href="#">{t('common.about')}</a>
+              <a className="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md" href="#">{t('common.terms')}</a>
+              <a className="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md" href="#">{t('common.privacy')}</a>
             </nav>
-            <div className="text-on-surface-variant font-label-sm text-label-sm">©2026 World of Community. All rights reserved.</div>
+            <div className="text-on-surface-variant font-label-sm text-label-sm">{t('common.footer_rights')}</div>
           </div>
         </footer>
       </div>
@@ -773,18 +806,18 @@ export default function SocietyPage() {
             
             <div className="flex items-center gap-3 mb-12">
               <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></div>
-              <span className="text-amber-400 text-sm font-bold uppercase tracking-[0.2em]">Coming Soon</span>
+              <span className="text-amber-400 text-sm font-bold uppercase tracking-[0.2em]">{t('common.coming_soon')}</span>
             </div>
 
             <p className="text-white/40 text-sm leading-relaxed max-w-xs">
-              We&apos;re working hard to bring this content to you. Stay tuned for updates!
+              {t('home.coming_soon_desc')}
             </p>
 
             <button 
               onClick={() => setComingSoonCard(null)}
               className="mt-10 px-10 py-4 bg-white/10 hover:bg-white/20 text-white font-bold rounded-2xl transition-all active:scale-95 ring-1 ring-white/10"
             >
-              Got it
+              {t('common.got_it')}
             </button>
           </div>
         </div>

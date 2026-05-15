@@ -5,7 +5,6 @@ import dynamic from 'next/dynamic';
 import { useJsApiLoader } from '@react-google-maps/api';
 import PageWrapper from '@/components/layout/PageWrapper';
 import ManageEntry from '@/components/venues/ManageEntry';
-import VenueDetail from '@/components/venues/VenueDetail';
 import { venueService } from '@/lib/firebase/venueService';
 import { Venue } from '@/types/venue';
 import { useModalNavigation } from '@/hooks/useModalNavigation';
@@ -23,7 +22,6 @@ const MapComponent = dynamic(() => import('@/components/venues/MapComponent'), {
 const libraries: ("places" | "drawing" | "geometry" | "visualization")[] = ["places"];
 
 function VenuesPageContent() {
-  const { value: venueId, openModal: openDetail, closeModal: closeDetail } = useModalNavigation('venueId');
   const { isOpen: isEditModalOpen, value: editId, openModal: openEdit, closeModal: closeEdit } = useModalNavigation('editId');
   
   const [editingVenue, setEditingVenue] = useState<Venue | null>(null);
@@ -98,11 +96,6 @@ function VenuesPageContent() {
           onRegisterOpen={handleRegisterOpen}
           onEdit={handleEdit}
           onDelete={handleDelete}
-        />
-
-        <VenueDetail
-          venueId={venueId || ''}
-          onClose={closeDetail}
         />
 
         <ManageEntry

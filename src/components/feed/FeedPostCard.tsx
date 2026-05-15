@@ -2,8 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Post, ReactionType } from '@/types/feed';
-import { formatDistanceToNow } from 'date-fns';
-import { ko } from 'date-fns/locale';
+
 import { motion, AnimatePresence } from 'framer-motion';
 import { feedService } from '@/lib/firebase/feedService';
 import ReactionSelector from './ReactionSelector';
@@ -14,6 +13,7 @@ import { DualText } from '@/components/social/SocialHeroCard';
 import UserBadge from '@/components/common/UserBadge';
 import { useModalNavigation } from '@/hooks/useModalNavigation';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { KIND_ICON, KIND_COLOR } from '@/constants/tags';
 
 interface FeedPostCardProps {
   post: Post;
@@ -28,7 +28,7 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const [isReactionSelectorOpen, setIsReactionSelectorOpen] = useState(false);
-  const { t, language } = useLanguage();
+  const { t, language, formatRelativeTime, formatDate } = useLanguage();
   
   const { openModal: openReactions, closeModal: closeReactions, value: reactionsPostId } = useModalNavigation('reactions');
   const { openModal: openComments, closeModal: closeComments, value: commentsPostId } = useModalNavigation('comments');
@@ -88,10 +88,7 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
   const getTimeAgo = () => {
     if (!post.createdAt) return t('plaza.just_now');
     try {
-      const date = typeof (post.createdAt as any).toDate === 'function' 
-        ? (post.createdAt as any).toDate() 
-        : new Date(post.createdAt as any);
-      return formatDistanceToNow(date, { addSuffix: true, locale: language === 'KR' ? ko : undefined });
+      return formatRelativeTime(post.createdAt);
     } catch (e) {
       return t('plaza.recent');
     }
@@ -161,6 +158,30 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
       await navigator.clipboard.writeText(shareUrl);
       alert(t('plaza.link_copied'));
     }
+  };
+
+  const renderTags = () => {
+    const tags = post.postTags || post.tags;
+    if (!tags || tags.length === 0) return null;
+    return (
+      <div className="flex flex-wrap gap-2 mt-3 mb-1 px-1">
+        {tags.map((tag: any, idx: number) => {
+          if (typeof tag === 'string') {
+            return (
+              <span key={idx} className="px-3 py-1 bg-surface-container rounded-full font-label-sm text-label-sm text-on-surface-variant">#{tag}</span>
+            );
+          }
+          return (
+            <div key={tag.id || idx} className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-outline-variant/30 font-label-sm text-xs ${KIND_COLOR[tag.kind] || 'text-on-surface-variant bg-surface-container'}`}>
+              <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                {KIND_ICON[tag.kind] || 'label'}
+              </span>
+              <span className="font-medium truncate max-w-[120px]">{tag.label}</span>
+            </div>
+          );
+        })}
+      </div>
+    );
   };
 
   const renderHeader = (isOfficial = false) => (
@@ -285,16 +306,17 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
         <div className="px-4 py-3 pb-3">
           {renderHeader(true)}
           {post.title && <h4 className="font-headline font-bold text-[15px] mb-2 text-primary">{post.title}</h4>}
-          <p className="text-on-surface text-sm mb-4 leading-relaxed whitespace-pre-wrap">{post.content}</p>
+          <p className="text-on-surface text-sm leading-relaxed whitespace-pre-wrap">{post.content}</p>
+          {renderTags()}
           
-          <div className="bg-surface rounded-lg p-3 flex items-center gap-4 mb-2">
+          <div className="bg-surface rounded-lg p-3 flex items-center gap-4 mb-2 mt-4">
             <div className="bg-surface-container-lowest w-12 h-12 rounded flex flex-col items-center justify-center border border-outline-variant/20 shadow-sm">
-              <span className="text-[10px] font-bold text-error uppercase">{eventDate.toLocaleDateString('en-US', { month: 'short' })}</span>
-              <span className="text-lg font-headline font-extrabold leading-none">{eventDate.getDate()}</span>
+              <span className="text-[10px] font-bold text-error uppercase">{formatDate(eventDate, 'shortMonth')}</span>
+              <span className="text-lg font-headline font-extrabold leading-none">{formatDate(eventDate, 'dayOnly')}</span>
             </div>
             <div>
               <p className="font-bold text-sm">{t('plaza.official_event')}</p>
-              <p className="text-xs text-on-surface-variant">{eventDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</p>
+              <p className="text-xs text-on-surface-variant">{formatDate(eventDate, 'timeOnly')}</p>
             </div>
           </div>
         </div>
@@ -330,7 +352,7 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
         <div className="px-4 py-3 pb-2">{renderHeader(post.isOfficial)}</div>
         {hasColorStyle ? (
           <div
-            className="w-full aspect-square p-4 flex flex-col items-center justify-center"
+            className="w-full py-10 px-6 flex flex-col items-center justify-center min-h-[180px]"
             style={{ background: style.bgColor, color: style.textColor }}
           >
             <p className={`text-center break-words w-full ${contentClass}`} style={{ color: style.textColor }}>
@@ -345,8 +367,9 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
           </div>
         )}
         <div className="px-4 py-3">
+          {renderTags()}
           {renderActionBar()}
-          <div className="flex gap-2 mb-1">
+          <div className="flex gap-2 mb-1 mt-2">
             {localLikesCount > 0 && (
               <button onClick={() => openReactions(post.id)} className="font-bold text-sm text-on-surface hover:underline">
                 {localLikesCount} {t('plaza.likes')}
@@ -499,6 +522,8 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
           </span>
           {post.content}
         </p>
+
+        {renderTags()}
 
         <p className="text-[10px] text-on-surface-variant font-medium tracking-wide uppercase mt-2">
           {timeAgo}

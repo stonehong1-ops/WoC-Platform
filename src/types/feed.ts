@@ -23,6 +23,8 @@ export interface Post {
   images?: string[];
   media?: { url: string; type: 'image' | 'video' }[];
   taggedUserIds?: string[];
+  tags?: { id: string; label: string; kind: string; photo?: string }[];
+  postTags?: { id: string; label: string; kind: string; photo?: string }[];
   targets: string[];
   category: string;
   location?: {

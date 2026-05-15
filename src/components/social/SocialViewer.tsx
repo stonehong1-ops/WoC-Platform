@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Social } from "@/types/social";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { socialService } from "@/lib/firebase/socialService";
@@ -13,6 +13,10 @@ import LiveFeed from "@/components/live/LiveFeed";
 import SocialHomeTab from "./SocialHomeTab";
 import SocialReservationTab from "./SocialReservationTab";
 import EditSocialEvent from "./EditSocialEvent";
+import SocialPosterEditor from "./SocialPosterEditor";
+import PosterOverlay from "./poster/PosterOverlay";
+import { extractPosterData } from "./poster/posterTypes";
+import { POSTER_LAYOUTS } from "./poster/PosterLayouts";
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useNavigation } from "@/components/providers/NavigationProvider";
 
@@ -31,7 +35,7 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
   const { setGlobalNavHidden } = useNavigation();
   const [social, setSocial] = useState<Social>(initialSocial);
   const [activeTab, setActiveTab] = useState<TabId>("home");
-  const { isOpen: showEditModal, openModal: openEditModal, closeModal: closeEditModal } = useModalNavigation("editMode");
+  const [showEditModal, setShowEditModal] = useState(false);
 
   // Hide global navigation on mount, restore on unmount
   useEffect(() => {
@@ -56,12 +60,14 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
   const [images, setImages] = useState<string[]>([]);
 
   useEffect(() => {
-    if (social.imageUrl) {
+    if (social.posterExportUrl) {
+      setImages([social.posterExportUrl]);
+    } else if (social.imageUrl) {
       setImages([social.imageUrl]);
     } else {
       setImages([]);
     }
-  }, [social.imageUrl]);
+  }, [social.imageUrl, social.posterExportUrl]);
 
   // UI state
   const [isScrolled, setIsScrolled] = useState(false);
@@ -82,6 +88,26 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
   } = useModalNavigation("imageModal");
 
   const showImageModal = imageModal === "true";
+  const [showPosterEditor, setShowPosterEditor] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const heroRef = useRef<HTMLDivElement>(null);
+  const posterData = useMemo(() => extractPosterData(social), [social]);
+
+  // Fetch the pre-generated poster image
+  const fetchPosterBlob = async (): Promise<Blob | null> => {
+    const urlToFetch = social.posterExportUrl || social.imageUrl;
+    if (!urlToFetch) return null;
+    try {
+      const proxyUrl = `/api/proxy/image?url=${encodeURIComponent(urlToFetch)}`;
+      const response = await fetch(proxyUrl);
+      if (!response.ok) throw new Error("Proxy fetch failed");
+      return await response.blob();
+    } catch (e) {
+      console.error("Failed to fetch poster blob", e);
+      return null;
+    }
+  };
 
   // Permission: Org, Staff, or Admin can edit
   const canEdit = user && (
@@ -185,36 +211,22 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
   );
 
   return (
-    <div className="fixed inset-0 z-[100] bg-white flex flex-col animate-in slide-in-from-bottom duration-300">
+    <div className="fixed inset-0 z-[100] bg-white flex flex-col">
       <style dangerouslySetInnerHTML={{ __html: `.detail-scrollbar::-webkit-scrollbar{display:none}.detail-scrollbar{-ms-overflow-style:none;scrollbar-width:none}` }} />
 
       {/* Header */}
-      <div className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 transition-all duration-300 ${isScrolled ? "bg-white/95 backdrop-blur-md shadow-sm" : "bg-gradient-to-b from-black/30 to-transparent"}`}>
+      <div className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 transition-all duration-300 ${isScrolled ? "bg-white/95 backdrop-blur-md shadow-sm" : ""}`}>
         <button onClick={onClose} className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? "bg-slate-100 text-[#2d3435]" : "bg-black/20 backdrop-blur-sm text-white"}`}>
           <span className="material-symbols-rounded text-xl">arrow_back</span>
         </button>
-        <div className={`flex flex-col items-center max-w-[160px] transition-colors ${isScrolled ? "text-[#2d3435]" : "text-white drop-shadow-md"}`}>
+        <div className={`flex flex-col items-center max-w-[160px] transition-all duration-300 ${isScrolled ? "opacity-100 translate-y-0 text-[#2d3435]" : "opacity-0 -translate-y-2 text-white pointer-events-none"}`}>
           <div className="text-base font-bold truncate w-full text-center">{social.title}</div>
-          {social.titleNative && <div className={`text-[10px] font-bold truncate w-full text-center ${isScrolled ? "text-[#acb3b4]" : "text-white/90 drop-shadow-md"}`}>{social.titleNative}</div>}
+          {social.titleNative && <div className={`text-[10px] font-bold truncate w-full text-center ${isScrolled ? "text-[#acb3b4]" : "text-white/90"}`}>{social.titleNative}</div>}
         </div>
-        <div className="flex items-center gap-1">
-          {canEdit && (
-            <>
-              <button onClick={() => openEditModal('true')}
-                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? "bg-slate-100 text-[#2d3435]" : "bg-black/20 backdrop-blur-sm text-white"}`}>
-                <span className="material-symbols-rounded text-xl">edit</span>
-              </button>
-              <button onClick={handleDelete}
-                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? "bg-slate-100 text-red-500" : "bg-black/20 backdrop-blur-sm text-white"}`}>
-                <span className="material-symbols-rounded text-xl">delete</span>
-              </button>
-            </>
-          )}
-          <button onClick={() => navigator.share ? navigator.share({ title: titleStr, url: window.location.href }).catch(console.error) : alert(t('social.share_not_supported'))}
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? "bg-slate-100 text-[#2d3435]" : "bg-black/20 backdrop-blur-sm text-white"}`}>
-            <span className="material-symbols-rounded text-xl">share</span>
-          </button>
-        </div>
+        <button onClick={() => setShowMenu(true)}
+          className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? "bg-slate-100 text-[#2d3435]" : "bg-black/20 backdrop-blur-sm text-white"}`}>
+          <span className="material-symbols-rounded text-xl">more_vert</span>
+        </button>
       </div>
 
       {/* Fixed Tab Bar — appears when scrolled past anchor */}
@@ -227,7 +239,7 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
       {/* Scrollable Content */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto detail-scrollbar pb-[80px]">
         {/* Image */}
-        <div className="relative aspect-[4/5] overflow-hidden bg-[#f2f4f4]">
+        <div ref={heroRef} className="relative aspect-[4/5] overflow-hidden bg-[#f2f4f4]">
           {images.length === 0 && (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-[#c4cacc]">
               <span className="material-symbols-rounded text-5xl mb-1">local_activity</span>
@@ -243,7 +255,10 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
                   </div>
                 ))}
               </div>
-
+              {/* Poster overlay on detail hero */}
+              {social.posterLayoutId && social.posterLayoutId !== "none" && !social.posterExportUrl && (
+                <PosterOverlay social={social} />
+              )}
             </div>
           )}
         </div>
@@ -303,8 +318,6 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
         {activeTab === "reservation" && <SocialReservationTab social={social} />}
       </div>
 
-
-
       {/* Full Screen Image Viewer */}
       {showImageModal && (
         <div className="fixed inset-0 z-[200] bg-black flex flex-col animate-in fade-in duration-200">
@@ -336,11 +349,121 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
       {showEditModal && (
         <EditSocialEvent
           socialData={social}
-          onClose={closeEditModal}
-          onSuccess={closeEditModal}
+          onClose={() => setShowEditModal(false)}
+          onSuccess={() => setShowEditModal(false)}
         />
       )}
 
+      {/* Bottom Sheet Menu */}
+      {showMenu && (
+        <>
+          <div className="fixed inset-0 z-[200] bg-black/40 animate-in fade-in duration-150" onClick={() => setShowMenu(false)} />
+          <div className="fixed bottom-0 left-0 right-0 z-[201] bg-white rounded-t-2xl shadow-2xl animate-in slide-in-from-bottom duration-200 pb-safe">
+            <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mt-3 mb-2" />
+            <div className="px-2 pb-4">
+              {canEdit && (
+                <>
+                  <button onClick={() => { setShowMenu(false); setShowEditModal(true); }}
+                    className="flex items-center gap-4 w-full px-5 py-3.5 rounded-xl hover:bg-gray-50 active:bg-gray-100 transition-colors">
+                    <span className="material-symbols-rounded text-[22px] text-[#2d3435]">edit</span>
+                    <span className="text-[15px] font-medium text-[#2d3435]">Edit</span>
+                  </button>
+                  <button onClick={() => { setShowMenu(false); handleDelete(); }}
+                    className="flex items-center gap-4 w-full px-5 py-3.5 rounded-xl hover:bg-red-50 active:bg-red-100 transition-colors">
+                    <span className="material-symbols-rounded text-[22px] text-red-500">delete</span>
+                    <span className="text-[15px] font-medium text-red-500">Delete</span>
+                  </button>
+                  <div className="h-px bg-gray-100 mx-4 my-1" />
+                </>
+              )}
+              <button onClick={async () => {
+                  setShowMenu(false);
+                  setIsExporting(true);
+                  try {
+                    const blob = await fetchPosterBlob();
+                    if (!blob) { alert("No image available"); return; }
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.download = `${social.title.replace(/\s+/g, "_")}_poster.png`;
+                    link.href = url;
+                    link.click();
+                    URL.revokeObjectURL(url);
+                  } catch (err) { console.error(err); alert("Failed to download"); }
+                  finally { setIsExporting(false); }
+                }}
+                className="flex items-center gap-4 w-full px-5 py-3.5 rounded-xl hover:bg-gray-50 active:bg-gray-100 transition-colors">
+                <span className="material-symbols-rounded text-[22px] text-[#2d3435]">download</span>
+                <span className="text-[15px] font-medium text-[#2d3435]">Download Poster</span>
+              </button>
+              <button onClick={async () => {
+                  setShowMenu(false);
+                  setIsExporting(true);
+                  try {
+                    const blob = await fetchPosterBlob();
+                    if (blob && navigator.canShare) {
+                      const file = new File([blob], `${social.title.replace(/\s+/g, "_")}_poster.png`, { type: "image/png" });
+                      const shareData = { title: titleStr, text: `${titleStr}`, files: [file] };
+                      if (navigator.canShare(shareData)) {
+                        await navigator.share(shareData);
+                      } else {
+                        // Fallback: share link only
+                        await navigator.share({ title: titleStr, url: window.location.href });
+                      }
+                    } else if (navigator.share) {
+                      await navigator.share({ title: titleStr, url: window.location.href });
+                    } else {
+                      navigator.clipboard?.writeText(window.location.href);
+                      alert("Link copied!");
+                    }
+                  } catch (err) {
+                    if ((err as Error).name !== "AbortError") console.error(err);
+                  } finally { setIsExporting(false); }
+                }}
+                className="flex items-center gap-4 w-full px-5 py-3.5 rounded-xl hover:bg-gray-50 active:bg-gray-100 transition-colors">
+                <span className="material-symbols-rounded text-[22px] text-[#2d3435]">share</span>
+                <span className="text-[15px] font-medium text-[#2d3435]">Share Poster</span>
+              </button>
+              <button onClick={() => {
+                  setShowMenu(false);
+                  if (navigator.share) {
+                    navigator.share({ title: titleStr, url: window.location.href }).catch(() => {});
+                  } else {
+                    navigator.clipboard?.writeText(window.location.href);
+                    alert("Link copied!");
+                  }
+                }}
+                className="flex items-center gap-4 w-full px-5 py-3.5 rounded-xl hover:bg-gray-50 active:bg-gray-100 transition-colors">
+                <span className="material-symbols-rounded text-[22px] text-[#2d3435]">link</span>
+                <span className="text-[15px] font-medium text-[#2d3435]">Share Link</span>
+              </button>
+              <div className="h-px bg-gray-100 mx-4 my-1" />
+              <button onClick={() => { setShowMenu(false); setShowPosterEditor(true); }}
+                className="flex items-center gap-4 w-full px-5 py-3.5 rounded-xl hover:bg-gray-50 active:bg-gray-100 transition-colors">
+                <span className="material-symbols-rounded text-[22px] text-primary">auto_fix_high</span>
+                <span className="text-[15px] font-medium text-primary">Poster Editor</span>
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Export loading overlay */}
+      {isExporting && (
+        <div className="fixed inset-0 z-[300] bg-black/60 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            <span className="text-white text-sm font-medium">Exporting...</span>
+          </div>
+        </div>
+      )}
+
+      {/* Poster Editor */}
+      {showPosterEditor && (
+        <SocialPosterEditor 
+          social={social} 
+          onClose={() => setShowPosterEditor(false)} 
+        />
+      )}
 
     </div>
   );

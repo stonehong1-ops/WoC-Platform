@@ -67,7 +67,7 @@ const PresentationFooter: React.FC<PresentationFooterProps> = ({ currentSlide, t
         </button>
         <span className="w-1 h-1 rounded-full bg-[#1c1b1b]/30"></span>
         <span>
-          {String(currentSlide + 1).padStart(2, '0')} / {String(totalSlides).padStart(2, '0')}
+          Slide {currentSlide}
         </span>
       </div>
       

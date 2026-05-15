@@ -27,6 +27,8 @@
 4. **Deployment Reporting**: After every deployment, you MUST confirm the deployment status and explicitly provide the Deployment ID and the live URL link to the USER.
 28. **IA Mapping Reference**: Before performing any development task, YOU MUST reference `ia.md` in the root directory to ensure correct file locations and architectural context. This is a mandatory reference point for understanding the system map.
 29. **Question Mark Handling**: 사용자의 요청이 물음표(?)로 끝날 경우, 절대 코딩(코드 수정)을 진행하지 말고, 현재 조사/진행 중인 상태와 원인 파악 내용에 대해서만 답변하라.
+30. **Strict Scope Adherence**: 사용자가 명시적으로 요청한 작업 이외에는 어떤 작업도 추가로 포함하거나 수행하지 않는다. (Do not include or perform any additional work beyond what the user has explicitly requested.)
+31. **No Repetitive Reporting**: 앞서서 작업했던 내용은 절대 다시 꺼내지 않는다. (Never reference or repeat details of previously completed work.)
 
 ## 🌐 Language & Localization Rules
 1. **English Only**: This platform is an English-based global service. ALL UI text, labels, and system messages MUST be in English. (이 플랫폼은 글로벌 서비스이므로 모든 UI와 시스템 메시지는 영문으로 작성되어야 한다.)

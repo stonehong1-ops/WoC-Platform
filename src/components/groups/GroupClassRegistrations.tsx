@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { classRegistrationService } from '@/lib/firebase/classRegistrationService';
 import { ClassRegistration, Group, GroupClass } from '@/types/group';
 import { GroupClassSelectionPopup } from './GroupClassSelectionPopup';
-import { format, isSameMonth } from 'date-fns';
 import { safeDate } from '@/lib/utils/safeDate';
 import UserBadge from '@/components/common/UserBadge';
 import { toast } from 'sonner';
@@ -21,7 +20,7 @@ export function GroupClassRegistrations({ group, validClassIds, allClasses = [],
   const [registrations, setRegistrations] = useState<ClassRegistration[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
-  const { t } = useLanguage();  
+  const { t, formatDate } = useLanguage();  
   // Selection Popup state (for Checkboxes)
   const [selectedPopupReg, setSelectedPopupReg] = useState<ClassRegistration | null>(null);
   const [popupIncludedIds, setPopupIncludedIds] = useState<string[]>([]);
@@ -104,9 +103,21 @@ export function GroupClassRegistrations({ group, validClassIds, allClasses = [],
 
   const handleTogglePayment = async (item: ClassRegistration) => {
     try {
-      const newStatus = item.status === 'PAYMENT_COMPLETED' ? 'PAYMENT_PENDING' : 'PAYMENT_COMPLETED';
+      let newStatus: ClassRegistration['status'] = 'PAYMENT_PENDING';
+      
+      if (item.status === 'PAYMENT_PENDING' || item.status === 'PAYMENT_REPORTED') {
+        newStatus = 'PAYMENT_COMPLETED';
+      } else if (item.status === 'PAYMENT_COMPLETED') {
+        newStatus = 'PAYMENT_PENDING';
+      }
+
       await classRegistrationService.updateRegistration(item.id, { status: newStatus });
-      toast.success(`Payment marked as ${newStatus === 'PAYMENT_COMPLETED' ? 'Paid' : 'Pending'}`);
+      
+      if (newStatus === 'PAYMENT_COMPLETED') {
+        toast.success(t('group.class.toast.payment_confirmed') || 'Payment confirmed successfully');
+      } else {
+        toast.success(t('group.class.toast.payment_pending') || 'Payment marked as pending');
+      }
     } catch (error) {
       toast.error('Failed to update payment status');
     }
@@ -160,7 +171,7 @@ export function GroupClassRegistrations({ group, validClassIds, allClasses = [],
     if (!user) return;
     
     const isItemOwner = user.uid === item.userId;
-    const isGroupAdmin = user.uid === group.ownerId || group.members?.some(m => m.id === user.uid && m.role === 'admin');
+    const isGroupAdmin = user.uid === group.ownerId || group.members?.some(m => m.id === user.uid && (m.role === 'admin' || m.role === 'owner'));
     
     if (!isItemOwner && !isGroupAdmin) {
       toast.error('You do not have permission to delete this registration.');
@@ -209,7 +220,7 @@ export function GroupClassRegistrations({ group, validClassIds, allClasses = [],
                         nameClassName="font-title-md text-title-md text-on-surface"
                         subText={
                           <p className="font-label-sm text-label-sm text-on-surface-variant mt-0.5">
-                            Member since {userGroup.joinedAt ? format(userGroup.joinedAt, 'MMM yyyy') : 'Unknown'}
+                            Member since {userGroup.joinedAt ? formatDate(userGroup.joinedAt, 'monthYear') : 'Unknown'}
                           </p>
                         }
                       />
@@ -236,39 +247,73 @@ export function GroupClassRegistrations({ group, validClassIds, allClasses = [],
                               </div>
                               <div className="flex items-center gap-2">
                                 <span className="font-label-sm text-xs text-on-surface-variant">
-                                  {format(appliedDate, 'MMM dd')}
+                                  {formatDate(appliedDate, 'shortMonthDay')}
                                 </span>
                               </div>
                             </div>
-                            
-                            <div className="flex flex-col gap-2 pt-2 border-t border-outline-variant/20">
+                                                      <div className="flex flex-col gap-3 pt-3 border-t border-outline-variant/20">
                               <div className="flex items-center justify-between">
-                                <label className="text-xs font-bold text-on-surface-variant">Payment Status</label>
+                                <div className="flex flex-col">
+                                  <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-0.5">Status</label>
+                                  <div className="flex items-center gap-2">
+                                    {item.status === 'PAYMENT_REPORTED' && (
+                                      <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse"></span>
+                                    )}
+                                    <span className={`text-xs font-bold ${
+                                      item.status === 'PAYMENT_COMPLETED' ? 'text-emerald-600' : 
+                                      item.status === 'PAYMENT_REPORTED' ? 'text-primary' : 
+                                      'text-on-surface-variant'
+                                    }`}>
+                                      {item.status === 'PAYMENT_COMPLETED' ? 'PAID' : 
+                                       item.status === 'PAYMENT_REPORTED' ? 'PAYMENT REPORTED' : 
+                                       'PENDING'}
+                                    </span>
+                                  </div>
+                                </div>
+
                                 <button 
                                   onClick={() => handleTogglePayment(item)}
-                                  className={`px-3 py-1 text-xs font-bold rounded-full transition-colors active:scale-95 ${item.status === 'PAYMENT_COMPLETED' ? 'bg-emerald-100 text-emerald-700' : 'bg-surface-variant text-on-surface-variant hover:bg-outline-variant/20'}`}
+                                  className={`px-4 py-2 text-xs font-bold rounded-lg transition-all active:scale-95 shadow-sm ${
+                                    item.status === 'PAYMENT_COMPLETED' 
+                                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                                      : item.status === 'PAYMENT_REPORTED'
+                                      ? 'bg-primary text-white shadow-primary/20 hover:bg-primary/90 ring-4 ring-primary/10'
+                                      : 'bg-surface-variant text-on-surface-variant hover:bg-outline-variant/20 border border-outline-variant/30'
+                                  }`}
                                 >
-                                  {item.status === 'PAYMENT_COMPLETED' ? 'Paid' : 'Pending'}
+                                  {item.status === 'PAYMENT_COMPLETED' ? 'Undo Paid' : 
+                                   item.status === 'PAYMENT_REPORTED' ? 'Confirm Payment' : 
+                                   'Mark as Paid'}
                                 </button>
                               </div>
-                              <div className="flex items-center justify-between gap-2">
-                                <label className="text-xs font-bold text-on-surface-variant whitespace-nowrap">Amount (₩)</label>
-                                <input 
-                                   type="number" 
-                                   className="w-1/2 text-right text-sm p-1.5 border border-outline-variant rounded bg-surface focus:outline-none focus:ring-2 focus:ring-primary/50" 
-                                   defaultValue={item.paymentAmount || ''} 
-                                   onBlur={(e) => handleUpdateAmount(item, e.target.value)}
-                                   placeholder="0"
-                                />
+
+                              <div className="grid grid-cols-2 gap-3">
+                                <div className="flex flex-col gap-1">
+                                  <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Amount (₩)</label>
+                                  <input 
+                                     type="number" 
+                                     className="w-full text-sm p-2 border border-outline-variant rounded-lg bg-surface focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" 
+                                     defaultValue={item.paymentAmount || item.amount || ''} 
+                                     onBlur={(e) => handleUpdateAmount(item, e.target.value)}
+                                     placeholder="0"
+                                  />
+                                </div>
+                                <div className="flex flex-col gap-1">
+                                  <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Contact</label>
+                                  <div className="text-sm p-2 border border-outline-variant rounded-lg bg-surface-container-low text-on-surface-variant truncate">
+                                    {item.contactNumber || '-'}
+                                  </div>
+                                </div>
                               </div>
+
                               <div className="flex flex-col gap-1">
-                                <label className="text-xs font-bold text-on-surface-variant">Memo</label>
+                                <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Admin Memo</label>
                                 <input 
                                   type="text" 
-                                  className="w-full text-sm p-1.5 border border-outline-variant rounded bg-surface focus:outline-none focus:ring-2 focus:ring-primary/50" 
+                                  className="w-full text-sm p-2 border border-outline-variant rounded-lg bg-surface focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" 
                                   defaultValue={item.adminMemo || ''} 
                                   onBlur={(e) => handleUpdateMemo(item, e.target.value)}
-                                  placeholder="Add notes (e.g. Bank transfer, Late fee)..."
+                                  placeholder="Add notes..."
                                 />
                               </div>
                             </div>
@@ -331,7 +376,7 @@ export function GroupClassRegistrations({ group, validClassIds, allClasses = [],
                 registration={selectedPopupReg}
                 allClasses={allClasses}
                 includedClassIds={popupIncludedIds}
-                canEdit={user?.uid === selectedPopupReg.userId || user?.uid === group.ownerId || group.members?.some(m => m.id === user?.uid && m.role === 'admin')}
+                canEdit={user?.uid === selectedPopupReg.userId || user?.uid === group.ownerId || group.members?.some(m => m.id === user?.uid && (m.role === 'admin' || m.role === 'owner'))}
               />
             )}
     </div>

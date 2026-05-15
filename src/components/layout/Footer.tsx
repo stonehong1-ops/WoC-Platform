@@ -14,58 +14,78 @@ export default function Footer() {
 
   const isActive = (href: string) => pathname === href;
 
+  // Preserve society context across navigation
+  const society = typeof window !== 'undefined' ? (new URLSearchParams(window.location.search).get('society') || sessionStorage.getItem('woc_society')) : null;
+  const eventsHref = society ? `/events?society=${society}` : '/events';
+
   return (
     <footer className="fixed bottom-0 left-0 w-full z-50 bg-white shadow-[0_-8px_30px_rgb(0,0,0,0.04)] pt-[6px] pb-[16px] flex flex-col justify-end">
       {/* Integrated Scrollable Menu System */}
       <div className="overflow-x-auto no-scrollbar scroll-smooth">
         <div className="flex items-stretch min-w-max px-4 gap-4">
           
-          {/* 1. TANGO WORLD PARTITION */}
-          <Section label={<><span className="text-primary">TANGO</span> WORLD</>}>
+          {/* 1. WORLD PARTITION */}
+          <Section label={<><span className="text-primary">WORLD</span></>}>
             <NavItem href="/home" icon="radio_button_unchecked" label="SOCIETY" active={isActive('/home')} />
             <NavItem href="/plaza" icon="quick_phrases" label="PLAZA" active={isActive('/plaza')} />
             <NavItem href="/venues" icon="map" label="MAP" active={isActive('/venues')} />
-            <NavItem href="/explore" icon="explore" label="EXPLORE" active={isActive('/explore')} />
-            <NavItem href="/hub" icon="airline_stops" label="HUB" active={isActive('/hub')} />
+            <NavItem href="/people" icon="group" label="PEOPLE" active={isActive('/people')} />
           </Section>
 
           <div className="w-[1px] bg-gray-200/60 my-1.5" />
 
-          {/* 2. ACTIVITY PARTITION */}
-          <Section label="Activity">
-            <NavItem href="/social" icon="nightlife" label="SOCIAL" active={isActive('/social')} />
+          {/* 2. MARKET PARTITION */}
+          <Section label="Market">
+            <NavItem href="/shop" icon="storefront" label="SHOP" active={isActive('/shop')} />
+            <NavItem href="/resale" icon="cached" label="RESALE" active={isActive('/resale')} />
+            <NavItem href="/rental" icon="key" label="RENTAL" active={isActive('/rental')} />
+            <NavItem href="/stay" icon="bed" label="STAY" active={isActive('/stay')} />
+          </Section>
+
+          <div className="w-[1px] bg-gray-200/60 my-1.5" />
+
+          {/* 3. NOW PARTITION */}
+          <Section label="Now">
+            <NavItem href="/social" icon="autoplay" label="SOCIAL" active={isActive('/social')} />
             <NavItem href="/live" icon="cinematic_blur" label="LIVE" active={isActive('/live')} />
-            <NavItem href="/events" icon="event" label="EVENTS" active={isActive('/events')} />
             <NavItem href="/class" icon="school" label="CLASS" active={isActive('/class')} />
-            <NavItem href="/groups" icon="groups" label="GROUP" active={isActive('/groups')} />
+            <NavItem href={eventsHref} icon="calendar_today" label="EVENTS" active={isActive('/events')} />
           </Section>
 
           <div className="w-[1px] bg-gray-200/60 my-1.5" />
 
-          {/* 3. TOWN PARTITION */}
-          <Section label="Town">
-            <NavItem href="/resale" icon="shopping_bag" label="RESALE" active={isActive('/resale')} />
-            <NavItem href="/rental" icon="handshake" label="RENTAL" active={isActive('/rental')} />
+          {/* 4. LOUNGE PARTITION */}
+          <Section label="Lounge">
+            <NavItem href="/pics" icon="photo_library" label="PICS" active={isActive('/pics')} />
             <NavItem href="/lost" icon="find_in_page" label="LOST" active={isActive('/lost')} />
+            <NavItem href="/hub" icon="airline_stops" label="HUB" active={isActive('/hub')} />
+            <NavItem href="/explore" icon="explore" label="JUMP" active={isActive('/explore')} />
           </Section>
 
           <div className="w-[1px] bg-gray-200/60 my-1.5" />
 
-          {/* 4. MY PARTITION */}
+          {/* 5. GROUPS PARTITION */}
+          <Section label="Groups">
+            <NavItem href="/groups" icon="groups" label="GROUPS" active={isActive('/groups')} />
+          </Section>
+
+          <div className="w-[1px] bg-gray-200/60 my-1.5" />
+
+          {/* 6. MY PARTITION */}
           <Section label="My" isLast={!profile?.isAdmin}>
-            <NavItem href="/profile" icon="manage_accounts" label="MY INFO" active={isActive('/profile')} />
-            <NavItem href="/wallet" icon="account_balance_wallet" label="WALLET" active={isActive('/wallet')} />
             <NavItem href="/history" icon="history" label="HISTORY" active={isActive('/history')} />
+            <NavItem href="/wallet" icon="account_balance_wallet" label="WALLET" active={isActive('/wallet')} />
+            <NavItem href="/profile" icon="manage_accounts" label="MY INFO" active={isActive('/profile')} />
           </Section>
 
           {profile?.isAdmin && <div className="w-[1px] bg-gray-200/60 my-1.5" />}
 
-          {/* 5. ADMIN PARTITION */}
+          {/* 7. ADMIN PARTITION */}
           {profile?.isAdmin && (
             <Section label="Admin" isLast>
-              <NavItem href="/admin/people" icon="person_search" label="PEOPLE" active={isActive('/admin/people')} />
-              <NavItem href="/admin/place" icon="location_city" label="PLACE" active={isActive('/admin/place')} />
-              <NavItem href="/admin/others" icon="more_horiz" label="OTHERS" active={isActive('/admin/others')} />
+              <NavItem href="/admin/people" icon="admin_panel_settings" label="PEOPLE" active={isActive('/admin/people')} />
+              <NavItem href="/admin/banners" icon="view_carousel" label="BANNERS" active={isActive('/admin/banners')} />
+              <NavItem href="/admin/pics" icon="wallpaper" label="PICs" active={isActive('/admin/pics')} />
             </Section>
           )}
 

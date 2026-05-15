@@ -4,12 +4,12 @@ import React, { useState } from 'react';
 import { Event } from '@/types/event';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { eventService } from '@/lib/firebase/eventService';
-import { format } from 'date-fns';
 import { Timestamp } from 'firebase/firestore';
 import UserProfileClickable from '@/components/common/UserProfileClickable';
 import UserAvatar from '@/components/common/UserAvatar';
 import UserName from '@/components/common/UserName';
 import { useNavigation } from '@/components/providers/NavigationProvider';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface EventDetailProps {
   event: Event;
@@ -27,6 +27,7 @@ const getNormalizedDate = (val: any): Date => {
 
 export default function EventDetail({ event, onClose, onEdit, onDelete }: EventDetailProps) {
   const { user } = useAuth();
+  const { formatDate } = useLanguage();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const { setGlobalNavHidden } = useNavigation();
@@ -134,11 +135,11 @@ export default function EventDetail({ event, onClose, onEdit, onDelete }: EventD
                 <span className="material-symbols-outlined text-primary">calendar_month</span>
                 <div>
                   <p className="text-[10px] font-black text-[#acb3b4] uppercase tracking-widest mb-1">Start</p>
-                  <p className="text-xs font-bold text-[#2d3435]">{format(startDate, 'MMM dd, yyyy')}</p>
+                  <p className="text-xs font-bold text-[#2d3435]">{formatDate(startDate, 'dateOnly')}</p>
                   {event.endDate && startDate.getTime() !== endDate.getTime() && (
                     <div className="mt-2 pt-2 border-t border-[#f2f4f4]">
                       <p className="text-[10px] font-black text-[#acb3b4] uppercase tracking-widest mb-1">End</p>
-                      <p className="text-xs font-bold text-[#2d3435]">{format(endDate, 'MMM dd, yyyy')}</p>
+                      <p className="text-xs font-bold text-[#2d3435]">{formatDate(endDate, 'dateOnly')}</p>
                     </div>
                   )}
                 </div>

@@ -35,7 +35,7 @@ export default function BottomSheet({
     <AnimatePresence>
       {isOpen && (
         <Portal>
-          <div className="fixed inset-0 z-[1000] flex items-end justify-center sm:items-center">
+          <div className="fixed inset-0 flex items-end justify-center sm:items-center" style={{ zIndex: 99999 }}>
             {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
@@ -43,6 +43,7 @@ export default function BottomSheet({
               exit={{ opacity: 0 }}
               onClick={onClose}
               className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              style={{ zIndex: -1 }}
             />
 
             {/* Sheet Container */}
@@ -77,7 +78,7 @@ export default function BottomSheet({
 
               {/* Scrollable Content Area */}
               <div 
-                className="flex-1 overflow-y-auto px-4 py-2"
+                className="flex-1 overflow-y-auto px-4 py-2 min-h-0"
                 style={{ maxHeight: height }}
               >
                 {children}

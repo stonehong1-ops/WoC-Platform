@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { groupService } from '@/lib/firebase/groupService';
-import { storageService } from '@/lib/firebase/storageService';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { Group, Member } from '@/types/group';
 import Link from 'next/link';
@@ -13,8 +12,23 @@ import { doc, getDoc, updateDoc, collection, getDocs, query } from 'firebase/fir
 import MyGroupsTray from '@/components/groups/MyGroupsTray';
 import GroupDetail from '@/components/groups/GroupDetail';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useHistoryBack } from '@/hooks/useHistoryBack';
+
 
 import { Suspense } from 'react';
+
+// Extract neighborhood (동/dong) from full address
+const extractDong = (address: string): string => {
+  if (!address) return '';
+  // Match Korean 동 pattern (e.g. 합정동, 서교동)
+  const dongMatch = address.match(/(\S+동)/);
+  if (dongMatch) return dongMatch[1];
+  // Fallback: try to get 3rd or 2nd segment
+  const parts = address.split(/\s+/);
+  if (parts.length >= 3) return parts[2];
+  if (parts.length >= 2) return parts[1];
+  return address;
+};
 
 function GroupsContent() {
   const router = useRouter();
@@ -64,17 +78,23 @@ function GroupsContent() {
   // Create Group State
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createLoading, setCreateLoading] = useState(false);
+  const [venueType, setVenueType] = useState<'online' | 'venue' | ''>('');
+  const [venueSearch, setVenueSearch] = useState('');
+  const [venueResults, setVenueResults] = useState<any[]>([]);
+  const [selectedVenue, setSelectedVenue] = useState<any>(null);
+  const [venueSearchLoading, setVenueSearchLoading] = useState(false);
   const [createForm, setCreateForm] = useState({
     name: '',
     description: '',
     category: 'Studio',
     joinPolicy: 'open',
-    coverImage: null as File | null,
-    previewUrl: null as string | null
   });
 
   // URL Params based state
   const selectedCategory = searchParams.get('category');
+
+  const { handleClose: handleCreateClose } = useHistoryBack(isCreateOpen, () => setIsCreateOpen(false));
+  const { handleClose: handleGroupClose } = useHistoryBack(!!selectedGroup, () => setSelectedGroup(null));
 
   // Navigation Handlers
   const openCategoryModal = (category: string) => {
@@ -83,14 +103,12 @@ function GroupsContent() {
 
   const openCreateModal = () => {
     setIsCreateOpen(true);
-    // Push dummy state for back button handling
-    window.history.pushState({ modal: 'create' }, '');
   };
 
   const handleGroupSelect = (group: Group) => {
     setSelectedGroup(group);
-    window.history.pushState({ modal: 'groupDetail' }, '');
   };
+
 
   // My groups is now handled entirely by the MyGroupsTray component
   const openMyGroups = () => {
@@ -99,10 +117,7 @@ function GroupsContent() {
 
   const closeModals = () => {
     if (selectedGroup) {
-      setSelectedGroup(null);
-      if (window.history.state?.modal === 'groupDetail') {
-        window.history.back();
-      }
+      handleGroupClose();
     } else if (selectedCategory) {
       // If we are in a URL-based popup, we use router.back()
       // But if there's no history (direct entry), we replace to base path
@@ -111,26 +126,13 @@ function GroupsContent() {
       } else {
         router.back();
       }
-    } else {
-      // For state-based modals, we manually close and pop state if needed
-      setIsCreateOpen(false);
-      if (window.history.state?.modal) {
-        window.history.back();
-      }
+    } else if (isCreateOpen) {
+      handleCreateClose();
     }
   };
 
-  // Popstate listener for transient (state-based) modals
-  useEffect(() => {
-    const handlePopState = (event: PopStateEvent) => {
-      // If the back button is pressed, close all state-based modals
-      setIsCreateOpen(false);
-      setSelectedGroup(null);
-    };
 
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
+
 
   // 스크롤 먹통 방지
   useEffect(() => {
@@ -149,6 +151,30 @@ function GroupsContent() {
       setLoading(true);
       setError(null);
       const data = await groupService.getGroups();
+
+      // Enrich groups with venue address if missing
+      const needsVenue = data.filter((g: any) => g.venueId && !g.address);
+      if (needsVenue.length > 0) {
+        const venueIds = Array.from(new Set(needsVenue.map((g: any) => g.venueId)));
+        const venueMap = new Map<string, string>();
+        
+        await Promise.all(venueIds.map(async (vid) => {
+          try {
+            const vSnap = await getDoc(doc(db, 'venues', vid as string));
+            if (vSnap.exists()) {
+              const vData = vSnap.data();
+              venueMap.set(vid as string, vData.address || vData.city || '');
+            }
+          } catch (_) { /* skip */ }
+        }));
+
+        data.forEach((g: any) => {
+          if (g.venueId && !g.address && venueMap.has(g.venueId)) {
+            g.address = venueMap.get(g.venueId);
+          }
+        });
+      }
+
       setGroups(data);
     } catch (err: any) {
       console.error('Error fetching groups:', err);
@@ -169,8 +195,8 @@ function GroupsContent() {
 
     if (action === 'create' && !isCreateOpen) {
       setIsCreateOpen(true);
-      window.history.replaceState({ modal: 'create' }, '');
     }
+
   }, [searchParams, isCreateOpen]);
 
   // Listen to global compose event
@@ -205,7 +231,7 @@ function GroupsContent() {
               const venue = venuesMap.get(groupData.venueId);
               // 태그가 없거나 기본 Studio인 경우 업데이트 진행
               if (venue.category && (!groupData.tags || groupData.tags.length === 0 || groupData.tags.includes('Studio'))) {
-                const catMap = ['Studio', 'Shop', 'Stay', 'Rental', 'Beauty', 'Wellness', 'Restaurant', 'Cafe', 'Office', 'Online'];
+                const catMap = ['Studio', 'Shop', 'Academy', 'Stay', 'Rental', 'Beauty', 'Wellness', 'Restaurant', 'Cafe', 'Office'];
                 const targetCat = catMap.find(c => venue.category.toLowerCase().includes(c.toLowerCase())) || 'Studio'; // fallback to Studio if no match
 
                 // 해당 카테고리가 Studio가 아닐 경우에만 업데이트
@@ -265,6 +291,7 @@ function GroupsContent() {
   const categoryCounts = {
     Studio: publishedGroups.filter(g => g.activeServices?.class || g.tags?.includes('Studio') || (!g.tags || g.tags.length === 0)).length,
     Shop: publishedGroups.filter(g => g.activeServices?.shop || g.tags?.includes('Shop')).length,
+    Academy: publishedGroups.filter(g => g.tags?.includes('Academy')).length,
     Stay: publishedGroups.filter(g => g.activeServices?.stay || g.tags?.includes('Stay')).length,
     Rental: publishedGroups.filter(g => g.activeServices?.rental || g.tags?.includes('Rental')).length,
     Beauty: publishedGroups.filter(g => g.activeServices?.beauty || g.tags?.includes('Beauty')).length,
@@ -272,20 +299,19 @@ function GroupsContent() {
     Restaurant: publishedGroups.filter(g => g.activeServices?.restaurant || g.tags?.includes('Restaurant')).length,
     Cafe: publishedGroups.filter(g => g.activeServices?.cafe || g.tags?.includes('Cafe')).length,
     Office: publishedGroups.filter(g => g.activeServices?.office || g.tags?.includes('Office')).length,
-    Online: publishedGroups.filter(g => g.activeServices?.online || g.tags?.includes('Online')).length,
   };
 
   const discoveryCategories = [
     { id: 'Studio', icon: 'palette', color: 'bg-primary-container', text: 'text-primary' },
     { id: 'Shop', icon: 'shopping_bag', color: 'bg-secondary-container', text: 'text-secondary' },
+    { id: 'Academy', icon: 'school', color: 'bg-blue-100', text: 'text-blue-900' },
     { id: 'Stay', icon: 'bed', color: 'bg-tertiary-container', text: 'text-tertiary' },
-    { id: 'Rental', icon: 'car_rental', color: 'bg-slate-100', text: 'text-slate-900' },
+    { id: 'Rental', icon: 'meeting_room', color: 'bg-slate-100', text: 'text-slate-900' },
     { id: 'Beauty', icon: 'face_retouching_natural', color: 'bg-pink-100', text: 'text-pink-900' },
     { id: 'Wellness', icon: 'self_care', color: 'bg-rose-100', text: 'text-rose-900' },
     { id: 'Restaurant', icon: 'restaurant', color: 'bg-orange-100', text: 'text-orange-900' },
     { id: 'Cafe', icon: 'local_cafe', color: 'bg-amber-100', text: 'text-amber-900' },
-    { id: 'Office', icon: 'work', color: 'bg-slate-100', text: 'text-slate-900' },
-    { id: 'Online', icon: 'computer', color: 'bg-blue-100', text: 'text-blue-900' }
+    { id: 'Office', icon: 'work', color: 'bg-slate-100', text: 'text-slate-900' }
   ];
 
   const getFilteredGroups = () => {
@@ -303,7 +329,7 @@ function GroupsContent() {
         (selectedCategory === 'Restaurant' && g.activeServices?.restaurant) ||
         (selectedCategory === 'Cafe' && g.activeServices?.cafe) ||
         (selectedCategory === 'Office' && g.activeServices?.office) ||
-        (selectedCategory === 'Online' && g.activeServices?.online);
+        (selectedCategory === 'Academy' && g.tags?.includes('Academy'));
     });
   };
 
@@ -319,14 +345,24 @@ function GroupsContent() {
     );
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setCreateForm(prev => ({
-        ...prev,
-        coverImage: file,
-        previewUrl: URL.createObjectURL(file)
-      }));
+  // Venue search handler
+  const handleVenueSearch = async (searchTerm: string) => {
+    setVenueSearch(searchTerm);
+    if (searchTerm.length < 2) {
+      setVenueResults([]);
+      return;
+    }
+    setVenueSearchLoading(true);
+    try {
+      const venuesSnap = await getDocs(query(collection(db, 'venues')));
+      const results = venuesSnap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter((v: any) => v.name?.toLowerCase().includes(searchTerm.toLowerCase()));
+      setVenueResults(results);
+    } catch (e) {
+      console.error('Venue search error:', e);
+    } finally {
+      setVenueSearchLoading(false);
     }
   };
 
@@ -343,13 +379,7 @@ function GroupsContent() {
 
     setCreateLoading(true);
     try {
-      let imageUrl = '';
-      if (createForm.coverImage) {
-        const path = `groups/${Date.now()}_${createForm.coverImage.name}`;
-        imageUrl = await storageService.uploadFile(createForm.coverImage, path);
-      }
-
-      // Map categories to services or tags
+      // Map categories to services
       const activeServices = {
         class: createForm.category === 'Studio',
         shop: createForm.category === 'Shop',
@@ -359,14 +389,13 @@ function GroupsContent() {
         wellness: createForm.category === 'Wellness',
         restaurant: createForm.category === 'Restaurant',
         cafe: createForm.category === 'Cafe',
-        office: createForm.category === 'Office',
-        online: createForm.category === 'Online'
+        office: createForm.category === 'Office'
       };
 
       const newGroupData: Partial<Group> = {
         name: createForm.name,
         description: createForm.description,
-        coverImage: imageUrl,
+        coverImage: '',
         tags: [createForm.category],
         ownerId: user.uid,
         representative: {
@@ -381,6 +410,11 @@ function GroupsContent() {
         updatedAt: new Date()
       };
 
+      // Link venue if selected (address is always derived from venue, not stored in group)
+      if (venueType === 'venue' && selectedVenue) {
+        newGroupData.venueId = selectedVenue.id;
+      }
+
       const memberData: Omit<Member, 'id'> = {
         name: profile?.nickname || user.displayName || t('groups.leader_fallback'),
         avatar: profile?.photoURL || user.photoURL || '',
@@ -394,10 +428,12 @@ function GroupsContent() {
         description: '',
         category: 'Studio',
         joinPolicy: 'open',
-        coverImage: null,
-        previewUrl: null
       });
-      setIsCreateOpen(false);
+      setVenueType('');
+      setSelectedVenue(null);
+      setVenueSearch('');
+      setVenueResults([]);
+      handleCreateClose();
       fetchGroups();
     } catch (error) {
       console.error('Error creating group:', error);
@@ -442,11 +478,13 @@ function GroupsContent() {
                 <div className="relative aspect-[16/9] rounded-2xl overflow-hidden mb-4 shadow-md group-hover:shadow-xl transition-all duration-300">
                   <GroupCoverImage group={group} className="group-hover:scale-105" />
                   <div className="absolute inset-0 bg-black/10 z-10"></div>
+                  {group.address && (
                   <div className="absolute top-3 left-3">
                     <span className="bg-white/90 backdrop-blur px-2.5 py-0.5 rounded-full text-[10px] font-bold text-primary flex items-center gap-1 shadow-sm">
-                      <span className="material-symbols-outlined text-[12px]">location_on</span> {group.address || t('groups.venue_fallback')}
+                      <span className="material-symbols-outlined text-[12px]">location_on</span> {extractDong(group.address)}
                     </span>
                   </div>
+                  )}
                   <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 via-black/40 to-transparent z-20 text-white">
                     <h3 className="text-lg font-bold font-headline mb-0.5 w-full truncate flex items-baseline gap-2">
                       <span className="text-white">{group.name}</span>
@@ -671,36 +709,179 @@ function GroupsContent() {
               </div>
             </section>
 
-            {/* Section: Category */}
+            {/* Section: Activity Type (Online vs Venue) */}
             <section className="bg-white rounded-[12px] p-6 shadow-sm border border-outline-variant/30">
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-outline mb-4">{t('groups.form_category_label')}</label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-outline mb-4">{t('groups.form_venue_type_label')}</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {[
-                  { id: 'Studio', icon: 'palette' },
-                  { id: 'Shop', icon: 'shopping_bag' },
-                  { id: 'Stay', icon: 'bed' },
-                  { id: 'Rental', icon: 'car_rental' },
-                  { id: 'Beauty', icon: 'face_retouching_natural' },
-                  { id: 'Wellness', icon: 'self_care' },
-                  { id: 'Restaurant', icon: 'restaurant' },
-                  { id: 'Cafe', icon: 'local_cafe' },
-                  { id: 'Office', icon: 'work' },
-                  { id: 'Online', icon: 'computer' }
-                ].map((cat) => (
-                  <button
-                    key={cat.id}
-                    onClick={() => setCreateForm(prev => ({ ...prev, category: cat.id }))}
-                    className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all group active:scale-95 ${createForm.category === cat.id
-                      ? 'border-primary bg-primary-container/10'
-                      : 'border-transparent bg-surface-container-low hover:bg-surface-container-high'
+                  { id: 'online' as const, icon: 'language', label: t('groups.venue_type_online'), desc: t('groups.venue_type_online_desc') },
+                  { id: 'venue' as const, icon: 'location_on', label: t('groups.venue_type_venue'), desc: t('groups.venue_type_venue_desc') }
+                ].map((opt) => (
+                  <div
+                    key={opt.id}
+                    onClick={() => {
+                      setVenueType(opt.id);
+                      if (opt.id === 'online') {
+                        setSelectedVenue(null);
+                        setVenueSearch('');
+                        setVenueResults([]);
+                        // Reset category if currently on venue-only category
+                        const onlineRestricted = ['Stay', 'Rental', 'Restaurant', 'Cafe'];
+                        if (onlineRestricted.includes(createForm.category)) {
+                          setCreateForm(prev => ({ ...prev, category: 'Studio' }));
+                        }
+                      }
+                    }}
+                    className={`relative p-5 rounded-xl border-2 cursor-pointer group hover:shadow-md transition-all ${venueType === opt.id
+                      ? 'border-primary bg-primary-container/5'
+                      : 'border-outline-variant/30 bg-white hover:border-outline'
                       }`}
                   >
-                    <span className={`material-symbols-outlined mb-2 ${createForm.category === cat.id ? 'text-primary' : 'text-outline'}`}>{cat.icon}</span>
-                    <span className={`text-[12px] font-semibold ${createForm.category === cat.id ? 'text-primary' : 'text-on-surface-variant'}`}>{t(`groups.cat_${cat.id.toLowerCase()}`)}</span>
-                  </button>
+                    <div className="flex justify-between items-start mb-3">
+                      <span className={`material-symbols-outlined text-2xl ${venueType === opt.id ? 'text-primary' : 'text-outline'}`}>{opt.icon}</span>
+                      <div className={`w-5 h-5 rounded-full border-4 bg-white ${venueType === opt.id ? 'border-primary' : 'border-outline-variant'}`}></div>
+                    </div>
+                    <p className="font-bold text-sm mb-1">{opt.label}</p>
+                    <p className="text-[12px] text-on-surface-variant font-medium">{opt.desc}</p>
+                  </div>
                 ))}
               </div>
+
+              {/* Venue Search (only when venue type selected) */}
+              {venueType === 'venue' && (
+                <div className="mt-5 space-y-3">
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-outline">{t('groups.venue_search_label')}</label>
+                  <div className="relative">
+                    <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline text-lg">search</span>
+                    <input
+                      className="w-full bg-surface-container-low border-transparent focus:border-primary focus:ring-0 rounded-lg p-3 pl-12 text-on-surface font-medium transition-all"
+                      placeholder={t('groups.venue_search_placeholder')}
+                      type="text"
+                      value={venueSearch}
+                      onChange={(e) => handleVenueSearch(e.target.value)}
+                    />
+                    {venueSearchLoading && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Venue results list */}
+                  {venueResults.length > 0 && !selectedVenue && (
+                    <div className="bg-surface-container-low rounded-xl border border-outline-variant/30 max-h-48 overflow-y-auto">
+                      {venueResults.map((v: any) => (
+                        <button
+                          key={v.id}
+                          onClick={() => {
+                            setSelectedVenue(v);
+                            setVenueSearch(v.name);
+                            setVenueResults([]);
+                            // Auto-set category from venue
+                            if (v.category) {
+                              const validCats = ['Studio', 'Shop', 'Academy', 'Stay', 'Rental', 'Beauty', 'Wellness', 'Restaurant', 'Cafe', 'Office'];
+                              const match = validCats.find(c => c.toLowerCase() === v.category.toLowerCase());
+                              if (match) setCreateForm(prev => ({ ...prev, category: match }));
+                            }
+                          }}
+                          className="w-full text-left p-3 hover:bg-surface-container-high transition-colors flex items-center gap-3 border-b border-outline-variant/10 last:border-0"
+                        >
+                          <span className="material-symbols-outlined text-primary">location_on</span>
+                          <div>
+                            <p className="text-sm font-semibold text-on-surface">{v.name}</p>
+                            <p className="text-[11px] text-outline">{v.address || v.city || ''}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {venueSearch.length >= 2 && venueResults.length === 0 && !venueSearchLoading && !selectedVenue && (
+                    <p className="text-[12px] text-outline text-center py-2">{t('groups.venue_no_results')}</p>
+                  )}
+
+                  {/* Selected venue card */}
+                  {selectedVenue && (
+                    <div className="flex items-center gap-3 p-4 bg-primary-container/10 rounded-xl border border-primary/20">
+                      <span className="material-symbols-outlined text-primary text-2xl">check_circle</span>
+                      <div className="flex-1">
+                        <p className="text-sm font-bold text-on-surface">{selectedVenue.name}</p>
+                        <p className="text-[11px] text-outline">{selectedVenue.address || selectedVenue.city || ''}</p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setSelectedVenue(null);
+                          setVenueSearch('');
+                        }}
+                        className="text-error hover:bg-error-container/20 p-2 rounded-full transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-sm">close</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Guide for unregistered venue */}
+                  <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-lg border border-amber-200/50">
+                    <span className="material-symbols-outlined text-amber-600 text-lg mt-0.5">info</span>
+                    <div>
+                      <p className="text-[12px] font-semibold text-amber-800">{t('groups.venue_not_registered')}</p>
+                      <p className="text-[11px] text-amber-700">{t('groups.venue_register_guide')}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </section>
+
+            {/* Section: Category */}
+            {venueType && (
+            <section className="bg-white rounded-[12px] p-6 shadow-sm border border-outline-variant/30">
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-outline mb-4">{t('groups.form_category_label')}</label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                {(() => {
+                  const allCats = [
+                    { id: 'Studio', icon: 'palette' },
+                    { id: 'Shop', icon: 'shopping_bag' },
+                    { id: 'Academy', icon: 'school' },
+                    { id: 'Stay', icon: 'bed' },
+                    { id: 'Rental', icon: 'meeting_room' },
+                    { id: 'Beauty', icon: 'face_retouching_natural' },
+                    { id: 'Wellness', icon: 'self_care' },
+                    { id: 'Restaurant', icon: 'restaurant' },
+                    { id: 'Cafe', icon: 'local_cafe' },
+                    { id: 'Office', icon: 'work' }
+                  ];
+                  // Online groups cannot select Stay, Rental, Restaurant, Cafe
+                  const onlineRestricted = ['Stay', 'Rental', 'Restaurant', 'Cafe'];
+                  return allCats.map((cat) => {
+                    const isDisabled = venueType === 'online' && onlineRestricted.includes(cat.id);
+                    return (
+                      <button
+                        key={cat.id}
+                        disabled={isDisabled}
+                        onClick={() => !isDisabled && setCreateForm(prev => ({ ...prev, category: cat.id }))}
+                        className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all active:scale-95 ${isDisabled
+                          ? 'border-transparent bg-surface-container-low/50 opacity-40 cursor-not-allowed'
+                          : createForm.category === cat.id
+                          ? 'border-primary bg-primary-container/10'
+                          : 'border-transparent bg-surface-container-low hover:bg-surface-container-high cursor-pointer'
+                          }`}
+                      >
+                        <span className={`material-symbols-outlined mb-2 ${isDisabled ? 'text-outline/50' : createForm.category === cat.id ? 'text-primary' : 'text-outline'}`}>{cat.icon}</span>
+                        <span className={`text-[12px] font-semibold ${isDisabled ? 'text-outline/50' : createForm.category === cat.id ? 'text-primary' : 'text-on-surface-variant'}`}>{t(`groups.cat_${cat.id.toLowerCase()}`)}</span>
+                      </button>
+                    );
+                  });
+                })()}
+              </div>
+              {venueType === 'online' && (
+                <p className="mt-3 text-[11px] text-outline flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-sm">info</span>
+                  {t('groups.category_unavailable_online')}:{' '}
+                  <span className="font-semibold">{t('groups.cat_stay')}, {t('groups.cat_rental')}, {t('groups.cat_restaurant')}, {t('groups.cat_cafe')}</span>
+                </p>
+              )}
+            </section>
+            )}
 
             {/* Section: Membership Strategy */}
             <section className="bg-white rounded-[12px] p-6 shadow-sm border border-outline-variant/30">
@@ -728,51 +909,6 @@ function GroupsContent() {
                   </div>
                 ))}
               </div>
-            </section>
-
-            {/* Section: Media */}
-            <section className="bg-white rounded-[12px] p-6 shadow-sm border border-outline-variant/30">
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-outline mb-4">{t('groups.form_cover_label')}</label>
-              <div className="relative group">
-                <div className={`w-full aspect-[21/9] rounded-xl overflow-hidden border-2 border-dashed flex flex-col items-center justify-center transition-all cursor-pointer ${createForm.previewUrl ? 'border-primary' : 'border-outline-variant bg-surface-container-low hover:bg-surface-container hover:border-primary'
-                  }`}>
-                  {createForm.previewUrl ? (
-                    <img src={createForm.previewUrl} className="w-full h-full object-cover" alt="Preview" />
-                  ) : (
-                    <>
-                      <div className="p-4 rounded-full bg-white shadow-sm mb-3">
-                        <span className="material-symbols-outlined text-primary text-3xl">upload_file</span>
-                      </div>
-                      <p className="font-bold text-sm">{t('groups.upload_instruction')}</p>
-                      <p className="text-[12px] text-outline font-medium mt-1">{t('groups.upload_limits')}</p>
-                    </>
-                  )}
-                </div>
-                <input
-                  className="absolute inset-0 opacity-0 cursor-pointer"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                />
-              </div>
-
-              {createForm.previewUrl && (
-                <div className="mt-4 flex items-center gap-3 p-3 bg-surface-container-low rounded-lg">
-                  <div className="w-12 h-12 rounded bg-outline-variant/20 flex items-center justify-center overflow-hidden">
-                    <img src={createForm.previewUrl} className="w-full h-full object-cover" alt="Small Preview" />
-                  </div>
-                  <div>
-                    <p className="text-[12px] font-semibold text-on-surface">{createForm.coverImage?.name}</p>
-                    <p className="text-[10px] text-outline font-medium">{(createForm.coverImage?.size || 0 / 1024 / 1024).toFixed(1)} MB • {t('groups.upload_ready')}</p>
-                  </div>
-                  <button
-                    onClick={() => setCreateForm(prev => ({ ...prev, coverImage: null, previewUrl: null }))}
-                    className="ml-auto text-error hover:bg-error-container/20 p-2 rounded-full transition-colors"
-                  >
-                    <span className="material-symbols-outlined text-sm">delete</span>
-                  </button>
-                </div>
-              )}
             </section>
 
             <div className="h-8"></div>

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { groupService } from '@/lib/firebase/groupService';
 import { Group, GroupClass } from '@/types/group';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -10,6 +10,8 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/clientApp';
 import { toast } from 'sonner';
 import BottomSheet from '@/components/common/BottomSheet';
+import { useBookingEngine } from '@/hooks/useBookingEngine';
+import UnifiedCheckoutModal from '@/components/common/UnifiedCheckoutModal';
 
 const DAY_ORDER = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'] as const;
 const DAY_LABELS: Record<string, string> = {
@@ -43,7 +45,9 @@ function formatScheduleDates(schedule: { week: number; date: string }[]): string
 export default function ClubClassSelectionPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const groupId = params.groupId as string;
+  const modalClassId = searchParams.get('modal');
   
   const [group, setGroup] = useState<Group | null>(null);
   const [loading, setLoading] = useState(true);
@@ -72,6 +76,10 @@ export default function ClubClassSelectionPage() {
   const captureRef = useRef<HTMLDivElement>(null);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+
+  const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
+  const [checkoutRole, setCheckoutRole] = useState<'leader' | 'follower'>('leader');
+  const { createBooking, reportPayment, isLoading: isBooking } = useBookingEngine();
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -123,6 +131,21 @@ export default function ClubClassSelectionPage() {
     
     fetchGroupData();
   }, [groupId]);
+
+  useEffect(() => {
+    if (group && modalClassId) {
+      const allItems = [
+        ...(group.monthlyPasses || []).map(p => ({ ...p, itemType: 'monthlyPass' as const })),
+        ...(group.discounts || []).map(d => ({ ...d, itemType: 'discount' as const })),
+        ...(group.classes || []).map(c => ({ ...c, itemType: 'class' as const }))
+      ];
+      
+      const targetItem = allItems.find(item => item.id === modalClassId);
+      if (targetItem) {
+        setSelectedClassDetail(targetItem);
+      }
+    }
+  }, [group, modalClassId]);
 
   if (loading) {
     return (
@@ -183,6 +206,43 @@ export default function ClubClassSelectionPage() {
       return newSet;
     });
     setSelectedClassDetail(null); // Close modal after adding
+  };
+
+  const handleCheckoutClick = () => {
+    if (!selectedClassDetail) return;
+    setCheckoutRole('leader'); // Default role
+    setCheckoutModalOpen(true);
+  };
+
+  const handleDirectReserve = (cls: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedClassDetail({ ...cls, itemType: 'class' });
+    setCheckoutRole('leader');
+    setCheckoutModalOpen(true);
+  };
+
+  const handleCheckoutSubmit = async () => {
+    if (!selectedClassDetail) return;
+    try {
+      const price = selectedClassDetail.amount || 0;
+      const orderId = await createBooking({
+        domain: 'class_daily',
+        itemName: selectedClassDetail.title,
+        itemImageUrl: selectedClassDetail.imageUrl || selectedClassDetail.image || selectedClassDetail.photoURL || selectedClassDetail.avatar || group?.coverImage || group?.logo || '',
+        itemId: selectedClassDetail.id,
+        hostId: group?.ownerId || '',
+        totalAmount: price,
+        currency: selectedClassDetail.currency || 'KRW',
+        payload: {
+          role: checkoutRole,
+          classDate: selectedClassDetail.schedule?.[0]?.date || new Date().toISOString()
+        }
+      });
+      return orderId;
+    } catch (err: any) {
+      alert(err.message || 'Booking failed');
+      throw err;
+    }
   };
 
   const handleRemoveFromBasket = (classId: string, e?: React.MouseEvent) => {
@@ -531,7 +591,14 @@ export default function ClubClassSelectionPage() {
                                 </div>
                               )}
 
-                              {selectedClasses.has(cls.id) ? (
+                              {cls.classType === 'special' ? (
+                                <button
+                                  onClick={(e) => handleDirectReserve(cls, e)}
+                                  className="text-[#0057bd] flex items-center justify-center font-black text-[10px] tracking-wider uppercase border border-[#0057bd] px-3 py-1.5 rounded-full hover:bg-[#0057bd]/5 transition-colors"
+                                >
+                                  RESERVE
+                                </button>
+                              ) : selectedClasses.has(cls.id) ? (
                                 <button 
                                   onClick={(e) => { e.stopPropagation(); handleRemoveFromBasket(cls.id); }}
                                   className="text-[#0057bd] flex items-center justify-center transition-colors"
@@ -624,7 +691,14 @@ export default function ClubClassSelectionPage() {
                           </div>
                         )}
 
-                        {selectedClasses.has(cls.id) ? (
+                        {cls.classType === 'special' ? (
+                          <button
+                            onClick={(e) => handleDirectReserve(cls, e)}
+                            className="text-[#0057bd] flex items-center justify-center font-black text-[10px] tracking-wider uppercase border border-[#0057bd] px-3 py-1.5 rounded-full hover:bg-[#0057bd]/5 transition-colors"
+                          >
+                            RESERVE
+                          </button>
+                        ) : selectedClasses.has(cls.id) ? (
                           <button 
                             onClick={(e) => { e.stopPropagation(); handleRemoveFromBasket(cls.id); }}
                             className="text-[#0057bd] flex items-center justify-center transition-colors"
@@ -940,7 +1014,14 @@ export default function ClubClassSelectionPage() {
                 return null;
               })()}
             </div>
-            {selectedClasses.has(selectedClassDetail.id) ? (
+            {selectedClassDetail.classType === 'special' ? (
+              <button 
+                onClick={handleCheckoutClick}
+                className="flex-shrink-0 bg-primary text-white px-8 py-3.5 rounded-full font-black text-sm tracking-wide shadow-xl active:scale-95 transition-transform"
+              >
+                RESERVE
+              </button>
+            ) : selectedClasses.has(selectedClassDetail.id) ? (
               <button 
                 onClick={(e) => handleRemoveFromBasket(selectedClassDetail.id, e)}
                 className="flex-shrink-0 bg-[#f2f4f4] text-[#e63946] px-7 py-3 rounded-xl font-black text-sm tracking-wide active:scale-95 transition-transform flex items-center gap-1"
@@ -1082,6 +1163,77 @@ export default function ClubClassSelectionPage() {
           </button>
         </div>
       </BottomSheet>
+
+      {/* Checkout Modal */}
+      {selectedClassDetail && (
+        <UnifiedCheckoutModal
+          isOpen={checkoutModalOpen}
+          onClose={() => setCheckoutModalOpen(false)}
+          title="Special Class Reservation"
+          subtitle={`${selectedClassDetail.title} · ${selectedClassDetail.schedule?.[0]?.date ? new Date(selectedClassDetail.schedule[0].date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }) : 'Date TBD'}`}
+          totalAmount={selectedClassDetail.amount || 0}
+          onCheckout={handleCheckoutSubmit}
+          isProcessing={isBooking}
+          buttonText="Submit Request"
+          bankDetails={{
+            bankName: (group as any)?.bankName || 'Kookmin Bank',
+            accountHolder: (group as any)?.accountHolder || group?.name || 'World of Community',
+            accountNumber: (group as any)?.accountNumber || '123456-00-123456'
+          }}
+          onReportPayment={reportPayment}
+        >
+          <div className="space-y-6 py-2">
+            <div className="flex gap-3 p-3 bg-neutral-50 dark:bg-neutral-800 rounded-2xl border border-neutral-200 dark:border-neutral-700">
+              <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-neutral-200 dark:bg-neutral-700">
+                {(selectedClassDetail.imageUrl || selectedClassDetail.image || selectedClassDetail.photoURL || selectedClassDetail.avatar || group?.coverImage || group?.logo) ? (
+                  <img src={selectedClassDetail.imageUrl || selectedClassDetail.image || selectedClassDetail.photoURL || selectedClassDetail.avatar || group?.coverImage || group?.logo} alt={selectedClassDetail.title} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <span className="material-symbols-outlined text-[24px] text-neutral-400">school</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-bold text-neutral-500 uppercase">{group?.name || 'World of Community'}</p>
+                <p className="text-sm font-bold text-neutral-900 dark:text-white truncate">{selectedClassDetail.title}</p>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  <span className="text-[10px] bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300 px-2 py-0.5 rounded-full font-bold">
+                    {selectedClassDetail.schedule?.[0]?.timeSlot || `${selectedClassDetail.startTime} - ${selectedClassDetail.endTime}`}
+                  </span>
+                  <span className="text-[10px] bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300 px-2 py-0.5 rounded-full font-bold">
+                    {selectedClassDetail.location || group?.name}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-sm font-bold text-neutral-900 dark:text-white mb-3">Select Role</h4>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setCheckoutRole('leader')}
+                  className={`flex flex-col items-center justify-center py-4 rounded-xl border-2 transition-all ${checkoutRole === 'leader' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-300'}`}
+                >
+                  <span className={`text-sm font-black uppercase ${checkoutRole === 'leader' ? 'text-blue-700 dark:text-blue-400' : 'text-neutral-700 dark:text-neutral-300'}`}>Leader</span>
+                </button>
+                <button
+                  onClick={() => setCheckoutRole('follower')}
+                  className={`flex flex-col items-center justify-center py-4 rounded-xl border-2 transition-all ${checkoutRole === 'follower' ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20' : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-300'}`}
+                >
+                  <span className={`text-sm font-black uppercase ${checkoutRole === 'follower' ? 'text-purple-700 dark:text-purple-400' : 'text-neutral-700 dark:text-neutral-300'}`}>Follower</span>
+                </button>
+              </div>
+            </div>
+            
+            <div className="bg-neutral-50 dark:bg-neutral-800 rounded-xl p-4 border border-neutral-100 dark:border-neutral-700">
+              <h4 className="text-[13px] font-black text-neutral-900 dark:text-white mb-2 flex items-center gap-1.5"><span className="material-symbols-outlined text-[16px] text-blue-500">info</span> Notice</h4>
+              <p className="text-xs font-medium text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                After submitting this request, your booking will be in "Waiting Confirmation" status. You will receive an instruction for the payment. Your spot is finalized once the host confirms the payment.
+              </p>
+            </div>
+          </div>
+        </UnifiedCheckoutModal>
+      )}
     </div>
   );
 }

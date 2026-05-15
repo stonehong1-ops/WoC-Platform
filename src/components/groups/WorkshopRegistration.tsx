@@ -1,13 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-
-const MOCK_WORKSHOPS = [
-  { id: "1", title: "Contemporary Dance Fundamentals", instructor: "Sarah Kim", level: "Beginner", date: "Jun 8", time: "2:00 PM", duration: "3h", slots: 20, registered: 16, status: "open" as const, description: "Explore foundational movements and body awareness through contemporary dance." },
-  { id: "2", title: "Hip Hop Choreography Intensive", instructor: "James Lee", level: "Intermediate", date: "Jun 15", time: "10:00 AM", duration: "4h", slots: 15, registered: 15, status: "full" as const, description: "Learn a complete routine from a professional choreographer." },
-  { id: "3", title: "Freestyle Battle Workshop", instructor: "David Park", level: "Advanced", date: "Jun 22", time: "1:00 PM", duration: "2h", slots: 12, registered: 8, status: "open" as const, description: "Develop your freestyle skills and battle techniques." },
-  { id: "4", title: "Kids Dance Camp", instructor: "Mia Johnson", level: "All Levels", date: "Jun 29", time: "9:00 AM", duration: "5h", slots: 25, registered: 20, status: "open" as const, description: "Fun-filled dance camp for children ages 6-12." },
-];
+import React, { useState, useMemo } from "react";
+import { Member } from "@/types/group";
 
 const LEVEL_STYLE: Record<string, { bg: string; text: string }> = {
   Beginner: { bg: "bg-emerald-500/10", text: "text-emerald-600" },
@@ -16,8 +10,24 @@ const LEVEL_STYLE: Record<string, { bg: string; text: string }> = {
   "All Levels": { bg: "bg-secondary-container/30", text: "text-on-secondary-container" },
 };
 
-export default function WorkshopRegistration() {
+export default function WorkshopRegistration({ members = [] }: { members?: Member[] }) {
   const [registered, setRegistered] = useState<Set<string>>(new Set());
+
+  // Extract instructors from members, prioritizing roles
+  const instructors = useMemo(() => {
+    return members.filter(m => ['instructor', 'owner', 'staff'].includes(m.role || ''));
+  }, [members]);
+
+  const getInstructorName = (index: number, fallback: string) => {
+    return instructors.length > 0 ? instructors[index % instructors.length]?.name : fallback;
+  };
+
+  const MOCK_WORKSHOPS = [
+    { id: "1", title: "Contemporary Dance Fundamentals", instructor: getInstructorName(0, "Instructor"), level: "Beginner", date: "Jun 8", time: "2:00 PM", duration: "3h", slots: 20, registered: 16, status: "open" as const, description: "Explore foundational movements and body awareness through contemporary dance." },
+    { id: "2", title: "Hip Hop Choreography Intensive", instructor: getInstructorName(1, "Instructor"), level: "Intermediate", date: "Jun 15", time: "10:00 AM", duration: "4h", slots: 15, registered: 15, status: "full" as const, description: "Learn a complete routine from a professional choreographer." },
+    { id: "3", title: "Freestyle Battle Workshop", instructor: getInstructorName(2, "Instructor"), level: "Advanced", date: "Jun 22", time: "1:00 PM", duration: "2h", slots: 12, registered: 8, status: "open" as const, description: "Develop your freestyle skills and battle techniques." },
+    { id: "4", title: "Kids Dance Camp", instructor: getInstructorName(3, "Instructor"), level: "All Levels", date: "Jun 29", time: "9:00 AM", duration: "5h", slots: 25, registered: 20, status: "open" as const, description: "Fun-filled dance camp for children ages 6-12." },
+  ];
 
   return (
     <div className="px-4 py-6 space-y-5 max-w-2xl mx-auto">

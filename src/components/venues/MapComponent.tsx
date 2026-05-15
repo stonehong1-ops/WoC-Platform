@@ -23,6 +23,7 @@ interface Venue {
   status: string;
   imageUrl?: string;
   brand?: string;
+  societyId?: string;
 }
 
 const mapContainerStyle = { width: '100%', height: '100%' };
@@ -105,14 +106,29 @@ export default function MapComponent({
     setZoom(coords.zoom);
   }, [location, map]);
 
+  // Society context detection
+  const [societyContext, setSocietyContext] = useState<string>('tango');
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlSociety = urlParams.get('society');
+    const sessionSociety = sessionStorage.getItem('woc_society');
+    setSocietyContext(urlSociety || sessionSociety || 'tango');
+  }, []);
+
   useEffect(() => {
     // Fetch all active venues globally to allow seamless discovery across bounds
     const q = query(collection(db, "venues"), where("status", "==", "active"));
     return onSnapshot(q, (snapshot) => {
       const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Venue));
-      setVenues(docs.filter(v => v.coordinates?.latitude && v.coordinates?.longitude));
+      const validDocs = docs.filter(v => v.coordinates?.latitude && v.coordinates?.longitude);
+      // Filter by society context
+      const filtered = validDocs.filter(v => {
+        if (societyContext === 'tango') return !v.societyId || v.societyId === 'tango';
+        return v.societyId === societyContext;
+      });
+      setVenues(filtered);
     });
-  }, []);
+  }, [societyContext]);
 
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
     if (isNaN(lat1) || isNaN(lon1) || isNaN(lat2) || isNaN(lon2)) return 999999;
@@ -250,11 +266,32 @@ export default function MapComponent({
   };
 
   const handleMarkerClick = (v: Venue) => {
-    router.push(`/venues/${v.id}`);
+    if (selectedVenueId === v.id) {
+      // Second click: Navigate to group's about tab
+      router.push(`/groups/${v.id}?tab=about`);
+    } else {
+      // First click: Focus on map and select
+      setSelectedVenueId(v.id);
+      setIsExpanded(true);
+      if (map) {
+        map.panTo({ lat: v.coordinates.latitude, lng: v.coordinates.longitude });
+        map.setZoom(16);
+      }
+    }
   };
 
   const handleListItemClick = (v: Venue) => {
-    router.push(`/venues/${v.id}`);
+    if (selectedVenueId === v.id) {
+      // Second click: Navigate to group's about tab
+      router.push(`/groups/${v.id}?tab=about`);
+    } else {
+      // First click: Focus on map and select
+      setSelectedVenueId(v.id);
+      if (map) {
+        map.panTo({ lat: v.coordinates.latitude, lng: v.coordinates.longitude });
+        map.setZoom(16);
+      }
+    }
   };
 
   const findMyLocation = () => {

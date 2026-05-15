@@ -11,6 +11,7 @@ import { useModalNavigation } from '@/hooks/useModalNavigation';
 import RentalWishlistTray from '@/components/rental/RentalWishlistTray';
 import RentalDetail from '@/components/rental/RentalDetail';
 import CreateRentalSpace from '@/components/rental/CreateRentalSpace';
+import ImageWithFallback from '@/components/common/ImageWithFallback';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 
@@ -304,23 +305,30 @@ function RentalPageContent() {
             {filteredSpaces.map(space => (
               <div key={space.id} onClick={() => openDetail(space.id)} className="group cursor-pointer animate-in fade-in slide-in-from-bottom-2 duration-500">
                 <div className="relative aspect-square rounded-xl bg-[#f2f4f4] overflow-hidden mb-3">
-                  {/* Fallback View */}
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-[#c4cacc]">
-                    <span className="material-symbols-outlined text-4xl mb-1">apartment</span>
-                    <span className="text-[10px] font-bold tracking-wider uppercase">{t('rental.no_image')}</span>
-                  </div>
+                  {(() => {
+                    let firstImage = '';
+                    const imgData = space.images || (space as any).imageUrls || (space as any).image;
+                    
+                    if (Array.isArray(imgData) && imgData.length > 0) {
+                      firstImage = imgData[0];
+                    } else if (typeof imgData === 'string') {
+                      firstImage = imgData;
+                    }
+                    
+                    if (!firstImage || typeof firstImage !== 'string' || firstImage.trim() === '') {
+                      firstImage = (space as any).groupCoverImage || '';
+                    }
 
-                  {/* Actual Image */}
-                  {space.images?.[0] && space.images[0].trim() !== '' && (
-                    <img
-                      alt={space.title}
-                      className="absolute inset-0 z-10 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 bg-[#f2f4f4]"
-                      src={space.images[0]}
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                      }}
-                    />
-                  )}
+                    return (
+                      <ImageWithFallback
+                        alt={space.title}
+                        className="absolute inset-0 z-10 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 bg-[#f2f4f4]"
+                        src={firstImage}
+                        fallbackType="cover"
+                        category={(space as any).groupCategory || 'Rental'}
+                      />
+                    );
+                  })()}
 
                   <button
                     onClick={(e) => handleToggleLike(e, space)}

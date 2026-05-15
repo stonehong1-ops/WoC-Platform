@@ -42,6 +42,9 @@ class PopupManager {
 }
 
 const manager = new PopupManager();
+if (typeof window !== 'undefined') {
+  (window as any).__popupManager = manager;
+}
 
 /**
  * 풀스크린 팝업/모달에서 디바이스 뒤로가기를 인터셉트해 팝업을 닫는 훅.

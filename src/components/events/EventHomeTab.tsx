@@ -5,7 +5,6 @@ import { Event, EventArtist, EventVenueItem, EventPackage } from "@/types/event"
 import { userService } from "@/lib/firebase/userService";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/clientApp";
-import { format } from "date-fns";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Props {
@@ -22,7 +21,7 @@ const getNormalizedDate = (val: any): Date => {
 };
 
 export default function EventHomeTab({ event, onChatWithHost, canEdit }: Props) {
-  const { t } = useLanguage();
+  const { t, formatDate } = useLanguage();
   const [venue, setVenue] = useState<any>(null);
   const [hostProfile, setHostProfile] = useState<any>(null);
   const [galleryIdx, setGalleryIdx] = useState<number | null>(null);
@@ -49,8 +48,8 @@ export default function EventHomeTab({ event, onChatWithHost, canEdit }: Props) 
   const endDate = event.endDate ? getNormalizedDate(event.endDate) : startDate;
   const isMultiDay = startDate.getTime() !== endDate.getTime();
   const dateStr = isMultiDay
-    ? `${format(startDate, "MMM d")} – ${format(endDate, "MMM d, yyyy")}`
-    : format(startDate, "MMM d, yyyy (EEE)");
+    ? `${formatDate(startDate, "shortMonthDay")} – ${formatDate(endDate, "dateOnly")}`
+    : `${formatDate(startDate, "dateOnly")} (${formatDate(startDate, "shortWeekday")})`;
 
   const hostPhone = hostProfile?.phone || event.organizerPhone;
   const hostPhoto = hostProfile?.photoURL || event.hostPhoto;
@@ -197,15 +196,17 @@ export default function EventHomeTab({ event, onChatWithHost, canEdit }: Props) 
 
       {/* ═══ ARTISTS ═══ */}
       {event.artists && event.artists.length > 0 && (() => {
+        const knownRoles = ['maestro', 'dj', 'performer'];
         const maestros = event.artists.filter(a => a.role === 'maestro');
         const djs = event.artists.filter(a => a.role === 'dj');
         const performers = event.artists.filter(a => a.role === 'performer');
+        const others = event.artists.filter(a => !knownRoles.includes(a.role));
         const renderGroup = (title: string, list: typeof maestros) => list.length > 0 && (
           <div className="mt-3 first:mt-0">
             <p className="text-[10px] font-black text-purple-400 uppercase tracking-widest mb-2 px-1">{title}</p>
             <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
-              {list.map(a => (
-                <div key={a.id} onClick={() => setSelectedArtist(a)}
+              {list.map((a, i) => (
+                <div key={a.id || a.name || i} onClick={() => setSelectedArtist(a)}
                   className="flex-shrink-0 w-[140px] bg-[#1a1a1a] rounded-xl overflow-hidden cursor-pointer hover:ring-1 hover:ring-purple-500/50 transition-all">
                   <div className="aspect-[3/4] bg-[#222] overflow-hidden">
                     {a.photoUrl ? <img src={a.photoUrl} alt={a.name} className="w-full h-full object-cover" /> :
@@ -213,7 +214,7 @@ export default function EventHomeTab({ event, onChatWithHost, canEdit }: Props) 
                   </div>
                   <div className="p-2.5">
                     <p className="text-xs font-bold text-white truncate">{a.name}</p>
-                    <p className="text-[10px] font-bold text-purple-400 capitalize">{a.role === 'maestro' ? 'The Maestro' : a.role === 'dj' ? 'DJ' : 'Performer'}</p>
+                    <p className="text-[10px] font-bold text-purple-400 capitalize">{a.role === 'maestro' ? 'The Maestro' : a.role === 'dj' ? 'DJ' : a.role === 'performer' ? 'Performer' : a.role}</p>
                     {a.country && <p className="text-[9px] text-[#888] mt-0.5">{a.country}</p>}
                   </div>
                 </div>
@@ -229,8 +230,9 @@ export default function EventHomeTab({ event, onChatWithHost, canEdit }: Props) 
             </div>
             <div className="p-3 bg-[#111]">
               {renderGroup('The Maestro', maestros)}
-              {renderGroup('DJ', djs)}
-              {renderGroup('Performer', performers)}
+               {renderGroup('DJ', djs)}
+               {renderGroup('Performer', performers)}
+               {renderGroup('Featured', others)}
             </div>
           </div>
         );
@@ -279,10 +281,10 @@ export default function EventHomeTab({ event, onChatWithHost, canEdit }: Props) 
             <p className="text-[10px] font-black text-primary uppercase tracking-widest">Packages</p>
           </div>
           <div className="p-3 bg-[#111] flex gap-3 overflow-x-auto no-scrollbar">
-            {event.packages.map(pkg => {
+            {event.packages.map((pkg, idx) => {
               const avail = pkg.totalTickets ? pkg.totalTickets - (pkg.soldTickets || 0) : null;
               return (
-                <div key={pkg.id} onClick={() => setSelectedPackage(pkg)}
+                <div key={pkg.id || pkg.name || idx} onClick={() => setSelectedPackage(pkg)}
                   className="flex-shrink-0 w-[260px] bg-[#1a1a1a] border border-[#333] rounded-xl overflow-hidden flex flex-col cursor-pointer hover:border-purple-500/50 transition-all">
                   {pkg.photoUrl && (
                     <div className="aspect-[16/9] bg-[#222] overflow-hidden">
@@ -296,11 +298,13 @@ export default function EventHomeTab({ event, onChatWithHost, canEdit }: Props) 
                     </div>
                   {avail !== null && <p className="text-[10px] font-bold text-green-400 mb-2">{avail} ticket available</p>}
                   <div className="flex-1 space-y-1 mb-3 max-h-[120px] overflow-y-auto">
-                    {pkg.includedItems.map((item, i) => (
-                      <p key={i} className="text-[10px] text-[#999] flex items-start gap-1.5">
-                        <span className="text-[#555] mt-px">•</span><span className="flex-1">{item}</span>
-                      </p>
-                    ))}
+                     {pkg.includedItems ? pkg.includedItems.map((item, i) => (
+                       <p key={i} className="text-[10px] text-[#999] flex items-start gap-1.5">
+                         <span className="text-[#555] mt-px">•</span><span className="flex-1">{item}</span>
+                       </p>
+                     )) : pkg.description && (
+                       <p className="text-[10px] text-[#999]">{pkg.description}</p>
+                     )}
                   </div>
                   {pkg.includedWorkshopCount && <p className="text-[10px] font-bold text-purple-400 mb-2">Includes {pkg.includedWorkshopCount} workshops</p>}
                   <div className="flex items-end justify-between mt-auto pt-2 border-t border-[#333]">
@@ -330,7 +334,7 @@ export default function EventHomeTab({ event, onChatWithHost, canEdit }: Props) 
               {event.scheduleDays?.map((day, i) => (
                 <button key={i} onClick={() => setActiveScheduleDay(i)}
                   className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${activeScheduleDay === i ? 'bg-purple-600 text-white' : 'text-[#888] hover:bg-[#222]'}`}>
-                  {day.dayLabel}
+                  {day.dayLabel || day.label}
                 </button>
               ))}
             </div>
@@ -505,7 +509,7 @@ export default function EventHomeTab({ event, onChatWithHost, canEdit }: Props) 
               </div>
               <div className="flex-1 pt-1">
                 <p className="text-lg font-bold text-white">{selectedArtist.name}</p>
-                <p className="text-xs font-bold text-purple-400 capitalize">{selectedArtist.role === 'maestro' ? 'The Maestro' : selectedArtist.role === 'dj' ? 'DJ' : 'Performer'}</p>
+                <p className="text-xs font-bold text-purple-400 capitalize">{selectedArtist.role === 'maestro' ? 'The Maestro' : selectedArtist.role === 'dj' ? 'DJ' : selectedArtist.role === 'performer' ? 'Performer' : selectedArtist.role}</p>
                 {selectedArtist.country && <p className="text-[11px] text-[#888] mt-1">{selectedArtist.country}</p>}
                 {selectedArtist.bio && <p className="text-xs text-[#aaa] mt-3 leading-relaxed">{selectedArtist.bio}</p>}
               </div>
@@ -527,9 +531,11 @@ export default function EventHomeTab({ event, onChatWithHost, canEdit }: Props) 
               </div>
               {selectedPackage.description && <p className="text-xs text-[#aaa] mb-4">{selectedPackage.description}</p>}
               <div className="space-y-1.5 mb-4">
-                {selectedPackage.includedItems.map((item, i) => (
-                  <p key={i} className="text-[11px] text-[#ccc] flex items-start gap-2"><span className="text-purple-400 mt-px">•</span>{item}</p>
-                ))}
+                 {selectedPackage.includedItems ? selectedPackage.includedItems.map((item, i) => (
+                   <p key={i} className="text-[11px] text-[#ccc] flex items-start gap-2"><span className="text-purple-400 mt-px">•</span>{item}</p>
+                 )) : selectedPackage.description && (
+                   <p className="text-[11px] text-[#ccc]">{selectedPackage.description}</p>
+                 )}
               </div>
               <div className="flex items-end justify-between pt-4 border-t border-[#333]">
                 <div>

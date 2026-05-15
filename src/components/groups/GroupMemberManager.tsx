@@ -8,10 +8,8 @@ import { groupService } from '@/lib/firebase/groupService';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { UserProfile } from '@/types/user';
 import { db } from '@/lib/firebase/clientApp';
-import { doc, updateDoc, deleteDoc, collection, query, onSnapshot, orderBy } from 'firebase/firestore';
-import { format, formatDistanceToNow } from 'date-fns';
+import { doc, updateDoc, setDoc, deleteDoc, collection, query, onSnapshot, orderBy } from 'firebase/firestore';
 import UserBadge from '@/components/common/UserBadge';
-import { ko } from 'date-fns/locale';
 import GroupInvitationModal from './GroupInvitationModal';
 
 interface MemberWithProfile extends Member {
@@ -20,7 +18,7 @@ interface MemberWithProfile extends Member {
 }
 
 const GroupMemberManager = ({ group }: { group: Group }) => {
-  const { t } = useLanguage();
+  const { t, formatDate, formatRelativeTime } = useLanguage();
 
   const { profile: currentUserProfile } = useAuth();
   const [activeSubTab, setActiveSubTab] = useState('Member');
@@ -87,7 +85,7 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
   const updateUserInfo = async (userId: string, data: Partial<UserProfile>) => {
     try {
       const userRef = doc(db, 'users', userId);
-      await updateDoc(userRef, data);
+      await setDoc(userRef, data, { merge: true });
       
       if (data.role || data.nickname || data.photoURL || data.systemRole) {
         const memberRef = doc(db, 'groups', group.id, 'members', userId);
@@ -97,9 +95,9 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
         if (data.photoURL) memberUpdate.photoURL = data.photoURL;
         
         try {
-          await updateDoc(memberRef, memberUpdate);
+          await setDoc(memberRef, memberUpdate, { merge: true });
         } catch (e) {
-          console.warn("Member subcollection update failed (might not exist yet):", e);
+          console.warn("Member subcollection update failed:", e);
         }
       }
 
@@ -207,31 +205,13 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
     setPageSize(prev => prev + 20);
   };
 
-  // Engagement badge logic
-  const getEngagementBadge = (member: MemberWithProfile) => {
-    const joinedMillis = getMillis(member.joinedAt);
-    const now = Date.now();
-    const daysSinceJoin = (now - joinedMillis) / (1000 * 60 * 60 * 24);
-    const lastVisitMillis = getMillis(member.profile?.updatedAt || member.profile?.createdAt);
-    const daysSinceVisit = (now - lastVisitMillis) / (1000 * 60 * 60 * 24);
 
-    if (daysSinceJoin < 30) {
-      return { label: 'New Member', className: 'bg-[#f199f7]/30 text-[#5e106a]' };
-    }
-    if (daysSinceVisit > 30) {
-      return { label: 'Inactive', className: 'bg-[#fb5151]/20 text-[#b31b25]' };
-    }
-    if (daysSinceVisit < 7) {
-      return { label: 'High Engagement', className: 'bg-[#f199f7]/30 text-[#5e106a]' };
-    }
-    return { label: 'Regular', className: 'bg-[#e4e7ff] text-[#515981]' };
-  };
 
   const getLastVisitText = (member: MemberWithProfile) => {
     const lastVisitMillis = getMillis(member.profile?.updatedAt || member.profile?.createdAt);
     if (!lastVisitMillis) return '-';
     try {
-      return formatDistanceToNow(new Date(lastVisitMillis), { addSuffix: true });
+      return formatRelativeTime(lastVisitMillis);
     } catch {
       return '-';
     }
@@ -251,7 +231,9 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
       nickname: primaryNickname,
       nativeNickname: secondaryNickname,
       photoURL: member.profile?.photoURL || member.photoURL || member.avatar,
-      role: member.profile?.role || member.role,
+      danceRole: member.profile?.role,
+      groupRole: member.role,
+      gender: member.profile?.gender,
       isAdmin: member.profile?.isAdmin || member.profile?.systemRole === 'admin' || member.role === 'owner' || member.id === group.ownerId,
       isStaff: member.profile?.isStaff || member.profile?.systemRole === 'staff',
       isInstructor: member.profile?.isInstructor,
@@ -260,14 +242,19 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
       isServiceProvider: member.profile?.isServiceProvider,
     };
 
-    const isLeader = user.role?.toLowerCase() === 'leader';
-    const isFollower = user.role?.toLowerCase() === 'follower';
-    const badge = getEngagementBadge(member);
+    let effectiveRole = user.danceRole?.toLowerCase();
+    if (!effectiveRole && user.gender) {
+      if (user.gender === 'male') effectiveRole = 'leader';
+      if (user.gender === 'female' || user.gender === 'others') effectiveRole = 'follower';
+    }
+
+    const isLeader = effectiveRole === 'leader';
+    const isFollower = effectiveRole === 'follower';
 
     return (
       <div key={member.id} className="bg-white p-6 rounded-xl shadow-[0_4px_20px_-4px_rgba(36,44,81,0.08)] border border-white hover:shadow-md transition-shadow">
         <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col gap-2">
             <UserBadge
               uid={user.id}
               nickname={user.nickname}
@@ -277,24 +264,22 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
               nameClassName="font-bold text-[#242c51] leading-tight"
               nativeClassName="text-[11px] text-[#515981] font-medium ml-1.5"
             />
-            <div>
-              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                {user.isAdmin && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-red-100 text-red-700">
-                    <span className="material-symbols-outlined text-[10px]" style={{ fontVariationSettings: "'FILL' 1" }}>shield</span>
-                    Owner
-                  </span>
-                )}
-                {user.isStaff && !user.isAdmin && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-100 text-blue-700">
-                    <span className="material-symbols-outlined text-[10px]" style={{ fontVariationSettings: "'FILL' 1" }}>badge</span>
-                    Staff
-                  </span>
-                )}
-                <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase ${badge.className} w-fit`}>
-                  {badge.label}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {user.isAdmin && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-red-100 text-red-700">
+                  Owner
                 </span>
-              </div>
+              )}
+              {user.isStaff && !user.isAdmin && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-100 text-blue-700">
+                  Staff
+                </span>
+              )}
+              {user.isInstructor && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-purple-100 text-purple-700">
+                  Instructor
+                </span>
+              )}
             </div>
           </div>
           {/* Action Menu */}
@@ -312,21 +297,6 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
                 className="absolute right-0 top-8 w-56 bg-white rounded-xl shadow-2xl border border-[#e4e7ff] z-[100] max-h-[400px] flex flex-col"
               >
                 <div className="flex-1 overflow-y-auto py-2">
-                {/* Section: Dance Role */}
-                <div className="px-4 py-2 border-b border-[#e4e7ff]">
-                  <p className="text-[10px] font-bold text-[#6c759e] tracking-widest uppercase mb-2">Dance Role</p>
-                  <div className="flex gap-2">
-                    <button 
-                      onClick={() => updateUserInfo(member.id, { role: 'leader' })}
-                      className={`flex-1 py-1.5 text-[11px] font-bold rounded-lg border transition-all ${isLeader ? 'bg-[#0057bd] text-white border-[#0057bd]' : 'bg-white text-[#242c51] border-[#a3abd7] hover:border-[#0057bd]'}`}
-                    >Leader</button>
-                    <button 
-                      onClick={() => updateUserInfo(member.id, { role: 'follower' })}
-                      className={`flex-1 py-1.5 text-[11px] font-bold rounded-lg border transition-all ${isFollower ? 'bg-[#893c92] text-white border-[#893c92]' : 'bg-white text-[#242c51] border-[#a3abd7] hover:border-[#893c92]'}`}
-                    >Follower</button>
-                  </div>
-                </div>
-
                 {/* Section: System Role */}
                 <div className="px-4 py-2 border-b border-[#e4e7ff]">
                   <p className="text-[10px] font-bold text-[#6c759e] tracking-widest uppercase mb-2">System Role</p>
@@ -391,7 +361,7 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
         <div className="grid grid-cols-2 gap-4 pt-4 border-t border-[#e4e7ff]">
           <div>
             <p className="text-[10px] uppercase font-bold text-[#6c759e] tracking-wider mb-0.5">Join Date</p>
-            <p className="text-sm font-medium">{member.joinedAt ? format(getMillis(member.joinedAt), 'MMM dd, yyyy') : '-'}</p>
+            <p className="text-sm font-medium">{member.joinedAt ? formatDate(getMillis(member.joinedAt), 'dateOnly') : '-'}</p>
           </div>
           <div>
             <p className="text-[10px] uppercase font-bold text-[#6c759e] tracking-wider mb-0.5">Last Visit</p>
@@ -401,7 +371,7 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
             <p className="text-[10px] uppercase font-bold text-[#6c759e] tracking-wider mb-1">Dance Role</p>
             <div className="flex items-center gap-2">
               <span className={`text-xl font-extrabold ${isLeader ? 'text-[#0057bd]' : isFollower ? 'text-[#893c92]' : 'text-[#515981]'}`}>
-                {user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Not Set'}
+                {effectiveRole ? effectiveRole.charAt(0).toUpperCase() + effectiveRole.slice(1) : 'Not Set'}
               </span>
             </div>
           </div>
@@ -494,23 +464,25 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
   return (
     <div className="space-y-8">
       {/* Sub-navigation Tabs */}
-      <nav className="flex items-center gap-1 bg-[#e4e7ff] p-1 rounded-xl w-fit shadow-sm">
-        {['Stats', 'Owner', 'Staff', 'Instructor', 'Member'].map((tab) => (
-          <button
-            key={tab}
-            onClick={() => {
-              setActiveSubTab(tab);
-              setPageSize(20);
-            }}
-            className={`px-6 py-2.5 text-sm font-semibold transition-colors rounded-lg ${activeSubTab === tab
-                ? "bg-white text-[#0057bd] shadow-sm"
-                : "text-[#515981] hover:text-[#242c51]"
-              }`}
-          >
-            {tab}
-          </button>
-        ))}
-      </nav>
+      <div className="w-full overflow-x-auto scrollbar-hide pb-2 -mb-2">
+        <nav className="flex items-center gap-1 bg-[#e4e7ff] p-1 rounded-xl w-max shadow-sm">
+          {['Stats', 'Owner', 'Staff', 'Instructor', 'Member'].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => {
+                setActiveSubTab(tab);
+                setPageSize(20);
+              }}
+              className={`px-6 py-2.5 text-sm font-semibold transition-colors rounded-lg ${activeSubTab === tab
+                  ? "bg-white text-[#0057bd] shadow-sm"
+                  : "text-[#515981] hover:text-[#242c51]"
+                }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </nav>
+      </div>
 
       {/* Stats View */}
       {activeSubTab === 'Stats' && renderStats()}
@@ -534,16 +506,6 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
                 {currentItems.map(member => renderStaffCard(member))}
               </>
             )}
-            {/* Add New Staff Placeholder */}
-            {!loading && (activeSubTab === 'Staff' || activeSubTab === 'Instructor') && (
-              <div
-                onClick={() => setIsInviteModalOpen(true)}
-                className="border-2 border-dashed border-slate-300 rounded-xl p-6 flex flex-col items-center justify-center gap-3 text-slate-500 hover:border-[#0057bd] hover:text-[#0057bd] transition-all cursor-pointer bg-slate-50/50"
-              >
-                <span className="material-symbols-outlined text-4xl">person_add</span>
-                <span className="font-semibold">Add New {activeSubTab} Member</span>
-              </div>
-            )}
           </div>
         </div>
       )}
@@ -552,13 +514,8 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
       {activeSubTab === 'Member' && (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
           {/* Header and Filters */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div>
-              <h1 className="text-2xl font-extrabold tracking-tight text-[#242c51]">Member Directory</h1>
-              <p className="text-sm text-[#515981] mt-1 font-body">Manage and monitor active community members.</p>
-            </div>
+          <div className="flex flex-col md:flex-row md:items-center justify-end gap-6">
             <div className="flex flex-wrap items-center gap-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#6c759e] mb-1 w-full md:w-auto">Sort By</span>
               <button 
                 onClick={() => setSortBy('joinedAt')}
                 className={`flex items-center gap-2 px-4 py-2 bg-white border rounded-lg text-sm font-medium transition-all ${sortBy === 'joinedAt' ? 'border-[#0057bd] text-[#0057bd]' : 'border-[#a3abd7] hover:border-[#0057bd]'}`}
@@ -591,14 +548,6 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
             ) : (
               <>
                 {currentItems.map(member => renderMemberCard(member))}
-                {/* Invite New Member Card */}
-                <div
-                  onClick={() => setIsInviteModalOpen(true)}
-                  className="border-2 border-dashed border-slate-300 rounded-xl p-6 flex flex-col items-center justify-center gap-3 text-slate-500 hover:border-[#0057bd] hover:text-[#0057bd] transition-all cursor-pointer bg-slate-50/50 min-h-[180px]"
-                >
-                  <span className="material-symbols-outlined text-4xl">person_add</span>
-                  <span className="font-semibold">Invite New Member</span>
-                </div>
               </>
             )}
           </div>

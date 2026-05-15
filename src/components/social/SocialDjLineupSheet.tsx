@@ -56,26 +56,29 @@ export default function SocialDjLineupSheet({ social, canEdit, onClose }: Props)
   };
 
   const handleAddDj = async () => {
-    if (!selectedDate || !djName.trim()) {
-      alert(t('social.alert_select_date_dj'));
+    if (!selectedDate) {
+      alert(t('social.alert_select_date_dj') || "Please select a date");
       return;
     }
 
+    const finalDjName = djName.trim() || "TBD";
+
     setIsSubmitting(true);
     try {
-      const newDj: SocialDj = {
+      const newDj: any = {
         id: uuidv4(),
         date: selectedDate,
-        djName: djName.trim(),
-        djId: selectedDjId || undefined,
+        djName: finalDjName,
       };
+      if (selectedDjId) {
+        newDj.djId = selectedDjId;
+      }
 
       const updatedDjs = [...djs, newDj].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
       
       await socialService.updateSocial(social.id, {
         djs: updatedDjs,
-        // Optionally update the single string if it's the next upcoming event
-        djName: updatedDjs.find(d => new Date(d.date) >= new Date())?.djName || updatedDjs[updatedDjs.length - 1]?.djName || social.djName
+        djName: updatedDjs.find(d => new Date(d.date) >= new Date())?.djName || updatedDjs[updatedDjs.length - 1]?.djName || social.djName || ""
       });
 
       setDjs(updatedDjs);
@@ -116,6 +119,35 @@ export default function SocialDjLineupSheet({ social, canEdit, onClose }: Props)
 
   const dateLocale = language === 'KR' ? 'ko-KR' : 'en-US';
 
+  // Helper to generate next N dates for regular socials
+  const generateUpcomingDates = () => {
+    if (social.type !== "regular" || social.dayOfWeek === undefined) return [];
+    const dates = [];
+    const d = new Date();
+    d.setHours(0,0,0,0);
+    const diff = (social.dayOfWeek - d.getDay() + 7) % 7;
+    let next = new Date(d);
+    next.setDate(d.getDate() + diff);
+    
+    for (let i = 0; i < 8; i++) {
+      const year = next.getFullYear();
+      const month = String(next.getMonth() + 1).padStart(2, '0');
+      const day = String(next.getDate()).padStart(2, '0');
+      dates.push(`${year}-${month}-${day}`);
+      next.setDate(next.getDate() + 7);
+    }
+    return dates;
+  };
+  
+  const suggestedDates = generateUpcomingDates();
+  
+  // Set initial selectedDate to the first suggested date if empty
+  useEffect(() => {
+    if (isAdding && !selectedDate && suggestedDates.length > 0) {
+      setSelectedDate(suggestedDates[0]);
+    }
+  }, [isAdding, selectedDate]); // don't add suggestedDates to deps to avoid infinite loops
+
   return (
     <>
       <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={onClose} />
@@ -153,12 +185,27 @@ export default function SocialDjLineupSheet({ social, canEdit, onClose }: Props)
                 <div className="p-4 bg-white border-t border-[#e0e4e5] space-y-4">
                   <div>
                     <label className="block text-[10px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1.5">{t('social.date')}</label>
-                    <input 
-                      type="date" 
-                      value={selectedDate}
-                      onChange={e => setSelectedDate(e.target.value)}
-                      className="w-full px-3 py-2 border border-[#e0e4e5] rounded-lg text-sm font-bold text-[#2d3435] focus:outline-none focus:border-primary/50"
-                    />
+                    {social.type === "regular" && social.dayOfWeek !== undefined ? (
+                      <select
+                        value={selectedDate}
+                        onChange={e => setSelectedDate(e.target.value)}
+                        className="w-full px-3 py-2 border border-[#e0e4e5] rounded-lg text-sm font-bold text-[#2d3435] focus:outline-none focus:border-primary/50 bg-white"
+                      >
+                        <option value="" disabled>{t('social.select_date') || "Select Date"}</option>
+                        {suggestedDates.map(dateStr => (
+                          <option key={dateStr} value={dateStr}>
+                            {new Date(dateStr).toLocaleDateString(dateLocale, { month: 'short', day: 'numeric', weekday: 'short' })}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input 
+                        type="date" 
+                        value={selectedDate}
+                        onChange={e => setSelectedDate(e.target.value)}
+                        className="w-full px-3 py-2 border border-[#e0e4e5] rounded-lg text-sm font-bold text-[#2d3435] focus:outline-none focus:border-primary/50"
+                      />
+                    )}
                   </div>
                   <div className="relative">
                     <label className="block text-[10px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1.5">{t('social.dj_label')}</label>

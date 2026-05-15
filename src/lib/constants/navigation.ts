@@ -5,7 +5,7 @@ import {
   Heart, Wallet, Settings, Image, Boxes
 } from 'lucide-react';
 
-export type NavGroup = 'Tango World' | 'Activity' | 'Space' | 'My Page';
+export type NavGroup = 'World' | 'Activity' | 'Space' | 'My Page';
 
 export interface NavItem {
   id: string;
@@ -16,11 +16,11 @@ export interface NavItem {
 }
 
 export const NAV_ITEMS: NavItem[] = [
-  // Tango World
-  { id: 'home', label: '홈', group: 'Tango World', icon: Map, href: '/home' },
-  { id: 'plaza', label: '프라자', group: 'Tango World', icon: Library, href: '/plaza' },
-  { id: 'venues', label: '장소(베뉴)', group: 'Tango World', icon: MapPin, href: '/venues' },
-  { id: 'groups', label: '그룹', group: 'Tango World', icon: Users, href: '/groups' },
+  // World
+  { id: 'home', label: '홈', group: 'World', icon: Map, href: '/home' },
+  { id: 'plaza', label: '프라자', group: 'World', icon: Library, href: '/plaza' },
+  { id: 'venues', label: '장소(베뉴)', group: 'World', icon: MapPin, href: '/venues' },
+  { id: 'groups', label: '그룹', group: 'World', icon: Users, href: '/groups' },
 
   // Activity
   { id: 'events', label: '이벤트', group: 'Activity', icon: Calendar, href: '/events' },

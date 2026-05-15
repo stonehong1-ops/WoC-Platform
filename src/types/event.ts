@@ -120,6 +120,7 @@ export interface EventPackage {
 // === Schedule Day (Timetable image per day) ===
 export interface EventScheduleDay {
   dayLabel: string;              // "Day 1", "Day 2", etc.
+  label?: string;                // Alternative label field (yoga events)
   date?: string;                 // "2026-06-19"
   timetableImageUrl?: string;    // Uploaded timetable image
 }
@@ -165,6 +166,9 @@ export interface Event {
   eventVenues?: EventVenueItem[];     // 이벤트 베뉴 (복수)
   packages?: EventPackage[];          // 패키지 (클래스 번들)
   scheduleDays?: EventScheduleDay[];  // 스케줄 (일별 시간표 이미지)
+
+  // Society 구분
+  societyId?: string;              // 'tango' | 'yoga' | ... (undefined = tango)
 
   // 기타
   dressCode?: string;

@@ -27,11 +27,67 @@ const SLIDE_URLS: Record<number, string> = {
   21: '/groups/freestyletango?tab=settings', // Slide 21: Function Builder / One Platform
 };
 
+const GLOBAL_ANIMATIONS = `
+  @keyframes pt1-slideEnter { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes pt1-fadeUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes pt1-fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes pt1-scaleIn { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+  @keyframes pt1-lineGrow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  @keyframes pt1-slideRight { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
+  @keyframes pt1-slideLeft { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: translateX(0); } }
+  @keyframes pt1-slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes pt1-donutReveal { from { transform: rotate(-90deg) scale(0.8); opacity: 0; } to { transform: rotate(0deg) scale(1); opacity: 1; } }
+  @keyframes pt1-counterUp { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+  @keyframes pt1-shimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
+  @keyframes pt1-pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.02); opacity: 0.85; } }
+  @keyframes pt1-glowPulse { 0%, 100% { text-shadow: 0 0 20px rgba(255,255,255,0.1); } 50% { text-shadow: 0 0 40px rgba(255,255,255,0.3); } }
+  @keyframes pt1-startGlow { 0%, 100% { box-shadow: 0 0 40px rgba(255,255,255,0.05); } 50% { box-shadow: 0 0 80px rgba(255,255,255,0.15), 0 0 120px rgba(255,255,255,0.05); } }
+  @keyframes pt1-dotPulse { 0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0,0,0,0.3); } 50% { transform: scale(1.3); box-shadow: 0 0 0 8px rgba(0,0,0,0); } }
+  @keyframes pt1-drawUnderline { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  @keyframes pt1-bgDrift { 0% { transform: scale(1.02); } 100% { transform: scale(1.08) translate(-0.5%, -0.5%); } }
+
+  .pt1-enter { animation: pt1-slideEnter 0.6s cubic-bezier(0.16,1,0.3,1) both; }
+  .pt1-fu { animation: pt1-fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) both; }
+  .pt1-fi { animation: pt1-fadeIn 0.6s ease-out both; }
+  .pt1-si { animation: pt1-scaleIn 0.7s cubic-bezier(0.16,1,0.3,1) both; }
+  .pt1-lg { animation: pt1-lineGrow 1s cubic-bezier(0.16,1,0.3,1) both; transform-origin: left; }
+  .pt1-sr { animation: pt1-slideRight 0.7s cubic-bezier(0.16,1,0.3,1) both; }
+  .pt1-sl { animation: pt1-slideLeft 0.7s cubic-bezier(0.16,1,0.3,1) both; }
+  .pt1-sd { animation: pt1-slideDown 0.6s cubic-bezier(0.16,1,0.3,1) both; }
+  .pt1-dr { animation: pt1-donutReveal 1.2s cubic-bezier(0.16,1,0.3,1) both; }
+  .pt1-cu { animation: pt1-counterUp 0.7s cubic-bezier(0.16,1,0.3,1) both; }
+  .pt1-p { animation: pt1-pulse 3s ease-in-out infinite; }
+  .pt1-gp { animation: pt1-glowPulse 3s ease-in-out infinite; }
+  .pt1-dp { animation: pt1-dotPulse 2s ease-in-out infinite; }
+  .pt1-du { animation: pt1-drawUnderline 0.8s cubic-bezier(0.16,1,0.3,1) both; transform-origin: left; }
+
+  .pt1-d1 { animation-delay: 100ms; }
+  .pt1-d2 { animation-delay: 200ms; }
+  .pt1-d3 { animation-delay: 300ms; }
+  .pt1-d4 { animation-delay: 400ms; }
+  .pt1-d5 { animation-delay: 500ms; }
+  .pt1-d6 { animation-delay: 600ms; }
+  .pt1-d7 { animation-delay: 700ms; }
+  .pt1-d8 { animation-delay: 800ms; }
+  .pt1-d9 { animation-delay: 900ms; }
+  .pt1-d10 { animation-delay: 1000ms; }
+  .pt1-d12 { animation-delay: 1200ms; }
+  .pt1-d15 { animation-delay: 1500ms; }
+
+  .pt1-shimmer-text {
+    background: linear-gradient(90deg, #ffffff 40%, rgba(255,255,255,0.5) 50%, #ffffff 60%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: pt1-shimmer 4s linear infinite;
+  }
+`;
+
 const PresentationPage = () => {
   const { setGlobalNavHidden, setIsHeaderVisible } = useNavigation();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [showStartScreen, setShowStartScreen] = useState(true);
-  const [isFocusMode, setIsFocusMode] = useState(false);
+  const [isFocusMode, setIsFocusMode] = useState(true);
   
   // Iframe states
   const [iframeUrl, setIframeUrl] = useState('/groups/freestyletango');
@@ -149,16 +205,22 @@ const PresentationPage = () => {
   return (
     <div className="min-h-screen bg-[#050505] text-white font-['Manrope'] selection:bg-[#c6c6c7] overflow-hidden relative flex w-full">
       <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Space+Grotesk:wght@300..700&family=Manrope:wght@200..800&display=swap" rel="stylesheet"/>
+      <style>{GLOBAL_ANIMATIONS}</style>
       
       {showStartScreen ? (
         <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-[#050505]">
-          <div className="mb-12 flex flex-col items-center">
+          {/* Ambient glow */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="w-[600px] h-[600px] rounded-full bg-white/[0.02] blur-[120px]" style={{ animation: 'pt1-startGlow 4s ease-in-out infinite' }} />
+          </div>
+          <div className="mb-12 flex flex-col items-center relative pt1-fu">
             <h1 className="text-4xl font-bold tracking-tighter text-white mb-4">WoC Presentation</h1>
             <p className="text-white/60">Live Ecosystem Demo</p>
           </div>
           <button 
             onClick={handleStartPresentation}
-            className="px-8 py-4 bg-white text-black rounded-full text-lg font-bold hover:bg-gray-200 transition-all transform hover:scale-105 shadow-xl flex items-center gap-3"
+            className="px-8 py-4 bg-white text-black rounded-full text-lg font-bold hover:bg-gray-200 transition-all transform hover:scale-105 shadow-xl flex items-center gap-3 pt1-fu pt1-d3"
+            style={{ animation: 'pt1-fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) 300ms both, pt1-startGlow 3s ease-in-out infinite 1s' }}
           >
             <span className="material-symbols-outlined">fullscreen</span>
             Start Presentation
@@ -171,7 +233,7 @@ const PresentationPage = () => {
         <PresentationHeader />
 
         <main className="relative flex-1 w-full flex items-center justify-center overflow-hidden">
-          <div className="w-full h-full flex items-center justify-center transition-opacity duration-500">
+          <div key={currentSlide} className="w-full h-full flex items-center justify-center pt1-enter">
             {CurrentSlideComponent ? <CurrentSlideComponent /> : null}
           </div>
         </main>

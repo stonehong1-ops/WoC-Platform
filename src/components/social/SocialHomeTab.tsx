@@ -16,29 +16,12 @@ interface Props {
   onClaim?: () => void;
 }
 
-// DJ display logic: show next upcoming DJ
-function getDjDisplay(social: Social): string {
-  if (social.djs && social.djs.length > 0) {
-    const sorted = [...social.djs].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    const today = new Date();
-    today.setHours(0,0,0,0);
-    const nextDj = sorted.find(d => new Date(d.date) >= today);
-    if (nextDj) return nextDj.djName;
-  }
-  return social.djName ? social.djName : "TBD";
-}
+import { getNextEventDateObj, getDjDisplay } from "@/lib/utils/socialUtils";
 
 function getNextEventDate(social: Social, language: string): string {
   const dateLocale = language === 'KR' ? 'ko-KR' : 'en-US';
-  if (social.type === "popup" && social.date) {
-    const d = typeof social.date.toDate === "function" ? social.date.toDate() : new Date(social.date as any);
-    return d.toLocaleDateString(dateLocale, { weekday: "short", month: "long", day: "numeric" });
-  }
-  if (social.type === "regular" && social.dayOfWeek !== undefined) {
-    const today = new Date();
-    const diff = (social.dayOfWeek - today.getDay() + 7) % 7;
-    const next = new Date(today);
-    next.setDate(today.getDate() + (diff === 0 ? 0 : diff));
+  const next = getNextEventDateObj(social);
+  if (next) {
     return next.toLocaleDateString(dateLocale, { weekday: "short", month: "long", day: "numeric" });
   }
   return "TBA";

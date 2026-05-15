@@ -113,16 +113,37 @@ export default function NavigationDrawer() {
         {/* Scrollable Navigation - Restored Structure */}
         <main className="flex-1 overflow-y-auto no-scrollbar px-3 py-6">
           
-          {/* Section: TANGO WORLD */}
+          {/* Section: WORLD */}
           <div className="mb-8">
-            <h2 className="px-5 mb-2 text-[9px] font-black tracking-[0.25em] text-on-surface/30 uppercase">{t('nav.tango_world')}</h2>
+            <h2 className="px-5 mb-2 text-[9px] font-black tracking-[0.25em] text-on-surface/30 uppercase">{t('nav.world') || 'WORLD'}</h2>
             <div className="space-y-0.5">
               {[
-                { icon: 'home', label: t('nav.home'), href: '/home' },
-                { icon: 'forum', label: t('nav.plaza'), href: '/plaza' },
-                { icon: 'explore', label: t('nav.venues'), href: '/venues' },
+                { icon: 'radio_button_unchecked', label: t('nav.home'), href: '/home' },
+                { icon: 'quick_phrases', label: t('nav.plaza'), href: '/plaza' },
+                { icon: 'map', label: t('nav.venues'), href: '/venues' },
                 { icon: 'group', label: 'People', href: '/people' },
+              ].map((item) => (
+                <Link 
+                  key={item.label}
+                  href={item.href}
+                  onClick={closeDrawer}
+                  className="flex items-center gap-4 px-5 py-3 text-on-surface/60 hover:bg-on-surface/[0.03] hover:text-on-surface rounded-2xl font-bold transition-all text-left"
+                >
+                  <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
+                  <span className="text-[15px] tracking-tight">{item.label}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Section: MARKET */}
+          <div className="mb-8">
+            <h2 className="px-5 mb-2 text-[9px] font-black tracking-[0.25em] text-on-surface/30 uppercase">{t('nav.market') || 'MARKET'}</h2>
+            <div className="space-y-0.5">
+              {[
                 { icon: 'storefront', label: t('nav.shop'), href: '/shop' },
+                { icon: 'cached', label: t('nav.resale'), href: '/resale' },
+                { icon: 'key', label: t('nav.rental'), href: '/rental' },
                 { icon: 'bed', label: t('nav.stay'), href: '/stay' },
               ].map((item) => (
                 <Link 
@@ -138,17 +159,15 @@ export default function NavigationDrawer() {
             </div>
           </div>
 
-          {/* Section: ACTIVITY */}
+          {/* Section: NOW */}
           <div className="mb-8">
-            <h2 className="px-5 mb-2 text-[9px] font-black tracking-[0.25em] text-on-surface/30 uppercase">{t('nav.activity')}</h2>
+            <h2 className="px-5 mb-2 text-[9px] font-black tracking-[0.25em] text-on-surface/30 uppercase">{t('nav.now') || 'NOW'}</h2>
             <div className="space-y-0.5">
               {[
-                { icon: 'nightlife', label: t('nav.social'), href: '/social' },
+                { icon: 'autoplay', label: t('nav.social'), href: '/social' },
                 { icon: 'cinematic_blur', label: t('nav.live'), href: '/live' },
-                { icon: 'event', label: t('nav.events'), href: '/events' },
                 { icon: 'school', label: t('nav.class'), href: '/class' },
-                { icon: 'groups', label: t('nav.groups'), href: '/groups' },
-                { icon: 'airline_stops', label: t('nav.hub'), href: '/hub' },
+                { icon: 'calendar_today', label: t('nav.events'), href: '/events' },
               ].map((item) => (
                 <Link 
                   key={item.label}
@@ -163,14 +182,35 @@ export default function NavigationDrawer() {
             </div>
           </div>
 
-          {/* Section: TOWN */}
+          {/* Section: LOUNGE */}
           <div className="mb-8">
-            <h2 className="px-5 mb-2 text-[9px] font-black tracking-[0.25em] text-on-surface/30 uppercase">{t('nav.town')}</h2>
+            <h2 className="px-5 mb-2 text-[9px] font-black tracking-[0.25em] text-on-surface/30 uppercase">{t('nav.lounge') || 'LOUNGE'}</h2>
             <div className="space-y-0.5">
               {[
-                { icon: 'shopping_bag', label: t('nav.resale'), href: '/resale' },
-                { icon: 'handshake', label: t('nav.rental'), href: '/rental' },
+                { icon: 'photo_library', label: t('nav.pics') || 'PICS', href: '/pics' },
                 { icon: 'find_in_page', label: t('nav.lost_found'), href: '/lost' },
+                { icon: 'airline_stops', label: t('nav.hub'), href: '/hub' },
+                { icon: 'explore', label: t('nav.explore') || 'JUMP', href: '/explore' },
+              ].map((item) => (
+                <Link 
+                  key={item.label}
+                  href={item.href}
+                  onClick={closeDrawer}
+                  className="flex items-center gap-4 px-5 py-3 text-on-surface/60 hover:bg-on-surface/[0.03] hover:text-on-surface rounded-2xl font-bold transition-all text-left"
+                >
+                  <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
+                  <span className="text-[15px] tracking-tight">{item.label}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Section: GROUPS */}
+          <div className="mb-8">
+            <h2 className="px-5 mb-2 text-[9px] font-black tracking-[0.25em] text-on-surface/30 uppercase">{t('nav.groups') || 'GROUPS'}</h2>
+            <div className="space-y-0.5">
+              {[
+                { icon: 'groups', label: t('nav.groups'), href: '/groups' },
               ].map((item) => (
                 <Link 
                   key={item.label}
@@ -187,7 +227,7 @@ export default function NavigationDrawer() {
 
           {/* Section: MY */}
           <div className="mb-8">
-            <h2 className="px-5 mb-2 text-[9px] font-black tracking-[0.25em] text-on-surface/30 uppercase">{t('nav.my')}</h2>
+            <h2 className="px-5 mb-2 text-[9px] font-black tracking-[0.25em] text-on-surface/30 uppercase">{t('nav.my') || 'MY'}</h2>
             <div className="space-y-0.5">
               {[
                 { icon: 'history', label: t('nav.history'), href: '/history' },
@@ -196,7 +236,8 @@ export default function NavigationDrawer() {
                 { icon: 'manage_accounts', label: t('nav.my_info'), href: '/profile' },
                 ...(profile?.isAdmin ? [
                   { icon: 'admin_panel_settings', label: 'Admin (People)', href: '/admin/people' },
-                  { icon: 'view_carousel', label: 'Admin (Banners)', href: '/admin/banners' }
+                  { icon: 'view_carousel', label: 'Admin (Banners)', href: '/admin/banners' },
+                  { icon: 'wallpaper', label: 'PICs Admin', href: '/admin/pics' }
                 ] : [])
               ].map((item) => (
                 <Link 
@@ -241,7 +282,7 @@ export default function NavigationDrawer() {
                       >
                         <span className="flex items-center gap-2">
                           {lang.name}
-                          <span className="text-[10px] font-medium opacity-50">· {lang.native}</span>
+                          <span className="text-[10px] font-medium opacity-50">쨌 {lang.native}</span>
                         </span>
                         {lang.active && <span className="w-1.5 h-1.5 rounded-full bg-primary" />}
                       </button>
@@ -275,10 +316,11 @@ export default function NavigationDrawer() {
             <span className="text-[14px] tracking-tight">{t('nav.logout')}</span>
           </button>
           <div className="mt-4 px-6">
-            <p className="text-[8px] font-black tracking-[0.3em] text-on-surface/20 uppercase">World of Group © 2026</p>
+            <p className="text-[8px] font-black tracking-[0.3em] text-on-surface/20 uppercase">World of Group 짤 2026</p>
           </div>
         </div>
       </div>
     </>
   );
 }
+

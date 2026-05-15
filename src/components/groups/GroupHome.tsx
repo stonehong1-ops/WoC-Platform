@@ -3,105 +3,110 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useJsApiLoader } from "@react-google-maps/api";
 import { Group, Member, Post } from "@/types/group";
 import { useAuth } from "@/components/providers/AuthProvider";
-import { format } from "date-fns";
+import { format, formatDistanceToNowStrict, isToday, isYesterday, addDays, startOfDay, addMonths, subMonths, parseISO } from "date-fns";
 import { groupService } from "@/lib/firebase/groupService";
 import { notificationService } from "@/lib/firebase/notificationService";
 import { Notification } from "@/types/notification";
 import { galleryService, GalleryPost } from "@/lib/firebase/galleryService";
+import { socialService } from "@/lib/firebase/socialService";
+import { feedService } from "@/lib/firebase/feedService";
 import ImageWithFallback from "@/components/common/ImageWithFallback";
 import GroupJoinModal from "./GroupJoinModal";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useNavigation } from "@/components/providers/NavigationProvider";
 import { getContrastColor } from "@/lib/utils";
+import { useHistoryBack } from "@/hooks/useHistoryBack";
 
 type TabType = 'home' | 'calendar' | 'feed' | 'board' | 'about' | 'class' | 'members' | 'settings' | 'shop' | 'stay' | 'rental' | 'coupon' | 'live' | 'brand' | 'polls' | 'qa' | 'broadcast' | 'attendance' | 'rules' | 'surveys' | 'anonymous' | 'classA' | 'classB' | 'classC' | 'homework' | 'studentReports' | 'tuition' | 'gradeSystem' | 'parentNotify' | 'parentConsult' | 'examScheduler' | 'ticketBooking' | 'workshopReg' | 'qrCheckin' | 'waitlist' | 'retreat' | 'eventStaff' | 'guestList' | 'productInventory' | 'membershipBilling' | 'donationSupport' | 'subscriptionPlans' | 'settlementReports' | 'mediaGallery' | 'videoLibrary' | 'editorialPage' | 'newsletter' | 'podcastFeed' | 'pressKit' | 'linkHub' | 'socialSync' | 'brandAssets' | 'customLandingPage' | 'taskManager' | 'internalWiki' | 'aiAssistant' | 'roles';
 
-import GroupCalendar from "./GroupCalendar";
-import GroupBoard from "./GroupBoard";
-import GroupInfo from "./GroupInfo";
-import GroupAbout from "./GroupAbout";
-import GroupClassEditor from "./GroupClassEditor";
-import GroupMemberManager from "./GroupMemberManager";
-import GroupMembers from "./GroupMembers";
-import MemberProfileOverlay from "./MemberProfileOverlay";
-import GroupFunctionBuilder from "./GroupFunctionBuilder";
+const GroupCalendar = dynamic(() => import("./GroupCalendar"));
+const GroupBoard = dynamic(() => import("./GroupBoard"));
+const GroupInfo = dynamic(() => import("./GroupInfo"));
+const GroupAbout = dynamic(() => import("./GroupAbout"));
+const GroupClassEditor = dynamic(() => import("./GroupClassEditor"));
+const GroupMemberManager = dynamic(() => import("./GroupMemberManager"));
+const GroupMembers = dynamic(() => import("./GroupMembers"));
+const MemberProfileOverlay = dynamic(() => import("./MemberProfileOverlay"));
+const GroupFunctionBuilder = dynamic(() => import("./GroupFunctionBuilder"));
 
-import UniversalFeed from "../feed/UniversalFeed";
-import GroupShopEditor from "./GroupShopEditor";
-import GroupStayEditor from "./GroupStayEditor";
-import GroupRentalEditor from "./GroupRentalEditor";
-import CouponAdmin from "./CouponAdmin";
+const UniversalFeed = dynamic(() => import("../feed/UniversalFeed"));
+const ChatRoomComponent = dynamic(() => import("../chat/ChatRoom"));
+const GroupShopEditor = dynamic(() => import("./GroupShopEditor"));
+const GroupStayEditor = dynamic(() => import("./GroupStayEditor"));
+const GroupRentalEditor = dynamic(() => import("./GroupRentalEditor"));
+const CouponAdmin = dynamic(() => import("./CouponAdmin"));
 
-import GroupHomeConfig from "./GroupHomeConfig";
-import GroupBasicEditor from "./GroupBasicEditor";
-import GroupMembershipEditor from "./GroupMembershipEditor";
-import GroupContactEditor from "./GroupContactEditor";
-import GroupGalleryEditor from "./GroupGalleryEditor";
-import GroupBoardEditor from "./GroupBoardEditor";
-import GroupAccountEditor from "./GroupAccountEditor";
-import LiveFeed from "@/components/live/LiveFeed";
-import ClassDetail from "../class/ClassDetail";
+const GroupHomeConfig = dynamic(() => import("./GroupHomeConfig"));
+const GroupBasicEditor = dynamic(() => import("./GroupBasicEditor"));
+const GroupMembershipEditor = dynamic(() => import("./GroupMembershipEditor"));
+const GroupContactEditor = dynamic(() => import("./GroupContactEditor"));
+const GroupGalleryEditor = dynamic(() => import("./GroupGalleryEditor"));
+const GroupBoardEditor = dynamic(() => import("./GroupBoardEditor"));
+const GroupAccountEditor = dynamic(() => import("./GroupAccountEditor"));
+const LiveFeed = dynamic(() => import("@/components/live/LiveFeed"));
+const ClassDetail = dynamic(() => import("../class/ClassDetail"));
 
 // Community module mockups
-import GroupPolls from "./GroupPolls";
-import GroupQABoard from "./GroupQABoard";
-import GroupBroadcastCenter from "./GroupBroadcastCenter";
-import GroupAttendance from "./GroupAttendance";
-import GroupRules from "./GroupRules";
-import GroupSurvey from "./GroupSurvey";
-import AnonymousBoard from "./AnonymousBoard";
+const GroupPolls = dynamic(() => import("./GroupPolls"));
+const GroupQABoard = dynamic(() => import("./GroupQABoard"));
+const GroupBroadcastCenter = dynamic(() => import("./GroupBroadcastCenter"));
+const GroupAttendance = dynamic(() => import("./GroupAttendance"));
+const GroupRules = dynamic(() => import("./GroupRules"));
+const GroupSurvey = dynamic(() => import("./GroupSurvey"));
+const AnonymousBoard = dynamic(() => import("./AnonymousBoard"));
 
 // Education module mockups
-import ClassManagerA from "./ClassManagerA";
-import ClassManagerB from "./ClassManagerB";
-import ClassManagerC from "./ClassManagerC";
-import HomeworkTracker from "./HomeworkTracker";
-import StudentReports from "./StudentReports";
-import TuitionManager from "./TuitionManager";
-import GradeSystem from "./GradeSystem";
-import ParentNotifications from "./ParentNotifications";
-import ParentConsultation from "./ParentConsultation";
-import ExamScheduler from "./ExamScheduler";
+const ClassManagerA = dynamic(() => import("./ClassManagerA"));
+const ClassManagerB = dynamic(() => import("./ClassManagerB"));
+const ClassManagerC = dynamic(() => import("./ClassManagerC"));
+const HomeworkTracker = dynamic(() => import("./HomeworkTracker"));
+const StudentReports = dynamic(() => import("./StudentReports"));
+const TuitionManager = dynamic(() => import("./TuitionManager"));
+const GradeSystem = dynamic(() => import("./GradeSystem"));
+const ParentNotifications = dynamic(() => import("./ParentNotifications"));
+const ParentConsultation = dynamic(() => import("./ParentConsultation"));
+const ExamScheduler = dynamic(() => import("./ExamScheduler"));
 
 // Events module mockups
-import TicketBooking from "./TicketBooking";
-import WorkshopRegistration from "./WorkshopRegistration";
-import QRCheckIn from "./QRCheckIn";
-import WaitlistSystem from "./WaitlistSystem";
-import RetreatPlanner from "./RetreatPlanner";
-import EventStaffManager from "./EventStaffManager";
-import GuestListManager from "./GuestListManager";
+const TicketBooking = dynamic(() => import("./TicketBooking"));
+const WorkshopRegistration = dynamic(() => import("./WorkshopRegistration"));
+const QRCheckIn = dynamic(() => import("./QRCheckIn"));
+const WaitlistSystem = dynamic(() => import("./WaitlistSystem"));
+const RetreatPlanner = dynamic(() => import("./RetreatPlanner"));
+const EventStaffManager = dynamic(() => import("./EventStaffManager"));
+const GuestListManager = dynamic(() => import("./GuestListManager"));
 
 // Operations module mockups
-import TaskManager from "./TaskManager";
-import InternalWiki from "./InternalWiki";
+const TaskManager = dynamic(() => import("./TaskManager"));
+const InternalWiki = dynamic(() => import("./InternalWiki"));
 
 // AI & Intelligence module mockups
-import AIAssistant from "./AIAssistant";
+const AIAssistant = dynamic(() => import("./AIAssistant"));
 
 // Commerce module mockups
-import ProductInventory from "./ProductInventory";
-import MembershipBilling from "./MembershipBilling";
-import DonationSupport from "./DonationSupport";
-import SubscriptionPlans from "./SubscriptionPlans";
-import SettlementReports from "./SettlementReports";
+const ProductInventory = dynamic(() => import("./ProductInventory"));
+const MembershipBilling = dynamic(() => import("./MembershipBilling"));
+const DonationSupport = dynamic(() => import("./DonationSupport"));
+const SubscriptionPlans = dynamic(() => import("./SubscriptionPlans"));
+const SettlementReports = dynamic(() => import("./SettlementReports"));
 
 // Brand & Media module mockups
-import MediaGallery from "./MediaGallery";
-import VideoLibrary from "./VideoLibrary";
-import EditorialPage from "./EditorialPage";
-import Newsletter from "./Newsletter";
-import PodcastFeed from "./PodcastFeed";
-import PressKit from "./PressKit";
-import LinkHub from "./LinkHub";
-import SocialSync from "./SocialSync";
-import BrandAssets from "./BrandAssets";
-import CustomLandingPage from "./CustomLandingPage";
+const MediaGallery = dynamic(() => import("./MediaGallery"));
+const VideoLibrary = dynamic(() => import("./VideoLibrary"));
+const EditorialPage = dynamic(() => import("./EditorialPage"));
+const Newsletter = dynamic(() => import("./Newsletter"));
+const PodcastFeed = dynamic(() => import("./PodcastFeed"));
+const PressKit = dynamic(() => import("./PressKit"));
+const LinkHub = dynamic(() => import("./LinkHub"));
+const SocialSync = dynamic(() => import("./SocialSync"));
+const BrandAssets = dynamic(() => import("./BrandAssets"));
+const CustomLandingPage = dynamic(() => import("./CustomLandingPage"));
 
 const PALETTE_COLORS = [
   "#0057bd", // WoC Blue
@@ -123,19 +128,28 @@ const PALETTE_COLORS = [
 
 export default function GroupHome({ group: initialGroup, isModal }: { group: Group, isModal?: boolean }) {
   const router = useRouter();
-  const { t } = useLanguage();
+  const { t, formatDate, formatRelativeTime } = useLanguage();
   const { user, profile } = useAuth();
   const { setGlobalNavHidden } = useNavigation();
   const [isJoining, setIsJoining] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('home');
+  // [Fix #1] 히어로는 최초 1회만 표시
+  const heroShown = React.useRef(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [memberStatus, setMemberStatus] = useState<'active' | 'pending' | 'rejected' | 'none'>('none');
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
-   const [selectedAdminIndex, setSelectedAdminIndex] = useState(0);
+  const [selectedAdminIndex, setSelectedAdminIndex] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [showGroupChat, setShowGroupChat] = useState(false);
   const [currentGroup, setCurrentGroup] = useState<Group>(initialGroup);
+  const [selectedMoment, setSelectedMoment] = useState<GalleryPost | null>(null);
+
+  const { handleClose: handleGroupChatClose } = useHistoryBack(showGroupChat, () => setShowGroupChat(false));
+  const { handleClose: handleSettingsClose } = useHistoryBack(isSettingsOpen, () => setIsSettingsOpen(false));
+  const { handleClose: handleJoinModalClose } = useHistoryBack(showJoinModal, () => setShowJoinModal(false));
+  const { handleClose: handleMomentViewerClose } = useHistoryBack(!!selectedMoment, () => setSelectedMoment(null));
 
   // 실시간 그룹 메타데이터 연동
   useEffect(() => {
@@ -159,42 +173,78 @@ export default function GroupHome({ group: initialGroup, isModal }: { group: Gro
     const handleScroll = () => {
       if (containerRef.current) {
         const top = containerRef.current.getBoundingClientRect().top;
-        // If the container's top is less than -60px, we've scrolled down 60px.
         setIsScrolled(top < -60);
       } else {
-        // Fallback to window.scrollY
         setIsScrolled(window.scrollY > 60);
       }
     };
-    
-    // Use capture: true to catch scroll events from ANY scrollable container
+
     window.addEventListener('scroll', handleScroll, { passive: true, capture: true });
-    // Initial check
     handleScroll();
-    
-    // Check URL parameters for tab routing
+
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
       const tabParam = urlParams.get('tab');
       const setupParam = urlParams.get('setup');
-      
+
       if (setupParam === '1') {
         setIsSettingsOpen(true);
       }
-      
+
       if (tabParam) {
         if (tabParam === 'admin' || tabParam === 'settings') {
           setIsSettingsOpen(true);
         } else {
           setActiveTab(tabParam as TabType);
+          // [Fix] URL로 직접 다른 탭 진입 시 히어로 건너뛰기 처리
+          if (tabParam !== 'home') {
+            heroShown.current = true;
+          }
         }
       }
     }
-    
+
     return () => window.removeEventListener('scroll', handleScroll, { capture: true } as EventListenerOptions);
   }, []);
 
+  // [Fix #3 & #5] 디바이스 뒤로가기 guard: 팝업 닫기는 허용, 그룹 이탈은 컨펌
+  useEffect(() => {
+    // 초기 가드 설정
+    if (window.history.state?.__groupPageGuard !== currentGroup.id) {
+      window.history.pushState({ __groupPageGuard: currentGroup.id }, '');
+    }
+
+    const handleGroupPagePopState = (e: PopStateEvent) => {
+      // 1. 팝업 상태가 있는 경우 (useHistoryBack이 처리 중)
+      if (e.state?.popupOpen) return;
+      
+      // 2. 가드 상태 자체로 돌아온 경우 (팝업이 닫힌 직후 등)
+      if (e.state?.__groupPageGuard === currentGroup.id) return;
+
+      // 3. 팝업 매니저에 아직 팝업이 남아있다면 가드를 넘지 못하게 방어
+      if (typeof window !== 'undefined' && (window as any).__popupManager?.getStack().length > 0) {
+        window.history.pushState({ __groupPageGuard: currentGroup.id }, '');
+        return;
+      }
+
+      // 4. 가드를 넘어 그룹 밖으로 나가려는 경우 → 컨펌
+      const confirmed = window.confirm('Are you sure you want to leave this group room?');
+      if (!confirmed) {
+        // 가드 복원
+        window.history.pushState({ __groupPageGuard: currentGroup.id }, '');
+      }
+    };
+
+    window.addEventListener('popstate', handleGroupPagePopState);
+    return () => {
+      window.removeEventListener('popstate', handleGroupPagePopState);
+    };
+  }, [currentGroup.id]);
+
   const handleExit = () => {
+    // [Fix #5] 나갈 때 컨펌
+    const confirmed = window.confirm('Are you sure you want to leave this group room?');
+    if (!confirmed) return;
     if (isModal) {
       window.history.back();
     } else {
@@ -206,9 +256,11 @@ export default function GroupHome({ group: initialGroup, isModal }: { group: Gro
   const [members, setMembers] = useState<Member[]>([]);
   const [noticePost, setNoticePost] = useState<Post | null>(null);
   const [moments, setMoments] = useState<GalleryPost[]>([]);
-  const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
+  const [upcomingCalEvents, setUpcomingCalEvents] = useState<any[]>([]);
+  const [upcomingSocialEvents, setUpcomingSocialEvents] = useState<any[]>([]);
+  const [upcomingClassEvents, setUpcomingClassEvents] = useState<any[]>([]);
   const [adminTodos, setAdminTodos] = useState<Notification[]>([]);
-  const [liveChats, setLiveChats] = useState<Post[]>([]);
+  const [recentFeedPosts, setRecentFeedPosts] = useState<any[]>([]);
 
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
@@ -236,46 +288,180 @@ export default function GroupHome({ group: initialGroup, isModal }: { group: Gro
     return () => unsubscribe();
   }, [user, currentGroup.id]);
 
-  // 대시보드 데이터 연동
+  // [Removed redundant gallery subscription - now handled in the main feed useEffect]
+
+  // 안정화 유틸리티
+  const ensureTimestamp = (val: any): number => {
+    if (!val) return 0;
+    if (typeof val === 'number') return val;
+    if (val.toDate && typeof val.toDate === 'function') return val.toDate().getTime();
+    if (val.seconds !== undefined) return val.seconds * 1000;
+    const d = new Date(val);
+    return isNaN(d.getTime()) ? 0 : d.getTime();
+  };
+
+  const safeFormat = (date: any, formatStr: string): string => {
+    if (!date) return "";
+    try {
+      const ts = ensureTimestamp(date);
+      if (ts === 0) return "";
+      return formatDate(new Date(ts), formatStr);
+    } catch (e) {
+      return "";
+    }
+  };
+
+  const safeFormatRelative = (date: any): string => {
+    if (!date) return "";
+    try {
+      const ts = ensureTimestamp(date);
+      if (ts === 0) return "";
+      return formatRelativeTime(new Date(ts));
+    } catch (e) {
+      return "";
+    }
+  };
+
+  const isPostNew = (date: any): boolean => {
+    if (!date) return false;
+    try {
+      const ts = ensureTimestamp(date);
+      if (ts === 0) return false;
+      const d = new Date(ts);
+      return isToday(d) || isYesterday(d);
+    } catch (e) {
+      return false;
+    }
+  };
+
+  // 대시보드 데이터 연동 - Feed
   useEffect(() => {
     if (!currentGroup.id) return;
+    // Feed: feeds 컬렉션에서 group scope 게시물 구독 (UniversalFeed와 동일한 소스)
+    const unsubscribeFeed = feedService.subscribePosts(currentGroup.id, (posts) => {
+      const normalized = posts.map(p => ({
+        ...p,
+        createdAt: ensureTimestamp(p.createdAt)
+      }));
+      setRecentFeedPosts(normalized.slice(0, 3));
+    });
 
+    // Notice: group posts 컬렉션에서 공지 구독
     const unsubscribePosts = groupService.subscribePosts(currentGroup.id, (posts) => {
-      const notice = posts.find(p => p.category?.toLowerCase() === 'notice') || posts[0] || null;
+      const normalized = posts.map(p => ({ ...p, createdAt: ensureTimestamp(p.createdAt) }));
+      const notice = normalized.find(p => p.category?.toLowerCase() === 'notice') || normalized[0] || null;
       setNoticePost(notice);
-
-      const chatPosts = posts.filter(p => p.category !== 'notice' && !p.image).slice(0, 2);
-      setLiveChats(chatPosts);
     });
 
     const unsubscribeGallery = galleryService.subscribeFeed((galleryPosts) => {
-      setMoments(galleryPosts.slice(0, 5));
+      const normalizedGallery = galleryPosts.map(p => ({
+        ...p,
+        createdAt: ensureTimestamp(p.createdAt)
+      }));
+      setMoments(normalizedGallery.slice(0, 5));
     }, { entityType: 'group', entityId: currentGroup.id });
 
-    const unsubscribeEvents = groupService.subscribeCalendarEvents(currentGroup.id, (events) => {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      const upcoming = events
-        .filter(e => {
-          const endTime = typeof e.endDate === 'number' ? e.endDate : new Date(e.endDate || 0).getTime();
-          return endTime >= today.getTime();
-        })
-        .sort((a, b) => {
-          const timeA = typeof a.startDate === 'number' ? a.startDate : new Date(a.startDate || 0).getTime();
-          const timeB = typeof b.startDate === 'number' ? b.startDate : new Date(b.startDate || 0).getTime();
-          return timeA - timeB;
-        })
-        .slice(0, 10);
-      setUpcomingEvents(upcoming);
-    });
-
     return () => {
+      unsubscribeFeed();
       unsubscribePosts();
       unsubscribeGallery();
-      unsubscribeEvents();
     };
   }, [currentGroup.id]);
+
+  // 대시보드 Schedule - GroupCalendar와 동일한 3개 소스 구독
+  useEffect(() => {
+    if (!currentGroup.id) return;
+    const unsubscribe = groupService.subscribeCalendarEvents(currentGroup.id, (calEvents) => {
+      setUpcomingCalEvents(calEvents.map(e => ({
+        ...e,
+        startDate: ensureTimestamp(e.startDate),
+        endDate: e.endDate ? ensureTimestamp(e.endDate) : ensureTimestamp(e.startDate)
+      })));
+    });
+    return () => unsubscribe();
+  }, [currentGroup.id]);
+
+  useEffect(() => {
+    if (!currentGroup.id) return;
+    const unsubscribe = groupService.subscribeClasses(currentGroup.id, (fetchedClasses) => {
+      const allClasses = [...(currentGroup.classes || []), ...fetchedClasses];
+      const uniqueClasses = Array.from(new Map(allClasses.map(c => [c.id, c])).values());
+      const classEvts: any[] = uniqueClasses.flatMap(cls =>
+        (cls.schedule || []).map((sch: any, idx: number) => {
+          let st = cls.startTime || '';
+          let et = cls.endTime || '';
+          if (sch.timeSlot) {
+            const parts = sch.timeSlot.split('-');
+            st = parts[0]?.trim() || st;
+            et = parts[1]?.trim() || et;
+          }
+          const parsedDate = sch.date ? parseISO(sch.date) : new Date();
+          return {
+            id: `class-${cls.id}-${idx}`,
+            title: cls.title,
+            startDate: parsedDate.getTime(),
+            endDate: parsedDate.getTime(),
+            startTime: st,
+            endTime: et,
+            type: 'class',
+          };
+        })
+      );
+      setUpcomingClassEvents(classEvts);
+    });
+    return () => unsubscribe();
+  }, [currentGroup.id, currentGroup.classes]);
+
+  useEffect(() => {
+    if (!currentGroup.venueId) return;
+    const unsubscribe = socialService.subscribeSocialsByVenue(currentGroup.venueId, (fetchedSocials) => {
+      const now = new Date();
+      const startOfWindow = subMonths(now, 2);
+      const endOfWindow = addMonths(now, 6);
+      const socialAsEvents: any[] = [];
+      fetchedSocials.forEach((s: any) => {
+        if (s.type === 'regular' && s.dayOfWeek !== undefined) {
+          let d = startOfDay(new Date(startOfWindow));
+          while (d.getDay() !== Number(s.dayOfWeek)) d = addDays(d, 1);
+          while (d <= endOfWindow) {
+            socialAsEvents.push({
+              id: `social-${s.id}-${format(d, 'yyyy-MM-dd')}`,
+              title: s.title,
+              startDate: d.getTime(),
+              endDate: d.getTime(),
+              startTime: s.startTime || '',
+              endTime: s.endTime || '',
+              type: s.title.toLowerCase().includes('milonga') || s.title.toLowerCase().includes('밀롱가') ? 'milonga' : 'social',
+            });
+            d = addDays(d, 7);
+          }
+        } else if (s.type === 'popup' && s.date) {
+          const sDate = typeof s.date.toDate === 'function' ? s.date.toDate() : new Date(s.date);
+          socialAsEvents.push({
+            id: `social-${s.id}`,
+            title: s.title,
+            startDate: sDate.getTime(),
+            endDate: sDate.getTime(),
+            startTime: s.startTime || '',
+            endTime: s.endTime || '',
+            type: s.title.toLowerCase().includes('milonga') || s.title.toLowerCase().includes('밀롱가') ? 'milonga' : 'social',
+          });
+        }
+      });
+      setUpcomingSocialEvents(socialAsEvents);
+    });
+    return () => unsubscribe();
+  }, [currentGroup.venueId]);
+
+  // 3개 소스 병합 → 오늘 이후 일정만 정렬
+  const upcomingEvents = React.useMemo(() => {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const todayMs = today.getTime();
+    return [...upcomingCalEvents, ...upcomingSocialEvents, ...upcomingClassEvents]
+      .filter(e => (e.endDate ?? e.startDate) >= todayMs)
+      .sort((a, b) => a.startDate - b.startDate)
+      .slice(0, 10);
+  }, [upcomingCalEvents, upcomingSocialEvents, upcomingClassEvents]);
 
   const genderStats = React.useMemo(() => {
     let male = 0;
@@ -293,13 +479,11 @@ export default function GroupHome({ group: initialGroup, isModal }: { group: Gro
   }, [members]);
 
   const isFullMember = memberStatus === 'active';
-  
+
   const [isClaiming, setIsClaiming] = useState(false);
-  const isOwner = currentGroup.ownerId && user && currentGroup.ownerId === user.uid;
-  const isLocked = currentGroup.isPublished === false && !isOwner;
 
   const admins = React.useMemo(() => {
-    const adminMembers = members.filter(m => m.role === 'admin' || m.id === currentGroup.ownerId);
+    const adminMembers = members.filter(m => m.role === 'admin' || m.role === 'owner' || m.id === currentGroup.ownerId);
     if (adminMembers.length > 0) return adminMembers;
     if (currentGroup.representative) {
       return [{ id: 'rep', name: currentGroup.representative.name, avatar: currentGroup.representative.avatar, role: 'admin' }];
@@ -313,13 +497,15 @@ export default function GroupHome({ group: initialGroup, isModal }: { group: Gro
     return admins.some(a => a.id === user?.uid) || currentGroup.ownerId === user?.uid;
   }, [admins, user, currentGroup.ownerId]);
 
+  const isLocked = currentGroup.isPublished === false && !isAdminUser;
+
   useEffect(() => {
     if (!user || !isAdminUser) return;
-    
+
     const unsub = notificationService.subscribeToAdminTodos(user.uid, currentGroup.id, (todos) => {
       setAdminTodos(todos);
     });
-    
+
     return () => unsub();
   }, [user, isAdminUser, currentGroup.id]);
 
@@ -339,7 +525,7 @@ export default function GroupHome({ group: initialGroup, isModal }: { group: Gro
 
       await groupService.claimGroupAdmin(currentGroup.id, user.uid, memberData);
       toast.success("Admin access granted!", { description: "Please start group setup." });
-      
+
       // Auto reload to refresh server component / permissions
       window.location.reload();
     } catch (error) {
@@ -401,33 +587,28 @@ export default function GroupHome({ group: initialGroup, isModal }: { group: Gro
   };
 
   const handleTabClick = (tab: TabType) => {
+    // [Fix #1] 홈이 아닌 탭을 클릭하면 히어로를 다시 보이지 않도록 처리
+    if (tab !== 'home') heroShown.current = true;
+
+    // [Fix #2] 모든 탭 전환 시 스크롤 최상단으로 이동
+    window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+
     // 메인(home)과 About(about)은 누구나 접근 가능
     if (tab === 'home' || tab === 'about') {
       setActiveTab(tab);
-      window.scrollTo(0, 0);
       return;
     }
 
     // 그 외 메뉴는 정회원만 가능
     if (!isFullMember) {
-      return; // Do nothing on click, as UI will show a lock
-    }
-
-    if (tab === 'class') {
-      setActiveTab(tab);
-      return;
-    }
-
-    if (tab === 'board') {
-      setActiveTab('board');
       return;
     }
 
     setActiveTab(tab);
-    window.scrollTo(0, 0);
   };
 
-  const showSolidHeader = isScrolled || activeTab !== 'home';
+  // [Fix] Dashboard(home) 탭이더라도 히어로를 이미 봤거나(heroShown), 스크롤되었거나, 다른 탭인 경우 헤더 고정
+  const showSolidHeader = isScrolled || activeTab !== 'home' || heroShown.current === true;
 
   return (
     <div ref={containerRef} className="bg-background text-on-background min-h-screen font-body relative pb-24 antialiased">
@@ -443,6 +624,14 @@ export default function GroupHome({ group: initialGroup, isModal }: { group: Gro
         
         .bg-blur-tertiary {
             background-image: radial-gradient(circle at bottom right, rgba(137, 60, 146, 0.08), transparent 45%);
+        }
+
+        @keyframes bounce-subtle {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+        .animate-bounce-subtle {
+            animation: bounce-subtle 2s ease-in-out infinite;
         }
 
         .hide-scrollbar::-webkit-scrollbar {
@@ -467,16 +656,15 @@ export default function GroupHome({ group: initialGroup, isModal }: { group: Gro
       <div className="fixed inset-0 pointer-events-none bg-blur-tertiary -z-10 bg-blur-primary"></div>
 
       {/* Header */}
-      <header 
-        className={`fixed top-0 w-full z-50 flex justify-between items-center px-page-margin h-16 transition-all duration-300 ${
-          showSolidHeader 
-            ? 'shadow-lg border-b border-white/10' 
+      <header
+        className={`fixed top-0 w-full z-50 flex justify-between items-center px-page-margin h-16 transition-all duration-300 ${showSolidHeader
+            ? 'shadow-lg border-b border-white/10'
             : 'border-b border-transparent shadow-none'
-        }`}
-        style={{ 
+          }`}
+        style={{
           backgroundColor: showSolidHeader ? (currentGroup.headerThemeColor || "#1a1c23") : 'transparent',
           color: (showSolidHeader && getContrastColor(currentGroup.headerThemeColor || "#1a1c23") === 'black')
-            ? "#0a0f1d" 
+            ? "#0a0f1d"
             : "#ffffff"
         }}
       >
@@ -501,13 +689,13 @@ export default function GroupHome({ group: initialGroup, isModal }: { group: Gro
         <div className="flex items-center gap-1 relative">
           {isAdminUser && (
             <>
-              <button 
+              <button
                 onClick={() => setIsPaletteOpen(!isPaletteOpen)}
                 className="hover:bg-current/10 active:scale-90 transition-all p-2 rounded-full flex items-center justify-center relative group/palette"
               >
                 <div className="relative flex items-center justify-center">
                   <span className="material-symbols-outlined text-[22px]">palette</span>
-                  <div 
+                  <div
                     className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white shadow-sm transition-transform group-hover/palette:scale-125"
                     style={{ backgroundColor: currentGroup.headerThemeColor || "#1a1c23" }}
                   />
@@ -517,8 +705,8 @@ export default function GroupHome({ group: initialGroup, isModal }: { group: Gro
               <AnimatePresence>
                 {isPaletteOpen && (
                   <>
-                    <div 
-                      className="fixed inset-0 z-50" 
+                    <div
+                      className="fixed inset-0 z-50"
                       onClick={() => setIsPaletteOpen(false)}
                     />
                     <motion.div
@@ -556,7 +744,7 @@ export default function GroupHome({ group: initialGroup, isModal }: { group: Gro
                 )}
               </AnimatePresence>
 
-              <button 
+              <button
                 onClick={() => setIsSettingsOpen(true)}
                 className="hover:bg-current/10 active:scale-90 transition-all p-2 rounded-full flex items-center justify-center"
               >
@@ -571,27 +759,28 @@ export default function GroupHome({ group: initialGroup, isModal }: { group: Gro
       <main className="pt-16 pb-12">
         {isLocked ? (
           <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center mt-10">
-             <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-                <span className="material-symbols-outlined text-3xl text-slate-400">lock</span>
-             </div>
-             <h2 className="text-xl font-bold text-slate-800 mb-2">{t('group.unsetup.title') || 'This group has not been set up yet'}</h2>
-             <p className="text-slate-500 mb-6 max-w-sm">
-                {t('group.unsetup.desc') || 'If you are the admin of this community, please claim your rights and activate the group.'}
-             </p>
-             {!currentGroup.ownerId && (
-               <button 
-                 onClick={handleClaimAdmin}
-                 disabled={isClaiming}
-                 className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-xl transition-colors shadow-sm disabled:opacity-50"
-               >
-                 {isClaiming ? (t('group.unsetup.claiming') || 'Processing...') : (t('group.unsetup.claim') || 'I am the admin here')}
-               </button>
-             )}
+            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+              <span className="material-symbols-outlined text-3xl text-slate-400">lock</span>
+            </div>
+            <h2 className="text-xl font-bold text-slate-800 mb-2">{t('group.unsetup.title') || 'This group has not been set up yet'}</h2>
+            <p className="text-slate-500 mb-6 max-w-sm">
+              {t('group.unsetup.desc') || 'If you are the admin of this community, please claim your rights and activate the group.'}
+            </p>
+            {!currentGroup.ownerId && (
+              <button
+                onClick={handleClaimAdmin}
+                disabled={isClaiming}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-xl transition-colors shadow-sm disabled:opacity-50"
+              >
+                {isClaiming ? (t('group.unsetup.claiming') || 'Processing...') : (t('group.unsetup.claim') || 'I am the admin here')}
+              </button>
+            )}
           </div>
         ) : (
           <>
-            {activeTab === 'home' && (
-              <section className="relative w-full aspect-[21/9] md:aspect-[3/1] bg-surface-container-high overflow-hidden -mt-16">
+            {/* [Fix #1] 히어로: 최초 진입 시 한 번만 표시 */}
+            {(activeTab !== 'home' || heroShown.current) ? null : (
+              <section className="relative w-full aspect-[16/9] md:aspect-[16/9] bg-surface-container-high overflow-hidden -mt-16">
                 <ImageWithFallback
                   alt={currentGroup.name}
                   className="absolute inset-0 object-cover w-full h-full"
@@ -701,7 +890,7 @@ export default function GroupHome({ group: initialGroup, isModal }: { group: Gro
                   };
 
                   // Admin function IDs (shown after separator, owner-only, importance order)
-                  const ADMIN_FUNCTION_IDS = ['brand-setting', 'roles-permissions', 'class-setting', 'shop-setting', 'rental-setting', 'stay-setting'];
+                  const ADMIN_FUNCTION_IDS = ['brand-setting', 'roles-permissions'];
                   // Fixed position IDs (excluded from user ordering in Step 3)
                   const FIXED_IDS = new Set(['dashboard', 'about', ...ADMIN_FUNCTION_IDS]);
 
@@ -719,7 +908,10 @@ export default function GroupHome({ group: initialGroup, isModal }: { group: Gro
                   if (menuOrder.length > 0) {
                     // Use saved menuOrder for core tabs only (excluding admin/fixed)
                     menuOrder.forEach(item => {
-                      if (item.type === 'divider') return; // skip old dividers
+                      if (item.type === 'divider') {
+                        coreTabs.push({ type: 'divider' });
+                        return;
+                      }
                       if (FIXED_IDS.has(item.id)) return; // skip admin/fixed items
                       const mapping = FUNCTION_TAB_MAP[item.id];
                       if (mapping && !addedTabIds.has(mapping.id)) {
@@ -773,9 +965,9 @@ export default function GroupHome({ group: initialGroup, isModal }: { group: Gro
                   // === 3. ABOUT — Always last before admin ===
                   const aboutTab = { id: 'about' as TabType, key: 'group.tab.about', icon: 'info', locked: false, implemented: true, type: 'item' };
 
-                  // === 4. ADMIN TABS — After separator, owner-only, importance order ===
+                  // === 4. ADMIN TABS — After separator, admin-only, importance order ===
                   const adminTabs: any[] = [];
-                  if (isOwner) {
+                  if (isAdminUser) {
                     ADMIN_FUNCTION_IDS.forEach(fnId => {
                       // Only include if selected (or mandatory like brand-setting, roles-permissions)
                       const isMandatoryAdmin = fnId === 'brand-setting' || fnId === 'roles-permissions';
@@ -816,32 +1008,30 @@ export default function GroupHome({ group: initialGroup, isModal }: { group: Gro
                       <button
                         key={tab.id + '-' + index}
                         onClick={() => {
+                          if (isTabLocked) {
+                            toast('🔒 Members Only', { description: 'This menu is only available to group members.' });
+                            return;
+                          }
                           if (!tab.implemented) {
                             toast('🚧 Under Construction', { description: 'This feature is coming soon!' });
                             return;
                           }
                           handleTabClick(tab.id as TabType);
                         }}
-                        className={`flex flex-col items-center justify-center py-2 px-1.5 border-b-2 transition-all shrink-0 min-w-[52px] relative ${
-                          activeTab === tab.id
+                        className={`flex flex-col items-center justify-center py-2 px-1.5 border-b-2 transition-all shrink-0 min-w-[52px] relative ${activeTab === tab.id
                             ? 'border-primary text-primary'
-                            : isTabLocked 
-                              ? 'border-transparent text-outline hover:text-outline cursor-not-allowed opacity-60'
-                              : !tab.implemented
-                                ? 'border-transparent text-on-surface-variant/40 hover:text-on-surface-variant/60'
-                                : 'border-transparent text-on-surface-variant hover:text-on-surface'
-                        }`}
+                            : !tab.implemented
+                              ? 'border-transparent text-on-surface-variant/40 hover:text-on-surface-variant/60'
+                              : 'border-transparent text-on-surface-variant hover:text-on-surface'
+                          }`}
                       >
                         <div className="relative">
                           <span className="material-symbols-outlined text-[12px] mb-0.5" style={activeTab === tab.id ? { fontVariationSettings: "'FILL' 1" } : {}}>{tab.icon}</span>
-                          {isTabLocked && (
-                            <span className="material-symbols-outlined text-[10px] absolute -top-1 -right-2 text-outline bg-surface rounded-full">lock</span>
-                          )}
                           {!tab.implemented && (
                             <span className="material-symbols-outlined text-[8px] absolute -top-1 -right-2 text-amber-500 bg-surface rounded-full">construction</span>
                           )}
                         </div>
-                        <span className="text-[7px] font-bold tracking-tight leading-none uppercase">{t(tab.key) || (tab.key.includes('.') ? tab.key.split('.').pop() : tab.key)}</span>
+                        <span className="text-[9px] font-bold tracking-tight leading-none uppercase">{t(tab.key) || (tab.key.includes('.') ? tab.key.split('.').pop() : tab.key)}</span>
                       </button>
                     );
                   });
@@ -849,639 +1039,676 @@ export default function GroupHome({ group: initialGroup, isModal }: { group: Gro
               </div>
             </div>
 
-        <div className={`max-w-7xl mx-auto ${activeTab === 'feed' || activeTab === 'home' || activeTab === 'live' || activeTab === 'calendar' ? 'px-0 md:px-0 mt-0 space-y-0 pb-0' : 'px-4 md:px-8 space-y-10 mt-6 pb-12'}`}>
-          {activeTab === 'home' && (
-            <div className="flex flex-col gap-10 mt-10">
-              {/* Admin Todo Section */}
-              {isAdminUser && adminTodos.length > 0 && (
-                <section className="px-6">
-                  <div className="bg-orange-50 rounded-xl p-4 border border-orange-200 relative overflow-hidden">
-                    <h3 className="font-headline font-bold text-orange-800 mb-3 flex items-center gap-2 text-base">
-                      <span className="material-symbols-outlined text-orange-600">notification_important</span> Action Required
-                    </h3>
-                    <div className="flex flex-col gap-2">
-                      {adminTodos.map(todo => (
-                        <div key={todo.id} className="bg-white rounded-lg p-3 border border-orange-100 flex items-center justify-between gap-3">
-                          <div className="min-w-0">
-                            <h4 className="font-bold text-on-surface text-sm truncate">{todo.title}</h4>
-                            <p className="text-xs text-on-surface-variant mt-0.5 truncate">{todo.message}</p>
-                          </div>
-                          <button 
-                            onClick={() => { notificationService.markTodosAsCompletedByReference(todo.referenceId || todo.id); toast.success("Task completed"); }}
-                            className="bg-orange-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg shrink-0"
-                          >Done</button>
+            <div className={`max-w-7xl mx-auto ${activeTab === 'feed' || activeTab === 'home' || activeTab === 'live' || activeTab === 'calendar' ? 'px-0 md:px-0 mt-0 space-y-0 pb-0' : 'px-4 md:px-8 space-y-10 mt-6 pb-12'}`}>
+              {activeTab === 'home' && (
+                <div className="flex flex-col gap-10 mt-10">
+                  {/* Admin Todo Section */}
+                  {isAdminUser && adminTodos.length > 0 && (
+                    <section className="px-6">
+                      <div className="bg-orange-50 rounded-xl p-4 border border-orange-200 relative overflow-hidden">
+                        <h3 className="font-headline font-bold text-orange-800 mb-3 flex items-center gap-2 text-base">
+                          <span className="material-symbols-outlined text-orange-600">notification_important</span> Action Required
+                        </h3>
+                        <div className="flex flex-col gap-2">
+                          {adminTodos.map(todo => (
+                            <div key={todo.id} className="bg-white rounded-lg p-3 border border-orange-100 flex items-center justify-between gap-3">
+                              <div className="min-w-0">
+                                <h4 className="font-bold text-on-surface text-sm truncate">{todo.title}</h4>
+                                <p className="text-xs text-on-surface-variant mt-0.5 truncate">{todo.message}</p>
+                              </div>
+                              <button
+                                onClick={() => { notificationService.markTodosAsCompletedByReference(todo.referenceId || todo.id); toast.success("Task completed"); }}
+                                className="bg-orange-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg shrink-0"
+                              >Done</button>
+                            </div>
+                          ))}
                         </div>
-                      ))}
+                      </div>
+                    </section>
+                  )}
+
+                  {/* Notice Board Section */}
+                  <section className="px-6">
+                    <div className={`bg-surface-container rounded-xl p-4 flex flex-col gap-4 relative ${isFullMember ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}`} onClick={() => handleTabClick('board')}>
+                      {noticePost && isPostNew(noticePost.createdAt) && (
+                        <div className="absolute -top-2 -right-1 bg-[#ff4444] text-white text-[11px] font-black px-2.5 py-1 rounded-lg shadow-[0_4px_12px_rgba(255,68,68,0.4)] z-10 animate-bounce-subtle">
+                          NEW
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center">
+                        <h4 className="font-body text-[12px] font-medium uppercase tracking-widest text-on-surface-variant">Notice</h4>
+                        {!isFullMember && <span className="material-symbols-outlined text-[16px] text-outline">lock</span>}
+                      </div>
+                      <ul className="flex flex-col gap-3">
+                        {noticePost ? (
+                          <li className="flex flex-col gap-1 border-b border-outline/10 pb-3 last:border-0 last:pb-0">
+                            <span className="font-body text-[16px] font-medium text-on-surface font-bold line-clamp-2">
+                              {noticePost.title || noticePost.content?.substring(0, 50) || 'Notice'}
+                            </span>
+                            <div className="flex justify-between items-center">
+                              <span className="font-body text-[12px] font-medium text-primary">{noticePost.author?.name || 'Admin'}</span>
+                              <span className="font-body text-[12px] font-medium text-outline">{safeFormatRelative(noticePost.createdAt)}</span>
+                            </div>
+                          </li>
+                        ) : (
+                          <li className="flex flex-col gap-1 border-b border-outline/10 pb-3 last:border-0 last:pb-0">
+                            <span className="font-body text-[16px] font-medium text-on-surface font-bold">Welcome to our community!</span>
+                            <div className="flex justify-between items-center">
+                              <span className="font-body text-[12px] font-medium text-primary">Admin</span>
+                              <span className="font-body text-[12px] font-medium text-outline">{safeFormat(Date.now(), 'MMM d')}</span>
+                            </div>
+                          </li>
+                        )}
+                      </ul>
                     </div>
-                  </div>
-                </section>
-              )}
+                  </section>
 
-              {/* Notice Board Section */}
-              <section className="px-6">
-                <div className={`bg-surface-container rounded-xl p-4 flex flex-col gap-4 ${isFullMember ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}`} onClick={() => handleTabClick('board')}>
-                  <div className="flex justify-between items-center">
-                    <h4 className="font-body text-[12px] font-medium uppercase tracking-widest text-on-surface-variant">Notice</h4>
-                    {!isFullMember && <span className="material-symbols-outlined text-[16px] text-outline">lock</span>}
-                  </div>
-                  <ul className="flex flex-col gap-3">
-                    {noticePost ? (
-                      <li className="flex flex-col gap-1 border-b border-outline/10 pb-3 last:border-0 last:pb-0">
-                        <span className="font-body text-[16px] font-medium text-on-surface font-bold line-clamp-2">{noticePost.title || noticePost.content?.substring(0, 50) || 'Notice'}</span>
-                        <div className="flex justify-between items-center">
-                          <span className="font-body text-[12px] font-medium text-primary">{noticePost.author?.name || 'Admin'}</span>
-                          <span className="font-body text-[12px] font-medium text-outline">{noticePost.createdAt ? format(typeof noticePost.createdAt === 'number' ? noticePost.createdAt : new Date(noticePost.createdAt).getTime(), 'MMM d') : ''}</span>
+                  {/* GROUP CHAT Button */}
+                  <section className="px-6">
+                    <div
+                      className={`bg-primary rounded-2xl p-4 flex items-center justify-between gap-4 shadow-md ${isFullMember ? 'cursor-pointer active:scale-[0.98] transition-transform' : 'cursor-not-allowed opacity-60'}`}
+                      onClick={() => { if (isFullMember) setShowGroupChat(true); }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+                          <span className="material-symbols-outlined text-[24px] text-on-primary" style={{ fontVariationSettings: "'FILL' 1" }}>chat</span>
                         </div>
-                      </li>
-                    ) : (
-                      <li className="flex flex-col gap-1 border-b border-outline/10 pb-3 last:border-0 last:pb-0">
-                        <span className="font-body text-[16px] font-medium text-on-surface font-bold">Welcome to our community!</span>
-                        <div className="flex justify-between items-center">
-                          <span className="font-body text-[12px] font-medium text-primary">Admin</span>
-                          <span className="font-body text-[12px] font-medium text-outline">{format(Date.now(), 'MMM d')}</span>
+                        <div>
+                          <h3 className="font-headline text-[16px] font-bold text-on-primary">Group Chat</h3>
+                          <p className="font-body text-[13px] text-on-primary/70">0 unread messages</p>
                         </div>
-                      </li>
-                    )}
-                  </ul>
-                </div>
-              </section>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {!isFullMember && <span className="material-symbols-outlined text-[20px] text-on-primary/60">lock</span>}
+                        <span className="material-symbols-outlined text-[24px] text-on-primary/80">chevron_right</span>
+                      </div>
+                    </div>
+                  </section>
 
-              {/* SCHEDULE Section */}
-              <section className="px-6 flex flex-col gap-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h2 className="font-headline text-[18px] leading-[1.4] font-bold text-on-background">Schedule</h2>
-                  <div className="flex items-center gap-3">
-                    {isFullMember ? (
-                      <span className="font-body text-[12px] font-medium text-primary cursor-pointer flex items-center" onClick={() => handleTabClick('calendar')}>VIEW ALL <span className="material-symbols-outlined text-[14px]">chevron_right</span></span>
-                    ) : (
-                      <span className="font-body text-[12px] font-medium text-outline flex items-center cursor-not-allowed opacity-60"><span className="material-symbols-outlined text-[14px] mr-1">lock</span></span>
-                    )}
-                    <span className="font-body text-[12px] font-bold text-white bg-primary px-3 py-1 rounded-full shadow-sm">{format(Date.now(), 'MMM d').toUpperCase()}</span>
-                  </div>
-                </div>
-                <div className="flex flex-col gap-4">
-                  {(() => {
-                    const todayStart = new Date();
-                    todayStart.setHours(0, 0, 0, 0);
-                    const todayEnd = new Date(todayStart);
-                    todayEnd.setDate(todayEnd.getDate() + 1);
-                    const todayEndMs = todayEnd.getTime();
-                    
-                    const todayEvents = upcomingEvents.filter(e => {
-                      const startTime = typeof e.startDate === 'number' ? e.startDate : new Date(e.startDate || 0).getTime();
-                      return startTime >= todayStart.getTime() && startTime < todayEnd.getTime();
-                    });
+                  {/* FEED Section */}
+                  <section className="px-6 flex flex-col gap-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h2 className="font-headline text-[18px] leading-[1.4] font-bold text-on-background">Feed</h2>
+                      <span className="font-body text-[12px] font-medium text-primary cursor-pointer flex items-center" onClick={() => handleTabClick('feed')}>VIEW ALL <span className="material-symbols-outlined text-[14px]">chevron_right</span></span>
+                    </div>
+                    <div className="flex flex-col gap-3">
+                      {recentFeedPosts.length > 0 ? (
+                        recentFeedPosts.map((post, idx) => (
+                          <div key={post.id || idx} className={`bg-surface-container-lowest border border-outline/15 rounded-xl p-4 flex justify-between items-center ${isFullMember ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}`} onClick={() => handleTabClick('feed')}>
+                            <div className="flex gap-3 items-start flex-1 min-w-0">
+                              {post.author?.avatar ? (
+                                <img src={post.author.avatar} alt={post.author.name} className="w-10 h-10 rounded-full object-cover shrink-0 border border-outline/20" />
+                              ) : (
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 font-bold ${idx === 0 ? 'bg-secondary-container text-on-secondary-container' : 'bg-tertiary-container text-on-tertiary-container'}`}>
+                                  {(post.author?.name || 'U').substring(0, 2).toUpperCase()}
+                                </div>
+                              )}
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-baseline gap-2 mb-1">
+                                  <span className="font-body text-[14px] font-semibold leading-[1.2] text-on-surface truncate">{post.author?.name || 'Anonymous'}</span>
+                                  <span className="font-body text-[12px] font-medium leading-[1.2] text-outline shrink-0">{safeFormatRelative(post.createdAt)}</span>
+                                </div>
+                                <p className="font-body text-[16px] font-medium text-on-surface-variant italic truncate">
+                                  {isPostNew(post.createdAt) && <span className="inline-block bg-primary text-white text-[10px] font-bold px-1.5 py-0.5 rounded-[4px] mr-1.5 align-middle -translate-y-[1px]">NEW</span>}
+                                  &quot;{post.content || post.title || '...'}&quot;
+                                </p>
+                              </div>
+                            </div>
+                            {!isFullMember && <span className="material-symbols-outlined text-[20px] text-outline shrink-0 ml-2">lock</span>}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="bg-surface-container-lowest border border-outline/15 rounded-xl p-4 text-center">
+                          <p className="font-body text-[16px] font-medium text-on-surface-variant">No posts yet</p>
+                        </div>
+                      )}
+                    </div>
+                  </section>
 
-                    if (todayEvents.length > 0) {
-                      return todayEvents.map((event, idx) => {
-                        const startTime = typeof event.startDate === 'number' ? event.startDate : new Date(event.startDate || 0).getTime();
-                        const isNow = startTime <= Date.now() && (typeof event.endDate === 'number' ? event.endDate : new Date(event.endDate || 0).getTime()) >= Date.now();
-                        const typeColor = event.type === 'Practica' ? 'text-primary' : (event.type === 'Class' ? 'text-tertiary' : 'text-secondary');
-                        const typeBg = event.type === 'Practica' ? 'bg-primary-container' : (event.type === 'Class' ? 'bg-tertiary-fixed' : 'bg-secondary-container');
+                  {/* SCHEDULE Section */}
+                  <section className="px-6 flex flex-col gap-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h2 className="font-headline text-[18px] leading-[1.4] font-bold text-on-background">Schedule</h2>
+                      <div className="flex items-center gap-3">
+                        {isFullMember ? (
+                          <span className="font-body text-[12px] font-medium text-primary cursor-pointer flex items-center" onClick={() => handleTabClick('calendar')}>VIEW ALL <span className="material-symbols-outlined text-[14px]">chevron_right</span></span>
+                        ) : (
+                          <span className="font-body text-[12px] font-medium text-outline flex items-center cursor-not-allowed opacity-60"><span className="material-symbols-outlined text-[14px] mr-1">lock</span></span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-4">
+                      {(() => {
+                        const firstEvent = upcomingEvents[0];
+                        const eventsToDisplay = firstEvent
+                          ? upcomingEvents.filter(e => {
+                            const d1 = new Date(e.startDate);
+                            const d2 = new Date(firstEvent.startDate);
+                            return d1.getFullYear() === d2.getFullYear() &&
+                              d1.getMonth() === d2.getMonth() &&
+                              d1.getDate() === d2.getDate();
+                          })
+                          : [];
+
+                        if (eventsToDisplay.length === 0) {
+                          return (
+                            <div className="bg-surface-container-lowest border border-outline/15 rounded-xl p-6 text-center">
+                              <span className="material-symbols-outlined text-outline/30 text-4xl mb-2">calendar_today</span>
+                              <p className="font-body text-[15px] font-medium text-on-surface-variant">No upcoming events scheduled</p>
+                            </div>
+                          );
+                        }
 
                         return (
-                          <div key={event.id} className={`flex items-start gap-4 relative ${isFullMember ? 'cursor-pointer' : 'cursor-not-allowed opacity-80'}`} onClick={() => handleTabClick('calendar')}>
-                            {idx < todayEvents.length - 1 && <div className="absolute left-[23px] top-8 bottom-[-24px] w-0.5 bg-outline/15"></div>}
-                            <div className="w-12 pt-2 flex flex-col items-center z-10 bg-background">
-                              <div className={`w-4 h-4 rounded-full relative z-10 shrink-0 ${isNow ? 'bg-error shadow-[0_0_12px_rgba(186,26,26,0.8)]' : 'bg-outline/40 border border-outline/60'}`}></div>
-                              <span className={`font-body text-[13px] font-black mt-1 ${isNow ? 'text-error' : 'text-on-surface'}`}>{format(startTime, 'HH:mm')}</span>
-                            </div>
-                            <div className={`flex-1 rounded-xl p-3 cursor-pointer ${isNow ? 'bg-error-container/20 border border-error/20' : 'bg-surface-container-lowest border border-outline/15'}`}>
-                              <div className="flex justify-between items-start mb-2">
-                                {isNow ? (
-                                  <span className="font-body text-[12px] font-medium text-on-primary bg-primary px-2 py-0.5 rounded-3xl tracking-widest">LIVE NOW</span>
-                                ) : (
-                                  <span className={`font-body text-[11px] font-black px-2.5 py-0.5 rounded-full shadow-sm ${typeColor} ${typeBg}`}>{event.type?.toUpperCase() || 'EVENT'}</span>
-                                )}
-                                <span className="font-body text-[12px] font-bold text-on-surface-variant flex items-center gap-1">
-                                  {isNow && event.type === 'Practica' ? (
-                                    <><span className="material-symbols-outlined text-[14px]">music_note</span> Practica</>
-                                  ) : (
-                                    <><span className="material-symbols-outlined text-[14px]">groups</span> {event.attendeeCount || 0}</>
+                          <div className="flex flex-col gap-8">
+                            {eventsToDisplay.map((event, idx) => {
+                              const isNow = event.startDate <= Date.now() && event.endDate >= Date.now();
+                              const eventDate = safeFormat(event.startDate, 'MMM d (EEE)');
+                              const prevEventDate = idx > 0 ? safeFormat(eventsToDisplay[idx - 1].startDate, 'MMM d (EEE)') : null;
+                              const showDateHeader = eventDate !== prevEventDate;
+
+                              const dotColorClass =
+                                event.type === 'class' || event.type === 'Class' || event.type === 'practice' ? 'bg-[#ba1a1a]' :
+                                  event.type === 'social' || event.type === 'Social' || event.type === 'milonga' ? 'bg-[#004190]' :
+                                    'bg-[#765b00]';
+                              const badgeColorClass =
+                                event.type === 'class' || event.type === 'Class' || event.type === 'practice' ? 'bg-[#ba1a1a]/10 text-[#ba1a1a]' :
+                                  event.type === 'social' || event.type === 'Social' || event.type === 'milonga' ? 'bg-[#004190]/10 text-[#004190]' :
+                                    'bg-slate-200 text-slate-600';
+                              const displayTime = event.startTime || safeFormat(event.startDate, 'HH:mm');
+
+                              return (
+                                <React.Fragment key={event.id}>
+                                  {showDateHeader && (
+                                    <div className="flex items-center gap-3 mb-1">
+                                      <span className="text-[20px] font-black text-on-surface tracking-tight">
+                                        {eventDate}
+                                      </span>
+                                      <div className="h-px flex-1 bg-outline/10"></div>
+                                    </div>
                                   )}
-                                </span>
-                              </div>
-                              <h3 className={`font-body ${isNow ? 'text-[18px]' : 'text-[16px]'} font-medium text-on-surface font-bold`}>{event.title}</h3>
-                            </div>
-                          </div>
-                        );
-                      });
-                    } else {
-                      // Show NEXT event if today is empty
-                      const nextEvent = upcomingEvents.find(e => {
-                        const st = typeof e.startDate === 'number' ? e.startDate : new Date(e.startDate || 0).getTime();
-                        return st >= todayEndMs;
-                      });
-                      
-                      if (nextEvent) {
-                        const nextStart = typeof nextEvent.startDate === 'number' ? nextEvent.startDate : new Date(nextEvent.startDate || 0).getTime();
-                        return (
-                          <div className={`bg-surface-container-lowest border border-outline/15 rounded-xl p-4 flex items-center justify-between gap-4 ${isFullMember ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}`} onClick={() => handleTabClick('calendar')}>
-                            <div className="flex items-center gap-4">
-                              <div className="w-16 h-16 rounded-lg bg-surface-variant shrink-0 flex flex-col items-center justify-center">
-                                <span className="font-body text-[12px] font-medium text-on-surface-variant uppercase">{format(nextStart, 'EEE')}</span>
-                                <span className="font-headline text-[24px] font-extrabold text-on-surface leading-[1.3]">{format(nextStart, 'd')}</span>
-                              </div>
-                              <div>
-                                <h3 className="font-headline text-[20px] font-bold leading-[1.4] text-on-surface">{nextEvent.title}</h3>
-                                <p className="font-body text-[16px] font-medium leading-[1.6] text-on-surface-variant">{nextEvent.location || nextEvent.description || ''}</p>
-                              </div>
-                            </div>
-                            {!isFullMember && <span className="material-symbols-outlined text-[20px] text-outline shrink-0">lock</span>}
-                          </div>
-                        );
-                      } else {
-                        return (
-                          <div className="flex items-start gap-4 relative">
-                            <div className="w-12 pt-2 flex flex-col items-center z-10 bg-background">
-                              <div className="w-4 h-4 rounded-full bg-outline/30 relative z-10 shrink-0 border border-outline/50"></div>
-                              <span className="font-body text-[12px] font-medium text-outline mt-1">--:--</span>
-                            </div>
-                            <div className="flex-1 bg-surface-container-lowest border border-outline/15 rounded-xl p-3">
-                              <h3 className="font-body text-[16px] font-medium text-on-surface-variant font-bold">No upcoming events scheduled</h3>
-                            </div>
-                          </div>
-                        );
-                      }
-                    }
-                  })()}
-                </div>
-              </section>
+                                  <div
+                                    className={`flex items-start gap-4 relative ${isFullMember ? 'cursor-pointer active:scale-[0.98] transition-transform' : 'cursor-not-allowed opacity-80'}`}
+                                    onClick={() => handleTabClick('calendar')}
+                                  >
+                                    <div className="flex flex-col items-center shrink-0 w-[52px] pt-1">
+                                      <span className="text-[14px] font-bold text-on-surface-variant">{displayTime}</span>
+                                      <div className={`w-1.5 h-1.5 rounded-full mt-2 ${dotColorClass} ${isNow ? 'animate-pulse ring-4 ring-red-500/20' : ''}`}></div>
+                                    </div>
 
-              {/* MOMENTS Section */}
-              <section className="px-6">
-                <h2 className="font-body text-[12px] font-medium uppercase tracking-widest text-on-surface-variant mb-4">{t('group.home.moments') || 'MOMENTS'}</h2>
-                <div className="flex flex-col gap-4">
-                  {moments.length > 0 ? (
-                    <div onClick={() => handleTabClick('live')} className="relative w-full aspect-[4/5] rounded-2xl overflow-hidden shrink-0 bg-surface-container cursor-pointer shadow-sm">
-                      <ImageWithFallback src={moments[0].media?.[0] || ''} alt={moments[0].caption || "Moment"} className="absolute inset-0 w-full h-full object-cover" fallbackType="gallery" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-                      <div className="absolute bottom-6 left-5 right-5 flex flex-col gap-2">
-                        <div className="flex items-center gap-2">
-                          {moments[0].authorPhoto ? (
-                            <img src={moments[0].authorPhoto} alt={moments[0].authorName} className="w-8 h-8 rounded-full border-2 border-white/80 object-cover" />
-                          ) : (
-                            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-bold text-xs border-2 border-white/80">
-                              {(moments[0].authorName || 'U').substring(0,2).toUpperCase()}
+                                    <div className={`flex-1 bg-white p-4 rounded-2xl border shadow-sm transition-all hover:shadow-md ${isNow ? 'border-[#ba1a1a]/30 bg-[#ba1a1a]/5' : 'border-slate-100'}`}>
+                                      <div className="flex justify-between items-start mb-2">
+                                        <h4 className="text-[16px] font-bold text-[#242c51] leading-tight">{event.title}</h4>
+                                        {isNow && (
+                                          <span className="font-body text-[9px] font-black text-white bg-[#ba1a1a] px-2 py-0.5 rounded-full tracking-wider animate-pulse shrink-0">LIVE NOW</span>
+                                        )}
+                                      </div>
+                                      <div className="flex flex-wrap gap-2">
+                                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-black tracking-wide uppercase ${badgeColorClass}`}>
+                                          {event.type?.toUpperCase() || 'EVENT'}
+                                        </span>
+                                        {(event.startTime || event.endTime) && (
+                                          <div className="flex items-center gap-1 text-[11px] font-bold text-slate-400">
+                                            <span className="material-symbols-outlined text-[13px]">schedule</span>
+                                            {displayTime}{event.endTime ? ` – ${event.endTime}` : ''}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </React.Fragment>
+                              );
+                            })}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </section>
+
+                  {/* MOMENTS Section */}
+                  <section className="px-6 flex flex-col gap-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h2 className="font-headline text-[18px] leading-[1.4] font-bold text-on-background">Moments</h2>
+                      <span className="font-body text-[12px] font-medium text-primary cursor-pointer flex items-center" onClick={() => handleTabClick('live')}>VIEW ALL <span className="material-symbols-outlined text-[14px]">chevron_right</span></span>
+                    </div>
+                    <div className="flex flex-col gap-4">
+                      {moments.length > 0 ? (
+                        <>
+                          {/* Featured Moment */}
+                          <div
+                            onClick={() => setSelectedMoment(moments[0])}
+                            className="relative w-full aspect-[4/5] rounded-2xl overflow-hidden shrink-0 bg-surface-container cursor-pointer shadow-sm active:scale-[0.98] transition-transform"
+                          >
+                            <ImageWithFallback src={moments[0].media?.[0] || ''} alt={moments[0].caption || "Moment"} className="absolute inset-0 w-full h-full object-cover" fallbackType="gallery" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                            <div className="absolute bottom-5 left-5 right-5 flex flex-col gap-2">
+                              <div className="flex items-center gap-2">
+                                {moments[0].authorPhoto ? (
+                                  <img src={moments[0].authorPhoto} alt={moments[0].authorName} className="w-8 h-8 rounded-full border-2 border-white/80 object-cover" />
+                                ) : (
+                                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-bold text-xs border-2 border-white/80">
+                                    {(moments[0].authorName || 'U').substring(0, 2).toUpperCase()}
+                                  </div>
+                                )}
+                                <span className="font-body text-[14px] font-medium text-white">{moments[0].authorName || 'User'}</span>
+                              </div>
+                              <p className="font-body text-[18px] font-bold text-white leading-[1.3] drop-shadow-md line-clamp-1">{moments[0].caption || ''}</p>
+                            </div>
+                            <div className="absolute top-4 right-4 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full flex items-center gap-1.5">
+                              <span className="w-2 h-2 rounded-full bg-error animate-pulse"></span>
+                              <span className="font-body text-[11px] font-bold text-white tracking-widest uppercase">LIVE</span>
+                            </div>
+                          </div>
+
+                          {/* Thumbnails Row */}
+                          {moments.length > 1 && (
+                            <div className="grid grid-cols-4 gap-2.5">
+                              {moments.slice(1, 5).map((moment, idx) => (
+                                <div
+                                  key={moment.id || idx}
+                                  onClick={() => setSelectedMoment(moment)}
+                                  className="aspect-square rounded-xl overflow-hidden bg-surface-container cursor-pointer active:scale-[0.95] transition-transform relative border border-outline/5 group"
+                                >
+                                  <ImageWithFallback
+                                    src={moment.media?.[0] || ''}
+                                    alt={moment.caption || "Thumbnail"}
+                                    className="w-full h-full object-cover"
+                                    fallbackType="gallery"
+                                  />
+                                  <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors" />
+                                  {moment.media && moment.media.length > 1 && (
+                                    <div className="absolute top-1.5 right-1.5 bg-black/50 backdrop-blur-md rounded-md p-1 flex items-center justify-center">
+                                      <span className="material-symbols-outlined text-white text-[12px]">filter_none</span>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+
+                              {/* More indicator placeholder if there are many moments */}
+                              {moments.length >= 5 && (
+                                <div
+                                  onClick={() => handleTabClick('live')}
+                                  className="aspect-square rounded-xl bg-surface-container-high flex flex-col items-center justify-center gap-1 border border-primary/20 cursor-pointer active:scale-[0.95] transition-all hover:bg-primary/5"
+                                >
+                                  <span className="material-symbols-outlined text-primary text-[20px]">grid_view</span>
+                                  <span className="text-[10px] font-black text-primary tracking-tighter">ALL</span>
+                                </div>
+                              )}
                             </div>
                           )}
-                          <span className="font-body text-[14px] font-medium text-white">{moments[0].authorName || 'User'}</span>
-                        </div>
-                        <p className="font-body text-[18px] font-bold text-white leading-[1.3] drop-shadow-md">{moments[0].caption || ''}</p>
-                      </div>
-                      <div className="absolute top-4 right-4 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-error animate-pulse"></span>
-                        <span className="font-body text-[11px] font-bold text-white tracking-widest uppercase">LIVE</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="relative w-full aspect-[21/9] rounded-2xl overflow-hidden shrink-0 bg-surface-container flex items-center justify-center border border-outline/10">
-                      <div className="flex flex-col items-center gap-2 opacity-50">
-                        <span className="material-symbols-outlined text-4xl">photo_camera</span>
-                        <span className="font-body text-sm font-medium">No live moments</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </section>
-
-              {/* RECENT FEED Section */}
-              <section className="px-6">
-                <h2 className="font-body text-[12px] font-medium uppercase tracking-widest text-on-surface-variant mb-4">{t('group.tab.feed') || 'RECENT FEED'}</h2>
-                <div className="flex flex-col gap-3">
-                  {liveChats.length > 0 ? (
-                    liveChats.map((chat, idx) => (
-                      <div key={chat.id || idx} className={`bg-surface-container-lowest border border-outline/15 rounded-xl p-4 flex justify-between items-center ${isFullMember ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}`} onClick={() => handleTabClick('feed')}>
-                        <div className="flex gap-3 items-start flex-1 min-w-0">
-                          {chat.author?.avatar ? (
-                          <img src={chat.author.avatar} alt={chat.author.name} className="w-10 h-10 rounded-full object-cover shrink-0 border border-outline/20" />
-                        ) : (
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 font-bold ${idx === 0 ? 'bg-secondary-container text-on-secondary-container' : 'bg-tertiary-container text-on-tertiary-container'}`}>
-                            {(chat.author?.name || 'U').substring(0, 2).toUpperCase()}
-                          </div>
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-baseline gap-2 mb-1">
-                            <span className="font-body text-[14px] font-semibold leading-[1.2] text-on-surface truncate">{chat.author?.name || 'Anonymous'}</span>
-                            <span className="font-body text-[12px] font-medium leading-[1.2] text-outline shrink-0">{chat.createdAt ? format(typeof chat.createdAt === 'number' ? chat.createdAt : new Date(chat.createdAt).getTime(), 'MMM d') : ''}</span>
-                          </div>
-                          <p className="font-body text-[16px] font-medium text-on-surface-variant italic truncate">&quot;{chat.content || '...'}&quot;</p>
-                        </div>
-                        </div>
-                        {!isFullMember && <span className="material-symbols-outlined text-[20px] text-outline shrink-0 ml-2">lock</span>}
-                      </div>
-                    ))
-                  ) : members.filter(m => m.status === 'active').slice(0, 2).map((member, idx) => (
-                    <div key={member.id || idx} className="bg-surface-container-lowest border border-outline/15 rounded-xl p-4 flex gap-3 items-start">
-                      {member.avatar || member.photoURL ? (
-                        <img src={member.avatar || member.photoURL} alt={member.name} className="w-10 h-10 rounded-full object-cover shrink-0 border border-outline/20" />
+                        </>
                       ) : (
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 font-bold ${idx === 0 ? 'bg-secondary-container text-on-secondary-container' : 'bg-tertiary-container text-on-tertiary-container'}`}>
-                          {(member.name || 'U').substring(0, 2).toUpperCase()}
+                        <div className="relative w-full aspect-[21/9] rounded-2xl overflow-hidden shrink-0 bg-surface-container flex items-center justify-center border border-outline/10">
+                          <div className="flex flex-col items-center gap-2 opacity-50">
+                            <span className="material-symbols-outlined text-4xl">photo_camera</span>
+                            <span className="font-body text-sm font-medium">No live moments</span>
+                          </div>
                         </div>
                       )}
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-baseline gap-2 mb-1">
-                          <span className="font-body text-[14px] font-semibold leading-[1.2] text-on-surface truncate">{member.name}</span>
-                          <span className="font-body text-[12px] font-medium leading-[1.2] text-outline shrink-0">{member.role || 'member'}</span>
-                        </div>
-                        <p className="font-body text-[16px] font-medium text-on-surface-variant italic truncate">&quot;{member.role === 'admin' ? 'Managing the community' : 'Active in the community'}&quot;</p>
-                      </div>
                     </div>
-                  ))}
-                  {liveChats.length === 0 && members.filter(m => m.status === 'active').length === 0 && (
-                    <div className="bg-surface-container-lowest border border-outline/15 rounded-xl p-4 text-center">
-                      <p className="font-body text-[16px] font-medium text-on-surface-variant">No active chatter yet</p>
-                    </div>
-                  )}
+                  </section>
+
                 </div>
-              </section>
+              )}
 
-              {/* ACTIVE SPIRITS Section */}
-              <section className="px-6 mb-12">
-                <h2 className="font-body text-[12px] font-medium uppercase tracking-widest text-on-surface-variant mb-4">ACTIVE SPIRITS</h2>
-                <div className="flex flex-col gap-4">
-                  {members.filter(m => m.status === 'active').slice(0, 5).map((member, idx) => (
-                    <div key={member.id || idx} className="flex items-center gap-3">
-                      {member.avatar || member.photoURL ? (
-                        <img src={member.avatar || member.photoURL} alt={member.name} className="w-10 h-10 rounded-full object-cover shrink-0 border border-outline/20" />
-                      ) : (
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 font-bold ${idx % 3 === 0 ? 'bg-primary-container text-on-primary-container' : idx % 3 === 1 ? 'bg-secondary-container text-on-secondary-container' : 'bg-tertiary-container text-on-tertiary-container'}`}>
-                          {(member.name || 'U').substring(0, 2).toUpperCase()}
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-body text-[16px] font-medium text-on-surface truncate">{member.name}</h4>
-                        <p className={`font-body text-[12px] font-medium truncate ${member.role === 'admin' ? 'text-primary' : 'text-on-surface-variant'}`}>{member.role === 'admin' ? 'Group Admin' : 'Active Member'}</p>
-                      </div>
-                    </div>
-                  ))}
-                  {members.filter(m => m.status === 'active').length === 0 && (
-                    <p className="font-body text-[16px] font-medium text-on-surface-variant">No active members yet</p>
-                  )}
+              {activeTab === 'about' && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <GroupAbout group={currentGroup} members={members} />
                 </div>
-              </section>
+              )}
+
+              {activeTab === 'members' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 z-[100]">
+                  <GroupMembers
+                    members={members}
+                    memberCount={currentGroup.memberCount}
+                    onMemberClick={(member) => setSelectedMember(member)}
+                    onClose={() => setActiveTab('home')}
+                  />
+                </div>
+              )}
+
+              {activeTab === 'roles' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
+                  <GroupMemberManager group={currentGroup} />
+                </div>
+              )}
+
+              <AnimatePresence>
+                {selectedMember && (
+                  <MemberProfileOverlay
+                    member={selectedMember}
+                    onClose={() => setSelectedMember(null)}
+                  />
+                )}
+              </AnimatePresence>
+
+              {activeTab === 'live' && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 w-full h-[calc(100vh-104px)]">
+                  <LiveFeed entityType="group" entityId={currentGroup.id} />
+                </div>
+              )}
+
+              {activeTab === 'calendar' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <GroupCalendar group={currentGroup} />
+                </div>
+              )}
+
+              {activeTab === 'feed' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <UniversalFeed
+                    context={{ scope: 'group', scopeId: currentGroup.id }}
+                    currentUser={{
+                      uid: user?.uid,
+                      displayName: profile?.nickname || user?.displayName || 'Anonymous',
+                      photoURL: profile?.photoURL || user?.photoURL || ''
+                    }}
+                  />
+                </div>
+              )}
+
+              {activeTab === 'class' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
+                  <ClassDetail groupId={currentGroup.id} isEmbedded={true} />
+                </div>
+              )}
+
+              {activeTab === 'board' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <GroupBoard group={currentGroup} isAdmin={isAdminUser} />
+                </div>
+              )}
+
+              {activeTab === 'stay' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
+                  <GroupStayEditor group={currentGroup} />
+                </div>
+              )}
+
+              {activeTab === 'shop' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
+                  <GroupShopEditor group={currentGroup} />
+                </div>
+              )}
+
+              {activeTab === 'rental' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
+                  <GroupRentalEditor group={currentGroup} />
+                </div>
+              )}
+
+              {activeTab === 'polls' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <GroupPolls />
+                </div>
+              )}
+
+              {activeTab === 'qa' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <GroupQABoard />
+                </div>
+              )}
+
+              {activeTab === 'broadcast' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <GroupBroadcastCenter members={members} />
+                </div>
+              )}
+
+              {activeTab === 'attendance' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <GroupAttendance />
+                </div>
+              )}
+
+              {activeTab === 'rules' && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <GroupRules />
+                </div>
+              )}
+
+              {activeTab === 'surveys' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <GroupSurvey />
+                </div>
+              )}
+
+              {activeTab === 'anonymous' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <AnonymousBoard />
+                </div>
+              )}
+
+              {/* Education Modules */}
+              {activeTab === 'classA' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <ClassManagerA />
+                </div>
+              )}
+
+              {activeTab === 'classB' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <ClassManagerB />
+                </div>
+              )}
+
+              {activeTab === 'classC' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <ClassManagerC />
+                </div>
+              )}
+
+              {activeTab === 'homework' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <HomeworkTracker />
+                </div>
+              )}
+
+              {activeTab === 'studentReports' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <StudentReports />
+                </div>
+              )}
+
+              {activeTab === 'tuition' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <TuitionManager />
+                </div>
+              )}
+
+              {activeTab === 'gradeSystem' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <GradeSystem />
+                </div>
+              )}
+
+              {activeTab === 'parentNotify' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <ParentNotifications />
+                </div>
+              )}
+
+              {activeTab === 'parentConsult' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <ParentConsultation />
+                </div>
+              )}
+
+              {activeTab === 'examScheduler' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <ExamScheduler />
+                </div>
+              )}
+
+              {/* Events Modules */}
+              {activeTab === 'ticketBooking' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <TicketBooking />
+                </div>
+              )}
+
+              {activeTab === 'workshopReg' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <WorkshopRegistration members={members} />
+                </div>
+              )}
+
+              {activeTab === 'qrCheckin' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <QRCheckIn />
+                </div>
+              )}
+
+              {activeTab === 'waitlist' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <WaitlistSystem />
+                </div>
+              )}
+
+              {activeTab === 'retreat' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <RetreatPlanner members={members} />
+                </div>
+              )}
+
+              {activeTab === 'eventStaff' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <EventStaffManager />
+                </div>
+              )}
+
+              {activeTab === 'guestList' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <GuestListManager />
+                </div>
+              )}
+
+              {/* Commerce Modules */}
+              {activeTab === 'productInventory' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <ProductInventory />
+                </div>
+              )}
+
+              {activeTab === 'membershipBilling' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <MembershipBilling />
+                </div>
+              )}
+
+              {activeTab === 'donationSupport' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <DonationSupport />
+                </div>
+              )}
+
+              {activeTab === 'subscriptionPlans' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <SubscriptionPlans />
+                </div>
+              )}
+
+              {activeTab === 'settlementReports' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <SettlementReports />
+                </div>
+              )}
+
+              {/* Brand & Media Modules */}
+              {activeTab === 'mediaGallery' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <MediaGallery />
+                </div>
+              )}
+
+              {activeTab === 'videoLibrary' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <VideoLibrary />
+                </div>
+              )}
+
+              {activeTab === 'editorialPage' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <EditorialPage members={members} />
+                </div>
+              )}
+
+              {activeTab === 'newsletter' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <Newsletter />
+                </div>
+              )}
+
+              {activeTab === 'podcastFeed' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <PodcastFeed />
+                </div>
+              )}
+
+              {activeTab === 'pressKit' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <PressKit />
+                </div>
+              )}
+
+              {activeTab === 'linkHub' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <LinkHub />
+                </div>
+              )}
+
+              {activeTab === 'socialSync' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <SocialSync />
+                </div>
+              )}
+
+              {activeTab === 'brandAssets' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <BrandAssets />
+                </div>
+              )}
+
+              {activeTab === 'customLandingPage' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <CustomLandingPage />
+                </div>
+              )}
+
+              {/* Operations Modules */}
+              {activeTab === 'taskManager' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <TaskManager />
+                </div>
+              )}
+
+              {activeTab === 'internalWiki' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <InternalWiki />
+                </div>
+              )}
+
+              {/* AI Modules */}
+              {activeTab === 'aiAssistant' && isFullMember && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <AIAssistant />
+                </div>
+              )}
+
+              {activeTab === 'brand' && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <GroupHomeConfig
+                    group={currentGroup}
+                    onClose={() => setActiveTab('home')}
+                    onSave={() => {
+                      // Stay on brand tab after save — toast notification handled by GroupHomeConfig
+                    }}
+                  />
+                </div>
+              )}
+
             </div>
-          )}
-
-          {activeTab === 'about' && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <GroupAbout group={currentGroup} />
-            </div>
-          )}
-
-          {activeTab === 'members' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 z-[100]">
-              <GroupMembers
-                members={members}
-                memberCount={currentGroup.memberCount}
-                onMemberClick={(member) => setSelectedMember(member)}
-                onClose={() => setActiveTab('home')}
-              />
-            </div>
-          )}
-
-          {activeTab === 'roles' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
-              <GroupMemberManager group={currentGroup} />
-            </div>
-          )}
-
-          <AnimatePresence>
-            {selectedMember && (
-              <MemberProfileOverlay
-                member={selectedMember}
-                onClose={() => setSelectedMember(null)}
-              />
-            )}
-          </AnimatePresence>
-
-          {activeTab === 'live' && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 w-full h-[calc(100vh-104px)]">
-              <LiveFeed entityType="group" entityId={currentGroup.id} />
-            </div>
-          )}
-
-          {activeTab === 'calendar' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <GroupCalendar group={currentGroup} />
-            </div>
-          )}
-
-          {activeTab === 'feed' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <UniversalFeed 
-                context={{ scope: 'group', scopeId: currentGroup.id }} 
-                currentUser={{
-                  uid: user?.uid,
-                  displayName: profile?.nickname || user?.displayName || 'Anonymous',
-                  photoURL: profile?.photoURL || user?.photoURL || ''
-                }}
-              />
-            </div>
-          )}
-
-          {activeTab === 'class' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
-              <ClassDetail groupId={currentGroup.id} isEmbedded={true} />
-            </div>
-          )}
-
-          {activeTab === 'board' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <GroupBoard group={currentGroup} />
-            </div>
-          )}
-
-          {activeTab === 'stay' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
-              <GroupStayEditor group={currentGroup} />
-            </div>
-          )}
-
-          {activeTab === 'shop' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
-              <GroupShopEditor group={currentGroup} />
-            </div>
-          )}
-
-          {activeTab === 'rental' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
-              <GroupRentalEditor group={currentGroup} />
-            </div>
-          )}
-
-          {activeTab === 'polls' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <GroupPolls />
-            </div>
-          )}
-
-          {activeTab === 'qa' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <GroupQABoard />
-            </div>
-          )}
-
-          {activeTab === 'broadcast' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <GroupBroadcastCenter />
-            </div>
-          )}
-
-          {activeTab === 'attendance' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <GroupAttendance />
-            </div>
-          )}
-
-          {activeTab === 'rules' && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <GroupRules />
-            </div>
-          )}
-
-          {activeTab === 'surveys' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <GroupSurvey />
-            </div>
-          )}
-
-          {activeTab === 'anonymous' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <AnonymousBoard />
-            </div>
-          )}
-
-          {/* Education Modules */}
-          {activeTab === 'classA' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <ClassManagerA />
-            </div>
-          )}
-
-          {activeTab === 'classB' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <ClassManagerB />
-            </div>
-          )}
-
-          {activeTab === 'classC' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <ClassManagerC />
-            </div>
-          )}
-
-          {activeTab === 'homework' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <HomeworkTracker />
-            </div>
-          )}
-
-          {activeTab === 'studentReports' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <StudentReports />
-            </div>
-          )}
-
-          {activeTab === 'tuition' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <TuitionManager />
-            </div>
-          )}
-
-          {activeTab === 'gradeSystem' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <GradeSystem />
-            </div>
-          )}
-
-          {activeTab === 'parentNotify' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <ParentNotifications />
-            </div>
-          )}
-
-          {activeTab === 'parentConsult' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <ParentConsultation />
-            </div>
-          )}
-
-          {activeTab === 'examScheduler' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <ExamScheduler />
-            </div>
-          )}
-
-          {/* Events Modules */}
-          {activeTab === 'ticketBooking' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <TicketBooking />
-            </div>
-          )}
-
-          {activeTab === 'workshopReg' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <WorkshopRegistration />
-            </div>
-          )}
-
-          {activeTab === 'qrCheckin' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <QRCheckIn />
-            </div>
-          )}
-
-          {activeTab === 'waitlist' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <WaitlistSystem />
-            </div>
-          )}
-
-          {activeTab === 'retreat' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <RetreatPlanner />
-            </div>
-          )}
-
-          {activeTab === 'eventStaff' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <EventStaffManager />
-            </div>
-          )}
-
-          {activeTab === 'guestList' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <GuestListManager />
-            </div>
-          )}
-
-          {/* Commerce Modules */}
-          {activeTab === 'productInventory' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <ProductInventory />
-            </div>
-          )}
-
-          {activeTab === 'membershipBilling' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <MembershipBilling />
-            </div>
-          )}
-
-          {activeTab === 'donationSupport' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <DonationSupport />
-            </div>
-          )}
-
-          {activeTab === 'subscriptionPlans' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <SubscriptionPlans />
-            </div>
-          )}
-
-          {activeTab === 'settlementReports' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <SettlementReports />
-            </div>
-          )}
-
-          {/* Brand & Media Modules */}
-          {activeTab === 'mediaGallery' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <MediaGallery />
-            </div>
-          )}
-
-          {activeTab === 'videoLibrary' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <VideoLibrary />
-            </div>
-          )}
-
-          {activeTab === 'editorialPage' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <EditorialPage />
-            </div>
-          )}
-
-          {activeTab === 'newsletter' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <Newsletter />
-            </div>
-          )}
-
-          {activeTab === 'podcastFeed' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <PodcastFeed />
-            </div>
-          )}
-
-          {activeTab === 'pressKit' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <PressKit />
-            </div>
-          )}
-
-          {activeTab === 'linkHub' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <LinkHub />
-            </div>
-          )}
-
-          {activeTab === 'socialSync' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <SocialSync />
-            </div>
-          )}
-
-          {activeTab === 'brandAssets' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <BrandAssets />
-            </div>
-          )}
-
-          {activeTab === 'customLandingPage' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <CustomLandingPage />
-            </div>
-          )}
-
-          {/* Operations Modules */}
-          {activeTab === 'taskManager' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <TaskManager />
-            </div>
-          )}
-
-          {activeTab === 'internalWiki' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <InternalWiki />
-            </div>
-          )}
-
-          {/* AI Modules */}
-          {activeTab === 'aiAssistant' && isFullMember && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <AIAssistant />
-            </div>
-          )}
-
-          {activeTab === 'brand' && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <GroupHomeConfig 
-                group={currentGroup} 
-                onClose={() => setActiveTab('home')}
-                onSave={() => {
-                  // Stay on brand tab after save — toast notification handled by GroupHomeConfig
-                }}
-              />
-            </div>
-          )}
-
-        </div>
           </>
         )}
       </main>
@@ -1489,24 +1716,104 @@ export default function GroupHome({ group: initialGroup, isModal }: { group: Gro
       {/* Settings Modal - Full Admin Panel */}
       {isSettingsOpen && (
         <div className="fixed inset-0 z-[100] bg-background overflow-y-auto">
-          <GroupFunctionBuilder group={currentGroup} onClose={() => setIsSettingsOpen(false)} />
+          <GroupFunctionBuilder group={currentGroup} onClose={handleSettingsClose} />
         </div>
       )}
 
       {/* Join Modal */}
       <GroupJoinModal
         isOpen={showJoinModal}
-        onClose={() => setShowJoinModal(false)}
+        onClose={handleJoinModalClose}
         groupName={currentGroup.name}
         adminName={currentGroup.representative?.name || 'Admin'}
         adminId={currentAdmin?.id || currentGroup.ownerId}
         strategy={currentGroup.membershipPolicy?.joinStrategy}
         onConfirm={() => {
-          setShowJoinModal(false);
+          handleJoinModalClose();
           setActiveTab('home');
         }}
       />
 
+      {/* Fullscreen Group Chat Overlay */}
+      {showGroupChat && (
+        <div className="fixed inset-0 z-[9999] bg-background flex flex-col">
+          <ChatRoomComponent
+            roomId={`group_${currentGroup.id}`}
+            onBack={handleGroupChatClose}
+          />
+        </div>
+      )}
+
+      {/* Fullscreen Moment Viewer Overlay */}
+      <AnimatePresence>
+        {selectedMoment && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[10000] bg-black/95 flex flex-col items-center justify-center backdrop-blur-md"
+          >
+            {/* Header */}
+            <div className="absolute top-0 left-0 right-0 p-6 flex items-center justify-between z-10 bg-gradient-to-b from-black/60 to-transparent">
+              <div className="flex items-center gap-3">
+                {selectedMoment.authorPhoto ? (
+                  <img src={selectedMoment.authorPhoto} alt={selectedMoment.authorName} className="w-10 h-10 rounded-full border-2 border-white/20 object-cover shadow-lg" />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm border-2 border-white/20 shadow-lg">
+                    {(selectedMoment.authorName || 'U').substring(0, 2).toUpperCase()}
+                  </div>
+                )}
+                <div className="flex flex-col">
+                  <span className="font-body text-[15px] font-bold text-white shadow-sm">{selectedMoment.authorName || 'User'}</span>
+                  <span className="font-body text-[11px] font-medium text-white/60">{safeFormatRelative(selectedMoment.createdAt)}</span>
+                </div>
+              </div>
+              <button
+                onClick={handleMomentViewerClose}
+                className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white backdrop-blur-md border border-white/10 active:scale-90 transition-transform"
+              >
+                <span className="material-symbols-outlined text-[24px]">close</span>
+              </button>
+            </div>
+
+            {/* Media Content */}
+            <div className="relative w-full h-full flex items-center justify-center p-4" onClick={handleMomentViewerClose}>
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="max-w-full max-h-full rounded-2xl overflow-hidden shadow-2xl shadow-black/50"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <ImageWithFallback
+                  src={selectedMoment.media?.[0] || ''}
+                  alt={selectedMoment.caption || "Fullscreen"}
+                  className="max-w-full max-h-[80vh] object-contain"
+                  fallbackType="gallery"
+                />
+              </motion.div>
+            </div>
+
+            {/* Caption & Info Bar */}
+            {selectedMoment.caption && (
+              <div className="absolute bottom-0 left-0 right-0 p-10 pb-16 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex flex-col items-center gap-4">
+                <p className="font-body text-[16px] md:text-[18px] font-medium text-white text-center max-w-2xl mx-auto leading-relaxed drop-shadow-lg">
+                  {selectedMoment.caption}
+                </p>
+                <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-1.5 text-white/80">
+                    <span className="material-symbols-outlined text-[20px]">favorite</span>
+                    <span className="text-[14px] font-bold">{(selectedMoment as any).likesCount || 0}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-white/80">
+                    <span className="material-symbols-outlined text-[20px]">chat_bubble</span>
+                    <span className="text-[14px] font-bold">{(selectedMoment as any).commentsCount || 0}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </div>
   );

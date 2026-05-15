@@ -17,7 +17,9 @@ import {
   updateDoc,
   increment,
   arrayUnion,
-  arrayRemove
+  arrayRemove,
+  collectionGroup,
+  where
 } from 'firebase/firestore';
 import { Group, Post, Member, GroupClass } from '@/types/group';
 
@@ -50,7 +52,7 @@ export const groupService = {
   },
 
   // Subscribe to group metadata
-  subscribeGroup: (groupId: string, callback: (group: Group | null) => void) => {
+  subscribeGroup: (groupId: string, callback: (group: Group | null) => void, errorCallback?: (error: any) => void) => {
     const docRef = doc(db, GROUPS_COLLECTION, groupId);
 
     return onSnapshot(docRef, async (snapshot) => {
@@ -71,25 +73,31 @@ export const groupService = {
         memberCount: typeof data.memberCount === 'number' ? data.memberCount : 0,
         posts: []
       } as Group);
+    }, (error) => {
+      console.error(`Error subscribing to group metadata for ${groupId}:`, error);
+      if (errorCallback) errorCallback(error);
     });
   },
 
   // Subscribe to group members
   subscribeMembers: (groupId: string, callback: (members: Member[]) => void) => {
     const membersRef = collection(db, GROUPS_COLLECTION, groupId, 'members');
-    const q = query(membersRef, orderBy('name', 'asc'));
+    const q = query(membersRef);
 
     return onSnapshot(q, (snapshot) => {
       const members = snapshot.docs.map(doc => ({
         id: doc.id,
-        ...doc.data()
+        ...groupService._convertTimestamps(doc.data())
       })) as Member[];
       callback(members);
+    }, (error) => {
+      console.error(`Error subscribing to members for group ${groupId}:`, error);
+      callback([]);
     });
   },
 
   // Subscribe to group posts
-  subscribePosts: (groupId: string, callback: (posts: Post[]) => void) => {
+  subscribePosts: (groupId: string, callback: (posts: Post[]) => void, errorCallback?: (error: any) => void) => {
     const postsRef = collection(db, GROUPS_COLLECTION, groupId, 'posts');
     const q = query(postsRef, orderBy('createdAt', 'desc'));
 
@@ -102,6 +110,9 @@ export const groupService = {
         };
       }) as Post[];
       callback(posts);
+    }, (error) => {
+      console.error(`Error subscribing to posts for group ${groupId}:`, error);
+      if (errorCallback) errorCallback(error);
     });
   },
 
@@ -128,24 +139,19 @@ export const groupService = {
 
     if (!snapshot.exists()) return null;
 
-    // Get posts as well
-    const postsRef = collection(db, GROUPS_COLLECTION, groupId, 'posts');
-    const postsSnap = await getDocs(query(postsRef, orderBy('createdAt', 'desc')));
-    const posts = postsSnap.docs.map(d => ({
-      id: d.id,
-      ...groupService._convertTimestamps(d.data())
-    })) as Post[];
-
     const data = groupService._convertTimestamps(snapshot.data());
 
-    // Fetch subcollections to attach to Group object (backward compatibility + easy access)
-    const classesSnap = await getDocs(query(collection(db, GROUPS_COLLECTION, groupId, 'classes'), orderBy('createdAt', 'desc')));
+    // Fetch subcollections concurrently to attach to Group object
+    const [postsSnap, classesSnap, passesSnap, discountsSnap] = await Promise.all([
+      getDocs(query(collection(db, GROUPS_COLLECTION, groupId, 'posts'), orderBy('createdAt', 'desc'), limit(20))),
+      getDocs(query(collection(db, GROUPS_COLLECTION, groupId, 'classes'), orderBy('createdAt', 'desc'))),
+      getDocs(query(collection(db, GROUPS_COLLECTION, groupId, 'monthlyPasses'), orderBy('createdAt', 'desc'))),
+      getDocs(query(collection(db, GROUPS_COLLECTION, groupId, 'discounts'), orderBy('createdAt', 'desc')))
+    ]);
+
+    const posts = postsSnap.docs.map(d => ({ id: d.id, ...groupService._convertTimestamps(d.data()) })) as Post[];
     const subClasses = classesSnap.docs.map(d => ({ id: d.id, ...groupService._convertTimestamps(d.data()) })) as GroupClass[];
-    
-    const passesSnap = await getDocs(query(collection(db, GROUPS_COLLECTION, groupId, 'monthlyPasses'), orderBy('createdAt', 'desc')));
     const subPasses = passesSnap.docs.map(d => ({ id: d.id, ...groupService._convertTimestamps(d.data()) }));
-    
-    const discountsSnap = await getDocs(query(collection(db, GROUPS_COLLECTION, groupId, 'discounts'), orderBy('createdAt', 'desc')));
     const subDiscounts = discountsSnap.docs.map(d => ({ id: d.id, ...groupService._convertTimestamps(d.data()) }));
 
     return {
@@ -441,6 +447,9 @@ export const groupService = {
         ...groupService._convertTimestamps(doc.data())
       }));
       callback(events);
+    }, (error) => {
+      console.error(`Error subscribing to calendar events for group ${groupId}:`, error);
+      callback([]);
     });
   },
 
@@ -660,5 +669,134 @@ export const groupService = {
       await chatService.syncGroupChatAdmin(groupId, userId);
       await chatService.addGroupChatParticipant(groupId, userId);
     } catch (e) { console.error('Chat sync error (claimGroupAdmin):', e); }
+  },
+
+  // --- Global Classes Section (for Class Portal) ---
+
+  // Get all open classes across all groups (for week/month filtering)
+  getGlobalClassesAll: async (): Promise<any[]> => {
+    try {
+      const q = query(
+        collectionGroup(db, 'classes'),
+        where('status', '==', 'Open')
+      );
+      
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(d => {
+        const pathSegments = d.ref.path.split('/');
+        const groupId = pathSegments[1] || '';
+        return {
+          id: d.id,
+          groupId,
+          ...groupService._convertTimestamps(d.data())
+        };
+      });
+    } catch (error) {
+      console.error('getGlobalClassesAll error:', error);
+      return [];
+    }
+  },
+
+  // Get all classes across all groups happening today
+  getGlobalClassesToday: async (): Promise<any[]> => {
+    try {
+      const now = new Date();
+      // Use local time for YYYY-MM-DD format
+      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      
+      console.log(`[ClassPortal] Searching classes for today: ${todayStr}`);
+
+      const q = query(
+        collectionGroup(db, 'classes'),
+        where('status', '==', 'Open')
+      );
+      
+      const snapshot = await getDocs(q);
+      const results: any[] = [];
+      
+      snapshot.docs.forEach(d => {
+        const data = d.data();
+        const hasToday = data.schedule?.some((s: any) => {
+          if (!s.date) return false;
+          
+          let dStr = '';
+          if (typeof s.date === 'string') {
+            dStr = s.date.trim();
+          } else if (s.date && typeof s.date.toDate === 'function') {
+            const dObj = s.date.toDate();
+            dStr = `${dObj.getFullYear()}-${String(dObj.getMonth() + 1).padStart(2, '0')}-${String(dObj.getDate()).padStart(2, '0')}`;
+          } else if (s.date && s.date.seconds) {
+            const dObj = new Date(s.date.seconds * 1000);
+            dStr = `${dObj.getFullYear()}-${String(dObj.getMonth() + 1).padStart(2, '0')}-${String(dObj.getDate()).padStart(2, '0')}`;
+          }
+
+          if (!dStr) return false;
+
+          // Standardize separator to hyphen and pad components
+          const normalizedInput = dStr.replace(/[\.\/]/g, '-');
+          const parts = normalizedInput.split('-');
+          if (parts.length === 3) {
+            const y = parts[0].length === 2 ? `20${parts[0]}` : parts[0];
+            const m = parts[1].padStart(2, '0');
+            const d = parts[2].padStart(2, '0');
+            const finalNormalized = `${y}-${m}-${d}`;
+            
+            if (finalNormalized === todayStr) return true;
+          }
+
+          // Fallback: Just compare numbers
+          const digitsOnlyInput = dStr.replace(/\D/g, '');
+          const digitsOnlyToday = todayStr.replace(/\D/g, '');
+          
+          // Handle YYMMDD vs YYYYMMDD
+          if (digitsOnlyInput.length === 6 && digitsOnlyToday.length === 8) {
+            return digitsOnlyToday.endsWith(digitsOnlyInput);
+          }
+
+          return digitsOnlyInput === digitsOnlyToday;
+        });
+        
+        if (hasToday) {
+          const pathSegments = d.ref.path.split('/');
+          const groupId = pathSegments[1] || '';
+          results.push({
+            id: d.id,
+            groupId,
+            ...groupService._convertTimestamps(data)
+          });
+        }
+      });
+      
+      console.log(`[ClassPortal] Found ${results.length} classes for today.`);
+      return results;
+    } catch (error) {
+      console.error('getGlobalClassesToday error:', error);
+      return [];
+    }
+  },
+
+  // Get all special classes across all groups
+  getGlobalSpecialClasses: async (): Promise<any[]> => {
+    try {
+      const q = query(
+        collectionGroup(db, 'classes'),
+        where('status', '==', 'Open'),
+        where('classType', '==', 'special')
+      );
+      
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(d => {
+        const pathSegments = d.ref.path.split('/');
+        const groupId = pathSegments[1] || '';
+        return {
+          id: d.id,
+          groupId,
+          ...groupService._convertTimestamps(d.data())
+        };
+      });
+    } catch (error) {
+      console.error('getGlobalSpecialClasses error:', error);
+      return [];
+    }
   }
 };

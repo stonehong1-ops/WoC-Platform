@@ -1,5 +1,5 @@
 export type BaseNotificationType = 'INFO' | 'TODO';
-export type NotificationCategory = 'CLASS' | 'STAY' | 'SHOP' | 'FEED' | 'SYSTEM' | 'GROUP' | 'ADMIN' | 'SOCIAL';
+export type NotificationCategory = 'CLASS' | 'STAY' | 'SHOP' | 'FEED' | 'SYSTEM' | 'GROUP' | 'ADMIN' | 'SOCIAL' | 'BOOKING';
 export type NotificationType = string; // Legacy: 'GROUP_INVITE' | 'GENERAL' | 'ADMIN', New: 'CLASS_APPLY', etc.
 export type NotificationStatus = 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'READ'; // Legacy
 

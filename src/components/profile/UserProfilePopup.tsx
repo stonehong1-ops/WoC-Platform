@@ -26,6 +26,7 @@ interface FullProfile {
   isSeller?: boolean;
   isServiceProvider?: boolean;
   gender?: string;
+  role?: string;
   joinedGroups?: string[];
 }
 
@@ -110,6 +111,19 @@ export default function UserProfilePopup({ isOpen, onClose, uid, initialData }: 
                   </div>
                 )}
                 
+                <div className="bg-surface-container-low rounded-2xl p-5 flex justify-between items-center">
+                  <span className="text-xs font-black tracking-widest uppercase text-on-surface-variant">Dance Role</span>
+                  <span className={`text-sm font-bold ${
+                    (profile.role?.toLowerCase() || (profile.gender?.toLowerCase() === 'male' ? 'leader' : (profile.gender?.toLowerCase() === 'female' || profile.gender?.toLowerCase() === 'others' ? 'follower' : ''))) === 'leader' ? 'text-[#0057bd]' : 
+                    (profile.role?.toLowerCase() || (profile.gender?.toLowerCase() === 'male' ? 'leader' : (profile.gender?.toLowerCase() === 'female' || profile.gender?.toLowerCase() === 'others' ? 'follower' : ''))) === 'follower' ? 'text-[#893c92]' : 'text-on-surface'
+                  }`}>
+                    {(() => {
+                      const effectiveRole = profile.role?.toLowerCase() || (profile.gender?.toLowerCase() === 'male' ? 'leader' : (profile.gender?.toLowerCase() === 'female' || profile.gender?.toLowerCase() === 'others' ? 'follower' : ''));
+                      return effectiveRole ? effectiveRole.charAt(0).toUpperCase() + effectiveRole.slice(1) : 'Not Set';
+                    })()}
+                  </span>
+                </div>
+
                 {profile.gender && profile.gender !== 'Other' && (
                   <div className="bg-surface-container-low rounded-2xl p-5 flex justify-between items-center">
                     <span className="text-xs font-black tracking-widest uppercase text-on-surface-variant">Gender</span>

@@ -14,18 +14,20 @@ import {
   Plus, 
   X, 
   MoreVertical,
-  Bookmark,
   Trash2,
   Edit2,
   Music,
   GraduationCap,
-  Building2
+  Building2,
+  AlertCircle,
+  RefreshCcw
 } from 'lucide-react';
 import { galleryService, GalleryPost, GalleryComment, GalleryTag } from '@/lib/firebase/galleryService';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { safeDate } from '@/lib/utils/safeDate';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useNavigation } from '@/components/providers/NavigationProvider';
+import { useHistoryBack } from '@/hooks/useHistoryBack';
 
 interface LiveFeedProps {
   entityType?: 'social' | 'group' | 'event' | 'class' | 'venue' | 'people';
@@ -37,6 +39,8 @@ interface LiveFeedProps {
 export default function LiveFeed({ entityType, entityId, userId, className = '' }: LiveFeedProps) {
   const [posts, setPosts] = useState<GalleryPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
   const [activeCommentPost, setActiveCommentPost] = useState<string | null>(null);
   const { t } = useLanguage();
   const { setIsHeaderVisible, setGlobalNavHidden } = useNavigation();
@@ -44,30 +48,43 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
   const containerRef = useRef<HTMLDivElement>(null);
   const [isImmersive, setIsImmersive] = useState(false);
 
+  const { handleClose: handleCommentClose } = useHistoryBack(!!activeCommentPost, () => setActiveCommentPost(null));
+  const { handleClose: handleImmersiveClose } = useHistoryBack(isImmersive, () => setIsImmersive(false));
+
   const router = useRouter();
 
   useEffect(() => {
-    const handlePopState = (e: PopStateEvent) => {
-      if (isImmersive) {
-        setIsImmersive(false);
-      }
-    };
-    window.addEventListener('popstate', handlePopState);
+    if (isImmersive) {
+      setIsHeaderVisible(false);
+      setGlobalNavHidden(true);
+    } else {
+      setIsHeaderVisible(true);
+      setGlobalNavHidden(false);
+    }
     return () => {
-      window.removeEventListener('popstate', handlePopState);
+      setIsHeaderVisible(true);
+      setGlobalNavHidden(false);
     };
-  }, [isImmersive]);
-
-  // ... (lines 48-78 remain unchanged)
+  }, [isImmersive, setIsHeaderVisible, setGlobalNavHidden]);
 
   useEffect(() => {
     setMounted(true);
-    const unsubscribe = galleryService.subscribeFeed((data) => {
-      setPosts(data);
-      setLoading(false);
-    }, { entityType, entityId, userId });
+    setLoading(true);
+    setError(null);
+    const unsubscribe = galleryService.subscribeFeed(
+      (data) => {
+        setPosts(data);
+        setLoading(false);
+      }, 
+      { entityType, entityId, userId },
+      (err) => {
+        console.error("LiveFeed subscription error:", err);
+        setError(err.message || "Failed to load live feed");
+        setLoading(false);
+      }
+    );
     return () => unsubscribe();
-  }, [entityType, entityId, userId]);
+  }, [entityType, entityId, userId, retryCount]);
 
   // Listen to global compose event
   useEffect(() => {
@@ -81,6 +98,25 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
   }, [router]);
 
   if (!mounted) return null;
+
+  if (error) {
+    return (
+      <div className={`flex flex-col items-center justify-center min-h-[calc(100vh-64px)] bg-black text-white ${className}`}>
+        <div className="bg-white/10 p-6 rounded-full mb-4 backdrop-blur-md">
+          <AlertCircle size={48} className="text-red-500" />
+        </div>
+        <p className="font-bold text-lg mb-2">Something went wrong</p>
+        <p className="text-sm text-white/60 mb-8 max-w-xs text-center">{error}</p>
+        <button 
+          onClick={() => setRetryCount(prev => prev + 1)}
+          className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-full font-bold hover:bg-primary/90 transition-colors"
+        >
+          <RefreshCcw size={18} />
+          Try Again
+        </button>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -115,6 +151,7 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
             onOpenComments={() => setActiveCommentPost(post.id)}
             isImmersive={isImmersive}
             setIsImmersive={setIsImmersive}
+            onCloseImmersive={handleImmersiveClose}
           />
         ))}
       </div>
@@ -124,7 +161,7 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
         {activeCommentPost && (
           <CommentBottomSheet 
             postId={activeCommentPost} 
-            onClose={() => setActiveCommentPost(null)} 
+            onClose={handleCommentClose} 
           />
         )}
       </AnimatePresence>
@@ -136,19 +173,21 @@ const GalleryCard = ({
   post, 
   onOpenComments,
   isImmersive,
-  setIsImmersive
+  setIsImmersive,
+  onCloseImmersive
 }: { 
   post: GalleryPost, 
   onOpenComments: () => void,
   isImmersive: boolean,
-  setIsImmersive: (value: boolean) => void
+  setIsImmersive: (value: boolean) => void,
+  onCloseImmersive: () => void
 }) => {
   const { user } = useAuth();
   const { t } = useLanguage();
   const [activeDot, setActiveDot] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
-  const isLiked = post.likedBy?.includes(user?.uid || '');
+  const isLiked = (post.likedBy || []).includes(user?.uid || '');
   const [isPlaying, setIsPlaying] = useState(false);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
 
@@ -223,7 +262,6 @@ const GalleryCard = ({
       videoRefs.current.forEach(video => {
         if (video) video.muted = false;
       });
-      window.history.pushState({ immersive: true }, '', window.location.href);
     } else {
       togglePlay();
     }
@@ -232,8 +270,7 @@ const GalleryCard = ({
   const handleExitImmersive = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isImmersive) {
-      setIsImmersive(false);
-      window.history.back();
+      onCloseImmersive();
     }
   };
 
@@ -268,8 +305,9 @@ const GalleryCard = ({
         onScroll={handleScroll}
         onClick={handleMediaClick}
       >
-        {post.media.map((url, idx) => {
-          const isVideo = post.mediaTypes ? post.mediaTypes[idx] === 'video' : (url.toLowerCase().includes('.mp4') || url.toLowerCase().includes('.mov') || url.toLowerCase().includes('.webm') || url.toLowerCase().includes('video'));
+        {(Array.isArray(post.media) ? post.media : (post.media ? [post.media] : [])).map((url, idx) => {
+          const urlString = typeof url === 'string' ? url : '';
+          const isVideo = post.mediaTypes ? post.mediaTypes[idx] === 'video' : (urlString.toLowerCase().includes('.mp4') || urlString.toLowerCase().includes('.mov') || urlString.toLowerCase().includes('.webm') || urlString.toLowerCase().includes('video'));
           return (
           <div key={idx} className="relative flex-none w-full h-full snap-start flex items-center justify-center">
             {isVideo ? (
@@ -308,7 +346,7 @@ const GalleryCard = ({
               <img src={post.authorPhoto} alt="" className="w-8 h-8 rounded-full border border-white/20 object-cover shrink-0" />
             ) : (
               <div className="w-8 h-8 rounded-full border border-white/20 bg-black/40 backdrop-blur-sm flex items-center justify-center text-[12px] font-bold text-white shadow-sm shrink-0">
-                {(post.authorName || 'A').charAt(0).toUpperCase()}
+                {String(post.authorName || 'A').charAt(0).toUpperCase()}
               </div>
             )}
             <div className="flex flex-col text-white drop-shadow-md min-w-0">
@@ -354,7 +392,7 @@ const GalleryCard = ({
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
           className={`absolute left-0 right-0 p-4 pr-16 bg-gradient-to-t from-black/80 via-black/40 to-transparent z-10 flex flex-col justify-end text-white transition-all duration-300 pointer-events-none ${isImmersive ? 'bottom-0 pb-safe' : 'bottom-0 pb-4 md:pb-8'}`}
         >
-          {post.media.length > 1 && (
+          {(Array.isArray(post.media) && post.media.length > 1) && (
             <div className="flex gap-1.5 mb-2 pointer-events-auto">
               {post.media.map((_, idx) => (
                 <div 
@@ -370,8 +408,8 @@ const GalleryCard = ({
           </p>
 
           <div className="flex flex-wrap items-center gap-2 pointer-events-auto">
-            {(post.tags && post.tags.length > 0) ? (
-              post.tags.filter((tag: GalleryTag) => tag.type !== 'people').map((tag: GalleryTag) => {
+            {(Array.isArray(post.tags) && post.tags.length > 0) ? (
+              post.tags.filter((tag: GalleryTag) => tag && tag.type !== 'people').map((tag: GalleryTag) => {
                 const href = tag.type === 'group' ? `/groups/${tag.id}` 
                   : tag.type === 'social' ? `/social?id=${tag.id}` 
                   : tag.type === 'event' ? `/events?id=${tag.id}` 
@@ -409,13 +447,13 @@ const GalleryCard = ({
                 )}
               </>
             )}
-            {post.tags && post.tags.filter((t: GalleryTag) => t.type === 'people').length > 0 && (
+            {Array.isArray(post.tags) && post.tags.filter((t: GalleryTag) => t && t.type === 'people').length > 0 && (
               <div className="flex items-center -space-x-1.5 ml-1">
-                {post.tags.filter((t: GalleryTag) => t.type === 'people').map((t: GalleryTag) => (
+                {post.tags.filter((t: GalleryTag) => t && t.type === 'people').map((t: GalleryTag) => (
                   <div key={t.id} className="relative group/person cursor-pointer" title={t.name}>
                     {t.avatar 
-                      ? <img src={t.avatar} alt={t.name} className="w-6 h-6 rounded-full border border-white/50 object-cover shadow-sm" />
-                      : <div className="w-6 h-6 rounded-full border border-white/50 bg-black/40 backdrop-blur-sm flex items-center justify-center text-[10px] font-bold text-white shadow-sm">{t.name.charAt(0)}</div>
+                      ? <img src={t.avatar} alt={t.name || ''} className="w-6 h-6 rounded-full border border-white/50 object-cover shadow-sm" />
+                      : <div className="w-6 h-6 rounded-full border border-white/50 bg-black/40 backdrop-blur-sm flex items-center justify-center text-[10px] font-bold text-white shadow-sm">{String(t.name || 'U').charAt(0).toUpperCase()}</div>
                     }
                     {t.role === 'organizer' && <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-purple-500 rounded-full border border-black/50 flex items-center justify-center text-[7px] font-bold text-white">O</div>}
                     {t.role === 'instructor' && <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-blue-500 rounded-full border border-black/50 flex items-center justify-center text-[7px] font-bold text-white">I</div>}

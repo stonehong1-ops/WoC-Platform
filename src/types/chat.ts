@@ -17,6 +17,12 @@ export interface ChatMessage {
   replyTo?: string; // ID of message being replied to
   isDeleted?: boolean;
   isEdited?: boolean;
+  metadata?: {
+    actionType?: string;
+    bookingId?: string;
+    status?: string;
+    [key: string]: any;
+  };
 }
 
 export interface ChatRoom {

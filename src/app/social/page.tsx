@@ -12,23 +12,24 @@ import SocialHeroCard, { DualText, SocialCardImage, getSocialDisplayTitle } from
 import { useNavigation } from '@/components/providers/NavigationProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useModalNavigation } from "@/hooks/useModalNavigation";
+import { getDjDisplay } from "@/lib/utils/socialUtils";
 // 대한민국 법정공휴일 (2025-2027)
 const KR_HOLIDAYS: Record<string, string> = {
-  '2025-01-01':'New Year','2025-01-28':'Seollal','2025-01-29':'Seollal','2025-01-30':'Seollal',
-  '2025-03-01':'Independence Movement','2025-05-05':'Children\'s Day','2025-05-06':'Buddha\'s Birthday',
-  '2025-06-06':'Memorial Day','2025-08-15':'Liberation Day','2025-10-03':'National Foundation',
-  '2025-10-05':'Chuseok','2025-10-06':'Chuseok','2025-10-07':'Chuseok','2025-10-09':'Hangul Day',
-  '2025-12-25':'Christmas',
-  '2026-01-01':'New Year','2026-02-16':'Seollal','2026-02-17':'Seollal','2026-02-18':'Seollal',
-  '2026-03-01':'Independence Movement','2026-05-05':'Children\'s Day','2026-05-24':'Buddha\'s Birthday',
-  '2026-06-06':'Memorial Day','2026-08-15':'Liberation Day','2026-09-24':'Chuseok',
-  '2026-09-25':'Chuseok','2026-09-26':'Chuseok','2026-10-03':'National Foundation','2026-10-09':'Hangul Day',
-  '2026-12-25':'Christmas',
-  '2027-01-01':'New Year','2027-02-06':'Seollal','2027-02-07':'Seollal','2027-02-08':'Seollal',
-  '2027-03-01':'Independence Movement','2027-05-05':'Children\'s Day','2027-05-13':'Buddha\'s Birthday',
-  '2027-06-06':'Memorial Day','2027-08-15':'Liberation Day','2027-10-03':'National Foundation',
-  '2027-10-09':'Hangul Day','2027-10-13':'Chuseok','2027-10-14':'Chuseok','2027-10-15':'Chuseok',
-  '2027-12-25':'Christmas',
+  '2025-01-01': 'New Year', '2025-01-28': 'Seollal', '2025-01-29': 'Seollal', '2025-01-30': 'Seollal',
+  '2025-03-01': 'Independence Movement', '2025-05-05': 'Children\'s Day', '2025-05-06': 'Buddha\'s Birthday',
+  '2025-06-06': 'Memorial Day', '2025-08-15': 'Liberation Day', '2025-10-03': 'National Foundation',
+  '2025-10-05': 'Chuseok', '2025-10-06': 'Chuseok', '2025-10-07': 'Chuseok', '2025-10-09': 'Hangul Day',
+  '2025-12-25': 'Christmas',
+  '2026-01-01': 'New Year', '2026-02-16': 'Seollal', '2026-02-17': 'Seollal', '2026-02-18': 'Seollal',
+  '2026-03-01': 'Independence Movement', '2026-05-05': 'Children\'s Day', '2026-05-24': 'Buddha\'s Birthday',
+  '2026-06-06': 'Memorial Day', '2026-08-15': 'Liberation Day', '2026-09-24': 'Chuseok',
+  '2026-09-25': 'Chuseok', '2026-09-26': 'Chuseok', '2026-10-03': 'National Foundation', '2026-10-09': 'Hangul Day',
+  '2026-12-25': 'Christmas',
+  '2027-01-01': 'New Year', '2027-02-06': 'Seollal', '2027-02-07': 'Seollal', '2027-02-08': 'Seollal',
+  '2027-03-01': 'Independence Movement', '2027-05-05': 'Children\'s Day', '2027-05-13': 'Buddha\'s Birthday',
+  '2027-06-06': 'Memorial Day', '2027-08-15': 'Liberation Day', '2027-10-03': 'National Foundation',
+  '2027-10-09': 'Hangul Day', '2027-10-13': 'Chuseok', '2027-10-14': 'Chuseok', '2027-10-15': 'Chuseok',
+  '2027-12-25': 'Christmas',
 };
 function getDateKey(d: Date) {
   const pad = (n: number) => n.toString().padStart(2, '0');
@@ -44,7 +45,7 @@ function SocialContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSocial, setSelectedSocial] = useState<Social | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  
+
   // New Header Filter States
   const [activeTab, setActiveTab] = useState<'this_week' | 'popup' | 'favorite' | 'overview'>('this_week');
   const [showOrganizerFilter, setShowOrganizerFilter] = useState(false);
@@ -171,8 +172,8 @@ function SocialContent() {
   };
 
   const countryDisplay = location?.country ? (location.country.charAt(0).toUpperCase() + location.country.slice(1).toLowerCase()) : '';
-  const cityDisplay = !location?.city || location.city === 'ALL' ? 'All' : 
-                    (location.city.charAt(0).toUpperCase() + location.city.slice(1).toLowerCase());
+  const cityDisplay = !location?.city || location.city === 'ALL' ? 'All' :
+    (location.city.charAt(0).toUpperCase() + location.city.slice(1).toLowerCase());
 
   // Calculate week days starting from today
   const weekDays = Array.from({ length: 7 }, (_, i) => {
@@ -184,32 +185,32 @@ function SocialContent() {
   useEffect(() => {
     // 1. Subscribe to all regulars for the carousel
     const unsubRegulars = socialService.subscribeSocials('regular', (data) => {
-        setRegulars(data);
+      setRegulars(data);
     });
 
     // 2. Subscribe to daily socials (Popups only via UI filter)
     const day = weekDays[activeDayOffset].getDay();
     const date = weekDays[activeDayOffset];
     const unsubDaily = socialService.subscribeDailySocials(day, date, (data) => {
-        setDailySocials(data);
+      setDailySocials(data);
     });
 
     const unsubPopups = socialService.subscribeSocials('popup', (data) => {
-        const today = new Date();
-        today.setHours(0,0,0,0);
-        // Sort popups by date and filter future
-        const valid = data.filter(s => {
-          if (!s.date) return false;
-          const sDate = typeof s.date.toDate === 'function' ? s.date.toDate() : new Date(s.date as any);
-          sDate.setHours(0,0,0,0);
-          return sDate.getTime() >= today.getTime();
-        });
-        const sorted = valid.sort((a, b) => {
-            const dateA = a.date ? a.date.toMillis() : 0;
-            const dateB = b.date ? b.date.toMillis() : 0;
-            return dateA - dateB;
-        });
-        setPopups(sorted);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      // Sort popups by date and filter future
+      const valid = data.filter(s => {
+        if (!s.date) return false;
+        const sDate = typeof s.date.toDate === 'function' ? s.date.toDate() : new Date(s.date as any);
+        sDate.setHours(0, 0, 0, 0);
+        return sDate.getTime() >= today.getTime();
+      });
+      const sorted = valid.sort((a, b) => {
+        const dateA = a.date ? a.date.toMillis() : 0;
+        const dateB = b.date ? b.date.toMillis() : 0;
+        return dateA - dateB;
+      });
+      setPopups(sorted);
     });
 
     return () => {
@@ -265,22 +266,22 @@ function SocialContent() {
   const favoriteTimeline = useMemo(() => {
     if (activeTab !== 'favorite') return [];
     const today = new Date();
-    today.setHours(0,0,0,0);
-    
+    today.setHours(0, 0, 0, 0);
+
     const liked = [...regulars, ...popups].filter(s => likedSocialIds.includes(s.id));
-    
+
     const instances: { date: Date, social: Social }[] = [];
-    
+
     liked.forEach(s => {
       if (s.type === 'popup' && s.date) {
         const sDate = typeof s.date.toDate === 'function' ? s.date.toDate() : new Date(s.date as any);
-        sDate.setHours(0,0,0,0);
+        sDate.setHours(0, 0, 0, 0);
         if (sDate >= today) {
           instances.push({ date: sDate, social: s });
         }
       } else if (s.type === 'regular' && s.dayOfWeek !== undefined) {
         // Only show 1 occurrence (this week) instead of 4
-        for(let i=0; i<1; i++) {
+        for (let i = 0; i < 1; i++) {
           const d = new Date(today);
           let offset = Number(s.dayOfWeek) - d.getDay();
           if (offset < 0) offset += 7;
@@ -289,9 +290,9 @@ function SocialContent() {
         }
       }
     });
-    
+
     instances.sort((a, b) => a.date.getTime() - b.date.getTime());
-    
+
     const grouped: Record<string, { date: Date, socials: Social[] }> = {};
     instances.forEach(inst => {
       const dateStr = inst.date.toDateString();
@@ -301,7 +302,7 @@ function SocialContent() {
         grouped[dateStr].socials.push(inst.social);
       }
     });
-    
+
     return Object.values(grouped).sort((a, b) => a.date.getTime() - b.date.getTime());
   }, [activeTab, regulars, popups, likedSocialIds]);
 
@@ -309,30 +310,30 @@ function SocialContent() {
   const overviewTimeline = useMemo(() => {
     if (activeTab !== 'overview') return [];
     const today = new Date();
-    today.setHours(0,0,0,0);
-    
+    today.setHours(0, 0, 0, 0);
+
     const filtered = locationFilteredSocials;
     const instances: { date: Date, social: Social }[] = [];
-    
+
     for (let i = 0; i < 7; i++) {
       const targetDate = new Date(today);
       targetDate.setDate(today.getDate() + i);
       const targetDayOfWeek = targetDate.getDay();
       const targetDateTime = targetDate.getTime();
-      
+
       filtered.forEach(s => {
         if (s.type === 'regular' && Number(s.dayOfWeek) === targetDayOfWeek) {
           instances.push({ date: targetDate, social: s });
         } else if (s.type === 'popup' && s.date) {
           const sDate = typeof s.date.toDate === 'function' ? s.date.toDate() : new Date(s.date as any);
-          sDate.setHours(0,0,0,0);
+          sDate.setHours(0, 0, 0, 0);
           if (sDate.getTime() === targetDateTime) {
             instances.push({ date: targetDate, social: s });
           }
         }
       });
     }
-    
+
     const grouped: Record<string, { date: Date, socials: Social[] }> = {};
     instances.forEach(inst => {
       const dateStr = inst.date.toDateString();
@@ -368,73 +369,72 @@ function SocialContent() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex-shrink-0 px-2.5 py-1 rounded-xl text-[12px] font-bold tracking-tight transition-all whitespace-nowrap border ${
-                activeTab === tab.id
+              className={`flex-shrink-0 px-2.5 py-1 rounded-xl text-[12px] font-bold tracking-tight transition-all whitespace-nowrap border ${activeTab === tab.id
                   ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-100'
                   : 'bg-slate-50/50 text-slate-500 border-slate-100 hover:bg-slate-100/80'
-              }`}
+                }`}
             >
               {tab.label}
             </button>
           ))}
         </div>
-        
+
         {/* Organizer / Club Filters — Overview only */}
         {activeTab === 'overview' && (
-        <>
-        <div className="w-full h-11 px-4 flex items-center justify-end gap-4">
-            <button 
-              onClick={() => { setShowOrganizerFilter(!showOrganizerFilter); if (!showOrganizerFilter) setShowClubFilter(false); }}
-              className={`flex items-center gap-0.5 text-[12px] font-bold transition-all ${selectedOrganizer !== 'All' ? 'text-blue-600' : 'text-slate-600 hover:text-slate-800'}`}
-            >
-              {selectedOrganizer === 'All' ? t('social.filter_organizer') : selectedOrganizer}
-              <span className={`material-symbols-outlined text-[16px] transition-transform ${showOrganizerFilter ? 'rotate-180' : ''}`}>expand_more</span>
-            </button>
-            <button 
-              onClick={() => { setShowClubFilter(!showClubFilter); if (!showClubFilter) setShowOrganizerFilter(false); }}
-              className={`flex items-center gap-0.5 text-[12px] font-bold transition-all ${selectedClub !== 'All' ? 'text-blue-600' : 'text-slate-600 hover:text-slate-800'}`}
-            >
-              {selectedClub === 'All' ? t('social.filter_club') : selectedClub}
-              <span className={`material-symbols-outlined text-[16px] transition-transform ${showClubFilter ? 'rotate-180' : ''}`}>expand_more</span>
-            </button>
-        </div>
-        {showOrganizerFilter && (
-          <div className="absolute top-full left-0 right-0 z-40 bg-white shadow-2xl border-t border-slate-100 p-4 max-h-[280px] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-300">
-            <div className="flex items-center justify-between mb-4 px-1">
-              <span className="text-[14px] font-black text-slate-800 uppercase tracking-tight">{t('social.filter_by_organizer')}</span>
-              <button onClick={() => setShowOrganizerFilter(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:text-slate-600 active:scale-90 transition-all">
-                <span className="material-symbols-outlined text-[18px]">close</span>
+          <>
+            <div className="w-full h-11 px-4 flex items-center justify-end gap-4">
+              <button
+                onClick={() => { setShowOrganizerFilter(!showOrganizerFilter); if (!showOrganizerFilter) setShowClubFilter(false); }}
+                className={`flex items-center gap-0.5 text-[12px] font-bold transition-all ${selectedOrganizer !== 'All' ? 'text-blue-600' : 'text-slate-600 hover:text-slate-800'}`}
+              >
+                {selectedOrganizer === 'All' ? t('social.filter_organizer') : selectedOrganizer}
+                <span className={`material-symbols-outlined text-[16px] transition-transform ${showOrganizerFilter ? 'rotate-180' : ''}`}>expand_more</span>
+              </button>
+              <button
+                onClick={() => { setShowClubFilter(!showClubFilter); if (!showClubFilter) setShowOrganizerFilter(false); }}
+                className={`flex items-center gap-0.5 text-[12px] font-bold transition-all ${selectedClub !== 'All' ? 'text-blue-600' : 'text-slate-600 hover:text-slate-800'}`}
+              >
+                {selectedClub === 'All' ? t('social.filter_club') : selectedClub}
+                <span className={`material-symbols-outlined text-[16px] transition-transform ${showClubFilter ? 'rotate-180' : ''}`}>expand_more</span>
               </button>
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              {['All', ...organizers].map(org => (
-                <button key={org} onClick={() => { setSelectedOrganizer(org); setShowOrganizerFilter(false); }}
-                  className={`px-4 py-3 rounded-2xl text-[12px] font-bold text-left transition-all border ${selectedOrganizer === org ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-100' : 'bg-slate-50/50 text-slate-600 border-transparent hover:bg-slate-100/80'}`}>
-                  <div className="flex items-center justify-between"><span className="truncate pr-2">{org}</span>{selectedOrganizer === org && <span className="material-symbols-outlined text-[14px]">check_circle</span>}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-        {showClubFilter && (
-          <div className="absolute top-full left-0 right-0 z-40 bg-white shadow-2xl border-t border-slate-100 p-4 max-h-[280px] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-300">
-            <div className="flex items-center justify-between mb-4 px-1">
-              <span className="text-[14px] font-black text-slate-800 uppercase tracking-tight">{t('social.filter_by_club')}</span>
-              <button onClick={() => setShowClubFilter(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:text-slate-600 active:scale-90 transition-all">
-                <span className="material-symbols-outlined text-[18px]">close</span>
-              </button>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              {['All', ...venues].map(ven => (
-                <button key={ven} onClick={() => { setSelectedClub(ven); setShowClubFilter(false); }}
-                  className={`px-4 py-3 rounded-2xl text-[12px] font-bold text-left transition-all border ${selectedClub === ven ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-100' : 'bg-slate-50/50 text-slate-600 border-transparent hover:bg-slate-100/80'}`}>
-                  <div className="flex items-center justify-between"><span className="truncate pr-2">{ven}</span>{selectedClub === ven && <span className="material-symbols-outlined text-[14px]">check_circle</span>}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-        </>
+            {showOrganizerFilter && (
+              <div className="absolute top-full left-0 right-0 z-40 bg-white shadow-2xl border-t border-slate-100 p-4 max-h-[280px] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="flex items-center justify-between mb-4 px-1">
+                  <span className="text-[14px] font-black text-slate-800 uppercase tracking-tight">{t('social.filter_by_organizer')}</span>
+                  <button onClick={() => setShowOrganizerFilter(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:text-slate-600 active:scale-90 transition-all">
+                    <span className="material-symbols-outlined text-[18px]">close</span>
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {['All', ...organizers].map(org => (
+                    <button key={org} onClick={() => { setSelectedOrganizer(org); setShowOrganizerFilter(false); }}
+                      className={`px-4 py-3 rounded-2xl text-[12px] font-bold text-left transition-all border ${selectedOrganizer === org ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-100' : 'bg-slate-50/50 text-slate-600 border-transparent hover:bg-slate-100/80'}`}>
+                      <div className="flex items-center justify-between"><span className="truncate pr-2">{org}</span>{selectedOrganizer === org && <span className="material-symbols-outlined text-[14px]">check_circle</span>}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {showClubFilter && (
+              <div className="absolute top-full left-0 right-0 z-40 bg-white shadow-2xl border-t border-slate-100 p-4 max-h-[280px] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="flex items-center justify-between mb-4 px-1">
+                  <span className="text-[14px] font-black text-slate-800 uppercase tracking-tight">{t('social.filter_by_club')}</span>
+                  <button onClick={() => setShowClubFilter(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:text-slate-600 active:scale-90 transition-all">
+                    <span className="material-symbols-outlined text-[18px]">close</span>
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {['All', ...venues].map(ven => (
+                    <button key={ven} onClick={() => { setSelectedClub(ven); setShowClubFilter(false); }}
+                      className={`px-4 py-3 rounded-2xl text-[12px] font-bold text-left transition-all border ${selectedClub === ven ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-100' : 'bg-slate-50/50 text-slate-600 border-transparent hover:bg-slate-100/80'}`}>
+                      <div className="flex items-center justify-between"><span className="truncate pr-2">{ven}</span>{selectedClub === ven && <span className="material-symbols-outlined text-[14px]">check_circle</span>}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     );
@@ -461,9 +461,9 @@ function SocialContent() {
       if (!matchLocation(s)) return false;
 
       const search = searchQuery.toLowerCase();
-      const matchSearch = !search || 
-        String(s.title || '').toLowerCase().includes(search) || 
-        String(s.organizerName || '').toLowerCase().includes(search) || 
+      const matchSearch = !search ||
+        String(s.title || '').toLowerCase().includes(search) ||
+        String(s.organizerName || '').toLowerCase().includes(search) ||
         String(s.venueName || '').toLowerCase().includes(search);
 
       // 팝업은 Organizer/Club 필터를 무시하고 검색어와 지역 조건만 반영
@@ -473,7 +473,7 @@ function SocialContent() {
 
       const matchOrg = selectedOrganizer === 'All' || s.organizerName === selectedOrganizer;
       const matchVen = selectedClub === 'All' || s.venueName === selectedClub;
-      
+
       return matchSearch && matchOrg && matchVen;
     });
 
@@ -490,11 +490,11 @@ function SocialContent() {
   return (
     <main className="w-full relative pb-32 bg-slate-50/30 overflow-x-hidden">
       <div className="px-4 space-y-6 pt-4">
-        
+
         {/* THIS WEEK TAB */}
         {activeTab === 'this_week' && (
           <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            
+
             {/* Calendar (Date Selector Grid) */}
             <div className="w-full bg-white rounded-2xl p-2 shadow-sm border border-slate-100 mb-4">
               <div className="grid grid-cols-7 gap-1">
@@ -507,22 +507,19 @@ function SocialContent() {
                     <button
                       key={i}
                       onClick={() => setActiveDayOffset(i)}
-                      className={`flex flex-col items-center justify-center py-2 rounded-xl transition-all border ${
-                        isSelected 
-                        ? 'bg-slate-900 text-white border-slate-900 shadow-sm shadow-slate-200' 
-                        : 'bg-transparent border-transparent hover:bg-slate-50 text-slate-500'
-                      }`}
+                      className={`flex flex-col items-center justify-center py-2 rounded-xl transition-all border ${isSelected
+                          ? 'bg-slate-900 text-white border-slate-900 shadow-sm shadow-slate-200'
+                          : 'bg-transparent border-transparent hover:bg-slate-50 text-slate-500'
+                        }`}
                     >
-                      <span className={`text-[10px] font-bold uppercase tracking-tighter mb-0.5 ${
-                        isSelected 
+                      <span className={`text-[10px] font-bold uppercase tracking-tighter mb-0.5 ${isSelected
                           ? (isRed ? 'text-red-300' : 'text-slate-100')
                           : (isRed ? 'text-red-500' : 'text-slate-400')
-                      }`}>
+                        }`}>
                         {date.toLocaleDateString('en-US', { weekday: 'short' })}
                       </span>
-                      <span className={`text-sm font-black tracking-tighter ${
-                        !isSelected && isRed ? 'text-red-600' : ''
-                      }`}>
+                      <span className={`text-sm font-black tracking-tighter ${!isSelected && isRed ? 'text-red-600' : ''
+                        }`}>
                         {date.getDate()}
                       </span>
                       {holiday && !isSelected && <span className="w-1 h-1 rounded-full bg-red-500 mt-0.5" />}
@@ -532,31 +529,30 @@ function SocialContent() {
               </div>
             </div>
 
-            <div 
+            <div
               ref={carouselRef}
               className="flex gap-4 overflow-x-auto no-scrollbar pt-2 -mx-4 px-4"
             >
               {filterSocials(regulars).filter(s => Number(s.dayOfWeek) === weekDays[activeDayOffset].getDay()).length === 0 ? (
                 <div className="w-full h-40 flex flex-col items-center justify-center opacity-20 bg-white rounded-lg border border-dashed border-gray-200">
-                   <span className="material-symbols-outlined text-4xl mb-2">event_busy</span>
-                   <p className="text-xs font-black uppercase tracking-widest">{t('social.no_regular_today')}</p>
+                  <span className="material-symbols-outlined text-4xl mb-2">event_busy</span>
+                  <p className="text-xs font-black uppercase tracking-widest">{t('social.no_regular_today')}</p>
                 </div>
               ) : (
                 filterSocials(regulars).filter(s => Number(s.dayOfWeek) === weekDays[activeDayOffset].getDay()).map(social => (
-                  <div 
-                    key={social.id} 
+                  <div
+                    key={social.id}
                     onClick={() => handleOpenView(social)}
                     className="relative flex-shrink-0 w-60 h-80 rounded-lg overflow-hidden group shadow-sm transition-all hover:shadow-md cursor-pointer animate-in zoom-in-95 duration-500 text-left"
                   >
-                    <SocialHeroCard social={social} />
-                    
-                    <button 
+                    <SocialHeroCard social={social} date={weekDays[activeDayOffset]} />
+
+                    <button
                       onClick={(e) => handleToggleLike(e, social.id)}
-                      className={`absolute z-20 top-3 right-3 w-8 h-8 backdrop-blur rounded-full flex items-center justify-center shadow-sm transition-colors active:scale-90 ${
-                        likedSocialIds.includes(social.id) ? 'bg-red-50 text-red-500' : 'bg-white/90 text-[#2d3435] hover:text-red-500'
-                      }`}
+                      className={`absolute z-20 top-3 right-3 w-8 h-8 backdrop-blur rounded-full flex items-center justify-center shadow-sm transition-colors active:scale-90 ${likedSocialIds.includes(social.id) ? 'bg-red-50 text-red-500' : 'bg-white/90 text-[#2d3435] hover:text-red-500'
+                        }`}
                     >
-                      <span 
+                      <span
                         className="material-symbols-rounded text-lg"
                         style={{ fontVariationSettings: likedSocialIds.includes(social.id) ? "'FILL' 1" : "'FILL' 0" }}
                       >
@@ -574,7 +570,7 @@ function SocialContent() {
               <p className="text-[12px] font-bold text-slate-400 uppercase tracking-tight">
                 {t('social.host_new')}
               </p>
-              <button 
+              <button
                 onClick={() => handleOpenCreate()}
                 className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 transition-colors py-2"
               >
@@ -593,7 +589,7 @@ function SocialContent() {
               if (filteredPopups.length === 0) {
                 return (
                   <div className="w-full h-32 flex flex-col items-center justify-center opacity-30 bg-white rounded-lg border border-dashed border-gray-200">
-                     <p className="text-xs font-black uppercase tracking-widest text-primary/40">{t('social.no_popup')}</p>
+                    <p className="text-xs font-black uppercase tracking-widest text-primary/40">{t('social.no_popup')}</p>
                   </div>
                 );
               }
@@ -615,60 +611,64 @@ function SocialContent() {
                   {monthSocials.map(social => {
                     const displayTitle = getSocialDisplayTitle(social);
                     return (
-                    <div 
-                      key={social.id} 
-                      onClick={() => handleOpenView(social)}
-                      className="relative flex items-center gap-4 p-4 bg-white rounded-lg border border-[#dde4e5] hover:border-primary/30 transition-all cursor-pointer group shadow-sm active:scale-[0.98] text-left"
-                    >
-                      <div className="flex flex-col items-center justify-center w-20 h-20 bg-[#F4FBFB] rounded-lg border-l-4 border-primary shrink-0">
-                        {(() => { const d = safeDate(social.date) || new Date(); return (<>
-                        <span className="text-[9px] font-black text-primary uppercase tracking-widest leading-none mb-1">
-                          {d.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()}
-                        </span>
-                        <span className="text-2xl font-black text-on-surface tracking-tighter leading-none mb-1">
-                          {d.getDate()}
-                        </span>
-                        <span className="text-[9px] font-bold text-on-surface-variant uppercase tracking-widest leading-none">
-                          {d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()}
-                        </span>
-                        </>); })()}
-                      </div>
-                      <div className="flex-1 space-y-0.5 text-left overflow-hidden pr-8">
-                        <DualText 
-                          text={displayTitle.primary}
-                          subText={displayTitle.secondary}
-                          primaryClassName="text-lg font-bold text-on-surface font-headline leading-tight truncate"
-                          secondaryClassName="text-[11px] text-on-surface-variant/60 font-normal truncate shrink-0 ml-1.5"
-                          containerClassName="w-full"
-                        />
-                        <DualText 
-                          text={social.venueName}
-                          subText={social.venueNameNative}
-                          primaryClassName="text-sm text-primary font-semibold truncate"
-                          secondaryClassName="text-[10px] text-primary/50 font-normal truncate ml-1.5"
-                          containerClassName="w-full mt-0.5"
-                        />
-                        <p className="text-xs text-on-surface-variant font-medium truncate mt-1">
-                          {social.startTime} - {social.endTime} {social.djName ? `• DJ ${social.djName}` : ''}
-                        </p>
-                      </div>
-
-                      <button 
-                        onClick={(e) => handleToggleLike(e, social.id)}
-                        className={`absolute z-20 top-3 right-3 w-8 h-8 backdrop-blur rounded-full flex items-center justify-center shadow-sm transition-colors active:scale-90 ${
-                          likedSocialIds.includes(social.id) ? 'bg-red-50 text-red-500' : 'bg-white/90 text-[#2d3435] hover:text-red-500'
-                        }`}
+                      <div
+                        key={social.id}
+                        onClick={() => handleOpenView(social)}
+                        className="relative flex items-center gap-4 p-4 bg-white rounded-lg border border-[#dde4e5] hover:border-primary/30 transition-all cursor-pointer group shadow-sm active:scale-[0.98] text-left"
                       >
-                        <span 
-                          className="material-symbols-rounded text-lg"
-                          style={{ fontVariationSettings: likedSocialIds.includes(social.id) ? "'FILL' 1" : "'FILL' 0" }}
-                        >
-                          favorite
-                        </span>
-                      </button>
+                        <div className="flex flex-col items-center justify-center w-20 h-20 bg-[#F4FBFB] rounded-lg border-l-4 border-primary shrink-0">
+                          {(() => {
+                            const d = safeDate(social.date) || new Date(); return (<>
+                              <span className="text-[9px] font-black text-primary uppercase tracking-widest leading-none mb-1">
+                                {d.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()}
+                              </span>
+                              <span className="text-2xl font-black text-on-surface tracking-tighter leading-none mb-1">
+                                {d.getDate()}
+                              </span>
+                              <span className="text-[9px] font-bold text-on-surface-variant uppercase tracking-widest leading-none">
+                                {d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()}
+                              </span>
+                            </>);
+                          })()}
+                        </div>
+                        <div className="flex-1 space-y-0.5 text-left overflow-hidden pr-8">
+                          <DualText
+                            text={displayTitle.primary}
+                            subText={displayTitle.secondary}
+                            primaryClassName="text-lg font-bold text-on-surface font-headline leading-tight truncate"
+                            secondaryClassName="text-[11px] text-on-surface-variant/60 font-normal truncate shrink-0 ml-1.5"
+                            containerClassName="w-full"
+                          />
+                          <DualText
+                            text={social.venueName}
+                            subText={social.venueNameNative}
+                            primaryClassName="text-sm text-primary font-semibold truncate"
+                            secondaryClassName="text-[10px] text-primary/50 font-normal truncate ml-1.5"
+                            containerClassName="w-full mt-0.5"
+                          />
+                          <p className="text-xs text-on-surface-variant font-medium truncate mt-1">
+                            {social.startTime} - {social.endTime} {(() => {
+                              const djName = getDjDisplay(social, safeDate(social.date) || undefined);
+                              return djName && djName !== 'TBD' && djName !== 'TBA' ? `• DJ ${djName}` : '';
+                            })()}
+                          </p>
+                        </div>
 
-                      <span className="material-symbols-outlined text-[#dde4e5] group-hover:text-primary transition-all group-hover:translate-x-1 absolute right-4 top-1/2 -translate-y-1/2">chevron_right</span>
-                    </div>
+                        <button
+                          onClick={(e) => handleToggleLike(e, social.id)}
+                          className={`absolute z-20 top-3 right-3 w-8 h-8 backdrop-blur rounded-full flex items-center justify-center shadow-sm transition-colors active:scale-90 ${likedSocialIds.includes(social.id) ? 'bg-red-50 text-red-500' : 'bg-white/90 text-[#2d3435] hover:text-red-500'
+                            }`}
+                        >
+                          <span
+                            className="material-symbols-rounded text-lg"
+                            style={{ fontVariationSettings: likedSocialIds.includes(social.id) ? "'FILL' 1" : "'FILL' 0" }}
+                          >
+                            favorite
+                          </span>
+                        </button>
+
+                        <span className="material-symbols-outlined text-[#dde4e5] group-hover:text-primary transition-all group-hover:translate-x-1 absolute right-4 top-1/2 -translate-y-1/2">chevron_right</span>
+                      </div>
                     );
                   })}
                 </div>
@@ -681,49 +681,51 @@ function SocialContent() {
         {activeTab === 'favorite' && (
           <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 text-left">
             {favoriteTimeline.length === 0 ? (
-               <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-                 <span className="material-symbols-outlined text-4xl mb-2">favorite_border</span>
-                 <p className="text-sm font-medium">{t('social.no_liked')}</p>
-               </div>
+              <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+                <span className="material-symbols-outlined text-4xl mb-2">favorite_border</span>
+                <p className="text-sm font-medium">{t('social.no_liked')}</p>
+              </div>
             ) : (
-               favoriteTimeline.map((group, idx) => (
-                 <div key={idx} className="space-y-4">
-                   <div className="flex items-center gap-4 py-2">
-                     <h3 className="text-lg font-black text-slate-800 tracking-tight">
-                       {group.date.toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric' })}
-                     </h3>
-                     <div className="flex-1 h-px bg-slate-200"></div>
-                   </div>
-                   {group.socials.map((social) => {
-                     const displayTitle = getSocialDisplayTitle(social);
-                     return (
-                      <div 
-                        key={`${social.id}-${group.date.getTime()}`} 
+              favoriteTimeline.map((group, idx) => (
+                <div key={idx} className="space-y-4">
+                  <div className="flex items-center gap-4 py-2">
+                    <h3 className="text-lg font-black text-slate-800 tracking-tight">
+                      {group.date.toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric' })}
+                    </h3>
+                    <div className="flex-1 h-px bg-slate-200"></div>
+                  </div>
+                  {group.socials.map((social) => {
+                    const displayTitle = getSocialDisplayTitle(social);
+                    return (
+                      <div
+                        key={`${social.id}-${group.date.getTime()}`}
                         onClick={() => handleOpenView(social)}
                         className="relative flex items-center gap-4 p-4 bg-white rounded-lg border border-[#dde4e5] hover:border-primary/30 transition-all cursor-pointer group shadow-sm active:scale-[0.98] text-left"
                       >
                         <div className="flex flex-col items-center justify-center w-20 h-20 bg-[#F4FBFB] rounded-lg border-l-4 border-primary shrink-0">
-                          {(() => { const d = group.date; return (<>
-                          <span className="text-[9px] font-black text-primary uppercase tracking-widest leading-none mb-1">
-                            {d.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()}
-                          </span>
-                          <span className="text-2xl font-black text-on-surface tracking-tighter leading-none mb-1">
-                            {d.getDate()}
-                          </span>
-                          <span className="text-[9px] font-bold text-on-surface-variant uppercase tracking-widest leading-none">
-                            {d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()}
-                          </span>
-                          </>); })()}
+                          {(() => {
+                            const d = group.date; return (<>
+                              <span className="text-[9px] font-black text-primary uppercase tracking-widest leading-none mb-1">
+                                {d.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()}
+                              </span>
+                              <span className="text-2xl font-black text-on-surface tracking-tighter leading-none mb-1">
+                                {d.getDate()}
+                              </span>
+                              <span className="text-[9px] font-bold text-on-surface-variant uppercase tracking-widest leading-none">
+                                {d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()}
+                              </span>
+                            </>);
+                          })()}
                         </div>
                         <div className="flex-1 space-y-0.5 text-left overflow-hidden pr-8">
-                          <DualText 
+                          <DualText
                             text={displayTitle.primary}
                             subText={displayTitle.secondary}
                             primaryClassName="text-lg font-bold text-on-surface font-headline leading-tight truncate"
                             secondaryClassName="text-[11px] text-on-surface-variant/60 font-normal truncate shrink-0 ml-1.5"
                             containerClassName="w-full"
                           />
-                          <DualText 
+                          <DualText
                             text={social.venueName}
                             subText={social.venueNameNative}
                             primaryClassName="text-sm text-primary font-semibold truncate"
@@ -731,30 +733,32 @@ function SocialContent() {
                             containerClassName="w-full mt-0.5"
                           />
                           <p className="text-xs text-on-surface-variant font-medium truncate mt-1">
-                            {social.startTime} - {social.endTime} {social.djName ? `• DJ ${social.djName}` : ''}
+                            {social.startTime} - {social.endTime} {(() => {
+                              const djName = getDjDisplay(social, group.date);
+                              return djName && djName !== 'TBD' && djName !== 'TBA' ? `• DJ ${djName}` : '';
+                            })()}
                           </p>
                         </div>
-  
-                        <button 
+
+                        <button
                           onClick={(e) => handleToggleLike(e, social.id)}
-                          className={`absolute z-20 top-3 right-3 w-8 h-8 backdrop-blur rounded-full flex items-center justify-center shadow-sm transition-colors active:scale-90 ${
-                            likedSocialIds.includes(social.id) ? 'bg-red-50 text-red-500' : 'bg-white/90 text-[#2d3435] hover:text-red-500'
-                          }`}
+                          className={`absolute z-20 top-3 right-3 w-8 h-8 backdrop-blur rounded-full flex items-center justify-center shadow-sm transition-colors active:scale-90 ${likedSocialIds.includes(social.id) ? 'bg-red-50 text-red-500' : 'bg-white/90 text-[#2d3435] hover:text-red-500'
+                            }`}
                         >
-                          <span 
+                          <span
                             className="material-symbols-rounded text-lg"
                             style={{ fontVariationSettings: likedSocialIds.includes(social.id) ? "'FILL' 1" : "'FILL' 0" }}
                           >
                             favorite
                           </span>
                         </button>
-  
+
                         <span className="material-symbols-outlined text-[#dde4e5] group-hover:text-primary transition-all group-hover:translate-x-1 absolute right-4 top-1/2 -translate-y-1/2">chevron_right</span>
                       </div>
-                     );
-                   })}
-                 </div>
-               ))
+                    );
+                  })}
+                </div>
+              ))
             )}
           </section>
         )}
@@ -772,79 +776,79 @@ function SocialContent() {
               </div>
             )}
             {overviewTimeline.length === 0 ? (
-               <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-                 <span className="material-symbols-outlined text-4xl mb-2">event_busy</span>
-                 <p className="text-sm font-medium">{t('social.no_upcoming')}</p>
-               </div>
+              <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+                <span className="material-symbols-outlined text-4xl mb-2">event_busy</span>
+                <p className="text-sm font-medium">{t('social.no_upcoming')}</p>
+              </div>
             ) : (
-               <div className="space-y-3">
-                 {overviewTimeline.map((group, idx) => {
-                   const isToday = group.date.toDateString() === new Date().toDateString();
-                   const holiday = isKoreanHoliday(group.date);
-                   const isWeekend = group.date.getDay() === 0 || group.date.getDay() === 6;
-                   const isRed = isWeekend || !!holiday;
-                   return (
-                     <div key={idx} className="overflow-hidden rounded-xl border border-slate-100 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)]">
-                       {/* Day Header */}
-                       <div className={`flex items-center gap-3 px-4 py-3 border-b border-slate-100 ${isToday ? 'bg-blue-600' : isRed ? 'bg-red-500' : 'bg-slate-800'}`}>
-                         <div className="flex flex-col items-center justify-center w-10 h-10 rounded-lg bg-white/15 shrink-0">
-                           <span className="text-[9px] font-black text-white/80 uppercase tracking-wider leading-none">
-                             {group.date.toLocaleDateString('en-US', { weekday: 'short' })}
-                           </span>
-                           <span className="text-[20px] font-black text-white leading-none tracking-tighter">
-                             {group.date.getDate()}
-                           </span>
-                         </div>
-                         <div className="flex-1 min-w-0">
-                           <h3 className="text-[13px] font-black text-white tracking-tight">
-                             {group.date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
-                             {isToday && <span className="ml-2 bg-white text-blue-600 px-1.5 py-0.5 rounded text-[9px] leading-none font-black">{t('social.today')}</span>}
-                             {holiday && <span className="ml-2 bg-white/20 text-white px-1.5 py-0.5 rounded text-[9px] leading-none">{holiday}</span>}
-                           </h3>
-                         </div>
-                         <span className="text-[11px] font-bold text-white/60 tracking-wider shrink-0">{group.socials.length} {t('social.events_count')}</span>
-                       </div>
-                       {/* Event Rows */}
-                       <div className="bg-white divide-y divide-slate-50">
-                         {group.socials.map(social => (
-                           <div
-                             key={social.id}
-                             onClick={() => handleOpenView(social)}
-                             className="px-4 py-3 flex items-center gap-3 hover:bg-slate-50 transition-colors cursor-pointer active:bg-slate-100 group"
-                           >
-                             {/* 소형 썸네일 */}
-                             <div className="shrink-0 w-10 h-10 rounded-lg overflow-hidden bg-slate-100 border border-slate-100">
-                               {social.imageUrl ? (
-                                 <img src={social.imageUrl} alt={social.title} className="w-full h-full object-cover" />
-                               ) : (
-                                 <div className="w-full h-full flex items-center justify-center">
-                                   <span className="material-symbols-outlined text-[18px] text-slate-300">music_note</span>
-                                 </div>
-                               )}
-                             </div>
-                             <div className="flex-1 min-w-0 pr-2">
-                               <h4 className="text-[14px] font-bold text-slate-800 truncate leading-tight flex items-baseline gap-1.5">
-                                 {social.title}
-                                 {social.titleNative && <span className="text-[10px] font-medium text-slate-400 truncate">{social.titleNative}</span>}
-                               </h4>
-                               <p className="text-[11px] font-medium text-slate-500 truncate mt-0.5">
-                                 <span className="inline-flex items-center gap-0.5"><span className="material-symbols-outlined text-[12px]">location_on</span>{social.venueNameNative || social.venueName}</span>
-                               </p>
-                               <p className="text-[11px] font-medium text-slate-500 truncate mt-0.5">
-                                 <span className="inline-flex items-center gap-0.5"><span className="material-symbols-outlined text-[12px]">schedule</span>{social.startTime}-{social.endTime}</span>
-                                 {social.djName && <span className="ml-2 inline-flex items-center gap-0.5"><span className="material-symbols-outlined text-[12px]">headphones</span>DJ {social.djName}</span>}
-                               </p>
-                             </div>
-                             <div className="shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-white shadow-sm border border-slate-100 group-hover:border-blue-200 transition-all">
-                               <span className="material-symbols-outlined text-[16px] text-slate-400 group-hover:text-blue-600">chevron_right</span>
-                             </div>
-                           </div>
-                         ))}
-                       </div>
-                     </div>
-                   );
-                 })}
-               </div>
+              <div className="space-y-3">
+                {overviewTimeline.map((group, idx) => {
+                  const isToday = group.date.toDateString() === new Date().toDateString();
+                  const holiday = isKoreanHoliday(group.date);
+                  const isWeekend = group.date.getDay() === 0 || group.date.getDay() === 6;
+                  const isRed = isWeekend || !!holiday;
+                  return (
+                    <div key={idx} className="overflow-hidden rounded-xl border border-slate-100 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)]">
+                      {/* Day Header */}
+                      <div className={`flex items-center gap-3 px-4 py-3 border-b border-slate-100 ${isToday ? 'bg-blue-600' : isRed ? 'bg-red-500' : 'bg-slate-800'}`}>
+                        <div className="flex flex-col items-center justify-center w-10 h-10 rounded-lg bg-white/15 shrink-0">
+                          <span className="text-[9px] font-black text-white/80 uppercase tracking-wider leading-none">
+                            {group.date.toLocaleDateString('en-US', { weekday: 'short' })}
+                          </span>
+                          <span className="text-[20px] font-black text-white leading-none tracking-tighter">
+                            {group.date.getDate()}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-[13px] font-black text-white tracking-tight">
+                            {group.date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+                            {isToday && <span className="ml-2 bg-white text-blue-600 px-1.5 py-0.5 rounded text-[9px] leading-none font-black">{t('social.today')}</span>}
+                            {holiday && <span className="ml-2 bg-white/20 text-white px-1.5 py-0.5 rounded text-[9px] leading-none">{holiday}</span>}
+                          </h3>
+                        </div>
+                        <span className="text-[11px] font-bold text-white/60 tracking-wider shrink-0">{group.socials.length} {t('social.events_count')}</span>
+                      </div>
+                      {/* Event Rows */}
+                      <div className="bg-white divide-y divide-slate-50">
+                        {group.socials.map(social => (
+                          <div
+                            key={social.id}
+                            onClick={() => handleOpenView(social)}
+                            className="px-4 py-3 flex items-center gap-3 hover:bg-slate-50 transition-colors cursor-pointer active:bg-slate-100 group"
+                          >
+                            {/* 소형 썸네일 */}
+                            <div className="shrink-0 w-10 h-10 rounded-lg overflow-hidden bg-slate-100 border border-slate-100">
+                              {social.imageUrl ? (
+                                <img src={social.imageUrl} alt={social.title} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <span className="material-symbols-outlined text-[18px] text-slate-300">music_note</span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0 pr-2">
+                              <h4 className="text-[14px] font-bold text-slate-800 truncate leading-tight flex items-baseline gap-1.5">
+                                {social.title}
+                                {social.titleNative && <span className="text-[10px] font-medium text-slate-400 truncate">{social.titleNative}</span>}
+                              </h4>
+                              <p className="text-[11px] font-medium text-slate-500 truncate mt-0.5">
+                                <span className="inline-flex items-center gap-0.5"><span className="material-symbols-outlined text-[12px]">location_on</span>{social.venueNameNative || social.venueName}</span>
+                              </p>
+                              <p className="text-[11px] font-medium text-slate-500 truncate mt-0.5">
+                                <span className="inline-flex items-center gap-0.5"><span className="material-symbols-outlined text-[12px]">schedule</span>{social.startTime}-{social.endTime}</span>
+                                {social.djName && <span className="ml-2 inline-flex items-center gap-0.5"><span className="material-symbols-outlined text-[12px]">headphones</span>DJ {social.djName}</span>}
+                              </p>
+                            </div>
+                            <div className="shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-white shadow-sm border border-slate-100 group-hover:border-blue-200 transition-all">
+                              <span className="material-symbols-outlined text-[16px] text-slate-400 group-hover:text-blue-600">chevron_right</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </section>
         )}
@@ -853,7 +857,7 @@ function SocialContent() {
 
       {/* 신규 등록 (Create 모드) */}
       {isCreateOpen && (
-        <EditSocialEvent 
+        <EditSocialEvent
           onClose={handleCloseCreate}
           onSuccess={handleCloseCreate}
         />
@@ -861,7 +865,7 @@ function SocialContent() {
 
       {/* 기존 소셜 편집 (Edit 모드) */}
       {selectedSocial && (
-        <EditSocialEvent 
+        <EditSocialEvent
           socialData={selectedSocial}
           onClose={handleCloseEdit}
         />
@@ -869,7 +873,7 @@ function SocialContent() {
 
       {/* 뷰 모드 (일반 사용자) */}
       {viewSocial && (
-        <SocialViewer 
+        <SocialViewer
           social={viewSocial}
           onClose={handleCloseView}
         />

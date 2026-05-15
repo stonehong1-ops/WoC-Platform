@@ -24,6 +24,8 @@ export interface Post {
   createdAt: any;
   updatedAt?: any;
   tags?: string[];
+  taggedUserIds?: string[];
+  postTags?: { id: string; label: string; kind: string; photo?: string }[];
   bgTheme?: string;
 }
 
@@ -147,6 +149,7 @@ export interface Group {
     accountNumber: string;
   };
   businessRegistrationNumber?: string;
+  representativeName?: string;
   isPublished?: boolean;
   headerThemeColor?: string;
   selectedFunctions?: string[];
@@ -285,6 +288,11 @@ export interface GroupClass {
   maxCapacity?: number;
   startTime?: string;
   endTime?: string;
+  todayLeaderRemaining?: number;
+  todayFollowerRemaining?: number;
+  isTodayBookingClosed?: boolean;
+  instructorComment?: string;
+  dailyClassPrice?: number;
   
   // Newly added fields
   bankName?: string;
@@ -361,5 +369,7 @@ export interface ClassRegistration {
   selectedClassIds?: string[]; // Custom selection for monthly passes
   adminMemo?: string;
   paymentAmount?: number;
+  paymentStatus?: 'pending' | 'reported' | 'completed' | 'canceled';
+  orderNumber?: string;
 }
 

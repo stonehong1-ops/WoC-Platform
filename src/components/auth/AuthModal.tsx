@@ -483,6 +483,7 @@ export default function AuthModal() {
         nativeNickname: details.nativeNickname,
         countryCode: details.countryCode,
         gender: details.gender,
+        role: details.gender.toLowerCase() === 'male' ? 'leader' : 'follower',
         photoURL: user.photoURL,
         isRegistered: true,
         createdAt: serverTimestamp(),
@@ -572,20 +573,22 @@ export default function AuthModal() {
 
               <button 
                 disabled={isLoading}
-                onClick={handleFacebookLogin}
-                className="flex flex-col items-center justify-center gap-1.5 h-20 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 transition-all disabled:opacity-50"
+                onClick={() => alert(t('auth.soon', 'Coming soon'))}
+                className="flex flex-col items-center justify-center gap-1.5 h-20 bg-gray-50 border border-gray-100 rounded-xl relative overflow-hidden disabled:opacity-50 hover:bg-gray-100 transition-all"
               >
-                <span className="material-symbols-outlined text-[20px] text-[#1877F2]">facebook</span>
-                <span className="text-[11px] font-bold text-gray-700 uppercase">Facebook</span>
+                <span className="material-symbols-outlined text-[20px] text-gray-400">facebook</span>
+                <span className="text-[11px] font-bold text-gray-400 uppercase">Facebook</span>
+                <span className="absolute top-1.5 right-2 text-[8px] font-black text-gray-300 uppercase tracking-wider">Soon</span>
               </button>
 
               <button 
                 disabled={isLoading}
-                onClick={() => setStep('EMAIL_INPUT')}
-                className="flex flex-col items-center justify-center gap-1.5 h-20 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 transition-all disabled:opacity-50"
+                onClick={() => alert(t('auth.soon', 'Coming soon'))}
+                className="flex flex-col items-center justify-center gap-1.5 h-20 bg-gray-50 border border-gray-100 rounded-xl relative overflow-hidden disabled:opacity-50 hover:bg-gray-100 transition-all"
               >
-                <span className="material-symbols-outlined text-[20px] text-gray-700">mail</span>
-                <span className="text-[11px] font-bold text-gray-700 uppercase">Email</span>
+                <span className="material-symbols-outlined text-[20px] text-gray-400">mail</span>
+                <span className="text-[11px] font-bold text-gray-400 uppercase">Email</span>
+                <span className="absolute top-1.5 right-2 text-[8px] font-black text-gray-300 uppercase tracking-wider">Soon</span>
               </button>
 
               <button 

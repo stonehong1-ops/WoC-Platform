@@ -7,9 +7,15 @@ import { plazaService, Post as PlazaPost } from '@/lib/firebase/plazaService';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
+const SOCIETIES = [
+  { id: 'tango', label: 'Tango' },
+  { id: 'yoga', label: 'Yoga' },
+];
+
 export default function AdminBannersPage() {
   const [events, setEvents] = useState<any[]>([]);
-  const [selectedEventId, setSelectedEventId] = useState<string>('');
+  const [selectedSociety, setSelectedSociety] = useState('tango');
+  const [heroEventIds, setHeroEventIds] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -38,9 +44,13 @@ export default function AdminBannersPage() {
         const bannerDoc = await getDoc(doc(db, 'settings', 'banners'));
         if (bannerDoc.exists()) {
           const data = bannerDoc.data();
-          if (data.heroEventId) {
-            setSelectedEventId(data.heroEventId);
+          // Load society-specific heroEventIds
+          const ids: Record<string, string> = data.heroEventIds || {};
+          // Migrate legacy heroEventId to tango slot if needed
+          if (data.heroEventId && !ids.tango) {
+            ids.tango = data.heroEventId;
           }
+          setHeroEventIds(ids);
           if (data.featuredPlazaPostIds) {
             setFeaturedSlot1(data.featuredPlazaPostIds[0] || '');
             setFeaturedSlot2(data.featuredPlazaPostIds[1] || '');
@@ -72,13 +82,22 @@ export default function AdminBannersPage() {
     fetchPlazaPosts();
   }, []);
 
+  // Filter events by selected society
+  const filteredEvents = events.filter((ev: any) => {
+    if (selectedSociety === 'tango') {
+      return !ev.societyId || ev.societyId === 'tango';
+    }
+    return ev.societyId === selectedSociety;
+  });
+
   const handleSave = async () => {
     setSaving(true);
     try {
       await setDoc(doc(db, 'settings', 'banners'), {
-        heroEventId: selectedEventId
+        heroEventId: heroEventIds.tango || '',  // legacy compatibility
+        heroEventIds: heroEventIds,
       }, { merge: true });
-      toast.success("Hero event updated successfully.");
+      toast.success(`Hero event for ${selectedSociety.toUpperCase()} updated successfully.`);
     } catch (e) {
       console.error(e);
       toast.error("Failed to update hero event.");
@@ -118,18 +137,36 @@ export default function AdminBannersPage() {
     <main className="max-w-[896px] mx-auto px-6 pt-4 pb-24 space-y-6">
       <h1 className="text-2xl font-bold">Banners Management</h1>
       
-      {/* Hero Event Section (기존) */}
+      {/* Hero Event Section — Society-Aware */}
       <div className="bg-white p-6 rounded-xl shadow-sm border border-outline-variant/30">
         <h2 className="text-lg font-bold mb-4">Society Top Hero Event</h2>
+        
+        {/* Society Selector */}
+        <div className="flex gap-2 mb-4">
+          {SOCIETIES.map(s => (
+            <button
+              key={s.id}
+              onClick={() => setSelectedSociety(s.id)}
+              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                selectedSociety === s.id
+                  ? 'bg-primary text-white shadow-sm'
+                  : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container'
+              }`}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+
         <div className="flex flex-col gap-2">
-          <label className="text-sm text-outline font-semibold">Select an upcoming event</label>
+          <label className="text-sm text-outline font-semibold">Select an upcoming event for {selectedSociety.toUpperCase()}</label>
           <select 
-            value={selectedEventId} 
-            onChange={(e) => setSelectedEventId(e.target.value)}
+            value={heroEventIds[selectedSociety] || ''} 
+            onChange={(e) => setHeroEventIds(prev => ({ ...prev, [selectedSociety]: e.target.value }))}
             className="border border-outline-variant rounded-lg p-3 bg-surface-container-lowest text-body-md"
           >
             <option value="">-- None (Auto select) --</option>
-            {events.map(ev => {
+            {filteredEvents.map(ev => {
               const d = ev.startDate?.toDate ? ev.startDate.toDate() : new Date();
               return (
                 <option key={ev.id} value={ev.id}>
@@ -149,7 +186,7 @@ export default function AdminBannersPage() {
         </button>
       </div>
 
-      {/* Featured Plaza Posts Section (신규) */}
+      {/* Featured Plaza Posts Section */}
       <div className="bg-white p-6 rounded-xl shadow-sm border border-outline-variant/30">
         <h2 className="text-lg font-bold mb-1">Featured Plaza Posts</h2>
         <p className="text-sm text-outline mb-4">Home 페이지 &quot;Stories from Seoul&quot; 섹션에 표시될 2개의 포스트를 선택하세요.</p>
