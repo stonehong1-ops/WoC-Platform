@@ -836,7 +836,7 @@ export default function GroupHome({ group: initialGroup, isModal }: { group: Gro
                     'notice': { id: 'board', key: 'group.tab.notice', icon: 'campaign', implemented: true },
                     'about': { id: 'about', key: 'group.tab.about', icon: 'info', implemented: true },
                     'members': { id: 'members', key: 'group.tab.members', icon: 'groups', implemented: true },
-                    'class': { id: 'class', key: 'group.tab.class_user', icon: 'school', implemented: false },
+                    'class': { id: 'class', key: 'group.tab.class_user', icon: 'school', implemented: true },
                     'class-setting': { id: 'class-setting', key: 'group.tab.class_admin', icon: 'school', implemented: true },
                     'stay-setting': { id: 'stay', key: 'group.tab.stay', icon: 'bed', implemented: true },
                     'shop-setting': { id: 'shop', key: 'group.tab.shop', icon: 'storefront', implemented: true },
@@ -897,7 +897,17 @@ export default function GroupHome({ group: initialGroup, isModal }: { group: Gro
                   // Fixed position IDs (excluded from user ordering in Step 3)
                   const FIXED_IDS = new Set(['dashboard', 'about', ...ADMIN_FUNCTION_IDS]);
 
-                  const selectedFns = currentGroup.selectedFunctions || [];
+                  const rawSelectedFns = currentGroup.selectedFunctions || [];
+                  const selectedFns = [...rawSelectedFns];
+                  
+                  // Auto-sync class and class-setting for backward compatibility and consistency
+                  if (selectedFns.includes('class-setting') && !selectedFns.includes('class')) {
+                    selectedFns.push('class');
+                  }
+                  if (selectedFns.includes('class') && !selectedFns.includes('class-setting')) {
+                    selectedFns.push('class-setting');
+                  }
+
                   const addedTabIds = new Set<string>();
 
                   // === 1. DASHBOARD — Always first ===
@@ -924,6 +934,23 @@ export default function GroupHome({ group: initialGroup, isModal }: { group: Gro
                           key: mapping.key,
                           icon: mapping.icon,
                           locked: mapping.id !== 'about' && !isFullMember,
+                          implemented: mapping.implemented,
+                          type: 'item'
+                        });
+                      }
+                    });
+
+                    // Add missing tabs from selectedFunctions that are not yet in menuOrder
+                    selectedFns.forEach((fnId: string) => {
+                      if (FIXED_IDS.has(fnId)) return;
+                      const mapping = FUNCTION_TAB_MAP[fnId];
+                      if (mapping && !addedTabIds.has(mapping.id)) {
+                        addedTabIds.add(mapping.id);
+                        coreTabs.push({
+                          id: mapping.id,
+                          key: mapping.key,
+                          icon: mapping.icon,
+                          locked: !isFullMember,
                           implemented: mapping.implemented,
                           type: 'item'
                         });
@@ -1050,7 +1077,7 @@ export default function GroupHome({ group: initialGroup, isModal }: { group: Gro
                     <section className="px-6">
                       <div className="bg-orange-50 rounded-xl p-4 border border-orange-200 relative overflow-hidden">
                         <h3 className="font-headline font-bold text-orange-800 mb-3 flex items-center gap-2 text-base">
-                          <span className="material-symbols-outlined text-orange-600">notification_important</span> Action Required
+                          <span className="material-symbols-outlined text-orange-600">notification_important</span> {t('home.actionRequired')}
                         </h3>
                         <div className="flex flex-col gap-2">
                           {adminTodos.map(todo => (
@@ -1062,7 +1089,7 @@ export default function GroupHome({ group: initialGroup, isModal }: { group: Gro
                               <button
                                 onClick={() => { notificationService.markTodosAsCompletedByReference(todo.referenceId || todo.id); toast.success("Task completed"); }}
                                 className="bg-orange-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg shrink-0"
-                              >Done</button>
+                              >{t('home.done')}</button>
                             </div>
                           ))}
                         </div>
@@ -1079,14 +1106,14 @@ export default function GroupHome({ group: initialGroup, isModal }: { group: Gro
                         </div>
                       )}
                       <div className="flex justify-between items-center">
-                        <h4 className="font-body text-[12px] font-medium uppercase tracking-widest text-on-surface-variant">Notice</h4>
+                        <h4 className="font-body text-[12px] font-medium uppercase tracking-widest text-on-surface-variant">{t('home.notice')}</h4>
                         {!isFullMember && <span className="material-symbols-outlined text-[16px] text-outline">lock</span>}
                       </div>
                       <ul className="flex flex-col gap-3">
                         {noticePost ? (
                           <li className="flex flex-col gap-1 border-b border-outline/10 pb-3 last:border-0 last:pb-0">
                             <span className="font-body text-[16px] font-medium text-on-surface font-bold line-clamp-2">
-                              {noticePost.title || noticePost.content?.substring(0, 50) || 'Notice'}
+                              {noticePost.title || noticePost.content?.substring(0, 50) || t('home.notice')}
                             </span>
                             <div className="flex justify-between items-center">
                               <span className="font-body text-[12px] font-medium text-primary">{noticePost.author?.name || 'Admin'}</span>
@@ -1095,7 +1122,7 @@ export default function GroupHome({ group: initialGroup, isModal }: { group: Gro
                           </li>
                         ) : (
                           <li className="flex flex-col gap-1 border-b border-outline/10 pb-3 last:border-0 last:pb-0">
-                            <span className="font-body text-[16px] font-medium text-on-surface font-bold">Welcome to our community!</span>
+                            <span className="font-body text-[16px] font-medium text-on-surface font-bold">{t('home.welcomeCommunity')}</span>
                             <div className="flex justify-between items-center">
                               <span className="font-body text-[12px] font-medium text-primary">Admin</span>
                               <span className="font-body text-[12px] font-medium text-outline">{safeFormat(Date.now(), 'MMM d')}</span>
@@ -1117,8 +1144,8 @@ export default function GroupHome({ group: initialGroup, isModal }: { group: Gro
                           <span className="material-symbols-outlined text-[24px] text-on-primary" style={{ fontVariationSettings: "'FILL' 1" }}>chat</span>
                         </div>
                         <div>
-                          <h3 className="font-headline text-[16px] font-bold text-on-primary">Group Chat</h3>
-                          <p className="font-body text-[13px] text-on-primary/70">0 unread messages</p>
+                          <h3 className="font-headline text-[16px] font-bold text-on-primary">{t('home.groupChat')}</h3>
+                          <p className="font-body text-[13px] text-on-primary/70">{t('home.unreadMessages', { count: 0 })}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -1131,8 +1158,8 @@ export default function GroupHome({ group: initialGroup, isModal }: { group: Gro
                   {/* FEED Section */}
                   <section className="px-6 flex flex-col gap-4">
                     <div className="flex items-center justify-between mb-2">
-                      <h2 className="font-headline text-[18px] leading-[1.4] font-bold text-on-background">Feed</h2>
-                      <span className="font-body text-[12px] font-medium text-primary cursor-pointer flex items-center" onClick={() => handleTabClick('feed')}>VIEW ALL <span className="material-symbols-outlined text-[14px]">chevron_right</span></span>
+                      <h2 className="font-headline text-[18px] leading-[1.4] font-bold text-on-background">{t('home.feed')}</h2>
+                      <span className="font-body text-[12px] font-medium text-primary cursor-pointer flex items-center" onClick={() => handleTabClick('feed')}>{t('home.viewAll')} <span className="material-symbols-outlined text-[14px]">chevron_right</span></span>
                     </div>
                     <div className="flex flex-col gap-3">
                       {recentFeedPosts.length > 0 ? (
@@ -1152,7 +1179,7 @@ export default function GroupHome({ group: initialGroup, isModal }: { group: Gro
                                   <span className="font-body text-[12px] font-medium leading-[1.2] text-outline shrink-0">{safeFormatRelative(post.createdAt)}</span>
                                 </div>
                                 <p className="font-body text-[16px] font-medium text-on-surface-variant italic truncate">
-                                  {isPostNew(post.createdAt) && <span className="inline-block bg-primary text-white text-[10px] font-bold px-1.5 py-0.5 rounded-[4px] mr-1.5 align-middle -translate-y-[1px]">NEW</span>}
+                                  {isPostNew(post.createdAt) && <span className="inline-block bg-primary text-white text-[10px] font-bold px-1.5 py-0.5 rounded-[4px] mr-1.5 align-middle -translate-y-[1px]">{t('home.new')}</span>}
                                   &quot;{post.content || post.title || '...'}&quot;
                                 </p>
                               </div>
@@ -1162,7 +1189,7 @@ export default function GroupHome({ group: initialGroup, isModal }: { group: Gro
                         ))
                       ) : (
                         <div className="bg-surface-container-lowest border border-outline/15 rounded-xl p-4 text-center">
-                          <p className="font-body text-[16px] font-medium text-on-surface-variant">No posts yet</p>
+                          <p className="font-body text-[16px] font-medium text-on-surface-variant">{t('home.noPosts')}</p>
                         </div>
                       )}
                     </div>
@@ -1171,10 +1198,10 @@ export default function GroupHome({ group: initialGroup, isModal }: { group: Gro
                   {/* SCHEDULE Section */}
                   <section className="px-6 flex flex-col gap-4">
                     <div className="flex items-center justify-between mb-2">
-                      <h2 className="font-headline text-[18px] leading-[1.4] font-bold text-on-background">Schedule</h2>
+                      <h2 className="font-headline text-[18px] leading-[1.4] font-bold text-on-background">{t('home.schedule')}</h2>
                       <div className="flex items-center gap-3">
                         {isFullMember ? (
-                          <span className="font-body text-[12px] font-medium text-primary cursor-pointer flex items-center" onClick={() => handleTabClick('calendar')}>VIEW ALL <span className="material-symbols-outlined text-[14px]">chevron_right</span></span>
+                          <span className="font-body text-[12px] font-medium text-primary cursor-pointer flex items-center" onClick={() => handleTabClick('calendar')}>{t('home.viewAll')} <span className="material-symbols-outlined text-[14px]">chevron_right</span></span>
                         ) : (
                           <span className="font-body text-[12px] font-medium text-outline flex items-center cursor-not-allowed opacity-60"><span className="material-symbols-outlined text-[14px] mr-1">lock</span></span>
                         )}
@@ -1197,7 +1224,7 @@ export default function GroupHome({ group: initialGroup, isModal }: { group: Gro
                           return (
                             <div className="bg-surface-container-lowest border border-outline/15 rounded-xl p-6 text-center">
                               <span className="material-symbols-outlined text-outline/30 text-4xl mb-2">calendar_today</span>
-                              <p className="font-body text-[15px] font-medium text-on-surface-variant">No upcoming events scheduled</p>
+                              <p className="font-body text-[15px] font-medium text-on-surface-variant">{t('home.noEvents')}</p>
                             </div>
                           );
                         }
@@ -1271,13 +1298,11 @@ export default function GroupHome({ group: initialGroup, isModal }: { group: Gro
                   {/* MOMENTS Section */}
                   <section className="px-6 flex flex-col gap-4">
                     <div className="flex items-center justify-between mb-2">
-                      <h2 className="font-headline text-[18px] leading-[1.4] font-bold text-on-background">Moments</h2>
-                      <span className="font-body text-[12px] font-medium text-primary cursor-pointer flex items-center" onClick={() => handleTabClick('live')}>VIEW ALL <span className="material-symbols-outlined text-[14px]">chevron_right</span></span>
+                      <h2 className="font-headline text-[18px] leading-[1.4] font-bold text-on-background">{t('group.moments')}</h2>
+                      <span className="font-body text-[12px] font-medium text-primary cursor-pointer flex items-center" onClick={() => handleTabClick('live')}>{t('group.moments.view_all')} <span className="material-symbols-outlined text-[14px]">chevron_right</span></span>
                     </div>
                     <div className="flex flex-col gap-4">
                       {moments.length > 0 ? (
-                        <>
-                          {/* Featured Moment */}
                           <div
                             onClick={() => setSelectedMoment(moments[0])}
                             className="relative w-full aspect-[4/5] rounded-2xl overflow-hidden shrink-0 bg-surface-container cursor-pointer shadow-sm active:scale-[0.98] transition-transform"
@@ -1299,52 +1324,14 @@ export default function GroupHome({ group: initialGroup, isModal }: { group: Gro
                             </div>
                             <div className="absolute top-4 right-4 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full flex items-center gap-1.5">
                               <span className="w-2 h-2 rounded-full bg-error animate-pulse"></span>
-                              <span className="font-body text-[11px] font-bold text-white tracking-widest uppercase">LIVE</span>
+                              <span className="font-body text-[11px] font-bold text-white tracking-widest uppercase">{t('group.moments.live')}</span>
                             </div>
                           </div>
-
-                          {/* Thumbnails Row */}
-                          {moments.length > 1 && (
-                            <div className="grid grid-cols-4 gap-2.5">
-                              {moments.slice(1, 5).map((moment, idx) => (
-                                <div
-                                  key={moment.id || idx}
-                                  onClick={() => setSelectedMoment(moment)}
-                                  className="aspect-square rounded-xl overflow-hidden bg-surface-container cursor-pointer active:scale-[0.95] transition-transform relative border border-outline/5 group"
-                                >
-                                  <ImageWithFallback
-                                    src={moment.media?.[0] || ''}
-                                    alt={moment.caption || "Thumbnail"}
-                                    className="w-full h-full object-cover"
-                                    fallbackType="gallery"
-                                  />
-                                  <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors" />
-                                  {moment.media && moment.media.length > 1 && (
-                                    <div className="absolute top-1.5 right-1.5 bg-black/50 backdrop-blur-md rounded-md p-1 flex items-center justify-center">
-                                      <span className="material-symbols-outlined text-white text-[12px]">filter_none</span>
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
-
-                              {/* More indicator placeholder if there are many moments */}
-                              {moments.length >= 5 && (
-                                <div
-                                  onClick={() => handleTabClick('live')}
-                                  className="aspect-square rounded-xl bg-surface-container-high flex flex-col items-center justify-center gap-1 border border-primary/20 cursor-pointer active:scale-[0.95] transition-all hover:bg-primary/5"
-                                >
-                                  <span className="material-symbols-outlined text-primary text-[20px]">grid_view</span>
-                                  <span className="text-[10px] font-black text-primary tracking-tighter">ALL</span>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </>
                       ) : (
                         <div className="relative w-full aspect-[21/9] rounded-2xl overflow-hidden shrink-0 bg-surface-container flex items-center justify-center border border-outline/10">
                           <div className="flex flex-col items-center gap-2 opacity-50">
                             <span className="material-symbols-outlined text-4xl">photo_camera</span>
-                            <span className="font-body text-sm font-medium">No live moments</span>
+                            <span className="font-body text-sm font-medium">{t('group.moments.no_moments')}</span>
                           </div>
                         </div>
                       )}
@@ -1413,20 +1400,16 @@ export default function GroupHome({ group: initialGroup, isModal }: { group: Gro
 
               {activeTab === 'class' && isFullMember && (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
-                  {!showClassDetail ? (
-                    <GroupClassDashboard 
-                      group={currentGroup} 
-                      onApplyClick={() => setShowClassDetail(true)} 
-                    />
-                  ) : (
-                    <ClassDetail groupId={currentGroup.id} isModal={true} onClose={() => setShowClassDetail(false)} />
-                  )}
+                  <GroupClassDashboard 
+                    group={currentGroup} 
+                    onApplyClick={() => {}} 
+                  />
                 </div>
               )}
 
               {activeTab === 'class-setting' && isAdminUser && (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
-                  <GroupClassEditor group={currentGroup} />
+                  <GroupClassEditor group={currentGroup} isInline={true} />
                 </div>
               )}
 

@@ -5,6 +5,7 @@ import React, { useState, useEffect } from "react";
 import { Group, ClassDiscount } from "@/types/group";
 import { groupService } from "@/lib/firebase/groupService";
 import { v4 as uuidv4 } from "uuid";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface GroupClassDiscountEditorProps {
   group: Group;
@@ -27,6 +28,7 @@ const GroupClassDiscountEditor: React.FC<GroupClassDiscountEditorProps> = ({ gro
     targetMonth: initialData?.targetMonth || targetMonth || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`
   });
 
+  const { t } = useLanguage();
   const isEditMode = !!initialData;
   const currentMonth = formData.targetMonth;
   const classes = (group.classes || []).filter(cls => !cls.targetMonth || cls.targetMonth === currentMonth);
@@ -50,15 +52,15 @@ const GroupClassDiscountEditor: React.FC<GroupClassDiscountEditorProps> = ({ gro
 
   const handleSave = async () => {
     if (!formData.title.trim()) {
-      alert("Please enter a bundle title.");
+      alert(t('discount.enter_title') || "Please enter a bundle title.");
       return;
     }
     if (formData.includedClassIds.length < 2) {
-      alert("Please select at least 2 classes.");
+      alert(t('discount.select_classes_alert') || "Please select at least 2 classes.");
       return;
     }
     if (formData.amount < 0) {
-      alert("Please enter a discount amount.");
+      alert(t('discount.enter_amount') || "Please enter a discount amount.");
       return;
     }
 
@@ -74,7 +76,7 @@ const GroupClassDiscountEditor: React.FC<GroupClassDiscountEditorProps> = ({ gro
       onClose();
     } catch (error) {
       console.error("Failed to save discount:", error);
-      alert("Failed to save the bundle.");
+      alert(t('discount.save_failed') || "Failed to save the bundle.");
     } finally {
       setLoading(false);
     }
@@ -107,7 +109,7 @@ const GroupClassDiscountEditor: React.FC<GroupClassDiscountEditorProps> = ({ gro
         <div className="max-w-md mx-auto w-full flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button onClick={onClose} className="material-symbols-outlined text-[#515981] p-2 hover:bg-[#d6dbff] rounded-full transition-colors active:scale-[0.98]">close</button>
-            <h1 className="text-xl font-extrabold tracking-tight text-[#242c51] font-['Plus_Jakarta_Sans']">{isEditMode ? "Edit Bundle" : "Discount Editor"}</h1>
+            <h1 className="text-xl font-extrabold tracking-tight text-[#242c51] font-['Plus_Jakarta_Sans']">{isEditMode ? (t('discount.edit_bundle') || "Edit Bundle") : (t('discount.add_bundle') || "Discount Editor")}</h1>
           </div>
           <button 
             onClick={handleSave}
@@ -115,7 +117,7 @@ const GroupClassDiscountEditor: React.FC<GroupClassDiscountEditorProps> = ({ gro
             className="bg-[#0057bd] text-white font-bold text-sm px-6 py-2 rounded-lg shadow-sm shadow-[#0057bd]/20 hover:bg-[#0057bd]/90 transition-all active:scale-[0.98] flex items-center gap-2"
           >
             {loading && <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>}
-            Save
+            {t('common.save') || "Save"}
           </button>
         </div>
       </header>
@@ -124,22 +126,22 @@ const GroupClassDiscountEditor: React.FC<GroupClassDiscountEditorProps> = ({ gro
         {/* Basic Info Card */}
         <div className="bg-[#ffffff] p-6 rounded-xl border border-[#6c759e]/20 shadow-sm space-y-5">
           <div>
-            <label className="block text-[10px] font-bold text-[#515981] mb-2 uppercase tracking-widest opacity-70" htmlFor="discount-title">Class Title</label>
+            <label className="block text-[10px] font-bold text-[#515981] mb-2 uppercase tracking-widest opacity-70" htmlFor="discount-title">{t('discount.class_title') || "Class Title"}</label>
             <input 
               id="discount-title"
               className="w-full bg-[#d6dbff]/30 border border-[#6c759e]/30 rounded-lg px-4 py-3 text-[#242c51] focus:ring-2 focus:ring-[#0057bd]/20 focus:border-[#0057bd] placeholder:text-[#515981]/40 outline-none transition-all" 
-              placeholder="Enter discount title" 
+              placeholder={t('discount.title_placeholder') || "Enter discount title"}
               type="text"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
             />
           </div>
           <div>
-            <label className="block text-[10px] font-bold text-[#515981] mb-2 uppercase tracking-widest opacity-70" htmlFor="discount-desc">Description</label>
+            <label className="block text-[10px] font-bold text-[#515981] mb-2 uppercase tracking-widest opacity-70" htmlFor="discount-desc">{t('discount.description') || "Description"}</label>
             <textarea 
               id="discount-desc"
               className="w-full bg-[#d6dbff]/30 border border-[#6c759e]/30 rounded-lg px-4 py-3 text-[#242c51] focus:ring-2 focus:ring-[#0057bd]/20 focus:border-[#0057bd] placeholder:text-[#515981]/40 outline-none resize-none text-sm transition-all" 
-              placeholder="Describe the discount..." 
+              placeholder={t('discount.desc_placeholder') || "Describe the discount..."}
               rows={4}
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -149,10 +151,10 @@ const GroupClassDiscountEditor: React.FC<GroupClassDiscountEditorProps> = ({ gro
 
         {/* Pricing & Discount Details Card */}
         <div className="bg-[#ffffff] p-6 rounded-xl border border-[#6c759e]/20 shadow-sm space-y-5">
-          <h2 className="text-sm font-extrabold font-['Plus_Jakarta_Sans'] text-[#242c51] uppercase tracking-widest mb-4">Pricing</h2>
+          <h2 className="text-sm font-extrabold font-['Plus_Jakarta_Sans'] text-[#242c51] uppercase tracking-widest mb-4">{t('discount.pricing') || "Pricing"}</h2>
           <div className="space-y-4">
             <div>
-              <label className="block text-[10px] font-bold text-[#515981] mb-2 uppercase tracking-widest opacity-70">Currency</label>
+              <label className="block text-[10px] font-bold text-[#515981] mb-2 uppercase tracking-widest opacity-70">{t('discount.currency') || "Currency"}</label>
               <div className="relative">
                 <select 
                   className="w-full bg-[#d6dbff]/30 border border-[#6c759e]/30 rounded-lg px-4 py-3 text-[#242c51] focus:ring-2 focus:ring-[#0057bd]/20 focus:border-[#0057bd] appearance-none outline-none transition-all text-sm"
@@ -168,7 +170,7 @@ const GroupClassDiscountEditor: React.FC<GroupClassDiscountEditorProps> = ({ gro
               </div>
             </div>
             <div>
-              <label className="block text-[10px] font-bold text-[#515981] mb-2 uppercase tracking-widest opacity-70">Amount</label>
+              <label className="block text-[10px] font-bold text-[#515981] mb-2 uppercase tracking-widest opacity-70">{t('discount.amount') || "Amount"}</label>
               <div className="relative">
                 <span className="absolute left-4 top-3.5 text-[#515981] font-bold text-sm">
                   {formData.currency === 'KRW' ? '₩' : formData.currency === 'USD' ? '$' : formData.currency === 'EUR' ? '€' : formData.currency === 'JPY' ? '¥' : '₩'}
@@ -187,11 +189,11 @@ const GroupClassDiscountEditor: React.FC<GroupClassDiscountEditorProps> = ({ gro
             </div>
           </div>
           <div className="mt-5">
-            <label className="block text-[10px] font-bold text-[#515981] mb-2 uppercase tracking-widest opacity-70" htmlFor="discount-details">Discount Description</label>
+            <label className="block text-[10px] font-bold text-[#515981] mb-2 uppercase tracking-widest opacity-70" htmlFor="discount-details">{t('discount.discount_description') || "Discount Description"}</label>
             <input 
               id="discount-details"
               className="w-full bg-[#d6dbff]/30 border border-[#6c759e]/30 rounded-lg px-4 py-3 text-[#242c51] focus:ring-2 focus:ring-[#0057bd]/20 focus:border-[#0057bd] placeholder:text-[#515981]/40 outline-none transition-all text-sm" 
-              placeholder="e.g., '20% discount for bundle classes'" 
+              placeholder={t('discount.discount_placeholder') || "e.g., '20% discount for bundle classes'"}
               type="text"
               value={formData.discountDescription}
               onChange={(e) => setFormData({ ...formData, discountDescription: e.target.value })}
@@ -202,12 +204,12 @@ const GroupClassDiscountEditor: React.FC<GroupClassDiscountEditorProps> = ({ gro
         {/* Select Classes Card */}
         <div className="bg-[#ffffff] p-6 rounded-xl border border-[#6c759e]/20 shadow-sm">
           <div className="mb-6">
-            <h2 className="text-sm font-extrabold font-['Plus_Jakarta_Sans'] text-[#242c51] uppercase tracking-widest">Select Classes</h2>
-            <p className="font-['Inter'] text-xs text-[#515981] opacity-70 mt-1">Choose existing classes from this month to include in the bundle.</p>
+            <h2 className="text-sm font-extrabold font-['Plus_Jakarta_Sans'] text-[#242c51] uppercase tracking-widest">{t('discount.select_classes') || "Select Classes"}</h2>
+            <p className="font-['Inter'] text-xs text-[#515981] opacity-70 mt-1">{t('discount.select_classes_desc') || "Choose existing classes from this month to include in the bundle."}</p>
           </div>
           <div className="space-y-3">
             {classes.length === 0 ? (
-              <p className="text-sm text-center py-4 text-[#515981]/60 font-bold">No classes available.</p>
+              <p className="text-sm text-center py-4 text-[#515981]/60 font-bold">{t('discount.no_classes') || "No classes available."}</p>
             ) : (
               classes.map((cls) => {
                 const isSelected = formData.includedClassIds.includes(cls.id);
@@ -227,7 +229,7 @@ const GroupClassDiscountEditor: React.FC<GroupClassDiscountEditorProps> = ({ gro
                       <p className="text-[11px] font-bold text-[#515981] opacity-70 truncate mt-0.5">
                         {cls.schedule && cls.schedule.length > 0 
                           ? `${cls.schedule[0].date} • ${cls.schedule[0].timeSlot}` 
-                          : "No schedule"}
+                          : (t('discount.no_schedule') || "No schedule")}
                       </p>
                     </div>
                   </label>

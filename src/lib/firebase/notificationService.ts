@@ -10,7 +10,8 @@ import {
   where,
   getDocs,
   updateDoc,
-  onSnapshot
+  onSnapshot,
+  writeBatch
 } from 'firebase/firestore';
 import { Notification } from '@/types/notification';
 
@@ -74,6 +75,26 @@ export const notificationService = {
   markAsRead: async (notificationId: string): Promise<void> => {
     const docRef = doc(db, NOTIFICATIONS_COLLECTION, notificationId);
     await updateDoc(docRef, { isRead: true });
+  },
+
+  // 3-1. 다중 읽음 처리 (Batch Update)
+  markMultipleAsRead: async (notificationIds: string[]): Promise<void> => {
+    if (!notificationIds || notificationIds.length === 0) return;
+    
+    // Firestore batch limit is 500, use 400 for safety
+    const chunks = [];
+    for (let i = 0; i < notificationIds.length; i += 400) {
+      chunks.push(notificationIds.slice(i, i + 400));
+    }
+    
+    for (const chunk of chunks) {
+      const batch = writeBatch(db);
+      for (const id of chunk) {
+        const docRef = doc(db, NOTIFICATIONS_COLLECTION, id);
+        batch.update(docRef, { isRead: true });
+      }
+      await batch.commit();
+    }
   },
 
   // 4. Todo 완료 처리 (동기화)

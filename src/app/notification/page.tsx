@@ -79,9 +79,9 @@ export default function NotificationPage() {
   };
 
   const handleMarkAllAsRead = async () => {
-    const unreadIds = filteredNotis.filter(n => !n.isRead).map(n => n.id);
-    for (const id of unreadIds) {
-      await notificationService.markAsRead(id);
+    const unreadIds = notifications.filter(n => !n.isRead).map(n => n.id);
+    if (unreadIds.length > 0) {
+      await notificationService.markMultipleAsRead(unreadIds);
     }
   };
 

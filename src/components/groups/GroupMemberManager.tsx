@@ -466,19 +466,25 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
       {/* Sub-navigation Tabs */}
       <div className="w-full overflow-x-auto scrollbar-hide pb-2 -mb-2">
         <nav className="flex items-center gap-1 bg-[#e4e7ff] p-1 rounded-xl w-max shadow-sm">
-          {['Stats', 'Owner', 'Staff', 'Instructor', 'Member'].map((tab) => (
+          {[
+            { id: 'Stats', label: t('group.stats', 'Stats') },
+            { id: 'Owner', label: t('group.owner', 'Owner') },
+            { id: 'Staff', label: t('group.staff', 'Staff') },
+            { id: 'Instructor', label: t('group.instructor', 'Instructor') },
+            { id: 'Member', label: t('group.member', 'Member') }
+          ].map((tab) => (
             <button
-              key={tab}
+              key={tab.id}
               onClick={() => {
-                setActiveSubTab(tab);
+                setActiveSubTab(tab.id);
                 setPageSize(20);
               }}
-              className={`px-6 py-2.5 text-sm font-semibold transition-colors rounded-lg ${activeSubTab === tab
+              className={`px-6 py-2.5 text-sm font-semibold transition-colors rounded-lg ${activeSubTab === tab.id
                   ? "bg-white text-[#0057bd] shadow-sm"
                   : "text-[#515981] hover:text-[#242c51]"
                 }`}
             >
-              {tab}
+              {tab.label}
             </button>
           ))}
         </nav>
@@ -512,7 +518,7 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
 
       {/* Member List View */}
       {activeSubTab === 'Member' && (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pt-8">
           {/* Header and Filters */}
           <div className="flex flex-col md:flex-row md:items-center justify-end gap-6">
             <div className="flex flex-wrap items-center gap-3">
@@ -521,14 +527,14 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
                 className={`flex items-center gap-2 px-4 py-2 bg-white border rounded-lg text-sm font-medium transition-all ${sortBy === 'joinedAt' ? 'border-[#0057bd] text-[#0057bd]' : 'border-[#a3abd7] hover:border-[#0057bd]'}`}
               >
                 <span className="material-symbols-outlined text-[18px]">calendar_today</span>
-                Recent Joined
+                {t('group.recent_joined', 'Recent Joined')}
               </button>
               <button 
                 onClick={() => setSortBy('lastVisitedAt')}
                 className={`flex items-center gap-2 px-4 py-2 bg-white border rounded-lg text-sm font-medium transition-all ${sortBy === 'lastVisitedAt' ? 'border-[#0057bd] text-[#0057bd]' : 'border-[#a3abd7] hover:border-[#0057bd]'}`}
               >
                 <span className="material-symbols-outlined text-[18px]">history</span>
-                Recent Visit
+                {t('group.recent_visit', 'Recent Visit')}
               </button>
             </div>
           </div>
@@ -559,7 +565,7 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
                 onClick={loadMore}
                 className="flex items-center gap-2 px-8 py-3 bg-[#0057bd] text-[#f0f2ff] font-bold rounded-xl shadow-lg shadow-[#0057bd]/20 hover:translate-y-[-2px] active:scale-95 transition-all"
               >
-                Load More Members
+                {t('group.load_more_members', 'Load More Members')}
                 <span className="material-symbols-outlined">expand_more</span>
               </button>
             </div>
@@ -569,7 +575,7 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
             <div className="flex items-center justify-center py-8">
               <div className="flex items-center gap-3 text-[#a3abd7]">
                 <span className="material-symbols-outlined text-sm">check_circle</span>
-                <span className="text-[10px] font-bold uppercase tracking-widest">You&apos;ve reached the end of the list</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest">{t('group.end_of_list', "You've reached the end of the list")}</span>
               </div>
             </div>
           )}

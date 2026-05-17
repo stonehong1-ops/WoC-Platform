@@ -18,7 +18,7 @@ export default function Header() {
   const { toggleDrawer, openNotiTray } = useNavigation();
   const { user, profile, setShowLogin } = useAuth();
   const { location, toggleSelector } = useLocation();
-  const { unreadCount: notiUnreadCount, todoCount } = useNotification();
+  const { unreadCount: notiUnreadCount } = useNotification();
   const [unreadCount, setUnreadCount] = React.useState(0);
   const { language, toggleLanguage, t } = useLanguage();
 
@@ -81,7 +81,7 @@ export default function Header() {
     }
   }
 
-  const totalNotiCount = notiUnreadCount + todoCount;
+  const totalNotiCount = notiUnreadCount;
 
   return (
     <header className="fixed top-0 w-full z-50 bg-[#FAF8FF] border-b border-slate-100 h-16 px-3 flex items-center justify-between">

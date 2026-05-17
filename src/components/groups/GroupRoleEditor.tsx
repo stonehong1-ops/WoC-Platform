@@ -98,7 +98,7 @@ const GroupRoleEditor: React.FC<GroupRoleEditorProps> = ({ group, onClose }) => 
               <span className="material-symbols-outlined">arrow_back</span>
             </button>
             <div>
-              <h1 className="text-lg font-headline font-black tracking-tight">Role & Permissions</h1>
+              <h1 className="text-lg font-headline font-black tracking-tight">{t('group.role.title') || "Role & Permissions"}</h1>
               <p className="text-xs text-white/40">{t('group.role.settings_desc') || "Manage member roles and staff permissions"}</p>
             </div>
           </div>
@@ -122,7 +122,7 @@ const GroupRoleEditor: React.FC<GroupRoleEditorProps> = ({ group, onClose }) => 
           <div className="lg:col-span-8 space-y-12">
             <section>
               <header className="mb-8">
-                <h2 className="text-3xl font-headline font-black mb-2">Role Definitions</h2>
+                <h2 className="text-3xl font-headline font-black mb-2">{t('group.role.definitions') || "Role Definitions"}</h2>
                 <p className="text-white/60">{t('group.role_desc1')}</p>
               </header>
               
@@ -157,7 +157,7 @@ const GroupRoleEditor: React.FC<GroupRoleEditorProps> = ({ group, onClose }) => 
             <section className="p-8 rounded-3xl bg-white/5 border border-white/10 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-[#0057bd]/10 blur-[60px] rounded-full" />
               <header className="mb-8">
-                <h2 className="text-2xl font-headline font-black mb-2">Staff Permissions</h2>
+                <h2 className="text-2xl font-headline font-black mb-2">{t('group.role.staff_permissions') || "Staff Permissions"}</h2>
                 <p className="text-white/40 text-sm">{t('group.role_desc2')}</p>
               </header>
               
@@ -196,7 +196,7 @@ const GroupRoleEditor: React.FC<GroupRoleEditorProps> = ({ group, onClose }) => 
           <div className="lg:col-span-4 space-y-6">
             <div className="p-8 rounded-3xl bg-white/5 border border-white/10 sticky top-28 backdrop-blur-md">
               <div className="flex items-center justify-between mb-8">
-                <h2 className="text-xl font-headline font-black">Staff List</h2>
+                <h2 className="text-xl font-headline font-black">{t('group.role.staff_list') || 'Staff List'}</h2>
                 <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-[#0057bd] transition-all">
                   <span className="material-symbols-outlined text-sm">person_add</span>
                 </button>
@@ -213,7 +213,7 @@ const GroupRoleEditor: React.FC<GroupRoleEditorProps> = ({ group, onClose }) => 
                     </div>
                     <div className="flex-grow">
                       <h4 className="font-bold text-sm text-white/90">{staff.name}</h4>
-                      <p className="text-[10px] text-white/30 font-bold uppercase tracking-wider">Staff Member</p>
+                      <p className="text-[10px] text-white/30 font-bold uppercase tracking-wider">{t('group.role.staff_member') || 'Staff Member'}</p>
                     </div>
                     <button className="opacity-0 group-hover:opacity-100 w-8 h-8 flex items-center justify-center text-red-400 hover:bg-red-500/10 rounded-lg transition-all">
                       <span className="material-symbols-outlined text-sm">person_remove</span>

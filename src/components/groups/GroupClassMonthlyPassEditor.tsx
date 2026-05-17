@@ -5,6 +5,7 @@ import React, { useState, useEffect } from "react";
 import { Group, MonthlyPass } from "@/types/group";
 import { groupService } from "@/lib/firebase/groupService";
 import { v4 as uuidv4 } from "uuid";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface GroupClassMonthlyPassEditorProps {
   group: Group;
@@ -21,6 +22,7 @@ const GroupClassMonthlyPassEditor: React.FC<GroupClassMonthlyPassEditorProps> = 
   onSave,
   targetMonth
 }) => {
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<MonthlyPass>({
     id: initialData?.id || uuidv4(),
@@ -55,11 +57,11 @@ const GroupClassMonthlyPassEditor: React.FC<GroupClassMonthlyPassEditorProps> = 
 
   const handleSave = async () => {
     if (!formData.title) {
-      alert("Please enter a title for the monthly pass.");
+      alert(t('pass.alert_title_req') || "Please enter a title for the monthly pass.");
       return;
     }
     if (formData.includedClassIds.length === 0) {
-      alert("Please select at least one class.");
+      alert(t('pass.alert_class_req') || "Please select at least one class.");
       return;
     }
 
@@ -75,7 +77,7 @@ const GroupClassMonthlyPassEditor: React.FC<GroupClassMonthlyPassEditorProps> = 
       onClose();
     } catch (error) {
       console.error("Failed to save monthly pass:", error);
-      alert("Failed to save the monthly pass.");
+      alert(t('pass.alert_save_fail') || "Failed to save the monthly pass.");
     } finally {
       setLoading(false);
     }
@@ -100,7 +102,7 @@ const GroupClassMonthlyPassEditor: React.FC<GroupClassMonthlyPassEditorProps> = 
               </button>
               {/* Headline */}
               <h1 className="text-xl font-extrabold tracking-tight text-on-surface headline">
-                {isEditMode ? "Edit Monthly Pass" : "Monthly Pass Editor"}
+                {isEditMode ? t('pass.edit_title') || "Edit Monthly Pass" : t('pass.create_title') || "Monthly Pass Editor"}
               </h1>
             </div>
             {/* Trailing Action */}
@@ -112,10 +114,10 @@ const GroupClassMonthlyPassEditor: React.FC<GroupClassMonthlyPassEditorProps> = 
               {loading ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>Saving...</span>
+                  <span>{t('pass.saving_status') || "Saving..."}</span>
                 </>
               ) : (
-                "Save"
+                t('pass.save_button') || "Save"
               )}
             </button>
           </div>
@@ -127,11 +129,11 @@ const GroupClassMonthlyPassEditor: React.FC<GroupClassMonthlyPassEditorProps> = 
           <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline/20 shadow-sm space-y-5">
             {/* Class Title */}
             <div>
-              <label className="block text-[10px] font-bold text-on-surface-variant mb-2 uppercase tracking-widest opacity-70" htmlFor="discount-title">Class Title</label>
+              <label className="block text-[10px] font-bold text-on-surface-variant mb-2 uppercase tracking-widest opacity-70" htmlFor="discount-title">{t('pass.title_label') || "Class Title"}</label>
               <input 
                 className="w-full bg-surface-variant/30 border border-outline/30 rounded-lg px-4 py-3 text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary placeholder:text-on-surface-variant/40 outline-none transition-all" 
                 id="discount-title" 
-                placeholder="Enter pass title" 
+                placeholder={t('pass.title_placeholder') || "Enter pass title"} 
                 type="text" 
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
@@ -139,11 +141,11 @@ const GroupClassMonthlyPassEditor: React.FC<GroupClassMonthlyPassEditorProps> = 
             </div>
             {/* Description */}
             <div>
-              <label className="block text-[10px] font-bold text-on-surface-variant mb-2 uppercase tracking-widest opacity-70" htmlFor="discount-desc">Description</label>
+              <label className="block text-[10px] font-bold text-on-surface-variant mb-2 uppercase tracking-widest opacity-70" htmlFor="discount-desc">{t('pass.desc_label') || "Description"}</label>
               <textarea 
                 className="w-full bg-surface-variant/30 border border-outline/30 rounded-lg px-4 py-3 text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary placeholder:text-on-surface-variant/40 outline-none resize-none text-sm transition-all" 
                 id="discount-desc" 
-                placeholder="Describe the pass..." 
+                placeholder={t('pass.desc_placeholder') || "Describe the pass..."} 
                 rows={4}
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -153,11 +155,11 @@ const GroupClassMonthlyPassEditor: React.FC<GroupClassMonthlyPassEditorProps> = 
 
           {/* Pricing & Discount Details Card */}
           <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline/20 shadow-sm space-y-5">
-            <h2 className="text-sm font-extrabold headline text-on-surface uppercase tracking-widest mb-4">Pricing</h2>
+            <h2 className="text-sm font-extrabold headline text-on-surface uppercase tracking-widest mb-4">{t('pass.pricing_title') || "Pricing"}</h2>
             <div className="space-y-4">
               {/* Currency */}
               <div>
-                <label className="block text-[10px] font-bold text-on-surface-variant mb-2 uppercase tracking-widest opacity-70">Currency</label>
+                <label className="block text-[10px] font-bold text-on-surface-variant mb-2 uppercase tracking-widest opacity-70">{t('pass.currency_label') || "Currency"}</label>
                 <div className="relative">
                   <select 
                     className="w-full bg-surface-variant/30 border border-outline/30 rounded-lg px-4 py-3 text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary appearance-none outline-none transition-all text-sm"
@@ -174,7 +176,7 @@ const GroupClassMonthlyPassEditor: React.FC<GroupClassMonthlyPassEditorProps> = 
               </div>
               {/* Amount */}
               <div>
-                <label className="block text-[10px] font-bold text-on-surface-variant mb-2 uppercase tracking-widest opacity-70">Amount</label>
+                <label className="block text-[10px] font-bold text-on-surface-variant mb-2 uppercase tracking-widest opacity-70">{t('pass.amount_label') || "Amount"}</label>
                 <div className="relative">
                   <span className="absolute left-4 top-3.5 text-on-surface-variant font-bold text-sm">
                     {formData.currency === 'KRW' ? '₩' : formData.currency === 'USD' ? '$' : formData.currency === 'EUR' ? '€' : formData.currency === 'JPY' ? '¥' : '₩'}
@@ -195,13 +197,13 @@ const GroupClassMonthlyPassEditor: React.FC<GroupClassMonthlyPassEditorProps> = 
             
             {/* Discount Description */}
             <div className="mt-5">
-              <label className="block text-[10px] font-bold text-on-surface-variant mb-2 uppercase tracking-widest opacity-70">Discount Rule</label>
+              <label className="block text-[10px] font-bold text-on-surface-variant mb-2 uppercase tracking-widest opacity-70">{t('pass.rule_label') || "Discount Rule"}</label>
               <textarea 
                 className="w-full bg-surface-variant/20 border border-outline/30 rounded-lg px-4 py-3 text-on-surface/60 text-sm outline-none resize-none cursor-not-allowed" 
                 disabled 
                 id="discount-rule-display" 
                 readOnly
-                value="Allows attendance to all selected classes below"
+                value={t('pass.rule_display') || "Allows attendance to all selected classes below"}
               />
             </div>
           </div>
@@ -210,8 +212,8 @@ const GroupClassMonthlyPassEditor: React.FC<GroupClassMonthlyPassEditorProps> = 
           <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline/20 shadow-sm">
             <div className="mb-6 flex items-center justify-between">
               <div>
-                <h2 className="text-sm font-extrabold headline text-on-surface uppercase tracking-widest">Select Classes</h2>
-                <p className="font-body text-xs text-on-surface-variant opacity-70 mt-1">Choose existing classes from this month to include in the pass.</p>
+                <h2 className="text-sm font-extrabold headline text-on-surface uppercase tracking-widest">{t('pass.select_classes_title') || "Select Classes"}</h2>
+                <p className="font-body text-xs text-on-surface-variant opacity-70 mt-1">{t('pass.select_classes_desc') || "Choose existing classes from this month to include in the pass."}</p>
               </div>
             </div>
             
@@ -220,7 +222,7 @@ const GroupClassMonthlyPassEditor: React.FC<GroupClassMonthlyPassEditorProps> = 
               {classes.length === 0 ? (
                 <div className="p-8 text-center bg-surface-variant/20 rounded-xl border border-outline/20">
                   <span className="material-symbols-outlined text-outline/50 text-3xl mb-2">event_busy</span>
-                  <p className="text-sm font-bold text-on-surface-variant">No classes available</p>
+                  <p className="text-sm font-bold text-on-surface-variant">{t('pass.no_classes') || "No classes available"}</p>
                 </div>
               ) : (
                 classes.map((cls) => {

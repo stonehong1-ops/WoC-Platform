@@ -365,7 +365,7 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
                 value={formData.title}
                 onChange={e => setFormData({...formData, title: e.target.value})}
                 className="w-full bg-surface-variant/30 border border-outline/30 rounded-lg px-4 py-3 text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary placeholder:text-on-surface-variant/40 outline-none transition-all" 
-                placeholder="e.g. Advanced Contemporary Dance" 
+                placeholder={t('class.title_placeholder') || "e.g. Advanced Contemporary Dance"} 
                 type="text"
               />
             </div>
@@ -375,7 +375,7 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
                 value={formData.description}
                 onChange={e => setFormData({...formData, description: e.target.value})}
                 className="w-full bg-surface-variant/30 border border-outline/30 rounded-lg px-4 py-3 text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary placeholder:text-on-surface-variant/40 outline-none resize-none text-sm transition-all" 
-                placeholder="Provide class syllabus and student expectations..." 
+                placeholder={t('class.desc_placeholder') || "Provide class syllabus and student expectations..."} 
                 rows={4}
               ></textarea>
               <div className="mt-2 flex justify-end">
@@ -394,11 +394,11 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
                   onChange={e => setFormData({...formData, level: e.target.value as any})}
                   className="w-full bg-surface-variant/30 border border-outline/30 rounded-lg px-4 py-3 text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary appearance-none outline-none transition-all"
                 >
-                  <option value="Basic">Basic</option>
-                  <option value="Intermediate">Intermediate</option>
-                  <option value="Advanced">Advanced</option>
-                  <option value="Very-Advanced">Very-Advanced</option>
-                  <option value="Masterclass">Masterclass</option>
+                  <option value="Basic">{t('class.level_basic') || "Basic"}</option>
+                  <option value="Intermediate">{t('class.level_intermediate') || "Intermediate"}</option>
+                  <option value="Advanced">{t('class.level_advanced') || "Advanced"}</option>
+                  <option value="Very-Advanced">{t('class.level_very_advanced') || "Very-Advanced"}</option>
+                  <option value="Masterclass">{t('class.level_masterclass') || "Masterclass"}</option>
                 </select>
                 <span className="material-symbols-outlined absolute right-3 top-3 pointer-events-none text-on-surface-variant">expand_more</span>
               </div>
@@ -412,11 +412,11 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
                   onChange={e => setFormData({...formData, classType: e.target.value})}
                   className="w-full bg-surface-variant/30 border border-outline/30 rounded-lg px-4 py-3 text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary appearance-none outline-none transition-all"
                 >
-                  <option value="Change Class">Change Class</option>
-                  <option value="Partner Class">Partner Class</option>
-                  <option value="Partner Class with Change">Partner Class with Change</option>
-                  <option value="Training">Training</option>
-                  <option value="special">Special Event</option>
+                  <option value="Change Class">{t('class.type_change_class') || "Change Class"}</option>
+                  <option value="Partner Class">{t('class.type_partner_class') || "Partner Class"}</option>
+                  <option value="Partner Class with Change">{t('class.type_partner_class_with_change') || "Partner Class with Change"}</option>
+                  <option value="Training">{t('class.type_training') || "Training"}</option>
+                  <option value="special">{t('class.type_special_event') || "Special Event"}</option>
                 </select>
                 <span className="material-symbols-outlined absolute right-3 top-3 pointer-events-none text-on-surface-variant">expand_more</span>
               </div>
@@ -465,7 +465,7 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
                 value={(formData as any).locationMemo || ''}
                 onChange={e => setFormData({...formData, locationMemo: e.target.value} as any)}
                 className="w-full bg-surface-variant/30 border border-outline/30 rounded-lg px-4 py-3 text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary placeholder:text-on-surface-variant/40 outline-none transition-all text-sm" 
-                placeholder="Enter address or specific location details" 
+                placeholder={t('class.venue_memo_placeholder') || "Enter address or specific location details"} 
                 type="text"
               />
             </div>
@@ -476,23 +476,23 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
             <h2 className="text-sm font-extrabold headline text-on-surface uppercase tracking-widest mb-4">{t('class.price_label')}</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-[10px] font-bold text-on-surface-variant mb-2 uppercase tracking-widest opacity-70">Currency</label>
+                <label className="block text-[10px] font-bold text-on-surface-variant mb-2 uppercase tracking-widest opacity-70">{t('class.currency_label') || "Currency"}</label>
                 <div className="relative">
                   <select 
                     value={formData.currency}
                     onChange={e => setFormData({...formData, currency: e.target.value})}
                     className="w-full bg-surface-variant/30 border border-outline/30 rounded-lg px-4 py-3 text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary appearance-none outline-none transition-all text-sm"
                   >
-                    <option value="KRW">KRW - South Korean Won</option>
-                    <option value="USD">USD - US Dollar</option>
-                    <option value="EUR">EUR - Euro</option>
-                    <option value="JPY">JPY - Japanese Yen</option>
+                    <option value="KRW">{t('class.currency_krw') || "KRW - South Korean Won"}</option>
+                    <option value="USD">{t('class.currency_usd') || "USD - US Dollar"}</option>
+                    <option value="EUR">{t('class.currency_eur') || "EUR - Euro"}</option>
+                    <option value="JPY">{t('class.currency_jpy') || "JPY - Japanese Yen"}</option>
                   </select>
                   <span className="material-symbols-outlined absolute right-3 top-3 pointer-events-none text-on-surface-variant">expand_more</span>
                 </div>
               </div>
               <div>
-                <label className="block text-[10px] font-bold text-on-surface-variant mb-2 uppercase tracking-widest opacity-70">Amount</label>
+                <label className="block text-[10px] font-bold text-on-surface-variant mb-2 uppercase tracking-widest opacity-70">{t('class.amount_label') || "Amount"}</label>
                 <div className="relative">
                   <span className="absolute left-4 top-3.5 text-on-surface-variant font-bold text-sm">
                     {formData.currency === 'KRW' ? '₩' : formData.currency === 'USD' ? '$' : formData.currency === 'EUR' ? '€' : formData.currency === 'JPY' ? '¥' : '₩'}
@@ -530,7 +530,7 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
             </div>
             <div className={`grid grid-cols-2 gap-4 ${!capacityEnabled ? 'opacity-50 pointer-events-none' : ''}`}>
               <div>
-                <label className="block text-[10px] font-bold text-on-surface-variant mb-2 uppercase tracking-widest opacity-70">Male</label>
+                <label className="block text-[10px] font-bold text-on-surface-variant mb-2 uppercase tracking-widest opacity-70">{t('class.capacity_male') || "Male"}</label>
                 <div className="relative">
                   <input 
                     value={formData.leaderCount || ''}
@@ -543,7 +543,7 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
                 </div>
               </div>
               <div>
-                <label className="block text-[10px] font-bold text-on-surface-variant mb-2 uppercase tracking-widest opacity-70">Female</label>
+                <label className="block text-[10px] font-bold text-on-surface-variant mb-2 uppercase tracking-widest opacity-70">{t('class.capacity_female') || "Female"}</label>
                 <div className="relative">
                   <input 
                     value={formData.followerCount || ''}
@@ -572,7 +572,7 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
                     onFocus={() => instructorSearchName.length >= 1 && setShowInstructorResults(instructorResults.length > 0)}
                     onBlur={() => setTimeout(() => setShowInstructorResults(false), 200)}
                     className="w-full pl-12 pr-4 py-3 bg-surface-variant/30 border border-outline/30 rounded-lg text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm"
-                    placeholder="Search instructors..."
+                    placeholder={t('class.instructor_search_placeholder') || "Search instructors..."}
                     type="text"
                   />
                 </div>
@@ -629,7 +629,7 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
                   <div className="space-y-4">
                     <div className="flex justify-between items-end">
                       <div className="flex-1">
-                        <label className="block text-[10px] font-bold text-on-surface-variant mb-1 uppercase opacity-70">Date (Week {entry.week})</label>
+                        <label className="block text-[10px] font-bold text-on-surface-variant mb-1 uppercase opacity-70">{t('class.date_week_label')?.replace('{week}', String(entry.week)) || `Date (Week ${entry.week})`}</label>
                         <input 
                           value={entry.date}
                           onChange={e => updateSchedule(index, 'date', e.target.value)}
@@ -642,7 +642,7 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
                       )}
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-on-surface-variant mb-1 uppercase opacity-70">Time</label>
+                      <label className="block text-[10px] font-bold text-on-surface-variant mb-1 uppercase opacity-70">{t('class.time_label') || "Time"}</label>
                       <div className="flex items-center gap-2">
                         <input 
                           value={entry.timeSlot ? entry.timeSlot.split(' - ')[0] : "19:00"}
@@ -666,12 +666,12 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
                       </div>
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-on-surface-variant mb-1 uppercase opacity-70">Lesson Content</label>
+                      <label className="block text-[10px] font-bold text-on-surface-variant mb-1 uppercase opacity-70">{t('class.lesson_content_label') || "Lesson Content"}</label>
                       <textarea 
                         value={entry.content}
                         onChange={e => updateSchedule(index, 'content', e.target.value)}
                         className="w-full bg-surface-container-lowest border border-outline/30 rounded-lg px-4 py-2.5 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 outline-none resize-none" 
-                        placeholder="e.g. Fundamental movements and warm-up routine..." 
+                        placeholder={t('class.lesson_content_placeholder') || "e.g. Fundamental movements and warm-up routine..."} 
                         rows={2}
                       ></textarea>
                     </div>
@@ -696,7 +696,7 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
               </div>
               <button onClick={handleAddWeeks} className="flex-1 sm:flex-none flex justify-center items-center gap-1.5 bg-primary text-white font-bold text-sm px-6 py-2.5 rounded-lg shadow-sm shadow-primary/20 hover:bg-primary/90 transition-all active-scale">
                 <span className="material-symbols-outlined text-base">add</span>
-                Add weeks
+                {t('class.add_weeks') || "Add weeks"}
               </button>
             </div>
             )}

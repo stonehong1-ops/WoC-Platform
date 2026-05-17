@@ -82,7 +82,7 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
   const lastSentVisibility = React.useRef<boolean | null>(null);
 
 
-  const { unreadCount: notiUnreadCount, todoCount } = useNotification();
+  const { unreadCount: notiUnreadCount } = useNotification();
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
@@ -93,7 +93,7 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
     return () => unsub();
   }, [user]);
 
-  const totalNotiCount = notiUnreadCount + todoCount;
+  const totalNotiCount = notiUnreadCount;
 
   useEffect(() => {
     let ticking = false;

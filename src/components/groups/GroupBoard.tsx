@@ -91,7 +91,7 @@ const GroupBoard = ({ group, isAdmin = false }: GroupBoardProps) => {
       {/* Header & Categories */}
       <div className="px-4 pt-4 mb-4 border-b border-slate-200 bg-white sticky top-0 z-10 shadow-sm">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-[#242c51] tracking-tight">{t('group.tab.notice') || 'Notice Board'}</h2>
+          <h2 className="text-xl font-bold text-[#242c51] tracking-tight">{t('group.board.title') || 'Notice Board'}</h2>
           <div className="flex items-center gap-2">
             {isAdmin && (
               <button 

@@ -9,14 +9,12 @@ import { Notification } from '@/types/notification';
 interface NotificationContextType {
   notifications: Notification[];
   unreadCount: number;
-  todoCount: number;
   loading: boolean;
 }
 
 const NotificationContext = createContext<NotificationContextType>({
   notifications: [],
   unreadCount: 0,
-  todoCount: 0,
   loading: true,
 });
 
@@ -57,13 +55,9 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
   }, [user]);
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
-  // Todo count is specifically those that are baseType TODO and not completed
-  const todoCount = notifications.filter(n => 
-    (n.baseType === 'TODO' || n.type === 'GROUP_INVITE') && !n.isCompleted
-  ).length;
 
   return (
-    <NotificationContext.Provider value={{ notifications, unreadCount, todoCount, loading }}>
+    <NotificationContext.Provider value={{ notifications, unreadCount, loading }}>
       {children}
     </NotificationContext.Provider>
   );

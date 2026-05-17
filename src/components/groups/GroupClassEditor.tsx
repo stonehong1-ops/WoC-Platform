@@ -20,6 +20,7 @@ interface GroupClassEditorProps {
   group: Group;
   onSave?: () => void;
   onClose?: () => void;
+  isInline?: boolean;
 }
 
 type EditorType = 'add-class' | 'discount' | 'monthly-pass' | 'payment';
@@ -29,7 +30,7 @@ interface EditingState {
   data: any;
 }
 
-const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onClose }) => {
+const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onClose, isInline }) => {
   const { t } = useLanguage();
   const router = useRouter();
   const [editingState, setEditingState] = useState<EditingState | null>(null);
@@ -225,24 +226,29 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
-      className="fixed inset-0 z-[100] antialiased text-gray-900 bg-[#F3F4F6] flex flex-col overflow-y-auto no-scrollbar font-['Plus_Jakarta_Sans'] pb-20"
+      className={isInline 
+        ? "w-full antialiased flex flex-col font-['Plus_Jakarta_Sans']" 
+        : "fixed inset-0 z-[100] antialiased text-gray-900 bg-[#F3F4F6] flex flex-col overflow-y-auto no-scrollbar font-['Plus_Jakarta_Sans'] pb-20"
+      }
     >
       {/* Top Bar */}
-      <header className="sticky top-0 z-50 bg-[#F3F4F6]/80 backdrop-blur-xl border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between w-full">
-          <div className="flex items-center gap-4">
-            <button 
-              onClick={onClose}
-              className="w-10 h-10 rounded-full flex items-center justify-center text-[#0057bd] hover:bg-[#0057bd]/5 transition-all"
-            >
-              <span className="material-symbols-outlined text-[#0057bd]">arrow_back</span>
-            </button>
-            <h1 className="text-base font-bold text-gray-900">{t('group.class.management') || "Class Management"}</h1>
+      {!isInline && (
+        <header className="sticky top-0 z-50 bg-[#F3F4F6]/80 backdrop-blur-xl border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between w-full">
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={onClose}
+                className="w-10 h-10 rounded-full flex items-center justify-center text-[#0057bd] hover:bg-[#0057bd]/5 transition-all"
+              >
+                <span className="material-symbols-outlined text-[#0057bd]">arrow_back</span>
+              </button>
+              <h1 className="text-base font-bold text-gray-900">{t('group.class.management') || "Class Management"}</h1>
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
+      )}
 
-      <main className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1">
+      <main className={`max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 ${isInline ? 'py-4' : 'py-8'} flex-1`}>
         {/* Month Navigation & Visibility */}
         <section className="mb-6 bg-white rounded-[16px] shadow-sm border border-gray-100 overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50/50">
@@ -307,22 +313,25 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
         <section className="mb-8 flex justify-between gap-3">
           <button
             onClick={() => setEditingState({ type: 'add-class', data: null })}
-            className="flex-1 flex flex-col items-center justify-center gap-1 px-2 py-3 bg-[#0057bd] text-white rounded-[12px] shadow-sm hover:bg-blue-700 transition-colors active:scale-95"
+            className="flex-1 flex flex-col items-center justify-center gap-1 px-2 py-3 bg-[#0057bd] text-white rounded-[12px] shadow-sm hover:bg-blue-700 transition-colors active:scale-95 relative"
           >
+            <div className="absolute top-2 right-2 w-5 h-5 bg-white/20 rounded-full flex items-center justify-center text-[10px] font-bold">{filteredClasses.length}</div>
             <span className="material-symbols-outlined text-xl">school</span>
             <span className="text-xs font-bold leading-tight text-center">{t('group.class.class') || "Class"}</span>
           </button>
           <button
             onClick={() => setEditingState({ type: 'discount', data: null })}
-            className="flex-1 flex flex-col items-center justify-center gap-1 px-2 py-3 bg-white text-gray-700 rounded-[12px] border border-gray-100 shadow-sm hover:bg-gray-50 transition-colors active:scale-95"
+            className="flex-1 flex flex-col items-center justify-center gap-1 px-2 py-3 bg-white text-gray-700 rounded-[12px] border border-gray-100 shadow-sm hover:bg-gray-50 transition-colors active:scale-95 relative"
           >
+            <div className="absolute top-2 right-2 w-5 h-5 bg-gray-100 rounded-full flex items-center justify-center text-[10px] font-bold text-gray-500">{filteredDiscounts.length}</div>
             <span className="material-symbols-outlined text-xl">sell</span>
             <span className="text-xs font-bold leading-tight text-center" dangerouslySetInnerHTML={{ __html: t('group.class.bundle_discount') || "Bundle<br />discount" }} />
           </button>
           <button
             onClick={() => setEditingState({ type: 'monthly-pass', data: null })}
-            className="flex-1 flex flex-col items-center justify-center gap-1 px-2 py-3 bg-white text-gray-700 rounded-[12px] border border-gray-100 shadow-sm hover:bg-gray-50 transition-colors active:scale-95"
+            className="flex-1 flex flex-col items-center justify-center gap-1 px-2 py-3 bg-white text-gray-700 rounded-[12px] border border-gray-100 shadow-sm hover:bg-gray-50 transition-colors active:scale-95 relative"
           >
+            <div className="absolute top-2 right-2 w-5 h-5 bg-gray-100 rounded-full flex items-center justify-center text-[10px] font-bold text-gray-500">{filteredPasses.length}</div>
             <span className="material-symbols-outlined text-xl">confirmation_number</span>
             <span className="text-xs font-bold leading-tight text-center" dangerouslySetInnerHTML={{ __html: t('group.class.monthly_pass_br') || "Monthly<br />Pass" }} />
           </button>

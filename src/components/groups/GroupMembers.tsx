@@ -176,17 +176,17 @@ export default function GroupMembers({ members, memberCount, onMemberClick, onCl
             <div className="flex items-center gap-1.5 flex-wrap">
               {user.isAdmin && (
                 <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-red-100 text-red-700">
-                  Owner
+                  {t('group.members.role.owner')}
                 </span>
               )}
               {user.isStaff && !user.isAdmin && (
                 <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-100 text-blue-700">
-                  Staff
+                  {t('group.members.role.staff')}
                 </span>
               )}
               {user.isInstructor && (
                 <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-purple-100 text-purple-700">
-                  Instructor
+                  {t('group.members.role.instructor')}
                 </span>
               )}
             </div>
@@ -196,20 +196,20 @@ export default function GroupMembers({ members, memberCount, onMemberClick, onCl
           {isViewerAdmin && (
             <>
               <div>
-                <p className="text-[10px] uppercase font-bold text-[#6c759e] tracking-wider mb-0.5">Join Date</p>
+                <p className="text-[10px] uppercase font-bold text-[#6c759e] tracking-wider mb-0.5">{t('group.members.joinDate')}</p>
                 <p className="text-sm font-medium">{member.joinedAt ? formatDate(getMillis(member.joinedAt), 'dateOnly') : '-'}</p>
               </div>
               <div>
-                <p className="text-[10px] uppercase font-bold text-[#6c759e] tracking-wider mb-0.5">Last Visit</p>
+                <p className="text-[10px] uppercase font-bold text-[#6c759e] tracking-wider mb-0.5">{t('group.members.lastVisit')}</p>
                 <p className="text-sm font-medium">{getLastVisitText(member)}</p>
               </div>
             </>
           )}
           <div className="col-span-2">
-            <p className="text-[10px] uppercase font-bold text-[#6c759e] tracking-wider mb-1">Dance Role</p>
+            <p className="text-[10px] uppercase font-bold text-[#6c759e] tracking-wider mb-1">{t('group.members.danceRole')}</p>
             <div className="flex items-center gap-2">
               <span className={`text-xl font-extrabold ${isLeader ? 'text-[#0057bd]' : isFollower ? 'text-[#893c92]' : 'text-[#515981]'}`}>
-                {effectiveRole ? effectiveRole.charAt(0).toUpperCase() + effectiveRole.slice(1) : 'Not Set'}
+                {effectiveRole ? effectiveRole.charAt(0).toUpperCase() + effectiveRole.slice(1) : t('group.members.notSet')}
               </span>
             </div>
           </div>
@@ -235,7 +235,7 @@ export default function GroupMembers({ members, memberCount, onMemberClick, onCl
                   : "text-[#515981] hover:text-[#242c51]"
                 }`}
             >
-              {tab}
+              {t(`group.members.role.${tab.toLowerCase()}`)}
             </button>
           ))}
         </nav>
@@ -247,7 +247,7 @@ export default function GroupMembers({ members, memberCount, onMemberClick, onCl
           <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#a3abd7]">search</span>
           <input
             type="text"
-            placeholder="Search members..."
+            placeholder={t('group.members.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-11 pr-10 py-2.5 rounded-xl bg-white border border-[#e4e7ff] text-[#242c51] placeholder-[#a3abd7] focus:outline-none focus:border-[#0057bd] focus:shadow-[0_0_0_4px_rgba(0,87,189,0.1)] transition-all font-medium text-sm"
@@ -292,7 +292,7 @@ export default function GroupMembers({ members, memberCount, onMemberClick, onCl
             onClick={loadMore}
             className="flex items-center gap-2 px-8 py-3 bg-[#0057bd] text-[#f0f2ff] font-bold rounded-xl shadow-lg shadow-[#0057bd]/20 hover:translate-y-[-2px] active:scale-95 transition-all"
           >
-            Load More Members
+            {t('group.members.loadMore')}
             <span className="material-symbols-outlined">expand_more</span>
           </button>
         </div>
@@ -302,7 +302,7 @@ export default function GroupMembers({ members, memberCount, onMemberClick, onCl
         <div className="flex items-center justify-center py-8">
           <div className="flex items-center gap-3 text-[#a3abd7]">
             <span className="material-symbols-outlined text-sm">check_circle</span>
-            <span className="text-[10px] font-bold uppercase tracking-widest">You&apos;ve reached the end of the list</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest">{t('group.members.endOfList')}</span>
           </div>
         </div>
       )}

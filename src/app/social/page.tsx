@@ -370,8 +370,8 @@ function SocialContent() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
               className={`flex-shrink-0 px-2.5 py-1 rounded-xl text-[12px] font-bold tracking-tight transition-all whitespace-nowrap border ${activeTab === tab.id
-                  ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-100'
-                  : 'bg-slate-50/50 text-slate-500 border-slate-100 hover:bg-slate-100/80'
+                ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-100'
+                : 'bg-slate-50/50 text-slate-500 border-slate-100 hover:bg-slate-100/80'
                 }`}
             >
               {tab.label}
@@ -508,13 +508,13 @@ function SocialContent() {
                       key={i}
                       onClick={() => setActiveDayOffset(i)}
                       className={`flex flex-col items-center justify-center py-2 rounded-xl transition-all border ${isSelected
-                          ? 'bg-slate-900 text-white border-slate-900 shadow-sm shadow-slate-200'
-                          : 'bg-transparent border-transparent hover:bg-slate-50 text-slate-500'
+                        ? 'bg-slate-900 text-white border-slate-900 shadow-sm shadow-slate-200'
+                        : 'bg-transparent border-transparent hover:bg-slate-50 text-slate-500'
                         }`}
                     >
                       <span className={`text-[10px] font-bold uppercase tracking-tighter mb-0.5 ${isSelected
-                          ? (isRed ? 'text-red-300' : 'text-slate-100')
-                          : (isRed ? 'text-red-500' : 'text-slate-400')
+                        ? (isRed ? 'text-red-300' : 'text-slate-100')
+                        : (isRed ? 'text-red-500' : 'text-slate-400')
                         }`}>
                         {date.toLocaleDateString('en-US', { weekday: 'short' })}
                       </span>
@@ -543,7 +543,7 @@ function SocialContent() {
                   <div
                     key={social.id}
                     onClick={() => handleOpenView(social)}
-                    className="relative flex-shrink-0 w-60 h-80 rounded-lg overflow-hidden group shadow-sm transition-all hover:shadow-md cursor-pointer animate-in zoom-in-95 duration-500 text-left"
+                    className="relative flex-shrink-0 w-60 h-80 rounded-lg overflow-hidden group shadow-sm transition-all md:hover:shadow-md cursor-pointer animate-in zoom-in-95 duration-500 text-left"
                   >
                     <SocialHeroCard social={social} date={weekDays[activeDayOffset]} />
 
@@ -614,7 +614,7 @@ function SocialContent() {
                       <div
                         key={social.id}
                         onClick={() => handleOpenView(social)}
-                        className="relative flex items-center gap-4 p-4 bg-white rounded-lg border border-[#dde4e5] hover:border-primary/30 transition-all cursor-pointer group shadow-sm active:scale-[0.98] text-left"
+                        className="relative flex items-center gap-4 p-4 bg-white rounded-lg border border-[#dde4e5] md:hover:border-primary/30 transition-all cursor-pointer group shadow-sm active:scale-[0.98] text-left"
                       >
                         <div className="flex flex-col items-center justify-center w-20 h-20 bg-[#F4FBFB] rounded-lg border-l-4 border-primary shrink-0">
                           {(() => {
@@ -700,7 +700,7 @@ function SocialContent() {
                       <div
                         key={`${social.id}-${group.date.getTime()}`}
                         onClick={() => handleOpenView(social)}
-                        className="relative flex items-center gap-4 p-4 bg-white rounded-lg border border-[#dde4e5] hover:border-primary/30 transition-all cursor-pointer group shadow-sm active:scale-[0.98] text-left"
+                        className="relative flex items-center gap-4 p-4 bg-white rounded-lg border border-[#dde4e5] md:hover:border-primary/30 transition-all cursor-pointer group shadow-sm active:scale-[0.98] text-left"
                       >
                         <div className="flex flex-col items-center justify-center w-20 h-20 bg-[#F4FBFB] rounded-lg border-l-4 border-primary shrink-0">
                           {(() => {
@@ -814,7 +814,7 @@ function SocialContent() {
                           <div
                             key={social.id}
                             onClick={() => handleOpenView(social)}
-                            className="px-4 py-3 flex items-center gap-3 hover:bg-slate-50 transition-colors cursor-pointer active:bg-slate-100 group"
+                            className="px-4 py-3 flex items-center gap-3 md:hover:bg-slate-50 transition-colors cursor-pointer active:bg-slate-100 group"
                           >
                             {/* 소형 썸네일 */}
                             <div className="shrink-0 w-10 h-10 rounded-lg overflow-hidden bg-slate-100 border border-slate-100">
@@ -839,8 +839,8 @@ function SocialContent() {
                                 {social.djName && <span className="ml-2 inline-flex items-center gap-0.5"><span className="material-symbols-outlined text-[12px]">headphones</span>DJ {social.djName}</span>}
                               </p>
                             </div>
-                            <div className="shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-white shadow-sm border border-slate-100 group-hover:border-blue-200 transition-all">
-                              <span className="material-symbols-outlined text-[16px] text-slate-400 group-hover:text-blue-600">chevron_right</span>
+                            <div className="shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-white shadow-sm border border-slate-100 md:group-hover:border-blue-200 transition-all">
+                              <span className="material-symbols-outlined text-[16px] text-slate-400 md:group-hover:text-blue-600">chevron_right</span>
                             </div>
                           </div>
                         ))}
