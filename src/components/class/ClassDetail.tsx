@@ -90,6 +90,7 @@ export default function ClassDetail({ groupId, onClose, isModal = false, isEmbed
   const [orderId, setOrderId] = useState<string>('');
   const [countdown, setCountdown] = useState(3600); // 60 min
   const [buyerPhone, setBuyerPhone] = useState('');
+  const [applicantMemo, setApplicantMemo] = useState('');
   const [isCopied, setIsCopied] = useState('');
   
   const [editingItem, setEditingItem] = useState<{type: 'class' | 'discount' | 'monthlyPass', data: any} | null>(null);
@@ -187,6 +188,11 @@ export default function ClassDetail({ groupId, onClose, isModal = false, isEmbed
 
   const currentMonthStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
   
+  const isMonthClosed = useMemo(() => {
+    if (!group?.classPaymentSettings?.closedMonths) return false;
+    return group.classPaymentSettings.closedMonths.includes(currentMonthStr);
+  }, [group, currentMonthStr]);
+
   const monthlyPasses = useMemo(() => {
     return (group?.monthlyPasses || []).filter(p => !p.targetMonth || p.targetMonth === currentMonthStr);
   }, [group?.monthlyPasses, currentMonthStr]);
@@ -420,11 +426,12 @@ export default function ClassDetail({ groupId, onClose, isModal = false, isEmbed
                     ))}
                   </div>
                   <button 
+                    disabled={isMonthClosed}
                     onClick={(e) => {
                       e.stopPropagation();
                       handleJoinClass(cls);
                     }}
-                    className="bg-primary text-white px-6 py-2.5 rounded-full text-sm font-black shadow-lg shadow-primary/20 active:scale-95 transition-all"
+                    className={`px-6 py-2.5 rounded-full text-sm font-black shadow-lg transition-all ${isMonthClosed ? 'bg-[#f2f4f4] text-[#acb3b4]' : 'bg-primary text-white shadow-primary/20 active:scale-95'}`}
                   >
                     JOIN NOW
                   </button>
@@ -448,7 +455,7 @@ export default function ClassDetail({ groupId, onClose, isModal = false, isEmbed
     <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-2 duration-500 pb-10">
       {monthlyPasses.length > 0 && (
         <section>
-          <h3 className="text-[10px] font-black text-[#596061] mb-4 uppercase tracking-[0.2em] px-1">MONTHLY PASSES</h3>
+          <h3 className="text-[10px] font-black text-[#596061] mb-4 uppercase tracking-[0.2em] px-1">{t('class.monthlyPasses', 'MONTHLY PASSES')}</h3>
           <div className="grid grid-cols-1 gap-4">
             {monthlyPasses.map((pass) => (
               <div 
@@ -462,11 +469,11 @@ export default function ClassDetail({ groupId, onClose, isModal = false, isEmbed
                     <h4 className="text-[1.25rem] font-black text-[#2d3435]">{pass.title}</h4>
                   </div>
                   {selectedClasses.has(pass.id) ? (
-                    <button onClick={() => handleRemoveFromBasket(pass.id)} className="text-primary transition-transform active:scale-90">
+                    <button disabled={isMonthClosed} onClick={() => handleRemoveFromBasket(pass.id)} className={`transition-transform active:scale-90 ${isMonthClosed ? 'text-[#acb3b4]' : 'text-primary'}`}>
                       <span className="material-symbols-outlined text-[44px]">toggle_on</span>
                     </button>
                   ) : (
-                    <button onClick={() => handleAddToBasket(pass.id, 'monthlyPass')} className="text-[#acb3b4] transition-transform active:scale-90">
+                    <button disabled={isMonthClosed} onClick={() => handleAddToBasket(pass.id, 'monthlyPass')} className={`transition-transform active:scale-90 ${isMonthClosed ? 'text-[#e0e4e5] opacity-50' : 'text-[#acb3b4]'}`}>
                       <span className="material-symbols-outlined text-[44px]">toggle_off</span>
                     </button>
                   )}
@@ -490,7 +497,7 @@ export default function ClassDetail({ groupId, onClose, isModal = false, isEmbed
 
       {discounts.length > 0 && (
         <section>
-          <h3 className="text-[10px] font-black text-[#596061] mb-4 uppercase tracking-[0.2em] px-1">BUNDLE PACKAGES</h3>
+          <h3 className="text-[10px] font-black text-[#596061] mb-4 uppercase tracking-[0.2em] px-1">{t('class.bundlePackages', 'BUNDLE PACKAGES')}</h3>
           <div className="grid grid-cols-1 gap-4">
             {discounts.map((disc) => (
               <div 
@@ -500,14 +507,14 @@ export default function ClassDetail({ groupId, onClose, isModal = false, isEmbed
                 <div className="flex justify-between items-start mb-2">
                   <h4 className="text-base font-black text-[#d97706]">{disc.title}</h4>
                   {selectedClasses.has(disc.id) ? (
-                    <button onClick={() => handleRemoveFromBasket(disc.id)} className="text-[#d97706] transition-transform active:scale-90">
+                    <button disabled={isMonthClosed} onClick={() => handleRemoveFromBasket(disc.id)} className={`transition-transform active:scale-90 ${isMonthClosed ? 'text-[#acb3b4]' : 'text-[#d97706]'}`}>
                       <span className="material-symbols-outlined text-[40px]">toggle_on</span>
                     </button>
                   ) : (
                     <button 
+                      disabled={isMonthlyPassSelected || isMonthClosed}
                       onClick={() => handleAddToBasket(disc.id)} 
-                      disabled={isMonthlyPassSelected}
-                      className={`transition-transform active:scale-90 ${isMonthlyPassSelected ? 'text-[#e0e4e5] opacity-50' : 'text-[#acb3b4]'}`}
+                      className={`transition-transform active:scale-90 ${(isMonthlyPassSelected || isMonthClosed) ? 'text-[#e0e4e5] opacity-50' : 'text-[#acb3b4]'}`}
                     >
                       <span className="material-symbols-outlined text-[40px]">toggle_off</span>
                     </button>
@@ -526,7 +533,7 @@ export default function ClassDetail({ groupId, onClose, isModal = false, isEmbed
       )}
 
       <section>
-        <h3 className="text-[10px] font-black text-[#596061] mb-4 uppercase tracking-[0.2em] px-1">MONTHLY COURSES</h3>
+        <h3 className="text-[10px] font-black text-[#596061] mb-4 uppercase tracking-[0.2em] px-1">{t('class.monthlyCourses', 'MONTHLY COURSES')}</h3>
         <div className="space-y-4">
           {monthClasses.length > 0 ? (
             monthClasses.map((cls) => (
@@ -547,14 +554,14 @@ export default function ClassDetail({ groupId, onClose, isModal = false, isEmbed
                     <div className="flex items-center gap-3">
                       <button onClick={() => handleMonthCardClick({ ...cls, itemType: 'class' })} className="text-[10px] font-black text-[#acb3b4] hover:text-primary transition-colors">INFO</button>
                       {selectedClasses.has(cls.id) ? (
-                        <button onClick={() => handleRemoveFromBasket(cls.id)} className="text-primary transition-transform active:scale-90">
+                        <button disabled={isMonthClosed} onClick={() => handleRemoveFromBasket(cls.id)} className={`transition-transform active:scale-90 ${isMonthClosed ? 'text-[#acb3b4]' : 'text-primary'}`}>
                           <span className="material-symbols-outlined text-[40px]">toggle_on</span>
                         </button>
                       ) : (
                         <button 
+                          disabled={isMonthlyPassSelected || isMonthClosed}
                           onClick={() => handleAddToBasket(cls.id)} 
-                          disabled={isMonthlyPassSelected}
-                          className={`transition-transform active:scale-90 ${isMonthlyPassSelected ? 'text-[#e0e4e5] opacity-50' : 'text-[#acb3b4]'}`}
+                          className={`transition-transform active:scale-90 ${(isMonthlyPassSelected || isMonthClosed) ? 'text-[#e0e4e5] opacity-50' : 'text-[#acb3b4]'}`}
                         >
                           <span className="material-symbols-outlined text-[40px]">toggle_off</span>
                         </button>
@@ -590,7 +597,7 @@ export default function ClassDetail({ groupId, onClose, isModal = false, isEmbed
             <div className="relative p-8 pt-24">
               <div className="inline-flex items-center gap-2 bg-primary px-4 py-1.5 rounded-full mb-4 shadow-lg shadow-primary/30">
                 <span className="material-symbols-outlined text-sm">stars</span>
-                <span className="text-[10px] font-black tracking-widest uppercase">SPECIAL EVENT</span>
+                <span className="text-[10px] font-black tracking-widest uppercase">{t('class.specialEvent', 'SPECIAL EVENT')}</span>
               </div>
               <h3 className="text-2xl font-black mb-4 leading-tight">{cls.title}</h3>
               <div className="flex items-end justify-between">
@@ -599,11 +606,12 @@ export default function ClassDetail({ groupId, onClose, isModal = false, isEmbed
                   <p className="text-2xl font-black">{cls.amount.toLocaleString()} <span className="text-sm">{cls.currency}</span></p>
                 </div>
                 <button 
+                  disabled={isMonthClosed}
                   onClick={(e) => {
                     e.stopPropagation();
                     handleJoinClass(cls);
                   }}
-                  className="bg-white text-[#2d3435] px-8 py-3.5 rounded-full text-sm font-black shadow-xl active:scale-95 transition-all"
+                  className={`px-8 py-3.5 rounded-full text-sm font-black shadow-xl transition-all ${isMonthClosed ? 'bg-[#f2f4f4] text-[#acb3b4] shadow-none' : 'bg-white text-[#2d3435] active:scale-95'}`}
                 >
                   RESERVE
                 </button>
@@ -671,7 +679,7 @@ export default function ClassDetail({ groupId, onClose, isModal = false, isEmbed
             <div className="w-10 h-10" />
           )}
           <div className="flex flex-col items-center">
-            <h2 className="text-base font-black text-[#2d3435]">{group?.name || 'Class Schedule'}</h2>
+            <h2 className="text-base font-black text-[#2d3435]">{t('class.registration_title', 'Class Registration')}</h2>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -702,6 +710,15 @@ export default function ClassDetail({ groupId, onClose, isModal = false, isEmbed
               </button>
             </div>
           </div>
+
+          {isMonthClosed && (
+            <div className="bg-[#f8f9fa] border border-[#e0e4e5] rounded-[24px] p-4 mb-6 text-center shadow-sm">
+              <span className="material-symbols-outlined text-[#acb3b4] text-2xl mb-2">event_busy</span>
+              <p className="text-[#596061] font-bold text-sm">
+                {t('class.registrationClosed', "Registration for this month's classes has ended")}
+              </p>
+            </div>
+          )}
 
           <div className="min-h-[400px]">
             {activeTab === 'TODAY' && renderTodayTab()}
@@ -760,7 +777,7 @@ export default function ClassDetail({ groupId, onClose, isModal = false, isEmbed
 
       {/* FAB Basket */}
       <AnimatePresence>
-        {selectedClasses.size > 0 && (
+        {selectedClasses.size > 0 && !isMonthClosed && (
           <motion.div 
             initial={false}
             animate={{ 
@@ -929,17 +946,17 @@ export default function ClassDetail({ groupId, onClose, isModal = false, isEmbed
 
         <div className="px-5 pb-8 flex flex-col gap-6">
           <section className="flex flex-col gap-2">
-             <h3 className="text-[10px] font-black text-[#596061] uppercase tracking-widest">Your Role <span className="text-error">*</span></h3>
+             <h3 className="text-[10px] font-black text-[#596061] uppercase tracking-widest">{t('class.your_role', 'Your Role')} <span className="text-error">*</span></h3>
              <div className="flex gap-2 mt-1">
-                 <button className={`flex-1 py-3 rounded-xl border text-sm font-bold transition-all ${selectedRole === 'Leader' ? 'bg-primary text-white border-primary' : 'bg-white text-[#acb3b4] border-[#f2f4f4]'}`} onClick={() => setSelectedRole('Leader')}>Leader</button>
-                 <button className={`flex-1 py-3 rounded-xl border text-sm font-bold transition-all ${selectedRole === 'Follower' ? 'bg-[#7c3aed] text-white border-[#7c3aed]' : 'bg-white text-[#acb3b4] border-[#f2f4f4]'}`} onClick={() => setSelectedRole('Follower')}>Follower</button>
+                 <button className={`flex-1 py-3 rounded-xl border text-sm font-bold transition-all ${selectedRole === 'Leader' ? 'bg-primary text-white border-primary' : 'bg-white text-[#acb3b4] border-[#f2f4f4]'}`} onClick={() => setSelectedRole('Leader')}>{t('class.leader', 'Leader')}</button>
+                 <button className={`flex-1 py-3 rounded-xl border text-sm font-bold transition-all ${selectedRole === 'Follower' ? 'bg-[#7c3aed] text-white border-[#7c3aed]' : 'bg-white text-[#acb3b4] border-[#f2f4f4]'}`} onClick={() => setSelectedRole('Follower')}>{t('class.follower', 'Follower')}</button>
              </div>
           </section>
 
           {purchaseStep === 'summary' && (
             <div className="space-y-6 animate-in fade-in duration-300">
               <section className="flex flex-col gap-2">
-                <h3 className="text-[10px] font-black text-[#596061] uppercase tracking-widest">Selected Items</h3>
+                <h3 className="text-[10px] font-black text-[#596061] uppercase tracking-widest">{t('class.selected_items', 'Selected Items')}</h3>
                 <div className="space-y-3">
                   {Array.from(selectedClasses).map(id => {
                     const item = allItems.find(i => i.id === id);
@@ -955,7 +972,7 @@ export default function ClassDetail({ groupId, onClose, isModal = false, isEmbed
                     );
                   })}
                   <div className="flex justify-between items-center px-2 pt-2">
-                    <p className="text-xs font-bold text-[#596061]">Total Amount</p>
+                    <p className="text-xs font-bold text-[#596061]">{t('class.total_amount', 'Total Amount')}</p>
                     <p className="text-lg font-black text-primary">
                       {Array.from(selectedClasses).reduce((sum, id) => sum + (allItems.find(i => i.id === id)?.amount || 0), 0).toLocaleString()} {group?.classes?.[0]?.currency || 'KRW'}
                     </p>
@@ -964,7 +981,7 @@ export default function ClassDetail({ groupId, onClose, isModal = false, isEmbed
               </section>
 
               <section className="flex flex-col gap-2">
-                <h3 className="text-[10px] font-black text-[#596061] uppercase tracking-widest">Contact Number <span className="text-error">*</span></h3>
+                <h3 className="text-[10px] font-black text-[#596061] uppercase tracking-widest">{t('class.contact_number', 'Contact Number')} <span className="text-error">*</span></h3>
                 <input
                   type="tel"
                   value={buyerPhone}
@@ -972,7 +989,19 @@ export default function ClassDetail({ groupId, onClose, isModal = false, isEmbed
                   placeholder="010-0000-0000"
                   className="w-full bg-[#f8f9fa] border border-[#f2f4f4] rounded-xl px-4 py-3.5 text-sm text-[#2d3435] font-bold focus:outline-none focus:border-primary transition-all"
                 />
-                <p className="text-[10px] text-[#acb3b4] font-medium leading-relaxed">Admin will contact you at this number for confirmation.</p>
+                <p className="text-[10px] text-[#acb3b4] font-medium leading-relaxed">{t('class.admin_contact_notice', 'Admin will contact you at this number for confirmation.')}</p>
+              </section>
+
+              <section className="flex flex-col gap-2">
+                <h3 className="text-[10px] font-black text-[#596061] uppercase tracking-widest">{t('class.applicant_memo', 'Class Registration Memo (Optional)')}</h3>
+                <textarea
+                  value={applicantMemo}
+                  onChange={(e) => setApplicantMemo(e.target.value)}
+                  placeholder={t('class.memo_placeholder', 'Leave a message (max 100 characters)')}
+                  maxLength={100}
+                  rows={3}
+                  className="w-full bg-[#f8f9fa] border border-[#f2f4f4] rounded-xl px-4 py-3 text-sm text-[#2d3435] resize-none focus:outline-none focus:border-primary transition-all"
+                />
               </section>
 
               <button 
@@ -1010,7 +1039,8 @@ export default function ClassDetail({ groupId, onClose, isModal = false, isEmbed
                         role: selectedRole,
                         orderNumber: num,
                         amount: item.amount,
-                        currency: item.currency || 'KRW'
+                        currency: item.currency || 'KRW',
+                        applicantMemo: applicantMemo.trim() || undefined
                       });
                     });
 
@@ -1028,7 +1058,8 @@ export default function ClassDetail({ groupId, onClose, isModal = false, isEmbed
                                 `Items: ${classTitles}\n` +
                                 `Total: ${totalAmount.toLocaleString()} KRW\n` +
                                 `Role: ${selectedRole?.toUpperCase()}\n` +
-                                `Contact: ${buyerPhone}`;
+                                `Contact: ${buyerPhone}` +
+                                (applicantMemo.trim() ? `\nMemo: ${applicantMemo.trim()}` : '');
                                 
                       await chatService.sendMessage({
                         roomId,
@@ -1050,7 +1081,7 @@ export default function ClassDetail({ groupId, onClose, isModal = false, isEmbed
                 disabled={isApplying}
                 className="w-full bg-primary text-white py-4 rounded-[20px] font-black text-sm tracking-wide shadow-xl shadow-primary/20 active:scale-[0.98] transition-all disabled:opacity-50"
               >
-                {isApplying ? "Processing..." : "Confirm Reservation"}
+                {isApplying ? "Processing..." : t('class.complete_application', 'Complete Application')}
               </button>
             </div>
           )}

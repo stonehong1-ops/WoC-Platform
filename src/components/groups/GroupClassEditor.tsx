@@ -132,6 +132,36 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
     }
   };
 
+  const isRegistrationClosed = group.classPaymentSettings?.closedMonths?.includes(currentMonthStr) || false;
+
+  const handleToggleRegistrationStatus = async () => {
+    try {
+      setLoading(true);
+      const currentClosedMonths = group.classPaymentSettings?.closedMonths || [];
+      const isCurrentlyClosed = currentClosedMonths.includes(currentMonthStr);
+      
+      let newClosedMonths;
+      if (isCurrentlyClosed) {
+        newClosedMonths = currentClosedMonths.filter((m: string) => m !== currentMonthStr);
+      } else {
+        newClosedMonths = [...currentClosedMonths, currentMonthStr];
+      }
+
+      await groupService.updateGroupMetadata(group.id, {
+        classPaymentSettings: {
+          ...(group.classPaymentSettings || { paymentMethods: { bankTransfer: false, creditCard: false, overseas: false } }),
+          closedMonths: newClosedMonths
+        }
+      });
+      toast.success(t('group.class.registration_status_updated') || "Registration status updated.");
+    } catch (err) {
+      console.error(err);
+      toast.error(t('common.error') || "An error occurred.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const executeDelete = async (type: 'class' | 'discount' | 'pass', id: string) => {
     setLoading(true);
     const promise = (async () => {
@@ -226,13 +256,19 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
           </div>
           <div className="p-5 flex items-center justify-between">
             <div>
-              <h3 className="font-bold text-gray-900">{t('group.class.monthly_visibility') || "Monthly Visibility"}</h3>
-              <p className="text-sm text-gray-500">{t('group.class.show_this_month') || "Show this month's classes to members"}</p>
+              <h3 className="font-bold text-gray-900">{t('group.class.registration_status') || "Registration Status"}</h3>
+              <p className="text-sm text-gray-500">{t('group.class.close_registration_desc') || "Close registration for this month's classes"}</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
-              <input defaultChecked className="sr-only peer" type="checkbox" value="" />
+              <input 
+                checked={isRegistrationClosed} 
+                onChange={handleToggleRegistrationStatus}
+                className="sr-only peer" 
+                type="checkbox" 
+                disabled={loading}
+              />
               <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0057bd]"></div>
-              <span className="ml-3 text-sm font-medium text-gray-900">{t('common.on') || "ON"}</span>
+              <span className="ml-3 text-sm font-medium text-gray-900">{isRegistrationClosed ? (t('group.class.registration_closed') || "신청완료") : (t('group.class.registration_open') || "Open")}</span>
             </label>
           </div>
         </section>

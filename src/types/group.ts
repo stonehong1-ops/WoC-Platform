@@ -142,6 +142,7 @@ export interface Group {
       accountHolder: string;
       accountNumber: string;
     };
+    closedMonths?: string[];
   };
   bankDetails?: {
     bankName: string;
@@ -368,6 +369,7 @@ export interface ClassRegistration {
   partnerName?: string; // For couple registrations
   selectedClassIds?: string[]; // Custom selection for monthly passes
   adminMemo?: string;
+  applicantMemo?: string;
   paymentAmount?: number;
   paymentStatus?: 'pending' | 'reported' | 'completed' | 'canceled';
   orderNumber?: string;
