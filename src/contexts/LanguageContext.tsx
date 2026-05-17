@@ -4419,9 +4419,23 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   const formatDate = (date: any, formatStr: string = 'yyyy-MM-dd') => {
     if (!date) return '';
+    // Map custom alias strings to date-fns format tokens
+    const formatAliases: Record<string, string> = {
+      'iso': 'yyyy-MM-dd',
+      'dayOnly': 'd',
+      'monthYear': 'MMMM yyyy',
+      'shortMonthDay': 'MMM d',
+      'shortMonth': 'MMM',
+      'shortWeekday': 'EEE',
+      'weekday': 'EEEE',
+      'timeOnly': 'HH:mm',
+      'dateOnly': 'yyyy.MM.dd',
+      'dateTime': 'yyyy.MM.dd HH:mm',
+    };
+    const resolvedFormat = formatAliases[formatStr] || formatStr;
     try {
       const d = typeof date?.toDate === 'function' ? date.toDate() : new Date(date);
-      return format(d, formatStr, { locale: language === 'KR' ? ko : enUS });
+      return format(d, resolvedFormat, { locale: language === 'KR' ? ko : enUS });
     } catch (e) {
       return '';
     }
