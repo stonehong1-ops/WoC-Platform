@@ -21,22 +21,32 @@ export const userService = {
   searchUsers: async (keyword: string, pageSize = 20): Promise<PlatformUser[]> => {
     if (!keyword || keyword.trim().length < 2) return [];
 
-    const searchKeyword = keyword.trim();
-    
-    // Firestore doesn't support full-text search easily without external services
-    // Using a common prefix search trick for displayName
-    const q = query(
-      collection(db, USERS_COLLECTION),
-      where('nickname', '>=', searchKeyword),
-      where('nickname', '<=', searchKeyword + '\uf8ff'),
-      limit(pageSize)
-    );
+    const kw = keyword.trim();
 
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    })) as PlatformUser[];
+    const [byNickname, byNative] = await Promise.all([
+      getDocs(query(
+        collection(db, USERS_COLLECTION),
+        where('nickname', '>=', kw),
+        where('nickname', '<=', kw + '\uf8ff'),
+        limit(pageSize)
+      )),
+      getDocs(query(
+        collection(db, USERS_COLLECTION),
+        where('nativeNickname', '>=', kw),
+        where('nativeNickname', '<=', kw + '\uf8ff'),
+        limit(pageSize)
+      )),
+    ]);
+
+    const seen = new Set<string>();
+    const results: PlatformUser[] = [];
+    [...byNickname.docs, ...byNative.docs].forEach(d => {
+      if (!seen.has(d.id)) {
+        seen.add(d.id);
+        results.push({ id: d.id, ...d.data() } as PlatformUser);
+      }
+    });
+    return results.slice(0, pageSize);
   },
 
   // Get single user by ID

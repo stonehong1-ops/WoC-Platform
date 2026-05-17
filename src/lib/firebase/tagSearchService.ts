@@ -80,19 +80,34 @@ export const tagSearchService = {
    */
   async searchGroups(keyword: string): Promise<TagSearchResult[]> {
     try {
-      const q = query(
-        collection(db, 'groups'),
-        where('name', '>=', keyword),
-        where('name', '<=', keyword + '\uf8ff')
-      );
-      const snapshot = await getDocs(q);
-      return snapshot.docs.map(d => ({
-        type: 'group' as const,
-        id: d.id,
-        name: d.data().name || '',
-        subtitle: d.data().address || '',
-        avatar: d.data().logo || d.data().coverImage || '',
-      }));
+      const [byName, byNative] = await Promise.all([
+        getDocs(query(
+          collection(db, 'groups'),
+          where('name', '>=', keyword),
+          where('name', '<=', keyword + '\uf8ff')
+        )),
+        getDocs(query(
+          collection(db, 'groups'),
+          where('nativeName', '>=', keyword),
+          where('nativeName', '<=', keyword + '\uf8ff')
+        )),
+      ]);
+      const seen = new Set<string>();
+      const results: TagSearchResult[] = [];
+      [...byName.docs, ...byNative.docs].forEach(d => {
+        if (seen.has(d.id)) return;
+        seen.add(d.id);
+        const data = d.data();
+        const native = data.nativeName || '';
+        results.push({
+          type: 'group' as const,
+          id: d.id,
+          name: native ? `${data.name || ''} ${native}` : (data.name || ''),
+          subtitle: data.address || '',
+          avatar: data.logo || data.coverImage || '',
+        });
+      });
+      return results;
     } catch (e) {
       console.error('Group search error:', e);
       return [];
@@ -136,19 +151,34 @@ export const tagSearchService = {
    */
   async searchPeople(keyword: string): Promise<TagSearchResult[]> {
     try {
-      const q = query(
-        collection(db, 'users'),
-        where('nickname', '>=', keyword),
-        where('nickname', '<=', keyword + '\uf8ff')
-      );
-      const snapshot = await getDocs(q);
-      return snapshot.docs.map(d => ({
-        type: 'people' as const,
-        id: d.id,
-        name: d.data().nickname || '',
-        subtitle: d.data().role || '',
-        avatar: d.data().photoURL || '',
-      }));
+      const [byNick, byNative] = await Promise.all([
+        getDocs(query(
+          collection(db, 'users'),
+          where('nickname', '>=', keyword),
+          where('nickname', '<=', keyword + '\uf8ff')
+        )),
+        getDocs(query(
+          collection(db, 'users'),
+          where('nativeNickname', '>=', keyword),
+          where('nativeNickname', '<=', keyword + '\uf8ff')
+        )),
+      ]);
+      const seen = new Set<string>();
+      const results: TagSearchResult[] = [];
+      [...byNick.docs, ...byNative.docs].forEach(d => {
+        if (seen.has(d.id)) return;
+        seen.add(d.id);
+        const data = d.data();
+        const native = data.nativeNickname || '';
+        results.push({
+          type: 'people' as const,
+          id: d.id,
+          name: native ? `${data.nickname || ''} ${native}` : (data.nickname || ''),
+          subtitle: data.role || '',
+          avatar: data.photoURL || '',
+        });
+      });
+      return results;
     } catch (e) {
       console.error('People search error:', e);
       return [];

@@ -7,7 +7,6 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { storageService } from '@/lib/firebase/storageService';
 import { groupService } from '@/lib/firebase/groupService';
 import { userService } from '@/lib/firebase/userService';
-import { venueService } from '@/lib/firebase/venueService';
 import { eventService } from '@/lib/firebase/eventService';
 import { socialService } from '@/lib/firebase/socialService';
 import { Group, Post, GroupBoard as GroupBoardType, DEFAULT_BOARDS } from '@/types/group';
@@ -19,7 +18,7 @@ interface MediaItem {
   id: string; url: string; type: 'image' | 'video';
   progress: number; status: 'uploading' | 'completed' | 'error'; file?: File;
 }
-interface TagItem { id: string; label: string; kind: 'people' | 'venue' | 'event' | 'social' | 'group'; photo?: string; }
+interface TagItem { id: string; label: string; kind: 'people' | 'event' | 'social' | 'group'; photo?: string; }
 interface PostEditorModalProps {
   group: Group;
   post?: Post | null;
@@ -153,20 +152,30 @@ export default function PostEditorModal({ group, post, isOpen, onClose }: PostEd
     const timer = setTimeout(async () => {
       setIsSearching(true);
       try {
-        const [users, venues, events, socials, groupsList] = await Promise.allSettled([
+        const [users, events, socials, groupsList] = await Promise.allSettled([
           userService.searchUsers(kw, 5),
-          venueService.searchVenues(kw),
           eventService.searchEvents(kw),
           socialService.searchSocials(kw),
           groupService.getGroups(),
         ]);
         const results: TagItem[] = [];
-        if (users.status === 'fulfilled') users.value.slice(0, 5).forEach(u => results.push({ id: u.id, label: u.nickname || u.id, kind: 'people', photo: u.photoURL && u.photoURL !== 'https://lh3.googleusercontent.com/a/default-user' ? u.photoURL : undefined }));
-        if (venues.status === 'fulfilled') (venues.value as any[]).slice(0, 3).forEach(v => results.push({ id: v.id, label: v.name, kind: 'venue' }));
+        if (users.status === 'fulfilled') users.value.slice(0, 5).forEach(u => {
+          const native = (u as any).nativeNickname || '';
+          const label = native ? `${u.nickname || u.id} ${native}` : (u.nickname || u.id);
+          results.push({ id: u.id, label, kind: 'people', photo: u.photoURL && u.photoURL !== 'https://lh3.googleusercontent.com/a/default-user' ? u.photoURL : undefined });
+        });
         if (events.status === 'fulfilled') (events.value as any[]).slice(0, 3).forEach(e => results.push({ id: e.id, label: e.title || e.titleNative, kind: 'event' }));
         if (socials.status === 'fulfilled') (socials.value as any[]).slice(0, 3).forEach(s => results.push({ id: s.id, label: s.title, kind: 'social' }));
         if (groupsList.status === 'fulfilled') {
-          (groupsList.value as any[]).filter(g => g.name?.toLowerCase().includes(kw.toLowerCase())).slice(0, 3).forEach(g => results.push({ id: g.id, label: g.name, kind: 'group' }));
+          (groupsList.value as any[]).filter(g => {
+            const n = (g.name || '').toLowerCase();
+            const nv = (g.nativeName || '').toLowerCase();
+            return n.includes(kw.toLowerCase()) || nv.includes(kw.toLowerCase());
+          }).slice(0, 3).forEach(g => {
+            const native = g.nativeName || '';
+            const label = native ? `${g.name} ${native}` : g.name;
+            results.push({ id: g.id, label, kind: 'group' });
+          });
         }
         setTagResults(results);
       } finally { setIsSearching(false); }
