@@ -22,13 +22,16 @@ export default function GroupFunctionReviewPage() {
     }).catch(() => setLoading(false));
   }, [groupId]);
 
-  // Resolve selected function IDs to full card data
+  // Admin function IDs hidden from user review (these are admin-only settings)
+  const ADMIN_HIDDEN_IDS = new Set(['brand-setting', 'roles-permissions', 'class-setting', 'stay-setting', 'shop-setting', 'rental-setting']);
+
+  // Resolve selected function IDs to full card data (excluding admin items)
   const selectedCards: FunctionCard[] = React.useMemo(() => {
     if (!group?.selectedFunctions) return [];
     const allCards = FUNCTION_SECTIONS.flatMap((s) => s.cards);
     return group.selectedFunctions
       .map((id) => allCards.find((c) => c.id === id))
-      .filter(Boolean) as FunctionCard[];
+      .filter((c): c is FunctionCard => c != null && !ADMIN_HIDDEN_IDS.has(c.id));
   }, [group?.selectedFunctions]);
 
   const totalCost = React.useMemo(() => {

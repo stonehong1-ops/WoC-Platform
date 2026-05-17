@@ -41,4 +41,7 @@
 ## Error Handling & Debugging Rules
 1. **Firebase Permission Check First**: 에러 발생 시(특히 데이터베이스 저장/수정 관련), 코드를 복잡하게 수정하거나 구조를 뜯어고치기 전에 **반드시 Firebase Firestore Security Rules (권한 설정) 누락 문제인지 가장 먼저 의심하고 확인**하라. (ex: `permission-denied` 에러).
 
-
+## 📚 Domain-Specific Rules (Class / Setting)
+1. **Class Setting은 Admin 전용**: Class Setting 모듈(`class-setting`)은 관리자 전용 기능이므로 일반 사용자가 메뉴를 선택하는 '설정 2단계'(`GroupFunctionBuilder.tsx` 등)에는 노출되지 않아야 한다. `functionBuilderData.ts`의 ADMIN 섹션은 설정 2단계 화면에서 노출되지 않거나 제거되어야 한다.
+2. **Class 추가 페이지 명확화**: 관리자용 Class Setting 화면은 예전 페이지(`GroupClassSetting.tsx`)를 사용하지 말고, 버튼이 3개(Class, Bundle discount, Monthly Pass) 있는 `GroupClassEditor.tsx`를 적용해야 한다.
+3. **Class 메뉴는 사용자용**: `class` 메뉴는 실제 사용자가 보는 페이지이다. 설정 단계에서 `class-setting` 관련 기능을 활성화했다면, 사용자는 `class` 메뉴를 볼 수 있어야 하며, 설정 3단계(위치 변경)에서도 `CLASS` 탭의 위치를 조정할 수 있어야 한다. 만약 사용자용 화면이 아직 완성되지 않았다면 메뉴만 생성하고 "공사중(Under Construction)"으로 표시한다.

@@ -15,6 +15,14 @@ type MenuItem = {
   label?: string;
 };
 
+// Map admin-setting IDs to user-facing menu labels
+const SETTING_TO_USER: Record<string, { label: string; icon: string }> = {
+  'class-setting': { label: 'Class', icon: 'school' },
+  'stay-setting': { label: 'Stay', icon: 'bed' },
+  'shop-setting': { label: 'Shop', icon: 'storefront' },
+  'rental-setting': { label: 'Rental', icon: 'key' },
+};
+
 export default function OrganizeMenuPage() {
   const router = useRouter();
   const params = useParams();
@@ -57,6 +65,11 @@ export default function OrganizeMenuPage() {
         // 2. Map existing items to ensure missing icons and labels are populated
         syncedItems = syncedItems.map(item => {
           if (item.type === "item") {
+            // Use user-facing label for setting items
+            const userOverride = SETTING_TO_USER[item.id];
+            if (userOverride) {
+              return { ...item, icon: userOverride.icon, label: userOverride.label };
+            }
             const card = allCards.find(c => c.id === item.id);
             if (card) {
               return { ...item, icon: card.icon, label: card.title };
@@ -90,11 +103,12 @@ export default function OrganizeMenuPage() {
               lastSectionId = section.id;
             }
 
+            const userOverrideNew = SETTING_TO_USER[card.id];
             syncedItems.push({
               id: card.id,
               type: "item",
-              icon: card.icon,
-              label: card.title,
+              icon: userOverrideNew?.icon || card.icon,
+              label: userOverrideNew?.label || card.title,
             });
           });
         }
@@ -125,11 +139,13 @@ export default function OrganizeMenuPage() {
           lastSectionId = section.id;
         }
 
+        // Use user-facing label for setting items
+        const userOverride = SETTING_TO_USER[card.id];
         menuItems.push({
           id: card.id,
           type: "item",
-          icon: card.icon,
-          label: card.title,
+          icon: userOverride?.icon || card.icon,
+          label: userOverride?.label || card.title,
         });
       });
 

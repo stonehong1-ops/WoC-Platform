@@ -1,0 +1,167 @@
+### [Turn 1] Time: 2026-05-17T00:57:14Z
+
+#### 👤 User Request:
+
+
+#### 🤖 Assistant Response:
+I will now inspect the files to prepare for the implementation since you've given the go-ahead ("고")! Let's first view the current `FUNCTION_TAB_MAP` structure in [GroupHome.tsx](file:///c:/Users/stone/WoC/src/components/groups/GroupHome.tsx) and then check the dictionary in [LanguageContext.tsx](file:///c:/Users/stone/WoC/src/contexts/LanguageContext.tsx).
+
+Let's use `view_file` to read the relevant sections.
+
+I will now view [groupTabs.ts](file:///c:/Users/stone/WoC/src/constants/groupTabs.ts) to see the standard list of tabs. This will help us align the database function IDs and tab IDs perfectly. Let's call `view_file` on `groupTabs.ts`.
+
+I will now view the imports in `GroupHome.tsx` to understand what types or constants are imported from `groupTabs.ts`. Let's call `view_file` on [GroupHome.tsx](file:///c:/Users/stone/WoC/src/components/groups/GroupHome.tsx) from lines 1 to 100.
+
+I will now view the tab switching section in [GroupHome.tsx](file:///c:/Users/stone/WoC/src/components/groups/GroupHome.tsx) from lines 1350 to 1460 using `view_file` to verify how it handles `activeTab === 'class'` and `activeTab === 'class-setting'`.
+
+I will now view lines 1461 to 1550 of [GroupHome.tsx](file:///c:/Users/stone/WoC/src/components/groups/GroupHome.tsx) to find where `GroupClassEditor` or other administrative and settings components are being rendered. Let's call `view_file`.
+
+I will now view lines 1551 to 1700 of [GroupHome.tsx](file:///c:/Users/stone/WoC/src/components/groups/GroupHome.tsx) to find where `GroupClassEditor` or other administrative and settings components are being rendered. Let's call `view_file`.
+
+I will search for `GroupClassEditor` in `GroupHome.tsx` to see where it is instantiated or referenced. I'll use `grep_search`.
+
+I will run a detailed line-by-line grep search to pinpoint the references of `GroupClassEditor` in `GroupHome.tsx`. Let's call `grep_search`.
+
+I will view the rest of [GroupHome.tsx](file:///c:/Users/stone/WoC/src/components/groups/GroupHome.tsx) from lines 1700 to 1821 to find exactly where `GroupClassEditor` is rendered. Let's call `view_file`.
+
+I will search for the term `class-setting` or `GroupClassEditor` within `GroupHome.tsx` to find the exact line numbers where it is rendering. I'll use `grep_search`.
+
+I will run a `grep_search` with forward slashes for the filepath to ensure ripgrep resolves it correctly on Windows. Let's call `grep_search`.
+
+I will view [GroupHome.tsx](file:///c:/Users/stone/WoC/src/components/groups/GroupHome.tsx) from lines 1000 to 1180 to find where the tabs are being matched and rendered. Let's call `view_file`.
+
+I will view lines 1280 to 1350 of [GroupHome.tsx](file:///c:/Users/stone/WoC/src/components/groups/GroupHome.tsx) to see the start of the `activeTab` rendering blocks. Let's call `view_file`.
+
+I will view [GroupHome.tsx](file:///c:/Users/stone/WoC/src/components/groups/GroupHome.tsx) from lines 100 to 200 to see if `GroupClassEditor` or other editor components are mentioned or if we can see their tab routing logic. Let's call `view_file`.
+
+I will now view lines 200 to 450 of [GroupHome.tsx](file:///c:/Users/stone/WoC/src/components/groups/GroupHome.tsx) to find where `GroupClassEditor` or settings tab views are instantiated. Let's call `view_file`.
+
+I will view lines 450 to 800 of [GroupHome.tsx](file:///c:/Users/stone/WoC/src/components/groups/GroupHome.tsx) to locate the exact usage or rendering of `GroupClassEditor`. Let's call `view_file`.
+
+I will start by checking the git status and workspace details to understand the current code state. I will search for the relevant files (`ia.md`, `STABILITY_GUARD.md`, `LanguageContext.tsx` or tailwind configs) inside the `c:\Users\stone\WoC` folder.
+
+I will check the tail end of the `overview.txt` to find out what step we completed last and what the exact next step (Step 3) is.
+
+I will search for "수동 완벽 복구 계획" or "Action Plan" inside the `overview.txt` log file to find the full details of the proposed plans.
+
+I will search for "Step 3" and "Step 4" inside the `overview.txt` to find the exact details of the plan.
+
+I will read the last 150 lines of `overview.txt` specifying the UTF-8 encoding to ensure that Korean characters display correctly and help us understand the context.
+
+I will run a `grep_search` inside the `overview.txt` log file to locate the full multi-step proposed recovery plan (Action Plan) that contains Step 3 and Step 4.
+
+I will run a `grep_search` looking for "Action Plan" (case insensitive) inside the `overview.txt` log file to locate the exact plan proposal text.
+
+I will run a command to search for "Step 3" inside the `overview.txt` log file and display the surrounding lines to get the complete details of the plan.
+
+I will check the git commit logs to see what changes were recently made and rolled back. This will give us clues about "Step 3: 클래스 데이터 렌더링 복구 (Data Binding Fix)".
+
+I will run a command to find "수동 완벽 복구 계획" using the `default` (ANSI/CP949) encoding in PowerShell, so that we can accurately read the Korean text describing Steps 3 and 4.
+
+I will retrieve the lines around line 1089 from the log file `overview.txt` to read the exact proposed Action Plan text.
+
+I will use a simple inline Node.js script to correctly read and print the Korean text from step 3261 in the `overview.txt` without any PowerShell encoding corruption. This will give us the exact Action Plan.
+
+I will use another Node.js inline command to filter and retrieve the specific descriptions of Step 3 and Step 4 from the proposal in step 3261, to bypass the 2000-character output limit.
+
+I will write the entire text of the proposal from step 3261 into a temporary scratch file and view it using `view_file`. This ensures we see the complete 4-step Action Plan with no truncation or character corruption.
+
+I will now view the file `scratch/action_plan.txt` to read the entire 4-step Action Plan proposed earlier.
+
+I will run an inline Node.js script to search the entire `overview.txt` file for any occurrence of "Step 3" or "클래스 데이터" and output their line index and snippet. This will help find when the recovery plan was originally defined.
+
+I will check the git diff to see exactly what changes are currently pending in the working directory. This might give us clues on the current status of the fixes.
+
+I will view the newly added (untracked) file `src/components/groups/GroupClassStatus.tsx` to understand the data binding and rendering logic for classes that was introduced recently.
+
+I will use `grep_search` to check if `GroupClassStatus` or other class-related components are rendered or imported inside `GroupHome.tsx` to understand the data binding flow.
+
+I will list the files inside `src/components/groups/` to find all components related to group feature rendering, including class-related editors and status viewers.
+
+I will search for `GroupClassStatus` in `old_grouphome.tsx.bak` to see if the backup file contained the registration/rendering logic for it.
+
+I will search for `activeTab ===` in `GroupHome.tsx` to locate the tab switching and rendering logic for various tabs, including classes.
+
+I will search for `GroupClass` inside `GroupHome.tsx` to see if and how any of the class components (like `GroupClassSetting`, `GroupClassEditor`, etc.) are imported or utilized.
+
+I will read `ia.md` as required by the Project Development Rules to ensure we have the correct file locations, menu structure, and architectural mapping context before proposing any modifications.
+
+I will view the `ia_group.md` file as suggested by `ia.md` to understand the detailed structure of the Group ecosystem, particularly the tabs, components, and data binding configurations.
+
+I will view `src/constants/groupTabs.ts` to see what tabs are defined and how they are mapped. This file handles navigation for the Group components.
+
+스토니님, **Step 3: 클래스 데이터 렌더링 복구 (Data Binding Fix)** 단계로 넘어가기 위해 수립한 세부 개발 계획을 보고드립니다. 
+
+글로벌 절대 규칙에 따라, **이 계획에 대해 스토니님의 명시적인 승인(Approval)**을 얻은 후에 실제 코드 수정을 진행하겠습니다.
+
+상세한 개발 계획은 [woc_manual_restore_step3_plan.md](file:///C:/Users/stone/.gemini/antigravity/brain/4b3ddb43-6df7-4cf0-b25b-7c715ccd1c0b/scratch/woc_manual_restore_step3_plan.md) 아티팩트로도 안전하게 작성해 두었으며, 핵심 내용은 아래와 같습니다.
+
+---
+
+### 📑 Step 3: 클래스 데이터 렌더링 복구 세부 개발 계획
+
+#### 1. 🎯 3대 개발 원칙 준수
+*   **Zero Design Deviation (디자인 편차 0%)**: 
+<truncated 2937 bytes>
+
+========================================================================
+
+### [Turn 2] Time: 2026-05-17T01:12:57Z
+
+#### 👤 User Request:
+<USER_REQUEST>
+아 씨발... 모든 작업 중단하고
+문제발생부터 롤백 그리고 문제점까지 전체 인수인계 파일 만들어 / 끌로드에게 하게해야겟다
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-05-17T10:12:57+09:00.
+
+The user's current state is as follows:
+Active Document: c:\Users\stone\WoC\src\contexts\LanguageContext.tsx (LANGUAGE_TSX)
+Cursor is on line: 1
+Other open documents:
+- c:\Users\stone\WoC\src\contexts\LanguageContext.tsx (LANGUAGE_TSX)
+No browser pages are currently open.
+</ADDITIONAL_METADATA>
+<USER_SETTINGS_CHANGE>
+The user changed setting `Model Selection` from None to Gemini 3 Flash. No need to comment on this change if the user doesn't ask about it. If reporting what model you are, please use a human readable name instead of the exact string.
+</USER_SETTINGS_CHANGE>
+
+#### 🤖 Assistant Response:
+스토니님, 지시하신 대로 **모든 신규 코딩 작업을 즉시 중단**하였습니다.
+
+다음 번에 작업하실 에이전트(클로드 등)가 프로젝트를 열었을 때 바로 이해하고 이어서 완벽하게 복구를 완수할 수 있도록, **사건 개요, 기술적 분석, 정합성 불일치 원인, 상세 복구 단계, 절대 준수 규칙**을 집대성한 **전체 기술 인수인계서 파일([CLAUDE_HANDOFF_REPORT.md](file:///C:/Users/stone/WoC/CLAUDE_HANDOFF_REPORT.md))을 프로젝트 루트 디렉토리에 성공적으로 생성 완료**하였습니다.
+
+생성된 인수인계 파일의 핵심 요약은 다음과 같습니다:
+
+---
+
+### 📑 Claude 인수인계 & 장애 분석 리포트 요약 ([CLAUDE_HANDOFF_REPORT.md](file:///C:/Users/stone/WoC/CLAUDE_HANDOFF_REPORT.md))
+
+#### 1. 🚨 사건 발단 및 긴급 복구 조치 완료 상황
+<truncated 3272 bytes>
+
+========================================================================
+
+### [Turn 3] Time: 2026-05-17T01:15:23Z
+
+#### 👤 User Request:
+<USER_REQUEST>
+아니 내가 3시간 전부터 요청한거 니가 대답한거 모든 내용을 거기에 담아... 니 의견을 담지 말고,,, 다시
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-05-17T10:15:23+09:00.
+
+The user's current state is as follows:
+Active Document: c:\Users\stone\WoC\CLAUDE_HANDOFF_REPORT.md (LANGUAGE_MARKDOWN)
+Cursor is on line: 1
+Other open documents:
+- c:\Users\stone\WoC\CLAUDE_HANDOFF_REPORT.md (LANGUAGE_MARKDOWN)
+- c:\Users\stone\WoC\src\contexts\LanguageContext.tsx (LANGUAGE_TSX)
+No browser pages are currently open.
+</ADDITIONAL_METADATA>
+
+#### 🤖 Assistant Response:
+
+
+========================================================================

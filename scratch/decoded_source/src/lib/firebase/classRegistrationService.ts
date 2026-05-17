@@ -1,0 +1,212 @@
+import {
+  collection,
+  doc,
+  getDocs,
+  setDoc,
+  updateDoc,
+  deleteDoc,
+  query,
+  where,
+  orderBy,
+  serverTimestamp,
+  onSnapshot,
+  writeBatch,
+  getDoc
+} from "firebase/firestore";
+import { db } from "./clientApp";
+import { ClassRegistration } from "@/types/group";
+
+const COLLECTION_NAME = "class_registrations";
+
+// Helper: Remove undefined/null fields to prevent Firestore rejections
+function cleanData(obj: any): any {
+  const result: any = {};
+  for (const key of Object.keys(obj)) {
+    if (obj[key] !== undefined && obj[key] !== null) {
+      result[key] = obj[key];
+    }
+  }
+  return result;
+}
+
+export const classRegistrationService = {
+  // Add a new registration
+  addRegistration: async (data: Omit<ClassRegistration, 'id' | 'appliedAt' | 'updatedAt'>) => {
+    try {
+      const batch = writeBatch(db);
+      const regRef = doc(collection(db, COLLECTION_NAME));
+      
+      // Clean undefined/null from data first
+      const cleanedData = cleanData(data);
+      
+      // Add system fields directly so FieldValue prototypes aren't stripped
+      const registration = {
+        ...cleanedData,
+        id: regRef.id,
+        appliedAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      };
+      
+      batch.set(regRef, registration);
+
+      // Create Notifications using the same batch
+      if (registration.groupId && registration.userId) {
+        const { notificationService } = await import('@/lib/firebase/notificationService');
+        
+        // 1. Admin Todo
+        await notificationService.createTodoForGroupAdmins(
+          registration.groupId,
+          {
+            category: 'CLASS',
+            type: 'CLASS_APPLY',
+            title: 'New Class Application',
+            message: `${registration.applicantName || 'User'} has applied for '${registration.classTitle || 'Class'}'. Please verify payment.`,
+            actionUrl: `/groups/${registration.groupId}?tab=classes`,
+            referenceId: regRef.id,
+          },
+          batch
+        );
+
+        // 2. User Info
+        await notificationService.createNotification({
+          targetUserId: registration.userId,
+          category: 'CLASS',
+          type: 'CLASS_APPLY_INFO',
+          title: 'Class Application Received',
+          message: `Application for '${registration.classTitle || 'Class'}' has been received. It will be approved after payment is verified.`,
+          actionUrl: `/history`,
+          referenceId: regRef.id,
+        }, batch);
+      }
+
+      await batch.commit();
+      return registration as ClassRegistration;
+    } catch (error: any) {
+      console.error("Error adding class registration:", error?.code, error?.message, error);
+      throw error;
+    }
+  },
+
+  // Update registration (e.g. user reports payment, or admin confirms payment)
+  updateRegistration: async (registrationId: string, updates: Partial<Omit<ClassRegistration, 'id' | 'appliedAt'>>) => {
+    try {
+      const batch = writeBatch(db);
+      const regRef = doc(db, COLLECTION_NAME, registrationId);
+      
+      batch.update(regRef, {
+        ...updates,
+        updatedAt: serverTimestamp()
+      });
+
+      // If marked as COMPLETED, notify user and close Admin Todos
+      if (updates.status === 'PAYMENT_COMPLETED') {
+        const snap = await getDoc(regRef);
+        if (snap.exists()) {
+          const regData = snap.data() as ClassRegistration;
+          if (regData.userId) {
+            const { notificationService } = await import('@/lib/firebase/notificationService');
+            
+            await notificationService.createNotification({
+              targetUserId: regData.userId,
+              category: 'CLASS',
+              type: 'CLASS_APPROVED',
+              title: 'Class Approved',
+              message: `Approval and payment verification for '${regData.classTitle || 'Class'}' are complete.`,
+              actionUrl: `/history`,
+              referenceId: registrationId,
+            }, batch);
+
+            await notificationService.markTodosAsCompletedByReference(registrationId, batch);
+          }
+        }
+      }
+
+      await batch.commit();
+    } catch (error) {
+      console.error("Error updating class registration:", error);
+      throw error;
+    }
+  },
+
+  // Get all registrations for a specific group (Admin View)
+  getRegistrationsByGroup: async (groupId: string): Promise<ClassRegistration[]> => {
+    try {
+      const q = query(
+        collection(db, COLLECTION_NAME),
+        where("groupId", "==", groupId)
+      );
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => doc.data() as ClassRegistration);
+    } catch (error) {
+      console.error("Error getting group registrations:", error);
+      throw error;
+    }
+  },
+
+  // Get all registrations for a specific user (User History View)
+  getUserRegistrations: async (userId: string): Promise<ClassRegistration[]> => {
+    try {
+      const q = query(
+        collection(db, COLLECTION_NAME),
+        where("userId", "==", userId)
+      );
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => doc.data() as ClassRegistration);
+    } catch (error) {
+      console.error("Error getting user registrations:", error);
+      throw error;
+    }
+  },
+
+  // Subscribe to registrations for a specific group
+  subscribeToGroupRegistrations: (groupId: string, callback: (registrations: ClassRegistration[]) => void) => {
+    const q = query(
+      collection(db, COLLECTION_NAME),
+      where("groupId", "==", groupId)
+    );
+    
+    return onSnapshot(q, (snapshot) => {
+      const registrations = snapshot.docs.map(doc => doc.data() as ClassRegistration);
+      callback(registrations);
+    }, (error) => {
+      console.error("Error subscribing to group registrations:", error);
+    });
+  },
+  // Subscribe to registrations for a specific user
+  subscribeToUserRegistrations: (userId: string, callback: (registrations: ClassRegistration[]) => void) => {
+    const q = query(
+      collection(db, COLLECTION_NAME),
+      where("userId", "==", userId)
+    );
+    
+    return onSnapshot(q, (snapshot) => {
+      const registrations = snapshot.docs.map(doc => doc.data() as ClassRegistration);
+      callback(registrations);
+    }, (error) => {
+      console.error("Error subscribing to user registrations:", error);
+    });
+  },
+
+  subscribeToPhoneRegistrations: (phoneNumber: string, callback: (registrations: ClassRegistration[]) => void) => {
+    const q = query(
+      collection(db, COLLECTION_NAME),
+      where("contactNumber", "==", phoneNumber)
+    );
+    
+    return onSnapshot(q, (snapshot) => {
+      const registrations = snapshot.docs.map(doc => doc.data() as ClassRegistration);
+      callback(registrations);
+    }, (error) => {
+      console.error("Error subscribing to phone registrations:", error);
+    });
+  },
+
+  deleteRegistration: async (id: string): Promise<void> => {
+    try {
+      await deleteDoc(doc(db, COLLECTION_NAME, id));
+    } catch (error) {
+      console.error("Error deleting registration:", error);
+      throw error;
+    }
+  }
+};

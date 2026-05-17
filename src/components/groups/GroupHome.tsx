@@ -23,7 +23,7 @@ import { useNavigation } from "@/components/providers/NavigationProvider";
 import { getContrastColor } from "@/lib/utils";
 import { useHistoryBack } from "@/hooks/useHistoryBack";
 
-type TabType = 'home' | 'calendar' | 'feed' | 'board' | 'about' | 'class' | 'members' | 'settings' | 'shop' | 'stay' | 'rental' | 'coupon' | 'live' | 'brand' | 'polls' | 'qa' | 'broadcast' | 'attendance' | 'rules' | 'surveys' | 'anonymous' | 'classA' | 'classB' | 'classC' | 'homework' | 'studentReports' | 'tuition' | 'gradeSystem' | 'parentNotify' | 'parentConsult' | 'examScheduler' | 'ticketBooking' | 'workshopReg' | 'qrCheckin' | 'waitlist' | 'retreat' | 'eventStaff' | 'guestList' | 'productInventory' | 'membershipBilling' | 'donationSupport' | 'subscriptionPlans' | 'settlementReports' | 'mediaGallery' | 'videoLibrary' | 'editorialPage' | 'newsletter' | 'podcastFeed' | 'pressKit' | 'linkHub' | 'socialSync' | 'brandAssets' | 'customLandingPage' | 'taskManager' | 'internalWiki' | 'aiAssistant' | 'roles';
+type TabType = 'home' | 'calendar' | 'feed' | 'board' | 'about' | 'class' | 'class-setting' | 'members' | 'settings' | 'shop' | 'stay' | 'rental' | 'coupon' | 'live' | 'brand' | 'polls' | 'qa' | 'broadcast' | 'attendance' | 'rules' | 'surveys' | 'anonymous' | 'classA' | 'classB' | 'classC' | 'homework' | 'studentReports' | 'tuition' | 'gradeSystem' | 'parentNotify' | 'parentConsult' | 'examScheduler' | 'ticketBooking' | 'workshopReg' | 'qrCheckin' | 'waitlist' | 'retreat' | 'eventStaff' | 'guestList' | 'productInventory' | 'membershipBilling' | 'donationSupport' | 'subscriptionPlans' | 'settlementReports' | 'mediaGallery' | 'videoLibrary' | 'editorialPage' | 'newsletter' | 'podcastFeed' | 'pressKit' | 'linkHub' | 'socialSync' | 'brandAssets' | 'customLandingPage' | 'taskManager' | 'internalWiki' | 'aiAssistant' | 'roles';
 
 const GroupCalendar = dynamic(() => import("./GroupCalendar"));
 const GroupBoard = dynamic(() => import("./GroupBoard"));
@@ -51,6 +51,7 @@ const GroupBoardEditor = dynamic(() => import("./GroupBoardEditor"));
 const GroupAccountEditor = dynamic(() => import("./GroupAccountEditor"));
 const LiveFeed = dynamic(() => import("@/components/live/LiveFeed"));
 const ClassDetail = dynamic(() => import("../class/ClassDetail"));
+const GroupClassDashboard = dynamic(() => import("./GroupClassDashboard"));
 
 // Community module mockups
 const GroupPolls = dynamic(() => import("./GroupPolls"));
@@ -145,6 +146,7 @@ export default function GroupHome({ group: initialGroup, isModal }: { group: Gro
   const [showGroupChat, setShowGroupChat] = useState(false);
   const [currentGroup, setCurrentGroup] = useState<Group>(initialGroup);
   const [selectedMoment, setSelectedMoment] = useState<GalleryPost | null>(null);
+  const [showClassDetail, setShowClassDetail] = useState(false);
 
   const { handleClose: handleGroupChatClose } = useHistoryBack(showGroupChat, () => setShowGroupChat(false));
   const { handleClose: handleSettingsClose } = useHistoryBack(isSettingsOpen, () => setIsSettingsOpen(false));
@@ -834,7 +836,8 @@ export default function GroupHome({ group: initialGroup, isModal }: { group: Gro
                     'notice': { id: 'board', key: 'group.tab.notice', icon: 'campaign', implemented: true },
                     'about': { id: 'about', key: 'group.tab.about', icon: 'info', implemented: true },
                     'members': { id: 'members', key: 'group.tab.members', icon: 'groups', implemented: true },
-                    'class-setting': { id: 'class', key: 'group.tab.class', icon: 'school', implemented: true },
+                    'class': { id: 'class', key: 'group.tab.class_user', icon: 'school', implemented: false },
+                    'class-setting': { id: 'class-setting', key: 'group.tab.class_admin', icon: 'school', implemented: true },
                     'stay-setting': { id: 'stay', key: 'group.tab.stay', icon: 'bed', implemented: true },
                     'shop-setting': { id: 'shop', key: 'group.tab.shop', icon: 'storefront', implemented: true },
                     'rental-setting': { id: 'rental', key: 'group.tab.rental', icon: 'key', implemented: true },
@@ -890,7 +893,7 @@ export default function GroupHome({ group: initialGroup, isModal }: { group: Gro
                   };
 
                   // Admin function IDs (shown after separator, owner-only, importance order)
-                  const ADMIN_FUNCTION_IDS = ['brand-setting', 'roles-permissions'];
+                  const ADMIN_FUNCTION_IDS = ['brand-setting', 'roles-permissions', 'class-setting'];
                   // Fixed position IDs (excluded from user ordering in Step 3)
                   const FIXED_IDS = new Set(['dashboard', 'about', ...ADMIN_FUNCTION_IDS]);
 
@@ -971,7 +974,7 @@ export default function GroupHome({ group: initialGroup, isModal }: { group: Gro
                     ADMIN_FUNCTION_IDS.forEach(fnId => {
                       // Only include if selected (or mandatory like brand-setting, roles-permissions)
                       const isMandatoryAdmin = fnId === 'brand-setting' || fnId === 'roles-permissions';
-                      if (isMandatoryAdmin || selectedFns.includes(fnId)) {
+                      if (isMandatoryAdmin || selectedFns.includes(fnId) || (fnId === 'class-setting' && selectedFns.includes('class'))) {
                         const mapping = FUNCTION_TAB_MAP[fnId];
                         if (mapping && !addedTabIds.has(mapping.id + '-admin')) {
                           addedTabIds.add(mapping.id + '-admin');
@@ -1410,7 +1413,20 @@ export default function GroupHome({ group: initialGroup, isModal }: { group: Gro
 
               {activeTab === 'class' && isFullMember && (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
-                  <ClassDetail groupId={currentGroup.id} isEmbedded={true} />
+                  {!showClassDetail ? (
+                    <GroupClassDashboard 
+                      group={currentGroup} 
+                      onApplyClick={() => setShowClassDetail(true)} 
+                    />
+                  ) : (
+                    <ClassDetail groupId={currentGroup.id} isModal={true} onClose={() => setShowClassDetail(false)} />
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'class-setting' && isAdminUser && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
+                  <GroupClassEditor group={currentGroup} />
                 </div>
               )}
 

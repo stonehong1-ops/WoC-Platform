@@ -13,7 +13,7 @@ for (let i = 0; i < lines.length; i++) {
             if (obj.content && obj.content.length > biggest.length) {
                 biggest = { line: i + 1, length: obj.content.length, content: obj.content };
             }
-        } catch (e) {}
+        } catch (e) { }
     }
 }
 

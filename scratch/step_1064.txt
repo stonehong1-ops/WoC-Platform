@@ -1,0 +1,12 @@
+<USER_REQUEST>
+현재 발생한 문제는 Git 커밋만 이전으로 되돌렸기 때문에, 이미 변경된 데이터베이스(Firestore) 구조나 번역 데이터, 빌드 캐시(Tailwind CSS) 등과 코드 간의 불일치(Mismatch) 가 발생했기 때문입니다. 자동 롤백만으로는 이 꼬인 실타래를 완전히 풀 수 없습니다.
+
+이제부터는 수동으로 하나씩 퍼즐을 맞춰서 완벽하게 복구해야 합니다. 다음 4단계의 수동 복구 계획(Action Plan) 을 제안합니다.
+
+🛠️ 수동 완벽 복구 계획 (Action Plan)
+
+Step 1: CSS 및 디자인 테마 복구 (Style Fix)
+tailwind.config.ts 와 백업 파일(tailwind.config.bak.ts)을 대조하여 깨진 전역 색상/블러 테마 오류를 바로잡습니다.
+Step 2: 다국어(번역 키) 동기화 (LanguageContext Fix)
+화면에 깨져서 나오는 groups.cat_academy 등의 번역 키 누락을 추적하여 LanguageContext.tsx에 다시 주입합니다.
+<truncated 1207 bytes>

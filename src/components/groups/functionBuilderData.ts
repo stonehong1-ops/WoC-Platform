@@ -19,19 +19,6 @@ export interface FunctionSection {
 
 export const FUNCTION_SECTIONS: FunctionSection[] = [
   {
-    id: 'admin',
-    title: 'ADMIN',
-    subtitle: '운영 관리 시스템',
-    accentColor: 'bg-primary',
-    cards: [
-      { id: 'brand-setting', icon: 'palette', title: 'Brand Setting', subtitle: '브랜드 설정', description: '브랜드 색상, 로고 및 고유 아이덴티티 구성', price: 'Free', status: 'INSTALLED', mandatory: true },
-      { id: 'class-setting', icon: 'school', title: 'Class Setting', subtitle: '수업 설정', description: '수업 커리큘럼 정의 및 강의실 공간 배정', price: 'Free', status: 'ALPHA' },
-      { id: 'rental-setting', icon: 'key', title: 'Rental Setting', subtitle: '대여 설정', description: '공간 및 장비 대여 규칙, 보증금 시스템 설정', price: 'Free', status: 'MIGRATE' },
-      { id: 'shop-setting', icon: 'storefront', title: 'Shop Setting', subtitle: '상점 설정', description: '커머스 인프라, 결제 게이트웨이 및 배송 정책', price: 'Free', status: 'ACTIVE' },
-      { id: 'stay-setting', icon: 'bed', title: 'Stay Setting', subtitle: '스테이 설정', description: '숙박 및 워크스테이 예약 엔진 커스터마이징', price: 'Free', status: 'ALPHA' },
-    ],
-  },
-  {
     id: 'core',
     title: 'CORE',
     subtitle: '핵심 기본 시스템',
@@ -68,6 +55,7 @@ export const FUNCTION_SECTIONS: FunctionSection[] = [
     subtitle: '교육 및 학원 운영',
     accentColor: 'bg-primary-container',
     cards: [
+      { id: 'class', icon: 'school', title: 'Class', subtitle: '클래스', description: '수업 커리큘럼 정의 및 강의실 공간 배정', price: 'Free', status: 'ACTIVE' },
       { id: 'class-manager-a', icon: 'assignment_ind', title: 'Class Manager A', subtitle: '강좌 관리 A', description: '수강생 명단 및 출결 현황 실시간 관리', price: '$18/mo', status: 'ACTIVE' },
       { id: 'class-manager-b', icon: 'menu_book', title: 'Class Manager B', subtitle: '강좌 관리 B', description: '강의 교안 아카이빙 및 과제 관리 엔진', price: '$18/mo', status: 'ACTIVE' },
       { id: 'class-manager-c', icon: 'auto_stories', title: 'Class Manager C', subtitle: '강좌 관리 C', description: '다중 강좌 스케줄링 및 자동 보강 관리', price: '$22/mo', status: 'ACTIVE' },

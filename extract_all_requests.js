@@ -9,7 +9,7 @@ lines.forEach((line, index) => {
         try {
             const obj = JSON.parse(line);
             userRequests.push({ line: index + 1, content: obj.content });
-        } catch (e) {}
+        } catch (e) { }
     }
 });
 

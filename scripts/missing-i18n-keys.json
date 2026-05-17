@@ -1,0 +1,2722 @@
+[
+  {
+    "key": "activeCoupons",
+    "files": [
+      "src\\components\\groups\\CouponAdmin.tsx"
+    ]
+  },
+  {
+    "key": "admin.banners.featured_desc",
+    "files": [
+      "src\\app\\admin\\banners\\page.tsx"
+    ]
+  },
+  {
+    "key": "admin.banners.featured_posts",
+    "files": [
+      "src\\app\\admin\\banners\\page.tsx"
+    ]
+  },
+  {
+    "key": "admin.banners.hero_fail",
+    "files": [
+      "src\\app\\admin\\banners\\page.tsx"
+    ]
+  },
+  {
+    "key": "admin.banners.hero_success",
+    "files": [
+      "src\\app\\admin\\banners\\page.tsx"
+    ]
+  },
+  {
+    "key": "admin.banners.loading_posts",
+    "files": [
+      "src\\app\\admin\\banners\\page.tsx"
+    ]
+  },
+  {
+    "key": "admin.banners.none",
+    "files": [
+      "src\\app\\admin\\banners\\page.tsx"
+    ]
+  },
+  {
+    "key": "admin.banners.posts_fail",
+    "files": [
+      "src\\app\\admin\\banners\\page.tsx"
+    ]
+  },
+  {
+    "key": "admin.banners.posts_success",
+    "files": [
+      "src\\app\\admin\\banners\\page.tsx"
+    ]
+  },
+  {
+    "key": "admin.banners.save",
+    "files": [
+      "src\\app\\admin\\banners\\page.tsx"
+    ]
+  },
+  {
+    "key": "admin.banners.save_posts",
+    "files": [
+      "src\\app\\admin\\banners\\page.tsx"
+    ]
+  },
+  {
+    "key": "admin.banners.saving",
+    "files": [
+      "src\\app\\admin\\banners\\page.tsx"
+    ]
+  },
+  {
+    "key": "admin.banners.select_event",
+    "files": [
+      "src\\app\\admin\\banners\\page.tsx"
+    ]
+  },
+  {
+    "key": "admin.banners.select_post",
+    "files": [
+      "src\\app\\admin\\banners\\page.tsx"
+    ]
+  },
+  {
+    "key": "admin.banners.slot1",
+    "files": [
+      "src\\app\\admin\\banners\\page.tsx"
+    ]
+  },
+  {
+    "key": "admin.banners.slot2",
+    "files": [
+      "src\\app\\admin\\banners\\page.tsx"
+    ]
+  },
+  {
+    "key": "admin.banners.society_hero",
+    "files": [
+      "src\\app\\admin\\banners\\page.tsx"
+    ]
+  },
+  {
+    "key": "admin.banners.title",
+    "files": [
+      "src\\app\\admin\\banners\\page.tsx"
+    ]
+  },
+  {
+    "key": "admin.seed.admin_account",
+    "files": [
+      "src\\app\\admin\\seed-scenario\\page.tsx"
+    ]
+  },
+  {
+    "key": "admin.seed.alert_input",
+    "files": [
+      "src\\app\\admin\\seed-scenario\\page.tsx"
+    ]
+  },
+  {
+    "key": "admin.seed.desc",
+    "files": [
+      "src\\app\\admin\\seed-scenario\\page.tsx"
+    ]
+  },
+  {
+    "key": "admin.seed.dummy_class_desc",
+    "files": [
+      "src\\app\\admin\\seed-scenario\\page.tsx"
+    ]
+  },
+  {
+    "key": "admin.seed.dummy_class_sched1",
+    "files": [
+      "src\\app\\admin\\seed-scenario\\page.tsx"
+    ]
+  },
+  {
+    "key": "admin.seed.dummy_class_sched2",
+    "files": [
+      "src\\app\\admin\\seed-scenario\\page.tsx"
+    ]
+  },
+  {
+    "key": "admin.seed.dummy_class_title",
+    "files": [
+      "src\\app\\admin\\seed-scenario\\page.tsx"
+    ]
+  },
+  {
+    "key": "admin.seed.dummy_group_desc",
+    "files": [
+      "src\\app\\admin\\seed-scenario\\page.tsx"
+    ]
+  },
+  {
+    "key": "admin.seed.execute",
+    "files": [
+      "src\\app\\admin\\seed-scenario\\page.tsx"
+    ]
+  },
+  {
+    "key": "admin.seed.generating",
+    "files": [
+      "src\\app\\admin\\seed-scenario\\page.tsx"
+    ]
+  },
+  {
+    "key": "admin.seed.log_db_saved",
+    "files": [
+      "src\\app\\admin\\seed-scenario\\page.tsx"
+    ]
+  },
+  {
+    "key": "admin.seed.log_start",
+    "files": [
+      "src\\app\\admin\\seed-scenario\\page.tsx"
+    ]
+  },
+  {
+    "key": "admin.seed.log_step2",
+    "files": [
+      "src\\app\\admin\\seed-scenario\\page.tsx"
+    ]
+  },
+  {
+    "key": "admin.seed.log_step4",
+    "files": [
+      "src\\app\\admin\\seed-scenario\\page.tsx"
+    ]
+  },
+  {
+    "key": "admin.seed.log_step5",
+    "files": [
+      "src\\app\\admin\\seed-scenario\\page.tsx"
+    ]
+  },
+  {
+    "key": "admin.seed.log_success",
+    "files": [
+      "src\\app\\admin\\seed-scenario\\page.tsx"
+    ]
+  },
+  {
+    "key": "admin.seed.no_access",
+    "files": [
+      "src\\app\\admin\\seed-scenario\\page.tsx"
+    ]
+  },
+  {
+    "key": "admin.seed.placeholder",
+    "files": [
+      "src\\app\\admin\\seed-scenario\\page.tsx"
+    ]
+  },
+  {
+    "key": "admin.seed.title",
+    "files": [
+      "src\\app\\admin\\seed-scenario\\page.tsx"
+    ]
+  },
+  {
+    "key": "admin.seed.user_account",
+    "files": [
+      "src\\app\\admin\\seed-scenario\\page.tsx"
+    ]
+  },
+  {
+    "key": "all",
+    "files": [
+      "src\\components\\groups\\GroupBoard.tsx"
+    ]
+  },
+  {
+    "key": "auth.auto_register_notice",
+    "files": [
+      "src\\components\\auth\\AuthModal.tsx"
+    ]
+  },
+  {
+    "key": "auth.email",
+    "files": [
+      "src\\components\\auth\\AuthModal.tsx"
+    ]
+  },
+  {
+    "key": "auth.email_continue",
+    "files": [
+      "src\\components\\auth\\AuthModal.tsx"
+    ]
+  },
+  {
+    "key": "auth.error.captcha_check_failed",
+    "files": [
+      "src\\components\\auth\\AuthModal.tsx"
+    ]
+  },
+  {
+    "key": "auth.error.code_expired",
+    "files": [
+      "src\\components\\auth\\AuthModal.tsx"
+    ]
+  },
+  {
+    "key": "auth.error.email_password_required",
+    "files": [
+      "src\\components\\auth\\AuthModal.tsx"
+    ]
+  },
+  {
+    "key": "auth.error.fallback",
+    "files": [
+      "src\\components\\auth\\AuthModal.tsx"
+    ]
+  },
+  {
+    "key": "auth.error.invalid_password",
+    "files": [
+      "src\\components\\auth\\AuthModal.tsx"
+    ]
+  },
+  {
+    "key": "auth.error.invalid_phone_number",
+    "files": [
+      "src\\components\\auth\\AuthModal.tsx"
+    ]
+  },
+  {
+    "key": "auth.error.invalid_verification_code",
+    "files": [
+      "src\\components\\auth\\AuthModal.tsx"
+    ]
+  },
+  {
+    "key": "auth.error.network_request_failed",
+    "files": [
+      "src\\components\\auth\\AuthModal.tsx"
+    ]
+  },
+  {
+    "key": "auth.error.password_length",
+    "files": [
+      "src\\components\\auth\\AuthModal.tsx"
+    ]
+  },
+  {
+    "key": "auth.error.quota_exceeded",
+    "files": [
+      "src\\components\\auth\\AuthModal.tsx"
+    ]
+  },
+  {
+    "key": "auth.error.timeout",
+    "files": [
+      "src\\components\\auth\\AuthModal.tsx"
+    ]
+  },
+  {
+    "key": "auth.error.too_many_requests",
+    "files": [
+      "src\\components\\auth\\AuthModal.tsx"
+    ]
+  },
+  {
+    "key": "auth.password",
+    "files": [
+      "src\\components\\auth\\AuthModal.tsx"
+    ]
+  },
+  {
+    "key": "auth.soon",
+    "files": [
+      "src\\components\\auth\\AuthModal.tsx"
+    ]
+  },
+  {
+    "key": "beTheFirstToShare",
+    "files": [
+      "src\\components\\groups\\GroupBoard.tsx"
+    ]
+  },
+  {
+    "key": "chat.discover",
+    "files": [
+      "src\\components\\chat\\ChatList.tsx"
+    ]
+  },
+  {
+    "key": "chat.myGroups",
+    "files": [
+      "src\\components\\chat\\ChatList.tsx"
+    ]
+  },
+  {
+    "key": "chat.public",
+    "files": [
+      "src\\components\\chat\\ChatList.tsx"
+    ]
+  },
+  {
+    "key": "chat.tab_${tab.toLowerCase()}",
+    "files": [
+      "src\\app\\chat\\page.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.${previewMedia.type}",
+    "files": [
+      "src\\components\\chat\\ChatRoom.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.admin",
+    "files": [
+      "src\\components\\chat\\GroupMembersPopup.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.approve",
+    "files": [
+      "src\\components\\chat\\ChatRoom.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.approved",
+    "files": [
+      "src\\components\\chat\\ChatRoom.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.cancel",
+    "files": [
+      "src\\components\\chat\\GroupMembersPopup.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.go_back",
+    "files": [
+      "src\\components\\chat\\ChatRoom.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.group_chat",
+    "files": [
+      "src\\components\\chat\\ChatRoom.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.group_members",
+    "files": [
+      "src\\components\\chat\\GroupMembersPopup.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.member",
+    "files": [
+      "src\\components\\chat\\GroupMembersPopup.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.members_only",
+    "files": [
+      "src\\components\\chat\\ChatRoom.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.members_only_desc",
+    "files": [
+      "src\\components\\chat\\ChatRoom.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.micPermissionNeeded",
+    "files": [
+      "src\\components\\chat\\ChatRoom.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.owner",
+    "files": [
+      "src\\components\\chat\\GroupMembersPopup.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.parse.key.amount",
+    "files": [
+      "src\\components\\chat\\ChatRoom.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.parse.key.applicant",
+    "files": [
+      "src\\components\\chat\\ChatRoom.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.parse.key.brand",
+    "files": [
+      "src\\components\\chat\\ChatRoom.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.parse.key.date",
+    "files": [
+      "src\\components\\chat\\ChatRoom.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.parse.key.dates",
+    "files": [
+      "src\\components\\chat\\ChatRoom.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.parse.key.depositor",
+    "files": [
+      "src\\components\\chat\\ChatRoom.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.parse.key.guests",
+    "files": [
+      "src\\components\\chat\\ChatRoom.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.parse.key.headcount",
+    "files": [
+      "src\\components\\chat\\ChatRoom.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.parse.key.image",
+    "files": [
+      "src\\components\\chat\\ChatRoom.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.parse.key.link",
+    "files": [
+      "src\\components\\chat\\ChatRoom.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.parse.key.message",
+    "files": [
+      "src\\components\\chat\\ChatRoom.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.parse.key.nights",
+    "files": [
+      "src\\components\\chat\\ChatRoom.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.parse.key.option",
+    "files": [
+      "src\\components\\chat\\ChatRoom.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.parse.key.order_no",
+    "files": [
+      "src\\components\\chat\\ChatRoom.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.parse.key.price",
+    "files": [
+      "src\\components\\chat\\ChatRoom.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.parse.key.product",
+    "files": [
+      "src\\components\\chat\\ChatRoom.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.parse.key.purpose",
+    "files": [
+      "src\\components\\chat\\ChatRoom.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.parse.key.space",
+    "files": [
+      "src\\components\\chat\\ChatRoom.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.parse.key.stay",
+    "files": [
+      "src\\components\\chat\\ChatRoom.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.parse.key.time",
+    "files": [
+      "src\\components\\chat\\ChatRoom.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.parse.key.title",
+    "files": [
+      "src\\components\\chat\\ChatRoom.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.parse.tag.order_placed",
+    "files": [
+      "src\\components\\chat\\ChatRoom.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.parse.tag.payment_reported",
+    "files": [
+      "src\\components\\chat\\ChatRoom.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.parse.tag.product_inquiry",
+    "files": [
+      "src\\components\\chat\\ChatRoom.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.parse.tag.rental_inquiry",
+    "files": [
+      "src\\components\\chat\\ChatRoom.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.parse.tag.stay_booking",
+    "files": [
+      "src\\components\\chat\\ChatRoom.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.parse.tag.stay_payment",
+    "files": [
+      "src\\components\\chat\\ChatRoom.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.reject",
+    "files": [
+      "src\\components\\chat\\ChatRoom.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.rejected",
+    "files": [
+      "src\\components\\chat\\ChatRoom.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.remove",
+    "files": [
+      "src\\components\\chat\\GroupMembersPopup.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.remove_failed",
+    "files": [
+      "src\\components\\chat\\GroupMembersPopup.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.sentPhoto",
+    "files": [
+      "src\\components\\chat\\ChatRoom.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.sentVideo",
+    "files": [
+      "src\\components\\chat\\ChatRoom.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.sentVoice",
+    "files": [
+      "src\\components\\chat\\ChatRoom.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.staff",
+    "files": [
+      "src\\components\\chat\\GroupMembersPopup.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.total",
+    "files": [
+      "src\\components\\events\\EventRegisterTab.tsx"
+    ]
+  },
+  {
+    "key": "chatroom.will_reply_after_review",
+    "files": [
+      "src\\components\\chat\\ChatRoom.tsx"
+    ]
+  },
+  {
+    "key": "class.add_class",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.add_instructor",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.add_weeks",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.added_success",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.all_levels",
+    "files": [
+      "src\\components\\class\\ClassDetail.tsx"
+    ]
+  },
+  {
+    "key": "class.amount_label",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.bundle_packages",
+    "files": [
+      "src\\components\\class\\ClassDetail.tsx"
+    ]
+  },
+  {
+    "key": "class.capacity_label",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.change_photo",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.change_video",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.check_cost",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.currency_eur",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.currency_jpy",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.currency_krw",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.currency_label",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.currency_usd",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.delete_confirm",
+    "files": [
+      "src\\components\\class\\ClassDetail.tsx"
+    ]
+  },
+  {
+    "key": "class.delete_failed",
+    "files": [
+      "src\\components\\class\\ClassDetail.tsx"
+    ]
+  },
+  {
+    "key": "class.deleted_success",
+    "files": [
+      "src\\components\\class\\ClassDetail.tsx"
+    ]
+  },
+  {
+    "key": "class.desc_label",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.desc_placeholder",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.details",
+    "files": [
+      "src\\components\\class\\ClassDetail.tsx"
+    ]
+  },
+  {
+    "key": "class.edit_class",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.edited_success",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.enter_instructors",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.enter_title",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.female_label",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.full_access",
+    "files": [
+      "src\\components\\class\\ClassDetail.tsx"
+    ]
+  },
+  {
+    "key": "class.have_special_events",
+    "files": [
+      "src\\components\\class\\ClassPortal.tsx"
+    ]
+  },
+  {
+    "key": "class.info",
+    "files": [
+      "src\\components\\class\\ClassDetail.tsx"
+    ]
+  },
+  {
+    "key": "class.instructors_label",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.join_now",
+    "files": [
+      "src\\components\\class\\ClassDetail.tsx"
+    ]
+  },
+  {
+    "key": "class.lesson_content_label",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.lesson_content_placeholder",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.level_advanced",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.level_basic",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.level_intermediate",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.level_label",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.level_masterclass",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.level_very_advanced",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.location_memo_placeholder",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.main_photo",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.male_label",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.media_label",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.monthly_courses",
+    "files": [
+      "src\\components\\class\\ClassDetail.tsx"
+    ]
+  },
+  {
+    "key": "class.monthly_pass_alert",
+    "files": [
+      "src\\components\\class\\ClassDetail.tsx"
+    ]
+  },
+  {
+    "key": "class.monthly_passes",
+    "files": [
+      "src\\components\\class\\ClassDetail.tsx"
+    ]
+  },
+  {
+    "key": "class.no_classes_today",
+    "files": [
+      "src\\components\\class\\ClassDetail.tsx"
+    ]
+  },
+  {
+    "key": "class.no_courses_month",
+    "files": [
+      "src\\components\\class\\ClassDetail.tsx"
+    ]
+  },
+  {
+    "key": "class.no_special_events_yet",
+    "files": [
+      "src\\components\\class\\ClassDetail.tsx",
+      "src\\components\\class\\ClassPortal.tsx"
+    ]
+  },
+  {
+    "key": "class.open_level",
+    "files": [
+      "src\\components\\class\\ClassDetail.tsx"
+    ]
+  },
+  {
+    "key": "class.optimizing",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.photo_desc",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.price_label",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.promo_video",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.register_event",
+    "files": [
+      "src\\components\\class\\ClassPortal.tsx"
+    ]
+  },
+  {
+    "key": "class.registration_fee",
+    "files": [
+      "src\\components\\class\\ClassPortal.tsx"
+    ]
+  },
+  {
+    "key": "class.reserve",
+    "files": [
+      "src\\components\\class\\ClassPortal.tsx"
+    ]
+  },
+  {
+    "key": "class.save_failed",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.schedule_label",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.search_instructors",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.special_event",
+    "files": [
+      "src\\components\\class\\ClassPortal.tsx"
+    ]
+  },
+  {
+    "key": "class.stay_tuned",
+    "files": [
+      "src\\components\\class\\ClassDetail.tsx",
+      "src\\components\\class\\ClassPortal.tsx"
+    ]
+  },
+  {
+    "key": "class.tab_month",
+    "files": [
+      "src\\components\\class\\ClassDetail.tsx"
+    ]
+  },
+  {
+    "key": "class.tab_special",
+    "files": [
+      "src\\components\\class\\ClassDetail.tsx"
+    ]
+  },
+  {
+    "key": "class.tab_today",
+    "files": [
+      "src\\components\\class\\ClassDetail.tsx"
+    ]
+  },
+  {
+    "key": "class.time_label",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.title_label",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.title_placeholder",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.type_change",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.type_label",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.type_partner",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.type_partner_change",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.type_special",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.type_training",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.upload_image_failed",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.upload_photo",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.upload_video",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.upload_video_failed",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.venue_label",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.venue_memo",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.venue_placeholder",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.venue_select",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "class.video_desc",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "common.${role.toLowerCase()}",
+    "files": [
+      "src\\components\\class\\ClassDetail.tsx"
+    ]
+  },
+  {
+    "key": "common.about",
+    "files": [
+      "src\\app\\home\\page.tsx"
+    ]
+  },
+  {
+    "key": "common.anonymous",
+    "files": [
+      "src\\components\\lost\\CreateLostItem.tsx"
+    ]
+  },
+  {
+    "key": "common.coming_soon",
+    "files": [
+      "src\\app\\home\\page.tsx",
+      "src\\components\\groups\\GroupAbout.tsx"
+    ]
+  },
+  {
+    "key": "common.delete",
+    "files": [
+      "src\\components\\groups\\GroupClassEditor.tsx"
+    ]
+  },
+  {
+    "key": "common.edit",
+    "files": [
+      "src\\components\\groups\\GroupClassEditor.tsx"
+    ]
+  },
+  {
+    "key": "common.error",
+    "files": [
+      "src\\app\\admin\\banners\\page.tsx"
+    ]
+  },
+  {
+    "key": "common.failed_update",
+    "files": [
+      "src\\components\\events\\EventRegisterTab.tsx"
+    ]
+  },
+  {
+    "key": "common.focus",
+    "files": [
+      "src\\app\\home\\page.tsx"
+    ]
+  },
+  {
+    "key": "common.fri",
+    "files": [
+      "src\\components\\social\\SocialDownloadModal.tsx",
+      "src\\components\\social\\SocialViewer.tsx"
+    ]
+  },
+  {
+    "key": "common.got_it",
+    "files": [
+      "src\\app\\home\\page.tsx"
+    ]
+  },
+  {
+    "key": "common.important",
+    "files": [
+      "src\\app\\home\\page.tsx"
+    ]
+  },
+  {
+    "key": "common.manage",
+    "files": [
+      "src\\components\\class\\ClassDetail.tsx"
+    ]
+  },
+  {
+    "key": "common.member",
+    "files": [
+      "src\\app\\home\\page.tsx"
+    ]
+  },
+  {
+    "key": "common.mon",
+    "files": [
+      "src\\components\\social\\SocialDownloadModal.tsx",
+      "src\\components\\social\\SocialViewer.tsx"
+    ]
+  },
+  {
+    "key": "common.new",
+    "files": [
+      "src\\app\\home\\page.tsx"
+    ]
+  },
+  {
+    "key": "common.no_results",
+    "files": [
+      "src\\components\\groups\\GroupMemberManager.bak.tsx",
+      "src\\components\\groups\\GroupMemberManager.tsx",
+      "src\\components\\groups\\GroupMembers.tsx"
+    ]
+  },
+  {
+    "key": "common.on",
+    "files": [
+      "src\\components\\groups\\GroupClassEditor.tsx"
+    ]
+  },
+  {
+    "key": "common.privacy",
+    "files": [
+      "src\\app\\home\\page.tsx"
+    ]
+  },
+  {
+    "key": "common.sat",
+    "files": [
+      "src\\components\\social\\SocialDownloadModal.tsx",
+      "src\\components\\social\\SocialViewer.tsx"
+    ]
+  },
+  {
+    "key": "common.save",
+    "files": [
+      "src\\components\\common\\FullScreenRegistration.tsx",
+      "src\\components\\groups\\GroupClassAddEditor.tsx",
+      "src\\components\\shop\\CreateProduct.tsx"
+    ]
+  },
+  {
+    "key": "common.saving",
+    "files": [
+      "src\\components\\groups\\GroupClassAddEditor.tsx"
+    ]
+  },
+  {
+    "key": "common.sun",
+    "files": [
+      "src\\components\\social\\SocialDownloadModal.tsx",
+      "src\\components\\social\\SocialViewer.tsx"
+    ]
+  },
+  {
+    "key": "common.terms",
+    "files": [
+      "src\\app\\home\\page.tsx"
+    ]
+  },
+  {
+    "key": "common.thu",
+    "files": [
+      "src\\components\\social\\SocialDownloadModal.tsx",
+      "src\\components\\social\\SocialViewer.tsx"
+    ]
+  },
+  {
+    "key": "common.todo_message1",
+    "files": [
+      "src\\components\\common\\TodoPage.tsx"
+    ]
+  },
+  {
+    "key": "common.todo_message2",
+    "files": [
+      "src\\components\\common\\TodoPage.tsx"
+    ]
+  },
+  {
+    "key": "common.tue",
+    "files": [
+      "src\\components\\social\\SocialDownloadModal.tsx",
+      "src\\components\\social\\SocialViewer.tsx"
+    ]
+  },
+  {
+    "key": "common.wed",
+    "files": [
+      "src\\components\\social\\SocialDownloadModal.tsx",
+      "src\\components\\social\\SocialViewer.tsx"
+    ]
+  },
+  {
+    "key": "confirmDeactivateCoupon",
+    "files": [
+      "src\\components\\groups\\CouponAdmin.tsx"
+    ]
+  },
+  {
+    "key": "couponCreatedSuccess",
+    "files": [
+      "src\\components\\groups\\CouponAdmin.tsx"
+    ]
+  },
+  {
+    "key": "couponDeactivated",
+    "files": [
+      "src\\components\\groups\\CouponAdmin.tsx"
+    ]
+  },
+  {
+    "key": "couponTitle",
+    "files": [
+      "src\\components\\groups\\CouponAdmin.tsx"
+    ]
+  },
+  {
+    "key": "couponTitlePlaceholder",
+    "files": [
+      "src\\components\\groups\\CouponAdmin.tsx"
+    ]
+  },
+  {
+    "key": "createCoupon",
+    "files": [
+      "src\\components\\groups\\CouponAdmin.tsx"
+    ]
+  },
+  {
+    "key": "createNewGroupCoupon",
+    "files": [
+      "src\\components\\groups\\CouponAdmin.tsx"
+    ]
+  },
+  {
+    "key": "creating",
+    "files": [
+      "src\\components\\groups\\CouponAdmin.tsx"
+    ]
+  },
+  {
+    "key": "discountAmountKrw",
+    "files": [
+      "src\\components\\groups\\CouponAdmin.tsx"
+    ]
+  },
+  {
+    "key": "discountType",
+    "files": [
+      "src\\components\\groups\\CouponAdmin.tsx"
+    ]
+  },
+  {
+    "key": "durationMonths",
+    "files": [
+      "src\\components\\groups\\CouponAdmin.tsx"
+    ]
+  },
+  {
+    "key": "event.cat_${c.toLowerCase()}",
+    "files": [
+      "src\\components\\events\\EditEvent.tsx"
+    ]
+  },
+  {
+    "key": "event.confirm_status_change",
+    "files": [
+      "src\\components\\events\\EventRegisterTab.tsx"
+    ]
+  },
+  {
+    "key": "event.date_label",
+    "files": [
+      "src\\components\\events\\EditEvent.tsx"
+    ]
+  },
+  {
+    "key": "failedToCreateCoupon",
+    "files": [
+      "src\\components\\groups\\CouponAdmin.tsx"
+    ]
+  },
+  {
+    "key": "failedToDeactivateCoupon",
+    "files": [
+      "src\\components\\groups\\CouponAdmin.tsx"
+    ]
+  },
+  {
+    "key": "failedToLoadCoupons",
+    "files": [
+      "src\\components\\groups\\CouponAdmin.tsx"
+    ]
+  },
+  {
+    "key": "freePass",
+    "files": [
+      "src\\components\\groups\\CouponAdmin.tsx"
+    ]
+  },
+  {
+    "key": "general",
+    "files": [
+      "src\\components\\groups\\GroupBoard.tsx"
+    ]
+  },
+  {
+    "key": "group.about.copied",
+    "files": [
+      "src\\components\\groups\\GroupAbout.tsx"
+    ]
+  },
+  {
+    "key": "group.about.join_requested",
+    "files": [
+      "src\\components\\groups\\GroupAbout.tsx"
+    ]
+  },
+  {
+    "key": "group.admin_approval",
+    "files": [
+      "src\\components\\groups\\GroupMembershipEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.admin_approval_desc",
+    "files": [
+      "src\\components\\groups\\GroupMembershipEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.board.editor.add_board",
+    "files": [
+      "src\\components\\groups\\GroupBoardEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.board.editor.board_list",
+    "files": [
+      "src\\components\\groups\\GroupBoardEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.board.editor.board_title",
+    "files": [
+      "src\\components\\groups\\GroupBoardEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.board.editor.boards",
+    "files": [
+      "src\\components\\groups\\GroupBoardEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.board.editor.default_setting",
+    "files": [
+      "src\\components\\groups\\GroupBoardEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.board.editor.enter_title",
+    "files": [
+      "src\\components\\groups\\GroupBoardEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.board.editor.error_save",
+    "files": [
+      "src\\components\\groups\\GroupBoardEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.board.editor.everyone",
+    "files": [
+      "src\\components\\groups\\GroupBoardEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.board.editor.mandatory_notice",
+    "files": [
+      "src\\components\\groups\\GroupBoardEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.board.editor.max_boards",
+    "files": [
+      "src\\components\\groups\\GroupBoardEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.board.editor.notice",
+    "files": [
+      "src\\components\\groups\\GroupBoardEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.board.editor.notice_title",
+    "files": [
+      "src\\components\\groups\\GroupBoardEditor.tsx",
+      "src\\components\\groups\\PostEditorModal.tsx"
+    ]
+  },
+  {
+    "key": "group.board.editor.only_admin",
+    "files": [
+      "src\\components\\groups\\GroupBoardEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.board.editor.pinned",
+    "files": [
+      "src\\components\\groups\\GroupBoardEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.board.editor.save",
+    "files": [
+      "src\\components\\groups\\GroupBoardEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.board.editor.saving",
+    "files": [
+      "src\\components\\groups\\GroupBoardEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.board.editor.section01",
+    "files": [
+      "src\\components\\groups\\GroupBoardEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.board.editor.section02",
+    "files": [
+      "src\\components\\groups\\GroupBoardEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.board.editor.title",
+    "files": [
+      "src\\components\\groups\\GroupBoardEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.board.editor.who_can_post",
+    "files": [
+      "src\\components\\groups\\GroupBoardEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.board.write_post",
+    "files": [
+      "src\\components\\groups\\GroupBoard.tsx"
+    ]
+  },
+  {
+    "key": "group.class.actions.delete_record",
+    "files": [
+      "src\\components\\groups\\GroupClassRegistrations.tsx"
+    ]
+  },
+  {
+    "key": "group.class.actions.edit_list",
+    "files": [
+      "src\\components\\groups\\GroupClassRegistrations.tsx"
+    ]
+  },
+  {
+    "key": "group.class.all_levels",
+    "files": [
+      "src\\components\\groups\\GroupClassEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.class.application",
+    "files": [
+      "src\\components\\groups\\GroupClassEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.class.bundle_badge",
+    "files": [
+      "src\\components\\groups\\GroupClassEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.class.bundle_discount",
+    "files": [
+      "src\\components\\groups\\GroupClassEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.class.class",
+    "files": [
+      "src\\components\\groups\\GroupClassEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.class.delete_confirm",
+    "files": [
+      "src\\components\\groups\\GroupClassEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.class.delete_failed",
+    "files": [
+      "src\\components\\groups\\GroupClassEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.class.delete_success",
+    "files": [
+      "src\\components\\groups\\GroupClassEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.class.deleting",
+    "files": [
+      "src\\components\\groups\\GroupClassEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.class.discounted_price",
+    "files": [
+      "src\\components\\groups\\GroupClassEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.class.includes_classes",
+    "files": [
+      "src\\components\\groups\\GroupClassEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.class.instructor",
+    "files": [
+      "src\\components\\groups\\GroupClassEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.class.management",
+    "files": [
+      "src\\components\\groups\\GroupClassEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.class.migrated_success",
+    "files": [
+      "src\\components\\groups\\GroupClassEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.class.monthly_pass_br",
+    "files": [
+      "src\\components\\groups\\GroupClassEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.class.monthly_price",
+    "files": [
+      "src\\components\\groups\\GroupClassEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.class.monthly_visibility",
+    "files": [
+      "src\\components\\groups\\GroupClassEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.class.no_items",
+    "files": [
+      "src\\components\\groups\\GroupClassEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.class.no_sessions",
+    "files": [
+      "src\\components\\groups\\GroupClassEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.class.pass_badge",
+    "files": [
+      "src\\components\\groups\\GroupClassEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.class.plus_sessions",
+    "files": [
+      "src\\components\\groups\\GroupClassEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.class.register",
+    "files": [
+      "src\\components\\groups\\GroupClassEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.class.show_this_month",
+    "files": [
+      "src\\components\\groups\\GroupClassEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.class.stats",
+    "files": [
+      "src\\components\\groups\\GroupClassEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.class.tbd",
+    "files": [
+      "src\\components\\groups\\GroupClassEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.class.toast.payment_confirmed",
+    "files": [
+      "src\\components\\groups\\GroupClassRegistrations.tsx"
+    ]
+  },
+  {
+    "key": "group.class.toast.payment_pending",
+    "files": [
+      "src\\components\\groups\\GroupClassRegistrations.tsx"
+    ]
+  },
+  {
+    "key": "group.class.unlimited_access",
+    "files": [
+      "src\\components\\groups\\GroupClassEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.contact.actions.fail_save",
+    "files": [
+      "src\\components\\groups\\GroupContactEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.contact.actions.fail_upload",
+    "files": [
+      "src\\components\\groups\\GroupContactEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.contact.actions.save",
+    "files": [
+      "src\\components\\groups\\GroupContactEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.contact.actions.saving",
+    "files": [
+      "src\\components\\groups\\GroupContactEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.contact.intro_title",
+    "files": [
+      "src\\components\\groups\\GroupContactEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.contact.location.address_label",
+    "files": [
+      "src\\components\\groups\\GroupContactEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.contact.location.detail_label",
+    "files": [
+      "src\\components\\groups\\GroupContactEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.contact.location.syncing",
+    "files": [
+      "src\\components\\groups\\GroupContactEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.contact.location.title",
+    "files": [
+      "src\\components\\groups\\GroupContactEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.contact.location.transit_label",
+    "files": [
+      "src\\components\\groups\\GroupContactEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.contact.representative.name_label",
+    "files": [
+      "src\\components\\groups\\GroupContactEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.contact.representative.phone_label",
+    "files": [
+      "src\\components\\groups\\GroupContactEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.contact.representative.phone_placeholder",
+    "files": [
+      "src\\components\\groups\\GroupContactEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.contact.representative.title",
+    "files": [
+      "src\\components\\groups\\GroupContactEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.contact.social.title",
+    "files": [
+      "src\\components\\groups\\GroupContactEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.gallery.editor.active_clip",
+    "files": [
+      "src\\components\\groups\\GroupGalleryEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.gallery.editor.add_content",
+    "files": [
+      "src\\components\\groups\\GroupGalleryEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.gallery.editor.assets_managed",
+    "files": [
+      "src\\components\\groups\\GroupGalleryEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.gallery.editor.cinema_stream",
+    "files": [
+      "src\\components\\groups\\GroupGalleryEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.gallery.editor.error_save",
+    "files": [
+      "src\\components\\groups\\GroupGalleryEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.gallery.editor.expand_story",
+    "files": [
+      "src\\components\\groups\\GroupGalleryEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.gallery.editor.init_section",
+    "files": [
+      "src\\components\\groups\\GroupGalleryEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.gallery.editor.layout_sections",
+    "files": [
+      "src\\components\\groups\\GroupGalleryEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.gallery.editor.max_photos",
+    "files": [
+      "src\\components\\groups\\GroupGalleryEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.gallery.editor.max_videos",
+    "files": [
+      "src\\components\\groups\\GroupGalleryEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.gallery.editor.media_protocol",
+    "files": [
+      "src\\components\\groups\\GroupGalleryEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.gallery.editor.milonga",
+    "files": [
+      "src\\components\\groups\\GroupGalleryEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.gallery.editor.new_section",
+    "files": [
+      "src\\components\\groups\\GroupGalleryEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.gallery.editor.optimizing",
+    "files": [
+      "src\\components\\groups\\GroupGalleryEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.gallery.editor.photo_stream",
+    "files": [
+      "src\\components\\groups\\GroupGalleryEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.gallery.editor.photos",
+    "files": [
+      "src\\components\\groups\\GroupGalleryEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.gallery.editor.repo_title",
+    "files": [
+      "src\\components\\groups\\GroupGalleryEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.gallery.editor.save",
+    "files": [
+      "src\\components\\groups\\GroupGalleryEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.gallery.editor.saving",
+    "files": [
+      "src\\components\\groups\\GroupGalleryEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.gallery.editor.section_identity",
+    "files": [
+      "src\\components\\groups\\GroupGalleryEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.gallery.editor.section_placeholder",
+    "files": [
+      "src\\components\\groups\\GroupGalleryEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.gallery.editor.slots_occupied",
+    "files": [
+      "src\\components\\groups\\GroupGalleryEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.gallery.editor.storage_quota",
+    "files": [
+      "src\\components\\groups\\GroupGalleryEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.gallery.editor.success_save",
+    "files": [
+      "src\\components\\groups\\GroupGalleryEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.gallery.editor.syncing",
+    "files": [
+      "src\\components\\groups\\GroupGalleryEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.gallery.editor.terminate_section",
+    "files": [
+      "src\\components\\groups\\GroupGalleryEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.gallery.editor.title",
+    "files": [
+      "src\\components\\groups\\GroupGalleryEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.gallery.editor.videos",
+    "files": [
+      "src\\components\\groups\\GroupGalleryEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.gallery.editor.warning_switch_type",
+    "files": [
+      "src\\components\\groups\\GroupGalleryEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.generate_invite",
+    "files": [
+      "src\\components\\groups\\GroupRoleEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.instructor_desc",
+    "files": [
+      "src\\components\\groups\\GroupRoleEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.instructor_role",
+    "files": [
+      "src\\components\\groups\\GroupRoleEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.invite_staff",
+    "files": [
+      "src\\components\\groups\\GroupRoleEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.loading_members",
+    "files": [
+      "src\\components\\groups\\GroupMemberManager.bak.tsx",
+      "src\\components\\groups\\GroupMemberManager.tsx",
+      "src\\components\\groups\\GroupMembers.tsx"
+    ]
+  },
+  {
+    "key": "group.manage_members",
+    "files": [
+      "src\\components\\groups\\GroupRoleEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.manage_members_desc",
+    "files": [
+      "src\\components\\groups\\GroupRoleEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.manage_posts",
+    "files": [
+      "src\\components\\groups\\GroupRoleEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.manage_posts_desc",
+    "files": [
+      "src\\components\\groups\\GroupRoleEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.manager_selection",
+    "files": [
+      "src\\components\\groups\\GroupMembershipEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.manager_selection_desc",
+    "files": [
+      "src\\components\\groups\\GroupMembershipEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.member_desc",
+    "files": [
+      "src\\components\\groups\\GroupRoleEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.member_role",
+    "files": [
+      "src\\components\\groups\\GroupRoleEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.no_members",
+    "files": [
+      "src\\components\\groups\\GroupMemberManager.bak.tsx",
+      "src\\components\\groups\\GroupMemberManager.tsx"
+    ]
+  },
+  {
+    "key": "group.no_staff",
+    "files": [
+      "src\\components\\groups\\GroupRoleEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.open_group",
+    "files": [
+      "src\\components\\groups\\GroupMembershipEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.open_group_desc",
+    "files": [
+      "src\\components\\groups\\GroupMembershipEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.owner_desc",
+    "files": [
+      "src\\components\\groups\\GroupRoleEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.owner_role",
+    "files": [
+      "src\\components\\groups\\GroupRoleEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.policy_desc1",
+    "files": [
+      "src\\components\\groups\\GroupMembershipEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.policy_desc2",
+    "files": [
+      "src\\components\\groups\\GroupMembershipEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.policy_save",
+    "files": [
+      "src\\components\\groups\\GroupMembershipEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.policy_warn1",
+    "files": [
+      "src\\components\\groups\\GroupMembershipEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.policy_warn2",
+    "files": [
+      "src\\components\\groups\\GroupMembershipEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.rental.actions.cancel",
+    "files": [
+      "src\\components\\groups\\GroupRentalEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.rental.actions.cancel_confirm",
+    "files": [
+      "src\\components\\groups\\GroupRentalEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.rental.actions.error_msg",
+    "files": [
+      "src\\components\\groups\\GroupRentalEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.rental.actions.save",
+    "files": [
+      "src\\components\\groups\\GroupRentalEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.rental.actions.save_confirm",
+    "files": [
+      "src\\components\\groups\\GroupRentalEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.rental.actions.saving",
+    "files": [
+      "src\\components\\groups\\GroupRentalEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.rental.actions.success_msg",
+    "files": [
+      "src\\components\\groups\\GroupRentalEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.rental.general_info.currency_label",
+    "files": [
+      "src\\components\\groups\\GroupRentalEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.rental.general_info.desc",
+    "files": [
+      "src\\components\\groups\\GroupRentalEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.rental.general_info.rules_label",
+    "files": [
+      "src\\components\\groups\\GroupRentalEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.rental.general_info.rules_placeholder",
+    "files": [
+      "src\\components\\groups\\GroupRentalEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.rental.general_info.title",
+    "files": [
+      "src\\components\\groups\\GroupRentalEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.rental.pricing_palette.desc",
+    "files": [
+      "src\\components\\groups\\GroupRentalEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.rental.pricing_palette.title",
+    "files": [
+      "src\\components\\groups\\GroupRentalEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.rental.requests.empty_desc",
+    "files": [
+      "src\\components\\groups\\GroupRentalEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.rental.requests.empty_title",
+    "files": [
+      "src\\components\\groups\\GroupRentalEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.rental.tabs.${tab.id}",
+    "files": [
+      "src\\components\\groups\\GroupRentalEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.rental.time_grid.color_set_title",
+    "files": [
+      "src\\components\\groups\\GroupRentalEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.rental.time_grid.desc",
+    "files": [
+      "src\\components\\groups\\GroupRentalEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.rental.time_grid.title",
+    "files": [
+      "src\\components\\groups\\GroupRentalEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.role_desc1",
+    "files": [
+      "src\\components\\groups\\GroupRoleEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.role_desc2",
+    "files": [
+      "src\\components\\groups\\GroupRoleEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.role.saving",
+    "files": [
+      "src\\components\\groups\\GroupRoleEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.role.settings_desc",
+    "files": [
+      "src\\components\\groups\\GroupRoleEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.save_permissions",
+    "files": [
+      "src\\components\\groups\\GroupRoleEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.staff_desc",
+    "files": [
+      "src\\components\\groups\\GroupRoleEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.staff_role",
+    "files": [
+      "src\\components\\groups\\GroupRoleEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.view_analytics",
+    "files": [
+      "src\\components\\groups\\GroupRoleEditor.tsx"
+    ]
+  },
+  {
+    "key": "group.view_analytics_desc",
+    "files": [
+      "src\\components\\groups\\GroupRoleEditor.tsx"
+    ]
+  },
+  {
+    "key": "groups.cat_${cat.id.toLowerCase()}",
+    "files": [
+      "src\\app\\groups\\page.tsx"
+    ]
+  },
+  {
+    "key": "groups.cat_${group.tags[0].toLowerCase()}",
+    "files": [
+      "src\\app\\groups\\page.tsx"
+    ]
+  },
+  {
+    "key": "groups.cat_${selectedCategory.toLowerCase()}",
+    "files": [
+      "src\\app\\groups\\page.tsx"
+    ]
+  },
+  {
+    "key": "groups.category_unavailable_online",
+    "files": [
+      "src\\app\\groups\\page.tsx"
+    ]
+  },
+  {
+    "key": "groups.form_venue_type_label",
+    "files": [
+      "src\\app\\groups\\page.tsx"
+    ]
+  },
+  {
+    "key": "groups.venue_no_results",
+    "files": [
+      "src\\app\\groups\\page.tsx"
+    ]
+  },
+  {
+    "key": "groups.venue_not_registered",
+    "files": [
+      "src\\app\\groups\\page.tsx"
+    ]
+  },
+  {
+    "key": "groups.venue_register_guide",
+    "files": [
+      "src\\app\\groups\\page.tsx"
+    ]
+  },
+  {
+    "key": "groups.venue_search_label",
+    "files": [
+      "src\\app\\groups\\page.tsx"
+    ]
+  },
+  {
+    "key": "groups.venue_search_placeholder",
+    "files": [
+      "src\\app\\groups\\page.tsx"
+    ]
+  },
+  {
+    "key": "groups.venue_type_online",
+    "files": [
+      "src\\app\\groups\\page.tsx"
+    ]
+  },
+  {
+    "key": "groups.venue_type_online_desc",
+    "files": [
+      "src\\app\\groups\\page.tsx"
+    ]
+  },
+  {
+    "key": "groups.venue_type_venue",
+    "files": [
+      "src\\app\\groups\\page.tsx"
+    ]
+  },
+  {
+    "key": "groups.venue_type_venue_desc",
+    "files": [
+      "src\\app\\groups\\page.tsx"
+    ]
+  },
+  {
+    "key": "home.coming_soon_desc",
+    "files": [
+      "src\\app\\home\\page.tsx"
+    ]
+  },
+  {
+    "key": "home.global_tango_society",
+    "files": [
+      "src\\app\\home\\page.tsx"
+    ]
+  },
+  {
+    "key": "loadingCoupons",
+    "files": [
+      "src\\components\\groups\\CouponAdmin.tsx"
+    ]
+  },
+  {
+    "key": "loadMorePosts",
+    "files": [
+      "src\\components\\groups\\GroupBoard.tsx"
+    ]
+  },
+  {
+    "key": "lost.clear_all",
+    "files": [
+      "src\\components\\lost\\LostFoundWishlistTray.tsx"
+    ]
+  },
+  {
+    "key": "lost.confirm_clear_likes",
+    "files": [
+      "src\\components\\lost\\LostFoundWishlistTray.tsx"
+    ]
+  },
+  {
+    "key": "lost.contact_number_label",
+    "files": [
+      "src\\components\\lost\\LostClaimFlow.tsx"
+    ]
+  },
+  {
+    "key": "lost.contact_number_placeholder",
+    "files": [
+      "src\\components\\lost\\LostClaimFlow.tsx"
+    ]
+  },
+  {
+    "key": "lost.message_label",
+    "files": [
+      "src\\components\\lost\\LostClaimFlow.tsx"
+    ]
+  },
+  {
+    "key": "lost.message_placeholder",
+    "files": [
+      "src\\components\\lost\\LostClaimFlow.tsx"
+    ]
+  },
+  {
+    "key": "lost.status_in_progress",
+    "files": [
+      "src\\components\\lost\\LostFoundDetail.tsx",
+      "src\\components\\lost\\LostFoundWishlistTray.tsx"
+    ]
+  },
+  {
+    "key": "lost.status_pending",
+    "files": [
+      "src\\components\\lost\\LostFoundDetail.tsx",
+      "src\\components\\lost\\LostFoundWishlistTray.tsx"
+    ]
+  },
+  {
+    "key": "months",
+    "files": [
+      "src\\components\\groups\\CouponAdmin.tsx"
+    ]
+  },
+  {
+    "key": "my.auth_${profile.authMethod.toLowerCase()}",
+    "files": [
+      "src\\app\\profile\\page.tsx"
+    ]
+  },
+  {
+    "key": "my.gender_${profile.gender.toLowerCase()}",
+    "files": [
+      "src\\app\\profile\\page.tsx"
+    ]
+  },
+  {
+    "key": "myinfo.dance_role",
+    "files": [
+      "src\\components\\profile\\MyInfoBottomSheet.tsx"
+    ]
+  },
+  {
+    "key": "myinfo.dance_role_${r}",
+    "files": [
+      "src\\components\\profile\\MyInfoBottomSheet.tsx"
+    ]
+  },
+  {
+    "key": "myinfo.gender_${g.toLowerCase()}",
+    "files": [
+      "src\\components\\profile\\MyInfoBottomSheet.tsx"
+    ]
+  },
+  {
+    "key": "noActiveCouponsFound",
+    "files": [
+      "src\\components\\groups\\CouponAdmin.tsx"
+    ]
+  },
+  {
+    "key": "noPostsFound",
+    "files": [
+      "src\\components\\groups\\GroupBoard.tsx"
+    ]
+  },
+  {
+    "key": "pleaseEnterCouponTitle",
+    "files": [
+      "src\\components\\groups\\CouponAdmin.tsx"
+    ]
+  },
+  {
+    "key": "quantity",
+    "files": [
+      "src\\components\\groups\\CouponAdmin.tsx"
+    ]
+  },
+  {
+    "key": "rental.size_${filter.key.toLowerCase()}",
+    "files": [
+      "src\\app\\rental\\page.tsx"
+    ]
+  },
+  {
+    "key": "rental.sort_${opt.key}",
+    "files": [
+      "src\\app\\rental\\page.tsx"
+    ]
+  },
+  {
+    "key": "rental.sort_${sortOption}",
+    "files": [
+      "src\\app\\rental\\page.tsx"
+    ]
+  },
+  {
+    "key": "resale.cat_${c.toLowerCase()}",
+    "files": [
+      "src\\components\\resale\\CreateResaleItem.tsx"
+    ]
+  },
+  {
+    "key": "resale.cond_${c.val.toLowerCase()}",
+    "files": [
+      "src\\components\\resale\\CreateResaleItem.tsx"
+    ]
+  },
+  {
+    "key": "resale.msg_max_photos",
+    "files": [
+      "src\\components\\resale\\CreateResaleItem.tsx"
+    ]
+  },
+  {
+    "key": "shop.msg_fill_required",
+    "files": [
+      "src\\components\\shop\\CreateProduct.tsx"
+    ]
+  },
+  {
+    "key": "shop.msg_max_photos",
+    "files": [
+      "src\\components\\shop\\CreateProduct.tsx"
+    ]
+  },
+  {
+    "key": "social.seats",
+    "files": [
+      "src\\components\\social\\SocialReservationTab.tsx"
+    ]
+  },
+  {
+    "key": "social.select_date",
+    "files": [
+      "src\\components\\social\\SocialDjLineupSheet.tsx"
+    ]
+  },
+  {
+    "key": "social.status",
+    "files": [
+      "src\\components\\social\\SocialReservationTab.tsx"
+    ]
+  },
+  {
+    "key": "social.unknown_error",
+    "files": [
+      "src\\components\\social\\SocialReservationTab.tsx"
+    ]
+  },
+  {
+    "key": "stay.sort_${opt.key}",
+    "files": [
+      "src\\app\\stay\\page.tsx"
+    ]
+  },
+  {
+    "key": "stay.sort_${sortOption}",
+    "files": [
+      "src\\app\\stay\\page.tsx"
+    ]
+  },
+  {
+    "key": "totalQuantity",
+    "files": [
+      "src\\components\\groups\\CouponAdmin.tsx"
+    ]
+  },
+  {
+    "key": "unlimited",
+    "files": [
+      "src\\components\\groups\\CouponAdmin.tsx"
+    ]
+  },
+  {
+    "key": "validity",
+    "files": [
+      "src\\components\\groups\\CouponAdmin.tsx"
+    ]
+  },
+  {
+    "key": "wallet.status_${t_item.status.toLowerCase()}",
+    "files": [
+      "src\\app\\wallet\\page.tsx"
+    ]
+  },
+  {
+    "key": "zeroForUnlimited",
+    "files": [
+      "src\\components\\groups\\CouponAdmin.tsx"
+    ]
+  }
+]
