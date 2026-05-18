@@ -217,37 +217,36 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
   const baseHeaderHeight = isNoSubMenuPage ? 60 : 110;
   const placeholderHeight = subHeader ? baseHeaderHeight + subHeaderHeight : baseHeaderHeight;
 
-  // Hide global navigation layout for admin pages (used in popups)
-  if (pathname.startsWith('/admin')) {
+  // Hide global navigation layout for admin pages, checkout flow, and register pages
+  if (pathname.startsWith('/admin') || pathname.includes('/checkout') || pathname.includes('/register')) {
     return <>{children}</>;
   }
 
   return (
     <div className="min-h-screen bg-[#faf8ff] font-manrope flex flex-col">
       {/* Header Placeholder to prevent layout shift and scroll thrashing */}
-      <div 
-        className="w-full flex-shrink-0 transition-all duration-300" 
-        style={{ 
-          height: `${placeholderHeight}px`,
-          visibility: isGlobalNavHidden ? 'hidden' : 'visible'
-        }} 
-      />
+      {!isGlobalNavHidden && (
+        <div 
+          className="w-full flex-shrink-0 transition-all duration-300" 
+          style={{ 
+            height: `${placeholderHeight}px`,
+            visibility: 'visible'
+          }} 
+        />
+      )}
 
       {/* Fixed Top Navigation */}
-      <header 
-        ref={headerRef}
-        className={`fixed top-0 left-0 right-0 z-50 bg-white transition-shadow duration-300 transform will-change-transform ${
-          isGlobalNavHidden ? 'hidden' : ''
-        } ${
-          (isScrolled || isHeaderShrink) 
-            ? 'shadow-[0_4px_24px_rgba(11,90,192,0.10)]' 
-            : 'shadow-[0_2px_12px_rgba(11,90,192,0.05)] border-b border-slate-100/30'
-        }`}
-        style={{ transition: 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)' }}
-      >
-        
-        <>
-          {/* Exact Image Replication: Header Top Row */}
+      {!isGlobalNavHidden && (
+        <header 
+          ref={headerRef}
+          className={`fixed top-0 left-0 right-0 z-50 bg-white transition-shadow duration-300 transform will-change-transform ${
+            (isScrolled || isHeaderShrink) 
+              ? 'shadow-[0_4px_24px_rgba(11,90,192,0.10)]' 
+              : 'shadow-[0_2px_12px_rgba(11,90,192,0.05)] border-b border-slate-100/30'
+          }`}
+          style={{ transition: 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)' }}
+        >
+        {/* Exact Image Replication: Header Top Row */}
           <div className="flex items-center justify-between pl-5 pr-4 h-[60px] border-b border-slate-100/50 bg-white">
             {/* Left Side: Location */}
             <button 
@@ -385,28 +384,27 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
               {subHeader}
             </div>
           )}
-        </>
-      </header>
+        </header>
+      )}
 
       {/* Main Content */}
-      <main className={`flex-1 w-full relative bg-[#faf8ff] ${pathname === '/venues' || pathname.startsWith('/chat') || pathname.startsWith('/notification') || pathname.startsWith('/search') ? 'pb-0' : 'pb-[120px]'}`}>
+      <main className={`flex-1 w-full relative bg-[#faf8ff] ${isGlobalNavHidden ? 'pb-0' : (pathname === '/venues' || pathname.startsWith('/chat') || pathname.startsWith('/notification') || pathname.startsWith('/search') ? 'pb-0' : 'pb-[120px]')}`}>
         {children}
       </main>
 
 
 
       {/* Bottom Navigation Bar */}
-      <footer 
-        ref={footerRef}
-        className={`fixed bottom-0 left-0 w-full z-50 bg-white rounded-t-2xl px-6 flex justify-around items-center shadow-[0_-8px_30px_rgba(11,90,192,0.14)] will-change-transform ${
-          isGlobalNavHidden ? 'hidden' : ''
-        }`}
-        style={{ 
-          height: 'calc(64px + max(env(safe-area-inset-bottom), 12px))',
-          paddingBottom: 'max(env(safe-area-inset-bottom), 12px)',
-          transition: 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)'
-        }}
-      >
+      {!isGlobalNavHidden && (
+        <footer 
+          ref={footerRef}
+          className={`fixed bottom-0 left-0 w-full z-50 bg-white rounded-t-2xl px-6 flex justify-around items-center shadow-[0_-8px_30px_rgba(11,90,192,0.14)] will-change-transform`}
+          style={{ 
+            height: 'calc(64px + max(env(safe-area-inset-bottom), 12px))',
+            paddingBottom: 'max(env(safe-area-inset-bottom), 12px)',
+            transition: 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)'
+          }}
+        >
         {BOTTOM_TABS.map((tab) => {
           const isActive = activeTab === tab.id;
           const isPhotoTab = tab.icon === "photo";
@@ -433,14 +431,15 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
                   {tab.icon}
                 </span>
               )}
-              {/* Localized label */}
-              <span className={`text-[11px] leading-none tracking-tight ${isActive ? 'font-extrabold' : 'font-medium'}`}>
-                {t(tab.label)}
-              </span>
-            </Link>
-          );
-        })}
-      </footer>
+                {/* Localized label */}
+                <span className={`text-[11px] leading-none tracking-tight ${isActive ? 'font-extrabold' : 'font-medium'}`}>
+                  {t(tab.label)}
+                </span>
+              </Link>
+            );
+          })}
+        </footer>
+      )}
     </div>
   );
 }
