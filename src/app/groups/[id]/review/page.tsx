@@ -75,7 +75,7 @@ export default function GroupFunctionReviewPage() {
       <StepIndicator currentStep={2} groupName={group.name} onBack={handleBack} />
 
       {/* Main Content */}
-      <main className="flex-1 px-5 md:px-16 pt-8 pb-40 max-w-2xl mx-auto w-full">
+      <main className="flex-1 px-4 md:px-16 pt-8 pb-40 max-w-2xl mx-auto w-full">
         {/* Title */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
@@ -121,7 +121,7 @@ export default function GroupFunctionReviewPage() {
       </main>
 
       {/* Fixed Bottom Action */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-surface/90 backdrop-blur-xl border-t border-surface-variant/20 px-5 md:px-16 py-4">
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-surface/90 backdrop-blur-xl border-t border-surface-variant/20 px-4 md:px-16 py-4">
         <div className="max-w-2xl mx-auto flex gap-3">
           <button
             onClick={handleBack}

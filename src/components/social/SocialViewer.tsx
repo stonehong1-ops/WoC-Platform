@@ -114,7 +114,9 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
     user.uid === social.organizerId ||
     social.staffIds?.includes(user.uid) ||
     ADMIN_UIDS.includes(user.uid) ||
-    user.email === "stonehong1@gmail.com"
+    user.email === "stonehong1@gmail.com" ||
+    profile?.isAdmin ||
+    profile?.systemRole === "admin"
   );
 
   // Likes

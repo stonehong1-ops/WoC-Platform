@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useNavigation } from '@/components/providers/NavigationProvider';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { rentalService } from '@/lib/firebase/rentalService';
 import { storageService } from '@/lib/firebase/storageService';
@@ -14,6 +15,12 @@ function RegisterPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const editId = searchParams.get('edit');
+  const { setGlobalNavHidden } = useNavigation();
+
+  useEffect(() => {
+    setGlobalNavHidden(true);
+    return () => setGlobalNavHidden(false);
+  }, [setGlobalNavHidden]);
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -135,17 +142,10 @@ function RegisterPageContent() {
   };
 
   return (
-    <main className="max-w-md mx-auto min-h-screen pb-24 bg-white relative pt-16">
-      {/* Header */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-slate-100 px-4 py-3 flex items-center justify-between">
-        <button onClick={() => router.back()} className="w-10 h-10 -ml-2 rounded-full flex items-center justify-center text-[#2d3435] active:bg-slate-100">
-          <span className="material-symbols-rounded text-xl">arrow_back</span>
-        </button>
-        <h1 className="text-base font-bold text-[#2d3435]">{editId ? 'Edit Rental Space' : 'Register Rental Space'}</h1>
-        <div className="w-10" />
-      </div>
+    <main className="max-w-md mx-auto min-h-screen pb-24 bg-white relative">
 
-      <form onSubmit={handleSubmit} className="px-5 mt-4 space-y-6">
+
+      <form onSubmit={handleSubmit} className="px-4 mt-4 space-y-6">
         
         {/* Category Toggle */}
         <div className="flex bg-[#f2f4f4] rounded-xl p-1">

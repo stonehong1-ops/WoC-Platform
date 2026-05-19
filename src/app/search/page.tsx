@@ -40,7 +40,7 @@ export default function SearchPage() {
   return (
     <div className="max-w-md mx-auto w-full h-[calc(100vh-124px)] flex flex-col overflow-hidden bg-surface font-manrope">
       {/* Search Input Area */}
-      <div className="px-5 pt-4 pb-4 bg-surface z-40 border-b border-on-surface/5 shrink-0">
+      <div className="px-4 pt-4 pb-4 bg-surface z-40 border-b border-on-surface/5 shrink-0">
         <div className={`flex items-center bg-surface rounded-2xl px-4 py-3 transition-all duration-300 ${isFocused ? 'ring-2 ring-primary shadow-lg shadow-primary/10' : 'border border-on-surface/10'}`}>
           <span className="material-symbols-outlined text-on-surface/40 mr-2 text-[22px]">search</span>
           <input
@@ -65,7 +65,7 @@ export default function SearchPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto no-scrollbar pb-24">
-        <div className="px-5 mt-6 mb-8">
+        <div className="px-4 mt-6 mb-8">
         <h2 className="text-[12px] font-black text-on-surface/40 mb-3 uppercase tracking-widest">{t('search.trendingNow')}</h2>
         <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
           {TRENDING_TAGS.map((tag) => (
@@ -83,7 +83,7 @@ export default function SearchPage() {
       <div className="space-y-10">
         {/* Section 1: Shop */}
         <section>
-          <div className="flex items-center justify-between px-5 mb-4">
+          <div className="flex items-center justify-between px-4 mb-4">
             <h2 className="text-[18px] font-black text-on-surface tracking-tight flex items-center gap-1.5">
               <span className="material-symbols-outlined text-primary text-[20px]">storefront</span>
               {t('search.hotInShop')}
@@ -92,7 +92,7 @@ export default function SearchPage() {
               {t('search.viewAll')} <span className="material-symbols-outlined text-[16px]">chevron_right</span>
             </button>
           </div>
-          <div className="flex gap-4 overflow-x-auto px-5 no-scrollbar pb-4">
+          <div className="flex gap-4 overflow-x-auto px-4 no-scrollbar pb-4">
             {MOCK_SHOP_ITEMS.map((item) => (
               <div key={item.id} className="min-w-[140px] flex flex-col gap-2 cursor-pointer active:scale-95 transition-transform group">
                 <div className="w-full aspect-square rounded-2xl overflow-hidden relative bg-on-surface/5 border border-on-surface/5 group-hover:shadow-md transition-shadow">
@@ -109,7 +109,7 @@ export default function SearchPage() {
 
         {/* Section 2: Class */}
         <section>
-          <div className="flex items-center justify-between px-5 mb-4">
+          <div className="flex items-center justify-between px-4 mb-4">
             <h2 className="text-[18px] font-black text-on-surface tracking-tight flex items-center gap-1.5">
               <span className="material-symbols-outlined text-primary text-[20px]">school</span>
               {t('search.upcomingClasses')}
@@ -118,7 +118,7 @@ export default function SearchPage() {
               {t('search.viewAll')} <span className="material-symbols-outlined text-[16px]">chevron_right</span>
             </button>
           </div>
-          <div className="flex gap-4 overflow-x-auto px-5 no-scrollbar pb-4">
+          <div className="flex gap-4 overflow-x-auto px-4 no-scrollbar pb-4">
             {MOCK_CLASS_ITEMS.map((item) => (
               <div key={item.id} className="min-w-[200px] flex flex-col gap-2 cursor-pointer active:scale-95 transition-transform group">
                 <div className="w-full aspect-video rounded-2xl overflow-hidden relative bg-on-surface/5 border border-on-surface/5 group-hover:shadow-md transition-shadow">
@@ -138,7 +138,7 @@ export default function SearchPage() {
 
         {/* Section 3: Event & Social */}
         <section>
-          <div className="flex items-center justify-between px-5 mb-4">
+          <div className="flex items-center justify-between px-4 mb-4">
             <h2 className="text-[18px] font-black text-on-surface tracking-tight flex items-center gap-1.5">
               <span className="material-symbols-outlined text-primary text-[20px]">calendar_today</span>
               {t('search.eventsSocial')}
@@ -147,7 +147,7 @@ export default function SearchPage() {
               {t('search.viewAll')} <span className="material-symbols-outlined text-[16px]">chevron_right</span>
             </button>
           </div>
-          <div className="flex flex-col gap-3 px-5">
+          <div className="flex flex-col gap-3 px-4">
             {MOCK_EVENT_ITEMS.map((item) => (
               <div key={item.id} className="flex gap-4 items-center bg-surface p-3 rounded-2xl active:scale-[0.98] transition-all hover:shadow-md border border-on-surface/5">
                 <div className="w-[70px] h-[70px] rounded-xl overflow-hidden relative flex-shrink-0 bg-on-surface/5">
@@ -167,7 +167,7 @@ export default function SearchPage() {
 
         {/* Section 4: Groups */}
         <section>
-          <div className="flex items-center justify-between px-5 mb-4">
+          <div className="flex items-center justify-between px-4 mb-4">
             <h2 className="text-[18px] font-black text-on-surface tracking-tight flex items-center gap-1.5">
               <span className="material-symbols-outlined text-primary text-[20px]">groups</span>
               {t('search.activeGroups')}
@@ -176,7 +176,7 @@ export default function SearchPage() {
               {t('search.viewAll')} <span className="material-symbols-outlined text-[16px]">chevron_right</span>
             </button>
           </div>
-          <div className="flex gap-4 overflow-x-auto px-5 no-scrollbar pb-8">
+          <div className="flex gap-4 overflow-x-auto px-4 no-scrollbar pb-8">
             {MOCK_GROUP_ITEMS.map((item) => (
               <div key={item.id} className="min-w-[120px] flex flex-col items-center gap-3 cursor-pointer active:scale-95 transition-transform group">
                 <div className="w-[80px] h-[80px] rounded-full overflow-hidden relative bg-on-surface/5 ring-2 ring-transparent group-hover:ring-primary/20 transition-all shadow-sm">

@@ -10,6 +10,9 @@ import { Venue } from '@/types/venue';
 import { useModalNavigation } from '@/hooks/useModalNavigation';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/clientApp';
+import { groupService } from '@/lib/firebase/groupService';
+import GroupDetail from '@/components/groups/GroupDetail';
+import { Group } from '@/types/group';
 
 // Defensive Architecture 2: Dynamically import MapComponent with ssr: false
 const MapComponent = dynamic(() => import('@/components/venues/MapComponent'), { 
@@ -26,6 +29,7 @@ function VenuesPageContent() {
   
   const [editingVenue, setEditingVenue] = useState<Venue | null>(null);
   const [editMode, setEditMode] = useState<'edit' | 'geo'>('edit');
+  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
 
   // Fetch editing venue if editId is present
   useEffect(() => {
@@ -96,6 +100,10 @@ function VenuesPageContent() {
           onRegisterOpen={handleRegisterOpen}
           onEdit={handleEdit}
           onDelete={handleDelete}
+          onGroupOpen={async (groupId: string) => {
+            const g = await groupService.getGroup(groupId);
+            if (g) setSelectedGroup(g);
+          }}
         />
 
         <ManageEntry
@@ -109,6 +117,13 @@ function VenuesPageContent() {
           mode={editMode}
         />
       </div>
+
+      {/* Group App-in-App Overlay */}
+      {selectedGroup && (
+        <div className="fixed inset-0 z-[150] bg-background overflow-y-auto no-scrollbar animate-in slide-in-from-bottom duration-300">
+          <GroupDetail group={selectedGroup} isModal={true} />
+        </div>
+      )}
     </PageWrapper>
   );
 }

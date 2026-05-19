@@ -148,16 +148,12 @@ export const eventService = {
 
   // 7. Search Events by Title
   async searchEvents(keyword: string) {
-    const q = query(
-      collection(db, COLLECTION_NAME),
-      where('title', '>=', keyword),
-      where('title', '<=', keyword + '\uf8ff')
-    );
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    })) as Event[];
+    if (!keyword) return [];
+    const lowerKw = keyword.toLowerCase();
+    const snapshot = await getDocs(collection(db, COLLECTION_NAME));
+    return snapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() } as Event))
+      .filter(e => (e.title || '').toLowerCase().includes(lowerKw));
   },
 
   // 8. Get Upcoming Events

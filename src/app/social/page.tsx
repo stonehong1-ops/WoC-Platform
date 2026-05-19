@@ -55,11 +55,12 @@ function SocialContent() {
 
   const { location } = useLocation();
   const { user, profile, loading, setShowLogin } = useAuth();
-  const [viewSocial, setViewSocial] = useState<Social | null>(null);
+
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
   const { setSubHeader } = useNavigation();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const dateLocale = language === 'KR' ? 'ko-KR' : 'en-US';
   const [likedSocialIds, setLikedSocialIds] = useState<string[]>([]);
 
   useEffect(() => {
@@ -126,16 +127,21 @@ function SocialContent() {
   };
 
   const { isOpen: isCreateOpenURL, openModal: openCreateURL, closeModal: closeCreateURL } = useModalNavigation('createSocial');
-  const { isOpen: isViewOpenURL, openModal: openViewURL, closeModal: closeViewURL } = useModalNavigation('viewSocial');
+  const { isOpen: isViewOpenURL, value: viewSocialId, openModal: openViewURL, closeModal: closeViewURL } = useModalNavigation('viewSocial');
   const { isOpen: isEditOpenURL, openModal: openEditURL, closeModal: closeEditURL } = useModalNavigation('editSocial');
 
   useEffect(() => {
     if (!isCreateOpenURL && isCreateOpen) setIsCreateOpen(false);
   }, [isCreateOpenURL, isCreateOpen]);
 
-  useEffect(() => {
-    if (!isViewOpenURL && viewSocial) setViewSocial(null);
-  }, [isViewOpenURL, viewSocial]);
+  // viewSocial은 URL 파라미터(viewSocialId)에서 파생 — 별도 state/useEffect 불필요
+  const viewSocial = useMemo(() => {
+    if (!viewSocialId) return null;
+    return regulars.find(s => s.id === viewSocialId)
+      || popups.find(s => s.id === viewSocialId)
+      || dailySocials.find(s => s.id === viewSocialId)
+      || null;
+  }, [viewSocialId, regulars, popups, dailySocials]);
 
   useEffect(() => {
     if (!isEditOpenURL && selectedSocial) setSelectedSocial(null);
@@ -152,12 +158,10 @@ function SocialContent() {
   };
 
   const handleOpenView = (social: Social) => {
-    setViewSocial(social);
     openViewURL(social.id);
   };
 
   const handleCloseView = () => {
-    setViewSocial(null);
     closeViewURL();
   };
 
@@ -516,7 +520,7 @@ function SocialContent() {
                         ? (isRed ? 'text-red-300' : 'text-slate-100')
                         : (isRed ? 'text-red-500' : 'text-slate-400')
                         }`}>
-                        {date.toLocaleDateString('en-US', { weekday: 'short' })}
+                        {date.toLocaleDateString(dateLocale, { weekday: 'short' })}
                       </span>
                       <span className={`text-sm font-black tracking-tighter ${!isSelected && isRed ? 'text-red-600' : ''
                         }`}>
@@ -597,7 +601,7 @@ function SocialContent() {
               const groupedPopups: Record<string, Social[]> = {};
               filteredPopups.forEach(social => {
                 const d = safeDate(social.date) || new Date();
-                const monthKey = d.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+                const monthKey = d.toLocaleDateString(dateLocale, { year: 'numeric', month: 'long' });
                 if (!groupedPopups[monthKey]) groupedPopups[monthKey] = [];
                 groupedPopups[monthKey].push(social);
               });
@@ -620,13 +624,13 @@ function SocialContent() {
                           {(() => {
                             const d = safeDate(social.date) || new Date(); return (<>
                               <span className="text-[9px] font-black text-primary uppercase tracking-widest leading-none mb-1">
-                                {d.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()}
+                                {d.toLocaleDateString(dateLocale, { weekday: 'short' }).toUpperCase()}
                               </span>
                               <span className="text-2xl font-black text-on-surface tracking-tighter leading-none mb-1">
                                 {d.getDate()}
                               </span>
                               <span className="text-[9px] font-bold text-on-surface-variant uppercase tracking-widest leading-none">
-                                {d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()}
+                                {d.toLocaleDateString(dateLocale, { month: 'short' }).toUpperCase()}
                               </span>
                             </>);
                           })()}
@@ -690,7 +694,7 @@ function SocialContent() {
                 <div key={idx} className="space-y-4">
                   <div className="flex items-center gap-4 py-2">
                     <h3 className="text-lg font-black text-slate-800 tracking-tight">
-                      {group.date.toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric' })}
+                      {group.date.toLocaleDateString(dateLocale, { weekday: 'short', month: 'long', day: 'numeric' })}
                     </h3>
                     <div className="flex-1 h-px bg-slate-200"></div>
                   </div>
@@ -706,13 +710,13 @@ function SocialContent() {
                           {(() => {
                             const d = group.date; return (<>
                               <span className="text-[9px] font-black text-primary uppercase tracking-widest leading-none mb-1">
-                                {d.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()}
+                                {d.toLocaleDateString(dateLocale, { weekday: 'short' }).toUpperCase()}
                               </span>
                               <span className="text-2xl font-black text-on-surface tracking-tighter leading-none mb-1">
                                 {d.getDate()}
                               </span>
                               <span className="text-[9px] font-bold text-on-surface-variant uppercase tracking-widest leading-none">
-                                {d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()}
+                                {d.toLocaleDateString(dateLocale, { month: 'short' }).toUpperCase()}
                               </span>
                             </>);
                           })()}
@@ -793,7 +797,7 @@ function SocialContent() {
                       <div className={`flex items-center gap-3 px-4 py-3 border-b border-slate-100 ${isToday ? 'bg-blue-600' : isRed ? 'bg-red-500' : 'bg-slate-800'}`}>
                         <div className="flex flex-col items-center justify-center w-10 h-10 rounded-lg bg-white/15 shrink-0">
                           <span className="text-[9px] font-black text-white/80 uppercase tracking-wider leading-none">
-                            {group.date.toLocaleDateString('en-US', { weekday: 'short' })}
+                            {group.date.toLocaleDateString(dateLocale, { weekday: 'short' })}
                           </span>
                           <span className="text-[20px] font-black text-white leading-none tracking-tighter">
                             {group.date.getDate()}
@@ -801,7 +805,7 @@ function SocialContent() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="text-[13px] font-black text-white tracking-tight">
-                            {group.date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+                            {group.date.toLocaleDateString(dateLocale, { month: 'long', day: 'numeric' })}
                             {isToday && <span className="ml-2 bg-white text-blue-600 px-1.5 py-0.5 rounded text-[9px] leading-none font-black">{t('social.today')}</span>}
                             {holiday && <span className="ml-2 bg-white/20 text-white px-1.5 py-0.5 rounded text-[9px] leading-none">{holiday}</span>}
                           </h3>
@@ -832,11 +836,11 @@ function SocialContent() {
                                 {social.titleNative && <span className="text-[10px] font-medium text-slate-400 truncate">{social.titleNative}</span>}
                               </h4>
                               <p className="text-[11px] font-medium text-slate-500 truncate mt-0.5">
-                                <span className="inline-flex items-center gap-0.5"><span className="material-symbols-outlined text-[12px]">location_on</span>{social.venueNameNative || social.venueName}</span>
+                                <span className="inline-flex items-center gap-0.5"><span className="material-symbols-outlined text-[14px] leading-none">location_on</span>{social.venueNameNative || social.venueName}</span>
                               </p>
                               <p className="text-[11px] font-medium text-slate-500 truncate mt-0.5">
-                                <span className="inline-flex items-center gap-0.5"><span className="material-symbols-outlined text-[12px]">schedule</span>{social.startTime}-{social.endTime}</span>
-                                {social.djName && <span className="ml-2 inline-flex items-center gap-0.5"><span className="material-symbols-outlined text-[12px]">headphones</span>DJ {social.djName}</span>}
+                                <span className="inline-flex items-center gap-0.5"><span className="material-symbols-outlined text-[14px] leading-none">schedule</span>{social.startTime}-{social.endTime}</span>
+                                {social.djName && <span className="ml-2 inline-flex items-center gap-0.5"><span className="material-symbols-outlined text-[14px] leading-none">headphones</span>DJ {social.djName}</span>}
                               </p>
                             </div>
                             <div className="shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-white shadow-sm border border-slate-100 md:group-hover:border-blue-200 transition-all">

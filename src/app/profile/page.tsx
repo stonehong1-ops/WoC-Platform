@@ -40,7 +40,7 @@ export default function MyInfoPage() {
 
   if (!user) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen px-6 text-center">
+      <div className="flex flex-col items-center justify-center min-h-screen px-4 text-center">
         <h1 className="text-2xl font-bold mb-4">{t('my.access_denied')}</h1>
         <p className="text-gray-500 mb-8">{t('my.sign_in_required')}</p>
         <button 
@@ -55,7 +55,7 @@ export default function MyInfoPage() {
 
   return (
     <div className="bg-surface text-on-surface min-h-screen">
-      <main className="max-w-3xl mx-auto px-6 py-6 md:py-8">
+      <main className="max-w-3xl mx-auto px-4 py-6 md:py-8">
         {/* Profile Hero Section (Ultra-compact) */}
         <div className="flex items-center gap-5 mb-8">
           <div className="relative group shrink-0">

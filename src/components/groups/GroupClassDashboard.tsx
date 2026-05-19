@@ -17,7 +17,7 @@ const CURRENCY_SYMBOL: Record<string, string> = { KRW: '₩', USD: '$', EUR: '�
 const getCurrencySymbol = (c: string) => CURRENCY_SYMBOL[c] || c + ' ';
 
 export default function GroupClassDashboard({ group, onApplyClick }: GroupClassDashboardProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { user } = useAuth();
   const router = useRouter();
 
@@ -43,8 +43,9 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
   const [ownerInfo, setOwnerInfo] = useState<any>(null);
 
   const currentMonthStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
-  const monthNamesShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const displayMonth = `${monthNamesShort[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+  const displayMonth = language === 'KR'
+    ? `${currentDate.getFullYear()}년 ${currentDate.getMonth() + 1}월`
+    : `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][currentDate.getMonth()]} ${currentDate.getFullYear()}`;
 
   useEffect(() => {
     if (group?.ownerId) {
@@ -58,9 +59,39 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
     }
   }, [group?.ownerId]);
 
-  const monthClasses = useMemo(() => group.classes?.filter(c => !c.targetMonth || c.targetMonth === currentMonthStr) || [], [group.classes, currentMonthStr]);
-  const monthPasses = useMemo(() => group.monthlyPasses?.filter(p => !p.targetMonth || p.targetMonth === currentMonthStr) || [], [group.monthlyPasses, currentMonthStr]);
-  const monthBundles = useMemo(() => group.discounts?.filter(d => !d.targetMonth || d.targetMonth === currentMonthStr) || [], [group.discounts, currentMonthStr]);
+  const monthClasses = useMemo(() => (group.classes || []).filter(c => {
+    if (c.targetMonth) return c.targetMonth === currentMonthStr;
+    if (c.schedule?.length) return c.schedule.some(s => s.date?.startsWith(currentMonthStr));
+    return false;
+  }), [group.classes, currentMonthStr]);
+
+  const monthPasses = useMemo(() => (group.monthlyPasses || []).filter(p => {
+    if (p.targetMonth) return p.targetMonth === currentMonthStr;
+    if (p.includedClassIds?.length) {
+      return p.includedClassIds.some(id => {
+        const cls = (group.classes || []).find(c => c.id === id);
+        if (!cls) return false;
+        if (cls.targetMonth) return cls.targetMonth === currentMonthStr;
+        if (cls.schedule?.length) return cls.schedule.some(s => s.date?.startsWith(currentMonthStr));
+        return false;
+      });
+    }
+    return false;
+  }), [group.monthlyPasses, group.classes, currentMonthStr]);
+
+  const monthBundles = useMemo(() => (group.discounts || []).filter(d => {
+    if (d.targetMonth) return d.targetMonth === currentMonthStr;
+    if (d.includedClassIds?.length) {
+      return d.includedClassIds.some(id => {
+        const cls = (group.classes || []).find(c => c.id === id);
+        if (!cls) return false;
+        if (cls.targetMonth) return cls.targetMonth === currentMonthStr;
+        if (cls.schedule?.length) return cls.schedule.some(s => s.date?.startsWith(currentMonthStr));
+        return false;
+      });
+    }
+    return false;
+  }), [group.discounts, group.classes, currentMonthStr]);
 
   const handlePrevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
   const handleNextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
@@ -69,7 +100,7 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
     if (!user || !ownerInfo?.id) return;
     try {
       const roomId = await chatService.getOrCreatePrivateRoom([user.uid, ownerInfo.id], user.uid);
-      router.push(`/chat/${roomId}`);
+      router.push(`/chat?roomId=${roomId}`);
     } catch (error) {
       console.error("Chat error:", error);
     }
@@ -90,9 +121,9 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
 
   const getItemTypeLabel = (type: string) => {
     switch (type) {
-      case 'pass': return t('class-dashboard.pass', 'Pass');
-      case 'bundle': return t('class-dashboard.bundle', 'Bundle');
-      case 'class': return t('class-dashboard.class', 'Class');
+      case 'pass': return t('class-dashboard.pass');
+      case 'bundle': return t('class-dashboard.bundle');
+      case 'class': return t('class-dashboard.class');
       default: return '';
     }
   };
@@ -124,7 +155,7 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
           <span className="material-symbols-outlined text-xl text-[#596061]">chevron_left</span>
         </button>
         <div className="flex flex-col items-center">
-          <span className="text-[10px] font-black text-primary tracking-widest uppercase">{t('class-dashboard.schedule', 'SCHEDULE')}</span>
+          <span className="text-[10px] font-black text-primary tracking-widest uppercase">{t('class-dashboard.schedule')}</span>
           <h2 className="text-[18px] font-black text-[#2d3435]">{displayMonth}</h2>
         </div>
         <button onClick={handleNextMonth} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-[#f2f4f4] transition-colors">
@@ -135,15 +166,15 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
       {/* Stats Summary - product count based */}
       <div className="grid grid-cols-3 gap-2 px-4 py-3">
         <div className="bg-[#f0f4ff] border border-[#0057bd]/15 rounded-xl p-3 flex flex-col items-center justify-center">
-          <span className="text-[10px] font-black text-[#0057bd] uppercase tracking-widest">{t('class-dashboard.pass', 'Pass')}</span>
+          <span className="text-[10px] font-black text-[#0057bd] uppercase tracking-widest">{t('class-dashboard.pass')}</span>
           <span className="text-[22px] font-black text-[#0057bd]">{monthPasses.length}</span>
         </div>
         <div className="bg-[#fff8f0] border border-[#d97706]/15 rounded-xl p-3 flex flex-col items-center justify-center">
-          <span className="text-[10px] font-black text-[#d97706] uppercase tracking-widest">{t('class-dashboard.bundle', 'Bundle')}</span>
+          <span className="text-[10px] font-black text-[#d97706] uppercase tracking-widest">{t('class-dashboard.bundle')}</span>
           <span className="text-[22px] font-black text-[#d97706]">{monthBundles.length}</span>
         </div>
         <div className="bg-[#f0fdf4] border border-[#059669]/15 rounded-xl p-3 flex flex-col items-center justify-center">
-          <span className="text-[10px] font-black text-[#059669] uppercase tracking-widest">{t('class-dashboard.class', 'Class')}</span>
+          <span className="text-[10px] font-black text-[#059669] uppercase tracking-widest">{t('class-dashboard.class')}</span>
           <span className="text-[22px] font-black text-[#059669]">{monthClasses.length}</span>
         </div>
       </div>
@@ -200,7 +231,7 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
         ) : (
           <div className="py-12 text-center">
             <span className="material-symbols-outlined text-4xl text-slate-300 mb-2">school</span>
-            <p className="text-slate-500 font-medium text-sm">{t('class-dashboard.noClassesThisMonth', 'No classes this month.')}</p>
+            <p className="text-slate-500 font-medium text-sm">{t('class-dashboard.noRegistrationsYet')}</p>
           </div>
         )}
       </div>
@@ -212,7 +243,7 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
           className="flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl bg-[#F1F5F9] text-[#596061] font-bold text-sm active:scale-95 transition-all border border-slate-200"
         >
           <span className="material-symbols-outlined text-[20px]">chat</span>
-          {t('class-dashboard.consultation', 'Inquiry')}
+          {t('class-dashboard.consultation')}
         </button>
 
         <button
@@ -221,7 +252,7 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
         >
           <div className="absolute inset-0 bg-white/20 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out skew-x-12"></div>
           <span className="material-symbols-outlined text-[20px]">how_to_reg</span>
-          {t('class-dashboard.registerClass', 'Register Class')}
+          {t('class-dashboard.registerClass')}
         </button>
       </div>
 

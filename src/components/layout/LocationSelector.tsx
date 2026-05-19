@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useLocation } from '@/components/providers/LocationProvider';
-import { useHistoryBack } from '@/hooks/useHistoryBack';
+
 
 export const REGIONS = [
   {
@@ -291,7 +291,7 @@ export default function LocationSelector() {
   const { location, setLocation, isSelectorOpen, setIsSelectorOpen, selectorCallback, clearSelectorCallback } = useLocation();
   const [expandedCountry, setExpandedCountry] = useState<string | null>(location.country);
 
-  const { handleClose } = useHistoryBack(isSelectorOpen, () => setIsSelectorOpen(false));
+  const handleClose = () => setIsSelectorOpen(false); // Replaced useHistoryBack
 
   if (!isSelectorOpen) return null;
 

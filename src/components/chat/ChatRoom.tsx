@@ -10,7 +10,7 @@ import GroupMembersPopup from './GroupMembersPopup';
 import { motion, AnimatePresence } from 'framer-motion';
 import { doc, onSnapshot, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/clientApp';
-import { useHistoryBack } from '@/hooks/useHistoryBack';
+
 import UserProfileClickable from '../common/UserProfileClickable';
 import UserAvatar from '../common/UserAvatar';
 import UserName from '../common/UserName';
@@ -44,7 +44,7 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
   const [selectedMedia, setSelectedMedia] = useState<{msgId: string, url: string, type: 'image' | 'video', isOwn: boolean} | null>(null);
   const [previewMedia, setPreviewMedia] = useState<{file: File | Blob, url: string, type: 'image' | 'video' | 'voice'} | null>(null);
   const closeSelectedMedia = () => setSelectedMedia(null);
-  const { handleClose: handleMediaClose } = useHistoryBack(!!selectedMedia, closeSelectedMedia);
+  const handleMediaClose = closeSelectedMedia; // Replaced useHistoryBack
   const [messageLimit, setMessageLimit] = useState(50);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isOtherTyping, setIsOtherTyping] = useState(false);

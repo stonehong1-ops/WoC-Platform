@@ -134,7 +134,7 @@ export default function AdminBannersPage() {
   }
 
   return (
-    <main className="max-w-[896px] mx-auto px-6 pt-4 pb-24 space-y-6">
+    <main className="max-w-[896px] mx-auto px-4 pt-4 pb-24 space-y-6">
       <h1 className="text-2xl font-bold">Banners Management</h1>
       
       {/* Hero Event Section — Society-Aware */}

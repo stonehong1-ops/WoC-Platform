@@ -62,12 +62,13 @@ export default function ClubClassSelectionPage() {
   const [selectedRole, setSelectedRole] = useState<'leader' | 'follower' | null>(null);
   const [ownerInfo, setOwnerInfo] = useState<{name: string | null, localName: string | null, avatar: string | null, phone: string | null} | null>(null);
   
+  const monthParam = searchParams.get('month');
   const [currentDate, setCurrentDate] = useState<Date>(() => {
-    const d = new Date();
-    if (d.getDate() >= 15) {
-      d.setMonth(d.getMonth() + 1);
+    if (monthParam) {
+      const [y, m] = monthParam.split('-').map(Number);
+      if (y && m) return new Date(y, m - 1, 1);
     }
-    return d;
+    return new Date();
   });
   const [sortOption, setSortOption] = useState<'class' | 'name'>('class');
   const [showSortDropdown, setShowSortDropdown] = useState(false);

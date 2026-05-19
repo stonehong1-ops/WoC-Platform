@@ -16,7 +16,7 @@ export default function ExplorePage() {
   return (
     <div className="bg-[#FAF8FF] text-black antialiased w-full pb-32 pt-4">
       {/* Header Message Section */}
-      <header className="px-6 mb-16 max-w-5xl mx-auto pt-2">
+      <header className="px-4 mb-16 max-w-5xl mx-auto pt-2">
         <div className="flex justify-between items-start mb-6">
           <div className="relative inline-block">
             <h1 className="text-4xl md:text-5xl font-bold italic tracking-tight text-slate-900 leading-tight animate-in fade-in slide-in-from-left-4 duration-1000">

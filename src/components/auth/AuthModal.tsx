@@ -16,7 +16,7 @@ import { auth, db } from '@/lib/firebase/clientApp';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useRouter, usePathname } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useHistoryBack } from '@/hooks/useHistoryBack';
+
 import { COUNTRY_CODES } from '@/lib/constants/countryCodes';
 
 export default function AuthModal() {
@@ -74,7 +74,7 @@ export default function AuthModal() {
   const router = useRouter();
   const currentPathname = usePathname();
 
-  const { handleClose } = useHistoryBack(showLogin, () => setShowLogin(false));
+  const handleClose = () => setShowLogin(false); // Replaced useHistoryBack
 
   const [details, setDetails] = useState({
     nickname: '',

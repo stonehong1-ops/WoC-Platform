@@ -12,17 +12,39 @@ import { doc, getDoc, updateDoc, collection, getDocs, query } from 'firebase/fir
 import MyGroupsTray from '@/components/groups/MyGroupsTray';
 import GroupDetail from '@/components/groups/GroupDetail';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useHistoryBack } from '@/hooks/useHistoryBack';
+
 
 
 import { Suspense } from 'react';
 
-// Extract neighborhood (동/dong) from full address
-const extractDong = (address: string): string => {
+// Extract neighborhood (dong) from full address with locale-aware display
+const DONG_ROMANIZE: Record<string, string> = {
+  '합정동': 'Hapjeong-dong', '서교동': 'Seogyo-dong', '상수동': 'Sangsu-dong',
+  '망원동': 'Mangwon-dong', '연남동': 'Yeonnam-dong', '성산동': 'Seongsan-dong',
+  '이태원동': 'Itaewon-dong', '한남동': 'Hannam-dong', '청담동': 'Cheongdam-dong',
+  '압구정동': 'Apgujeong-dong', '신사동': 'Sinsa-dong', '역삼동': 'Yeoksam-dong',
+  '삼성동': 'Samsung-dong', '강남동': 'Gangnam-dong', '서초동': 'Seocho-dong',
+  '방배동': 'Bangbae-dong', '논현동': 'Nonhyeon-dong', '대치동': 'Daechi-dong',
+  '잠실동': 'Jamsil-dong', '송파동': 'Songpa-dong', '홍대동': 'Hongdae-dong',
+  '을지로동': 'Euljiro-dong', '명동': 'Myeongdong', '종로동': 'Jongno-dong',
+  '혜화동': 'Hyehwa-dong', '동대문동': 'Dongdaemun-dong', '마포동': 'Mapo-dong',
+  '용산동': 'Yongsan-dong', '구로동': 'Guro-dong', '영등포동': 'Yeongdeungpo-dong',
+  '여의도동': 'Yeouido-dong', '관악동': 'Gwanak-dong', '봉천동': 'Bongcheon-dong',
+  '신림동': 'Sillim-dong', '건대동': 'Geondae-dong', '성수동': 'Seongsu-dong',
+  '왕십리동': 'Wangsimni-dong', '행당동': 'Haengdang-dong', '금호동': 'Geumho-dong',
+  '옥수동': 'Oksu-dong', '약수동': 'Yaksu-dong', '신당동': 'Sindang-dong',
+  '교대동': 'Gyodae-dong', '선릉동': 'Seolleung-dong',
+};
+
+const extractDong = (address: string, lang?: string): string => {
   if (!address) return '';
   // Match Korean 동 pattern (e.g. 합정동, 서교동)
   const dongMatch = address.match(/(\S+동)/);
-  if (dongMatch) return dongMatch[1];
+  if (dongMatch) {
+    const dong = dongMatch[1];
+    if (lang === 'en') return DONG_ROMANIZE[dong] || dong;
+    return dong;
+  }
   // Fallback: try to get 3rd or 2nd segment
   const parts = address.split(/\s+/);
   if (parts.length >= 3) return parts[2];
@@ -35,7 +57,7 @@ function GroupsContent() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const { user, profile, setShowLogin } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -93,8 +115,26 @@ function GroupsContent() {
   // URL Params based state
   const selectedCategory = searchParams.get('category');
 
-  const { handleClose: handleCreateClose } = useHistoryBack(isCreateOpen, () => setIsCreateOpen(false));
-  const { handleClose: handleGroupClose } = useHistoryBack(!!selectedGroup, () => setSelectedGroup(null));
+  const handleCreateClose = () => setIsCreateOpen(false); // Replaced useHistoryBack
+
+  const lastBackPressTime = React.useRef<number>(0);
+  const handleGroupBeforeClose = React.useCallback(() => {
+    const now = Date.now();
+    if (now - lastBackPressTime.current < 2000) {
+      lastBackPressTime.current = 0; // Reset
+      return true; // Allow close
+    } else {
+      lastBackPressTime.current = now;
+      import('sonner').then(({ toast }) => toast('한 번 더 누르시면 이 방에서 나가게 됩니다.', {
+        position: 'bottom-center',
+        duration: 2000,
+        style: { marginBottom: '100px' }
+      }));
+      return false; // Prevent close
+    }
+  }, []);
+
+  const handleGroupClose = () => setSelectedGroup(null); // Replaced useHistoryBack
 
   // Navigation Handlers
   const openCategoryModal = (category: string) => {
@@ -453,7 +493,7 @@ function GroupsContent() {
 
   return (
     <div className="bg-background min-h-screen pb-32 relative font-body">
-      <main className="max-w-4xl mx-auto px-6 py-8 space-y-10">
+      <main className="max-w-4xl mx-auto px-6 py-8 space-y-6">
         {/* What's New Carousel */}
         <section className="space-y-4">
           <div className="flex items-end justify-between">
@@ -481,7 +521,7 @@ function GroupsContent() {
                   {group.address && (
                   <div className="absolute top-3 left-3">
                     <span className="bg-white/90 backdrop-blur px-2.5 py-0.5 rounded-full text-[10px] font-bold text-primary flex items-center gap-1 shadow-sm">
-                      <span className="material-symbols-outlined text-[12px]">location_on</span> {extractDong(group.address)}
+                      <span className="material-symbols-outlined text-[12px]">location_on</span> {extractDong(group.address, language)}
                     </span>
                   </div>
                   )}
@@ -918,7 +958,7 @@ function GroupsContent() {
       {/* Group Detail Overlay */}
       {selectedGroup && (
         <div className="fixed inset-0 z-[150] bg-background overflow-y-auto no-scrollbar animate-in slide-in-from-bottom duration-300">
-          <GroupDetail group={selectedGroup} isModal={true} />
+          <GroupDetail group={selectedGroup} isModal={true} onClose={closeModals} />
         </div>
       )}
 

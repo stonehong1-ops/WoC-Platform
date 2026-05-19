@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useHistoryBack } from '@/hooks/useHistoryBack';
+
 
 interface MediaItem {
   url: string;
@@ -15,7 +15,7 @@ interface MediaViewerProps {
 
 export default function MediaViewer({ items, initialIndex, isOpen, onClose }: MediaViewerProps) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
-  const { handleClose } = useHistoryBack(isOpen, onClose);
+  const handleClose = onClose; // Replaced useHistoryBack
 
   // Reset index when opened
   useEffect(() => {

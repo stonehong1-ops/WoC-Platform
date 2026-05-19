@@ -15,6 +15,7 @@ import InfoRow from '@/components/ui/InfoRow';
 import CollapseSection from '@/components/ui/CollapseSection';
 import ChatRoom from '@/components/chat/ChatRoom';
 import RentalRequestFlow from './RentalRequestFlow';
+import ImageWithFallback from '@/components/common/ImageWithFallback';
 
 interface RentalDetailProps {
   space: RentalSpace;
@@ -220,7 +221,7 @@ export default function RentalDetail({ space, isLiked, onClose, onToggleLike }: 
               <div className="flex h-full transition-transform duration-300 ease-out" style={{ transform: `translateX(-${currentImg * 100}%)` }}>
                 {images.map((img, i) => (
                   <div key={i} className="min-w-full shrink-0 h-full">
-                    <img src={img} alt={`${space.title} ${i + 1}`} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                    <ImageWithFallback src={img} alt={`${space.title} ${i + 1}`} className="w-full h-full object-cover" fallbackType="cover" category={space.category || 'Rental'} />
                   </div>
                 ))}
               </div>
@@ -437,7 +438,7 @@ export default function RentalDetail({ space, isLiked, onClose, onToggleLike }: 
             <div className="flex w-full transition-transform duration-300 ease-out h-full items-center" style={{ transform: `translateX(-${currentImg * 100}%)` }}>
               {images.map((img, i) => (
                 <div key={i} className="min-w-full shrink-0 flex items-center justify-center px-4">
-                  <img src={img} alt={`Fullscreen ${i + 1}`} className="w-full max-h-[80vh] object-contain" />
+                  <ImageWithFallback src={img} alt={`Fullscreen ${i + 1}`} className="w-full max-h-[80vh] object-contain" fallbackType="cover" category={space.category || 'Rental'} />
                 </div>
               ))}
             </div>

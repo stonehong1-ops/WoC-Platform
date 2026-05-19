@@ -37,35 +37,36 @@ export const tagSearchService = {
   async searchAll(keyword: string): Promise<TagSearchResult[]> {
     if (!keyword || keyword.length < 1) return [];
 
-    const capitalized = keyword.charAt(0).toUpperCase() + keyword.slice(1);
     const lowerKw = keyword.toLowerCase();
 
     const [
       groupResults,
-      socialResults1, socialResults2,
-      eventResults1, eventResults2,
+      socialResults,
+      eventResults,
       classResults,
       peopleResults
     ] = await Promise.all([
       this.searchGroups(keyword),
       socialService.searchSocials(keyword),
-      socialService.searchSocials(capitalized),
       eventService.searchEvents(keyword),
-      eventService.searchEvents(capitalized),
       this.searchClasses(keyword),
       this.searchPeople(keyword),
     ]);
 
     const groups = groupResults;
 
-    const socials = this._dedup([...socialResults1, ...socialResults2]).map((s: any) => ({
-      type: 'social' as const,
-      id: s.id,
-      name: s.title || s.name || '',
-      subtitle: s.venueName || s.organizerName || '',
-    }));
+    const socials = socialResults.map((s: any) => {
+      const title = s.title || s.name || '';
+      const native = s.titleNative || '';
+      return {
+        type: 'social' as const,
+        id: s.id,
+        name: native ? `${title} ${native}` : title,
+        subtitle: s.venueName || s.organizerName || '',
+      };
+    });
 
-    const events = this._dedup([...eventResults1, ...eventResults2]).map((e: any) => ({
+    const events = eventResults.map((e: any) => ({
       type: 'event' as const,
       id: e.id,
       name: e.title || '',
@@ -79,33 +80,25 @@ export const tagSearchService = {
    * Search groups by name
    */
   async searchGroups(keyword: string): Promise<TagSearchResult[]> {
+    if (!keyword) return [];
     try {
-      const [byName, byNative] = await Promise.all([
-        getDocs(query(
-          collection(db, 'groups'),
-          where('name', '>=', keyword),
-          where('name', '<=', keyword + '\uf8ff')
-        )),
-        getDocs(query(
-          collection(db, 'groups'),
-          where('nativeName', '>=', keyword),
-          where('nativeName', '<=', keyword + '\uf8ff')
-        )),
-      ]);
-      const seen = new Set<string>();
+      const lowerKw = keyword.toLowerCase();
+      const snap = await getDocs(collection(db, 'groups'));
       const results: TagSearchResult[] = [];
-      [...byName.docs, ...byNative.docs].forEach(d => {
-        if (seen.has(d.id)) return;
-        seen.add(d.id);
+      snap.docs.forEach(d => {
         const data = d.data();
-        const native = data.nativeName || '';
-        results.push({
-          type: 'group' as const,
-          id: d.id,
-          name: native ? `${data.name || ''} ${native}` : (data.name || ''),
-          subtitle: data.address || '',
-          avatar: data.logo || data.coverImage || '',
-        });
+        const name = (data.name || '').toLowerCase();
+        const nativeName = (data.nativeName || '').toLowerCase();
+        if (name.includes(lowerKw) || nativeName.includes(lowerKw)) {
+          const native = data.nativeName || '';
+          results.push({
+            type: 'group' as const,
+            id: d.id,
+            name: native ? `${data.name || ''} ${native}` : (data.name || ''),
+            subtitle: data.address || '',
+            avatar: data.logo || data.coverImage || '',
+          });
+        }
       });
       return results;
     } catch (e) {
@@ -118,28 +111,29 @@ export const tagSearchService = {
    * Search classes across all groups using collectionGroup query
    */
   async searchClasses(keyword: string): Promise<TagSearchResult[]> {
+    if (!keyword) return [];
     try {
-      const q = query(
-        collectionGroup(db, 'classes'),
-        where('title', '>=', keyword),
-        where('title', '<=', keyword + '\uf8ff')
-      );
-      const snapshot = await getDocs(q);
+      const lowerKw = keyword.toLowerCase();
+      const snapshot = await getDocs(collectionGroup(db, 'classes'));
 
-      return snapshot.docs.map(d => {
+      const results: TagSearchResult[] = [];
+      snapshot.docs.forEach(d => {
         const data = d.data() as GroupClass;
-        const pathSegments = d.ref.path.split('/');
-        const groupId = pathSegments[1] || '';
-        const instructorNames = data.instructors?.map(i => i.name).join(', ') || '';
-        return {
-          type: 'class' as const,
-          id: d.id,
-          name: data.title,
-          subtitle: instructorNames ? `by ${instructorNames}` : '',
-          groupId,
-          instructors: instructorNames ? `by ${instructorNames}` : undefined,
-        };
+        if ((data.title || '').toLowerCase().includes(lowerKw)) {
+          const pathSegments = d.ref.path.split('/');
+          const groupId = pathSegments[1] || '';
+          const instructorNames = data.instructors?.map(i => i.name).join(', ') || '';
+          results.push({
+            type: 'class' as const,
+            id: d.id,
+            name: data.title,
+            subtitle: instructorNames ? `by ${instructorNames}` : '',
+            groupId,
+            instructors: instructorNames ? `by ${instructorNames}` : undefined,
+          });
+        }
       });
+      return results;
     } catch (error) {
       console.error('Class search error:', error);
       return [];
@@ -150,33 +144,25 @@ export const tagSearchService = {
    * Search people (users) by nickname
    */
   async searchPeople(keyword: string): Promise<TagSearchResult[]> {
+    if (!keyword) return [];
     try {
-      const [byNick, byNative] = await Promise.all([
-        getDocs(query(
-          collection(db, 'users'),
-          where('nickname', '>=', keyword),
-          where('nickname', '<=', keyword + '\uf8ff')
-        )),
-        getDocs(query(
-          collection(db, 'users'),
-          where('nativeNickname', '>=', keyword),
-          where('nativeNickname', '<=', keyword + '\uf8ff')
-        )),
-      ]);
-      const seen = new Set<string>();
+      const lowerKw = keyword.toLowerCase();
+      const snap = await getDocs(collection(db, 'users'));
       const results: TagSearchResult[] = [];
-      [...byNick.docs, ...byNative.docs].forEach(d => {
-        if (seen.has(d.id)) return;
-        seen.add(d.id);
+      snap.docs.forEach(d => {
         const data = d.data();
-        const native = data.nativeNickname || '';
-        results.push({
-          type: 'people' as const,
-          id: d.id,
-          name: native ? `${data.nickname || ''} ${native}` : (data.nickname || ''),
-          subtitle: data.role || '',
-          avatar: data.photoURL || '',
-        });
+        const nick = (data.nickname || '').toLowerCase();
+        const native = (data.nativeNickname || '').toLowerCase();
+        if (nick.includes(lowerKw) || native.includes(lowerKw)) {
+          const nativeName = data.nativeNickname || '';
+          results.push({
+            type: 'people' as const,
+            id: d.id,
+            name: nativeName ? `${data.nickname || ''} ${nativeName}` : (data.nickname || ''),
+            subtitle: data.role || '',
+            avatar: data.photoURL || '',
+          });
+        }
       });
       return results;
     } catch (e) {
@@ -360,12 +346,17 @@ export const tagSearchService = {
             }
             return false;
           })
-          .map(d => ({
-            type: 'social' as const,
-            id: d.id,
-            name: d.data().title || '',
-            subtitle: d.data().organizerName || '',
-          }));
+          .map(d => {
+            const data = d.data();
+            const title = data.title || '';
+            const native = data.titleNative || '';
+            return {
+              type: 'social' as const,
+              id: d.id,
+              name: native ? `${title} ${native}` : title,
+              subtitle: data.organizerName || '',
+            };
+          });
       }
 
       // Events linked to this group's venue — only in progress
@@ -446,12 +437,16 @@ export const tagSearchService = {
         return false;
       });
 
-      const socialsToday: TagSearchResult[] = todaySocials.map(s => ({
-        type: 'social',
-        id: s.id,
-        name: s.title || '',
-        subtitle: s.venueName || '',
-      }));
+      const socialsToday: TagSearchResult[] = todaySocials.map(s => {
+        const title = s.title || '';
+        const native = s.titleNative || '';
+        return {
+          type: 'social',
+          id: s.id,
+          name: native ? `${title} ${native}` : title,
+          subtitle: s.venueName || '',
+        };
+      });
 
       // Events in progress
       const eventsSnap = await getDocs(collection(db, 'events'));
@@ -522,14 +517,28 @@ export const tagSearchService = {
           const data = snap.data();
           const results: TagSearchResult[] = [];
           if (data.organizerId) {
-            results.push({
-              type: 'people',
-              id: data.organizerId,
-              name: data.organizerName || 'Organizer',
-              subtitle: 'Organizer',
-              avatar: data.organizerAvatar || '',
-              role: 'organizer',
-            });
+            try {
+              const userSnap = await getDoc(doc(db, 'users', data.organizerId));
+              const userData = userSnap.exists() ? userSnap.data() : null;
+              const name = userData ? (userData.nativeNickname ? `${userData.nickname || ''} ${userData.nativeNickname}` : (userData.nickname || 'Organizer')) : (data.organizerName || 'Organizer');
+              results.push({
+                type: 'people',
+                id: data.organizerId,
+                name: name,
+                subtitle: 'Organizer',
+                avatar: userData?.photoURL || data.organizerAvatar || '',
+                role: 'organizer',
+              });
+            } catch {
+              results.push({
+                type: 'people',
+                id: data.organizerId,
+                name: data.organizerName || 'Organizer',
+                subtitle: 'Organizer',
+                avatar: data.organizerAvatar || '',
+                role: 'organizer',
+              });
+            }
           }
           return results;
         }
@@ -543,12 +552,14 @@ export const tagSearchService = {
             // Try to get host name from users collection
             try {
               const userSnap = await getDoc(doc(db, 'users', data.hostId));
+              const userData = userSnap.exists() ? userSnap.data() : null;
+              const name = userData ? (userData.nativeNickname ? `${userData.nickname || ''} ${userData.nativeNickname}` : (userData.nickname || 'Host')) : 'Host';
               results.push({
                 type: 'people',
                 id: data.hostId,
-                name: userSnap.exists() ? (userSnap.data().nickname || 'Host') : 'Host',
+                name: name,
                 subtitle: 'Organizer',
-                avatar: userSnap.exists() ? (userSnap.data().photoURL || '') : '',
+                avatar: userData?.photoURL || '',
                 role: 'organizer',
               });
             } catch {

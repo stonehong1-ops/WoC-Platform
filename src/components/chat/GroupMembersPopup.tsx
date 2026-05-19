@@ -3,7 +3,7 @@ import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase/clientApp';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { groupService } from '@/lib/firebase/groupService';
-import { useHistoryBack } from '@/hooks/useHistoryBack';
+
 import UserBadge from '../common/UserBadge';
 
 interface GroupMembersPopupProps {
@@ -29,7 +29,7 @@ export default function GroupMembersPopup({ roomId, onClose }: GroupMembersPopup
   const [currentUserRole, setCurrentUserRole] = useState<string>('member');
   const [kickingId, setKickingId] = useState<string | null>(null);
   const [confirmKickId, setConfirmKickId] = useState<string | null>(null);
-  const { handleClose } = useHistoryBack(true, onClose);
+  const handleClose = onClose; // Replaced useHistoryBack
 
   const fetchData = useCallback(async () => {
     try {

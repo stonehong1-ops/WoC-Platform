@@ -50,8 +50,8 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet" />
       </head>
-      <body className="bg-background text-on-surface font-body selection:bg-primary-container selection:text-on-primary-container antialiased">
-        <div className="overflow-x-hidden w-full relative flex flex-col min-h-[100dvh]">
+      <body className="overflow-x-hidden bg-background text-on-surface font-body selection:bg-primary-container selection:text-on-primary-container antialiased">
+        <div className="w-full relative flex flex-col min-h-[100dvh]">
           <LanguageProvider>
             <AuthProvider>
               <AuthModal />

@@ -34,7 +34,12 @@ const CATEGORIES = (t: any) => [
 
 export default function GaviCartoonPopup({ onClose }: GaviCartoonPopupProps) {
   const { t } = useLanguage();
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('gaviCartoonAdmin') === 'true';
+    }
+    return false;
+  });
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
   
@@ -54,7 +59,7 @@ export default function GaviCartoonPopup({ onClose }: GaviCartoonPopupProps) {
   // Set to track liked episodes in this session
   const [likedCartoons, setLikedCartoons] = useState<Set<string>>(new Set());
   
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadFiles, setUploadFiles] = useState<File[]>([]);
   const [uploadCategory, setUploadCategory] = useState<string>('imagination');
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -152,13 +157,14 @@ export default function GaviCartoonPopup({ onClose }: GaviCartoonPopupProps) {
       setIsAdmin(true);
       setShowAdminLogin(false);
       setPasswordInput('');
+      localStorage.setItem('gaviCartoonAdmin', 'true');
     } else {
       alert('Incorrect password.');
     }
   };
 
   const handleUpload = async () => {
-    if (!uploadFile) return;
+    if (uploadFiles.length === 0) return;
     
     setUploading(true);
     try {
@@ -174,25 +180,28 @@ export default function GaviCartoonPopup({ onClose }: GaviCartoonPopupProps) {
         nextEpisodeNumber = catCartoons[0].episodeNumber + 1;
       }
 
-      const fileRef = ref(storage, `cartoons/${uploadCategory}_ep${nextEpisodeNumber}_${Date.now()}_${uploadFile.name}`);
-      await uploadBytes(fileRef, uploadFile);
-      const imageUrl = await getDownloadURL(fileRef);
+      for (let i = 0; i < uploadFiles.length; i++) {
+        const file = uploadFiles[i];
+        const epNum = nextEpisodeNumber + i;
+        const fileRef = ref(storage, `cartoons/${uploadCategory}_ep${epNum}_${Date.now()}_${file.name}`);
+        await uploadBytes(fileRef, file);
+        const imageUrl = await getDownloadURL(fileRef);
+        
+        await addDoc(collection(db, 'cartoons'), {
+          imageUrl,
+          episodeNumber: epNum,
+          category: uploadCategory,
+          createdAt: serverTimestamp()
+        });
+      }
       
-      await addDoc(collection(db, 'cartoons'), {
-        imageUrl,
-        episodeNumber: nextEpisodeNumber,
-        category: uploadCategory,
-        createdAt: serverTimestamp()
-      });
-      
-      setUploadFile(null);
+      setUploadFiles([]);
       if (fileInputRef.current) fileInputRef.current.value = '';
       
       if (selectedCategory === uploadCategory) {
         await fetchCartoons();
       }
-      alert('Upload complete!');
-      setIsAdmin(false);
+      alert(`${uploadFiles.length} image(s) uploaded!`);
     } catch (error) {
       console.error("Error uploading cartoon:", error);
       alert('An error occurred during upload. Please check Firebase Storage rules.');
@@ -383,7 +392,7 @@ export default function GaviCartoonPopup({ onClose }: GaviCartoonPopupProps) {
               <span className="material-symbols-outlined text-primary text-xl">upload_file</span>
               {t('home.cartoon.admin.upload')}
             </span>
-            <button onClick={() => setIsAdmin(false)} className="text-sm text-slate-400 hover:text-slate-900 font-bold transition-colors">{t('home.cartoon.admin.exit')}</button>
+            <button onClick={() => { setIsAdmin(false); localStorage.removeItem('gaviCartoonAdmin'); }} className="text-sm text-slate-400 hover:text-slate-900 font-bold transition-colors">{t('home.cartoon.admin.exit')}</button>
           </div>
           
           <div className="space-y-4">
@@ -401,20 +410,25 @@ export default function GaviCartoonPopup({ onClose }: GaviCartoonPopupProps) {
             </div>
             
             <div>
-              <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">{t('home.cartoon.admin.imageFileLabel')}</label>
+              <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">{t('home.cartoon.admin.imageFileLabel')} (max 20)</label>
               <input 
                 type="file" 
                 accept="image/*"
-                onChange={(e) => setUploadFile(e.target.files ? e.target.files[0] : null)}
+                multiple
+                onChange={(e) => {
+                  const files = e.target.files ? Array.from(e.target.files).slice(0, 20) : [];
+                  setUploadFiles(files);
+                }}
                 ref={fileInputRef}
                 className="w-full text-sm text-slate-600 file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-xs file:font-bold file:uppercase file:tracking-wider file:bg-slate-900 file:text-white hover:file:bg-slate-800 transition-colors bg-slate-50 rounded-xl border border-slate-200 p-1"
               />
+              {uploadFiles.length > 0 && <p className="text-xs text-slate-500 mt-1">{uploadFiles.length} file(s) selected</p>}
             </div>
           </div>
 
           <button 
             onClick={handleUpload}
-            disabled={!uploadFile || uploading}
+            disabled={uploadFiles.length === 0 || uploading}
             className="w-full py-3.5 bg-slate-900 text-white rounded-xl font-bold disabled:opacity-50 disabled:bg-slate-200 disabled:text-slate-400 flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 mt-2"
           >
             {uploading ? (

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import StayDetail from '@/components/stay/StayDetail';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useNavigation } from '@/components/providers/NavigationProvider';
 import { stayService } from '@/lib/firebase/stayService';
 
 export default function StayDetailPage() {
@@ -11,7 +12,13 @@ export default function StayDetailPage() {
   const stayId = params.id as string;
   const router = useRouter();
   const { user } = useAuth();
+  const { setGlobalNavHidden } = useNavigation();
   const [isLiked, setIsLiked] = useState(false);
+
+  useEffect(() => {
+    setGlobalNavHidden(true);
+    return () => setGlobalNavHidden(false);
+  }, [setGlobalNavHidden]);
 
   useEffect(() => {
     if (user && stayId) {

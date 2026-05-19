@@ -16,7 +16,7 @@ const STEPS = [
 
 export default function StepIndicator({ currentStep, groupName, onBack }: StepIndicatorProps) {
   return (
-    <header className="sticky top-0 z-50 bg-surface/80 backdrop-blur-xl border-b border-surface-variant/20" style={{ fontFamily: "'Inter', sans-serif" }}>
+    <header className="relative bg-transparent border-b border-surface-variant/20" style={{ fontFamily: "'Inter', sans-serif" }}>
       {/* Top bar */}
       <div className="flex items-center justify-between px-5 md:px-16 h-14">
         <div className="flex items-center gap-3">

@@ -25,12 +25,18 @@ export default function MyGroupsTray({ groups, onGroupSelect }: MyGroupsTrayProp
     setTrayState(prev => prev === 'EXPANDED' ? 'COLLAPSED' : 'EXPANDED');
   };
 
-  const handleGroupClick = (group: Group) => {
-    if (onGroupSelect) {
-      onGroupSelect(group);
-    } else {
-      router.push(`/groups/${group.id}`);
-    }
+  const handleGroupClick = (group: Group, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setTrayState('COLLAPSED');
+    
+    // 약간의 딜레이를 주어 상태 변경(COLLAPSED)이 DOM에 먼저 반영되도록 함
+    setTimeout(() => {
+      if (onGroupSelect) {
+        onGroupSelect(group);
+      } else {
+        router.push(`/groups/${group.id}`);
+      }
+    }, 50);
   };
 
   const isExpanded = trayState === 'EXPANDED';
@@ -117,10 +123,7 @@ export default function MyGroupsTray({ groups, onGroupSelect }: MyGroupsTrayProp
                 {groups.map(group => (
                   <div 
                     key={group.id}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleGroupClick(group);
-                    }}
+                    onClick={(e) => handleGroupClick(group, e)}
                     className={`flex-none w-[calc(100%-24px)] bg-white rounded-lg p-2 shadow-sm border flex gap-3 relative snap-center transition-all cursor-pointer border-slate-50`}
                   >
                     <div className="w-16 h-16 rounded-lg bg-slate-100 flex-none overflow-hidden">

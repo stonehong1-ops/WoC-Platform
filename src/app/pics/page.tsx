@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import Image from 'next/image';
-import Header from '@/components/layout/Header';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { picService } from '@/services/picService';
 import { Pic } from '@/types/pic';
@@ -116,20 +115,19 @@ export default function PicsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF8FF]">
-      <Header />
-      <div className="pt-24 pb-28 px-4 sm:px-6 max-w-[1600px] mx-auto">
-        <div className="mb-12 text-center">
-          <h1 className="font-display text-[42px] font-black text-on-surface tracking-tight leading-none mb-4 uppercase">
+    <div className="w-full bg-[#FAF8FF]">
+      <div className="pt-0 pb-12 px-4 sm:px-6 max-w-[1600px] mx-auto">
+        <div className="mb-4 pt-2 text-center">
+          <h1 className="font-display text-[32px] font-black text-on-surface tracking-tight leading-none mb-2 uppercase">
             PICS
           </h1>
-          <p className="text-on-surface/50 font-medium max-w-xl mx-auto text-[15px] leading-relaxed">
+          <p className="text-on-surface/50 font-medium max-w-xl mx-auto text-[14px] leading-relaxed">
             Explore our curated visual library. A collection of high-quality, aesthetic assets designed to elevate your community experience. Free to download.
           </p>
         </div>
 
         {/* Filters */}
-        <div className="sticky top-16 z-30 bg-[#FAF8FF]/90 backdrop-blur-xl pt-4 pb-6 mb-8 border-b border-on-surface/[0.04]">
+        <div className="sticky top-[110px] z-30 bg-[#FAF8FF]/90 backdrop-blur-xl pt-2 pb-3 mb-4 border-b border-on-surface/[0.04]">
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
               <span className="text-[12px] font-bold text-on-surface/40 uppercase tracking-widest mr-2 shrink-0">Mood</span>
@@ -189,7 +187,7 @@ export default function PicsPage() {
             <p className="text-[13px] font-bold text-on-surface/40 uppercase tracking-[0.2em]">Loading Assets</p>
           </div>
         ) : pics.length === 0 ? (
-          <div className="flex flex-col items-center justify-center text-on-surface/30 py-32 bg-surface rounded-[32px] border border-on-surface/[0.03]">
+          <div className="flex flex-col items-center justify-center text-on-surface/30 py-16 bg-surface rounded-[32px] border border-on-surface/[0.03]">
             <span className="material-symbols-outlined text-[64px] mb-4 opacity-50">wallpaper</span>
             <p className="text-[16px] font-bold tracking-tight">No assets found.</p>
             <p className="text-[13px] mt-2 font-medium opacity-70">Try adjusting your filters.</p>
@@ -245,7 +243,7 @@ export default function PicsPage() {
             )}
             
             {!hasMore && pics.length > 0 && (
-              <div className="text-center mt-12 mb-8">
+              <div className="text-center mt-8 mb-6">
                 <p className="text-on-surface/30 font-bold text-[13px] uppercase tracking-widest">End of Collection</p>
               </div>
             )}

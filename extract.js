@@ -1,27 +1,24 @@
 const fs = require('fs');
-const logPath = 'C:\\Users\\stone\\.gemini\\antigravity\\brain\\5aef59ee-8019-48a7-9bcb-aa09283fa701\\.system_generated\\logs\\overview.txt';
+const lines = fs.readFileSync('C:\\Users\\stone\\.gemini\\antigravity\\brain\\39aaac6e-4bfc-486d-99b2-e11822ee19f1\\.system_generated\\logs\\overview.txt', 'utf8').split('\n');
 
-const content = fs.readFileSync(logPath, 'utf8');
-const lines = content.split('\n');
-
-for (const line of lines) {
-    try {
-        if (!line.trim()) continue;
-        const data = JSON.parse(line);
-        if (data.step_index === 916) {
-            let htmlContent = data.content;
-            const htmlStart = htmlContent.indexOf('<!DOCTYPE html>');
-            if (htmlStart !== -1) {
-                htmlContent = htmlContent.substring(htmlStart);
-                // JSON.parse already handled the string escapes if the whole line was JSON
-                // But the content field itself might have been a string with escaped characters
-                // Let's just output it.
-                fs.writeFileSync('original_source.html', htmlContent, 'utf8');
-                console.log('Extracted to original_source.html');
-            }
-            break;
+for (let i = lines.length - 1; i >= 0; i--) {
+  if (lines[i].includes('안티그래비티 봇 최종 수술 지시서') && lines[i].includes('USER_EXPLICIT')) {
+    const data = JSON.parse(lines[i]);
+    function findMessage(obj) {
+      if (typeof obj === 'string' && obj.includes('안티그래비티 봇 최종 수술 지시서')) return obj;
+      if (typeof obj === 'object' && obj !== null) {
+        for (let key in obj) {
+          const res = findMessage(obj[key]);
+          if (res) return res;
         }
-    } catch (e) {
-        // Skip lines that are not valid JSON
+      }
+      return null;
     }
+    const msg = findMessage(data);
+    if (msg) {
+      fs.writeFileSync('C:\\Users\\stone\\WoC\\full_instruction.txt', msg);
+      console.log('Found and wrote instructions.');
+      break;
+    }
+  }
 }

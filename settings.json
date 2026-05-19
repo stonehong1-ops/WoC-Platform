@@ -1,0 +1,6 @@
+{
+  "model": "gemini-3.1-pro",
+  "secondaryModel": "gemini-3-flash",
+  "agentModel": "gemini-3-flash",
+  "fallbackModel": "claude-sonnet-4.6"
+}

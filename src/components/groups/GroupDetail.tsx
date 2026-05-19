@@ -1,30 +1,17 @@
 
 'use client';
+// 그룹 상세 래퍼 - GroupHome으로 데이터를 전달하는 패스쓰루 컴포넌트
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Group } from '@/types/group';
-import { groupService } from '@/lib/firebase/groupService';
-import { useAuth } from '@/components/providers/AuthProvider';
 import GroupHome from './GroupHome';
 
 interface GroupDetailProps {
   group: Group;
   isModal?: boolean;
+  onClose?: () => void;
 }
 
-export default function GroupDetail({ group: initialGroup, isModal }: GroupDetailProps) {
-  const [group, setGroup] = useState<Group>(initialGroup);
-  
-  // Real-time Group Subscription
-  useEffect(() => {
-    const unsubCommunity = groupService.subscribeGroup(initialGroup.id, (data) => {
-      if (data) setGroup(prev => ({ ...prev, ...data }));
-    });
-    
-    return () => {
-      unsubCommunity();
-    };
-  }, [initialGroup.id]);
-
-  return <GroupHome group={group} isModal={isModal} />;
+export default function GroupDetail({ group, isModal, onClose }: GroupDetailProps) {
+  return <GroupHome group={group} isModal={isModal} onClose={onClose} />;
 }

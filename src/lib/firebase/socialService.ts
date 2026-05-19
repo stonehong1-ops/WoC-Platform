@@ -179,16 +179,16 @@ export const socialService = {
 
   // 7. Search Socials by Title
   async searchSocials(keyword: string) {
-    const q = query(
-      collection(db, SOCIALS_COLLECTION),
-      where('title', '>=', keyword),
-      where('title', '<=', keyword + '\uf8ff')
-    );
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    })) as any[];
+    if (!keyword) return [];
+    const lowerKw = keyword.toLowerCase();
+    const snapshot = await getDocs(collection(db, SOCIALS_COLLECTION));
+    return snapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() } as any))
+      .filter(s => {
+        const title = (s.title || '').toLowerCase();
+        const native = (s.titleNative || '').toLowerCase();
+        return title.includes(lowerKw) || native.includes(lowerKw);
+      });
   },
 
   // 8. Add Reservation

@@ -114,7 +114,7 @@ export default function AdminOthersPage() {
       `}</style>
 
       {/* Main Content Area */}
-      <main className="pt-20 pb-12 px-6">
+      <main className="pt-20 pb-12 px-4">
         <div className="max-w-[896px] mx-auto space-y-10">
           {/* Header Section */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

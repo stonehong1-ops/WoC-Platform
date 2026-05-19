@@ -47,6 +47,8 @@ export default function FullScreenRegistration({
     }
   };
 
+  const handleClose = () => setIsOpen(false); // Replaced useHistoryBack
+
   useEffect(() => {
     setMounted(true);
     const handleOpen = (e: any) => {
@@ -80,7 +82,7 @@ export default function FullScreenRegistration({
       <header className="flex-shrink-0 w-full z-50 flex items-center justify-between px-4 h-16 bg-white shadow-sm border-b border-slate-100">
         <div className="flex items-center gap-3">
           <button 
-            onClick={() => setIsOpen(false)} 
+            onClick={handleClose} 
             className="p-2 rounded-full active:scale-95 duration-150 hover:bg-slate-50"
           >
             <span className="material-symbols-outlined text-slate-500">close</span>

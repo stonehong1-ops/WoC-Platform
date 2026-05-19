@@ -108,7 +108,7 @@ export default function AdminPeoplePage() {
   const currentItems = sortedUsers.slice(0, visibleCount);
 
   return (
-    <main className="max-w-[896px] mx-auto px-6 pt-4 pb-24 space-y-element-gap">
+    <main className="max-w-[896px] mx-auto px-4 pt-4 pb-24 space-y-element-gap">
       <style jsx global>{`
         body { background-color: #F3F4F6; }
         .material-symbols-outlined {

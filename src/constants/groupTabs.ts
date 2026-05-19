@@ -63,8 +63,10 @@ export const FUNCTION_TAB_MAP: Record<string, { id: TabType; key: string; icon: 
   'custom-landing-page': { id: 'customLandingPage', key: 'group.tab.customLandingPage', icon: 'web', implemented: true },
   // AI modules
   'ai-assistant': { id: 'aiAssistant', key: 'group.tab.aiAssistant', icon: 'smart_toy', implemented: true },
+  // Admin only root settings
+  'group-settings': { id: 'settings', key: 'group.tab.settings', icon: 'settings', implemented: true },
 };
 
-export const ADMIN_FUNCTION_IDS = ['brand-setting', 'roles-permissions', 'class-setting'];
+export const ADMIN_FUNCTION_IDS = ['group-settings', 'brand-setting', 'roles-permissions', 'class-setting'];
 
 export const FIXED_IDS = new Set(['dashboard', 'about', ...ADMIN_FUNCTION_IDS]);

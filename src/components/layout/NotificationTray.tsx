@@ -7,14 +7,14 @@ import { useNotification } from '@/contexts/NotificationContext';
 import { notificationService } from '@/lib/firebase/notificationService';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useHistoryBack } from '@/hooks/useHistoryBack';
+
 
 export default function NotificationTray() {
   const { isNotiTrayOpen, closeNotiTray } = useNavigation();
   const { notifications, loading } = useNotification();
   const { formatRelativeTime } = useLanguage();
   const router = useRouter();
-  const { handleClose } = useHistoryBack(isNotiTrayOpen, closeNotiTray);
+  const handleClose = closeNotiTray; // Replaced useHistoryBack
   const displayNotis = notifications;
 
   const handleNotificationClick = async (noti: any) => {

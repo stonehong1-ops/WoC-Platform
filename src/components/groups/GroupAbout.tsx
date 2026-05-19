@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '@/lib/firebase/clientApp';
 import { doc, getDoc } from 'firebase/firestore';
-import { useHistoryBack } from '@/hooks/useHistoryBack';
+
 
 interface GroupAboutProps {
   group: Group;
@@ -74,7 +74,7 @@ const GroupAbout: React.FC<GroupAboutProps> = ({ group, members }) => {
   const img4 = displayImages[3] || displayImages[0];
   const moreCount = displayImages.length > 4 ? displayImages.length - 4 : 0;
 
-  const { handleClose: closeViewer } = useHistoryBack(isViewerOpen, () => setIsViewerOpen(false));
+  const closeViewer = () => setIsViewerOpen(false); // Replaced useHistoryBack
 
   const openViewer = (index: number) => {
     if (displayImages.length === 0) return;
@@ -122,7 +122,7 @@ const GroupAbout: React.FC<GroupAboutProps> = ({ group, members }) => {
   });
 
   return (
-    <div className="p-4 space-y-8">
+    <div className="space-y-8">
       {/* Fullscreen Photo Viewer */}
       <AnimatePresence>
         {isViewerOpen && (

@@ -1,37 +1,32 @@
-# 📋 Group Member Management & Permission Setup Localization Checklist
+# 📋 Spacing and Padding Audit Checklist
 
-## 1. Multi-language Support Updates
-- [x] Add 11 translation keys for Group Member Manager in `src/contexts/LanguageContext.tsx`
-  - [x] English (EN):
-    - `group.stats`: 'Stats'
-    - `group.owner`: 'Owner'
-    - `group.staff`: 'Staff'
-    - `group.instructor`: 'Instructor'
-    - `group.member`: 'Member'
-    - `group.recent_joined`: 'Recent Joined'
-    - `group.recent_visit`: 'Recent Visit'
-    - `group.load_more_members`: 'Load More Members'
-    - `group.end_of_list`: 'End of List'
-    - `group.loading_members`: 'Loading Members...' (중복 제거 후 기존 group.loading_members 연동 완료)
-    - `group.no_members`: 'No Members Found' (중복 제거 후 기존 group.no_members 연동 완료)
-  - [x] Korean (KR):
-    - `group.stats`: '통계'
-    - `group.owner`: '개설자'
-    - `group.staff`: '스태프'
-    - `group.instructor`: '강사'
-    - `group.member`: '일반회원'
-    - `group.recent_joined`: '최근 가입순'
-    - `group.recent_visit`: '최근 방문순'
-    - `group.load_more_members`: '멤버 더 보기'
-    - `group.end_of_list`: '목록의 끝입니다.'
-    - `group.loading_members`: '멤버를 불러오는 중...' (중복 제거 후 기존 group.loading_members 연동 완료)
-    - `group.no_members`: '등록된 멤버가 없습니다.' (중복 제거 후 기존 group.no_members 연동 완료)
+## 1. Project-wide Space and Padding Auditing
+- [x] Extract all page routes and main layouts from `ia.md` and `src/app/`
+- [x] Scan and inspect each page component for horizontal margins/paddings (`px-`)
+- [x] Scan and inspect each page component for vertical/top margins/paddings (`pt-`, `py-`, `mt-`) relative to the header layout
+- [x] Identify visual spacing mismatches or inconsistencies compared to the `px-4` layout standard
 
-## 2. Localization Verification
-- [x] Verify that all localized keys render correctly on the live page.
-- [x] Verify that switching the language instantly translates these menus without layout shifts.
+## 2. Generate Spacing Audit Report
+- [x] Create `spacing_audit_report.md` in the project root directory
+- [x] List all identified spacing mismatches with file paths, line ranges, and current code snippets
+- [x] Categorize the issues into "Horizontal Spacing (px-) Deviations" and "Header Gap (Top Spacing) Discrepancies"
+- [x] Detail recommendations for achieving a perfectly consistent design alignment
 
-## 3. Production Deployment & Quality Control
-- [x] Verify the project builds successfully in local environment without any TypeScript/Next.js compiler errors.
-- [x] Deploy the project to Vercel production environment (`npx -y vercel --prod --yes`).
-- [x] Confirm and report the live URL, Deployment ID, and Exit Code to the user.
+## 3. Implement Spacing Fixes
+- [x] Update `src/app/admin/banners/page.tsx` (`px-6` -> `px-4` - already aligned, verified)
+- [x] Update `src/app/admin/others/page.tsx` (`px-6` -> `px-4`)
+- [x] Update `src/app/admin/people/page.tsx` (`px-6` -> `px-4`)
+- [x] Update `src/app/explore/page.tsx` (`px-6` -> `px-4`)
+- [x] Update `src/app/groups/[id]/review/page.tsx` (`px-5` -> `px-4`)
+- [x] Update `src/app/lost/register/page.tsx` (`px-5` -> `px-4`)
+- [x] Update `src/app/rental/register/page.tsx` (`px-5` -> `px-4`)
+- [x] Update `src/app/hub/page.tsx` (`px-6` -> `px-4`)
+- [x] Update `src/app/profile/page.tsx` (`px-6` -> `px-4`)
+- [x] Update `src/app/search/page.tsx` (`px-5` -> `px-4`)
+- [x] Update `src/app/wallet/page.tsx` (`px-6` -> `px-4` & `-mx-6 px-6` -> `-mx-4 px-4`)
+
+## 4. Strict Safety Verification
+- [x] Double check that absolutely NO design layout logic or HTML structures were altered
+- [x] Verify the project continues to build successfully (`npm run build`)
+- [x] Deploy to production and report URL & Deployment ID to user
+

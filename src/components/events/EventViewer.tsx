@@ -74,7 +74,9 @@ export default function EventViewer({ event: initialEvent, onClose }: EventViewe
     user.uid === event.hostId ||
     event.staffIds?.includes(user.uid) ||
     ADMIN_UIDS.includes(user.uid) ||
-    user.email === "stonehong1@gmail.com"
+    user.email === "stonehong1@gmail.com" ||
+    profile?.isAdmin ||
+    profile?.systemRole === "admin"
   );
 
   // Scroll listener

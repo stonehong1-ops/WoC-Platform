@@ -60,7 +60,7 @@ export default function EventsPage() {
   const { toggleDrawer, setSubHeader } = useNavigation();
   const { location } = useLocation();
   const { user, profile, setShowLogin } = useAuth();
-  const { t } = useLanguage();
+  const { t, language, formatDate } = useLanguage();
   const [events, setEvents] = useState<Event[]>([]);
   const [likedEventIds, setLikedEventIds] = useState<string[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -251,7 +251,7 @@ export default function EventsPage() {
     return slotsMap;
   }, [filteredLocationEvents]);
 
-  const formattedMonth = currentDate.toLocaleString('en-US', { month: 'short', year: 'numeric' });
+  const formattedMonth = formatDate(currentDate, 'monthYear');
 
   // SubHeader Injection
   useEffect(() => {
@@ -300,13 +300,27 @@ export default function EventsPage() {
                 </button>
               </div>
             )}
-            <div className="flex items-center gap-2 cursor-pointer" onClick={() => setIsWorldEvent(!isWorldEvent)}>
-              <div className={`w-4 h-4 rounded-[4px] flex items-center justify-center border transition-colors ${isWorldEvent ? 'bg-blue-600 border-blue-600' : 'bg-white border-slate-300 shadow-sm'}`}>
-                {isWorldEvent && <span className="material-symbols-outlined text-[12px] text-white font-bold" style={{ fontVariationSettings: "'wght' 700" }}>check</span>}
-              </div>
-              <span className={`text-[11px] font-bold uppercase tracking-widest select-none transition-colors ${isWorldEvent ? 'text-blue-600' : 'text-slate-500'}`}>
-                World Event
-              </span>
+            <div className="flex items-center bg-slate-100 rounded-lg p-0.5 border border-slate-200/50">
+              <button
+                onClick={() => setIsWorldEvent(false)}
+                className={`px-3 py-1 rounded-md text-[11px] font-bold uppercase tracking-widest transition-all duration-200 ${
+                  !isWorldEvent
+                    ? 'bg-white text-blue-600 shadow-sm border border-slate-200/80'
+                    : 'text-slate-400 hover:text-slate-500'
+                }`}
+              >
+                Local
+              </button>
+              <button
+                onClick={() => setIsWorldEvent(true)}
+                className={`px-3 py-1 rounded-md text-[11px] font-bold uppercase tracking-widest transition-all duration-200 ${
+                  isWorldEvent
+                    ? 'bg-white text-blue-600 shadow-sm border border-slate-200/80'
+                    : 'text-slate-400 hover:text-slate-500'
+                }`}
+              >
+                World
+              </button>
             </div>
           </div>
         )}
@@ -334,7 +348,7 @@ export default function EventsPage() {
     const grouped: Record<string, Event[]> = {};
     validEvents.forEach(e => {
       const startDate = getNormalizedDate(e.startDate);
-      const monthKey = format(startDate, 'MMMM yyyy');
+      const monthKey = formatDate(startDate, 'monthYear');
       if (!grouped[monthKey]) grouped[monthKey] = [];
       grouped[monthKey].push(e);
     });
@@ -429,7 +443,9 @@ export default function EventsPage() {
                   <p className="text-white/90 uppercase flex items-center gap-1.5"
                     style={{ fontFamily: 'Inter, sans-serif', fontSize: '0.75rem', lineHeight: '1.25rem', fontWeight: 600, letterSpacing: '0.05em' }}>
                     <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'opsz' 20" }}>calendar_today</span>
-                    {format(getNormalizedDate(featuredEvent.startDate), 'MMM dd, yyyy')}
+                    {language === 'KR'
+                      ? `${getNormalizedDate(featuredEvent.startDate).getFullYear()}년 ${getNormalizedDate(featuredEvent.startDate).getMonth() + 1}월 ${getNormalizedDate(featuredEvent.startDate).getDate()}일`
+                      : format(getNormalizedDate(featuredEvent.startDate), 'MMM dd, yyyy')}
                   </p>
                   <p className="text-white/90 flex items-center gap-1.5"
                     style={{ fontFamily: 'Inter, sans-serif', fontSize: '0.75rem', lineHeight: '1.25rem', fontWeight: 600 }}>
@@ -551,8 +567,10 @@ export default function EventsPage() {
                           const end = event.endDate ? getNormalizedDate(event.endDate) : null;
                           const flagUrl = getFlagImageUrl(event.location?.split(',').pop()?.trim() || '');
                           const dateStr = end && !isSameDay(start, end)
-                            ? `${format(start, 'MMM d')} – ${format(end, 'MMM d')}`
-                            : format(start, 'MMM d, EEE');
+                            ? `${formatDate(start, 'shortMonthDay')} – ${formatDate(end, 'shortMonthDay')}`
+                            : language === 'KR'
+                              ? formatDate(start, 'shortMonthDay')
+                              : formatDate(start, 'MMM d, EEE');
                             
                           return (
                             <div
@@ -623,8 +641,10 @@ export default function EventsPage() {
                         const end = event.endDate ? getNormalizedDate(event.endDate) : null;
                         const flagUrl = getFlagImageUrl(event.location?.split(',').pop()?.trim() || '');
                         const dateStr = end && !isSameDay(start, end)
-                          ? `${format(start, 'MMM d')} – ${format(end, 'MMM d')}`
-                          : format(start, 'MMM d, EEE');
+                          ? `${formatDate(start, 'shortMonthDay')} – ${formatDate(end, 'shortMonthDay')}`
+                          : language === 'KR'
+                            ? formatDate(start, 'shortMonthDay')
+                            : formatDate(start, 'MMM d, EEE');
                           
                         return (
                           <div

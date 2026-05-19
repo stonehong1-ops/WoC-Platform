@@ -1,5 +1,7 @@
 # 🌟 MAIN PRINCIPLE
 Upon receiving instructions, you MUST read this MD file, explicitly confirm that you have read it in your response, and spend 1 minute thinking before writing any code.
+**가장 핵심 원칙 — 방금전에 지시한 것만 수행한다.**
+**Single Task Rule**: The user will never request multiple tasks at once. Therefore, you MUST ONLY perform the very last requested task.
 
 # Project Development Rules
 
@@ -141,3 +143,12 @@ When something fails:
 - Don't apply a "common fix" before confirming the cause.
 - If unclear, add a print/log to verify state — then fix.
 This is the step LLMs skip most often after "run tests". They guess from error keywords and apply the most-recent-pattern fix. That's how a one-line bug becomes a three-file refactor.
+
+# Everything Claude Code (ECC) - Core Principles & Hybrid Routing
+
+- **Hybrid Model Routing (모델 사용 원칙)** — 일상적인 코딩, 리팩토링, 파일 탐색은 무조건 Gemini (Pro/Flash)를 사용하라. Claude는 '설계 아키텍처 결함 해결' 또는 '다중 파일이 얽힌 치명적 Race Condition 해결' 등 제한된 상황에서만 명시적으로 호출하라.
+- **Security-First (보안 최우선)** — API Key, Token 등 시크릿 값은 절대 하드코딩하지 않는다. 반드시 환경 변수(env)를 사용하며, 노출 발견 시 즉각 로테이션 및 수정한다.
+- **Immutability (불변성 유지 - CRITICAL)** — 기존 객체나 상태를 직접 수정(mutate)하지 마라. 항상 변경사항이 적용된 새로운 복사본을 생성하여 반환한다.
+- **File Organization (파일 모듈화)** — 거대한 단일 파일(Mega-file)을 절대 만들지 마라. 파일은 기능/도메인 단위로 200~400줄을 유지하며, 최대 800줄을 넘기지 않도록 분리(Decoupling)한다.
+- **Error Handling & Validation** — 모든 에러는 조용히 넘기지(swallow) 말고 명시적으로 처리한다. 외부에서 들어오는 데이터(사용자 입력 등)는 시스템 경계에서 반드시 검증(Validate)한다.
+- **Context Management** — 컨텍스트 윈도우 한계를 인지하라. 대규모 리팩토링 시 한 번에 너무 많은 파일을 로드하지 말고, 작업이 끝난 도메인은 메모리에서 내린 후 다음 작업을 진행한다.

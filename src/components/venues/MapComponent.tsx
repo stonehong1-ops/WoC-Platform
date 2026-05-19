@@ -6,9 +6,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from '@/components/providers/LocationProvider';
 import { useNavigation } from '@/components/providers/NavigationProvider';
 import { db } from '@/lib/firebase/clientApp';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, getDocs, limit } from 'firebase/firestore';
 import { CITY_COORDINATES, DEFAULT_COORDINATES } from '@/lib/constants/locations';
-import { useRouter } from 'next/navigation';
 import { OverlayView } from '@react-google-maps/api';
 import useSupercluster from 'use-supercluster';
 
@@ -37,11 +36,13 @@ export default function MapComponent({
   onRegisterOpen, 
   onEdit, 
   onDelete, 
+  onGroupOpen,
   isLoaded 
 }: { 
   onRegisterOpen: () => void; 
   onEdit: (venue: Venue, mode?: 'edit' | 'geo') => void;
   onDelete: (id: string) => void;
+  onGroupOpen?: (groupId: string) => void;
   isLoaded: boolean; 
 }) {
   const { location } = useLocation();
@@ -78,7 +79,6 @@ export default function MapComponent({
   const [center, setCenter] = useState<{ lat: number; lng: number } | null>(null);
   const [selectedBrand, setSelectedBrand] = useState('All');
   const [showBrandFilter, setShowBrandFilter] = useState(false);
-  const router = useRouter();
 
   const categories = ['All', 'Studio', 'Shop', 'Stay', 'Beauty', 'Club', 'Academy', 'Cafe', 'Eats', 'Other'];
 
@@ -265,10 +265,23 @@ export default function MapComponent({
     });
   };
 
+  const openGroupByVenueId = async (venueId: string) => {
+    try {
+      const q = query(collection(db, 'groups'), where('venueId', '==', venueId), limit(1));
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        const groupDoc = snap.docs[0];
+        onGroupOpen?.(groupDoc.id);
+      }
+    } catch (e) {
+      console.error('Failed to load group for venue:', e);
+    }
+  };
+
   const handleMarkerClick = (v: Venue) => {
     if (selectedVenueId === v.id) {
-      // Second click: Navigate to group's about tab
-      router.push(`/groups/${v.id}?tab=about`);
+      // Second click: Open group as app-in-app
+      openGroupByVenueId(v.id);
     } else {
       // First click: Focus on map and select
       setSelectedVenueId(v.id);
@@ -282,8 +295,8 @@ export default function MapComponent({
 
   const handleListItemClick = (v: Venue) => {
     if (selectedVenueId === v.id) {
-      // Second click: Navigate to group's about tab
-      router.push(`/groups/${v.id}?tab=about`);
+      // Second click: Open group as app-in-app
+      openGroupByVenueId(v.id);
     } else {
       // First click: Focus on map and select
       setSelectedVenueId(v.id);
@@ -803,7 +816,7 @@ export default function MapComponent({
             )}
           </AnimatePresence>
         </motion.div>
-      </div>
+    </div>
     </div>
   );
 }

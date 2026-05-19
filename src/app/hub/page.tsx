@@ -18,7 +18,7 @@ export default function HubPage() {
           />
           <div className="absolute inset-0 bg-black/40"></div>
         </div>
-        <div className="container mx-auto px-6 relative z-10">
+        <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-2xl">
             <h1 className="font-headline font-extrabold text-5xl md:text-6xl text-white mb-6 tracking-tight leading-tight">
               {t('hub.hero_title_1')} <br/> {t('hub.hero_title_2')}
@@ -36,7 +36,7 @@ export default function HubPage() {
       </section>
 
       {/* Essential Services Section */}
-      <section className="py-24 container mx-auto px-6">
+      <section className="py-24 container mx-auto px-4">
         <div className="mb-12 text-center md:text-left">
           <span className="text-primary font-bold tracking-widest text-xs uppercase">{t('hub.services_subtitle')}</span>
           <h2 className="font-headline font-bold text-3xl mt-2 text-on-surface">{t('hub.services_title')}</h2>
@@ -85,7 +85,7 @@ export default function HubPage() {
 
       {/* Current Arrivals Section */}
       <section className="py-24 bg-surface-container-low overflow-hidden">
-        <div className="container mx-auto px-6 mb-12 flex justify-between items-end">
+        <div className="container mx-auto px-4 mb-12 flex justify-between items-end">
           <div>
             <span className="text-primary font-bold tracking-widest text-xs uppercase">{t('hub.arrivals_subtitle')}</span>
             <h2 className="font-headline font-bold text-3xl mt-2">{t('hub.arrivals_title')}</h2>
@@ -99,7 +99,7 @@ export default function HubPage() {
             </button>
           </div>
         </div>
-        <div className="flex gap-6 px-6 overflow-x-auto hide-scrollbar snap-x snap-mandatory">
+        <div className="flex gap-6 px-4 overflow-x-auto hide-scrollbar snap-x snap-mandatory">
           {/* Item 1 */}
           <div className="min-w-[300px] md:min-w-[320px] snap-start bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm group">
             <div className="h-80 overflow-hidden">

@@ -24,6 +24,7 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
     slug: group.slug || "",
     story: group.story || "",
     coverImage: group.coverImage || "",
+    logo: group.logo || "",
     aboutPhotos: group.aboutPhotos || [],
     bankDetails: group.bankDetails || { bankName: "", accountHolder: "", accountNumber: "" },
     businessRegistrationNumber: group.businessRegistrationNumber || "",
@@ -38,7 +39,7 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
     ]
   });
 
-  const [uploadingType, setUploadingType] = useState<"cover" | null>(null);
+  const [uploadingType, setUploadingType] = useState<"cover" | "logo" | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
@@ -53,11 +54,11 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
     setLoading(true);
     try {
       await groupService.updateGroupMetadata(group.id, formData);
-      toast.success("Brand settings saved successfully!");
+      toast.success(t("group.brand.toast.save_success"));
       if (onSave) onSave();
     } catch (error) {
       console.error("Failed to save group config:", error);
-      toast.error("Failed to save settings. Please try again.");
+      toast.error(t("group.brand.toast.save_fail"));
     } finally {
       setLoading(false);
     }
@@ -75,7 +76,7 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
 
   const removeService = (index: number) => {
     if (formData.services.length <= 1) {
-      toast.error("At least one core service is required.");
+      toast.error(t("group.brand.toast.service_required"));
       return; 
     }
     setFormData(prev => ({
@@ -90,7 +91,7 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
     setFormData(prev => ({ ...prev, services: updated }));
   };
 
-  const triggerUpload = (type: "cover") => {
+  const triggerUpload = (type: "cover" | "logo") => {
     setUploadingType(type);
     if (fileInputRef.current) {
       fileInputRef.current.accept = "image/*";
@@ -107,14 +108,26 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
       const path = `groups/${group.id}/branding/${uploadingType}_${Date.now()}_${file.name}`;
       const url = await storageService.uploadFile(file, path);
       
-      setFormData(prev => ({
-        ...prev,
-        coverImage: url
-      }));
-      toast.success("Cover image uploaded!");
+      if (uploadingType === "cover") {
+        setFormData(prev => ({
+          ...prev,
+          coverImage: url
+        }));
+        toast.success(t("group.brand.toast.cover_success"));
+      } else if (uploadingType === "logo") {
+        setFormData(prev => ({
+          ...prev,
+          logo: url
+        }));
+        toast.success(t("group.brand.toast.logo_success"));
+      }
     } catch (error) {
       console.error("Upload failed:", error);
-      toast.error("Image upload failed. Please try again.");
+      if (uploadingType === "cover") {
+        toast.error(t("group.brand.toast.cover_fail"));
+      } else {
+        toast.error(t("group.brand.toast.logo_fail"));
+      }
     } finally {
       setLoading(false);
       setUploadingType(null);
@@ -129,7 +142,7 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
     if (!files.length) return;
 
     if (formData.aboutPhotos.length + files.length > 20) {
-      toast.error("You can upload a maximum of 20 photos.");
+      toast.error(t("group.brand.toast.max_photos"));
       return;
     }
 
@@ -146,10 +159,10 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
         ...prev,
         aboutPhotos: [...prev.aboutPhotos, ...uploadedUrls]
       }));
-      toast.success(`${uploadedUrls.length} photo(s) uploaded!`);
+      toast.success(t("group.brand.toast.photos_success", { count: uploadedUrls.length }));
     } catch (error) {
       console.error("About photos upload failed:", error);
-      toast.error("Photo upload failed. Please try again.");
+      toast.error(t("group.brand.toast.photos_fail"));
     } finally {
       setLoading(false);
       if (aboutPhotosInputRef.current) aboutPhotosInputRef.current.value = "";
@@ -183,8 +196,8 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
       {/* Section Header */}
       <div className="px-4 pt-4 pb-6">
         <div className="mb-2">
-          <h2 className="text-[24px] leading-[1.3] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>Brand Settings</h2>
-          <p className="text-[14px] leading-[1.4] tracking-[0.01em] font-medium text-on-surface-variant mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>Manage your community&apos;s identity and presence</p>
+          <h2 className="text-[24px] leading-[1.3] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.brand.title")}</h2>
+          <p className="text-[14px] leading-[1.4] tracking-[0.01em] font-medium text-on-surface-variant mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.brand.subtitle")}</p>
         </div>
       </div>
 
@@ -198,8 +211,8 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
                 <span className="material-symbols-outlined text-primary text-[20px]">badge</span>
               </div>
               <div>
-                <h3 className="text-[16px] leading-[1.6] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>Brand Identity</h3>
-                <p className="text-[12px] leading-[1.2] font-medium text-on-surface-variant" style={{ fontFamily: "'Inter', sans-serif" }}>Name and access path</p>
+                <h3 className="text-[16px] leading-[1.6] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.brand.identity")}</h3>
+                <p className="text-[12px] leading-[1.2] font-medium text-on-surface-variant" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.brand.identity_desc")}</p>
               </div>
             </div>
           </div>
@@ -208,7 +221,7 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
             {/* Names Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>Global Brand Name</label>
+                <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.brand.global_name")}</label>
                 <input
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -219,7 +232,7 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>Localized Name</label>
+                <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.brand.localized_name")}</label>
                 <input
                   value={formData.nativeName}
                   onChange={(e) => setFormData({ ...formData, nativeName: e.target.value })}
@@ -233,7 +246,7 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
 
             {/* Slug */}
             <div className="space-y-2">
-              <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>Unique URL Path</label>
+              <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.brand.unique_path")}</label>
               <div className="flex items-center bg-surface-container-low border border-outline/10 rounded-xl px-4 overflow-hidden focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary transition-all">
                 <span className="text-on-surface-variant/40 text-[14px] font-medium py-3.5 whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif" }}>woc.today/groups/</span>
                 <input
@@ -245,13 +258,13 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
                   style={{ fontFamily: "'Inter', sans-serif" }}
                 />
               </div>
-              <p className="text-[11px] text-on-surface-variant/60 font-medium ml-1" style={{ fontFamily: "'Inter', sans-serif" }}>This slug defines your group&apos;s permanent direct link.</p>
+              <p className="text-[11px] text-on-surface-variant/60 font-medium ml-1" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.brand.slug_desc")}</p>
             </div>
 
             {/* Cover */}
             <div className="pt-2">
               <div className="space-y-2">
-                <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>Cover Image</label>
+                <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.brand.cover_image")}</label>
                 <div 
                   onClick={() => triggerUpload("cover")}
                   className="relative aspect-[21/9] bg-surface-container-low border-2 border-dashed border-outline/15 rounded-2xl overflow-hidden group/cover cursor-pointer hover:border-primary/30 transition-all"
@@ -261,11 +274,41 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center gap-1">
                       <span className="material-symbols-outlined text-on-surface-variant/30 text-[28px]">landscape</span>
-                      <span className="text-[10px] text-on-surface-variant/40 font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>Upload</span>
+                      <span className="text-[10px] text-on-surface-variant/40 font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.brand.upload")}</span>
                     </div>
                   )}
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/cover:opacity-100 flex items-center justify-center transition-opacity rounded-2xl">
                     <span className="material-symbols-outlined text-white text-[20px]">edit</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Logo */}
+            <div className="pt-4">
+              <div className="space-y-2">
+                <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.brand.logo")}</label>
+                <div className="flex items-center gap-4">
+                  <div 
+                    onClick={() => triggerUpload("logo")}
+                    className="relative w-24 h-24 aspect-square bg-surface-container-low border-2 border-dashed border-outline/15 rounded-2xl overflow-hidden group/logo cursor-pointer hover:border-primary/30 transition-all flex items-center justify-center shrink-0"
+                  >
+                    {formData.logo ? (
+                      <img src={formData.logo} alt="Logo" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center gap-1">
+                        <span className="material-symbols-outlined text-on-surface-variant/30 text-[24px]">image</span>
+                        <span className="text-[10px] text-on-surface-variant/40 font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.brand.upload")}</span>
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/logo:opacity-100 flex items-center justify-center transition-opacity rounded-2xl">
+                      <span className="material-symbols-outlined text-white text-[18px]">edit</span>
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] leading-[1.4] text-on-surface-variant/70 font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>
+                      {t("group.brand.logo_desc")}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -283,8 +326,8 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
                 <span className="material-symbols-outlined text-secondary text-[20px]">auto_stories</span>
               </div>
               <div>
-                <h3 className="text-[16px] leading-[1.6] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>Brand Story</h3>
-                <p className="text-[12px] leading-[1.2] font-medium text-on-surface-variant" style={{ fontFamily: "'Inter', sans-serif" }}>The heart of your community</p>
+                <h3 className="text-[16px] leading-[1.6] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.brand.story")}</h3>
+                <p className="text-[12px] leading-[1.2] font-medium text-on-surface-variant" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.brand.story_desc")}</p>
               </div>
             </div>
           </div>
@@ -293,7 +336,7 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
               value={formData.story}
               onChange={(e) => setFormData({ ...formData, story: e.target.value })}
               className="w-full bg-surface-container-low border border-outline/10 focus:ring-2 focus:ring-primary/30 focus:border-primary rounded-xl px-4 py-4 text-on-surface text-[16px] leading-relaxed font-normal resize-none placeholder:text-on-surface-variant/30 min-h-[200px]"
-              placeholder="Tell your story... What inspires your community?"
+              placeholder={t("group.brand.story_placeholder")}
               style={{ fontFamily: "'Inter', sans-serif" }}
             ></textarea>
           </div>
@@ -309,8 +352,8 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
                 <span className="material-symbols-outlined text-primary text-[20px]">collections</span>
               </div>
               <div>
-                <h3 className="text-[16px] leading-[1.6] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>About Photos</h3>
-                <p className="text-[12px] leading-[1.2] font-medium text-on-surface-variant" style={{ fontFamily: "'Inter', sans-serif" }}>Atmosphere and space (Up to 20)</p>
+                <h3 className="text-[16px] leading-[1.6] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.brand.about_photos")}</h3>
+                <p className="text-[12px] leading-[1.2] font-medium text-on-surface-variant" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.brand.about_photos_desc")}</p>
               </div>
             </div>
           </div>
@@ -335,12 +378,12 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
                   className="aspect-square rounded-xl border-2 border-dashed border-outline/15 bg-surface-container-low hover:border-primary/30 flex flex-col items-center justify-center gap-1 transition-all"
                 >
                   <span className="material-symbols-outlined text-on-surface-variant/30 text-[24px]">add_photo_alternate</span>
-                  <span className="text-[10px] text-on-surface-variant/40 font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>Add Photo</span>
+                  <span className="text-[10px] text-on-surface-variant/40 font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.brand.add_photo")}</span>
                 </button>
               )}
             </div>
             <p className="text-[11px] text-on-surface-variant/60 font-medium text-right" style={{ fontFamily: "'Inter', sans-serif" }}>
-              {formData.aboutPhotos.length} / 20 photos uploaded
+              {t("group.brand.photos_count", { count: formData.aboutPhotos.length })}
             </p>
           </div>
         </div>
@@ -354,8 +397,8 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
               <span className="material-symbols-outlined text-tertiary text-[20px]">widgets</span>
             </div>
             <div>
-              <h3 className="text-[16px] leading-[1.6] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>Core Services</h3>
-              <p className="text-[12px] leading-[1.2] font-medium text-on-surface-variant" style={{ fontFamily: "'Inter', sans-serif" }}>Highlight your key features</p>
+              <h3 className="text-[16px] leading-[1.6] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.brand.core_services")}</h3>
+              <p className="text-[12px] leading-[1.2] font-medium text-on-surface-variant" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.brand.core_services_desc")}</p>
             </div>
           </div>
           <button
@@ -386,7 +429,7 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
                       onChange={(e) => updateService(index, "title", e.target.value)}
                       className="w-full bg-transparent border-none focus:ring-0 p-0 text-on-surface text-[16px] font-semibold placeholder:text-on-surface-variant/30"
                       type="text"
-                      placeholder="Service name..."
+                      placeholder={t("group.brand.service_name_placeholder")}
                       style={{ fontFamily: "'Inter', sans-serif" }}
                     />
                   </div>
@@ -404,7 +447,7 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
                   onChange={(e) => updateService(index, "description", e.target.value)}
                   className="w-full bg-surface-container-low border border-outline/10 focus:ring-2 focus:ring-primary/30 focus:border-primary rounded-xl px-4 py-3 text-on-surface text-[14px] leading-relaxed font-normal resize-none placeholder:text-on-surface-variant/30"
                   rows={3}
-                  placeholder="Describe this service..."
+                  placeholder={t("group.brand.service_desc_placeholder")}
                   style={{ fontFamily: "'Inter', sans-serif" }}
                 ></textarea>
               </div>
@@ -422,15 +465,15 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
                 <span className="material-symbols-outlined text-error text-[20px]">account_balance</span>
               </div>
               <div>
-                <h3 className="text-[16px] leading-[1.6] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>Financial Details</h3>
-                <p className="text-[12px] leading-[1.2] font-medium text-on-surface-variant" style={{ fontFamily: "'Inter', sans-serif" }}>Bank account information</p>
+                <h3 className="text-[16px] leading-[1.6] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.brand.financial_details")}</h3>
+                <p className="text-[12px] leading-[1.2] font-medium text-on-surface-variant" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.brand.financial_details_desc")}</p>
               </div>
             </div>
           </div>
           <div className="p-6 space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>Bank Name</label>
+                <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.brand.bank_name")}</label>
                 <input
                   value={formData.bankDetails.bankName}
                   onChange={(e) => setFormData({ ...formData, bankDetails: { ...formData.bankDetails, bankName: e.target.value } })}
@@ -441,7 +484,7 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>Account Holder</label>
+                <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.brand.account_holder")}</label>
                 <input
                   value={formData.bankDetails.accountHolder}
                   onChange={(e) => setFormData({ ...formData, bankDetails: { ...formData.bankDetails, accountHolder: e.target.value } })}
@@ -453,7 +496,7 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>Account Number</label>
+              <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.brand.account_number")}</label>
               <input
                 value={formData.bankDetails.accountNumber}
                 onChange={(e) => setFormData({ ...formData, bankDetails: { ...formData.bankDetails, accountNumber: e.target.value } })}
@@ -476,14 +519,14 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
                 <span className="material-symbols-outlined text-blue-500 text-[20px]">domain</span>
               </div>
               <div>
-                <h3 className="text-[16px] leading-[1.6] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>Business Identity</h3>
-                <p className="text-[12px] leading-[1.2] font-medium text-on-surface-variant" style={{ fontFamily: "'Inter', sans-serif" }}>Official representative and registration</p>
+                <h3 className="text-[16px] leading-[1.6] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.brand.business_identity")}</h3>
+                <p className="text-[12px] leading-[1.2] font-medium text-on-surface-variant" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.brand.business_identity_desc")}</p>
               </div>
             </div>
           </div>
           <div className="p-6 space-y-5">
             <div className="space-y-2">
-              <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>Representative Name</label>
+              <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.brand.representative_name")}</label>
               <input
                 value={formData.representativeName}
                 onChange={(e) => setFormData({ ...formData, representativeName: e.target.value })}
@@ -494,7 +537,7 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
               />
             </div>
             <div className="space-y-2">
-              <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>Business Registration No. <span className="text-on-surface-variant/50 lowercase font-normal tracking-normal">(optional)</span></label>
+              <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.brand.business_reg_no")} <span className="text-on-surface-variant/50 lowercase font-normal tracking-normal">{t("group.brand.optional")}</span></label>
               <input
                 value={formData.businessRegistrationNumber}
                 onChange={(e) => setFormData({ ...formData, businessRegistrationNumber: e.target.value })}
@@ -509,7 +552,7 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
       </section>
 
       {/* Floating Save Button (Mobile) */}
-      <div className="fixed bottom-6 left-5 right-5 z-40 md:hidden">
+      <div className="fixed bottom-20 left-5 right-5 z-40 md:hidden">
         <button
           onClick={handleSave}
           disabled={loading}
@@ -519,12 +562,12 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
           {loading ? (
             <>
               <span className="material-symbols-outlined text-[20px] animate-spin">progress_activity</span>
-              Saving...
+              {t("group.brand.saving")}
             </>
           ) : (
             <>
               <span className="material-symbols-outlined text-[20px]">check</span>
-              Save Changes
+              {t("group.brand.save_changes")}
             </>
           )}
         </button>
@@ -554,14 +597,14 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
                   <span className="material-symbols-outlined text-[20px]">bolt</span>
                 </div>
                 <div>
-                  <h3 className="text-[18px] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>New Service</h3>
-                  <p className="text-[12px] text-on-surface-variant font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>Add a core feature to your home page</p>
+                  <h3 className="text-[18px] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.brand.new_service")}</h3>
+                  <p className="text-[12px] text-on-surface-variant font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.brand.new_service_desc")}</p>
                 </div>
               </div>
               
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>Service Name</label>
+                  <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.brand.service_name")}</label>
                   <input
                     value={newService.title}
                     onChange={(e) => setNewService({ ...newService, title: e.target.value })}
@@ -573,12 +616,12 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
                 </div>
                 
                 <div className="space-y-2">
-                  <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>Description</label>
+                  <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.brand.description")}</label>
                   <textarea
                     value={newService.description}
                     onChange={(e) => setNewService({ ...newService, description: e.target.value })}
                     className="w-full bg-surface-container-low border border-outline/10 focus:ring-2 focus:ring-primary/30 focus:border-primary rounded-xl px-4 py-3.5 text-on-surface text-[14px] leading-relaxed font-normal placeholder:text-on-surface-variant/30 resize-none"
-                    placeholder="Describe the service..."
+                    placeholder={t("group.brand.service_desc_placeholder")}
                     rows={4}
                     style={{ fontFamily: "'Inter', sans-serif" }}
                   />
@@ -590,14 +633,14 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
                     className="flex-1 py-3.5 rounded-xl text-on-surface-variant text-[14px] font-medium hover:bg-surface-container-low transition-all"
                     style={{ fontFamily: "'Inter', sans-serif" }}
                   >
-                    Cancel
+                    {t("group.brand.cancel")}
                   </button>
                   <button
                     onClick={addService}
                     className="flex-[2] py-3.5 rounded-xl bg-primary text-on-primary text-[14px] font-medium shadow-sm hover:opacity-90 active:scale-95 transition-all"
                     style={{ fontFamily: "'Inter', sans-serif" }}
                   >
-                    Add Service
+                    {t("group.brand.add_service")}
                   </button>
                 </div>
               </div>

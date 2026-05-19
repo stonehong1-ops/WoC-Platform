@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { use } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useNavigation } from '@/components/providers/NavigationProvider';
 import { rentalService } from '@/lib/firebase/rentalService';
 import { chatService } from '@/lib/firebase/chatService';
 import { groupService } from '@/lib/firebase/groupService';
@@ -19,8 +20,14 @@ export default function RentalDetailPage({ params }: { params: Promise<{ id: str
   const { user } = useAuth();
   const { t } = useLanguage();
   const router = useRouter();
+  const { setGlobalNavHidden } = useNavigation();
   const [space, setSpace] = useState<RentalSpace | null>(null);
   const [group, setGroup] = useState<Group | null>(null);
+
+  useEffect(() => {
+    setGlobalNavHidden(true);
+    return () => setGlobalNavHidden(false);
+  }, [setGlobalNavHidden]);
   const [loading, setLoading] = useState(true);
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [isLiked, setIsLiked] = useState(false);

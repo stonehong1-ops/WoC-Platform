@@ -16,6 +16,8 @@ import { addDays } from 'date-fns';
 import SectionCard from '@/components/ui/SectionCard';
 import InfoRow from '@/components/ui/InfoRow';
 
+import { useNavigation } from '@/components/providers/NavigationProvider';
+
 function CheckoutContent() {
   const router = useRouter();
   const params = useParams();
@@ -23,6 +25,7 @@ function CheckoutContent() {
   const stayId = params.id as string;
   const { user, profile } = useAuth();
   const { t, formatDate } = useLanguage();
+  const { setGlobalNavHidden } = useNavigation();
   
   const [stay, setStay] = useState<Stay | null>(null);
   const [group, setGroup] = useState<Group | null>(null);
@@ -53,6 +56,11 @@ function CheckoutContent() {
     setNights(Math.max(1, Math.ceil((d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24))));
     setGuests(g ? parseInt(g, 10) : 1);
   }, [searchParams]);
+
+  useEffect(() => {
+    setGlobalNavHidden(true);
+    return () => setGlobalNavHidden(false);
+  }, [setGlobalNavHidden]);
 
   useEffect(() => {
     if (!stayId) return;

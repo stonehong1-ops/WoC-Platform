@@ -101,7 +101,7 @@ export default function WalletPage() {
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Inter:wght@400;500;600;700&display=swap');
       `}</style>
 
-      <div className="px-6 pt-12 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="px-4 pt-12 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
         
         {/* Balance Card */}
         <section className="relative overflow-hidden bg-gradient-to-br from-[#1E293B] to-[#334155] rounded-[32px] p-8 shadow-xl shadow-slate-900/10 text-white">
@@ -131,7 +131,7 @@ export default function WalletPage() {
             <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">{coupons.filter(c => c.status === 'UNUSED').length} {t('wallet.available')}</span>
           </div>
 
-          <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar -mx-6 px-6 snap-x">
+          <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar -mx-4 px-4 snap-x">
             {coupons.length === 0 ? (
               <div className="w-full py-8 text-center bg-white rounded-2xl border border-dashed border-slate-200 text-slate-400 text-sm">
                 {t('wallet.no_coupons')}

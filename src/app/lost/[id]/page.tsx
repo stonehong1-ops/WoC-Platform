@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useRouter, useParams } from 'next/navigation';
+import { useNavigation } from '@/components/providers/NavigationProvider';
 import { chatService } from '@/lib/firebase/chatService';
 import { lostFoundService } from '@/lib/firebase/lostFoundService';
 import { LostFoundItem } from '@/types/lostFound';
@@ -12,6 +13,12 @@ export default function LostFoundDetailPage() {
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
+  const { setGlobalNavHidden } = useNavigation();
+
+  useEffect(() => {
+    setGlobalNavHidden(true);
+    return () => setGlobalNavHidden(false);
+  }, [setGlobalNavHidden]);
 
   const [item, setItem] = useState<LostFoundItem | null>(null);
   const [isLiked, setIsLiked] = useState(false);

@@ -82,7 +82,7 @@ const GroupBoard = ({ group, isAdmin = false }: GroupBoardProps) => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto w-full pb-20 bg-[#f4f6fc] min-h-screen">
+    <div className="max-w-[600px] mx-auto w-full pb-20 bg-background min-h-screen">
       <style dangerouslySetInnerHTML={{ __html: `
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

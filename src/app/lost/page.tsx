@@ -8,7 +8,6 @@ import { useRouter } from 'next/navigation';
 import { useModalNavigation } from '@/hooks/useModalNavigation';
 import { useNavigation } from '@/components/providers/NavigationProvider';
 import LostFoundDetail from '@/components/lost/LostFoundDetail';
-import CreateLostItem from '@/components/lost/CreateLostItem';
 import LostFoundWishlistTray from '@/components/lost/LostFoundWishlistTray';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { AnimatePresence } from 'framer-motion';
@@ -20,8 +19,16 @@ function LostFoundPageContent() {
   const { t } = useLanguage();
   const router = useRouter();
   const { value: modalId, openModal, closeModal } = useModalNavigation('lostId');
-  const { isOpen: showCreateModal, openModal: openCreate, closeModal: closeCreate } = useModalNavigation('create');
-  const { setSubHeader } = useNavigation();
+  const { setSubHeader, setGlobalNavHidden } = useNavigation();
+
+  useEffect(() => {
+    if (modalId) {
+      setGlobalNavHidden(true);
+    } else {
+      setGlobalNavHidden(false);
+    }
+    return () => setGlobalNavHidden(false);
+  }, [modalId, setGlobalNavHidden]);
 
   const SORT_OPTIONS: { key: SortOption; label: string; icon: string }[] = useMemo(() => [
     { key: 'latest', label: t('lost.latest'), icon: 'schedule' },
@@ -39,12 +46,12 @@ function LostFoundPageContent() {
   useEffect(() => {
     const handleComposeOpen = (e: CustomEvent) => {
       if (e.detail?.id === 'lost-found') {
-        openCreate('true');
+        router.push('/lost/register');
       }
     };
     window.addEventListener('woc:compose:open', handleComposeOpen as EventListener);
     return () => window.removeEventListener('woc:compose:open', handleComposeOpen as EventListener);
-  }, [openCreate]);
+  }, [router]);
   
   const [allItems, setAllItems] = useState<LostFoundItem[]>([]);
   const [activeFilter, setActiveFilter] = useState('all');
@@ -218,7 +225,7 @@ function LostFoundPageContent() {
           {t('lost.have_items_report')}
         </p>
         <button 
-          onClick={() => openCreate('true')}
+          onClick={() => router.push('/lost/register')}
           className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 transition-colors py-2"
         >
           <span className="text-[13px] font-bold">{t('lost.post_item')}</span>
@@ -330,9 +337,6 @@ function LostFoundPageContent() {
       <AnimatePresence>
         {modalId && (
           <LostFoundDetail id={modalId} onClose={closeModal} />
-        )}
-        {showCreateModal && (
-          <CreateLostItem onClose={closeCreate} onSuccess={() => {}} />
         )}
       </AnimatePresence>
     </main>

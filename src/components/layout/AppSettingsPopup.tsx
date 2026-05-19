@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useHistoryBack } from '@/hooks/useHistoryBack';
+
 
 interface AppSettingsPopupProps {
   isOpen: boolean;
@@ -49,7 +49,7 @@ const INSTRUCTIONS = [
 
 export default function AppSettingsPopup({ isOpen, onClose }: AppSettingsPopupProps) {
   const [activeTab, setActiveTab] = useState('chrome');
-  const { handleClose } = useHistoryBack(isOpen, onClose);
+  const handleClose = onClose; // Replaced useHistoryBack
 
   if (!isOpen) return null;
 

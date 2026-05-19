@@ -12,6 +12,7 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { galleryService, GalleryTag } from '@/lib/firebase/galleryService';
 import { tagSearchService, TagSearchResult } from '@/lib/firebase/tagSearchService';
 import { useLocation } from '@/components/providers/LocationProvider';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { storage } from '@/lib/firebase/clientApp';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 
@@ -42,6 +43,7 @@ const GalleryCreateContent = () => {
   const editId = searchParams.get('edit');
   const source = searchParams.get('source');
   const isFromLive = source === 'live';
+  const { t } = useLanguage();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Media
@@ -129,10 +131,14 @@ const GalleryCreateContent = () => {
           selectedActivity.id,
           selectedActivity.groupId || selectedGroup?.id
         );
-        // Keep "me" and add auto people
+        // Add auto people without duplicating by id
         setSelectedPeople(prev => {
-          const me = prev.find(p => p.role === 'me');
-          const merged = me ? [me, ...autoPeople.filter(p => p.id !== me.id)] : autoPeople;
+          const merged = [...prev];
+          for (const p of autoPeople) {
+            if (!merged.find(x => x.id === p.id)) {
+              merged.push(p);
+            }
+          }
           return merged;
         });
       } catch (e) {
@@ -146,15 +152,22 @@ const GalleryCreateContent = () => {
 
   // ---- Add "me" by default ----
   useEffect(() => {
-    if (user && !selectedPeople.find(p => p.role === 'me')) {
-      setSelectedPeople(prev => [{
-        type: 'people',
-        id: user.uid,
-        name: user.displayName || profile?.nickname || 'Me',
-        subtitle: 'Me',
-        avatar: user.photoURL || '',
-        role: 'me',
-      }, ...prev]);
+    if (user && !selectedPeople.find(p => p.id === user.uid)) {
+      const nativeName = profile?.nativeNickname || '';
+      const nickname = user.displayName || profile?.nickname || 'Me';
+      const fullName = nativeName ? `${nickname} ${nativeName}` : nickname;
+      
+      setSelectedPeople(prev => {
+        if (prev.find(p => p.id === user.uid)) return prev;
+        return [{
+          type: 'people',
+          id: user.uid,
+          name: fullName,
+          subtitle: 'Me',
+          avatar: user.photoURL || profile?.photoURL || '',
+          role: 'me',
+        }, ...prev];
+      });
     }
   }, [user, profile]);
 
@@ -165,7 +178,7 @@ const GalleryCreateContent = () => {
     galleryService.getPost(editId).then(post => {
       if (!post) return;
       if (user && post.authorId !== user.uid) {
-        alert('You do not have permission to edit.');
+        alert(t('gallery.no_permission', 'You do not have permission to edit.'));
         router.push('/live');
         return;
       }
@@ -223,7 +236,7 @@ const GalleryCreateContent = () => {
   // ---- Media ----
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    if (files.length + images.length + existingImages.length > 10) return alert('Maximum 10 files.');
+    if (files.length + images.length + existingImages.length > 10) return alert(t('gallery.max_files', 'Maximum 10 files.'));
     const newP = files.map(f => ({ url: URL.createObjectURL(f), type: f.type.startsWith('video/') ? 'video' as const : 'image' as const }));
     setImages(prev => [...prev, ...files]);
     setPreviews(prev => [...prev, ...newP]);
@@ -241,8 +254,8 @@ const GalleryCreateContent = () => {
 
   // ---- Post ----
   const handlePost = async () => {
-    if (!user) return alert('Please sign in first.');
-    if (images.length === 0 && existingImages.length === 0) return alert('At least 1 media file is required.');
+    if (!user) return alert(t('gallery.sign_in_first', 'Please sign in first.'));
+    if (images.length === 0 && existingImages.length === 0) return alert(t('gallery.media_required', 'At least 1 media file is required.'));
 
     setIsUploading(true);
     setUploadProgress(0);
@@ -295,7 +308,7 @@ const GalleryCreateContent = () => {
       router.push('/live');
     } catch (err) {
       console.error(err);
-      alert('Error saving post.');
+      alert(t('gallery.error_saving', 'Error saving post.'));
     } finally {
       setIsUploading(false);
     }
@@ -308,9 +321,9 @@ const GalleryCreateContent = () => {
         {/* Header */}
         <div className="create-header">
           <button onClick={() => router.back()}><ChevronLeft size={24} /></button>
-          <span className="create-title">{isEditMode ? 'Edit Post' : 'New Post'}</span>
+          <span className="create-title">{isEditMode ? t('gallery.edit_post', 'Edit Post') : t('gallery.new_post', 'New Post')}</span>
           <button className="btn-post" onClick={handlePost} disabled={isUploading || (images.length === 0 && existingImages.length === 0)}>
-            {isUploading ? `${uploadProgress}%` : (isEditMode ? 'Update' : 'Post')}
+            {isUploading ? `${uploadProgress}%` : (isEditMode ? t('common.update', 'Update') : t('common.post', 'Post'))}
           </button>
         </div>
 
@@ -328,7 +341,7 @@ const GalleryCreateContent = () => {
               </div>
             ))}
             <button className="btn-add-more" style={{ flex: '0 0 80px', height: '100px', fontSize: '10px' }} onClick={() => fileInputRef.current?.click()}>
-              <Camera size={18} /><span>Add</span>
+              <Camera size={18} /><span>{t('common.add', 'Add')}</span>
             </button>
           </div>
           <input type="file" multiple accept="image/*,video/*" hidden ref={fileInputRef} onChange={handleImageChange} />
@@ -339,7 +352,7 @@ const GalleryCreateContent = () => {
           <input
             type="text"
             className="flex-1 text-sm bg-transparent border-none focus:outline-none placeholder:text-gray-400"
-            placeholder="Write a caption..."
+            placeholder={t('gallery.write_caption', 'Write a caption...')}
             value={caption}
             maxLength={MAX_CAPTION}
             onChange={e => setCaption(e.target.value)}
@@ -349,6 +362,22 @@ const GalleryCreateContent = () => {
           </span>
         </div>
 
+        {/* ── LIVE TOGGLE ── */}
+        {!isFromLive && (
+          <div className="px-4 py-2 border-b border-gray-100 bg-white">
+            <button
+              className="w-full flex items-center gap-2.5 py-1"
+              onClick={() => setShowInLive(!showInLive)}
+            >
+              <span className="material-symbols-outlined text-[16px] text-red-500" style={{ fontVariationSettings: "'FILL' 1" }}>play_circle</span>
+              <span className="text-xs font-bold text-gray-700 flex-1 text-left">{t('gallery.also_show_in_live', 'Also show in Live')}</span>
+              <div className={`w-9 h-5 rounded-full transition-colors duration-200 flex items-center px-0.5 ${showInLive ? 'bg-red-500' : 'bg-gray-300'}`}>
+                <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${showInLive ? 'translate-x-4' : 'translate-x-0'}`} />
+              </div>
+            </button>
+          </div>
+        )}
+
         {/* ===== TAG SYSTEM v2 ===== */}
         <div className="flex-1 overflow-y-auto px-4 py-3">
           {/* TAG section title */}
@@ -356,18 +385,18 @@ const GalleryCreateContent = () => {
             <div className="w-5 h-5 rounded bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
               <Hash size={12} className="text-white" />
             </div>
-            <span className="text-sm font-extrabold text-gray-800 tracking-wide">TAG</span>
+            <span className="text-sm font-extrabold text-gray-800 tracking-wide">{t('gallery.tag', 'TAG')}</span>
             <div className="flex-1 h-px bg-gray-200" />
           </div>
 
           <div className="space-y-2.5">
           {/* ── TIER 1: GROUP ── */}
           <TierSection
-            label="GROUP"
+            label={t('gallery.group', 'GROUP')}
             icon={<Building2 size={14} />}
             color="indigo"
             selected={selectedGroup}
-            onClear={() => { setSelectedGroup(null); setSelectedActivity(null); setSelectedPeople(prev => prev.filter(p => p.role === 'me')); }}
+            onClear={() => { setSelectedGroup(null); setSelectedActivity(null); setSelectedPeople(prev => prev.filter(p => p.id === user?.uid)); }}
           >
             {!selectedGroup && (
               loadingGroups
@@ -378,17 +407,17 @@ const GalleryCreateContent = () => {
                         <Chip key={g.id} label={g.name} avatar={g.avatar} onClick={() => setSelectedGroup(g)} />
                       ))}
                     </div>
-                  : <p className="text-xs text-gray-400">No active groups today</p>
+                  : <p className="text-xs text-gray-400">{t('gallery.no_active_groups', 'No active groups today')}</p>
             )}
           </TierSection>
 
           {/* ── TIER 2: SOCIAL / EVENT / CLASS ── */}
           <TierSection
-            label="SOCIAL · EVENT · CLASS"
+            label={t('gallery.socialEventClass', 'SOCIAL · EVENT · CLASS')}
             icon={<Music size={14} />}
             color="purple"
             selected={selectedActivity}
-            onClear={() => { setSelectedActivity(null); setSelectedPeople(prev => prev.filter(p => p.role === 'me')); }}
+            onClear={() => { setSelectedActivity(null); setSelectedPeople(prev => prev.filter(p => p.id === user?.uid)); }}
           >
             {!selectedActivity && (
               loadingActivities
@@ -406,7 +435,7 @@ const GalleryCreateContent = () => {
                         />
                       ))}
                     </div>
-                  : <p className="text-xs text-gray-400">{selectedGroup ? 'No activities today' : 'No activities today'}</p>
+                  : <p className="text-xs text-gray-400">{selectedGroup ? t('gallery.no_activities', 'No activities today') : t('gallery.no_activities', 'No activities today')}</p>
             )}
           </TierSection>
 
@@ -414,7 +443,7 @@ const GalleryCreateContent = () => {
           <div className="rounded-xl border border-gray-100 bg-white">
             <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-50">
               <Users size={14} className="text-pink-500" />
-              <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">People</span>
+              <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">{t('gallery.people', 'People')}</span>
             </div>
             <div className="px-3 py-2">
               {loadingPeople ? <Spinner /> : (
@@ -439,40 +468,17 @@ const GalleryCreateContent = () => {
           </div>
 
           {/* ── SEARCH (1% power user) ── */}
-          <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50/50">
-            <button
-              className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-gray-400 hover:bg-gray-100 transition-colors rounded-xl"
+          <div className="pt-2">
+            <div 
+              className="relative cursor-text"
               onClick={() => setSearchMode(true)}
             >
-              <Search size={14} />
-              <span>Search & add any resource</span>
-            </button>
+              <div className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-400 text-left shadow-sm flex items-center">
+                <span>{t('gallery.search_placeholder', 'Search group, social, event, class, people...')}</span>
+              </div>
+            </div>
           </div>
 
-          {/* ── LIVE TOGGLE ── */}
-          {!isFromLive && (
-            <div className="rounded-xl border border-gray-100 bg-white">
-              <button
-                className="w-full flex items-center gap-2.5 px-3 py-2.5"
-                onClick={() => setShowInLive(!showInLive)}
-              >
-                <span className="material-symbols-outlined text-[16px] text-red-500" style={{ fontVariationSettings: "'FILL' 1" }}>play_circle</span>
-                <span className="text-xs font-bold text-gray-700 flex-1 text-left">Also show in Live</span>
-                <div className={`w-9 h-5 rounded-full transition-colors duration-200 flex items-center px-0.5 ${showInLive ? 'bg-red-500' : 'bg-gray-300'}`}>
-                  <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${showInLive ? 'translate-x-4' : 'translate-x-0'}`} />
-                </div>
-              </button>
-            </div>
-          )}
-
-          {/* Selected Tags Summary */}
-          {(selectedGroup || selectedActivity || selectedPeople.length > 0) && (
-            <div className="flex flex-wrap gap-1 pt-1">
-              {selectedGroup && <MiniTag type="group" name={selectedGroup.name} />}
-              {selectedActivity && <MiniTag type={selectedActivity.type} name={selectedActivity.name} />}
-              {selectedPeople.map(p => <MiniTag key={p.id} type="people" name={p.name} />)}
-            </div>
-          )}
           </div>
         </div>
         
@@ -498,7 +504,7 @@ const GalleryCreateContent = () => {
                   <div className="w-12 h-1.5 bg-gray-300 rounded-full"></div>
                 </div>
                 <div className="px-6 pb-4 border-b border-gray-100 flex justify-between items-center shrink-0">
-                  <h2 className="text-lg font-extrabold text-gray-900 font-headline">Search & add</h2>
+                  <h2 className="text-lg font-extrabold text-gray-900 font-headline">{t('gallery.search_add', 'Search & add')}</h2>
                   <button onClick={() => setSearchMode(false)} className="p-2 rounded-full hover:bg-gray-100 transition-colors">
                     <X size={20} className="text-gray-500" />
                   </button>
@@ -508,7 +514,7 @@ const GalleryCreateContent = () => {
                     <input
                       type="text"
                       className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary shadow-sm"
-                      placeholder="Search group, social, event, class, people..."
+                      placeholder={t('gallery.search_placeholder', 'Search group, social, event, class, people...')}
                       value={searchQuery}
                       onChange={e => setSearchQuery(e.target.value)}
                       autoFocus
@@ -538,8 +544,8 @@ const GalleryCreateContent = () => {
                   ) : (
                     <div className="py-20 flex flex-col items-center justify-center text-gray-400">
                       <Search size={40} className="mb-4 opacity-20" />
-                      <p className="font-medium">Find and tag resources</p>
-                      <p className="text-sm opacity-80">Type to start searching</p>
+                      <p className="font-medium">{t('gallery.find_tag_resources', 'Find and tag resources')}</p>
+                      <p className="text-sm opacity-80">{t('gallery.type_to_start', 'Type to start searching')}</p>
                     </div>
                   )}
                 </div>

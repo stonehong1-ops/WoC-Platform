@@ -31,7 +31,7 @@ interface EditingState {
 }
 
 const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onClose, isInline }) => {
-  const { t } = useLanguage();
+  const { t, language, formatDate } = useLanguage();
   const router = useRouter();
   const [editingState, setEditingState] = useState<EditingState | null>(null);
   const [loading, setLoading] = useState(false);
@@ -63,7 +63,7 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
   };
 
   const currentMonthStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
-  const monthDisplay = currentDate.toLocaleString('en-US', { month: 'short', year: 'numeric' });
+  const monthDisplay = formatDate(currentDate, 'monthYear');
 
   // Real-time data from subcollections
   const [subClasses, setSubClasses] = useState<GroupClass[]>([]);

@@ -89,7 +89,7 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
   useEffect(() => {
     const handleComposeOpen = (e: CustomEvent) => {
       if (e.detail?.id === 'gallery') {
-        router.push('/live/create');
+        router.push('/live/create?source=live');
       }
     };
     window.addEventListener('woc:compose:open', handleComposeOpen as EventListener);
@@ -135,7 +135,7 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
       >
         {posts.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-white/50 pb-20">
-            <Link href="/live/create" className="bg-white/10 p-6 rounded-full mb-4 backdrop-blur-md hover:bg-white/20 transition-colors">
+            <Link href="/live/create?source=live" className="bg-white/10 p-6 rounded-full mb-4 backdrop-blur-md hover:bg-white/20 transition-colors">
               <Plus size={40} />
             </Link>
             <p className="font-bold">{t('gallery.no_posts')}</p>
@@ -359,7 +359,7 @@ const GalleryCard = ({
             {user?.uid === post.authorId && (
               <>
                 <Link
-                  href={`/live/create?edit=${post.id}`}
+                  href={`/live/create?edit=${post.id}&source=live`}
                   className="w-8 h-8 rounded-full bg-black/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/20 transition-colors border border-white/10 shadow-sm"
                   onClick={(e) => e.stopPropagation()}
                 >
@@ -473,7 +473,7 @@ const GalleryCard = ({
           className={`absolute right-2 flex flex-col items-center gap-4 z-20 transition-all duration-300 pointer-events-auto ${isImmersive ? 'bottom-12 pb-safe' : 'bottom-12 md:bottom-16'}`}
         >
           {!isImmersive && (
-            <Link href="/live/create" onClick={(e) => e.stopPropagation()} className="flex flex-col items-center gap-1 group">
+            <Link href="/live/create?source=live" onClick={(e) => e.stopPropagation()} className="flex flex-col items-center gap-1 group">
               <div className="w-9 h-9 rounded-full flex items-center justify-center bg-black/20 backdrop-blur-md border border-white/10 text-white transition-transform active:scale-90 shadow-sm">
                 <Plus size={18} className="drop-shadow-md" />
               </div>
