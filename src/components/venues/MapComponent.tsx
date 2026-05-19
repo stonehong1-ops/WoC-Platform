@@ -86,6 +86,7 @@ export default function MapComponent({
   const [showBrandFilter, setShowBrandFilter] = useState(false);
   const [socialMode, setSocialMode] = useState(false);
   const [todaySocials, setTodaySocials] = useState<Social[]>([]);
+  const [selectedSocialId, setSelectedSocialId] = useState<string | null>(null);
   const router = useRouter();
 
   const categories = ['All', 'Studio', 'Shop', 'Stay', 'Beauty', 'Club', 'Academy', 'Cafe', 'Eats', 'Other'];
@@ -472,25 +473,37 @@ export default function MapComponent({
                     className="flex flex-col items-center cursor-pointer pointer-events-auto group"
                     onClick={(e) => {
                       e.stopPropagation();
-                      router.push(`/social?id=${item.social.id}`);
+                      setSelectedSocialId(item.social.id);
+                      map?.panTo({ lat: item.lat, lng: item.lng });
+                      setIsExpanded(true);
                     }}
                     style={{
                       transform: `translate(-50%, -100%) scale(${labelScale})`,
                       transition: 'transform 0.1s ease-out'
                     }}
                   >
-                    <div className="flex flex-col items-center bg-white/95 backdrop-blur-sm rounded-xl px-3 py-2 shadow-[0_4px_16px_rgba(0,0,0,0.15)] border border-primary/20 group-hover:border-primary/50 group-hover:shadow-primary/10 transition-all group-hover:scale-105 active:scale-95">
-                      <span className="text-[12px] font-black text-on-surface leading-tight tracking-tight whitespace-nowrap">
+                    <div className={`flex flex-col items-center backdrop-blur-sm rounded-xl px-3 py-2 shadow-[0_4px_16px_rgba(0,0,0,0.15)] transition-all group-hover:scale-105 active:scale-95 ${
+                      selectedSocialId === item.social.id
+                        ? 'bg-primary text-white border border-primary shadow-primary/30'
+                        : 'bg-white/95 border border-primary/20 group-hover:border-primary/50'
+                    }`}>
+                      <span className={`text-[12px] font-black leading-tight tracking-tight whitespace-nowrap ${
+                        selectedSocialId === item.social.id ? 'text-white' : 'text-on-surface'
+                      }`}>
                         {item.social.title}
                       </span>
                       {item.social.titleNative && (
-                        <span className="text-[9px] font-medium text-on-surface-variant/70 leading-tight whitespace-nowrap mt-0.5">
+                        <span className={`text-[9px] font-medium leading-tight whitespace-nowrap mt-0.5 ${
+                          selectedSocialId === item.social.id ? 'text-white/80' : 'text-on-surface-variant/70'
+                        }`}>
                           {item.social.titleNative}
                         </span>
                       )}
                     </div>
                     {/* Pin tail */}
-                    <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[8px] border-l-transparent border-r-transparent border-t-white/95 -mt-[1px]" />
+                    <div className={`w-0 h-0 border-l-[6px] border-r-[6px] border-t-[8px] border-l-transparent border-r-transparent -mt-[1px] ${
+                      selectedSocialId === item.social.id ? 'border-t-primary' : 'border-t-white/95'
+                    }`} />
                     <div className="w-2 h-2 bg-primary rounded-full mt-0.5 shadow-sm" />
                   </div>
                 </OverlayView>
@@ -666,6 +679,7 @@ export default function MapComponent({
               map.setZoom(coords.zoom);
             }
             setSelectedVenueId(null);
+            setSelectedSocialId(null);
             setIsExpanded(false);
           }}
           className={`w-10 h-10 mt-3 shadow-[0_1px_4px_rgba(0,0,0,0.3)] rounded-full flex items-center justify-center transition-all ${
@@ -825,8 +839,17 @@ export default function MapComponent({
                     socialsInView.map((item) => (
                       <div 
                         key={item.social.id}
-                        onClick={() => router.push(`/social?id=${item.social.id}`)}
-                        className="flex-none w-[calc(100%-24px)] bg-white rounded-lg p-2 shadow-sm border border-slate-50 flex gap-3 relative snap-center transition-all cursor-pointer hover:border-primary/30"
+                        onClick={() => {
+                          setSelectedSocialId(item.social.id);
+                          const marker = socialMarkers.find(m => m.social.id === item.social.id);
+                          if (marker && map) {
+                            map.panTo({ lat: marker.lat, lng: marker.lng });
+                          }
+                          router.push(`/social?id=${item.social.id}`);
+                        }}
+                        className={`flex-none w-[calc(100%-24px)] bg-white rounded-lg p-2 shadow-sm border flex gap-3 relative snap-center transition-all cursor-pointer ${
+                          selectedSocialId === item.social.id ? 'border-primary ring-1 ring-primary' : 'border-slate-50 hover:border-primary/30'
+                        }`}
                       >
                         <div className="w-16 h-16 rounded bg-gradient-to-br from-primary/10 to-primary/5 flex-none flex items-center justify-center">
                           <span className="material-symbols-rounded text-primary text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>nightlife</span>
