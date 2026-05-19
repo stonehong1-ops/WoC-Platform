@@ -3,6 +3,7 @@
 
 import React from 'react';
 import { Member } from '@/types/group';
+import { Users } from 'lucide-react';
 
 interface GroupShellFooterProps {
   members: Member[];
@@ -30,54 +31,55 @@ export default function GroupShellFooter({ members, liveSessionCount, newPostCou
 
   return (
     <div className="presence-bar" style={{ background: 'var(--palette-gradient)' }}>
-      {/* 원본: 128명 접속 중 */}
-      <div className="presence-group">
-        <div className="presence-dot" />
-        <div>{members.length} members</div>
+      {/* Section 1: Members */}
+      <div className="flex items-center gap-3 shrink-0">
+        <Users className="w-7 h-7 text-white/90" strokeWidth={2} />
+        <div className="flex flex-col items-start justify-center">
+          <span className="text-[22px] font-bold text-white leading-none mb-0.5">{members.length}</span>
+          <span className="text-[12px] font-medium text-white/70 leading-none">members</span>
+        </div>
       </div>
 
-      {/* 원본: 아바타 + +125 */}
-      <div className="presence-group avatars">
+      {/* Divider */}
+      <div className="w-px h-8 bg-white/20 shrink-0" />
+
+      {/* Section 2: Active Users (Avatars) */}
+      <div className="flex items-center -space-x-2 shrink-0">
         {recentMembers.map((m, i) => {
           const avatarSrc = m.avatar || m.photoURL;
           return (
-            <div key={m.id || i} className="mini-avatar">
+            <div key={m.id || i} className="w-11 h-11 rounded-full border-[1.5px] border-white bg-white overflow-hidden shrink-0 relative">
               {avatarSrc ? (
                 <img
                   src={avatarSrc}
                   alt={m.name || ''}
-                  className="w-full h-full rounded-full object-cover"
+                  className="w-full h-full object-cover"
                 />
               ) : null}
             </div>
           );
         })}
         {remainingCount > 0 && (
-          <div 
-            className="mini-avatar" 
-            style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              background: 'rgba(255,255,255,0.2)', 
-              backdropFilter: 'blur(8px)',
-              fontSize: '11px',
-              fontWeight: '700',
-              border: '2px solid rgba(255,255,255,0.4)',
-              color: '#ffffff'
-            }}
-          >
+          <div className="w-11 h-11 rounded-full border-[1.5px] border-white/60 bg-white/20 backdrop-blur-md flex items-center justify-center text-white text-[14px] font-bold shrink-0 relative">
             +{remainingCount}
           </div>
         )}
       </div>
 
-      {/* 원본: 💬 새 글 2개 — 항상 표시 */}
-      <div className="presence-group">
-        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>
-          chat_bubble
-        </span>
-        update 3hrs ago
+      {/* Divider */}
+      <div className="w-px h-8 bg-white/20 shrink-0" />
+
+      {/* Section 3: Ticker / Event */}
+      <div className="flex items-center gap-4 flex-1 overflow-hidden pl-2">
+        <div className="w-2.5 h-2.5 rounded-full bg-[#FF6B6B] shrink-0 shadow-[0_0_8px_rgba(255,107,107,0.6)]" />
+        <div className="flex flex-col items-start overflow-hidden">
+          <span className="text-[17px] font-bold text-white truncate w-full leading-tight mb-0.5">Lucy Milonga tonight</span>
+          <div className="flex items-center gap-2 text-[13px] font-medium text-white/80 leading-none">
+            <span>7:40 PM</span>
+            <span className="text-[10px] opacity-60">•</span>
+            <span>DJ : Alex</span>
+          </div>
+        </div>
       </div>
     </div>
   );
