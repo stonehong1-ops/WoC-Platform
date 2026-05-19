@@ -27,8 +27,8 @@ const NAV_STRUCTURE = {
     { name: "nav.stay", icon: "bed", path: "/stay" },
   ],
   Now: [
-    { name: "nav.social", icon: "autoplay", path: "/social" },
     { name: "nav.live", icon: "cinematic_blur", path: "/live" },
+    { name: "nav.social", icon: "autoplay", path: "/social" },
     { name: "nav.class", icon: "school", path: "/class" },
     { name: "nav.events", icon: "calendar_today", path: "/events" },
   ],
@@ -54,7 +54,7 @@ const NAV_STRUCTURE = {
 const BOTTOM_TABS = [
   { id: "World", icon: "globe", label: "nav.world", basePath: "/home" },
   { id: "Market", icon: "redeem", label: "nav.market", basePath: "/shop" },
-  { id: "Now", icon: "contactless", label: "nav.now", basePath: "/social" },
+  { id: "Now", icon: "contactless", label: "nav.now", basePath: "/live" },
   { id: "Lounge", icon: "weekend", label: "nav.lounge", basePath: "/pics" },
   { id: "Groups", icon: "communities", label: "nav.groups", basePath: "/groups" },
   { id: "My", icon: "photo", label: "nav.my", basePath: "/profile" },
@@ -217,15 +217,15 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
   const baseHeaderHeight = isNoSubMenuPage ? 60 : 110;
   const placeholderHeight = subHeader ? baseHeaderHeight + subHeaderHeight : baseHeaderHeight;
 
-  // Hide global navigation layout for admin pages, checkout flow, and register pages
-  if (pathname.startsWith('/admin') || pathname.includes('/checkout') || pathname.includes('/register')) {
-    return <>{children}</>;
-  }
+  // Compute effective hidden state based on context and pathname
+  const isDetailPage = /^\/(class|shop|people|social|resale|rental|stay|events)\/[^\/]+/.test(pathname);
+  const isHiddenPath = pathname.startsWith('/admin') || pathname.includes('/checkout') || pathname.includes('/register') || isDetailPage;
+  const effectiveIsGlobalNavHidden = isGlobalNavHidden || isHiddenPath;
 
   return (
     <div className="min-h-screen bg-[#faf8ff] font-manrope flex flex-col">
       {/* Header Placeholder to prevent layout shift and scroll thrashing */}
-      {!isGlobalNavHidden && (
+      {!effectiveIsGlobalNavHidden && (
         <div 
           className="w-full flex-shrink-0 transition-all duration-300" 
           style={{ 
@@ -236,7 +236,7 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
       )}
 
       {/* Fixed Top Navigation */}
-      {!isGlobalNavHidden && (
+      {!effectiveIsGlobalNavHidden && (
         <header 
           ref={headerRef}
           className={`fixed top-0 left-0 right-0 z-50 bg-white transition-shadow duration-300 transform will-change-transform ${
@@ -388,14 +388,14 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
       )}
 
       {/* Main Content */}
-      <main className={`flex-1 w-full relative bg-[#faf8ff] ${isGlobalNavHidden ? 'pb-0' : (pathname === '/venues' || pathname.startsWith('/chat') || pathname.startsWith('/notification') || pathname.startsWith('/search') ? 'pb-0' : 'pb-[120px]')}`}>
+      <main className={`flex-1 w-full relative bg-[#faf8ff] ${effectiveIsGlobalNavHidden ? 'pb-0' : (pathname === '/venues' || pathname.startsWith('/chat') || pathname.startsWith('/notification') || pathname.startsWith('/search') ? 'pb-0' : 'pb-[120px]')}`}>
         {children}
       </main>
 
 
 
       {/* Bottom Navigation Bar */}
-      {!isGlobalNavHidden && (
+      {!effectiveIsGlobalNavHidden && (
         <footer 
           ref={footerRef}
           className={`fixed bottom-0 left-0 w-full z-50 bg-white rounded-t-2xl px-6 flex justify-around items-center shadow-[0_-8px_30px_rgba(11,90,192,0.14)] will-change-transform`}

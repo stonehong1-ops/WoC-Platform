@@ -5,14 +5,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Heart, 
-  MessageCircle, 
+import {
+  Heart,
+  MessageCircle,
   Send,
-  MapPin, 
-  Calendar, 
-  Plus, 
-  X, 
+  MapPin,
+  Calendar,
+  Plus,
+  X,
   MoreVertical,
   Trash2,
   Edit2,
@@ -27,7 +27,6 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { safeDate } from '@/lib/utils/safeDate';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useNavigation } from '@/components/providers/NavigationProvider';
-import { useHistoryBack } from '@/hooks/useHistoryBack';
 
 interface LiveFeedProps {
   entityType?: 'social' | 'group' | 'event' | 'class' | 'venue' | 'people';
@@ -48,8 +47,8 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
   const containerRef = useRef<HTMLDivElement>(null);
   const [isImmersive, setIsImmersive] = useState(false);
 
-  const { handleClose: handleCommentClose } = useHistoryBack(!!activeCommentPost, () => setActiveCommentPost(null));
-  const { handleClose: handleImmersiveClose } = useHistoryBack(isImmersive, () => setIsImmersive(false));
+  const handleCommentClose = () => setActiveCommentPost(null); // Replaced useHistoryBack
+  const handleImmersiveClose = () => setIsImmersive(false); // Replaced useHistoryBack
 
   const router = useRouter();
 
@@ -75,7 +74,7 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
       (data) => {
         setPosts(data);
         setLoading(false);
-      }, 
+      },
       { entityType, entityId, userId },
       (err) => {
         console.error("LiveFeed subscription error:", err);
@@ -107,7 +106,7 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
         </div>
         <p className="font-bold text-lg mb-2">Something went wrong</p>
         <p className="text-sm text-white/60 mb-8 max-w-xs text-center">{error}</p>
-        <button 
+        <button
           onClick={() => setRetryCount(prev => prev + 1)}
           className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-full font-bold hover:bg-primary/90 transition-colors"
         >
@@ -129,7 +128,7 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
   return (
     <div className={`${isImmersive ? 'fixed inset-0 z-[100]' : 'relative w-full h-full min-h-[500px]'} bg-black overflow-hidden flex flex-col ${className}`}>
       {/* Feed Container - Vertical Snap */}
-      <div 
+      <div
         ref={containerRef}
         className="flex-1 overflow-y-scroll snap-y snap-mandatory no-scrollbar"
         style={{ scrollBehavior: 'smooth' }}
@@ -145,9 +144,9 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
         )}
 
         {posts.map((post) => (
-          <GalleryCard 
-            key={post.id} 
-            post={post} 
+          <GalleryCard
+            key={post.id}
+            post={post}
             onOpenComments={() => setActiveCommentPost(post.id)}
             isImmersive={isImmersive}
             setIsImmersive={setIsImmersive}
@@ -159,9 +158,9 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
       {/* Comment Bottom Sheet */}
       <AnimatePresence>
         {activeCommentPost && (
-          <CommentBottomSheet 
-            postId={activeCommentPost} 
-            onClose={handleCommentClose} 
+          <CommentBottomSheet
+            postId={activeCommentPost}
+            onClose={handleCommentClose}
           />
         )}
       </AnimatePresence>
@@ -169,14 +168,14 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
   );
 }
 
-const GalleryCard = ({ 
-  post, 
+const GalleryCard = ({
+  post,
   onOpenComments,
   isImmersive,
   setIsImmersive,
   onCloseImmersive
-}: { 
-  post: GalleryPost, 
+}: {
+  post: GalleryPost,
   onOpenComments: () => void,
   isImmersive: boolean,
   setIsImmersive: (value: boolean) => void,
@@ -199,7 +198,7 @@ const GalleryCard = ({
         if (entry.isIntersecting) {
           setIsPlaying(true);
           videoRefs.current.forEach(video => {
-            if (video) video.play().catch(() => {});
+            if (video) video.play().catch(() => { });
           });
         } else {
           setIsPlaying(false);
@@ -299,7 +298,7 @@ const GalleryCard = ({
   return (
     <div ref={cardRef} className="relative h-full w-full snap-start snap-always bg-black">
       {/* Media Carousel */}
-      <div 
+      <div
         className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory no-scrollbar"
         ref={carouselRef}
         onScroll={handleScroll}
@@ -309,34 +308,35 @@ const GalleryCard = ({
           const urlString = typeof url === 'string' ? url : '';
           const isVideo = post.mediaTypes ? post.mediaTypes[idx] === 'video' : (urlString.toLowerCase().includes('.mp4') || urlString.toLowerCase().includes('.mov') || urlString.toLowerCase().includes('.webm') || urlString.toLowerCase().includes('video'));
           return (
-          <div key={idx} className="relative flex-none w-full h-full snap-start flex items-center justify-center">
-            {isVideo ? (
-              <video
-                ref={el => { videoRefs.current[idx] = el }}
-                src={url}
-                className="w-full h-full object-cover"
-                loop
-                muted={isMuted}
-                playsInline
-              />
-            ) : (
-              <img src={url} alt="" className="w-full h-full object-cover" />
-            )}
-            
-            {!isPlaying && isVideo && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                <div className="w-16 h-16 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center text-white">
-                  <span className="material-symbols-outlined text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
+            <div key={idx} className="relative flex-none w-full h-full snap-start flex items-center justify-center">
+              {isVideo ? (
+                <video
+                  ref={el => { videoRefs.current[idx] = el }}
+                  src={url}
+                  className="w-full h-full object-cover"
+                  loop
+                  muted={isMuted}
+                  playsInline
+                />
+              ) : (
+                <img src={url} alt="" className="w-full h-full object-cover" />
+              )}
+
+              {!isPlaying && isVideo && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                  <div className="w-16 h-16 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center text-white">
+                    <span className="material-symbols-outlined text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-        )})}
+              )}
+            </div>
+          )
+        })}
       </div>
 
       {/* Top Header */}
       <AnimatePresence>
-        <motion.div 
+        <motion.div
           key="top-header"
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
           className={`absolute top-0 left-0 right-0 p-4 ${isImmersive ? 'pt-safe' : 'pt-4'} bg-gradient-to-b from-black/60 via-black/30 to-transparent z-10 flex justify-between items-start pointer-events-none gap-2`}
@@ -354,18 +354,18 @@ const GalleryCard = ({
               <span className="text-[10px] text-white/70 font-medium truncate">{formatTime(post.createdAt)}</span>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2 pointer-events-auto shrink-0">
             {user?.uid === post.authorId && (
               <>
-                <Link 
-                  href={`/live/create?edit=${post.id}`} 
+                <Link
+                  href={`/live/create?edit=${post.id}`}
                   className="w-8 h-8 rounded-full bg-black/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/20 transition-colors border border-white/10 shadow-sm"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <Edit2 size={14} />
                 </Link>
-                <button 
+                <button
                   className="w-8 h-8 rounded-full bg-black/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-red-500/80 transition-colors border border-white/10 shadow-sm"
                   onClick={handleDelete}
                 >
@@ -374,7 +374,7 @@ const GalleryCard = ({
               </>
             )}
             {isImmersive && (
-              <button 
+              <button
                 onClick={handleExitImmersive}
                 className="w-8 h-8 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white hover:bg-black/60 transition-colors border border-white/20 shadow-lg"
               >
@@ -387,7 +387,7 @@ const GalleryCard = ({
 
       {/* Bottom Overlay Info */}
       <AnimatePresence>
-        <motion.div 
+        <motion.div
           key="bottom-info"
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
           className={`absolute left-0 right-0 p-4 pr-16 bg-gradient-to-t from-black/80 via-black/40 to-transparent z-10 flex flex-col justify-end text-white transition-all duration-300 pointer-events-none ${isImmersive ? 'bottom-0 pb-safe' : 'bottom-0 pb-4 md:pb-8'}`}
@@ -395,9 +395,9 @@ const GalleryCard = ({
           {(Array.isArray(post.media) && post.media.length > 1) && (
             <div className="flex gap-1.5 mb-2 pointer-events-auto">
               {post.media.map((_, idx) => (
-                <div 
-                  key={idx} 
-                  className={`h-1.5 rounded-full transition-all duration-300 ${activeDot === idx ? 'w-4 bg-white' : 'w-1.5 bg-white/40'}`} 
+                <div
+                  key={idx}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${activeDot === idx ? 'w-4 bg-white' : 'w-1.5 bg-white/40'}`}
                 />
               ))}
             </div>
@@ -410,19 +410,19 @@ const GalleryCard = ({
           <div className="flex flex-wrap items-center gap-2 pointer-events-auto">
             {(Array.isArray(post.tags) && post.tags.length > 0) ? (
               post.tags.filter((tag: GalleryTag) => tag && tag.type !== 'people').map((tag: GalleryTag) => {
-                const href = tag.type === 'group' ? `/groups/${tag.id}` 
-                  : tag.type === 'social' ? `/social?id=${tag.id}` 
-                  : tag.type === 'event' ? `/events?id=${tag.id}` 
-                  : `/groups/${tag.groupId}?class=${tag.id}`;
-                const TagIcon = tag.type === 'group' ? Building2 
-                  : tag.type === 'social' ? Music 
-                  : tag.type === 'event' ? Calendar 
-                  : GraduationCap;
+                const href = tag.type === 'group' ? `/groups/${tag.id}`
+                  : tag.type === 'social' ? `/social?id=${tag.id}`
+                    : tag.type === 'event' ? `/events?id=${tag.id}`
+                      : `/groups/${tag.groupId}?class=${tag.id}`;
+                const TagIcon = tag.type === 'group' ? Building2
+                  : tag.type === 'social' ? Music
+                    : tag.type === 'event' ? Calendar
+                      : GraduationCap;
                 return (
-                  <Link 
-                    key={`${tag.type}-${tag.id}`} 
-                    href={href} 
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/30 backdrop-blur-md text-xs font-semibold border border-white/20 hover:bg-black/50 transition-colors" 
+                  <Link
+                    key={`${tag.type}-${tag.id}`}
+                    href={href}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/30 backdrop-blur-md text-xs font-semibold border border-white/20 hover:bg-black/50 transition-colors"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <TagIcon size={12} className="text-white/80" />
@@ -451,7 +451,7 @@ const GalleryCard = ({
               <div className="flex items-center -space-x-1.5 ml-1">
                 {post.tags.filter((t: GalleryTag) => t && t.type === 'people').map((t: GalleryTag) => (
                   <div key={t.id} className="relative group/person cursor-pointer" title={t.name}>
-                    {t.avatar 
+                    {t.avatar
                       ? <img src={t.avatar} alt={t.name || ''} className="w-6 h-6 rounded-full border border-white/50 object-cover shadow-sm" />
                       : <div className="w-6 h-6 rounded-full border border-white/50 bg-black/40 backdrop-blur-sm flex items-center justify-center text-[10px] font-bold text-white shadow-sm">{String(t.name || 'U').charAt(0).toUpperCase()}</div>
                     }
@@ -467,7 +467,7 @@ const GalleryCard = ({
 
       {/* Right Side Vertical Actions */}
       <AnimatePresence>
-        <motion.div 
+        <motion.div
           key="right-actions"
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
           className={`absolute right-2 flex flex-col items-center gap-4 z-20 transition-all duration-300 pointer-events-auto ${isImmersive ? 'bottom-12 pb-safe' : 'bottom-12 md:bottom-16'}`}
@@ -534,15 +534,15 @@ const CommentBottomSheet = ({ postId, onClose }: { postId: string, onClose: () =
 
   return (
     <div className="fixed inset-0 z-[200] flex items-end justify-center">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
-        onClick={onClose} 
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
       />
-      
-      <motion.div 
+
+      <motion.div
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
@@ -552,14 +552,14 @@ const CommentBottomSheet = ({ postId, onClose }: { postId: string, onClose: () =
         <div className="w-full flex justify-center pt-3 pb-2 shrink-0">
           <div className="w-12 h-1.5 bg-outline-variant rounded-full"></div>
         </div>
-        
+
         <div className="px-6 pb-4 border-b border-outline-variant flex justify-between items-center shrink-0">
           <h2 className="text-lg font-extrabold text-on-surface font-headline">{comments.length} {t('gallery.comments')}</h2>
           <button onClick={onClose} className="p-2 rounded-full hover:bg-surface-container transition-colors">
             <X size={20} className="text-on-surface-variant" />
           </button>
         </div>
-        
+
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {comments.map((comment) => (
             <div key={comment.id} className="flex gap-4">
@@ -593,16 +593,16 @@ const CommentBottomSheet = ({ postId, onClose }: { postId: string, onClose: () =
         <div className="p-4 border-t border-outline-variant bg-surface shrink-0 mb-safe">
           <div className="flex items-center gap-3 bg-surface-container-lowest p-2 rounded-full border border-outline shadow-sm focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all">
             <img src={user?.photoURL || '/default-avatar.png'} alt="" className="w-8 h-8 rounded-full ml-1 object-cover" />
-            <input 
-              type="text" 
-              className="flex-1 bg-transparent border-none text-sm focus:outline-none px-2 text-on-surface" 
-              placeholder={t('gallery.add_comment')} 
+            <input
+              type="text"
+              className="flex-1 bg-transparent border-none text-sm focus:outline-none px-2 text-on-surface"
+              placeholder={t('gallery.add_comment')}
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
             />
-            <button 
-              className="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center disabled:opacity-50 disabled:bg-outline-variant transition-all shrink-0" 
+            <button
+              className="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center disabled:opacity-50 disabled:bg-outline-variant transition-all shrink-0"
               onClick={handleSubmit}
               disabled={!inputText.trim()}
             >
