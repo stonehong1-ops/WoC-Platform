@@ -150,7 +150,7 @@ export const groupService = {
     ]);
 
     const posts = postsSnap.docs.map(d => ({ id: d.id, ...groupService._convertTimestamps(d.data()) })) as Post[];
-    const subClasses = classesSnap.docs.map(d => ({ id: d.id, ...groupService._convertTimestamps(d.data()) })) as GroupClass[];
+    const subClasses = classesSnap.docs.map(d => ({ ...groupService._convertTimestamps(d.data()), id: d.id })) as GroupClass[];
     const subPasses = passesSnap.docs.map(d => ({ id: d.id, ...groupService._convertTimestamps(d.data()) }));
     const subDiscounts = discountsSnap.docs.map(d => ({ id: d.id, ...groupService._convertTimestamps(d.data()) }));
 
@@ -489,8 +489,8 @@ export const groupService = {
       const classes = snapshot.docs.map(doc => {
         const data = groupService._convertTimestamps(doc.data());
         return {
-          id: doc.id,
-          ...data
+          ...data,
+          id: doc.id
         };
       }) as GroupClass[];
       callback(classes);
