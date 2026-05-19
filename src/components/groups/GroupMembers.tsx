@@ -102,8 +102,8 @@ export default function GroupMembers({ members, memberCount, onMemberClick, onCl
     if (sortBy === 'joinedAt') {
       return getMillis(b.joinedAt) - getMillis(a.joinedAt);
     } else if (sortBy === 'lastVisitedAt') {
-      const dateA = getMillis(a.profile?.updatedAt || a.profile?.createdAt);
-      const dateB = getMillis(b.profile?.updatedAt || b.profile?.createdAt);
+      const dateA = getMillis(a.profile?.lastVisitedAt || a.profile?.updatedAt || a.profile?.createdAt);
+      const dateB = getMillis(b.profile?.lastVisitedAt || b.profile?.updatedAt || b.profile?.createdAt);
       return dateB - dateA;
     }
     return 0;
@@ -116,7 +116,7 @@ export default function GroupMembers({ members, memberCount, onMemberClick, onCl
   };
 
   const getLastVisitText = (member: MemberWithProfile) => {
-    const lastVisitMillis = getMillis(member.profile?.updatedAt || member.profile?.createdAt);
+    const lastVisitMillis = getMillis(member.profile?.lastVisitedAt || member.profile?.updatedAt || member.profile?.createdAt);
     if (!lastVisitMillis) return '-';
     try {
       return formatRelativeTime(lastVisitMillis);
@@ -160,9 +160,9 @@ export default function GroupMembers({ members, memberCount, onMemberClick, onCl
       <div 
         key={member.id} 
         onClick={() => onMemberClick?.(member)}
-        className={`bg-white p-6 rounded-xl shadow-[0_4px_20px_-4px_rgba(36,44,81,0.08)] border border-white hover:shadow-md transition-shadow ${onMemberClick ? 'cursor-pointer active:scale-[0.98]' : ''}`}
+        className={`bg-white p-4 rounded-xl shadow-[0_4px_20px_-4px_rgba(36,44,81,0.08)] border border-white hover:shadow-md transition-shadow ${onMemberClick ? 'cursor-pointer active:scale-[0.98]' : ''}`}
       >
-        <div className="flex items-start justify-between mb-4">
+        <div className="flex items-start justify-between mb-3">
           <div className="flex flex-col gap-2">
             <UserBadge
               uid={user.id}
@@ -192,7 +192,7 @@ export default function GroupMembers({ members, memberCount, onMemberClick, onCl
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-[#e4e7ff]">
+        <div className="grid grid-cols-2 gap-3 pt-3 border-t border-[#e4e7ff]">
           {isViewerAdmin && (
             <>
               <div>
@@ -219,11 +219,11 @@ export default function GroupMembers({ members, memberCount, onMemberClick, onCl
   };
 
   return (
-    <div className="space-y-8 pb-24 px-5 pt-6 bg-[#f4f6fc]">
+    <div className="max-w-[600px] mx-auto w-full space-y-4 pb-24 px-4 pt-3 bg-background min-h-screen">
       {/* Sub-navigation Tabs */}
       <div className="w-full overflow-x-auto scrollbar-hide pb-2 -mb-2">
         <nav className="flex items-center gap-1 bg-[#e4e7ff] p-1 rounded-xl w-max shadow-sm">
-          {['Member', 'Owner', 'Staff', 'Instructor'].map((tab) => (
+          {['Owner', 'Staff', 'Instructor', 'Member'].map((tab) => (
             <button
               key={tab}
               onClick={() => {
@@ -242,7 +242,7 @@ export default function GroupMembers({ members, memberCount, onMemberClick, onCl
       </div>
 
       {/* Header and Filters */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="relative w-full md:w-72">
           <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#a3abd7]">search</span>
           <input
@@ -267,7 +267,7 @@ export default function GroupMembers({ members, memberCount, onMemberClick, onCl
       </div>
 
       {/* Member Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
         {loading ? (
           <div className="col-span-full py-20 text-center text-[#515981] font-medium">
             <div className="mx-auto w-10 h-10 border-4 border-[#0057bd]/10 border-t-[#0057bd] rounded-full animate-spin mb-4"></div>

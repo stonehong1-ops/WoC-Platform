@@ -20,6 +20,9 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 const dictionary: Record<Language, Record<string, string>> = {
   EN: {
 
+    // Common
+    'common.add': 'Add',
+
     // Monthly Pass
     'pass.alert_title_req': 'Please enter a title for the monthly pass.',
     'pass.alert_class_req': 'Please select at least one class.',
@@ -255,7 +258,7 @@ const dictionary: Record<Language, Record<string, string>> = {
     'auth.gender_female': 'Female',
     'auth.gender_other': 'Other',
     'auth.native_nickname': 'Native Nickname',
-    'auth.native_nickname_placeholder': 'ex) 스칼렛',
+    'auth.native_nickname_placeholder': 'ex) Scarlet',
     'auth.complete_reg_btn': 'Complete Registration',
     'auth.terms_agree': 'By continuing, you agree to the ',
     'auth.terms': 'Terms of Service',
@@ -316,7 +319,7 @@ const dictionary: Record<Language, Record<string, string>> = {
     // In-App Browser Guard
     'guard.title': 'Open in Browser',
     'guard.desc_en': 'For the best experience, open this page in your default browser.',
-    'guard.desc_kr': '외부 브라우저에서 열면 더 안정적으로 이용할 수 있습니다.',
+    'guard.desc_kr': 'Opening in an external browser may provide a more stable experience.',
     'guard.url_copied': 'URL Copied! Paste in Browser',
     'guard.open_btn': 'Open in Browser',
     'guard.continue_btn': 'Continue anyway',
@@ -333,6 +336,7 @@ const dictionary: Record<Language, Record<string, string>> = {
     'group.tab.members': 'MEMBERS',
     'group.tab.class_user': 'CLASS',
     'group.tab.class_admin': 'CLASS SETTING',
+    'group.tab.settings': 'SETTINGS',
     'group.tab.stay': 'STAY SETTING',
     'group.tab.shop': 'SHOP SETTING',
     'group.tab.rental': 'RENTAL SETTING',
@@ -1490,6 +1494,25 @@ const dictionary: Record<Language, Record<string, string>> = {
     'gallery.add_comment': 'Add a comment...',
     'gallery.reply': 'Reply',
     'gallery.just_now': 'just now',
+    'gallery.no_permission': 'You do not have permission to edit.',
+    'gallery.max_files': 'Maximum 10 files.',
+    'gallery.media_required': 'At least 1 media file is required.',
+    'gallery.error_saving': 'Error saving post.',
+    'gallery.edit_post': 'Edit Post',
+    'gallery.new_post': 'New Post',
+    'gallery.write_caption': 'Write a caption...',
+    'gallery.also_show_in_live': 'Also show in Live',
+    'gallery.no_active_groups': 'No active groups today',
+    'gallery.no_activities': 'No activities today',
+    'gallery.people': 'People',
+    'gallery.search_resource': 'Search & add any resource',
+    'gallery.search_add': 'Search & add',
+    'gallery.search_placeholder': 'Search group, social, event, class, people...',
+    'gallery.find_tag_resources': 'Find and tag resources',
+    'gallery.type_to_start': 'Type to start searching',
+    'gallery.tag': 'TAG',
+    'gallery.group': 'GROUP',
+    'gallery.socialEventClass': 'SOCIAL · EVENT · CLASS',
 
     // Home/Society Module
     'home.social_today': 'Social today',
@@ -1646,7 +1669,7 @@ const dictionary: Record<Language, Record<string, string>> = {
     'home.cartoon.comments.empty': 'Be the first to share your thoughts!',
     'home.cartoon.comments.anonymous': 'Anonymous',
     'home.cartoon.comments.justNow': 'Just now',
-    'home.cartoon.like': '좋아요',
+    'home.cartoon.like': 'Like',
 
     'home.music.navTitle': "Camus' Selection",
     'home.music.subtitle': 'Tango Music 365',
@@ -1706,6 +1729,7 @@ const dictionary: Record<Language, Record<string, string>> = {
     'groups.alert_create_failed': 'Failed to create group. Please try again.',
     'groups.cat_studio': 'Studio',
     'groups.cat_shop': 'Shop',
+    'groups.cat_academy': 'Academy',
     'groups.cat_stay': 'Stay',
     'groups.cat_rental': 'Rental',
     'groups.cat_beauty': 'Beauty',
@@ -2167,15 +2191,15 @@ const dictionary: Record<Language, Record<string, string>> = {
 
     // Group Class Dashboard
     'class-dashboard.schedule': 'SCHEDULE',
-    'class-dashboard.pass': 'Pass',
+    'class-dashboard.pass': 'Monthly Pass',
     'class-dashboard.bundle': 'Bundle',
-    'class-dashboard.class': 'Class',
+    'class-dashboard.class': 'Individual Class',
     'class-dashboard.registeredMembers': 'Registered Members',
     'class-dashboard.leaders': 'Leaders',
     'class-dashboard.followers': 'Followers',
     'class-dashboard.andOthers': 'and {count} others',
     'class-dashboard.noRegistrationsYet': 'No registrations yet.',
-    'class-dashboard.consultation': 'Consultation',
+    'class-dashboard.consultation': 'Inquiry',
     'class-dashboard.modifyApplication': 'Modify Application',
     'class-dashboard.registerClass': 'Register Class',
 
@@ -2690,8 +2714,21 @@ const dictionary: Record<Language, Record<string, string>> = {
     'nav.tango_world': 'TANGO WORLD',
     'group.invite.preview_msg': 'You are invited to join our group!',
     'plaza.last_feed_local': 'Latest from your area',
+    'iso': 'yyyy-MM-dd',
+    'dayOnly': 'd',
+    'monthYear': 'MMMM yyyy',
+    'shortMonthDay': 'MMM d',
+    'shortMonth': 'MMM',
+    'shortWeekday': 'EEE',
+    'weekday': 'EEEE',
+    'timeOnly': 'HH:mm',
+    'dateOnly': 'yyyy.MM.dd',
+    'dateTime': 'yyyy.MM.dd HH:mm',
 },
   KR: {
+
+    // Common
+    'common.add': '추가',
 
     // Monthly Pass
     'pass.alert_title_req': '월간 패스 제목을 입력해주세요.',
@@ -2716,15 +2753,15 @@ const dictionary: Record<Language, Record<string, string>> = {
 
     // Group Class Dashboard
     'class-dashboard.schedule': '일정',
-    'class-dashboard.pass': '패스',
-    'class-dashboard.bundle': '묶음',
-    'class-dashboard.class': '단과',
+    'class-dashboard.pass': '월간패스',
+    'class-dashboard.bundle': '번들',
+    'class-dashboard.class': '개별클래스',
     'class-dashboard.registeredMembers': '신청 멤버',
     'class-dashboard.leaders': '리더',
     'class-dashboard.followers': '팔로워',
     'class-dashboard.andOthers': '외 {count}명',
     'class-dashboard.noRegistrationsYet': '아직 등록된 신청이 없습니다.',
-    'class-dashboard.consultation': '상담하기',
+    'class-dashboard.consultation': '문의하기',
     'class-dashboard.modifyApplication': '신청 내역 수정',
     'class-dashboard.registerClass': '수업 신청하기',
 
@@ -2841,6 +2878,7 @@ const dictionary: Record<Language, Record<string, string>> = {
     'group.tab.members': '멤버',
     'group.tab.class_user': '클래스',
     'group.tab.class_admin': '클래스 설정',
+    'group.tab.settings': '그룹 설정',
     'group.tab.stay': '스테이 설정',
     'group.tab.shop': '샵 설정',
     'group.tab.rental': '대관 설정',
@@ -4176,6 +4214,25 @@ const dictionary: Record<Language, Record<string, string>> = {
     'gallery.add_comment': '댓글을 입력하세요...',
     'gallery.reply': '답글',
     'gallery.just_now': '방금 전',
+    'gallery.no_permission': '수정할 권한이 없습니다.',
+    'gallery.max_files': '최대 10개까지 업로드 가능합니다.',
+    'gallery.media_required': '최소 1개의 미디어 파일이 필요합니다.',
+    'gallery.error_saving': '게시물을 저장하는 중 오류가 발생했습니다.',
+    'gallery.edit_post': '게시물 수정',
+    'gallery.new_post': '새 게시물',
+    'gallery.write_caption': '내용을 입력하세요...',
+    'gallery.also_show_in_live': 'Live 피드에도 표시',
+    'gallery.no_active_groups': '오늘 활동하는 그룹이 없습니다.',
+    'gallery.no_activities': '오늘 진행되는 액티비티가 없습니다.',
+    'gallery.people': '참여자',
+    'gallery.search_resource': '원하는 그룹이나 활동, 사람 추가',
+    'gallery.search_add': '검색 및 추가',
+    'gallery.search_placeholder': '그룹, 소셜, 이벤트, 클래스, 사람 검색...',
+    'gallery.find_tag_resources': '태그할 리소스를 찾아보세요',
+    'gallery.type_to_start': '검색어를 입력하세요',
+    'gallery.tag': '태그',
+    'gallery.group': '그룹',
+    'gallery.socialEventClass': '소셜 · 이벤트 · 클래스',
 
     // Home/Society Module
     'home.social_today': '오늘의 소셜',
@@ -4390,11 +4447,12 @@ const dictionary: Record<Language, Record<string, string>> = {
     'groups.alert_create_failed': '그룹 생성에 실패했습니다. 다시 시도해주세요.',
     'groups.cat_studio': '스튜디오',
     'groups.cat_shop': '마켓',
+    'groups.cat_academy': '아카데미',
     'groups.cat_stay': '스테이',
     'groups.cat_rental': '대여',
     'groups.cat_beauty': '뷰티',
     'groups.cat_wellness': '웰니스',
-    'groups.cat_restaurant': '레스트랑',
+    'groups.cat_restaurant': '레스토랑',
     'groups.cat_cafe': '카페',
     'groups.cat_office': '오피스',
     'groups.cat_online': '온라인',
@@ -4538,9 +4596,9 @@ const dictionary: Record<Language, Record<string, string>> = {
     'group.unsetup.claiming': '처리 중...',
 
     // Chat Module
-    'chat.tab_personal': 'Personal',
-    'chat.tab_group': 'Group',
-    'chat.tab_market': 'Market',
+    'chat.tab_personal': '개인',
+    'chat.tab_group': '그룹',
+    'chat.tab_market': '마켓',
     'chat.searchPlaceholder': '이름 또는 이메일로 검색',
     'chat.searchGroupsPlaceholder': '그룹 검색...',
     'chat.searchMarketPlaceholder': '비즈니스 검색...',
@@ -4920,7 +4978,7 @@ const dictionary: Record<Language, Record<string, string>> = {
     'home.noEvents': '예정된 이벤트가 없습니다',
 
     // Group Members
-    'group.members.role.owner': '모임장',
+    'group.members.role.owner': '오너',
     'group.members.role.staff': '스태프',
     'group.members.role.instructor': '강사',
     'group.members.role.member': '멤버',
