@@ -1,32 +1,23 @@
-# 📋 Plaza (Feed) UI & Functional Cleanups Checklist
+# 📋 Venues Map & Component Page Localization Checklist
 
-## 1. Plaza Feed Post Nickname & User Identification
-- [x] Update `FeedPostCard.tsx`'s UserBadge invocation: remove the `hidden` class from `nativeClassName` and add elegant spacing styling.
-- [x] Update `FeedPostCard.tsx` Standard/Image Style: remove the redundant username `<span>` in the post content description paragraph.
+## 1. Dictionary Extension in LanguageContext
+- [x] Add translation keys for the venues map UI to the EN dictionary in `src/contexts/LanguageContext.tsx`.
+- [x] Add translation keys for the venues map UI to the KR dictionary in `src/contexts/LanguageContext.tsx`.
 
-## 2. Layout Alignment & Card Separation
-- [x] Update `FeedPostCard.tsx`'s `<article>` root classes for standard, announcement, and short-text/quote layouts to include horizontal margins `mx-4` and bottom separation margins `mb-4`.
-- [x] Wrap post cards in elegant borders (`border border-outline-variant/30`) with rounded corners (`rounded-2xl`) and shadow (`shadow-sm`) to match the compose bar styling exactly.
+## 2. Venues Page Localization Hook Integration
+- [x] Inject `useLanguage` hook and dynamic `t` function into `src/app/venues/page.tsx`.
+- [x] Replace hardcoded text strings in `src/app/venues/page.tsx` (`confirm`, `alert`, `loadError`) with `t()`.
 
-## 3. Inline Counters & Stats Integration
-- [x] Modify Action Bar in `FeedPostCard.tsx` to render real-time like counts directly next to the Like (reaction) button inside the button label.
-- [x] Modify Action Bar in `FeedPostCard.tsx` to render comment counts directly next to the Chat/Comment button inside the button label.
-- [x] Remove the redundant secondary statistics counts container row from all standard, announcement, and short-text/quote templates.
+## 3. MapComponent Localization Hook Integration
+- [x] Inject `useLanguage` hook and dynamic `t` function into `src/components/venues/MapComponent.tsx`.
+- [x] Update static categories array rendering using `t('venues.cat_' + cat.toLowerCase())` (with fallback logic for `All`).
+- [x] Replace hardcoded map controls, brand filter panels, and venue list elements (`IN VIEW`, `Filter by Brand`, `Search venue..`, `no social today`, `No venues in this area`) with localized translation calls.
 
-## 4. Text Readability & "more" Folding
-- [x] Implement local state `isExpanded` and a robust string-truncation helper inside `FeedPostCard.tsx`.
-- [x] Truncate posts longer than 180 characters or 5 lines of text, rendering a clickable English inline `...more` button to expand post contents dynamically.
-- [x] Increase post body text font size to `text-[16px]` (previously `text-[15px]`) inside both standard and announcement layouts for enhanced readability.
+## 4. Build & Local Verification
+- [ ] Run `npm run build` locally in the workspace to confirm zero TypeScript compilation errors.
+- [ ] Verify that all UI elements render beautifully with zero design deviation.
 
-## 5. Robust Bookmark & UI Flow Fixes
-- [x] Modify `feedService.ts`'s `togglePinPost` to use `setDoc(..., { merge: true })` instead of `updateDoc` to allow creation of user documents dynamically.
-- [x] Modify `feedService.ts`'s `togglePinUser` to use `setDoc(..., { merge: true })` instead of `updateDoc`.
-- [x] Update `AuthProvider.tsx` to initialize empty arrays for `pinnedPostIds`, `interactedUserIds`, and `pinnedUserIds` inside the fallback auth state object.
-- [x] Prevent 2-line wrapping for like/comment inline counts in `FeedPostCard.tsx` by applying `whitespace-nowrap`.
-- [x] Add non-logged-in user error guard for bookmark clicks in `FeedPostCard.tsx` showing a prompt alert.
-
-## 6. Build and Deploy Verification
-- [ ] Run `npm run build` locally to verify TypeScript types, lint standards, and build stability.
-- [ ] Deploy to Vercel production environment (`npx -y vercel --prod --yes`).
-- [ ] Confirm deployment URL, deployment ID, and exit status to the user.
-
+## 5. Production Deployment & Live Report
+- [ ] Deploy the validated codebase to Vercel production using `npx -y vercel --prod --yes`.
+- [ ] Capture the deployment ID, exit code, and live URL.
+- [ ] Report the production link to Stony for final testing.
