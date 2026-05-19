@@ -139,18 +139,14 @@ export default function MapComponent({
     });
   }, [societyContext]);
 
-  // 소셜 모드: 오늘자 소셜 구독
+  // 오늘자 소셜 구독 (venue 카드 + 소셜 모드 공용)
   useEffect(() => {
-    if (!socialMode) {
-      setTodaySocials([]);
-      return;
-    }
     const today = new Date();
     const day = today.getDay();
     return socialService.subscribeDailySocials(day, today, (socials) => {
       setTodaySocials(socials);
     });
-  }, [socialMode]);
+  }, []);
 
   // 소셜 마커: Social + Venue 좌표 조인
   const socialMarkers = useMemo(() => {
@@ -900,7 +896,14 @@ export default function MapComponent({
                           {v.nameKo || v.name}
                         </h3>
                         <p className="text-[11px] text-slate-400 truncate mt-0.5 font-medium">
-                          {t('venues.no_social_today')}
+                          {(() => {
+                            const vSocial = todaySocials.find(s => s.venueId === v.id);
+                            if (!vSocial) return t('venues.no_social_today');
+                            const today = new Date().toISOString().slice(0, 10);
+                            const todayDj = vSocial.djs?.find(d => d.date === today);
+                            const djDisplay = todayDj?.djName || vSocial.djName;
+                            return `${vSocial.startTime} ${vSocial.title}${djDisplay ? ` (dj : ${djDisplay})` : ''}`;
+                          })()}
                         </p>
                       </div>
                       
