@@ -41,6 +41,28 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
 
   const reactionTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [localMyReaction, setLocalMyReaction] = useState<ReactionType | null>(post.myReaction || null);
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const getTruncatedContent = (content: string) => {
+    if (isExpanded) return { text: content, shouldTruncate: false };
+    const lines = content.split('\n');
+    const MAX_LINES = 5;
+    const MAX_CHARS = 180;
+    let needsTruncation = false;
+    let truncatedText = content;
+    if (lines.length > MAX_LINES) {
+      truncatedText = lines.slice(0, MAX_LINES).join('\n');
+      needsTruncation = true;
+    }
+    if (truncatedText.length > MAX_CHARS) {
+      truncatedText = truncatedText.slice(0, MAX_CHARS);
+      needsTruncation = true;
+    }
+    return {
+      text: truncatedText,
+      shouldTruncate: needsTruncation || content.length > truncatedText.length
+    };
+  };
   
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -207,7 +229,7 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
           photoURL={hideUserInfo ? null : (post.userPhoto || (post as any).authorPhoto)}
           avatarSize="w-8 h-8"
           nameClassName="font-headline font-bold text-on-surface text-[13px] leading-tight"
-          nativeClassName="text-[11px] font-medium text-on-surface-variant leading-tight hidden"
+          nativeClassName="text-[11px] font-normal text-on-surface-variant leading-tight ml-1"
           subText={null}
         />
       )}
@@ -259,12 +281,15 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
           <button
             onClick={(e) => { e.stopPropagation(); setIsReactionSelectorOpen(prev => !prev); }}
             onMouseEnter={() => { if (!('ontouchstart' in window)) { if (reactionTimerRef.current) clearTimeout(reactionTimerRef.current); setIsReactionSelectorOpen(true); } }}
-            className={`transition-transform active:scale-90 flex items-center ${localMyReaction || post.myReaction ? myReaction.color : 'text-on-surface'}`}
+            className={`transition-transform active:scale-90 flex items-center gap-1 whitespace-nowrap ${localMyReaction || post.myReaction ? myReaction.color : 'text-on-surface'}`}
           >
             {localMyReaction || post.myReaction ? (
               <span className="text-[24px] leading-none">{myReaction.emoji}</span>
             ) : (
               <span className="material-symbols-outlined text-[24px] font-light">favorite</span>
+            )}
+            {localLikesCount > 0 && (
+              <span className="text-xs font-semibold">{localLikesCount}</span>
             )}
           </button>
           <AnimatePresence>
@@ -273,15 +298,21 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
             )}
           </AnimatePresence>
         </div>
-        <button onClick={() => openComments(post.id)} className="transition-transform active:scale-90 flex items-center text-on-surface">
+        <button onClick={() => openComments(post.id)} className="transition-transform active:scale-90 flex items-center gap-1 whitespace-nowrap text-on-surface">
           <span className="material-symbols-outlined text-[24px] font-light">chat_bubble</span>
+          {post.commentsCount > 0 && (
+            <span className="text-xs font-semibold">{post.commentsCount}</span>
+          )}
         </button>
         <button onClick={handleShare} className="transition-transform active:scale-90 flex items-center text-on-surface">
           <span className="material-symbols-outlined text-[24px] font-light">share</span>
         </button>
       </div>
       <button onClick={async () => {
-        if (!currentUser) return;
+        if (!currentUser) {
+          alert(t('plaza.sign_in_first'));
+          return;
+        }
         const pinnedPostIds = (profile as any)?.pinnedPostIds || [];
         const isPinned = pinnedPostIds.includes(post.id);
         try {
@@ -301,12 +332,26 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
   // Announcement Style
   if (post.isAnnouncement) {
     const eventDate = typeof (post.createdAt as any).toDate === 'function' ? (post.createdAt as any).toDate() : new Date(post.createdAt as any);
+    const { text: renderedContent, shouldTruncate } = getTruncatedContent(post.content);
     return (
-      <article className="w-full bg-surface-container-lowest">
+      <article className="mx-4 mb-4 rounded-2xl border border-outline-variant/30 shadow-sm bg-surface-container-lowest overflow-hidden">
         <div className="px-4 py-3 pb-3">
           {renderHeader(true)}
           {post.title && <h4 className="font-headline font-bold text-[15px] mb-2 text-primary">{post.title}</h4>}
-          <p className="text-on-surface text-sm leading-relaxed whitespace-pre-wrap">{post.content}</p>
+          <p className="text-on-surface text-[16px] leading-relaxed whitespace-pre-wrap">
+            {renderedContent}
+            {shouldTruncate && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsExpanded(true);
+                }}
+                className="text-primary hover:underline ml-1 font-medium text-sm"
+              >
+                ...more
+              </button>
+            )}
+          </p>
           {renderTags()}
           
           <div className="bg-surface rounded-lg p-3 flex items-center gap-4 mb-2 mt-4">
@@ -322,18 +367,6 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
         </div>
         <div className="px-4 pb-3">
           {renderActionBar()}
-          <div className="flex gap-2 mb-1">
-            {localLikesCount > 0 && (
-              <button onClick={() => openReactions(post.id)} className="font-bold text-sm text-on-surface hover:underline">
-                {localLikesCount} {t('plaza.likes')}
-              </button>
-            )}
-            {post.commentsCount > 0 && (
-              <button onClick={() => openComments(post.id)} className="font-medium text-sm text-on-surface-variant hover:underline">
-                {post.commentsCount} {t('plaza.comments')}
-              </button>
-            )}
-          </div>
           <p className="text-[10px] text-on-surface-variant font-medium tracking-wide uppercase mt-2">{timeAgo}</p>
         </div>
       </article>
@@ -348,7 +381,7 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
       ? `${style.impactClass || 'text-xl font-normal'} ${(style.emphasisClasses || []).join(' ')}`
       : 'text-on-surface text-lg font-headline font-semibold leading-tight';
     return (
-      <article className="w-full bg-surface-container-lowest">
+      <article className="mx-4 mb-4 rounded-2xl border border-outline-variant/30 shadow-sm bg-surface-container-lowest overflow-hidden">
         <div className="px-4 py-3 pb-2">{renderHeader(post.isOfficial)}</div>
         {hasColorStyle ? (
           <div
@@ -369,18 +402,6 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
         <div className="px-4 py-3">
           {renderTags()}
           {renderActionBar()}
-          <div className="flex gap-2 mb-1 mt-2">
-            {localLikesCount > 0 && (
-              <button onClick={() => openReactions(post.id)} className="font-bold text-sm text-on-surface hover:underline">
-                {localLikesCount} {t('plaza.likes')}
-              </button>
-            )}
-            {post.commentsCount > 0 && (
-              <button onClick={() => openComments(post.id)} className="font-medium text-sm text-on-surface-variant hover:underline">
-                {post.commentsCount} {t('plaza.comments')}
-              </button>
-            )}
-          </div>
           <p className="text-[10px] text-on-surface-variant font-medium tracking-wide uppercase mt-2">{timeAgo}</p>
         </div>
       </article>
@@ -488,8 +509,9 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
   };
 
   // Standard / Image Style
+  const { text: renderedContent, shouldTruncate } = getTruncatedContent(post.content);
   return (
-    <article className="w-full bg-surface-container-lowest">
+    <article className="mx-4 mb-4 rounded-2xl border border-outline-variant/30 shadow-sm bg-surface-container-lowest overflow-hidden">
       <div className="px-4 pt-3 pb-1">
         {renderHeader(post.isOfficial)}
       </div>
@@ -502,25 +524,20 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
 
       <div className="px-4 py-2">
         {renderActionBar()}
-
-        <div className="flex gap-2 mb-1">
-          {localLikesCount > 0 && (
-            <button onClick={() => openReactions(post.id)} className="font-bold text-sm text-on-surface hover:underline">
-              {localLikesCount} {t('plaza.likes')}
-            </button>
-          )}
-          {post.commentsCount > 0 && (
-            <button onClick={() => openComments(post.id)} className="font-medium text-sm text-on-surface-variant hover:underline">
-              {post.commentsCount} {t('plaza.comments')}
-            </button>
-          )}
-        </div>
         
-        <p className="text-sm text-on-surface leading-normal whitespace-pre-wrap break-words">
-          <span className="font-bold mr-2 text-[13px]">
-            {hideUserInfo ? t('help_desk.anonymous') : (post.userName || (post as any).authorName || 'Unknown User')}
-          </span>
-          {post.content}
+        <p className="text-[16px] text-on-surface leading-relaxed whitespace-pre-wrap break-words mt-2">
+          {renderedContent}
+          {shouldTruncate && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsExpanded(true);
+              }}
+              className="text-primary hover:underline ml-1 font-medium text-sm animate-pulse"
+            >
+              ...more
+            </button>
+          )}
         </p>
 
         {renderTags()}
