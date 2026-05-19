@@ -11,6 +11,9 @@ import { CITY_COORDINATES, DEFAULT_COORDINATES } from '@/lib/constants/locations
 import { OverlayView } from '@react-google-maps/api';
 import useSupercluster from 'use-supercluster';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { socialService } from '@/lib/firebase/socialService';
+import { Social } from '@/types/social';
+import { useRouter } from 'next/navigation';
 
 interface Venue {
   id: string;
@@ -81,6 +84,9 @@ export default function MapComponent({
   const [center, setCenter] = useState<{ lat: number; lng: number } | null>(null);
   const [selectedBrand, setSelectedBrand] = useState('All');
   const [showBrandFilter, setShowBrandFilter] = useState(false);
+  const [socialMode, setSocialMode] = useState(false);
+  const [todaySocials, setTodaySocials] = useState<Social[]>([]);
+  const router = useRouter();
 
   const categories = ['All', 'Studio', 'Shop', 'Stay', 'Beauty', 'Club', 'Academy', 'Cafe', 'Eats', 'Other'];
 
@@ -131,6 +137,37 @@ export default function MapComponent({
       setVenues(filtered);
     });
   }, [societyContext]);
+
+  // 소셜 모드: 오늘자 소셜 구독
+  useEffect(() => {
+    if (!socialMode) {
+      setTodaySocials([]);
+      return;
+    }
+    const today = new Date();
+    const day = today.getDay();
+    return socialService.subscribeDailySocials(day, today, (socials) => {
+      setTodaySocials(socials);
+    });
+  }, [socialMode]);
+
+  // 소셜 마커: Social + Venue 좌표 조인
+  const socialMarkers = useMemo(() => {
+    if (!socialMode || todaySocials.length === 0) return [];
+    return todaySocials.map(social => {
+      const venue = venues.find(v => v.id === social.venueId);
+      if (!venue) return null;
+      return { social, lat: venue.coordinates.latitude, lng: venue.coordinates.longitude };
+    }).filter(Boolean) as { social: Social; lat: number; lng: number }[];
+  }, [socialMode, todaySocials, venues]);
+
+  // 소셜 모드: 뷰 내 소셜 필터링
+  const socialsInView = useMemo(() => {
+    if (!socialMode || !map) return socialMarkers;
+    const currentBounds = map.getBounds();
+    if (!currentBounds) return socialMarkers;
+    return socialMarkers.filter(m => currentBounds.contains({ lat: m.lat, lng: m.lng }));
+  }, [socialMode, socialMarkers, bounds]);
 
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
     if (isNaN(lat1) || isNaN(lon1) || isNaN(lat2) || isNaN(lon2)) return 999999;
@@ -423,7 +460,43 @@ export default function MapComponent({
               ]
             }}
           >
-            {clusters.map((cluster) => {
+            {/* 소셜 모드: 소셜 마커 렌더링 */}
+            {socialMode ? (
+              socialMarkers.map((item) => (
+                <OverlayView
+                  key={item.social.id}
+                  position={{ lat: item.lat, lng: item.lng }}
+                  mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+                >
+                  <div
+                    className="flex flex-col items-center cursor-pointer pointer-events-auto group"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      router.push(`/social?id=${item.social.id}`);
+                    }}
+                    style={{
+                      transform: `translate(-50%, -100%) scale(${labelScale})`,
+                      transition: 'transform 0.1s ease-out'
+                    }}
+                  >
+                    <div className="flex flex-col items-center bg-white/95 backdrop-blur-sm rounded-xl px-3 py-2 shadow-[0_4px_16px_rgba(0,0,0,0.15)] border border-primary/20 group-hover:border-primary/50 group-hover:shadow-primary/10 transition-all group-hover:scale-105 active:scale-95">
+                      <span className="text-[12px] font-black text-on-surface leading-tight tracking-tight whitespace-nowrap">
+                        {item.social.title}
+                      </span>
+                      {item.social.titleNative && (
+                        <span className="text-[9px] font-medium text-on-surface-variant/70 leading-tight whitespace-nowrap mt-0.5">
+                          {item.social.titleNative}
+                        </span>
+                      )}
+                    </div>
+                    {/* Pin tail */}
+                    <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[8px] border-l-transparent border-r-transparent border-t-white/95 -mt-[1px]" />
+                    <div className="w-2 h-2 bg-primary rounded-full mt-0.5 shadow-sm" />
+                  </div>
+                </OverlayView>
+              ))
+            ) : (
+            clusters.map((cluster) => {
               const [longitude, latitude] = cluster.geometry.coordinates;
               const { cluster: isCluster, point_count: pointCount, venue } = cluster.properties as any;
 
@@ -520,7 +593,8 @@ export default function MapComponent({
                   </div>
                 </OverlayView>
               );
-            })}
+            })
+            )}
 
             {userLocation && (
               <OverlayView
@@ -538,7 +612,8 @@ export default function MapComponent({
         )}
       </div>
 
-      {/* Layer 1: Floating Filter Icons (Top) */}
+      {/* Layer 1: Floating Filter Icons (Top) - 소셜 모드에서 숨김 */}
+      {!socialMode && (
       <div className="absolute top-2 left-0 right-0 z-20 flex gap-2.5 overflow-x-auto px-6 no-scrollbar pointer-events-auto py-2">
         {categories.map((cat) => (
           <button
@@ -561,6 +636,7 @@ export default function MapComponent({
           </button>
         ))}
       </div>
+      )}
 
       {/* Layer 1.5: Map Control Group (Top Right - Standard Google Maps Style) */}
       <div className="absolute top-[80px] right-4 z-40 flex flex-col gap-0.5 pointer-events-auto">
@@ -577,6 +653,29 @@ export default function MapComponent({
           title="My Location"
         >
           <span className="material-symbols-rounded !text-[22px]">my_location</span>
+        </button>
+        {/* Social Mode Toggle */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            const next = !socialMode;
+            setSocialMode(next);
+            if (next && map) {
+              const coords = CITY_COORDINATES[location.country.toUpperCase()] || DEFAULT_COORDINATES;
+              map.panTo({ lat: coords.lat, lng: coords.lng });
+              map.setZoom(coords.zoom);
+            }
+            setSelectedVenueId(null);
+            setIsExpanded(false);
+          }}
+          className={`w-10 h-10 mt-3 shadow-[0_1px_4px_rgba(0,0,0,0.3)] rounded-full flex items-center justify-center transition-all ${
+            socialMode
+              ? 'bg-primary text-white shadow-primary/30'
+              : 'bg-white text-[#5F6368] hover:bg-slate-50 active:bg-slate-100'
+          }`}
+          title="Today's Social"
+        >
+          <span className="material-symbols-rounded !text-[22px]" style={{ fontVariationSettings: socialMode ? "'FILL' 1" : "'FILL' 0" }}>nightlife</span>
         </button>
       </div>
 
@@ -609,7 +708,12 @@ export default function MapComponent({
                 </span>
               </div>
               
-              {isExpanded ? (
+              {socialMode ? (
+                <span className="text-sm text-slate-800 font-bold ml-3 tracking-wide truncate">
+                  <span className="material-symbols-rounded text-primary !text-[16px] align-text-bottom mr-1" style={{ fontVariationSettings: "'FILL' 1" }}>nightlife</span>
+                  {socialsInView.length} socials today
+                </span>
+              ) : isExpanded ? (
                 <div className="flex items-center ml-2 flex-1 overflow-hidden">
                   {selectedBrand !== 'All' && (
                     <div 
@@ -639,6 +743,7 @@ export default function MapComponent({
               )}
             </div>
             
+            {!socialMode && (
             <div className="flex items-center gap-1 shrink-0">
               <div className="h-5 w-[1px] bg-slate-200 mx-1"></div>
               
@@ -669,6 +774,7 @@ export default function MapComponent({
                 <span className="material-symbols-rounded text-[24px]">search</span>
               </button>
             </div>
+            )}
           </div>
 
           {/* Brand Filter Panel */}
@@ -713,7 +819,39 @@ export default function MapComponent({
                 exit={{ opacity: 0 }}
                 className="flex items-center overflow-x-auto px-6 gap-4 no-scrollbar snap-x snap-mandatory py-4 h-[130px]"
               >
-                {sortedFilteredVenues.length > 0 ? (
+                {socialMode ? (
+                  /* 소셜 모드 리스트 */
+                  socialsInView.length > 0 ? (
+                    socialsInView.map((item) => (
+                      <div 
+                        key={item.social.id}
+                        onClick={() => router.push(`/social?id=${item.social.id}`)}
+                        className="flex-none w-[calc(100%-24px)] bg-white rounded-lg p-2 shadow-sm border border-slate-50 flex gap-3 relative snap-center transition-all cursor-pointer hover:border-primary/30"
+                      >
+                        <div className="w-16 h-16 rounded bg-gradient-to-br from-primary/10 to-primary/5 flex-none flex items-center justify-center">
+                          <span className="material-symbols-rounded text-primary text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>nightlife</span>
+                        </div>
+                        <div className="flex flex-col min-w-0 pr-2 justify-center">
+                          <span className="text-[10px] font-bold text-primary bg-primary/10 w-fit px-1.5 py-0.5 rounded mb-1 uppercase">
+                            {item.social.type === 'regular' ? 'Regular' : 'Popup'}
+                          </span>
+                          <h3 className="text-[17px] font-bold text-on-background truncate leading-tight">
+                            {item.social.title}
+                          </h3>
+                          <p className="text-[11px] text-slate-400 truncate mt-0.5 font-medium">
+                            {item.social.titleNative || item.social.venueName}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex items-center justify-center w-full h-full text-slate-400 text-xs font-medium">
+                      No socials in this area
+                    </div>
+                  )
+                ) : (
+                /* Venue 모드 리스트 (기존) */
+                sortedFilteredVenues.length > 0 ? (
                   sortedFilteredVenues.map((v) => (
                     <div 
                       key={v.id}
@@ -813,7 +951,7 @@ export default function MapComponent({
                   <div className="flex items-center justify-center w-full h-full text-slate-400 text-xs font-medium">
                     {t('venues.no_venues_area')}
                   </div>
-                )}
+                ))}
                 {/* Visual nudge for next card */}
                 <div className="flex-none w-10 h-1" /> 
               </motion.div>
