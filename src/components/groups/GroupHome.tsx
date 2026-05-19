@@ -1638,7 +1638,7 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
             {/* Modal Header */}
             <div className="px-6 pt-6 pb-4 border-b border-[#f2f4f4]">
               <div className="flex items-center justify-between mb-1">
-                <h2 className="text-lg font-black text-[#2d3435]">{"It's mine."}</h2>
+                <h2 className="text-lg font-black text-[#2d3435]">{t('group.claim.title')}</h2>
                 <button
                   onClick={() => setShowClaimModal(false)}
                   className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors"
@@ -1646,7 +1646,7 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
                   <span className="material-symbols-rounded text-[#acb3b4] text-[20px]">close</span>
                 </button>
               </div>
-              <p className="text-xs text-[#acb3b4] font-medium">This club belongs to me. Claim ownership of this group.</p>
+              <p className="text-xs text-[#acb3b4] font-medium">{t('group.claim.desc')}</p>
             </div>
 
             {/* Group Info */}
@@ -1660,13 +1660,13 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
               )}
               <div>
                 <p className="font-bold text-[#2d3435] text-sm">{currentGroup.name}</p>
-                <p className="text-[11px] text-[#acb3b4] font-medium">No owner assigned</p>
+                <p className="text-[11px] text-[#acb3b4] font-medium">{t('group.claim.no_owner')}</p>
               </div>
             </div>
 
             {/* Owner Search Input */}
             <div className="px-6 pt-5 pb-2">
-              <label className="block text-[11px] font-bold text-[#acb3b4] uppercase tracking-wider mb-2">Owner</label>
+              <label className="block text-[11px] font-bold text-[#acb3b4] uppercase tracking-wider mb-2">{t('group.claim.owner_label')}</label>
               <div className="relative">
                 <div className="relative flex items-center px-4 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/20 transition-all">
                   <span className="material-symbols-rounded text-[#acb3b4] mr-2 text-[20px]">person_filled</span>
@@ -1692,7 +1692,7 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
                     onFocus={() => claimOwnerName.length >= 1 && setShowClaimResults(claimResults.length > 0)}
                     onBlur={() => setTimeout(() => setShowClaimResults(false), 200)}
                     className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-sm font-bold text-[#2d3435] placeholder:text-[#acb3b4] outline-none"
-                    placeholder="Search by nickname..."
+                    placeholder={t('group.claim.search_placeholder')}
                     type="text"
                   />
                   {claimOwnerId && (
@@ -1717,7 +1717,7 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
                           {u.nativeNickname && <span className="text-[10px] text-[#acb3b4] font-medium leading-tight">{u.nativeNickname}</span>}
                         </div>
                         {u.id === user?.uid && (
-                          <span className="ml-auto text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">Me</span>
+                          <span className="ml-auto text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">{t('group.claim.me')}</span>
                         )}
                       </button>
                     ))}
@@ -1727,7 +1727,7 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
               {claimOwnerId && (
                 <p className="text-[11px] text-emerald-600 font-bold mt-1.5 flex items-center gap-1">
                   <span className="material-symbols-rounded text-[14px]">check_circle</span>
-                  Selected as owner
+                  {t('group.claim.selected_badge')}
                 </p>
               )}
             </div>
@@ -1738,12 +1738,12 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
                 onClick={() => setShowClaimModal(false)}
                 className="flex-1 py-3 rounded-xl border border-[#e0e4e5] text-sm font-bold text-[#596061] hover:bg-[#f8f9fa] transition-colors"
               >
-                Cancel
+                {t('group.claim.cancel')}
               </button>
               <button
                 onClick={() => {
                   if (!claimOwnerId) {
-                    toast.error('Please select a user first.');
+                    toast.error(t('group.claim.alert_select_user'));
                     return;
                   }
                   handleClaimAdmin(claimOwnerId, claimOwnerName);
@@ -1751,7 +1751,7 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
                 disabled={isClaiming || !claimOwnerId}
                 className="flex-1 py-3 rounded-xl bg-primary text-white text-sm font-bold hover:bg-primary/90 transition-colors disabled:opacity-50 shadow-sm"
               >
-                {isClaiming ? 'Saving...' : "Claim Ownership"}
+                {isClaiming ? t('group.claim.saving') : t('group.claim.button')}
               </button>
             </div>
           </div>
@@ -1769,21 +1769,21 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
               <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
                 <span className="material-symbols-rounded text-red-500 text-[24px]">logout</span>
               </div>
-              <h2 className="text-lg font-black text-[#2d3435] mb-2">Leave Group</h2>
-              <p className="text-sm text-[#596061] font-medium">Are you sure you want to leave this group?</p>
+              <h2 className="text-lg font-black text-[#2d3435] mb-2">{t('group.exit.title')}</h2>
+              <p className="text-sm text-[#596061] font-medium">{t('group.exit.message')}</p>
             </div>
             <div className="px-6 pb-6 pt-2 flex gap-3">
               <button
                 onClick={handleStay}
                 className="flex-1 py-3.5 rounded-xl border border-[#e0e4e5] text-sm font-bold text-[#596061] hover:bg-[#f8f9fa] transition-colors"
               >
-                Stay
+                {t('group.exit.stay')}
               </button>
               <button
                 onClick={handleLeave}
                 className="flex-1 py-3.5 rounded-xl bg-red-500 text-white text-sm font-bold hover:bg-red-600 transition-colors shadow-sm"
               >
-                Leave
+                {t('group.exit.leave')}
               </button>
             </div>
           </motion.div>

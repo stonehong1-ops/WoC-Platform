@@ -1,21 +1,20 @@
-# 📋 Venues Map & Component Page Localization Checklist
+# 📋 Group Shell Header Switch & Leave Group Modal Localization Checklist
 
 ## 1. Dictionary Extension in LanguageContext
-- [x] Add translation keys for the venues map UI to the EN dictionary in `src/contexts/LanguageContext.tsx`.
-- [x] Add translation keys for the venues map UI to the KR dictionary in `src/contexts/LanguageContext.tsx`.
+- [x] Add translation keys for the Group Shell Header (dropdown items) and Leave Group Modal to the EN dictionary in `src/contexts/LanguageContext.tsx`.
+- [x] Add translation keys for the Group Shell Header (dropdown items) and Leave Group Modal to the KR dictionary in `src/contexts/LanguageContext.tsx`.
 
-## 2. Venues Page Localization Hook Integration
-- [x] Inject `useLanguage` hook and dynamic `t` function into `src/app/venues/page.tsx`.
-- [x] Replace hardcoded text strings in `src/app/venues/page.tsx` (`confirm`, `alert`, `loadError`) with `t()`.
+## 2. Group Shell Header Localization
+- [x] Inspect existing `useLanguage` integration in `src/components/groups/shell/GroupShellHeader.tsx`.
+- [x] Map hardcoded texts "Exit", "Current Group", "Switch to", and "Leave Group" in `src/components/groups/shell/GroupShellHeader.tsx` to `t()`.
 
-## 3. MapComponent Localization Hook Integration
-- [x] Inject `useLanguage` hook and dynamic `t` function into `src/components/venues/MapComponent.tsx`.
-- [x] Update static categories array rendering using `t('venues.cat_' + cat.toLowerCase())` (with fallback logic for `All`).
-- [x] Replace hardcoded map controls, brand filter panels, and venue list elements (`IN VIEW`, `Filter by Brand`, `Search venue..`, `no social today`, `No venues in this area`) with localized translation calls.
+## 3. Leave Group Modal Localization
+- [x] Inspect existing `useLanguage` integration in `src/components/groups/GroupHome.tsx`.
+- [x] Map hardcoded texts "Leave Group" (title), "Are you sure you want to leave this group?" (body), "Stay" (button), and "Leave" (button) in the modal rendering block of `src/components/groups/GroupHome.tsx` to `t()`.
 
 ## 4. Build & Local Verification
-- [x] Run `npm run build` locally in the workspace to confirm zero TypeScript compilation errors.
-- [x] Verify that all UI elements render beautifully with zero design deviation.
+- [x] Run the project's build locally to confirm zero TypeScript compilation errors.
+- [x] Verify that all UI elements render perfectly with 0% design deviation.
 
 ## 5. Production Deployment & Live Report
 - [x] Deploy the validated codebase to Vercel production using `npx -y vercel --prod --yes`.

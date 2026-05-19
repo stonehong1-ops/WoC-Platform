@@ -112,7 +112,7 @@ export default function GroupShellHeader({ group, onExit }: GroupShellHeaderProp
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
           >
             <span className="material-symbols-outlined" style={{ fontSize: 20 }}>logout</span>
-            <span>Exit</span>
+            <span>{t('group.shell.exit')}</span>
             <span className="material-symbols-outlined" style={{ fontSize: 16 }}>
               {isDropdownOpen ? 'expand_less' : 'expand_more'}
             </span>
@@ -134,7 +134,7 @@ export default function GroupShellHeader({ group, onExit }: GroupShellHeaderProp
                 >
                   {/* 현재 그룹 */}
                   <div className="dropdown-section">
-                    <div className="dropdown-label">Current Group</div>
+                    <div className="dropdown-label">{t('group.shell.currentGroup')}</div>
                     <div className="club-item active-club">
                       <div
                         className="club-dot"
@@ -152,7 +152,7 @@ export default function GroupShellHeader({ group, onExit }: GroupShellHeaderProp
                     <>
                       <div className="divider" />
                       <div className="dropdown-section">
-                        <div className="dropdown-label">Switch to</div>
+                        <div className="dropdown-label">{t('group.shell.switchTo')}</div>
                         {myGroups.filter(g => g.id !== group.id).map(g => (
                           <div
                             key={g.id}
@@ -180,7 +180,7 @@ export default function GroupShellHeader({ group, onExit }: GroupShellHeaderProp
                     style={{ cursor: 'pointer' }}
                   >
                     <span className="material-symbols-outlined" style={{ fontSize: 18, marginRight: 8 }}>exit_to_app</span>
-                    Leave Group
+                    {t('group.shell.leaveGroup')}
                   </div>
                 </motion.div>
               </>
