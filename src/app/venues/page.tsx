@@ -13,6 +13,7 @@ import { db } from '@/lib/firebase/clientApp';
 import { groupService } from '@/lib/firebase/groupService';
 import GroupDetail from '@/components/groups/GroupDetail';
 import { Group } from '@/types/group';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 // Defensive Architecture 2: Dynamically import MapComponent with ssr: false
 const MapComponent = dynamic(() => import('@/components/venues/MapComponent'), { 
@@ -25,6 +26,7 @@ const MapComponent = dynamic(() => import('@/components/venues/MapComponent'), {
 const libraries: ("places" | "drawing" | "geometry" | "visualization")[] = ["places"];
 
 function VenuesPageContent() {
+  const { t } = useLanguage();
   const { isOpen: isEditModalOpen, value: editId, openModal: openEdit, closeModal: closeEdit } = useModalNavigation('editId');
   
   const [editingVenue, setEditingVenue] = useState<Venue | null>(null);
@@ -80,17 +82,17 @@ function VenuesPageContent() {
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this venue?')) {
+    if (confirm(t('venues.confirm_delete'))) {
       try {
         await venueService.deleteVenue(id);
       } catch (error) {
         console.error('Failed to delete venue:', error);
-        alert('Failed to delete venue.');
+        alert(t('venues.alert_delete_failed'));
       }
     }
   };
 
-  if (loadError) return <div className="p-10 text-center font-bold text-error">Error loading maps system.</div>;
+  if (loadError) return <div className="p-10 text-center font-bold text-error">{t('venues.err_load_maps')}</div>;
 
   return (
     <PageWrapper>
@@ -105,18 +107,18 @@ function VenuesPageContent() {
             if (g) setSelectedGroup(g);
           }}
         />
-
-        <ManageEntry
-          isOpen={isEditModalOpen}
-          onClose={() => {
-            closeEdit();
-            setEditingVenue(null);
-          }}
-          isLoaded={isLoaded}
-          initialData={editingVenue}
-          mode={editMode}
-        />
       </div>
+
+      <ManageEntry
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          closeEdit();
+          setEditingVenue(null);
+        }}
+        isLoaded={isLoaded}
+        initialData={editingVenue}
+        mode={editMode}
+      />
 
       {/* Group App-in-App Overlay */}
       {selectedGroup && (

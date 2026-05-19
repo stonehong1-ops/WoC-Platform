@@ -8,6 +8,7 @@ import { GoogleMap, Autocomplete, Marker } from '@react-google-maps/api';
 import { venueService } from '@/lib/firebase/venueService';
 import { Venue } from '@/types/venue';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface ManageEntryProps {
   isOpen: boolean;
@@ -27,6 +28,7 @@ const CIRCLE_PATH = 0;
 
 export default function ManageEntry({ isOpen, onClose, isLoaded, initialData, mode = 'edit' }: ManageEntryProps) {
   const { location } = useLocation();
+  const { t } = useLanguage();
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const detailAddressRef = useRef<HTMLInputElement>(null);
@@ -174,11 +176,11 @@ export default function ManageEntry({ isOpen, onClose, isLoaded, initialData, mo
 
   const handleSubmit = async () => {
     if (!formData.name.trim()) {
-      alert('Please enter a Place Name.');
+      alert(t('venues.alert_place_name'));
       return;
     }
     if (formData.categories.length === 0) {
-      alert('Please select at least one category.');
+      alert(t('venues.alert_category'));
       return;
     }
     setSaving(true);
@@ -199,16 +201,16 @@ export default function ManageEntry({ isOpen, onClose, isLoaded, initialData, mo
 
       if (initialData?.id) {
         await venueService.updateVenue(initialData.id, payload);
-        alert('Venue updated successfully!');
+        alert(t('venues.alert_update_success'));
       } else {
         payload.createdAt = serverTimestamp();
         await addDoc(collection(db, "venues"), payload);
-        alert('Venue saved successfully!');
+        alert(t('venues.alert_save_success'));
       }
       onClose();
     } catch (error: any) {
       console.error("Error saving venue:", error);
-      alert(`Failed to save: ${error.message || 'Unknown error. check console.'}`);
+      alert(t('venues.alert_save_failed', { error: error.message || 'Unknown error. check console.' }));
     } finally {
       setSaving(false);
     }
@@ -230,14 +232,14 @@ export default function ManageEntry({ isOpen, onClose, isLoaded, initialData, mo
               <span className="material-symbols-rounded text-[#161D1E]">close</span>
             </button>
             <h1 className="font-headline text-[13px] font-black text-[#2D3435] uppercase tracking-widest">
-              {mode === 'geo' ? 'Geo Tuning' : initialData ? 'Edit Venue' : 'Register Venue'}
+              {mode === 'geo' ? t('venues.geo_tuning') : initialData ? t('venues.edit_venue') : t('venues.register_venue')}
             </h1>
             <button 
               onClick={handleSubmit} 
               disabled={saving} 
               className="px-5 py-2 bg-[#005BC0] text-white font-black rounded-xl active:scale-95 transition-all text-[11px] uppercase tracking-widest disabled:opacity-50"
             >
-              {saving ? 'WAIT' : 'SAVE'}
+              {saving ? t('venues.wait') : t('venues.save')}
             </button>
           </header>
 
@@ -247,15 +249,15 @@ export default function ManageEntry({ isOpen, onClose, isLoaded, initialData, mo
             {/* Identity */}
             {mode === 'edit' && (
               <section className="mb-10">
-                <h2 className="font-headline text-[13px] font-black text-[#2D3435] uppercase tracking-[0.15em] mb-6">Identity</h2>
+                <h2 className="font-headline text-[13px] font-black text-[#2D3435] uppercase tracking-[0.15em] mb-6">{t('venues.identity')}</h2>
                 <div className="space-y-5">
                   <div className="group">
-                    <label className="block text-[10px] font-bold text-[#596061] mb-2 tracking-widest uppercase">Place Name (Required)</label>
-                    <input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="e.g. Blue Horizon Studio" className="w-full bg-[#e8eff0] border-none rounded-xl px-5 py-4 text-[#2D3435] font-bold focus:bg-white focus:ring-2 focus:ring-[#005BC0]/20 transition-all placeholder:text-[#596061]/30 text-[15px]"/>
+                    <label className="block text-[10px] font-bold text-[#596061] mb-2 tracking-widest uppercase">{t('venues.place_name_required')}</label>
+                    <input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder={t('venues.place_name_placeholder')} className="w-full bg-[#e8eff0] border-none rounded-xl px-5 py-4 text-[#2D3435] font-bold focus:bg-white focus:ring-2 focus:ring-[#005BC0]/20 transition-all placeholder:text-[#596061]/30 text-[15px]"/>
                   </div>
                   <div className="group">
-                    <label className="block text-[10px] font-bold text-[#596061] mb-2 tracking-widest uppercase">Korean Name (Optional)</label>
-                    <input type="text" value={formData.nameKo} onChange={(e) => setFormData({...formData, nameKo: e.target.value})} placeholder="e.g. Blue Horizon Studio" className="w-full bg-[#e8eff0] border-none rounded-xl px-5 py-4 text-[#2D3435] font-bold focus:bg-white focus:ring-2 focus:ring-[#005BC0]/20 transition-all placeholder:text-[#596061]/30 text-[15px]"/>
+                    <label className="block text-[10px] font-bold text-[#596061] mb-2 tracking-widest uppercase">{t('venues.korean_name_optional')}</label>
+                    <input type="text" value={formData.nameKo} onChange={(e) => setFormData({...formData, nameKo: e.target.value})} placeholder={t('venues.korean_name_placeholder')} className="w-full bg-[#e8eff0] border-none rounded-xl px-5 py-4 text-[#2D3435] font-bold focus:bg-white focus:ring-2 focus:ring-[#005BC0]/20 transition-all placeholder:text-[#596061]/30 text-[15px]"/>
                   </div>
                 </div>
               </section>
@@ -265,14 +267,14 @@ export default function ManageEntry({ isOpen, onClose, isLoaded, initialData, mo
             {mode === 'edit' && (
               <section className="mb-10">
                 <div className="flex justify-between items-center mb-6">
-                  <h2 className="font-headline text-[13px] font-black text-[#2D3435] uppercase tracking-[0.15em]">Category</h2>
-                  <span className="text-[10px] font-bold text-[#005BC0] uppercase tracking-widest bg-[#005BC0]/5 px-3 py-1 rounded-full">Multi-selection Enabled</span>
+                  <h2 className="font-headline text-[13px] font-black text-[#2D3435] uppercase tracking-[0.15em]">{t('venues.category')}</h2>
+                  <span className="text-[10px] font-bold text-[#005BC0] uppercase tracking-widest bg-[#005BC0]/5 px-3 py-1 rounded-full">{t('venues.multi_selection_enabled')}</span>
                 </div>
                 <div className="grid grid-cols-3 gap-2.5">
                   {categoriesList.map((cat) => (
                     <button key={cat.id} type="button" onClick={() => toggleCategory(cat.id)} className={`flex flex-col items-center justify-center p-4 rounded-xl transition-all ${formData.categories.includes(cat.id) ? 'bg-[#005BC0] text-white shadow-lg scale-105 z-10' : 'bg-[#eef5f6] text-[#596061]'}`}>
                       <span className="material-symbols-rounded text-[20px] mb-2" style={{ fontVariationSettings: formData.categories.includes(cat.id) ? "'FILL' 1" : "'FILL' 0" }}>{cat.icon}</span>
-                      <span className="text-[9px] font-black uppercase tracking-tight">{cat.label}</span>
+                      <span className="text-[9px] font-black uppercase tracking-tight">{t('venues.cat_' + cat.id.toLowerCase())}</span>
                     </button>
                   ))}
                 </div>
@@ -281,7 +283,7 @@ export default function ManageEntry({ isOpen, onClose, isLoaded, initialData, mo
 
             {/* Search */}
             <section className="mb-10">
-              <h2 className="font-headline text-[13px] font-black text-[#2D3435] uppercase tracking-[0.15em] mb-6">Location Search</h2>
+              <h2 className="font-headline text-[13px] font-black text-[#2D3435] uppercase tracking-[0.15em] mb-6">{t('venues.location_search')}</h2>
               <div className="relative mb-5 w-full">
                 {isLoaded ? (
                   <Autocomplete 
@@ -302,7 +304,7 @@ export default function ManageEntry({ isOpen, onClose, isLoaded, initialData, mo
                       value={formData.address}
                       onChange={(e) => setFormData({...formData, address: e.target.value})}
                       onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleManualSearch(); } }}
-                      placeholder="Type address or place name..."
+                      placeholder={t('venues.search_placeholder')}
                       className="w-full bg-[#e8eff0] border-none rounded-2xl pl-12 pr-4 py-4 text-[#2D3435] font-bold focus:bg-white focus:ring-2 focus:ring-[#005BC0]/20 shadow-sm transition-all text-[15px]"
                     />
                   </Autocomplete>
@@ -320,23 +322,23 @@ export default function ManageEntry({ isOpen, onClose, isLoaded, initialData, mo
 
               <div className="bg-[#f4fbfb] rounded-3xl p-2.5 space-y-1.5 border border-[#e8eff0]">
                 <div className="grid grid-cols-2 gap-1.5">
-                  <DetailItem label="LATITUDE" value={formData.latitude.toString()} readOnly={true} />
-                  <DetailItem label="LONGITUDE" value={formData.longitude.toString()} readOnly={true} />
+                  <DetailItem label={t('venues.latitude')} value={formData.latitude.toString()} readOnly={true} />
+                  <DetailItem label={t('venues.longitude')} value={formData.longitude.toString()} readOnly={true} />
                 </div>
-                <DetailItem label="COUNTRY" value={formData.country} readOnly={true} />
-                <DetailItem label="CITY" value={formData.city} readOnly={true} />
-                <DetailItem label="ZONE" value={formData.zone} readOnly={true} />
-                <DetailItem label="STREET ADDR" value={formData.address} readOnly={true} />
+                <DetailItem label={t('venues.country')} value={formData.country} readOnly={true} />
+                <DetailItem label={t('venues.city')} value={formData.city} readOnly={true} />
+                <DetailItem label={t('venues.zone')} value={formData.zone} readOnly={true} />
+                <DetailItem label={t('venues.street_addr')} value={formData.address} readOnly={true} />
                 
                 <div className="flex items-center px-5 py-4 bg-white rounded-2xl shadow-sm border-2 border-[#005BC0]/20">
-                  <label className="w-1/3 text-[9px] font-black text-[#005BC0] uppercase tracking-widest">UNIT / FLOOR</label>
+                  <label className="w-1/3 text-[9px] font-black text-[#005BC0] uppercase tracking-widest">{t('venues.unit_floor')}</label>
                   <input 
                     ref={detailAddressRef}
                     type="text" 
                     value={formData.detailAddress}
                     onChange={(e) => setFormData({...formData, detailAddress: e.target.value})}
                     className="w-2/3 border-none bg-transparent focus:ring-0 text-[#2D3435] font-bold text-[14px] p-0" 
-                    placeholder="Required (e.g. 2F, 201)" 
+                    placeholder={t('venues.unit_floor_placeholder')} 
                   />
                 </div>
               </div>
@@ -346,7 +348,7 @@ export default function ManageEntry({ isOpen, onClose, isLoaded, initialData, mo
             {mode === 'edit' && (
               <section className="mb-0">
                 <div className="flex justify-between items-end mb-6">
-                  <h2 className="font-headline text-[13px] font-black text-[#2D3435] uppercase tracking-[0.15em]">Venue Photos</h2>
+                  <h2 className="font-headline text-[13px] font-black text-[#2D3435] uppercase tracking-[0.15em]">{t('venues.venue_photos')}</h2>
                   <span className="text-[10px] font-black text-[#005BC0] bg-[#005BC0]/5 px-3 py-1 rounded-full uppercase tracking-widest">{formData.images.length} / 20</span>
                 </div>
                 <div className="flex gap-4 overflow-x-auto no-scrollbar pb-6 -mx-6 px-6">

@@ -10,6 +10,7 @@ import { collection, onSnapshot, query, where, getDocs, limit } from 'firebase/f
 import { CITY_COORDINATES, DEFAULT_COORDINATES } from '@/lib/constants/locations';
 import { OverlayView } from '@react-google-maps/api';
 import useSupercluster from 'use-supercluster';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Venue {
   id: string;
@@ -47,6 +48,7 @@ export default function MapComponent({
 }) {
   const { location } = useLocation();
   const { setHeaderShrink } = useNavigation();
+  const { t } = useLanguage();
   const shrinkTimerRef = React.useRef<NodeJS.Timeout | null>(null);
 
   const [map, setMap] = useState<google.maps.Map | null>(null);
@@ -317,7 +319,7 @@ export default function MapComponent({
           map?.setZoom(15);
         },
         () => {
-          alert("Could not find your location.");
+          alert(t('venues.alert_no_location'));
         }
       );
     }
@@ -553,7 +555,9 @@ export default function MapComponent({
                 {categoryIcons[cat]}
               </span>
             )}
-            <span className="mt-[1px]">{cat}</span>
+            <span className="mt-[1px]">
+              {cat === 'All' ? t('venues.cat_all') : t('venues.cat_' + cat.toLowerCase())}
+            </span>
           </button>
         ))}
       </div>
@@ -615,7 +619,7 @@ export default function MapComponent({
                       }}
                       className="flex items-center bg-primary/10 text-primary px-2 py-1 rounded-lg mr-2 whitespace-nowrap cursor-pointer hover:bg-primary/20 transition-colors group shrink-0"
                     >
-                      <span className="text-[11px] font-bold">Brand: {selectedBrand}</span>
+                      <span className="text-[11px] font-bold">{t('venues.brand_label')}: {selectedBrand}</span>
                       <span className="material-symbols-rounded text-sm ml-1 opacity-60 group-hover:opacity-100">close</span>
                     </div>
                   )}
@@ -624,13 +628,13 @@ export default function MapComponent({
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleEnterKey()}
-                    placeholder={selectedBrand === 'All' ? "Search venue.." : ""}
+                    placeholder={selectedBrand === 'All' ? t('venues.search_venue_placeholder') : ""}
                     className="bg-transparent border-none p-0 focus:ring-0 text-sm font-medium text-slate-800 placeholder:text-slate-400 w-full outline-none"
                   />
                 </div>
               ) : (
                 <span className="text-sm text-slate-800 font-bold ml-3 tracking-wide truncate">
-                  {selectedBrand !== 'All' ? `${selectedBrand} : ` : ''}{filteredVenues.length} IN VIEW
+                  {selectedBrand !== 'All' ? `${selectedBrand} : ` : ''}{filteredVenues.length} {t('venues.in_view')}
                 </span>
               )}
             </div>
@@ -676,7 +680,7 @@ export default function MapComponent({
                 exit={{ opacity: 0, height: 0 }}
                 className="bg-white border-t border-slate-50 p-4"
               >
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">Filter by Brand</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">{t('venues.filter_brand')}</p>
                 <div className="flex flex-wrap gap-2">
                   {brands.map(brand => (
                     <button
@@ -729,13 +733,13 @@ export default function MapComponent({
                       </div>
                       <div className="flex flex-col min-w-0 pr-8 justify-center">
                         <span className="text-[10px] font-bold text-primary bg-primary/10 w-fit px-1.5 py-0.5 rounded mb-1 uppercase">
-                          {v.category}
+                          {v.category === 'All' ? t('venues.cat_all') : t('venues.cat_' + v.category.toLowerCase())}
                         </span>
                         <h3 className="text-[17px] font-bold text-on-background truncate leading-tight">
                           {v.nameKo || v.name}
                         </h3>
                         <p className="text-[11px] text-slate-400 truncate mt-0.5 font-medium">
-                          no social today
+                          {t('venues.no_social_today')}
                         </p>
                       </div>
                       
@@ -777,7 +781,7 @@ export default function MapComponent({
                               }}
                               className="w-full px-4 py-2.5 text-left text-xs font-bold text-primary hover:bg-primary/5 border-b border-slate-50 flex items-center justify-between transition-colors"
                             >
-                              <span>Geo tuning</span>
+                              <span>{t('venues.geo_tuning')}</span>
                             <span className="material-symbols-rounded text-[14px]">my_location</span>
                             </button>
                             <button 
@@ -788,7 +792,7 @@ export default function MapComponent({
                               }}
                               className="w-full px-4 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 border-b border-slate-50 transition-colors"
                             >
-                              Edit
+                              {t('venues.edit_venue')}
                             </button>
                             <button 
                               onClick={(e) => {
@@ -798,7 +802,7 @@ export default function MapComponent({
                               }}
                               className="w-full px-4 py-2 text-left text-xs font-bold text-error hover:bg-red-50 transition-colors"
                             >
-                              Delete
+                              {t('venues.delete')}
                             </button>
                           </motion.div>
                         )}
@@ -807,7 +811,7 @@ export default function MapComponent({
                   ))
                 ) : (
                   <div className="flex items-center justify-center w-full h-full text-slate-400 text-xs font-medium">
-                    No venues in this area
+                    {t('venues.no_venues_area')}
                   </div>
                 )}
                 {/* Visual nudge for next card */}
