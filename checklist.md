@@ -14,10 +14,10 @@
 - [x] Replace hardcoded map controls, brand filter panels, and venue list elements (`IN VIEW`, `Filter by Brand`, `Search venue..`, `no social today`, `No venues in this area`) with localized translation calls.
 
 ## 4. Build & Local Verification
-- [ ] Run `npm run build` locally in the workspace to confirm zero TypeScript compilation errors.
-- [ ] Verify that all UI elements render beautifully with zero design deviation.
+- [x] Run `npm run build` locally in the workspace to confirm zero TypeScript compilation errors.
+- [x] Verify that all UI elements render beautifully with zero design deviation.
 
 ## 5. Production Deployment & Live Report
-- [ ] Deploy the validated codebase to Vercel production using `npx -y vercel --prod --yes`.
-- [ ] Capture the deployment ID, exit code, and live URL.
-- [ ] Report the production link to Stony for final testing.
+- [x] Deploy the validated codebase to Vercel production using `npx -y vercel --prod --yes`.
+- [x] Capture the deployment ID, exit code, and live URL.
+- [x] Report the production link to Stony for final testing.
