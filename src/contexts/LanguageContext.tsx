@@ -2775,6 +2775,17 @@ const dictionary: Record<Language, Record<string, string>> = {
     'group.brand.logo_desc': 'Display logo in group shell header',
     'group.brand.toast.logo_success': 'Brand logo uploaded!',
     'group.brand.toast.logo_fail': 'Brand logo upload failed. Please try again.',
+
+    // Group Member Manager & Permissions
+    'group.stats': 'Stats',
+    'group.owner': 'Owner',
+    'group.staff': 'Staff',
+    'group.instructor': 'Instructor',
+    'group.member': 'Member',
+    'group.recent_joined': 'Recent Joined',
+    'group.recent_visit': 'Recent Visit',
+    'group.load_more_members': 'Load More Members',
+    'group.end_of_list': 'End of List',
 },
   KR: {
 
@@ -5526,6 +5537,17 @@ const dictionary: Record<Language, Record<string, string>> = {
     'group.brand.logo_desc': '그룹 헤더에 표시될 로고 이미지',
     'group.brand.toast.logo_success': '브랜드 로고가 업로드되었습니다!',
     'group.brand.toast.logo_fail': '브랜드 로고 업로드에 실패했습니다. 다시 시도해주세요.',
+
+    // Group Member Manager & Permissions
+    'group.stats': '통계',
+    'group.owner': '개설자',
+    'group.staff': '스태프',
+    'group.instructor': '강사',
+    'group.member': '일반회원',
+    'group.recent_joined': '최근 가입순',
+    'group.recent_visit': '최근 방문순',
+    'group.load_more_members': '멤버 더 보기',
+    'group.end_of_list': '목록의 끝입니다.',
 }
 };
 
