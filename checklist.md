@@ -4,4 +4,4 @@
 - [x] 4. 로컬 빌드 테스트 (npm run build) 수행하여 오류 체크
 - [x] 5. Vercel 배포 (npx vercel --prod --yes) 실행 및 최종 리포트
 - [x] 6. GroupAppShell.tsx 내 More 드롭다운 너비 20% 축소 (데스크톱/태블릿 210px, 모바일 190px)
-- [ ] 7. 로컬 빌드 테스트 및 Vercel 배포 완료 후 최종 리포트
+- [x] 7. 로컬 빌드 테스트 및 Vercel 배포 완료 후 최종 리포트
