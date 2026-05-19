@@ -500,12 +500,21 @@ export const groupService = {
   // Add a class
   addClass: async (groupId: string, classData: Partial<GroupClass>) => {
     const classesRef = collection(db, GROUPS_COLLECTION, groupId, 'classes');
-    const docRef = await addDoc(classesRef, {
-      ...classData,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now()
-    });
-    return docRef.id;
+    if (classData.id) {
+      await setDoc(doc(classesRef, classData.id), {
+        ...classData,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now()
+      });
+      return classData.id;
+    } else {
+      const docRef = await addDoc(classesRef, {
+        ...classData,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now()
+      });
+      return docRef.id;
+    }
   },
 
   // Update a class
