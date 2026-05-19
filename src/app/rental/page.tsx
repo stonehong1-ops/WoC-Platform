@@ -306,17 +306,15 @@ function RentalPageContent() {
               <div key={space.id} onClick={() => openDetail(space.id)} className="group cursor-pointer animate-in fade-in slide-in-from-bottom-2 duration-500">
                 <div className="relative aspect-square rounded-xl bg-[#f2f4f4] overflow-hidden mb-3">
                   {(() => {
-                    let firstImage = '';
-                    const imgData = space.images || (space as any).imageUrls || (space as any).image;
-                    
-                    if (Array.isArray(imgData) && imgData.length > 0) {
-                      firstImage = imgData[0];
-                    } else if (typeof imgData === 'string') {
-                      firstImage = imgData;
-                    }
-                    
-                    if (!firstImage || typeof firstImage !== 'string' || firstImage.trim() === '') {
-                      firstImage = (space as any).groupCoverImage || '';
+                    let firstImage = (space as any).groupCoverImage || '';
+
+                    if (!firstImage) {
+                      const imgData = space.images || (space as any).imageUrls || (space as any).image;
+                      if (Array.isArray(imgData) && imgData.length > 0) {
+                        firstImage = imgData[0];
+                      } else if (typeof imgData === 'string') {
+                        firstImage = imgData;
+                      }
                     }
 
                     return (
