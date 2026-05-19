@@ -234,7 +234,7 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
       {/* Top Bar */}
       {!isInline && (
         <header className="sticky top-0 z-50 bg-[#F3F4F6]/80 backdrop-blur-xl border-b border-gray-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between w-full">
+          <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between w-full">
             <div className="flex items-center gap-4">
               <button 
                 onClick={onClose}
@@ -248,7 +248,7 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
         </header>
       )}
 
-      <main className={`max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 ${isInline ? 'py-4' : 'py-8'} flex-1`}>
+      <main className={`max-w-7xl w-full mx-auto px-4 ${isInline ? 'py-4' : 'py-8'} flex-1`}>
         {/* Month Navigation & Visibility */}
         <section className="mb-6 bg-white rounded-[16px] shadow-sm border border-gray-100 overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50/50">
