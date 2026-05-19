@@ -11,6 +11,7 @@ import GroupShellMore from './GroupShellMore';
 import GroupShellFooter from './GroupShellFooter';
 import { FUNCTION_TAB_MAP, ADMIN_FUNCTION_IDS, FIXED_IDS } from '@/constants/groupTabs';
 
+
 type TabType = string;
 
 interface GroupAppShellProps {
@@ -44,6 +45,7 @@ export default function GroupAppShell({
   onColorChange,
   children,
 }: GroupAppShellProps) {
+
   const { t } = useLanguage();
   const paletteVars = usePalette(group.headerThemeColor);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
@@ -122,10 +124,10 @@ export default function GroupAppShell({
       });
     }
 
-    // Nav: Dashboard + coreTabs 상위 5개 = 6슬롯 + 더보기
+    // Nav: Dashboard + coreTabs 상위 4개 = 5슬롯 + 더보기
     const allCoreTabs = [...coreTabs, aboutTab];
-    const navVisible = [dashboardTab, ...allCoreTabs.slice(0, 5)];
-    const moreItems = allCoreTabs.slice(5);
+    const navVisible = [dashboardTab, ...allCoreTabs.slice(0, 4)];
+    const moreItems = allCoreTabs.slice(4);
 
     return {
       navTabs: navVisible,
@@ -135,9 +137,8 @@ export default function GroupAppShell({
   }, [group.selectedFunctions, group.menuOrder, isAdmin]);
 
   const handleMoreTabClick = (tab: TabType) => {
-    if (tab !== 'home' && tab !== 'about' && !isFullMember) return;
-    onTabClick(tab);
     setIsMoreOpen(false);
+    onTabClick(tab);
   };
 
   return (
@@ -148,7 +149,7 @@ export default function GroupAppShell({
           width: 100%;
           max-width: 1280px;
           margin: 0 auto;
-          background: white;
+          background: var(--background);
           position: relative;
         }
 
@@ -161,7 +162,7 @@ export default function GroupAppShell({
           max-width: 1280px;
           margin: 0 auto;
           z-index: 100;
-          background: white;
+          background: var(--background);
         }
 
         /* HEADER */
@@ -323,7 +324,7 @@ export default function GroupAppShell({
           position: absolute;
           top: 100%;
           right: 0;
-          width: 260px;
+          width: 210px;
           margin-top: 8px;
           background: white;
           border-radius: 20px;
@@ -467,7 +468,7 @@ export default function GroupAppShell({
 
           /* More 드롭다운 */
           .group-app-shell .more-dropdown {
-            right: 12px; width: 240px; left: auto;
+            right: 12px; width: 190px; left: auto;
             border-radius: 20px; padding: 12px;
             max-height: 60vh;
           }
@@ -494,7 +495,7 @@ export default function GroupAppShell({
           .group-app-shell .shell-nav { margin: 0 24px; }
           .group-app-shell .nav-item { height: 60px; }
           .group-app-shell .shell-content { padding: 0; }
-          .group-app-shell .more-dropdown { right: 24px; width: 260px; left: auto; }
+          .group-app-shell .more-dropdown { right: 24px; width: 210px; left: auto; }
           .group-app-shell .presence-bar {
             left: 16px; right: 16px; bottom: 16px;
             height: 56px; border-radius: 22px;
