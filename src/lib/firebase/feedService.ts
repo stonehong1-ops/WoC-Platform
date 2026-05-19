@@ -195,10 +195,10 @@ export const feedService = {
           try {
             const { arrayUnion } = await import('firebase/firestore');
             const userRef = doc(db, 'users', userId);
-            await updateDoc(userRef, {
+            await setDoc(userRef, {
               likedPostIds: arrayUnion(postId),
               ...(postAuthorId && postAuthorId !== userId ? { interactedUserIds: arrayUnion(postAuthorId) } : {})
-            });
+            }, { merge: true });
           } catch (e) {
             console.error('Failed to update user interaction data:', e);
           }
@@ -254,10 +254,10 @@ export const feedService = {
         try {
           const { arrayUnion } = await import('firebase/firestore');
           const userRef = doc(db, 'users', commentData.userId);
-          await updateDoc(userRef, {
+          await setDoc(userRef, {
             commentedPostIds: arrayUnion(postId),
             ...(postAuthorId && commentData.userId !== postAuthorId ? { interactedUserIds: arrayUnion(postAuthorId) } : {})
-          });
+          }, { merge: true });
         } catch (e) {
           console.error('Failed to update user interaction data:', e);
         }
@@ -387,11 +387,11 @@ export const feedService = {
   // 핀(Pin) 상태 토글
   togglePinUser: async (userId: string, targetId: string, isPinned: boolean) => {
     try {
-      const { doc, updateDoc, arrayUnion, arrayRemove } = await import('firebase/firestore');
+      const { doc, setDoc, arrayUnion, arrayRemove } = await import('firebase/firestore');
       const userRef = doc(db, 'users', userId);
-      await updateDoc(userRef, {
+      await setDoc(userRef, {
         pinnedUserIds: isPinned ? arrayRemove(targetId) : arrayUnion(targetId)
-      });
+      }, { merge: true });
       return !isPinned;
     } catch (error) {
       console.error("Error toggling pin user:", error);
@@ -402,11 +402,11 @@ export const feedService = {
   // 게시물 핀(Pin Post) 상태 토글
   togglePinPost: async (userId: string, postId: string, isPinned: boolean) => {
     try {
-      const { doc, updateDoc, arrayUnion, arrayRemove } = await import('firebase/firestore');
+      const { doc, setDoc, arrayUnion, arrayRemove } = await import('firebase/firestore');
       const userRef = doc(db, 'users', userId);
-      await updateDoc(userRef, {
+      await setDoc(userRef, {
         pinnedPostIds: isPinned ? arrayRemove(postId) : arrayUnion(postId)
-      });
+      }, { merge: true });
       return !isPinned;
     } catch (error) {
       console.error("Error toggling pin post:", error);

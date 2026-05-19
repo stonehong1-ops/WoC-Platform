@@ -81,8 +81,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // [Link Logic] 사전 등록된 데이터가 있는지 확인 (전화번호 기준)
         const userDocRef = doc(db, 'users', firebaseUser.uid);
         
+        let userSnap: any = null;
         try {
-          const userSnap = await getDoc(userDocRef);
+          userSnap = await getDoc(userDocRef);
           
           if (!userSnap.exists()) {
             // 처음 로그인하는 사용자라면 전화번호 기반 데이터 검색
@@ -131,9 +132,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // Update last visited time
         try {
-          await updateDoc(userDocRef, { lastVisitedAt: serverTimestamp() });
+          const userDocExists = userSnap && userSnap.exists();
+          const existingData = userDocExists ? userSnap.data() : null;
+          
+          await setDoc(userDocRef, { 
+            lastVisitedAt: serverTimestamp(),
+            pinnedPostIds: existingData?.pinnedPostIds ?? [],
+            interactedUserIds: existingData?.interactedUserIds ?? [],
+            pinnedUserIds: existingData?.pinnedUserIds ?? []
+          }, { merge: true });
         } catch (error) {
-          console.log('User document might not exist yet for lastVisitedAt update');
+          console.error('Failed to init/update user document:', error);
         }
 
         // 실시간 프로필 감시 시작
@@ -172,6 +181,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               photoURL: firebaseUser.photoURL,
               phoneNumber: firebaseUser.phoneNumber || '',
               isRegistered: false,
+              pinnedPostIds: [],
+              interactedUserIds: [],
+              pinnedUserIds: [],
             });
           }
           setLoading(false);
