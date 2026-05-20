@@ -31,9 +31,56 @@ interface UnifiedCheckoutModalProps {
   
   // Action for Step 3
   onComplete?: () => void;
+
+  // Existing booking pre-fill for Step 2 direct entry
+  initialStep?: Step;
+  initialBookingId?: string;
+  initialOrderNumber?: string;
+  initialCreatedAt?: any;
 }
 
 const fmt = (n: number) => n.toLocaleString();
+
+const getCreatedAtMs = (createdAt: any): number => {
+  if (!createdAt) return Date.now();
+  if (typeof createdAt.toDate === 'function') {
+    return createdAt.toDate().getTime();
+  }
+  if (createdAt.seconds) {
+    return createdAt.seconds * 1000;
+  }
+  if (typeof createdAt === 'number') {
+    return createdAt;
+  }
+  if (createdAt instanceof Date) {
+    return createdAt.getTime();
+  }
+  try {
+    return new Date(createdAt).getTime();
+  } catch (e) {
+    return Date.now();
+  }
+};
+
+const formatAppliedTime = (createdAt: any, isKorean: boolean) => {
+  const ms = getCreatedAtMs(createdAt);
+  const date = new Date(ms);
+  if (isKorean) {
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const hours = date.getHours();
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${month}월 ${day}일 ${hours}:${minutes}분`;
+  } else {
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+  }
+};
 
 export default function UnifiedCheckoutModal({
   isOpen,
@@ -48,14 +95,19 @@ export default function UnifiedCheckoutModal({
   buttonText = 'Book Now',
   bankDetails,
   onReportPayment,
-  onComplete
+  onComplete,
+  initialStep,
+  initialBookingId,
+  initialOrderNumber,
+  initialCreatedAt
 }: UnifiedCheckoutModalProps) {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   
   const [step, setStep] = useState<Step>('summary');
   const [localProcessing, setLocalProcessing] = useState(false);
-  const [orderId, setOrderId] = useState<string>('');
+  const [bookingId, setBookingId] = useState<string>('');
+  const [displayOrderNumber, setDisplayOrderNumber] = useState<string>('');
   const [countdown, setCountdown] = useState(3600); // 60 min
   const [copied, setCopied] = useState('');
 
@@ -63,14 +115,28 @@ export default function UnifiedCheckoutModal({
 
   // Reset state when modal opens/closes
   useEffect(() => {
-    if (!isOpen) {
+    if (isOpen) {
+      if (initialStep) setStep(initialStep);
+      if (initialBookingId) setBookingId(initialBookingId);
+      if (initialOrderNumber) setDisplayOrderNumber(initialOrderNumber);
+      
+      if (initialCreatedAt) {
+        const createdAtMs = getCreatedAtMs(initialCreatedAt);
+        const elapsedSeconds = Math.floor((Date.now() - createdAtMs) / 1000);
+        const remainingSeconds = Math.max(0, 3600 - elapsedSeconds);
+        setCountdown(remainingSeconds);
+      } else {
+        setCountdown(3600);
+      }
+    } else {
       setTimeout(() => {
         setStep('summary');
-        setOrderId('');
+        setBookingId('');
+        setDisplayOrderNumber('');
         setCountdown(3600);
       }, 300); // delay to prevent UI flicker
     }
-  }, [isOpen]);
+  }, [isOpen, initialStep, initialBookingId, initialOrderNumber, initialCreatedAt]);
 
   // Countdown timer for payment step
   useEffect(() => {
@@ -95,10 +161,19 @@ export default function UnifiedCheckoutModal({
     try {
       const result = await onCheckout();
       if (result) {
-        setOrderId(result);
+        if (result.includes('|')) {
+          const [bId, oNum] = result.split('|');
+          setBookingId(bId);
+          setDisplayOrderNumber(oNum);
+        } else {
+          setBookingId(result);
+          setDisplayOrderNumber(result);
+        }
       } else {
         // Fallback for order ID if not returned, just use timestamp for display
-        setOrderId(`ORD-${Date.now().toString().slice(-6)}`);
+        const fallback = `ORD-${Date.now().toString().slice(-6)}`;
+        setBookingId(fallback);
+        setDisplayOrderNumber(fallback);
       }
       setStep('payment');
     } catch (err) {
@@ -112,7 +187,7 @@ export default function UnifiedCheckoutModal({
     setLocalProcessing(true);
     try {
       if (onReportPayment) {
-        await onReportPayment(orderId);
+        await onReportPayment(bookingId);
       }
       setStep('complete');
     } catch (err) {
@@ -193,9 +268,25 @@ export default function UnifiedCheckoutModal({
               <span className="material-symbols-outlined text-lg text-orange-500">timer</span>
               <span className="text-2xl font-black text-orange-600 dark:text-orange-400 font-mono tracking-wider">{mm}:{ss}</span>
             </div>
-            <p className="text-xs text-[#596061] dark:text-neutral-400 mt-2">
-              {t('shop.transfer_within_1h', 'Please transfer within 1 hour.')}<br/>
-              <span className="text-[#acb3b4] dark:text-neutral-500">{t('shop.order_expire_notice', 'Order may expire if not paid in time.')}</span>
+            <p className="text-xs text-[#596061] dark:text-neutral-400 mt-2 leading-relaxed">
+              {countdown === 0 ? (
+                language === 'KR' ? (
+                  <>
+                    <span className="font-bold text-orange-600">{formatAppliedTime(initialCreatedAt, true)}</span>에 신청하셨습니다.<br/>
+                    입금 후 <span className="font-bold text-[#0057bd]">송금을 완료했습니다</span> 버튼을 클릭해주십시오.
+                  </>
+                ) : (
+                  <>
+                    Requested on <span className="font-bold text-orange-600">{formatAppliedTime(initialCreatedAt, false)}</span>.<br/>
+                    Please click the <span className="font-bold text-[#0057bd]">I've Transferred</span> button after payment.
+                  </>
+                )
+              ) : (
+                <>
+                  {t('shop.transfer_within_1h', 'Please transfer within 1 hour.')}<br/>
+                  <span className="text-[#acb3b4] dark:text-neutral-500">{t('shop.order_expire_notice', 'Order may expire if not paid in time.')}</span>
+                </>
+              )}
             </p>
           </div>
 
@@ -203,11 +294,7 @@ export default function UnifiedCheckoutModal({
           <div className="bg-[#f8f9fa] dark:bg-neutral-800 rounded-2xl p-4 border border-[#e0e4e5] dark:border-neutral-700">
             <p className="text-[10px] font-bold text-[#acb3b4] dark:text-neutral-500 uppercase tracking-widest mb-1">{t('shop.order_number', 'Order Number')}</p>
             <div className="flex items-center justify-between">
-              <p className="text-base font-black text-[#2d3435] dark:text-white font-mono">{orderId}</p>
-              <button onClick={() => copyToClipboard(orderId, 'order')}
-                className={`text-[10px] font-bold px-3 py-1.5 rounded-full transition-colors ${copied === 'order' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400' : 'bg-[#e8eaec] text-[#596061] dark:bg-neutral-700 dark:text-neutral-300'}`}>
-                {copied === 'order' ? t('shop.copied', '✓ Copied') : t('shop.copy', 'Copy')}
-              </button>
+              <p className="text-base font-black text-[#2d3435] dark:text-white font-mono">{displayOrderNumber}</p>
             </div>
           </div>
 
@@ -243,21 +330,10 @@ export default function UnifiedCheckoutModal({
                   <p className="text-[10px] text-[#0057bd] dark:text-blue-400 uppercase font-bold">{t('shop.transfer_amount', 'Transfer Amount')}</p>
                   <p className="text-xl font-black text-[#0057bd] dark:text-blue-400">{sym}{fmt(totalAmount)}</p>
                 </div>
-                <button onClick={() => copyToClipboard(String(totalAmount), 'amount')}
-                  className={`text-[10px] font-bold px-3 py-1.5 rounded-full transition-colors ${copied === 'amount' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400' : 'bg-[#0057bd] text-white'}`}>
-                  {copied === 'amount' ? t('shop.copied', '✓ Copied') : t('shop.copy', 'Copy')}
-                </button>
               </div>
             </div>
           </div>
 
-          {/* Warning */}
-          <div className="flex gap-2 p-3 bg-[#fef2f2] dark:bg-red-950/30 rounded-xl border border-red-100 dark:border-red-900/50">
-            <span className="material-symbols-outlined text-sm text-red-400 flex-shrink-0 mt-0.5">warning</span>
-            <p className="text-[11px] text-red-600 dark:text-red-400 leading-relaxed">
-              {t('shop.payment_warning', 'If payment is not completed within 1 hour, the order will be automatically cancelled.')}
-            </p>
-          </div>
         </div>
       </BottomSheet>
     );
@@ -290,7 +366,7 @@ export default function UnifiedCheckoutModal({
           {t('shop.order_placed', 'Request Completed!')}
         </h2>
         <p className="text-sm text-[#596061] dark:text-neutral-400 text-center leading-relaxed mb-4">
-          Order <span className="font-mono font-bold text-[#2d3435] dark:text-white">{orderId}</span> has been reported.
+          Order <span className="font-mono font-bold text-[#2d3435] dark:text-white">{displayOrderNumber}</span> has been reported.
         </p>
         <p className="text-xs text-[#acb3b4] dark:text-neutral-500 text-center leading-relaxed">
           {t('shop.order_placed_desc2', "You'll receive a notification when the seller confirms your payment.")}

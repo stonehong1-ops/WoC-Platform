@@ -17,11 +17,15 @@ import { useBookingEngine } from '@/hooks/useBookingEngine';
 import UnifiedCheckoutModal from '@/components/common/UnifiedCheckoutModal';
 import Portal from '@/components/common/Portal';
 import GroupClassAddEditor from '@/components/groups/GroupClassAddEditor';
+import BottomSheet from '@/components/common/BottomSheet';
+import { bookingService } from '@/lib/firebase/bookingService';
+import { BaseBooking } from '@/types/booking';
+
 
 export default function ClassPortal() {
   const router = useRouter();
   const { setSubHeader } = useNavigation();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   
   const [activeTab, setActiveTab] = useState<'TODAY' | 'WEEK' | 'MONTH' | 'SPECIAL'>('TODAY');
   const [loading, setLoading] = useState(true);
@@ -29,10 +33,13 @@ export default function ClassPortal() {
   const [venues, setVenues] = useState<Venue[]>([]);
   const [allClasses, setAllClasses] = useState<any[]>([]);
   const [specialClasses, setSpecialClasses] = useState<any[]>([]);
+  const [allPasses, setAllPasses] = useState<any[]>([]);
+  const [allDiscountsGlobal, setAllDiscountsGlobal] = useState<any[]>([]);
   
   const { user, profile } = useAuth();
   
   const [weekOffset, setWeekOffset] = useState(0);
+  const [monthOffset, setMonthOffset] = useState(0);
 
   const [showOrganizerFilter, setShowOrganizerFilter] = useState(false);
   const [showClubFilter, setShowClubFilter] = useState(false);
@@ -59,21 +66,42 @@ export default function ClassPortal() {
   
   const { openModal: openClassDetail } = useModalNavigation('modal');
 
+  const [userBookings, setUserBookings] = useState<BaseBooking[]>([]);
+  const [checkoutInitialStep, setCheckoutInitialStep] = useState<'summary' | 'payment' | 'complete' | undefined>(undefined);
+  const [checkoutInitialBookingId, setCheckoutInitialBookingId] = useState<string | undefined>(undefined);
+  const [checkoutInitialOrderNumber, setCheckoutInitialOrderNumber] = useState<string | undefined>(undefined);
+  const [checkoutInitialCreatedAt, setCheckoutInitialCreatedAt] = useState<any>(undefined);
+
+  useEffect(() => {
+    if (!user) {
+      setUserBookings([]);
+      return;
+    }
+    const unsub = bookingService.subscribeToUserBookings(user.uid, (bookings) => {
+      setUserBookings(bookings);
+    });
+    return () => unsub();
+  }, [user]);
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [groupsData, allData, specialData, venuesData] = await Promise.all([
+        const [groupsData, allData, specialData, venuesData, passesData, discountsData] = await Promise.all([
           groupService.getGroups(),
           groupService.getGlobalClassesAll(),
           groupService.getGlobalSpecialClasses(),
-          venueService.getVenues()
+          venueService.getVenues(),
+          groupService.getGlobalMonthlyPassesAll(),
+          groupService.getGlobalDiscountsAll()
         ]);
         
         setGroups(groupsData);
         setAllClasses(allData);
         setSpecialClasses(specialData);
         setVenues(venuesData || []);
+        setAllPasses(passesData);
+        setAllDiscountsGlobal(discountsData);
       } catch (error) {
         console.error("Failed to fetch class portal data:", error);
       } finally {
@@ -194,10 +222,10 @@ export default function ClassPortal() {
       <div className="relative w-full bg-white flex flex-col shadow-[0_20px_40px_-15px_rgba(0,0,0,0.15)] z-30">
         <div className="w-full px-3 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
           {[
-            { id: 'TODAY', label: 'TODAY' },
-            { id: 'WEEK', label: 'WEEK' },
-            { id: 'MONTH', label: 'MONTH' },
-            { id: 'SPECIAL', label: 'SPECIAL' }
+            { id: 'TODAY', label: t('class.tab_today') },
+            { id: 'WEEK', label: t('class.tab_week') },
+            { id: 'MONTH', label: t('class.tab_month') },
+            { id: 'SPECIAL', label: t('class.tab_special') }
           ].map((tab) => (
             <button
               key={tab.id}
@@ -220,21 +248,21 @@ export default function ClassPortal() {
                 onClick={() => { setShowOrganizerFilter(!showOrganizerFilter); if (!showOrganizerFilter) setShowClubFilter(false); }}
                 className={`flex items-center gap-0.5 text-[12px] font-bold transition-all ${selectedOrganizer !== 'All' ? 'text-blue-600' : 'text-slate-600 hover:text-slate-800'}`}
               >
-                {selectedOrganizer === 'All' ? 'Instructor' : selectedOrganizer}
+                {selectedOrganizer === 'All' ? t('class.filter_instructor') : selectedOrganizer}
                 <span className={`material-symbols-outlined text-[16px] transition-transform ${showOrganizerFilter ? 'rotate-180' : ''}`}>expand_more</span>
               </button>
               <button
                 onClick={() => { setShowClubFilter(!showClubFilter); if (!showClubFilter) setShowOrganizerFilter(false); }}
                 className={`flex items-center gap-0.5 text-[12px] font-bold transition-all ${selectedClub !== 'All' ? 'text-blue-600' : 'text-slate-600 hover:text-slate-800'}`}
               >
-                {selectedClub === 'All' ? 'Club' : selectedClub}
+                {selectedClub === 'All' ? t('class.filter_club') : selectedClub}
                 <span className={`material-symbols-outlined text-[16px] transition-transform ${showClubFilter ? 'rotate-180' : ''}`}>expand_more</span>
               </button>
             </div>
             {showOrganizerFilter && (
               <div className="absolute top-full left-0 right-0 z-40 bg-white shadow-2xl border-t border-slate-100 p-4 max-h-[280px] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-300">
                 <div className="flex items-center justify-between mb-4 px-1">
-                  <span className="text-[14px] font-black text-slate-800 uppercase tracking-tight">Filter by Instructor</span>
+                  <span className="text-[14px] font-black text-slate-800 uppercase tracking-tight">{t('class.filter_by_instructor')}</span>
                   <button onClick={() => setShowOrganizerFilter(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:text-slate-600 active:scale-90 transition-all">
                     <span className="material-symbols-outlined text-[18px]">close</span>
                   </button>
@@ -252,7 +280,7 @@ export default function ClassPortal() {
             {showClubFilter && (
               <div className="absolute top-full left-0 right-0 z-40 bg-white shadow-2xl border-t border-slate-100 p-4 max-h-[280px] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-300">
                 <div className="flex items-center justify-between mb-4 px-1">
-                  <span className="text-[14px] font-black text-slate-800 uppercase tracking-tight">Filter by Club</span>
+                  <span className="text-[14px] font-black text-slate-800 uppercase tracking-tight">{t('class.filter_by_club')}</span>
                   <button onClick={() => setShowClubFilter(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:text-slate-600 active:scale-90 transition-all">
                     <span className="material-symbols-outlined text-[18px]">close</span>
                   </button>
@@ -277,8 +305,7 @@ export default function ClassPortal() {
   }, [activeTab, selectedOrganizer, selectedClub, showOrganizerFilter, showClubFilter, organizers, clubs, setSubHeader]);
 
   const handleClassClick = (cls: any) => {
-    // Navigate to group-specific class page with class ID in query for detail
-    router.push(`/class/${cls.groupId}?modal=${cls.id}`);
+    router.push(`/class/${cls.groupId}?modal=${cls.id}&from=portal`);
   };
 
   const handleGroupClick = (group: Group) => {
@@ -343,10 +370,10 @@ export default function ClassPortal() {
     });
 
     const blocks = [
-      { label: 'Morning', time: '06:00 - 11:59', icon: 'routine', classes: [] as any[] },
-      { label: 'Afternoon', time: '12:00 - 17:59', icon: 'light_mode', classes: [] as any[] },
-      { label: 'Evening', time: '18:00 - 20:59', icon: 'wb_twilight', classes: [] as any[] },
-      { label: 'Night', time: '21:00 -', icon: 'clear_night', classes: [] as any[] }
+      { label: t('class.time_morning'), time: '06:00 - 11:59', icon: 'routine', classes: [] as any[] },
+      { label: t('class.time_afternoon'), time: '12:00 - 17:59', icon: 'light_mode', classes: [] as any[] },
+      { label: t('class.time_evening'), time: '18:00 - 20:59', icon: 'wb_twilight', classes: [] as any[] },
+      { label: t('class.time_night'), time: '21:00 -', icon: 'clear_night', classes: [] as any[] }
     ];
 
     classes.forEach(cls => {
@@ -395,19 +422,154 @@ export default function ClassPortal() {
     setIsAddingSpecialClass(true);
   };
 
-  const handleCheckoutClick = (cls: any) => {
-    setCheckoutClass(cls);
+  const handleCheckoutClick = (cls: any, isSpecial: boolean = false) => {
+    let group = cls.group;
+    if (!group && cls.groupId) {
+      group = groups.find(g => g.id === cls.groupId);
+    }
+    setCheckoutClass({ ...cls, group, isSpecial });
     setCheckoutRole('leader'); // Default role
     setCheckoutModalOpen(true);
+  };
+
+  const getActiveBooking = (itemId: string) => {
+    if (!user || !userBookings) return null;
+    return userBookings.find(b => 
+      b.itemId === itemId && 
+      ['SUBMITTED', 'BANK_TRANSFERRED', 'SELLER_CONFIRMED'].includes(b.status)
+    );
+  };
+
+  const handleExistingCheckoutClick = (cls: any, booking: BaseBooking, isSpecial: boolean = false) => {
+    let group = cls.group;
+    if (!group && cls.groupId) {
+      group = groups.find(g => g.id === cls.groupId);
+    }
+    setCheckoutClass({ ...cls, group, isSpecial });
+    setCheckoutRole((booking.payload?.role as 'leader' | 'follower') || 'leader');
+    setCheckoutInitialStep('payment');
+    setCheckoutInitialBookingId(booking.id);
+    setCheckoutInitialOrderNumber((booking as any).orderNumber || booking.id);
+    setCheckoutInitialCreatedAt(booking.createdAt);
+    setCheckoutModalOpen(true);
+  };
+
+  const handleChatWithHost = (hostId: string) => {
+    if (!hostId) return;
+    router.push(`/chat/${hostId}`);
+  };
+
+  const renderBookingStatusArea = (cls: any, isPast: boolean, isSpecial: boolean = false) => {
+    const booking = getActiveBooking(cls.id);
+    
+    if (booking) {
+      if (booking.status === 'SUBMITTED') {
+        return (
+          <div className={`${isSpecial ? 'flex items-end justify-between w-full' : 'px-4 py-3 bg-slate-50/80 border-t border-slate-100 flex items-center justify-between'}`}>
+            <div className="flex flex-col">
+              <span className={`text-[10px] font-bold uppercase tracking-widest leading-none mb-1 ${isSpecial ? 'text-white/60' : 'text-slate-400'}`}>
+                {isSpecial ? t('class.registration_fee') : t('class.daily_pass')}
+              </span>
+              <span className={`text-[14px] font-black leading-none ${isSpecial ? 'text-amber-400 text-lg' : 'text-amber-600'}`}>
+                {language === 'KR' ? '입금대기중...' : 'Pending Deposit...'}
+              </span>
+            </div>
+            <button 
+              onClick={(e) => { e.stopPropagation(); handleExistingCheckoutClick(cls, booking, isSpecial); }}
+              className={`flex items-center gap-1 text-[13px] font-black px-5 py-2.5 rounded-full shadow-md active:scale-95 transition-all bg-[#0057bd] text-white`}
+            >
+              {language === 'KR' ? '입금완료' : 'Payment Completed'}
+            </button>
+          </div>
+        );
+      }
+      
+      if (booking.status === 'BANK_TRANSFERRED') {
+        const hostId = cls.group?.ownerId || '';
+        return (
+          <div className={`${isSpecial ? 'flex items-end justify-between w-full' : 'px-4 py-3 bg-slate-50/80 border-t border-slate-100 flex items-center justify-between'}`}>
+            <div className="flex flex-col">
+              <span className={`text-[10px] font-bold uppercase tracking-widest leading-none mb-1 ${isSpecial ? 'text-white/60' : 'text-slate-400'}`}>
+                {isSpecial ? t('class.registration_fee') : t('class.daily_pass')}
+              </span>
+              <span className={`text-[14px] font-black leading-none ${isSpecial ? 'text-blue-400 text-lg' : 'text-blue-600'}`}>
+                {language === 'KR' ? '승인대기중...' : 'Pending Approval...'}
+              </span>
+            </div>
+            <button 
+              onClick={(e) => { e.stopPropagation(); handleChatWithHost(hostId); }}
+              className={`flex items-center gap-1 text-[13px] font-black px-5 py-2.5 rounded-full shadow-md active:scale-95 transition-all bg-emerald-600 text-white`}
+            >
+              {language === 'KR' ? '관리자와 채팅' : 'Chat with Host'}
+            </button>
+          </div>
+        );
+      }
+      
+      if (booking.status === 'SELLER_CONFIRMED') {
+        return (
+          <div className={`${isSpecial ? 'flex items-end justify-between w-full' : 'px-4 py-3 bg-slate-50/80 border-t border-slate-100 flex items-center justify-between'}`}>
+            <div className="flex flex-col">
+              <span className={`text-[10px] font-bold uppercase tracking-widest leading-none mb-1 ${isSpecial ? 'text-white/60' : 'text-slate-400'}`}>
+                {isSpecial ? t('class.registration_fee') : t('class.daily_pass')}
+              </span>
+              <span className={`text-[14px] font-black leading-none ${isSpecial ? 'text-emerald-400 text-lg' : 'text-emerald-600'}`}>
+                {language === 'KR' ? '신청완료' : 'Completed'}
+              </span>
+            </div>
+          </div>
+        );
+      }
+    }
+    
+    if (isSpecial) {
+      return (
+        <div className="flex items-end justify-between">
+          <div className="flex flex-col gap-1">
+            <p className="text-white/60 text-[10px] font-black tracking-widest uppercase">{t('class.registration_fee')}</p>
+            <p className="text-2xl font-black">{cls.amount?.toLocaleString()} <span className="text-sm">{cls.currency || 'KRW'}</span></p>
+          </div>
+          <button 
+            onClick={(e) => { e.stopPropagation(); handleCheckoutClick({ ...cls, group: cls.group }, true); }}
+            className="bg-white text-[#2d3435] px-8 py-3.5 rounded-full text-sm font-black shadow-xl active:scale-95 transition-all"
+          >
+            {t('class.reserve')}
+          </button>
+        </div>
+      );
+    } else {
+      return (
+        <div className="px-4 py-3 bg-slate-50/80 border-t border-slate-100 flex items-center justify-between">
+          <div className="flex flex-col">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">{t('class.daily_pass')}</span>
+            <span className="text-[14px] font-black text-slate-800 leading-none">
+              ₩{(cls.dailyClassPrice || Math.floor((cls.price || 0) / 3) + 5000).toLocaleString()}
+            </span>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={(e) => { e.stopPropagation(); handleCheckoutClick(cls, false); }}
+              className={`flex items-center gap-1 text-[13px] font-black px-5 py-2 rounded-full shadow-sm transition-all ${isPast ? 'bg-slate-200 text-slate-500' : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-md active:scale-95'}`}
+              disabled={isPast}
+            >
+              {isPast ? t('class.closed') : t('class.book_now')}
+            </button>
+          </div>
+        </div>
+      );
+    }
   };
 
   const handleCheckoutSubmit = async () => {
     if (!checkoutClass) return;
     try {
-      const price = checkoutClass.amount || checkoutClass.dailyClassPrice || Math.floor((checkoutClass.price || 0) / 4) + 5000;
+      const price = checkoutClass.isSpecial 
+        ? (checkoutClass.amount || checkoutClass.price) 
+        : (checkoutClass.dailyClassPrice || Math.floor((checkoutClass.price || 0) / 3) + 5000);
       const orderId = await createBooking({
-        domain: checkoutClass.amount ? 'class_special' : 'class_daily',
-        itemName: checkoutClass.title + (checkoutClass.amount ? ' (Special)' : ' (Daily)'),
+        domain: checkoutClass.isSpecial ? 'class_special' : 'class_daily',
+        itemName: checkoutClass.title + (checkoutClass.isSpecial ? ' (Special)' : ' (Daily)'),
         itemImageUrl: checkoutClass.imageUrl || checkoutClass.group?.coverImage || '',
         itemId: checkoutClass.id,
         hostId: checkoutClass.group?.ownerId || '',
@@ -491,7 +653,7 @@ export default function ClassPortal() {
                                     setEditingClass(cls);
                                     setTempIsDailyBookingOpen(!!cls.isDailyBookingOpen);
                                     setTempInstructorComment(cls.instructorComment || '');
-                                    setTempDailyClassPrice(cls.dailyClassPrice || Math.floor((cls.price || 0) / 4) + 5000);
+                                    setTempDailyClassPrice(cls.dailyClassPrice || Math.floor((cls.price || 0) / 3) + 5000);
                                     setCapacityModalOpen(true);
                                   }}
                                   className="shrink-0 flex items-center justify-center w-7 h-7 rounded-full bg-slate-50 text-slate-400 hover:text-slate-600 hover:bg-slate-100 border border-slate-100 transition-colors"
@@ -519,26 +681,7 @@ export default function ClassPortal() {
                         )}
                       </div>
 
-                      {cls.isDailyBookingOpen && (
-                        <div className="px-4 py-3 bg-slate-50/80 border-t border-slate-100 flex items-center justify-between">
-                          <div className="flex flex-col">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Daily Pass</span>
-                            <span className="text-[14px] font-black text-slate-800 leading-none">
-                              ₩{(cls.dailyClassPrice || Math.floor((cls.price || 0) / 4) + 5000).toLocaleString()}
-                            </span>
-                          </div>
-                          
-                          <div className="flex items-center gap-2">
-                            <button 
-                              onClick={(e) => { e.stopPropagation(); handleCheckoutClick(cls); }}
-                              className={`flex items-center gap-1 text-[13px] font-black px-5 py-2 rounded-full shadow-sm transition-all ${isPast ? 'bg-slate-200 text-slate-500' : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-md active:scale-95'}`}
-                              disabled={isPast}
-                            >
-                              {isPast ? 'Closed' : 'Book Now'}
-                            </button>
-                          </div>
-                        </div>
-                      )}
+                      {cls.isDailyBookingOpen && renderBookingStatusArea(cls, isPast, false)}
 
                     </div>
                   );
@@ -570,7 +713,7 @@ export default function ClassPortal() {
             <span className="material-symbols-outlined text-[18px]">chevron_left</span>
           </button>
           <span className="text-[11px] font-black text-slate-700 uppercase tracking-widest min-w-[60px] text-center">
-            {weekOffset === 0 ? 'THIS WEEK' : weekOffset === 1 ? 'NEXT WEEK' : weekOffset === -1 ? 'LAST WEEK' : `${weekOffset > 0 ? '+' : ''}${weekOffset} WEEKS`}
+            {weekOffset === 0 ? t('class.this_week') : weekOffset === 1 ? t('class.next_week') : weekOffset === -1 ? t('class.last_week') : `${weekOffset > 0 ? '+' : ''}${weekOffset} ${t('class.weeks')}`}
           </span>
           <button onClick={() => setWeekOffset(prev => prev + 1)} className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-slate-200 active:scale-90 transition-all text-slate-500">
             <span className="material-symbols-outlined text-[18px]">chevron_right</span>
@@ -662,7 +805,7 @@ export default function ClassPortal() {
                                     setEditingClass(cls);
                                     setTempIsDailyBookingOpen(!!cls.isDailyBookingOpen);
                                     setTempInstructorComment(cls.instructorComment || '');
-                                    setTempDailyClassPrice(cls.dailyClassPrice || Math.floor((cls.price || 0) / 4) + 5000);
+                                    setTempDailyClassPrice(cls.dailyClassPrice || Math.floor((cls.price || 0) / 3) + 5000);
                                     setCapacityModalOpen(true);
                                   }}
                                   className="shrink-0 flex items-center justify-center w-7 h-7 rounded-full bg-slate-50 text-slate-400 hover:text-slate-600 hover:bg-slate-100 border border-slate-100 transition-colors"
@@ -690,26 +833,7 @@ export default function ClassPortal() {
                         )}
                       </div>
 
-                      {cls.isDailyBookingOpen && (
-                        <div className="px-4 py-3 bg-slate-50/80 border-t border-slate-100 flex items-center justify-between">
-                          <div className="flex flex-col">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Daily Pass</span>
-                            <span className="text-[14px] font-black text-slate-800 leading-none">
-                              ₩{(cls.dailyClassPrice || Math.floor((cls.price || 0) / 4) + 5000).toLocaleString()}
-                            </span>
-                          </div>
-                          
-                          <div className="flex items-center gap-2">
-                            <button 
-                              onClick={(e) => { e.stopPropagation(); handleCheckoutClick(cls); }}
-                              className={`flex items-center gap-1 text-[13px] font-black px-5 py-2 rounded-full shadow-sm transition-all ${isPast ? 'bg-slate-200 text-slate-500' : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-md active:scale-95'}`}
-                              disabled={isPast}
-                            >
-                              {isPast ? 'Closed' : 'Book Now'}
-                            </button>
-                          </div>
-                        </div>
-                      )}
+                      {cls.isDailyBookingOpen && renderBookingStatusArea(cls, isPast, false)}
 
                     </div>
                   )})}
@@ -734,14 +858,61 @@ export default function ClassPortal() {
       .sort((a, b) => (b.classes?.length || 0) - (a.classes?.length || 0));
   }, [groups, venues]);
 
-  const renderMonthTab = () => (
+  const renderMonthTab = () => {
+    const targetDate = new Date();
+    targetDate.setMonth(targetDate.getMonth() + monthOffset);
+    const targetYear = targetDate.getFullYear();
+    const targetMonthNum = targetDate.getMonth();
+    const targetMonthStr = `${targetYear}-${String(targetMonthNum + 1).padStart(2, '0')}`;
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const monthLabel = `${monthNames[targetMonthNum]} ${targetYear}`;
+
+    const getGroupClassCount = (groupId: string) => {
+      return allClasses.filter(cls => {
+        if (cls.groupId !== groupId) return false;
+        if (cls.targetMonth) return cls.targetMonth === targetMonthStr;
+        if (cls.schedule && Array.isArray(cls.schedule)) {
+          return cls.schedule.some((s: any) => {
+            if (!s.date || typeof s.date !== 'string') return false;
+            const normalized = s.date.replace(/[\.\/ ]/g, '-');
+            return normalized.startsWith(targetMonthStr);
+          });
+        }
+        return false;
+      }).length;
+    };
+    const getGroupPassCount = (groupId: string) => allPasses.filter(p => {
+      if (p.groupId !== groupId) return false;
+      if (p.targetMonth) return p.targetMonth === targetMonthStr;
+      return true;
+    }).length;
+    const getGroupDiscountCount = (groupId: string) => allDiscountsGlobal.filter(d => {
+      if (d.groupId !== groupId) return false;
+      if (d.targetMonth) return d.targetMonth === targetMonthStr;
+      return true;
+    }).length;
+
+    return (
     <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-2 duration-500 pb-10">
-      <h3 className="text-[10px] font-black text-[#596061] mb-2 uppercase tracking-[0.2em] px-1">STUDIOS IN SEOUL</h3>
+      <div className="flex items-center justify-between px-1 mb-2">
+        <h3 className="text-[10px] font-black text-[#596061] uppercase tracking-[0.2em]">{t('class.studios_in_seoul')}</h3>
+        <div className="flex items-center gap-3 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100">
+          <button onClick={() => setMonthOffset(prev => prev - 1)} className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-slate-200 active:scale-90 transition-all text-slate-500">
+            <span className="material-symbols-outlined text-[18px]">chevron_left</span>
+          </button>
+          <span className="text-[11px] font-black text-slate-700 uppercase tracking-widest min-w-[100px] text-center">
+            {monthLabel}
+          </span>
+          <button onClick={() => setMonthOffset(prev => prev + 1)} className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-slate-200 active:scale-90 transition-all text-slate-500">
+            <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+          </button>
+        </div>
+      </div>
       <div className="grid grid-cols-1 gap-4">
         {filteredGroups.map((group) => (
           <div 
             key={group.id} 
-            onClick={() => handleGroupClick(group)}
+            onClick={() => router.push(`/class/${group.id}?month=${targetMonthStr}`)}
             className="bg-white border border-[#f2f4f4] rounded-[24px] p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition-all cursor-pointer group"
           >
             <div className="w-16 h-16 rounded-2xl overflow-hidden flex-shrink-0 bg-slate-100">
@@ -755,25 +926,32 @@ export default function ClassPortal() {
               <div className="flex items-baseline gap-1.5 mb-1">
                 <h4 className="text-[1rem] font-black text-[#2d3435] truncate">
                   {group.name}
-                  {group.name.includes('Andante') && (
-                    <span className="text-[11px] font-medium text-[#acb3b4] ml-1">안단테</span>
+                  {group.nativeName && (
+                    <span className="text-[11px] font-medium text-[#acb3b4] ml-1">{group.nativeName}</span>
                   )}
                 </h4>
               </div>
               <div className="flex flex-wrap gap-1.5">
                 <div className="flex items-center bg-slate-50 border border-slate-100 rounded-lg px-2 py-0.5">
                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter mr-1.5">CLASSES</span>
-                  <span className="text-[11px] font-black text-slate-700">{group.classes?.length || 0}</span>
+                  <span className="text-[11px] font-black text-slate-700">{getGroupClassCount(group.id)}</span>
                 </div>
                 <div className="flex items-center bg-blue-50 border border-blue-100 rounded-lg px-2 py-0.5">
                   <span className="text-[9px] font-black text-blue-400 uppercase tracking-tighter mr-1.5">BUNDLE</span>
-                  <span className="text-[11px] font-black text-blue-700">{group.discounts?.length || 0}</span>
+                  <span className="text-[11px] font-black text-blue-700">{getGroupDiscountCount(group.id)}</span>
                 </div>
                 <div className="flex items-center bg-purple-50 border border-purple-100 rounded-lg px-2 py-0.5">
                   <span className="text-[9px] font-black text-purple-400 uppercase tracking-tighter mr-1.5">PASS</span>
-                  <span className="text-[11px] font-black text-purple-700">{group.monthlyPasses?.length || 0}</span>
+                  <span className="text-[11px] font-black text-purple-700">{getGroupPassCount(group.id)}</span>
                 </div>
               </div>
+              {group.updatedAt && (() => {
+                const updated = group.updatedAt?.toDate ? group.updatedAt.toDate() : new Date(group.updatedAt);
+                const diffMs = Date.now() - updated.getTime();
+                const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                const label = diffDays === 0 ? t('class.updated_today') : diffDays === 1 ? t('class.updated_yesterday') : t('class.updated_days_ago').replace('{days}', String(diffDays));
+                return <p className="text-[9px] font-medium text-slate-400 mt-1">{label}</p>;
+              })()}
             </div>
             <span className="material-symbols-outlined text-[#acb3b4] group-hover:text-primary transition-colors">chevron_right</span>
           </div>
@@ -781,11 +959,12 @@ export default function ClassPortal() {
       </div>
       {filteredGroups.length === 0 && (
         <div className="py-20 text-center">
-          <p className="text-[#acb3b4] font-bold">No studios found in Seoul, Korea.</p>
+          <p className="text-[#acb3b4] font-bold">{t('class.no_studios_found')}</p>
         </div>
       )}
     </div>
   );
+  };
 
   const renderSpecialTab = () => {
     const isAdminOrOwner = user && (profile?.systemRole === 'admin' || profile?.isAdmin || groups.some(g => g.ownerId === user.uid));
@@ -795,13 +974,13 @@ export default function ClassPortal() {
       {isAdminOrOwner && (
         <div className="px-5 py-3 flex items-center justify-between bg-white rounded-xl border border-slate-100 shadow-sm">
           <p className="text-[12px] font-bold text-slate-400 uppercase tracking-tight">
-            Have special events to host?
+            {t('class.have_special_events')}
           </p>
           <button 
             onClick={handleAddSpecialClick}
             className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 transition-colors py-2"
           >
-            <span className="text-[13px] font-bold">Register Event</span>
+            <span className="text-[13px] font-bold">{t('class.register_event')}</span>
             <span className="material-symbols-outlined text-[18px]">add_circle</span>
           </button>
         </div>
@@ -823,7 +1002,7 @@ export default function ClassPortal() {
               <div className="relative p-8 pt-24">
                 <div className="inline-flex items-center gap-2 bg-primary px-4 py-1.5 rounded-full mb-4 shadow-lg shadow-primary/30">
                   <span className="material-symbols-outlined text-sm">stars</span>
-                  <span className="text-[10px] font-black tracking-widest uppercase">SPECIAL EVENT</span>
+                  <span className="text-[10px] font-black tracking-widest uppercase">{t('class.special_event_label')}</span>
                 </div>
                 <h3 className="text-2xl font-black mb-4 leading-tight">{cls.title}</h3>
                 <div className="flex items-center gap-2 mb-6">
@@ -832,18 +1011,7 @@ export default function ClassPortal() {
                   </div>
                   <span className="text-xs font-bold text-white/80">{group?.name}</span>
                 </div>
-                <div className="flex items-end justify-between">
-                  <div className="flex flex-col gap-1">
-                    <p className="text-white/60 text-[10px] font-black tracking-widest uppercase">REGISTRATION FEE</p>
-                    <p className="text-2xl font-black">{cls.amount?.toLocaleString()} <span className="text-sm">{cls.currency || 'KRW'}</span></p>
-                  </div>
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); handleCheckoutClick({ ...cls, group }); }}
-                    className="bg-white text-[#2d3435] px-8 py-3.5 rounded-full text-sm font-black shadow-xl active:scale-95 transition-all"
-                  >
-                    RESERVE
-                  </button>
-                </div>
+                {renderBookingStatusArea({ ...cls, group }, false, true)}
               </div>
             </div>
           );
@@ -853,8 +1021,8 @@ export default function ClassPortal() {
           <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mb-6 shadow-sm">
             <span className="material-symbols-outlined text-[#acb3b4] text-4xl">campaign</span>
           </div>
-          <h4 className="text-[#2d3435] font-black mb-2">No Special Events Yet</h4>
-          <p className="text-[#acb3b4] text-xs font-medium max-w-[200px]">Stay tuned for upcoming masterclasses!</p>
+          <h4 className="text-[#2d3435] font-black mb-2">{t('class.no_special_events')}</h4>
+          <p className="text-[#acb3b4] text-xs font-medium max-w-[200px]">{t('class.stay_tuned_special')}</p>
         </div>
       )}
     </div>
@@ -891,91 +1059,112 @@ export default function ClassPortal() {
       </div>
       
       {/* Capacity Setter Modal */}
-      {capacityModalOpen && editingClass && (
-        <Portal>
-          <div className="fixed inset-0 z-[1000] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4">
-            <div className="w-full max-w-md bg-white rounded-t-[32px] sm:rounded-[32px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] p-6">
-              <div className="flex justify-between items-center mb-6 shrink-0">
-                <h3 className="text-[18px] font-black text-slate-800">Set Today's Capacity</h3>
-                <button onClick={() => setCapacityModalOpen(false)} className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
-                  <span className="material-symbols-outlined text-[18px]">close</span>
+      {/* Capacity Setter Modal */}
+      <BottomSheet
+        isOpen={capacityModalOpen}
+        onClose={() => setCapacityModalOpen(false)}
+        title={t('class.set_capacity')}
+        footer={
+          <div className="p-5 border-t border-slate-100 bg-white">
+            <div className="flex justify-between items-center mb-4">
+              <span className="text-[14px] text-slate-500 font-medium">Daily Class Price</span>
+              <span className="text-xl font-black text-slate-900">
+                ₩{tempDailyClassPrice?.toLocaleString() || '0'}
+              </span>
+            </div>
+            <button 
+              onClick={handleSaveCapacity} 
+              className="w-full py-4 text-[16px] font-black text-white bg-black rounded-xl active:scale-95 transition-all"
+            >
+              {t('class.save_changes')}
+            </button>
+          </div>
+        }
+      >
+        {editingClass && (
+          <div className="space-y-6 py-2">
+            <p className="text-[13px] font-medium text-slate-500 mb-2 line-clamp-2">{editingClass.title}</p>
+            
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                <span className="text-[14px] font-black text-slate-800 uppercase">{t('class.daily_booking')}</span>
+                <button 
+                  onClick={() => setTempIsDailyBookingOpen(!tempIsDailyBookingOpen)} 
+                  className={`w-12 h-6 rounded-full p-1 flex items-center transition-all duration-300 ${tempIsDailyBookingOpen ? 'bg-blue-500 justify-end' : 'bg-slate-300 justify-start'}`}
+                >
+                  <div className="w-4 h-4 rounded-full bg-white shadow-sm"></div>
                 </button>
               </div>
-              
-              <p className="text-[13px] font-medium text-slate-500 mb-6 shrink-0 line-clamp-2">{editingClass.title}</p>
-              
-              <div className="space-y-4 mb-4 overflow-y-auto no-scrollbar flex-1 -mx-2 px-2 pb-2">
-                <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border border-slate-100">
-                  <span className="text-[14px] font-black text-slate-800 uppercase">Daily Booking</span>
-                  <button 
-                    onClick={() => setTempIsDailyBookingOpen(!tempIsDailyBookingOpen)} 
-                    className={`w-12 h-6 rounded-full p-1 flex items-center transition-all duration-300 ${tempIsDailyBookingOpen ? 'bg-blue-500 justify-end' : 'bg-slate-300 justify-start'}`}
-                  >
-                    <div className="w-4 h-4 rounded-full bg-white shadow-sm"></div>
-                  </button>
-                </div>
 
-                {tempIsDailyBookingOpen && (
-                  <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300 mt-4">
-                    <div className="flex flex-col gap-2 p-4 rounded-2xl bg-amber-50 border border-amber-100">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[14px] font-black text-amber-800 uppercase">Instructor Comment</span>
-                        <span className="text-[11px] font-bold text-amber-600">{tempInstructorComment.length}/30</span>
-                      </div>
+              {tempIsDailyBookingOpen && (
+                <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300 mt-4">
+                  <div className="flex flex-col gap-2 p-4 rounded-2xl bg-amber-50 border border-amber-100">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[14px] font-black text-amber-800 uppercase">{t('class.instructor_comment')}</span>
+                      <span className="text-[11px] font-bold text-amber-600">{tempInstructorComment.length}/30</span>
+                    </div>
+                    <input
+                      type="text"
+                      maxLength={30}
+                      value={tempInstructorComment}
+                      onChange={(e) => setTempInstructorComment(e.target.value)}
+                      placeholder={t('class.comment_placeholder')}
+                      className="w-full bg-white border border-amber-200 rounded-xl px-4 py-3 text-[13px] font-medium text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-2 p-4 rounded-2xl bg-emerald-50 border border-emerald-100">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[14px] font-black text-emerald-800 uppercase">{t('class.daily_class_price')}</span>
+                    </div>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-black">₩</span>
                       <input
-                        type="text"
-                        maxLength={30}
-                        value={tempInstructorComment}
-                        onChange={(e) => setTempInstructorComment(e.target.value)}
-                        placeholder="e.g. Please bring comfortable shoes!"
-                        className="w-full bg-white border border-amber-200 rounded-xl px-4 py-3 text-[13px] font-medium text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                        type="number"
+                        value={tempDailyClassPrice || ''}
+                        onChange={(e) => setTempDailyClassPrice(parseInt(e.target.value) || 0)}
+                        className="w-full bg-white border border-emerald-200 rounded-xl pl-8 pr-4 py-3 text-[13px] font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
                       />
                     </div>
-
-                    <div className="flex flex-col gap-2 p-4 rounded-2xl bg-emerald-50 border border-emerald-100">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[14px] font-black text-emerald-800 uppercase">Daily Class Price</span>
-                      </div>
-                      <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-black">₩</span>
-                        <input
-                          type="number"
-                          value={tempDailyClassPrice || ''}
-                          onChange={(e) => setTempDailyClassPrice(parseInt(e.target.value) || 0)}
-                          className="w-full bg-white border border-emerald-200 rounded-xl pl-8 pr-4 py-3 text-[13px] font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-                        />
-                      </div>
-                    </div>
                   </div>
-                )}
-              </div>
-              
-              <div className="flex gap-3 shrink-0 pt-4 border-t border-slate-100 mt-auto">
-                <button onClick={() => { setTempIsDailyBookingOpen(false); setTempInstructorComment(''); }} className="flex-1 py-4 text-[14px] font-bold text-slate-500 bg-slate-100 rounded-2xl hover:bg-slate-200 transition-all">Clear</button>
-                <button onClick={handleSaveCapacity} className="flex-[2] py-4 text-[14px] font-black text-white bg-blue-600 rounded-2xl shadow-xl shadow-blue-600/20 active:scale-95 transition-all">Save Changes</button>
-              </div>
+                </div>
+              )}
             </div>
           </div>
-        </Portal>
-      )}
+        )}
+      </BottomSheet>
+
 
       {/* Checkout Modal */}
       {checkoutClass && (
         <UnifiedCheckoutModal
           isOpen={checkoutModalOpen}
-          onClose={() => setCheckoutModalOpen(false)}
-          title={checkoutClass.amount ? "Special Class Booking" : "Daily Class Booking"}
-          subtitle={`${checkoutClass.title} · ${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}`}
-          totalAmount={checkoutClass.amount || checkoutClass.dailyClassPrice || Math.floor((checkoutClass.price || 0) / 4) + 5000}
+          onClose={() => {
+            setCheckoutModalOpen(false);
+            setCheckoutInitialStep(undefined);
+            setCheckoutInitialBookingId(undefined);
+            setCheckoutInitialOrderNumber(undefined);
+            setCheckoutInitialCreatedAt(undefined);
+          }}
+          title={checkoutClass.isSpecial ? t('class.booking_special_title') : t('class.booking_daily_title')}
+          subtitle={`${checkoutClass.title} · ${new Date().toLocaleDateString(language === 'KR' ? 'ko-KR' : 'en-US', { weekday: 'long', month: 'short', day: 'numeric' })}`}
+          totalAmount={checkoutClass.isSpecial 
+            ? (checkoutClass.amount || checkoutClass.price) 
+            : (checkoutClass.dailyClassPrice || Math.floor((checkoutClass.price || 0) / 3) + 5000)
+          }
           onCheckout={handleCheckoutSubmit}
           isProcessing={isBooking}
-          buttonText="Submit Request"
+          buttonText={t('class.submit_request')}
           bankDetails={{
-            bankName: checkoutClass.group?.bankName || 'Kookmin Bank',
-            accountHolder: checkoutClass.group?.accountHolder || checkoutClass.group?.name || 'World of Community',
-            accountNumber: checkoutClass.group?.accountNumber || '123456-00-123456'
+            bankName: (checkoutClass.group?.classPaymentSettings?.bankDetails || checkoutClass.group?.bankDetails)?.bankName || 'Kookmin Bank',
+            accountHolder: (checkoutClass.group?.classPaymentSettings?.bankDetails || checkoutClass.group?.bankDetails)?.accountHolder || checkoutClass.group?.name || 'World of Community',
+            accountNumber: (checkoutClass.group?.classPaymentSettings?.bankDetails || checkoutClass.group?.bankDetails)?.accountNumber || '123456-00-123456'
           }}
           onReportPayment={reportPayment}
+          initialStep={checkoutInitialStep}
+          initialBookingId={checkoutInitialBookingId}
+          initialOrderNumber={checkoutInitialOrderNumber}
+          initialCreatedAt={checkoutInitialCreatedAt}
         >
           <div className="space-y-6 py-2">
             <div className="flex gap-3 p-3 bg-neutral-50 dark:bg-neutral-800 rounded-2xl border border-neutral-200 dark:border-neutral-700">
@@ -1008,7 +1197,7 @@ export default function ClassPortal() {
             </div>
 
             <div>
-              <h4 className="text-sm font-bold text-neutral-900 dark:text-white mb-3">Select Role</h4>
+              <h4 className="text-sm font-bold text-neutral-900 dark:text-white mb-3">{t('class.select_role')}</h4>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => setCheckoutRole('leader')}
@@ -1026,9 +1215,9 @@ export default function ClassPortal() {
             </div>
             
             <div className="bg-neutral-50 dark:bg-neutral-800 rounded-xl p-4 border border-neutral-100 dark:border-neutral-700">
-              <h4 className="text-[13px] font-black text-neutral-900 dark:text-white mb-2 flex items-center gap-1.5"><span className="material-symbols-outlined text-[16px] text-blue-500">info</span> Notice</h4>
+              <h4 className="text-[13px] font-black text-neutral-900 dark:text-white mb-2 flex items-center gap-1.5"><span className="material-symbols-outlined text-[16px] text-blue-500">info</span> {t('class.booking_notice_title')}</h4>
               <p className="text-xs font-medium text-neutral-600 dark:text-neutral-400 leading-relaxed">
-                After submitting this request, your booking will be in "Waiting Confirmation" status. You will receive an instruction for the payment. Your spot is finalized once the host confirms the payment.
+                {t('class.booking_notice_desc')}
               </p>
             </div>
           </div>
