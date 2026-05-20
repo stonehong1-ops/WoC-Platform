@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect, useRef } from "react";
 
@@ -236,27 +236,62 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
 
     setIsSaving(true);
     try {
-      const currentClasses = group?.classes || [];
-      let updatedClasses: GroupClass[];
-      const finalData = { ...formData };
+      if (!formData.schedule || formData.schedule.length === 0) {
+        toast.error(t('class.schedule_empty') || "Schedule is empty. Please add a schedule.");
+        setIsSaving(false);
+        return;
+      }
+
+      // 저장 로직 분기: 특강/수정 시 기존 스케줄 유지, 신규 일반 클래스만 4주 자동 생성
+      let finalSchedule = formData.schedule;
+      if (!isSpecial && !isEditMode && formData.schedule.length === 1) {
+        const baseSchedule = formData.schedule[0];
+        const baseDate = new Date(baseSchedule.date);
+        finalSchedule = Array.from({ length: 4 }).map((_, i) => {
+          const nextDate = new Date(baseDate);
+          nextDate.setDate(baseDate.getDate() + i * 7);
+          return {
+            ...baseSchedule,
+            week: i + 1,
+            date: nextDate.toISOString().split('T')[0]
+          };
+        });
+      }
+
+      const finalData = { ...formData, schedule: finalSchedule };
       if (!capacityEnabled) {
         finalData.leaderCount = 0;
         finalData.followerCount = 0;
       }
       
+      // Firestore does not accept undefined values
+      const cleanUndefined = (obj: any): any => {
+        if (Array.isArray(obj)) return obj.map(cleanUndefined);
+        if (obj !== null && typeof obj === 'object') {
+          return Object.fromEntries(
+            Object.entries(obj)
+              .filter(([_, v]) => v !== undefined)
+              .map(([k, v]) => [k, cleanUndefined(v)])
+          );
+        }
+        return obj;
+      };
+
+      const sanitizedData = cleanUndefined(finalData);
+
       const groupId = group?.id || 'special';
       if (isEditMode) {
-        await groupService.updateClass(groupId, formData.id, finalData);
+        await groupService.updateClass(groupId, formData.id, sanitizedData);
       } else {
-        await groupService.addClass(groupId, finalData);
+        await groupService.addClass(groupId, sanitizedData);
       }
       
       toast.success(isEditMode ? t('class.edited_success') : t('class.added_success'));
       if (onSave) onSave();
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to save class:", error);
-      toast.error(t('class.save_failed'));
+      toast.error(t('class.save_failed') + (error?.message ? ` (${error.message})` : ''));
     } finally {
       setIsSaving(false);
     }
@@ -336,8 +371,8 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
         {isSpecial && (
           <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4">
             <span className="material-symbols-outlined text-amber-500 text-[20px] mt-0.5 shrink-0">info</span>
-            <p className="text-[13px] font-bold text-amber-700 leading-relaxed">
-              Special classes can only be registered on a daily basis. For regular classes, please register through your group.
+            <p className="text-[13px] font-semibold text-amber-700 leading-relaxed">
+              {t('class.special_daily_notice')}
             </p>
           </div>
         )}
@@ -577,76 +612,123 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({ group, onClos
 
         {/* Schedule */}
         <div className="space-y-4">
-          <label className="text-[13px] font-black text-gray-400 uppercase tracking-widest ml-1">{t('class.schedule_label')}</label>
-          <div className="space-y-4">
-            {formData.schedule.map((entry, index) => (
-              <div key={index} className="bg-gray-50 rounded-2xl p-5 space-y-4">
-                <div className="flex justify-between items-end">
-                  <div className="flex-1">
-                    <label className="block text-[11px] font-bold text-gray-400 mb-2 uppercase tracking-widest">{t('class.date_week_label')?.replace('{week}', String(entry.week)) || `Date (Week ${entry.week})`}</label>
-                    <input
-                      value={entry.date}
-                      onChange={e => updateSchedule(index, 'date', e.target.value)}
-                      className="w-full bg-white border-none rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-primary/10"
-                      type="date"
-                    />
+          <label className="text-[13px] font-black text-gray-400 uppercase tracking-widest ml-1">{t('class.schedule_label') || "Schedule"}</label>
+          <div className="space-y-3">
+            {formData.schedule.map((entry, index) => {
+              const dayLabel = entry.date ? (() => {
+                const d = new Date(entry.date + 'T00:00:00');
+                const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                return days[d.getDay()];
+              })() : '';
+              return (
+              <div key={index} className="bg-gray-50 rounded-2xl p-4 space-y-3 relative border border-gray-100">
+                {/* Week Header + Delete */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-7 h-7 rounded-lg bg-primary/10 text-primary text-xs font-black flex items-center justify-center">{index + 1}</span>
+                    <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      {isSpecial ? 'Date' : `Week ${index + 1}`}
+                    </span>
                   </div>
-                  {!isSpecial && formData.schedule.length > 1 && (
-                    <button onClick={() => removeWeek(index)} className="ml-3 mb-1 material-symbols-outlined text-gray-300 hover:text-red-400 transition-colors">delete</button>
+                  {formData.schedule.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeWeek(index)}
+                      className="w-7 h-7 rounded-full bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 flex items-center justify-center transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">close</span>
+                    </button>
                   )}
                 </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-gray-400 mb-2 uppercase tracking-widest">{t('class.time_label') || "Time"}</label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      value={entry.timeSlot ? entry.timeSlot.split(' - ')[0] : "19:00"}
-                      onChange={e => {
-                        const end = entry.timeSlot ? entry.timeSlot.split(' - ')[1] : "21:00";
-                        updateSchedule(index, 'timeSlot', `${e.target.value} - ${end || '21:00'}`);
-                      }}
-                      className="flex-1 bg-white border-none rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-primary/10"
-                      type="time"
-                    />
-                    <span className="text-gray-300 font-bold">-</span>
-                    <input
-                      value={entry.timeSlot && entry.timeSlot.includes(' - ') ? entry.timeSlot.split(' - ')[1] : "21:00"}
-                      onChange={e => {
-                        const start = entry.timeSlot ? entry.timeSlot.split(' - ')[0] : "19:00";
-                        updateSchedule(index, 'timeSlot', `${start || '19:00'} - ${e.target.value}`);
-                      }}
-                      className="flex-1 bg-white border-none rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-primary/10"
-                      type="time"
-                    />
-                  </div>
+                {/* Date row with day of week */}
+                <div className="flex items-center gap-2">
+                  <input
+                    value={entry.date}
+                    onChange={e => updateSchedule(index, 'date', e.target.value)}
+                    className="flex-1 bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-semibold text-gray-800 focus:ring-2 focus:ring-primary/10"
+                    type="date"
+                  />
+                  {dayLabel && (
+                    <span className="px-2.5 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-black tracking-wide shrink-0">{dayLabel}</span>
+                  )}
                 </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-gray-400 mb-2 uppercase tracking-widest">{t('class.lesson_content_label') || "Lesson Content"}</label>
-                  <textarea
-                    value={entry.content}
-                    onChange={e => updateSchedule(index, 'content', e.target.value)}
-                    className="w-full bg-white border-none rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-primary/10 resize-none"
-                    placeholder={t('class.lesson_content_placeholder') || "e.g. Fundamental movements and warm-up routine..."}
-                    rows={2}
-                  ></textarea>
+                {/* Time row */}
+                <div className="flex items-center gap-2">
+                  <input
+                    value={entry.timeSlot ? entry.timeSlot.split(' - ')[0] : "19:00"}
+                    onChange={e => {
+                      const end = entry.timeSlot ? entry.timeSlot.split(' - ')[1] : "21:00";
+                      updateSchedule(index, 'timeSlot', `${e.target.value} - ${end || '21:00'}`);
+                    }}
+                    className="flex-1 bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-semibold text-gray-800 focus:ring-2 focus:ring-primary/10"
+                    type="time"
+                  />
+                  <span className="text-gray-400 font-bold text-xs">—</span>
+                  <input
+                    value={entry.timeSlot && entry.timeSlot.includes(' - ') ? entry.timeSlot.split(' - ')[1] : "21:00"}
+                    onChange={e => {
+                      const start = entry.timeSlot ? entry.timeSlot.split(' - ')[0] : "19:00";
+                      updateSchedule(index, 'timeSlot', `${start || '19:00'} - ${e.target.value}`);
+                    }}
+                    className="flex-1 bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-semibold text-gray-800 focus:ring-2 focus:ring-primary/10"
+                    type="time"
+                  />
                 </div>
+                {/* Content */}
+                <textarea
+                  value={entry.content}
+                  onChange={e => updateSchedule(index, 'content', e.target.value)}
+                  className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-700 focus:ring-2 focus:ring-primary/10 resize-none"
+                  placeholder={t('class.lesson_content_placeholder') || "e.g. Fundamental movements and warm-up routine..."}
+                  rows={1}
+                />
               </div>
-            ))}
+              );
+            })}
           </div>
-          {!isSpecial && (
-            <div className="flex items-center gap-3">
-              <select
-                value={weeksToAdd}
-                onChange={e => setWeeksToAdd(Number(e.target.value))}
-                className="bg-gray-50 border-none rounded-2xl px-4 py-3 text-sm font-black focus:ring-2 focus:ring-primary/10 w-[80px] shrink-0"
+          {/* Action buttons */}
+          <div className="flex items-center gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => { setWeeksToAdd(1); handleAddWeeks(); }}
+              disabled={isSpecial}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-colors ${
+                isSpecial
+                  ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                  : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[16px]">add</span>
+              Add Date
+            </button>
+            {!isSpecial && !isEditMode && formData.schedule.length <= 1 && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (formData.schedule.length === 1 && formData.schedule[0].date) {
+                    const base = formData.schedule[0];
+                    const baseDate = new Date(base.date);
+                    const generated = Array.from({ length: 3 }).map((_, i) => {
+                      const nextDate = new Date(baseDate);
+                      nextDate.setDate(baseDate.getDate() + (i + 1) * 7);
+                      return { ...base, week: i + 2, date: nextDate.toISOString().split('T')[0] };
+                    });
+                    setFormData(prev => ({ ...prev, schedule: [{ ...prev.schedule[0], week: 1 }, ...generated] }));
+                  } else {
+                    toast.error('Please set the first date before generating.');
+                  }
+                }}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold transition-colors"
               >
-                {[...Array(11)].map((_, i) => (
-                  <option key={i+1} value={i+1}>{i+1}</option>
-                ))}
-              </select>
-              <button onClick={handleAddWeeks} className="flex-1 flex justify-center items-center gap-1.5 bg-gray-900 text-white font-bold text-sm px-6 py-3 rounded-2xl hover:bg-gray-800 transition-all active:scale-[0.98]">
-                <span className="material-symbols-outlined text-base">add</span>
-                {t('class.add_weeks') || "Add weeks"}
+                <span className="material-symbols-outlined text-[16px]">date_range</span>
+                Generate 4 Weeks
               </button>
+            )}
+          </div>
+          {/* Notice */}
+          {!isSpecial && !isEditMode && formData.schedule.length <= 1 && (
+            <div className="px-1 pt-1">
+              <p className="text-[11px] text-[#0057bd] font-semibold">* {t('class.auto_four_weeks_notice') || "The schedule will be automatically duplicated for 4 consecutive weeks starting from the selected date."}</p>
             </div>
           )}
         </div>

@@ -9,13 +9,14 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 interface GroupClassDiscountEditorProps {
   group: Group;
+  allClasses?: import('@/types/group').GroupClass[];
   onClose: () => void;
   onSave?: () => void;
   initialData?: ClassDiscount | null;
   targetMonth?: string;
 }
 
-const GroupClassDiscountEditor: React.FC<GroupClassDiscountEditorProps> = ({ group, onClose, onSave, initialData, targetMonth }) => {
+const GroupClassDiscountEditor: React.FC<GroupClassDiscountEditorProps> = ({ group, allClasses: allClassesProp, onClose, onSave, initialData, targetMonth }) => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<ClassDiscount>({
     id: initialData?.id || uuidv4(),
@@ -31,7 +32,8 @@ const GroupClassDiscountEditor: React.FC<GroupClassDiscountEditorProps> = ({ gro
   const { t } = useLanguage();
   const isEditMode = !!initialData;
   const currentMonth = formData.targetMonth;
-  const classes = (group.classes || []).filter(cls => !cls.targetMonth || cls.targetMonth === currentMonth);
+  const classSource = allClassesProp || group.classes || [];
+  const classes = classSource.filter(cls => !cls.targetMonth || cls.targetMonth === currentMonth);
 
   useEffect(() => {
     if (initialData) {

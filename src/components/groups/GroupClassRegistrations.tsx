@@ -7,6 +7,7 @@ import UserBadge from '@/components/common/UserBadge';
 import { toast } from 'sonner';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { notificationUtils } from '@/lib/utils/notificationUtils';
 
 interface GroupClassRegistrationsProps {
   group: Group;
@@ -115,6 +116,17 @@ export function GroupClassRegistrations({ group, validClassIds, allClasses = [],
       
       if (newStatus === 'PAYMENT_COMPLETED') {
         toast.success(t('group.class.toast.payment_confirmed') || 'Payment confirmed successfully');
+        
+        // Trigger payment completed / approved chat notification to buyer (e-step)
+        if (user && item.userId) {
+          notificationUtils.sendClassApprovedNotification({
+            user,
+            buyerId: item.userId,
+            orderNumber: item.orderNumber || '',
+            classTitle: item.classTitle,
+            t
+          }).catch(err => console.error("Failed to send approval chat:", err));
+        }
       } else {
         toast.success(t('group.class.toast.payment_pending') || 'Payment marked as pending');
       }

@@ -9,6 +9,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 interface GroupClassMonthlyPassEditorProps {
   group: Group;
+  allClasses?: import('@/types/group').GroupClass[];
   initialData?: MonthlyPass | null;
   onClose: () => void;
   onSave?: () => void;
@@ -17,6 +18,7 @@ interface GroupClassMonthlyPassEditorProps {
 
 const GroupClassMonthlyPassEditor: React.FC<GroupClassMonthlyPassEditorProps> = ({ 
   group, 
+  allClasses: allClassesProp,
   initialData, 
   onClose, 
   onSave,
@@ -36,7 +38,8 @@ const GroupClassMonthlyPassEditor: React.FC<GroupClassMonthlyPassEditorProps> = 
 
   const isEditMode = !!initialData;
   const currentMonth = formData.targetMonth;
-  const classes = (group.classes || []).filter(cls => !cls.targetMonth || cls.targetMonth === currentMonth);
+  const classSource = allClassesProp || group.classes || [];
+  const classes = classSource.filter(cls => !cls.targetMonth || cls.targetMonth === currentMonth);
 
   useEffect(() => {
     if (initialData) {

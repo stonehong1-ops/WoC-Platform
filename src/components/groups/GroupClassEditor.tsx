@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import GroupClassAddEditor from "./GroupClassAddEditor";
 import GroupClassDiscountEditor from "./GroupClassDiscountEditor";
 import GroupClassMonthlyPassEditor from "./GroupClassMonthlyPassEditor";
+import GroupClassCloneEditor from "./GroupClassCloneEditor";
 import { classRegistrationService } from "@/lib/firebase/classRegistrationService";
 import { useRouter } from "next/navigation";
 import { GroupClassRegistrations } from "./GroupClassRegistrations";
@@ -23,7 +24,7 @@ interface GroupClassEditorProps {
   isInline?: boolean;
 }
 
-type EditorType = 'add-class' | 'discount' | 'monthly-pass' | 'payment';
+type EditorType = 'add-class' | 'discount' | 'monthly-pass' | 'payment' | 'clone';
 
 interface EditingState {
   type: EditorType;
@@ -123,7 +124,7 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
   const allDiscounts = [...subDiscounts, ...(group.discounts || []).filter(d => !subDiscounts.find(sd => sd.id === d.id))];
 
   const filteredClasses = allClasses.filter(cls => !cls.targetMonth || cls.targetMonth === currentMonthStr);
-  const filteredPasses = allMonthlyPasses.filter((pass: MonthlyPass) => !pass.targetMonth || pass.targetMonth === currentMonthStr);
+  const filteredPasses = allMonthlyPasses.filter((pass: MonthlyPass) => pass.targetMonth === currentMonthStr);
   const filteredDiscounts = allDiscounts.filter((discount: ClassDiscount) => !discount.targetMonth || discount.targetMonth === currentMonthStr);
 
   const handleDelete = async (type: 'class' | 'discount' | 'pass', id: string) => {
@@ -133,25 +134,24 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
     }
   };
 
-  const isRegistrationClosed = group.classPaymentSettings?.closedMonths?.includes(currentMonthStr) || false;
+  const isRegistrationOpen = group.classPaymentSettings?.openMonths?.includes(currentMonthStr) || false;
 
-  const handleToggleRegistrationStatus = async () => {
+  const handleToggleRegistrationStatus = async (setOpen: boolean) => {
     try {
       setLoading(true);
-      const currentClosedMonths = group.classPaymentSettings?.closedMonths || [];
-      const isCurrentlyClosed = currentClosedMonths.includes(currentMonthStr);
+      const currentOpenMonths = group.classPaymentSettings?.openMonths || [];
       
-      let newClosedMonths;
-      if (isCurrentlyClosed) {
-        newClosedMonths = currentClosedMonths.filter((m: string) => m !== currentMonthStr);
+      let newOpenMonths;
+      if (setOpen) {
+        newOpenMonths = currentOpenMonths.includes(currentMonthStr) ? currentOpenMonths : [...currentOpenMonths, currentMonthStr];
       } else {
-        newClosedMonths = [...currentClosedMonths, currentMonthStr];
+        newOpenMonths = currentOpenMonths.filter((m: string) => m !== currentMonthStr);
       }
 
       await groupService.updateGroupMetadata(group.id, {
         classPaymentSettings: {
           ...(group.classPaymentSettings || { paymentMethods: { bankTransfer: false, creditCard: false, overseas: false } }),
-          closedMonths: newClosedMonths
+          openMonths: newOpenMonths
         }
       });
       toast.success(t('group.class.registration_status_updated') || "Registration status updated.");
@@ -251,7 +251,7 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
       <main className={`max-w-7xl w-full mx-auto px-4 ${isInline ? 'py-4' : 'py-8'} flex-1`}>
         {/* Month Navigation & Visibility */}
         <section className="mb-6 bg-white rounded-[16px] shadow-sm border border-gray-100 overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50/50">
+          <div className="flex items-center justify-between px-4 py-3 bg-gray-50/50">
             <button onClick={handlePrevMonth} className="p-2 hover:bg-white rounded-full transition-colors shadow-sm bg-white border border-gray-100 active:scale-95">
               <span className="material-symbols-outlined text-gray-600">chevron_left</span>
             </button>
@@ -260,22 +260,31 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
               <span className="material-symbols-outlined text-gray-600">chevron_right</span>
             </button>
           </div>
-          <div className="p-5 flex items-center justify-between">
-            <div>
-              <h3 className="font-bold text-gray-900">{t('group.class.registration_status') || "Registration Status"}</h3>
-              <p className="text-sm text-gray-500">{t('group.class.close_registration_desc') || "Close registration for this month's classes"}</p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input 
-                checked={isRegistrationClosed} 
-                onChange={handleToggleRegistrationStatus}
-                className="sr-only peer" 
-                type="checkbox" 
+          <div className="px-4 py-3 flex items-center justify-center">
+            <div className="flex bg-gray-100 rounded-lg p-0.5">
+              <button
+                onClick={() => handleToggleRegistrationStatus(false)}
                 disabled={loading}
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0057bd]"></div>
-              <span className="ml-3 text-sm font-medium text-gray-900">{isRegistrationClosed ? (t('group.class.registration_closed') || "신청완료") : (t('group.class.registration_open') || "Open")}</span>
-            </label>
+                className={`px-5 py-1.5 text-xs font-bold rounded-md transition-all ${
+                  !isRegistrationOpen
+                    ? 'bg-gray-500 text-white shadow-sm'
+                    : 'text-gray-400 hover:text-gray-600'
+                }`}
+              >
+                Closed
+              </button>
+              <button
+                onClick={() => handleToggleRegistrationStatus(true)}
+                disabled={loading}
+                className={`px-5 py-1.5 text-xs font-bold rounded-md transition-all ${
+                  isRegistrationOpen
+                    ? 'bg-[#0057bd] text-white shadow-sm'
+                    : 'text-gray-400 hover:text-gray-600'
+                }`}
+              >
+                Open
+              </button>
+            </div>
           </div>
         </section>
 
@@ -313,9 +322,9 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
         <section className="mb-8 flex justify-between gap-3">
           <button
             onClick={() => setEditingState({ type: 'add-class', data: null })}
-            className="flex-1 flex flex-col items-center justify-center gap-1 px-2 py-3 bg-[#0057bd] text-white rounded-[12px] shadow-sm hover:bg-blue-700 transition-colors active:scale-95 relative"
+            className="flex-1 flex flex-col items-center justify-center gap-1 px-2 py-3 bg-white text-gray-700 rounded-[12px] border border-gray-100 shadow-sm hover:bg-gray-50 transition-colors active:scale-95 relative"
           >
-            <div className="absolute top-2 right-2 w-5 h-5 bg-white/20 rounded-full flex items-center justify-center text-[10px] font-bold">{filteredClasses.length}</div>
+            <div className="absolute top-2 right-2 w-5 h-5 bg-gray-100 rounded-full flex items-center justify-center text-[10px] font-bold text-gray-500">{filteredClasses.length}</div>
             <span className="material-symbols-outlined text-xl">school</span>
             <span className="text-xs font-bold leading-tight text-center">{t('group.class.class') || "Class"}</span>
           </button>
@@ -334,6 +343,13 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
             <div className="absolute top-2 right-2 w-5 h-5 bg-gray-100 rounded-full flex items-center justify-center text-[10px] font-bold text-gray-500">{filteredPasses.length}</div>
             <span className="material-symbols-outlined text-xl">confirmation_number</span>
             <span className="text-xs font-bold leading-tight text-center" dangerouslySetInnerHTML={{ __html: t('group.class.monthly_pass_br') || "Monthly<br />Pass" }} />
+          </button>
+          <button
+            onClick={() => setEditingState({ type: 'clone', data: null })}
+            className="flex-1 flex flex-col items-center justify-center gap-1 px-2 py-3 bg-gray-900 text-white rounded-[12px] shadow-sm hover:bg-gray-800 transition-colors active:scale-95"
+          >
+            <span className="material-symbols-outlined text-xl">content_copy</span>
+            <span className="text-xs font-bold leading-tight text-center">Clone</span>
           </button>
         </section>
 
@@ -567,6 +583,7 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
         {editingState?.type === "discount" && (
           <GroupClassDiscountEditor
             group={group}
+            allClasses={allClasses}
             initialData={editingState.data}
             onClose={() => setEditingState(null)}
             onSave={() => {
@@ -579,6 +596,7 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
         {editingState?.type === "monthly-pass" && (
           <GroupClassMonthlyPassEditor
             group={group}
+            allClasses={allClasses}
             initialData={editingState.data}
             onClose={() => setEditingState(null)}
             onSave={() => {
@@ -586,6 +604,18 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
               else router.refresh();
             }}
             targetMonth={currentMonthStr}
+          />
+        )}
+        {editingState?.type === "clone" && (
+          <GroupClassCloneEditor
+            group={group}
+            allClasses={allClasses}
+            targetMonth={currentMonthStr}
+            onClose={() => setEditingState(null)}
+            onComplete={() => {
+              if (onSave) onSave();
+              else router.refresh();
+            }}
           />
         )}
       </>

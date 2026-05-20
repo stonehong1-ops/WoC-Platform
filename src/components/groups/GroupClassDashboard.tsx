@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Group } from '@/types/group';
+import { Group, GroupClass, ClassDiscount, MonthlyPass } from '@/types/group';
 import { chatService } from '@/lib/firebase/chatService';
+import { groupService } from '@/lib/firebase/groupService';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/clientApp';
@@ -21,24 +22,23 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
   const { user } = useAuth();
   const router = useRouter();
 
-  const [currentDate, setCurrentDate] = useState<Date>(() => {
-    let latestDate = new Date();
-    if (group.classes && group.classes.length > 0) {
-      const sortedClasses = [...group.classes].sort((a, b) => {
-        const dateA = a.schedule?.[0]?.date || '0000-00-00';
-        const dateB = b.schedule?.[0]?.date || '0000-00-00';
-        return dateB.localeCompare(dateA);
-      });
-      const latestClassDate = sortedClasses[0]?.schedule?.[0]?.date;
-      if (latestClassDate) {
-        const d = new Date(latestClassDate.replace(/\./g, '-'));
-        if (!isNaN(d.getTime()) && d > latestDate) {
-          latestDate = d;
-        }
-      }
-    }
-    return latestDate;
-  });
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
+
+  // Firestore 하위 컬렉션에서 실시간 데이터 구독
+  const [allClasses, setAllClasses] = useState<GroupClass[]>([]);
+  const [allPasses, setAllPasses] = useState<MonthlyPass[]>([]);
+  const [allDiscounts, setAllDiscounts] = useState<ClassDiscount[]>([]);
+
+  useEffect(() => {
+    const unsubClasses = groupService.subscribeClasses(group.id, setAllClasses);
+    const unsubPasses = groupService.subscribeMonthlyPasses(group.id, setAllPasses);
+    const unsubDiscounts = groupService.subscribeDiscounts(group.id, setAllDiscounts);
+    return () => {
+      unsubClasses();
+      unsubPasses();
+      unsubDiscounts();
+    };
+  }, [group.id]);
 
   const [ownerInfo, setOwnerInfo] = useState<any>(null);
 
@@ -59,17 +59,17 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
     }
   }, [group?.ownerId]);
 
-  const monthClasses = useMemo(() => (group.classes || []).filter(c => {
+  const monthClasses = useMemo(() => allClasses.filter(c => {
     if (c.targetMonth) return c.targetMonth === currentMonthStr;
     if (c.schedule?.length) return c.schedule.some(s => s.date?.startsWith(currentMonthStr));
     return false;
-  }), [group.classes, currentMonthStr]);
+  }), [allClasses, currentMonthStr]);
 
-  const monthPasses = useMemo(() => (group.monthlyPasses || []).filter(p => {
+  const monthPasses = useMemo(() => allPasses.filter(p => {
     if (p.targetMonth) return p.targetMonth === currentMonthStr;
     if (p.includedClassIds?.length) {
       return p.includedClassIds.some(id => {
-        const cls = (group.classes || []).find(c => c.id === id);
+        const cls = allClasses.find(c => c.id === id);
         if (!cls) return false;
         if (cls.targetMonth) return cls.targetMonth === currentMonthStr;
         if (cls.schedule?.length) return cls.schedule.some(s => s.date?.startsWith(currentMonthStr));
@@ -77,13 +77,13 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
       });
     }
     return false;
-  }), [group.monthlyPasses, group.classes, currentMonthStr]);
+  }), [allPasses, allClasses, currentMonthStr]);
 
-  const monthBundles = useMemo(() => (group.discounts || []).filter(d => {
+  const monthBundles = useMemo(() => allDiscounts.filter(d => {
     if (d.targetMonth) return d.targetMonth === currentMonthStr;
     if (d.includedClassIds?.length) {
       return d.includedClassIds.some(id => {
-        const cls = (group.classes || []).find(c => c.id === id);
+        const cls = allClasses.find(c => c.id === id);
         if (!cls) return false;
         if (cls.targetMonth) return cls.targetMonth === currentMonthStr;
         if (cls.schedule?.length) return cls.schedule.some(s => s.date?.startsWith(currentMonthStr));
@@ -91,7 +91,7 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
       });
     }
     return false;
-  }), [group.discounts, group.classes, currentMonthStr]);
+  }), [allDiscounts, allClasses, currentMonthStr]);
 
   const handlePrevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
   const handleNextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
@@ -108,6 +108,10 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
 
   const handleRegisterClass = () => {
     router.push(`/class/${group.id}`);
+  };
+
+  const handleItemClick = (item: any) => {
+    router.push(`/class/${group.id}?modal=${item.id}&from=group`);
   };
 
   // Build all items list for display
@@ -191,7 +195,7 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
             return (
               <article
                 key={item.id || idx}
-                onClick={handleRegisterClass}
+                onClick={() => handleItemClick(item)}
                 className="bg-white rounded-xl p-4 shadow-sm border border-[#e0e4e5]/60 flex gap-4 active:scale-[0.99] transition-transform cursor-pointer hover:shadow-md"
               >
                 {/* Thumbnail */}
