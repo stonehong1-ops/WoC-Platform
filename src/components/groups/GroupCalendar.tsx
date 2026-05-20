@@ -6,6 +6,7 @@ import {
   startOfWeek, endOfWeek, isSameMonth, isSameDay, addDays, 
   startOfDay, isToday, parseISO, format
 } from 'date-fns';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { groupService } from '@/lib/firebase/groupService';
 import { eventService } from '@/lib/firebase/eventService';
 import { socialService } from '@/lib/firebase/socialService';
@@ -22,6 +23,10 @@ type ViewMode = 'day' | 'week' | 'month';
 
 const GroupCalendar: React.FC<GroupCalendarProps> = ({ group }) => {
   const { t, formatDate } = useLanguage();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+
   const [viewMode, setViewMode] = useState<ViewMode>('day');
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
@@ -36,7 +41,12 @@ const GroupCalendar: React.FC<GroupCalendarProps> = ({ group }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
 
-  const handleFormClose = () => setIsFormOpen(false); // Replaced useHistoryBack
+  const handleFormClose = () => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('modal');
+    params.delete('eventId');
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
   
   const [formData, setFormData] = useState({
     title: '',
@@ -179,26 +189,53 @@ const GroupCalendar: React.FC<GroupCalendarProps> = ({ group }) => {
   };
 
   const handleOpenForm = (event?: CalendarEvent) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('modal', 'event-add');
     if (event) {
-      setEditingEvent(event);
-      const eventDate = new Date(event.startDate);
-      setFormData({
-        title: event.title, description: event.description || '',
-        startDate: formatDate(eventDate, 'iso'), startTime: event.startTime || '19:00',
-        endDate: formatDate(eventDate, 'iso'), endTime: event.endTime || '21:00',
-        type: event.type,
-      });
+      params.set('eventId', event.id);
     } else {
-      setEditingEvent(null);
-      setFormData({
-        title: '', description: '',
-        startDate: formatDate(selectedDate, 'iso'), startTime: '19:00',
-        endDate: formatDate(selectedDate, 'iso'), endTime: '21:00',
-        type: 'general',
-      });
+      params.delete('eventId');
     }
-    setIsFormOpen(true);
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
   };
+
+  useEffect(() => {
+    const modal = searchParams.get('modal');
+    const eventId = searchParams.get('eventId');
+
+    if (modal === 'event-add') {
+      if (eventId) {
+        const foundEvent = events.find(e => e.id === eventId);
+        if (foundEvent) {
+          setEditingEvent(foundEvent);
+          const eventDate = new Date(foundEvent.startDate);
+          setFormData({
+            title: foundEvent.title,
+            description: foundEvent.description || '',
+            startDate: formatDate(eventDate, 'iso'),
+            startTime: foundEvent.startTime || '19:00',
+            endDate: formatDate(eventDate, 'iso'),
+            endTime: foundEvent.endTime || '21:00',
+            type: foundEvent.type,
+          });
+        }
+      } else {
+        setEditingEvent(null);
+        setFormData({
+          title: '',
+          description: '',
+          startDate: formatDate(selectedDate, 'iso'),
+          startTime: '19:00',
+          endDate: formatDate(selectedDate, 'iso'),
+          endTime: '21:00',
+          type: 'general',
+        });
+      }
+      setIsFormOpen(true);
+    } else {
+      setIsFormOpen(false);
+    }
+  }, [searchParams, selectedDate, groupCalendarEvents, socialEvents, classEvents]);
 
   const handleSaveEvent = async () => {
     if (!formData.title) return;

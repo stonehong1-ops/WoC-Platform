@@ -18,6 +18,7 @@ export type BookingDomain =
   | 'stay' 
   | 'class_4w' 
   | 'class_daily' 
+  | 'class_pass'
   | 'resale' 
   | 'events'
   | 'class_special';

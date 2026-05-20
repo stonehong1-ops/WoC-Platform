@@ -12,7 +12,7 @@ import { useModalNavigation } from '@/hooks/useModalNavigation';
 
 interface GroupClassDashboardProps {
   group: Group;
-  onApplyClick: () => void;
+  onApplyClick: (monthStr: string) => void;
 }
 
 const CURRENCY_SYMBOL: Record<string, string> = { KRW: '₩', USD: '$', EUR: '€' };
@@ -26,7 +26,48 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
   const { openModal: openClassFlow } = useModalNavigation('classFlow');
 
 
-  const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  const [currentDate, setCurrentDate] = useState<Date>(() => {
+    const now = new Date();
+    const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    if (!group?.classPaymentSettings?.openMonths || group.classPaymentSettings.openMonths.length === 0) {
+      return now;
+    }
+    const openMonths = [...group.classPaymentSettings.openMonths].sort();
+    if (openMonths.includes(currentMonthStr)) {
+      return now;
+    }
+    const futureMonths = openMonths.filter(m => m > currentMonthStr);
+    if (futureMonths.length > 0) {
+      const [y, m] = futureMonths[0].split('-').map(Number);
+      return new Date(y, m - 1, 1);
+    }
+    const [y, m] = openMonths[openMonths.length - 1].split('-').map(Number);
+    return new Date(y, m - 1, 1);
+  });
+
+  useEffect(() => {
+    const now = new Date();
+    const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    if (group?.classPaymentSettings?.openMonths && group.classPaymentSettings.openMonths.length > 0) {
+      const openMonths = [...group.classPaymentSettings.openMonths].sort();
+      const currStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+      if (!openMonths.includes(currStr)) {
+        if (openMonths.includes(currentMonthStr)) {
+          setCurrentDate(now);
+        } else {
+          const futureMonths = openMonths.filter(m => m > currentMonthStr);
+          if (futureMonths.length > 0) {
+            const [y, m] = futureMonths[0].split('-').map(Number);
+            setCurrentDate(new Date(y, m - 1, 1));
+          } else {
+            const [y, m] = openMonths[openMonths.length - 1].split('-').map(Number);
+            setCurrentDate(new Date(y, m - 1, 1));
+          }
+        }
+      }
+    }
+  }, [group?.classPaymentSettings?.openMonths]);
+
 
   // Firestore 하위 컬렉션에서 실시간 데이터 구독
   const [allClasses, setAllClasses] = useState<GroupClass[]>([]);
@@ -47,6 +88,11 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
   const [ownerInfo, setOwnerInfo] = useState<any>(null);
 
   const currentMonthStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+  const isRegistrationOpen = useMemo(() => {
+    if (!group?.classPaymentSettings?.openMonths) return true;
+    return group.classPaymentSettings.openMonths.includes(currentMonthStr);
+  }, [group?.classPaymentSettings?.openMonths, currentMonthStr]);
+
   const displayMonth = language === 'KR'
     ? `${currentDate.getFullYear()}년 ${currentDate.getMonth() + 1}월`
     : `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][currentDate.getMonth()]} ${currentDate.getFullYear()}`;
@@ -111,11 +157,11 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
   };
 
   const handleRegisterClass = () => {
-    onApplyClick();
+    onApplyClick(currentMonthStr);
   };
 
   const handleItemClick = (item: any) => {
-    openClassFlow('apply', { modal: item.id });
+    openClassFlow('apply', { modal: item.id, month: currentMonthStr });
   };
 
   // Build all items list for display
@@ -170,6 +216,13 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
           <span className="material-symbols-outlined text-xl text-[#596061]">chevron_right</span>
         </button>
       </div>
+
+      {!isRegistrationOpen && (
+        <div className="bg-rose-50 border-b border-rose-100 text-rose-600 px-4 py-2.5 text-xs font-bold flex items-center gap-2 animate-in fade-in duration-300">
+          <span className="material-symbols-outlined text-base">info</span>
+          {language === 'KR' ? '지금은 수업신청이 불가합니다.' : 'Class registration is currently unavailable.'}
+        </div>
+      )}
 
       {/* Stats Summary - product count based */}
       <div className="grid grid-cols-3 gap-2 px-4 py-3">
@@ -245,10 +298,15 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
       </div>
 
       {/* Bottom Action Bar - Shop/Resale style */}
-      <div className="sticky bottom-0 bg-white/95 backdrop-blur-sm border-t border-[#f2f4f4] px-4 py-3 flex gap-3">
+      <div className="sticky bottom-[60px] md:bottom-[112px] z-[200] bg-white/95 backdrop-blur-sm border-t border-[#f2f4f4] px-4 py-3 flex gap-3">
         <button
           onClick={handleChatWithOwner}
-          className="flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl bg-[#F1F5F9] text-[#596061] font-bold text-sm active:scale-95 transition-all border border-slate-200"
+          disabled={!isRegistrationOpen}
+          className={`flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl font-bold text-sm transition-all border ${
+            isRegistrationOpen
+              ? 'bg-[#F1F5F9] text-[#596061] border-slate-200 active:scale-95'
+              : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+          }`}
         >
           <span className="material-symbols-outlined text-[20px]">chat</span>
           {t('class-dashboard.consultation')}
@@ -256,9 +314,16 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
 
         <button
           onClick={handleRegisterClass}
-          className="flex-1 bg-[#0057bd] text-white rounded-xl py-3.5 flex items-center justify-center gap-2 active:scale-95 transition-all shadow-md shadow-[#0057bd]/20 font-bold text-[15px] relative overflow-hidden group"
+          disabled={!isRegistrationOpen}
+          className={`flex-1 rounded-xl py-3.5 flex items-center justify-center gap-2 transition-all font-bold text-[15px] relative overflow-hidden group ${
+            isRegistrationOpen
+              ? 'bg-[#0057bd] text-white active:scale-95 shadow-md shadow-[#0057bd]/20'
+              : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
+          }`}
         >
-          <div className="absolute inset-0 bg-white/20 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out skew-x-12"></div>
+          {isRegistrationOpen && (
+            <div className="absolute inset-0 bg-white/20 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out skew-x-12"></div>
+          )}
           <span className="material-symbols-outlined text-[20px]">how_to_reg</span>
           {t('class-dashboard.registerClass')}
         </button>

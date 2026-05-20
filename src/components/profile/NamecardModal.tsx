@@ -94,7 +94,7 @@ export default function NamecardModal({ user, isOpen, onClose, onChat, onCall }:
           </header>
 
           {/* Scrollable Area */}
-          <div className="overflow-hidden flex flex-col h-full namecard-scrollbar-hide">
+          <div className="flex-1 min-h-0 overflow-y-auto flex flex-col namecard-scrollbar-hide">
             {/* Profile Visual Section */}
             <div className="relative h-44 w-full overflow-hidden shrink-0">
               {user.photoURL ? (
@@ -130,7 +130,7 @@ export default function NamecardModal({ user, isOpen, onClose, onChat, onCall }:
             </div>
 
             {/* Content Canvas */}
-            <div className="px-modal-padding -mt-10 relative z-10 pb-lg flex-1 overflow-hidden flex flex-col namecard-scrollbar-hide">
+            <div className="px-modal-padding -mt-10 relative z-10 pb-lg flex-1 flex flex-col">
               {/* Hero Info */}
               <div className="flex flex-col gap-xs mb-md shrink-0">
                 <h1 className="font-display-name text-display-name text-on-surface">{displayName}</h1>
@@ -151,17 +151,17 @@ export default function NamecardModal({ user, isOpen, onClose, onChat, onCall }:
 
               {/* Stats Grid */}
               <div className="grid grid-cols-3 gap-xs mb-md shrink-0">
-                <div className="bg-secondary-container/30 p-sm rounded-xl flex flex-col items-center justify-center text-center">
-                  <span className="text-[9px] uppercase tracking-wider font-bold text-on-secondary-container/60 mb-0.5">Role</span>
-                  <span className="font-headline-sm text-[16px] text-on-secondary-container truncate w-full">{user.roles?.[0] || 'Member'}</span>
+                <div className="bg-[#d0e1fb]/30 p-sm rounded-xl flex flex-col items-center justify-center text-center">
+                  <span className="text-[9px] uppercase tracking-wider font-bold text-[#54647a]/60 mb-0.5">Role</span>
+                  <span className="font-headline-sm text-[16px] text-[#54647a]">{user.roles?.[0] || 'Member'}</span>
                 </div>
-                <div className="bg-primary-container/10 p-sm rounded-xl flex flex-col items-center justify-center text-center">
-                  <span className="text-[9px] uppercase tracking-wider font-bold text-primary/60 mb-0.5">Career</span>
-                  <span className="font-headline-sm text-[16px] text-primary truncate w-full">{user.career || 'N/A'}</span>
+                <div className="bg-[#2170e4]/10 p-sm rounded-xl flex flex-col items-center justify-center text-center">
+                  <span className="text-[9px] uppercase tracking-wider font-bold text-[#0058be]/60 mb-0.5">Career</span>
+                  <span className="font-headline-sm text-[16px] text-[#0058be]">{user.career || 'N/A'}</span>
                 </div>
-                <div className="bg-tertiary-fixed/30 p-sm rounded-xl flex flex-col items-center justify-center text-center">
-                  <span className="text-[9px] uppercase tracking-wider font-bold text-on-tertiary-fixed-variant/60 mb-0.5">Partner</span>
-                  <span className="font-headline-sm text-[16px] text-on-tertiary-fixed-variant truncate w-full">{user.partnerStatus || '-'}</span>
+                <div className="bg-[#ffdcc6]/30 p-sm rounded-xl flex flex-col items-center justify-center text-center">
+                  <span className="text-[9px] uppercase tracking-wider font-bold text-[#723600]/60 mb-0.5">Partner</span>
+                  <span className="font-headline-sm text-[16px] text-[#723600]">{user.partnerStatus || '-'}</span>
                 </div>
               </div>
 
@@ -200,7 +200,7 @@ export default function NamecardModal({ user, isOpen, onClose, onChat, onCall }:
               <div className="flex gap-md mt-auto shrink-0">
                 <button 
                   onClick={() => onChat?.(user.uid)}
-                  className="flex-1 h-12 rounded-xl bg-primary text-white font-action-text text-action-text flex items-center justify-center gap-2 shadow-lg shadow-primary/20 active:scale-[0.98] transition-all"
+                  className="flex-1 h-12 rounded-xl bg-[#0058be] text-white font-action-text text-action-text flex items-center justify-center gap-2 shadow-lg shadow-[#0058be]/20 active:scale-[0.98] transition-all"
                 >
                   <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>chat_bubble</span>
                   Chat
@@ -208,7 +208,7 @@ export default function NamecardModal({ user, isOpen, onClose, onChat, onCall }:
                 {user.phone && onCall && (
                   <button 
                     onClick={() => onCall(user.phone!)}
-                    className="w-12 h-12 rounded-xl border-2 border-outline-variant bg-transparent text-on-surface flex items-center justify-center active:bg-surface-container-high active:scale-[0.98] transition-all"
+                    className="w-12 h-12 rounded-xl border-2 border-[#c2c6d6] bg-transparent text-[#191c1e] flex items-center justify-center active:bg-surface-container-high active:scale-[0.98] transition-all"
                   >
                     <span className="material-symbols-outlined text-[20px]">call</span>
                   </button>

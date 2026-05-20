@@ -22,12 +22,13 @@ interface UnifiedCheckoutModalProps {
   onCheckout: () => Promise<string | void>;
   isProcessing?: boolean;
   buttonText?: string;
+  isSubmitDisabled?: boolean;
 
   // Step 2: Payment Instructions
   bankDetails?: { bankName: string; accountHolder: string; accountNumber: string };
   
   // Action for Step 2
-  onReportPayment?: (orderId: string) => Promise<void>;
+  onReportPayment?: (orderId: string, memo?: string) => Promise<void>;
   
   // Action for Step 3
   onComplete?: () => void;
@@ -99,7 +100,8 @@ export default function UnifiedCheckoutModal({
   initialStep,
   initialBookingId,
   initialOrderNumber,
-  initialCreatedAt
+  initialCreatedAt,
+  isSubmitDisabled = false
 }: UnifiedCheckoutModalProps) {
   const { user } = useAuth();
   const { language, t } = useLanguage();
@@ -110,6 +112,7 @@ export default function UnifiedCheckoutModal({
   const [displayOrderNumber, setDisplayOrderNumber] = useState<string>('');
   const [countdown, setCountdown] = useState(3600); // 60 min
   const [copied, setCopied] = useState('');
+  const [paymentMemo, setPaymentMemo] = useState('');
 
   const sym = currency === 'KRW' ? '₩' : currency === 'USD' ? '$' : currency + ' ';
 
@@ -134,6 +137,7 @@ export default function UnifiedCheckoutModal({
         setBookingId('');
         setDisplayOrderNumber('');
         setCountdown(3600);
+        setPaymentMemo('');
       }, 300); // delay to prevent UI flicker
     }
   }, [isOpen, initialStep, initialBookingId, initialOrderNumber, initialCreatedAt]);
@@ -187,7 +191,7 @@ export default function UnifiedCheckoutModal({
     setLocalProcessing(true);
     try {
       if (onReportPayment) {
-        await onReportPayment(bookingId);
+        await onReportPayment(bookingId, paymentMemo || undefined);
       }
       setStep('complete');
     } catch (err) {
@@ -211,7 +215,7 @@ export default function UnifiedCheckoutModal({
         
         <button
           onClick={handleCheckoutClick}
-          disabled={isProcessing || localProcessing || !user}
+          disabled={isProcessing || localProcessing || !user || isSubmitDisabled}
           className="w-full h-12 flex items-center justify-center rounded-xl bg-black dark:bg-white text-white dark:text-black font-semibold text-lg transition-transform active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
         >
           {isProcessing || localProcessing ? (
@@ -233,7 +237,7 @@ export default function UnifiedCheckoutModal({
               {subtitle}
             </div>
           )}
-          <div className="px-5 py-4">
+          <div className="flex-1 overflow-y-auto max-h-[60vh] sm:max-h-[75vh] md:max-h-none px-5 py-4">
             {children}
           </div>
         </div>
@@ -332,6 +336,21 @@ export default function UnifiedCheckoutModal({
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Payment Memo */}
+          <div className="bg-[#f8f9fa] dark:bg-neutral-800 rounded-2xl p-4 border border-[#e0e4e5] dark:border-neutral-700">
+            <p className="text-[10px] font-bold text-[#acb3b4] dark:text-neutral-500 uppercase tracking-widest mb-2">
+              {language === 'KR' ? '메모' : 'Memo'} <span className="normal-case tracking-normal text-[#acb3b4] dark:text-neutral-600">({language === 'KR' ? '선택' : 'Optional'})</span>
+            </p>
+            <textarea
+              value={paymentMemo}
+              onChange={(e) => setPaymentMemo(e.target.value)}
+              placeholder={language === 'KR' ? '입금자명, 멤버쉽등 사유 등 입금확인 가능정보' : 'Depositor name, membership info, or payment reference'}
+              maxLength={200}
+              rows={2}
+              className="w-full bg-white dark:bg-neutral-900 border border-[#e0e4e5] dark:border-neutral-700 rounded-xl px-3 py-2.5 text-sm text-[#2d3435] dark:text-white placeholder:text-[#acb3b4] dark:placeholder:text-neutral-600 focus:outline-none focus:ring-2 focus:ring-[#0057bd]/30 focus:border-[#0057bd] resize-none"
+            />
           </div>
 
         </div>

@@ -3,7 +3,7 @@
 import '../../app/live/live.css';
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Heart,
@@ -47,10 +47,55 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
   const containerRef = useRef<HTMLDivElement>(null);
   const [isImmersive, setIsImmersive] = useState(false);
 
-  const handleCommentClose = () => setActiveCommentPost(null); // Replaced useHistoryBack
-  const handleImmersiveClose = () => setIsImmersive(false); // Replaced useHistoryBack
-
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+
+  const handleCommentClose = () => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('modal');
+    params.delete('commentPostId');
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
+  const handleImmersiveClose = () => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('modal');
+    params.delete('immersivePostId');
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
+  const handleOpenComments = (postId: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('modal', 'live-comments');
+    params.set('commentPostId', postId);
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
+  const handleOpenImmersive = (postId: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('modal', 'live-immersive');
+    params.set('immersivePostId', postId);
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
+  // Dual-Binding Mode: Sync searchParams with local modal states
+  useEffect(() => {
+    const modal = searchParams.get('modal');
+    const commentPostId = searchParams.get('commentPostId');
+
+    if (modal === 'live-immersive') {
+      setIsImmersive(true);
+    } else {
+      setIsImmersive(false);
+    }
+
+    if (modal === 'live-comments' && commentPostId) {
+      setActiveCommentPost(commentPostId);
+    } else {
+      setActiveCommentPost(null);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (isImmersive) {
@@ -147,9 +192,9 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
           <GalleryCard
             key={post.id}
             post={post}
-            onOpenComments={() => setActiveCommentPost(post.id)}
+            onOpenComments={() => handleOpenComments(post.id)}
             isImmersive={isImmersive}
-            setIsImmersive={setIsImmersive}
+            onOpenImmersive={() => handleOpenImmersive(post.id)}
             onCloseImmersive={handleImmersiveClose}
           />
         ))}
@@ -172,13 +217,13 @@ const GalleryCard = ({
   post,
   onOpenComments,
   isImmersive,
-  setIsImmersive,
+  onOpenImmersive,
   onCloseImmersive
 }: {
   post: GalleryPost,
   onOpenComments: () => void,
   isImmersive: boolean,
-  setIsImmersive: (value: boolean) => void,
+  onOpenImmersive: () => void,
   onCloseImmersive: () => void
 }) => {
   const { user } = useAuth();
@@ -257,7 +302,7 @@ const GalleryCard = ({
   const handleMediaClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!isImmersive) {
-      setIsImmersive(true);
+      onOpenImmersive();
       videoRefs.current.forEach(video => {
         if (video) video.muted = false;
       });

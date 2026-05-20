@@ -9,7 +9,7 @@ import { Venue } from '@/types/venue';
 import { useNavigation } from '@/components/providers/NavigationProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useModalNavigation } from '@/hooks/useModalNavigation';
+import ClassDetail from '@/components/class/ClassDetail';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/clientApp';
@@ -20,6 +20,10 @@ import GroupClassAddEditor from '@/components/groups/GroupClassAddEditor';
 import BottomSheet from '@/components/common/BottomSheet';
 import { bookingService } from '@/lib/firebase/bookingService';
 import { BaseBooking } from '@/types/booking';
+import { chatService } from '@/lib/firebase/chatService';
+import dynamic from 'next/dynamic';
+
+const ChatRoomComponent = dynamic(() => import('../chat/ChatRoom'));
 
 
 export default function ClassPortal() {
@@ -64,7 +68,8 @@ export default function ClassPortal() {
 
   const { createBooking, reportPayment, isLoading: isBooking } = useBookingEngine();
   
-  const { openModal: openClassDetail } = useModalNavigation('modal');
+  const [selectedDetailClass, setSelectedDetailClass] = useState<any | null>(null);
+  const [chatOverlayRoomId, setChatOverlayRoomId] = useState<string | null>(null);
 
   const [userBookings, setUserBookings] = useState<BaseBooking[]>([]);
   const [checkoutInitialStep, setCheckoutInitialStep] = useState<'summary' | 'payment' | 'complete' | undefined>(undefined);
@@ -305,7 +310,7 @@ export default function ClassPortal() {
   }, [activeTab, selectedOrganizer, selectedClub, showOrganizerFilter, showClubFilter, organizers, clubs, setSubHeader]);
 
   const handleClassClick = (cls: any) => {
-    router.push(`/class/${cls.groupId}?modal=${cls.id}&from=portal`);
+    setSelectedDetailClass(cls);
   };
 
   const handleGroupClick = (group: Group) => {
@@ -454,9 +459,23 @@ export default function ClassPortal() {
     setCheckoutModalOpen(true);
   };
 
-  const handleChatWithHost = (hostId: string) => {
+  const handleChatWithHost = async (hostId: string) => {
     if (!hostId) return;
-    router.push(`/chat/${hostId}`);
+    if (!user) {
+      alert(language === 'KR' ? '로그인이 필요합니다.' : 'Login is required.');
+      return;
+    }
+    if (user.uid === hostId) {
+      alert(language === 'KR' ? '본인과는 채팅할 수 없습니다.' : 'You cannot chat with yourself.');
+      return;
+    }
+    try {
+      const roomId = await chatService.getOrCreatePrivateRoom([user.uid, hostId], user.uid, 'business');
+      setChatOverlayRoomId(roomId);
+    } catch (err) {
+      console.error('Failed to get or create chat room:', err);
+      alert(language === 'KR' ? '채팅방을 열 수 없습니다.' : 'Failed to open chat room.');
+    }
   };
 
   const renderBookingStatusArea = (cls: any, isPast: boolean, isSpecial: boolean = false) => {
@@ -1284,6 +1303,24 @@ export default function ClassPortal() {
             </div>
           </div>
         </Portal>
+      )}
+      {/* Class Detail Overlay - state 기반, 페이지 이동 없이 열고 닫힘 */}
+      <ClassDetail
+        groupId={selectedDetailClass?.groupId || ''}
+        isOpen={!!selectedDetailClass}
+        itemId={selectedDetailClass?.id}
+        itemDetail={selectedDetailClass}
+        onClose={() => setSelectedDetailClass(null)}
+      />
+
+      {/* Chat Overlay - 관리자와 채팅을 현재 페이지 위에 오버레이로 표시 */}
+      {chatOverlayRoomId && (
+        <div className="fixed inset-0 z-[9999] bg-background flex flex-col">
+          <ChatRoomComponent
+            roomId={chatOverlayRoomId}
+            onBack={() => setChatOverlayRoomId(null)}
+          />
+        </div>
       )}
     </div>
   );

@@ -130,7 +130,7 @@ export function useBookingEngine() {
   /**
    * 1.5 Report Payment (User action after creating PENDING booking)
    */
-  const reportPayment = async (bookingId: string) => {
+  const reportPayment = async (bookingId: string, memo?: string) => {
     if (!user) {
       throw new Error("User must be logged in to report payment.");
     }
@@ -151,7 +151,8 @@ export function useBookingEngine() {
 
       batch.update(bookingRef, {
         status: 'BANK_TRANSFERRED',
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
+        ...(memo ? { paymentMemo: memo } : {})
       });
 
       // 1. Host Notification (No functions)
@@ -192,7 +193,8 @@ export function useBookingEngine() {
           const msg = `💸 ${t('shop.chat_payment_prefix', '[PAYMENT REPORTED]')}\n` +
             `${t('shop.chat_order_no', 'Order No')}: ${orderNumDisplay}\n` +
             `${t('shop.chat_product_name', 'Item')}: ${bookingData.itemName}\n` +
-            `${t('shop.chat_depositor', 'Depositor')}: ${user.displayName || t('common.user', 'User')}`;
+            `${t('shop.chat_depositor', 'Depositor')}: ${user.displayName || t('common.user', 'User')}` +
+            (memo ? `\nMemo: ${memo}` : '');
           
           // 1. Buyer's payment report message
           await chatService.sendMessage({

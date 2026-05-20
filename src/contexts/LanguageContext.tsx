@@ -1058,6 +1058,11 @@ const dictionary: Record<Language, Record<string, string>> = {
     'class.booking_notice_title': 'Notice',
     'class.booking_notice_desc': 'After submitting this request, your booking will be in "Waiting Confirmation" status. You will receive an instruction for the payment. Your spot is finalized once the host confirms the payment.',
     'class.submit_request': 'Submit Request',
+    'class.booking_monthly_title': 'Class Registration',
+    'class.applied_items': 'Applied Items',
+    'class.booking_pass_title': 'Monthly Pass',
+    'class.select_participating_classes': 'Select Participating Classes',
+    'class.selected_count': '{count} / {total} selected',
 
     // Stay Module
     'stay.sort_latest': 'Latest',
@@ -4173,6 +4178,11 @@ const dictionary: Record<Language, Record<string, string>> = {
     'class.booking_notice_title': '안내 사항',
     'class.booking_notice_desc': '신청서를 제출하시면 예약이 \'승인 대기\' 상태가 됩니다. 이후 결제 안내 메시지가 발송되며, 호스트가 입금을 확인하면 최종 예약이 확정됩니다.',
     'class.submit_request': '신청서 제출',
+    'class.booking_monthly_title': '수업 등록',
+    'class.applied_items': '신청 항목',
+    'class.booking_pass_title': '월간 패스',
+    'class.select_participating_classes': '참여 클래스 선택',
+    'class.selected_count': '{count} / {total}개 선택',
 
     // Stay Module
     'stay.sort_latest': '최신순',

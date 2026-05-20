@@ -23,6 +23,28 @@ interface GroupClassEditorProps {
   onClose?: () => void;
   isInline?: boolean;
 }
+const DAY_ORDER = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'] as const;
+
+function getDayOfWeek(dateStr: string): string {
+  if (!dateStr) return '';
+  const cleanDate = dateStr.replace(/\./g, '-');
+  const d = new Date(cleanDate);
+  if (isNaN(d.getTime())) return '';
+  return ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][d.getDay()];
+}
+
+const getClassDay = (cls: any): string => {
+  if (cls.schedule && cls.schedule.length > 0) {
+    const day = getDayOfWeek(cls.schedule[0].date);
+    return day || 'MON';
+  }
+  return 'MON';
+};
+
+const getDayIndex = (day: string) => {
+  const idx = DAY_ORDER.indexOf(day as any);
+  return idx === -1 ? 99 : idx;
+};
 
 type EditorType = 'add-class' | 'discount' | 'monthly-pass' | 'payment' | 'clone';
 
@@ -124,6 +146,16 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
   const allDiscounts = [...subDiscounts, ...(group.discounts || []).filter(d => !subDiscounts.find(sd => sd.id === d.id))];
 
   const filteredClasses = allClasses.filter(cls => !cls.targetMonth || cls.targetMonth === currentMonthStr);
+  const sortedClasses = [...filteredClasses].sort((a, b) => {
+    const dayA = getClassDay(a);
+    const dayB = getClassDay(b);
+    const idxA = getDayIndex(dayA);
+    const idxB = getDayIndex(dayB);
+    if (idxA !== idxB) return idxA - idxB;
+    const timeA = a.startTime || '00:00';
+    const timeB = b.startTime || '00:00';
+    return timeA.localeCompare(timeB);
+  });
   const filteredPasses = allMonthlyPasses.filter((pass: MonthlyPass) => pass.targetMonth === currentMonthStr);
   const filteredDiscounts = allDiscounts.filter((discount: ClassDiscount) => !discount.targetMonth || discount.targetMonth === currentMonthStr);
 
@@ -349,7 +381,7 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
             className="flex-1 flex flex-col items-center justify-center gap-1 px-2 py-3 bg-gray-900 text-white rounded-[12px] shadow-sm hover:bg-gray-800 transition-colors active:scale-95"
           >
             <span className="material-symbols-outlined text-xl">content_copy</span>
-            <span className="text-xs font-bold leading-tight text-center">Clone</span>
+            <span className="text-xs font-bold leading-tight text-center">{language === 'KR' ? '복제하기' : 'Clone'}</span>
           </button>
         </section>
 
@@ -481,56 +513,68 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
           ))}
 
           {/* Classes */}
-          {filteredClasses.map((cls) => (
-            <div key={cls.id} className="bg-white rounded-[12px] shadow-sm hover:shadow-md transition-shadow border border-gray-100 p-5 flex items-start gap-4">
-              <div className="flex-grow">
-                <div className="flex justify-between items-start mb-1">
-                  <div className="flex items-center gap-2">
-                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${getLevelColor(cls.level)}`}>
-                      {cls.level || t('group.class.all_levels') || 'All Levels'}
-                    </span>
-                    <span className="text-xs font-bold text-gray-400">#C-{cls.id.slice(0, 4)}</span>
-                  </div>
-                </div>
-                <h4 className="text-lg font-bold text-gray-900 leading-tight mb-2">{cls.title}</h4>
-                <div className="flex flex-col gap-1 text-sm text-gray-600 mb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-[#0057bd]">
-                      {cls.schedule?.length ? (t('group.class.plus_sessions')?.replace('{date}', cls.schedule[0].date).replace('{count}', String(cls.schedule.length - 1)) || `${cls.schedule[0].date} plus ${cls.schedule.length - 1} sessions`) : (t('group.class.no_sessions') || 'No sessions')}
-                    </span>
-                    <span className="ml-2 text-gray-600">{cls.schedule?.[0]?.timeSlot || ''}</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500">{t('group.class.instructor') || "Instructor:"}</span>
-                    <span className="text-sm font-semibold text-gray-800">
-                      {cls.instructors?.[0]?.name || t('group.class.tbd') || 'TBD'}
-                      {cls.instructors && cls.instructors.length > 1 && ` +${cls.instructors.length - 1}`}
-                    </span>
-                  </div>
-                  <span className="text-sm font-bold text-gray-900">{cls.currency === 'KRW' ? '₩' : cls.currency} {cls.amount.toLocaleString()}</span>
-                </div>
-              </div>
-              <div className="relative action-menu-container">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setActiveMenuId(activeMenuId === cls.id ? null : cls.id);
-                  }}
-                  className="p-1 hover:bg-gray-100 rounded-full transition-colors text-gray-400"
-                >
-                  <span className="material-symbols-outlined">more_vert</span>
-                </button>
-                {activeMenuId === cls.id && (
-                  <div className="absolute right-0 mt-1 w-32 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden z-20">
-                    <button onClick={() => handleEdit('add-class', cls)} className="w-full px-4 py-2 text-left text-sm font-bold hover:bg-gray-50">{t('common.edit') || "Edit"}</button>
-                    <button onClick={() => handleDelete('class', cls.id)} className="w-full px-4 py-2 text-left text-sm font-bold text-red-500 hover:bg-red-50">{t('common.delete') || "Delete"}</button>
-                  </div>
+          {sortedClasses.map((cls, idx) => {
+            const day = getClassDay(cls);
+            const prevCls = idx > 0 ? sortedClasses[idx - 1] : null;
+            const prevDay = prevCls ? getClassDay(prevCls) : null;
+            const isNewDay = idx > 0 && day !== prevDay;
+
+            return (
+              <React.Fragment key={cls.id}>
+                {isNewDay && (
+                  <div className="border-t border-gray-200 dark:border-gray-800 my-4" />
                 )}
-              </div>
-            </div>
-          ))}
+                <div className="bg-white rounded-[12px] shadow-sm hover:shadow-md transition-shadow border border-gray-100 p-5 flex items-start gap-4">
+                  <div className="flex-grow">
+                    <div className="flex justify-between items-start mb-1">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${getLevelColor(cls.level)}`}>
+                          {cls.level || t('group.class.all_levels') || 'All Levels'}
+                        </span>
+                        <span className="text-xs font-bold text-gray-400">#C-{cls.id.slice(0, 4)}</span>
+                      </div>
+                    </div>
+                    <h4 className="text-lg font-bold text-gray-900 leading-tight mb-2">{cls.title}</h4>
+                    <div className="flex flex-col gap-1 text-sm text-gray-600 mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-[#0057bd]">
+                          {cls.schedule?.length ? (t('group.class.plus_sessions')?.replace('{date}', cls.schedule[0].date).replace('{count}', String(cls.schedule.length - 1)) || `${cls.schedule[0].date} plus ${cls.schedule.length - 1} sessions`) : (t('group.class.no_sessions') || 'No sessions')}
+                        </span>
+                        <span className="ml-2 text-gray-600">{cls.schedule?.[0]?.timeSlot || ''}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500">{t('group.class.instructor') || "Instructor:"}</span>
+                        <span className="text-sm font-semibold text-gray-800">
+                          {cls.instructors?.[0]?.name || t('group.class.tbd') || 'TBD'}
+                          {cls.instructors && cls.instructors.length > 1 && ` +${cls.instructors.length - 1}`}
+                        </span>
+                      </div>
+                      <span className="text-sm font-bold text-gray-900">{cls.currency === 'KRW' ? '₩' : cls.currency} {cls.amount.toLocaleString()}</span>
+                    </div>
+                  </div>
+                  <div className="relative action-menu-container">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveMenuId(activeMenuId === cls.id ? null : cls.id);
+                      }}
+                      className="p-1 hover:bg-gray-100 rounded-full transition-colors text-gray-400"
+                    >
+                      <span className="material-symbols-outlined">more_vert</span>
+                    </button>
+                    {activeMenuId === cls.id && (
+                      <div className="absolute right-0 mt-1 w-32 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden z-20">
+                        <button onClick={() => handleEdit('add-class', cls)} className="w-full px-4 py-2 text-left text-sm font-bold hover:bg-gray-50">{t('common.edit') || "Edit"}</button>
+                        <button onClick={() => handleDelete('class', cls.id)} className="w-full px-4 py-2 text-left text-sm font-bold text-red-500 hover:bg-red-50">{t('common.delete') || "Delete"}</button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </React.Fragment>
+            );
+          })}
         </section>
         </>
         )}

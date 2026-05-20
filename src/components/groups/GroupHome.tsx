@@ -29,6 +29,7 @@ import { FUNCTION_TAB_MAP } from '@/constants/groupTabs';
 import { useSearchParams, usePathname } from "next/navigation";
 import { useModalNavigation } from "@/hooks/useModalNavigation";
 import ClassDetail from "../class/ClassDetail";
+import ClubClassSelectionPage from "@/app/class/[groupId]/page";
 
 type TabType = 'home' | 'calendar' | 'feed' | 'board' | 'about' | 'class' | 'class-setting' | 'members' | 'settings' | 'shop' | 'stay' | 'rental' | 'coupon' | 'live' | 'brand' | 'polls' | 'qa' | 'broadcast' | 'attendance' | 'rules' | 'surveys' | 'anonymous' | 'classA' | 'classB' | 'classC' | 'homework' | 'studentReports' | 'tuition' | 'gradeSystem' | 'parentNotify' | 'parentConsult' | 'examScheduler' | 'ticketBooking' | 'workshopReg' | 'qrCheckin' | 'waitlist' | 'retreat' | 'eventStaff' | 'guestList' | 'productInventory' | 'membershipBilling' | 'donationSupport' | 'subscriptionPlans' | 'settlementReports' | 'mediaGallery' | 'videoLibrary' | 'editorialPage' | 'newsletter' | 'podcastFeed' | 'pressKit' | 'linkHub' | 'socialSync' | 'brandAssets' | 'customLandingPage' | 'taskManager' | 'internalWiki' | 'aiAssistant' | 'roles';
 
@@ -1139,7 +1140,7 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
                   <GroupClassDashboard
                     group={currentGroup}
-                    onApplyClick={() => openClassFlow('apply')}
+                    onApplyClick={(monthStr) => openClassFlow('apply', { month: monthStr })}
                   />
                 </div>
 
@@ -1586,13 +1587,14 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
       />
 
       {/* Class Detail Modal Overlay */}
-      <ClassDetail
-        groupId={currentGroup.id}
-        isModal={true}
-        isOpen={localClassFlow === 'apply'}
-        itemId={localModalId || undefined}
-        onClose={handleCloseClassDetail}
-      />
+      {localClassFlow === 'apply' ? (
+        <ClubClassSelectionPage
+          propGroupId={currentGroup.id}
+          propModalId={localModalId || undefined}
+          isOverlay={true}
+          onClose={handleCloseClassDetail}
+        />
+      ) : null}
 
       {/* Fullscreen Group Chat Overlay */}
       {showGroupChat && (
