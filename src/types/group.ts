@@ -143,6 +143,7 @@ export interface Group {
       accountNumber: string;
     };
     closedMonths?: string[];
+    openMonths?: string[];
   };
   bankDetails?: {
     bankName: string;

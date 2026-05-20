@@ -109,7 +109,7 @@ export function useBookingEngine() {
         console.error('Failed to send booking chat notification:', chatErr);
       }
 
-      return bookingRef.id;
+      return `${bookingRef.id}|${orderNumber}`;
     } catch (err: any) {
       console.error("Failed to create booking:", err);
       setError(err.message || 'Failed to create booking');

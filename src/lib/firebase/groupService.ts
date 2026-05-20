@@ -706,6 +706,36 @@ export const groupService = {
     }
   },
 
+  // Get all monthly passes across all groups
+  getGlobalMonthlyPassesAll: async (): Promise<any[]> => {
+    try {
+      const snapshot = await getDocs(collectionGroup(db, 'monthlyPasses'));
+      return snapshot.docs.map(d => {
+        const pathSegments = d.ref.path.split('/');
+        const groupId = pathSegments[1] || '';
+        return { id: d.id, groupId, ...groupService._convertTimestamps(d.data()) };
+      });
+    } catch (error) {
+      console.error('getGlobalMonthlyPassesAll error:', error);
+      return [];
+    }
+  },
+
+  // Get all discounts (bundles) across all groups
+  getGlobalDiscountsAll: async (): Promise<any[]> => {
+    try {
+      const snapshot = await getDocs(collectionGroup(db, 'discounts'));
+      return snapshot.docs.map(d => {
+        const pathSegments = d.ref.path.split('/');
+        const groupId = pathSegments[1] || '';
+        return { id: d.id, groupId, ...groupService._convertTimestamps(d.data()) };
+      });
+    } catch (error) {
+      console.error('getGlobalDiscountsAll error:', error);
+      return [];
+    }
+  },
+
   // Get all classes across all groups happening today
   getGlobalClassesToday: async (): Promise<any[]> => {
     try {

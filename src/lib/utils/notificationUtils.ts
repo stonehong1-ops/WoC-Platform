@@ -225,5 +225,123 @@ export const notificationUtils = {
     } catch (err) {
       console.error('Failed to send payment reported notification:', err);
     }
+  },
+
+  // Class Reservation Applied
+  sendClassReservationNotification: async ({
+    user,
+    adminId,
+    orderNumber,
+    classTitles,
+    totalAmount,
+    selectedRole,
+    buyerPhone,
+    applicantMemo,
+    t
+  }: {
+    user: any;
+    adminId: string;
+    orderNumber: string;
+    classTitles: string;
+    totalAmount: number;
+    selectedRole: string;
+    buyerPhone: string;
+    applicantMemo?: string;
+    t: (key: string, defaultText: string) => string;
+  }) => {
+    try {
+      if (!adminId) return;
+      const roomId = await chatService.getOrCreatePrivateRoom([user.uid, adminId], user.uid, 'business');
+      
+      const msg = `📅 [CLASS RESERVATION]\n` +
+        `Order No: ${orderNumber}\n` +
+        `Items: ${classTitles}\n` +
+        `Total: ${totalAmount.toLocaleString()} KRW\n` +
+        `Role: ${selectedRole.toUpperCase()}\n` +
+        `Contact: ${buyerPhone}` +
+        (applicantMemo ? `\nMemo: ${applicantMemo}` : '');
+
+      await chatService.sendMessage({
+        roomId,
+        senderId: user.uid,
+        senderName: user.displayName || 'User',
+        text: msg,
+        type: 'text'
+      });
+    } catch (err) {
+      console.error('Failed to send class reservation notification:', err);
+    }
+  },
+
+  // Class Payment Reported (d-step)
+  sendClassPaymentReportedNotification: async ({
+    user,
+    adminId,
+    orderNumber,
+    depositorName,
+    t
+  }: {
+    user: any;
+    adminId: string;
+    orderNumber: string;
+    depositorName?: string;
+    t: (key: string, defaultText: string) => string;
+  }) => {
+    try {
+      if (!adminId || adminId === user.uid) return;
+      const roomId = await chatService.getOrCreatePrivateRoom([user.uid, adminId], user.uid, 'business');
+      
+      const depositor = depositorName || user.displayName || 'User';
+      const msg = `💸 [PAYMENT REPORTED]\n` +
+        `Order No: ${orderNumber}\n` +
+        `Depositor: ${depositor}\n` +
+        `I have transferred the payment. Please confirm!`;
+
+      await chatService.sendMessage({
+        roomId,
+        senderId: user.uid,
+        senderName: depositor,
+        text: msg,
+        type: 'text'
+      });
+    } catch (err) {
+      console.error('Failed to send class payment reported notification:', err);
+    }
+  },
+
+  // Class Payment Completed / Approved (e-step)
+  sendClassApprovedNotification: async ({
+    user,
+    buyerId,
+    orderNumber,
+    classTitle,
+    t
+  }: {
+    user: any;
+    buyerId: string;
+    orderNumber: string;
+    classTitle: string;
+    t: (key: string, defaultText: string) => string;
+  }) => {
+    try {
+      if (!buyerId || buyerId === user.uid) return;
+      const roomId = await chatService.getOrCreatePrivateRoom([user.uid, buyerId], user.uid, 'business');
+      
+      const msg = `✅ [CLASS APPROVED]\n` +
+        `Order No: ${orderNumber}\n` +
+        `Class: ${classTitle}\n` +
+        `Your class registration has been approved. Thank you!`;
+
+      await chatService.sendMessage({
+        roomId,
+        senderId: user.uid,
+        senderName: user.displayName || 'Admin',
+        text: msg,
+        type: 'text'
+      });
+    } catch (err) {
+      console.error('Failed to send class approved notification:', err);
+    }
   }
 };
+

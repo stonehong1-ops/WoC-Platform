@@ -49,36 +49,6 @@ export const classRegistrationService = {
       
       batch.set(regRef, registration);
 
-      // Create Notifications using the same batch
-      if (registration.groupId && registration.userId) {
-        const { notificationService } = await import('@/lib/firebase/notificationService');
-        
-        // 1. Admin Todo
-        await notificationService.createTodoForGroupAdmins(
-          registration.groupId,
-          {
-            category: 'CLASS',
-            type: 'CLASS_APPLY',
-            title: 'New Class Application',
-            message: `${registration.applicantName || 'User'} has applied for '${registration.classTitle || 'Class'}'. Please verify payment.`,
-            actionUrl: `/groups/${registration.groupId}?tab=classes`,
-            referenceId: regRef.id,
-          },
-          batch
-        );
-
-        // 2. User Info
-        await notificationService.createNotification({
-          targetUserId: registration.userId,
-          category: 'CLASS',
-          type: 'CLASS_APPLY_INFO',
-          title: 'Class Application Received',
-          message: `Application for '${registration.classTitle || 'Class'}' has been received. It will be approved after payment is verified.`,
-          actionUrl: `/history`,
-          referenceId: regRef.id,
-        }, batch);
-      }
-
       await batch.commit();
       return registration as ClassRegistration;
     } catch (error: any) {
@@ -97,29 +67,6 @@ export const classRegistrationService = {
         ...updates,
         updatedAt: serverTimestamp()
       });
-
-      // If marked as COMPLETED, notify user and close Admin Todos
-      if (updates.status === 'PAYMENT_COMPLETED') {
-        const snap = await getDoc(regRef);
-        if (snap.exists()) {
-          const regData = snap.data() as ClassRegistration;
-          if (regData.userId) {
-            const { notificationService } = await import('@/lib/firebase/notificationService');
-            
-            await notificationService.createNotification({
-              targetUserId: regData.userId,
-              category: 'CLASS',
-              type: 'CLASS_APPROVED',
-              title: 'Class Approved',
-              message: `Approval and payment verification for '${regData.classTitle || 'Class'}' are complete.`,
-              actionUrl: `/history`,
-              referenceId: registrationId,
-            }, batch);
-
-            await notificationService.markTodosAsCompletedByReference(registrationId, batch);
-          }
-        }
-      }
 
       await batch.commit();
     } catch (error) {
