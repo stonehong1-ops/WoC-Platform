@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { groupService } from '@/lib/firebase/groupService';
-import { Group, GroupClass, ClassDiscount, MonthlyPass } from '@/types/group';
+import { Group, GroupClass, ClassDiscount } from '@/types/group';
 import { useAuth } from '@/components/providers/AuthProvider';
 
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -79,7 +79,6 @@ export default function ClubClassSelectionPage({
 
   // Firestore 하위 컬렉션 구독
   const [subClasses, setSubClasses] = useState<GroupClass[]>([]);
-  const [subPasses, setSubPasses] = useState<MonthlyPass[]>([]);
   const [subDiscounts, setSubDiscounts] = useState<ClassDiscount[]>([]);
   
   const monthParam = searchParams.get('month');
@@ -187,15 +186,13 @@ export default function ClubClassSelectionPage({
   useEffect(() => {
     if (!groupId) return;
     const unsubC = groupService.subscribeClasses(groupId, setSubClasses);
-    const unsubP = groupService.subscribeMonthlyPasses(groupId, setSubPasses);
     const unsubD = groupService.subscribeDiscounts(groupId, setSubDiscounts);
-    return () => { unsubC(); unsubP(); unsubD(); };
+    return () => { unsubC(); unsubD(); };
   }, [groupId]);
 
   useEffect(() => {
-    if (modalClassId && (subClasses.length > 0 || subPasses.length > 0 || subDiscounts.length > 0)) {
+    if (modalClassId && (subClasses.length > 0 || subDiscounts.length > 0)) {
       const all = [
-        ...subPasses.map(p => ({ ...p, itemType: 'monthlyPass' as const })),
         ...subDiscounts.map(d => ({ ...d, itemType: 'discount' as const })),
         ...subClasses.map(c => ({ ...c, itemType: 'class' as const }))
       ];
@@ -204,7 +201,7 @@ export default function ClubClassSelectionPage({
         setSelectedClassDetail(targetItem);
       }
     }
-  }, [modalClassId, subClasses, subPasses, subDiscounts]);
+  }, [modalClassId, subClasses, subDiscounts]);
 
   // 상세보기 모달 닫기: propModalId로 열린 경우 전체 오버레이를 닫아 원래 화면으로 복귀.
   const closeDetailModal = useCallback(() => {
@@ -246,20 +243,16 @@ export default function ClubClassSelectionPage({
   const allGroupClasses = subClasses.length > 0 ? subClasses : (group.classes || []);
   const allGroupClassesOriginal = allGroupClasses;
   const classes = allGroupClasses.filter(cls => !cls.targetMonth || cls.targetMonth === currentMonthStr);
-  const allMonthlyPassesOriginal = subPasses.length > 0 ? subPasses : (group.monthlyPasses || []);
-  const monthlyPasses = allMonthlyPassesOriginal.filter(p => !p.targetMonth || p.targetMonth === currentMonthStr);
   const allDiscountsOriginal = subDiscounts.length > 0 ? subDiscounts : (group.discounts || []);
   const discounts = allDiscountsOriginal.filter(d => !d.targetMonth || d.targetMonth === currentMonthStr);
 
   const allPackagesOriginal = [
-    ...allMonthlyPassesOriginal.map(p => ({ ...p, itemType: 'monthlyPass' as const, amount: p.amount, currency: p.currency })),
     ...allDiscountsOriginal.map(d => ({ ...d, itemType: 'discount' as const, amount: d.amount, currency: d.currency }))
   ];
 
   const allItemsOriginal = [...allPackagesOriginal, ...allGroupClassesOriginal.map(c => ({ ...c, itemType: 'class' as const }))];
 
   const packages = [
-    ...monthlyPasses.map(p => ({ ...p, itemType: 'monthlyPass' as const, amount: p.amount, currency: p.currency })),
     ...discounts.map(d => ({ ...d, itemType: 'discount' as const, amount: d.amount, currency: d.currency }))
   ];
 
@@ -267,7 +260,7 @@ export default function ClubClassSelectionPage({
 
   const handleCardClick = (item: any) => {
     setSelectedClassDetail(item);
-    if (item.itemType === 'monthlyPass' || item.itemType === 'discount') {
+    if (item.itemType === 'discount') {
       const passClasses = item.includedClassIds && item.includedClassIds.length > 0 
         ? allGroupClassesOriginal.filter(c => item.includedClassIds.includes(c.id))
         : allGroupClassesOriginal;
@@ -275,14 +268,14 @@ export default function ClubClassSelectionPage({
     }
   };
 
-  const isMonthlyPassSelected = selectedClasses.size > 0 && Array.from(selectedClasses).some(id => 
-    group?.monthlyPasses?.some(p => p.id === id)
+  const isDiscountSelected = selectedClasses.size > 0 && Array.from(selectedClasses).some(id => 
+    subDiscounts.some(d => d.id === id)
   );
 
   const handleAddToBasket = (classId: string, itemType?: string) => {
     setSelectedClasses(prev => {
       let newSet = new Set(prev);
-      if (itemType === 'monthlyPass') {
+      if (itemType === 'discount') {
         newSet.clear();
       }
       newSet.add(classId);
@@ -361,7 +354,8 @@ export default function ClubClassSelectionPage({
         }
       });
       const link = document.createElement('a');
-      link.download = `${monthDisplay.replace(' ', '-')}.png`;
+      const formattedMonthStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+      link.download = `${formattedMonthStr}-Class.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
     } catch (err) {
@@ -442,50 +436,6 @@ export default function ClubClassSelectionPage({
             </div>
           </div>
 
-          {/* Monthly Pass Info */}
-          {monthlyPasses && monthlyPasses.length > 0 && (
-            <div className="mb-6 bg-[#f0f4ff] border border-[#0057bd]/20 rounded-2xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="material-symbols-outlined text-[#0057bd] text-lg">local_activity</span>
-                <h3 className="text-sm font-black text-[#0057bd]">Monthly Pass</h3>
-              </div>
-              <div className="space-y-3">
-                {monthlyPasses.map(pass => (
-                  <div key={pass.id} onClick={() => handleCardClick({ ...pass, itemType: 'monthlyPass' })} className="bg-white rounded-xl p-3 shadow-sm border border-[#0057bd]/10 cursor-pointer hover:shadow-md transition-all">
-                    <div className="flex justify-between items-start mb-1">
-                      <p className="text-sm font-bold text-[#2d3435]">{pass.title}</p>
-                    </div>
-                    {pass.description && (
-                      <p className="text-xs text-[#596061] leading-relaxed whitespace-pre-wrap mb-2">{pass.description}</p>
-                    )}
-                    <div className="flex justify-between items-center mt-2 pt-2 border-t border-[#0057bd]/10">
-                      <p className="text-sm font-black text-[#0057bd]">
-                        {pass.amount.toLocaleString()} {pass.currency}
-                      </p>
-                      {selectedClasses.has(pass.id) ? (
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); handleRemoveFromBasket(pass.id); }}
-                          disabled={!isRegistrationOpen}
-                          className={`flex items-center justify-center transition-colors ${!isRegistrationOpen ? 'text-[#e0e4e5] cursor-not-allowed opacity-50' : 'text-[#0057bd]'}`}
-                        >
-                          <span className="material-symbols-outlined" style={{ fontSize: '44px' }}>toggle_on</span>
-                        </button>
-                      ) : (
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); handleAddToBasket(pass.id, 'monthlyPass'); }}
-                          disabled={!isRegistrationOpen}
-                          className={`flex items-center justify-center transition-colors ${!isRegistrationOpen ? 'text-[#e0e4e5] cursor-not-allowed opacity-50' : 'text-[#acb3b4]'}`}
-                        >
-                          <span className="material-symbols-outlined" style={{ fontSize: '44px' }}>toggle_off</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Bundle Info */}
           {discounts && discounts.length > 0 && (
             <div className="mb-6 bg-[#fff8f0] border border-[#d97706]/20 rounded-2xl p-4">
@@ -504,7 +454,7 @@ export default function ClubClassSelectionPage({
                     )}
                     <div className="flex justify-between items-center mt-2 pt-2 border-t border-[#d97706]/10">
                       <p className="text-sm font-black text-[#d97706]">
-                        {disc.amount.toLocaleString()} {disc.currency}
+                        {disc.currency === 'KRW' ? `₩${disc.amount.toLocaleString()}` : `${disc.amount.toLocaleString()} ${disc.currency}`}
                       </p>
                       {selectedClasses.has(disc.id) ? (
                         <button 
@@ -516,9 +466,9 @@ export default function ClubClassSelectionPage({
                         </button>
                       ) : (
                         <button 
-                          onClick={(e) => { e.stopPropagation(); handleAddToBasket(disc.id); }}
-                          disabled={isMonthlyPassSelected || !isRegistrationOpen}
-                          className={`flex items-center justify-center transition-colors ${isMonthlyPassSelected || !isRegistrationOpen ? 'text-[#e0e4e5] cursor-not-allowed opacity-50' : 'text-[#acb3b4]'}`}
+                          onClick={(e) => { e.stopPropagation(); handleAddToBasket(disc.id, 'discount'); }}
+                          disabled={isDiscountSelected || !isRegistrationOpen}
+                          className={`flex items-center justify-center transition-colors ${isDiscountSelected || !isRegistrationOpen ? 'text-[#e0e4e5] cursor-not-allowed opacity-50' : 'text-[#acb3b4]'}`}
                         >
                           <span className="material-symbols-outlined" style={{ fontSize: '44px' }}>toggle_off</span>
                         </button>
@@ -533,40 +483,7 @@ export default function ClubClassSelectionPage({
           {/* Classes Sort & List */}
           <div className="flex items-center justify-between mb-4 mt-8">
             <h3 className="text-sm font-black text-[#2d3435]">Class Schedule</h3>
-            <div className="relative">
-              <button
-                onClick={() => setShowSortDropdown(!showSortDropdown)}
-                className="flex items-center gap-1 text-sm font-semibold text-[#596061] hover:text-[#2d3435] transition-colors"
-              >
-                {sortOption === 'class' ? 'Class Order' : 'Name Order'}
-                <span className="material-symbols-outlined text-base">expand_more</span>
-              </button>
-              {showSortDropdown && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setShowSortDropdown(false)} />
-                  <div className="absolute top-full mt-1 right-0 bg-white rounded-xl shadow-xl border border-slate-100 min-w-[150px] z-50 overflow-hidden">
-                    <button
-                      onClick={() => { setSortOption('class'); setShowSortDropdown(false); }}
-                      className={`w-full text-left px-4 py-2.5 text-sm font-medium flex items-center gap-2 transition-colors ${
-                        sortOption === 'class' ? 'bg-primary/10 text-[#1A73E8] font-bold' : 'text-[#2d3435] hover:bg-slate-50'
-                      }`}
-                    >
-                      <span className="material-symbols-outlined text-base">format_list_numbered</span>
-                      Class Order
-                    </button>
-                    <button
-                      onClick={() => { setSortOption('name'); setShowSortDropdown(false); }}
-                      className={`w-full text-left px-4 py-2.5 text-sm font-medium flex items-center gap-2 transition-colors ${
-                        sortOption === 'name' ? 'bg-primary/10 text-[#1A73E8] font-bold' : 'text-[#2d3435] hover:bg-slate-50'
-                      }`}
-                    >
-                      <span className="material-symbols-outlined text-base">sort_by_alpha</span>
-                      Name Order
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
+            <div className="relative" />
           </div>
 
           <div className="space-y-4">
@@ -596,7 +513,14 @@ export default function ClubClassSelectionPage({
                           const cleanDate = startDate.replace(/\./g, '-');
                           const dd = new Date(cleanDate);
                           if (!isNaN(dd.getTime())) {
-                            startDisplay = `${dd.getMonth() + 1}/${dd.getDate()}`;
+                            const daysKr = ['일', '월', '화', '수', '목', '금', '토'];
+                            const daysEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                            const dayIdx = dd.getDay();
+                            if (language === 'KR') {
+                              startDisplay = `${dd.getMonth() + 1}.${dd.getDate()}(${daysKr[dayIdx]})`;
+                            } else {
+                              startDisplay = `${dd.getMonth() + 1}/${dd.getDate()} (${daysEn[dayIdx]})`;
+                            }
                           }
                         }
                         const timeDisplay = cls.schedule?.[0]?.timeSlot || (cls.startTime ? `${cls.startTime}${cls.endTime ? ' - ' + cls.endTime : ''}` : '');
@@ -617,7 +541,9 @@ export default function ClubClassSelectionPage({
 
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-bold text-[#2d3435] truncate">{cls.title}</p>
-                              <p className="text-[13px] font-black text-[#2d3435] mt-0.5">{cls.amount.toLocaleString()} {cls.currency}</p>
+                              <p className="text-[13px] font-black text-[#2d3435] mt-0.5">
+                                {cls.currency === 'KRW' ? `₩${cls.amount.toLocaleString()}` : `${cls.amount.toLocaleString()} ${cls.currency}`}
+                              </p>
                               <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1">
                                 {startDisplay && (
                                   <span className="text-[11px] font-bold" style={{ color }}>Start: {startDisplay}</span>
@@ -676,8 +602,8 @@ export default function ClubClassSelectionPage({
                               ) : (
                                 <button 
                                   onClick={(e) => { e.stopPropagation(); handleAddToBasket(cls.id); }}
-                                  disabled={isMonthlyPassSelected || !isRegistrationOpen}
-                                  className={`flex items-center justify-center transition-colors ${isMonthlyPassSelected || !isRegistrationOpen ? 'text-[#e0e4e5] cursor-not-allowed opacity-50' : 'text-[#acb3b4]'}`}
+                                  disabled={isDiscountSelected || !isRegistrationOpen}
+                                  className={`flex items-center justify-center transition-colors ${isDiscountSelected || !isRegistrationOpen ? 'text-[#e0e4e5] cursor-not-allowed opacity-50' : 'text-[#acb3b4]'}`}
                                 >
                                   <span className="material-symbols-outlined" style={{ fontSize: '44px' }}>toggle_off</span>
                                 </button>
@@ -702,7 +628,14 @@ export default function ClubClassSelectionPage({
                     const cleanDate = startDate.replace(/\./g, '-');
                     const dd = new Date(cleanDate);
                     if (!isNaN(dd.getTime())) {
-                      startDisplay = `${dd.getMonth() + 1}/${dd.getDate()}`;
+                      const daysKr = ['일', '월', '화', '수', '목', '금', '토'];
+                      const daysEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                      const dayIdx = dd.getDay();
+                      if (language === 'KR') {
+                        startDisplay = `${dd.getMonth() + 1}.${dd.getDate()}(${daysKr[dayIdx]})`;
+                      } else {
+                        startDisplay = `${dd.getMonth() + 1}/${dd.getDate()} (${daysEn[dayIdx]})`;
+                      }
                     }
                   }
                   const timeDisplay = cls.schedule?.[0]?.timeSlot || (cls.startTime ? `${cls.startTime}${cls.endTime ? ' - ' + cls.endTime : ''}` : '');
@@ -723,7 +656,9 @@ export default function ClubClassSelectionPage({
 
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold text-[#2d3435] truncate">{cls.title}</p>
-                        <p className="text-[13px] font-black text-[#2d3435] mt-0.5">{cls.amount.toLocaleString()} {cls.currency}</p>
+                        <p className="text-[13px] font-black text-[#2d3435] mt-0.5">
+                          {cls.currency === 'KRW' ? `₩${cls.amount.toLocaleString()}` : `${cls.amount.toLocaleString()} ${cls.currency}`}
+                        </p>
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1">
                           {startDisplay && (
                             <span className="text-[11px] font-bold text-[#0057bd]">Start: {startDisplay}</span>
@@ -782,8 +717,8 @@ export default function ClubClassSelectionPage({
                         ) : (
                           <button 
                             onClick={(e) => { e.stopPropagation(); handleAddToBasket(cls.id); }}
-                            disabled={isMonthlyPassSelected || !isRegistrationOpen}
-                            className={`flex items-center justify-center transition-colors ${isMonthlyPassSelected || !isRegistrationOpen ? 'text-[#e0e4e5] cursor-not-allowed opacity-50' : 'text-[#acb3b4]'}`}
+                            disabled={isDiscountSelected || !isRegistrationOpen}
+                            className={`flex items-center justify-center transition-colors ${isDiscountSelected || !isRegistrationOpen ? 'text-[#e0e4e5] cursor-not-allowed opacity-50' : 'text-[#acb3b4]'}`}
                           >
                             <span className="material-symbols-outlined" style={{ fontSize: '44px' }}>toggle_off</span>
                           </button>
@@ -866,9 +801,7 @@ export default function ClubClassSelectionPage({
             </div>
           </div>
 
-          <div className="mt-6 text-center">
-            <p className="text-[9px] text-[#acb3b4]">© {new Date().getFullYear()} {group.name} · woc.today</p>
-          </div>
+          <div className="mt-6 text-center" />
         </div>
       </div>
 
@@ -888,15 +821,7 @@ export default function ClubClassSelectionPage({
       )}
 
       {/* Item Details Popup Modal */}
-      <ClassDetail
-        groupId={groupId}
-        isOpen={!!selectedClassDetail}
-        itemId={selectedClassDetail?.id}
-        itemDetail={selectedClassDetail}
-        onClose={closeDetailModal}
-      />
-
-      {/* Class Registration - UnifiedCheckoutModal (SHOP과 동일한 워크플로) */}
+       {/* Class Registration - UnifiedCheckoutModal (SHOP과 동일한 워크플로) */}
       <UnifiedCheckoutModal
         isOpen={isApplyModalOpen}
         onClose={() => {
@@ -905,9 +830,9 @@ export default function ClubClassSelectionPage({
           setPassSelectedClassIds(new Set());
           setClassPartners({});
         }}
-        title={isMonthlyPassSelected ? t('class.booking_pass_title') : t('class.booking_monthly_title')}
-        subtitle={isMonthlyPassSelected ? undefined : `${group?.name || 'Club'} · ${monthDisplay}`}
-        isSubmitDisabled={isMonthlyPassSelected && passSelectedClassIds.size === 0}
+        title={isDiscountSelected ? "Bundle Package Registration" : "Class Registration"}
+        subtitle={isDiscountSelected ? undefined : `${group?.name || 'Club'} · ${monthDisplay}`}
+        isSubmitDisabled={isDiscountSelected && passSelectedClassIds.size === 0}
         totalAmount={Array.from(selectedClasses).reduce((sum, id) => {
           const item = allItemsOriginal.find(c => c.id === id);
           return sum + (item?.amount || 0);
@@ -922,8 +847,8 @@ export default function ClubClassSelectionPage({
             toast.error('Please select a role (Leader/Follower).');
             throw new Error('No role selected');
           }
-          if (isMonthlyPassSelected && passSelectedClassIds.size === 0) {
-            toast.error(t('class.select_participating_classes'));
+          if (isDiscountSelected && passSelectedClassIds.size === 0) {
+            toast.error('Please select at least one class to attend.');
             throw new Error('No participating classes selected');
           }
           const selectedItems = Array.from(selectedClasses).map(id => {
@@ -933,7 +858,7 @@ export default function ClubClassSelectionPage({
           const totalAmount = selectedItems.reduce((sum, item) => sum + (item?.amount || 0), 0);
           const classTitles = selectedItems.map(item => item?.title).join(', ');
           const orderId = await createBooking({
-            domain: isMonthlyPassSelected ? 'class_pass' : 'class_4w',
+            domain: isDiscountSelected ? 'class_discount' : 'class_4w',
             itemName: classTitles,
             itemImageUrl: group?.coverImage || group?.logo || '',
             itemId: selectedItems[0]?.id || '',
@@ -945,7 +870,7 @@ export default function ClubClassSelectionPage({
               groupId,
               groupName: group?.name,
               selectedItems,
-              ...(isMonthlyPassSelected ? { 
+              ...(isDiscountSelected ? { 
                 participatingClassIds: Array.from(passSelectedClassIds),
                 participatingClassPartners: Object.fromEntries(
                   Object.entries(classPartners).filter(([id, val]) => passSelectedClassIds.has(id) && val.trim() !== '')
@@ -956,7 +881,7 @@ export default function ClubClassSelectionPage({
           return orderId;
         }}
         isProcessing={isBooking}
-        buttonText={t('class.submit_request')}
+        buttonText="Submit Request"
         bankDetails={{
           bankName: (group as any)?.classPaymentSettings?.bankDetails?.bankName || (group as any)?.bankDetails?.bankName || (group as any)?.bankName || 'Kookmin Bank',
           accountHolder: (group as any)?.classPaymentSettings?.bankDetails?.accountHolder || (group as any)?.bankDetails?.accountHolder || (group as any)?.accountHolder || group?.name || 'World of Community',
@@ -967,7 +892,7 @@ export default function ClubClassSelectionPage({
         <div className="space-y-6 py-2">
           {/* Role Selection */}
           <div>
-            <h4 className="text-sm font-bold text-neutral-900 dark:text-white mb-3">{t('class.select_role')} <span className="text-error">*</span></h4>
+            <h4 className="text-sm font-bold text-neutral-900 dark:text-white mb-3">Select Role <span className="text-error">*</span></h4>
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => setSelectedRole('leader')}
@@ -984,11 +909,11 @@ export default function ClubClassSelectionPage({
             </div>
           </div>
 
-          {isMonthlyPassSelected ? (
+          {isDiscountSelected ? (
             <>
-              {/* Monthly Pass Info */}
+              {/* Bundle Info */}
               <div className="bg-neutral-50 dark:bg-neutral-800 rounded-2xl p-4 border border-neutral-200 dark:border-neutral-700">
-                <h4 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-3">{t('class.applied_items')}</h4>
+                <h4 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-3">Applied Bundle</h4>
                 {Array.from(selectedClasses).map(classId => {
                   const item = allItemsOriginal.find(c => c.id === classId);
                   if (!item) return null;
@@ -996,7 +921,7 @@ export default function ClubClassSelectionPage({
                     <div key={classId} className="flex justify-between items-center">
                       <span className="text-sm font-bold text-neutral-900 dark:text-white truncate mr-2">{item.title}</span>
                       <span className="text-sm font-black text-neutral-900 dark:text-white whitespace-nowrap">
-                        {item.amount ? item.amount.toLocaleString() : '0'} {item.currency || 'KRW'}
+                        {item.currency === 'KRW' || !item.currency ? `₩${item.amount ? item.amount.toLocaleString() : '0'}` : `${item.amount ? item.amount.toLocaleString() : '0'} ${item.currency}`}
                       </span>
                     </div>
                   );
@@ -1005,7 +930,7 @@ export default function ClubClassSelectionPage({
 
               {/* Participating Classes Checkbox */}
               <div className="bg-neutral-50 dark:bg-neutral-800 rounded-2xl p-4 border border-neutral-200 dark:border-neutral-700">
-                <h4 className="text-sm font-bold text-neutral-900 dark:text-white mb-3">{t('class.select_participating_classes')} <span className="text-error">*</span></h4>
+                <h4 className="text-sm font-bold text-neutral-900 dark:text-white mb-3">Select Classes to Attend <span className="text-error">*</span></h4>
                 <div className="space-y-2">
                   {(() => {
                     const passId = Array.from(selectedClasses)[0];
@@ -1041,7 +966,7 @@ export default function ClubClassSelectionPage({
 
                     // 요일 정렬 적용 (월-일 순서)
                     const sortedPassClasses = [...passClasses].sort((a, b) => {
-                  const dayA = getClassDay(a);
+                      const dayA = getClassDay(a);
                       const dayB = getClassDay(b);
                       const idxA = getDayIndex(dayA);
                       const idxB = getDayIndex(dayB);
@@ -1123,7 +1048,7 @@ export default function ClubClassSelectionPage({
                                       [cls.id]: e.target.value
                                     }));
                                   }}
-                                  placeholder={language === 'KR' ? '파트너명 (선택)' : 'Partner Name (Optional)'}
+                                  placeholder="Partner Name (Optional)"
                                   className="w-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-1.5 text-xs text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                                 />
                               </div>
@@ -1135,23 +1060,21 @@ export default function ClubClassSelectionPage({
                   })()}
                 </div>
                 <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-2 text-right">
-                  {t('class.selected_count')
-                    .replace('{count}', String(passSelectedClassIds.size))
-                    .replace('{total}', String((() => {
-                      const passId = Array.from(selectedClasses)[0];
-                      const pass = allItems.find(c => c.id === passId);
-                      const passClassIds = (pass as any)?.includedClassIds || [];
-                      return passClassIds.length > 0
-                        ? allGroupClasses.filter(c => passClassIds.includes(c.id)).length
-                        : allGroupClasses.length;
-                    })()))}
+                  Selected: {passSelectedClassIds.size} / {(() => {
+                    const passId = Array.from(selectedClasses)[0];
+                    const pass = allItems.find(c => c.id === passId);
+                    const passClassIds = (pass as any)?.includedClassIds || [];
+                    return passClassIds.length > 0
+                      ? allGroupClasses.filter(c => passClassIds.includes(c.id)).length
+                      : allGroupClasses.length;
+                  })()}
                 </p>
               </div>
             </>
           ) : (
             /* Applied Items - 일반 클래스/번들 */
             <div className="bg-neutral-50 dark:bg-neutral-800 rounded-2xl p-4 border border-neutral-200 dark:border-neutral-700">
-              <h4 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-3">{t('class.applied_items')}</h4>
+              <h4 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-3">Applied Classes</h4>
               {Array.from(selectedClasses).map(classId => {
                 const item = allItems.find(c => c.id === classId);
                 if (!item) return null;
@@ -1159,7 +1082,7 @@ export default function ClubClassSelectionPage({
                   <div key={classId} className="flex justify-between items-center mb-3 last:mb-0">
                     <span className="text-sm font-bold text-neutral-900 dark:text-white truncate mr-2">{item.title}</span>
                     <span className="text-sm font-black text-neutral-900 dark:text-white whitespace-nowrap">
-                      {item.amount ? item.amount.toLocaleString() : '0'} {item.currency || 'KRW'}
+                      {item.currency === 'KRW' || !item.currency ? `₩${item.amount ? item.amount.toLocaleString() : '0'}` : `${item.amount ? item.amount.toLocaleString() : '0'} ${item.currency}`}
                     </span>
                   </div>
                 );

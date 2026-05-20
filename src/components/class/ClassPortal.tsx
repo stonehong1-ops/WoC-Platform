@@ -37,7 +37,6 @@ export default function ClassPortal() {
   const [venues, setVenues] = useState<Venue[]>([]);
   const [allClasses, setAllClasses] = useState<any[]>([]);
   const [specialClasses, setSpecialClasses] = useState<any[]>([]);
-  const [allPasses, setAllPasses] = useState<any[]>([]);
   const [allDiscountsGlobal, setAllDiscountsGlobal] = useState<any[]>([]);
   
   const { user, profile } = useAuth();
@@ -92,12 +91,11 @@ export default function ClassPortal() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [groupsData, allData, specialData, venuesData, passesData, discountsData] = await Promise.all([
+        const [groupsData, allData, specialData, venuesData, discountsData] = await Promise.all([
           groupService.getGroups(),
           groupService.getGlobalClassesAll(),
           groupService.getGlobalSpecialClasses(),
           venueService.getVenues(),
-          groupService.getGlobalMonthlyPassesAll(),
           groupService.getGlobalDiscountsAll()
         ]);
         
@@ -105,7 +103,6 @@ export default function ClassPortal() {
         setAllClasses(allData);
         setSpecialClasses(specialData);
         setVenues(venuesData || []);
-        setAllPasses(passesData);
         setAllDiscountsGlobal(discountsData);
       } catch (error) {
         console.error("Failed to fetch class portal data:", error);
@@ -879,12 +876,17 @@ export default function ClassPortal() {
 
   const renderMonthTab = () => {
     const targetDate = new Date();
+    if (targetDate.getDate() >= 16) {
+      targetDate.setMonth(targetDate.getMonth() + 1);
+    }
     targetDate.setMonth(targetDate.getMonth() + monthOffset);
     const targetYear = targetDate.getFullYear();
     const targetMonthNum = targetDate.getMonth();
     const targetMonthStr = `${targetYear}-${String(targetMonthNum + 1).padStart(2, '0')}`;
     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-    const monthLabel = `${monthNames[targetMonthNum]} ${targetYear}`;
+    const monthLabel = language === 'KR'
+      ? `${targetYear}년 ${targetMonthNum + 1}월`
+      : `${monthNames[targetMonthNum]} ${targetYear}`;
 
     const getGroupClassCount = (groupId: string) => {
       return allClasses.filter(cls => {
@@ -900,11 +902,7 @@ export default function ClassPortal() {
         return false;
       }).length;
     };
-    const getGroupPassCount = (groupId: string) => allPasses.filter(p => {
-      if (p.groupId !== groupId) return false;
-      if (p.targetMonth) return p.targetMonth === targetMonthStr;
-      return true;
-    }).length;
+
     const getGroupDiscountCount = (groupId: string) => allDiscountsGlobal.filter(d => {
       if (d.groupId !== groupId) return false;
       if (d.targetMonth) return d.targetMonth === targetMonthStr;
@@ -919,7 +917,7 @@ export default function ClassPortal() {
           <button onClick={() => setMonthOffset(prev => prev - 1)} className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-slate-200 active:scale-90 transition-all text-slate-500">
             <span className="material-symbols-outlined text-[18px]">chevron_left</span>
           </button>
-          <span className="text-[11px] font-black text-slate-700 uppercase tracking-widest min-w-[100px] text-center">
+          <span className="text-[11px] font-black text-slate-700 tracking-widest min-w-[100px] text-center">
             {monthLabel}
           </span>
           <button onClick={() => setMonthOffset(prev => prev + 1)} className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-slate-200 active:scale-90 transition-all text-slate-500">
@@ -959,10 +957,7 @@ export default function ClassPortal() {
                   <span className="text-[9px] font-black text-blue-400 uppercase tracking-tighter mr-1.5">BUNDLE</span>
                   <span className="text-[11px] font-black text-blue-700">{getGroupDiscountCount(group.id)}</span>
                 </div>
-                <div className="flex items-center bg-purple-50 border border-purple-100 rounded-lg px-2 py-0.5">
-                  <span className="text-[9px] font-black text-purple-400 uppercase tracking-tighter mr-1.5">PASS</span>
-                  <span className="text-[11px] font-black text-purple-700">{getGroupPassCount(group.id)}</span>
-                </div>
+
               </div>
               {group.updatedAt && (() => {
                 const updated = group.updatedAt?.toDate ? group.updatedAt.toDate() : new Date(group.updatedAt);
