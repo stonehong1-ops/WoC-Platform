@@ -147,13 +147,51 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
     openClassFlow('apply', { modal: item.id, month: currentMonthStr });
   };
 
+  const getDayOfWeek = (dateStr: string): string => {
+    if (!dateStr) return '';
+    const cleanDate = dateStr.replace(/\./g, '-');
+    const d = new Date(cleanDate);
+    if (isNaN(d.getTime())) return '';
+    return ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][d.getDay()];
+  };
+
+  const getDayIndex = (day: string) => {
+    const DAY_ORDER = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+    const idx = DAY_ORDER.indexOf(day.toUpperCase());
+    return idx === -1 ? 99 : idx;
+  };
+
+  const getClassDay = (cls: any): string => {
+    if (cls.schedule && cls.schedule.length > 0) {
+      const sortedSched = [...cls.schedule].sort((a, b) => a.date.localeCompare(b.date));
+      const day = getDayOfWeek(sortedSched[0]?.date);
+      return day || 'MON';
+    }
+    return 'MON';
+  };
+
+  const sortedMonthClasses = useMemo(() => {
+    return [...monthClasses].sort((a, b) => {
+      const dayA = getClassDay(a);
+      const dayB = getClassDay(b);
+      const idxA = getDayIndex(dayA);
+      const idxB = getDayIndex(dayB);
+      if (idxA !== idxB) {
+        return idxA - idxB;
+      }
+      const timeA = a.startTime || '';
+      const timeB = b.startTime || '';
+      return timeA.localeCompare(timeB);
+    });
+  }, [monthClasses]);
+
   // Build all items list for display
   const allItems = useMemo(() => {
     const items: any[] = [];
     monthBundles.forEach(d => items.push({ ...d, itemType: 'bundle' }));
-    monthClasses.forEach(c => items.push({ ...c, itemType: 'class' }));
+    sortedMonthClasses.forEach(c => items.push({ ...c, itemType: 'class' }));
     return items;
-  }, [monthBundles, monthClasses]);
+  }, [monthBundles, sortedMonthClasses]);
 
   const getItemTypeLabel = (type: string) => {
     switch (type) {
@@ -256,9 +294,37 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
                     <span className="font-['Plus_Jakarta_Sans'] font-bold text-base text-[#0057bd]">
                       {getCurrencySymbol(item.currency || 'KRW')}{(item.amount || item.price || 0).toLocaleString()}
                     </span>
-                    {timeDisplay && (
-                      <span className="text-[11px] text-[#596061] font-medium">{timeDisplay}</span>
-                    )}
+                    {(() => {
+                      let startDisplay = '';
+                      if (item.itemType === 'class' && item.schedule && item.schedule.length > 0) {
+                        const sortedSched = [...item.schedule].sort((a: any, b: any) => a.date.localeCompare(b.date));
+                        const firstDateStr = sortedSched[0]?.date;
+                        if (firstDateStr) {
+                          const dd = new Date(firstDateStr.replace(/\./g, '-'));
+                          if (!isNaN(dd.getTime())) {
+                            const dayIdx = dd.getDay();
+                            const daysKr = ['일', '월', '화', '수', '목', '금', '토'];
+                            const daysEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                            startDisplay = language === 'KR'
+                              ? `${dd.getMonth() + 1}.${dd.getDate()}(${daysKr[dayIdx]})`
+                              : `${dd.getMonth() + 1}/${dd.getDate()} (${daysEn[dayIdx]})`;
+                          }
+                        }
+                      }
+
+                      return (
+                        <div className="flex flex-col items-end gap-0.5">
+                          {startDisplay && (
+                            <span className="text-[10px] font-bold text-[#0057bd]">
+                              {startDisplay}
+                            </span>
+                          )}
+                          {timeDisplay && (
+                            <span className="text-[11px] text-[#596061] font-medium">{timeDisplay}</span>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               </article>
