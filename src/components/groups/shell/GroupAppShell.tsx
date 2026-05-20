@@ -22,8 +22,7 @@ interface GroupAppShellProps {
   isAdmin: boolean;
   isFullMember: boolean;
   members: Member[];
-  liveSessionCount: number;
-  newPostCount: number;
+
   paletteColors: string[];
   currentColor: string;
   onColorChange: (color: string) => void;
@@ -38,8 +37,7 @@ export default function GroupAppShell({
   isAdmin,
   isFullMember,
   members,
-  liveSessionCount,
-  newPostCount,
+
   paletteColors,
   currentColor,
   onColorChange,
@@ -541,8 +539,7 @@ export default function GroupAppShell({
       {/* Footer */}
       <GroupShellFooter
         members={members}
-        liveSessionCount={liveSessionCount}
-        newPostCount={newPostCount}
+        group={group}
       />
     </div>
   );
