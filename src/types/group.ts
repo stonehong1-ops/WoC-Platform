@@ -124,7 +124,6 @@ export interface Group {
   };
   classes?: GroupClass[];
   discounts?: ClassDiscount[];
-  monthlyPasses?: MonthlyPass[];
   shopItems?: ShopItem[];
   stayRooms?: StayRoom[];
   staySettings?: StaySettings;
@@ -313,16 +312,6 @@ export interface ClassDiscount {
   currency: string;
   amount: number;
   discountDescription: string;
-  includedClassIds: string[];
-  targetMonth?: string;
-}
-
-export interface MonthlyPass {
-  id: string;
-  title: string;
-  description: string;
-  currency: string;
-  amount: number;
   includedClassIds: string[];
   targetMonth?: string;
 }

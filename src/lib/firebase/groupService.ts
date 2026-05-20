@@ -142,26 +142,22 @@ export const groupService = {
     const data = groupService._convertTimestamps(snapshot.data());
 
     // Fetch subcollections concurrently to attach to Group object
-    const [postsSnap, classesSnap, passesSnap, discountsSnap] = await Promise.all([
+    const [postsSnap, classesSnap, discountsSnap] = await Promise.all([
       getDocs(query(collection(db, GROUPS_COLLECTION, groupId, 'posts'), orderBy('createdAt', 'desc'), limit(20))),
       getDocs(query(collection(db, GROUPS_COLLECTION, groupId, 'classes'), orderBy('createdAt', 'desc'))),
-      getDocs(query(collection(db, GROUPS_COLLECTION, groupId, 'monthlyPasses'), orderBy('createdAt', 'desc'))),
       getDocs(query(collection(db, GROUPS_COLLECTION, groupId, 'discounts'), orderBy('createdAt', 'desc')))
     ]);
 
     const posts = postsSnap.docs.map(d => ({ id: d.id, ...groupService._convertTimestamps(d.data()) })) as Post[];
     const subClasses = classesSnap.docs.map(d => ({ ...groupService._convertTimestamps(d.data()), id: d.id })) as GroupClass[];
-    const subPasses = passesSnap.docs.map(d => ({ id: d.id, ...groupService._convertTimestamps(d.data()) }));
     const subDiscounts = discountsSnap.docs.map(d => ({ id: d.id, ...groupService._convertTimestamps(d.data()) }));
 
     return {
       id: snapshot.id,
       ...data,
       classes: [...subClasses, ...(data.classes || [])],
-      monthlyPasses: [...subPasses, ...(data.monthlyPasses || [])],
       discounts: [...subDiscounts, ...(data.discounts || [])],
       _legacyClasses: data.classes || [],
-      _legacyMonthlyPasses: data.monthlyPasses || [],
       _legacyDiscounts: data.discounts || [],
       members: [],
       memberCount: typeof data?.memberCount === 'number' ? data?.memberCount : 0,
@@ -532,31 +528,6 @@ export const groupService = {
     await deleteDoc(classRef);
   },
 
-  // --- Monthly Passes Section ---
-  subscribeMonthlyPasses: (groupId: string, callback: (passes: any[]) => void) => {
-    const passesRef = collection(db, GROUPS_COLLECTION, groupId, 'monthlyPasses');
-    const q = query(passesRef, orderBy('createdAt', 'desc'));
-    return onSnapshot(q, (snapshot) => {
-      callback(snapshot.docs.map(doc => ({ id: doc.id, ...groupService._convertTimestamps(doc.data()) })));
-    });
-  },
-  addMonthlyPass: async (groupId: string, passData: any) => {
-    const passesRef = collection(db, GROUPS_COLLECTION, groupId, 'monthlyPasses');
-    if (passData.id) {
-      await setDoc(doc(passesRef, passData.id), { ...passData, createdAt: Timestamp.now(), updatedAt: Timestamp.now() });
-      return passData.id;
-    } else {
-      const docRef = await addDoc(passesRef, { ...passData, createdAt: Timestamp.now(), updatedAt: Timestamp.now() });
-      return docRef.id;
-    }
-  },
-  updateMonthlyPass: async (groupId: string, passId: string, passData: any) => {
-    const passRef = doc(db, GROUPS_COLLECTION, groupId, 'monthlyPasses', passId);
-    await updateDoc(passRef, { ...passData, updatedAt: Timestamp.now() });
-  },
-  deleteMonthlyPass: async (groupId: string, passId: string) => {
-    await deleteDoc(doc(db, GROUPS_COLLECTION, groupId, 'monthlyPasses', passId));
-  },
 
   // --- Discounts Section ---
   subscribeDiscounts: (groupId: string, callback: (discounts: any[]) => void) => {
@@ -706,20 +677,6 @@ export const groupService = {
     }
   },
 
-  // Get all monthly passes across all groups
-  getGlobalMonthlyPassesAll: async (): Promise<any[]> => {
-    try {
-      const snapshot = await getDocs(collectionGroup(db, 'monthlyPasses'));
-      return snapshot.docs.map(d => {
-        const pathSegments = d.ref.path.split('/');
-        const groupId = pathSegments[1] || '';
-        return { id: d.id, groupId, ...groupService._convertTimestamps(d.data()) };
-      });
-    } catch (error) {
-      console.error('getGlobalMonthlyPassesAll error:', error);
-      return [];
-    }
-  },
 
   // Get all discounts (bundles) across all groups
   getGlobalDiscountsAll: async (): Promise<any[]> => {

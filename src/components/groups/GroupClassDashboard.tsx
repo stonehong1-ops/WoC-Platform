@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Group, GroupClass, ClassDiscount, MonthlyPass } from '@/types/group';
+import { Group, GroupClass, ClassDiscount } from '@/types/group';
 import { chatService } from '@/lib/firebase/chatService';
 import { groupService } from '@/lib/firebase/groupService';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -71,16 +71,13 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
 
   // Firestore 하위 컬렉션에서 실시간 데이터 구독
   const [allClasses, setAllClasses] = useState<GroupClass[]>([]);
-  const [allPasses, setAllPasses] = useState<MonthlyPass[]>([]);
   const [allDiscounts, setAllDiscounts] = useState<ClassDiscount[]>([]);
 
   useEffect(() => {
     const unsubClasses = groupService.subscribeClasses(group.id, setAllClasses);
-    const unsubPasses = groupService.subscribeMonthlyPasses(group.id, setAllPasses);
     const unsubDiscounts = groupService.subscribeDiscounts(group.id, setAllDiscounts);
     return () => {
       unsubClasses();
-      unsubPasses();
       unsubDiscounts();
     };
   }, [group.id]);
@@ -114,20 +111,6 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
     if (c.schedule?.length) return c.schedule.some(s => s.date?.startsWith(currentMonthStr));
     return false;
   }), [allClasses, currentMonthStr]);
-
-  const monthPasses = useMemo(() => allPasses.filter(p => {
-    if (p.targetMonth) return p.targetMonth === currentMonthStr;
-    if (p.includedClassIds?.length) {
-      return p.includedClassIds.some(id => {
-        const cls = allClasses.find(c => c.id === id);
-        if (!cls) return false;
-        if (cls.targetMonth) return cls.targetMonth === currentMonthStr;
-        if (cls.schedule?.length) return cls.schedule.some(s => s.date?.startsWith(currentMonthStr));
-        return false;
-      });
-    }
-    return false;
-  }), [allPasses, allClasses, currentMonthStr]);
 
   const monthBundles = useMemo(() => allDiscounts.filter(d => {
     if (d.targetMonth) return d.targetMonth === currentMonthStr;
@@ -167,15 +150,13 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
   // Build all items list for display
   const allItems = useMemo(() => {
     const items: any[] = [];
-    monthPasses.forEach(p => items.push({ ...p, itemType: 'pass' }));
     monthBundles.forEach(d => items.push({ ...d, itemType: 'bundle' }));
     monthClasses.forEach(c => items.push({ ...c, itemType: 'class' }));
     return items;
-  }, [monthPasses, monthBundles, monthClasses]);
+  }, [monthBundles, monthClasses]);
 
   const getItemTypeLabel = (type: string) => {
     switch (type) {
-      case 'pass': return t('class-dashboard.pass');
       case 'bundle': return t('class-dashboard.bundle');
       case 'class': return t('class-dashboard.class');
       default: return '';
@@ -184,7 +165,6 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
 
   const getItemTypeColor = (type: string) => {
     switch (type) {
-      case 'pass': return { text: 'text-[#0057bd]', bg: 'bg-[#0057bd]/10', border: 'border-[#0057bd]/20' };
       case 'bundle': return { text: 'text-[#d97706]', bg: 'bg-[#d97706]/10', border: 'border-[#d97706]/20' };
       case 'class': return { text: 'text-[#059669]', bg: 'bg-[#059669]/10', border: 'border-[#059669]/20' };
       default: return { text: 'text-slate-500', bg: 'bg-slate-100', border: 'border-slate-200' };
@@ -193,7 +173,6 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
 
   const getItemTypeIcon = (type: string) => {
     switch (type) {
-      case 'pass': return 'local_activity';
       case 'bundle': return 'category';
       case 'class': return 'school';
       default: return 'school';
@@ -225,11 +204,7 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
       )}
 
       {/* Stats Summary - product count based */}
-      <div className="grid grid-cols-3 gap-2 px-4 py-3">
-        <div className="bg-[#f0f4ff] border border-[#0057bd]/15 rounded-xl p-3 flex flex-col items-center justify-center">
-          <span className="text-[10px] font-black text-[#0057bd] uppercase tracking-widest">{t('class-dashboard.pass')}</span>
-          <span className="text-[22px] font-black text-[#0057bd]">{monthPasses.length}</span>
-        </div>
+      <div className="grid grid-cols-2 gap-2 px-4 py-3">
         <div className="bg-[#fff8f0] border border-[#d97706]/15 rounded-xl p-3 flex flex-col items-center justify-center">
           <span className="text-[10px] font-black text-[#d97706] uppercase tracking-widest">{t('class-dashboard.bundle')}</span>
           <span className="text-[22px] font-black text-[#d97706]">{monthBundles.length}</span>

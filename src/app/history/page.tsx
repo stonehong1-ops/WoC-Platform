@@ -317,7 +317,7 @@ function HistoryContent() {
 
   };
 
-  // Find class/bundle/pass specific details
+  // Find class/bundle specific details
   let itemInfo: any = null;
   if (selectedDetail && groupDetails) {
     const raw = selectedDetail.raw;
@@ -326,8 +326,6 @@ function HistoryContent() {
     
     if (itemType === 'discount') {
       itemInfo = groupDetails.discounts?.find(d => d.id === classId);
-    } else if (itemType === 'monthlyPass') {
-      itemInfo = groupDetails.monthlyPasses?.find(p => p.id === classId);
     } else {
       itemInfo = groupDetails.classes?.find(c => c.id === classId);
     }
@@ -622,7 +620,7 @@ function HistoryContent() {
             <div className="mx-4 my-4 border border-[#e0e4e5] rounded-2xl overflow-hidden">
               <div className="bg-[#f8f9fa] px-4 py-2.5 border-b border-[#e0e4e5] flex items-center gap-2">
                 <span className="material-symbols-outlined text-sm text-blue-500">info</span>
-                <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">{selectedDetail.raw?.itemType === 'discount' ? t('history.info_bundle') : selectedDetail.raw?.itemType === 'monthlyPass' ? t('history.info_pass') : t('history.info_class')}</p>
+                <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">{selectedDetail.raw?.itemType === 'discount' ? t('history.info_bundle') : t('history.info_class')}</p>
               </div>
               <div className="px-4 py-4 flex flex-col gap-4">
                 {selectedDetail.type === 'Class' && itemInfo && (
@@ -665,7 +663,7 @@ function HistoryContent() {
                   </>
                 )}
 
-                {(selectedDetail.raw?.itemType === 'discount' || selectedDetail.raw?.itemType === 'monthlyPass') && itemInfo && (
+                {selectedDetail.raw?.itemType === 'discount' && itemInfo && (
                   <div className="flex items-start gap-3">
                     <div className="w-8 h-8 rounded-full bg-[#f2f4f4] flex items-center justify-center shrink-0 text-[#596061]">
                       <span className="material-symbols-outlined text-[16px]">list_alt</span>

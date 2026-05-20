@@ -13,11 +13,10 @@ interface GroupClassRegistrationsProps {
   group: Group;
   validClassIds: string[];
   allClasses?: GroupClass[];
-  allPasses?: any[];
   allDiscounts?: any[];
 }
 
-export function GroupClassRegistrations({ group, validClassIds, allClasses = [], allPasses = [], allDiscounts = [] }: GroupClassRegistrationsProps) {
+export function GroupClassRegistrations({ group, validClassIds, allClasses = [], allDiscounts = [] }: GroupClassRegistrationsProps) {
   const [registrations, setRegistrations] = useState<ClassRegistration[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
@@ -83,7 +82,6 @@ export function GroupClassRegistrations({ group, validClassIds, allClasses = [],
 
   const getResolvedItemType = (type?: string, classId?: string) => {
     if (classId) {
-      if (allPasses?.some(p => p.id === classId)) return 'monthlyPass';
       if (allDiscounts?.some(d => d.id === classId)) return 'discount';
     }
     return type || 'class';
@@ -94,8 +92,6 @@ export function GroupClassRegistrations({ group, validClassIds, allClasses = [],
     switch (resolvedType) {
       case 'discount':
         return { label: 'BUNDLE', bgClass: 'bg-secondary-container text-on-secondary-container' };
-      case 'monthlyPass':
-        return { label: 'PASS', bgClass: 'bg-tertiary-container text-on-tertiary-container' };
       case 'class':
       default:
         return { label: 'CLASS', bgClass: 'bg-primary-container text-on-primary-container' };
@@ -169,9 +165,9 @@ export function GroupClassRegistrations({ group, validClassIds, allClasses = [],
     if (!actionReg) return;
     let includedIds: string[] = [];
     const resolvedType = getResolvedItemType(actionReg.itemType, actionReg.classId);
-    if (resolvedType === 'monthlyPass') {
-      const pass = allPasses?.find(p => p.id === actionReg.classId);
-      if (pass && pass.includedClassIds) includedIds = pass.includedClassIds;
+    if (resolvedType === 'discount') {
+      const discount = allDiscounts?.find(d => d.id === actionReg.classId);
+      if (discount && discount.includedClassIds) includedIds = discount.includedClassIds;
     }
     
     setPopupIncludedIds(includedIds);
@@ -355,7 +351,7 @@ export function GroupClassRegistrations({ group, validClassIds, allClasses = [],
                   </div>
                   
                   <div className="p-2 flex flex-col gap-1 bg-surface-container-lowest">
-                    {resolvedActionType === 'monthlyPass' && (
+                    {resolvedActionType === 'discount' && (
                       <button 
                         onClick={handleEditPass}
                         className="w-full text-left px-4 py-3.5 hover:bg-surface-variant/50 transition-colors font-body-md text-on-surface flex items-center gap-3 rounded-lg active:scale-[0.98]"

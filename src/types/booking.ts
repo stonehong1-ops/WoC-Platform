@@ -19,6 +19,7 @@ export type BookingDomain =
   | 'class_4w' 
   | 'class_daily' 
   | 'class_pass'
+  | 'class_discount'
   | 'resale' 
   | 'events'
   | 'class_special';

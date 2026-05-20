@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Group, GroupClass, ClassDiscount, MonthlyPass } from '@/types/group';
+import { Group, GroupClass, ClassDiscount } from '@/types/group';
 import { groupService } from '@/lib/firebase/groupService';
 import { classRegistrationService } from '@/lib/firebase/classRegistrationService';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -38,7 +38,6 @@ export default function GroupClassStatus({ groupId, isAdmin = false, group: init
 
   // Real-time data from subcollections
   const [subClasses, setSubClasses] = useState<GroupClass[]>([]);
-  const [subPasses, setSubPasses] = useState<MonthlyPass[]>([]);
   const [subDiscounts, setSubDiscounts] = useState<ClassDiscount[]>([]);
 
   const [baseDate, setBaseDate] = useState(() => {
@@ -68,11 +67,9 @@ export default function GroupClassStatus({ groupId, isAdmin = false, group: init
   // Subscribe subcollections
   useEffect(() => {
     const unsubClasses = groupService.subscribeClasses(groupId, setSubClasses);
-    const unsubPasses = groupService.subscribeMonthlyPasses(groupId, setSubPasses);
     const unsubDiscounts = groupService.subscribeDiscounts(groupId, setSubDiscounts);
     return () => {
       unsubClasses();
-      unsubPasses();
       unsubDiscounts();
     };
   }, [groupId]);
@@ -88,7 +85,6 @@ export default function GroupClassStatus({ groupId, isAdmin = false, group: init
 
   // Data
   const allClasses = useMemo(() => [...subClasses, ...(group.classes || []).filter(c => !subClasses.find(sc => sc.id === c.id))], [subClasses, group.classes]);
-  const allMonthlyPasses = useMemo(() => [...subPasses, ...(group.monthlyPasses || []).filter(p => !subPasses.find(sp => sp.id === p.id))], [subPasses, group.monthlyPasses]);
   const allDiscounts = useMemo(() => [...subDiscounts, ...(group.discounts || []).filter(d => !subDiscounts.find(sd => sd.id === d.id))], [subDiscounts, group.discounts]);
 
   const filteredClasses = useMemo(() => {
@@ -98,22 +94,6 @@ export default function GroupClassStatus({ groupId, isAdmin = false, group: init
       return false; // If no targetMonth and no schedule, hide it to prevent cross-month pollution
     });
   }, [allClasses, currentMonthStr]);
-
-  const monthlyPasses = useMemo(() => {
-    return allMonthlyPasses.filter(p => {
-      if (p.targetMonth) return p.targetMonth === currentMonthStr;
-      if (p.includedClassIds?.length) {
-        return p.includedClassIds.some(id => {
-          const cls = allClasses.find(c => c.id === id);
-          if (!cls) return false;
-          if (cls.targetMonth) return cls.targetMonth === currentMonthStr;
-          if (cls.schedule?.length) return cls.schedule.some(s => s.date?.startsWith(currentMonthStr));
-          return false;
-        });
-      }
-      return false;
-    });
-  }, [allMonthlyPasses, allClasses, currentMonthStr]);
 
   const bundles = useMemo(() => {
     return allDiscounts.filter(d => {
@@ -135,7 +115,6 @@ export default function GroupClassStatus({ groupId, isAdmin = false, group: init
   const stats = useMemo(() => {
     const validClassIds = [
       ...filteredClasses.map(c => c.id),
-      ...monthlyPasses.map(p => p.id),
       ...bundles.map(b => b.id)
     ];
     
@@ -165,7 +144,7 @@ export default function GroupClassStatus({ groupId, isAdmin = false, group: init
     });
 
     return { total: uniqueUsers.size, leaders, followers, list };
-  }, [bookings, filteredClasses, monthlyPasses, bundles]);
+  }, [bookings, filteredClasses, bundles]);
 
 
 

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Group, GroupClass, ClassDiscount, MonthlyPass } from "@/types/group";
+import { Group, GroupClass, ClassDiscount } from "@/types/group";
 import { groupService } from "@/lib/firebase/groupService";
 import { db } from "@/lib/firebase/clientApp";
 import { motion, AnimatePresence } from "framer-motion";
@@ -9,7 +9,6 @@ import { doc, writeBatch, deleteField, Timestamp } from "firebase/firestore";
 import { toast } from "sonner";
 import GroupClassAddEditor from "./GroupClassAddEditor";
 import GroupClassDiscountEditor from "./GroupClassDiscountEditor";
-import GroupClassMonthlyPassEditor from "./GroupClassMonthlyPassEditor";
 import GroupClassCloneEditor from "./GroupClassCloneEditor";
 import { classRegistrationService } from "@/lib/firebase/classRegistrationService";
 import { useRouter } from "next/navigation";
@@ -90,31 +89,25 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
 
   // Real-time data from subcollections
   const [subClasses, setSubClasses] = useState<GroupClass[]>([]);
-  const [subPasses, setSubPasses] = useState<MonthlyPass[]>([]);
   const [subDiscounts, setSubDiscounts] = useState<ClassDiscount[]>([]);
 
   useEffect(() => {
     // Auto-migration logic for legacy embedded arrays
     const legacyClasses = (group as any)._legacyClasses || [];
-    const legacyPasses = (group as any)._legacyMonthlyPasses || [];
     const legacyDiscounts = (group as any)._legacyDiscounts || [];
 
-    if (legacyClasses.length > 0 || legacyPasses.length > 0 || legacyDiscounts.length > 0) {
+    if (legacyClasses.length > 0 || legacyDiscounts.length > 0) {
       const migrateData = async () => {
         try {
           const batch = writeBatch(db);
           for (const cls of legacyClasses) {
             batch.set(doc(db, 'groups', group.id, 'classes', cls.id), { ...cls, createdAt: Timestamp.now() });
           }
-          for (const pass of legacyPasses) {
-            batch.set(doc(db, 'groups', group.id, 'monthlyPasses', pass.id), { ...pass, createdAt: Timestamp.now() });
-          }
           for (const discount of legacyDiscounts) {
             batch.set(doc(db, 'groups', group.id, 'discounts', discount.id), { ...discount, createdAt: Timestamp.now() });
           }
           batch.update(doc(db, 'groups', group.id), {
             classes: deleteField(),
-            monthlyPasses: deleteField(),
             discounts: deleteField()
           });
           await batch.commit();
@@ -130,11 +123,9 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
 
   useEffect(() => {
     const unsubClasses = groupService.subscribeClasses(group.id, setSubClasses);
-    const unsubPasses = groupService.subscribeMonthlyPasses(group.id, setSubPasses);
     const unsubDiscounts = groupService.subscribeDiscounts(group.id, setSubDiscounts);
     return () => {
       unsubClasses();
-      unsubPasses();
       unsubDiscounts();
     };
   }, [group.id]);
@@ -142,7 +133,6 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
   // Combine legacy props (if not migrated yet) and real-time subcollections
   // De-duplicate by ID just in case
   const allClasses = [...subClasses, ...(group.classes || []).filter(c => !subClasses.find(sc => sc.id === c.id))];
-  const allMonthlyPasses = [...subPasses, ...(group.monthlyPasses || []).filter(p => !subPasses.find(sp => sp.id === p.id))];
   const allDiscounts = [...subDiscounts, ...(group.discounts || []).filter(d => !subDiscounts.find(sd => sd.id === d.id))];
 
   const filteredClasses = allClasses.filter(cls => !cls.targetMonth || cls.targetMonth === currentMonthStr);
@@ -156,10 +146,9 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
     const timeB = b.startTime || '00:00';
     return timeA.localeCompare(timeB);
   });
-  const filteredPasses = allMonthlyPasses.filter((pass: MonthlyPass) => pass.targetMonth === currentMonthStr);
   const filteredDiscounts = allDiscounts.filter((discount: ClassDiscount) => !discount.targetMonth || discount.targetMonth === currentMonthStr);
 
-  const handleDelete = async (type: 'class' | 'discount' | 'pass', id: string) => {
+  const handleDelete = async (type: 'class' | 'discount', id: string) => {
     setActiveMenuId(null);
     if (window.confirm(t('group.class.delete_confirm') || "Are you sure you want to delete this item? This action cannot be undone.")) {
       executeDelete(type, id);
@@ -195,15 +184,13 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
     }
   };
 
-  const executeDelete = async (type: 'class' | 'discount' | 'pass', id: string) => {
+  const executeDelete = async (type: 'class' | 'discount', id: string) => {
     setLoading(true);
     const promise = (async () => {
       if (type === "class") {
         await groupService.deleteClass(group.id, id);
       } else if (type === "discount") {
         await groupService.deleteDiscount(group.id, id);
-      } else if (type === "pass") {
-        await groupService.deleteMonthlyPass(group.id, id);
       }
       setActiveMenuId(null);
       if (onSave) {
@@ -369,14 +356,6 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
             <span className="text-xs font-bold leading-tight text-center" dangerouslySetInnerHTML={{ __html: t('group.class.bundle_discount') || "Bundle<br />discount" }} />
           </button>
           <button
-            onClick={() => setEditingState({ type: 'monthly-pass', data: null })}
-            className="flex-1 flex flex-col items-center justify-center gap-1 px-2 py-3 bg-white text-gray-700 rounded-[12px] border border-gray-100 shadow-sm hover:bg-gray-50 transition-colors active:scale-95 relative"
-          >
-            <div className="absolute top-2 right-2 w-5 h-5 bg-gray-100 rounded-full flex items-center justify-center text-[10px] font-bold text-gray-500">{filteredPasses.length}</div>
-            <span className="material-symbols-outlined text-xl">confirmation_number</span>
-            <span className="text-xs font-bold leading-tight text-center" dangerouslySetInnerHTML={{ __html: t('group.class.monthly_pass_br') || "Monthly<br />Pass" }} />
-          </button>
-          <button
             onClick={() => setEditingState({ type: 'clone', data: null })}
             className="flex-1 flex flex-col items-center justify-center gap-1 px-2 py-3 bg-gray-900 text-white rounded-[12px] shadow-sm hover:bg-gray-800 transition-colors active:scale-95"
           >
@@ -387,71 +366,12 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
 
         {/* List Section */}
         <section className="flex flex-col gap-4">
-          {filteredClasses.length === 0 && filteredDiscounts.length === 0 && filteredPasses.length === 0 && (
+          {filteredClasses.length === 0 && filteredDiscounts.length === 0 && (
             <div className="bg-transparent border-2 border-dashed border-gray-300 rounded-[12px] p-10 text-center flex flex-col items-center justify-center">
               <span className="material-symbols-outlined text-gray-400 text-4xl mb-2">inbox</span>
               <p className="text-gray-500 font-bold">{t('group.class.no_items') || "No items registered"}</p>
             </div>
           )}
-
-          {/* Monthly Passes */}
-          {filteredPasses.map((pass: MonthlyPass) => (
-            <div key={pass.id} className="bg-white rounded-[12px] shadow-sm hover:shadow-md transition-shadow border border-gray-100 p-5 flex items-start gap-4">
-              <div className="flex-grow">
-                <div className="flex justify-between items-start mb-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-fuchsia-600 bg-fuchsia-50 px-2 py-0.5 rounded">
-                      {t('group.class.pass_badge') || "Pass"}
-                    </span>
-                    <span className="text-xs font-bold text-gray-400">#P-{pass.id.slice(0, 4)}</span>
-                  </div>
-                </div>
-                <h4 className="text-lg font-bold text-gray-900 leading-tight mb-2">{pass.title}</h4>
-                <div className="flex flex-col gap-1 text-sm text-gray-600 mb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-gray-600">
-                      {t('group.class.unlimited_access') || "Unlimited access for 30 days"}
-                    </span>
-                  </div>
-                  {pass.includedClassIds && pass.includedClassIds.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {pass.includedClassIds.map((classId: string) => {
-                        const cls = allClasses.find(c => c.id === classId);
-                        return cls ? (
-                          <span key={classId} className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full border border-gray-200">
-                            {cls.title}
-                          </span>
-                        ) : null;
-                      })}
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500">{t('group.class.monthly_price') || "Monthly Price"}</span>
-                  </div>
-                  <span className="text-sm font-bold text-gray-900">{pass.currency === 'KRW' ? '₩' : pass.currency} {pass.amount.toLocaleString()}</span>
-                </div>
-              </div>
-              <div className="relative action-menu-container">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setActiveMenuId(activeMenuId === pass.id ? null : pass.id);
-                  }}
-                  className="p-1 hover:bg-gray-100 rounded-full transition-colors text-gray-400"
-                >
-                  <span className="material-symbols-outlined">more_vert</span>
-                </button>
-                {activeMenuId === pass.id && (
-                  <div className="absolute right-0 mt-1 w-32 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden z-20">
-                    <button onClick={() => handleEdit('monthly-pass', pass)} className="w-full px-4 py-2 text-left text-sm font-bold hover:bg-gray-50">{t('common.edit') || "Edit"}</button>
-                    <button onClick={() => handleDelete('pass', pass.id)} className="w-full px-4 py-2 text-left text-sm font-bold text-red-500 hover:bg-red-50">{t('common.delete') || "Delete"}</button>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
 
           {/* Discounts */}
           {filteredDiscounts.map((discount: ClassDiscount) => (
@@ -585,11 +505,9 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
               group={group} 
               validClassIds={[
                 ...filteredClasses.map(c => c.id),
-                ...filteredPasses.map((p: any) => p.id),
                 ...filteredDiscounts.map((d: any) => d.id)
               ]}
               allClasses={allClasses}
-              allPasses={allMonthlyPasses}
               allDiscounts={allDiscounts}
             />
           </section>
@@ -601,7 +519,6 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
               group={group} 
               validClassIds={[
                 ...filteredClasses.map(c => c.id),
-                ...filteredPasses.map((p: any) => p.id),
                 ...filteredDiscounts.map((d: any) => d.id)
               ]}
               filteredClasses={filteredClasses}
@@ -626,19 +543,6 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
         )}
         {editingState?.type === "discount" && (
           <GroupClassDiscountEditor
-            group={group}
-            allClasses={allClasses}
-            initialData={editingState.data}
-            onClose={() => setEditingState(null)}
-            onSave={() => {
-              if (onSave) onSave();
-              else router.refresh();
-            }}
-            targetMonth={currentMonthStr}
-          />
-        )}
-        {editingState?.type === "monthly-pass" && (
-          <GroupClassMonthlyPassEditor
             group={group}
             allClasses={allClasses}
             initialData={editingState.data}
