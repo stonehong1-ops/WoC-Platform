@@ -53,7 +53,8 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
             sellerId,
             buyerId,
             msgId: msg.id,
-            itemName: msg.metadata.itemName
+            itemName: msg.metadata.itemName,
+            actionType: msg.metadata.actionType
           };
         }
       }
@@ -1154,7 +1155,7 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
                 <button
                   onClick={async () => {
                     try {
-                      if (latestOrder.domain === 'class') {
+                      if (latestOrder.actionType === 'booking_approval') {
                         await handleBookingAction(latestOrder.id, 'SELLER_CONFIRMED', latestOrder.msgId, roomId);
                       } else {
                         await shopService.updateOrderStatus(latestOrder.id, 'CONFIRMED');
@@ -1189,7 +1190,7 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
                 <button
                   onClick={async () => {
                     try {
-                      if (latestOrder.domain === 'class') {
+                      if (latestOrder.actionType === 'booking_approval') {
                         await cancelBooking(latestOrder.id);
                       } else {
                         await shopService.updateOrderStatus(latestOrder.id, 'CANCELLED');
