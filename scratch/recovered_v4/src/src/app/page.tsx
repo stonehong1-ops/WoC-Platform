@@ -1,3 +1,0 @@
-{
-  "data": "aW1wb3J0IHsgcmVkaXJlY3QgfSBmcm9tICduZXh0L25hdmlnYXRpb24nOwoKZXhwb3J0IGRlZmF1bHQgZnVuY3Rpb24gTGFuZGluZ1BhZ2UoKSB7CiAgcmVkaXJlY3QoJy9zb2NpYWwnKTsKfQo="
-}
