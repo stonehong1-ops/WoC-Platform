@@ -192,9 +192,9 @@ export function useBookingEngine() {
           const msg = `💸 ${t('shop.chat_payment_prefix', '[PAYMENT REPORTED]')}\n` +
             `${t('shop.chat_order_no', 'Order No')}: ${orderNumDisplay}\n` +
             `${t('shop.chat_product_name', 'Item')}: ${bookingData.itemName}\n` +
-            `${t('shop.chat_depositor', 'Depositor')}: ${user.displayName || t('common.user', 'User')}\n` +
-            `검토 후 답변드리겠습니다.`;
+            `${t('shop.chat_depositor', 'Depositor')}: ${user.displayName || t('common.user', 'User')}`;
           
+          // 1. Buyer's payment report message
           await chatService.sendMessage({
             roomId,
             senderId: user.uid,
@@ -207,8 +207,18 @@ export function useBookingEngine() {
               status: 'BANK_TRANSFERRED',
               domain: bookingData.domain || 'class',
               sellerId: hostId,
-              buyerId: user.uid
+              buyerId: user.uid,
+              itemName: bookingData.itemName
             }
+          });
+
+          // 2. Seller's automated review reply
+          await chatService.sendMessage({
+            roomId,
+            senderId: hostId,
+            senderName: 'Host',
+            text: '입금 확인 후 답변드리겠습니다. I will review and reply.',
+            type: 'text'
           });
         }
       } catch (chatErr) {
@@ -265,7 +275,7 @@ export function useBookingEngine() {
         const hostId = bookingData.hostId || 'adminstone';
         if (hostId) {
           const roomId = await chatService.getOrCreatePrivateRoom([bookingData.buyerId, hostId], bookingData.buyerId, 'business');
-          const msg = `✅ [BOOKING CONFIRMED]\nYour booking for '${bookingData.itemName}' has been confirmed by the host.`;
+          const msg = `✅ [BOOKING CONFIRMED]\n입금 확인 되었습니다. 감사합니다. I confirmed your bank transfer. Thank you.`;
           
           // Send message as host
           await chatService.sendMessage({
@@ -341,9 +351,9 @@ export function useBookingEngine() {
       const hostId = bookingData.hostId || 'adminstone';
       let replyText = '';
       if (action === 'SELLER_CONFIRMED') {
-        replyText = `✅ 감사합니다. 최종 승인 되었습니다.`;
+        replyText = `✅ [BOOKING CONFIRMED]\n입금 확인 되었습니다. 감사합니다. I confirmed your bank transfer. Thank you.`;
       } else {
-        replyText = `❌ 죄송합니다. 이 요청은 승인되지 않았습니다.`;
+        replyText = `❌ [ORDER CANCELLED]\n죄송합니다. 요청을 취소합니다. I am sorry for canceling your request.`;
       }
 
       await chatService.sendMessage({
@@ -403,7 +413,7 @@ export function useBookingEngine() {
         const hostId = bookingData.hostId || 'adminstone';
         if (hostId) {
           const roomId = await chatService.getOrCreatePrivateRoom([bookingData.buyerId, hostId], bookingData.buyerId, 'business');
-          const msg = `❌ [ORDER CANCELLED]\nThe order has been cancelled by the seller.`;
+          const msg = `❌ [ORDER CANCELLED]\n죄송합니다. 요청을 취소합니다. I am sorry for canceling your request.`;
           
           await chatService.sendMessage({
             roomId,

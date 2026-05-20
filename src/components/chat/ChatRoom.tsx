@@ -52,7 +52,8 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
             status,
             sellerId,
             buyerId,
-            msgId: msg.id
+            msgId: msg.id,
+            itemName: msg.metadata.itemName
           };
         }
       }
@@ -631,15 +632,6 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
             />
           </div>
           <div className="flex items-center gap-2">
-            {isSeller && (
-              <button
-                onClick={() => setIsManageModalOpen(true)}
-                className="px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-full text-xs font-black uppercase tracking-wider transition-all duration-300 shadow-md shadow-blue-500/20 active:scale-95 flex items-center gap-1.5"
-              >
-                <span className="material-symbols-outlined text-[14px]">settings_accessibility</span>
-                <span>{t('chatroom.manage_order', 'Manage Order')}</span>
-              </button>
-            )}
             <button 
               onClick={() => {
                 if (otherUser?.allowPhoneCalls && otherUser?.phoneNumber) {
@@ -1145,15 +1137,15 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
 
               <div className="bg-gray-50/50 border border-gray-100/50 rounded-2xl p-4 flex flex-col gap-2">
                 <div className="flex justify-between items-center text-xs text-gray-400 font-bold uppercase tracking-wider">
-                  <span>Domain</span>
+                  <span>{t('chatroom.domain', 'Domain')}</span>
                   <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-[10px] font-black">{latestOrder.domain}</span>
                 </div>
                 <div className="flex justify-between items-center text-xs text-gray-400 font-bold uppercase tracking-wider">
-                  <span>Order ID</span>
-                  <span className="text-gray-700 font-mono truncate max-w-[180px]">{latestOrder.id}</span>
+                  <span>{t('chatroom.order_name', 'Order Name')}</span>
+                  <span className="text-gray-700 font-bold truncate max-w-[180px]">{latestOrder.itemName || t('common.item', 'Item')}</span>
                 </div>
                 <div className="flex justify-between items-center text-xs text-gray-400 font-bold uppercase tracking-wider">
-                  <span>Current Status</span>
+                  <span>{t('chatroom.current_status', 'Current Status')}</span>
                   <span className="text-orange-500 font-black">{latestOrder.status}</span>
                 </div>
               </div>
@@ -1170,7 +1162,7 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
                           roomId,
                           senderId: user?.uid || 'adminstone',
                           senderName: user?.displayName || 'Host',
-                          text: `✅ [ORDER CONFIRMED]\nYour payment has been confirmed. The order is now completed!`,
+                          text: `✅ [ORDER CONFIRMED]\n입금 확인 되었습니다. 감사합니다. I confirmed your bank transfer. Thank you.`,
                           type: 'text',
                           metadata: {
                             actionType: 'shop_approval',
@@ -1205,7 +1197,7 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
                           roomId,
                           senderId: user?.uid || 'adminstone',
                           senderName: user?.displayName || 'Host',
-                          text: `❌ [ORDER CANCELLED]\nThe order has been cancelled by the seller.`,
+                          text: `❌ [ORDER CANCELLED]\n죄송합니다. 요청을 취소합니다. I am sorry for canceling your request.`,
                           type: 'text',
                           metadata: {
                             actionType: 'shop_approval',
@@ -1233,6 +1225,17 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
           </div>
         )}
       </AnimatePresence>
+
+      {/* FAB for Manage Order (Seller Only) */}
+      {isSeller && (
+        <button
+          onClick={() => setIsManageModalOpen(true)}
+          className="fixed bottom-24 right-4 z-40 px-4 py-3 bg-gradient-to-br from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-full shadow-xl shadow-blue-500/30 active:scale-95 transition-all flex items-center justify-center gap-2"
+        >
+          <span className="material-symbols-outlined text-[20px]">assignment_turned_in</span>
+          <span className="text-xs font-black uppercase tracking-wider">TODO</span>
+        </button>
+      )}
     </div>
   );
 }

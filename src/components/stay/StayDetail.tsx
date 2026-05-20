@@ -236,7 +236,7 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike }: S
 
     while (day <= endDateView) {
       for (let i = 0; i < 7; i++) {
-        const formattedDate = formatDate(day, 'dayOnly');
+        const formattedDate = formatDate(day, 'calendarDay');
         const cloneDay = day;
         const isPast = isBefore(day, startOfDay(new Date()));
         const isBooked = isDateBooked(day);

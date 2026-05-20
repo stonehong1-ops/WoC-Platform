@@ -228,11 +228,22 @@ export default function StayReservationFlow({
       if (hostId && user) {
         const roomId = await chatService.getOrCreatePrivateRoom([user.uid, hostId], user.uid, 'business');
         const msg = `💸 ${t('stay.chat_payment_prefix', '[PAYMENT REPORTED]')}\n${t('stay.chat_order_no', 'Booking No')}: ${createdOrderNumber}\n${t('stay.chat_depositor', 'Depositor')}: ${user.displayName || applicantName}\n${t('stay.chat_payment_msg', 'I have transferred the payment. Please confirm!')}`;
+        
+        // 1. Buyer's payment report message
         await chatService.sendMessage({
           roomId,
           senderId: user.uid,
           senderName: user.displayName || applicantName,
           text: msg,
+          type: 'text'
+        });
+
+        // 2. Seller's automated review reply
+        await chatService.sendMessage({
+          roomId,
+          senderId: hostId,
+          senderName: 'Host',
+          text: '입금 확인 후 답변드리겠습니다. I will review and reply.',
           type: 'text'
         });
       }

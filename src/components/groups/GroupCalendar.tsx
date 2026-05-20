@@ -446,7 +446,7 @@ const GroupCalendar: React.FC<GroupCalendarProps> = ({ group }) => {
         <div className="grid grid-cols-1 gap-y-3 px-4">
           {weekDays.map((wd, idx) => {
             const dayName = formatDate(wd, 'shortWeekday');
-            const dayNum = formatDate(wd, 'dayOnly');
+            const dayNum = formatDate(wd, 'calendarDay');
             const isTodayDate = isToday(wd);
             const dayEvents = events
               .filter(e => isSameDay(new Date(e.startDate), wd))
@@ -502,7 +502,7 @@ const GroupCalendar: React.FC<GroupCalendarProps> = ({ group }) => {
                       <div key={event.id} onClick={() => { setSelectedDate(ed); setCurrentMonth(startOfMonth(ed)); setViewMode('day'); }} className="bg-white rounded-xl p-4 border border-slate-100 shadow-sm flex gap-4 items-center hover:shadow-md transition-shadow cursor-pointer">
                         <div className="flex flex-col items-center justify-center min-w-[50px] border-r border-slate-100 pr-4">
                           <span className="text-[10px] font-bold text-slate-400 uppercase">{formatDate(ed, 'shortMonth')}</span>
-                          <span className="text-xl font-extrabold text-[#242c51]">{formatDate(ed, 'dayOnly')}</span>
+                          <span className="text-xl font-extrabold text-[#242c51]">{formatDate(ed, 'calendarDay')}</span>
                         </div>
                         <div className="flex-1 flex flex-col gap-1.5">
                           <div className="flex items-center gap-2">
@@ -575,7 +575,7 @@ const GroupCalendar: React.FC<GroupCalendarProps> = ({ group }) => {
                       }}
                       className={`w-9 h-9 flex flex-col items-center justify-center relative rounded-full cursor-pointer transition-colors ${isSelected ? 'bg-[#0057bd] shadow-md' : isTodayDate ? 'bg-slate-100' : 'hover:bg-slate-50'} ${textColor}`}
                     >
-                      <span className={`text-[12px] ${isSelected || isTodayDate ? 'font-bold' : 'font-medium'}`}>{formatDate(d, 'dayOnly')}</span>
+                      <span className={`text-[12px] ${isSelected || isTodayDate ? 'font-bold' : 'font-medium'}`}>{formatDate(d, 'calendarDay')}</span>
                       {dayEvents.length > 0 && (
                         <div className="flex gap-[2px] absolute bottom-0.5">
                           {dayEvents.slice(0, 3).map((e, ei) => (

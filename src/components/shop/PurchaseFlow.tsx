@@ -420,6 +420,8 @@ export default function PurchaseFlow({
                       `${t('shop.chat_product_name', 'Item')}: ${product.title}\n` +
                       `${t('shop.chat_depositor', 'Depositor')}: ${user.displayName || t('common.user', 'User')}\n` +
                       `${t('shop.chat_payment_msg', 'I have transferred the payment. Please confirm!')}`;
+                    
+                    // 1. Buyer's payment report message
                     await chatService.sendMessage({
                       roomId,
                       senderId: user.uid,
@@ -432,8 +434,18 @@ export default function PurchaseFlow({
                         status: 'PAYMENT_REPORTED',
                         domain: 'shop',
                         sellerId: sellerId,
-                        buyerId: user.uid
+                        buyerId: user.uid,
+                        itemName: product.title
                       }
+                    });
+
+                    // 2. Seller's automated review reply
+                    await chatService.sendMessage({
+                      roomId,
+                      senderId: sellerId,
+                      senderName: 'Host',
+                      text: '입금 확인 후 답변드리겠습니다. I will review and reply.',
+                      type: 'text'
                     });
                   }
                 } catch (err) {
