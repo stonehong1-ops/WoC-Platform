@@ -27,6 +27,7 @@ import { useNavigation } from "@/components/providers/NavigationProvider";
 import GroupAppShell from "./shell/GroupAppShell";
 import { FUNCTION_TAB_MAP } from '@/constants/groupTabs';
 import { useSearchParams, usePathname } from "next/navigation";
+import { useModalNavigation } from "@/hooks/useModalNavigation";
 
 type TabType = 'home' | 'calendar' | 'feed' | 'board' | 'about' | 'class' | 'class-setting' | 'members' | 'settings' | 'shop' | 'stay' | 'rental' | 'coupon' | 'live' | 'brand' | 'polls' | 'qa' | 'broadcast' | 'attendance' | 'rules' | 'surveys' | 'anonymous' | 'classA' | 'classB' | 'classC' | 'homework' | 'studentReports' | 'tuition' | 'gradeSystem' | 'parentNotify' | 'parentConsult' | 'examScheduler' | 'ticketBooking' | 'workshopReg' | 'qrCheckin' | 'waitlist' | 'retreat' | 'eventStaff' | 'guestList' | 'productInventory' | 'membershipBilling' | 'donationSupport' | 'subscriptionPlans' | 'settlementReports' | 'mediaGallery' | 'videoLibrary' | 'editorialPage' | 'newsletter' | 'podcastFeed' | 'pressKit' | 'linkHub' | 'socialSync' | 'brandAssets' | 'customLandingPage' | 'taskManager' | 'internalWiki' | 'aiAssistant' | 'roles';
 
@@ -52,6 +53,7 @@ const GroupHomeConfig = dynamic(() => import("./GroupHomeConfig"));
 const LiveFeed = dynamic(() => import("@/components/live/LiveFeed"));
 
 const GroupClassDashboard = dynamic(() => import("./GroupClassDashboard"));
+const ClassDetail = dynamic(() => import("../class/ClassDetail"));
 
 // Community module mockups
 const GroupPolls = dynamic(() => import("./GroupPolls"));
@@ -134,6 +136,7 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
   const { setGlobalNavHidden } = useNavigation();
   const searchParams = useSearchParams();
   const pathname = usePathname();
+  const { openModal: openClassFlow, closeModal: closeClassFlow, value: classFlow } = useModalNavigation('classFlow');
   const [isJoining, setIsJoining] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>(() => (searchParams.get('tab') as TabType) || 'home');
   const [visitedTabs, setVisitedTabs] = useState<Set<TabType>>(new Set<TabType>(['home']));
@@ -141,6 +144,15 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [currentGroup, setCurrentGroup] = useState<Group>(initialGroup);
   const [selectedMoment, setSelectedMoment] = useState<GalleryPost | null>(null);
+
+  // URL의 ?tab= 파라미터가 변경되면 activeTab을 동기화 (외부 페이지에서 router.replace로 복귀할 때 필요)
+  useEffect(() => {
+    const tabParam = searchParams.get('tab') as TabType | null;
+    if (tabParam && tabParam !== activeTab) {
+      setActiveTab(tabParam);
+      setVisitedTabs(prev => { const newSet = new Set(prev); newSet.add(tabParam); return newSet; });
+    }
+  }, [searchParams]);
 
 
   // [Step 2] 모달 제어를 Query String으로 전환
@@ -1102,7 +1114,7 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
                   <GroupClassDashboard
                     group={currentGroup}
-                    onApplyClick={() => { }}
+                    onApplyClick={() => openClassFlow('apply')}
                   />
                 </div>
 
@@ -1547,6 +1559,17 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
           handleTabClick('home');
         }}
       />
+
+      {/* Class Detail Modal Overlay */}
+      {classFlow === 'apply' && (
+        <div className="fixed inset-0 z-[9999] bg-background flex flex-col">
+          <ClassDetail
+            groupId={currentGroup.id}
+            isModal={true}
+            onClose={closeClassFlow}
+          />
+        </div>
+      )}
 
       {/* Fullscreen Group Chat Overlay */}
       {showGroupChat && (

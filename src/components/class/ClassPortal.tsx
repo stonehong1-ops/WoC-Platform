@@ -909,7 +909,7 @@ export default function ClassPortal() {
         </div>
       </div>
       <div className="grid grid-cols-1 gap-4">
-        {filteredGroups.map((group) => (
+        {[...filteredGroups].sort((a, b) => getGroupClassCount(b.id) - getGroupClassCount(a.id)).map((group) => (
           <div 
             key={group.id} 
             onClick={() => router.push(`/class/${group.id}?month=${targetMonthStr}`)}

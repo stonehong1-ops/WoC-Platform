@@ -1,15 +1,22 @@
-# 📝 Class Portal Modal Localization Context Notes
+# 📝 클래스 상세 모달 오버레이 전환 작업 컨텍스트 노트
 
-## Architecture Decision & Context
-1. **Goal**: Align the daily/special class reservation checkout modal in `ClassPortal.tsx` with the platform's multi-language toggle system.
-   - Maintain 0% design deviation on the UI layouts.
-   - Inject localized language bindings for both English and Korean seamlessly.
-   - Allow dynamic switching of the date formatter inside the subtitle based on the user's selected language setting.
+## 1. 아키텍처 의사결정 배경
+1. **문제 정의**:
+   - 기존의 클래스 신청 및 상세 정보 화면(`ClassDetail`)은 단순 정보 디스플레이 페이지임에도 독립 페이지 라우팅(`/class/[groupId]`) 방식을 강제 사용함.
+   - PWA 앱 모바일 기기 하드웨어/디바이스 뒤로가기를 하면 브라우저 히스토리 백이 작동하면서, 그룹을 통째로 이탈하거나 닫아버리는 비정상적인 버그가 지속 발생함.
 
-2. **State Integration Strategy**:
-   - `LanguageContext` already provides the custom dictionaries (`EN` & `KR`) with dedicated `class.booking_*` entries.
-   - By updating `useLanguage()` inside `ClassPortal.tsx` to export `{ t, language }`, we gain instant access to the active locale value (`'EN'` or `'KR'`).
-   - Using standard browser `toLocaleDateString` dynamic switching preserves structural alignment while delivering native localization.
+2. **비교 분석 (피드 등록창 방식의 훌륭함)**:
+   - 피드 등록창(`CreateFeedPopup`)은 동일 그룹 화면에 머물면서 URL 쿼리 파라미터(`?createFlow=new`)의 유무에 따라 팝업을 띄우는 오버레이(Modal) 구조임.
+   - 사용자가 뒤로가기를 하면 브라우저 파라미터만 제거되어 아무런 화면 흔들림(깜빡임)이나 이탈 없이 모달창만 완벽하게 닫힘.
+   - 쿼리 파라미터가 포함된 주소 자체가 고유 URL이 되므로 카카오톡 등 외부 링크 공유 및 랜딩 기능도 100% 동일하게 정상 작동함.
 
-3. **Verbatim Styling Retention**:
-   - All nested layouts, icon elements (`material-symbols-outlined`), flex alignments, and dark mode classes remain unchanged to ensure absolute pixel-perfect visual stability.
+3. **해결 방향**:
+   - 스토니님의 지시에 따라 클래스 상세 및 신청 또한 피드 방식과 100% 동일하게 설계 구조를 맞추어 완전히 로컬 모달 오버레이화함.
+   - 복잡한 라우트 이동을 전면 배제하고, `GroupHome` 내에서 쿼리스트링 기반 오버레이로 단순화하여 깜빡임과 뒤로가기 이탈 버그를 원천 봉쇄함.
+
+## 2. 작업 간 특이사항 및 제한조건
+- **디자인 안정성 유지 (Zero Design Deviation)**: 
+  - `ClassDetail` UI 구조와 원본 CSS 및 디자인 픽셀은 전혀 건드리지 않고, 화면을 띄우는 네비게이션 로직 및 닫기 바인딩만 깔끔하고 정밀하게 수술함.
+  - 추가로 클래스 신청하기/결제 flow에서 하프 형태의 BottomSheet가 모바일 PWA 환경에서 부자연스러움을 주던 문제를 해결하기 위해, 피드 등록창과 100% 동일하게 Framer-motion 및 Portal 기반의 풀스크린 모달 구조(z-index `10000`)로 개편하여 풀스크린 경험을 완성함.
+- **한국어 종결 규칙**:
+  - 이번 작업의 산출물 및 출력 메시지에서는 한국어 문장 끝에 콜론(`:`)을 사용하는 한국어 언어적 관성을 배제하고 마침표(`.`) 및 완전한 평서문으로 마감함.

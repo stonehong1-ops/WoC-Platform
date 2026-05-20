@@ -1159,6 +1159,7 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
                         await handleBookingAction(latestOrder.id, 'SELLER_CONFIRMED', latestOrder.msgId, roomId);
                       } else {
                         await shopService.updateOrderStatus(latestOrder.id, 'CONFIRMED');
+                        await chatService.updateMessage(latestOrder.msgId, { 'metadata.status': 'CONFIRMED' } as any);
                         await chatService.sendMessage({
                           roomId,
                           senderId: user?.uid || 'adminstone',
@@ -1191,9 +1192,10 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
                   onClick={async () => {
                     try {
                       if (latestOrder.actionType === 'booking_approval') {
-                        await cancelBooking(latestOrder.id);
+                        await handleBookingAction(latestOrder.id, 'SELLER_REJECTED', latestOrder.msgId, roomId);
                       } else {
                         await shopService.updateOrderStatus(latestOrder.id, 'CANCELLED');
+                        await chatService.updateMessage(latestOrder.msgId, { 'metadata.status': 'CANCELLED' } as any);
                         await chatService.sendMessage({
                           roomId,
                           senderId: user?.uid || 'adminstone',

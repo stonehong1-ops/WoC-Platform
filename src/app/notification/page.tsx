@@ -147,7 +147,63 @@ export default function NotificationPage() {
     );
   };
 
+  const getLocalizedNotification = (noti: Notification) => {
+    let title = noti.title || '';
+    let message = noti.message || '';
+
+    const titleMap: Record<string, string> = {
+      'New Booking Request': t('notification.title.new_booking_request'),
+      'Request Submitted': t('notification.title.request_submitted'),
+      'Booking Confirmed': t('notification.title.booking_confirmed'),
+      'Booking Cancelled': t('notification.title.booking_cancelled'),
+      'Order Received': t('notification.title.order_received'),
+      'New Order': t('notification.title.new_order'),
+      'Stay Booking Requested': t('notification.title.stay_requested'),
+      'New Stay Booking': t('notification.title.new_stay_booking'),
+      'Social Event Reservation Received': t('notification.title.social_reserved'),
+      'New Reservation Received': t('notification.title.new_reservation'),
+    };
+    if (titleMap[title]) title = titleMap[title];
+
+    if (message.includes('requested to join')) {
+      const match = message.match(/(.+) requested to join '(.+)'\. Please review in chat\./);
+      if (match) message = t('notification.msg.booking_request', { user: match[1], item: match[2] });
+    } else if (message.includes('is submitted and waiting for host confirmation')) {
+      const match = message.match(/Your request for '(.+)' is submitted and waiting for host confirmation\./);
+      if (match) message = t('notification.msg.request_submitted', { item: match[1] });
+    } else if (message.includes('has been confirmed!')) {
+      const match = message.match(/Your booking for '(.+)' has been confirmed!/);
+      if (match) message = t('notification.msg.booking_confirmed', { item: match[1] });
+    } else if (message.includes('has been cancelled')) {
+      const match = message.match(/Your booking for '(.+)' has been cancelled\./);
+      if (match) message = t('notification.msg.booking_cancelled', { item: match[1] });
+    } else if (message.includes('has been successfully received')) {
+      const match1 = message.match(/Order for '(.+)' has been successfully received\./);
+      if (match1) {
+         message = t('notification.msg.order_received', { item: match1[1] });
+      } else {
+        const match2 = message.match(/'(.+)' reservation has been successfully received\./);
+        if (match2) message = t('notification.msg.social_reserved', { item: match2[1] });
+      }
+    } else if (message.includes('has placed a new order for')) {
+      const match = message.match(/(.+) has placed a new order for '(.+)'\. Please check the details\./);
+      if (match) message = t('notification.msg.new_order', { user: match[1], item: match[2] });
+    } else if (message.includes('has been received') && message.includes('Your booking for')) {
+      const match = message.match(/Your booking for '(.+)' has been received\./);
+      if (match) message = t('notification.msg.stay_requested', { item: match[1] });
+    } else if (message.includes('has applied for') && message.includes('Awaiting approval')) {
+      const match = message.match(/(.+) has applied for '(.+)'\. Awaiting approval\./);
+      if (match) message = t('notification.msg.new_stay_booking', { user: match[1], item: match[2] });
+    } else if (message.includes('has reserved for')) {
+      const match = message.match(/(.+) has reserved for '(.+)'\./);
+      if (match) message = t('notification.msg.new_reservation', { user: match[1], item: match[2] });
+    }
+
+    return { title, message };
+  };
+
   const renderNotification = (noti: Notification) => {
+    const { title, message } = getLocalizedNotification(noti);
 
     return (
       <div 
@@ -167,8 +223,8 @@ export default function NotificationPage() {
              </span>
           )}
           <div className="text-sm text-[#2d3435] leading-relaxed">
-            <span className="font-bold text-[#2d3435] block mb-0.5">{noti.title}</span>
-            <span className={noti.isRead ? "text-[#596061]" : "text-[#2d3435]"}>{noti.message}</span>
+            <span className="font-bold text-[#2d3435] block mb-0.5">{title}</span>
+            <span className={noti.isRead ? "text-[#596061]" : "text-[#2d3435]"}>{message}</span>
           </div>
           <p className="text-xs text-[#596061] mt-1.5 flex items-center gap-1.5">
             <span className="material-symbols-outlined text-[14px]">schedule</span>

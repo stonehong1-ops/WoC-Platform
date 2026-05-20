@@ -10,6 +10,7 @@ import { doc, getDoc, query, collection, where, getDocs } from 'firebase/firesto
 import { db } from '@/lib/firebase/clientApp';
 import { toast } from 'sonner';
 import BottomSheet from '@/components/common/BottomSheet';
+import Portal from '@/components/common/Portal';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useModalNavigation } from '@/hooks/useModalNavigation';
 import { useNavigation } from '@/components/providers/NavigationProvider';
@@ -665,8 +666,8 @@ export default function ClassDetail({ groupId, onClose, isModal = false, isEmbed
     );
   }
 
-  return (
-    <div className={isModal ? "fixed inset-0 z-[200] bg-white flex flex-col animate-in slide-in-from-bottom duration-300" : isEmbedded ? "flex flex-col bg-transparent w-full" : "flex flex-col bg-white w-full h-full"}>
+  const contentLayout = (
+    <div className={isModal ? "fixed inset-0 z-[9999] bg-white flex flex-col animate-in slide-in-from-bottom duration-300" : isEmbedded ? "flex flex-col bg-transparent w-full" : "flex flex-col bg-white w-full h-full"}>
       <style dangerouslySetInnerHTML={{ __html: `
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -945,269 +946,298 @@ export default function ClassDetail({ groupId, onClose, isModal = false, isEmbed
 
 
       {/* Apply/Payment Modal */}
-      <BottomSheet isOpen={flow === 'apply'} onClose={() => closeFlow()} title="Class Registration">
-
-        <div className="px-5 pb-8 flex flex-col gap-6">
-          <section className="flex flex-col gap-2">
-             <h3 className="text-[10px] font-black text-[#596061] uppercase tracking-widest">{t('class.your_role', 'Your Role')} <span className="text-error">*</span></h3>
-             <div className="flex gap-2 mt-1">
-                 <button className={`flex-1 py-3 rounded-xl border text-sm font-bold transition-all ${selectedRole === 'Leader' ? 'bg-primary text-white border-primary' : 'bg-white text-[#acb3b4] border-[#f2f4f4]'}`} onClick={() => setSelectedRole('Leader')}>{t('class.leader', 'Leader')}</button>
-                 <button className={`flex-1 py-3 rounded-xl border text-sm font-bold transition-all ${selectedRole === 'Follower' ? 'bg-[#7c3aed] text-white border-[#7c3aed]' : 'bg-white text-[#acb3b4] border-[#f2f4f4]'}`} onClick={() => setSelectedRole('Follower')}>{t('class.follower', 'Follower')}</button>
-             </div>
-          </section>
-
-          {purchaseStep === 'summary' && (
-            <div className="space-y-6 animate-in fade-in duration-300">
-              <section className="flex flex-col gap-2">
-                <h3 className="text-[10px] font-black text-[#596061] uppercase tracking-widest">{t('class.selected_items', 'Selected Items')}</h3>
-                <div className="space-y-3">
-                  {Array.from(selectedClasses).map(id => {
-                    const item = allItems.find(i => i.id === id);
-                    if (!item) return null;
-                    return (
-                      <div key={id} className="flex items-center justify-between p-3 bg-[#f8f9fa] rounded-2xl border border-[#f2f4f4]">
-                        <div className="flex flex-col">
-                          <p className="text-sm font-black text-[#2d3435]">{item.title}</p>
-                          <p className="text-[10px] text-primary font-black uppercase tracking-wider">{item.itemType}</p>
-                        </div>
-                        <p className="text-sm font-black text-[#2d3435]">{item.amount.toLocaleString()} {item.currency}</p>
-                      </div>
-                    );
-                  })}
-                  <div className="flex justify-between items-center px-2 pt-2">
-                    <p className="text-xs font-bold text-[#596061]">{t('class.total_amount', 'Total Amount')}</p>
-                    <p className="text-lg font-black text-primary">
-                      {Array.from(selectedClasses).reduce((sum, id) => sum + (allItems.find(i => i.id === id)?.amount || 0), 0).toLocaleString()} {group?.classes?.[0]?.currency || 'KRW'}
-                    </p>
-                  </div>
-                </div>
-              </section>
-
-              <section className="flex flex-col gap-2">
-                <h3 className="text-[10px] font-black text-[#596061] uppercase tracking-widest">{t('class.contact_number', 'Contact Number')} <span className="text-error">*</span></h3>
-                <input
-                  type="tel"
-                  value={buyerPhone}
-                  onChange={(e) => setBuyerPhone(e.target.value)}
-                  placeholder="010-0000-0000"
-                  className="w-full bg-[#f8f9fa] border border-[#f2f4f4] rounded-xl px-4 py-3.5 text-sm text-[#2d3435] font-bold focus:outline-none focus:border-primary transition-all"
-                />
-                <p className="text-[10px] text-[#acb3b4] font-medium leading-relaxed">{t('class.admin_contact_notice', 'Admin will contact you at this number for confirmation.')}</p>
-              </section>
-
-              <section className="flex flex-col gap-2">
-                <h3 className="text-[10px] font-black text-[#596061] uppercase tracking-widest">{t('class.applicant_memo', 'Class Registration Memo (Optional)')}</h3>
-                <textarea
-                  value={applicantMemo}
-                  onChange={(e) => setApplicantMemo(e.target.value)}
-                  placeholder={t('class.memo_placeholder', 'Leave a message (max 100 characters)')}
-                  maxLength={100}
-                  rows={3}
-                  className="w-full bg-[#f8f9fa] border border-[#f2f4f4] rounded-xl px-4 py-3 text-sm text-[#2d3435] resize-none focus:outline-none focus:border-primary transition-all"
-                />
-              </section>
-
-              <button 
-                onClick={async () => {
-                  if (!user || !selectedRole) {
-                    toast.error("Please select your role (Leader/Follower)");
-                    return;
-                  }
-                  if (!buyerPhone.trim()) {
-                    toast.error("Please enter your contact number");
-                    return;
-                  }
-                  
-                  setIsApplying(true);
-                  try {
-                    const num = genOrderNumber();
-                    setOrderNumber(num);
-                    
-                    const totalAmount = Array.from(selectedClasses).reduce((sum, id) => sum + (allItems.find(i => i.id === id)?.amount || 0), 0);
-                    const classTitles = Array.from(selectedClasses).map(id => allItems.find(i => i.id === id)?.title).filter(Boolean).join(', ');
-
-                    const regPromises = Array.from(selectedClasses).map(classId => {
-                      const item = allItems.find(c => c.id === classId);
-                      if (!item) return Promise.resolve();
-                      
-                      return classRegistrationService.addRegistration({
-                        classId: item.id,
-                        groupId,
-                        userId: user.uid,
-                        applicantName: user.displayName || profile?.nickname || 'Anonymous',
-                        classTitle: item.title,
-                        status: 'PAYMENT_PENDING',
-                        paymentStatus: 'pending',
-                        contactNumber: buyerPhone,
-                        role: selectedRole,
-                        orderNumber: num,
-                        amount: item.amount,
-                        currency: item.currency || 'KRW',
-                        applicantMemo: applicantMemo.trim() || undefined
-                      });
-                    });
-
-                    const results = await Promise.all(regPromises);
-                    const firstReg = results.find(r => r && r.id);
-                    if (firstReg) setOrderId(firstReg.id);
-
-                    // Chat Notification
-                    try {
-                      const adminId = group?.ownerId || 'adminstone';
-                      await notificationUtils.sendClassReservationNotification({
-                        user,
-                        adminId,
-                        orderNumber: num,
-                        classTitles,
-                        totalAmount,
-                        selectedRole,
-                        buyerPhone,
-                        applicantMemo: applicantMemo.trim() || undefined,
-                        t
-                      });
-                    } catch (e) { console.error("Chat notify failed:", e); }
-
-                    setPurchaseStep('payment');
-                  } catch (error) {
-                    console.error("Application failed:", error);
-                    toast.error("Failed to process reservation.");
-                  } finally {
-                    setIsApplying(false);
-                  }
-                }}
-                disabled={isApplying}
-                className="w-full bg-primary text-white py-4 rounded-[20px] font-black text-sm tracking-wide shadow-xl shadow-primary/20 active:scale-[0.98] transition-all disabled:opacity-50"
-              >
-                {isApplying ? "Processing..." : t('class.complete_application', 'Complete Application')}
-              </button>
-            </div>
-          )}
-
-          {purchaseStep === 'payment' && (
-            <div className="space-y-6 animate-in slide-in-from-right duration-300">
-              <div className="text-center py-2">
-                <div className="inline-flex items-center gap-2 bg-[#fff7ed] border border-[#fed7aa] rounded-2xl px-5 py-3">
-                  <span className="material-symbols-outlined text-lg text-orange-500">timer</span>
-                  <span className="text-2xl font-black text-orange-600 font-mono tracking-wider">{mm}:{ss}</span>
-                </div>
-                <p className="text-[11px] text-[#596061] font-bold mt-3">Please transfer within 1 hour to secure your spot.</p>
-              </div>
-
-              <div className="bg-[#f8f9fa] rounded-2xl p-4 border border-[#e0e4e5]">
-                <p className="text-[10px] font-black text-[#acb3b4] uppercase tracking-widest mb-1">Reservation No.</p>
-                <div className="flex items-center justify-between">
-                  <p className="text-base font-black text-[#2d3435] font-mono">{orderNumber}</p>
-                  <button onClick={() => copyToClipboard(orderNumber, 'order')}
-                    className={`text-[10px] font-black px-3 py-1.5 rounded-full transition-all ${isCopied === 'order' ? 'bg-emerald-100 text-emerald-700' : 'bg-[#e8eaec] text-[#596061]'}`}>
-                    {isCopied === 'order' ? '✓ COPIED' : 'COPY'}
+      <AnimatePresence>
+        {flow === 'apply' && (
+          <Portal>
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed inset-0 z-[10000] bg-[#f8f9fa] text-[#2d3435] font-sans antialiased flex flex-col"
+            >
+              {/* TopAppBar */}
+              <header className="fixed top-0 w-full z-[10001] flex items-center justify-between px-4 h-16 bg-white shadow-sm border-b border-slate-100">
+                <div className="flex items-center gap-3">
+                  <button onClick={() => closeFlow()} className="p-2 rounded-full active:scale-95 duration-150 hover:bg-slate-50">
+                    <span className="material-symbols-outlined text-slate-500">close</span>
                   </button>
+                  <h1 className="font-title-md text-title-md text-[#2d3435] font-black">Class Registration</h1>
                 </div>
-              </div>
+                <div className="w-10 h-10"></div>
+              </header>
 
-              <div className="border border-[#e0e4e5] rounded-[24px] overflow-hidden bg-white shadow-sm">
-                <div className="bg-[#f8f9fa] px-4 py-3 border-b border-[#e0e4e5] flex items-center gap-2">
-                  <span className="material-symbols-outlined text-sm text-primary">account_balance</span>
-                  <p className="text-[10px] font-black text-primary uppercase tracking-widest">Bank Details</p>
-                </div>
-                <div className="p-5 space-y-4">
-                  <div className="flex justify-between items-center">
-                    <p className="text-[10px] text-[#acb3b4] font-black uppercase">Bank</p>
-                    <p className="text-sm font-black text-[#2d3435]">{bank?.bankName}</p>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <div className="flex flex-col">
-                      <p className="text-[10px] text-[#acb3b4] font-black uppercase">Account</p>
-                      <p className="text-sm font-black text-[#2d3435] font-mono">{bank?.accountNumber}</p>
-                    </div>
-                    <button onClick={() => copyToClipboard(bank?.accountNumber || '', 'acc')}
-                      className={`text-[10px] font-black px-3 py-1.5 rounded-full transition-all ${isCopied === 'acc' ? 'bg-emerald-100 text-emerald-700' : 'bg-primary text-white'}`}>
-                      {isCopied === 'acc' ? '✓ COPIED' : 'COPY'}
+              {/* Scrollable Content */}
+              <main className="flex-1 overflow-y-auto pt-20 pb-32 px-5 max-w-[56rem] mx-auto w-full space-y-6">
+                <section className="flex flex-col gap-2">
+                   <h3 className="text-[10px] font-black text-[#596061] uppercase tracking-widest">{t('class.your_role', 'Your Role')} <span className="text-error">*</span></h3>
+                   <div className="flex gap-2 mt-1">
+                       <button className={`flex-1 py-3 rounded-xl border text-sm font-bold transition-all ${selectedRole === 'Leader' ? 'bg-primary text-white border-primary' : 'bg-white text-[#acb3b4] border-[#f2f4f4]'}`} onClick={() => setSelectedRole('Leader')}>{t('class.leader', 'Leader')}</button>
+                       <button className={`flex-1 py-3 rounded-xl border text-sm font-bold transition-all ${selectedRole === 'Follower' ? 'bg-[#7c3aed] text-white border-[#7c3aed]' : 'bg-white text-[#acb3b4] border-[#f2f4f4]'}`} onClick={() => setSelectedRole('Follower')}>{t('class.follower', 'Follower')}</button>
+                   </div>
+                </section>
+
+                {purchaseStep === 'summary' && (
+                  <div className="space-y-6 animate-in fade-in duration-300">
+                    <section className="flex flex-col gap-2">
+                      <h3 className="text-[10px] font-black text-[#596061] uppercase tracking-widest">{t('class.selected_items', 'Selected Items')}</h3>
+                      <div className="space-y-3">
+                        {Array.from(selectedClasses).map(id => {
+                          const item = allItems.find(i => i.id === id);
+                          if (!item) return null;
+                          return (
+                            <div key={id} className="flex items-center justify-between p-3 bg-[#f8f9fa] rounded-2xl border border-[#f2f4f4]">
+                              <div className="flex flex-col">
+                                <p className="text-sm font-black text-[#2d3435]">{item.title}</p>
+                                <p className="text-[10px] text-primary font-black uppercase tracking-wider">{item.itemType}</p>
+                              </div>
+                              <p className="text-sm font-black text-[#2d3435]">{item.amount.toLocaleString()} {item.currency}</p>
+                            </div>
+                          );
+                        })}
+                        <div className="flex justify-between items-center px-2 pt-2">
+                          <p className="text-xs font-bold text-[#596061]">{t('class.total_amount', 'Total Amount')}</p>
+                          <p className="text-lg font-black text-primary">
+                            {Array.from(selectedClasses).reduce((sum, id) => sum + (allItems.find(i => i.id === id)?.amount || 0), 0).toLocaleString()} {group?.classes?.[0]?.currency || 'KRW'}
+                          </p>
+                        </div>
+                      </div>
+                    </section>
+
+                    <section className="flex flex-col gap-2">
+                      <h3 className="text-[10px] font-black text-[#596061] uppercase tracking-widest">{t('class.contact_number', 'Contact Number')} <span className="text-error">*</span></h3>
+                      <input
+                        type="tel"
+                        value={buyerPhone}
+                        onChange={(e) => setBuyerPhone(e.target.value)}
+                        placeholder="010-0000-0000"
+                        className="w-full bg-[#f8f9fa] border border-[#f2f4f4] rounded-xl px-4 py-3.5 text-sm text-[#2d3435] font-bold focus:outline-none focus:border-primary transition-all"
+                      />
+                      <p className="text-[10px] text-[#acb3b4] font-medium leading-relaxed">{t('class.admin_contact_notice', 'Admin will contact you at this number for confirmation.')}</p>
+                    </section>
+
+                    <section className="flex flex-col gap-2">
+                      <h3 className="text-[10px] font-black text-[#596061] uppercase tracking-widest">{t('class.applicant_memo', 'Class Registration Memo (Optional)')}</h3>
+                      <textarea
+                        value={applicantMemo}
+                        onChange={(e) => setApplicantMemo(e.target.value)}
+                        placeholder={t('class.memo_placeholder', 'Leave a message (max 100 characters)')}
+                        maxLength={100}
+                        rows={3}
+                        className="w-full bg-[#f8f9fa] border border-[#f2f4f4] rounded-xl px-4 py-3 text-sm text-[#2d3435] resize-none focus:outline-none focus:border-primary transition-all"
+                      />
+                    </section>
+
+                    <button 
+                      onClick={async () => {
+                        if (!user || !selectedRole) {
+                          toast.error("Please select your role (Leader/Follower)");
+                          return;
+                        }
+                        if (!buyerPhone.trim()) {
+                          toast.error("Please enter your contact number");
+                          return;
+                        }
+                        
+                        setIsApplying(true);
+                        try {
+                          const num = genOrderNumber();
+                          setOrderNumber(num);
+                          
+                          const totalAmount = Array.from(selectedClasses).reduce((sum, id) => sum + (allItems.find(i => i.id === id)?.amount || 0), 0);
+                          const classTitles = Array.from(selectedClasses).map(id => allItems.find(i => i.id === id)?.title).filter(Boolean).join(', ');
+
+                          const regPromises = Array.from(selectedClasses).map(classId => {
+                            const item = allItems.find(c => c.id === classId);
+                            if (!item) return Promise.resolve();
+                            
+                            return classRegistrationService.addRegistration({
+                              classId: item.id,
+                              groupId,
+                              userId: user.uid,
+                              applicantName: user.displayName || profile?.nickname || 'Anonymous',
+                              classTitle: item.title,
+                              status: 'PAYMENT_PENDING',
+                              paymentStatus: 'pending',
+                              contactNumber: buyerPhone,
+                              role: selectedRole,
+                              orderNumber: num,
+                              amount: item.amount,
+                              currency: item.currency || 'KRW',
+                              applicantMemo: applicantMemo.trim() || undefined
+                            });
+                          });
+
+                          const results = await Promise.all(regPromises);
+                          const firstReg = results.find(r => r && r.id);
+                          if (firstReg) setOrderId(firstReg.id);
+
+                          // Chat Notification
+                          try {
+                            const adminId = group?.ownerId || 'adminstone';
+                            await notificationUtils.sendClassReservationNotification({
+                              user,
+                              adminId,
+                              orderNumber: num,
+                              classTitles,
+                              totalAmount,
+                              selectedRole,
+                              buyerPhone,
+                              applicantMemo: applicantMemo.trim() || undefined,
+                              t
+                            });
+                          } catch (e) { console.error("Chat notify failed:", e); }
+
+                          setPurchaseStep('payment');
+                        } catch (error) {
+                          console.error("Application failed:", error);
+                          toast.error("Failed to process reservation.");
+                        } finally {
+                          setIsApplying(false);
+                        }
+                      }}
+                      disabled={isApplying}
+                      className="w-full bg-primary text-white py-4 rounded-[20px] font-black text-sm tracking-wide shadow-xl shadow-primary/20 active:scale-[0.98] transition-all disabled:opacity-50"
+                    >
+                      {isApplying ? "Processing..." : t('class.complete_application', 'Complete Application')}
                     </button>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <p className="text-[10px] text-[#acb3b4] font-black uppercase">Holder</p>
-                    <p className="text-sm font-black text-[#2d3435]">{bank?.accountHolder}</p>
-                  </div>
-                  <div className="bg-[#f0f4ff] rounded-xl p-4 flex items-center justify-between">
-                    <div className="flex flex-col">
-                      <p className="text-[10px] text-primary font-black uppercase">Total Amount</p>
-                      <p className="text-xl font-black text-primary">
-                        {Array.from(selectedClasses).reduce((sum, id) => sum + (allItems.find(i => i.id === id)?.amount || 0), 0).toLocaleString()} KRW
-                      </p>
+                )}
+
+                {purchaseStep === 'payment' && (
+                  <div className="space-y-6 animate-in slide-in-from-right duration-300">
+                    <div className="text-center py-2">
+                      <div className="inline-flex items-center gap-2 bg-[#fff7ed] border border-[#fed7aa] rounded-2xl px-5 py-3">
+                        <span className="material-symbols-outlined text-lg text-orange-500">timer</span>
+                        <span className="text-2xl font-black text-orange-600 font-mono tracking-wider">{mm}:{ss}</span>
+                      </div>
+                      <p className="text-[11px] text-[#596061] font-bold mt-3">Please transfer within 1 hour to secure your spot.</p>
                     </div>
+
+                    <div className="bg-[#f8f9fa] rounded-2xl p-4 border border-[#e0e4e5]">
+                      <p className="text-[10px] font-black text-[#acb3b4] uppercase tracking-widest mb-1">Reservation No.</p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-base font-black text-[#2d3435] font-mono">{orderNumber}</p>
+                        <button onClick={() => copyToClipboard(orderNumber, 'order')}
+                          className={`text-[10px] font-black px-3 py-1.5 rounded-full transition-all ${isCopied === 'order' ? 'bg-emerald-100 text-emerald-700' : 'bg-[#e8eaec] text-[#596061]'}`}>
+                          {isCopied === 'order' ? '✓ COPIED' : 'COPY'}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="border border-[#e0e4e5] rounded-[24px] overflow-hidden bg-white shadow-sm">
+                      <div className="bg-[#f8f9fa] px-4 py-3 border-b border-[#e0e4e5] flex items-center gap-2">
+                        <span className="material-symbols-outlined text-sm text-primary">account_balance</span>
+                        <p className="text-[10px] font-black text-primary uppercase tracking-widest">Bank Details</p>
+                      </div>
+                      <div className="p-5 space-y-4">
+                        <div className="flex justify-between items-center">
+                          <p className="text-[10px] text-[#acb3b4] font-black uppercase">Bank</p>
+                          <p className="text-sm font-black text-[#2d3435]">{bank?.bankName}</p>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <div className="flex flex-col">
+                            <p className="text-[10px] text-[#acb3b4] font-black uppercase">Account</p>
+                            <p className="text-sm font-black text-[#2d3435] font-mono">{bank?.accountNumber}</p>
+                          </div>
+                          <button onClick={() => copyToClipboard(bank?.accountNumber || '', 'acc')}
+                            className={`text-[10px] font-black px-3 py-1.5 rounded-full transition-all ${isCopied === 'acc' ? 'bg-emerald-100 text-emerald-700' : 'bg-primary text-white'}`}>
+                            {isCopied === 'acc' ? '✓ COPIED' : 'COPY'}
+                          </button>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <p className="text-[10px] text-[#acb3b4] font-black uppercase">Holder</p>
+                          <p className="text-sm font-black text-[#2d3435]">{bank?.accountHolder}</p>
+                        </div>
+                        <div className="bg-[#f0f4ff] rounded-xl p-4 flex items-center justify-between">
+                          <div className="flex flex-col">
+                            <p className="text-[10px] text-primary font-black uppercase">Total Amount</p>
+                            <p className="text-xl font-black text-primary">
+                              {Array.from(selectedClasses).reduce((sum, id) => sum + (allItems.find(i => i.id === id)?.amount || 0), 0).toLocaleString()} KRW
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button 
+                      onClick={async () => {
+                        setIsApplying(true);
+                        try {
+                          // Update all registrations for this order to PAYMENT_REPORTED
+                          const q = query(
+                            collection(db, 'class_registrations'),
+                            where('orderNumber', '==', orderNumber),
+                            where('userId', '==', user?.uid)
+                          );
+                          const snap = await getDocs(q);
+                          const updatePromises = snap.docs.map(d => 
+                            classRegistrationService.updateRegistration(d.id, { 
+                              status: 'PAYMENT_REPORTED',
+                              paymentStatus: 'reported'
+                            })
+                          );
+                          await Promise.all(updatePromises);
+
+                          // Chat Notification
+                          try {
+                            const adminId = group?.ownerId || 'adminstone';
+                            await notificationUtils.sendClassPaymentReportedNotification({
+                              user,
+                              adminId,
+                              orderNumber,
+                              depositorName: user?.displayName || undefined,
+                              t
+                            });
+                          } catch (e) { console.error("Chat report failed:", e); }
+
+                          setPurchaseStep('complete');
+                        } catch (e) {
+                          toast.error("Failed to report payment.");
+                        } finally {
+                          setIsApplying(false);
+                        }
+                      }}
+                      className="w-full bg-[#2d3435] text-white py-4 rounded-[20px] font-black text-sm tracking-wide shadow-xl active:scale-[0.98] transition-all"
+                    >
+                      I've Transferred the Payment
+                    </button>
                   </div>
-                </div>
-              </div>
+                )}
 
-              <button 
-                onClick={async () => {
-                  setIsApplying(true);
-                  try {
-                    // Update all registrations for this order to PAYMENT_REPORTED
-                    const q = query(
-                      collection(db, 'class_registrations'),
-                      where('orderNumber', '==', orderNumber),
-                      where('userId', '==', user?.uid)
-                    );
-                    const snap = await getDocs(q);
-                    const updatePromises = snap.docs.map(d => 
-                      classRegistrationService.updateRegistration(d.id, { 
-                        status: 'PAYMENT_REPORTED',
-                        paymentStatus: 'reported'
-                      })
-                    );
-                    await Promise.all(updatePromises);
+                {purchaseStep === 'complete' && (
+                  <div className="flex flex-col items-center justify-center py-10 animate-in fade-in duration-500">
+                    <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mb-6">
+                      <span className="material-symbols-outlined text-4xl text-emerald-600" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                    </div>
+                    <h3 className="text-xl font-black text-[#2d3435] mb-2">Reservation Placed!</h3>
+                    <p className="text-sm text-[#596061] text-center leading-relaxed mb-8 px-4">
+                      Your reservation has been received. Admin will confirm your payment shortly. Check status in My Info.
+                    </p>
+                    <button 
+                      onClick={() => {
+                        closeFlow();
+                        setSelectedClasses(new Set()); // Clear basket after completion
+                        router.push('/history');
+                      }}
+                      className="w-full bg-primary text-white py-4 rounded-[20px] font-black text-sm tracking-wide shadow-xl shadow-primary/20 transition-all"
+                    >
+                      View My History
+                    </button>
+                  </div>
+                )}
 
-                    // Chat Notification
-                    try {
-                      const adminId = group?.ownerId || 'adminstone';
-                      await notificationUtils.sendClassPaymentReportedNotification({
-                        user,
-                        adminId,
-                        orderNumber,
-                        depositorName: user?.displayName || undefined,
-                        t
-                      });
-                    } catch (e) { console.error("Chat report failed:", e); }
-
-                    setPurchaseStep('complete');
-                  } catch (e) {
-                    toast.error("Failed to report payment.");
-                  } finally {
-                    setIsApplying(false);
-                  }
-                }}
-                className="w-full bg-[#2d3435] text-white py-4 rounded-[20px] font-black text-sm tracking-wide shadow-xl active:scale-[0.98] transition-all"
-              >
-                I've Transferred the Payment
-              </button>
-            </div>
-          )}
-
-          {purchaseStep === 'complete' && (
-            <div className="flex flex-col items-center justify-center py-10 animate-in fade-in duration-500">
-              <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mb-6">
-                <span className="material-symbols-outlined text-4xl text-emerald-600" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-              </div>
-              <h3 className="text-xl font-black text-[#2d3435] mb-2">Reservation Placed!</h3>
-              <p className="text-sm text-[#596061] text-center leading-relaxed mb-8 px-4">
-                Your reservation has been received. Admin will confirm your payment shortly. Check status in My Info.
-              </p>
-              <button 
-                onClick={() => {
-                  closeFlow();
-                  setSelectedClasses(new Set()); // Clear basket after completion
-                  router.push('/history');
-                }}
-                className="w-full bg-primary text-white py-4 rounded-[20px] font-black text-sm tracking-wide shadow-xl shadow-primary/20 transition-all"
-              >
-                View My History
-              </button>
-            </div>
-          )}
-
-        </div>
-      </BottomSheet>
+              </main>
+            </motion.div>
+          </Portal>
+        )}
+      </AnimatePresence>
     </div>
   );
+
+  if (isModal) {
+    return <Portal>{contentLayout}</Portal>;
+  }
+
+  return contentLayout;
 }

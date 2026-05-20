@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { groupService } from '@/lib/firebase/groupService';
 import { Group, GroupClass, ClassDiscount, MonthlyPass } from '@/types/group';
@@ -164,6 +164,11 @@ export default function ClubClassSelectionPage() {
     }
   }, [modalClassId, subClasses, subPasses, subDiscounts]);
 
+  // 상세보기 모달 닫기: 순수 state 기반. 열었으면 닫기만 하면 됨.
+  const closeDetailModal = useCallback(() => {
+    setSelectedClassDetail(null);
+  }, []);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex justify-center items-center">
@@ -223,7 +228,7 @@ export default function ClubClassSelectionPage() {
       newSet.add(classId);
       return newSet;
     });
-    if (fromSource) { router.back(); } else { setSelectedClassDetail(null); } // Close modal after adding
+    closeDetailModal(); // Close modal after adding
   };
 
   const handleCheckoutClick = () => {
@@ -841,7 +846,7 @@ export default function ClubClassSelectionPage() {
 
           {/* Header */}
           <div className={`fixed top-0 left-0 right-0 z-[260] flex items-center justify-between px-4 py-3 transition-all duration-300 ${isScrolled ? 'bg-white/95 backdrop-blur-md shadow-sm' : 'bg-gradient-to-b from-black/30 to-transparent'}`}>
-            <button onClick={() => { if (fromSource) { router.back(); } else { setSelectedClassDetail(null); } }} className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'}`}>
+            <button onClick={() => closeDetailModal()} className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'}`}>
               <span className="material-symbols-outlined text-xl">arrow_back</span>
             </button>
             <div className={`text-sm font-bold truncate max-w-[180px] transition-opacity ${isScrolled ? 'opacity-100 text-[#2d3435]' : 'opacity-0'}`}>{selectedClassDetail.title}</div>
@@ -1011,7 +1016,7 @@ export default function ClubClassSelectionPage() {
 
           </div>
 
-          {/* Fixed Bottom Bar */}
+          {/* Fixed Bottom Bar - 정보 표시 + 닫기 버튼만 */}
           <div className="fixed bottom-0 left-0 right-0 z-[260] bg-white border-t border-slate-100 px-4 py-2.5 flex items-center gap-3">
             <div className="flex-1 min-w-0">
               <p className="text-lg font-black text-[#2d3435] font-headline leading-tight">
@@ -1032,30 +1037,12 @@ export default function ClubClassSelectionPage() {
                 return null;
               })()}
             </div>
-            {selectedClassDetail.classType === 'special' ? (
-              <button 
-                onClick={handleCheckoutClick}
-                className="flex-shrink-0 bg-primary text-white px-8 py-3.5 rounded-full font-black text-sm tracking-wide shadow-xl active:scale-95 transition-transform"
-              >
-                RESERVE
-              </button>
-            ) : selectedClasses.has(selectedClassDetail.id) ? (
-              <button 
-                onClick={(e) => handleRemoveFromBasket(selectedClassDetail.id, e)}
-                className="flex-shrink-0 bg-[#f2f4f4] text-[#e63946] px-7 py-3 rounded-xl font-black text-sm tracking-wide active:scale-95 transition-transform flex items-center gap-1"
-              >
-                <span className="material-symbols-outlined text-[18px]">remove_shopping_cart</span>
-                Remove
-              </button>
-            ) : (
-              <button 
-                onClick={() => handleAddToBasket(selectedClassDetail.id)}
-                className="flex-shrink-0 bg-primary text-white px-7 py-3 rounded-xl font-black text-sm tracking-wide shadow-lg shadow-primary/20 active:scale-95 transition-transform flex items-center gap-1"
-              >
-                <span className="material-symbols-outlined text-[18px]">shopping_basket</span>
-                Add
-              </button>
-            )}
+            <button 
+              onClick={closeDetailModal}
+              className="flex-shrink-0 bg-[#f2f4f4] text-[#596061] px-7 py-3 rounded-xl font-black text-sm tracking-wide active:scale-95 transition-transform"
+            >
+              Close
+            </button>
           </div>
         </div>
       )}

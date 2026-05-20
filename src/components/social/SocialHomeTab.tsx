@@ -28,11 +28,13 @@ function getNextEventDate(social: Social, language: string): string {
 }
 
 import SocialDjLineupSheet from "./SocialDjLineupSheet";
+import NamecardModal, { NamecardUser } from "@/components/profile/NamecardModal";
 
 export default function SocialHomeTab({ social, onChatWithOrganizer, canEdit, onShowImages, isUnclaimed, isClaiming, onClaim }: Props) {
   const [venue, setVenue] = useState<any>(null);
   const [orgProfile, setOrgProfile] = useState<any>(null);
   const [showDjLineup, setShowDjLineup] = useState(false);
+  const [selectedNamecardUser, setSelectedNamecardUser] = useState<NamecardUser | null>(null);
   const { t, language } = useLanguage();
 
   // Auto-fetch venue details
@@ -157,13 +159,27 @@ export default function SocialHomeTab({ social, onChatWithOrganizer, canEdit, on
         </div>
         <div className="px-4 py-4 space-y-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+            <div 
+              className="flex items-center gap-3 cursor-pointer group"
+              onClick={() => {
+                setSelectedNamecardUser({
+                  uid: social.organizerId || 'unknown',
+                  name: social.organizerName || 'Organizer',
+                  nativeName: social.organizerNameNative || undefined,
+                  photoURL: orgPhoto || undefined,
+                  phone: orgPhone || undefined,
+                  email: orgProfile?.email || undefined,
+                  roles: ['Organizer'],
+                  bio: orgProfile?.bio || undefined,
+                });
+              }}
+            >
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden group-active:scale-95 transition-transform">
                 {orgPhoto ? <img src={orgPhoto} className="w-full h-full object-cover" alt="" /> :
                   <span className="material-symbols-rounded text-lg text-primary">person</span>}
               </div>
               <div>
-                <p className="text-sm font-bold text-[#2d3435]">{social.organizerNameNative || social.organizerName}</p>
+                <p className="text-sm font-bold text-[#2d3435] group-active:text-primary transition-colors">{social.organizerNameNative || social.organizerName}</p>
                 <p className="text-[10px] text-[#acb3b4] font-bold uppercase">{t('social.organizer')}</p>
               </div>
             </div>
@@ -181,12 +197,22 @@ export default function SocialHomeTab({ social, onChatWithOrganizer, canEdit, on
           {social.staffNames && social.staffNames.length > 0 && (
             <div className="border-t border-[#f2f4f4] pt-3 space-y-2">
               {social.staffNames.map((name, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center">
+                <div 
+                  key={i} 
+                  className="flex items-center gap-3 cursor-pointer group"
+                  onClick={() => {
+                    setSelectedNamecardUser({
+                      uid: `staff-${i}`,
+                      name: name,
+                      roles: ['Staff'],
+                    });
+                  }}
+                >
+                  <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center group-active:scale-95 transition-transform">
                     <span className="material-symbols-rounded text-sm text-[#acb3b4]">person</span>
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-[#2d3435]">{name}</p>
+                    <p className="text-xs font-bold text-[#2d3435] group-active:text-primary transition-colors">{name}</p>
                     <p className="text-[10px] text-[#acb3b4]">{t('social.staff')}</p>
                   </div>
                 </div>
@@ -231,6 +257,24 @@ export default function SocialHomeTab({ social, onChatWithOrganizer, canEdit, on
         </div>
       )}
 
+      {selectedNamecardUser && (
+        <NamecardModal
+          user={selectedNamecardUser}
+          isOpen={!!selectedNamecardUser}
+          onClose={() => setSelectedNamecardUser(null)}
+          onChat={(uid) => {
+             if (uid === social.organizerId) {
+                onChatWithOrganizer();
+             } else {
+                alert(t('social.chat_unavailable'));
+             }
+             setSelectedNamecardUser(null);
+          }}
+          onCall={(phone) => {
+             window.location.href = `tel:${phone}`;
+          }}
+        />
+      )}
     </div>
   );
 }

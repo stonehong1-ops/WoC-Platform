@@ -1,24 +1,25 @@
-# 📋 Class Portal Modal Localization Checklist
+# 📋 클래스 상세조회 오버레이 풀스크린 개편 체크리스트
 
-## 1. Context Localization State Integration
-- [x] Verify new translation keys inside `src/contexts/LanguageContext.tsx`.
-  - [x] Confirm `class.booking_special_title`, `class.booking_daily_title`, `class.select_role`, `class.booking_notice_title`, `class.booking_notice_desc`, `class.submit_request` keys exist.
-- [x] Update `src/components/class/ClassPortal.tsx` to retrieve the `language` value from `useLanguage()`.
+## 1. 계획 및 기초 설계 수립
+- [ ] 스토니님에게 완벽한 풀스크린 구현 계획 설명 및 최종 승인 획득하기.
+- [ ] 체크리스트(`checklist.md`) 및 컨텍스트 노트(`context-notes.md`) 최신화 완료하기.
 
-## 2. Modal Verbatim Translation Binding
-- [x] Bind dynamic dictionary values to elements in `UnifiedCheckoutModal` within `ClassPortal.tsx`.
-  - [x] Replace `title` field mapping with `booking_special_title` and `booking_daily_title`.
-  - [x] Replace `subtitle` date formatter locale with `language === 'KR' ? 'ko-KR' : 'en-US'`.
-  - [x] Replace `buttonText` with `class.submit_request`.
-  - [x] Replace "Select Role" heading text with `class.select_role`.
-  - [x] Replace "Notice" title with `class.booking_notice_title`.
-  - [x] Replace notice paragraph text with `class.booking_notice_desc`.
+## 2. 소스코드 수정 단계
+- [ ] **`src/components/groups/GroupClassDashboard.tsx` 수정**
+  - [ ] `selectedDetail` 오버레이를 띄우는 기존 `div` 구조를 `Portal` 기반으로 래핑하여 최상단 오버레이로 마운트하기.
+  - [ ] 기존 바텀시트 느낌의 둥근 모서리 및 위쪽 여백 제거하고 `fixed inset-0 z-[10000] bg-white flex flex-col` 형태의 완전한 풀스크린 컨테이너로 교체하기.
+  - [ ] 상단 드래그 핸들바(`w-10 h-1 bg-[#e0e4e5] rounded-full`) 구조를 완전히 제거하기.
+  - [ ] 피드 등록창(`CreateFeedPopup.tsx`) 스타일의 세련된 탑바(Header) 영역을 추가하고 왼쪽 정렬된 닫기(뒤로가기) 버튼과 제목 렌더링을 적용하기.
+  - [ ] 상세 내용 스크롤이 자연스럽게 가능하도록 본문 영역을 `flex-1 overflow-y-auto` 레이아웃으로 완벽히 독립하기.
+  - [ ] 기존의 실시간 결제, 포함 클래스, 일정 바인딩 등 모든 비즈니스 로직을 온전히 유지하며 하단 액션 영역을 고정 바로 안전하게 매핑하기.
+- [ ] **`src/components/class/ClassDetail.tsx` 보완**
+  - [ ] 클래스 상세 모달(`selectedClassDetail`)의 오버레이가 모바일 에뮬레이터 뷰에서도 상단 잘림이나 어색함 없이 100% 꽉 채우는 완전한 풀스크린으로 표시되는지 픽셀 단위로 정밀 검증하기.
 
-## 3. Pre-Flight Verification & Quality Control
-- [x] Perform local compilation check (`npm run build`).
-- [x] Confirm no trailing colons (`:`) exist in Korean translation mappings or logs.
+## 3. 예외 및 예방 검증 (QA & 빌드)
+- [ ] 로컬 빌드 정적 컴파일 무결성 체크 완료하기 (`npm run build`).
+- [ ] 한국어 문장 끝에 콜론(`:`) 누락 등의 핵심 UI 규칙을 엄격히 준수했는지 스스로 재점검하기.
 
-## 4. Production Deployment & Live Report
-- [x] Deploy updated code to live production using Vercel (`npx -y vercel --prod --yes`).
-- [x] Verify live site functionality and retrieve the deployment credentials.
-- [x] Deliver the Deployment ID, exit code, and live URL to Stony.
+## 4. 라이브 프로덕션 배포 및 최종 보고
+- [ ] 변경된 코드를 Vercel 리얼 배포망에 자동 빌드 반영하기 (`npx -y vercel --prod --yes`).
+- [ ] 최종 배포 ID 및 작동하는 라이브 URL을 보고하기.
+- [ ] 스토니님이 직접 검증해 볼 수 있는 모바일 자가 검증 체크리스트를 친절히 제공하기.
