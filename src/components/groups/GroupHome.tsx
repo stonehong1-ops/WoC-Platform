@@ -28,6 +28,7 @@ import GroupAppShell from "./shell/GroupAppShell";
 import { FUNCTION_TAB_MAP } from '@/constants/groupTabs';
 import { useSearchParams, usePathname } from "next/navigation";
 import { useModalNavigation } from "@/hooks/useModalNavigation";
+import ClassDetail from "../class/ClassDetail";
 
 type TabType = 'home' | 'calendar' | 'feed' | 'board' | 'about' | 'class' | 'class-setting' | 'members' | 'settings' | 'shop' | 'stay' | 'rental' | 'coupon' | 'live' | 'brand' | 'polls' | 'qa' | 'broadcast' | 'attendance' | 'rules' | 'surveys' | 'anonymous' | 'classA' | 'classB' | 'classC' | 'homework' | 'studentReports' | 'tuition' | 'gradeSystem' | 'parentNotify' | 'parentConsult' | 'examScheduler' | 'ticketBooking' | 'workshopReg' | 'qrCheckin' | 'waitlist' | 'retreat' | 'eventStaff' | 'guestList' | 'productInventory' | 'membershipBilling' | 'donationSupport' | 'subscriptionPlans' | 'settlementReports' | 'mediaGallery' | 'videoLibrary' | 'editorialPage' | 'newsletter' | 'podcastFeed' | 'pressKit' | 'linkHub' | 'socialSync' | 'brandAssets' | 'customLandingPage' | 'taskManager' | 'internalWiki' | 'aiAssistant' | 'roles';
 
@@ -53,7 +54,7 @@ const GroupHomeConfig = dynamic(() => import("./GroupHomeConfig"));
 const LiveFeed = dynamic(() => import("@/components/live/LiveFeed"));
 
 const GroupClassDashboard = dynamic(() => import("./GroupClassDashboard"));
-const ClassDetail = dynamic(() => import("../class/ClassDetail"));
+
 
 // Community module mockups
 const GroupPolls = dynamic(() => import("./GroupPolls"));
@@ -137,6 +138,17 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const { openModal: openClassFlow, closeModal: closeClassFlow, value: classFlow } = useModalNavigation('classFlow');
+  const [localClassFlow, setLocalClassFlow] = useState<string | null>(null);
+  const [localModalId, setLocalModalId] = useState<string | null>(null);
+
+  // URL searchParams와 로컬 상태(이중 안전 장치) 실시간 동기화
+  useEffect(() => {
+    const cf = searchParams.get('classFlow');
+    const md = searchParams.get('modal');
+    setLocalClassFlow(cf);
+    setLocalModalId(md);
+  }, [searchParams]);
+
   const [isJoining, setIsJoining] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>(() => (searchParams.get('tab') as TabType) || 'home');
   const [visitedTabs, setVisitedTabs] = useState<Set<TabType>>(new Set<TabType>(['home']));
@@ -170,6 +182,19 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
   const handleMomentViewerClose = () => {
     setSelectedMoment(null);
     router.back();
+  };
+
+  const handleCloseClassDetail = () => {
+    setLocalClassFlow(null);
+    setLocalModalId(null);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('classFlow');
+    params.delete('modal');
+    if (!params.has('active')) {
+      params.set('active', 'true');
+    }
+    const newQuery = params.toString();
+    router.replace(`${pathname}${newQuery ? `?${newQuery}` : ''}`, { scroll: false });
   };
 
   // [Step 4] 안전한 Exit UX (Hybrid Trap + Exit Modal)
@@ -643,7 +668,7 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
         params.set('tab', tab);
       }
       const qs = params.toString();
-      window.history.replaceState(null, '', pathname + (qs ? '?' + qs : ''));
+      router.replace(pathname + (qs ? '?' + qs : ''), { scroll: false });
       return;
     }
 
@@ -658,7 +683,7 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
     const params = new URLSearchParams(searchParams.toString());
     params.set('tab', tab);
     const qs = params.toString();
-    window.history.replaceState(null, '', pathname + (qs ? '?' + qs : ''));
+    router.replace(pathname + (qs ? '?' + qs : ''), { scroll: false });
   };
 
   return (
@@ -1513,7 +1538,7 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
                         const params = new URLSearchParams(searchParams.toString());
                         params.delete('tab');
                         const qs = params.toString();
-                        window.history.replaceState(null, '', pathname + (qs ? '?' + qs : ''));
+                        router.replace(pathname + (qs ? '?' + qs : ''), { scroll: false });
                       }}
                     />
                   </div>
@@ -1531,7 +1556,7 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
                         const params = new URLSearchParams(searchParams.toString());
                         params.delete('tab');
                         const qs = params.toString();
-                        window.history.replaceState(null, '', pathname + (qs ? '?' + qs : ''));
+                        router.replace(pathname + (qs ? '?' + qs : ''), { scroll: false });
                       }}
                       onSave={() => { }}
                     />
@@ -1561,15 +1586,13 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
       />
 
       {/* Class Detail Modal Overlay */}
-      {classFlow === 'apply' && (
-        <div className="fixed inset-0 z-[9999] bg-background flex flex-col">
-          <ClassDetail
-            groupId={currentGroup.id}
-            isModal={true}
-            onClose={closeClassFlow}
-          />
-        </div>
-      )}
+      <ClassDetail
+        groupId={currentGroup.id}
+        isModal={true}
+        isOpen={localClassFlow === 'apply'}
+        itemId={localModalId || undefined}
+        onClose={handleCloseClassDetail}
+      />
 
       {/* Fullscreen Group Chat Overlay */}
       {showGroupChat && (

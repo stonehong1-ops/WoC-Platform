@@ -12,17 +12,24 @@ interface ClassDetailProps {
   groupId: string;
   onClose?: () => void;
   isModal?: boolean;
+  isOpen: boolean;
+  itemId?: string;
 }
 
-export default function ClassDetail({ groupId, onClose, isModal = false }: ClassDetailProps) {
+export default function ClassDetail({ groupId, onClose, isModal = false, isOpen, itemId }: ClassDetailProps) {
   const searchParams = useSearchParams();
-  const classIdInUrl = searchParams.get('modal');
+  const classIdInUrl = itemId || searchParams.get('modal');
   
   const [itemDetail, setItemDetail] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!groupId || !classIdInUrl) return;
+    if (!isOpen || !groupId || !classIdInUrl) {
+      if (!isOpen) {
+        setItemDetail(null);
+      }
+      return;
+    }
 
     const fetchItemDetail = async (id: string) => {
       setLoading(true);
@@ -61,7 +68,7 @@ export default function ClassDetail({ groupId, onClose, isModal = false }: Class
     };
 
     fetchItemDetail(classIdInUrl);
-  }, [groupId, classIdInUrl]);
+  }, [isOpen, groupId, classIdInUrl]);
 
   const handleClose = () => {
     if (onClose) onClose();
@@ -85,7 +92,7 @@ export default function ClassDetail({ groupId, onClose, isModal = false }: Class
     }
   };
 
-  if (!classIdInUrl) return null;
+  if (!isOpen || !classIdInUrl) return null;
 
   const contentLayout = (
     <div className="fixed inset-0 z-[9999] bg-white flex flex-col antialiased">

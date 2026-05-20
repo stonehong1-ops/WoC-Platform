@@ -1,48 +1,209 @@
-안티그래비티 봇 최종 수술 지시서
-[긴급 및 최종: Navigation Architecture 전면 개편 및 Exit UX 확정]
+<!DOCTYPE html>
 
-핑퐁은 끝났다. 브라우저 window.history를 강제로 조작하는 바닐라 JS 해킹이 Next.js App Router와 충돌하며 앱 종료 및 이벤트 레이스 컨디션을 유발한다는 것이 최종 확인되었다.
-
-기존 로직을 전면 폐기하고, 오직 Next.js Native Router(Query String) 방식만을 사용하는 진정한 App Shell Architecture로 재설계한다. 아래 4단계 절차를 "한 글자도 빠짐없이" 정확하게 구현하고 단계별로 보고하라.
-
-🚨 Step 1: 기존 History Hack 코드 전면 철거 (Delete)
-
-BackEventManager, useGroupBackGuard 등 바닐라 자바스크립트로 pushState와 replaceState를 직접 호출하던 모든 코드를 당장 삭제하라.
-
-popstate 이벤트 리스너를 직접 등록해서 e.preventDefault()나 e.stopPropagation()을 시도하던 로직도 모두 지워라.
-
-🏗️ Step 2: 모달/팝업 제어의 Query String 전환 (핵심)
-
-DO: 모든 모달(설정창 등)은 내부 State가 아닌 Next.js 라우터의 쿼리 파라미터로 제어하라.
-
-모달 열기: router.push('?modal=settings')
-
-모달 닫기: 디바이스 뒤로가기를 누르면 브라우저가 알아서 쿼리를 뺌. useSearchParams에서 modal 값이 사라진 것을 감지하여 UI를 닫아라.
-
-DON'T: 이 과정에서 절대 window.history에 직접 접근하지 마라.
-
-🧭 Step 3: 수평 탭(수평 이동) 라우팅 (Replace)
-
-Feed, Class, Calendar 등 수평 탭 이동은 히스토리가 쌓이면 안 된다.
-
-DO: router.replace('?tab=feed', { scroll: false }) 방식으로 Next.js 라우터를 사용하여 URL만 얕게(Shallow) 변경하라. 탭 전환 시 화면 깜빡임(Flickering)이 없도록 컴포넌트 렌더링 격리(React.memo 등)를 완벽히 유지하라.
-
-🛡️ Step 4: 안전한 Exit UX (중앙 모달 방식 도입)
-
-기존의 "하단 토스트 메시지 2초 대기" 로직은 전면 폐기한다.
-
-사용자가 그룹 홈 최상단 뎁스에서 '디바이스 뒤로가기'를 눌렀을 때의 동작을 다음과 같이 'Query String Trap' 패턴으로 구현하라.
-
-진입 시: 그룹 진입 시 router.replace('/g/123?active=true') 처럼 기본 상태 쿼리를 달아둔다.
-
-이탈 감지: 디바이스 뒤로가기를 누르면 active=true 쿼리가 URL에서 빠진다.
-
-중앙 모달 호출: active 쿼리가 사라진 것을 감지하면 즉시 화면 한가운데에 "정말 그룹을 나가시겠습니까?" (버튼: [머무르기] / [나가기]) 형태의 명확한 중앙 팝업 모달을 띄워라.
-
-후속 조치:
-
-[머무르기] 클릭 시: 다시 router.replace('?active=true')를 호출해 방어막 복구. 모달 닫기.
-
-[나가기] 클릭 시: router.push('/groups') 등으로 실제 그룹 목록으로 이동.
-
-결과 보고 지시: 위 4가지 Step을 완벽히 적용한 코드의 구조(특히 Step 2와 Step 4의 Query 감지 로직)를 요약해서 즉시 보고하라. 변명은 필요 없다. 코드로 증명해라.
+<html class="light" lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary-fixed-dim": "#b7c8e1",
+                    "background": "#f7f9fb",
+                    "on-secondary-fixed": "#0b1c30",
+                    "inverse-primary": "#adc6ff",
+                    "on-error": "#ffffff",
+                    "on-background": "#191c1e",
+                    "on-primary-container": "#fefcff",
+                    "inverse-surface": "#2d3133",
+                    "surface-variant": "#e0e3e5",
+                    "on-tertiary-container": "#fffbff",
+                    "surface-dim": "#d8dadc",
+                    "on-secondary": "#ffffff",
+                    "on-primary-fixed-variant": "#004395",
+                    "surface-container": "#eceef0",
+                    "surface": "#f7f9fb",
+                    "secondary-fixed": "#d3e4fe",
+                    "primary-fixed": "#d8e2ff",
+                    "primary": "#0058be",
+                    "on-tertiary": "#ffffff",
+                    "surface-container-highest": "#e0e3e5",
+                    "on-primary": "#ffffff",
+                    "tertiary-fixed": "#ffdcc6",
+                    "surface-container-lowest": "#ffffff",
+                    "secondary": "#505f76",
+                    "on-secondary-fixed-variant": "#38485d",
+                    "on-surface-variant": "#424754",
+                    "inverse-on-surface": "#eff1f3",
+                    "error": "#ba1a1a",
+                    "primary-container": "#2170e4",
+                    "on-surface": "#191c1e",
+                    "outline": "#727785",
+                    "on-tertiary-fixed": "#311400",
+                    "error-container": "#ffdad6",
+                    "tertiary": "#924700",
+                    "outline-variant": "#c2c6d6",
+                    "surface-tint": "#005ac2",
+                    "on-tertiary-fixed-variant": "#723600",
+                    "on-primary-fixed": "#001a42",
+                    "primary-fixed-dim": "#adc6ff",
+                    "on-secondary-container": "#54647a",
+                    "on-error-container": "#93000a",
+                    "tertiary-container": "#b75b00",
+                    "surface-container-low": "#f2f4f6",
+                    "surface-container-high": "#e6e8ea",
+                    "surface-bright": "#f7f9fb",
+                    "tertiary-fixed-dim": "#ffb786",
+                    "secondary-container": "#d0e1fb"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "md": "16px",
+                    "base": "4px",
+                    "gutter": "16px",
+                    "xl": "32px",
+                    "sm": "12px",
+                    "lg": "24px",
+                    "modal-padding": "20px",
+                    "xs": "8px"
+            },
+            "fontFamily": {
+                    "headline-sm": ["Inter"],
+                    "body-md": ["Inter"],
+                    "display-name": ["Inter"],
+                    "body-sm": ["Inter"],
+                    "action-text": ["Inter"],
+                    "label-caps": ["Inter"]
+            },
+            "fontSize": {
+                    "headline-sm": ["18px", {"lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "display-name": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "action-text": ["15px", {"lineHeight": "20px", "fontWeight": "600"}],
+                    "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .modal-constrained {
+            max-height: 66.67vh;
+        }
+    </style>
+</head>
+<body class="bg-[#00000066] flex items-center justify-center min-h-screen p-gutter">
+<!-- Centered Modal Container -->
+<div class="bg-surface w-[90%] max-w-lg rounded-[32px] overflow-hidden shadow-2xl relative modal-constrained flex flex-col animate-in fade-in zoom-in duration-300">
+<!-- Top Navigation Bar -->
+<header class="absolute top-0 left-0 w-full z-20 flex justify-end items-center px-lg h-14">
+<button class="w-10 h-10 flex items-center justify-center rounded-full bg-black/10 text-white hover:bg-black/20 transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+</header>
+<!-- Scrollable Area (if content ever overflows, but request says no scrolling for 2/3 height) -->
+<div class="overflow-hidden flex flex-col h-full">
+<!-- Profile Visual Section -->
+<div class="relative h-44 w-full overflow-hidden shrink-0">
+<img alt="Alex Professional Portrait" class="w-full h-full object-cover grayscale-[20%] brightness-95" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDHge-4AdK_46YLO_sflAHZfRKiJMLEsF7tNlxSuxGejfHp_rfC5UiW0WH1zRYiKEeQqsxNM56g1Ir48ZxbRLiWk23Zu9wK4ZRuB5A__QlRZ92-YSQFD5ouHAYWCu8PbrYmvhWPq4LfZcJa38UqFVz7itTj6T1uddzoRll6ArCw4xO23LnT0tW0ZTnTLavef1i2BSZZBd9SU66Vl6Q45dz07s3ts42O4TNC1dvctFXYoyl4mPI3cw5WTBb3u3X-8EJGuVAN7uAD6Y0M"/>
+<div class="absolute right-4 top-14 z-30 flex flex-col gap-2 items-end">
+<span class="px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-primary text-[10px] font-bold glass-effect">Shop Owner</span>
+<span class="px-3 py-1 rounded-full border border-outline-variant bg-surface-container-low/80 text-on-surface-variant text-[10px] font-bold glass-effect">Organizer</span>
+<span class="px-3 py-1 rounded-full border border-outline-variant bg-surface-container-low/80 text-on-surface-variant text-[10px] font-bold glass-effect">DJ</span>
+</div>
+<div class="absolute bottom-0 left-0 w-full h-20 bg-gradient-to-t from-surface to-transparent"></div>
+</div>
+<!-- Content Canvas -->
+<div class="px-modal-padding -mt-10 relative z-10 pb-lg flex-1 overflow-hidden flex flex-col">
+<!-- Hero Info -->
+<div class="flex flex-col gap-xs mb-md">
+<h1 class="font-display-name text-display-name text-on-surface">Alex</h1>
+<div class="flex flex-col -mt-1">
+<p class="font-body-sm text-body-sm text-on-surface-variant font-medium">알렉스</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">alex@example.com</p>
+</div>
+</div>
+<!-- Bio Card -->
+<div class="bg-surface-container-low rounded-xl p-md mb-md border border-surface-container-highest/50">
+<p class="font-body-sm text-body-sm text-on-surface italic leading-relaxed">
+                        "춤을 통해 즐거움을 찾는 UI 디자이너입니다. 살사와 바차타를 즐기며 새로운 인연을 기다리고 있습니다."
+                    </p>
+</div>
+<!-- Stats Grid -->
+<div class="grid grid-cols-3 gap-xs mb-md">
+<div class="bg-secondary-container/30 p-sm rounded-xl flex flex-col items-center justify-center text-center">
+<span class="text-[9px] uppercase tracking-wider font-bold text-on-secondary-container/60 mb-0.5">Role</span>
+<span class="font-headline-sm text-[16px] text-on-secondary-container">Leader</span>
+</div>
+<div class="bg-primary-container/10 p-sm rounded-xl flex flex-col items-center justify-center text-center">
+<span class="text-[9px] uppercase tracking-wider font-bold text-primary/60 mb-0.5">Career</span>
+<span class="font-headline-sm text-[16px] text-primary">3y 6m</span>
+</div>
+<div class="bg-tertiary-fixed/30 p-sm rounded-xl flex flex-col items-center justify-center text-center">
+<span class="text-[9px] uppercase tracking-wider font-bold text-on-tertiary-fixed-variant/60 mb-0.5">Partner</span>
+<span class="font-headline-sm text-[16px] text-on-tertiary-fixed-variant">Searching</span>
+</div>
+</div>
+<!-- Social Links -->
+<div class="flex justify-around items-center py-md border-y border-outline-variant/30 mb-md">
+<div class="flex flex-col items-center gap-1 group cursor-pointer">
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors">face_nod</span>
+</div>
+<span class="text-[10px] font-medium text-on-surface-variant">Facebook</span>
+</div>
+<div class="flex flex-col items-center gap-1 group cursor-pointer">
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors">photo_camera</span>
+</div>
+<span class="text-[10px] font-medium text-on-surface-variant">Instagram</span>
+</div>
+<div class="flex flex-col items-center gap-1 group cursor-pointer">
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors">chat</span>
+</div>
+<span class="text-[10px] font-medium text-on-surface-variant">WhatsApp</span>
+</div>
+</div>
+<!-- Action Cluster -->
+<div class="flex gap-md mt-auto">
+<button class="flex-1 h-12 rounded-xl bg-primary text-white font-action-text text-action-text flex items-center justify-center gap-2 shadow-lg shadow-primary/20 active:scale-[0.98] transition-all">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">chat_bubble</span>
+                        Chat
+                    </button>
+<button class="w-12 h-12 rounded-xl border-2 border-outline-variant bg-transparent text-on-surface flex items-center justify-center active:bg-surface-container-high transition-all">
+<span class="material-symbols-outlined text-[20px]">call</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<script>
+        // Micro-interactions for button scale
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('touchstart', () => btn.classList.add('scale-95'));
+            btn.addEventListener('touchend', () => btn.classList.remove('scale-95'));
+        });
+    </script>
+</body></html>

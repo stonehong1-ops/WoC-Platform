@@ -5,9 +5,10 @@ import { groupService } from '@/lib/firebase/groupService';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/clientApp';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import ImageWithFallback from '@/components/common/ImageWithFallback';
+import { useModalNavigation } from '@/hooks/useModalNavigation';
 
 interface GroupClassDashboardProps {
   group: Group;
@@ -21,6 +22,9 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
   const { t, language } = useLanguage();
   const { user } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+  const { openModal: openClassFlow } = useModalNavigation('classFlow');
+
 
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
 
@@ -107,11 +111,11 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
   };
 
   const handleRegisterClass = () => {
-    router.push(`/class/${group.id}`);
+    onApplyClick();
   };
 
   const handleItemClick = (item: any) => {
-    router.push(`/class/${group.id}?modal=${item.id}&from=group`);
+    openClassFlow('apply', { modal: item.id });
   };
 
   // Build all items list for display
