@@ -830,7 +830,7 @@ export default function ClubClassSelectionPage({
           setPassSelectedClassIds(new Set());
           setClassPartners({});
         }}
-        title={isDiscountSelected ? "Bundle Package Registration" : "Class Registration"}
+        title={language === 'KR' ? (isDiscountSelected ? "번들 패키지 신청" : "클래스 신청") : (isDiscountSelected ? "Bundle Package Registration" : "Class Registration")}
         subtitle={isDiscountSelected ? undefined : `${group?.name || 'Club'} · ${monthDisplay}`}
         isSubmitDisabled={isDiscountSelected && passSelectedClassIds.size === 0}
         totalAmount={Array.from(selectedClasses).reduce((sum, id) => {
@@ -881,7 +881,7 @@ export default function ClubClassSelectionPage({
           return orderId;
         }}
         isProcessing={isBooking}
-        buttonText="Submit Request"
+        buttonText={language === 'KR' ? "신청서 제출" : "Submit Request"}
         bankDetails={{
           bankName: (group as any)?.classPaymentSettings?.bankDetails?.bankName || (group as any)?.bankDetails?.bankName || (group as any)?.bankName || 'Kookmin Bank',
           accountHolder: (group as any)?.classPaymentSettings?.bankDetails?.accountHolder || (group as any)?.bankDetails?.accountHolder || (group as any)?.accountHolder || group?.name || 'World of Community',
@@ -892,19 +892,19 @@ export default function ClubClassSelectionPage({
         <div className="space-y-6 py-2">
           {/* Role Selection */}
           <div>
-            <h4 className="text-sm font-bold text-neutral-900 dark:text-white mb-3">Select Role <span className="text-error">*</span></h4>
+            <h4 className="text-sm font-bold text-neutral-900 dark:text-white mb-3">{language === 'KR' ? "역할 선택" : "Select Role"} <span className="text-error">*</span></h4>
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => setSelectedRole('leader')}
                 className={`flex flex-col items-center justify-center py-4 rounded-xl border-2 transition-all ${selectedRole === 'leader' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-300'}`}
               >
-                <span className={`text-sm font-black uppercase ${selectedRole === 'leader' ? 'text-blue-700 dark:text-blue-400' : 'text-neutral-700 dark:text-neutral-300'}`}>Leader</span>
+                <span className={`text-sm font-black uppercase ${selectedRole === 'leader' ? 'text-blue-700 dark:text-blue-400' : 'text-neutral-700 dark:text-neutral-300'}`}>{language === 'KR' ? "리더 (Leader)" : "Leader"}</span>
               </button>
               <button
                 onClick={() => setSelectedRole('follower')}
                 className={`flex flex-col items-center justify-center py-4 rounded-xl border-2 transition-all ${selectedRole === 'follower' ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20' : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-300'}`}
               >
-                <span className={`text-sm font-black uppercase ${selectedRole === 'follower' ? 'text-purple-700 dark:text-purple-400' : 'text-neutral-700 dark:text-neutral-300'}`}>Follower</span>
+                <span className={`text-sm font-black uppercase ${selectedRole === 'follower' ? 'text-purple-700 dark:text-purple-400' : 'text-neutral-700 dark:text-neutral-300'}`}>{language === 'KR' ? "팔로어 (Follower)" : "Follower"}</span>
               </button>
             </div>
           </div>
@@ -913,7 +913,7 @@ export default function ClubClassSelectionPage({
             <>
               {/* Bundle Info */}
               <div className="bg-neutral-50 dark:bg-neutral-800 rounded-2xl p-4 border border-neutral-200 dark:border-neutral-700">
-                <h4 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-3">Applied Bundle</h4>
+                <h4 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-3">{language === 'KR' ? "신청된 번들" : "Applied Bundle"}</h4>
                 {Array.from(selectedClasses).map(classId => {
                   const item = allItemsOriginal.find(c => c.id === classId);
                   if (!item) return null;
@@ -930,7 +930,7 @@ export default function ClubClassSelectionPage({
 
               {/* Participating Classes Checkbox */}
               <div className="bg-neutral-50 dark:bg-neutral-800 rounded-2xl p-4 border border-neutral-200 dark:border-neutral-700">
-                <h4 className="text-sm font-bold text-neutral-900 dark:text-white mb-3">Select Classes to Attend <span className="text-error">*</span></h4>
+                <h4 className="text-sm font-bold text-neutral-900 dark:text-white mb-3">{language === 'KR' ? "참여할 클래스 선택" : "Select Classes to Attend"} <span className="text-error">*</span></h4>
                 <div className="space-y-2">
                   {(() => {
                     const passId = Array.from(selectedClasses)[0];
@@ -1048,7 +1048,7 @@ export default function ClubClassSelectionPage({
                                       [cls.id]: e.target.value
                                     }));
                                   }}
-                                  placeholder="Partner Name (Optional)"
+                                  placeholder={language === 'KR' ? "파트너 이름 (선택)" : "Partner Name (Optional)"}
                                   className="w-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-1.5 text-xs text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                                 />
                               </div>
@@ -1060,7 +1060,7 @@ export default function ClubClassSelectionPage({
                   })()}
                 </div>
                 <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-2 text-right">
-                  Selected: {passSelectedClassIds.size} / {(() => {
+                  {language === 'KR' ? "선택됨: " : "Selected: "}{passSelectedClassIds.size} / {(() => {
                     const passId = Array.from(selectedClasses)[0];
                     const pass = allItems.find(c => c.id === passId);
                     const passClassIds = (pass as any)?.includedClassIds || [];
@@ -1074,7 +1074,7 @@ export default function ClubClassSelectionPage({
           ) : (
             /* Applied Items - 일반 클래스/번들 */
             <div className="bg-neutral-50 dark:bg-neutral-800 rounded-2xl p-4 border border-neutral-200 dark:border-neutral-700">
-              <h4 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-3">Applied Classes</h4>
+              <h4 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-3">{language === 'KR' ? "신청된 클래스" : "Applied Classes"}</h4>
               {Array.from(selectedClasses).map(classId => {
                 const item = allItems.find(c => c.id === classId);
                 if (!item) return null;

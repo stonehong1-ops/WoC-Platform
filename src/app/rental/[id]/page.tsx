@@ -14,6 +14,7 @@ import { Group } from '@/types/group';
 import SectionCard from '@/components/ui/SectionCard';
 import InfoRow from '@/components/ui/InfoRow';
 import CollapseSection from '@/components/ui/CollapseSection';
+import ImageWithFallback from '@/components/common/ImageWithFallback';
 
 export default function RentalDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -35,7 +36,27 @@ export default function RentalDetailPage({ params }: { params: Promise<{ id: str
   // Image carousel
   const [currentImg, setCurrentImg] = useState(0);
   const touchStartX = useRef(0);
-  const images = useMemo(() => space?.images?.length ? space.images : [], [space]);
+  const images = useMemo(() => {
+    const candidateImages: string[] = [];
+    
+    const groupCover = (space as any)?.groupCoverImage || group?.coverImage || '';
+    if (groupCover) {
+      candidateImages.push(groupCover);
+    }
+    
+    const imgData: any = space?.images || (space as any)?.imageUrls || (space as any)?.image;
+    if (Array.isArray(imgData)) {
+      imgData.forEach(img => {
+        if (typeof img === 'string' && img.trim() !== '') {
+          candidateImages.push(img);
+        }
+      });
+    } else if (typeof imgData === 'string' && imgData.trim() !== '') {
+      candidateImages.push(imgData);
+    }
+    
+    return Array.from(new Set(candidateImages)).filter(img => typeof img === 'string' && img.trim() !== '');
+  }, [space, group]);
 
   // UI state
   const [isScrolled, setIsScrolled] = useState(false);
@@ -221,8 +242,8 @@ export default function RentalDetailPage({ params }: { params: Promise<{ id: str
               <div className="flex h-full transition-transform duration-300 ease-out" style={{ transform: `translateX(-${currentImg * 100}%)` }}>
                 {images.map((img, i) => (
                   <div key={i} className="w-full flex-shrink-0 h-full">
-                    <img src={img} alt={`${space.title} ${i + 1}`} className="w-full h-full object-cover"
-                      onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                    <ImageWithFallback src={img} alt={`${space.title} ${i + 1}`} className="w-full h-full object-cover"
+                      fallbackType="cover" category={(space as any)?.groupCategory || 'Rental'} />
                   </div>
                 ))}
               </div>

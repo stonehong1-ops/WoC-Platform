@@ -49,20 +49,31 @@ export default function RentalDetail({ space, isLiked, onClose, onToggleLike }: 
   const [currentImg, setCurrentImg] = useState(0);
   const touchStartX = useRef(0);
   const images = useMemo(() => {
-    let imgs = space?.images || (space as any)?.imageUrls || (typeof (space as any)?.image === 'string' ? [(space as any).image] : []);
-    imgs = Array.isArray(imgs) ? imgs.filter(img => typeof img === 'string' && img.trim() !== '') : [];
-
-    // Fallback to group's cover image if space has no images
-    if (imgs.length === 0) {
-      if ((space as any).groupCoverImage) {
-        imgs = [(space as any).groupCoverImage];
-      } else if (group?.coverImage) {
-        imgs = [group.coverImage];
-      } else {
-        imgs = [""]; // Force empty string to trigger ImageWithFallback category fallback
-      }
+    const candidateImages: string[] = [];
+    
+    const groupCover = (space as any)?.groupCoverImage || group?.coverImage || '';
+    if (groupCover) {
+      candidateImages.push(groupCover);
     }
-    return imgs;
+    
+    const imgData: any = space?.images || (space as any)?.imageUrls || (space as any)?.image;
+    if (Array.isArray(imgData)) {
+      imgData.forEach(img => {
+        if (typeof img === 'string' && img.trim() !== '') {
+          candidateImages.push(img);
+        }
+      });
+    } else if (typeof imgData === 'string' && imgData.trim() !== '') {
+      candidateImages.push(imgData);
+    }
+    
+    const uniqueImages = Array.from(new Set(candidateImages)).filter(img => typeof img === 'string' && img.trim() !== '');
+    
+    if (uniqueImages.length === 0) {
+      return [""]; // ImageWithFallback 카테고리 기반 fallback을 트리거하도록 빈 문자열 추가
+    }
+    
+    return uniqueImages;
   }, [space, group]);
 
   useEffect(() => {

@@ -207,7 +207,7 @@ export default function UnifiedCheckoutModal({
     const footerContent = (
       <div className="p-5 bg-white dark:bg-neutral-900 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] dark:shadow-none pb-[calc(env(safe-area-inset-bottom)+20px)] sm:pb-5">
         <div className="flex items-center justify-between mb-4">
-          <span className="text-sm font-medium text-neutral-500 dark:text-neutral-400">Total</span>
+          <span className="text-sm font-medium text-neutral-500 dark:text-neutral-400">{language === 'KR' ? '총 금액' : 'Total'}</span>
           <span className="text-xl font-bold text-neutral-900 dark:text-white">
             {sym}{fmt(totalAmount)}
           </span>
@@ -219,11 +219,11 @@ export default function UnifiedCheckoutModal({
           className="w-full h-12 flex items-center justify-center rounded-xl bg-black dark:bg-white text-white dark:text-black font-semibold text-lg transition-transform active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
         >
           {isProcessing || localProcessing ? (
-            <span className="animate-pulse">Processing...</span>
+            <span className="animate-pulse">{language === 'KR' ? '처리 중...' : 'Processing...'}</span>
           ) : user ? (
             buttonText
           ) : (
-            'Login to Book'
+            language === 'KR' ? '로그인 후 신청하기' : 'Login to Book'
           )}
         </button>
       </div>
@@ -255,7 +255,7 @@ export default function UnifiedCheckoutModal({
           className="w-full h-12 flex items-center justify-center rounded-xl bg-[#0057bd] text-white font-semibold text-lg shadow-lg shadow-[#0057bd]/20 active:scale-[0.98] transition-transform disabled:opacity-50 disabled:active:scale-100"
         >
           {localProcessing ? (
-            <span className="animate-pulse">Processing...</span>
+            <span className="animate-pulse">{language === 'KR' ? '처리 중...' : 'Processing...'}</span>
           ) : (
             t('shop.btn_transferred', "I've Transferred the Payment")
           )}
@@ -370,7 +370,7 @@ export default function UnifiedCheckoutModal({
         onClick={handleCompleteClose}
         className="w-full h-12 flex items-center justify-center rounded-xl bg-black dark:bg-white text-white dark:text-black font-semibold text-lg transition-transform active:scale-[0.98]"
       >
-        {t('common.done', 'Done')}
+        {t('common.done', language === 'KR' ? '완료' : 'Done')}
       </button>
     </div>
   );
@@ -382,10 +382,14 @@ export default function UnifiedCheckoutModal({
           <span className="material-symbols-outlined text-4xl text-emerald-600 dark:text-emerald-400" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
         </div>
         <h2 className="text-xl font-black text-[#2d3435] dark:text-white mb-2 text-center">
-          {t('shop.order_placed', 'Request Completed!')}
+          {t('shop.order_placed', language === 'KR' ? '신청이 완료되었습니다!' : 'Request Completed!')}
         </h2>
         <p className="text-sm text-[#596061] dark:text-neutral-400 text-center leading-relaxed mb-4">
-          Order <span className="font-mono font-bold text-[#2d3435] dark:text-white">{displayOrderNumber}</span> has been reported.
+          {language === 'KR' ? (
+            <>신청서 <span className="font-mono font-bold text-[#2d3435] dark:text-white">{displayOrderNumber}</span>번이 정상적으로 접수되었습니다.</>
+          ) : (
+            <>Order <span className="font-mono font-bold text-[#2d3435] dark:text-white">{displayOrderNumber}</span> has been reported.</>
+          )}
         </p>
         <p className="text-xs text-[#acb3b4] dark:text-neutral-500 text-center leading-relaxed">
           {t('shop.order_placed_desc2', "You'll receive a notification when the seller confirms your payment.")}
