@@ -77,7 +77,7 @@ export default function FullScreenRegistration({
   if (!isOpen || !mounted) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] bg-surface-bright text-on-surface font-body-md antialiased flex flex-col animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[9999] bg-white text-on-surface font-body-md antialiased flex flex-col animate-in fade-in duration-200">
       {/* Header */}
       <header className="flex-shrink-0 w-full z-50 flex items-center justify-between px-4 h-16 bg-white shadow-sm border-b border-slate-100">
         <div className="flex items-center gap-3">

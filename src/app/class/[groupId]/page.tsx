@@ -3,9 +3,11 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { groupService } from '@/lib/firebase/groupService';
-import { Group, GroupClass } from '@/types/group';
+import { Group, GroupClass, ClassDiscount, MonthlyPass } from '@/types/group';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { classRegistrationService } from '@/lib/firebase/classRegistrationService';
+import { notificationUtils } from '@/lib/utils/notificationUtils';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/clientApp';
 import { toast } from 'sonner';
@@ -48,6 +50,7 @@ export default function ClubClassSelectionPage() {
   const searchParams = useSearchParams();
   const groupId = params.groupId as string;
   const modalClassId = searchParams.get('modal');
+  const fromSource = searchParams.get('from');
   
   const [group, setGroup] = useState<Group | null>(null);
   const [loading, setLoading] = useState(true);
@@ -58,9 +61,15 @@ export default function ClubClassSelectionPage() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [passSelectedClassIds, setPassSelectedClassIds] = useState<Set<string>>(new Set());
   const { user, profile } = useAuth();
+  const { t } = useLanguage();
   const [isApplying, setIsApplying] = useState(false);
   const [selectedRole, setSelectedRole] = useState<'leader' | 'follower' | null>(null);
   const [ownerInfo, setOwnerInfo] = useState<{name: string | null, localName: string | null, avatar: string | null, phone: string | null} | null>(null);
+
+  // Firestore 하위 컬렉션 구독
+  const [subClasses, setSubClasses] = useState<GroupClass[]>([]);
+  const [subPasses, setSubPasses] = useState<MonthlyPass[]>([]);
+  const [subDiscounts, setSubDiscounts] = useState<ClassDiscount[]>([]);
   
   const monthParam = searchParams.get('month');
   const [currentDate, setCurrentDate] = useState<Date>(() => {
@@ -134,19 +143,26 @@ export default function ClubClassSelectionPage() {
   }, [groupId]);
 
   useEffect(() => {
-    if (group && modalClassId) {
-      const allItems = [
-        ...(group.monthlyPasses || []).map(p => ({ ...p, itemType: 'monthlyPass' as const })),
-        ...(group.discounts || []).map(d => ({ ...d, itemType: 'discount' as const })),
-        ...(group.classes || []).map(c => ({ ...c, itemType: 'class' as const }))
+    if (!groupId) return;
+    const unsubC = groupService.subscribeClasses(groupId, setSubClasses);
+    const unsubP = groupService.subscribeMonthlyPasses(groupId, setSubPasses);
+    const unsubD = groupService.subscribeDiscounts(groupId, setSubDiscounts);
+    return () => { unsubC(); unsubP(); unsubD(); };
+  }, [groupId]);
+
+  useEffect(() => {
+    if (modalClassId && (subClasses.length > 0 || subPasses.length > 0 || subDiscounts.length > 0)) {
+      const all = [
+        ...subPasses.map(p => ({ ...p, itemType: 'monthlyPass' as const })),
+        ...subDiscounts.map(d => ({ ...d, itemType: 'discount' as const })),
+        ...subClasses.map(c => ({ ...c, itemType: 'class' as const }))
       ];
-      
-      const targetItem = allItems.find(item => item.id === modalClassId);
+      const targetItem = all.find(item => item.id === modalClassId);
       if (targetItem) {
         setSelectedClassDetail(targetItem);
       }
     }
-  }, [group, modalClassId]);
+  }, [modalClassId, subClasses, subPasses, subDiscounts]);
 
   if (loading) {
     return (
@@ -171,10 +187,11 @@ export default function ClubClassSelectionPage() {
   const monthNamesShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const monthDisplay = `${monthNamesShort[currentDate.getMonth()]}(${String(currentDate.getMonth() + 1).padStart(2, '0')}), ${currentDate.getFullYear()}`;
 
-  const allGroupClasses = group.classes || [];
+  // 하위 컬렉션 데이터 사용 (레거시 임베디드 배열 폴백)
+  const allGroupClasses = subClasses.length > 0 ? subClasses : (group.classes || []);
   const classes = allGroupClasses.filter(cls => !cls.targetMonth || cls.targetMonth === currentMonthStr);
-  const monthlyPasses = (group.monthlyPasses || []).filter(p => !p.targetMonth || p.targetMonth === currentMonthStr);
-  const discounts = (group.discounts || []).filter(d => !d.targetMonth || d.targetMonth === currentMonthStr);
+  const monthlyPasses = (subPasses.length > 0 ? subPasses : (group.monthlyPasses || [])).filter(p => !p.targetMonth || p.targetMonth === currentMonthStr);
+  const discounts = (subDiscounts.length > 0 ? subDiscounts : (group.discounts || [])).filter(d => !d.targetMonth || d.targetMonth === currentMonthStr);
 
   const packages = [
     ...monthlyPasses.map(p => ({ ...p, itemType: 'monthlyPass' as const, amount: p.amount, currency: p.currency })),
@@ -206,7 +223,7 @@ export default function ClubClassSelectionPage() {
       newSet.add(classId);
       return newSet;
     });
-    setSelectedClassDetail(null); // Close modal after adding
+    if (fromSource) { router.back(); } else { setSelectedClassDetail(null); } // Close modal after adding
   };
 
   const handleCheckoutClick = () => {
@@ -824,7 +841,7 @@ export default function ClubClassSelectionPage() {
 
           {/* Header */}
           <div className={`fixed top-0 left-0 right-0 z-[260] flex items-center justify-between px-4 py-3 transition-all duration-300 ${isScrolled ? 'bg-white/95 backdrop-blur-md shadow-sm' : 'bg-gradient-to-b from-black/30 to-transparent'}`}>
-            <button onClick={() => setSelectedClassDetail(null)} className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'}`}>
+            <button onClick={() => { if (fromSource) { router.back(); } else { setSelectedClassDetail(null); } }} className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'}`}>
               <span className="material-symbols-outlined text-xl">arrow_back</span>
             </button>
             <div className={`text-sm font-bold truncate max-w-[180px] transition-opacity ${isScrolled ? 'opacity-100 text-[#2d3435]' : 'opacity-0'}`}>{selectedClassDetail.title}</div>
@@ -1125,6 +1142,14 @@ export default function ClubClassSelectionPage() {
               }
               setIsApplying(true);
               try {
+                // Generate a unified CLASS order number
+                const d = new Date();
+                const dateStr = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+                const rawName = (profile as any)?.englishName || profile?.nickname || user?.displayName || 'user';
+                const englishName = rawName.toLowerCase().replace(/[^a-z0-9]/g, '');
+                const rand = String(Math.floor(Math.random() * 90) + 10);
+                const generatedOrderNum = `CLASS-${dateStr}-${englishName}-${rand}`;
+
                 for (const classId of Array.from(selectedClasses)) {
                   const item = allItems.find(c => c.id === classId);
                   if (!item) continue;
@@ -1134,15 +1159,51 @@ export default function ClubClassSelectionPage() {
                     groupId: groupId,
                     userId: user.uid,
                     classTitle: item.title,
-                    applicantName: profile?.nickname || 'Unknown',
+                    applicantName: profile?.nickname || user.displayName || 'Unknown',
                     status: paymentStatus === 'paid' ? 'PAYMENT_REPORTED' : 'PAYMENT_PENDING',
+                    paymentStatus: paymentStatus === 'paid' ? 'reported' : 'pending',
                     amount: item.amount || 0,
                     currency: item.currency || 'KRW',
-                    role: selectedRole === 'leader' ? 'Leader' : 'Follower'
+                    role: selectedRole === 'leader' ? 'Leader' : 'Follower',
+                    orderNumber: generatedOrderNum
                   };
 
                   await classRegistrationService.addRegistration(regData);
                 }
+
+                // Chat Notifications after successful registration
+                try {
+                  const adminId = group?.ownerId || 'adminstone';
+                  const totalAmount = Array.from(selectedClasses).reduce((sum, id) => sum + (allItems.find(i => i.id === id)?.amount || 0), 0);
+                  const classTitles = Array.from(selectedClasses).map(id => allItems.find(i => i.id === id)?.title).filter(Boolean).join(', ');
+
+                  // Send reservation notification
+                  await notificationUtils.sendClassReservationNotification({
+                    user,
+                    adminId,
+                    orderNumber: generatedOrderNum,
+                    classTitles,
+                    totalAmount,
+                    selectedRole: selectedRole === 'leader' ? 'Leader' : 'Follower',
+                    buyerPhone: profile?.phoneNumber || 'N/A',
+                    applicantMemo: undefined,
+                    t
+                  });
+
+                  // If reported immediately, send payment reported notification
+                  if (paymentStatus === 'paid') {
+                    await notificationUtils.sendClassPaymentReportedNotification({
+                      user,
+                      adminId,
+                      orderNumber: generatedOrderNum,
+                      depositorName: profile?.nickname || user.displayName || undefined,
+                      t
+                    });
+                  }
+                } catch (e) {
+                  console.error("Chat notifications failed:", e);
+                }
+
                 setIsApplyModalOpen(false);
                 setShowSuccess(true);
                 setSelectedClasses(new Set());

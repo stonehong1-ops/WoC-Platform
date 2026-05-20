@@ -15,6 +15,7 @@ import { useModalNavigation } from '@/hooks/useModalNavigation';
 import { useNavigation } from '@/components/providers/NavigationProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { chatService } from '@/lib/firebase/chatService';
+import { notificationUtils } from '@/lib/utils/notificationUtils';
 import { Timestamp } from 'firebase/firestore';
 import GroupClassAddEditor from '@/components/groups/GroupClassAddEditor';
 import GroupClassDiscountEditor from '@/components/groups/GroupClassDiscountEditor';
@@ -152,8 +153,10 @@ export default function ClassDetail({ groupId, onClose, isModal = false, isEmbed
   const genOrderNumber = () => {
     const d = new Date();
     const date = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
-    const rand = String(Math.floor(Math.random() * 9999) + 1).padStart(4, '0');
-    return `CLS-${date}-${rand}`;
+    const rawName = (profile as any)?.englishName || profile?.nickname || user?.displayName || 'user';
+    const englishName = rawName.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const rand = String(Math.floor(Math.random() * 90) + 10);
+    return `CLASS-${date}-${englishName}-${rand}`;
   };
 
 
@@ -189,16 +192,16 @@ export default function ClassDetail({ groupId, onClose, isModal = false, isEmbed
   const currentMonthStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
   
   const isMonthClosed = useMemo(() => {
-    if (!group?.classPaymentSettings?.closedMonths) return false;
-    return group.classPaymentSettings.closedMonths.includes(currentMonthStr);
+    if (!group?.classPaymentSettings?.openMonths) return true;
+    return !group.classPaymentSettings.openMonths.includes(currentMonthStr);
   }, [group, currentMonthStr]);
 
   const monthlyPasses = useMemo(() => {
-    return (group?.monthlyPasses || []).filter(p => !p.targetMonth || p.targetMonth === currentMonthStr);
+    return (group?.monthlyPasses || []).filter(p => p.targetMonth === currentMonthStr);
   }, [group?.monthlyPasses, currentMonthStr]);
 
   const discounts = useMemo(() => {
-    return (group?.discounts || []).filter(d => !d.targetMonth || d.targetMonth === currentMonthStr);
+    return (group?.discounts || []).filter(d => d.targetMonth === currentMonthStr);
   }, [group?.discounts, currentMonthStr]);
 
   const allItems = useMemo(() => [
@@ -1051,22 +1054,16 @@ export default function ClassDetail({ groupId, onClose, isModal = false, isEmbed
                     // Chat Notification
                     try {
                       const adminId = group?.ownerId || 'adminstone';
-                      const roomId = await chatService.getOrCreatePrivateRoom([user.uid, adminId], user.uid, 'business');
-                      
-                      const msg = `📅 [CLASS RESERVATION]\n` +
-                                `Order No: ${num}\n` +
-                                `Items: ${classTitles}\n` +
-                                `Total: ${totalAmount.toLocaleString()} KRW\n` +
-                                `Role: ${selectedRole?.toUpperCase()}\n` +
-                                `Contact: ${buyerPhone}` +
-                                (applicantMemo.trim() ? `\nMemo: ${applicantMemo.trim()}` : '');
-                                
-                      await chatService.sendMessage({
-                        roomId,
-                        senderId: user.uid,
-                        senderName: user.displayName || 'User',
-                        text: msg,
-                        type: 'text'
+                      await notificationUtils.sendClassReservationNotification({
+                        user,
+                        adminId,
+                        orderNumber: num,
+                        classTitles,
+                        totalAmount,
+                        selectedRole,
+                        buyerPhone,
+                        applicantMemo: applicantMemo.trim() || undefined,
+                        t
                       });
                     } catch (e) { console.error("Chat notify failed:", e); }
 
@@ -1164,14 +1161,12 @@ export default function ClassDetail({ groupId, onClose, isModal = false, isEmbed
                     // Chat Notification
                     try {
                       const adminId = group?.ownerId || 'adminstone';
-                      const roomId = await chatService.getOrCreatePrivateRoom([user?.uid!, adminId], user?.uid!, 'business');
-                      const msg = `💸 [PAYMENT REPORTED]\nOrder No: ${orderNumber}\nI have transferred the payment. Please confirm!`;
-                      await chatService.sendMessage({
-                        roomId,
-                        senderId: user?.uid!,
-                        senderName: user?.displayName || 'User',
-                        text: msg,
-                        type: 'text'
+                      await notificationUtils.sendClassPaymentReportedNotification({
+                        user,
+                        adminId,
+                        orderNumber,
+                        depositorName: user?.displayName || undefined,
+                        t
                       });
                     } catch (e) { console.error("Chat report failed:", e); }
 

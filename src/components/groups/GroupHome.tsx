@@ -696,8 +696,6 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
         isAdmin={isAdminUser}
         isFullMember={isFullMember}
         members={members}
-        liveSessionCount={0}
-        newPostCount={0}
         paletteColors={PALETTE_COLORS}
         currentColor={currentGroup.headerThemeColor || '#1a1c23'}
         onColorChange={handleColorChange}
