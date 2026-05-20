@@ -1,11 +1,44 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 
 import { Group, ClassDiscount } from "@/types/group";
 import { groupService } from "@/lib/firebase/groupService";
 import { v4 as uuidv4 } from "uuid";
 import { useLanguage } from "@/contexts/LanguageContext";
+
+const getDayOfWeek = (dateStr: string): string => {
+  if (!dateStr) return '';
+  const cleanDate = dateStr.replace(/\./g, '-');
+  const d = new Date(cleanDate);
+  if (isNaN(d.getTime())) return '';
+  return ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][d.getDay()];
+};
+
+const getDayIndex = (day: string) => {
+  const DAY_ORDER = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+  const idx = DAY_ORDER.indexOf(day.toUpperCase());
+  return idx === -1 ? 99 : idx;
+};
+
+const getClassDay = (cls: any): string => {
+  if (cls.schedule && cls.schedule.length > 0) {
+    const sortedSched = [...cls.schedule].sort((a, b) => a.date.localeCompare(b.date));
+    const day = getDayOfWeek(sortedSched[0]?.date);
+    return day || 'MON';
+  }
+  return 'MON';
+};
+
+const DAY_LABELS: Record<string, { en: string; ko: string }> = {
+  MON: { en: 'Mon', ko: '월' },
+  TUE: { en: 'Tue', ko: '화' },
+  WED: { en: 'Wed', ko: '수' },
+  THU: { en: 'Thu', ko: '목' },
+  FRI: { en: 'Fri', ko: '금' },
+  SAT: { en: 'Sat', ko: '토' },
+  SUN: { en: 'Sun', ko: '일' },
+};
 
 interface GroupClassDiscountEditorProps {
   group: Group;
@@ -29,11 +62,25 @@ const GroupClassDiscountEditor: React.FC<GroupClassDiscountEditorProps> = ({ gro
     targetMonth: initialData?.targetMonth || targetMonth || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`
   });
 
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const isEditMode = !!initialData;
   const currentMonth = formData.targetMonth;
   const classSource = allClassesProp || group.classes || [];
-  const classes = classSource.filter(cls => !cls.targetMonth || cls.targetMonth === currentMonth);
+  const classes = useMemo(() => {
+    const filtered = classSource.filter(cls => !cls.targetMonth || cls.targetMonth === currentMonth);
+    return [...filtered].sort((a, b) => {
+      const dayA = getClassDay(a);
+      const dayB = getClassDay(b);
+      const idxA = getDayIndex(dayA);
+      const idxB = getDayIndex(dayB);
+      if (idxA !== idxB) {
+        return idxA - idxB;
+      }
+      const timeA = a.schedule?.[0]?.timeSlot?.split('-')?.[0]?.trim() || '';
+      const timeB = b.schedule?.[0]?.timeSlot?.split('-')?.[0]?.trim() || '';
+      return timeA.localeCompare(timeB);
+    });
+  }, [classSource, currentMonth]);
 
   useEffect(() => {
     if (initialData) {
@@ -230,7 +277,14 @@ const GroupClassDiscountEditor: React.FC<GroupClassDiscountEditorProps> = ({ gro
                       <p className="text-sm font-bold text-[#242c51] group-hover:text-[#0057bd] transition-colors truncate">{cls.title}</p>
                       <p className="text-[11px] font-bold text-[#515981] opacity-70 truncate mt-0.5">
                         {cls.schedule && cls.schedule.length > 0 
-                          ? `${cls.schedule[0].date} • ${cls.schedule[0].timeSlot}` 
+                          ? (() => {
+                              const baseDate = cls.schedule[0].date;
+                              const day = getDayOfWeek(baseDate);
+                              const daySuffix = language === 'KR' 
+                                ? `(${DAY_LABELS[day]?.ko || ''})` 
+                                : ` (${DAY_LABELS[day]?.en || ''})`;
+                              return `${baseDate}${daySuffix} • ${cls.schedule[0].timeSlot}`;
+                            })()
                           : (t('discount.no_schedule') || "No schedule")}
                       </p>
                     </div>
