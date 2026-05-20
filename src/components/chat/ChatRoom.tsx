@@ -18,6 +18,7 @@ import UserBadge from '../common/UserBadge';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useNavigation } from "@/components/providers/NavigationProvider";
 import { useBookingEngine } from '@/hooks/useBookingEngine';
+import { shopService } from '@/lib/firebase/shopService';
 
 interface ChatRoomProps {
   roomId: string;
@@ -28,10 +29,39 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
   const { user } = useAuth();
   const { t, formatDate } = useLanguage();
   const { setGlobalNavHidden } = useNavigation();
-  const { handleBookingAction } = useBookingEngine();
+  const { handleBookingAction, cancelBooking } = useBookingEngine();
+  const [isManageModalOpen, setIsManageModalOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [room, setRoom] = useState<ChatRoom | null>(null);
+
+  // Find the latest pending order metadata
+  const getLatestPendingOrder = () => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const msg = messages[i];
+      if (msg.metadata && (msg.metadata.actionType === 'booking_approval' || msg.metadata.actionType === 'shop_approval')) {
+        const status = msg.metadata.status;
+        const id = msg.metadata.bookingId || msg.metadata.orderId;
+        const sellerId = msg.metadata.sellerId;
+        const buyerId = msg.metadata.buyerId;
+        
+        if (status && id && sellerId && buyerId && ['SUBMITTED', 'PENDING', 'BANK_TRANSFERRED', 'PAYMENT_REPORTED', 'WAITING_CONFIRMATION'].includes(status)) {
+          return {
+            id,
+            domain: msg.metadata.domain || (msg.metadata.actionType === 'booking_approval' ? 'class' : 'shop'),
+            status,
+            sellerId,
+            buyerId,
+            msgId: msg.id
+          };
+        }
+      }
+    }
+    return null;
+  };
+
+  const latestOrder = getLatestPendingOrder();
+  const isSeller = latestOrder && user && latestOrder.sellerId === user.uid;
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
@@ -306,7 +336,7 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
     
     // Helper to extract value by key (supports English and Korean labels)
     const getVal = (lines: string[], keys: string[]) => {
-      const line = lines.find(l => keys.some(k => l.includes(k)));
+      const line = lines.find(l => keys.some(k => l.toLowerCase().includes(k.toLowerCase())));
       return line ? line.split(':').slice(1).join(':').trim() : null;
     };
 
@@ -324,9 +354,9 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
     if (TAGS.ORDER_PLACED.some(tag => text.includes(tag))) {
       const lines = text.split('\n');
       const orderNo = getVal(lines, ['Order No', '주문번호', '주문 번호']);
-      const product = getVal(lines, ['Product', '상품명']);
+      const product = getVal(lines, ['Product', '상품명', 'Item', 'Title']);
       const option = getVal(lines, ['Option', '옵션']);
-      const amount = getVal(lines, ['Amount', '결제금액', '수량']);
+      const amount = getVal(lines, ['Amount', '결제금액', '금액', '수량']);
       const image = getVal(lines, ['Image', '이미지']);
       
       return (
@@ -359,10 +389,8 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
     if (TAGS.PAYMENT_REPORTED.some(tag => text.includes(tag))) {
       const lines = text.split('\n');
       const orderNo = getVal(lines, ['Order No', '주문번호', '주문 번호']);
-      const depositor = getVal(lines, ['Depositor', '입금자명']);
-
-      const isActionable = msg.metadata?.actionType === 'booking_approval' && msg.metadata?.status === 'WAITING_CONFIRMATION';
-      const isHost = user?.uid !== msg.senderId;
+      const productName = getVal(lines, ['Product', '상품명', 'Item', 'Title']);
+      const depositor = getVal(lines, ['Depositor', '입금자명', '입금자']);
 
       return (
         <div className="flex flex-col gap-3 min-w-[240px]">
@@ -371,34 +399,20 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
             <span className="font-black uppercase tracking-widest text-[10px]">{t('chatroom.payment_reported')}</span>
           </div>
           <div className="space-y-1">
+            {productName && (
+              <p className="text-base font-black leading-tight text-inherit mb-1">{productName}</p>
+            )}
             <p className="text-[10px] opacity-60 font-bold uppercase tracking-tighter">{t('chatroom.label_order_no')}: {orderNo}</p>
-            <p className="text-sm font-bold leading-tight">{t('chatroom.transfer_reported_by', { name: depositor })}</p>
+            <p className="text-[12px] font-bold opacity-90">{t('chatroom.transfer_reported_by', { name: depositor })}</p>
           </div>
           
-          {isActionable ? (
-            isHost ? (
-              <div className="flex gap-2 mt-2">
-                <button 
-                  onClick={(e) => { e.stopPropagation(); if (msg.metadata?.bookingId) handleBookingAction(msg.metadata.bookingId, 'SELLER_REJECTED', msg.id, msg.roomId); }}
-                  className="flex-1 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-bold transition-colors"
-                >
-                  거절
-                </button>
-                <button 
-                  onClick={(e) => { e.stopPropagation(); if (msg.metadata?.bookingId) handleBookingAction(msg.metadata.bookingId, 'SELLER_CONFIRMED', msg.id, msg.roomId); }}
-                  className="flex-1 py-2 bg-white text-primary rounded-lg text-xs font-bold shadow-sm hover:bg-gray-50 transition-colors"
-                >
-                  승인
-                </button>
-              </div>
-            ) : (
-              <div className="text-[10px] bg-white/10 px-3 py-1.5 rounded-full font-bold self-start">검토 후 답변드리겠습니다.</div>
-            )
-          ) : (
-            <div className="text-[10px] bg-white/10 px-3 py-1.5 rounded-full font-bold uppercase self-start">
-              {msg.metadata?.status === 'CONFIRMED' ? '승인 완료' : msg.metadata?.status === 'REJECTED' ? '승인 거절' : t('chatroom.pending_confirmation')}
-            </div>
-          )}
+          <div className="text-[10px] bg-white/10 px-3 py-1.5 rounded-full font-bold uppercase self-start">
+            {msg.metadata?.status === 'CONFIRMED' || msg.metadata?.status === 'SELLER_CONFIRMED' 
+              ? '승인 완료' 
+              : msg.metadata?.status === 'CANCELLED' || msg.metadata?.status === 'SELLER_REJECTED' 
+                ? '주문 취소' 
+                : '검토 중'}
+          </div>
         </div>
       );
     }
@@ -616,7 +630,16 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
               }
             />
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
+            {isSeller && (
+              <button
+                onClick={() => setIsManageModalOpen(true)}
+                className="px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-full text-xs font-black uppercase tracking-wider transition-all duration-300 shadow-md shadow-blue-500/20 active:scale-95 flex items-center gap-1.5"
+              >
+                <span className="material-symbols-outlined text-[14px]">settings_accessibility</span>
+                <span>{t('chatroom.manage_order', 'Manage Order')}</span>
+              </button>
+            )}
             <button 
               onClick={() => {
                 if (otherUser?.allowPhoneCalls && otherUser?.phoneNumber) {
@@ -1092,6 +1115,122 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
               </div>
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Premium Glassmorphism Bottom Sheet for Order Management */}
+      <AnimatePresence>
+        {isManageModalOpen && latestOrder && (
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm">
+            <div className="absolute inset-0" onClick={() => setIsManageModalOpen(false)} />
+            
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="relative w-full max-w-md bg-white/90 backdrop-blur-xl rounded-t-[32px] p-6 shadow-2xl border border-white/20 z-10 flex flex-col gap-5 text-gray-800"
+            >
+              <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto" />
+              
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-black uppercase tracking-tighter text-gray-900">{t('chatroom.manage_order_title', 'Manage Order')}</h3>
+                <button 
+                  onClick={() => setIsManageModalOpen(false)}
+                  className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-100 hover:bg-gray-200 transition-all text-gray-500"
+                >
+                  <span className="material-symbols-outlined text-base">close</span>
+                </button>
+              </div>
+
+              <div className="bg-gray-50/50 border border-gray-100/50 rounded-2xl p-4 flex flex-col gap-2">
+                <div className="flex justify-between items-center text-xs text-gray-400 font-bold uppercase tracking-wider">
+                  <span>Domain</span>
+                  <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-[10px] font-black">{latestOrder.domain}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs text-gray-400 font-bold uppercase tracking-wider">
+                  <span>Order ID</span>
+                  <span className="text-gray-700 font-mono truncate max-w-[180px]">{latestOrder.id}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs text-gray-400 font-bold uppercase tracking-wider">
+                  <span>Current Status</span>
+                  <span className="text-orange-500 font-black">{latestOrder.status}</span>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={async () => {
+                    try {
+                      if (latestOrder.domain === 'class') {
+                        await handleBookingAction(latestOrder.id, 'SELLER_CONFIRMED', latestOrder.msgId, roomId);
+                      } else {
+                        await shopService.updateOrderStatus(latestOrder.id, 'CONFIRMED');
+                        await chatService.sendMessage({
+                          roomId,
+                          senderId: user?.uid || 'adminstone',
+                          senderName: user?.displayName || 'Host',
+                          text: `✅ [ORDER CONFIRMED]\nYour payment has been confirmed. The order is now completed!`,
+                          type: 'text',
+                          metadata: {
+                            actionType: 'shop_approval',
+                            orderId: latestOrder.id,
+                            status: 'CONFIRMED',
+                            domain: 'shop',
+                            sellerId: latestOrder.sellerId,
+                            buyerId: latestOrder.buyerId
+                          }
+                        });
+                      }
+                      setIsManageModalOpen(false);
+                    } catch (err) {
+                      console.error("Failed to confirm order:", err);
+                      alert(t('chatroom.failed_to_confirm', 'Failed to confirm order'));
+                    }
+                  }}
+                  className="w-full py-4 bg-primary text-white font-black text-sm uppercase tracking-wider rounded-2xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex items-center justify-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-lg">check_circle</span>
+                  <span>{t('chatroom.confirm_payment', 'Confirm Payment')}</span>
+                </button>
+
+                <button
+                  onClick={async () => {
+                    try {
+                      if (latestOrder.domain === 'class') {
+                        await cancelBooking(latestOrder.id);
+                      } else {
+                        await shopService.updateOrderStatus(latestOrder.id, 'CANCELLED');
+                        await chatService.sendMessage({
+                          roomId,
+                          senderId: user?.uid || 'adminstone',
+                          senderName: user?.displayName || 'Host',
+                          text: `❌ [ORDER CANCELLED]\nThe order has been cancelled by the seller.`,
+                          type: 'text',
+                          metadata: {
+                            actionType: 'shop_approval',
+                            orderId: latestOrder.id,
+                            status: 'CANCELLED',
+                            domain: 'shop',
+                            sellerId: latestOrder.sellerId,
+                            buyerId: latestOrder.buyerId
+                          }
+                        });
+                      }
+                      setIsManageModalOpen(false);
+                    } catch (err) {
+                      console.error("Failed to cancel order:", err);
+                      alert(t('chatroom.failed_to_cancel', 'Failed to cancel order'));
+                    }
+                  }}
+                  className="w-full py-4 bg-red-50 hover:bg-red-100 text-red-500 font-bold text-sm uppercase tracking-wider rounded-2xl transition-all flex items-center justify-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-lg">cancel</span>
+                  <span>{t('chatroom.cancel_order', 'Cancel Order')}</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>

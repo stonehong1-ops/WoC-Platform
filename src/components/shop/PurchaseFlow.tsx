@@ -180,7 +180,15 @@ export default function PurchaseFlow({
             senderId: user.uid,
             senderName: user.displayName || t('common.user', 'User'),
             text: orderMsg,
-            type: 'text'
+            type: 'text',
+            metadata: {
+              actionType: 'shop_approval',
+              orderId: createdId,
+              status: 'PENDING',
+              domain: 'shop',
+              sellerId: sellerId,
+              buyerId: user.uid
+            }
           });
         }
       } catch (chatErr) {
@@ -407,13 +415,25 @@ export default function PurchaseFlow({
                   const sellerId = product.sellerId || 'adminstone';
                   if (sellerId && user) {
                     const roomId = await chatService.getOrCreatePrivateRoom([user.uid, sellerId], user.uid, 'business');
-                    const msg = `💸 ${t('shop.chat_payment_prefix', '[PAYMENT REPORTED]')}\n${t('shop.chat_order_no', 'Order No')}: ${orderNumber}\n${t('shop.chat_depositor', 'Depositor')}: ${user.displayName || t('common.user', 'User')}\n${t('shop.chat_payment_msg', 'I have transferred the payment. Please confirm!')}`;
+                    const msg = `💸 ${t('shop.chat_payment_prefix', '[PAYMENT REPORTED]')}\n` +
+                      `${t('shop.chat_order_no', 'Order No')}: ${orderNumber}\n` +
+                      `${t('shop.chat_product_name', 'Item')}: ${product.title}\n` +
+                      `${t('shop.chat_depositor', 'Depositor')}: ${user.displayName || t('common.user', 'User')}\n` +
+                      `${t('shop.chat_payment_msg', 'I have transferred the payment. Please confirm!')}`;
                     await chatService.sendMessage({
                       roomId,
                       senderId: user.uid,
                       senderName: user.displayName || t('common.user', 'User'),
                       text: msg,
-                      type: 'text'
+                      type: 'text',
+                      metadata: {
+                        actionType: 'shop_approval',
+                        orderId: orderId,
+                        status: 'PAYMENT_REPORTED',
+                        domain: 'shop',
+                        sellerId: sellerId,
+                        buyerId: user.uid
+                      }
                     });
                   }
                 } catch (err) {

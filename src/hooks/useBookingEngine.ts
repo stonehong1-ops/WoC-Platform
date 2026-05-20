@@ -102,7 +102,15 @@ export function useBookingEngine() {
             senderId: user.uid,
             senderName: user.displayName || t('common.user', 'User'),
             text: orderMsg,
-            type: 'text'
+            type: 'text',
+            metadata: {
+              actionType: 'booking_approval',
+              bookingId: bookingRef.id,
+              status: 'SUBMITTED',
+              domain: data.domain || 'class',
+              sellerId: hostId,
+              buyerId: user.uid
+            }
           });
         }
       } catch (chatErr) {
@@ -181,7 +189,11 @@ export function useBookingEngine() {
         if (hostId) {
           const roomId = await chatService.getOrCreatePrivateRoom([user.uid, hostId], user.uid, 'business');
           const orderNumDisplay = bookingData.orderNumber || bookingData.id;
-          const msg = `💸 ${t('shop.chat_payment_prefix', '[PAYMENT REPORTED]')}\n${t('shop.chat_order_no', 'Order No')}: ${orderNumDisplay}\n${t('shop.chat_depositor', 'Depositor')}: ${user.displayName || t('common.user', 'User')}\n검토 후 답변드리겠습니다.`;
+          const msg = `💸 ${t('shop.chat_payment_prefix', '[PAYMENT REPORTED]')}\n` +
+            `${t('shop.chat_order_no', 'Order No')}: ${orderNumDisplay}\n` +
+            `${t('shop.chat_product_name', 'Item')}: ${bookingData.itemName}\n` +
+            `${t('shop.chat_depositor', 'Depositor')}: ${user.displayName || t('common.user', 'User')}\n` +
+            `검토 후 답변드리겠습니다.`;
           
           await chatService.sendMessage({
             roomId,
@@ -192,7 +204,10 @@ export function useBookingEngine() {
             metadata: {
               actionType: 'booking_approval',
               bookingId: bookingId,
-              status: 'BANK_TRANSFERRED'
+              status: 'BANK_TRANSFERRED',
+              domain: bookingData.domain || 'class',
+              sellerId: hostId,
+              buyerId: user.uid
             }
           });
         }
@@ -341,7 +356,70 @@ export function useBookingEngine() {
 
     } catch (err: any) {
       console.error("Failed to handle booking action:", err);
-      setError(err.message || 'Failed to process');
+      setError(err.message || 'Failed to handle booking action');
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /**
+   * 2.5 Cancel a booking (Host/Seller action)
+   */
+  const cancelBooking = async (bookingId: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const batch = writeBatch(db);
+      const bookingRef = doc(db, COLLECTION_NAME, bookingId);
+      const snap = await getDoc(bookingRef);
+      
+      if (!snap.exists()) {
+        throw new Error("Booking not found");
+      }
+      
+      const bookingData = snap.data() as BaseBooking;
+
+      batch.update(bookingRef, {
+        status: 'CANCELLED',
+        updatedAt: serverTimestamp()
+      });
+
+      // Notify User
+      await notificationService.createNotification({
+        targetUserId: bookingData.buyerId,
+        category: 'BOOKING',
+        type: 'BOOKING_CANCELLED',
+        title: 'Booking Cancelled',
+        message: `Your booking for '${bookingData.itemName}' has been cancelled by the host.`,
+        actionUrl: `/history`,
+        referenceId: bookingId,
+      }, batch);
+
+      await batch.commit();
+
+      // Automated Chat Notification for Cancellation
+      try {
+        const hostId = bookingData.hostId || 'adminstone';
+        if (hostId) {
+          const roomId = await chatService.getOrCreatePrivateRoom([bookingData.buyerId, hostId], bookingData.buyerId, 'business');
+          const msg = `❌ [ORDER CANCELLED]\nThe order has been cancelled by the seller.`;
+          
+          await chatService.sendMessage({
+            roomId,
+            senderId: hostId,
+            senderName: 'Host',
+            text: msg,
+            type: 'text'
+          });
+        }
+      } catch (chatErr) {
+        console.error('Failed to send booking cancellation chat notification:', chatErr);
+      }
+
+    } catch (err: any) {
+      console.error("Failed to cancel booking:", err);
+      setError(err.message || 'Failed to cancel booking');
       throw err;
     } finally {
       setIsLoading(false);
@@ -352,6 +430,7 @@ export function useBookingEngine() {
     createBooking,
     reportPayment,
     confirmBooking,
+    cancelBooking,
     startInquiryChat,
     handleBookingAction,
     isLoading,
