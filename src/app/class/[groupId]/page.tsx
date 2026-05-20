@@ -981,7 +981,7 @@ export default function ClubClassSelectionPage({
                       const prevCls = idx > 0 ? sortedPassClasses[idx - 1] : null;
                       const prevDay = prevCls ? getClassDay(prevCls) : null;
                       const isNewDay = idx > 0 && day !== prevDay;
-                      const dayLabel = language === 'KR' ? DAY_LABELS[day]?.ko : DAY_LABELS[day]?.en;
+                      const dayLabel = DAY_LABELS[day]?.en || 'Mon';
                       
                       let datesStr = '';
                       if (cls.schedule && cls.schedule.length > 0) {
