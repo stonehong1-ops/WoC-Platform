@@ -1,22 +1,24 @@
-# 📋 Group Shell Header Switch & Leave Group Modal Localization Checklist
+# 📋 Class Portal Modal Localization Checklist
 
-## 1. Dictionary Extension in LanguageContext
-- [x] Add translation keys for the Group Shell Header (dropdown items) and Leave Group Modal to the EN dictionary in `src/contexts/LanguageContext.tsx`.
-- [x] Add translation keys for the Group Shell Header (dropdown items) and Leave Group Modal to the KR dictionary in `src/contexts/LanguageContext.tsx`.
+## 1. Context Localization State Integration
+- [x] Verify new translation keys inside `src/contexts/LanguageContext.tsx`.
+  - [x] Confirm `class.booking_special_title`, `class.booking_daily_title`, `class.select_role`, `class.booking_notice_title`, `class.booking_notice_desc`, `class.submit_request` keys exist.
+- [x] Update `src/components/class/ClassPortal.tsx` to retrieve the `language` value from `useLanguage()`.
 
-## 2. Group Shell Header Localization
-- [x] Inspect existing `useLanguage` integration in `src/components/groups/shell/GroupShellHeader.tsx`.
-- [x] Map hardcoded texts "Exit", "Current Group", "Switch to", and "Leave Group" in `src/components/groups/shell/GroupShellHeader.tsx` to `t()`.
+## 2. Modal Verbatim Translation Binding
+- [x] Bind dynamic dictionary values to elements in `UnifiedCheckoutModal` within `ClassPortal.tsx`.
+  - [x] Replace `title` field mapping with `booking_special_title` and `booking_daily_title`.
+  - [x] Replace `subtitle` date formatter locale with `language === 'KR' ? 'ko-KR' : 'en-US'`.
+  - [x] Replace `buttonText` with `class.submit_request`.
+  - [x] Replace "Select Role" heading text with `class.select_role`.
+  - [x] Replace "Notice" title with `class.booking_notice_title`.
+  - [x] Replace notice paragraph text with `class.booking_notice_desc`.
 
-## 3. Leave Group Modal Localization
-- [x] Inspect existing `useLanguage` integration in `src/components/groups/GroupHome.tsx`.
-- [x] Map hardcoded texts "Leave Group" (title), "Are you sure you want to leave this group?" (body), "Stay" (button), and "Leave" (button) in the modal rendering block of `src/components/groups/GroupHome.tsx` to `t()`.
+## 3. Pre-Flight Verification & Quality Control
+- [x] Perform local compilation check (`npm run build`).
+- [x] Confirm no trailing colons (`:`) exist in Korean translation mappings or logs.
 
-## 4. Build & Local Verification
-- [x] Run the project's build locally to confirm zero TypeScript compilation errors.
-- [x] Verify that all UI elements render perfectly with 0% design deviation.
-
-## 5. Production Deployment & Live Report
-- [x] Deploy the validated codebase to Vercel production using `npx -y vercel --prod --yes`.
-- [x] Capture the deployment ID, exit code, and live URL.
-- [x] Report the production link to Stony for final testing.
+## 4. Production Deployment & Live Report
+- [x] Deploy updated code to live production using Vercel (`npx -y vercel --prod --yes`).
+- [x] Verify live site functionality and retrieve the deployment credentials.
+- [x] Deliver the Deployment ID, exit code, and live URL to Stony.
