@@ -59,6 +59,17 @@ export default function UniversalCompose({
     return () => window.removeEventListener('woc:compose:open', handleOpen);
   }, [id]);
 
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   if (!isOpen || !mounted) return null;
 
   return createPortal(
@@ -68,7 +79,7 @@ export default function UniversalCompose({
         onClick={() => setIsOpen(false)} 
       />
       
-      <div className="relative bg-white w-full max-w-xl h-[95vh] sm:h-auto sm:max-h-[90vh] rounded-t-[32px] sm:rounded-[32px] shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom duration-300">
+      <div className="relative bg-white w-full max-w-xl h-[95dvh] sm:h-auto sm:max-h-[90vh] rounded-t-[32px] sm:rounded-[32px] shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom duration-300">
         {/* Header - Premium Style */}
         <div className="px-8 py-6 border-b border-gray-50 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10 font-manrope">
           <div className="flex flex-col">
