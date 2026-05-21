@@ -170,6 +170,25 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
     return 'MON';
   };
 
+  const getStartTime = (cls: any): string => {
+    if (cls.startTime) {
+      const match = cls.startTime.match(/^(\d{1,2}):(\d{2})/);
+      if (match) return `${match[1].padStart(2, '0')}:${match[2]}`;
+      return cls.startTime;
+    }
+    if (cls.schedule && cls.schedule.length > 0) {
+      const sortedSched = [...cls.schedule].sort((a, b) => a.date.localeCompare(b.date));
+      const firstSlot = sortedSched[0]?.timeSlot;
+      if (firstSlot) {
+        const match = firstSlot.match(/^(\d{1,2}):(\d{2})/);
+        if (match) {
+          return `${match[1].padStart(2, '0')}:${match[2]}`;
+        }
+      }
+    }
+    return '';
+  };
+
   const sortedMonthClasses = useMemo(() => {
     return [...monthClasses].sort((a, b) => {
       const dayA = getClassDay(a);
@@ -179,8 +198,8 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
       if (idxA !== idxB) {
         return idxA - idxB;
       }
-      const timeA = a.startTime || '';
-      const timeB = b.startTime || '';
+      const timeA = getStartTime(a);
+      const timeB = getStartTime(b);
       return timeA.localeCompare(timeB);
     });
   }, [monthClasses]);
@@ -256,80 +275,100 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
       {/* Item List - Shop style cards */}
       <div className="px-4 pb-4 space-y-3">
         {allItems.length > 0 ? (
-          allItems.map((item, idx) => {
-            const colors = getItemTypeColor(item.itemType);
-            const icon = getItemTypeIcon(item.itemType);
-            const imgSrc = item.imageUrl || item.image || item.photoURL || item.avatar || group.coverImage || group.logo || '';
-            const timeDisplay = item.schedule?.[0]?.timeSlot || (item.startTime ? `${item.startTime}${item.endTime ? ' - ' + item.endTime : ''}` : '');
+          (() => {
+            let prevClassDay = '';
+            return allItems.map((item, idx) => {
+              const colors = getItemTypeColor(item.itemType);
+              const icon = getItemTypeIcon(item.itemType);
+              const imgSrc = item.imageUrl || item.image || item.photoURL || item.avatar || group.coverImage || group.logo || '';
+              const timeDisplay = item.schedule?.[0]?.timeSlot || (item.startTime ? `${item.startTime}${item.endTime ? ' - ' + item.endTime : ''}` : '');
 
-            return (
-              <article
-                key={item.id || idx}
-                onClick={() => handleItemClick(item)}
-                className="bg-white rounded-xl p-4 shadow-sm border border-[#e0e4e5]/60 flex gap-4 active:scale-[0.99] transition-transform cursor-pointer hover:shadow-md"
-              >
-                {/* Thumbnail */}
-                <div className="w-20 h-20 rounded-lg bg-slate-100 overflow-hidden flex-shrink-0">
-                  {imgSrc ? (
-                    <ImageWithFallback src={imgSrc} alt={item.title} className="w-full h-full object-cover" fallbackType="gallery" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-slate-300">
-                      <span className="material-symbols-outlined text-3xl">{icon}</span>
+              const isClass = item.itemType === 'class';
+              const currentClassDay = isClass ? getClassDay(item) : '';
+              const showDayDivider = isClass && currentClassDay !== prevClassDay;
+              if (isClass) {
+                prevClassDay = currentClassDay;
+              }
+
+              return (
+                <React.Fragment key={item.id || idx}>
+                  {showDayDivider && (
+                    <div className="pt-4 pb-2 flex items-center gap-3">
+                      <div className="h-[1px] flex-1 bg-slate-100"></div>
+                      <span className="text-[12px] font-black text-slate-400 tracking-wider uppercase">
+                        {t(`days.${currentClassDay}`)}
+                      </span>
+                      <div className="h-[1px] flex-1 bg-slate-100"></div>
                     </div>
                   )}
-                </div>
-
-                {/* Info */}
-                <div className="flex-1 flex flex-col justify-between min-w-0">
-                  <div>
-                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full inline-block mb-1 ${colors.text} ${colors.bg}`}>
-                      {getItemTypeLabel(item.itemType)}
-                    </span>
-                    <h3 className="font-['Plus_Jakarta_Sans'] font-extrabold text-[15px] leading-tight text-[#2d3435] truncate">{item.title}</h3>
-                    {item.description && (
-                      <p className="text-xs font-medium text-[#596061] mt-0.5 line-clamp-1">{item.description}</p>
-                    )}
-                  </div>
-                  <div className="flex items-end justify-between mt-2">
-                    <span className="font-['Plus_Jakarta_Sans'] font-bold text-base text-[#0057bd]">
-                      {getCurrencySymbol(item.currency || 'KRW')}{(item.amount || item.price || 0).toLocaleString()}
-                    </span>
-                    {(() => {
-                      let startDisplay = '';
-                      if (item.itemType === 'class' && item.schedule && item.schedule.length > 0) {
-                        const sortedSched = [...item.schedule].sort((a: any, b: any) => a.date.localeCompare(b.date));
-                        const firstDateStr = sortedSched[0]?.date;
-                        if (firstDateStr) {
-                          const dd = new Date(firstDateStr.replace(/\./g, '-'));
-                          if (!isNaN(dd.getTime())) {
-                            const dayIdx = dd.getDay();
-                            const daysKr = ['일', '월', '화', '수', '목', '금', '토'];
-                            const daysEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-                            startDisplay = language === 'KR'
-                              ? `${dd.getMonth() + 1}.${dd.getDate()}(${daysKr[dayIdx]})`
-                              : `${dd.getMonth() + 1}/${dd.getDate()} (${daysEn[dayIdx]})`;
-                          }
-                        }
-                      }
-
-                      return (
-                        <div className="flex flex-col items-end gap-0.5">
-                          {startDisplay && (
-                            <span className="text-[10px] font-bold text-[#0057bd]">
-                              {startDisplay}
-                            </span>
-                          )}
-                          {timeDisplay && (
-                            <span className="text-[11px] text-[#596061] font-medium">{timeDisplay}</span>
-                          )}
+                  <article
+                    onClick={() => handleItemClick(item)}
+                    className="bg-white rounded-xl p-4 shadow-sm border border-[#e0e4e5]/60 flex gap-4 active:scale-[0.99] transition-transform cursor-pointer hover:shadow-md"
+                  >
+                    {/* Thumbnail */}
+                    <div className="w-20 h-20 rounded-lg bg-slate-100 overflow-hidden flex-shrink-0">
+                      {imgSrc ? (
+                        <ImageWithFallback src={imgSrc} alt={item.title} className="w-full h-full object-cover" fallbackType="gallery" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-slate-300">
+                          <span className="material-symbols-outlined text-3xl">{icon}</span>
                         </div>
-                      );
-                    })()}
-                  </div>
-                </div>
-              </article>
-            );
-          })
+                      )}
+                    </div>
+
+                    {/* Info */}
+                    <div className="flex-1 flex flex-col justify-between min-w-0">
+                      <div>
+                        <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full inline-block mb-1 ${colors.text} ${colors.bg}`}>
+                          {getItemTypeLabel(item.itemType)}
+                        </span>
+                        <h3 className="font-['Plus_Jakarta_Sans'] font-extrabold text-[15px] leading-tight text-[#2d3435] truncate">{item.title}</h3>
+                        {item.description && (
+                          <p className="text-xs font-medium text-[#596061] mt-0.5 line-clamp-1">{item.description}</p>
+                        )}
+                      </div>
+                      <div className="flex items-end justify-between mt-2">
+                        <span className="font-['Plus_Jakarta_Sans'] font-bold text-base text-[#0057bd]">
+                          {getCurrencySymbol(item.currency || 'KRW')}{(item.amount || item.price || 0).toLocaleString()}
+                        </span>
+                        {(() => {
+                          let startDisplay = '';
+                          if (item.itemType === 'class' && item.schedule && item.schedule.length > 0) {
+                            const sortedSched = [...item.schedule].sort((a: any, b: any) => a.date.localeCompare(b.date));
+                            const firstDateStr = sortedSched[0]?.date;
+                            if (firstDateStr) {
+                              const dd = new Date(firstDateStr.replace(/\./g, '-'));
+                              if (!isNaN(dd.getTime())) {
+                                const dayIdx = dd.getDay();
+                                const daysKr = ['일', '월', '화', '수', '목', '금', '토'];
+                                const daysEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                                startDisplay = language === 'KR'
+                                  ? `${dd.getMonth() + 1}.${dd.getDate()}(${daysKr[dayIdx]})`
+                                  : `${dd.getMonth() + 1}/${dd.getDate()} (${daysEn[dayIdx]})`;
+                              }
+                            }
+                          }
+
+                          return (
+                            <div className="flex flex-col items-end gap-0.5">
+                              {startDisplay && (
+                                <span className="text-[10px] font-bold text-[#0057bd]">
+                                  {t('class-dashboard.startDate').replace('{date}', startDisplay)}
+                                </span>
+                              )}
+                              {timeDisplay && (
+                                <span className="text-[11px] text-[#596061] font-medium">{timeDisplay}</span>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  </article>
+                </React.Fragment>
+              );
+            });
+          })()
         ) : (
           <div className="py-12 text-center">
             <span className="material-symbols-outlined text-4xl text-slate-300 mb-2">school</span>

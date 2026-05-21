@@ -7,6 +7,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/clientApp';
 import Portal from '@/components/common/Portal';
 import { useLanguage } from '@/contexts/LanguageContext';
+import UserProfileClickable from '@/components/common/UserProfileClickable';
 
 interface ClassDetailProps {
   groupId: string;
@@ -323,24 +324,33 @@ export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDeta
                 </p>
                 <div className="flex gap-4 overflow-x-auto detail-scrollbar pb-2">
                   {itemDetail.instructors.map((inst: any, idx: number) => (
-                    <div key={idx} className="flex flex-col items-center flex-shrink-0 w-20">
-                      {inst.avatar || inst.photoURL || inst.image || inst.imageUrl ? (
-                        <img 
-                          src={inst.avatar || inst.photoURL || inst.image || inst.imageUrl} 
-                          alt={inst.name} 
-                          className="w-14 h-14 rounded-full object-cover mb-2 border border-[#e0e4e5]" 
-                          onError={(e) => { 
-                            e.currentTarget.style.display = 'none'; 
-                            e.currentTarget.parentElement!.innerHTML = `<div class="w-14 h-14 rounded-full bg-[#f2f4f4] text-[#596061] flex items-center justify-center text-xl font-bold mb-2 border border-[#e0e4e5]">${inst.name.substring(0, 2).toUpperCase()}</div><span class="text-xs font-bold text-[#2d3435] text-center line-clamp-1">${inst.name}</span>`; 
-                          }} 
-                        />
-                      ) : (
-                        <div className="w-14 h-14 rounded-full bg-[#f2f4f4] text-[#596061] flex items-center justify-center text-xl font-bold mb-2 border border-[#e0e4e5]">
-                          {inst.name.substring(0, 2).toUpperCase()}
-                        </div>
-                      )}
-                      <span className="text-xs font-bold text-[#2d3435] text-center line-clamp-1">{inst.name}</span>
-                    </div>
+                    <UserProfileClickable 
+                      key={inst.id || inst.uid || idx} 
+                      uid={inst.id || inst.uid || ''}
+                      initialData={{
+                        nickname: inst.name,
+                        photoURL: inst.avatar || inst.photoURL || inst.image || inst.imageUrl
+                      }}
+                    >
+                      <div className="flex flex-col items-center flex-shrink-0 w-20 cursor-pointer">
+                        {inst.avatar || inst.photoURL || inst.image || inst.imageUrl ? (
+                          <img 
+                            src={inst.avatar || inst.photoURL || inst.image || inst.imageUrl} 
+                            alt={inst.name} 
+                            className="w-14 h-14 rounded-full object-cover mb-2 border border-[#e0e4e5]" 
+                            onError={(e) => { 
+                              e.currentTarget.style.display = 'none'; 
+                              e.currentTarget.parentElement!.innerHTML = `<div class="w-14 h-14 rounded-full bg-[#f2f4f4] text-[#596061] flex items-center justify-center text-xl font-bold mb-2 border border-[#e0e4e5]">${inst.name.substring(0, 2).toUpperCase()}</div><span class="text-xs font-bold text-[#2d3435] text-center line-clamp-1">${inst.name}</span>`; 
+                            }} 
+                          />
+                        ) : (
+                          <div className="w-14 h-14 rounded-full bg-[#f2f4f4] text-[#596061] flex items-center justify-center text-xl font-bold mb-2 border border-[#e0e4e5]">
+                            {inst.name.substring(0, 2).toUpperCase()}
+                          </div>
+                        )}
+                        <span className="text-xs font-bold text-[#2d3435] text-center line-clamp-1">{inst.name}</span>
+                      </div>
+                    </UserProfileClickable>
                   ))}
                 </div>
               </div>

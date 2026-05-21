@@ -20,12 +20,16 @@ interface UserProfile {
   phoneNumber?: string;
   gender?: string;
   isRegistered: boolean;
+  isAdmin?: boolean;
   isInstructor?: boolean;
-  isSeller?: boolean;
+  isOrganizer?: boolean;
+  isDj?: boolean;
   isServiceProvider?: boolean;
   authMethod?: string;
   allowPhoneCalls?: boolean;
   role?: 'leader' | 'follower';
+  career?: string;
+  partnerStatus?: string;
 }
 
 interface MyInfoBottomSheetProps {
@@ -49,12 +53,16 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
     gender: 'Other',
     phoneNumber: '',
     countryCode: '+1 (US)',
+    isAdmin: false,
     isInstructor: false,
-    isSeller: false,
+    isOrganizer: false,
+    isDj: false,
     isServiceProvider: false,
     photoURL: '',
     allowPhoneCalls: false,
-    role: 'follower' as 'leader' | 'follower'
+    role: 'follower' as 'leader' | 'follower',
+    career: '',
+    partnerStatus: ''
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -68,12 +76,16 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
         gender: profile.gender || 'Other',
         phoneNumber: profile.phoneNumber || '',
         countryCode: profile.countryCode || '+1 (US)',
+        isAdmin: profile.isAdmin || false,
         isInstructor: profile.isInstructor || false,
-        isSeller: profile.isSeller || false,
+        isOrganizer: profile.isOrganizer || false,
+        isDj: profile.isDj || false,
         isServiceProvider: profile.isServiceProvider || false,
         photoURL: profile.photoURL || '',
         allowPhoneCalls: profile.allowPhoneCalls || false,
-        role: profile.role || 'follower'
+        role: profile.role || 'follower',
+        career: profile.career || '',
+        partnerStatus: profile.partnerStatus || ''
       });
     }
   }, [profile, isOpen]);
@@ -137,11 +149,15 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
         role: details.role,
         phoneNumber: details.phoneNumber,
         countryCode: details.countryCode,
+        isAdmin: details.isAdmin,
         isInstructor: details.isInstructor,
-        isSeller: details.isSeller,
+        isOrganizer: details.isOrganizer,
+        isDj: details.isDj,
         isServiceProvider: details.isServiceProvider,
         photoURL: details.photoURL,
         allowPhoneCalls: details.allowPhoneCalls,
+        career: details.career,
+        partnerStatus: details.partnerStatus,
         updatedAt: serverTimestamp()
       });
       onClose();
@@ -414,9 +430,36 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
                         : 'text-on-surface-variant hover:text-on-surface'
                     }`}
                   >
-                    {t(`myinfo.dance_role_${r}`)}
+                    {r === 'leader' ? 'Leader' : 'Follower'}
                   </button>
                 ))}
+              </div>
+            </section>
+
+            {/* Section 4.7: Career & Partner Status */}
+            <section className="space-y-6">
+              <h2 className="font-headline text-lg font-bold text-on-surface">Dance Profile Info</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5 col-span-2 md:col-span-1">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-outline">{t('myinfo.career')}</label>
+                  <input 
+                    className="w-full bg-surface border border-outline-variant rounded px-4 py-2.5 text-on-surface focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none" 
+                    placeholder={t('myinfo.career_placeholder')}
+                    type="text"
+                    value={details.career}
+                    onChange={(e) => setDetails(prev => ({ ...prev, career: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1.5 col-span-2 md:col-span-1">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-outline">{t('myinfo.partner')}</label>
+                  <input 
+                    className="w-full bg-surface border border-outline-variant rounded px-4 py-2.5 text-on-surface focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none" 
+                    placeholder={t('myinfo.partner_placeholder')}
+                    type="text"
+                    value={details.partnerStatus}
+                    onChange={(e) => setDetails(prev => ({ ...prev, partnerStatus: e.target.value }))}
+                  />
+                </div>
               </div>
             </section>
 
@@ -429,7 +472,8 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
               <div className="grid grid-cols-1 gap-3">
                 {[
                   { id: 'isInstructor', label: t('myinfo.role_instructor_label'), sub: t('myinfo.role_instructor_sub'), icon: 'school' },
-                  { id: 'isSeller', label: t('myinfo.role_seller_label'), sub: t('myinfo.role_seller_sub'), icon: 'store' },
+                  { id: 'isOrganizer', label: t('myinfo.role_organizer_label'), sub: t('myinfo.role_organizer_sub'), icon: 'event' },
+                  { id: 'isDj', label: t('myinfo.role_dj_label'), sub: t('myinfo.role_dj_sub'), icon: 'album' },
                   { id: 'isServiceProvider', label: t('myinfo.role_pro_label'), sub: t('myinfo.role_pro_sub'), icon: 'hand_gesture' }
                 ].map((role) => {
                   const active = (details as any)[role.id];

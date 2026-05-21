@@ -132,10 +132,6 @@ export default function NotificationPage() {
        iconName = 'groups';
        bgColor = 'bg-[#d8e2ff]';
        textColor = 'text-[#0058ba]';
-    } else if (noti.baseType === 'TODO') {
-       iconName = 'assignment_late';
-       bgColor = 'bg-orange-100';
-       textColor = 'text-orange-800';
     }
     
     return (

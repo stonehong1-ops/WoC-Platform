@@ -18,6 +18,12 @@ export default function InAppBrowserGuard() {
   useEffect(() => {
     if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
 
+    // PT 및 PT1 경로는 인앱 브라우저 가드 대상에서 제외
+    const path = window.location.pathname;
+    if (path === '/pt' || path === '/pt1' || path.startsWith('/pt/') || path.startsWith('/pt1/')) {
+      return;
+    }
+
     const ua = navigator.userAgent || '';
 
     // Detect in-app browsers: KakaoTalk, Instagram, Facebook, Line

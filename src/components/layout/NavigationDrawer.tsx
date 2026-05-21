@@ -42,9 +42,10 @@ export default function NavigationDrawer() {
   const photoURL = profile?.photoURL || user?.photoURL || null;
   
   const roles = [];
-  if (profile?.isInstructor) roles.push(t('common.role.instructor') || 'Instructor');
-  if (profile?.isSeller) roles.push(t('my.role_seller') || 'Seller');
-  if (profile?.isServiceProvider) roles.push(t('common.role.provider') || 'Service');
+  if (profile?.isInstructor) roles.push(t('my.role_instructor') || 'Instructor');
+  if (profile?.isOrganizer) roles.push(t('my.role_organizer') || 'Organizer');
+  if (profile?.isDj) roles.push('DJ');
+  if (profile?.isServiceProvider) roles.push(t('my.role_pro') || 'Pro');
   if (!profile?.isRegistered) roles.push('Guest');
   else if (roles.length === 0) roles.push(t('common.members') || 'Member');
 

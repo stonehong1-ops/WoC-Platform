@@ -26,7 +26,8 @@ interface UserProfile {
   isRegistered: boolean;
   // Roles
   isInstructor?: boolean;
-  isSeller?: boolean;
+  isOrganizer?: boolean;
+  isDj?: boolean;
   isServiceProvider?: boolean;
   role?: 'leader' | 'follower';
   isAdmin?: boolean;
@@ -163,7 +164,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               role: (data.role as 'leader' | 'follower') || undefined,
               isRegistered: data.isRegistered === true,
               isInstructor: data.isInstructor || false,
-              isSeller: data.isSeller || false,
+              isOrganizer: data.isOrganizer || false,
+              isDj: data.isDj || false,
               isServiceProvider: data.isServiceProvider || false,
               isAdmin: data.isAdmin || false,
               systemRole: data.systemRole || '',

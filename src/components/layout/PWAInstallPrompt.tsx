@@ -43,6 +43,14 @@ export default function PWAInstallPrompt() {
 
   // Check conditions and decide whether to show
   useEffect(() => {
+    // PT 및 PT1 경로는 PWA 설치 유도 대상에서 제외
+    if (typeof window !== 'undefined') {
+      const path = window.location.pathname;
+      if (path === '/pt' || path === '/pt1' || path.startsWith('/pt/') || path.startsWith('/pt1/')) {
+        return;
+      }
+    }
+
     // Don't show if already installed as PWA
     if (isStandalone()) return;
 

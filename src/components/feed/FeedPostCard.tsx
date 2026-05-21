@@ -42,6 +42,35 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
   const reactionTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [localMyReaction, setLocalMyReaction] = useState<ReactionType | null>(post.myReaction || null);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [prevPostId, setPrevPostId] = useState(post.id);
+
+  if (post.id !== prevPostId) {
+    setIsExpanded(false);
+    setPrevPostId(post.id);
+  }
+
+  const cardRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const element = cardRef.current;
+    if (!element) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) {
+          setIsExpanded(false);
+        }
+      },
+      {
+        threshold: 0,
+      }
+    );
+
+    observer.observe(element);
+    return () => {
+      observer.unobserve(element);
+    };
+  }, []);
 
   const getTruncatedContent = (content: string) => {
     if (isExpanded) return { text: content, shouldTruncate: false };
@@ -106,6 +135,8 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
   const hasMedia = normalizedMedia.length > 0;
   const isShortText = !hasMedia && !post.isAnnouncement && post.content.length <= 70;
   const isAuthor = currentUser?.uid === post.userId;
+  const isAdmin = profile?.systemRole === 'admin' || profile?.isAdmin;
+  const canEditOrDelete = isAuthor || isAdmin;
 
   const getTimeAgo = () => {
     if (!post.createdAt) return t('plaza.just_now');
@@ -245,7 +276,7 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
           </button>
           {isMenuOpen && (
             <div className="absolute right-0 mt-2 w-48 bg-surface-container-lowest rounded-xl shadow-xl border border-outline-variant/10 z-50 py-1 overflow-hidden">
-              {isAuthor ? (
+              {canEditOrDelete ? (
                 <>
                   <button onClick={() => { onEdit?.(post); setIsMenuOpen(false); }} className="w-full px-4 py-2 text-left text-sm hover:bg-primary/10 flex items-center gap-3 text-on-surface">
                     <span className="material-symbols-outlined text-lg">edit</span> {t('plaza.edit_post')}
@@ -334,11 +365,11 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
     const eventDate = typeof (post.createdAt as any).toDate === 'function' ? (post.createdAt as any).toDate() : new Date(post.createdAt as any);
     const { text: renderedContent, shouldTruncate } = getTruncatedContent(post.content);
     return (
-      <article className="mx-4 mb-4 rounded-2xl border border-outline-variant/30 shadow-sm bg-surface-container-lowest overflow-hidden">
+      <article ref={cardRef} className="mx-4 mb-4 rounded-2xl border border-outline-variant/30 shadow-sm bg-surface-container-lowest overflow-hidden">
         <div className="px-4 py-3 pb-3">
           {renderHeader(true)}
           {post.title && <h4 className="font-headline font-bold text-[15px] mb-2 text-primary">{post.title}</h4>}
-          <p className="text-on-surface text-[16px] leading-relaxed whitespace-pre-wrap">
+          <p className="text-on-surface text-[14px] font-medium leading-relaxed whitespace-pre-wrap">
             {renderedContent}
             {shouldTruncate && (
               <button
@@ -381,7 +412,7 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
       ? `${style.impactClass || 'text-xl font-normal'} ${(style.emphasisClasses || []).join(' ')}`
       : 'text-on-surface text-lg font-headline font-semibold leading-tight';
     return (
-      <article className="mx-4 mb-4 rounded-2xl border border-outline-variant/30 shadow-sm bg-surface-container-lowest overflow-hidden">
+      <article ref={cardRef} className="mx-4 mb-4 rounded-2xl border border-outline-variant/30 shadow-sm bg-surface-container-lowest overflow-hidden">
         <div className="px-4 py-3 pb-2">{renderHeader(post.isOfficial)}</div>
         {hasColorStyle ? (
           <div
@@ -511,7 +542,7 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
   // Standard / Image Style
   const { text: renderedContent, shouldTruncate } = getTruncatedContent(post.content);
   return (
-    <article className="mx-4 mb-4 rounded-2xl border border-outline-variant/30 shadow-sm bg-surface-container-lowest overflow-hidden">
+    <article ref={cardRef} className="mx-4 mb-4 rounded-2xl border border-outline-variant/30 shadow-sm bg-surface-container-lowest overflow-hidden">
       <div className="px-4 pt-3 pb-1">
         {renderHeader(post.isOfficial)}
       </div>
@@ -525,7 +556,7 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
       <div className="px-4 py-2">
         {renderActionBar()}
         
-        <p className="text-[16px] text-on-surface leading-relaxed whitespace-pre-wrap break-words mt-2">
+        <p className="text-[14px] font-medium text-on-surface leading-relaxed whitespace-pre-wrap break-words mt-2">
           {renderedContent}
           {shouldTruncate && (
             <button

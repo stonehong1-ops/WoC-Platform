@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Pic } from '@/types/pic';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface SafeZoneEditorProps {
   pic: Partial<Pic>;
@@ -9,6 +10,7 @@ interface SafeZoneEditorProps {
 }
 
 export default function SafeZoneEditor({ pic, onUpdate }: SafeZoneEditorProps) {
+  const { t } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragType, setDragType] = useState<'move' | 'resize-tl' | 'resize-tr' | 'resize-bl' | 'resize-br' | 'resize-t' | 'resize-b' | 'resize-l' | 'resize-r' | null>(null);
@@ -82,7 +84,7 @@ export default function SafeZoneEditor({ pic, onUpdate }: SafeZoneEditorProps) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-sm font-bold text-on-surface">Typography Safe Zone</h3>
+        <h3 className="text-sm font-bold text-on-surface">{t('pics.admin.typography_safe_zone')}</h3>
         <div className="text-[10px] text-outline font-mono bg-surface-container-low px-2 py-1 rounded">
           x: {Math.round(safeZone.left)}% | y: {Math.round(safeZone.top)}% | w: {Math.round(safeZone.width)}% | h: {Math.round(safeZone.height)}%
         </div>
@@ -101,7 +103,7 @@ export default function SafeZoneEditor({ pic, onUpdate }: SafeZoneEditorProps) {
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-outline text-sm">
-            No image available
+            {t('pics.admin.no_image_available')}
           </div>
         )}
 
@@ -143,7 +145,7 @@ export default function SafeZoneEditor({ pic, onUpdate }: SafeZoneEditorProps) {
         </div>
       </div>
       <p className="text-xs text-outline-variant italic">
-        * Drag the box or edges to define the area where text (titles, event details) can be safely placed without clashing with the subject.
+        {t('pics.admin.safe_zone_hint')}
       </p>
     </div>
   );

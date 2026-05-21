@@ -45,7 +45,7 @@ export const notificationService = {
     return docRef.id;
   },
 
-  // 2. 행동 유도형 Todo 생성
+  // 2. 행동 유도형 Todo 생성 (INFO 일반 알림으로 통합)
   createTodo: async (
     data: Omit<Notification, 'id' | 'createdAt' | 'isRead' | 'isCompleted' | 'baseType'>,
     batch?: any // firebase/firestore WriteBatch for atomic writes
@@ -53,20 +53,19 @@ export const notificationService = {
     const docRef = doc(collection(db, NOTIFICATIONS_COLLECTION));
     const docData = {
       ...data,
-      baseType: 'TODO',
+      baseType: 'INFO',
       isRead: false,
-      isCompleted: false,
       createdAt: Timestamp.now()
     };
 
     if (batch) {
       batch.set(docRef, docData);
     } else {
-      await addDoc(collection(db, NOTIFICATIONS_COLLECTION), docData);
+      await setDoc(docRef, docData);
     }
 
     // 비동기 푸시 발송
-    notificationService.sendFCM(data.targetUserId, data.title || 'New Task', data.message, docData);
+    notificationService.sendFCM(data.targetUserId, data.title || 'New Notification', data.message, docData);
 
     return docRef.id;
   },
@@ -97,13 +96,13 @@ export const notificationService = {
     }
   },
 
-  // 4. Todo 완료 처리 (동기화)
+  // 4. Todo 완료 처리 (동기화 - INFO 통합에 따라 읽음 처리만 지원)
   markAsCompleted: async (notificationId: string, batch?: any): Promise<void> => {
     const docRef = doc(db, NOTIFICATIONS_COLLECTION, notificationId);
     if (batch) {
-      batch.update(docRef, { isCompleted: true, isRead: true });
+      batch.update(docRef, { isRead: true });
     } else {
-      await updateDoc(docRef, { isCompleted: true, isRead: true });
+      await updateDoc(docRef, { isRead: true });
     }
   },
 
@@ -130,23 +129,9 @@ export const notificationService = {
     return createdIds;
   },
 
-  // 6. 특정 referenceId에 해당하는 모든 TODO 완료 처리 (어드민 중 한명이 처리 시 동기화)
+  // 6. 특정 referenceId에 해당하는 모든 TODO 완료 처리 (TODO 제거에 따라 Nop 처리)
   markTodosAsCompletedByReference: async (referenceId: string, batch?: any): Promise<void> => {
-    const q = query(collection(db, NOTIFICATIONS_COLLECTION), 
-      where('referenceId', '==', referenceId),
-      where('baseType', '==', 'TODO'),
-      where('isCompleted', '==', false)
-    );
-    const snapshot = await getDocs(q);
-    
-    for (const docSnap of snapshot.docs) {
-      const docRef = doc(db, NOTIFICATIONS_COLLECTION, docSnap.id);
-      if (batch) {
-        batch.update(docRef, { isCompleted: true, isRead: true });
-      } else {
-        await updateDoc(docRef, { isCompleted: true, isRead: true });
-      }
-    }
+    return;
   },
 
   // 7. 사용자 알림 실시간 구독
@@ -176,44 +161,14 @@ export const notificationService = {
     });
   },
 
-  // 8. 관리자 Todo 알림 실시간 구독
+  // 8. 관리자 Todo 알림 실시간 구독 (TODO 제거에 따라 빈 구독 유지)
   subscribeToAdminTodos: (
     adminId: string,
     groupId: string | undefined, // undefined면 모든 그룹의 Todo 가져오기
     callback: (todos: Notification[]) => void
   ) => {
-    let q;
-    if (groupId) {
-      q = query(
-        collection(db, NOTIFICATIONS_COLLECTION),
-        where('targetUserId', '==', adminId),
-        where('groupId', '==', groupId),
-        where('baseType', '==', 'TODO'),
-        where('isCompleted', '==', false)
-      );
-    } else {
-      q = query(
-        collection(db, NOTIFICATIONS_COLLECTION),
-        where('targetUserId', '==', adminId),
-        where('baseType', '==', 'TODO'),
-        where('isCompleted', '==', false)
-      );
-    }
-
-    return onSnapshot(q, (snapshot) => {
-      const todos = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Notification[];
-      
-      todos.sort((a, b) => {
-        const timeA = (a.createdAt as any)?.toMillis?.() || a.createdAt || 0;
-        const timeB = (b.createdAt as any)?.toMillis?.() || b.createdAt || 0;
-        return Number(timeB) - Number(timeA);
-      });
-      
-      callback(todos);
-    });
+    callback([]);
+    return () => {};
   },
 
 
@@ -261,7 +216,7 @@ export const notificationService = {
     const message = `${fromUserName} invited you to the '${groupName}' group. Would you like to approve?`;
 
     const notificationData: Omit<Notification, 'id'> = {
-      baseType: 'TODO',
+      baseType: 'INFO',
       category: 'GROUP',
       type: 'GROUP_INVITE',
       status: 'PENDING',
@@ -272,7 +227,6 @@ export const notificationService = {
       groupName,
       message,
       isRead: false,
-      isCompleted: false,
       createdAt: Date.now()
     };
 

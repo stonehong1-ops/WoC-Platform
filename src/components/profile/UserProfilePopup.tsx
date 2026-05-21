@@ -1,10 +1,8 @@
-'use client';
-
+// 사용자 프로필 정보를 불러와 프리미엄 NamecardModal로 렌더링하는 팝업 래퍼 컴포넌트
 import React, { useEffect, useState } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/clientApp';
-import UserAvatar from '../common/UserAvatar';
-import UserName from '../common/UserName';
+import NamecardModal, { NamecardUser } from './NamecardModal';
 
 interface UserProfilePopupProps {
   isOpen: boolean;
@@ -23,11 +21,22 @@ interface FullProfile {
   photoURL?: string | null;
   bio?: string;
   isInstructor?: boolean;
-  isSeller?: boolean;
+  isOrganizer?: boolean;
+  isDj?: boolean;
   isServiceProvider?: boolean;
   gender?: string;
   role?: string;
   joinedGroups?: string[];
+  email?: string;
+  career?: string;
+  partnerStatus?: string;
+  socialLinks?: {
+    facebook?: string;
+    instagram?: string;
+    whatsapp?: string;
+  };
+  phone?: string;
+  phoneNumber?: string;
 }
 
 export default function UserProfilePopup({ isOpen, onClose, uid, initialData }: UserProfilePopupProps) {
@@ -57,88 +66,58 @@ export default function UserProfilePopup({ isOpen, onClose, uid, initialData }: 
 
   if (!isOpen) return null;
 
-  return (
-    <div 
-      className="fixed inset-0 z-[9999] bg-black/40 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-300"
-      onClick={onClose}
-    >
-      <div 
-        className="bg-surface w-full relative flex flex-col overflow-hidden bottom-sheet-container animate-in slide-in-from-bottom duration-500 max-h-[85vh]"
-        style={{ borderRadius: '24px 24px 0 0' }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Grab Handle */}
-        <div className="w-full flex justify-center py-3 shrink-0 cursor-pointer" onClick={onClose}>
-          <div className="w-12 h-1.5 bg-on-surface/20 rounded-full"></div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto hide-scrollbar px-6 pb-10">
-          {loading && !profile ? (
-            <div className="flex justify-center items-center py-12">
-              <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-            </div>
-          ) : profile ? (
-            <div className="flex flex-col items-center pt-4">
-              <UserAvatar 
-                photoURL={profile.photoURL} 
-                className="w-32 h-32 rounded-squircle shadow-sm mb-5 border-4 border-surface"
-                iconSize="64px"
-              />
-              <div className="text-center mb-6">
-                <UserName 
-                  nickname={profile.nickname} 
-                  nativeNickname={profile.nativeNickname} 
-                  className="text-2xl gap-2"
-                  nativeClassName="text-base text-on-surface-variant tracking-normal normal-case"
-                />
-              </div>
-
-              {profile.bio && (
-                <div className="w-full bg-surface-container-low rounded-2xl p-5 mb-6 text-center">
-                  <p className="text-on-surface text-sm leading-relaxed">{profile.bio}</p>
-                </div>
-              )}
-
-              <div className="w-full space-y-3">
-                {(profile.isInstructor || profile.isSeller || profile.isServiceProvider) && (
-                  <div className="bg-surface-container-low rounded-2xl p-5">
-                    <h3 className="text-xs font-black tracking-widest uppercase text-on-surface-variant mb-4">Roles</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {profile.isInstructor && <span className="bg-primary/10 text-primary px-3 py-1 rounded-lg text-xs font-bold uppercase">Instructor</span>}
-                      {profile.isSeller && <span className="bg-primary/10 text-primary px-3 py-1 rounded-lg text-xs font-bold uppercase">Seller</span>}
-                      {profile.isServiceProvider && <span className="bg-primary/10 text-primary px-3 py-1 rounded-lg text-xs font-bold uppercase">Service Provider</span>}
-                    </div>
-                  </div>
-                )}
-                
-                <div className="bg-surface-container-low rounded-2xl p-5 flex justify-between items-center">
-                  <span className="text-xs font-black tracking-widest uppercase text-on-surface-variant">Dance Role</span>
-                  <span className={`text-sm font-bold ${
-                    (profile.role?.toLowerCase() || (profile.gender?.toLowerCase() === 'male' ? 'leader' : (profile.gender?.toLowerCase() === 'female' || profile.gender?.toLowerCase() === 'others' ? 'follower' : ''))) === 'leader' ? 'text-[#0057bd]' : 
-                    (profile.role?.toLowerCase() || (profile.gender?.toLowerCase() === 'male' ? 'leader' : (profile.gender?.toLowerCase() === 'female' || profile.gender?.toLowerCase() === 'others' ? 'follower' : ''))) === 'follower' ? 'text-[#893c92]' : 'text-on-surface'
-                  }`}>
-                    {(() => {
-                      const effectiveRole = profile.role?.toLowerCase() || (profile.gender?.toLowerCase() === 'male' ? 'leader' : (profile.gender?.toLowerCase() === 'female' || profile.gender?.toLowerCase() === 'others' ? 'follower' : ''));
-                      return effectiveRole ? effectiveRole.charAt(0).toUpperCase() + effectiveRole.slice(1) : 'Not Set';
-                    })()}
-                  </span>
-                </div>
-
-                {profile.gender && profile.gender !== 'Other' && (
-                  <div className="bg-surface-container-low rounded-2xl p-5 flex justify-between items-center">
-                    <span className="text-xs font-black tracking-widest uppercase text-on-surface-variant">Gender</span>
-                    <span className="text-sm font-bold text-on-surface">{profile.gender}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-12 text-on-surface-variant">
-              User not found.
-            </div>
-          )}
-        </div>
+  if (loading && !profile) {
+    return (
+      <div className="fixed inset-0 z-[300] bg-black/60 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-300">
+        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
       </div>
-    </div>
+    );
+  }
+
+  if (!profile) return null;
+
+  // FullProfile을 NamecardUser 형식으로 전환하는 트랜스포머
+  const roles: string[] = [];
+  if (profile.isInstructor) roles.push('Instructor');
+  if (profile.isOrganizer) roles.push('Organizer');
+  if (profile.isDj) roles.push('DJ');
+  if (profile.isServiceProvider) roles.push('Service Provider');
+  
+  if (roles.length === 0 && profile.role) {
+    roles.push(profile.role);
+  }
+
+  const namecardUser: NamecardUser = {
+    uid,
+    name: profile.nickname || 'User',
+    nativeName: profile.nativeNickname,
+    email: profile.email,
+    photoURL: profile.photoURL || undefined,
+    roles: roles.length > 0 ? roles : ['Member'],
+    career: profile.career,
+    partnerStatus: profile.partnerStatus,
+    bio: profile.bio,
+    socialLinks: profile.socialLinks,
+    phone: profile.phone || profile.phoneNumber,
+    phoneNumber: profile.phoneNumber,
+    role: profile.role
+  };
+
+  return (
+    <NamecardModal
+      user={namecardUser}
+      isOpen={isOpen}
+      onClose={onClose}
+      onChat={(userId) => {
+        console.log("Chat clicked for user:", userId);
+      }}
+      onCall={(phone) => {
+        if (phone) {
+          window.open(`tel:${phone}`);
+        } else {
+          alert("전화번호가 등록되지 않았습니다.");
+        }
+      }}
+    />
   );
 }

@@ -23,7 +23,7 @@ export interface GetPicsResponse {
 
 export const picService = {
   async getPics(): Promise<Pic[]> {
-    const q = query(collection(db, COLLECTION_NAME), orderBy('sortOrder', 'asc'));
+    const q = query(collection(db, COLLECTION_NAME), orderBy('sortOrder', 'desc'));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Pic));
   },
@@ -46,7 +46,7 @@ export const picService = {
       constraints.push(where('timeOfDay', '==', options.filters.timeOfDay));
     }
 
-    constraints.push(orderBy('sortOrder', 'asc'));
+    constraints.push(orderBy('sortOrder', 'desc'));
 
     if (options.lastDoc) {
       constraints.push(startAfter(options.lastDoc));

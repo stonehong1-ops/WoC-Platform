@@ -39,6 +39,15 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
     ]
   });
 
+  const [operatingHoursStr, setOperatingHoursStr] = useState(() => {
+    const hours = group.operatingHours || [];
+    return hours.map(h => `${h.label} | ${h.time}`).join('\n');
+  });
+  const [houseRulesStr, setHouseRulesStr] = useState(() => {
+    const rules = group.houseRules || [];
+    return rules.join('\n');
+  });
+
   const [uploadingType, setUploadingType] = useState<"cover" | "logo" | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -53,7 +62,31 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
   const handleSave = async () => {
     setLoading(true);
     try {
-      await groupService.updateGroupMetadata(group.id, formData);
+      const parsedHours = operatingHoursStr.split('\n')
+        .map(line => {
+          const parts = line.split('|');
+          if (parts.length >= 2) {
+            return { label: parts[0].trim(), time: parts.slice(1).join('|').trim() };
+          }
+          const colonParts = line.split(':');
+          if (colonParts.length >= 2) {
+            return { label: colonParts[0].trim(), time: colonParts.slice(1).join(':').trim() };
+          }
+          return { label: line.trim(), time: "" };
+        })
+        .filter(item => item.label !== "");
+
+      const parsedRules = houseRulesStr.split('\n')
+        .map(r => r.trim())
+        .filter(r => r !== "");
+
+      const updateData = {
+        ...formData,
+        operatingHours: parsedHours,
+        houseRules: parsedRules
+      };
+
+      await groupService.updateGroupMetadata(group.id, updateData);
       toast.success(t("group.brand.toast.save_success"));
       if (onSave) onSave();
     } catch (error) {
@@ -251,8 +284,8 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
                 <span className="text-on-surface-variant/40 text-[14px] font-medium py-3.5 whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif" }}>woc.today/groups/</span>
                 <input
                   value={formData.slug}
-                  readOnly
-                  className="flex-1 bg-transparent border-none focus:ring-0 py-3.5 text-on-surface-variant/70 text-[14px] font-medium cursor-not-allowed"
+                  onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                  className="flex-1 bg-transparent border-none focus:ring-0 py-3.5 text-on-surface text-[14px] font-medium"
                   placeholder="brandname"
                   type="text"
                   style={{ fontFamily: "'Inter', sans-serif" }}
@@ -385,6 +418,51 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
             <p className="text-[11px] text-on-surface-variant/60 font-medium text-right" style={{ fontFamily: "'Inter', sans-serif" }}>
               {t("group.brand.photos_count", { count: formData.aboutPhotos.length })}
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Section 2.7: Hours & Rules */}
+      <section className="px-4 mb-6">
+        <div className="bg-white rounded-2xl shadow-[0px_10px_30px_rgba(0,0,0,0.03)] border border-white/20 overflow-hidden">
+          <div className="px-6 pt-6 pb-4 border-b border-outline/5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <span className="material-symbols-outlined text-primary text-[20px]">schedule</span>
+              </div>
+              <div>
+                <h3 className="text-[16px] leading-[1.6] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.brand.hours_rules", "Hours & Rules")}</h3>
+                <p className="text-[12px] leading-[1.2] font-medium text-on-surface-variant" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.brand.hours_rules_desc", "Configure operating hours and community guidelines")}</p>
+              </div>
+            </div>
+          </div>
+          <div className="p-6 space-y-5">
+            <div className="space-y-2">
+              <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.brand.operating_hours", "Operating Hours")}</label>
+              <textarea
+                value={operatingHoursStr}
+                onChange={(e) => setOperatingHoursStr(e.target.value)}
+                className="w-full bg-surface-container-low border border-outline/10 focus:ring-2 focus:ring-primary/30 focus:border-primary rounded-xl px-4 py-3 text-on-surface text-[14px] leading-relaxed font-normal resize-none placeholder:text-on-surface-variant/30 min-h-[120px]"
+                placeholder={`Mon - Fri | 14:00 - 22:00\nSat - Sun | 12:00 - 23:00`}
+                style={{ fontFamily: "'Inter', sans-serif" }}
+              ></textarea>
+              <p className="text-[11px] text-on-surface-variant/60 font-medium ml-1" style={{ fontFamily: "'Inter', sans-serif" }}>
+                {t("group.brand.operating_hours_hint", "Enter one entry per line, using '|' to separate the label and time. Automatically synced and reflected on the About page. (e.g. Weekdays | 14:00 - 22:00)")}
+              </p>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.brand.house_rules", "House Rules")}</label>
+              <textarea
+                value={houseRulesStr}
+                onChange={(e) => setHouseRulesStr(e.target.value)}
+                className="w-full bg-surface-container-low border border-outline/10 focus:ring-2 focus:ring-primary/30 focus:border-primary rounded-xl px-4 py-3 text-on-surface text-[14px] leading-relaxed font-normal resize-none placeholder:text-on-surface-variant/30 min-h-[120px]"
+                placeholder={`No food allowed in the main studio\nRespect other members`}
+                style={{ fontFamily: "'Inter', sans-serif" }}
+              ></textarea>
+              <p className="text-[11px] text-on-surface-variant/60 font-medium ml-1" style={{ fontFamily: "'Inter', sans-serif" }}>
+                {t("group.brand.house_rules_hint", "Enter one rule per line. Automatically synced and reflected on the About page.")}
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -552,7 +630,7 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
       </section>
 
       {/* Floating Save Button (Mobile) */}
-      <div className="fixed bottom-20 left-5 right-5 z-40 md:hidden">
+      <div className="fixed bottom-[64px] left-5 right-5 z-40 md:hidden">
         <button
           onClick={handleSave}
           disabled={loading}

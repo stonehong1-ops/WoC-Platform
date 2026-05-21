@@ -88,10 +88,19 @@ const PresentationPage = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [showStartScreen, setShowStartScreen] = useState(true);
   const [isFocusMode, setIsFocusMode] = useState(true);
+  const [isDemoMode, setIsDemoMode] = useState(false);
   
   // Iframe states
   const [iframeUrl, setIframeUrl] = useState('/groups/freestyletango');
   const [fadeIframe, setFadeIframe] = useState(false);
+
+  // Check demo mode from query params
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      setIsDemoMode(params.get('demo') === '1');
+    }
+  }, []);
 
   const totalSlides = SLIDES.length;
 
@@ -291,12 +300,34 @@ const PresentationPage = () => {
 
                 {/* Inner iframe container to hide browser scrollbars cleanly */}
                 <div className="w-full h-full overflow-hidden bg-background">
-                   <iframe 
-                       src={iframeUrl} 
-                       className={`w-full h-full border-0 bg-background transition-opacity duration-500 ${fadeIframe ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}
-                       style={{ pointerEvents: 'auto' }}
-                       title="WoC Live Demo"
-                   />
+                   {isDemoMode ? (
+                     <iframe 
+                         src={iframeUrl} 
+                         className={`w-full h-full border-0 bg-background transition-opacity duration-500 ${fadeIframe ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}
+                         style={{ pointerEvents: 'auto' }}
+                         title="WoC Live Demo"
+                     />
+                   ) : (
+                     <div className="w-full h-full relative bg-black flex items-center justify-center overflow-hidden">
+                       <img 
+                         src="/images/pt/demo-mockup.png" 
+                         alt="WoC Demo Mockup" 
+                         className="w-full h-full object-cover" 
+                       />
+                       {/* Glassmorphic Overlay Card for "Presentation Mode" */}
+                       <div className="absolute inset-x-4 bottom-12 p-5 bg-black/60 backdrop-blur-md rounded-2xl border border-white/10 flex flex-col items-center text-center">
+                         <span className="text-[10px] font-bold text-white/90 uppercase tracking-widest bg-white/10 px-2 py-0.5 rounded-full border border-white/10 mb-2">
+                           Preview Mode
+                         </span>
+                         <h3 className="text-sm font-bold tracking-tight text-white mb-1 font-['Space_Grotesk']">
+                           Presentation Preview Only
+                         </h3>
+                         <p className="text-[11px] text-white/50 leading-relaxed">
+                           Live Demo is available during private presentation sessions.
+                         </p>
+                       </div>
+                     </div>
+                   )}
                 </div>
             </div>
 

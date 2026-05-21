@@ -526,7 +526,6 @@ function SocialContent() {
                         }`}>
                         {date.getDate()}
                       </span>
-                      {holiday && !isSelected && <span className="w-1 h-1 rounded-full bg-red-500 mt-0.5" />}
                     </button>
                   );
                 })}

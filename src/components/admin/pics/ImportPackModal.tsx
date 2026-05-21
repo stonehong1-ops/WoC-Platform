@@ -4,6 +4,7 @@ import { picService } from '@/services/picService';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { storage } from '@/lib/firebase/clientApp';
 import { toast } from 'sonner';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface ImportPackModalProps {
   onClose: () => void;
@@ -16,6 +17,7 @@ interface PreviewItem {
 }
 
 export default function ImportPackModal({ onClose, onComplete }: ImportPackModalProps) {
+  const { t } = useLanguage();
   const [file, setFile] = useState<File | null>(null);
   const [manifestText, setManifestText] = useState('');
   
@@ -38,7 +40,7 @@ export default function ImportPackModal({ onClose, onComplete }: ImportPackModal
       return Array.isArray(data) ? data : [];
     } catch (e) {
       console.error("Manifest Parse Error:", e);
-      toast.error("Invalid JSON Manifest format.");
+      toast.error(t('pics.admin.import_invalid_json'));
       return [];
     }
   };
@@ -46,7 +48,7 @@ export default function ImportPackModal({ onClose, onComplete }: ImportPackModal
   // Generate Previews
   const handlePreview = async () => {
     if (!file) {
-      toast.error("Please upload a contact sheet image first.");
+      toast.error(t('pics.admin.upload_image_only'));
       return;
     }
 
@@ -101,7 +103,7 @@ export default function ImportPackModal({ onClose, onComplete }: ImportPackModal
 
     } catch (error) {
       console.error("Preview Generation Error:", error);
-      toast.error("Failed to process image.");
+      toast.error(t('pics.admin.upload_fail'));
     } finally {
       setIsProcessing(false);
     }
@@ -112,7 +114,7 @@ export default function ImportPackModal({ onClose, onComplete }: ImportPackModal
     
     // Validate if at least some metadata is present
     const hasMetadata = previews.some(p => p.metadata);
-    if (!hasMetadata && !confirm("No metadata parsed. Upload images anyway?")) {
+    if (!hasMetadata && !confirm(t('pics.admin.import_no_metadata_confirm'))) {
       return;
     }
 
@@ -159,7 +161,10 @@ export default function ImportPackModal({ onClose, onComplete }: ImportPackModal
     }
 
     setIsUploading(false);
-    toast.success(`Successfully imported ${successCount} out of ${previews.length} pics.`);
+    const finishedMsg = t('pics.admin.import_finished')
+      .replace('{successCount}', successCount.toString())
+      .replace('{totalCount}', previews.length.toString());
+    toast.success(finishedMsg);
     onComplete();
   };
 
@@ -172,9 +177,9 @@ export default function ImportPackModal({ onClose, onComplete }: ImportPackModal
           <div>
             <h2 className="text-xl font-bold font-headline flex items-center gap-2">
               <span className="material-symbols-outlined text-primary">view_cozy</span>
-              Import Scene Pack
+              {t('pics.admin.import_modal_title')}
             </h2>
-            <p className="text-sm text-on-surface-variant mt-1">Upload a contact sheet to auto-split and import multiple assets at once.</p>
+            <p className="text-sm text-on-surface-variant mt-1">{t('pics.admin.import_pack_desc')}</p>
           </div>
           <button onClick={onClose} disabled={isUploading} className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-surface-container transition-colors disabled:opacity-50">
             <span className="material-symbols-outlined">close</span>
@@ -187,7 +192,7 @@ export default function ImportPackModal({ onClose, onComplete }: ImportPackModal
           {/* Config Panel */}
           <div className="w-full lg:w-80 shrink-0 space-y-6">
             <div className="space-y-4">
-              <h3 className="text-sm font-bold text-primary uppercase tracking-widest border-b border-surface-container pb-2">1. Contact Sheet</h3>
+              <h3 className="text-sm font-bold text-primary uppercase tracking-widest border-b border-surface-container pb-2">{t('pics.admin.contact_sheet')}</h3>
               <input 
                 type="file" 
                 accept="image/*"
@@ -197,29 +202,29 @@ export default function ImportPackModal({ onClose, onComplete }: ImportPackModal
             </div>
 
             <div className="space-y-4">
-              <h3 className="text-sm font-bold text-primary uppercase tracking-widest border-b border-surface-container pb-2">2. Grid Config</h3>
+              <h3 className="text-sm font-bold text-primary uppercase tracking-widest border-b border-surface-container pb-2">{t('pics.admin.grid_config')}</h3>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-bold text-outline">Columns</label>
+                  <label className="text-xs font-bold text-outline">{t('pics.admin.columns')}</label>
                   <input type="number" min="1" value={gridCols} onChange={e => setGridCols(Number(e.target.value))} className="w-full p-2 mt-1 bg-surface-container-low border border-outline-variant/30 rounded-lg text-sm outline-none focus:border-primary" />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-outline">Rows</label>
+                  <label className="text-xs font-bold text-outline">{t('pics.admin.rows')}</label>
                   <input type="number" min="1" value={gridRows} onChange={e => setGridRows(Number(e.target.value))} className="w-full p-2 mt-1 bg-surface-container-low border border-outline-variant/30 rounded-lg text-sm outline-none focus:border-primary" />
                 </div>
               </div>
               <div>
                 <div className="flex justify-between items-center mb-1">
-                  <label className="text-xs font-bold text-outline">Crop Bottom Text Area (%)</label>
+                  <label className="text-xs font-bold text-outline">{t('pics.admin.crop_bottom')}</label>
                   <span className="text-xs font-mono">{cropBottomPercent}%</span>
                 </div>
                 <input type="range" min="0" max="50" value={cropBottomPercent} onChange={e => setCropBottomPercent(Number(e.target.value))} className="w-full accent-primary" />
-                <p className="text-[10px] text-on-surface-variant mt-1 leading-tight">Removes the metadata text board below each image in the contact sheet.</p>
+                <p className="text-[10px] text-on-surface-variant mt-1 leading-tight">{t('pics.admin.crop_bottom_desc')}</p>
               </div>
             </div>
 
             <div className="space-y-4">
-              <h3 className="text-sm font-bold text-primary uppercase tracking-widest border-b border-surface-container pb-2">3. JSON Manifest</h3>
+              <h3 className="text-sm font-bold text-primary uppercase tracking-widest border-b border-surface-container pb-2">{t('pics.admin.json_manifest')}</h3>
               <textarea 
                 value={manifestText}
                 onChange={e => setManifestText(e.target.value)}
@@ -234,14 +239,16 @@ export default function ImportPackModal({ onClose, onComplete }: ImportPackModal
               className="w-full py-3 bg-surface-container hover:bg-surface-container-high text-on-surface font-bold rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
             >
               <span className="material-symbols-outlined">auto_awesome</span>
-              Generate Preview
+              {t('pics.admin.generate_preview')}
             </button>
           </div>
 
           {/* Preview Panel */}
           <div className="flex-1 bg-surface-container-low rounded-2xl border border-surface-container overflow-hidden flex flex-col">
             <div className="p-4 border-b border-surface-container bg-surface flex items-center justify-between">
-              <h3 className="font-bold text-sm">Preview ({previews.length} Items)</h3>
+              <h3 className="font-bold text-sm">
+                {t('pics.admin.preview_title').replace('{count}', previews.length.toString())}
+              </h3>
               {previews.length > 0 && (
                 <button 
                   onClick={handleUpload}
@@ -249,7 +256,7 @@ export default function ImportPackModal({ onClose, onComplete }: ImportPackModal
                   className="px-6 py-2 bg-primary text-white font-bold rounded-full text-sm shadow-md hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2"
                 >
                   <span className="material-symbols-outlined !text-[18px]">cloud_upload</span>
-                  {isUploading ? `Uploading... ${uploadProgress}%` : 'Upload & Save All'}
+                  {isUploading ? `${t('pics.admin.saving')} ${uploadProgress}%` : t('pics.admin.upload_save_all')}
                 </button>
               )}
             </div>
@@ -258,7 +265,7 @@ export default function ImportPackModal({ onClose, onComplete }: ImportPackModal
               {previews.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-outline-variant">
                   <span className="material-symbols-outlined !text-[48px] mb-2 opacity-50">grid_view</span>
-                  <p className="text-sm">Configure settings and click Generate Preview</p>
+                  <p className="text-sm">{t('pics.admin.preview_hint')}</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -282,7 +289,7 @@ export default function ImportPackModal({ onClose, onComplete }: ImportPackModal
                             <span className="text-[9px] bg-tertiary/10 text-tertiary px-1.5 py-0.5 rounded uppercase font-bold">{item.metadata.activity}</span>
                           )}
                           {!item.metadata && (
-                            <span className="text-[9px] bg-error/10 text-error px-1.5 py-0.5 rounded uppercase font-bold">No Metadata</span>
+                            <span className="text-[9px] bg-error/10 text-error px-1.5 py-0.5 rounded uppercase font-bold">{t('pics.admin.no_metadata')}</span>
                           )}
                         </div>
                       </div>

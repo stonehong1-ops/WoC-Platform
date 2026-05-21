@@ -55,7 +55,7 @@ export default function SocialHomeTab({ social, onChatWithOrganizer, canEdit, on
     ? social.socialEvents.map((e: any) => typeof e === "string" ? { id: e, title: e, maxParticipants: 0 } : e)
     : [];
 
-  const orgPhone = orgProfile?.phone || social.organizerPhone;
+  const orgPhone = orgProfile?.phone || orgProfile?.phoneNumber || social.organizerPhone;
   const orgPhoto = orgProfile?.photoURL;
 
   // Map URLs
@@ -168,6 +168,7 @@ export default function SocialHomeTab({ social, onChatWithOrganizer, canEdit, on
                   nativeName: social.organizerNameNative || undefined,
                   photoURL: orgPhoto || undefined,
                   phone: orgPhone || undefined,
+                  phoneNumber: orgProfile?.phoneNumber || undefined,
                   email: orgProfile?.email || undefined,
                   roles: ['Organizer'],
                   bio: orgProfile?.bio || undefined,

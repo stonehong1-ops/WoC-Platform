@@ -27,6 +27,16 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { safeDate } from '@/lib/utils/safeDate';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useNavigation } from '@/components/providers/NavigationProvider';
+import BottomSheet from '@/components/common/BottomSheet';
+import { SlidersHorizontal } from 'lucide-react';
+
+interface LiveFilter {
+  category: 'all' | 'social' | 'class' | 'event' | 'na';
+  id?: string;        // socialId, groupId
+  name?: string;      // 필터 대상 이름
+  subId?: string;     // 수업시연의 경우 classId
+  subName?: string;   // 수업시연의 경우 className
+}
 
 interface LiveFeedProps {
   entityType?: 'social' | 'group' | 'event' | 'class' | 'venue' | 'people';
@@ -46,6 +56,103 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
   const [mounted, setMounted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isImmersive, setIsImmersive] = useState(false);
+
+  const [activeFilter, setActiveFilter] = useState<LiveFilter>({ category: 'all' });
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [tempFilter, setTempFilter] = useState<LiveFilter>({ category: 'all' });
+  const [activeCategoryTab, setActiveCategoryTab] = useState<'all' | 'social' | 'class' | 'event' | 'na'>('all');
+
+  // Dynamic filter options extraction
+  const filterOptions = React.useMemo(() => {
+    const socials: { id: string; name: string }[] = [];
+    const events: { id: string; name: string }[] = [];
+    const clubsMap: { [groupId: string]: { id: string; name: string; classes: { id: string; name: string }[] } } = {};
+
+    posts.forEach(post => {
+      if (!Array.isArray(post.tags)) return;
+
+      post.tags.forEach(tag => {
+        if (!tag) return;
+
+        if (tag.type === 'social') {
+          if (!socials.some(s => s.id === tag.id)) {
+            socials.push({ id: tag.id, name: tag.name });
+          }
+        }
+
+        if (tag.type === 'event') {
+          if (!events.some(e => e.id === tag.id)) {
+            events.push({ id: tag.id, name: tag.name });
+          }
+        }
+
+        if (tag.type === 'class') {
+          const groupId = tag.groupId || '';
+          if (groupId) {
+            let groupName = '기타 클럽';
+            const groupTag = post.tags?.find(t => t && t.type === 'group' && t.id === groupId);
+            if (groupTag) {
+              groupName = groupTag.name;
+            }
+
+            if (!clubsMap[groupId]) {
+              clubsMap[groupId] = {
+                id: groupId,
+                name: groupName,
+                classes: []
+              };
+            }
+
+            if (!clubsMap[groupId].classes.some(c => c.id === tag.id)) {
+              clubsMap[groupId].classes.push({ id: tag.id, name: tag.name });
+            }
+          }
+        }
+      });
+
+      if (post.eventId && post.eventName) {
+        if (!events.some(e => e.id === post.eventId)) {
+          events.push({ id: post.eventId, name: post.eventName });
+        }
+      }
+    });
+
+    return {
+      socials,
+      events,
+      clubs: Object.values(clubsMap)
+    };
+  }, [posts]);
+
+  // Client-side filtering logic
+  const filteredPosts = React.useMemo(() => {
+    return posts.filter(post => {
+      if (activeFilter.category === 'all') return true;
+
+      if (activeFilter.category === 'social') {
+        return Array.isArray(post.tags) && post.tags.some(tag => tag && tag.type === 'social' && tag.id === activeFilter.id);
+      }
+
+      if (activeFilter.category === 'class') {
+        return Array.isArray(post.tags) && post.tags.some(tag => tag && tag.type === 'class' && tag.id === activeFilter.subId);
+      }
+
+      if (activeFilter.category === 'event') {
+        const hasTag = Array.isArray(post.tags) && post.tags.some(tag => tag && tag.type === 'event' && tag.id === activeFilter.id);
+        const hasLegacy = post.eventId === activeFilter.id;
+        return hasTag || hasLegacy;
+      }
+
+      if (activeFilter.category === 'na') {
+        if (!post.tags || post.tags.length === 0) return true;
+        const hasValidTag = post.tags.some(tag => tag && ['social', 'class', 'group', 'event'].includes(tag.type));
+        const hasLegacy = !!post.eventId;
+        return !hasValidTag && !hasLegacy;
+      }
+
+      return true;
+    });
+  }, [posts, activeFilter]);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -172,6 +279,53 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
 
   return (
     <div className={`${isImmersive ? 'fixed inset-0 z-[100]' : 'relative w-full h-full min-h-[500px]'} bg-black overflow-hidden flex flex-col ${className}`}>
+      {/* Floating Filter Button */}
+      {!isImmersive && (
+        <div className="absolute top-[125px] left-4 z-30 flex flex-col gap-2 items-start pointer-events-none">
+          <button
+            onClick={() => {
+              setTempFilter(activeFilter);
+              setActiveCategoryTab(activeFilter.category);
+              setIsFilterOpen(true);
+            }}
+            className={`pointer-events-auto flex items-center gap-1.5 px-4 py-2.5 rounded-full text-xs font-black tracking-tight transition-all shadow-lg border backdrop-blur-md active:scale-95 cursor-pointer ${
+              activeFilter.category !== 'all'
+                ? 'bg-blue-600/90 text-white border-blue-500/30'
+                : 'bg-black/40 text-white/90 border-white/10 hover:bg-black/60'
+            }`}
+          >
+            <SlidersHorizontal size={14} className="shrink-0" />
+            <span>{t('gallery.filter.title')}</span>
+            {activeFilter.category !== 'all' && (
+              <span className="bg-white text-blue-600 rounded-full w-4 h-4 flex items-center justify-center text-[9px] font-black ml-0.5">
+                1
+              </span>
+            )}
+          </button>
+
+          {/* Active Filter Badge / Chip */}
+          {activeFilter.category !== 'all' && (
+            <div className="pointer-events-auto flex items-center gap-1 bg-blue-600/20 backdrop-blur-md text-blue-400 border border-blue-500/20 px-2.5 py-1 rounded-full text-[10px] font-bold shadow-md">
+              <span className="truncate max-w-[150px]">
+                {activeFilter.category === 'social' && `${t('gallery.filter.social')}: ${activeFilter.name}`}
+                {activeFilter.category === 'class' && `${t('gallery.filter.class')}: ${activeFilter.subName}`}
+                {activeFilter.category === 'event' && `${t('gallery.filter.event')}: ${activeFilter.name}`}
+                {activeFilter.category === 'na' && t('gallery.filter.na')}
+              </span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveFilter({ category: 'all' });
+                }}
+                className="w-3.5 h-3.5 rounded-full bg-blue-500/20 hover:bg-blue-500/40 text-blue-300 flex items-center justify-center ml-0.5 transition-colors shrink-0"
+              >
+                <X size={10} />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Feed Container - Vertical Snap */}
       <div
         ref={containerRef}
@@ -188,7 +342,23 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
           </div>
         )}
 
-        {posts.map((post) => (
+        {posts.length > 0 && filteredPosts.length === 0 && (
+          <div className="flex flex-col items-center justify-center h-full text-white/50 pb-20 px-6 text-center">
+            <div className="bg-white/10 p-5 rounded-full mb-4 backdrop-blur-md">
+              <span className="material-symbols-outlined text-[36px] text-white/60 select-none">filter_list_off</span>
+            </div>
+            <p className="font-bold text-sm text-white">{t('pics.no_assets_found') || '조건에 맞는 라이브 피드가 없습니다.'}</p>
+            <p className="text-xs text-white/40 mt-1">{t('pics.try_adjusting_filters') || '필터를 조정해 보세요.'}</p>
+            <button
+              onClick={() => setActiveFilter({ category: 'all' })}
+              className="mt-6 px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-full text-xs font-black transition-all active:scale-95 border border-white/10 shadow-md"
+            >
+              {t('gallery.filter.reset') || '필터 초기화'}
+            </button>
+          </div>
+        )}
+
+        {filteredPosts.map((post) => (
           <GalleryCard
             key={post.id}
             post={post}
@@ -196,6 +366,12 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
             isImmersive={isImmersive}
             onOpenImmersive={() => handleOpenImmersive(post.id)}
             onCloseImmersive={handleImmersiveClose}
+            onOpenFilter={() => {
+              setTempFilter(activeFilter);
+              setActiveCategoryTab(activeFilter.category);
+              setIsFilterOpen(true);
+            }}
+            activeFilter={activeFilter}
           />
         ))}
       </div>
@@ -209,6 +385,215 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
           />
         )}
       </AnimatePresence>
+
+      {/* Filter Bottom Sheet */}
+      <BottomSheet
+        isOpen={isFilterOpen}
+        onClose={() => setIsFilterOpen(false)}
+        title={t('gallery.filter.title')}
+        height="auto"
+        footer={
+          <div className="p-4 flex items-center gap-3 bg-surface-container-lowest border-t border-outline-variant/10">
+            <button
+              onClick={() => {
+                setTempFilter({ category: 'all' });
+                setActiveCategoryTab('all');
+              }}
+              className="flex-1 py-3.5 text-[14px] font-bold text-on-surface-variant bg-surface-container-high rounded-[16px] transition-all hover:bg-surface-container-highest active:scale-95 border border-outline-variant/10"
+            >
+              {t('gallery.filter.reset')}
+            </button>
+            <button
+              onClick={() => {
+                setActiveFilter(tempFilter);
+                setIsFilterOpen(false);
+              }}
+              className="flex-[2] py-3.5 text-[14px] font-bold text-on-primary bg-primary rounded-[16px] transition-all hover:bg-primary-dark active:scale-95 shadow-md shadow-primary/10"
+            >
+              {t('gallery.filter.apply')}
+            </button>
+          </div>
+        }
+      >
+        <div className="flex flex-col gap-6 py-2 px-1">
+          {/* Category Tabs */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-2.5 no-scrollbar border-b border-outline-variant/15 shrink-0">
+            <style dangerouslySetInnerHTML={{ __html: `
+              .no-scrollbar::-webkit-scrollbar { display: none; }
+              .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+            `}} />
+            {(['all', 'social', 'class', 'event', 'na'] as const).map((cat) => {
+              const isActive = activeCategoryTab === cat;
+              return (
+                <button
+                  key={cat}
+                  onClick={() => {
+                    setActiveCategoryTab(cat);
+                    if (cat === 'all' || cat === 'na') {
+                      setTempFilter({ category: cat });
+                    }
+                  }}
+                  className={`flex-shrink-0 px-3.5 py-2.5 rounded-xl text-[12px] font-bold tracking-tight transition-all whitespace-nowrap border flex items-center gap-1 ${
+                    isActive
+                      ? 'bg-primary text-on-primary border-primary shadow-sm shadow-primary/10'
+                      : 'bg-surface-container-low text-on-surface-variant border-outline-variant/30 hover:bg-surface-container'
+                  }`}
+                >
+                  {cat === 'all' && t('gallery.filter.all')}
+                  {cat === 'social' && t('gallery.filter.social')}
+                  {cat === 'class' && t('gallery.filter.class')}
+                  {cat === 'event' && t('gallery.filter.event')}
+                  {cat === 'na' && t('gallery.filter.na')}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Sub-options based on activeCategoryTab */}
+          <div className="min-h-[180px] max-h-[45vh] overflow-y-auto pr-1 no-scrollbar">
+            {activeCategoryTab === 'all' && (
+              <div className="flex flex-col items-center justify-center py-10 text-center">
+                <span className="material-symbols-outlined text-[48px] text-primary/40 mb-3 select-none">all_inclusive</span>
+                <p className="text-sm font-bold text-on-surface">{t('gallery.filter.all')}</p>
+                <p className="text-xs text-on-surface-variant/70 mt-1.5 px-4 leading-relaxed">모든 라이브 스트림과 포스트를 제한 없이 시청합니다.</p>
+              </div>
+            )}
+
+            {activeCategoryTab === 'na' && (
+              <div className="flex flex-col items-center justify-center py-10 text-center">
+                <span className="material-symbols-outlined text-[48px] text-primary/40 mb-3 select-none">label_off</span>
+                <p className="text-sm font-bold text-on-surface">{t('gallery.filter.na')}</p>
+                <p className="text-xs text-on-surface-variant/70 mt-1.5 px-4 leading-relaxed">특정 그룹, 소셜, 클래스에 연결되지 않은 기본 피드만 시청합니다.</p>
+              </div>
+            )}
+
+            {activeCategoryTab === 'social' && (
+              <div className="flex flex-col gap-1.5">
+                {filterOptions.socials.length === 0 ? (
+                  <div className="py-12 flex flex-col items-center justify-center text-center text-on-surface-variant/40 text-xs font-bold gap-2">
+                    <span className="material-symbols-outlined text-[32px] opacity-40">music_note</span>
+                    <span>등록된 소셜 라이브가 없습니다.</span>
+                  </div>
+                ) : (
+                  filterOptions.socials.map((social) => {
+                    const isSelected = tempFilter.category === 'social' && tempFilter.id === social.id;
+                    return (
+                      <button
+                        key={social.id}
+                        onClick={() => setTempFilter({ category: 'social', id: social.id, name: social.name })}
+                        className={`w-full py-4 px-5 flex items-center gap-3.5 hover:bg-on-surface/5 active:bg-on-surface/10 transition-all text-left text-[14px] rounded-2xl border ${
+                          isSelected
+                            ? 'text-primary font-bold bg-primary/5 border-primary/20 shadow-sm'
+                            : 'text-on-surface-variant border-transparent font-medium'
+                        }`}
+                      >
+                        <Music size={16} className={isSelected ? 'text-primary' : 'text-on-surface-variant/60'} />
+                        <span className="flex-1 truncate">{social.name}</span>
+                        {isSelected && (
+                          <span className="material-symbols-outlined text-[18px] text-primary font-bold">check</span>
+                        )}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            )}
+
+            {activeCategoryTab === 'event' && (
+              <div className="flex flex-col gap-1.5">
+                {filterOptions.events.length === 0 ? (
+                  <div className="py-12 flex flex-col items-center justify-center text-center text-on-surface-variant/40 text-xs font-bold gap-2">
+                    <span className="material-symbols-outlined text-[32px] opacity-40">event</span>
+                    <span>등록된 공연 라이브가 없습니다.</span>
+                  </div>
+                ) : (
+                  filterOptions.events.map((event) => {
+                    const isSelected = tempFilter.category === 'event' && tempFilter.id === event.id;
+                    return (
+                      <button
+                        key={event.id}
+                        onClick={() => setTempFilter({ category: 'event', id: event.id, name: event.name })}
+                        className={`w-full py-4 px-5 flex items-center gap-3.5 hover:bg-on-surface/5 active:bg-on-surface/10 transition-all text-left text-[14px] rounded-2xl border ${
+                          isSelected
+                            ? 'text-primary font-bold bg-primary/5 border-primary/20 shadow-sm'
+                            : 'text-on-surface-variant border-transparent font-medium'
+                        }`}
+                      >
+                        <Calendar size={16} className={isSelected ? 'text-primary' : 'text-on-surface-variant/60'} />
+                        <span className="flex-1 truncate">{event.name}</span>
+                        {isSelected && (
+                          <span className="material-symbols-outlined text-[18px] text-primary font-bold">check</span>
+                        )}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            )}
+
+            {activeCategoryTab === 'class' && (
+              <div className="flex flex-col gap-4">
+                {filterOptions.clubs.length === 0 ? (
+                  <div className="py-12 flex flex-col items-center justify-center text-center text-on-surface-variant/40 text-xs font-bold gap-2">
+                    <span className="material-symbols-outlined text-[32px] opacity-40">school</span>
+                    <span>등록된 수업시연 라이브가 없습니다.</span>
+                  </div>
+                ) : (
+                  filterOptions.clubs.map((club) => (
+                    <div
+                      key={club.id}
+                      className="border border-outline-variant/30 rounded-[20px] bg-surface-container-low/40 overflow-hidden shadow-sm"
+                    >
+                      {/* Club Header */}
+                      <div className="bg-surface-container-high/30 px-4.5 py-3 flex items-center gap-2 border-b border-outline-variant/10">
+                        <Building2 size={14} className="text-on-surface-variant/70" />
+                        <span className="text-[11px] font-black tracking-wider text-on-surface-variant uppercase">
+                          {club.name}
+                        </span>
+                      </div>
+
+                      {/* Classes List */}
+                      <div className="p-2 flex flex-col gap-1 bg-surface-container-lowest">
+                        {club.classes.map((cls) => {
+                          const isSelected = tempFilter.category === 'class' && tempFilter.subId === cls.id;
+                          return (
+                            <button
+                              key={cls.id}
+                              onClick={() =>
+                                setTempFilter({
+                                  category: 'class',
+                                  id: club.id,
+                                  name: club.name,
+                                  subId: cls.id,
+                                  subName: cls.name,
+                                })
+                              }
+                              className={`w-full py-3.5 px-4 flex items-center gap-3 hover:bg-on-surface/5 active:bg-on-surface/10 transition-all text-left text-[13px] rounded-2xl border ${
+                                isSelected
+                                  ? 'text-primary font-bold bg-primary/5 border-primary/20 shadow-xs'
+                                  : 'text-on-surface border-transparent font-medium'
+                              }`}
+                            >
+                              <GraduationCap
+                                size={15}
+                                className={isSelected ? 'text-primary' : 'text-on-surface-variant/70'}
+                              />
+                              <span className="flex-1 truncate">{cls.name}</span>
+                              {isSelected && (
+                                <span className="material-symbols-outlined text-[16px] text-primary font-bold">check</span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </BottomSheet>
     </div>
   );
 }
@@ -218,17 +603,47 @@ const GalleryCard = ({
   onOpenComments,
   isImmersive,
   onOpenImmersive,
-  onCloseImmersive
+  onCloseImmersive,
+  onOpenFilter,
+  activeFilter
 }: {
   post: GalleryPost,
   onOpenComments: () => void,
   isImmersive: boolean,
   onOpenImmersive: () => void,
-  onCloseImmersive: () => void
+  onCloseImmersive: () => void,
+  onOpenFilter?: () => void,
+  activeFilter?: LiveFilter
 }) => {
   const { user } = useAuth();
   const { t } = useLanguage();
   const [activeDot, setActiveDot] = useState(0);
+
+  const handleShare = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const shareUrl = `${window.location.origin}/live?modal=live-immersive&immersivePostId=${post.id}`;
+    const shareText = `[WoC Live] ${post.authorName}: ${post.caption || ''}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'World of Community - Live',
+          text: shareText,
+          url: shareUrl
+        });
+      } catch (err) {
+        console.error('Error sharing:', err);
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        alert(t('gallery.link_copied'));
+      } catch (err) {
+        console.error('Failed to copy link:', err);
+        alert('링크 복사에 실패했습니다.');
+      }
+    }
+  };
   const carouselRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const isLiked = (post.likedBy || []).includes(user?.uid || '');
@@ -518,28 +933,49 @@ const GalleryCard = ({
           className={`absolute right-2 flex flex-col items-center gap-4 z-20 transition-all duration-300 pointer-events-auto ${isImmersive ? 'bottom-12 pb-safe' : 'bottom-12 md:bottom-16'}`}
         >
           {!isImmersive && (
-            <Link href="/live/create?source=live" onClick={(e) => e.stopPropagation()} className="flex flex-col items-center gap-1 group">
+            <Link href="/live/create?source=live" onClick={(e) => e.stopPropagation()} className="flex flex-col items-center group">
               <div className="w-9 h-9 rounded-full flex items-center justify-center bg-black/20 backdrop-blur-md border border-white/10 text-white transition-transform active:scale-90 shadow-sm">
                 <Plus size={18} className="drop-shadow-md" />
               </div>
             </Link>
           )}
 
-          <button className="flex flex-col items-center gap-1 group" onClick={handleLike}>
+          {/* Filter Button (Positioned under Plus button, always visible) */}
+          <button 
+            className="flex flex-col items-center group" 
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenFilter?.();
+            }}
+          >
+            <div className={`w-9 h-9 rounded-full flex items-center justify-center bg-black/20 backdrop-blur-md border transition-all duration-300 active:scale-90 cursor-pointer ${
+              activeFilter?.category !== 'all'
+                ? 'text-[#007AFF] border-[#007AFF]/50 bg-[#007AFF]/10 shadow-[0_0_8px_rgba(0,122,255,0.4)]'
+                : 'text-white border-white/10'
+            }`}>
+              <SlidersHorizontal size={18} className="drop-shadow-md" />
+            </div>
+          </button>
+
+          <button className="relative flex flex-col items-center group" onClick={handleLike}>
             <div className={`w-9 h-9 rounded-full flex items-center justify-center bg-black/20 backdrop-blur-md border border-white/10 transition-transform active:scale-90 ${isLiked ? 'text-[#ff2d55]' : 'text-white'}`}>
               <Heart size={18} fill={isLiked ? "#ff2d55" : "none"} className={isLiked ? "drop-shadow-[0_0_8px_rgba(255,45,85,0.5)]" : ""} />
             </div>
-            <span className="text-white text-[10px] font-bold drop-shadow-md">{post.likesCount || 0}</span>
+            <span className="absolute -bottom-1.5 bg-black/60 px-1.5 py-0.5 rounded-full border border-white/10 text-white text-[8px] font-black tracking-tight drop-shadow-md scale-90">
+              {post.likesCount || 0}
+            </span>
           </button>
 
-          <button className="flex flex-col items-center gap-1 group" onClick={onOpenComments}>
+          <button className="relative flex flex-col items-center group" onClick={onOpenComments}>
             <div className="w-9 h-9 rounded-full flex items-center justify-center bg-black/20 backdrop-blur-md border border-white/10 text-white transition-transform active:scale-90">
               <MessageCircle size={18} fill="white" className="text-white drop-shadow-md" />
             </div>
-            <span className="text-white text-[10px] font-bold drop-shadow-md">{post.commentsCount || 0}</span>
+            <span className="absolute -bottom-1.5 bg-black/60 px-1.5 py-0.5 rounded-full border border-white/10 text-white text-[8px] font-black tracking-tight drop-shadow-md scale-90">
+              {post.commentsCount || 0}
+            </span>
           </button>
 
-          <button className="flex flex-col items-center gap-1 group" onClick={(e) => e.stopPropagation()}>
+          <button className="flex flex-col items-center group" onClick={handleShare}>
             <div className="w-9 h-9 rounded-full flex items-center justify-center bg-black/20 backdrop-blur-md border border-white/10 text-white transition-transform active:scale-90">
               <span className="material-symbols-outlined text-[18px] drop-shadow-md">share</span>
             </div>

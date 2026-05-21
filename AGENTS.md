@@ -37,8 +37,8 @@ Upon receiving instructions, you MUST read this MD file, explicitly confirm that
 32. **Provide Self-Verification Test List**: 작업 완료 시 사용자가 라이브 환경에서 직접 수행할 수 있는 구체적인 자가 검증 테스트 리스트(Verification Checklist)를 항상 제공한다. (Always provide a concrete self-verification test list for the user upon completing a task.)
 
 ## 🌐 Language & Localization Rules
-1. **English Only**: This platform is an English-based global service. ALL UI text, labels, and system messages MUST be in English. (이 플랫폼은 글로벌 서비스이므로 모든 UI와 시스템 메시지는 영문으로 작성되어야 한다.)
-2. **Exclude Localization**: 로컬화(Localization/i18n) 작업은 현재 작업 영역에서 완전히 제외한다. 모든 기능 구현 및 수정이 완료된 후 나중에 처리할 예정이므로, 사용자가 명시적으로 요청하기 전까지는 절대 로컬라이제이션을 언급하거나 관련 작업을 수행하지 않는다.
+1. **English & Korean Co-development (영한 로케일 병행 개발 필수)**: This platform supports both English and Korean. Whenever a new UI feature or text is added, you MUST define and apply proper multi-language translations (i.e., `kr.ts` and `en.ts`) simultaneously. (새로운 UI 문구나 텍스트를 추가할 때는 반드시 한글 로케일과 영문 로케일 번역을 누락 없이 함께 정의하고 반영해야 한다. 로컬라이제이션 제외 규칙은 폐지한다.)
+2. **Localization Integration**: DO NOT leave raw English or Korean text directly in the TSX layout. Always wrap them in the `t()` translation function with matching keys defined in both `kr.ts` and `en.ts`. (TSX 레이아웃에 번역되지 않은 날것의 영어나 한글 텍스트를 방치해서는 안 되며, 항상 `t()` 함수로 감싸고 다국어 사전에 등록하여 완벽하게 통합해야 한다.)
 
 ## Deployment Rules
 1. **Mandatory Production Deployment**: Whenever any code modification is completed, you MUST automatically build and deploy the project to the production environment (e.g., `npx -y vercel --prod --yes`) to ensure the live site reflects the latest changes immediately.

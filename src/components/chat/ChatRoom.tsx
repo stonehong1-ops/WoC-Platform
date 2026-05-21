@@ -373,10 +373,10 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
                 <img src={image} className="w-full h-full object-cover" alt="" />
               </div>
             )}
-            <div className="flex-1 space-y-1 min-w-0">
+            <div className="flex-1 space-y-1 min-w-0 max-w-[calc(100%-4.5rem)]">
               <p className="text-[10px] opacity-60 font-bold uppercase tracking-tighter truncate">{t('chatroom.label_order_no')}: {orderNo}</p>
-              <p className="text-sm font-black leading-tight truncate">{product}</p>
-              <p className="text-[11px] font-bold opacity-80 truncate">{option}</p>
+              <p className="text-sm font-black leading-tight whitespace-normal break-words">{product}</p>
+              <p className="text-[11px] font-bold opacity-80 whitespace-normal break-words">{option}</p>
             </div>
           </div>
           <div className="bg-white/10 rounded-xl p-3 flex justify-between items-center">
@@ -765,7 +765,7 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
                         </div>
                       </div>
                     ) : (
-                      <p>{renderMessageText(msg)}</p>
+                      <div>{renderMessageText(msg)}</div>
                     )}
 
                     {/* Reactions */}

@@ -32,8 +32,7 @@ export default function UniversalFeed({ context, currentUser, profile, activeFil
   const tabs = [
     { id: 'all', label: t('plaza.tab_all') },
     { id: 'hot', label: t('plaza.tab_hot') },
-    { id: 'favorites', label: t('plaza.tab_favorites') },
-    { id: 'pin', label: t('plaza.tab_pin') },
+    { id: 'bookmark', label: t('plaza.tab_bookmark') },
     { id: 'my_log', label: t('plaza.tab_my_log') },
   ];
 
@@ -98,6 +97,7 @@ export default function UniversalFeed({ context, currentUser, profile, activeFil
         // User's own posts
         result = result.filter(p => p.userId === currentUser?.uid);
         break;
+      case 'bookmark':
       case 'pin':
       case 'pinned': // fallback for old filter name
         // Posts I pinned

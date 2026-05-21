@@ -19,7 +19,8 @@ import {
   arrayUnion,
   arrayRemove,
   collectionGroup,
-  where
+  where,
+  writeBatch
 } from 'firebase/firestore';
 import { Group, Post, Member, GroupClass } from '@/types/group';
 
@@ -295,23 +296,27 @@ export const groupService = {
     const memberRef = doc(db, GROUPS_COLLECTION, groupId, 'members', userId);
     const userRef = doc(db, 'users', userId);
 
+    const batch = writeBatch(db);
+
     // Add to members subcollection as active
-    await setDoc(memberRef, {
+    batch.set(memberRef, {
       ...memberData,
       status: 'active',
       joinedAt: Timestamp.now()
     });
 
     // Increment member count and update memberIds in metadata
-    await updateDoc(groupRef, {
+    batch.update(groupRef, {
       memberCount: increment(1),
       memberIds: arrayUnion(userId)
     });
 
     // Update user's joinedGroups
-    await updateDoc(userRef, {
+    batch.update(userRef, {
       joinedGroups: arrayUnion(groupId)
     });
+
+    await batch.commit();
 
     // Sync: add to group chat room participants
     try {
@@ -337,21 +342,25 @@ export const groupService = {
     const memberRef = doc(db, GROUPS_COLLECTION, groupId, 'members', userId);
     const userRef = doc(db, 'users', userId);
 
-    await updateDoc(memberRef, {
+    const batch = writeBatch(db);
+
+    batch.update(memberRef, {
       status: 'active',
       approvedAt: Timestamp.now()
     });
 
     // Increment member count and update memberIds in metadata
-    await updateDoc(groupRef, {
+    batch.update(groupRef, {
       memberCount: increment(1),
       memberIds: arrayUnion(userId)
     });
 
     // Update user's joinedGroups
-    await updateDoc(userRef, {
+    batch.update(userRef, {
       joinedGroups: arrayUnion(groupId)
     });
+
+    await batch.commit();
 
     // Sync: add to group chat room participants (approval/invite strategy)
     try {
@@ -375,19 +384,23 @@ export const groupService = {
     const memberRef = doc(db, GROUPS_COLLECTION, groupId, 'members', userId);
     const userRef = doc(db, 'users', userId);
     
+    const batch = writeBatch(db);
+
     // Remove from members subcollection
-    await deleteDoc(memberRef);
+    batch.delete(memberRef);
 
     // Decrement member count and remove from memberIds
-    await updateDoc(groupRef, {
+    batch.update(groupRef, {
       memberCount: increment(-1),
       memberIds: arrayRemove(userId)
     });
 
     // Remove from user's joinedGroups
-    await updateDoc(userRef, {
+    batch.update(userRef, {
       joinedGroups: arrayRemove(groupId)
     });
+
+    await batch.commit();
 
     // Sync: remove from group chat room participants
     try {
@@ -401,19 +414,23 @@ export const groupService = {
     const memberRef = doc(db, GROUPS_COLLECTION, groupId, 'members', userId);
     const userRef = doc(db, 'users', userId);
     
+    const batch = writeBatch(db);
+
     // Remove from members subcollection
-    await deleteDoc(memberRef);
+    batch.delete(memberRef);
 
     // Decrement member count and remove from memberIds
-    await updateDoc(groupRef, {
+    batch.update(groupRef, {
       memberCount: increment(-1),
       memberIds: arrayRemove(userId)
     });
 
     // Remove from user's joinedGroups
-    await updateDoc(userRef, {
+    batch.update(userRef, {
       joinedGroups: arrayRemove(groupId)
     });
+
+    await batch.commit();
 
     // Sync: kick from group chat room participants (sends system message)
     try {
@@ -559,20 +576,28 @@ export const groupService = {
   createGroup: async (groupData: Partial<Group>, userId?: string, memberData?: Omit<Member, 'id'>): Promise<string> => {
     // 1. Create the group document
     const defaultFunctions = ['dashboard', 'feed', 'live', 'calendar', 'members', 'notice', 'about', 'brand-setting', 'roles-permissions'];
+    const docRef = doc(collection(db, GROUPS_COLLECTION));
+    const batch = writeBatch(db);
     
-    const docRef = await addDoc(collection(db, GROUPS_COLLECTION), {
+    const initialData: any = {
       ...groupData,
       selectedFunctions: defaultFunctions,
       menuOrder: defaultFunctions,
       memberCount: 1, // Automatically counting the creator
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
-    });
+    };
+
+    if (userId) {
+      initialData.memberIds = [userId];
+    }
+
+    batch.set(docRef, initialData);
 
     if (userId) {
       // 2. Add the user to the members subcollection as an owner
       const memberRef = doc(db, GROUPS_COLLECTION, docRef.id, 'members', userId);
-      await setDoc(memberRef, {
+      batch.set(memberRef, {
         ...(memberData || {}),
         name: memberData?.name || groupData.representative?.name || 'Owner',
         role: 'owner',
@@ -582,15 +607,12 @@ export const groupService = {
 
       // 3. Update the user's joinedGroups array
       const userRef = doc(db, 'users', userId);
-      await updateDoc(userRef, {
+      batch.update(userRef, {
         joinedGroups: arrayUnion(docRef.id),
       });
-      
-      // Update memberIds array on the group for easier querying if needed
-      await updateDoc(docRef, {
-        memberIds: arrayUnion(userId)
-      });
     }
+
+    await batch.commit();
 
     // 4. Auto-create linked group chat room (1:1 mapping)
     try {
@@ -620,11 +642,12 @@ export const groupService = {
   claimGroupAdmin: async (groupId: string, userId: string, memberData: Omit<Member, 'id'>): Promise<void> => {
     const groupRef = doc(db, GROUPS_COLLECTION, groupId);
     const memberRef = doc(db, GROUPS_COLLECTION, groupId, 'members', userId);
-
     const userRef = doc(db, 'users', userId);
 
+    const batch = writeBatch(db);
+
     // 1. Set the user as the owner of the group, update member count and memberIds
-    await updateDoc(groupRef, {
+    batch.update(groupRef, {
       ownerId: userId,
       memberCount: increment(1),
       memberIds: arrayUnion(userId),
@@ -632,7 +655,7 @@ export const groupService = {
     });
 
     // 2. Add the user to the members subcollection as an admin
-    await setDoc(memberRef, {
+    batch.set(memberRef, {
       ...memberData,
       role: 'admin',
       status: 'active',
@@ -640,9 +663,11 @@ export const groupService = {
     });
 
     // 3. Update the user's joinedGroups array
-    await updateDoc(userRef, {
+    batch.update(userRef, {
       joinedGroups: arrayUnion(groupId),
     });
+
+    await batch.commit();
 
     // 4. Sync: update group chat room admin + add as participant
     try {

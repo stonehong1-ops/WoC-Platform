@@ -25,8 +25,7 @@ function PlazaPageContent() {
   const tabs = [
     { id: 'all', label: t('plaza.tab_all') },
     { id: 'hot', label: t('plaza.tab_hot') },
-    { id: 'favorites', label: t('plaza.tab_favorites') },
-    { id: 'pin', label: t('plaza.tab_pin') },
+    { id: 'bookmark', label: t('plaza.tab_bookmark') },
     { id: 'my_log', label: t('plaza.tab_my_log') },
   ];
 

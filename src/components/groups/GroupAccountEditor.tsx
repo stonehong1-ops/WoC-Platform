@@ -107,50 +107,16 @@ export default function GroupAccountEditor({ group, onClose }: GroupAccountEdito
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-3">
                 <label className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 ml-1">{t("group.account.bank_name.label")}</label>
-                <div className="relative">
-                  <select
-                    className="w-full bg-white/5 border border-white/5 focus:bg-white/10 focus:border-[#8b5cf6]/40 outline-none rounded-2xl px-6 py-4 font-headline font-bold text-white transition-all shadow-inner appearance-none cursor-pointer"
+                  <input
+                    className="w-full bg-white/5 border border-white/5 focus:bg-white/10 focus:border-[#8b5cf6]/40 outline-none rounded-2xl px-6 py-4 font-headline font-bold text-white transition-all shadow-inner"
+                    type="text"
                     value={formData.bankDetails.bankName}
                     onChange={(e) => setFormData(prev => ({
                       ...prev,
                       bankDetails: { ...prev.bankDetails, bankName: e.target.value }
                     }))}
-                  >
-                    <option value="" disabled className="bg-[#0a0f1d] text-white/50">{t("group.account.bank_name.placeholder")}</option>
-                    <optgroup label={t("group.account.bank_name.major")} className="bg-[#0a0f1d] text-white/70 font-bold">
-                      <option value="KB국민은행" className="bg-[#0a0f1d] text-white font-normal">{t("bank.kb", "KB Kookmin Bank")}</option>
-                      <option value="신한은행" className="bg-[#0a0f1d] text-white font-normal">{t("bank.shinhan", "Shinhan Bank")}</option>
-                      <option value="하나은행" className="bg-[#0a0f1d] text-white font-normal">{t("bank.hana", "Hana Bank")}</option>
-                      <option value="우리은행" className="bg-[#0a0f1d] text-white font-normal">{t("bank.woori", "Woori Bank")}</option>
-                      <option value="NH농협은행" className="bg-[#0a0f1d] text-white font-normal">{t("bank.nh", "NH Nonghyup Bank")}</option>
-                      <option value="IBK기업은행" className="bg-[#0a0f1d] text-white font-normal">{t("bank.ibk", "IBK Industrial Bank")}</option>
-                      <option value="카카오뱅크" className="bg-[#0a0f1d] text-white font-normal">{t("bank.kakao", "KakaoBank")}</option>
-                      <option value="토스뱅크" className="bg-[#0a0f1d] text-white font-normal">{t("bank.toss", "Toss Bank")}</option>
-                      <option value="케이뱅크" className="bg-[#0a0f1d] text-white font-normal">{t("bank.kbank", "K Bank")}</option>
-                    </optgroup>
-                    <optgroup label={t("group.account.bank_name.regional")} className="bg-[#0a0f1d] text-white/70 font-bold">
-                      <option value="iM뱅크" className="bg-[#0a0f1d] text-white font-normal">{t("bank.im", "iM Bank (formerly DGB)")}</option>
-                      <option value="부산은행" className="bg-[#0a0f1d] text-white font-normal">{t("bank.busan", "Busan Bank")}</option>
-                      <option value="경남은행" className="bg-[#0a0f1d] text-white font-normal">{t("bank.kyongnam", "Kyongnam Bank")}</option>
-                      <option value="광주은행" className="bg-[#0a0f1d] text-white font-normal">{t("bank.kwangju", "Kwangju Bank")}</option>
-                      <option value="전북은행" className="bg-[#0a0f1d] text-white font-normal">{t("bank.jeonbuk", "Jeonbuk Bank")}</option>
-                      <option value="제주은행" className="bg-[#0a0f1d] text-white font-normal">{t("bank.jeju", "Jeju Bank")}</option>
-                    </optgroup>
-                    <optgroup label={t("group.account.bank_name.foreign")} className="bg-[#0a0f1d] text-white/70 font-bold">
-                      <option value="SC제일은행" className="bg-[#0a0f1d] text-white font-normal">{t("bank.sc", "SC First Bank")}</option>
-                      <option value="한국씨티은행" className="bg-[#0a0f1d] text-white font-normal">{t("bank.citi", "Citibank Korea")}</option>
-                      <option value="수협은행" className="bg-[#0a0f1d] text-white font-normal">{t("bank.suhyup", "Suhyup Bank")}</option>
-                    </optgroup>
-                    <optgroup label={t("group.account.bank_name.special")} className="bg-[#0a0f1d] text-white/70 font-bold">
-                      <option value="우체국" className="bg-[#0a0f1d] text-white font-normal">{t("bank.post", "Post Office")}</option>
-                      <option value="새마을금고" className="bg-[#0a0f1d] text-white font-normal">{t("bank.mg", "MG Community Credit Cooperatives")}</option>
-                      <option value="신협" className="bg-[#0a0f1d] text-white font-normal">{t("bank.shinhyup", "Shinhyup")}</option>
-                      <option value="저축은행" className="bg-[#0a0f1d] text-white font-normal">{t("bank.savings", "Savings Bank")}</option>
-                      <option value="산림조합" className="bg-[#0a0f1d] text-white font-normal">{t("bank.forest", "Forestry Cooperative")}</option>
-                    </optgroup>
-                  </select>
-                  <span className="material-symbols-outlined absolute right-6 top-1/2 -translate-y-1/2 text-white/50 pointer-events-none">expand_more</span>
-                </div>
+                    placeholder={t("group.account.bank_name.placeholder", "e.g. KakaoBank")}
+                  />
               </div>
               <div className="space-y-3">
                 <label className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 ml-1">{t("group.account.account_number.label")}</label>

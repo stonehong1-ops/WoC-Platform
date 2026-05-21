@@ -66,12 +66,17 @@ export default function GroupMembers({ members, memberCount, onMemberClick, onCl
     return () => { isMounted = false; };
   }, [members]);
 
-  const getMillis = (date: any) => {
+  const getMillis = (date: any): number => {
     if (!date) return 0;
     if (typeof date === 'number') return date;
     if (typeof date.toMillis === 'function') return date.toMillis();
     if (typeof date.toDate === 'function') return date.toDate().getTime();
-    return 0;
+    if (date instanceof Date) return date.getTime();
+    if (typeof date.seconds === 'number') {
+      return date.seconds * 1000 + Math.floor((date.nanoseconds || 0) / 1000000);
+    }
+    const d = new Date(date);
+    return isNaN(d.getTime()) ? 0 : d.getTime();
   };
 
   const filteredMembers = membersWithProfiles.filter(member => {
@@ -89,7 +94,7 @@ export default function GroupMembers({ members, memberCount, onMemberClick, onCl
     const isAdmin = member.role === 'owner' || profile?.systemRole === 'admin' || profile?.isAdmin;
     const isInstructor = member.role === 'instructor' || profile?.isInstructor;
     const isStaff = member.role === 'staff' || member.role === 'moderator' || profile?.isStaff || profile?.systemRole === 'staff' || 
-                    profile?.isSeller || profile?.isStayHost || profile?.isServiceProvider;
+                    profile?.isDj || profile?.isStayHost || profile?.isServiceProvider;
     
     if (activeSubTab === 'Owner') return isAdmin && member.status === 'active';
     if (activeSubTab === 'Staff') return isStaff && !isAdmin && !isInstructor && member.status === 'active';
@@ -102,8 +107,8 @@ export default function GroupMembers({ members, memberCount, onMemberClick, onCl
     if (sortBy === 'joinedAt') {
       return getMillis(b.joinedAt) - getMillis(a.joinedAt);
     } else if (sortBy === 'lastVisitedAt') {
-      const dateA = getMillis(a.profile?.lastVisitedAt || a.profile?.updatedAt || a.profile?.createdAt);
-      const dateB = getMillis(b.profile?.lastVisitedAt || b.profile?.updatedAt || b.profile?.createdAt);
+      const dateA = getMillis(a.profile?.lastVisitedAt);
+      const dateB = getMillis(b.profile?.lastVisitedAt);
       return dateB - dateA;
     }
     return 0;
@@ -116,7 +121,7 @@ export default function GroupMembers({ members, memberCount, onMemberClick, onCl
   };
 
   const getLastVisitText = (member: MemberWithProfile) => {
-    const lastVisitMillis = getMillis(member.profile?.lastVisitedAt || member.profile?.updatedAt || member.profile?.createdAt);
+    const lastVisitMillis = getMillis(member.profile?.lastVisitedAt);
     if (!lastVisitMillis) return '-';
     try {
       return formatRelativeTime(lastVisitMillis);

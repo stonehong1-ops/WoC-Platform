@@ -3,10 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import { Group } from '@/types/group';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '@/lib/firebase/clientApp';
 import { doc, getDoc } from 'firebase/firestore';
+import { groupService } from '@/lib/firebase/groupService';
+import UserAvatar from '@/components/common/UserAvatar';
 
 
 interface GroupAboutProps {
@@ -21,10 +24,63 @@ const swipePower = (offset: number, velocity: number) => {
 
 const GroupAbout: React.FC<GroupAboutProps> = ({ group, members }) => {
   const { t } = useLanguage();
+  const { user } = useAuth();
+  
   const [isAboutExpanded, setIsAboutExpanded] = useState(false);
+  const [isLeaving, setIsLeaving] = useState(false);
+
+  const handleLeaveGroup = async () => {
+    if (!user || !group.id) return;
+    
+    const confirmLeave = window.confirm(
+      t("group.about.leave_confirm", "Are you sure you want to leave this community?")
+    );
+    if (!confirmLeave) return;
+
+    setIsLeaving(true);
+    try {
+      await groupService.leaveGroup(group.id, user.uid);
+      toast.success(t("group.about.leave_success", "Successfully left the community."));
+      window.location.reload();
+    } catch (error) {
+      console.error("Failed to leave group:", error);
+      toast.error(t("group.about.leave_fail", "Failed to leave the community. Please try again."));
+    } finally {
+      setIsLeaving(false);
+    }
+  };
   
   // Venue address fetched from venue document (not stored in group)
   const [venueAddress, setVenueAddress] = useState<string>('');
+
+  // Date formatter for joined date
+  const getJoinedDateString = (joinedAt: any) => {
+    if (!joinedAt) return '';
+    try {
+      let dateObj: Date;
+      if (joinedAt && typeof joinedAt.toDate === 'function') {
+        dateObj = joinedAt.toDate();
+      } else if (joinedAt instanceof Date) {
+        dateObj = joinedAt;
+      } else if (typeof joinedAt === 'number') {
+        dateObj = new Date(joinedAt);
+      } else if (typeof joinedAt === 'string') {
+        dateObj = new Date(joinedAt);
+      } else if (joinedAt.seconds) {
+        dateObj = new Date(joinedAt.seconds * 1000);
+      } else {
+        return '';
+      }
+      
+      const year = dateObj.getFullYear();
+      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const day = String(dateObj.getDate()).padStart(2, '0');
+      return `${year}. ${month}. ${day}.`;
+    } catch (e) {
+      console.error("Failed to parse joinedAt date:", e);
+      return '';
+    }
+  };
 
   // Fetch address from venue document (single source of truth)
   useEffect(() => {
@@ -89,37 +145,174 @@ const GroupAbout: React.FC<GroupAboutProps> = ({ group, members }) => {
     }
   };
 
-  // Extract team members (Owner and Staff)
-  const combinedTeam: any[] = [];
-  
-  // Use dynamically fetched members. Do not fallback to group.members to avoid mock data.
+  // Merge dynamic members and group.members safely, preventing duplicates
   const actualMembers = members || [];
+  const groupMembers = group.members || [];
+  const allMembersMap = new Map<string, any>();
   
-  // 1. Add owner if exists
-  const hasOwnerInMembers = actualMembers.find(m => m.role === 'owner' || m.id === group.ownerId);
-  if (hasOwnerInMembers) {
-    combinedTeam.push({
-      id: hasOwnerInMembers.id,
-      name: hasOwnerInMembers.name,
-      role: t("group.about.role.representative", "대표"),
-      avatar: hasOwnerInMembers.avatar || hasOwnerInMembers.photoURL || "https://api.dicebear.com/7.x/avataaars/svg?seed=" + hasOwnerInMembers.name,
-      phone: hasOwnerInMembers.phone || null
+  groupMembers.forEach(m => {
+    if (m && m.id) {
+      allMembersMap.set(m.id, {
+        id: m.id,
+        name: m.name,
+        avatar: m.avatar || m.photoURL,
+        role: m.role,
+        joinedAt: m.joinedAt,
+        status: m.status
+      });
+    }
+  });
+  
+  actualMembers.forEach(m => {
+    if (m && m.id) {
+      allMembersMap.set(m.id, {
+        ...allMembersMap.get(m.id),
+        ...m,
+        id: m.id,
+        name: m.name || allMembersMap.get(m.id)?.name,
+        avatar: m.avatar || m.photoURL || allMembersMap.get(m.id)?.avatar,
+        role: m.role || allMembersMap.get(m.id)?.role
+      });
+    }
+  });
+  
+  const mergedMembers = Array.from(allMembersMap.values());
+
+  // Check current user's membership
+  const currentMember = user ? mergedMembers.find(m => m.id === user.uid) : null;
+  const isJoined = !!currentMember;
+
+  // State to hold members with their full UserProfile fetched from DB
+  const [membersWithProfiles, setMembersWithProfiles] = useState<any[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchProfiles = async () => {
+      const withProfiles = await Promise.all(mergedMembers.map(async (member) => {
+        try {
+          const { userService } = await import('@/lib/firebase/userService');
+          const userProfile = await userService.getUserById(member.id);
+          return {
+            ...member,
+            profile: userProfile,
+            isInstructor: userProfile?.isInstructor || member.role === 'instructor',
+            isStaff: userProfile?.isStaff || userProfile?.systemRole === 'staff' || member.role === 'staff' || member.role === 'moderator',
+            isDj: userProfile?.isDj,
+            isServiceProvider: userProfile?.isServiceProvider,
+            name: userProfile?.nickname || member.name || member.nickname || 'Unknown',
+            avatar: userProfile?.photoURL || member.avatar || member.photoURL || null,
+            phone: userProfile?.phoneNumber || member.phone || null
+          };
+        } catch (error) {
+          console.error(`Failed to fetch profile for user ${member.id}:`, error);
+          return { ...member, profile: null };
+        }
+      }));
+      if (isMounted) {
+        setMembersWithProfiles(withProfiles);
+      }
+    };
+    if (mergedMembers.length > 0) {
+      fetchProfiles();
+    }
+    return () => { isMounted = false; };
+  }, [members, group.members]);
+
+  // Hybrid binding: fallback to mergedMembers until async profile load is complete
+  const targetMembers = membersWithProfiles.length > 0 ? membersWithProfiles : mergedMembers;
+
+  // Extract team members (Owner, Instructor, Staff)
+  const ownersList: any[] = [];
+  const owners = targetMembers.filter(m => m.role === 'owner' || m.id === group.ownerId);
+  owners.forEach(owner => {
+    ownersList.push({
+      id: owner.id,
+      name: owner.name,
+      roleName: t("group.about.role.representative", "대표"),
+      avatar: owner.avatar || null,
+      phone: owner.phone || null
+    });
+  });
+  if (ownersList.length === 0 && group.representative) {
+    ownersList.push({
+      id: group.ownerId || 'representative',
+      name: group.representative.name,
+      roleName: t("group.about.role.representative", "대표"),
+      avatar: group.representative.avatar || null,
+      phone: group.representative.phone || null
     });
   }
+  const ownerIds = new Set(ownersList.map(o => o.id));
 
-  // 2. Add staff and instructor members
-  const ownerId = hasOwnerInMembers ? hasOwnerInMembers.id : group.ownerId;
-  const staffMembers = actualMembers.filter(m => (m.role === 'staff' || m.role === 'instructor') && m.id !== ownerId);
-  
-  staffMembers.forEach(m => {
-    combinedTeam.push({
+  const instructorsList: any[] = [];
+  const instructors = targetMembers.filter(m => (m.role === 'instructor' || m.isInstructor) && !ownerIds.has(m.id));
+  instructors.forEach(m => {
+    instructorsList.push({
       id: m.id,
       name: m.name,
-      role: t(`group.about.role.${m.role}`, m.role === 'instructor' ? '강사' : '스탭'),
-      avatar: m.avatar || m.photoURL || "https://api.dicebear.com/7.x/avataaars/svg?seed=" + m.name,
+      roleName: t("group.about.role.instructor", "강사"),
+      avatar: m.avatar || null,
       phone: m.phone || null
     });
   });
+  const instructorIds = new Set(instructorsList.map(i => i.id));
+
+  const staffList: any[] = [];
+  const staff = targetMembers.filter(m => 
+    (m.role === 'staff' || m.role === 'moderator' || m.isStaff || m.isServiceProvider) && 
+    !ownerIds.has(m.id) && 
+    !instructorIds.has(m.id)
+  );
+  staff.forEach(m => {
+    let roleLabel = t("group.about.role.staff", "스태프");
+    if (m.role === 'moderator') {
+      roleLabel = t("group.about.role.moderator", "운영진");
+    }
+    staffList.push({
+      id: m.id,
+      name: m.name,
+      roleName: roleLabel,
+      avatar: m.avatar || null,
+      phone: m.phone || null
+    });
+  });
+
+  const hasOwnerInMembers = targetMembers.find(m => m.role === 'owner' || m.id === group.ownerId) || (group.representative ? { name: group.representative.name } : null);
+
+  const renderTeamMemberCard = (member: any) => (
+    <div key={member.id} className="flex items-center justify-between p-3.5 bg-surface border border-outline-variant/20 rounded-2xl">
+      <div className="flex items-center gap-4">
+        <UserAvatar 
+          photoURL={member.avatar} 
+          alt={member.name} 
+          className="w-12 h-12 rounded-full ring-2 ring-primary/5" 
+          iconSize="24px"
+        />
+        <div>
+          <p className="font-label-md text-label-md font-bold text-on-surface">{member.name}</p>
+          <p className="font-label-sm text-label-sm text-on-surface-variant capitalize">{member.roleName}</p>
+        </div>
+      </div>
+      <div className="flex gap-1">
+        <button 
+          className="p-2 text-primary hover:bg-primary-container rounded-full"
+          onClick={() => toast.info(t('common.coming_soon') || 'Chat feature coming soon!')}
+        >
+          <span className="material-symbols-outlined">chat</span>
+        </button>
+        {member.phone && (
+          <button 
+            className="p-2 text-primary hover:bg-primary-container rounded-full"
+            onClick={() => {
+              window.location.href = `tel:${member.phone}`;
+            }}
+          >
+            <span className="material-symbols-outlined">call</span>
+          </button>
+        )}
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-8">
@@ -188,7 +381,7 @@ const GroupAbout: React.FC<GroupAboutProps> = ({ group, members }) => {
 
       {/* Section 1: Atmosphere */}
       <section>
-        <h3 className="font-title-lg text-title-lg text-on-surface mb-4 tracking-tight">{t("group.about.atmosphere")}</h3>
+        <h3 className="font-title-lg text-title-lg font-bold text-on-surface mb-4 tracking-tight">{t("group.about.atmosphere")}</h3>
         <div className="grid grid-cols-6 grid-rows-2 gap-2 h-[260px]">
           {/* Emotional Moment 1: Large Landscape */}
           <div 
@@ -248,7 +441,7 @@ const GroupAbout: React.FC<GroupAboutProps> = ({ group, members }) => {
         {/* Core Services */}
         {group.services && group.services.length > 0 && (
           <div className="space-y-3">
-            <h3 className="font-title-lg text-title-lg text-on-surface">{t("group.about.services", "Core Services")}</h3>
+            <h3 className="font-title-lg text-title-lg font-bold text-on-surface">{t("group.about.services", "Core Services")}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {group.services.map((service, index) => (
                 <div key={index} className="bg-surface p-4 rounded-2xl border border-outline-variant/30 flex items-start gap-3 shadow-sm">
@@ -256,7 +449,7 @@ const GroupAbout: React.FC<GroupAboutProps> = ({ group, members }) => {
                     <span className="material-symbols-outlined text-[20px]">{service.icon || 'bolt'}</span>
                   </div>
                   <div>
-                    <h4 className="font-label-lg text-label-lg text-on-surface">{service.title}</h4>
+                    <h4 className="font-label-lg text-label-lg text-on-surface font-bold">{service.title}</h4>
                     <p className="font-body-sm text-body-sm text-on-surface-variant mt-1 leading-relaxed">{service.description}</p>
                   </div>
                 </div>
@@ -265,55 +458,179 @@ const GroupAbout: React.FC<GroupAboutProps> = ({ group, members }) => {
           </div>
         )}
 
-        <div className="bg-primary p-5 rounded-2xl shadow-lg shadow-primary/20">
-          <p className="font-title-lg text-title-lg text-on-primary mb-3">{t("group.about.become_member")}</p>
-          <p className="font-body-md text-on-primary/80 mb-4 text-sm">{t("group.about.join_desc", { name: group.name || 'our vibrant community' })}</p>
-          <button 
-            className="w-full py-3 bg-on-primary text-primary font-label-md text-label-md rounded-xl active:scale-[0.98] transition-transform shadow-sm"
-            onClick={() => toast.success(t("group.about.join_requested") || "Join request sent!")}
-          >
-            {t("group.about.join_button")}
-          </button>
-        </div>
+        {/* Member Application Status */}
+        {isJoined ? (
+          <div className="bg-surface-container-high p-5 rounded-2xl border border-outline-variant/30 text-center">
+            <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto mb-3">
+              <span className="material-symbols-outlined text-2xl font-bold">verified</span>
+            </div>
+            <p className="font-title-lg text-title-lg text-on-surface font-bold mb-1">
+              {t("group.about.already_member", "이미 가입된 멤버입니다")}
+            </p>
+            {currentMember?.joinedAt && (
+              <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">
+                {t("group.about.joined_date", { date: getJoinedDateString(currentMember.joinedAt) })}
+              </p>
+            )}
+            <div className="mt-4 pt-3 border-t border-outline-variant/10">
+              <button
+                onClick={handleLeaveGroup}
+                disabled={isLeaving}
+                className="text-[11px] font-label-sm text-on-surface-variant/40 hover:text-error/85 transition-colors duration-200 active:scale-95 disabled:opacity-50"
+              >
+                {isLeaving 
+                  ? t("group.about.leaving", "Leaving...") 
+                  : t("group.about.leave", "Leave Community (탈퇴하기)")
+                }
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-primary p-5 rounded-2xl shadow-lg shadow-primary/20">
+            <p className="font-title-lg text-title-lg text-on-primary mb-3 font-bold">{t("group.about.become_member")}</p>
+            <p className="font-body-md text-on-primary/80 mb-4 text-sm">{t("group.about.join_desc", { name: group.name || 'our vibrant community' })}</p>
+            <button 
+              className="w-full py-3 bg-on-primary text-primary font-label-md text-label-md rounded-xl active:scale-[0.98] transition-transform shadow-sm"
+              onClick={() => toast.success(t("group.about.join_requested") || "Join request sent!")}
+            >
+              {t("group.about.join_button")}
+            </button>
+          </div>
+        )}
       </section>
 
-      {/* Section 3: Scannable Info (Location) - from venue */}
+      {/* Section 3: Hours & Rules (Minimalist Cards) */}
+      <div className="grid grid-cols-1 gap-4">
+        <section className="space-y-3">
+          <h3 className="font-title-lg text-title-lg font-bold text-on-surface">{t("group.about.hours")}</h3>
+          <div className="bg-surface border border-outline-variant/20 rounded-2xl divide-y divide-outline-variant/10 shadow-sm">
+            {group.operatingHours && group.operatingHours.length > 0 ? (
+              group.operatingHours.map((hours, idx) => (
+                <div key={idx} className="px-5 py-4 flex justify-between font-body-md text-body-md">
+                  <span className="text-on-surface-variant">{hours.label}</span>
+                  <span className="text-on-surface font-semibold">{hours.time}</span>
+                </div>
+              ))
+            ) : (
+              <>
+                <div className="px-5 py-4 flex justify-between font-body-md text-body-md">
+                  <span className="text-on-surface-variant">{t("group.about.hours.mon_fri")}</span>
+                  <span className="text-on-surface font-semibold">14:00 - 22:00</span>
+                </div>
+                <div className="px-5 py-4 flex justify-between font-body-md text-body-md">
+                  <span className="text-on-surface-variant">{t("group.about.hours.sat_sun")}</span>
+                  <span className="text-on-surface font-semibold">12:00 - 23:00</span>
+                </div>
+              </>
+            )}
+          </div>
+        </section>
+        <section className="space-y-3">
+          <h3 className="font-title-lg text-title-lg font-bold text-on-surface">{t("group.about.rules")}</h3>
+          <div className="bg-surface-container-low p-4 rounded-2xl border border-outline-variant/20">
+            <ul className="space-y-3">
+              {group.houseRules && group.houseRules.length > 0 ? (
+                group.houseRules.map((rule, idx) => (
+                  <li key={idx} className="flex gap-4 font-body-md text-body-md text-on-surface-variant">
+                    <span className="material-symbols-outlined text-primary text-[20px]">check_circle</span>
+                    <span>{rule}</span>
+                  </li>
+                ))
+              ) : (
+                <>
+                  <li className="flex gap-4 font-body-md text-body-md text-on-surface-variant">
+                    <span className="material-symbols-outlined text-primary text-[20px]">stars</span>
+                    <span>{t("group.about.rules.rule1")}</span>
+                  </li>
+                  <li className="flex gap-4 font-body-md text-body-md text-on-surface-variant">
+                    <span className="material-symbols-outlined text-primary text-[20px]">check_circle</span>
+                    <span>{t("group.about.rules.rule2")}</span>
+                  </li>
+                  <li className="flex gap-4 font-body-md text-body-md text-on-surface-variant">
+                    <span className="material-symbols-outlined text-primary text-[20px]">block</span>
+                    <span>{t("group.about.rules.rule3")}</span>
+                  </li>
+                </>
+              )}
+            </ul>
+          </div>
+        </section>
+      </div>
+
+      {/* Section 4: Team */}
+      <section className="space-y-4">
+        <h3 className="font-title-lg text-title-lg font-bold text-on-surface">{t("group.about.team")}</h3>
+        
+        {ownersList.length === 0 && instructorsList.length === 0 && staffList.length === 0 ? (
+          <div className="py-6 flex flex-col items-center justify-center bg-surface-container-low border border-outline-variant/30 rounded-2xl">
+            <span className="material-symbols-outlined text-outline mb-2 text-3xl">group_off</span>
+            <p className="font-body-md text-on-surface-variant">{t("group.about.no_team", "대표자나 스탭 정보가 없습니다.")}</p>
+          </div>
+        ) : (
+          <div className="space-y-5">
+            {/* Owners */}
+            {ownersList.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider pl-1">{t("group.about.team.owners", "Owners")}</h4>
+                <div className="space-y-2">
+                  {ownersList.map(member => renderTeamMemberCard(member))}
+                </div>
+              </div>
+            )}
+
+            {/* Instructors */}
+            {instructorsList.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider pl-1">{t("group.about.team.instructors", "Instructors")}</h4>
+                <div className="space-y-2">
+                  {instructorsList.map(member => renderTeamMemberCard(member))}
+                </div>
+              </div>
+            )}
+
+            {/* Staff */}
+            {staffList.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider pl-1">{t("group.about.team.staff", "Staff & DJs")}</h4>
+                <div className="space-y-2">
+                  {staffList.map(member => renderTeamMemberCard(member))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </section>
+
+      {/* Section 5: Payment Info */}
+      {group.bankDetails && group.bankDetails.accountNumber && (
+        <section className="bg-secondary-container/30 p-5 rounded-2xl border border-secondary-fixed-dim/20">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="material-symbols-outlined text-primary filled">account_balance</span>
+            <h3 className="font-label-md text-label-md font-bold text-on-surface">{t("group.about.payment")}</h3>
+          </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-label-sm text-on-surface-variant mb-1">{group.bankDetails.bankName} {group.bankDetails.accountHolder && `(${group.bankDetails.accountHolder})`}</p>
+              <p className="font-title-lg text-title-lg text-primary tracking-wider font-bold">{group.bankDetails.accountNumber}</p>
+            </div>
+            <button
+              className="px-5 py-2.5 bg-primary text-on-primary font-label-sm text-label-sm rounded-xl active:scale-95 transition-transform font-bold"
+              onClick={() => {
+                navigator.clipboard.writeText(group.bankDetails?.accountNumber || "");
+                toast.success(t("group.about.copied") || "Copied to clipboard!");
+              }}
+            >
+              {t("group.about.copy")}
+            </button>
+          </div>
+        </section>
+      )}
+
+      {/* Section 6: Scannable Info (Location) - from venue */}
       {venueAddress && (
         <section>
-          <h3 className="font-title-lg text-title-lg text-on-surface mb-2">{t("group.about.location")}</h3>
-          {group.publicTransport && (
-            <p className="font-label-sm text-label-sm text-primary mb-3 flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[16px]">info</span>
-              {group.publicTransport}
-            </p>
-          )}
+          <h3 className="font-title-lg text-title-lg font-bold text-on-surface mb-4">{t("group.about.location")}</h3>
           
-          {(() => {
-            const addressParts = venueAddress.split(',');
-            const mainAddress = addressParts[0].trim();
-            const detailAddress = addressParts.slice(1).join(',').trim();
-            
-            return (
-              <div className="flex items-center justify-between mb-3 p-3.5 bg-surface-container-low border border-outline-variant/30 rounded-xl">
-                <div>
-                  <p className="font-body-md text-body-md text-on-surface">{mainAddress}</p>
-                  {detailAddress && (
-                    <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">{detailAddress}</p>
-                  )}
-                </div>
-                <button
-                  className="px-4 py-2 bg-primary/10 text-primary font-label-sm text-label-sm rounded-lg active:bg-primary/20 shrink-0 ml-3"
-                  onClick={() => {
-                    navigator.clipboard.writeText(mainAddress);
-                    toast.success(t("group.about.copied") || "Copied to clipboard!");
-                  }}
-                >
-                  {t("group.about.copy")}
-                </button>
-              </div>
-            );
-          })()}
-
           {/* Actual Google Maps iframe Preview */}
           <div 
             className="rounded-2xl overflow-hidden border border-outline-variant/30 mb-3 h-48 relative shadow-sm group"
@@ -340,9 +657,35 @@ const GroupAbout: React.FC<GroupAboutProps> = ({ group, members }) => {
               {t("group.about.tap_expand")}
             </div>
           </div>
+
+          {(() => {
+            const addressParts = venueAddress.split(',');
+            const mainAddress = addressParts[0].trim();
+            const detailAddress = addressParts.slice(1).join(',').trim();
+            
+            return (
+              <div className="flex items-center justify-between mb-3 p-3.5 bg-surface-container-low border border-outline-variant/30 rounded-xl">
+                <div>
+                  <p className="font-body-md text-body-md text-on-surface">{mainAddress}</p>
+                  {detailAddress && (
+                    <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">{detailAddress}</p>
+                  )}
+                </div>
+                <button
+                  className="px-4 py-2 bg-primary/10 text-primary font-label-sm text-label-sm rounded-lg active:bg-primary/20 shrink-0 ml-3 font-bold"
+                  onClick={() => {
+                    navigator.clipboard.writeText(mainAddress);
+                    toast.success(t("group.about.copied") || "Copied to clipboard!");
+                  }}
+                >
+                  {t("group.about.copy")}
+                </button>
+              </div>
+            );
+          })()}
           
           {/* Map buttons */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-2 mb-3">
             <button 
               className="flex flex-col items-center justify-center py-3 bg-surface border border-outline-variant/40 rounded-xl active:bg-surface-container transition-colors shadow-sm"
               onClick={() => {
@@ -374,134 +717,13 @@ const GroupAbout: React.FC<GroupAboutProps> = ({ group, members }) => {
               <span className="text-[10px] font-label-sm text-on-surface-variant">{t("group.about.map.google")}</span>
             </button>
           </div>
-        </section>
-      )}
 
-      {/* Section 4: Hours & Rules (Minimalist Cards) */}
-      <div className="grid grid-cols-1 gap-4">
-        <section className="space-y-3">
-          <h3 className="font-title-lg text-title-lg text-on-surface">{t("group.about.hours")}</h3>
-          <div className="bg-surface border border-outline-variant/20 rounded-2xl divide-y divide-outline-variant/10 shadow-sm">
-            {group.operatingHours && group.operatingHours.length > 0 ? (
-              group.operatingHours.map((hours, idx) => (
-                <div key={idx} className="px-5 py-4 flex justify-between font-body-md text-body-md">
-                  <span className="text-on-surface-variant">{hours.label}</span>
-                  <span className="text-on-surface font-semibold">{hours.time}</span>
-                </div>
-              ))
-            ) : (
-              <>
-                <div className="px-5 py-4 flex justify-between font-body-md text-body-md">
-                  <span className="text-on-surface-variant">{t("group.about.hours.mon_fri")}</span>
-                  <span className="text-on-surface font-semibold">14:00 - 22:00</span>
-                </div>
-                <div className="px-5 py-4 flex justify-between font-body-md text-body-md">
-                  <span className="text-on-surface-variant">{t("group.about.hours.sat_sun")}</span>
-                  <span className="text-on-surface font-semibold">12:00 - 23:00</span>
-                </div>
-              </>
-            )}
-          </div>
-        </section>
-        <section className="space-y-3">
-          <h3 className="font-title-lg text-title-lg text-on-surface">{t("group.about.rules")}</h3>
-          <div className="bg-surface-container-low p-4 rounded-2xl border border-outline-variant/20">
-            <ul className="space-y-3">
-              {group.houseRules && group.houseRules.length > 0 ? (
-                group.houseRules.map((rule, idx) => (
-                  <li key={idx} className="flex gap-4 font-body-md text-body-md text-on-surface-variant">
-                    <span className="material-symbols-outlined text-primary text-[20px]">check_circle</span>
-                    <span>{rule}</span>
-                  </li>
-                ))
-              ) : (
-                <>
-                  <li className="flex gap-4 font-body-md text-body-md text-on-surface-variant">
-                    <span className="material-symbols-outlined text-primary text-[20px]">stars</span>
-                    <span>{t("group.about.rules.rule1")}</span>
-                  </li>
-                  <li className="flex gap-4 font-body-md text-body-md text-on-surface-variant">
-                    <span className="material-symbols-outlined text-primary text-[20px]">check_circle</span>
-                    <span>{t("group.about.rules.rule2")}</span>
-                  </li>
-                  <li className="flex gap-4 font-body-md text-body-md text-on-surface-variant">
-                    <span className="material-symbols-outlined text-primary text-[20px]">block</span>
-                    <span>{t("group.about.rules.rule3")}</span>
-                  </li>
-                </>
-              )}
-            </ul>
-          </div>
-        </section>
-      </div>
-
-      {/* Section 5: Team */}
-      <section>
-        <h3 className="font-title-lg text-title-lg text-on-surface mb-3">{t("group.about.team")}</h3>
-        <div className="space-y-2">
-          {combinedTeam.length > 0 ? (
-            combinedTeam.map(member => (
-              <div key={member.id} className="flex items-center justify-between p-3.5 bg-surface border border-outline-variant/20 rounded-2xl">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-surface-container-highest overflow-hidden ring-2 ring-primary/5">
-                    <img alt={member.name} src={member.avatar} className="w-full h-full object-cover" />
-                  </div>
-                  <div>
-                    <p className="font-label-md text-label-md text-on-surface">{member.name}</p>
-                    <p className="font-label-sm text-label-sm text-on-surface-variant capitalize">{member.role}</p>
-                  </div>
-                </div>
-                <div className="flex gap-1">
-                  <button 
-                    className="p-2 text-primary hover:bg-primary-container rounded-full"
-                    onClick={() => toast.info(t('common.coming_soon') || 'Chat feature coming soon!')}
-                  >
-                    <span className="material-symbols-outlined">chat</span>
-                  </button>
-                  {member.phone && (
-                    <button 
-                      className="p-2 text-primary hover:bg-primary-container rounded-full"
-                      onClick={() => {
-                        window.location.href = `tel:${member.phone}`;
-                      }}
-                    >
-                      <span className="material-symbols-outlined">call</span>
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="py-6 flex flex-col items-center justify-center bg-surface-container-low border border-outline-variant/30 rounded-2xl">
-              <span className="material-symbols-outlined text-outline mb-2 text-3xl">group_off</span>
-              <p className="font-body-md text-on-surface-variant">{t("group.about.no_team", "대표자나 스탭 정보가 없습니다.")}</p>
-            </div>
+          {group.publicTransport && (
+            <p className="font-label-sm text-label-sm text-primary flex items-center gap-1.5 p-3.5 bg-primary/5 rounded-xl border border-primary/10">
+              <span className="material-symbols-outlined text-[16px]">info</span>
+              {group.publicTransport}
+            </p>
           )}
-        </div>
-      </section>
-
-      {/* Section 6: Payment Info */}
-      {group.bankDetails && group.bankDetails.accountNumber && (
-        <section className="bg-secondary-container/30 p-5 rounded-2xl border border-secondary-fixed-dim/20">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="material-symbols-outlined text-primary filled">account_balance</span>
-            <h3 className="font-label-md text-label-md text-on-surface">{t("group.about.payment")}</h3>
-          </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-label-sm text-on-surface-variant mb-1">{group.bankDetails.bankName} {group.bankDetails.accountHolder && `(${group.bankDetails.accountHolder})`}</p>
-              <p className="font-title-lg text-title-lg text-primary tracking-wider">{group.bankDetails.accountNumber}</p>
-            </div>
-            <button
-              className="px-5 py-2.5 bg-primary text-on-primary font-label-sm text-label-sm rounded-xl active:scale-95 transition-transform"
-              onClick={() => {
-                navigator.clipboard.writeText(group.bankDetails?.accountNumber || "");
-                toast.success(t("group.about.copied") || "Copied to clipboard!");
-              }}
-            >
-              {t("group.about.copy")}
-            </button>
-          </div>
         </section>
       )}
 

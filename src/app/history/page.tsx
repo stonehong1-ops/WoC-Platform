@@ -35,25 +35,25 @@ function getStatusLabel(status: StatusKey, t: any): string {
     case 'SUBMITTED':
     case 'PENDING':
     case 'PAYMENT_PENDING':
-      return 'Submitted';
+      return t('history.status_submitted') || 'Submitted';
     case 'BANK_TRANSFERRED':
     case 'WAITING_CONFIRMATION':
     case 'PAYMENT_REPORTED':
-      return 'Bank Transferred';
+      return t('history.status_bank_transferred') || 'Bank Transferred';
     case 'SELLER_CONFIRMED':
     case 'CONFIRMED':
     case 'PAYMENT_COMPLETED':
-      return 'Seller Confirmed';
+      return t('history.status_seller_confirmed') || 'Seller Confirmed';
     case 'SELLER_REJECTED':
     case 'REJECTED':
-      return 'Seller Rejected';
+      return t('history.status_seller_rejected') || 'Seller Rejected';
     case 'REFUNDED':
-      return 'Refunded';
+      return t('history.status_refunded') || 'Refunded';
     case 'DELIVERED':
-      return 'Delivered';
+      return t('history.status_delivered') || 'Delivered';
     case 'CANCELLED':
     case 'CANCELED':
-      return 'Cancelled';
+      return t('history.status_cancelled') || 'Cancelled';
     default: return status.replace(/_/g, ' ').toUpperCase();
   }
 }
@@ -592,10 +592,10 @@ function HistoryContent() {
                     <div className={`absolute w-3 h-3 rounded-full -left-[7px] top-1 ring-4 ring-white transition-colors ${(selectedDetail.status !== 'PAYMENT_PENDING' && selectedDetail.status !== 'PENDING' && selectedDetail.status !== 'SUBMITTED') ? 'bg-blue-500' : 'bg-slate-200'}`}></div>
                     <div className="flex flex-col">
                       <span className={`font-['Inter'] text-[13px] font-bold ${(selectedDetail.status !== 'PAYMENT_PENDING' && selectedDetail.status !== 'PENDING' && selectedDetail.status !== 'SUBMITTED') ? 'text-[#2d3435]' : 'text-slate-400'}`}>
-                        {language === 'KR' ? '처리 중' : 'Processing'}
+                        {t('history.step_processing') || 'Processing'}
                       </span>
                       <span className="font-['Inter'] text-[11px] text-[#596061] mt-0.5">
-                        {language === 'KR' ? '진행 상황은 채팅(Chat)을 통해 안내됩니다.' : 'Updates will be provided via Chat.'}
+                        {t('history.processing_desc') || 'Updates will be provided via Chat.'}
                       </span>
                     </div>
                   </div>
@@ -765,7 +765,7 @@ function HistoryContent() {
               onClick={handleCloseDetail}
               className="flex-shrink-0 bg-[#2d3435] text-white px-7 py-3 rounded-xl font-black text-sm tracking-wide active:scale-95 transition-transform"
             >
-              Close
+              {t('history.close') || 'Close'}
             </button>
           </div>
         </div>

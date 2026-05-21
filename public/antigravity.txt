@@ -1,11 +1,9 @@
-<!DOCTYPE html>
-
-<html class="light" lang="ko"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<!DOCTYPE html><html class="light" lang="ko"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
 <script id="tailwind-config">
       tailwind.config = {
         darkMode: "class",
@@ -108,25 +106,26 @@
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
         }
-        .modal-constrained {
+        .bottom-sheet-constrained {
+            height: 66.67vh;
             max-height: 66.67vh;
         }
     </style>
 </head>
-<body class="bg-[#00000066] flex items-center justify-center min-h-screen p-gutter">
-<!-- Centered Modal Container -->
-<div class="bg-surface w-[90%] max-w-lg rounded-[32px] overflow-hidden shadow-2xl relative modal-constrained flex flex-col animate-in fade-in zoom-in duration-300">
+<body class="bg-[#00000066] flex min-h-screen flex-col">
+<!-- Bottom Sheet Container -->
+<div class="bg-surface w-full rounded-t-[32px] overflow-hidden shadow-2xl relative bottom-sheet-constrained flex flex-col animate-in slide-in-from-bottom duration-300 mt-auto">
 <!-- Top Navigation Bar -->
 <header class="absolute top-0 left-0 w-full z-20 flex justify-end items-center px-lg h-14">
 <button class="w-10 h-10 flex items-center justify-center rounded-full bg-black/10 text-white hover:bg-black/20 transition-colors">
 <span class="material-symbols-outlined">close</span>
 </button>
 </header>
-<!-- Scrollable Area (if content ever overflows, but request says no scrolling for 2/3 height) -->
+<!-- Scrollable Area Container (request says scroll-free, so overflow-hidden) -->
 <div class="overflow-hidden flex flex-col h-full">
 <!-- Profile Visual Section -->
 <div class="relative h-44 w-full overflow-hidden shrink-0">
-<img alt="Alex Professional Portrait" class="w-full h-full object-cover grayscale-[20%] brightness-95" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDHge-4AdK_46YLO_sflAHZfRKiJMLEsF7tNlxSuxGejfHp_rfC5UiW0WH1zRYiKEeQqsxNM56g1Ir48ZxbRLiWk23Zu9wK4ZRuB5A__QlRZ92-YSQFD5ouHAYWCu8PbrYmvhWPq4LfZcJa38UqFVz7itTj6T1uddzoRll6ArCw4xO23LnT0tW0ZTnTLavef1i2BSZZBd9SU66Vl6Q45dz07s3ts42O4TNC1dvctFXYoyl4mPI3cw5WTBb3u3X-8EJGuVAN7uAD6Y0M"/>
+<img alt="Alex Professional Portrait" class="w-full h-full object-cover grayscale-[20%] brightness-95" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDHge-4AdK_46YLO_sflAHZfRKiJMLEsF7tNlxSuxGejfHp_rfC5UiW0WH1zRYiKEeQqsxNM56g1Ir48ZxbRLiWk23Zu9wK4ZRuB5A__QlRZ92-YSQFD5ouHAYWCu8PbrYmvhWPq4LfZcJa38UqFVz7itTj6T1uddzoRll6ArCw4xO23LnT0tW0ZTnTLavef1i2BSZZBd9SU66Vl6Q45dz07s3ts42O4TNC1dvctFXYoyl4mPI3cw5WTBb3u3X-8EJGuVAN7uAD6Y0M">
 <div class="absolute right-4 top-14 z-30 flex flex-col gap-2 items-end">
 <span class="px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-primary text-[10px] font-bold glass-effect">Shop Owner</span>
 <span class="px-3 py-1 rounded-full border border-outline-variant bg-surface-container-low/80 text-on-surface-variant text-[10px] font-bold glass-effect">Organizer</span>
@@ -206,4 +205,6 @@
             btn.addEventListener('touchend', () => btn.classList.remove('scale-95'));
         });
     </script>
+
+
 </body></html>

@@ -178,7 +178,7 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
     const isAdmin = member.role === 'owner' || member.id === group.ownerId || profile?.systemRole === 'admin' || profile?.isAdmin;
     const isInstructor = member.role === 'instructor' || profile?.isInstructor;
     const isStaff = member.role === 'staff' || member.role === 'moderator' || profile?.isStaff || profile?.systemRole === 'staff' || 
-                    profile?.isSeller || profile?.isStayHost || profile?.isServiceProvider;
+                    profile?.isDj || profile?.isStayHost || profile?.isServiceProvider;
     
     if (activeSubTab === 'Owner') return isAdmin && member.status === 'active';
     if (activeSubTab === 'Instructor') return isInstructor && !isAdmin && member.status === 'active';
@@ -237,7 +237,7 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
       isAdmin: member.profile?.isAdmin || member.profile?.systemRole === 'admin' || member.role === 'owner' || member.id === group.ownerId,
       isStaff: member.profile?.isStaff || member.profile?.systemRole === 'staff',
       isInstructor: member.profile?.isInstructor,
-      isSeller: member.profile?.isSeller,
+      isDj: member.profile?.isDj,
       isStayHost: member.profile?.isStayHost,
       isServiceProvider: member.profile?.isServiceProvider,
     };
@@ -328,7 +328,7 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
                   <p className="text-[10px] font-bold text-[#6c759e] tracking-widest uppercase mb-2">Service Staff Roles</p>
                   {[
                     { key: 'isInstructor', label: 'Instructor', value: user.isInstructor },
-                    { key: 'isSeller', label: 'Seller', value: user.isSeller },
+                    { key: 'isDj', label: 'DJ', value: user.isDj },
                     { key: 'isStayHost', label: 'Stay Host', value: user.isStayHost },
                     { key: 'isServiceProvider', label: 'Service Provider', value: user.isServiceProvider },
                   ].map((role) => (
@@ -434,7 +434,7 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
 
   const renderStats = () => {
     const adminCount = members.filter(m => m.role === 'owner' || m.id === group.ownerId || m.profile?.systemRole === 'admin' || m.profile?.isAdmin).length;
-    const staffCount = members.filter(m => (m.profile?.isStaff || m.profile?.systemRole === 'staff' || m.profile?.isInstructor || m.profile?.isSeller || m.profile?.isStayHost || m.profile?.isServiceProvider) && !(m.role === 'owner' || m.id === group.ownerId || m.profile?.systemRole === 'admin' || m.profile?.isAdmin)).length;
+    const staffCount = members.filter(m => (m.profile?.isStaff || m.profile?.systemRole === 'staff' || m.profile?.isInstructor || m.profile?.isDj || m.profile?.isStayHost || m.profile?.isServiceProvider) && !(m.role === 'owner' || m.id === group.ownerId || m.profile?.systemRole === 'admin' || m.profile?.isAdmin)).length;
     const memberOnlyCount = members.length - adminCount - staffCount;
 
     return (

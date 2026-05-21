@@ -6,11 +6,13 @@ export interface UserProfile {
   gender?: string;
   role?: 'leader' | 'follower';
   isInstructor?: boolean;
-  isSeller?: boolean;
-  isStayHost?: boolean;
+  isOrganizer?: boolean;
+  isDj?: boolean;
   isServiceProvider?: boolean;
+  isSeller?: boolean;
   isAdmin?: boolean;
   isStaff?: boolean;
+  isStayHost?: boolean;
   systemRole?: 'admin' | 'staff' | 'member';
   createdAt?: any;
   updatedAt?: any;
@@ -18,6 +20,7 @@ export interface UserProfile {
   phoneNumber?: string;
   joinedGroups?: string[];
   lastVisitedAt?: any;
+  authMethod?: string;
 }
 
 export interface PlatformUser extends UserProfile { }

@@ -83,8 +83,8 @@ export default function MyInfoPage() {
                 {profile?.isInstructor && (
                   <span className="px-2 py-0.5 rounded bg-primary-container text-on-primary-container text-[9px] font-bold uppercase tracking-tighter">{t('my.role_instructor')}</span>
                 )}
-                {profile?.isSeller && (
-                  <span className="px-2 py-0.5 rounded bg-secondary-container text-on-secondary-container text-[9px] font-bold uppercase tracking-tighter">{t('my.role_seller')}</span>
+                {profile?.isDj && (
+                  <span className="px-2 py-0.5 rounded bg-secondary-container text-on-secondary-container text-[9px] font-bold uppercase tracking-tighter">DJ</span>
                 )}
                 {profile?.isServiceProvider && (
                   <span className="px-2 py-0.5 rounded bg-tertiary-container text-on-tertiary-container text-[9px] font-bold uppercase tracking-tighter">{t('my.role_pro')}</span>
@@ -192,14 +192,18 @@ export default function MyInfoPage() {
         {/* Role Description Section */}
         <div className="mt-16 border-t border-surface-container pt-12">
           <h2 className="text-xl font-bold text-on-surface mb-8 font-headline">{t('my.access_rights')}</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="space-y-3">
               <p className="text-xs font-bold text-on-primary-fixed-variant uppercase">{t('my.role_instructor')}</p>
               <p className="text-sm text-on-surface-variant leading-relaxed">{t('my.instructor_desc')}</p>
             </div>
             <div className="space-y-3">
-              <p className="text-xs font-bold text-on-primary-fixed-variant uppercase">{t('my.role_seller')}</p>
-              <p className="text-sm text-on-surface-variant leading-relaxed">{t('my.seller_desc')}</p>
+              <p className="text-xs font-bold text-on-primary-fixed-variant uppercase">{t('my.role_organizer')}</p>
+              <p className="text-sm text-on-surface-variant leading-relaxed">{t('my.organizer_desc')}</p>
+            </div>
+            <div className="space-y-3">
+              <p className="text-xs font-bold text-on-primary-fixed-variant uppercase">{t('my.role_dj')}</p>
+              <p className="text-sm text-on-surface-variant leading-relaxed">{t('my.dj_desc')}</p>
             </div>
             <div className="space-y-3">
               <p className="text-xs font-bold text-on-primary-fixed-variant uppercase">{t('my.role_pro')}</p>
