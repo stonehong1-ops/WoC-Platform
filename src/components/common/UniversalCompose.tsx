@@ -92,12 +92,12 @@ export default function UniversalCompose({
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-y-auto p-8 space-y-8 no-scrollbar scroll-smooth pb-32">
+        <div className="flex-1 overflow-y-auto p-8 space-y-8 no-scrollbar scroll-smooth pb-8">
           {children}
         </div>
 
         {/* Action Button Area - Premium Style */}
-        <div className="p-6 border-t border-gray-50 bg-white sticky bottom-0 z-10">
+        <div className="p-6 border-t border-gray-50 bg-white flex-shrink-0 z-10 w-full pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
           <button
             onClick={onSubmit}
             disabled={isSubmitting}
