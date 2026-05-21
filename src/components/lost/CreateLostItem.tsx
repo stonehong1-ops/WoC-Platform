@@ -94,7 +94,7 @@ export default function CreateLostItem({ isOpen, onClose, onSuccess }: CreateLos
       onSubmit={handleSubmit}
       isSubmitting={isSubmitting}
     >
-      <div className="space-y-8">
+      <div className="space-y-10">
         {/* Category Toggle (Lost vs Found) */}
         <div className="flex p-1 bg-gray-100 rounded-full">
           <button
@@ -140,34 +140,34 @@ export default function CreateLostItem({ isOpen, onClose, onSuccess }: CreateLos
         {/* Core Info */}
         <div className="space-y-6">
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 text-left block">{t('lost.case_title')}</label>
+            <label className="text-[12px] font-black text-gray-400 uppercase tracking-widest ml-1 text-left block mb-2">{t('lost.case_title')}</label>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder={type === 'LOST' ? t('lost.ex_lost_title') : t('lost.ex_found_title')}
-              className="w-full text-[24px] font-black tracking-tighter border-none focus:ring-0 placeholder:text-gray-200 p-0"
+              className="w-full text-[24px] font-black tracking-tighter border-none focus:ring-0 placeholder:text-gray-200 p-0 bg-transparent"
               required
             />
           </div>
 
           <div className="grid grid-cols-2 gap-8">
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 text-left block">{t('lost.type')}</label>
+              <label className="text-[12px] font-black text-gray-400 uppercase tracking-widest ml-1 text-left block mb-2">{t('lost.type')}</label>
               <select 
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full bg-gray-50 border-none rounded-2xl px-4 py-3.5 text-sm font-bold focus:ring-2 focus:ring-primary/10"
+                className="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-primary/10 transition-all cursor-pointer"
               >
                 {categories.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
               </select>
             </div>
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 text-left block">{t('lost.location')}</label>
+              <label className="text-[12px] font-black text-gray-400 uppercase tracking-widest ml-1 text-left block mb-2">{t('lost.location')}</label>
               <input
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 placeholder={t('lost.ex_location')}
-                className="w-full bg-gray-50 border-none rounded-2xl px-4 py-3.5 text-sm font-bold focus:ring-2 focus:ring-primary/10"
+                className="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-primary/10 transition-all"
                 required
               />
             </div>
@@ -176,12 +176,12 @@ export default function CreateLostItem({ isOpen, onClose, onSuccess }: CreateLos
 
         {/* Description */}
         <div className="space-y-2 pb-4 text-left">
-          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 block">{t('lost.detailed_story')}</label>
+          <label className="text-[12px] font-black text-gray-400 uppercase tracking-widest ml-1 block mb-2">{t('lost.detailed_story')}</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder={t('lost.story_placeholder')}
-            className="w-full min-h-[120px] bg-gray-50 border-none rounded-[28px] px-5 py-4 text-sm font-medium focus:ring-2 focus:ring-primary/10 resize-none"
+            className="w-full min-h-[160px] bg-gray-50 border-none rounded-[28px] px-6 py-5 text-sm font-medium focus:ring-2 focus:ring-primary/10 resize-none leading-relaxed transition-all"
           />
         </div>
       </div>
