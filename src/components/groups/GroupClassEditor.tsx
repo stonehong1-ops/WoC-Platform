@@ -1,3 +1,4 @@
+// 클래스 스케줄 및 번들 할인 목록을 관리하고 에디터를 매핑하는 메인 대시보드 컴포넌트
 import React, { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Group, GroupClass, ClassDiscount } from "@/types/group";
@@ -45,7 +46,7 @@ const getDayIndex = (day: string) => {
   return idx === -1 ? 99 : idx;
 };
 
-type EditorType = 'add-class' | 'discount' | 'monthly-pass' | 'payment' | 'clone';
+type EditorType = 'add-class' | 'discount' | 'clone';
 
 interface EditingState {
   type: EditorType;
@@ -241,291 +242,351 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 20 }}
-      className={isInline 
-        ? "w-full antialiased flex flex-col font-['Plus_Jakarta_Sans']" 
-        : "fixed inset-0 z-[100] antialiased text-gray-900 bg-[#F3F4F6] flex flex-col overflow-y-auto no-scrollbar font-['Plus_Jakarta_Sans'] pb-20"
-      }
-    >
-      {/* Top Bar */}
-      {!isInline && (
-        <header className="sticky top-0 z-50 bg-[#F3F4F6]/80 backdrop-blur-xl border-b border-gray-200">
-          <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between w-full">
-            <div className="flex items-center gap-4">
-              <button 
-                onClick={onClose}
-                className="w-10 h-10 rounded-full flex items-center justify-center text-[#0057bd] hover:bg-[#0057bd]/5 transition-all"
-              >
-                <span className="material-symbols-outlined text-[#0057bd]">arrow_back</span>
-              </button>
-              <h1 className="text-base font-bold text-gray-900">{t('group.class.management') || "Class Management"}</h1>
+    <>
+      <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+      <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 20 }}
+        className={isInline 
+          ? "w-full light font-body-md text-on-surface antialiased bg-background flex flex-col no-scrollbar" 
+          : "fixed inset-0 z-[100] light font-body-md text-on-surface antialiased bg-background flex flex-col overflow-y-auto no-scrollbar pb-20"
+        }
+      >
+        {/* Top Bar */}
+        {!isInline && (
+          <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-outline/5">
+            <div className="max-w-[896px] mx-auto px-4 py-4 flex items-center justify-between w-full">
+              <div className="flex items-center gap-4">
+                {onClose && (
+                  <button 
+                    onClick={onClose}
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-primary hover:bg-primary/5 transition-all"
+                  >
+                    <span className="material-symbols-outlined text-primary">arrow_back</span>
+                  </button>
+                )}
+                <h1 className="text-base font-bold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>
+                  {t('group.class.management') || "Class Management"}
+                </h1>
+              </div>
             </div>
-          </div>
-        </header>
-      )}
+          </header>
+        )}
 
-      <main className={`max-w-7xl w-full mx-auto px-4 ${isInline ? 'py-4' : 'py-8'} flex-1`}>
-        {/* Month Navigation & Visibility */}
-        <section className="mb-6 bg-white rounded-[16px] shadow-sm border border-gray-100 overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 bg-gray-50/50">
-            <button onClick={handlePrevMonth} className="p-2 hover:bg-white rounded-full transition-colors shadow-sm bg-white border border-gray-100 active:scale-95">
-              <span className="material-symbols-outlined text-gray-600">chevron_left</span>
-            </button>
-            <h2 className="text-xl font-bold text-gray-900">{monthDisplay}</h2>
-            <button onClick={handleNextMonth} className="p-2 hover:bg-white rounded-full transition-colors shadow-sm bg-white border border-gray-100 active:scale-95">
-              <span className="material-symbols-outlined text-gray-600">chevron_right</span>
-            </button>
-          </div>
-          <div className="px-4 py-3 flex items-center justify-center">
-            <div className="flex bg-gray-100 rounded-lg p-0.5">
-              <button
-                onClick={() => handleToggleRegistrationStatus(false)}
-                disabled={loading}
-                className={`px-5 py-1.5 text-xs font-bold rounded-md transition-all ${
-                  !isRegistrationOpen
-                    ? 'bg-gray-500 text-white shadow-sm'
-                    : 'text-gray-400 hover:text-gray-600'
-                }`}
-              >
-                Closed
-              </button>
-              <button
-                onClick={() => handleToggleRegistrationStatus(true)}
-                disabled={loading}
-                className={`px-5 py-1.5 text-xs font-bold rounded-md transition-all ${
-                  isRegistrationOpen
-                    ? 'bg-[#0057bd] text-white shadow-sm'
-                    : 'text-gray-400 hover:text-gray-600'
-                }`}
-              >
-                Open
-              </button>
+        <main className="flex-1">
+          <div className={`max-w-[896px] mx-auto space-y-6 ${isInline ? 'pb-24' : 'pb-48 md:pb-32'}`}>
+            
+            {/* Section Header */}
+            <div className="px-4 pt-4 pb-6">
+              <div className="mb-2">
+                <h2 className="text-[24px] leading-[1.3] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>
+                  {t("group.class.management") || "Class Management"}
+                </h2>
+                <p className="text-[14px] leading-[1.4] tracking-[0.01em] font-medium text-on-surface-variant mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>
+                  {t("group.class.subtitle") || "Manage schedules, classes, and registration options."}
+                </p>
+              </div>
             </div>
-          </div>
-        </section>
 
-        {/* Tabs Navigation */}
-        <div className="flex bg-white rounded-[12px] p-1 shadow-sm border border-gray-100 mb-6 gap-1">
-          <button
-            onClick={() => setActiveTab('register')}
-            className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${
-              activeTab === 'register' ? 'bg-[#0057bd] text-white' : 'text-gray-500 hover:bg-gray-50'
-            }`}
-          >
-            {t('group.class.register') || "Register"}
-          </button>
-          <button
-            onClick={() => setActiveTab('application')}
-            className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${
-              activeTab === 'application' ? 'bg-[#0057bd] text-white' : 'text-gray-500 hover:bg-gray-50'
-            }`}
-          >
-            {t('group.class.application') || "Application"}
-          </button>
-          <button
-            onClick={() => setActiveTab('stats')}
-            className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${
-              activeTab === 'stats' ? 'bg-[#0057bd] text-white' : 'text-gray-500 hover:bg-gray-50'
-            }`}
-          >
-            {t('group.class.stats') || "Stats"}
-          </button>
-        </div>
-
-        {activeTab === 'register' && (
-          <>
-            {/* Action Buttons */}
-        <section className="mb-8 flex justify-between gap-3">
-          <button
-            onClick={() => setEditingState({ type: 'add-class', data: null })}
-            className="flex-1 flex flex-col items-center justify-center gap-1 px-2 py-3 bg-white text-gray-700 rounded-[12px] border border-gray-100 shadow-sm hover:bg-gray-50 transition-colors active:scale-95 relative"
-          >
-            <div className="absolute top-2 right-2 w-5 h-5 bg-gray-100 rounded-full flex items-center justify-center text-[10px] font-bold text-gray-500">{filteredClasses.length}</div>
-            <span className="material-symbols-outlined text-xl">school</span>
-            <span className="text-xs font-bold leading-tight text-center">{t('group.class.class') || "Class"}</span>
-          </button>
-          <button
-            onClick={() => setEditingState({ type: 'discount', data: null })}
-            className="flex-1 flex flex-col items-center justify-center gap-1 px-2 py-3 bg-white text-gray-700 rounded-[12px] border border-gray-100 shadow-sm hover:bg-gray-50 transition-colors active:scale-95 relative"
-          >
-            <div className="absolute top-2 right-2 w-5 h-5 bg-gray-100 rounded-full flex items-center justify-center text-[10px] font-bold text-gray-500">{filteredDiscounts.length}</div>
-            <span className="material-symbols-outlined text-xl">sell</span>
-            <span className="text-xs font-bold leading-tight text-center" dangerouslySetInnerHTML={{ __html: t('group.class.bundle_discount') || "Bundle<br />discount" }} />
-          </button>
-          <button
-            onClick={() => setEditingState({ type: 'clone', data: null })}
-            className="flex-1 flex flex-col items-center justify-center gap-1 px-2 py-3 bg-gray-900 text-white rounded-[12px] shadow-sm hover:bg-gray-800 transition-colors active:scale-95"
-          >
-            <span className="material-symbols-outlined text-xl">content_copy</span>
-            <span className="text-xs font-bold leading-tight text-center">{language === 'KR' ? '복제하기' : 'Clone'}</span>
-          </button>
-        </section>
-
-        {/* List Section */}
-        <section className="flex flex-col gap-4">
-          {filteredClasses.length === 0 && filteredDiscounts.length === 0 && (
-            <div className="bg-transparent border-2 border-dashed border-gray-300 rounded-[12px] p-10 text-center flex flex-col items-center justify-center">
-              <span className="material-symbols-outlined text-gray-400 text-4xl mb-2">inbox</span>
-              <p className="text-gray-500 font-bold">{t('group.class.no_items') || "No items registered"}</p>
-            </div>
-          )}
-
-          {/* Discounts */}
-          {filteredDiscounts.map((discount: ClassDiscount) => (
-            <div key={discount.id} className="bg-white rounded-[12px] shadow-sm hover:shadow-md transition-shadow border border-gray-100 p-5 flex items-start gap-4">
-              <div className="flex-grow">
-                <div className="flex justify-between items-start mb-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-rose-600 bg-rose-50 px-2 py-0.5 rounded">
-                      {t('group.class.bundle_badge') || "Bundle"}
-                    </span>
-                    <span className="text-xs font-bold text-gray-400">#D-{discount.id.slice(0, 4)}</span>
+            {/* Month Navigation & Visibility */}
+            <section className="px-4 mb-6">
+              <div className="bg-white rounded-2xl shadow-[0px_10px_30px_rgba(0,0,0,0.03)] border border-white/20 overflow-hidden">
+                <div className="px-6 pt-6 pb-4 border-b border-outline/5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                      <span className="material-symbols-outlined text-primary text-[20px]">calendar_month</span>
+                    </div>
+                    <div>
+                      <h3 className="text-[16px] leading-[1.6] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>
+                        {t('group.class.registration_status') || "Registration Status"}
+                      </h3>
+                      <p className="text-[12px] leading-[1.2] font-medium text-on-surface-variant" style={{ fontFamily: "'Inter', sans-serif" }}>
+                        {t('group.class.close_registration_desc') || "Close registration for this month's classes"}
+                      </p>
+                    </div>
                   </div>
                 </div>
-                <h4 className="text-lg font-bold text-gray-900 leading-tight mb-2">{discount.title}</h4>
-                <div className="flex flex-col gap-1 text-sm text-gray-600 mb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-gray-600">
-                      {t('group.class.includes_classes')?.replace('{count}', String(discount.includedClassIds?.length || 0)) || `Includes ${discount.includedClassIds?.length || 0} classes`}
-                    </span>
+
+                <div className="p-6 space-y-4">
+                  {/* Navigation Row */}
+                  <div className="flex items-center justify-between bg-surface-container-low border border-outline/5 p-2 rounded-xl">
+                    <button onClick={handlePrevMonth} className="p-2 hover:bg-white rounded-lg transition-all shadow-sm bg-white border border-outline/5 active:scale-95 text-on-surface flex items-center justify-center">
+                      <span className="material-symbols-outlined text-[20px]">chevron_left</span>
+                    </button>
+                    <h2 className="text-[18px] font-bold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>{monthDisplay}</h2>
+                    <button onClick={handleNextMonth} className="p-2 hover:bg-white rounded-lg transition-all shadow-sm bg-white border border-outline/5 active:scale-95 text-on-surface flex items-center justify-center">
+                      <span className="material-symbols-outlined text-[20px]">chevron_right</span>
+                    </button>
                   </div>
-                  {discount.includedClassIds && discount.includedClassIds.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {discount.includedClassIds.map((classId: string) => {
-                        const cls = allClasses.find(c => c.id === classId);
-                        return cls ? (
-                          <span key={classId} className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full border border-gray-200">
-                            {cls.title}
-                          </span>
-                        ) : null;
-                      })}
+
+                  {/* Status Toggle Row */}
+                  <div className="flex bg-surface-container-low border border-outline/5 p-1 rounded-xl shadow-inner w-full">
+                    <button
+                      onClick={() => handleToggleRegistrationStatus(false)}
+                      disabled={loading}
+                      className={`flex-1 py-2.5 text-[13px] font-bold rounded-lg transition-all ${
+                        !isRegistrationOpen
+                          ? 'bg-surface-container-highest text-on-surface shadow-sm'
+                          : 'text-on-surface-variant/60 hover:text-on-surface hover:bg-surface-container-high'
+                      }`}
+                      style={{ fontFamily: "'Inter', sans-serif" }}
+                    >
+                      {t('group.class.status_closed')}
+                    </button>
+                    <button
+                      onClick={() => handleToggleRegistrationStatus(true)}
+                      disabled={loading}
+                      className={`flex-1 py-2.5 text-[13px] font-bold rounded-lg transition-all ${
+                        isRegistrationOpen
+                          ? 'bg-primary text-on-primary shadow-sm'
+                          : 'text-on-surface-variant/60 hover:text-on-surface hover:bg-surface-container-high'
+                      }`}
+                      style={{ fontFamily: "'Inter', sans-serif" }}
+                    >
+                      {t('group.class.status_open')}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Tabs Navigation */}
+            <section className="px-4 mb-6">
+              <div className="flex bg-surface-container-low border border-outline/5 p-1 rounded-xl shadow-inner gap-1">
+                <button
+                  onClick={() => setActiveTab('register')}
+                  className={`flex-1 py-2.5 text-[14px] font-bold rounded-lg transition-colors ${
+                    activeTab === 'register' ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant/60 hover:text-on-surface hover:bg-surface-container-high'
+                  }`}
+                  style={{ fontFamily: "'Inter', sans-serif" }}
+                >
+                  {t('group.class.register') || "Register"}
+                </button>
+                <button
+                  onClick={() => setActiveTab('application')}
+                  className={`flex-1 py-2.5 text-[14px] font-bold rounded-lg transition-colors ${
+                    activeTab === 'application' ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant/60 hover:text-on-surface hover:bg-surface-container-high'
+                  }`}
+                  style={{ fontFamily: "'Inter', sans-serif" }}
+                >
+                  {t('group.class.application') || "Application"}
+                </button>
+                <button
+                  onClick={() => setActiveTab('stats')}
+                  className={`flex-1 py-2.5 text-[14px] font-bold rounded-lg transition-colors ${
+                    activeTab === 'stats' ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant/60 hover:text-on-surface hover:bg-surface-container-high'
+                  }`}
+                  style={{ fontFamily: "'Inter', sans-serif" }}
+                >
+                  {t('group.class.stats') || "Stats"}
+                </button>
+              </div>
+            </section>
+
+            {activeTab === 'register' && (
+              <>
+                {/* Action Buttons */}
+                <section className="px-4 mb-6">
+                  <div className="flex justify-between gap-3">
+                    <button
+                      onClick={() => setEditingState({ type: 'add-class', data: null })}
+                      className="flex-1 flex flex-col items-center justify-center gap-1.5 p-4 bg-white text-on-surface rounded-2xl border border-white/20 shadow-[0px_10px_30px_rgba(0,0,0,0.02)] hover:bg-surface-container-low transition-all active:scale-[0.98] relative group"
+                    >
+                      <div className="absolute top-3 right-3 w-5 h-5 bg-primary text-on-primary rounded-full flex items-center justify-center text-[10px] font-bold shadow-sm">{filteredClasses.length}</div>
+                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-105 transition-transform">
+                        <span className="material-symbols-outlined text-[20px]">school</span>
+                      </div>
+                      <span className="text-[12px] font-bold leading-tight text-center" style={{ fontFamily: "'Inter', sans-serif" }}>{t('group.class.class') || "Class"}</span>
+                    </button>
+                    <button
+                      onClick={() => setEditingState({ type: 'discount', data: null })}
+                      className="flex-1 flex flex-col items-center justify-center gap-1.5 p-4 bg-white text-on-surface rounded-2xl border border-white/20 shadow-[0px_10px_30px_rgba(0,0,0,0.02)] hover:bg-surface-container-low transition-all active:scale-[0.98] relative group"
+                    >
+                      <div className="absolute top-3 right-3 w-5 h-5 bg-primary text-on-primary rounded-full flex items-center justify-center text-[10px] font-bold shadow-sm">{filteredDiscounts.length}</div>
+                      <div className="w-10 h-10 rounded-xl bg-secondary/10 flex items-center justify-center text-secondary group-hover:scale-105 transition-transform">
+                        <span className="material-symbols-outlined text-[20px]">sell</span>
+                      </div>
+                      <span className="text-[12px] font-bold leading-tight text-center" style={{ fontFamily: "'Inter', sans-serif" }} dangerouslySetInnerHTML={{ __html: t('group.class.bundle_discount') || "Bundle<br />discount" }} />
+                    </button>
+                    <button
+                      onClick={() => setEditingState({ type: 'clone', data: null })}
+                      className="flex-1 flex flex-col items-center justify-center gap-1.5 p-4 bg-white text-on-surface rounded-2xl border border-white/20 shadow-[0px_10px_30px_rgba(0,0,0,0.02)] hover:bg-surface-container-low transition-all active:scale-[0.98] group"
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-tertiary/10 flex items-center justify-center text-tertiary group-hover:scale-105 transition-transform">
+                        <span className="material-symbols-outlined text-[20px]">content_copy</span>
+                      </div>
+                      <span className="text-[12px] font-bold leading-tight text-center" style={{ fontFamily: "'Inter', sans-serif" }}>{t('group.class.clone')}</span>
+                    </button>
+                  </div>
+                </section>
+
+                {/* List Section */}
+                <section className="px-4 mb-6 flex flex-col gap-4">
+                  {filteredClasses.length === 0 && filteredDiscounts.length === 0 && (
+                    <div className="bg-transparent border-2 border-dashed border-outline/15 rounded-2xl p-10 text-center flex flex-col items-center justify-center">
+                      <span className="material-symbols-outlined text-on-surface-variant/30 text-4xl mb-2">inbox</span>
+                      <p className="text-on-surface-variant font-bold">{t('group.class.no_items') || "No items registered"}</p>
                     </div>
                   )}
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500">{t('group.class.discounted_price') || "Discounted Price"}</span>
-                  </div>
-                  <span className="text-sm font-bold text-[#0057bd]">{discount.currency === 'KRW' ? '₩' : discount.currency} {discount.amount.toLocaleString()}</span>
-                </div>
-              </div>
-              <div className="relative action-menu-container">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setActiveMenuId(activeMenuId === discount.id ? null : discount.id);
-                  }}
-                  className="p-1 hover:bg-gray-100 rounded-full transition-colors text-gray-400"
-                >
-                  <span className="material-symbols-outlined">more_vert</span>
-                </button>
-                {activeMenuId === discount.id && (
-                  <div className="absolute right-0 mt-1 w-32 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden z-20">
-                    <button onClick={() => handleEdit('discount', discount)} className="w-full px-4 py-2 text-left text-sm font-bold hover:bg-gray-50">{t('common.edit') || "Edit"}</button>
-                    <button onClick={() => handleDelete('discount', discount.id)} className="w-full px-4 py-2 text-left text-sm font-bold text-red-500 hover:bg-red-50">{t('common.delete') || "Delete"}</button>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
 
-          {/* Classes */}
-          {sortedClasses.map((cls, idx) => {
-            const day = getClassDay(cls);
-            const prevCls = idx > 0 ? sortedClasses[idx - 1] : null;
-            const prevDay = prevCls ? getClassDay(prevCls) : null;
-            const isNewDay = idx > 0 && day !== prevDay;
-
-            return (
-              <React.Fragment key={cls.id}>
-                {isNewDay && (
-                  <div className="border-t border-gray-200 dark:border-gray-800 my-4" />
-                )}
-                <div className="bg-white rounded-[12px] shadow-sm hover:shadow-md transition-shadow border border-gray-100 p-5 flex items-start gap-4">
-                  <div className="flex-grow">
-                    <div className="flex justify-between items-start mb-1">
-                      <div className="flex items-center gap-2">
-                        <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${getLevelColor(cls.level)}`}>
-                          {cls.level || t('group.class.all_levels') || 'All Levels'}
-                        </span>
-                        <span className="text-xs font-bold text-gray-400">#C-{cls.id.slice(0, 4)}</span>
+                  {/* Discounts */}
+                  {filteredDiscounts.map((discount: ClassDiscount) => (
+                    <div key={discount.id} className="bg-white rounded-2xl shadow-[0px_10px_30px_rgba(0,0,0,0.03)] border border-white/20 p-6 flex items-start gap-4 hover:shadow-[0px_15px_40px_rgba(0,0,0,0.05)] transition-all">
+                      <div className="flex-grow">
+                        <div className="flex justify-between items-start mb-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-rose-600 bg-rose-50 px-2 py-0.5 rounded-lg">
+                              {t('group.class.bundle_badge') || "Bundle"}
+                            </span>
+                            <span className="text-xs font-bold text-on-surface-variant/40">#D-{discount.id.slice(0, 4)}</span>
+                          </div>
+                        </div>
+                        <h4 className="text-lg font-bold text-on-surface leading-tight mb-2" style={{ fontFamily: "'Inter', sans-serif" }}>{discount.title}</h4>
+                        <div className="flex flex-col gap-1 text-sm text-on-surface-variant mb-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-on-surface-variant" style={{ fontFamily: "'Inter', sans-serif" }}>
+                              {t('group.class.includes_classes')?.replace('{count}', String(discount.includedClassIds?.length || 0)) || `Includes ${discount.includedClassIds?.length || 0} classes`}
+                            </span>
+                          </div>
+                          {discount.includedClassIds && discount.includedClassIds.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {discount.includedClassIds.map((classId: string) => {
+                                const cls = allClasses.find(c => c.id === classId);
+                                return cls ? (
+                                  <span key={classId} className="text-[10px] bg-surface-container-low text-on-surface-variant px-2.5 py-1 rounded-full border border-outline/5 font-semibold">
+                                    {cls.title}
+                                  </span>
+                                ) : null;
+                              })}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between pt-2 border-t border-outline/5">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[12px] font-medium text-on-surface-variant" style={{ fontFamily: "'Inter', sans-serif" }}>{t('group.class.discounted_price') || "Discounted Price"}</span>
+                          </div>
+                          <span className="text-base font-bold text-primary" style={{ fontFamily: "'Inter', sans-serif" }}>{discount.amount === 0 ? t('group.class.free', 'Free') : `${discount.currency === 'KRW' ? '₩' : discount.currency} ${discount.amount.toLocaleString()}`}</span>
+                        </div>
+                      </div>
+                      <div className="relative action-menu-container">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveMenuId(activeMenuId === discount.id ? null : discount.id);
+                          }}
+                          className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container-low transition-all text-on-surface-variant/70"
+                        >
+                          <span className="material-symbols-outlined text-[20px]">more_vert</span>
+                        </button>
+                        {activeMenuId === discount.id && (
+                          <div className="absolute right-0 mt-1 w-32 bg-white rounded-xl shadow-[0px_10px_30px_rgba(0,0,0,0.08)] border border-outline/5 overflow-hidden z-20">
+                            <button onClick={() => handleEdit('discount', discount)} className="w-full px-4 py-2.5 text-left text-sm font-bold text-on-surface hover:bg-surface-container-low transition-colors" style={{ fontFamily: "'Inter', sans-serif" }}>{t('common.edit') || "Edit"}</button>
+                            <button onClick={() => handleDelete('discount', discount.id)} className="w-full px-4 py-2.5 text-left text-sm font-bold text-error hover:bg-error/5 transition-colors" style={{ fontFamily: "'Inter', sans-serif" }}>{t('common.delete') || "Delete"}</button>
+                          </div>
+                        )}
                       </div>
                     </div>
-                    <h4 className="text-lg font-bold text-gray-900 leading-tight mb-2">{cls.title}</h4>
-                    <div className="flex flex-col gap-1 text-sm text-gray-600 mb-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-[#0057bd]">
-                          {cls.schedule?.length ? (t('group.class.plus_sessions')?.replace('{date}', cls.schedule[0].date).replace('{count}', String(cls.schedule.length - 1)) || `${cls.schedule[0].date} plus ${cls.schedule.length - 1} sessions`) : (t('group.class.no_sessions') || 'No sessions')}
-                        </span>
-                        <span className="ml-2 text-gray-600">{cls.schedule?.[0]?.timeSlot || ''}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-500">{t('group.class.instructor') || "Instructor:"}</span>
-                        <span className="text-sm font-semibold text-gray-800">
-                          {cls.instructors?.[0]?.name || t('group.class.tbd') || 'TBD'}
-                          {cls.instructors && cls.instructors.length > 1 && ` +${cls.instructors.length - 1}`}
-                        </span>
-                      </div>
-                      <span className="text-sm font-bold text-gray-900">{cls.currency === 'KRW' ? '₩' : cls.currency} {cls.amount.toLocaleString()}</span>
-                    </div>
-                  </div>
-                  <div className="relative action-menu-container">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setActiveMenuId(activeMenuId === cls.id ? null : cls.id);
-                      }}
-                      className="p-1 hover:bg-gray-100 rounded-full transition-colors text-gray-400"
-                    >
-                      <span className="material-symbols-outlined">more_vert</span>
-                    </button>
-                    {activeMenuId === cls.id && (
-                      <div className="absolute right-0 mt-1 w-32 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden z-20">
-                        <button onClick={() => handleEdit('add-class', cls)} className="w-full px-4 py-2 text-left text-sm font-bold hover:bg-gray-50">{t('common.edit') || "Edit"}</button>
-                        <button onClick={() => handleDelete('class', cls.id)} className="w-full px-4 py-2 text-left text-sm font-bold text-red-500 hover:bg-red-50">{t('common.delete') || "Delete"}</button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </React.Fragment>
-            );
-          })}
-        </section>
-        </>
-        )}
+                  ))}
 
-        {activeTab === 'application' && (
-          <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <GroupClassRegistrations 
-              group={group} 
-              validClassIds={[
-                ...filteredClasses.map(c => c.id),
-                ...filteredDiscounts.map((d: any) => d.id)
-              ]}
-              allClasses={allClasses}
-              allDiscounts={allDiscounts}
-            />
-          </section>
-        )}
+                  {/* Classes */}
+                  {sortedClasses.map((cls, idx) => {
+                    const day = getClassDay(cls);
+                    const prevCls = idx > 0 ? sortedClasses[idx - 1] : null;
+                    const prevDay = prevCls ? getClassDay(prevCls) : null;
+                    const isNewDay = idx > 0 && day !== prevDay;
 
-        {activeTab === 'stats' && (
-          <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <GroupClassStats 
-              group={group} 
-              validClassIds={[
-                ...filteredClasses.map(c => c.id),
-                ...filteredDiscounts.map((d: any) => d.id)
-              ]}
-              filteredClasses={filteredClasses}
-            />
-          </section>
-        )}
-      </main>
+                    return (
+                      <React.Fragment key={cls.id}>
+                        {isNewDay && (
+                          <div className="border-t border-outline/10 my-4" />
+                        )}
+                        <div className="bg-white rounded-2xl shadow-[0px_10px_30px_rgba(0,0,0,0.03)] border border-white/20 p-6 flex items-start gap-4 hover:shadow-[0px_15px_40px_rgba(0,0,0,0.05)] transition-all">
+                          <div className="flex-grow">
+                            <div className="flex justify-between items-start mb-1">
+                              <div className="flex items-center gap-2">
+                                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-lg ${getLevelColor(cls.level)}`}>
+                                  {cls.level || t('group.class.all_levels') || 'All Levels'}
+                                </span>
+                                <span className="text-xs font-bold text-on-surface-variant/40">#C-{cls.id.slice(0, 4)}</span>
+                              </div>
+                            </div>
+                            <h4 className="text-lg font-bold text-on-surface leading-tight mb-2" style={{ fontFamily: "'Inter', sans-serif" }}>{cls.title}</h4>
+                            <div className="flex flex-col gap-1 text-sm text-on-surface-variant mb-3">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-semibold text-primary" style={{ fontFamily: "'Inter', sans-serif" }}>
+                                  {cls.schedule?.length ? (t('group.class.plus_sessions')?.replace('{date}', cls.schedule[0].date).replace('{count}', String(cls.schedule.length - 1)) || `${cls.schedule[0].date} plus ${cls.schedule.length - 1} sessions`) : (t('group.class.no_sessions') || 'No sessions')}
+                                </span>
+                                <span className="ml-2 text-on-surface-variant font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>{cls.schedule?.[0]?.timeSlot || ''}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-between pt-2 border-t border-outline/5">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[12px] font-medium text-on-surface-variant" style={{ fontFamily: "'Inter', sans-serif" }}>{t('group.class.instructor') || "Instructor:"}</span>
+                                <span className="text-sm font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>
+                                  {cls.instructors?.[0]?.name || t('group.class.tbd') || 'TBD'}
+                                  {cls.instructors && cls.instructors.length > 1 && ` +${cls.instructors.length - 1}`}
+                                </span>
+                              </div>
+                              <span className="text-base font-bold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>{cls.amount === 0 ? t('group.class.free', 'Free') : `${cls.currency === 'KRW' ? '₩' : cls.currency} ${cls.amount.toLocaleString()}`}</span>
+                            </div>
+                          </div>
+                          <div className="relative action-menu-container">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveMenuId(activeMenuId === cls.id ? null : cls.id);
+                              }}
+                              className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container-low transition-all text-on-surface-variant/70"
+                            >
+                              <span className="material-symbols-outlined text-[20px]">more_vert</span>
+                            </button>
+                            {activeMenuId === cls.id && (
+                              <div className="absolute right-0 mt-1 w-32 bg-white rounded-xl shadow-[0px_10px_30px_rgba(0,0,0,0.08)] border border-outline/5 overflow-hidden z-20">
+                                <button onClick={() => handleEdit('add-class', cls)} className="w-full px-4 py-2.5 text-left text-sm font-bold text-on-surface hover:bg-surface-container-low transition-colors" style={{ fontFamily: "'Inter', sans-serif" }}>{t('common.edit') || "Edit"}</button>
+                                <button onClick={() => handleDelete('class', cls.id)} className="w-full px-4 py-2.5 text-left text-sm font-bold text-error hover:bg-error/5 transition-colors" style={{ fontFamily: "'Inter', sans-serif" }}>{t('common.delete') || "Delete"}</button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </React.Fragment>
+                    );
+                  })}
+                </section>
+              </>
+            )}
+
+            {activeTab === 'application' && (
+              <section className="px-4 mb-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <GroupClassRegistrations 
+                  group={group} 
+                  validClassIds={[
+                    ...filteredClasses.map(c => c.id),
+                    ...filteredDiscounts.map((d: any) => d.id)
+                  ]}
+                  allClasses={allClasses}
+                  allDiscounts={allDiscounts}
+                />
+              </section>
+            )}
+
+            {activeTab === 'stats' && (
+              <section className="px-4 mb-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <GroupClassStats 
+                  group={group} 
+                  validClassIds={[
+                    ...filteredClasses.map(c => c.id),
+                    ...filteredDiscounts.map((d: any) => d.id)
+                  ]}
+                  filteredClasses={filteredClasses}
+                />
+              </section>
+            )}
+
+          </div>
+        </main>
 
       {/* Editors Overlay */}
       <>
@@ -567,9 +628,9 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
           />
         )}
       </>
-      </motion.div>
+    </motion.div>
+  </>
   );
 };
 
 export default GroupClassEditor;
-

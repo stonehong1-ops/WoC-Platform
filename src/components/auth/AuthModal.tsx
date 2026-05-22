@@ -133,10 +133,25 @@ export default function AuthModal() {
 
   // Handle automatic nickname pre-fill when user is newly authenticated
   useEffect(() => {
-    if (user && !details.nickname) {
-      setDetails(prev => ({ ...prev, nickname: user.displayName || '' }));
+    if (user && !details.nickname && !details.nativeNickname) {
+      const displayName = user.displayName || '';
+      const hasKorean = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(displayName);
+      
+      if (hasKorean) {
+        setDetails(prev => ({
+          ...prev,
+          nickname: '',
+          nativeNickname: displayName
+        }));
+      } else {
+        setDetails(prev => ({
+          ...prev,
+          nickname: displayName,
+          nativeNickname: ''
+        }));
+      }
     }
-  }, [user, details.nickname]);
+  }, [user, details.nickname, details.nativeNickname]);
 
   // Automatic success observer (only if they are registered)
   useEffect(() => {

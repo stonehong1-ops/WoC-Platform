@@ -1,4 +1,5 @@
-export type TabType = 'home' | 'calendar' | 'feed' | 'board' | 'about' | 'class' | 'class-setting' | 'members' | 'settings' | 'shop' | 'stay' | 'rental' | 'coupon' | 'live' | 'brand' | 'polls' | 'qa' | 'broadcast' | 'attendance' | 'rules' | 'surveys' | 'anonymous' | 'classA' | 'classB' | 'classC' | 'homework' | 'studentReports' | 'tuition' | 'gradeSystem' | 'parentNotify' | 'parentConsult' | 'examScheduler' | 'ticketBooking' | 'workshopReg' | 'qrCheckin' | 'waitlist' | 'retreat' | 'eventStaff' | 'guestList' | 'productInventory' | 'membershipBilling' | 'donationSupport' | 'subscriptionPlans' | 'settlementReports' | 'mediaGallery' | 'videoLibrary' | 'editorialPage' | 'newsletter' | 'podcastFeed' | 'pressKit' | 'linkHub' | 'socialSync' | 'brandAssets' | 'customLandingPage' | 'taskManager' | 'internalWiki' | 'aiAssistant' | 'roles';
+// 그룹 서비스에서 제공하는 각 기능 및 페이지의 탭 종류와 속성 매핑을 관리하는 파일
+export type TabType = 'home' | 'calendar' | 'feed' | 'board' | 'about' | 'class' | 'class-setting' | 'shop-setting' | 'stay-setting' | 'rental-setting' | 'members' | 'settings' | 'shop' | 'stay' | 'rental' | 'coupon' | 'live' | 'brand' | 'polls' | 'qa' | 'broadcast' | 'attendance' | 'rules' | 'surveys' | 'anonymous' | 'classA' | 'classB' | 'classC' | 'homework' | 'studentReports' | 'tuition' | 'gradeSystem' | 'parentNotify' | 'parentConsult' | 'examScheduler' | 'ticketBooking' | 'workshopReg' | 'qrCheckin' | 'waitlist' | 'retreat' | 'eventStaff' | 'guestList' | 'productInventory' | 'membershipBilling' | 'donationSupport' | 'subscriptionPlans' | 'settlementReports' | 'mediaGallery' | 'videoLibrary' | 'editorialPage' | 'newsletter' | 'podcastFeed' | 'pressKit' | 'linkHub' | 'socialSync' | 'brandAssets' | 'customLandingPage' | 'taskManager' | 'internalWiki' | 'aiAssistant' | 'roles';
 
 export const FUNCTION_TAB_MAP: Record<string, { id: TabType; key: string; icon: string; implemented: boolean }> = {
   'brand-setting': { id: 'brand', key: 'group.tab.brand', icon: 'palette', implemented: true },
@@ -11,9 +12,12 @@ export const FUNCTION_TAB_MAP: Record<string, { id: TabType; key: string; icon: 
   'members': { id: 'members', key: 'group.tab.members', icon: 'groups', implemented: true },
   'class': { id: 'class', key: 'group.tab.class_user', icon: 'school', implemented: true },
   'class-setting': { id: 'class-setting', key: 'group.tab.class_admin', icon: 'school', implemented: true },
-  'stay-setting': { id: 'stay', key: 'group.tab.stay', icon: 'bed', implemented: true },
-  'shop-setting': { id: 'shop', key: 'group.tab.shop', icon: 'storefront', implemented: true },
-  'rental-setting': { id: 'rental', key: 'group.tab.rental', icon: 'key', implemented: true },
+  'shop': { id: 'shop', key: 'group.tab.shop_user', icon: 'storefront', implemented: true },
+  'shop-setting': { id: 'shop-setting', key: 'group.tab.shop_admin', icon: 'storefront', implemented: true },
+  'stay': { id: 'stay', key: 'group.tab.stay_user', icon: 'bed', implemented: true },
+  'stay-setting': { id: 'stay-setting', key: 'group.tab.stay_admin', icon: 'bed', implemented: true },
+  'rental': { id: 'rental', key: 'group.tab.rental_user', icon: 'key', implemented: true },
+  'rental-setting': { id: 'rental-setting', key: 'group.tab.rental_admin', icon: 'key', implemented: true },
   'roles-permissions': { id: 'roles', key: 'group.tab.roles', icon: 'security', implemented: true },
   'qa-board': { id: 'qa', key: 'group.tab.qa', icon: 'quiz', implemented: true },
   'polls': { id: 'polls', key: 'group.tab.polls', icon: 'how_to_vote', implemented: true },
@@ -67,6 +71,6 @@ export const FUNCTION_TAB_MAP: Record<string, { id: TabType; key: string; icon: 
   'group-settings': { id: 'settings', key: 'group.tab.settings', icon: 'settings', implemented: true },
 };
 
-export const ADMIN_FUNCTION_IDS = ['group-settings', 'brand-setting', 'roles-permissions', 'class-setting'];
+export const ADMIN_FUNCTION_IDS = ['group-settings', 'brand-setting', 'roles-permissions', 'class-setting', 'shop-setting', 'stay-setting', 'rental-setting'];
 
 export const FIXED_IDS = new Set(['dashboard', 'about', ...ADMIN_FUNCTION_IDS]);

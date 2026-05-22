@@ -41,8 +41,8 @@ Upon receiving instructions, you MUST read this MD file, explicitly confirm that
 2. **Localization Integration**: DO NOT leave raw English or Korean text directly in the TSX layout. Always wrap them in the `t()` translation function with matching keys defined in both `kr.ts` and `en.ts`. (TSX 레이아웃에 번역되지 않은 날것의 영어나 한글 텍스트를 방치해서는 안 되며, 항상 `t()` 함수로 감싸고 다국어 사전에 등록하여 완벽하게 통합해야 한다.)
 
 ## Deployment Rules
-1. **Mandatory Production Deployment**: Whenever any code modification is completed, you MUST automatically build and deploy the project to the production environment (e.g., `npx -y vercel --prod --yes`) to ensure the live site reflects the latest changes immediately.
-2. **Deployment Reporting**: After every deployment, you MUST confirm the deployment status (READY/ERROR) and explicitly provide the **Deployment ID, Exit Code, and the live URL link** to the USER. NEVER report success before the deployment process is fully 'DONE' and verified.
+1. **Approval-Required Production Deployment**: Vercel 서버리스 요금 폭탄을 방지하기 위해, 어떠한 경우에도 자동 배포를 실행해서는 안 됩니다. 모든 코드 변경 및 빌드가 완료된 후, 반드시 사용자(스토니님)에게 배포 승인을 구하고 명시적인 사전 서면 승인(Approval)을 획득한 경우에만 배포 명령(`npx -y vercel --prod --yes` 등)을 Propose해야 합니다.
+2. **Deployment Reporting**: 배포 승인을 얻어 배포가 완료된 후에는 배포 상태(READY/ERROR)를 확인하고, **Deployment ID, Exit Code, 라이브 URL 링크**를 사용자에게 명확하게 보고해야 합니다. 배포 프로세스가 완전히 완료(DONE)되고 검증되기 전에는 성공 보고를 해서는 안 됩니다.
 
 ## Error Handling & Debugging Rules
 1. **Firebase Permission Check First**: 에러 발생 시(특히 데이터베이스 저장/수정 관련), 코드를 복잡하게 수정하거나 구조를 뜯어고치기 전에 **반드시 Firebase Firestore Security Rules (권한 설정) 누락 문제인지 가장 먼저 의심하고 확인**하라. (ex: `permission-denied` 에러).

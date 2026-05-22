@@ -59,7 +59,7 @@ export default function StayReservationFlow({
 
   useEffect(() => {
     if (profile || user) {
-      setApplicantName(profile?.nickname || user?.displayName || '');
+      setApplicantName(profile?.nativeNickname || profile?.nickname || user?.displayName || '');
       if (profile?.phoneNumber) {
         setBuyerPhone(profile.phoneNumber);
       }
@@ -196,7 +196,7 @@ export default function StayReservationFlow({
         await chatService.sendMessage({
           roomId,
           senderId: user.uid,
-          senderName: user.displayName || applicantName,
+          senderName: profile?.nativeNickname || profile?.nickname || user.displayName || applicantName,
           text: msg,
           type: 'text'
         });
@@ -218,7 +218,7 @@ export default function StayReservationFlow({
       if (snap.exists()) {
         const data = snap.data() as StayBooking;
         await updateDoc(bookingRef, {
-          'payment.depositorName': user.displayName || applicantName,
+          'payment.depositorName': profile?.nativeNickname || profile?.nickname || user.displayName || applicantName,
           'payment.depositDate': new Date().toISOString().split('T')[0]
         });
       }
@@ -227,13 +227,13 @@ export default function StayReservationFlow({
       const hostId = stay.host?.userId || 'adminstone';
       if (hostId && user) {
         const roomId = await chatService.getOrCreatePrivateRoom([user.uid, hostId], user.uid, 'business');
-        const msg = `💸 ${t('stay.chat_payment_prefix', '[PAYMENT REPORTED]')}\n${t('stay.chat_order_no', 'Booking No')}: ${createdOrderNumber}\n${t('stay.chat_depositor', 'Depositor')}: ${user.displayName || applicantName}\n${t('stay.chat_payment_msg', 'I have transferred the payment. Please confirm!')}`;
+        const msg = `💸 ${t('stay.chat_payment_prefix', '[PAYMENT REPORTED]')}\n${t('stay.chat_order_no', 'Booking No')}: ${createdOrderNumber}\n${t('stay.chat_depositor', 'Depositor')}: ${profile?.nativeNickname || profile?.nickname || user.displayName || applicantName}\n${t('stay.chat_payment_msg', 'I have transferred the payment. Please confirm!')}`;
         
         // 1. Buyer's payment report message
         await chatService.sendMessage({
           roomId,
           senderId: user.uid,
-          senderName: user.displayName || applicantName,
+          senderName: profile?.nativeNickname || profile?.nickname || user.displayName || applicantName,
           text: msg,
           type: 'text'
         });

@@ -1,3 +1,4 @@
+// 그룹에 할당할 서비스 모듈을 선택하고 메뉴의 출력 우선순위를 커스텀 배치하는 기능 빌더 컴포넌트
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
@@ -6,6 +7,8 @@ import { Group } from "@/types/group";
 import { groupService } from "@/lib/firebase/groupService";
 import { FUNCTION_SECTIONS, FunctionCard } from "./functionBuilderData";
 import StepIndicator from "./StepIndicator";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { FUNCTION_TAB_MAP } from "@/constants/groupTabs";
 
 interface GroupFunctionBuilderProps {
   group: Group;
@@ -29,15 +32,30 @@ type MenuItem = {
   label?: string;
 };
 
-// Map admin-setting IDs to user-facing menu labels
-const SETTING_TO_USER: Record<string, { label: string; icon: string }> = {
-  'class-setting': { label: 'Class', icon: 'school' },
-  'stay-setting': { label: 'Stay', icon: 'bed' },
-  'shop-setting': { label: 'Shop', icon: 'storefront' },
-  'rental-setting': { label: 'Rental', icon: 'key' },
+// Map user-facing menu IDs to labels and icons (for step 3 menu names)
+const SETTING_TO_USER: Record<string, { key: string; icon: string }> = {
+  'class': { key: 'group.tab.class_user', icon: 'school' },
+  'stay': { key: 'group.tab.stay_user', icon: 'bed' },
+  'shop': { key: 'group.tab.shop_user', icon: 'storefront' },
+  'rental': { key: 'group.tab.rental_user', icon: 'key' },
+};
+
+const ADMIN_TO_USER: Record<string, string> = {
+  'class-setting': 'class',
+  'stay-setting': 'stay',
+  'shop-setting': 'shop',
+  'rental-setting': 'rental',
+};
+
+const USER_TO_ADMIN: Record<string, string> = {
+  'class': 'class-setting',
+  'stay': 'stay-setting',
+  'shop': 'shop-setting',
+  'rental': 'rental-setting',
 };
 
 const GroupFunctionBuilder = ({ group, onClose }: GroupFunctionBuilderProps) => {
+  const { t } = useLanguage();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [selectedSet, setSelectedSet] = useState<Set<string>>(new Set());
   const [isSaving, setIsSaving] = useState(false);
@@ -120,7 +138,13 @@ const GroupFunctionBuilder = ({ group, onClose }: GroupFunctionBuilderProps) => 
     const allCards = FUNCTION_SECTIONS.flatMap((s) => s.cards);
     return Array.from(selectedSet)
       .map((id) => allCards.find((c) => c.id === id))
-      .filter((c): c is FunctionCard => c != null && !ADMIN_HIDDEN_IDS.has(c.id));
+      .filter(
+        (c): c is FunctionCard => 
+          c != null && 
+          !ADMIN_HIDDEN_IDS.has(c.id) && 
+          c.id !== 'dashboard' && 
+          c.id !== 'members'
+      );
   }, [selectedSet]);
 
   const handleNextStep2 = () => {
@@ -138,10 +162,23 @@ const GroupFunctionBuilder = ({ group, onClose }: GroupFunctionBuilderProps) => 
     if (step !== 3) return;
 
     const allCards = FUNCTION_SECTIONS.flatMap((s) => s.cards);
-    const selectedFunctionsArray = Array.from(selectedSet);
+    // Convert admin setting IDs to user facing menu IDs
+    const selectedFunctionsArray = Array.from(selectedSet).map(id => ADMIN_TO_USER[id] || id);
+
+    // Keep admin-specific cards from showing up directly in the user menu order
+    const excludedIds = new Set([
+      'dashboard', 
+      'members',
+      'about', 
+      'roles-permissions', 
+      'brand-setting',
+      'class-setting',
+      'stay-setting',
+      'shop-setting',
+      'rental-setting'
+    ]);
 
     if (group.menuOrder && group.menuOrder.length > 0) {
-      const excludedIds = new Set(['dashboard', 'about', 'roles-permissions', 'brand-setting']);
       let syncedItems = group.menuOrder.filter(item => 
         item.type === "divider" || (selectedFunctionsArray.includes(item.id) && !excludedIds.has(item.id))
       );
@@ -150,7 +187,7 @@ const GroupFunctionBuilder = ({ group, onClose }: GroupFunctionBuilderProps) => 
         if (item.type === "item") {
           const userOverride = SETTING_TO_USER[item.id];
           if (userOverride) {
-            return { ...item, icon: userOverride.icon, label: userOverride.label };
+            return { ...item, icon: userOverride.icon, label: t(userOverride.key) };
           }
           const card = allCards.find(c => c.id === item.id);
           if (card) {
@@ -167,15 +204,17 @@ const GroupFunctionBuilder = ({ group, onClose }: GroupFunctionBuilderProps) => 
         let lastSectionId = "";
         const lastItem = syncedItems.filter(i => i.type === "item").pop();
         if (lastItem) {
-          const sec = FUNCTION_SECTIONS.find(s => s.cards.some(c => c.id === lastItem.id));
+          const searchId = USER_TO_ADMIN[lastItem.id] || lastItem.id;
+          const sec = FUNCTION_SECTIONS.find(s => s.cards.some(c => c.id === searchId));
           if (sec) lastSectionId = sec.id;
         }
 
         newFunctionIds.forEach((funcId) => {
-          const card = allCards.find((c) => c.id === funcId);
+          const searchId = USER_TO_ADMIN[funcId] || funcId;
+          const card = allCards.find((c) => c.id === searchId);
           if (!card) return;
 
-          const section = FUNCTION_SECTIONS.find((s) => s.cards.some((c) => c.id === funcId));
+          const section = FUNCTION_SECTIONS.find((s) => s.cards.some((c) => c.id === searchId));
           if (section && section.id !== lastSectionId && syncedItems.length > 0) {
             syncedItems.push({ id: `div-${Date.now()}-${Math.random()}`, type: "divider" });
             lastSectionId = section.id;
@@ -183,12 +222,12 @@ const GroupFunctionBuilder = ({ group, onClose }: GroupFunctionBuilderProps) => 
             lastSectionId = section.id;
           }
 
-          const userOverrideNew = SETTING_TO_USER[card.id];
+          const userOverrideNew = SETTING_TO_USER[funcId];
           syncedItems.push({
-            id: card.id,
+            id: funcId,
             type: "item",
             icon: userOverrideNew?.icon || card.icon,
-            label: userOverrideNew?.label || card.title,
+            label: userOverrideNew?.key ? t(userOverrideNew.key) : card.title,
           });
         });
       }
@@ -198,16 +237,16 @@ const GroupFunctionBuilder = ({ group, onClose }: GroupFunctionBuilderProps) => 
     }
 
     const menuItems: MenuItem[] = [];
-    const excludedIds = new Set(['dashboard', 'about', 'roles-permissions', 'brand-setting']);
     let lastSectionId = "";
 
     selectedFunctionsArray.forEach((funcId) => {
       if (excludedIds.has(funcId)) return;
       
-      const card = allCards.find((c) => c.id === funcId);
+      const searchId = USER_TO_ADMIN[funcId] || funcId;
+      const card = allCards.find((c) => c.id === searchId);
       if (!card) return;
 
-      const section = FUNCTION_SECTIONS.find((s) => s.cards.some((c) => c.id === funcId));
+      const section = FUNCTION_SECTIONS.find((s) => s.cards.some((c) => c.id === searchId));
       if (section && section.id !== lastSectionId && menuItems.length > 0) {
         menuItems.push({ id: `div-${Date.now()}-${Math.random()}`, type: "divider" });
         lastSectionId = section.id;
@@ -215,12 +254,12 @@ const GroupFunctionBuilder = ({ group, onClose }: GroupFunctionBuilderProps) => 
         lastSectionId = section.id;
       }
 
-      const userOverride = SETTING_TO_USER[card.id];
+      const userOverride = SETTING_TO_USER[funcId];
       menuItems.push({
-        id: card.id,
+        id: funcId,
         type: "item",
         icon: userOverride?.icon || card.icon,
-        label: userOverride?.label || card.title,
+        label: userOverride?.key ? t(userOverride.key) : card.title,
       });
     });
 
@@ -306,70 +345,133 @@ const GroupFunctionBuilder = ({ group, onClose }: GroupFunctionBuilderProps) => 
             <p className="text-[14px] leading-[1.6] text-on-surface-variant max-w-3xl">Architect your community ecosystem. Select and configure advanced modules to power your collective's unique workflow.</p>
           </div>
 
-          {FUNCTION_SECTIONS.map((section) => (
-            <section key={section.id} className="mb-12">
-              <div className="flex items-center gap-2 mb-6">
-                <div className={`h-6 w-1 ${section.accentColor} rounded-full`}></div>
-                <h3 className="text-[18px] md:text-[20px] leading-[1.2] tracking-[-0.01em] font-bold" style={{ fontFamily: "'Inter', sans-serif" }}>{section.title} <span className="font-medium text-on-surface-variant ml-2 opacity-60 text-[14px] md:text-[16px]">{section.subtitle}</span></h3>
-              </div>
-              <div className="function-grid">
-                {section.cards.map((card) => {
-                  const isMandatory = card.mandatory === true;
-                  const isSelected = selectedSet.has(card.id);
-                  return (
-                    <div
-                      key={card.id}
-                      className={`p-6 rounded-2xl shadow-sm hover:shadow-lg transition-all group flex flex-col justify-between ${
-                        isMandatory
-                          ? 'bg-primary text-on-primary border border-primary/80 shadow-lg shadow-primary/20'
-                          : isSelected
-                            ? 'glass-card bg-primary/5 border-primary/20'
-                            : 'glass-card'
-                      }`}
-                    >
-                      <div>
-                        <div className="flex justify-between items-start mb-4">
-                          <span className={`material-symbols-outlined text-3xl ${isMandatory ? 'text-on-primary' : 'text-primary'}`}>{card.icon}</span>
-                          <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${
-                            isMandatory
-                              ? 'bg-white/20 text-white'
-                              : isSelected
-                                ? STATUS_BADGE.INSTALLED.bg
-                                : STATUS_BADGE[card.status].bg
-                          }`}>
-                            {isMandatory ? 'REQUIRED' : isSelected ? 'INSTALLED' : card.status}
-                          </span>
-                        </div>
-                        <h4 className={`text-[18px] font-semibold mb-1 ${isMandatory ? 'text-on-primary' : ''}`} style={{ fontFamily: "'Inter', sans-serif" }}>{card.title} <span className={isMandatory ? 'text-on-primary/60 font-normal' : 'text-on-surface-variant/50 font-normal'}>{card.subtitle}</span></h4>
-                        <p className={`text-[14px] leading-[1.4] mb-4 leading-snug ${isMandatory ? 'text-on-primary/70' : 'text-on-surface-variant/70'}`}>{card.description}</p>
-                      </div>
-                      <div className="flex items-center justify-between mt-4">
-                        {card.price !== 'Free' && (
-                          <span className={`text-[14px] font-bold ${isMandatory ? 'text-on-primary/80' : 'text-primary'}`}>{card.price}</span>
-                        )}
-                        {isMandatory ? (
-                          <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white/20">
-                            <span className="material-symbols-outlined text-[20px] text-on-primary">lock</span>
+          {FUNCTION_SECTIONS.filter(section => section.id !== 'admin').map((section) => {
+            const visibleCards = section.cards.filter(
+              card => !ADMIN_HIDDEN_IDS.has(card.id) && card.id !== 'dashboard' && card.id !== 'members'
+            );
+            if (visibleCards.length === 0) return null;
+            return (
+              <section key={section.id} className="mb-12">
+                <div className="flex items-center gap-2 mb-6">
+                  <div className={`h-6 w-1 ${section.accentColor} rounded-full`}></div>
+                  <h3 className="text-[18px] md:text-[20px] leading-[1.2] tracking-[-0.01em] font-bold" style={{ fontFamily: "'Inter', sans-serif" }}>{section.title} <span className="font-medium text-on-surface-variant ml-2 opacity-60 text-[14px] md:text-[16px]">{section.subtitle}</span></h3>
+                </div>
+                <div className="function-grid">
+                  {visibleCards.map((card) => {
+                    const isMandatory = card.mandatory === true;
+                    const isSelected = selectedSet.has(card.id);
+                    const isCoreChoice = section.id === 'core-choice';
+
+                    if (isCoreChoice) {
+                      return (
+                        <div
+                          key={card.id}
+                          onClick={() => toggleFunction(card.id)}
+                          className={`p-6 rounded-2xl cursor-pointer border transition-all duration-300 flex flex-col justify-between hover:shadow-lg ${
+                            isSelected
+                              ? 'bg-primary/5 border-primary/40 shadow-sm shadow-primary/5'
+                              : 'bg-surface-container-lowest border-surface-variant/40 shadow-sm'
+                          }`}
+                        >
+                          <div>
+                            <div className="flex justify-between items-start mb-4">
+                              <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors duration-300 ${isSelected ? 'bg-primary/10 text-primary' : 'bg-surface-container text-on-surface-variant/70'}`}>
+                                <span className="material-symbols-outlined text-2xl">{card.icon}</span>
+                              </div>
+                              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase transition-all ${
+                                isSelected
+                                  ? 'bg-primary/10 text-primary'
+                                  : 'bg-surface-container text-on-surface-variant/60'
+                              }`}>
+                                {isSelected ? 'ACTIVE' : 'INACTIVE'}
+                              </span>
+                            </div>
+                            <h4 className="text-[17px] font-bold mb-1 text-on-surface flex items-center gap-1.5" style={{ fontFamily: "'Inter', sans-serif" }}>
+                              {card.title}
+                              <span className="font-normal text-on-surface-variant/50 text-[13px]">{card.subtitle}</span>
+                            </h4>
+                            <p className="text-[13px] leading-[1.4] text-on-surface-variant/70 mb-4 line-clamp-2">{card.description}</p>
                           </div>
-                        ) : (
-                          <button
-                            onClick={() => toggleFunction(card.id)}
-                            className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                              isSelected
-                                ? 'bg-primary text-white shadow-lg'
-                                : 'bg-surface-container-high text-primary group-hover:bg-primary group-hover:text-white'
-                            }`}
-                          >
-                            <span className="material-symbols-outlined text-[20px]">{isSelected ? 'check' : 'add'}</span>
-                          </button>
-                        )}
+                          
+                          <div className="flex items-center justify-between pt-2 border-t border-surface-variant/20 mt-4">
+                            <span className="text-[13px] font-semibold text-primary">Free</span>
+                            
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleFunction(card.id);
+                              }}
+                              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none ${
+                                isSelected ? 'bg-primary' : 'bg-outline-variant/30'
+                              }`}
+                            >
+                              <span
+                                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-300 ease-in-out ${
+                                  isSelected ? 'translate-x-5' : 'translate-x-0'
+                                }`}
+                              />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div
+                        key={card.id}
+                        className={`p-6 rounded-2xl shadow-sm hover:shadow-lg transition-all group flex flex-col justify-between ${
+                          isMandatory
+                            ? 'bg-primary text-on-primary border border-primary/80 shadow-lg shadow-primary/20'
+                            : isSelected
+                              ? 'glass-card bg-primary/5 border-primary/20'
+                              : 'glass-card'
+                        }`}
+                      >
+                        <div>
+                          <div className="flex justify-between items-start mb-4">
+                            <span className={`material-symbols-outlined text-3xl ${isMandatory ? 'text-on-primary' : 'text-primary'}`}>{card.icon}</span>
+                            <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${
+                              isMandatory
+                                ? 'bg-white/20 text-white'
+                                : isSelected
+                                  ? STATUS_BADGE.INSTALLED.bg
+                                  : STATUS_BADGE[card.status].bg
+                            }`}>
+                              {isMandatory ? 'REQUIRED' : isSelected ? 'INSTALLED' : card.status}
+                            </span>
+                          </div>
+                          <h4 className={`text-[18px] font-semibold mb-1 ${isMandatory ? 'text-on-primary' : ''}`} style={{ fontFamily: "'Inter', sans-serif" }}>{card.title} <span className={isMandatory ? 'text-on-primary/60 font-normal' : 'text-on-surface-variant/50 font-normal'}>{card.subtitle}</span></h4>
+                          <p className={`text-[14px] leading-[1.4] mb-4 leading-snug ${isMandatory ? 'text-on-primary/70' : 'text-on-surface-variant/70'}`}>{card.description}</p>
+                        </div>
+                        <div className="flex items-center justify-between mt-4">
+                          {card.price !== 'Free' && (
+                            <span className={`text-[14px] font-bold ${isMandatory ? 'text-on-primary/80' : 'text-primary'}`}>{card.price}</span>
+                          )}
+                          {isMandatory ? (
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white/20">
+                              <span className="material-symbols-outlined text-[20px] text-on-primary">lock</span>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => toggleFunction(card.id)}
+                              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                                isSelected
+                                  ? 'bg-primary text-white shadow-lg'
+                                  : 'bg-surface-container-high text-primary group-hover:bg-primary group-hover:text-white'
+                              }`}
+                            >
+                              <span className="material-symbols-outlined text-[20px]">{isSelected ? 'check' : 'add'}</span>
+                            </button>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-          ))}
+                    );
+                  })}
+                </div>
+              </section>
+            );
+          })}
         </main>
 
         {selectedCount > 0 && (
@@ -515,21 +617,6 @@ const GroupFunctionBuilder = ({ group, onClose }: GroupFunctionBuilderProps) => 
           </div>
 
           <div className="space-y-1.5">
-            <div className="bg-surface-container-lowest border border-surface-variant/50 py-2.5 px-4 rounded-xl flex items-center gap-3">
-              <div className="w-6 flex justify-center">
-                <span className="material-symbols-outlined text-outline-variant text-xl">lock</span>
-              </div>
-              <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                <span className="material-symbols-outlined text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>dashboard</span>
-              </div>
-              <div className="flex-grow">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-on-surface text-[15px]">Dashboard</span>
-                  <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Fixed</span>
-                </div>
-              </div>
-            </div>
-
             <div className="space-y-1.5">
               {items.map((item, index) => {
                 if (item.type === "divider") {
@@ -573,7 +660,9 @@ const GroupFunctionBuilder = ({ group, onClose }: GroupFunctionBuilderProps) => 
                     <div className="w-10 h-10 bg-surface-container rounded-full flex items-center justify-center">
                       <span className="material-symbols-outlined text-on-surface-variant">{item.icon}</span>
                     </div>
-                    <div className="flex-grow font-bold text-on-surface text-[15px]">{item.label}</div>
+                    <div className="flex-grow font-bold text-on-surface text-[15px]">
+                      {SETTING_TO_USER[item.id] ? t(SETTING_TO_USER[item.id].key) : item.label}
+                    </div>
                   </div>
                 );
               })}

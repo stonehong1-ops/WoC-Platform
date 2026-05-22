@@ -87,7 +87,7 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
   }, [group.id]);
 
   const [ownerInfo, setOwnerInfo] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'list' | 'registrations' | 'payments'>('list');
+  const [activeTab, setActiveTab] = useState<'list' | 'registrations' | 'class_status' | 'payments'>('list');
   const [viewMode, setViewMode] = useState<'personal' | 'byClass'>('personal');
 
   // Detail & Editing Modals State
@@ -177,10 +177,32 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
     openClassFlow('apply', { modal: item.id, month: currentMonthStr });
   };
 
-  const getDayOfWeek = (dateStr: string): string => {
+  const getDayOfWeek = (dateStr: string, targetMonth?: string): string => {
     if (!dateStr) return '';
     const cleanDate = dateStr.replace(/\./g, '-');
-    const d = new Date(cleanDate);
+    const parts = cleanDate.split('-');
+    
+    let year = new Date().getFullYear();
+    let month = 1;
+    let day = 1;
+    
+    if (parts.length === 3) {
+      year = parseInt(parts[0], 10);
+      month = parseInt(parts[1], 10);
+      day = parseInt(parts[2], 10);
+    } else if (parts.length === 2) {
+      if (targetMonth && targetMonth.includes('-')) {
+        year = parseInt(targetMonth.split('-')[0], 10);
+      }
+      month = parseInt(parts[0], 10);
+      day = parseInt(parts[1], 10);
+    } else {
+      const d = new Date(cleanDate);
+      if (isNaN(d.getTime())) return '';
+      return ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][d.getDay()];
+    }
+    
+    const d = new Date(year, month - 1, day);
     if (isNaN(d.getTime())) return '';
     return ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][d.getDay()];
   };
@@ -194,7 +216,7 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
   const getClassDay = (cls: any): string => {
     if (cls.schedule && cls.schedule.length > 0) {
       const sortedSched = [...cls.schedule].sort((a, b) => a.date.localeCompare(b.date));
-      const day = getDayOfWeek(sortedSched[0]?.date);
+      const day = getDayOfWeek(sortedSched[0]?.date, cls.targetMonth || currentMonthStr);
       return day || 'MON';
     }
     return 'MON';
@@ -318,8 +340,13 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
   // Class Stats for 'By Class' view
   const classStats = useMemo(() => {
     return sortedMonthClasses.map(cls => {
-      const clsRegs = filteredRegistrations.filter(r => r.classId === cls.id && r.status !== 'CANCELED');
-      const leaders = clsRegs.filter(r => r.role === 'Leader');
+      const clsRegs = filteredRegistrations.filter(r => {
+        if (r.status === 'CANCELED') return false;
+        if (r.classId === cls.id) return true;
+        if (r.selectedClassIds && r.selectedClassIds.includes(cls.id)) return true;
+        return false;
+      });
+      const leaders = clsRegs.filter(r => (r.role || 'Leader') === 'Leader');
       const followers = clsRegs.filter(r => r.role === 'Follower');
       const couples = clsRegs.filter(r => r.role === 'Couple');
 
@@ -431,7 +458,7 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
     const daySuffix = day ? ` (${day})` : '';
     
     if (count > 0) {
-      return `${reg.classTitle}${daySuffix} (${count}${language === 'KR' ? '개 수업' : ' classes'})`;
+      return `${reg.classTitle} (${count}${language === 'KR' ? '개 수업' : ' classes'})`;
     }
     return `${reg.classTitle}${daySuffix}`;
   };
@@ -447,6 +474,32 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
     return [];
   };
 
+  const getSingleClassDay = (cls: any): string => {
+    if (!cls || !cls.schedule || cls.schedule.length === 0) return '';
+    const sortedSched = [...cls.schedule].sort((a, b) => a.date.localeCompare(b.date));
+    const firstDate = sortedSched[0]?.date;
+    if (!firstDate) return '';
+    const dd = new Date(firstDate.replace(/\./g, '-'));
+    if (isNaN(dd.getTime())) return '';
+    
+    const daysKr = ['일', '월', '화', '수', '목', '금', '토'];
+    const daysEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    return language === 'KR' ? daysKr[dd.getDay()] : daysEn[dd.getDay()];
+  };
+
+  const getIncludedClassObjects = (reg: ClassRegistration) => {
+    let targetClassIds: string[] = [];
+    if (reg.selectedClassIds && reg.selectedClassIds.length > 0) {
+      targetClassIds = reg.selectedClassIds;
+    } else {
+      const discount = allDiscounts.find(d => d.id === reg.classId);
+      if (discount && discount.includedClassIds) {
+        targetClassIds = discount.includedClassIds;
+      }
+    }
+    return targetClassIds.map(id => allClasses.find(c => c.id === id)).filter(Boolean) as any[];
+  };
+
   const formatDateTime = (timeAny: any): string => {
     if (!timeAny) return '-';
     let d: Date;
@@ -457,13 +510,16 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
     }
     if (isNaN(d.getTime())) return '-';
     
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
+    const daysKr = ['일', '월', '화', '수', '목', '금', '토'];
+    const daysEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const dayName = language === 'KR' ? daysKr[d.getDay()] : daysEn[d.getDay()];
+
+    const month = d.getMonth() + 1;
+    const date = d.getDate();
     const hh = String(d.getHours()).padStart(2, '0');
     const min = String(d.getMinutes()).padStart(2, '0');
     
-    return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
+    return `${month}.${date}(${dayName}) ${hh}:${min}`;
   };
 
   const openEditModal = (groupedReg: any) => {
@@ -515,6 +571,7 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
         {[
           { id: 'list', label: t('class-dashboard.tab.list') },
           { id: 'registrations', label: t('class-dashboard.tab.registrations') },
+          { id: 'class_status', label: t('class-dashboard.tab.class_status') },
           { id: 'payments', label: t('class-dashboard.tab.payments') }
         ].map((tab) => (
           <button
@@ -662,219 +719,273 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
 
       {activeTab === 'registrations' && (
         <div className="px-4 py-3 space-y-4 animate-in fade-in duration-300">
-          {/* Sub View Toggle Button */}
-          <div className="flex items-center justify-end">
-            <div className="flex items-center bg-slate-100 rounded-lg p-0.5 border border-slate-200/50">
-              <button
-                onClick={() => setViewMode('personal')}
-                className={`px-3 py-1 rounded-md text-[11px] font-black uppercase tracking-wider transition-all duration-200 ${
-                  viewMode === 'personal'
-                    ? 'bg-white text-[#0057bd] shadow-sm border border-slate-200/80'
-                    : 'text-slate-400 hover:text-slate-500'
-                }`}
-              >
-                {t('class-dashboard.view.personal')}
-              </button>
-              <button
-                onClick={() => setViewMode('byClass')}
-                className={`px-3 py-1 rounded-md text-[11px] font-black uppercase tracking-wider transition-all duration-200 ${
-                  viewMode === 'byClass'
-                    ? 'bg-white text-[#0057bd] shadow-sm border border-slate-200/80'
-                    : 'text-slate-400 hover:text-slate-500'
-                }`}
-              >
-                {t('class-dashboard.view.class')}
-              </button>
-            </div>
-          </div>
-
           {/* VIEW: Personal Grouped Cards */}
-          {viewMode === 'personal' && (
-            <div className="space-y-3">
-              {groupedRegistrations.length > 0 ? (
-                groupedRegistrations.map((g: any) => {
-                  const representativeReg = g.registrations[0];
-                  const hasMultiple = g.registrations.length > 1;
-                  const firstTitle = representativeReg?.classTitle || '';
-                  const totalCount = g.registrations.length;
-                  const isMe = user && g.userId === user.uid;
+          <div className="space-y-3">
+            {groupedRegistrations.length > 0 ? (
+              groupedRegistrations.map((g: any) => {
+                const representativeReg = g.registrations[0];
+                const hasMultiple = g.registrations.length > 1;
+                const firstTitle = representativeReg?.classTitle || '';
+                const totalCount = g.registrations.length;
+                const isMe = user && g.userId === user.uid;
 
-                  return (
-                    <article
-                      key={g.key}
-                      className={`bg-white rounded-2xl p-4 shadow-sm border transition-all hover:shadow-md ${
-                        isMe ? 'border-blue-200 bg-blue-50/20' : 'border-[#e0e4e5]/60'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        {/* Left Side: Avatar + Name + Subtext */}
-                        <div className="flex items-center gap-3">
-                          {g.userId ? (
-                            <UserBadge
-                              uid={g.userId}
-                              nickname={g.applicantName}
-                              avatarSize="w-10 h-10"
-                              nameClassName="font-extrabold text-[14px] text-[#2d3435]"
-                              nativeClassName="text-[10px] font-medium text-slate-400 ml-1.5"
-                            />
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
-                                <span className="material-symbols-outlined text-xl">person</span>
-                              </div>
-                              <div className="flex flex-col">
-                                <span className="font-extrabold text-[14px] text-[#2d3435]">{g.applicantName}</span>
-                                <span className="text-[9px] font-bold text-slate-400 px-1 py-0.5 bg-slate-100 rounded-md inline-block w-fit mt-0.5">NON-MEMBER</span>
-                              </div>
+                return (
+                  <article
+                    key={g.key}
+                    className={`bg-white rounded-2xl p-4 shadow-sm border transition-all hover:shadow-md ${
+                      isMe ? 'border-blue-200 bg-blue-50/20' : 'border-[#e0e4e5]/60'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      {/* Left Side: Avatar + Name + Subtext */}
+                      <div className="flex items-center gap-3">
+                        {g.userId ? (
+                          <UserBadge
+                            uid={g.userId}
+                            nickname={g.applicantName}
+                            avatarSize="w-10 h-10"
+                            nameClassName="font-extrabold text-[14px] text-[#2d3435]"
+                            nativeClassName="text-[10px] font-medium text-slate-400 ml-1.5"
+                          />
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                              <span className="material-symbols-outlined text-xl">person</span>
                             </div>
-                          )}
-                        </div>
-
-                        {/* Right Side: Payment Status Badge + Edit Button */}
-                        <div className="flex items-center gap-2">
-                          {representativeReg?.status && (() => {
-                            const badge = getStatusBadge(representativeReg.status);
-                            return (
-                              <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border ${badge.bg}`}>
-                                {badge.label}
-                              </span>
-                            );
-                          })()}
-                          {isMe && (
-                            <button
-                              onClick={() => openEditModal(g)}
-                              className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 font-bold text-[11px] text-[#596061] shadow-xs active:scale-95 transition-all flex items-center gap-1"
-                            >
-                              <span className="material-symbols-outlined text-[12px]">edit</span>
-                              {t('class-dashboard.modify')}
-                            </button>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Middle Side: Dynamic Item Link */}
-                      <div className="mt-3 bg-slate-50/75 rounded-xl p-3 border border-slate-100">
-                        <button
-                          onClick={() => setSelectedGroupedReg(g)}
-                          className="w-full text-left flex items-center justify-between group"
-                        >
-                          <span className="text-xs font-black text-[#0057bd] leading-snug break-all hover:underline flex-1 pr-2">
-                            {getRegistrationTitle(representativeReg)}
-                            {totalCount > 1 && (
-                              language === 'KR'
-                                ? ` 외 ${totalCount - 1}개`
-                                : ` and ${totalCount - 1} others`
-                            )}
-                          </span>
-                          <span className="material-symbols-outlined text-[16px] text-slate-400 group-hover:translate-x-0.5 transition-transform">
-                            chevron_right
-                          </span>
-                        </button>
-                      </div>
-
-                      {/* Bottom Side: Membership & Personal Memo */}
-                      {(representativeReg?.adminMemo || representativeReg?.applicantMemo) && (
-                        <div className="mt-3 pt-3 border-t border-slate-100 space-y-1.5">
-                          {representativeReg.adminMemo && (
-                            <div className="text-[11px] text-slate-500 font-medium leading-relaxed flex items-start gap-1">
-                              <span className="material-symbols-outlined text-[13px] mt-0.5 text-indigo-500 shrink-0">badge</span>
-                              <span>
-                                <strong className="text-indigo-600 font-bold">{language === 'KR' ? '멤버쉽' : 'Membership'}.</strong> {representativeReg.adminMemo}
-                              </span>
+                            <div className="flex flex-col">
+                              <span className="font-extrabold text-[14px] text-[#2d3435]">{g.applicantName}</span>
+                              <span className="text-[9px] font-bold text-slate-400 px-1 py-0.5 bg-slate-100 rounded-md inline-block w-fit mt-0.5">NON-MEMBER</span>
                             </div>
-                          )}
-                          {representativeReg.applicantMemo && (
-                            <div className="text-[11px] text-slate-500 font-medium leading-relaxed flex items-start gap-1">
-                              <span className="material-symbols-outlined text-[13px] mt-0.5 text-emerald-500 shrink-0">comment</span>
-                              <span>
-                                <strong className="text-emerald-600 font-bold">{language === 'KR' ? '입금메모' : 'Deposit Memo'}.</strong> {representativeReg.applicantMemo}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </article>
-                  );
-                })
-              ) : (
-                <div className="py-12 text-center bg-white rounded-2xl border border-slate-100">
-                  <span className="material-symbols-outlined text-4xl text-slate-300 mb-2">people</span>
-                  <p className="text-slate-500 font-medium text-sm">{t('class-dashboard.noRegistrationsYet')}</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* VIEW: Class Stats & Nickname Lists */}
-          {viewMode === 'byClass' && (
-            <div className="space-y-3">
-              {classStats.length > 0 ? (
-                classStats.map(({ class: cls, leaderCount, followerCount, registrations: clsRegs }) => {
-                  return (
-                    <article
-                      key={cls.id}
-                      className="bg-white rounded-2xl p-4 shadow-sm border border-[#e0e4e5]/60 space-y-3"
-                    >
-                      {/* Top: Class Title */}
-                      <h4 className="font-extrabold text-[14px] text-[#2d3435] leading-tight">{cls.title}</h4>
-
-                      {/* Middle: Counts */}
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl px-3 py-2 flex items-center justify-between">
-                          <span className="text-[10px] font-bold text-indigo-600 tracking-wider uppercase">{t('class-dashboard.leaders')}</span>
-                          <span className="text-[14px] font-black text-indigo-700">{t('class-dashboard.leader_count').replace('{count}', String(leaderCount))}</span>
-                        </div>
-                        <div className="bg-pink-50/50 border border-pink-100 rounded-xl px-3 py-2 flex items-center justify-between">
-                          <span className="text-[10px] font-bold text-pink-600 tracking-wider uppercase">{t('class-dashboard.followers')}</span>
-                          <span className="text-[14px] font-black text-pink-700">{t('class-dashboard.follower_count').replace('{count}', String(followerCount))}</span>
-                        </div>
-                      </div>
-
-                      {/* Bottom: Nicknames List */}
-                      {clsRegs.length > 0 ? (
-                        <div className="pt-2 border-t border-slate-100">
-                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2">{t('class-dashboard.registeredMembers')}</span>
-                          <div className="flex flex-wrap gap-1.5">
-                            {clsRegs.map((reg) => {
-                              return (
-                                <div
-                                  key={reg.id}
-                                  className="flex items-center gap-1 bg-slate-50 border border-slate-150 rounded-full pl-1 pr-2.5 py-0.5 max-w-[130px] shrink-0"
-                                >
-                                  {reg.userId ? (
-                                    <UserBadge
-                                      uid={reg.userId}
-                                      nickname={reg.applicantName}
-                                      avatarSize="w-5 h-5"
-                                      nameClassName="font-bold text-[10px] text-slate-600 truncate max-w-[60px]"
-                                      nativeClassName="text-[8px] font-semibold text-slate-400 ml-1 truncate max-w-[40px]"
-                                    />
-                                  ) : (
-                                    <div className="flex items-center gap-1 min-w-0">
-                                      <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 shrink-0">
-                                        <span className="material-symbols-outlined text-[10px]">person</span>
-                                      </div>
-                                      <span className="font-bold text-[10px] text-slate-600 truncate max-w-[60px]">{reg.applicantName}</span>
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
                           </div>
-                        </div>
-                      ) : (
-                        <p className="text-[11px] font-medium text-slate-400 italic pt-1">{language === 'KR' ? '신청자가 아직 없습니다.' : 'No members registered yet.'}</p>
-                      )}
-                    </article>
-                  );
-                })
-              ) : (
-                <div className="py-12 text-center bg-white rounded-2xl border border-slate-100">
-                  <p className="text-slate-500 font-medium text-sm">{language === 'KR' ? '수업 정보가 존재하지 않습니다.' : 'No class data available.'}</p>
-                </div>
-              )}
-            </div>
-          )}
+                        )}
+                      </div>
+
+                      {/* Right Side: Payment Status Badge + Edit Button */}
+                      <div className="flex items-center gap-2">
+                        {representativeReg?.status && (() => {
+                          const badge = getStatusBadge(representativeReg.status);
+                          return (
+                            <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border ${badge.bg}`}>
+                              {badge.label}
+                            </span>
+                          );
+                        })()}
+                        {isMe && (
+                          <button
+                            onClick={() => openEditModal(g)}
+                            className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 font-bold text-[11px] text-[#596061] shadow-xs active:scale-95 transition-all flex items-center gap-1"
+                          >
+                            <span className="material-symbols-outlined text-[12px]">edit</span>
+                            {t('class-dashboard.modify')}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Middle Side: Dynamic Item Link */}
+                    <div className="mt-3 bg-slate-50/75 rounded-xl p-3 border border-slate-100">
+                      <button
+                        onClick={() => setSelectedGroupedReg(g)}
+                        className="w-full text-left flex items-center justify-between group"
+                      >
+                        <span className="text-xs font-black text-[#0057bd] leading-snug break-all hover:underline flex-1 pr-2">
+                          {getRegistrationTitle(representativeReg)}
+                          {totalCount > 1 && (
+                            language === 'KR'
+                              ? ` 외 ${totalCount - 1}개`
+                              : ` and ${totalCount - 1} others`
+                          )}
+                        </span>
+                        <span className="material-symbols-outlined text-[16px] text-slate-400 group-hover:translate-x-0.5 transition-transform">
+                          chevron_right
+                        </span>
+                      </button>
+                    </div>
+
+                    {/* Bottom Side: Membership & Personal Memo */}
+                    {(representativeReg?.adminMemo || representativeReg?.applicantMemo) && (
+                      <div className="mt-3 pt-3 border-t border-slate-100 space-y-1.5">
+                        {representativeReg.adminMemo && (
+                          <div className="text-[11px] text-slate-500 font-medium leading-relaxed flex items-start gap-1">
+                            <span className="material-symbols-outlined text-[13px] mt-0.5 text-indigo-500 shrink-0">badge</span>
+                            <span>
+                              <strong className="text-indigo-600 font-bold">{language === 'KR' ? '멤버쉽' : 'Membership'}.</strong> {representativeReg.adminMemo}
+                            </span>
+                          </div>
+                        )}
+                        {representativeReg.applicantMemo && (
+                          <div className="text-[11px] text-slate-500 font-medium leading-relaxed flex items-start gap-1">
+                            <span className="material-symbols-outlined text-[13px] mt-0.5 text-emerald-500 shrink-0">comment</span>
+                            <span>
+                              <strong className="text-emerald-600 font-bold">{language === 'KR' ? '입금메모' : 'Deposit Memo'}.</strong> {representativeReg.applicantMemo}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </article>
+                );
+              })
+            ) : (
+              <div className="py-12 text-center bg-white rounded-2xl border border-slate-100">
+                <span className="material-symbols-outlined text-4xl text-slate-300 mb-2">people</span>
+                <p className="text-slate-500 font-medium text-sm">{t('class-dashboard.noRegistrationsYet')}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'class_status' && (
+        <div className="px-4 py-3 space-y-4 animate-in fade-in duration-300">
+          {/* VIEW: Class Stats & Nickname Lists */}
+          <div className="space-y-3">
+            {classStats.length > 0 ? (
+              classStats.map(({ class: cls, leaderCount, followerCount, registrations: clsRegs }) => {
+                return (
+                  <article
+                    key={cls.id}
+                    className="bg-white rounded-2xl p-4 shadow-sm border border-[#e0e4e5]/60 space-y-3"
+                  >
+                    {/* Top: Class Title */}
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className="font-extrabold text-[14px] text-[#2d3435] leading-tight">{cls.title}</h4>
+                      <span className="text-[12px] font-black text-[#0057bd] shrink-0 bg-blue-50 px-2 py-0.5 rounded-md">
+                        {(() => {
+                          const dayKey = getClassDay(cls);
+                          const dayLabel = language === 'KR'
+                            ? { 'MON': '월', 'TUE': '화', 'WED': '수', 'THU': '목', 'FRI': '금', 'SAT': '토', 'SUN': '일' }[dayKey] || dayKey
+                            : { 'MON': 'Mon', 'TUE': 'Tue', 'WED': 'Wed', 'THU': 'Thu', 'FRI': 'Fri', 'SAT': 'Sat', 'SUN': 'Sun' }[dayKey] || dayKey;
+                          return `(${dayLabel})`;
+                        })()}
+                      </span>
+                    </div>
+
+                    {/* Middle: Counts */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl px-3 py-2 flex items-center justify-between">
+                        <span className="text-[10px] font-bold text-indigo-600 tracking-wider uppercase">{t('class-dashboard.leaders')}</span>
+                        <span className="text-[14px] font-black text-indigo-700">{t('class-dashboard.leader_count').replace('{count}', String(leaderCount))}</span>
+                      </div>
+                      <div className="bg-pink-50/50 border border-pink-100 rounded-xl px-3 py-2 flex items-center justify-between">
+                        <span className="text-[10px] font-bold text-pink-600 tracking-wider uppercase">{t('class-dashboard.followers')}</span>
+                        <span className="text-[14px] font-black text-pink-700">{t('class-dashboard.follower_count').replace('{count}', String(followerCount))}</span>
+                      </div>
+                    </div>
+
+                    {/* Bottom: Nicknames List */}
+                    {clsRegs.length > 0 ? (
+                      <div className="pt-2 border-t border-slate-100 space-y-3">
+                        {/* Leaders list */}
+                        {(() => {
+                          const leaders = clsRegs.filter(r => (r.role || 'Leader') === 'Leader' || r.role === 'Couple');
+                          return (
+                            <div className="space-y-1.5">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest block">{t('class-dashboard.leaders')}</span>
+                                <span className="text-[9px] font-black text-indigo-400 bg-indigo-50 px-1.5 py-0.2 rounded-sm">{leaders.length}</span>
+                              </div>
+                              {leaders.length > 0 ? (
+                                <div className="flex flex-wrap gap-1.5">
+                                  {leaders.map((reg) => (
+                                    <div
+                                      key={`leader-${reg.id}`}
+                                      className="flex items-center gap-1 bg-[#f4f7fb] border border-[#e2eaf4] rounded-full pl-1 pr-2 py-0.5 max-w-[135px] shrink-0"
+                                    >
+                                      {reg.userId ? (
+                                        <UserBadge
+                                          uid={reg.userId}
+                                          nickname={reg.applicantName}
+                                          avatarSize="w-5 h-5"
+                                          nameClassName="font-bold text-[10px] text-slate-600 truncate max-w-[60px]"
+                                          nativeClassName="text-[8px] font-semibold text-slate-400 ml-1 truncate max-w-[40px]"
+                                        />
+                                      ) : (
+                                        <div className="flex items-center gap-1 min-w-0">
+                                          <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 shrink-0">
+                                            <span className="material-symbols-outlined text-[10px]">person</span>
+                                          </div>
+                                          <span className="font-bold text-[10px] text-slate-600 truncate max-w-[60px]">{reg.applicantName}</span>
+                                        </div>
+                                      )}
+                                      {reg.role === 'Couple' && (
+                                        <span className="text-[8px] font-black text-[#b45309] bg-[#fef3c7] px-1 py-0.2 rounded-sm scale-90 shrink-0 select-none">
+                                          C
+                                        </span>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <p className="text-[10px] font-medium text-slate-400 italic pl-1">
+                                  {language === 'KR' ? '신청한 리더가 없습니다.' : 'No leaders registered.'}
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })()}
+
+                        {/* Followers list */}
+                        {(() => {
+                          const followers = clsRegs.filter(r => r.role === 'Follower' || r.role === 'Couple');
+                          return (
+                            <div className="space-y-1.5">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[9px] font-black text-pink-500 uppercase tracking-widest block">{t('class-dashboard.followers')}</span>
+                                <span className="text-[9px] font-black text-pink-400 bg-pink-50 px-1.5 py-0.2 rounded-sm">{followers.length}</span>
+                              </div>
+                              {followers.length > 0 ? (
+                                <div className="flex flex-wrap gap-1.5">
+                                  {followers.map((reg) => (
+                                    <div
+                                      key={`follower-${reg.id}`}
+                                      className="flex items-center gap-1 bg-[#fff5f6] border border-[#ffe4e6] rounded-full pl-1 pr-2 py-0.5 max-w-[135px] shrink-0"
+                                    >
+                                      {reg.userId ? (
+                                        <UserBadge
+                                          uid={reg.userId}
+                                          nickname={reg.applicantName}
+                                          avatarSize="w-5 h-5"
+                                          nameClassName="font-bold text-[10px] text-slate-600 truncate max-w-[60px]"
+                                          nativeClassName="text-[8px] font-semibold text-slate-400 ml-1 truncate max-w-[40px]"
+                                        />
+                                      ) : (
+                                        <div className="flex items-center gap-1 min-w-0">
+                                          <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 shrink-0">
+                                            <span className="material-symbols-outlined text-[10px]">person</span>
+                                          </div>
+                                          <span className="font-bold text-[10px] text-slate-600 truncate max-w-[60px]">{reg.applicantName}</span>
+                                        </div>
+                                      )}
+                                      {reg.role === 'Couple' && (
+                                        <span className="text-[8px] font-black text-[#b45309] bg-[#fef3c7] px-1 py-0.2 rounded-sm scale-90 shrink-0 select-none">
+                                          C
+                                        </span>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <p className="text-[10px] font-medium text-slate-400 italic pl-1">
+                                  {language === 'KR' ? '신청한 팔로워가 없습니다.' : 'No followers registered.'}
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    ) : (
+                      <p className="text-[11px] font-medium text-slate-400 italic pt-1">{language === 'KR' ? '신청자가 아직 없습니다.' : 'No members registered yet.'}</p>
+                    )}
+                  </article>
+                );
+              })
+            ) : (
+              <div className="py-12 text-center bg-white rounded-2xl border border-slate-100">
+                <p className="text-slate-500 font-medium text-sm">{language === 'KR' ? '수업 정보가 존재하지 않습니다.' : 'No class data available.'}</p>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -1067,20 +1178,33 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
                     </div>
                     
                     {/* Included individual classes */}
-                    {includedClasses.length > 0 && (
-                      <div className="mt-1 pl-3.5 border-l-2 border-slate-200/80 space-y-1.5 py-0.5">
-                        {includedClasses.map((title, idx) => (
-                          <div key={idx} className="text-[11px] font-bold text-slate-500 flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#0057bd] shrink-0"></span>
-                            <span className="truncate">{title}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    {(() => {
+                      const includedClassObjs = getIncludedClassObjects(reg);
+                      if (includedClassObjs.length === 0) return null;
+                      return (
+                        <div className="mt-1 pl-3.5 border-l-2 border-slate-200/80 space-y-1.5 py-0.5">
+                          {includedClassObjs.map((cls, idx) => {
+                            const clsDay = getSingleClassDay(cls);
+                            const dayPrefix = clsDay ? `(${clsDay}) ` : '';
+                            const partnerSuffix = reg.partnerName && reg.partnerName.trim() !== '' 
+                              ? ` (${reg.partnerName})` 
+                              : '';
+                            return (
+                              <div key={idx} className="text-[11px] font-bold text-slate-500 flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#0057bd] shrink-0"></span>
+                                <span className="truncate">
+                                  - {dayPrefix}{cls.title}{partnerSuffix}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
                     
                     {/* 3-Step compact status workflow */}
                     <div className="mt-2.5 pt-3.5 border-t border-slate-200/50 space-y-2">
-                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">{language === 'KR' ? '진행 상태 워크플로우' : 'Progress Workflow'}</span>
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">{language === 'KR' ? '진행 상태' : 'Progress Status'}</span>
                       <div className="grid grid-cols-3 gap-1 relative mt-1">
                         {/* Line connector background */}
                         <div className="absolute top-[14px] left-[15%] right-[15%] h-[2px] bg-slate-200 z-0"></div>
@@ -1133,7 +1257,7 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
                     
                     <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 pt-2.5 mt-1 border-t border-slate-200/50">
                       <span>
-                        {language === 'KR' ? '댄스 역할' : 'Dance Role'}: <strong className="text-slate-600">{reg.role || 'Leader'}</strong>
+                        {language === 'KR' ? '댄스 역할' : 'Dance Role'}: <strong className="text-slate-600">{(reg.role || 'Leader').toUpperCase()}</strong>
                       </span>
                       <span className="text-[#0057bd] font-black text-xs">
                         {getCurrencySymbol(reg.currency || 'KRW')}{(reg.amount || 0).toLocaleString()}

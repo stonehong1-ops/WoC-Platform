@@ -2,6 +2,7 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import Portal from '@/components/common/Portal';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { storageService } from '@/lib/firebase/storageService';
@@ -18,11 +19,32 @@ import { KIND_ICON, KIND_COLOR } from '@/constants/tags';
 
 /* ?€?€?€ Types ?€?€?€ */
 interface MediaItem {
-  id: string; url: string; type: 'image' | 'video';
+  id: string; url: string; type: 'image' | 'video' | 'link';
   progress: number; status: 'uploading' | 'completed' | 'error'; file?: File;
+  linkMetadata?: {
+    title: string;
+    description: string;
+    image: string;
+    domain: string;
+  };
 }
 interface TagItem { id: string; label: string; kind: 'people' | 'venue' | 'event' | 'social' | 'group'; photo?: string; }
 interface Props { isOpen: boolean; onClose: () => void; context?: FeedContext; editingPost?: Post | null; }
+
+const T_COLOR: Record<string, string> = {
+  group: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  social: 'bg-purple-50 text-purple-700 border-purple-200',
+  event: 'bg-amber-50 text-amber-700 border-amber-200',
+  venue: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  people: 'bg-pink-50 text-pink-700 border-pink-200',
+};
+const T_ICON: Record<string, string> = {
+  group: 'corporate_fare',
+  social: 'music_note',
+  event: 'calendar_today',
+  venue: 'location_on',
+  people: 'person',
+};
 
 /* ?€?€?€ Style config ?€?€?€ */
 const COLOR_PALETTE = [
@@ -60,6 +82,7 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
 
   const [content, setContent] = useState('');
   const [media, setMedia] = useState<MediaItem[]>([]);
+  const [searchMode, setSearchMode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedColor, setSelectedColor] = useState<typeof COLOR_PALETTE[0] | null>(null);
   const [selectedImpact, setSelectedImpact] = useState(0);
@@ -101,6 +124,69 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
     }
     setTagKeyword(''); setTagResults([]);
   }, [editingPost, isOpen]);
+
+  /* 🔗 Link Auto Detection & Manual Adding 🔗 */
+  const [showLinkInput, setShowLinkInput] = useState(false);
+  const [linkInputVal, setLinkInputVal] = useState('');
+
+  const handleLinkSubmit = async () => {
+    if (!linkInputVal.trim()) return;
+    const url = linkInputVal.trim();
+    setLinkInputVal('');
+    setShowLinkInput(false);
+    await fetchLinkMetadata(url);
+  };
+
+  const fetchLinkMetadata = async (url: string) => {
+    // 이미 존재하는 링크가 있으면 스킵
+    if (media.some(m => m.url === url)) return;
+
+    const tempId = Math.random().toString(36).slice(7);
+    setMedia(prev => [...prev, {
+      id: tempId,
+      url,
+      type: 'link',
+      progress: 50,
+      status: 'uploading'
+    }]);
+
+    try {
+      const res = await fetch(`/api/link-preview?url=${encodeURIComponent(url)}`);
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      
+      setMedia(prev => prev.map(m => m.id === tempId ? {
+        ...m,
+        status: 'completed',
+        progress: 100,
+        linkMetadata: {
+          title: data.title || '',
+          description: data.description || '',
+          image: data.image || '',
+          domain: data.domain || ''
+        }
+      } : m));
+    } catch {
+      setMedia(prev => prev.filter(m => m.id !== tempId));
+    }
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const urlRegex = /(https?:\/\/[^\s]+)/gi;
+    const urls = content.match(urlRegex);
+    if (!urls || urls.length === 0) return;
+
+    const firstUrl = urls[0];
+    const hasAlready = media.some(m => m.type === 'link' && m.url === firstUrl);
+    if (hasAlready) return;
+
+    const timer = setTimeout(async () => {
+      await fetchLinkMetadata(firstUrl);
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [content, media, isOpen]);
 
   /* ⚙ Tag Cache (load all once on open) ⚙ */
   useEffect(() => {
@@ -206,7 +292,11 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
     setIsSubmitting(true);
     try {
       const finalTargets = context?.scope === 'plaza' ? ['plaza', context.scopeId] : [context?.scopeId || 'freestyle-tango'];
-      const mediaData = media.filter(m => m.status === 'completed').map(m => ({ url: m.url, type: m.type }));
+      const mediaData = media.filter(m => m.status === 'completed').map(m => ({
+        url: m.url,
+        type: m.type,
+        ...(m.type === 'link' ? { linkMetadata: m.linkMetadata } : {})
+      }));
       const styleData = showColorPreview ? {
         shortTextStyle: {
           bgColor: selectedColor!.bg, textColor: selectedColor!.text,
@@ -244,278 +334,409 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
 
   return (
     <Portal>
-      <div className="fixed inset-0 z-[10000] bg-surface-bright text-on-surface font-body-md antialiased flex flex-col">
-
-        {/* ?€?€ TopAppBar ?€?€ */}
-        <header className="fixed top-0 w-full z-50 flex items-center justify-between px-4 h-16 bg-white shadow-sm border-b border-slate-100">
-          <div className="flex items-center gap-3">
-            <button onClick={handleClose} className="p-2 rounded-full active:scale-95 duration-150 hover:bg-slate-50">
-              <span className="material-symbols-outlined text-slate-500">close</span>
+      <div className="fixed inset-0 z-[10000] bg-black/40 flex items-center justify-center backdrop-blur-[2px]">
+        <div className="w-full max-w-md h-[100dvh] bg-white flex flex-col overflow-hidden relative shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+          
+          {/* Header */}
+          <div className="flex-shrink-0 bg-white border-b border-slate-100 px-4 h-14 flex items-center justify-between z-50">
+            <button 
+              type="button" 
+              onClick={handleClose} 
+              className="w-10 h-10 flex items-center justify-center -ml-2 active:scale-95 transition-transform text-slate-700 hover:bg-slate-50 rounded-full"
+            >
+              <span className="material-symbols-rounded text-2xl">close</span>
             </button>
-            <h1 className="font-title-md text-title-md text-on-surface">{editingPost ? t('feed.edit_post') : t('feed.create_post')}</h1>
+            <h1 className="text-[14px] font-black uppercase tracking-widest text-slate-800">
+              {editingPost ? t('feed.edit_post') : t('feed.create_post')}
+            </h1>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={isSubmitting || (!content.trim() && media.length === 0) || media.some(m => m.status === 'uploading')}
+              className="text-[14px] font-bold text-primary active:scale-95 disabled:opacity-40"
+            >
+              {isSubmitting ? (editingPost ? t('feed.updating') : t('feed.posting')) : (editingPost ? t('feed.update') : t('feed.post'))}
+            </button>
           </div>
-          <button
-            onClick={handleSubmit}
-            disabled={isSubmitting || (!content.trim() && media.length === 0) || media.some(m => m.status === 'uploading')}
-            className="px-5 py-2 rounded-xl bg-primary-container text-white font-title-md text-body-md hover:opacity-90 active:scale-95 duration-150 transition-all disabled:opacity-40"
-          >
-            {isSubmitting ? (editingPost ? t('feed.updating') : t('feed.posting')) : (editingPost ? t('feed.update') : t('feed.post'))}
-          </button>
-        </header>
 
-        {/* ?€?€ Scrollable Canvas ?€?€ */}
-        <main className="flex-1 overflow-y-auto pt-20 pb-32 px-[1.5rem] max-w-[56rem] mx-auto w-full space-y-4">
-
-          {/* Profile Section */}
-          <section className="flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="w-12 h-12 rounded-full shadow-sm border-2 border-primary-container/20 flex-shrink-0 overflow-hidden bg-surface-container relative flex items-center justify-center">
-            <span className="material-symbols-outlined text-on-surface-variant absolute" style={{ fontSize: '28px', fontVariationSettings: "'FILL' 1" }}>person</span>
-            {!isHelpDesk && ((profile?.photoURL && profile.photoURL !== 'https://lh3.googleusercontent.com/a/default-user') || (user?.photoURL && user.photoURL !== 'https://lh3.googleusercontent.com/a/default-user')) && (
-              <img
-                alt={profile?.nickname || 'User'}
-                className="w-full h-full object-cover relative z-10"
-                src={(profile?.photoURL && profile.photoURL !== 'https://lh3.googleusercontent.com/a/default-user') ? profile.photoURL : user?.photoURL!}
-                onError={(e) => e.currentTarget.style.display = 'none'}
-              />
-            )}
-          </div>
-            <div className="space-y-0.5">
-              <div className="flex items-baseline gap-1">
-                <h2 className="font-title-md text-title-sm">{isHelpDesk ? t('help_desk.anonymous', 'Anonymous') : (profile?.nickname || user?.displayName || 'Anonymous')}</h2>
-                {!isHelpDesk && profile?.nativeNickname && <span className="text-[11px] text-on-surface-variant font-medium">({profile.nativeNickname})</span>}
-              </div>
-              <div className="flex items-center gap-1.5 px-2 py-0.5 bg-surface-container-low rounded-full border border-outline-variant/30 w-fit cursor-default">
-                <span className="material-symbols-outlined text-[16px] text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>groups</span>
-                <span className="font-label-sm text-[11px] text-on-surface-variant">{context?.scopeId || 'Freestyle Tango'}</span>
-                <span className="material-symbols-outlined text-[14px] text-outline">expand_more</span>
-              </div>
-            </div>
-          </section>
-
-          {/* Text Input / Color Preview */}
-          <section className="w-full">
-            {showColorPreview ? (
-              <div
-                className="rounded-2xl p-5 min-h-[120px] flex items-center justify-center transition-all cursor-pointer"
-                style={{ background: selectedColor!.bg, color: selectedColor!.text }}
-                onClick={() => setSelectedColor(null)}
-                title={t('feed.click_to_edit')}
-              >
-                <p className={`text-center break-words w-full ${previewClass}`} style={{ color: selectedColor!.text }}>{content}</p>
-              </div>
-            ) : (
-              <textarea
-                className="w-full min-h-[120px] bg-transparent border-none focus:ring-0 text-lg font-body-md text-on-surface placeholder:text-outline/60 resize-none"
-                placeholder={t('plaza.compose_prompt')}
-                value={content}
-                onChange={e => setContent(e.target.value)}
-              />
-            )}
-            {content.length > 0 && (
-              <p className={`text-[10px] mt-1 text-right font-bold tracking-wide ${content.length <= 70 ? 'text-primary' : 'text-outline'}`}>
-                {content.length}/70 {content.length <= 70 ? t('feed.style_available') : ''}
-              </p>
-            )}
-          </section>
-
-          {/* Palette + Style Section */}
-          <section className="flex flex-col gap-2 animate-in fade-in duration-700">
-          {/* Color Row */}
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold text-outline tracking-wider uppercase shrink-0 w-[42px]">{t('feed.palette')}</span>
-              <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-1">
-                {COLOR_PALETTE.map((c, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setSelectedColor(selectedColor?.name === c.name ? null : c)}
-                    title={c.name}
-                    className={`rounded-full border-2 flex-shrink-0 transition-all hover:scale-110 active:scale-95 duration-150 ${
-                      selectedColor?.name === c.name
-                        ? 'ring-2 ring-primary ring-offset-1 border-primary scale-110'
-                        : 'border-outline-variant/50'
-                    } ${i === 0 ? 'w-6 h-6' : 'w-[20px] h-[20px]'}`}
-                    style={c.isDefault ? {} : { backgroundColor: c.bg }}
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-4 mt-4 space-y-6 pb-6 text-left no-scrollbar">
+            
+            {/* Profile Section */}
+            <section className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full shadow-sm border border-slate-100 flex-shrink-0 overflow-hidden bg-slate-50 relative flex items-center justify-center">
+                <span className="material-symbols-rounded text-slate-400 absolute" style={{ fontSize: '24px' }}>person</span>
+                {!isHelpDesk && ((profile?.photoURL && profile.photoURL !== 'https://lh3.googleusercontent.com/a/default-user') || (user?.photoURL && user.photoURL !== 'https://lh3.googleusercontent.com/a/default-user')) && (
+                  <img
+                    alt={profile?.nickname || 'User'}
+                    className="w-full h-full object-cover relative z-10"
+                    src={(profile?.photoURL && profile.photoURL !== 'https://lh3.googleusercontent.com/a/default-user') ? profile.photoURL : user?.photoURL!}
+                    onError={(e) => e.currentTarget.style.display = 'none'}
                   />
-                ))}
-              </div>
-            </div>
-
-            {/* Style Row ??Impact + Emphasis ??以?(??0?????쒖떆) */}
-            {/* Style Row */}
-            {isShort && (
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold text-outline tracking-wider uppercase shrink-0 w-[42px]">{t('feed.style')}</span>
-                <div className="flex items-center gap-1">
-                  {IMPACT_SIZES.map((s, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setSelectedImpact(i)}
-                      title={[t('feed.style_normal'), t('feed.style_bold'), t('feed.style_impact')][i]}
-                      style={{ fontWeight: s.weight, fontSize: s.size }}
-                      className={`w-8 h-7 rounded-md border transition-all active:scale-95 flex items-center justify-center leading-none ${
-                        selectedImpact === i
-                          ? 'bg-primary text-white border-primary shadow-sm'
-                          : 'border-outline-variant/40 text-outline hover:bg-surface-container'
-                      }`}
-                    >
-                      A
-                    </button>
-                  ))}
-                </div>
-                <div className="w-px h-4 bg-outline-variant/30 mx-1" />
-                <div className="flex items-center gap-1">
-                  {EMPHASIS_OPTIONS.map((o, i) => (
-                    <button
-                      key={i}
-                      title={[t('feed.style_bold'), t('feed.style_italic'), t('feed.style_uppercase')][i]}
-                      onClick={() => setSelectedEmphasis(prev => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i])}
-                      className={`w-7 h-7 rounded-md text-[11px] border transition-all active:scale-95 flex items-center justify-center ${
-                        selectedEmphasis.includes(i)
-                          ? 'bg-primary text-white border-primary shadow-sm'
-                          : 'border-outline-variant/40 text-outline hover:bg-surface-container'
-                      } ${o.cls}`}
-                    >
-                      {o.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </section>
-
-          {/* Media Section */}
-          {showMedia && (
-            <section className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-label-xs text-label-xs text-outline tracking-[0.1em] uppercase">{t('feed.media')}</h3>
-                {media.length > 0 && (
-                  <button
-                    onClick={() => mediaInputRef.current?.click()}
-                    className="flex items-center gap-1 px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold hover:bg-primary/20 transition-colors"
-                  >
-                    <span className="material-symbols-outlined text-sm">add_photo_alternate</span> {t('feed.add')}
-                  </button>
                 )}
               </div>
-              {media.length > 0 ? (
-                <div className="flex gap-3 overflow-x-auto pb-2 snap-x">
+              <div className="space-y-0.5">
+                <div className="flex items-baseline gap-1">
+                  <h2 className="text-sm font-bold text-slate-800">{isHelpDesk ? t('help_desk.anonymous', 'Anonymous') : (profile?.nickname || user?.displayName || 'Anonymous')}</h2>
+                  {!isHelpDesk && profile?.nativeNickname && <span className="text-[10px] text-slate-400 font-medium">({profile.nativeNickname})</span>}
+                </div>
+                <div className="flex items-center gap-1 px-2 py-0.5 bg-slate-50 rounded-full border border-slate-100 w-fit cursor-default">
+                  <span className="material-symbols-rounded text-[14px] text-primary">groups</span>
+                  <span className="text-[10px] font-bold text-slate-500">{context?.scopeId || 'Freestyle Tango'}</span>
+                </div>
+              </div>
+            </section>
+
+            {/* Text Area */}
+            <section className="w-full">
+              {showColorPreview ? (
+                <div
+                  className="rounded-2xl p-5 min-h-[120px] flex items-center justify-center transition-all cursor-pointer shadow-sm border border-slate-100"
+                  style={{ background: selectedColor!.bg, color: selectedColor!.text }}
+                  onClick={() => setSelectedColor(null)}
+                  title={t('feed.click_to_edit')}
+                >
+                  <p className={`text-center break-words w-full ${previewClass}`} style={{ color: selectedColor!.text }}>{content}</p>
+                </div>
+              ) : (
+                <textarea
+                  className="w-full min-h-[100px] bg-transparent border-none focus:ring-0 text-base font-normal text-slate-800 placeholder:text-slate-400 resize-none outline-none"
+                  placeholder={t('plaza.compose_prompt')}
+                  value={content}
+                  onChange={e => setContent(e.target.value)}
+                />
+              )}
+              {content.length > 0 && (
+                <p className={`text-[10px] mt-1 text-right font-bold tracking-wide ${content.length <= 70 ? 'text-primary' : 'text-slate-400'}`}>
+                  {content.length}/70 {content.length <= 70 ? t('feed.style_available') : ''}
+                </p>
+              )}
+            </section>
+
+            {/* Palette + Style Section */}
+            <section className="flex flex-col gap-3 py-2 border-t border-b border-slate-50">
+              {/* Color Row */}
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] font-black text-slate-400 tracking-wider uppercase shrink-0 w-[42px]">{t('feed.palette')}</span>
+                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+                  {COLOR_PALETTE.map((c, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setSelectedColor(selectedColor?.name === c.name ? null : c)}
+                      title={c.name}
+                      className={`rounded-full border flex-shrink-0 transition-all hover:scale-110 active:scale-95 duration-150 ${
+                        selectedColor?.name === c.name
+                          ? 'ring-2 ring-primary ring-offset-1 border-primary scale-110'
+                          : 'border-slate-200'
+                      } ${i === 0 ? 'w-5 h-5 bg-transparent relative flex items-center justify-center before:w-3 before:h-px before:bg-slate-300 before:rotate-45 after:w-3 after:h-px after:bg-slate-300 after:-rotate-45' : 'w-[18px] h-[18px]'}`}
+                      style={c.isDefault ? {} : { backgroundColor: c.bg }}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Style Row */}
+              {isShort && (
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] font-black text-slate-400 tracking-wider uppercase shrink-0 w-[42px]">{t('feed.style')}</span>
+                  <div className="flex items-center gap-1 shrink-0">
+                    {IMPACT_SIZES.map((s, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setSelectedImpact(i)}
+                        title={[t('feed.style_normal'), t('feed.style_bold'), t('feed.style_impact')][i]}
+                        style={{ fontWeight: s.weight, fontSize: s.size }}
+                        className={`w-7 h-7 rounded-lg border transition-all active:scale-95 flex items-center justify-center leading-none ${
+                          selectedImpact === i
+                            ? 'bg-primary text-white border-primary shadow-sm'
+                            : 'border-slate-200 text-slate-500 hover:bg-slate-50'
+                        }`}
+                      >
+                        A
+                      </button>
+                    ))}
+                  </div>
+                  <div className="w-px h-4 bg-slate-200 mx-1" />
+                  <div className="flex items-center gap-1 shrink-0">
+                    {EMPHASIS_OPTIONS.map((o, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        title={[t('feed.style_bold'), t('feed.style_italic'), t('feed.style_uppercase')][i]}
+                        onClick={() => setSelectedEmphasis(prev => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i])}
+                        className={`w-7 h-7 rounded-lg text-[10px] border transition-all active:scale-95 flex items-center justify-center ${
+                          selectedEmphasis.includes(i)
+                            ? 'bg-primary text-white border-primary shadow-sm'
+                            : 'border-slate-200 text-slate-500 hover:bg-slate-50'
+                        } ${o.cls}`}
+                      >
+                        {o.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </section>
+
+            {/* Media Section */}
+            {showMedia && (
+              <section className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    {t('feed.media')} ({media.length})
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowLinkInput(!showLinkInput)}
+                    className="flex items-center gap-1 px-2.5 py-1 bg-slate-50 text-slate-600 border border-slate-200 rounded-full text-[11px] font-bold hover:bg-slate-100 transition-colors active:scale-95 duration-100 shrink-0"
+                  >
+                    <span className="material-symbols-rounded text-[14px]">link</span> {t('feed.add_link', 'Link')}
+                  </button>
+                </div>
+
+                {/* Manual Link Input Form */}
+                {showLinkInput && (
+                  <div className="flex gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-xl shadow-sm animate-in fade-in duration-200">
+                    <input
+                      type="url"
+                      placeholder="https://example.com"
+                      value={linkInputVal}
+                      onChange={e => setLinkInputVal(e.target.value)}
+                      className="flex-1 bg-transparent border-none text-xs text-slate-800 placeholder:text-slate-400 focus:ring-0 outline-none"
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleLinkSubmit();
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleLinkSubmit}
+                      className="px-3 py-1.5 bg-primary text-white text-[11px] font-bold rounded-lg hover:opacity-90 active:scale-95 duration-100 transition-all shrink-0"
+                    >
+                      {t('common.add', 'Add')}
+                    </button>
+                  </div>
+                )}
+
+                <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
+                  {/* Plus Add Button */}
+                  <button 
+                    type="button" 
+                    onClick={() => mediaInputRef.current?.click()}
+                    className="w-20 h-20 flex-shrink-0 flex flex-col items-center justify-center border-2 border-dashed border-[#acb3b4] rounded-xl text-[#596061] bg-[#f8f9fa] active:scale-95 transition-transform"
+                  >
+                    <span className="material-symbols-rounded text-2xl mb-1">add_a_photo</span>
+                  </button>
+                  <input ref={mediaInputRef} type="file" className="hidden" accept="image/*,video/*" multiple onChange={handleMediaSelect} />
+
+                  {/* Loaded Media Items */}
                   {media.map(item => (
-                    <div key={item.id} className="relative flex-shrink-0 w-40 h-52 rounded-xl overflow-hidden snap-start group shadow border border-outline-variant/20">
-                      {item.type === 'video'
-                        ? <video className={`w-full h-full object-cover ${item.status === 'uploading' ? 'brightness-50' : ''}`} src={item.url} muted playsInline />
-                        : <img alt="" className={`w-full h-full object-cover ${item.status === 'uploading' ? 'brightness-50' : ''}`} src={item.url} />}
+                    <div key={item.id} className="w-20 h-20 flex-shrink-0 relative rounded-xl overflow-hidden border border-slate-100 group shadow-sm bg-slate-50">
+                      {item.type === 'link' ? (
+                        <div className="w-full h-full relative select-none bg-slate-100 flex items-center justify-center">
+                          {item.linkMetadata?.image ? (
+                            <img alt="" className="w-full h-full object-cover brightness-95" src={item.linkMetadata.image} />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center">
+                              <span className="material-symbols-rounded text-slate-400 text-lg">link</span>
+                            </div>
+                          )}
+                          {/* YouTube Video Play Icon */}
+                          {item.linkMetadata?.domain?.includes('youtube') && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                              <div className="w-6 h-6 rounded-full bg-red-600 flex items-center justify-center shadow-md">
+                                <span className="material-symbols-rounded text-white text-xs leading-none" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
+                              </div>
+                            </div>
+                          )}
+                          {/* Tiny Link Domain Overlay */}
+                          <div className="absolute bottom-0 inset-x-0 bg-black/60 px-1 py-0.5 text-center">
+                            <p className="text-[7px] text-white font-bold tracking-wide uppercase truncate">{item.linkMetadata?.domain || 'LINK'}</p>
+                          </div>
+                        </div>
+                      ) : item.type === 'video' ? (
+                        <div className="w-full h-full relative">
+                          <video className={`w-full h-full object-cover ${item.status === 'uploading' ? 'brightness-50' : ''}`} src={item.url} muted playsInline />
+                          <div className="absolute bottom-1 right-1 bg-black/60 text-white text-[7px] px-1 py-0.5 rounded font-bold">VIDEO</div>
+                        </div>
+                      ) : (
+                        <img alt="" className={`w-full h-full object-cover ${item.status === 'uploading' ? 'brightness-50' : ''}`} src={item.url} />
+                      )}
+
+                      {/* Uploading Progress */}
                       {item.status === 'uploading' && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
-                          <p className="text-white font-bold text-xs mb-2">{item.progress}%</p>
-                          <div className="w-full bg-white/30 h-1 rounded-full">
-                            <div className="bg-white h-full rounded-full transition-all" style={{ width: `${item.progress}%` }} />
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40">
+                          <p className="text-white font-bold text-[9px] mb-1">{item.progress}%</p>
+                          <div className="w-12 bg-white/30 h-[3px] rounded-full overflow-hidden">
+                            <div className="bg-white h-full transition-all" style={{ width: `${item.progress}%` }} />
                           </div>
                         </div>
                       )}
-                      {item.status === 'completed' && (
-                        <button onClick={() => removeMedia(item.id)} className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
-                          <span className="material-symbols-outlined text-sm">close</span>
-                        </button>
-                      )}
-                      {item.type === 'video' && item.status === 'completed' && (
-                        <div className="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">VIDEO</div>
-                      )}
+
+                      {/* Error Badge */}
                       {item.status === 'error' && (
                         <div className="absolute inset-0 flex items-center justify-center bg-red-500/20">
-                          <span className="material-symbols-outlined text-red-500">error</span>
+                          <span className="material-symbols-rounded text-red-500 text-lg">error</span>
                         </div>
+                      )}
+
+                      {/* Remove Button */}
+                      {item.status === 'completed' && (
+                        <button 
+                          type="button"
+                          onClick={() => removeMedia(item.id)} 
+                          className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/50 flex items-center justify-center text-white active:scale-90 transition-transform z-20"
+                        >
+                          <span className="material-symbols-rounded text-[12px] leading-none">close</span>
+                        </button>
                       )}
                     </div>
                   ))}
                 </div>
-              ) : (
-                <div
-                  onClick={() => mediaInputRef.current?.click()}
-                  className="relative group h-48 rounded-xl border-2 border-dashed border-outline-variant hover:border-primary-container hover:bg-primary-container/5 transition-all cursor-pointer flex flex-col items-center justify-center gap-2 overflow-hidden shadow-sm active:scale-[0.98] duration-150"
-                >
-                  <div className="w-12 h-12 rounded-full bg-primary-container/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <span className="material-symbols-outlined text-primary-container text-[28px]">add_photo_alternate</span>
-                  </div>
-                  <p className="font-title-md text-body-md text-on-surface-variant">{t('feed.add_photos_video')}</p>
-                  <span className="text-[10px] text-on-surface-variant/60 font-medium">{imageCount}/20 {t('feed.photo_count')} · {videoCount}/1 {t('feed.video_count')}</span>
-                  <span className="material-symbols-outlined absolute -bottom-6 -right-6 text-[120px] text-primary-container/5 pointer-events-none select-none">cloud_upload</span>
+              </section>
+            )}
+
+            {/* Tagging Section */}
+            <section className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-rounded text-slate-400 text-lg">sell</span>
+                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('feed.tags')}</h3>
+              </div>
+
+              {/* Selected Tags as Premium Pastel Chips */}
+              {tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {tags.map(t => (
+                    <div key={t.id} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border transition-colors ${T_COLOR[t.kind] || 'bg-slate-50 text-slate-700 border-slate-200'}`}>
+                      <span className="material-symbols-rounded text-[13px]">{T_ICON[t.kind] || 'sell'}</span>
+                      <span>{t.label}</span>
+                      <button type="button" onClick={() => removeTag(t.id)} className="ml-0.5 opacity-55 hover:opacity-100 transition-opacity active:scale-90">
+                        <span className="material-symbols-rounded text-[12px] leading-none">close</span>
+                      </button>
+                    </div>
+                  ))}
                 </div>
               )}
-              <input ref={mediaInputRef} type="file" className="hidden" accept="image/*,video/*" multiple onChange={handleMediaSelect} />
-            </section>
-          )}
 
-          {/* Tagging Section */}
-          <section className="space-y-4">
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-outline text-[20px]">sell</span>
-              <h3 className="font-label-xs text-label-xs text-outline tracking-[0.1em] uppercase">{t('feed.tags')}</h3>
-            </div>
-
-            {/* Selected Tags */}
-            {tags.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {tags.map(t => (
-                  <div key={t.id} className="flex items-center gap-1 px-2.5 py-1 bg-primary/10 text-primary rounded-full text-xs font-semibold border border-primary/20">
-                    <span className={`material-symbols-outlined text-[13px] ${KIND_COLOR[t.kind]}`}>{KIND_ICON[t.kind]}</span>
-                    <span>{t.label}</span>
-                    <button onClick={() => removeTag(t.id)} className="ml-0.5 hover:text-red-500 transition-colors">
-                      <span className="material-symbols-outlined text-[13px]">close</span>
-                    </button>
+              {/* Search Trigger Bar */}
+              <div className="pt-1">
+                <div 
+                  className="relative cursor-pointer"
+                  onClick={() => setSearchMode(true)}
+                >
+                  <div className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-400 text-left shadow-sm flex items-center gap-2 active:scale-[0.99] transition-transform">
+                    <span className="material-symbols-rounded text-slate-400 text-base">search</span>
+                    <span>{t('feed.tag_placeholder', 'Search group, social, event, people...')}</span>
                   </div>
-                ))}
+                </div>
               </div>
-            )}
+            </section>
 
-            {/* Search Input */}
-            <div className="relative group">
-              <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                <span className={`material-symbols-outlined text-outline group-focus-within:text-primary-container transition-colors ${isSearching ? 'animate-spin' : ''}`}>
-                  {isSearching ? 'progress_activity' : 'search'}
-                </span>
-              </div>
-              <input
-                type="text"
-                value={tagKeyword}
-                onChange={e => setTagKeyword(e.target.value)}
-                placeholder={t('feed.tag_placeholder')}
-                className="w-full h-14 pl-12 pr-4 bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm focus:ring-2 focus:ring-primary-container focus:border-transparent transition-all outline-none font-body-md"
-              />
-            </div>
-
-            {/* Search Results Dropdown */}
-            {tagResults.length > 0 && (
-              <div className="bg-white rounded-xl shadow-lg border border-outline-variant/20 overflow-hidden max-h-64 overflow-y-auto">
-                {tagResults.map(item => (
-                  <button
-                    key={item.id}
-                    onClick={() => addTag(item)}
-                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-surface-container transition-colors text-left"
-                  >
-                    {item.photo
-                      ? <img src={item.photo} alt="" className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
-                      : <div className={`w-8 h-8 rounded-full flex items-center justify-center bg-surface-container flex-shrink-0 ${KIND_COLOR[item.kind]}`}>
-                          <span className="material-symbols-outlined text-base">{KIND_ICON[item.kind]}</span>
-                        </div>
-                    }
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-on-surface truncate">{item.label}</p>
-                      <p className={`text-xs capitalize ${KIND_COLOR[item.kind]}`}>{item.kind}</p>
-                    </div>
-                    {tags.find(t => t.id === item.id) && (
-                      <span className="material-symbols-outlined text-primary text-lg">check_circle</span>
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
-            {tagKeyword.length >= 2 && !isSearching && tagResults.length === 0 && (
-              <p className="text-center text-xs text-outline py-4">{t('search.no_results', 'No results found')}</p>
-            )}
-          </section>
-
-        </main>
+          </div>
+        </div>
       </div>
+
+      {/* Search Bottom Sheet */}
+      <AnimatePresence>
+        {searchMode && (
+          <div className="fixed inset-0 z-[20000] flex items-end justify-center">
+            {/* Backdrop */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
+              onClick={() => { setSearchMode(false); setTagKeyword(''); setTagResults([]); }} 
+            />
+            {/* Sheet Body */}
+            <motion.div 
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="relative w-full max-w-md h-[80vh] bg-white rounded-t-[2rem] flex flex-col overflow-hidden shadow-2xl z-10"
+            >
+              {/* Handle bar */}
+              <div className="w-full flex justify-center pt-3 pb-2 shrink-0">
+                <div className="w-12 h-1.5 bg-slate-200 rounded-full"></div>
+              </div>
+              
+              {/* Header */}
+              <div className="px-6 pb-4 border-b border-slate-100 flex justify-between items-center shrink-0">
+                <h2 className="text-sm font-black uppercase tracking-wider text-slate-800">{t('gallery.search_add', 'Search & add')}</h2>
+                <button 
+                  type="button"
+                  onClick={() => { setSearchMode(false); setTagKeyword(''); setTagResults([]); }} 
+                  className="p-1.5 rounded-full hover:bg-slate-100 transition-colors text-slate-400 active:scale-95"
+                >
+                  <span className="material-symbols-rounded text-xl leading-none">close</span>
+                </button>
+              </div>
+              
+              {/* Search Input Bar */}
+              <div className="p-4 bg-slate-50 shrink-0">
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-rounded text-slate-400 text-lg">search</span>
+                  <input
+                    type="text"
+                    className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-10 py-3 text-xs focus:outline-none focus:border-primary shadow-sm outline-none text-slate-800 placeholder:text-slate-400"
+                    placeholder={t('feed.tag_placeholder', 'Search group, social, event, people...')}
+                    value={tagKeyword}
+                    onChange={e => setTagKeyword(e.target.value)}
+                    autoFocus
+                  />
+                  {isSearching && (
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                  )}
+                </div>
+              </div>
+              
+              {/* Results List */}
+              <div className="flex-1 overflow-y-auto px-4 py-2 no-scrollbar">
+                {tagResults.length > 0 ? (
+                  <div className="space-y-1">
+                    {tagResults.map(item => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => addTag(item)}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 rounded-xl text-left transition-colors"
+                      >
+                        {item.photo ? (
+                          <img src={item.photo} alt="" className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+                        ) : (
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${T_COLOR[item.kind] || 'bg-slate-100 text-slate-500 border border-slate-200'}`}>
+                            <span className="material-symbols-rounded text-sm">{T_ICON[item.kind]}</span>
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold text-slate-800 truncate">{item.label}</p>
+                          <p className={`text-[9px] font-black uppercase tracking-wider mt-0.5 ${T_COLOR[item.kind] ? T_COLOR[item.kind].split(' ')[1] : 'text-slate-400'}`}>
+                            {item.kind}
+                          </p>
+                        </div>
+                        {tags.find(t => t.id === item.id) && (
+                          <span className="material-symbols-rounded text-primary text-lg shrink-0">check_circle</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-20 flex flex-col items-center justify-center text-slate-400">
+                    <span className="material-symbols-rounded text-4xl mb-3 opacity-20">search</span>
+                    <p className="text-xs font-bold">{t('gallery.find_tag_resources', 'Find and tag resources')}</p>
+                    <p className="text-[11px] opacity-70 mt-1">{t('gallery.type_to_start', 'Type to start searching')}</p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </Portal>
   );
 }

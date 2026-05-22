@@ -1,5 +1,5 @@
+// 소스 월의 클래스 프로그램을 타겟 월로 요일 기반 복제하는 모바일 코어 에디터 컴포넌트
 "use client";
-// 소스 월의 클래스 프로그램을 타겟 월로 요일 기반 복제하는 풀스크린 에디터
 
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { Group, GroupClass, ClassScheduleEntry } from "@/types/group";
@@ -8,14 +8,6 @@ import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { motion } from "framer-motion";
-
-interface GroupClassCloneEditorProps {
-  group: Group;
-  allClasses: GroupClass[];
-  targetMonth: string;
-  onClose: () => void;
-  onComplete: () => void;
-}
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -62,8 +54,20 @@ interface CloneCandidate {
   weekCount: number;
 }
 
+interface GroupClassCloneEditorProps {
+  group: Group;
+  allClasses: GroupClass[];
+  targetMonth: string;
+  onClose: () => void;
+  onComplete: () => void;
+}
+
 const GroupClassCloneEditor: React.FC<GroupClassCloneEditorProps> = ({
-  group, allClasses, targetMonth, onClose, onComplete
+  group,
+  allClasses,
+  targetMonth,
+  onClose,
+  onComplete,
 }) => {
   const { t } = useLanguage();
   const [isCloning, setIsCloning] = useState(false);
@@ -142,7 +146,10 @@ const GroupClassCloneEditor: React.FC<GroupClassCloneEditorProps> = ({
 
   const handleClone = async () => {
     const selected = candidates.filter(c => c.selected);
-    if (!selected.length) { toast.error("No classes selected."); return; }
+    if (!selected.length) {
+      toast.error("No classes selected.");
+      return;
+    }
 
     setIsCloning(true);
     try {
@@ -172,161 +179,196 @@ const GroupClassCloneEditor: React.FC<GroupClassCloneEditorProps> = ({
     }
   };
 
+  if (typeof window === "undefined") return null;
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: "100%" }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 20 }}
-      className="fixed inset-0 z-[100] antialiased text-gray-900 bg-[#F3F4F6] flex flex-col overflow-y-auto no-scrollbar font-['Plus_Jakarta_Sans'] pb-28"
+      exit={{ opacity: 0, y: "100%" }}
+      transition={{ type: "spring", damping: 25, stiffness: 200 }}
+      className="fixed inset-0 z-[110] bg-white flex items-center justify-center font-['Plus_Jakarta_Sans']"
     >
-      <header className="sticky top-0 z-50 bg-[#F3F4F6]/80 backdrop-blur-xl border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-4">
-          <button onClick={onClose} className="w-10 h-10 rounded-full flex items-center justify-center text-[#0057bd] hover:bg-[#0057bd]/5 transition-all">
-            <span className="material-symbols-outlined">arrow_back</span>
+      <main className="max-w-md w-full h-[100dvh] bg-white flex flex-col overflow-hidden relative text-left">
+        {/* Header */}
+        <div className="flex-shrink-0 bg-white border-b border-slate-100 px-4 h-14 flex items-center justify-between z-50">
+          <button type="button" onClick={onClose} className="w-10 h-10 flex items-center justify-center -ml-2 active:scale-95 transition-transform text-slate-700">
+            <span className="material-symbols-rounded text-2xl">arrow_back</span>
           </button>
-          <h1 className="text-base font-bold text-gray-900">Clone Classes</h1>
-        </div>
-      </header>
-
-      <main className="max-w-7xl w-full mx-auto px-4 py-6 flex-1">
-        {/* Source Month Navigation */}
-        <section className="mb-4 bg-white rounded-[16px] shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-4 py-2 bg-gray-50/50">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">Clone from</p>
-          </div>
-          <div className="flex items-center justify-between px-4 py-3">
-            <button onClick={() => setSourceMonthOffset(p => p - 1)} className="p-2 hover:bg-gray-50 rounded-full transition-colors active:scale-95">
-              <span className="material-symbols-outlined text-gray-600">chevron_left</span>
-            </button>
-            <h2 className="text-lg font-bold text-gray-900">{sourceDisplay}</h2>
-            <button onClick={() => setSourceMonthOffset(p => p + 1)} className="p-2 hover:bg-gray-50 rounded-full transition-colors active:scale-95">
-              <span className="material-symbols-outlined text-gray-600">chevron_right</span>
-            </button>
-          </div>
-        </section>
-
-        <div className="mb-6 flex items-center justify-center gap-2">
-          <span className="material-symbols-outlined text-[#0057bd] text-lg">arrow_downward</span>
-          <span className="text-xs font-bold text-[#0057bd] bg-blue-50 px-3 py-1 rounded-full">Clone to {targetDisplay}</span>
+          <h1 className="text-[14px] font-black uppercase tracking-widest text-slate-800">
+            {t("group.class.clone_title") || "CLONE CLASSES"}
+          </h1>
+          <div className="w-10" />
         </div>
 
-        {isSameMonth && (
-          <div className="mb-4 flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
-            <span className="material-symbols-outlined text-amber-500 text-lg">warning</span>
-            <p className="text-xs font-bold text-amber-700">Source and target are the same month. Classes will be duplicated.</p>
-          </div>
-        )}
-
-        {sourceClasses.length === 0 && (
-          <div className="bg-white border-2 border-dashed border-gray-200 rounded-[16px] p-10 text-center">
-            <span className="material-symbols-outlined text-gray-300 text-4xl mb-2">inbox</span>
-            <p className="text-gray-400 font-bold text-sm">No classes found in {sourceDisplay}.</p>
-            <p className="text-gray-300 text-xs mt-1">Try navigating to another month.</p>
-          </div>
-        )}
-
-        {/* Grouped Class List */}
-        {groupedByDay.map(({ day, indices }) => (
-          <div key={day} className="mb-5">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-full bg-gray-900 flex items-center justify-center">
-                <span className="text-[10px] font-black text-white">{DAY_NAMES[day]}</span>
+        <form onSubmit={(e) => { e.preventDefault(); handleClone(); }} className="flex-1 flex flex-col overflow-hidden">
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-4 mt-4 space-y-6 pb-6 text-left no-scrollbar">
+            
+            {/* Navigation & Target warning */}
+            <div className="space-y-4">
+              {/* Month Navigation */}
+              <div className="bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl p-4 flex flex-col items-center justify-center">
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">{t("group.class.clone_from") || "CLONE FROM"}</p>
+                <div className="flex items-center justify-between w-full">
+                  <button type="button" onClick={() => setSourceMonthOffset(p => p - 1)} className="p-2 hover:bg-white rounded-full transition-all border border-transparent hover:border-slate-100 shadow-none hover:shadow-sm active:scale-95">
+                    <span className="material-symbols-rounded text-slate-600">chevron_left</span>
+                  </button>
+                  <h2 className="text-base font-bold text-slate-800">{sourceDisplay}</h2>
+                  <button type="button" onClick={() => setSourceMonthOffset(p => p + 1)} className="p-2 hover:bg-white rounded-full transition-all border border-transparent hover:border-slate-100 shadow-none hover:shadow-sm active:scale-95">
+                    <span className="material-symbols-rounded text-slate-600">chevron_right</span>
+                  </button>
+                </div>
               </div>
-              <div className="flex-1 h-px bg-gray-200" />
-            </div>
 
-            <div className="space-y-3">
-              {indices.map(idx => {
-                const c = candidates[idx];
-                if (!c) return null;
-                const cls = c.sourceClass;
-                const dayLabel = c.startDate ? DAY_NAMES[new Date(c.startDate + 'T00:00:00').getDay()] : '';
-                const timeParts = (c.timeSlot || '19:00 - 21:00').split(' - ');
-                return (
-                  <div key={cls.id} className={`bg-white rounded-[14px] shadow-sm border transition-all ${c.selected ? 'border-[#0057bd]/30 ring-1 ring-[#0057bd]/10' : 'border-gray-100 opacity-50'}`}>
-                    <div className="flex items-start gap-3 p-4 pb-2">
-                      <button onClick={() => toggleCandidate(idx)} className="mt-0.5 shrink-0">
-                        <span className={`material-symbols-outlined text-xl ${c.selected ? 'text-[#0057bd]' : 'text-gray-300'}`}>
-                          {c.selected ? 'check_circle' : 'radio_button_unchecked'}
-                        </span>
-                      </button>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-bold text-gray-900 leading-tight">{cls.title}</h3>
-                        {cls.instructors?.length > 0 && (
-                          <p className="text-[11px] text-gray-400 font-medium mt-0.5">
-                            {cls.instructors.map(i => i.name).join(' · ')}
-                          </p>
-                        )}
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-[10px] font-bold text-gray-400 bg-gray-50 px-2 py-0.5 rounded">{cls.level}</span>
-                          <span className="text-[10px] font-bold text-gray-400">{cls.currency} {cls.amount?.toLocaleString()}</span>
-                          <span className="text-[10px] font-bold text-gray-300">· {c.weekCount} weeks</span>
-                        </div>
-                      </div>
-                    </div>
+              {/* Arrow Info & Target */}
+              <div className="flex items-center justify-center gap-2">
+                <span className="material-symbols-rounded text-primary text-base">arrow_downward</span>
+                <span className="text-[10px] font-bold text-primary bg-primary/5 border border-primary/10 px-3 py-1 rounded-full">
+                  {t("group.class.clone_to")?.replace("{target}", targetDisplay) || `Clone to ${targetDisplay}`}
+                </span>
+              </div>
 
-                    {/* 시작일 + 시간 2줄 표시 */}
-                    {c.selected && (
-                      <div className="px-4 pb-4 pt-1 space-y-2">
-                        <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2.5">
-                          <span className="material-symbols-outlined text-gray-400 text-base">event</span>
-                          <input
-                            type="date"
-                            value={c.startDate}
-                            onChange={e => updateStartDate(idx, e.target.value)}
-                            className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-bold text-gray-700 focus:ring-1 focus:ring-[#0057bd]/30"
-                          />
-                          <span className="text-xs font-bold text-gray-400">{dayLabel}</span>
-                        </div>
-                        <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2.5">
-                          <span className="material-symbols-outlined text-gray-400 text-base">schedule</span>
-                          <input
-                            type="time"
-                            value={timeParts[0] || '19:00'}
-                            onChange={e => updateTimeSlot(idx, 'start', e.target.value)}
-                            className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-bold text-gray-700 focus:ring-1 focus:ring-[#0057bd]/30"
-                          />
-                          <span className="text-gray-400 text-xs font-bold">—</span>
-                          <input
-                            type="time"
-                            value={timeParts[1] || '21:00'}
-                            onChange={e => updateTimeSlot(idx, 'end', e.target.value)}
-                            className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-bold text-gray-700 focus:ring-1 focus:ring-[#0057bd]/30"
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </main>
-
-      {sourceClasses.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-t border-gray-200 px-4 py-4 safe-area-bottom">
-          <div className="max-w-7xl mx-auto">
-            <button
-              onClick={handleClone}
-              disabled={isCloning || selectedCount === 0}
-              className="w-full py-3.5 bg-[#0057bd] text-white font-bold text-sm rounded-2xl hover:bg-blue-700 transition-all active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2"
-            >
-              {isCloning ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Cloning...
-                </>
-              ) : (
-                <>
-                  <span className="material-symbols-outlined text-lg">content_copy</span>
-                  Clone {selectedCount} {selectedCount === 1 ? 'Class' : 'Classes'}
-                </>
+              {/* Same Month Warning */}
+              {isSameMonth && (
+                <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                  <span className="material-symbols-rounded text-amber-500 text-[18px] shrink-0 mt-0.5">warning</span>
+                  <p className="text-[12px] font-bold text-amber-700 leading-normal">
+                    Source and target are the same month. Classes will be duplicated.
+                  </p>
+                </div>
               )}
-            </button>
+
+              {/* No items fallback */}
+              {sourceClasses.length === 0 && (
+                <div className="bg-[#f8f9fa] border border-dashed border-[#e0e4e5] rounded-xl p-8 text-center flex flex-col items-center justify-center">
+                  <span className="material-symbols-rounded text-slate-300 text-3xl mb-2">inbox</span>
+                  <p className="text-slate-400 font-bold text-xs">No classes found in {sourceDisplay}.</p>
+                  <p className="text-slate-300 text-[10px] mt-1 font-medium">Try navigating to another month.</p>
+                </div>
+              )}
+            </div>
+
+            {/* Candidates List */}
+            {groupedByDay.map(({ day, indices }) => (
+              <div key={day} className="space-y-3">
+                {/* Day Header */}
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center shrink-0">
+                    <span className="text-[9px] font-black text-white uppercase">{DAY_NAMES[day].slice(0, 3)}</span>
+                  </div>
+                  <div className="flex-1 h-px bg-slate-100" />
+                </div>
+
+                <div className="space-y-3">
+                  {indices.map(idx => {
+                    const c = candidates[idx];
+                    if (!c) return null;
+                    const cls = c.sourceClass;
+                    const dayLabel = c.startDate ? DAY_NAMES[new Date(c.startDate + 'T00:00:00').getDay()] : '';
+                    const timeParts = (c.timeSlot || '19:00 - 21:00').split(' - ');
+                    
+                    return (
+                      <div
+                        key={cls.id}
+                        className={`bg-white rounded-xl border transition-all duration-200 overflow-hidden ${
+                          c.selected 
+                            ? 'border-primary shadow-sm shadow-primary/5' 
+                            : 'border-[#e0e4e5] opacity-50'
+                        }`}
+                      >
+                        {/* Top Select Header */}
+                        <div className="flex items-start gap-3 p-4 pb-2">
+                          <button
+                            type="button"
+                            onClick={() => toggleCandidate(idx)}
+                            className="mt-0.5 shrink-0 active:scale-95 transition-transform"
+                          >
+                            <span className={`material-symbols-rounded text-xl ${c.selected ? 'text-primary' : 'text-slate-300'}`}>
+                              {c.selected ? 'check_circle' : 'radio_button_unchecked'}
+                            </span>
+                          </button>
+                          
+                          <div className="flex-1 min-w-0 text-left">
+                            <h3 className="text-sm font-bold text-slate-800 leading-tight">{cls.title}</h3>
+                            {cls.instructors?.length > 0 && (
+                              <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
+                                {cls.instructors.map(i => i.name).join(' · ')}
+                              </p>
+                            )}
+                            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                              <span className="text-[9px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded uppercase">{cls.level}</span>
+                              <span className="text-[9px] font-bold text-slate-500">{cls.currency} {cls.amount?.toLocaleString()}</span>
+                              <span className="text-[9px] font-semibold text-slate-300">· {c.weekCount} weeks</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Setup Fields (Only if selected) */}
+                        {c.selected && (
+                          <div className="px-4 pb-4 pt-1.5 space-y-2 border-t border-slate-50 mt-2 bg-[#f8f9fa]">
+                            {/* Date Field */}
+                            <div className="flex items-center gap-2">
+                              <span className="material-symbols-rounded text-slate-400 text-[16px] shrink-0">event</span>
+                              <input
+                                type="date"
+                                value={c.startDate}
+                                onChange={e => updateStartDate(idx, e.target.value)}
+                                className="flex-1 bg-white border border-[#e0e4e5] rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-700 focus:border-primary outline-none transition-all"
+                              />
+                              <span className="text-xs font-bold text-slate-400 shrink-0 w-8 text-right">{dayLabel}</span>
+                            </div>
+                            {/* Time Field */}
+                            <div className="flex items-center gap-2">
+                              <span className="material-symbols-rounded text-slate-400 text-[16px] shrink-0">schedule</span>
+                              <input
+                                type="time"
+                                value={timeParts[0] || '19:00'}
+                                onChange={e => updateTimeSlot(idx, 'start', e.target.value)}
+                                className="flex-1 bg-white border border-[#e0e4e5] rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-700 focus:border-primary outline-none transition-all"
+                              />
+                              <span className="text-slate-300 text-xs font-bold shrink-0">—</span>
+                              <input
+                                type="time"
+                                value={timeParts[1] || '21:00'}
+                                onChange={e => updateTimeSlot(idx, 'end', e.target.value)}
+                                className="flex-1 bg-white border border-[#e0e4e5] rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-700 focus:border-primary outline-none transition-all"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
-      )}
+
+          {/* Submit Save Floating Bar */}
+          {sourceClasses.length > 0 && (
+            <div className="flex-shrink-0 w-full p-4 border-t border-slate-100 bg-white pb-[calc(1rem+env(safe-area-inset-bottom))] z-50">
+              <button
+                type="submit"
+                disabled={isCloning || selectedCount === 0}
+                className="w-full bg-primary text-white font-bold py-3.5 rounded-xl shadow-lg shadow-primary/20 active:scale-[0.98] transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isCloning ? (
+                  <>
+                    <span className="material-symbols-rounded animate-spin text-sm">progress_activity</span>
+                    {t("common.saving") || "Cloning..."}
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-rounded text-lg">content_copy</span>
+                    {t("group.class.clone_count_classes")?.replace("{count}", String(selectedCount)) || `Clone ${selectedCount} Classes`}
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+        </form>
+      </main>
     </motion.div>
   );
 };

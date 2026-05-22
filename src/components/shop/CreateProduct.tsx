@@ -1,10 +1,10 @@
 'use client';
 
+// 상품 등록창의 레이아웃 및 폼 UI를 분실물 등록창의 스타일과 100% 매칭하는 컴포넌트
 import React, { useState, useRef } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { shopService } from '@/lib/firebase/shopService';
 import { plazaService } from '@/lib/firebase/plazaService';
-import FullScreenRegistration from '@/components/common/FullScreenRegistration';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { CITY_COORDINATES } from '@/lib/constants/locations';
 
@@ -20,7 +20,7 @@ export default function CreateProduct({ onClose, onSuccess }: CreateProductProps
   const { t } = useLanguage();
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   
   const [name, setName] = useState('');
   const [brand, setBrand] = useState('');
@@ -81,9 +81,14 @@ export default function CreateProduct({ onClose, onSuccess }: CreateProductProps
     return parseInt(val, 10).toLocaleString();
   };
 
-  const handleSubmit = async () => {
-    if (!user || !name || !price || mediaFiles.length === 0 || !region) {
-      alert(t('shop.msg_fill_required') || "Please fill in all required fields and add at least one photo.");
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) {
+      alert(t('shop.msg_login_first') || 'Please login first.');
+      return;
+    }
+    if (!name.trim() || !price.trim() || mediaFiles.length === 0 || !region) {
+      alert(t('shop.msg_fill_required_photo') || "Please fill in all required fields and add at least one photo.");
       return;
     }
 
@@ -91,17 +96,19 @@ export default function CreateProduct({ onClose, onSuccess }: CreateProductProps
     setUploadProgress(0);
     
     try {
-      let uploadedUrls: string[] = [];
-      const totalFiles = mediaFiles.length;
-      
-      uploadedUrls = await Promise.all(
-        mediaFiles.map(async (file, index) => {
+      // 1. Upload media files sequentially with cumulative progress tracking
+      const uploadedUrls: string[] = [];
+      if (mediaFiles.length > 0) {
+        for (let i = 0; i < mediaFiles.length; i++) {
+          const file = mediaFiles[i];
           const url = await plazaService.uploadMedia(file, (p) => {
-            setUploadProgress(Math.round(((index * 100) + p) / totalFiles));
+            const overall = Math.round(((i * 100) + p) / mediaFiles.length);
+            setUploadProgress(overall);
           });
-          return url;
-        })
-      );
+          uploadedUrls.push(url);
+        }
+        setUploadProgress(null);
+      }
 
       // Register Product
       await shopService.addProduct({
@@ -136,190 +143,194 @@ export default function CreateProduct({ onClose, onSuccess }: CreateProductProps
       setDescription('');
     } catch (error) {
       console.error("Error creating product:", error);
-      alert(t('shop.msg_fail_register', "Failed to register product. Please check your connection."));
+      alert(t('shop.msg_fail_register') || "Failed to register product. Please check your connection.");
     } finally {
       setIsSubmitting(false);
+      setUploadProgress(null);
     }
   };
 
-  const isValid = !!(name && price && mediaFiles.length > 0 && region);
+  const isValid = !!(name.trim() && price.trim() && mediaFiles.length > 0 && region);
 
   return (
-    <FullScreenRegistration
-      id="shop"
-      title={t('shop.host_product', "Host a Product")}
-      submitLabel={t('common.save') || 'SAVE'}
-      submittingLabel={`${t('shop.hosting', 'Hosting')} ${uploadProgress}%`}
-      onSubmit={handleSubmit}
-      isSubmitting={isSubmitting}
-      isValid={isValid}
-      onClose={onClose}
-    >
-      <div className="space-y-10 pt-4">
-        {/* Photo Upload Area */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between ml-1">
-            <label className="text-[13px] font-black text-gray-400 uppercase tracking-widest">
-              {t('shop.upload_photo', 'PHOTOS')} <span className="text-primary">*</span>
-            </label>
-            <span className="text-[13px] font-bold text-gray-400">{mediaFiles.length}/{MAX_PHOTOS}</span>
-          </div>
-          
-          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 items-center">
-            {mediaFiles.length < MAX_PHOTOS && (
-              <button 
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="shrink-0 w-24 h-24 rounded-2xl bg-gray-50 border-2 border-dashed border-gray-200 flex flex-col items-center justify-center hover:border-primary/40 hover:bg-primary/5 transition-all"
-              >
-                <span className="material-symbols-outlined text-gray-400 mb-1">add_a_photo</span>
-                <span className="text-[9px] font-black text-gray-400 uppercase">ADD</span>
-              </button>
-            )}
-            
-            {previewUrls.map((url, i) => (
-              <div key={i} className="shrink-0 relative w-24 h-24 rounded-2xl overflow-hidden group">
-                <img src={url} className="w-full h-full object-cover" alt={`Preview ${i}`} />
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <button 
-                    type="button"
-                    onClick={() => removePhoto(i)}
-                    className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center backdrop-blur-md transition-all"
-                  >
-                    <span className="material-symbols-outlined text-white text-[18px]">delete</span>
-                  </button>
-                </div>
-                {i === 0 && (
-                  <div className="absolute top-2 left-2 bg-primary px-2 py-0.5 rounded text-[8px] font-black text-white uppercase tracking-widest shadow-sm">
-                    Main
-                  </div>
-                )}
-              </div>
-            ))}
-            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" multiple onChange={handleFileChange} />
-          </div>
-        </div>
-
-        {/* Product Basic Info */}
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <label className="text-[13px] font-black text-gray-400 uppercase tracking-widest ml-1">{t('shop.brand_name', 'Brand Name')}</label>
-            <input
-              value={brand}
-              onChange={(e) => setBrand(e.target.value)}
-              placeholder={t('shop.ex_brand', "Ex. Tango Elite")}
-              className="w-full text-[16px] font-bold border-none focus:ring-0 placeholder:text-gray-200 p-0 bg-transparent"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-[13px] font-black text-gray-400 uppercase tracking-widest ml-1">
-              {t('shop.product_name', 'Product Name')} <span className="text-primary">*</span>
-            </label>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={t('shop.ex_product_name', "Ex. Performance Leather Shoes")}
-              className="w-full text-[24px] font-black tracking-tighter border-none focus:ring-0 placeholder:text-gray-200 p-0 bg-transparent"
-              required
-            />
-          </div>
-        </div>
-
-        {/* Category */}
-        <div className="space-y-3">
-          <label className="text-[13px] font-black text-gray-400 uppercase tracking-widest ml-1">{t('shop.category', 'Category')}</label>
-          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
-            {categories.map(cat => (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => setCategory(cat)}
-                className={`px-5 py-2.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border ${
-                  category === cat 
-                    ? 'bg-gray-900 text-white border-gray-900 shadow-md' 
-                    : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                {t(`shop.cat_${cat.toLowerCase().replace(/ /g, '_')}`, cat)}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Price & Currency */}
-        <div className="space-y-4">
-          <label className="text-[13px] font-black text-gray-400 uppercase tracking-widest ml-1">
-            {t('shop.price', 'PRICE')} <span className="text-primary">*</span>
-          </label>
-          <div className="flex w-full items-center gap-3">
-            <select 
-              value={currency}
-              onChange={(e) => setCurrency(e.target.value)}
-              className="bg-gray-50 border-none rounded-2xl px-4 py-4 text-sm font-black focus:ring-2 focus:ring-primary/10 w-[100px] shrink-0"
-            >
-              {CURRENCIES.map(curr => (
-                <option key={curr} value={curr}>{curr}</option>
-              ))}
-            </select>
-            <input
-              type="text"
-              value={formatPrice(price)}
-              onChange={handlePriceChange}
-              placeholder="0"
-              className="flex-1 min-w-0 bg-gray-50 border-none rounded-2xl px-5 py-4 text-lg font-black focus:ring-2 focus:ring-primary/10 text-right overflow-hidden"
-              required
-            />
-          </div>
-        </div>
-
-        {/* Location Region Selector */}
-        <div className="space-y-3">
-          <label className="text-[13px] font-black text-gray-400 uppercase tracking-widest ml-1">
-            {t('shop.location', 'LOCATION')} <span className="text-primary">*</span>
-          </label>
-          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
-            {regions.map(r => (
-              <button
-                key={r}
-                type="button"
-                onClick={() => setRegion(r)}
-                className={`px-5 py-2.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border ${
-                  region === r 
-                    ? 'bg-primary text-white border-primary shadow-md' 
-                    : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                {r}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Location Detail */}
-        <div className="space-y-3">
-          <label className="text-[13px] font-black text-gray-400 uppercase tracking-widest ml-1">
-            {t('shop.location_detail', 'LOCATION DETAIL')}
-          </label>
-          <input
-            type="text"
-            value={locationDetail}
-            onChange={(e) => setLocationDetail(e.target.value)}
-            placeholder={t('shop.location_detail_placeholder', 'Enter specific location details')}
-            className="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-primary/10"
-          />
-        </div>
-
-        {/* Description */}
-        <div className="space-y-3 pb-8">
-          <label className="text-[13px] font-black text-gray-400 uppercase tracking-widest ml-1">{t('shop.product_story', 'Product Story')}</label>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder={t('shop.product_story_placeholder', "Tell us about the condition, materials, and why you're selling...")}
-            className="w-full min-h-[160px] bg-gray-50 border-none rounded-[28px] px-6 py-5 text-sm font-medium focus:ring-2 focus:ring-primary/10 resize-none leading-relaxed"
-          />
-        </div>
+    <main className="max-w-md mx-auto h-[100dvh] bg-white flex flex-col overflow-hidden relative text-left">
+      {/* Header */}
+      <div className="flex-shrink-0 bg-white border-b border-slate-100 px-4 h-14 flex items-center justify-between z-50">
+        <button type="button" onClick={onClose} className="w-10 h-10 flex items-center justify-center -ml-2 active:scale-95 transition-transform text-slate-700">
+          <span className="material-symbols-rounded text-2xl">arrow_back</span>
+        </button>
+        <h1 className="text-[14px] font-black uppercase tracking-widest text-slate-800">
+          {t('shop.host_product') || 'Host Product'}
+        </h1>
+        <div className="w-10" />
       </div>
-    </FullScreenRegistration>
+
+      <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+        {/* Form Scrollable Content */}
+        <div className="flex-1 overflow-y-auto px-4 mt-4 space-y-6 pb-6 text-left no-scrollbar">
+          
+          {/* Images */}
+          <div>
+            <label className="block text-xs font-bold text-[#596061] mb-2 uppercase tracking-wider">
+              {t('shop.upload_photo') || 'PHOTOS'} ({mediaFiles.length}/{MAX_PHOTOS}) <span className="text-red-400">*</span>
+            </label>
+            <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
+              {mediaFiles.length < MAX_PHOTOS && (
+                <button type="button" onClick={() => fileInputRef.current?.click()}
+                  className="w-20 h-20 flex-shrink-0 flex flex-col items-center justify-center border-2 border-dashed border-[#acb3b4] rounded-xl text-[#596061] bg-[#f8f9fa] active:scale-95 transition-transform">
+                  <span className="material-symbols-rounded text-2xl mb-1">add_a_photo</span>
+                </button>
+              )}
+              <input type="file" ref={fileInputRef} className="hidden" accept="image/*" multiple onChange={handleFileChange} />
+              
+              {previewUrls.map((url, i) => (
+                <div key={i} className="w-20 h-20 flex-shrink-0 relative rounded-xl overflow-hidden border border-slate-100">
+                  <img src={url} alt={`Preview ${i}`} className="w-full h-full object-cover" />
+                  <button type="button" onClick={() => removePhoto(i)} className="absolute top-1 right-1 w-5 h-5 bg-black/50 rounded-full text-white flex items-center justify-center">
+                    <span className="material-symbols-rounded text-[14px]">close</span>
+                  </button>
+                  {i === 0 && (
+                    <div className="absolute bottom-1 left-1 bg-primary px-1.5 py-0.5 rounded text-[8px] font-black text-white uppercase tracking-widest shadow-sm">
+                      {t('shop.main_photo') || 'Main'}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Details */}
+          <div className="space-y-4">
+            {/* Brand Name */}
+            <div>
+              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
+                {t('shop.brand_name') || 'Brand Name'}
+              </label>
+              <input type="text" value={brand} onChange={e => setBrand(e.target.value)} placeholder={t('shop.ex_brand') || "Ex. Tango Elite"}
+                className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" />
+            </div>
+
+            {/* Product Name */}
+            <div>
+              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
+                {t('shop.product_name') || 'Product Name'} <span className="text-red-400">*</span>
+              </label>
+              <input required type="text" value={name} onChange={e => setName(e.target.value)} placeholder={t('shop.ex_product_name') || "Ex. Performance Leather Shoes"}
+                className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" />
+            </div>
+
+            {/* Category */}
+            <div>
+              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
+                {t('shop.category') || 'Category'}
+              </label>
+              <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                {categories.map(cat => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setCategory(cat)}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${
+                      category === cat 
+                        ? 'bg-[#596061] text-white border-[#596061] shadow-sm' 
+                        : 'bg-[#f8f9fa] text-gray-500 border-[#e0e4e5] hover:border-gray-300'
+                    }`}
+                  >
+                    {t(`shop.cat_${cat.toLowerCase().replace(/ /g, '_')}`, cat)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Price & Currency */}
+            <div className="flex gap-3">
+              <div className="w-[100px] shrink-0">
+                <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
+                  {t('shop.currency') || 'Currency'}
+                </label>
+                <select 
+                  value={currency}
+                  onChange={(e) => setCurrency(e.target.value)}
+                  className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-3 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-bold"
+                >
+                  {CURRENCIES.map(curr => (
+                    <option key={curr} value={curr}>{curr}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex-1">
+                <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
+                  {t('shop.price') || 'Price'} <span className="text-red-400">*</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-[#acb3b4]">
+                    {currency === 'KRW' ? '₩' : currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency === 'JPY' ? '¥' : '¥'}
+                  </span>
+                  <input required type="text" value={formatPrice(price)} onChange={handlePriceChange} placeholder="0"
+                    className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl pl-9 pr-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-bold text-right" />
+                </div>
+              </div>
+            </div>
+
+            {/* Location Region Selector */}
+            <div>
+              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
+                {t('shop.location') || 'Location'} <span className="text-red-400">*</span>
+              </label>
+              <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                {regions.map(r => (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => setRegion(r)}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${
+                      region === r 
+                        ? 'bg-[#596061] text-white border-[#596061] shadow-sm' 
+                        : 'bg-[#f8f9fa] text-gray-500 border-[#e0e4e5] hover:border-gray-300'
+                    }`}
+                  >
+                    {t(`common.${r.toLowerCase()}`) || r}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Location Detail */}
+            <div>
+              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
+                {t('shop.location_detail') || 'Location Detail'}
+              </label>
+              <input type="text" value={locationDetail} onChange={e => setLocationDetail(e.target.value)} placeholder={t('shop.location_detail_placeholder') || 'Enter specific location details'}
+                className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" />
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
+                {t('shop.product_story') || 'Product Story'}
+              </label>
+              <textarea rows={5} value={description} onChange={e => setDescription(e.target.value)} placeholder={t('shop.product_story_placeholder') || "Tell us about the condition, materials, and why you're selling..."}
+                className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none" />
+            </div>
+          </div>
+        </div>
+
+        {/* Submit */}
+        <div className="flex-shrink-0 w-full p-4 border-t border-slate-100 bg-white pb-[calc(1rem+env(safe-area-inset-bottom))] z-50">
+          <button type="submit" disabled={isSubmitting || !isValid}
+            className="w-full bg-primary text-white font-bold py-3.5 rounded-xl shadow-lg shadow-primary/20 active:scale-[0.98] transition-transform disabled:opacity-50">
+            {isSubmitting ? (
+              uploadProgress !== null ? (
+                `${uploadProgress}%`
+              ) : (
+                t('shop.status_registering') || 'Registering...'
+              )
+            ) : (
+              t('shop.button_register') || 'Host Product'
+            )}
+          </button>
+        </div>
+      </form>
+    </main>
   );
 }

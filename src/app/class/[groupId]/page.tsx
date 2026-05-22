@@ -91,6 +91,7 @@ export default function ClubClassSelectionPage({
   });
   const [sortOption, setSortOption] = useState<'class' | 'name'>('class');
   const [showSortDropdown, setShowSortDropdown] = useState(false);
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
   
   const scrollRef = useRef<HTMLDivElement>(null);
   const captureRef = useRef<HTMLDivElement>(null);
@@ -527,17 +528,39 @@ export default function ClubClassSelectionPage({
 
                         return (
                           <div key={cls.id} onClick={() => handleCardClick({ ...cls, itemType: 'class' })} className="p-3 flex gap-3 cursor-pointer hover:bg-[#f8f9fa] transition-colors group bg-white">
-                            <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-[#e0e4e5]">
-                              {cls.imageUrl || (cls as any).image || (cls as any).photoURL || (cls as any).avatar ? (
-                                <img src={cls.imageUrl || (cls as any).image || (cls as any).photoURL || (cls as any).avatar} alt={cls.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement!.classList.add('flex', 'items-center', 'justify-center'); e.currentTarget.parentElement!.innerHTML = '<span class="material-symbols-outlined text-[#acb3b4] text-lg">school</span>'; }} />
-                              ) : group.coverImage ? (
-                                <img src={group.coverImage} alt={cls.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement!.classList.add('flex', 'items-center', 'justify-center'); e.currentTarget.parentElement!.innerHTML = '<span class="material-symbols-outlined text-[#acb3b4] text-lg">school</span>'; }} />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center">
-                                  <span className="material-symbols-outlined text-[#acb3b4] text-lg">school</span>
+                            {(() => {
+                              const imgKey = `class-img-${cls.id}`;
+                              const hasError = imageErrors[imgKey];
+                              return (
+                                <div className={`w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-[#e0e4e5] ${hasError ? 'flex items-center justify-center' : ''}`}>
+                                  {hasError ? (
+                                    <span className="material-symbols-outlined text-[#acb3b4] text-lg">school</span>
+                                  ) : cls.imageUrl || (cls as any).image || (cls as any).photoURL || (cls as any).avatar ? (
+                                    <img 
+                                      src={cls.imageUrl || (cls as any).image || (cls as any).photoURL || (cls as any).avatar} 
+                                      alt={cls.title} 
+                                      className="w-full h-full object-cover group-hover:scale-105 transition-transform" 
+                                      onError={() => {
+                                        setImageErrors(prev => ({ ...prev, [imgKey]: true }));
+                                      }} 
+                                    />
+                                  ) : group.coverImage ? (
+                                    <img 
+                                      src={group.coverImage} 
+                                      alt={cls.title} 
+                                      className="w-full h-full object-cover group-hover:scale-105 transition-transform" 
+                                      onError={() => {
+                                        setImageErrors(prev => ({ ...prev, [imgKey]: true }));
+                                      }} 
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center">
+                                      <span className="material-symbols-outlined text-[#acb3b4] text-lg">school</span>
+                                    </div>
+                                  )}
                                 </div>
-                              )}
-                            </div>
+                              );
+                            })()}
 
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-bold text-[#2d3435] truncate">{cls.title}</p>
@@ -564,15 +587,30 @@ export default function ClubClassSelectionPage({
                                 <div className="flex flex-row gap-2 items-center justify-end mb-2">
                                   {instructors.slice(0, 2).map((instructor, idx) => (
                                     <div key={idx} className="flex flex-col items-center w-8">
-                                      <div className="w-7 h-7 rounded-full overflow-hidden bg-[#e0e4e5] border border-[#f2f4f4]">
-                                        {(instructor as any).avatar || (instructor as any).photoURL || (instructor as any).image || (instructor as any).imageUrl ? (
-                                          <img src={(instructor as any).avatar || (instructor as any).photoURL || (instructor as any).image || (instructor as any).imageUrl} alt={instructor.name} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement!.classList.add('flex', 'items-center', 'justify-center', 'text-[9px]', 'font-bold', 'text-[#596061]', 'bg-[#f8f9fa]'); e.currentTarget.parentElement!.innerHTML = instructor.name.substring(0, 2).toUpperCase(); }} />
-                                        ) : (
-                                          <div className="w-full h-full flex items-center justify-center text-[9px] font-bold text-[#596061] bg-[#f8f9fa]">
-                                            {instructor.name.substring(0, 2).toUpperCase()}
+                                      {(() => {
+                                        const instKey = `instructor-img-${cls.id}-${(instructor as any).id || (instructor as any).userId || idx}`;
+                                        const hasInstError = imageErrors[instKey];
+                                        return (
+                                          <div className={`w-7 h-7 rounded-full overflow-hidden bg-[#e0e4e5] border border-[#f2f4f4] ${hasInstError ? 'flex items-center justify-center text-[9px] font-bold text-[#596061] bg-[#f8f9fa]' : ''}`}>
+                                            {hasInstError ? (
+                                              instructor.name.substring(0, 2).toUpperCase()
+                                            ) : (instructor as any).avatar || (instructor as any).photoURL || (instructor as any).image || (instructor as any).imageUrl ? (
+                                              <img 
+                                                src={(instructor as any).avatar || (instructor as any).photoURL || (instructor as any).image || (instructor as any).imageUrl} 
+                                                alt={instructor.name} 
+                                                className="w-full h-full object-cover" 
+                                                onError={() => {
+                                                  setImageErrors(prev => ({ ...prev, [instKey]: true }));
+                                                }} 
+                                              />
+                                            ) : (
+                                              <div className="w-full h-full flex items-center justify-center text-[9px] font-bold text-[#596061] bg-[#f8f9fa]">
+                                                {instructor.name.substring(0, 2).toUpperCase()}
+                                              </div>
+                                            )}
                                           </div>
-                                        )}
-                                      </div>
+                                        );
+                                      })()}
                                       <p className="text-[8px] font-bold text-[#596061] mt-0.5 text-center truncate w-full">{instructor.name}</p>
                                     </div>
                                   ))}
@@ -642,17 +680,39 @@ export default function ClubClassSelectionPage({
 
                   return (
                     <div key={cls.id} onClick={() => handleCardClick({ ...cls, itemType: 'class' })} className="p-3 flex gap-3 cursor-pointer hover:bg-[#f8f9fa] transition-colors group bg-white">
-                      <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-[#e0e4e5]">
-                        {cls.imageUrl || (cls as any).image || (cls as any).photoURL || (cls as any).avatar ? (
-                          <img src={cls.imageUrl || (cls as any).image || (cls as any).photoURL || (cls as any).avatar} alt={cls.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement!.classList.add('flex', 'items-center', 'justify-center'); e.currentTarget.parentElement!.innerHTML = '<span class="material-symbols-outlined text-[#acb3b4] text-lg">school</span>'; }} />
-                        ) : group.coverImage ? (
-                          <img src={group.coverImage} alt={cls.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement!.classList.add('flex', 'items-center', 'justify-center'); e.currentTarget.parentElement!.innerHTML = '<span class="material-symbols-outlined text-[#acb3b4] text-lg">school</span>'; }} />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <span className="material-symbols-outlined text-[#acb3b4] text-lg">school</span>
+                      {(() => {
+                        const imgKey = `class-flat-img-${cls.id}`;
+                        const hasError = imageErrors[imgKey];
+                        return (
+                          <div className={`w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-[#e0e4e5] ${hasError ? 'flex items-center justify-center' : ''}`}>
+                            {hasError ? (
+                              <span className="material-symbols-outlined text-[#acb3b4] text-lg">school</span>
+                            ) : cls.imageUrl || (cls as any).image || (cls as any).photoURL || (cls as any).avatar ? (
+                              <img 
+                                src={cls.imageUrl || (cls as any).image || (cls as any).photoURL || (cls as any).avatar} 
+                                alt={cls.title} 
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform" 
+                                onError={() => {
+                                  setImageErrors(prev => ({ ...prev, [imgKey]: true }));
+                                }} 
+                              />
+                            ) : group.coverImage ? (
+                              <img 
+                                src={group.coverImage} 
+                                alt={cls.title} 
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform" 
+                                onError={() => {
+                                  setImageErrors(prev => ({ ...prev, [imgKey]: true }));
+                                }} 
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <span className="material-symbols-outlined text-[#acb3b4] text-lg">school</span>
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
+                        );
+                      })()}
 
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold text-[#2d3435] truncate">{cls.title}</p>
@@ -679,15 +739,30 @@ export default function ClubClassSelectionPage({
                           <div className="flex flex-row gap-2 items-center justify-end mb-2">
                             {instructors.slice(0, 2).map((instructor, idx) => (
                               <div key={idx} className="flex flex-col items-center w-8">
-                                <div className="w-7 h-7 rounded-full overflow-hidden bg-[#e0e4e5] border border-[#f2f4f4]">
-                                  {(instructor as any).avatar || (instructor as any).photoURL || (instructor as any).image || (instructor as any).imageUrl ? (
-                                    <img src={(instructor as any).avatar || (instructor as any).photoURL || (instructor as any).image || (instructor as any).imageUrl} alt={instructor.name} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement!.classList.add('flex', 'items-center', 'justify-center', 'text-[9px]', 'font-bold', 'text-[#596061]', 'bg-[#f8f9fa]'); e.currentTarget.parentElement!.innerHTML = instructor.name.substring(0, 2).toUpperCase(); }} />
-                                  ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-[9px] font-bold text-[#596061] bg-[#f8f9fa]">
-                                      {instructor.name.substring(0, 2).toUpperCase()}
+                                {(() => {
+                                  const instKey = `instructor-flat-img-${cls.id}-${(instructor as any).id || (instructor as any).userId || idx}`;
+                                  const hasInstError = imageErrors[instKey];
+                                  return (
+                                    <div className={`w-7 h-7 rounded-full overflow-hidden bg-[#e0e4e5] border border-[#f2f4f4] ${hasInstError ? 'flex items-center justify-center text-[9px] font-bold text-[#596061] bg-[#f8f9fa]' : ''}`}>
+                                      {hasInstError ? (
+                                        instructor.name.substring(0, 2).toUpperCase()
+                                      ) : (instructor as any).avatar || (instructor as any).photoURL || (instructor as any).image || (instructor as any).imageUrl ? (
+                                        <img 
+                                          src={(instructor as any).avatar || (instructor as any).photoURL || (instructor as any).image || (instructor as any).imageUrl} 
+                                          alt={instructor.name} 
+                                          className="w-full h-full object-cover" 
+                                          onError={() => {
+                                            setImageErrors(prev => ({ ...prev, [instKey]: true }));
+                                          }} 
+                                        />
+                                      ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-[9px] font-bold text-[#596061] bg-[#f8f9fa]">
+                                          {instructor.name.substring(0, 2).toUpperCase()}
+                                        </div>
+                                      )}
                                     </div>
-                                  )}
-                                </div>
+                                  );
+                                })()}
                                 <p className="text-[8px] font-bold text-[#596061] mt-0.5 text-center truncate w-full">{instructor.name}</p>
                               </div>
                             ))}
@@ -1170,6 +1245,14 @@ export default function ClubClassSelectionPage({
           </div>
         </UnifiedCheckoutModal>
       )}
+
+      <ClassDetail
+        groupId={groupId}
+        itemId={selectedClassDetail?.id}
+        itemDetail={selectedClassDetail}
+        isOpen={!!selectedClassDetail && !checkoutModalOpen}
+        onClose={closeDetailModal}
+      />
     </div>
   );
 }

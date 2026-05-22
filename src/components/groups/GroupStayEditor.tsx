@@ -8,15 +8,18 @@ import { stayService } from "@/lib/firebase/stayService";
 import { storageService } from "@/lib/firebase/storageService";
 import { Stay, StayType } from "@/types/stay";
 import { useAuth } from "@/components/providers/AuthProvider";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
 
 interface GroupStayEditorProps {
   group?: any;
   onClose?: () => void;
+  isInline?: boolean;
 }
 
-export default function GroupStayEditor({ group, onClose }: GroupStayEditorProps) {
+export default function GroupStayEditor({ group, onClose, isInline }: GroupStayEditorProps) {
   const { user } = useAuth();
+  const { t } = useLanguage();
 
   // -- Loading / Saving State --
   const [isLoading, setIsLoading] = useState(true);
@@ -301,24 +304,29 @@ export default function GroupStayEditor({ group, onClose }: GroupStayEditorProps
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 20 }}
-        className="fixed inset-0 z-[100] light font-body-md text-on-background antialiased bg-[#F3F4F6] flex flex-col overflow-y-auto no-scrollbar"
+        className={isInline
+          ? "w-full light font-body-md text-on-background antialiased bg-[#F3F4F6] flex flex-col"
+          : "fixed inset-0 z-[100] light font-body-md text-on-background antialiased bg-[#F3F4F6] flex flex-col overflow-y-auto no-scrollbar"
+        }
       >
         {/* Top Bar */}
-        <header className="sticky top-0 z-50 bg-[#F3F4F6]/80 backdrop-blur-xl border-b border-gray-200">
-          <div className="max-w-[896px] mx-auto px-6 md:px-12 py-4 flex items-center justify-between w-full">
-            <div className="flex items-center gap-4">
-              <button 
-                onClick={onClose}
-                className="w-10 h-10 rounded-full flex items-center justify-center text-primary hover:bg-primary/5 transition-all"
-              >
-                <span className="material-symbols-outlined text-primary">arrow_back</span>
-              </button>
-              <h1 className="text-base font-bold text-on-surface">Stay Editor</h1>
+        {!isInline && (
+          <header className="sticky top-0 z-50 bg-[#F3F4F6]/80 backdrop-blur-xl border-b border-gray-200">
+            <div className="max-w-[896px] mx-auto px-6 md:px-12 py-4 flex items-center justify-between w-full">
+              <div className="flex items-center gap-4">
+                <button 
+                  onClick={onClose}
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-primary hover:bg-primary/5 transition-all"
+                >
+                  <span className="material-symbols-outlined text-primary">arrow_back</span>
+                </button>
+                <h1 className="text-base font-bold text-on-surface">Stay Editor</h1>
+              </div>
             </div>
-          </div>
-        </header>
+          </header>
+        )}
 
-        <main className="p-6 md:p-12 flex-1">
+        <main className="flex-1">
           <div className="max-w-[896px] mx-auto flex items-center justify-center py-32">
             <div className="flex flex-col items-center gap-4">
               <div className="w-8 h-8 border-3 border-primary/30 border-t-primary rounded-full animate-spin" />
@@ -349,257 +357,422 @@ export default function GroupStayEditor({ group, onClose }: GroupStayEditorProps
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 20 }}
-        className="fixed inset-0 z-[100] light font-body-md text-on-background antialiased bg-[#F3F4F6] flex flex-col overflow-y-auto no-scrollbar"
+        className={isInline
+          ? "w-full light font-body-md text-on-surface antialiased bg-background flex flex-col no-scrollbar"
+          : "fixed inset-0 z-[100] light font-body-md text-on-surface antialiased bg-background flex flex-col overflow-y-auto no-scrollbar pb-20"
+        }
       >
         {/* Top Bar */}
-        <header className="sticky top-0 z-50 bg-[#F3F4F6]/80 backdrop-blur-xl border-b border-gray-200">
-          <div className="max-w-[896px] mx-auto px-6 md:px-12 py-4 flex items-center justify-between w-full">
-            <div className="flex items-center gap-4">
-              <button 
-                onClick={onClose}
-                className="w-10 h-10 rounded-full flex items-center justify-center text-primary hover:bg-primary/5 transition-all"
-              >
-                <span className="material-symbols-outlined text-primary">arrow_back</span>
-              </button>
-              <h1 className="text-base font-bold text-on-surface">Stay Editor</h1>
+        {!isInline && (
+          <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-outline/5">
+            <div className="max-w-[896px] mx-auto px-4 py-4 flex items-center justify-between w-full">
+              <div className="flex items-center gap-4">
+                <button 
+                  onClick={onClose}
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-primary hover:bg-primary/5 transition-all"
+                >
+                  <span className="material-symbols-outlined text-primary">arrow_back</span>
+                </button>
+                <h1 className="text-base font-bold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.title")}</h1>
+              </div>
             </div>
-          </div>
-        </header>
+          </header>
+        )}
 
-        <main className="p-6 md:p-12 flex-1">
-          <div className="max-w-[896px] mx-auto space-y-10 pb-48 md:pb-32">
-            <header className="flex justify-between items-end mb-12">
-              <div>
-                <h1 className="font-headline-lg text-headline-lg text-on-surface">Manage Details</h1>
-                <p className="font-body-md text-on-surface-variant mt-1">Manage details for {title || "your stay"}</p>
+        <main className="flex-1">
+          <div className={`max-w-[896px] mx-auto space-y-6 ${isInline ? 'pb-24' : 'pb-48 md:pb-32'}`}>
+            
+            {/* Section Header */}
+            <div className="px-4 pt-4 pb-6">
+              <div className="mb-2">
+                <h2 className="text-[24px] leading-[1.3] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>
+                  {t("group.stay.title")}
+                </h2>
+                <p className="text-[14px] leading-[1.4] tracking-[0.01em] font-medium text-on-surface-variant mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>
+                  {t("group.stay.subtitle")}
+                </p>
               </div>
-              {/* Save Status Message */}
-              {saveMessage && (
-                <div className={`px-4 py-2 rounded-lg font-label-sm ${saveMessage.type === 'success' ? 'bg-primary/10 text-primary' : 'bg-error/10 text-error'}`}>
-                  {saveMessage.text}
-                </div>
-              )}
-            </header>
+            </div>
+
             {/* 1. BASIC INFO */}
-            <section className="bg-white rounded-[12px] shadow-sm p-6 space-y-6">
-              <div className="flex items-center gap-2 text-primary">
-                <span className="material-symbols-outlined" data-icon="info">info</span>
-                <h2 className="font-title-md text-title-md">BASIC INFO</h2>
-              </div>
-              <div className="grid grid-cols-1 gap-6">
-                <div className="space-y-2">
-                  <label className="font-label-sm text-on-surface-variant">Stay Name (English)</label>
-                  <input className="w-full px-4 py-3 bg-surface-container-low border-transparent rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-body-md transition-all" type="text" value={title} onChange={(e) => setTitle(e.target.value)} />
+            <section className="px-4 mb-6">
+              <div className="bg-white rounded-2xl shadow-[0px_10px_30px_rgba(0,0,0,0.03)] border border-white/20 overflow-hidden">
+                <div className="px-6 pt-6 pb-4 border-b border-outline/5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                      <span className="material-symbols-outlined text-primary text-[20px]">info</span>
+                    </div>
+                    <div>
+                      <h3 className="text-[16px] leading-[1.6] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.basic_info")}</h3>
+                      <p className="text-[12px] leading-[1.2] font-medium text-on-surface-variant" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.basic_info_desc")}</p>
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <label className="font-label-sm text-on-surface-variant">Native Title</label>
-                  <input className="w-full px-4 py-3 bg-surface-container-low border-transparent rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-body-md transition-all" type="text" value={nativeTitle} onChange={(e) => setNativeTitle(e.target.value)} placeholder="Enter native title" />
-                </div>
-                <div className="space-y-2">
-                  <label className="font-label-sm text-on-surface-variant">Short Headline</label>
-                  <input className="w-full px-4 py-3 bg-surface-container-low border-transparent rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-body-md transition-all" placeholder="e.g. Modern minimalist studio in the heart of Mapo" type="text" value={headline} onChange={(e) => setHeadline(e.target.value)} />
+
+                <div className="p-6 space-y-5">
+                  <div className="space-y-2">
+                    <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.stay_name_en")}</label>
+                    <input 
+                      className="w-full bg-surface-container-low border border-outline/10 focus:ring-2 focus:ring-primary/30 focus:border-primary rounded-xl px-4 py-3.5 text-on-surface text-[16px] font-medium placeholder:text-on-surface-variant/30" 
+                      type="text" 
+                      value={title} 
+                      onChange={(e) => setTitle(e.target.value)} 
+                      style={{ fontFamily: "'Inter', sans-serif" }}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.native_title")}</label>
+                    <input 
+                      className="w-full bg-surface-container-low border border-outline/10 focus:ring-2 focus:ring-primary/30 focus:border-primary rounded-xl px-4 py-3.5 text-on-surface text-[16px] font-medium placeholder:text-on-surface-variant/30" 
+                      type="text" 
+                      value={nativeTitle} 
+                      onChange={(e) => setNativeTitle(e.target.value)} 
+                      placeholder={t('group.stay.native_title', 'Enter native title')} 
+                      style={{ fontFamily: "'Inter', sans-serif" }}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.short_headline")}</label>
+                    <input 
+                      className="w-full bg-surface-container-low border border-outline/10 focus:ring-2 focus:ring-primary/30 focus:border-primary rounded-xl px-4 py-3.5 text-on-surface text-[16px] font-medium placeholder:text-on-surface-variant/30" 
+                      placeholder={t("group.stay.short_headline_placeholder")} 
+                      type="text" 
+                      value={headline} 
+                      onChange={(e) => setHeadline(e.target.value)} 
+                      style={{ fontFamily: "'Inter', sans-serif" }}
+                    />
+                  </div>
                 </div>
               </div>
             </section>
 
             {/* 3. MEDIA */}
-            <section className="bg-white rounded-[12px] shadow-sm p-6 space-y-6">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2 text-primary">
-                  <span className="material-symbols-outlined" data-icon="photo_library">photo_library</span>
-                  <h2 className="font-title-md text-title-md">MEDIA</h2>
+            <section className="px-4 mb-6">
+              <div className="bg-white rounded-2xl shadow-[0px_10px_30px_rgba(0,0,0,0.03)] border border-white/20 overflow-hidden">
+                <div className="px-6 pt-6 pb-4 border-b border-outline/5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-secondary/10 flex items-center justify-center shrink-0">
+                        <span className="material-symbols-outlined text-secondary text-[20px]">photo_library</span>
+                      </div>
+                      <div>
+                        <h3 className="text-[16px] leading-[1.6] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.media")}</h3>
+                        <p className="text-[12px] leading-[1.2] font-medium text-on-surface-variant" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.media_desc")}</p>
+                      </div>
+                    </div>
+                    <span className="text-[12px] font-semibold text-on-surface-variant bg-surface-container-low px-3 py-1.5 rounded-full" style={{ fontFamily: "'Inter', sans-serif" }}>
+                      {t("group.stay.uploaded_count", { count: displayImageUrls.length })}
+                    </span>
+                  </div>
                 </div>
-                <span className="font-label-sm text-on-surface-variant">{displayImageUrls.length} / 20 uploaded</span>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {displayImageUrls.map((imgUrl, index) => {
-                  const progress = uploadProgress[index];
-                  const isOptimizing = optimizingSlots[index];
-                  const isUploadingImg = progress !== undefined;
 
-                  return (
-                    <div key={index} className="aspect-square relative rounded-lg overflow-hidden group border border-outline-variant/10">
-                      <img alt="Interior" className="w-full h-full object-cover" src={imgUrl} />
-                      
-                      {/* Upload Progress Overlay */}
-                      {(isUploadingImg || isOptimizing) && (
-                        <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center p-2 text-center backdrop-blur-[1px]">
-                          {isOptimizing ? (
-                            <div className="flex flex-col items-center gap-2">
-                              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                              <span className="text-[10px] text-white font-bold uppercase tracking-tighter">Optimizing...</span>
+                <div className="p-6 space-y-5">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {displayImageUrls.map((imgUrl, index) => {
+                      const progress = uploadProgress[index];
+                      const isOptimizing = optimizingSlots[index];
+                      const isUploadingImg = progress !== undefined;
+
+                      return (
+                        <div key={index} className="aspect-square relative rounded-xl overflow-hidden group border border-outline/5">
+                          <img alt="Interior" className="w-full h-full object-cover" src={imgUrl} />
+                          
+                          {/* Upload Progress Overlay */}
+                          {(isUploadingImg || isOptimizing) && (
+                            <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center p-2 text-center backdrop-blur-[1px]">
+                              {isOptimizing ? (
+                                <div className="flex flex-col items-center gap-2">
+                                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                  <span className="text-[10px] text-white font-bold uppercase tracking-tighter">Optimizing...</span>
+                                </div>
+                              ) : (
+                                <div className="relative w-12 h-12">
+                                  <svg className="w-full h-full transform -rotate-90">
+                                    <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="4" fill="transparent" className="text-white/20" />
+                                    <circle 
+                                      cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="4" fill="transparent" 
+                                      strokeDasharray={125.6} 
+                                      strokeDashoffset={125.6 * (1 - (progress || 0) / 100)} 
+                                      className="text-white transition-all duration-300" 
+                                    />
+                                  </svg>
+                                  <span className="absolute inset-0 flex items-center justify-center text-[10px] text-white font-bold">
+                                    {Math.round(progress || 0)}%
+                                  </span>
+                                </div>
+                              )}
                             </div>
-                          ) : (
-                            <div className="relative w-12 h-12">
-                              <svg className="w-full h-full transform -rotate-90">
-                                <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="4" fill="transparent" className="text-white/20" />
-                                <circle 
-                                  cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="4" fill="transparent" 
-                                  strokeDasharray={125.6} 
-                                  strokeDashoffset={125.6 * (1 - (progress || 0) / 100)} 
-                                  className="text-white transition-all duration-300" 
-                                />
-                              </svg>
-                              <span className="absolute inset-0 flex items-center justify-center text-[10px] text-white font-bold">
-                                {Math.round(progress || 0)}%
-                              </span>
+                          )}
+
+                          {!isUploadingImg && !isOptimizing && (
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 rounded-xl">
+                              <button onClick={() => handleImageDelete(index)} className="w-8 h-8 rounded-full bg-error text-white flex items-center justify-center"><span className="material-symbols-outlined text-[16px]">delete</span></button>
                             </div>
                           )}
                         </div>
-                      )}
+                      );
+                    })}
+                    {displayImageUrls.length < 20 && (
+                      <div
+                        onClick={() => fileInputRef.current?.click()}
+                        className="aspect-square relative rounded-xl border-2 border-dashed border-outline/15 bg-surface-container-low hover:border-primary/30 flex flex-col items-center justify-center gap-1 transition-all cursor-pointer group"
+                      >
+                        <span className="material-symbols-outlined text-on-surface-variant/30 text-[24px]" data-icon="add_a_photo">add_a_photo</span>
+                        <span className="text-[10px] text-on-surface-variant/40 font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.add_photos")}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </section>
 
-                      {!isUploadingImg && !isOptimizing && (
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                          <button onClick={() => handleImageDelete(index)} className="p-1 bg-white rounded-full text-error"><span className="material-symbols-outlined" data-icon="delete">delete</span></button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-                {displayImageUrls.length < 20 && (
-                  <div
-                    onClick={() => fileInputRef.current?.click()}
-                    className="aspect-square relative rounded-lg border-2 border-dashed border-primary/40 bg-primary/5 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-primary/10 transition-colors group"
-                  >
-                    <span className="material-symbols-outlined text-primary group-hover:scale-110 transition-transform" data-icon="add_a_photo">add_a_photo</span>
-                    <span className="font-label-sm text-primary font-bold">Add Photos</span>
-                  </div>
-                )}
-              </div>
-            </section>
             {/* 4. RATES */}
-            <section className="bg-white rounded-[12px] shadow-sm p-6 space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-primary">
-                  <span className="material-symbols-outlined" data-icon="payments">payments</span>
-                  <h2 className="font-title-md text-title-md">RATES</h2>
-                </div>
-                <div className="flex items-center gap-2">
-                  <label className="font-label-sm text-on-surface-variant">Currency</label>
-                  <select className="bg-surface-container-low border-transparent rounded-lg font-label-sm text-on-surface py-1.5 pl-3 pr-8 focus:ring-primary focus:border-primary" value={currency} onChange={(e) => setCurrency(e.target.value)}>
-                    <option value="KRW">KRW (₩)</option>
-                    <option value="USD">USD ($)</option>
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="font-label-sm text-on-surface-variant">Weekday Base Rate</label>
-                  <div className="relative">
-                    <input className="w-full pl-4 pr-4 py-3 bg-surface-container-low border-transparent rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-body-md" type="text" value={baseRate} onChange={(e) => setBaseRate(e.target.value)} />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="font-label-sm text-on-surface-variant">Weekend Surcharge</label>
-                  <div className="relative">
-                    <input className="w-full pl-4 pr-4 py-3 bg-surface-container-low border-transparent rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-body-md" type="text" value={weekendSurcharge} onChange={(e) => setWeekendSurcharge(e.target.value)} />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="font-label-sm text-on-surface-variant">Extra Person Fee</label>
-                  <div className="relative">
-                    <input className="w-full pl-4 pr-4 py-3 bg-surface-container-low border-transparent rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-body-md" type="text" value={extraPersonFee} onChange={(e) => setExtraPersonFee(e.target.value)} />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="font-label-sm text-on-surface-variant">Cleaning Fee</label>
-                  <div className="relative">
-                    <input className="w-full pl-4 pr-4 py-3 bg-surface-container-low border-transparent rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-body-md" type="text" value={cleaningFee} onChange={(e) => setCleaningFee(e.target.value)} />
-                  </div>
-                </div>
-              </div>
-            </section>
-            {/* 5. GUIDES */}
-            <section className="bg-white rounded-[12px] shadow-sm p-6 space-y-6">
-              <div className="flex items-center gap-2 text-primary">
-                <span className="material-symbols-outlined" data-icon="menu_book">menu_book</span>
-                <h2 className="font-title-md text-title-md">GUIDES</h2>
-              </div>
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <label className="font-label-sm text-on-surface-variant">Room Features</label>
-                  <textarea className="w-full px-4 py-3 bg-surface-container-low border-transparent rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-body-md" rows={3} value={roomFeatures} onChange={(e) => setRoomFeatures(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <label className="font-label-sm text-on-surface-variant">Getting Here</label>
-                  <textarea className="w-full px-4 py-3 bg-surface-container-low border-transparent rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-body-md" rows={3} value={gettingHere} onChange={(e) => setGettingHere(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <label className="font-label-sm text-on-surface-variant">Facility Guide</label>
-                  <textarea className="w-full px-4 py-3 bg-surface-container-low border-transparent rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-body-md" rows={3} value={facilityGuide} onChange={(e) => setFacilityGuide(e.target.value)} />
-                </div>
-              </div>
-            </section>
-            {/* 6. HOST SETTINGS */}
-            <section className="bg-white rounded-[12px] shadow-sm p-6 space-y-6">
-              <div className="flex items-center gap-2 text-primary">
-                <span className="material-symbols-outlined" data-icon="person">person</span>
-                <h2 className="font-title-md text-title-md uppercase">Host Settings</h2>
-              </div>
-              <div className="space-y-2">
-                <label className="font-label-sm text-on-surface-variant">Primary Host</label>
-                {isEditingHost ? (
-                  <div className="p-4 bg-surface-container-low rounded-xl space-y-4">
-                    <div className="space-y-2">
-                      <label className="font-label-sm text-on-surface-variant">Host Name</label>
-                      <input className="w-full px-4 py-2 bg-white border border-outline-variant/30 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-body-md" type="text" value={hostName} onChange={(e) => setHostName(e.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="font-label-sm text-on-surface-variant">Host Photo URL</label>
-                      <input className="w-full px-4 py-2 bg-white border border-outline-variant/30 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary font-body-md" type="text" value={hostPhoto} onChange={(e) => setHostPhoto(e.target.value)} placeholder="https://..." />
-                    </div>
-                    <div className="flex justify-end pt-2">
-                      <button onClick={() => setIsEditingHost(false)} className="px-6 py-2 bg-primary text-white rounded-lg font-label-sm hover:bg-primary/90 transition-colors">Done</button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-between p-4 bg-surface-container-low rounded-xl">
+            <section className="px-4 mb-6">
+              <div className="bg-white rounded-2xl shadow-[0px_10px_30px_rgba(0,0,0,0.03)] border border-white/20 overflow-hidden">
+                <div className="px-6 pt-6 pb-4 border-b border-outline/5">
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary overflow-hidden">
-                        {hostPhoto || originalData?.host?.photo ? (
-                          <img src={hostPhoto || originalData?.host?.photo || ""} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <span className="material-symbols-outlined">account_circle</span>
-                        )}
+                      <div className="w-10 h-10 rounded-xl bg-tertiary/10 flex items-center justify-center shrink-0">
+                        <span className="material-symbols-outlined text-tertiary text-[20px]">payments</span>
                       </div>
                       <div>
-                        <p className="font-body-md text-on-surface">{hostName}</p>
-                        <p className="text-[12px] text-on-surface-variant font-medium">Default Host</p>
+                        <h3 className="text-[16px] leading-[1.6] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.rates")}</h3>
+                        <p className="text-[12px] leading-[1.2] font-medium text-on-surface-variant" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.rates_desc")}</p>
                       </div>
                     </div>
-                    <button onClick={() => setIsEditingHost(true)} className="px-4 py-2 bg-white border border-outline-variant/50 rounded-lg font-label-sm text-primary hover:bg-surface-container-low transition-colors flex items-center gap-2">
-                      <span className="material-symbols-outlined text-[18px]">person_search</span>
-                      Change
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <label className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.currency")}</label>
+                      <select 
+                        className="bg-surface-container-low border border-outline/10 rounded-xl text-[14px] font-medium text-on-surface py-1.5 pl-3 pr-8 focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all" 
+                        value={currency} 
+                        onChange={(e) => setCurrency(e.target.value)}
+                        style={{ fontFamily: "'Inter', sans-serif" }}
+                      >
+                        <option value="KRW">KRW (₩)</option>
+                        <option value="USD">USD ($)</option>
+                      </select>
+                    </div>
                   </div>
-                )}
-                <p className="text-[11px] text-on-surface-variant px-1 mt-2">Search and select from people in your organization to assign a different primary host.</p>
+                </div>
+
+                <div className="p-6 space-y-5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.weekday_base_rate")}</label>
+                      <input 
+                        className="w-full bg-surface-container-low border border-outline/10 focus:ring-2 focus:ring-primary/30 focus:border-primary rounded-xl px-4 py-3.5 text-on-surface text-[16px] font-medium placeholder:text-on-surface-variant/30" 
+                        type="text" 
+                        value={baseRate} 
+                        onChange={(e) => setBaseRate(e.target.value)} 
+                        style={{ fontFamily: "'Inter', sans-serif" }}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.weekend_surcharge")}</label>
+                      <input 
+                        className="w-full bg-surface-container-low border border-outline/10 focus:ring-2 focus:ring-primary/30 focus:border-primary rounded-xl px-4 py-3.5 text-on-surface text-[16px] font-medium placeholder:text-on-surface-variant/30" 
+                        type="text" 
+                        value={weekendSurcharge} 
+                        onChange={(e) => setWeekendSurcharge(e.target.value)} 
+                        style={{ fontFamily: "'Inter', sans-serif" }}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.extra_person_fee")}</label>
+                      <input 
+                        className="w-full bg-surface-container-low border border-outline/10 focus:ring-2 focus:ring-primary/30 focus:border-primary rounded-xl px-4 py-3.5 text-on-surface text-[16px] font-medium placeholder:text-on-surface-variant/30" 
+                        type="text" 
+                        value={extraPersonFee} 
+                        onChange={(e) => setExtraPersonFee(e.target.value)} 
+                        style={{ fontFamily: "'Inter', sans-serif" }}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.cleaning_fee")}</label>
+                      <input 
+                        className="w-full bg-surface-container-low border border-outline/10 focus:ring-2 focus:ring-primary/30 focus:border-primary rounded-xl px-4 py-3.5 text-on-surface text-[16px] font-medium placeholder:text-on-surface-variant/30" 
+                        type="text" 
+                        value={cleaningFee} 
+                        onChange={(e) => setCleaningFee(e.target.value)} 
+                        style={{ fontFamily: "'Inter', sans-serif" }}
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             </section>
+
+            {/* 5. GUIDES */}
+            <section className="px-4 mb-6">
+              <div className="bg-white rounded-2xl shadow-[0px_10px_30px_rgba(0,0,0,0.03)] border border-white/20 overflow-hidden">
+                <div className="px-6 pt-6 pb-4 border-b border-outline/5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
+                      <span className="material-symbols-outlined text-blue-500 text-[20px]">menu_book</span>
+                    </div>
+                    <div>
+                      <h3 className="text-[16px] leading-[1.6] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.guides")}</h3>
+                      <p className="text-[12px] leading-[1.2] font-medium text-on-surface-variant" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.guides_desc")}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-6 space-y-5">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.room_features")}</label>
+                      <textarea 
+                        className="w-full bg-surface-container-low border border-outline/10 focus:ring-2 focus:ring-primary/30 focus:border-primary rounded-xl px-4 py-3.5 text-on-surface text-[14px] leading-relaxed font-normal placeholder:text-on-surface-variant/30 resize-none min-h-[100px]" 
+                        rows={3} 
+                        value={roomFeatures} 
+                        onChange={(e) => setRoomFeatures(e.target.value)} 
+                        style={{ fontFamily: "'Inter', sans-serif" }}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.getting_here")}</label>
+                      <textarea 
+                        className="w-full bg-surface-container-low border border-outline/10 focus:ring-2 focus:ring-primary/30 focus:border-primary rounded-xl px-4 py-3.5 text-on-surface text-[14px] leading-relaxed font-normal placeholder:text-on-surface-variant/30 resize-none min-h-[100px]" 
+                        rows={3} 
+                        value={gettingHere} 
+                        onChange={(e) => setGettingHere(e.target.value)} 
+                        style={{ fontFamily: "'Inter', sans-serif" }}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.facility_guide")}</label>
+                      <textarea 
+                        className="w-full bg-surface-container-low border border-outline/10 focus:ring-2 focus:ring-primary/30 focus:border-primary rounded-xl px-4 py-3.5 text-on-surface text-[14px] leading-relaxed font-normal placeholder:text-on-surface-variant/30 resize-none min-h-[100px]" 
+                        rows={3} 
+                        value={facilityGuide} 
+                        onChange={(e) => setFacilityGuide(e.target.value)} 
+                        style={{ fontFamily: "'Inter', sans-serif" }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* 6. HOST SETTINGS */}
+            <section className="px-4 mb-6">
+              <div className="bg-white rounded-2xl shadow-[0px_10px_30px_rgba(0,0,0,0.03)] border border-white/20 overflow-hidden">
+                <div className="px-6 pt-6 pb-4 border-b border-outline/5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-error/10 flex items-center justify-center shrink-0">
+                      <span className="material-symbols-outlined text-error text-[20px]">person</span>
+                    </div>
+                    <div>
+                      <h3 className="text-[16px] leading-[1.6] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.host_settings")}</h3>
+                      <p className="text-[12px] leading-[1.2] font-medium text-on-surface-variant" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.host_settings_desc")}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-6 space-y-5">
+                  <div className="space-y-2">
+                    <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.primary_host")}</label>
+                    {isEditingHost ? (
+                      <div className="p-4 bg-surface-container-low rounded-xl space-y-4">
+                        <div className="space-y-2">
+                          <label className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.host_name")}</label>
+                          <input 
+                            className="w-full bg-white border border-outline/10 rounded-xl px-4 py-3 text-on-surface text-[14px] font-medium" 
+                            type="text" 
+                            value={hostName} 
+                            onChange={(e) => setHostName(e.target.value)} 
+                            style={{ fontFamily: "'Inter', sans-serif" }}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.host_photo")}</label>
+                          <input 
+                            className="w-full bg-white border border-outline/10 rounded-xl px-4 py-3 text-on-surface text-[14px] font-medium" 
+                            type="text" 
+                            value={hostPhoto} 
+                            onChange={(e) => setHostPhoto(e.target.value)} 
+                            placeholder="https://..." 
+                            style={{ fontFamily: "'Inter', sans-serif" }}
+                          />
+                        </div>
+                        <div className="flex justify-end pt-2">
+                          <button 
+                            onClick={() => setIsEditingHost(false)} 
+                            className="px-6 py-2.5 bg-primary text-on-primary rounded-xl font-semibold hover:opacity-90 active:scale-95 transition-all text-[14px]"
+                            style={{ fontFamily: "'Inter', sans-serif" }}
+                          >
+                            Done
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between p-4 bg-surface-container-low rounded-xl">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary overflow-hidden">
+                            {hostPhoto || originalData?.host?.photo ? (
+                              <img src={hostPhoto || originalData?.host?.photo || ""} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="material-symbols-outlined">account_circle</span>
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-body-md text-on-surface font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>{hostName}</p>
+                            <p className="text-[12px] text-on-surface-variant font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.default_host")}</p>
+                          </div>
+                        </div>
+                        <button 
+                          onClick={() => setIsEditingHost(true)} 
+                          className="px-4 py-2 bg-white border border-outline/10 rounded-xl font-semibold text-primary hover:bg-surface-container-low transition-all text-[13px] flex items-center gap-2 shadow-sm"
+                          style={{ fontFamily: "'Inter', sans-serif" }}
+                        >
+                          <span className="material-symbols-outlined text-[18px]">person_search</span>
+                          {t("group.stay.change_host")}
+                        </button>
+                      </div>
+                    )}
+                    <p className="text-[11px] text-on-surface-variant/60 font-medium ml-1" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.host_settings_hint")}</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
             {/* ACTION BAR */}
-            <div className="sticky bottom-20 md:bottom-0 left-0 right-0 p-6 bg-[#F3F4F6]/90 backdrop-blur-xl border-t border-outline-variant/30 flex justify-center z-40 mt-12 -mx-6 md:-mx-12">
-              <div className="w-full max-w-[896px] flex justify-end gap-4 px-6 md:px-12">
-                <button onClick={handleDiscard} disabled={isSaving} className="px-8 py-3 rounded-xl bg-outline-variant/20 font-title-md text-body-md hover:bg-outline-variant/40 transition-all">Discard</button>
-                <button onClick={handleSave} disabled={isSaving || isUploadingImages} className="px-12 py-3 rounded-xl bg-primary text-on-primary font-title-md text-body-md shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50">
+            <div className={`sticky ${isInline ? 'bottom-0' : 'bottom-20 md:bottom-0'} left-0 right-0 p-6 bg-background/80 backdrop-blur-xl border-t border-outline/5 flex justify-center z-40 mt-12 ${isInline ? '-mx-4' : '-mx-6 md:-mx-12'}`}>
+              <div className={`w-full max-w-[896px] flex justify-end gap-4 ${isInline ? '' : 'px-6 md:px-12'}`}>
+                <button 
+                  onClick={handleDiscard} 
+                  disabled={isSaving} 
+                  className="px-8 py-3.5 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-semibold transition-all active:scale-95 text-[14px]"
+                  style={{ fontFamily: "'Inter', sans-serif" }}
+                >
+                  {t("group.stay.discard")}
+                </button>
+                <button 
+                  onClick={handleSave} 
+                  disabled={isSaving || isUploadingImages} 
+                  className="px-12 py-3.5 rounded-xl bg-primary text-on-primary font-semibold shadow-[0_10px_20px_rgba(0,88,188,0.15)] hover:opacity-90 active:scale-[0.98] transition-all flex items-center gap-2 disabled:opacity-50 text-[14px]"
+                  style={{ fontFamily: "'Inter', sans-serif" }}
+                >
                   {isSaving ? (
                     <>
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Saving...
+                      <div className="w-5 h-5 border-2 border-on-primary/30 border-t-on-primary rounded-full animate-spin" />
+                      {t("group.stay.saving")}
                     </>
                   ) : isUploadingImages ? (
                     <>
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Uploading...
+                      <div className="w-5 h-5 border-2 border-on-primary/30 border-t-on-primary rounded-full animate-spin" />
+                      {t("group.stay.uploading")}
                     </>
                   ) : (
                     <>
-                      <span className="material-symbols-outlined" data-icon="save">save</span>
-                      Save Changes
+                      <span className="material-symbols-outlined text-[20px]">save</span>
+                      {t("group.stay.save_changes")}
                     </>
                   )}
                 </button>
               </div>
             </div>
+
           </div>
         </main>
       </motion.div>

@@ -279,52 +279,6 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
 
   return (
     <div className={`${isImmersive ? 'fixed inset-0 z-[100]' : 'relative w-full h-full min-h-[500px]'} bg-black overflow-hidden flex flex-col ${className}`}>
-      {/* Floating Filter Button */}
-      {!isImmersive && (
-        <div className="absolute top-[125px] left-4 z-30 flex flex-col gap-2 items-start pointer-events-none">
-          <button
-            onClick={() => {
-              setTempFilter(activeFilter);
-              setActiveCategoryTab(activeFilter.category);
-              setIsFilterOpen(true);
-            }}
-            className={`pointer-events-auto flex items-center gap-1.5 px-4 py-2.5 rounded-full text-xs font-black tracking-tight transition-all shadow-lg border backdrop-blur-md active:scale-95 cursor-pointer ${
-              activeFilter.category !== 'all'
-                ? 'bg-blue-600/90 text-white border-blue-500/30'
-                : 'bg-black/40 text-white/90 border-white/10 hover:bg-black/60'
-            }`}
-          >
-            <SlidersHorizontal size={14} className="shrink-0" />
-            <span>{t('gallery.filter.title')}</span>
-            {activeFilter.category !== 'all' && (
-              <span className="bg-white text-blue-600 rounded-full w-4 h-4 flex items-center justify-center text-[9px] font-black ml-0.5">
-                1
-              </span>
-            )}
-          </button>
-
-          {/* Active Filter Badge / Chip */}
-          {activeFilter.category !== 'all' && (
-            <div className="pointer-events-auto flex items-center gap-1 bg-blue-600/20 backdrop-blur-md text-blue-400 border border-blue-500/20 px-2.5 py-1 rounded-full text-[10px] font-bold shadow-md">
-              <span className="truncate max-w-[150px]">
-                {activeFilter.category === 'social' && `${t('gallery.filter.social')}: ${activeFilter.name}`}
-                {activeFilter.category === 'class' && `${t('gallery.filter.class')}: ${activeFilter.subName}`}
-                {activeFilter.category === 'event' && `${t('gallery.filter.event')}: ${activeFilter.name}`}
-                {activeFilter.category === 'na' && t('gallery.filter.na')}
-              </span>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setActiveFilter({ category: 'all' });
-                }}
-                className="w-3.5 h-3.5 rounded-full bg-blue-500/20 hover:bg-blue-500/40 text-blue-300 flex items-center justify-center ml-0.5 transition-colors shrink-0"
-              >
-                <X size={10} />
-              </button>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Feed Container - Vertical Snap */}
       <div

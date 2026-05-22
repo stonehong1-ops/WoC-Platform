@@ -27,6 +27,11 @@ interface GroupAppShellProps {
   currentColor: string;
   onColorChange: (color: string) => void;
   children: React.ReactNode;
+
+  onMembersClick?: () => void;
+  onChatClick?: () => void;
+  onDashboardClick?: () => void;
+  onFirstTabDetect?: (tabId: string) => void;
 }
 
 export default function GroupAppShell({
@@ -42,11 +47,20 @@ export default function GroupAppShell({
   currentColor,
   onColorChange,
   children,
+
+  onMembersClick,
+  onChatClick,
+  onDashboardClick,
+  onFirstTabDetect,
 }: GroupAppShellProps) {
 
   const { t } = useLanguage();
   const paletteVars = usePalette(group.headerThemeColor);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
+
+  React.useEffect(() => {
+    setIsMoreOpen(false);
+  }, [activeTab]);
 
   // 탭 목록 계산 — 기존 FUNCTION_TAB_MAP 로직 재사용
   const { navTabs, moreMenuItems, adminMenuItems } = useMemo(() => {
@@ -60,16 +74,46 @@ export default function GroupAppShell({
       selectedFns.push('class-setting');
     }
 
-    const addedTabIds = new Set<string>();
-    const dashboardTab = { id: 'home', key: 'group.tab.dashboard', icon: 'dashboard' };
-    addedTabIds.add('home');
+    if (selectedFns.includes('shop-setting') && !selectedFns.includes('shop')) {
+      selectedFns.push('shop');
+    }
+    if (selectedFns.includes('shop') && !selectedFns.includes('shop-setting')) {
+      selectedFns.push('shop-setting');
+    }
 
+    if (selectedFns.includes('stay-setting') && !selectedFns.includes('stay')) {
+      selectedFns.push('stay');
+    }
+    if (selectedFns.includes('stay') && !selectedFns.includes('stay-setting')) {
+      selectedFns.push('stay-setting');
+    }
+
+    if (selectedFns.includes('rental-setting') && !selectedFns.includes('rental')) {
+      selectedFns.push('rental');
+    }
+    if (selectedFns.includes('rental') && !selectedFns.includes('rental-setting')) {
+      selectedFns.push('rental-setting');
+    }
+
+    const addedTabIds = new Set<string>();
+    addedTabIds.add('home');
+    addedTabIds.add('members');
+
+    const aboutTab = { id: 'about', key: 'group.tab.about', icon: 'info' };
     const coreTabs: { id: string; key: string; icon: string }[] = [];
     const menuOrder = group.menuOrder || [];
+    const isAboutInOrder = menuOrder.some((item: any) => item.id === 'about');
 
     if (menuOrder.length > 0) {
       menuOrder.forEach((item: any) => {
         if (item.type === 'divider') return;
+        if (item.id === 'about') {
+          if (!addedTabIds.has('about')) {
+            addedTabIds.add('about');
+            coreTabs.push(aboutTab);
+          }
+          return;
+        }
         if (FIXED_IDS.has(item.id)) return;
         const mapping = FUNCTION_TAB_MAP[item.id];
         if (mapping && !addedTabIds.has(mapping.id)) {
@@ -95,7 +139,7 @@ export default function GroupAppShell({
         }
       });
     } else {
-      const defaultFns = ['live', 'feed', 'calendar', 'notice', 'members'];
+      const defaultFns = ['feed', 'live', 'calendar', 'class', 'notice', 'members'];
       defaultFns.forEach(fnId => {
         const mapping = FUNCTION_TAB_MAP[fnId];
         if (mapping && !addedTabIds.has(mapping.id)) {
@@ -105,7 +149,6 @@ export default function GroupAppShell({
       });
     }
 
-    const aboutTab = { id: 'about', key: 'group.tab.about', icon: 'info' };
     const adminTabs: { id: string; key: string; icon: string }[] = [];
     if (isAdmin) {
       // 기본 Dashboard Settings 추가
@@ -113,7 +156,14 @@ export default function GroupAppShell({
 
       ADMIN_FUNCTION_IDS.forEach(fnId => {
         const isMandatory = fnId === 'brand-setting' || fnId === 'roles-permissions';
-        if (isMandatory || selectedFns.includes(fnId) || (fnId === 'class-setting' && selectedFns.includes('class'))) {
+        if (
+          isMandatory || 
+          selectedFns.includes(fnId) || 
+          (fnId === 'class-setting' && selectedFns.includes('class')) ||
+          (fnId === 'shop-setting' && selectedFns.includes('shop')) ||
+          (fnId === 'stay-setting' && selectedFns.includes('stay')) ||
+          (fnId === 'rental-setting' && selectedFns.includes('rental'))
+        ) {
           const mapping = FUNCTION_TAB_MAP[fnId];
           if (mapping) {
             adminTabs.push({ id: mapping.id, key: mapping.key, icon: mapping.icon });
@@ -122,10 +172,22 @@ export default function GroupAppShell({
       });
     }
 
-    // Nav: Dashboard + coreTabs 상위 4개 = 5슬롯 + 더보기
-    const allCoreTabs = [...coreTabs, aboutTab];
-    const navVisible = [dashboardTab, ...allCoreTabs.slice(0, 4)];
-    const moreItems = allCoreTabs.slice(4);
+    // 탭 정렬 알고리즘 개선: 어바웃(about) 탭을 디폴트 배치 시 서비스 탭군보다 상위로 지정
+    let allCoreTabs: { id: string; key: string; icon: string }[] = [];
+    if (isAboutInOrder) {
+      // 사용자가 직접 menuOrder 상에서 어바웃 순서를 변경한 경우 그대로 적용
+      allCoreTabs = coreTabs;
+    } else {
+      // 디폴트 정렬 상태인 경우: 서비스성 탭군을 분리하여 [일반 코어 탭군, 어바웃, 서비스 탭군] 형태로 배치
+      const serviceTabIds = new Set(['shop', 'rental', 'stay', 'class']);
+      const normalCoreTabs = coreTabs.filter(t => !serviceTabIds.has(t.id));
+      const serviceCoreTabs = coreTabs.filter(t => serviceTabIds.has(t.id));
+      allCoreTabs = [...normalCoreTabs, aboutTab, ...serviceCoreTabs];
+    }
+
+    // Nav: coreTabs 상위 6개 = 6슬롯 + 더보기 (Dashboard와 Members는 제외됨)
+    const navVisible = allCoreTabs.slice(0, 6);
+    const moreItems = allCoreTabs.slice(6);
 
     return {
       navTabs: navVisible,
@@ -133,6 +195,12 @@ export default function GroupAppShell({
       adminMenuItems: adminTabs,
     };
   }, [group.selectedFunctions, group.menuOrder, isAdmin]);
+
+  React.useEffect(() => {
+    if (navTabs.length > 0 && onFirstTabDetect) {
+      onFirstTabDetect(navTabs[0].id);
+    }
+  }, [navTabs, onFirstTabDetect]);
 
   const handleMoreTabClick = (tab: TabType) => {
     setIsMoreOpen(false);
@@ -540,6 +608,9 @@ export default function GroupAppShell({
       <GroupShellFooter
         members={members}
         group={group}
+        onMembersClick={onMembersClick}
+        onChatClick={onChatClick}
+        onDashboardClick={onDashboardClick}
       />
     </div>
   );

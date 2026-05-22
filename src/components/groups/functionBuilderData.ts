@@ -35,6 +35,18 @@ export const FUNCTION_SECTIONS: FunctionSection[] = [
     ],
   },
   {
+    id: 'core-choice',
+    title: 'CORE CHOICE',
+    subtitle: '선택형 비구매형 시스템',
+    accentColor: 'bg-primary-container',
+    cards: [
+      { id: 'class', icon: 'school', title: 'Class', subtitle: '클래스', description: '수업 커리큘럼 정의 및 강의실 공간 배정', price: 'Free', status: 'ACTIVE' },
+      { id: 'shop', icon: 'storefront', title: 'Shop', subtitle: '상점', description: '커뮤니티 전용 상품 판매 및 주문 관리', price: 'Free', status: 'ACTIVE' },
+      { id: 'stay', icon: 'bed', title: 'Stay', subtitle: '스테이', description: '수련회 및 행사용 객실/숙박 통합 예약 관리', price: 'Free', status: 'ACTIVE' },
+      { id: 'rental', icon: 'key', title: 'Rental', subtitle: '렌탈', description: '장비 및 연습실/밀론가 대여 예약 통합 관리', price: 'Free', status: 'ACTIVE' },
+    ],
+  },
+  {
     id: 'community',
     title: 'COMMUNITY',
     subtitle: '커뮤니티 및 소통',
@@ -55,7 +67,6 @@ export const FUNCTION_SECTIONS: FunctionSection[] = [
     subtitle: '교육 및 학원 운영',
     accentColor: 'bg-primary-container',
     cards: [
-      { id: 'class', icon: 'school', title: 'Class', subtitle: '클래스', description: '수업 커리큘럼 정의 및 강의실 공간 배정', price: 'Free', status: 'ACTIVE' },
       { id: 'class-manager-a', icon: 'assignment_ind', title: 'Class Manager A', subtitle: '강좌 관리 A', description: '수강생 명단 및 출결 현황 실시간 관리', price: '$18/mo', status: 'ACTIVE' },
       { id: 'class-manager-b', icon: 'menu_book', title: 'Class Manager B', subtitle: '강좌 관리 B', description: '강의 교안 아카이빙 및 과제 관리 엔진', price: '$18/mo', status: 'ACTIVE' },
       { id: 'class-manager-c', icon: 'auto_stories', title: 'Class Manager C', subtitle: '강좌 관리 C', description: '다중 강좌 스케줄링 및 자동 보강 관리', price: '$22/mo', status: 'ACTIVE' },
@@ -92,9 +103,7 @@ export const FUNCTION_SECTIONS: FunctionSection[] = [
     subtitle: '커뮤니티 경제 시스템',
     accentColor: 'bg-error',
     cards: [
-      { id: 'group-shop', icon: 'store', title: 'Group Shop', subtitle: '그룹 상점', description: '커뮤니티 전용 상품 판매 및 주문 관리', price: '$15/mo', status: 'ACTIVE' },
       { id: 'product-inventory', icon: 'inventory_2', title: 'Product Inventory', subtitle: '상품 재고', description: '상품별 재고 현황 추적 및 입출고 기록', price: '$10/mo', status: 'ACTIVE' },
-      { id: 'rental-system', icon: 'handshake', title: 'Rental System', subtitle: '대여 시스템', description: '장비 및 공간 대여 예약 통합 관리', price: '$8/mo', status: 'ACTIVE' },
       { id: 'resale-market', icon: 'sell', title: 'Resale Market', subtitle: '리세일 마켓', description: '멤버 간 중고 거래 플랫폼', price: '$5/mo', status: 'ALPHA' },
       { id: 'coupon-system', icon: 'local_offer', title: 'Coupon System', subtitle: '쿠폰 시스템', description: '할인 코드 생성 및 캠페인 관리', price: '$6/mo', status: 'ACTIVE' },
       { id: 'membership-billing', icon: 'credit_card', title: 'Membership Billing', subtitle: '멤버십 결제', description: '정기 회비 자동 청구 및 결제 관리', price: '$12/mo', status: 'ACTIVE' },

@@ -23,7 +23,26 @@ export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDeta
   const [itemDetail, setItemDetail] = useState<any | null>(propItemDetail || null);
   const [loading, setLoading] = useState(!propItemDetail);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+  const [groupImage, setGroupImage] = useState<string>('');
   const scrollRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!groupId || !isOpen) return;
+    const fetchGroupImage = async () => {
+      try {
+        const groupDocRef = doc(db, 'groups', groupId);
+        const groupDoc = await getDoc(groupDocRef);
+        if (groupDoc.exists()) {
+          const gData = groupDoc.data();
+          setGroupImage(gData.coverImage || gData.logo || '');
+        }
+      } catch (e) {
+        console.error("Failed to fetch group image in ClassDetail:", e);
+      }
+    };
+    fetchGroupImage();
+  }, [groupId, isOpen]);
 
   useEffect(() => {
     if (propItemDetail) {
@@ -165,19 +184,24 @@ export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDeta
           <div className="max-w-[56rem] mx-auto w-full">
             {/* Cover Image */}
             <div className="relative aspect-square md:aspect-[16/9] w-full overflow-hidden bg-[#f2f4f4] flex items-center justify-center">
-              {itemDetail.imageUrl || itemDetail.image || itemDetail.photoURL || itemDetail.avatar ? (
-                <img 
-                  src={itemDetail.imageUrl || itemDetail.image || itemDetail.photoURL || itemDetail.avatar} 
-                  alt={itemDetail.title} 
-                  className="w-full h-full object-cover absolute inset-0"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                    e.currentTarget.parentElement!.innerHTML = '<span class="material-symbols-outlined text-[#acb3b4] text-8xl">school</span>';
-                  }}
-                />
-              ) : (
-                <span className="material-symbols-outlined text-[#acb3b4] text-8xl z-10">school</span>
-              )}
+              {(() => {
+                const coverKey = `cover-img-${itemDetail.id}`;
+                const hasCoverError = imageErrors[coverKey];
+                const displayImageUrl = itemDetail.imageUrl || itemDetail.image || itemDetail.photoURL || itemDetail.avatar || groupImage;
+                if (hasCoverError || !displayImageUrl) {
+                  return <span className="material-symbols-outlined text-[#acb3b4] text-8xl z-10">school</span>;
+                }
+                return (
+                  <img 
+                    src={displayImageUrl} 
+                    alt={itemDetail.title} 
+                    className="w-full h-full object-cover absolute inset-0"
+                    onError={() => {
+                      setImageErrors(prev => ({ ...prev, [coverKey]: true }));
+                    }}
+                  />
+                );
+              })()}
               {itemDetail.itemType === 'discount' && (
                 <span className="absolute top-20 left-4 z-20 bg-[#d97706] text-white text-xs font-black px-3 py-1 rounded-full">
                   {language === 'KR' ? '패키지 할인 상품' : 'Bundle Deal'}
@@ -333,22 +357,40 @@ export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDeta
                       }}
                     >
                       <div className="flex flex-col items-center flex-shrink-0 w-20 cursor-pointer">
-                        {inst.avatar || inst.photoURL || inst.image || inst.imageUrl ? (
-                          <img 
-                            src={inst.avatar || inst.photoURL || inst.image || inst.imageUrl} 
-                            alt={inst.name} 
-                            className="w-14 h-14 rounded-full object-cover mb-2 border border-[#e0e4e5]" 
-                            onError={(e) => { 
-                              e.currentTarget.style.display = 'none'; 
-                              e.currentTarget.parentElement!.innerHTML = `<div class="w-14 h-14 rounded-full bg-[#f2f4f4] text-[#596061] flex items-center justify-center text-xl font-bold mb-2 border border-[#e0e4e5]">${inst.name.substring(0, 2).toUpperCase()}</div><span class="text-xs font-bold text-[#2d3435] text-center line-clamp-1">${inst.name}</span>`; 
-                            }} 
-                          />
-                        ) : (
-                          <div className="w-14 h-14 rounded-full bg-[#f2f4f4] text-[#596061] flex items-center justify-center text-xl font-bold mb-2 border border-[#e0e4e5]">
-                            {inst.name.substring(0, 2).toUpperCase()}
-                          </div>
-                        )}
-                        <span className="text-xs font-bold text-[#2d3435] text-center line-clamp-1">{inst.name}</span>
+                        {(() => {
+                          const instKey = `inst-img-${itemDetail.id}-${inst.id || inst.uid || idx}`;
+                          const hasInstError = imageErrors[instKey];
+                          if (hasInstError) {
+                            return (
+                              <>
+                                <div className="w-14 h-14 rounded-full bg-[#f2f4f4] text-[#596061] flex items-center justify-center text-xl font-bold mb-2 border border-[#e0e4e5]">
+                                  {inst.name.substring(0, 2).toUpperCase()}
+                                </div>
+                                <span className="text-xs font-bold text-[#2d3435] text-center line-clamp-1">{inst.name}</span>
+                              </>
+                            );
+                          }
+                          return inst.avatar || inst.photoURL || inst.image || inst.imageUrl ? (
+                            <>
+                              <img 
+                                src={inst.avatar || inst.photoURL || inst.image || inst.imageUrl} 
+                                alt={inst.name} 
+                                className="w-14 h-14 rounded-full object-cover mb-2 border border-[#e0e4e5]" 
+                                onError={() => { 
+                                  setImageErrors(prev => ({ ...prev, [instKey]: true }));
+                                }} 
+                              />
+                              <span className="text-xs font-bold text-[#2d3435] text-center line-clamp-1">{inst.name}</span>
+                            </>
+                          ) : (
+                            <>
+                              <div className="w-14 h-14 rounded-full bg-[#f2f4f4] text-[#596061] flex items-center justify-center text-xl font-bold mb-2 border border-[#e0e4e5]">
+                                {inst.name.substring(0, 2).toUpperCase()}
+                              </div>
+                              <span className="text-xs font-bold text-[#2d3435] text-center line-clamp-1">{inst.name}</span>
+                            </>
+                          );
+                        })()}
                       </div>
                     </UserProfileClickable>
                   ))}

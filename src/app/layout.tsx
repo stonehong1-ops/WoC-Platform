@@ -4,6 +4,26 @@ import GlobalNavigation from "@/components/layout/GlobalNavigation";
 import PageWrapper from "@/components/layout/PageWrapper";
 import SWRegister from "@/components/layout/SWRegister";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import { Inter, Plus_Jakarta_Sans, Manrope } from 'next/font/google';
+
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+});
+
+const jakarta = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  variable: '--font-jakarta',
+  display: 'swap',
+});
+
+const manrope = Manrope({
+  subsets: ['latin'],
+  variable: '--font-manrope',
+  display: 'swap',
+});
+
 
 export const metadata: Metadata = {
   title: "WoC",
@@ -45,9 +65,8 @@ export default function RootLayout({
   modal?: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="light">
+    <html lang="en" className={`light notranslate ${inter.variable} ${jakarta.variable} ${manrope.variable}`} translate="no">
       <head>
-        <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet" />
       </head>
       <body className="overflow-x-hidden bg-background text-on-surface font-body selection:bg-primary-container selection:text-on-primary-container antialiased">

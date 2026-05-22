@@ -33,7 +33,7 @@ function cleanData(obj: any): any {
 }
 
 export function useBookingEngine() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const router = useRouter();
   const { t } = useLanguage();
   const [isLoading, setIsLoading] = useState(false);
@@ -71,7 +71,7 @@ export function useBookingEngine() {
         id: bookingRef.id,
         orderNumber,
         buyerId: user.uid,
-        buyerName: user.displayName || 'Unknown User',
+        buyerName: profile?.nativeNickname || profile?.nickname || user.displayName || 'Unknown User',
         status: 'SUBMITTED',
         createdAt: serverTimestamp() as any,
         updatedAt: serverTimestamp() as any,
@@ -100,7 +100,7 @@ export function useBookingEngine() {
           await chatService.sendMessage({
             roomId,
             senderId: user.uid,
-            senderName: user.displayName || t('common.user', 'User'),
+            senderName: profile?.nativeNickname || profile?.nickname || user.displayName || t('common.user', 'User'),
             text: orderMsg,
             type: 'text',
             metadata: {
@@ -193,14 +193,14 @@ export function useBookingEngine() {
           const msg = `💸 ${t('shop.chat_payment_prefix', '[PAYMENT REPORTED]')}\n` +
             `${t('shop.chat_order_no', 'Order No')}: ${orderNumDisplay}\n` +
             `${t('shop.chat_product_name', 'Item')}: ${bookingData.itemName}\n` +
-            `${t('shop.chat_depositor', 'Depositor')}: ${user.displayName || t('common.user', 'User')}` +
+            `${t('shop.chat_depositor', 'Depositor')}: ${profile?.nativeNickname || profile?.nickname || user.displayName || t('common.user', 'User')}` +
             (memo ? `\nMemo: ${memo}` : '');
           
           // 1. Buyer's payment report message
           await chatService.sendMessage({
             roomId,
             senderId: user.uid,
-            senderName: user.displayName || t('common.user', 'User'),
+            senderName: profile?.nativeNickname || profile?.nickname || user.displayName || t('common.user', 'User'),
             text: msg,
             type: 'text',
             metadata: {
@@ -361,7 +361,7 @@ export function useBookingEngine() {
       await chatService.sendMessage({
         roomId,
         senderId: hostId,
-        senderName: user?.displayName || 'Host',
+        senderName: profile?.nativeNickname || profile?.nickname || user?.displayName || 'Host',
         text: replyText,
         type: 'text'
       });

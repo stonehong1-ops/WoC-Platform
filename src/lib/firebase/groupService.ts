@@ -26,7 +26,86 @@ import { Group, Post, Member, GroupClass } from '@/types/group';
 
 const GROUPS_COLLECTION = 'groups';
 
+// 전역 인메모리 Warm Cache 저장소
+const groupCache = new Map<string, Group>();
+const membersCache = new Map<string, Member[]>();
+const postsCache = new Map<string, Post[]>();
+const classesCache = new Map<string, GroupClass[]>();
+const discountsCache = new Map<string, any[]>();
+
 export const groupService = {
+  // 캐시 인메모리 조회 동기식 헬퍼
+  getCachedGroup: (groupId: string): Group | null => {
+    return groupCache.get(groupId) || null;
+  },
+
+  getCachedMembers: (groupId: string): Member[] | null => {
+    return membersCache.get(groupId) || null;
+  },
+
+  // 목록의 그룹 메타데이터를 전역 캐시에 선제 시딩하는 동기식 헬퍼
+  registerGroupToCache: (group: Group): void => {
+    if (!group || !group.id) return;
+    const existing = groupCache.get(group.id);
+    groupCache.set(group.id, {
+      ...existing,
+      ...group,
+      members: existing?.members || group.members || [],
+      posts: existing?.posts || group.posts || []
+    } as Group);
+  },
+
+  // 백그라운드 프리패칭 비동기 엔진 (메타데이터, 멤버, 클래스, 혜택 서브컬렉션 일괄 사전 로드)
+  prefetchGroup: async (groupId: string): Promise<void> => {
+    if (!groupId) return;
+    try {
+      // 1. 그룹 메타데이터 1회 getDoc 패칭
+      const docRef = doc(db, GROUPS_COLLECTION, groupId);
+      const snapshot = await getDoc(docRef);
+      if (snapshot.exists()) {
+        const data = groupService._convertTimestamps(snapshot.data());
+
+        // 2. 그룹 클래스 및 할인 혜택 서브컬렉션 병합 로딩 (0ms FOUC 즉시 안착 필수)
+        const [classesSnap, discountsSnap] = await Promise.all([
+          getDocs(query(collection(db, GROUPS_COLLECTION, groupId, 'classes'), orderBy('createdAt', 'desc'))),
+          getDocs(query(collection(db, GROUPS_COLLECTION, groupId, 'discounts'), orderBy('createdAt', 'desc')))
+        ]);
+
+        const subClasses = classesSnap.docs.map(d => ({ ...groupService._convertTimestamps(d.data()), id: d.id })) as GroupClass[];
+        const subDiscounts = discountsSnap.docs.map(d => ({ id: d.id, ...groupService._convertTimestamps(d.data()) }));
+
+        const groupObj = {
+          id: snapshot.id,
+          ...data,
+          classes: [...subClasses, ...(data.classes || [])],
+          discounts: [...subDiscounts, ...(data.discounts || [])],
+          _legacyClasses: data.classes || [],
+          _legacyDiscounts: data.discounts || [],
+          members: [],
+          memberCount: typeof data.memberCount === 'number' ? data.memberCount : 0,
+        } as Group;
+
+        const existing = groupCache.get(groupId);
+        groupCache.set(groupId, { ...existing, ...groupObj } as Group);
+        classesCache.set(groupId, subClasses);
+        discountsCache.set(groupId, subDiscounts);
+      }
+
+      // 3. 그룹 멤버 서브컬렉션 전체 선제 로딩 (구독 시작 전 Warm Cache 구축)
+      const membersRef = collection(db, GROUPS_COLLECTION, groupId, 'members');
+      const snapshotMembers = await getDocs(query(membersRef));
+      const members = snapshotMembers.docs.map(doc => ({
+        id: doc.id,
+        ...groupService._convertTimestamps(doc.data())
+      })) as Member[];
+      
+      membersCache.set(groupId, members);
+      console.log(`[Warm Cache] Prefetched metadata, classes, discounts, and members for group ${groupId}.`);
+    } catch (e) {
+      console.error(`[Warm Cache] Prefetch failed for group ${groupId}:`, e);
+    }
+  },
+
   // Helper to convert Firestore Timestamps to plain numbers
   _convertTimestamps: (data: any): any => {
     if (!data) return data;
@@ -66,14 +145,20 @@ export const groupService = {
       if (!rawData) return;
       const data = groupService._convertTimestamps(rawData);
 
-      // Initially set without posts or members (we'll fetch them separately)
-      callback({
+      const groupObj = {
         id: snapshot.id,
         ...data,
         members: [], // Members now in subcollection
         memberCount: typeof data.memberCount === 'number' ? data.memberCount : 0,
         posts: []
-      } as Group);
+      } as Group;
+
+      // 캐시 동기화 병합
+      const existing = groupCache.get(groupId);
+      const merged = { ...existing, ...groupObj } as Group;
+      groupCache.set(groupId, merged);
+
+      callback(merged);
     }, (error) => {
       console.error(`Error subscribing to group metadata for ${groupId}:`, error);
       if (errorCallback) errorCallback(error);
@@ -90,6 +175,10 @@ export const groupService = {
         id: doc.id,
         ...groupService._convertTimestamps(doc.data())
       })) as Member[];
+      
+      // 캐시 적재
+      membersCache.set(groupId, members);
+
       callback(members);
     }, (error) => {
       console.error(`Error subscribing to members for group ${groupId}:`, error);
@@ -110,6 +199,10 @@ export const groupService = {
           ...data
         };
       }) as Post[];
+
+      // 캐시 적재
+      postsCache.set(groupId, posts);
+
       callback(posts);
     }, (error) => {
       console.error(`Error subscribing to posts for group ${groupId}:`, error);
@@ -153,7 +246,7 @@ export const groupService = {
     const subClasses = classesSnap.docs.map(d => ({ ...groupService._convertTimestamps(d.data()), id: d.id })) as GroupClass[];
     const subDiscounts = discountsSnap.docs.map(d => ({ id: d.id, ...groupService._convertTimestamps(d.data()) }));
 
-    return {
+    const groupObj = {
       id: snapshot.id,
       ...data,
       classes: [...subClasses, ...(data.classes || [])],
@@ -164,6 +257,14 @@ export const groupService = {
       memberCount: typeof data?.memberCount === 'number' ? data?.memberCount : 0,
       posts
     } as Group;
+
+    // 캐시 적재
+    groupCache.set(groupId, groupObj);
+    if (posts) postsCache.set(groupId, posts);
+    if (subClasses) classesCache.set(groupId, subClasses);
+    if (subDiscounts) discountsCache.set(groupId, subDiscounts);
+
+    return groupObj;
   },
 
   // Get group members with pagination
@@ -575,14 +676,14 @@ export const groupService = {
   // Create a new group
   createGroup: async (groupData: Partial<Group>, userId?: string, memberData?: Omit<Member, 'id'>): Promise<string> => {
     // 1. Create the group document
-    const defaultFunctions = ['dashboard', 'feed', 'live', 'calendar', 'members', 'notice', 'about', 'brand-setting', 'roles-permissions'];
+    const defaultFunctions = ['feed', 'live', 'calendar', 'class', 'notice', 'about', 'dashboard', 'members', 'brand-setting', 'roles-permissions'];
     const docRef = doc(collection(db, GROUPS_COLLECTION));
     const batch = writeBatch(db);
     
     const initialData: any = {
       ...groupData,
       selectedFunctions: defaultFunctions,
-      menuOrder: defaultFunctions,
+      menuOrder: defaultFunctions.map(id => ({ id, type: 'item' })),
       memberCount: 1, // Automatically counting the creator
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),

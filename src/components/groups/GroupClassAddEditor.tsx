@@ -1,5 +1,5 @@
-"use client";
 // 클래스 정보를 신규 등록하고 수정하기 위한 코어 에디터 컴포넌트
+"use client";
 
 import React, { useState, useEffect, useRef } from "react";
 import { Group, GroupClass, ClassScheduleEntry } from "@/types/group";
@@ -12,9 +12,9 @@ import { PlatformUser } from "@/types/user";
 import { venueService } from "@/lib/firebase/venueService";
 import { Venue } from "@/types/venue";
 import { useLanguage } from "@/contexts/LanguageContext";
-import FullScreenRegistration from "@/components/common/FullScreenRegistration";
 import { ClassInstructorForm } from "./ClassInstructorForm";
 import { ClassScheduleForm } from "./ClassScheduleForm";
+import { motion } from "framer-motion";
 
 interface GroupClassAddEditorProps {
   group: Group | null;
@@ -35,16 +35,15 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({
 }) => {
   const { t } = useLanguage();
   const [isSaving, setIsSaving] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
-  const [imageUploading, setImageUploading] = useState(false);
-  const [videoUploading, setVideoUploading] = useState(false);
-  const [imageProgress, setImageProgress] = useState(0);
-  const [videoProgress, setVideoProgress] = useState(0);
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [selectedVideoFile, setSelectedVideoFile] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string>("");
+  const [videoPreviewUrl, setVideoPreviewUrl] = useState<string>("");
 
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
-  const [isOptimizingImage, setIsOptimizingImage] = useState(false);
-  const [isOptimizingVideo, setIsOptimizingVideo] = useState(false);
 
   // Venue State
   const [allVenues, setAllVenues] = useState<Venue[]>([]);
@@ -96,6 +95,8 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({
         ...initialData,
         imageUrl: initialData.imageUrl || (initialData as any).image || "",
       });
+      setImagePreviewUrl(initialData.imageUrl || (initialData as any).image || "");
+      setVideoPreviewUrl(initialData.videoUrl || "");
       setCapacityEnabled(
         (initialData.leaderCount && initialData.leaderCount > 0) ||
           (initialData.followerCount && initialData.followerCount > 0)
@@ -206,72 +207,32 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({
     }
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    const originalUrl = formData.imageUrl;
-    const blobUrl = URL.createObjectURL(file);
-
-    setFormData(prev => ({ ...prev, imageUrl: blobUrl }));
-    setImageUploading(true);
-    setImageProgress(0);
-    setIsOptimizingImage(true);
-
-    try {
-      const groupId = group?.id || "special";
-      const path = `groups/${groupId}/classes/images/${uuidv4()}_${file.name}`;
-      const url = await storageService.uploadFile(file, path, progress => {
-        setIsOptimizingImage(false);
-        setImageProgress(Math.round(progress));
-      });
-
-      setFormData(prev => ({ ...prev, imageUrl: url }));
-      URL.revokeObjectURL(blobUrl);
-    } catch (error: any) {
-      console.error("Image upload failed:", error);
-      toast.error(t("class.upload_image_failed") || "Failed to upload image.");
-      setFormData(prev => ({ ...prev, imageUrl: originalUrl }));
-      URL.revokeObjectURL(blobUrl);
-    } finally {
-      setImageUploading(false);
-      setIsOptimizingImage(false);
-      if (imageInputRef.current) imageInputRef.current.value = "";
-    }
+    setSelectedImageFile(file);
+    const url = URL.createObjectURL(file);
+    setImagePreviewUrl(url);
+    if (imageInputRef.current) imageInputRef.current.value = "";
   };
 
-  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleVideoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setSelectedVideoFile(file);
+    const url = URL.createObjectURL(file);
+    setVideoPreviewUrl(url);
+    if (videoInputRef.current) videoInputRef.current.value = "";
+  };
 
-    const originalUrl = formData.videoUrl;
-    const blobUrl = URL.createObjectURL(file);
+  const removeImage = () => {
+    setSelectedImageFile(null);
+    setImagePreviewUrl("");
+  };
 
-    setFormData(prev => ({ ...prev, videoUrl: blobUrl }));
-    setVideoUploading(true);
-    setVideoProgress(0);
-    setIsOptimizingVideo(true);
-
-    try {
-      const groupId = group?.id || "special";
-      const path = `groups/${groupId}/classes/videos/${uuidv4()}_${file.name}`;
-      const url = await storageService.uploadFile(file, path, progress => {
-        setIsOptimizingVideo(false);
-        setVideoProgress(Math.round(progress));
-      });
-
-      setFormData(prev => ({ ...prev, videoUrl: url }));
-      URL.revokeObjectURL(blobUrl);
-    } catch (error: any) {
-      console.error("Video upload failed:", error);
-      toast.error(t("class.upload_video_failed") || "Failed to upload video.");
-      setFormData(prev => ({ ...prev, videoUrl: originalUrl }));
-      URL.revokeObjectURL(blobUrl);
-    } finally {
-      setVideoUploading(false);
-      setIsOptimizingVideo(false);
-      if (videoInputRef.current) videoInputRef.current.value = "";
-    }
+  const removeVideo = () => {
+    setSelectedVideoFile(null);
+    setVideoPreviewUrl("");
   };
 
   const handleSave = async () => {
@@ -296,6 +257,36 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({
         return;
       }
 
+      // Sequential file upload
+      const filesToUpload: { file: File; type: "image" | "video" }[] = [];
+      if (selectedImageFile) filesToUpload.push({ file: selectedImageFile, type: "image" });
+      if (selectedVideoFile) filesToUpload.push({ file: selectedVideoFile, type: "video" });
+
+      let finalImageUrl = imagePreviewUrl;
+      let finalVideoUrl = videoPreviewUrl;
+
+      if (filesToUpload.length > 0) {
+        setUploadProgress(0);
+        for (let i = 0; i < filesToUpload.length; i++) {
+          const item = filesToUpload[i];
+          const groupId = group?.id || "special";
+          const folder = item.type === "image" ? "images" : "videos";
+          const path = `groups/${groupId}/classes/${folder}/${uuidv4()}_${item.file.name}`;
+          
+          const url = await storageService.uploadFile(item.file, path, progress => {
+            const overall = Math.round(((i * 100) + progress) / filesToUpload.length);
+            setUploadProgress(overall);
+          });
+
+          if (item.type === "image") {
+            finalImageUrl = url;
+          } else {
+            finalVideoUrl = url;
+          }
+        }
+        setUploadProgress(null);
+      }
+
       let finalSchedule = formData.schedule;
       if (!isSpecial && !isEditMode && formData.schedule.length === 1) {
         const baseSchedule = formData.schedule[0];
@@ -311,7 +302,13 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({
         });
       }
 
-      const finalData = { ...formData, schedule: finalSchedule };
+      const finalData = { 
+        ...formData, 
+        imageUrl: finalImageUrl,
+        videoUrl: finalVideoUrl,
+        schedule: finalSchedule 
+      };
+
       if (!capacityEnabled) {
         finalData.leaderCount = 0;
         finalData.followerCount = 0;
@@ -346,357 +343,364 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({
       toast.error(t("class.save_failed") + (error?.message ? ` (${error.message})` : ""));
     } finally {
       setIsSaving(false);
+      setUploadProgress(null);
     }
   };
 
-  if (typeof document === "undefined") return null;
+  if (typeof window === "undefined") return null;
 
   return (
-    <FullScreenRegistration
-      id="class-add"
-      title={isEditMode ? t("class.edit_class") : t("class.add_class")}
-      submitLabel={t("common.save") || "SAVE"}
-      submittingLabel={t("common.saving") || "Saving..."}
-      onSubmit={handleSave}
-      isSubmitting={isSaving}
-      isValid={!!formData.title.trim()}
-      onClose={onClose}
-      isOpen={true}
+    <motion.div
+      initial={{ opacity: 0, y: "100%" }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: "100%" }}
+      transition={{ type: "spring", damping: 25, stiffness: 200 }}
+      className="fixed inset-0 z-[110] bg-white flex items-center justify-center font-['Plus_Jakarta_Sans']"
     >
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `
-        .toggle-checkbox:checked { right: 0; border-color: #0057bd; }
-        .toggle-checkbox:checked + .toggle-label { background-color: #0057bd; }
-        input[type="number"]::-webkit-inner-spin-button,
-        input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-      `,
-        }}
-      />
-      <div className="space-y-10 pt-4">
-        {/* Special Class Disclaimer Banner */}
-        {isSpecial && (
-          <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4">
-            <span className="material-symbols-outlined text-amber-500 text-[20px] mt-0.5 shrink-0">info</span>
-            <p className="text-[13px] font-semibold text-amber-700 leading-relaxed">
-              {t("class.special_daily_notice")}
-            </p>
-          </div>
-        )}
-
-        {/* Title */}
-        <div className="space-y-2">
-          <label className="text-[13px] font-black text-gray-400 uppercase tracking-widest ml-1">
-            {t("class.title_label")} <span className="text-primary">*</span>
-          </label>
-          <input
-            value={formData.title}
-            onChange={e => setFormData({ ...formData, title: e.target.value })}
-            className="w-full text-[24px] font-black tracking-tighter border-none focus:ring-0 placeholder:text-gray-200 p-0 bg-transparent"
-            placeholder={t("class.title_placeholder") || "e.g. Advanced Contemporary Dance"}
-            type="text"
-          />
+      <main className="max-w-md w-full h-[100dvh] bg-white flex flex-col overflow-hidden relative text-left">
+        {/* Header */}
+        <div className="flex-shrink-0 bg-white border-b border-slate-100 px-4 h-14 flex items-center justify-between z-50">
+          <button type="button" onClick={onClose} className="w-10 h-10 flex items-center justify-center -ml-2 active:scale-95 transition-transform text-slate-700">
+            <span className="material-symbols-rounded text-2xl">arrow_back</span>
+          </button>
+          <h1 className="text-[14px] font-black uppercase tracking-widest text-slate-800">
+            {isEditMode ? t("class.edit_class") : t("class.add_class")}
+          </h1>
+          <div className="w-10" />
         </div>
 
-        {/* Description */}
-        <div className="space-y-3">
-          <label className="text-[13px] font-black text-gray-400 uppercase tracking-widest ml-1">
-            {t("class.desc_label")}
-          </label>
-          <textarea
-            value={formData.description}
-            onChange={e => setFormData({ ...formData, description: e.target.value })}
-            className="w-full min-h-[120px] bg-gray-50 border-none rounded-[28px] px-6 py-5 text-sm font-medium focus:ring-2 focus:ring-primary/10 resize-none leading-relaxed"
-            placeholder={t("class.desc_placeholder") || "Provide class syllabus and student expectations..."}
-            rows={4}
-          />
-          <div className="flex justify-end mr-2">
-            <span className="text-[11px] font-bold text-gray-300">{formData.description?.length || 0} / 2000</span>
-          </div>
-        </div>
-
-        {/* Level */}
-        <div className="space-y-3">
-          <label className="text-[13px] font-black text-gray-400 uppercase tracking-widest ml-1">
-            {t("class.level_label")}
-          </label>
-          <select
-            value={formData.level}
-            onChange={e => setFormData({ ...formData, level: e.target.value as any })}
-            className="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 text-sm font-black focus:ring-2 focus:ring-primary/10"
-          >
-            <option value="Basic">{t("class.level_basic") || "Basic"}</option>
-            <option value="Intermediate">{t("class.level_intermediate") || "Intermediate"}</option>
-            <option value="Advanced">{t("class.level_advanced") || "Advanced"}</option>
-            <option value="Very-Advanced">{t("class.level_very_advanced") || "Very-Advanced"}</option>
-            <option value="Masterclass">{t("class.level_masterclass") || "Masterclass"}</option>
-          </select>
-        </div>
-
-        {/* Class Type - only for non-special */}
-        {!isSpecial && (
-          <div className="space-y-3">
-            <label className="text-[13px] font-black text-gray-400 uppercase tracking-widest ml-1">
-              {t("class.type_label")}
-            </label>
-            <select
-              value={formData.classType}
-              onChange={e => setFormData({ ...formData, classType: e.target.value })}
-              className="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 text-sm font-black focus:ring-2 focus:ring-primary/10"
-            >
-              <option value="Change Class">{t("class.type_change_class") || "Change Class"}</option>
-              <option value="Partner Class">{t("class.type_partner_class") || "Partner Class"}</option>
-              <option value="Partner Class with Change">{t("class.type_partner_class_with_change") || "Partner Class with Change"}</option>
-              <option value="Training">{t("class.type_training") || "Training"}</option>
-              <option value="special">{t("class.type_special_event") || "Special Event"}</option>
-            </select>
-          </div>
-        )}
-
-        {/* Venue */}
-        <div className="space-y-3">
-          <label className="text-[13px] font-black text-gray-400 uppercase tracking-widest ml-1">
-            {t("class.venue_label") || "Venue"}
-          </label>
-          <div className="relative z-40">
-            <div className="relative">
-              <span className="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-gray-300">
-                location_on
-              </span>
-              <input
-                value={venueName}
-                onChange={e => handleVenueSearch(e.target.value)}
-                onFocus={() => venueName.length >= 1 && setShowVenueResults(venueResults.length > 0)}
-                onBlur={() => setTimeout(() => setShowVenueResults(false), 200)}
-                className="w-full bg-gray-50 border-none rounded-2xl pl-14 pr-5 py-4 text-sm font-bold focus:ring-2 focus:ring-primary/10"
-                placeholder={t("class.venue_placeholder") || "Search venues..."}
-              />
-            </div>
-            {showVenueResults && (
-              <div className="absolute top-full left-0 w-full mt-2 bg-white border border-slate-100 rounded-2xl shadow-lg z-50 max-h-60 overflow-y-auto animate-in fade-in duration-200">
-                {venueResults.map(v => (
-                  <button
-                    key={v.id}
-                    onClick={() => handleSelectVenue(v)}
-                    className="w-full text-left px-5 py-3 hover:bg-slate-50 flex items-center gap-3 transition-colors border-b border-slate-50 last:border-b-0"
-                  >
-                    <span className="material-symbols-outlined text-[18px] text-slate-400 shrink-0">location_on</span>
-                    <div className="flex flex-col">
-                      <p className="font-bold text-sm text-gray-800 leading-tight">{v.name}</p>
-                      {v.nameKo && <span className="text-[10px] text-slate-400 font-medium leading-tight">{v.nameKo}</span>}
-                    </div>
-                    <span className="text-[10px] text-gray-300 font-bold ml-auto shrink-0">{v.city}</span>
-                  </button>
-                ))}
+        <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="flex-1 flex flex-col overflow-hidden">
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-4 mt-4 space-y-6 pb-6 text-left no-scrollbar">
+            {/* Special Class Banner */}
+            {isSpecial && (
+              <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                <span className="material-symbols-rounded text-amber-500 text-[18px] shrink-0 mt-0.5">info</span>
+                <p className="text-[12px] font-bold text-amber-700 leading-normal">
+                  {t("class.special_daily_notice")}
+                </p>
               </div>
             )}
-          </div>
-          <input
-            value={(formData as any).locationMemo || ""}
-            onChange={e => setFormData({ ...formData, locationMemo: e.target.value } as any)}
-            className="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-primary/10"
-            placeholder={t("class.venue_memo_placeholder") || "Enter address or specific location details"}
-            type="text"
-          />
-        </div>
 
-        {/* Price & Currency */}
-        <div className="space-y-4">
-          <label className="text-[13px] font-black text-gray-400 uppercase tracking-widest ml-1">
-            {t("class.price_label")} <span className="text-primary">*</span>
-          </label>
-          <div className="flex w-full items-center gap-3">
-            <select
-              value={formData.currency}
-              onChange={e => setFormData({ ...formData, currency: e.target.value })}
-              className="bg-gray-50 border-none rounded-2xl px-4 py-4 text-sm font-black focus:ring-2 focus:ring-primary/10 w-[100px] shrink-0"
-            >
-              <option value="KRW">{t("class.currency_krw") || "KRW"}</option>
-              <option value="USD">{t("class.currency_usd") || "USD"}</option>
-              <option value="EUR">{t("class.currency_eur") || "EUR"}</option>
-              <option value="JPY">{t("class.currency_jpy") || "JPY"}</option>
-            </select>
-            <input
-              value={formData.amount ? formData.amount.toLocaleString() : ""}
-              onChange={e => {
-                const val = e.target.value.replace(/[^0-9]/g, "");
-                setFormData({ ...formData, amount: Number(val) });
-              }}
-              className="flex-1 min-w-0 bg-gray-50 border-none rounded-2xl px-5 py-4 text-lg font-black focus:ring-2 focus:ring-primary/10 text-right"
-              placeholder="0"
-              type="text"
+            {/* Title */}
+            <div>
+              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
+                {t("class.title_label")} <span className="text-red-400">*</span>
+              </label>
+              <input
+                required
+                value={formData.title}
+                onChange={e => setFormData({ ...formData, title: e.target.value })}
+                className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                placeholder={t("class.title_placeholder") || "e.g. Advanced Contemporary Dance"}
+                type="text"
+              />
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
+                {t("class.desc_label")}
+              </label>
+              <textarea
+                value={formData.description}
+                onChange={e => setFormData({ ...formData, description: e.target.value })}
+                className="w-full min-h-[120px] bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none leading-relaxed"
+                placeholder={t("class.desc_placeholder") || "Provide class syllabus and student expectations..."}
+                rows={4}
+              />
+              <div className="flex justify-end mt-1.5 mr-1">
+                <span className="text-[10px] font-bold text-gray-300">{formData.description?.length || 0} / 2000</span>
+              </div>
+            </div>
+
+            {/* Level */}
+            <div>
+              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
+                {t("class.level_label")}
+              </label>
+              <div className="relative">
+                <select
+                  value={formData.level}
+                  onChange={e => setFormData({ ...formData, level: e.target.value as any })}
+                  className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none pr-10"
+                >
+                  <option value="Basic">{t("class.level_basic") || "Basic"}</option>
+                  <option value="Intermediate">{t("class.level_intermediate") || "Intermediate"}</option>
+                  <option value="Advanced">{t("class.level_advanced") || "Advanced"}</option>
+                  <option value="Very-Advanced">{t("class.level_very_advanced") || "Very-Advanced"}</option>
+                  <option value="Masterclass">{t("class.level_masterclass") || "Masterclass"}</option>
+                </select>
+                <span className="material-symbols-rounded absolute right-3 top-1/2 -translate-y-1/2 text-[#acb3b4] pointer-events-none">expand_more</span>
+              </div>
+            </div>
+
+            {/* Class Type - only for non-special */}
+            {!isSpecial && (
+              <div>
+                <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
+                  {t("class.type_label")}
+                </label>
+                <div className="relative">
+                  <select
+                    value={formData.classType}
+                    onChange={e => setFormData({ ...formData, classType: e.target.value })}
+                    className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none pr-10"
+                  >
+                    <option value="Change Class">{t("class.type_change_class") || "Change Class"}</option>
+                    <option value="Partner Class">{t("class.type_partner_class") || "Partner Class"}</option>
+                    <option value="Partner Class with Change">{t("class.type_partner_class_with_change") || "Partner Class with Change"}</option>
+                    <option value="Training">{t("class.type_training") || "Training"}</option>
+                    <option value="special">{t("class.type_special_event") || "Special Event"}</option>
+                  </select>
+                  <span className="material-symbols-rounded absolute right-3 top-1/2 -translate-y-1/2 text-[#acb3b4] pointer-events-none">expand_more</span>
+                </div>
+              </div>
+            )}
+
+            {/* Venue */}
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
+                  {t("class.venue_label") || "Venue"}
+                </label>
+                <div className="relative z-40">
+                  <div className="relative">
+                    <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                      location_on
+                    </span>
+                    <input
+                      value={venueName}
+                      onChange={e => handleVenueSearch(e.target.value)}
+                      onFocus={() => venueName.length >= 1 && setShowVenueResults(venueResults.length > 0)}
+                      onBlur={() => setTimeout(() => setShowVenueResults(false), 200)}
+                      className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl pl-12 pr-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                      placeholder={t("class.venue_placeholder") || "Search venues..."}
+                    />
+                  </div>
+                  {showVenueResults && (
+                    <div className="absolute top-full left-0 w-full mt-2 bg-white border border-slate-100 rounded-xl shadow-lg z-50 max-h-60 overflow-y-auto animate-in fade-in duration-200">
+                      {venueResults.map(v => (
+                        <button
+                          key={v.id}
+                          type="button"
+                          onClick={() => handleSelectVenue(v)}
+                          className="w-full text-left px-4 py-2.5 hover:bg-slate-50 flex items-center gap-3 transition-colors border-b border-slate-50 last:border-b-0"
+                        >
+                          <span className="material-symbols-outlined text-[16px] text-slate-400 shrink-0">location_on</span>
+                          <div className="flex flex-col">
+                            <p className="font-bold text-xs text-gray-800 leading-tight">{v.name}</p>
+                            {v.nameKo && <span className="text-[9px] text-slate-400 font-medium leading-tight">{v.nameKo}</span>}
+                          </div>
+                          <span className="text-[9px] text-gray-300 font-bold ml-auto shrink-0">{v.city}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <input
+                value={(formData as any).locationMemo || ""}
+                onChange={e => setFormData({ ...formData, locationMemo: e.target.value } as any)}
+                className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                placeholder={t("class.venue_memo_placeholder") || "Enter address or specific location details"}
+                type="text"
+              />
+            </div>
+
+            {/* Price & Currency */}
+            <div>
+              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
+                {t("class.price_label")} <span className="text-red-400">*</span>
+              </label>
+              <div className="flex w-full items-center gap-3">
+                <div className="relative w-[100px] shrink-0">
+                  <select
+                    value={formData.currency}
+                    onChange={e => setFormData({ ...formData, currency: e.target.value })}
+                    className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none pr-8"
+                  >
+                    <option value="KRW">{t("class.currency_krw") || "KRW"}</option>
+                    <option value="USD">{t("class.currency_usd") || "USD"}</option>
+                    <option value="EUR">{t("class.currency_eur") || "EUR"}</option>
+                    <option value="JPY">{t("class.currency_jpy") || "JPY"}</option>
+                  </select>
+                  <span className="material-symbols-rounded absolute right-3 top-1/2 -translate-y-1/2 text-[#acb3b4] pointer-events-none">expand_more</span>
+                </div>
+                <input
+                  value={formData.amount ? formData.amount.toLocaleString() : ""}
+                  onChange={e => {
+                    const val = e.target.value.replace(/[^0-9]/g, "");
+                    setFormData({ ...formData, amount: Number(val) });
+                  }}
+                  className="flex-1 min-w-0 bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-right font-bold"
+                  placeholder="0"
+                  type="text"
+                />
+              </div>
+            </div>
+
+            {/* Capacity */}
+            <div className="bg-[#f8f9fa] rounded-xl p-4 border border-[#e0e4e5] space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold text-[#596061] uppercase tracking-wider">{t("class.capacity_label")}</h3>
+                <button
+                  type="button"
+                  onClick={() => setCapacityEnabled(!capacityEnabled)}
+                  className={`w-12 h-6 rounded-full relative shadow-inner transition-colors duration-300 ${
+                    capacityEnabled ? 'bg-primary' : 'bg-slate-300'
+                  }`}
+                >
+                  <div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 shadow-sm transition-transform duration-300 flex items-center justify-center ${
+                    capacityEnabled ? 'translate-x-[22px]' : 'translate-x-[2px]'
+                  }`}>
+                    {capacityEnabled && <span className="material-symbols-rounded text-[10px] text-primary font-bold">check</span>}
+                  </div>
+                </button>
+              </div>
+              {capacityEnabled && (
+                <div className="flex gap-3">
+                  <div className="flex-1">
+                    <label className="block text-[10px] font-bold text-[#596061] mb-1 uppercase tracking-wider">{t("class.capacity_male") || "Male"}</label>
+                    <input
+                      value={formData.leaderCount || ""}
+                      onChange={e => setFormData({ ...formData, leaderCount: Number(e.target.value) })}
+                      className="w-full bg-white border border-[#e0e4e5] rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                      placeholder="0"
+                      type="number"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-[10px] font-bold text-[#596061] mb-1 uppercase tracking-wider">{t("class.capacity_female") || "Female"}</label>
+                    <input
+                      value={formData.followerCount || ""}
+                      onChange={e => setFormData({ ...formData, followerCount: Number(e.target.value) })}
+                      className="w-full bg-white border border-[#e0e4e5] rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                      placeholder="0"
+                      type="number"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Instructors */}
+            <ClassInstructorForm
+              instructors={formData.instructors as any}
+              allUsers={allUsers}
+              t={t}
+              onAddInstructor={handleAddInstructor}
+              onRemoveInstructor={handleRemoveInstructor}
             />
-          </div>
-        </div>
 
-        {/* Capacity */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between ml-1">
-            <label className="text-[13px] font-black text-gray-400 uppercase tracking-widest">
-              {t("class.capacity_label")}
-            </label>
-            <div className="relative inline-block w-10 align-middle select-none">
-              <input
-                checked={capacityEnabled}
-                onChange={e => setCapacityEnabled(e.target.checked)}
-                className="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300 right-5 z-10 top-0 transition-transform duration-300 ease-in-out"
-                id="toggle-capacity"
-                name="toggle"
-                type="checkbox"
-              />
-              <label
-                className="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer transition-colors duration-300 ease-in-out"
-                htmlFor="toggle-capacity"
-              />
-            </div>
-          </div>
-          <div className={`flex gap-3 ${!capacityEnabled ? "opacity-40 pointer-events-none" : ""}`}>
-            <div className="flex-1 space-y-2">
-              <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1">
-                {t("class.capacity_male") || "Male"}
+            {/* Schedule */}
+            <ClassScheduleForm
+              schedule={formData.schedule}
+              t={t}
+              isSpecial={isSpecial}
+              isEditMode={isEditMode}
+              onAddWeeks={handleAddWeeks}
+              onRemoveWeek={handleRemoveWeek}
+              onUpdateSchedule={handleUpdateSchedule}
+              onGenerateFourWeeks={handleGenerateFourWeeks}
+            />
+
+            {/* Media Uploads */}
+            <div className="space-y-4 pt-2">
+              <label className="block text-xs font-bold text-[#596061] uppercase tracking-wider">
+                {t("class.media_label")}
               </label>
-              <input
-                value={formData.leaderCount || ""}
-                onChange={e => setFormData({ ...formData, leaderCount: Number(e.target.value) })}
-                className="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 text-sm font-black focus:ring-2 focus:ring-primary/10"
-                disabled={!capacityEnabled}
-                placeholder="0"
-                type="number"
-              />
-            </div>
-            <div className="flex-1 space-y-2">
-              <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1">
-                {t("class.capacity_female") || "Female"}
-              </label>
-              <input
-                value={formData.followerCount || ""}
-                onChange={e => setFormData({ ...formData, followerCount: Number(e.target.value) })}
-                className="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 text-sm font-black focus:ring-2 focus:ring-primary/10"
-                disabled={!capacityEnabled}
-                placeholder="0"
-                type="number"
-              />
-            </div>
-          </div>
-        </div>
 
-        {/* Instructors - Decomposed Component */}
-        <ClassInstructorForm
-          instructors={formData.instructors as any}
-          allUsers={allUsers}
-          t={t}
-          onAddInstructor={handleAddInstructor}
-          onRemoveInstructor={handleRemoveInstructor}
-        />
-
-        {/* Schedule - Decomposed Component */}
-        <ClassScheduleForm
-          schedule={formData.schedule}
-          t={t}
-          isSpecial={isSpecial}
-          isEditMode={isEditMode}
-          onAddWeeks={handleAddWeeks}
-          onRemoveWeek={handleRemoveWeek}
-          onUpdateSchedule={handleUpdateSchedule}
-          onGenerateFourWeeks={handleGenerateFourWeeks}
-        />
-
-        {/* Media */}
-        <div className="space-y-6 pb-8">
-          <label className="text-[13px] font-black text-gray-400 uppercase tracking-widest ml-1">
-            {t("class.media_label")}
-          </label>
-          {/* Thumbnail Photo */}
-          <div className="space-y-3">
-            <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1">
-              {t("class.main_photo")}
-            </label>
-            <input type="file" ref={imageInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
-            <div
-              onClick={() => !imageUploading && imageInputRef.current?.click()}
-              className="border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center text-center hover:border-primary/40 hover:bg-primary/5 transition-all cursor-pointer relative overflow-hidden h-40"
-            >
-              {imageUploading ? (
-                <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] flex flex-col items-center justify-center p-4">
-                  {isOptimizingImage ? (
-                    <div className="flex flex-col items-center gap-3">
-                      <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span className="text-xs font-bold text-white tracking-tight">{t("class.optimizing")}</span>
-                    </div>
+              {/* Main Photo Thumbnail */}
+              <div>
+                <label className="block text-[10px] font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
+                  {t("class.main_photo")}
+                </label>
+                <input type="file" ref={imageInputRef} className="hidden" accept="image/*" onChange={handleImageSelect} />
+                <div
+                  onClick={() => imageInputRef.current?.click()}
+                  className="w-full h-40 border border-[#e0e4e5] rounded-xl flex flex-col items-center justify-center text-center bg-[#f8f9fa] active:scale-95 transition-transform cursor-pointer relative overflow-hidden"
+                >
+                  {imagePreviewUrl ? (
+                    <>
+                      <img src={imagePreviewUrl} alt="Thumbnail preview" className="w-full h-full object-cover absolute inset-0" />
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); removeImage(); }}
+                        className="absolute top-2 right-2 w-6 h-6 bg-black/60 rounded-full text-white flex items-center justify-center active:scale-95"
+                      >
+                        <span className="material-symbols-rounded text-[16px]">close</span>
+                      </button>
+                      <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[9px] font-bold text-center py-1 uppercase tracking-wider">
+                        {t("class.change_photo")}
+                      </div>
+                    </>
                   ) : (
-                    <div className="relative w-16 h-16">
-                      <svg className="w-full h-full -rotate-90">
-                        <circle cx="32" cy="32" r="28" stroke="currentColor" strokeWidth="4" fill="transparent" className="text-white/20" />
-                        <circle cx="32" cy="32" r="28" stroke="currentColor" strokeWidth="4" fill="transparent" strokeDasharray={175.9} strokeDashoffset={175.9 - (175.9 * imageProgress) / 100} className="text-white transition-all duration-300 ease-out" />
-                      </svg>
-                      <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white">{imageProgress}%</span>
-                    </div>
+                    <>
+                      <span className="material-symbols-rounded text-2xl text-slate-400 mb-1">add_photo_alternate</span>
+                      <p className="text-xs font-bold text-[#596061] mb-0.5">{t("class.upload_photo")}</p>
+                      <p className="text-[10px] text-slate-400">{t("class.photo_desc")}</p>
+                    </>
                   )}
                 </div>
-              ) : formData.imageUrl ? (
-                <>
-                  <img src={formData.imageUrl} alt="Thumbnail" className="w-full h-full object-cover absolute inset-0" />
-                  <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <span className="text-white font-bold text-sm">{t("class.change_photo")}</span>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <span className="material-symbols-outlined text-3xl text-gray-300 mb-2">image</span>
-                  <p className="text-sm font-bold text-gray-800 mb-1">{t("class.upload_photo")}</p>
-                  <p className="text-[11px] text-gray-400">{t("class.photo_desc")}</p>
-                </>
-              )}
-            </div>
-          </div>
-          {/* Promo Video */}
-          <div className="space-y-3">
-            <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest ml-1">
-              {t("class.promo_video")}
-            </label>
-            <input type="file" ref={videoInputRef} className="hidden" accept="video/*" onChange={handleVideoUpload} />
-            <div
-              onClick={() => !videoUploading && videoInputRef.current?.click()}
-              className="border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center text-center hover:border-primary/40 hover:bg-primary/5 transition-all cursor-pointer relative overflow-hidden h-40"
-            >
-              {videoUploading ? (
-                <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] flex flex-col items-center justify-center p-4">
-                  {isOptimizingVideo ? (
-                    <div className="flex flex-col items-center gap-3">
-                      <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span className="text-xs font-bold text-white tracking-tight">{t("class.optimizing")}</span>
-                    </div>
+              </div>
+
+              {/* Promo Video */}
+              <div>
+                <label className="block text-[10px] font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
+                  {t("class.promo_video")}
+                </label>
+                <input type="file" ref={videoInputRef} className="hidden" accept="video/*" onChange={handleVideoSelect} />
+                <div
+                  onClick={() => videoInputRef.current?.click()}
+                  className="w-full h-40 border border-[#e0e4e5] rounded-xl flex flex-col items-center justify-center text-center bg-[#f8f9fa] active:scale-95 transition-transform cursor-pointer relative overflow-hidden"
+                >
+                  {videoPreviewUrl ? (
+                    <>
+                      <div className="absolute inset-0 bg-slate-900 flex items-center justify-center">
+                        <span className="material-symbols-outlined text-white text-4xl">play_circle</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); removeVideo(); }}
+                        className="absolute top-2 right-2 w-6 h-6 bg-black/60 rounded-full text-white flex items-center justify-center active:scale-95"
+                      >
+                        <span className="material-symbols-rounded text-[16px]">close</span>
+                      </button>
+                      <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[9px] font-bold text-center py-1 uppercase tracking-wider">
+                        {t("class.change_video")}
+                      </div>
+                    </>
                   ) : (
-                    <div className="relative w-16 h-16">
-                      <svg className="w-full h-full -rotate-90">
-                        <circle cx="32" cy="32" r="28" stroke="currentColor" strokeWidth="4" fill="transparent" className="text-white/20" />
-                        <circle cx="32" cy="32" r="28" stroke="currentColor" strokeWidth="4" fill="transparent" strokeDasharray={175.9} strokeDashoffset={175.9 - (175.9 * videoProgress) / 100} className="text-white transition-all duration-300 ease-out" />
-                      </svg>
-                      <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white">{videoProgress}%</span>
-                    </div>
+                    <>
+                      <span className="material-symbols-rounded text-2xl text-slate-400 mb-1">video_call</span>
+                      <p className="text-xs font-bold text-[#596061] mb-0.5">{t("class.upload_video")}</p>
+                      <p className="text-[10px] text-slate-400">{t("class.video_desc")}</p>
+                    </>
                   )}
                 </div>
-              ) : formData.videoUrl ? (
-                <>
-                  <div className="absolute inset-0 bg-slate-900 flex items-center justify-center">
-                    <span className="material-symbols-outlined text-white text-4xl">play_circle</span>
-                  </div>
-                  <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <span className="text-white font-bold text-sm">{t("class.change_video")}</span>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <span className="material-symbols-outlined text-3xl text-gray-300 mb-2">movie</span>
-                  <p className="text-sm font-bold text-gray-800 mb-1">{t("class.upload_video")}</p>
-                  <p className="text-[11px] text-gray-400">{t("class.video_desc")}</p>
-                </>
-              )}
+              </div>
             </div>
           </div>
-        </div>
-      </div>
-    </FullScreenRegistration>
+
+          {/* Submit Save Floating Bar */}
+          <div className="flex-shrink-0 w-full p-4 border-t border-slate-100 bg-white pb-[calc(1rem+env(safe-area-inset-bottom))] z-50">
+            <button type="submit" disabled={isSaving}
+              className="w-full bg-primary text-white font-bold py-3.5 rounded-xl shadow-lg shadow-primary/20 active:scale-[0.98] transition-transform disabled:opacity-50 flex items-center justify-center">
+              {isSaving ? (
+                uploadProgress !== null ? (
+                  `${uploadProgress}%`
+                ) : (
+                  t("common.saving") || "Saving..."
+                )
+              ) : (
+                t("common.save") || "SAVE"
+              )}
+            </button>
+          </div>
+        </form>
+      </main>
+    </motion.div>
   );
 };
 

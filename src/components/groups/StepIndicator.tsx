@@ -20,11 +20,6 @@ export default function StepIndicator({ currentStep, groupName, onBack }: StepIn
       {/* Top bar */}
       <div className="flex items-center justify-between px-5 md:px-16 h-14">
         <div className="flex items-center gap-3">
-          {onBack && (
-            <button onClick={onBack} className="hover:bg-surface-variant/50 p-2 rounded-full transition-colors flex items-center justify-center">
-              <span className="material-symbols-outlined text-on-surface text-[20px]">arrow_back</span>
-            </button>
-          )}
           <div>
             <h1 className="font-semibold text-on-surface text-[15px] leading-tight">{groupName || "Group Configuration"}</h1>
             <p className="text-[11px] text-on-surface-variant leading-tight">Step {currentStep} of 3</p>

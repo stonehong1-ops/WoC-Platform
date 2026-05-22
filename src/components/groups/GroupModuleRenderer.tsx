@@ -4,8 +4,8 @@
 import React from "react";
 import dynamic from "next/dynamic";
 import { Group, Member } from "@/types/group";
-
-type TabType = 'home' | 'calendar' | 'feed' | 'board' | 'about' | 'class' | 'class-setting' | 'members' | 'settings' | 'shop' | 'stay' | 'rental' | 'coupon' | 'live' | 'brand' | 'polls' | 'qa' | 'broadcast' | 'attendance' | 'rules' | 'surveys' | 'anonymous' | 'classA' | 'classB' | 'classC' | 'homework' | 'studentReports' | 'tuition' | 'gradeSystem' | 'parentNotify' | 'parentConsult' | 'examScheduler' | 'ticketBooking' | 'workshopReg' | 'qrCheckin' | 'waitlist' | 'retreat' | 'eventStaff' | 'guestList' | 'productInventory' | 'membershipBilling' | 'donationSupport' | 'subscriptionPlans' | 'settlementReports' | 'mediaGallery' | 'videoLibrary' | 'editorialPage' | 'newsletter' | 'podcastFeed' | 'pressKit' | 'linkHub' | 'socialSync' | 'brandAssets' | 'customLandingPage' | 'taskManager' | 'internalWiki' | 'aiAssistant' | 'roles';
+import { useLanguage } from "@/contexts/LanguageContext";
+import { TabType } from "@/constants/groupTabs";
 
 const GroupCalendar = dynamic(() => import("./GroupCalendar"));
 const GroupBoard = dynamic(() => import("./GroupBoard"));
@@ -90,6 +90,7 @@ export interface GroupModuleRendererProps {
   setSelectedMember: (member: Member | null) => void;
   openClassFlow: (flow: string, options?: any) => void;
   handleTabClick: (tab: TabType) => void;
+  onJoinPrompt?: () => void;
 }
 
 export default function GroupModuleRenderer({
@@ -103,8 +104,11 @@ export default function GroupModuleRenderer({
   profile,
   setSelectedMember,
   openClassFlow,
-  handleTabClick
+  handleTabClick,
+  onJoinPrompt
 }: GroupModuleRendererProps) {
+  const { t } = useLanguage();
+
   return (
     <>
       {visitedTabs.has('about') && (
@@ -115,15 +119,37 @@ export default function GroupModuleRenderer({
         </div>
       )}
 
-      {visitedTabs.has('members') && (isFullMember || isAdminUser) && (
+      {visitedTabs.has('members') && (
         <div style={{ display: activeTab === 'members' ? 'block' : 'none' }}>
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 z-[100]">
-            <GroupMembers
-              members={members}
-              memberCount={currentGroup.memberCount}
-              onMemberClick={(member) => setSelectedMember(member)}
-              onClose={() => handleTabClick('home')}
-            />
+            {isFullMember || isAdminUser ? (
+              <GroupMembers
+                members={members}
+                memberCount={currentGroup.memberCount}
+                onMemberClick={(member) => setSelectedMember(member)}
+                onClose={() => handleTabClick('home')}
+              />
+            ) : (
+              <div className="max-w-md mx-auto px-4 py-8">
+                <div className="flex flex-col items-center justify-center text-center p-8 bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-3xl shadow-xl shadow-zinc-100/50 dark:shadow-none min-h-[400px]">
+                  <div className="w-16 h-16 rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 flex items-center justify-center mb-6 shadow-sm">
+                    <span className="material-symbols-outlined text-3xl text-zinc-400 dark:text-zinc-500 animate-bounce-subtle">lock</span>
+                  </div>
+                  <h3 className="text-xl font-bold text-zinc-800 dark:text-zinc-100 mb-3 tracking-tight font-headline">
+                    {t('group.members_only.title')}
+                  </h3>
+                  <p className="text-sm leading-relaxed text-zinc-400 dark:text-zinc-500 max-w-xs mb-8 font-body">
+                    {t('group.members_only.desc')}
+                  </p>
+                  <button
+                    onClick={onJoinPrompt}
+                    className="w-full h-14 bg-[#0057bd] text-white font-bold rounded-xl text-[16px] active:scale-95 transition-all shadow-md font-body"
+                  >
+                    {t('group.members_only.join')}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -195,25 +221,49 @@ export default function GroupModuleRenderer({
       )}
 
       {visitedTabs.has('stay') && (isFullMember || isAdminUser) && (
-        <div style={{ display: activeTab === 'stay' ? 'block' : 'none' }}>
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
-            <GroupStayEditor group={currentGroup} />
+        <div style={{ display: activeTab === 'stay' ? 'block' : 'none' }} className="px-4 py-8">
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-md mx-auto">
+            <UnderConstructionCard icon="bed" />
           </div>
         </div>
       )}
 
       {visitedTabs.has('shop') && (isFullMember || isAdminUser) && (
-        <div style={{ display: activeTab === 'shop' ? 'block' : 'none' }}>
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
-            <GroupShopEditor group={currentGroup} />
+        <div style={{ display: activeTab === 'shop' ? 'block' : 'none' }} className="px-4 py-8">
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-md mx-auto">
+            <UnderConstructionCard icon="storefront" />
           </div>
         </div>
       )}
 
       {visitedTabs.has('rental') && (isFullMember || isAdminUser) && (
-        <div style={{ display: activeTab === 'rental' ? 'block' : 'none' }}>
+        <div style={{ display: activeTab === 'rental' ? 'block' : 'none' }} className="px-4 py-8">
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-md mx-auto">
+            <UnderConstructionCard icon="key" />
+          </div>
+        </div>
+      )}
+
+      {visitedTabs.has('shop-setting') && isAdminUser && (
+        <div style={{ display: activeTab === 'shop-setting' ? 'block' : 'none' }}>
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
-            <GroupRentalEditor group={currentGroup} />
+            <GroupShopEditor group={currentGroup} isInline={true} />
+          </div>
+        </div>
+      )}
+
+      {visitedTabs.has('stay-setting') && isAdminUser && (
+        <div style={{ display: activeTab === 'stay-setting' ? 'block' : 'none' }}>
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
+            <GroupStayEditor group={currentGroup} isInline={true} />
+          </div>
+        </div>
+      )}
+
+      {visitedTabs.has('rental-setting') && isAdminUser && (
+        <div style={{ display: activeTab === 'rental-setting' ? 'block' : 'none' }}>
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
+            <GroupRentalEditor group={currentGroup} isInline={true} />
           </div>
         </div>
       )}
@@ -591,5 +641,22 @@ export default function GroupModuleRenderer({
         </div>
       )}
     </>
+  );
+}
+
+function UnderConstructionCard({ icon }: { icon: string }) {
+  const { t } = useLanguage();
+  return (
+    <div className="flex flex-col items-center justify-center text-center p-8 bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-3xl shadow-xl shadow-zinc-100/50 dark:shadow-none min-h-[400px]">
+      <div className="w-16 h-16 rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 flex items-center justify-center mb-6 shadow-sm">
+        <span className="material-symbols-outlined text-3xl text-zinc-400 dark:text-zinc-500 animate-pulse">{icon}</span>
+      </div>
+      <h3 className="text-xl font-bold text-zinc-800 dark:text-zinc-100 mb-3 tracking-tight">
+        {t('group.under_construction.title')}
+      </h3>
+      <p className="text-sm leading-relaxed text-zinc-400 dark:text-zinc-500 max-w-xs">
+        {t('group.under_construction.desc')}
+      </p>
+    </div>
   );
 }

@@ -314,6 +314,7 @@ export interface ClassDiscount {
   discountDescription: string;
   includedClassIds: string[];
   targetMonth?: string;
+  imageUrl?: string;
 }
 
 export interface CalendarEvent {

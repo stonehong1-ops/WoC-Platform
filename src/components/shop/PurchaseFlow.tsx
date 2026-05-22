@@ -109,7 +109,7 @@ export default function PurchaseFlow({
         groupId,
         groupName,
         buyerId: user.uid,
-        buyerName: user.displayName || t('common.user', 'User'),
+        buyerName: profile?.nativeNickname || profile?.nickname || user.displayName || t('common.user', 'User'),
         buyerPhone: buyerPhone,
         sellerId: product.sellerId || 'adminstone', // Unified fallback with chat notifications
         items: [{
@@ -162,7 +162,7 @@ export default function PurchaseFlow({
           await chatService.sendMessage({
             roomId,
             senderId: user.uid,
-            senderName: user.displayName || t('common.user', 'User'),
+            senderName: profile?.nativeNickname || profile?.nickname || user.displayName || t('common.user', 'User'),
             text: productInfoMsg,
             type: 'text'
           });
@@ -178,7 +178,7 @@ export default function PurchaseFlow({
           await chatService.sendMessage({
             roomId,
             senderId: user.uid,
-            senderName: user.displayName || t('common.user', 'User'),
+            senderName: profile?.nativeNickname || profile?.nickname || user.displayName || t('common.user', 'User'),
             text: orderMsg,
             type: 'text',
             metadata: {
@@ -407,7 +407,7 @@ export default function PurchaseFlow({
               if (orderId) {
                 try {
                   await shopService.updateOrderStatus(orderId, 'PAYMENT_REPORTED', {
-                    depositorName: user?.displayName || t('common.user', 'User'),
+                    depositorName: profile?.nativeNickname || profile?.nickname || user?.displayName || t('common.user', 'User'),
                     depositDate: new Date().toISOString().split('T')[0]
                   });
 
@@ -418,14 +418,14 @@ export default function PurchaseFlow({
                     const msg = `💸 ${t('shop.chat_payment_prefix', '[PAYMENT REPORTED]')}\n` +
                       `${t('shop.chat_order_no', 'Order No')}: ${orderNumber}\n` +
                       `${t('shop.chat_product_name', 'Item')}: ${product.title}\n` +
-                      `${t('shop.chat_depositor', 'Depositor')}: ${user.displayName || t('common.user', 'User')}\n` +
+                      `${t('shop.chat_depositor', 'Depositor')}: ${profile?.nativeNickname || profile?.nickname || user.displayName || t('common.user', 'User')}\n` +
                       `${t('shop.chat_payment_msg', 'I have transferred the payment. Please confirm!')}`;
                     
                     // 1. Buyer's payment report message
                     await chatService.sendMessage({
                       roomId,
                       senderId: user.uid,
-                      senderName: user.displayName || t('common.user', 'User'),
+                      senderName: profile?.nativeNickname || profile?.nickname || user.displayName || t('common.user', 'User'),
                       text: msg,
                       type: 'text',
                       metadata: {

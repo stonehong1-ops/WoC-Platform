@@ -21,7 +21,16 @@ export interface Post {
   authorPhoto?: string;
   content: string;
   images?: string[];
-  media?: { url: string; type: 'image' | 'video' }[];
+  media?: { 
+    url: string; 
+    type: 'image' | 'video' | 'link';
+    linkMetadata?: {
+      title: string;
+      description: string;
+      image: string;
+      domain: string;
+    };
+  }[];
   taggedUserIds?: string[];
   tags?: { id: string; label: string; kind: string; photo?: string }[];
   postTags?: { id: string; label: string; kind: string; photo?: string }[];

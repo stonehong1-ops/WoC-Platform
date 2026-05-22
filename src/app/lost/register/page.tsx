@@ -7,6 +7,7 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { lostFoundService } from '@/lib/firebase/lostFoundService';
 import { storageService } from '@/lib/firebase/storageService';
 import { LostFoundType, LostFoundItem } from '@/types/lostFound';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 function RegisterPageContent() {
   const { user } = useAuth();
@@ -14,11 +15,7 @@ function RegisterPageContent() {
   const searchParams = useSearchParams();
   const editId = searchParams.get('edit');
   const { setGlobalNavHidden } = useNavigation();
-
-  useEffect(() => {
-    setGlobalNavHidden(true);
-    return () => setGlobalNavHidden(false);
-  }, [setGlobalNavHidden]);
+  const { t } = useLanguage();
 
   const [type, setType] = useState<LostFoundType>('LOST');
   const [title, setTitle] = useState('');
@@ -30,6 +27,7 @@ function RegisterPageContent() {
   const [images, setImages] = useState<File[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load existing item if editing
@@ -39,7 +37,7 @@ function RegisterPageContent() {
       const unsub = lostFoundService.subscribeItem(editId, (data) => {
         if (data) {
           if (data.authorId !== user?.uid) {
-            alert('You do not have permission.');
+            alert(t('lost.register.msg_no_permission'));
             router.back();
             return;
           }
@@ -55,13 +53,13 @@ function RegisterPageContent() {
       });
     };
     fetchItem();
-  }, [editId, user]);
+  }, [editId, user, t]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const selectedFiles = Array.from(e.target.files);
       if (images.length + existingImages.length + selectedFiles.length > 5) {
-        alert('You can upload up to 5 images.');
+        alert(t('lost.register.msg_limit_photos'));
         return;
       }
       setImages(prev => [...prev, ...selectedFiles]);
@@ -78,22 +76,30 @@ function RegisterPageContent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) {
-      alert('Login is required.');
+      alert(t('lost.register.msg_login_required'));
       return;
     }
     if (!title.trim() || !location.trim() || !date.trim()) {
-      alert('Please fill in all required fields.');
+      alert(t('lost.register.msg_fill_required'));
       return;
     }
 
     setIsSubmitting(true);
     try {
-      // 1. Upload new images
+      // 1. Upload new images with cumulative progress tracking
       const uploadedUrls: string[] = [];
-      for (const file of images) {
-        const path = `lost_found/${Date.now()}_${Math.random().toString(36).substring(7)}`;
-        const url = await storageService.uploadFile(file, path);
-        uploadedUrls.push(url);
+      if (images.length > 0) {
+        setUploadProgress(0);
+        for (let i = 0; i < images.length; i++) {
+          const file = images[i];
+          const path = `lost_found/${Date.now()}_${Math.random().toString(36).substring(7)}`;
+          const url = await storageService.uploadFile(file, path, (progress) => {
+            const overall = Math.round(((i * 100) + progress) / images.length);
+            setUploadProgress(overall);
+          });
+          uploadedUrls.push(url);
+        }
+        setUploadProgress(null);
       }
 
       const finalImages = [...existingImages, ...uploadedUrls];
@@ -114,120 +120,134 @@ function RegisterPageContent() {
 
       if (editId) {
         await lostFoundService.updateItem(editId, itemData);
-        alert('Updated successfully.');
+        alert(t('lost.register.msg_success_update'));
         router.back();
       } else {
         await lostFoundService.addItem(itemData as Omit<LostFoundItem, 'id' | 'createdAt' | 'updatedAt' | 'likesCount' | 'viewsCount'>);
-        alert('Registered successfully.');
+        alert(t('lost.register.msg_success_register'));
         router.back();
       }
     } catch (err) {
       console.error(err);
-      alert('An error occurred during processing.');
+      alert(t('lost.register.msg_error_occurred'));
     } finally {
       setIsSubmitting(false);
+      setUploadProgress(null);
     }
   };
 
   return (
-    <main className="max-w-md mx-auto min-h-screen pb-24 bg-white relative">
+    <main className="max-w-md mx-auto h-[100dvh] bg-white flex flex-col overflow-hidden relative">
       {/* Header */}
-      <div className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-100 px-4 h-14 flex items-center justify-between">
+      <div className="flex-shrink-0 bg-white border-b border-slate-100 px-4 h-14 flex items-center justify-between z-50">
         <button type="button" onClick={() => router.back()} className="w-10 h-10 flex items-center justify-center -ml-2 active:scale-95 transition-transform text-slate-700">
           <span className="material-symbols-rounded text-2xl">arrow_back</span>
         </button>
         <h1 className="text-[14px] font-black uppercase tracking-widest text-slate-800">
-          {editId ? 'Edit Item' : 'Register Item'}
+          {editId ? t('lost.register.title_edit') : t('lost.register.title_register')}
         </h1>
         <div className="w-10" />
       </div>
 
-      <form onSubmit={handleSubmit} className="px-4 mt-4 space-y-6">
-        
-        {/* Type Toggle */}
-        <div className="flex bg-[#f2f4f4] rounded-xl p-1">
-          <button type="button" onClick={() => setType('LOST')}
-            className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${type === 'LOST' ? 'bg-white shadow-sm text-red-500' : 'text-[#596061]'}`}>
-            Lost Item
-          </button>
-          <button type="button" onClick={() => setType('FOUND')}
-            className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${type === 'FOUND' ? 'bg-white shadow-sm text-primary' : 'text-[#596061]'}`}>
-            Found Item
-          </button>
-        </div>
-
-        {/* Images */}
-        <div>
-          <label className="block text-xs font-bold text-[#596061] mb-2 uppercase tracking-wider">Upload Photos ({images.length + existingImages.length}/5)</label>
-          <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
-            <button type="button" onClick={() => fileInputRef.current?.click()}
-              className="w-20 h-20 flex-shrink-0 flex flex-col items-center justify-center border-2 border-dashed border-[#acb3b4] rounded-xl text-[#596061] bg-[#f8f9fa] active:scale-95 transition-transform">
-              <span className="material-symbols-rounded text-2xl mb-1">add_a_photo</span>
+      <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+        {/* Form Scrollable Content */}
+        <div className="flex-1 overflow-y-auto px-4 mt-4 space-y-6 pb-6 text-left no-scrollbar">
+          
+          {/* Type Toggle */}
+          <div className="flex bg-[#f2f4f4] rounded-xl p-1">
+            <button type="button" onClick={() => setType('LOST')}
+              className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${type === 'LOST' ? 'bg-white shadow-sm text-red-500' : 'text-[#596061]'}`}>
+              {t('lost.register.type_lost')}
             </button>
-            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" multiple onChange={handleImageChange} />
-            
-            {existingImages.map((url, i) => (
-              <div key={`existing-${i}`} className="w-20 h-20 flex-shrink-0 relative rounded-xl overflow-hidden border border-slate-100">
-                <img src={url} alt="Uploaded" className="w-full h-full object-cover" />
-                <button type="button" onClick={() => removeExistingImage(i)} className="absolute top-1 right-1 w-5 h-5 bg-black/50 rounded-full text-white flex items-center justify-center">
-                  <span className="material-symbols-rounded text-[14px]">close</span>
-                </button>
-              </div>
-            ))}
-
-            {images.map((file, i) => (
-              <div key={`new-${i}`} className="w-20 h-20 flex-shrink-0 relative rounded-xl overflow-hidden border border-slate-100">
-                <img src={URL.createObjectURL(file)} alt="Upload preview" className="w-full h-full object-cover" />
-                <button type="button" onClick={() => removeImage(i)} className="absolute top-1 right-1 w-5 h-5 bg-black/50 rounded-full text-white flex items-center justify-center">
-                  <span className="material-symbols-rounded text-[14px]">close</span>
-                </button>
-              </div>
-            ))}
+            <button type="button" onClick={() => setType('FOUND')}
+              className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${type === 'FOUND' ? 'bg-white shadow-sm text-primary' : 'text-[#596061]'}`}>
+              {t('lost.register.type_found')}
+            </button>
           </div>
-        </div>
 
-        {/* Details */}
-        <div className="space-y-4">
+          {/* Images */}
           <div>
-            <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">Title <span className="text-red-400">*</span></label>
-            <input required type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g., Black Prada Wallet"
-              className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" />
+            <label className="block text-xs font-bold text-[#596061] mb-2 uppercase tracking-wider">
+              {t('lost.register.upload_photos', { count: images.length + existingImages.length })}
+            </label>
+            <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
+              <button type="button" onClick={() => fileInputRef.current?.click()}
+                className="w-20 h-20 flex-shrink-0 flex flex-col items-center justify-center border-2 border-dashed border-[#acb3b4] rounded-xl text-[#596061] bg-[#f8f9fa] active:scale-95 transition-transform">
+                <span className="material-symbols-rounded text-2xl mb-1">add_a_photo</span>
+              </button>
+              <input type="file" ref={fileInputRef} className="hidden" accept="image/*" multiple onChange={handleImageChange} />
+              
+              {existingImages.map((url, i) => (
+                <div key={`existing-${i}`} className="w-20 h-20 flex-shrink-0 relative rounded-xl overflow-hidden border border-slate-100">
+                  <img src={url} alt="Uploaded" className="w-full h-full object-cover" />
+                  <button type="button" onClick={() => removeExistingImage(i)} className="absolute top-1 right-1 w-5 h-5 bg-black/50 rounded-full text-white flex items-center justify-center">
+                    <span className="material-symbols-rounded text-[14px]">close</span>
+                  </button>
+                </div>
+              ))}
+
+              {images.map((file, i) => (
+                <div key={`new-${i}`} className="w-20 h-20 flex-shrink-0 relative rounded-xl overflow-hidden border border-slate-100">
+                  <img src={URL.createObjectURL(file)} alt="Upload preview" className="w-full h-full object-cover" />
+                  <button type="button" onClick={() => removeImage(i)} className="absolute top-1 right-1 w-5 h-5 bg-black/50 rounded-full text-white flex items-center justify-center">
+                    <span className="material-symbols-rounded text-[14px]">close</span>
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
 
-          <div className="flex gap-3">
-            <div className="flex-1">
-              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">Location <span className="text-red-400">*</span></label>
-              <input required type="text" value={location} onChange={e => setLocation(e.target.value)} placeholder="e.g., Gangnam Station Exit 1"
+          {/* Details */}
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">{t('lost.register.label_title')} <span className="text-red-400">*</span></label>
+              <input required type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder={t('lost.register.placeholder_title')}
                 className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" />
             </div>
-            <div className="flex-1">
-              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">Date <span className="text-red-400">*</span></label>
-              <input required type="date" value={date} onChange={e => setDate(e.target.value)}
-                className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" />
-            </div>
-          </div>
 
-          <div>
-            <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">Reward (Optional)</label>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-[#acb3b4]">₩</span>
-              <input type="number" value={reward} onChange={e => setReward(e.target.value ? Number(e.target.value) : '')} placeholder="Enter reward amount"
-                className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl pl-9 pr-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" />
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">{t('lost.register.label_location')} <span className="text-red-400">*</span></label>
+                <input required type="text" value={location} onChange={e => setLocation(e.target.value)} placeholder={t('lost.register.placeholder_location')}
+                  className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" />
+              </div>
+              <div className="flex-1">
+                <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">{t('lost.register.label_date')} <span className="text-red-400">*</span></label>
+                <input required type="date" value={date} onChange={e => setDate(e.target.value)}
+                  className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" />
+              </div>
             </div>
-          </div>
 
-          <div>
-            <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">Description</label>
-            <textarea rows={5} value={description} onChange={e => setDescription(e.target.value)} placeholder="Please provide detailed features, contents, etc."
-              className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none" />
+            <div>
+              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">{t('lost.register.label_reward')}</label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-[#acb3b4]">₩</span>
+                <input type="number" value={reward} onChange={e => setReward(e.target.value ? Number(e.target.value) : '')} placeholder={t('lost.register.placeholder_reward')}
+                  className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl pl-9 pr-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">{t('lost.register.label_description')}</label>
+              <textarea rows={5} value={description} onChange={e => setDescription(e.target.value)} placeholder={t('lost.register.placeholder_description')}
+                className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none" />
+            </div>
           </div>
         </div>
 
         {/* Submit */}
-        <div className="pt-4 pb-10">
+        <div className="flex-shrink-0 w-full p-4 border-t border-slate-100 bg-white pb-[calc(1rem+env(safe-area-inset-bottom))] z-50">
           <button type="submit" disabled={isSubmitting}
             className="w-full bg-primary text-white font-bold py-3.5 rounded-xl shadow-lg shadow-primary/20 active:scale-[0.98] transition-transform disabled:opacity-50">
-            {isSubmitting ? 'Processing...' : editId ? 'Update' : 'Register'}
+            {isSubmitting ? (
+              uploadProgress !== null ? (
+                `${uploadProgress}%`
+              ) : (
+                editId ? t('lost.register.status_updating') : t('lost.register.status_registering')
+              )
+            ) : (
+              editId ? t('lost.register.button_update') : t('lost.register.button_register')
+            )}
           </button>
         </div>
       </form>

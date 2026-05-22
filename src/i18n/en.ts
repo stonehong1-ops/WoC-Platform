@@ -23,6 +23,7 @@ export const en: Record<string, string> = {
     'class-dashboard.startDate': 'Starts: {date}',
     'class-dashboard.tab.list': 'Classes',
     'class-dashboard.tab.registrations': 'Registrations',
+    'class-dashboard.tab.class_status': 'Class Status',
     'class-dashboard.tab.payments': 'Payments',
     'class-dashboard.view.personal': 'Personal',
     'class-dashboard.view.class': 'By Class',
@@ -2106,6 +2107,9 @@ export const en: Record<string, string> = {
     'group.unsetup.desc': 'If you are the admin of this community, please claim your rights and activate the group.',
     'group.unsetup.claim': "It's mine.",
     'group.unsetup.claiming': 'Processing...',
+    'group.members_only.title': 'Members Only',
+    'group.members_only.desc': 'This menu is only accessible to members. Join the community to see the members!',
+    'group.members_only.join': 'Join Community',
 
     // Group Account Editor
     'group.account.title': 'Group Bank Account',
@@ -2741,6 +2745,8 @@ export const en: Record<string, string> = {
     'discount.select_classes_desc': 'Choose existing classes from this month to include in the bundle.',
     'discount.no_classes': 'No classes available.',
     'discount.no_schedule': 'No schedule',
+    'discount.image_url': 'Cover Image',
+    'discount.image_url_placeholder': 'Please select a cover image.',
     'pass.enter_title': 'Please enter a title for the monthly pass.',
     'pass.select_classes_alert': 'Please select at least one class.',
     'pass.save_failed': 'Failed to save the monthly pass.',

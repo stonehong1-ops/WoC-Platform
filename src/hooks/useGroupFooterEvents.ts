@@ -1,3 +1,5 @@
+"use client";
+
 // 그룹 Footer의 섹션2(방문자/온라인) + 섹션3(8개 이벤트 티커) 실시간 데이터를 구독하는 훅
 import { useState, useEffect, useMemo } from 'react';
 import { Member, GroupClass } from '@/types/group';
@@ -6,6 +8,11 @@ import { ChatRoom } from '@/types/chat';
 import { Post } from '@/types/feed';
 import { GalleryPost } from '@/lib/firebase/galleryService';
 import { PlatformUser } from '@/types/user';
+import { groupService } from '@/lib/firebase/groupService';
+import { socialService } from '@/lib/firebase/socialService';
+import { feedService } from '@/lib/firebase/feedService';
+import { galleryService } from '@/lib/firebase/galleryService';
+import { userService } from '@/lib/firebase/userService';
 
 export interface FooterEvent {
   id: number;
@@ -102,6 +109,14 @@ export function useGroupFooterEvents(
   venueId?: string,
   userId?: string
 ) {
+  // [개선] Warm Cache(프리패칭된 캐시)가 이미 전역에 존재한다면, 로딩 스켈레튼을 건너뛰고 0ms 즉시 렌더링하도록 초기 상태를 true로 설정
+  const hasCache = useMemo(() => {
+    if (!groupId) return false;
+    const cachedG = groupService.getCachedGroup(groupId);
+    const cachedM = groupService.getCachedMembers(groupId);
+    return !!cachedG && !!cachedM;
+  }, [groupId]);
+
   const [classes, setClasses] = useState<GroupClass[]>([]);
   const [socials, setSocials] = useState<Social[]>([]);
   const [chatRoom, setChatRoom] = useState<ChatRoom | null>(null);
@@ -112,24 +127,35 @@ export function useGroupFooterEvents(
   const [onlineCount, setOnlineCount] = useState(0);
   const [newestProfile, setNewestProfile] = useState<PlatformUser | null>(null);
 
+  // Firestore 최초 데이터 로드 트래킹을 위한 플래그들
+  const [classesLoaded, setClassesLoaded] = useState(hasCache);
+  const [socialsLoaded, setSocialsLoaded] = useState(hasCache);
+  const [chatLoaded, setChatLoaded] = useState(hasCache);
+  const [feedsLoaded, setFeedsLoaded] = useState(hasCache);
+  const [galleryLoaded, setGalleryLoaded] = useState(hasCache);
+  const [visitorsLoaded, setVisitorsLoaded] = useState(hasCache);
+
   // 1. Subscribe to classes
   useEffect(() => {
     if (!groupId) return;
-    let unsub: (() => void) | undefined;
-    import('@/lib/firebase/groupService').then(({ groupService }) => {
-      unsub = groupService.subscribeClasses(groupId, setClasses);
+    const unsubscribe = groupService.subscribeClasses(groupId, (data) => {
+      setClasses(data);
+      setClassesLoaded(true);
     });
-    return () => unsub?.();
+    return () => unsubscribe();
   }, [groupId]);
 
   // 2. Subscribe to socials by venue
   useEffect(() => {
-    if (!venueId) return;
-    let unsub: (() => void) | undefined;
-    import('@/lib/firebase/socialService').then(({ socialService }) => {
-      unsub = socialService.subscribeSocialsByVenue(venueId, setSocials);
+    if (!venueId) {
+      setSocialsLoaded(true);
+      return;
+    }
+    const unsubscribe = socialService.subscribeSocialsByVenue(venueId, (data) => {
+      setSocials(data);
+      setSocialsLoaded(true);
     });
-    return () => unsub?.();
+    return () => unsubscribe();
   }, [venueId]);
 
   // 3. Subscribe to group chat room
@@ -143,6 +169,7 @@ export function useGroupFooterEvents(
       const q = fs.query(fs.collection(db, 'chat_rooms'), fs.where('linkedGroupId', '==', groupId));
       unsub = fs.onSnapshot(q, (snap) => {
         if (!snap.empty) setChatRoom({ id: snap.docs[0].id, ...snap.docs[0].data() } as ChatRoom);
+        setChatLoaded(true);
       });
     });
     return () => unsub?.();
@@ -172,31 +199,34 @@ export function useGroupFooterEvents(
   // 5. Subscribe to feeds
   useEffect(() => {
     if (!groupId) return;
-    let unsub: (() => void) | undefined;
-    import('@/lib/firebase/feedService').then(({ feedService }) => {
-      unsub = feedService.subscribePosts(groupId, setFeeds);
+    const unsubscribe = feedService.subscribePosts(groupId, (data) => {
+      setFeeds(data);
+      setFeedsLoaded(true);
     });
-    return () => unsub?.();
+    return () => unsubscribe();
   }, [groupId]);
 
   // 6. Subscribe to gallery/live
   useEffect(() => {
     if (!groupId) return;
-    let unsub: (() => void) | undefined;
-    import('@/lib/firebase/galleryService').then(({ galleryService }) => {
-      unsub = galleryService.subscribeFeed(setGallery, { entityType: 'group', entityId: groupId });
-    });
-    return () => unsub?.();
+    const unsubscribe = galleryService.subscribeFeed((data) => {
+      setGallery(data);
+      setGalleryLoaded(true);
+    }, { entityType: 'group', entityId: groupId });
+    return () => unsubscribe();
   }, [groupId]);
 
   // 7. Fetch member profiles → Section 2 (recent visitors + online count)
   useEffect(() => {
-    if (!members.length) return;
+    if (!members.length) {
+      setVisitorsLoaded(true);
+      return;
+    }
     let cancelled = false;
     const active = members.filter(m => m.status === 'active');
     const sample = active.slice(0, 30); // 비용 제한
 
-    import('@/lib/firebase/userService').then(async ({ userService }) => {
+    const run = async () => {
       const profiles = (await Promise.all(
         sample.map(m => userService.getUserById(m.id).catch(() => null))
       )).filter(Boolean) as PlatformUser[];
@@ -219,8 +249,10 @@ export function useGroupFooterEvents(
       // 30명 샘플 → 전체 추정
       const estimated = active.length > 30 ? Math.round(online * (active.length / 30)) : online;
       setOnlineCount(estimated);
-    });
+      setVisitorsLoaded(true);
+    };
 
+    run();
     return () => { cancelled = true; };
   }, [members]);
 
@@ -231,10 +263,9 @@ export function useGroupFooterEvents(
     const newest = [...active].sort((a, b) => toMillis(b.joinedAt) - toMillis(a.joinedAt))[0];
     if (!newest) return;
 
-    import('@/lib/firebase/userService').then(async ({ userService }) => {
-      const p = await userService.getUserById(newest.id).catch(() => null);
+    userService.getUserById(newest.id).then((p) => {
       setNewestProfile(p);
-    });
+    }).catch(console.error);
   }, [members]);
 
   // Combine all data into events
@@ -380,5 +411,34 @@ export function useGroupFooterEvents(
     return result;
   }, [classes, socials, members, chatRoom, recentMsgs, feeds, gallery, newestProfile, userId]);
 
-  return { events, recentVisitors, onlineCount };
+  // 모든 비동기 Firestore 정보의 초기 로드 상태를 결합하여 isInitialLoading 상태를 제공합니다.
+  const isInitialLoading = useMemo(() => {
+    const needClasses = !!groupId;
+    const needSocials = !!venueId;
+    const needChat = !!groupId;
+    const needFeeds = !!groupId;
+    const needGallery = !!groupId;
+    const needVisitors = !!members.length;
+
+    if (needClasses && !classesLoaded) return true;
+    if (needSocials && !socialsLoaded) return true;
+    if (needChat && !chatLoaded) return true;
+    if (needFeeds && !feedsLoaded) return true;
+    if (needGallery && !galleryLoaded) return true;
+    if (needVisitors && !visitorsLoaded) return true;
+
+    return false;
+  }, [
+    groupId,
+    venueId,
+    members.length,
+    classesLoaded,
+    socialsLoaded,
+    chatLoaded,
+    feedsLoaded,
+    galleryLoaded,
+    visitorsLoaded,
+  ]);
+
+  return { events, recentVisitors, onlineCount, isInitialLoading };
 }

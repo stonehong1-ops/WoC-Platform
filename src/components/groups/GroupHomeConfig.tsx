@@ -15,6 +15,34 @@ interface GroupHomeConfigProps {
   onSave?: () => void;
 }
 
+/**
+ * 영업 시간 문자열을 파싱하여 { label, time } 객체 배열로 반환합니다.
+ */
+export function parseOperatingHours(hoursStr: string): { label: string; time: string }[] {
+  return hoursStr.split('\n')
+    .map(line => {
+      const parts = line.split('|');
+      if (parts.length >= 2) {
+        return { label: parts[0].trim(), time: parts.slice(1).join('|').trim() };
+      }
+      const colonParts = line.split(':');
+      if (colonParts.length >= 2) {
+        return { label: colonParts[0].trim(), time: colonParts.slice(1).join(':').trim() };
+      }
+      return { label: line.trim(), time: "" };
+    })
+    .filter(item => item.label !== "");
+}
+
+/**
+ * 이용 규칙 문자열을 파싱하여 문자열 배열로 반환합니다.
+ */
+export function parseHouseRules(rulesStr: string): string[] {
+  return rulesStr.split('\n')
+    .map(r => r.trim())
+    .filter(r => r !== "");
+}
+
 export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeConfigProps) {
   const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
@@ -62,23 +90,8 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
   const handleSave = async () => {
     setLoading(true);
     try {
-      const parsedHours = operatingHoursStr.split('\n')
-        .map(line => {
-          const parts = line.split('|');
-          if (parts.length >= 2) {
-            return { label: parts[0].trim(), time: parts.slice(1).join('|').trim() };
-          }
-          const colonParts = line.split(':');
-          if (colonParts.length >= 2) {
-            return { label: colonParts[0].trim(), time: colonParts.slice(1).join(':').trim() };
-          }
-          return { label: line.trim(), time: "" };
-        })
-        .filter(item => item.label !== "");
-
-      const parsedRules = houseRulesStr.split('\n')
-        .map(r => r.trim())
-        .filter(r => r !== "");
+      const parsedHours = parseOperatingHours(operatingHoursStr);
+      const parsedRules = parseHouseRules(houseRulesStr);
 
       const updateData = {
         ...formData,

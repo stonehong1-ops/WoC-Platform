@@ -7,10 +7,12 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { rentalService } from '@/lib/firebase/rentalService';
 import { storageService } from '@/lib/firebase/storageService';
 import { RentalSpace } from '@/types/rental';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const CATEGORIES = ['Dance Studio', 'Party Room', 'Practice Room'];
 
 function RegisterPageContent() {
+  const { t } = useLanguage();
   const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -35,6 +37,7 @@ function RegisterPageContent() {
   const [images, setImages] = useState<File[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load existing item if editing
@@ -45,7 +48,7 @@ function RegisterPageContent() {
         const data = await rentalService.getSpace(editId);
         if (data) {
           if (data.hostId !== user?.uid) {
-            alert('No permission.');
+            alert(t('rental.register.msg_no_permission'));
             router.back();
             return;
           }
@@ -71,7 +74,7 @@ function RegisterPageContent() {
     if (e.target.files) {
       const selectedFiles = Array.from(e.target.files);
       if (images.length + existingImages.length + selectedFiles.length > 5) {
-        alert('You can upload up to 5 images.');
+        alert(t('rental.register.msg_limit_photos'));
         return;
       }
       setImages(prev => [...prev, ...selectedFiles]);
@@ -88,11 +91,11 @@ function RegisterPageContent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) {
-      alert('Login required.');
+      alert(t('rental.register.msg_login_required'));
       return;
     }
     if (!title.trim() || !location.trim() || !address.trim() || pricePerHour === '' || minHours === '') {
-      alert('Please fill in all required fields.');
+      alert(t('rental.register.msg_fill_required'));
       return;
     }
 
@@ -100,10 +103,18 @@ function RegisterPageContent() {
     try {
       // 1. Upload new images
       const uploadedUrls: string[] = [];
-      for (const file of images) {
-        const path = `rental/${Date.now()}_${Math.random().toString(36).substring(7)}`;
-        const url = await storageService.uploadFile(file, path);
-        uploadedUrls.push(url);
+      if (images.length > 0) {
+        setUploadProgress(0);
+        for (let i = 0; i < images.length; i++) {
+          const file = images[i];
+          const path = `rental/${Date.now()}_${Math.random().toString(36).substring(7)}`;
+          const url = await storageService.uploadFile(file, path, (progress) => {
+            const overall = Math.round(((i * 100) + progress) / images.length);
+            setUploadProgress(overall);
+          });
+          uploadedUrls.push(url);
+        }
+        setUploadProgress(null);
       }
 
       const finalImages = [...existingImages, ...uploadedUrls];
@@ -126,18 +137,19 @@ function RegisterPageContent() {
 
       if (editId) {
         await rentalService.updateSpace(editId, spaceData);
-        alert('Successfully updated.');
+        alert(t('rental.register.msg_success_update'));
         router.back();
       } else {
         await rentalService.addSpace(spaceData as Omit<RentalSpace, 'id' | 'createdAt' | 'updatedAt' | 'likesCount'>);
-        alert('Rental space successfully registered.');
+        alert(t('rental.register.msg_success_register'));
         router.replace('/rental');
       }
     } catch (err) {
       console.error(err);
-      alert('An error occurred during processing.');
+      alert(t('rental.register.msg_error_occurred'));
     } finally {
       setIsSubmitting(false);
+      setUploadProgress(null);
     }
   };
 
@@ -149,17 +161,25 @@ function RegisterPageContent() {
         
         {/* Category Toggle */}
         <div className="flex bg-[#f2f4f4] rounded-xl p-1">
-          {CATEGORIES.map(c => (
-            <button key={c} type="button" onClick={() => setCategory(c)}
-              className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${category === c ? 'bg-white shadow-sm text-primary' : 'text-[#596061]'}`}>
-              {c}
-            </button>
-          ))}
+          {CATEGORIES.map(c => {
+            let key = '';
+            if (c === 'Dance Studio') key = 'rental.register.category_dance_studio';
+            else if (c === 'Party Room') key = 'rental.register.category_party_room';
+            else if (c === 'Practice Room') key = 'rental.register.category_practice_room';
+            return (
+              <button key={c} type="button" onClick={() => setCategory(c)}
+                className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${category === c ? 'bg-white shadow-sm text-primary' : 'text-[#596061]'}`}>
+                {t(key)}
+              </button>
+            );
+          })}
         </div>
 
         {/* Images */}
         <div>
-          <label className="block text-xs font-bold text-[#596061] mb-2 uppercase tracking-wider">Space Photos ({images.length + existingImages.length}/5)</label>
+          <label className="block text-xs font-bold text-[#596061] mb-2 uppercase tracking-wider">
+            {t('rental.register.upload_photos').replace('{count}', (images.length + existingImages.length).toString())}
+          </label>
           <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
             <button type="button" onClick={() => fileInputRef.current?.click()}
               className="w-20 h-20 flex-shrink-0 flex flex-col items-center justify-center border-2 border-dashed border-[#acb3b4] rounded-xl text-[#596061] bg-[#f8f9fa] active:scale-95 transition-transform">
@@ -190,27 +210,27 @@ function RegisterPageContent() {
         {/* Details */}
         <div className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">Space Name <span className="text-red-400">*</span></label>
-            <input required type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Gangnam Exit 1 Dance Studio"
+            <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">{t('rental.register.label_title')} <span className="text-red-400">*</span></label>
+            <input required type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder={t('rental.register.placeholder_title')}
               className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" />
           </div>
 
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">Region (City/District) <span className="text-red-400">*</span></label>
-              <input required type="text" value={location} onChange={e => setLocation(e.target.value)} placeholder="e.g. Gangnam-gu"
+              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">{t('rental.register.label_location')} <span className="text-red-400">*</span></label>
+              <input required type="text" value={location} onChange={e => setLocation(e.target.value)} placeholder={t('rental.register.placeholder_location')}
                 className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" />
             </div>
             <div className="flex-1">
-              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">Detailed Address <span className="text-red-400">*</span></label>
-              <input required type="text" value={address} onChange={e => setAddress(e.target.value)} placeholder="e.g. 123 Teheran-ro B1"
+              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">{t('rental.register.label_address')} <span className="text-red-400">*</span></label>
+              <input required type="text" value={address} onChange={e => setAddress(e.target.value)} placeholder={t('rental.register.placeholder_address')}
                 className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" />
             </div>
           </div>
 
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">Price Per Hour <span className="text-red-400">*</span></label>
+              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">{t('rental.register.label_price')} <span className="text-red-400">*</span></label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-[#acb3b4]">₩</span>
                 <input required type="number" min="0" value={pricePerHour} onChange={e => setPricePerHour(e.target.value ? Number(e.target.value) : '')} placeholder="10000"
@@ -218,7 +238,7 @@ function RegisterPageContent() {
               </div>
             </div>
             <div className="flex-1">
-              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">Min. Hours <span className="text-red-400">*</span></label>
+              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">{t('rental.register.label_min_hours')} <span className="text-red-400">*</span></label>
               <div className="relative">
                 <input required type="number" min="1" value={minHours} onChange={e => setMinHours(e.target.value ? Number(e.target.value) : '')} placeholder="1"
                   className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-right pr-12" />
@@ -228,20 +248,20 @@ function RegisterPageContent() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">Facilities (comma separated)</label>
-            <input type="text" value={facilitiesInput} onChange={e => setFacilitiesInput(e.target.value)} placeholder="e.g. Wall Mirror, Bluetooth Speaker, Water Dispenser"
+            <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">{t('rental.register.label_facilities')}</label>
+            <input type="text" value={facilitiesInput} onChange={e => setFacilitiesInput(e.target.value)} placeholder={t('rental.register.placeholder_facilities')}
               className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">Detailed Description</label>
-            <textarea rows={5} value={description} onChange={e => setDescription(e.target.value)} placeholder="Please enter a detailed description of the space."
+            <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">{t('rental.register.label_description')}</label>
+            <textarea rows={5} value={description} onChange={e => setDescription(e.target.value)} placeholder={t('rental.register.placeholder_description')}
               className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none" />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">Rules & Refund Policy</label>
-            <textarea rows={4} value={rules} onChange={e => setRules(e.target.value)} placeholder="Indoor shoes required, No food allowed, etc."
+            <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">{t('rental.register.label_rules')}</label>
+            <textarea rows={4} value={rules} onChange={e => setRules(e.target.value)} placeholder={t('rental.register.placeholder_rules')}
               className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none" />
           </div>
         </div>
@@ -250,7 +270,15 @@ function RegisterPageContent() {
         <div className="pt-4 pb-10">
           <button type="submit" disabled={isSubmitting}
             className="w-full bg-primary text-white font-bold py-3.5 rounded-xl shadow-lg shadow-primary/20 active:scale-[0.98] transition-transform disabled:opacity-50">
-            {isSubmitting ? 'Processing...' : editId ? 'Save Changes' : 'Register Space'}
+            {isSubmitting ? (
+              uploadProgress !== null ? (
+                `${uploadProgress}%`
+              ) : (
+                editId ? t('rental.register.status_updating') : t('rental.register.status_registering')
+              )
+            ) : (
+              editId ? t('rental.register.button_update') : t('rental.register.button_register')
+            )}
           </button>
         </div>
       </form>
@@ -258,9 +286,14 @@ function RegisterPageContent() {
   );
 }
 
+function FallbackLoading() {
+  const { t } = useLanguage();
+  return <div className="flex items-center justify-center min-h-screen">{t('rental.register.loading')}</div>;
+}
+
 export default function RentalRegisterPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+    <Suspense fallback={<FallbackLoading />}>
       <RegisterPageContent />
     </Suspense>
   );

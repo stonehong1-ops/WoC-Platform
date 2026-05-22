@@ -1,3 +1,4 @@
+// 그룹 대관 설정을 통합 제어하고 스케줄 그리드를 관리하는 관리자 컴포넌트
 "use client";
 
 import React, { useState } from "react";
@@ -11,6 +12,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 interface GroupRentalEditorProps {
   group: Group;
   onClose?: () => void;
+  isInline?: boolean;
 }
 
 const COLORS = [
@@ -63,7 +65,7 @@ const generateDefaultTimeGrid = () => {
   return grid;
 };
 
-const GroupRentalEditor: React.FC<GroupRentalEditorProps> = ({ group, onClose }) => {
+const GroupRentalEditor: React.FC<GroupRentalEditorProps> = ({ group, onClose, isInline }) => {
   const router = useRouter();
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<typeof TABS[number]["id"]>("settings");
@@ -78,7 +80,26 @@ const GroupRentalEditor: React.FC<GroupRentalEditorProps> = ({ group, onClose })
         timeGrid: generateDefaultTimeGrid(),
       };
     }
-    return existing as RentalSettings;
+
+    // Firestore 데이터 정규화 가드 (요일별 항상 온전한 크기 24의 String[] 배열 보장)
+    const normalizedGrid: Record<number, string[]> = {};
+    for (let day = 0; day <= 6; day++) {
+      const rawDayData = existing.timeGrid?.[day] || existing.timeGrid?.[day.toString()];
+      if (Array.isArray(rawDayData)) {
+        normalizedGrid[day] = Array(24).fill("tier1").map((v, i) => rawDayData[i] || "tier1");
+      } else if (rawDayData && typeof rawDayData === "object") {
+        normalizedGrid[day] = Array(24).fill("tier1").map((v, i) => rawDayData[i] || rawDayData[i.toString()] || "tier1");
+      } else {
+        normalizedGrid[day] = Array(24).fill("tier1");
+      }
+    }
+
+    return {
+      currency: existing.currency || "KRW",
+      rentalInfo: existing.rentalInfo || "",
+      pricePalette: { ...defaultPalette, ...existing.pricePalette },
+      timeGrid: normalizedGrid,
+    };
   });
 
   const [isUpdating, setIsUpdating] = useState(false);
@@ -110,169 +131,211 @@ const GroupRentalEditor: React.FC<GroupRentalEditorProps> = ({ group, onClose })
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
-      className="fixed inset-0 z-[100] text-[var(--on-background)] font-body antialiased bg-white flex flex-col overflow-y-auto no-scrollbar pb-32"
+      className={isInline
+        ? "w-full text-on-surface font-body antialiased bg-background flex flex-col no-scrollbar"
+        : "fixed inset-0 z-[100] text-on-surface font-body antialiased bg-background flex flex-col overflow-y-auto no-scrollbar pb-32"
+      }
     >
-      {/* Header & Tabs */}
-      <header className="bg-white sticky top-0 z-50 border-b border-[var(--outline-variant)]/20">
-        <div className="px-6 pt-6 max-w-4xl mx-auto">
-          <div className="flex items-center gap-4 mb-6">
-            <button 
-              onClick={onClose || (() => router.push(`/groups/${group.id}`))}
-              className="w-10 h-10 rounded-full flex items-center justify-center text-[var(--primary)] hover:bg-[var(--primary)]/5 transition-all"
-            >
-              <span className="material-symbols-outlined text-[var(--primary)]">arrow_back</span>
-            </button>
-            <h1 className="font-headline font-extrabold text-2xl tracking-tight text-[#242C51]">{t('group.rental.title') || "Rental Manager"}</h1>
-          </div>
-          
-          <div className="flex items-center gap-6">
-            {TABS.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`relative pb-3 font-headline font-bold text-[15px] transition-colors ${
-                  activeTab === tab.id ? "text-[var(--primary)]" : "text-[var(--on-surface-variant)] hover:text-[var(--on-surface)]"
-                }`}
-              >
-                {t(`group.rental.tabs.${tab.id}`) || tab.label}
-                {activeTab === tab.id && (
-                  <motion.div
-                    layoutId="rental-tab-indicator"
-                    className="absolute bottom-0 left-0 right-0 h-1 bg-[var(--primary)] rounded-t-full"
-                  />
-                )}
-              </button>
-            ))}
-          </div>
+      {/* Title Header with Stitch Spec */}
+      <div className="px-4 pt-6 pb-2 flex items-center gap-4">
+        {!isInline && (
+          <button 
+            onClick={onClose || (() => router.push(`/groups/${group.id}`))}
+            className="w-10 h-10 rounded-full flex items-center justify-center text-primary hover:bg-primary/5 transition-all"
+          >
+            <span className="material-symbols-outlined">arrow_back</span>
+          </button>
+        )}
+        <div>
+          <h1 className="font-headline font-black text-[24px] text-on-surface tracking-tight leading-none mb-1">
+            {t('group.rental.title') || "Rental Manager"}
+          </h1>
+          <p className="text-[13px] text-on-surface-variant">
+            {t('group.rental.subtitle') || "Manage rental venues, pricing palette, and time slots."}
+          </p>
         </div>
-      </header>
+      </div>
+
+      {/* Premium Segmented Tabbar inside Content Area */}
+      <div className="px-4 pt-4 pb-2">
+        <div className="rounded-2xl bg-surface-container-low border border-outline/5 p-1 flex gap-2">
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 py-3 text-[14px] font-bold rounded-xl transition-all ${
+                activeTab === tab.id
+                  ? "bg-primary text-on-primary shadow-sm"
+                  : "text-on-surface-variant hover:bg-surface-container-high"
+              }`}
+            >
+              {t(`group.rental.${tab.id}`) || tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Main Content */}
-      <main className="max-w-4xl w-full mx-auto px-4 sm:px-6 pt-6 pb-20 flex-1">
+      <main className="w-full flex-1 pb-32 pt-4">
         {activeTab === "settings" && (
           <motion.div 
             initial={{ opacity: 0, y: 10 }} 
             animate={{ opacity: 1, y: 0 }} 
-            className="space-y-8"
+            className="w-full"
           >
-            {/* General Info - Clean Layout */}
-            <section className="space-y-4">
-              <div>
-                <h3 className="font-headline font-bold text-lg text-[var(--on-surface)] mb-1">{t('group.rental.general_info.title') || "General Info"}</h3>
-                <p className="font-body text-[13px] text-[var(--on-surface-variant)]">{t('group.rental.general_info.desc') || "Set currency and provide guidelines for your space."}</p>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2 md:col-span-1">
-                  <label className="font-label font-bold text-[11px] uppercase tracking-wider text-[var(--on-surface-variant)] block">{t('group.rental.general_info.currency_label') || "Currency"}</label>
-                  <div className="relative">
-                    <select 
-                      value={settings.currency}
-                      onChange={(e) => setSettings({ ...settings, currency: e.target.value })}
-                      className="w-full bg-slate-50 appearance-none border border-[var(--outline-variant)]/20 rounded-xl px-4 py-3 font-body text-[14px] font-medium text-[var(--on-surface)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/50 transition-shadow"
-                    >
-                      <option value="USD">USD ($)</option>
-                      <option value="EUR">EUR (€)</option>
-                      <option value="GBP">GBP (£)</option>
-                      <option value="JPY">JPY (¥)</option>
-                      <option value="KRW">KRW (₩)</option>
-                    </select>
-                    <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-[var(--on-surface-variant)] pointer-events-none text-sm" data-icon="expand_more">expand_more</span>
+            {/* General Info Card */}
+            <section className="px-4 mb-6">
+              <div className="bg-white rounded-2xl shadow-[0px_10px_30px_rgba(0,0,0,0.03)] border border-white/20 overflow-hidden">
+                <div className="px-6 pt-6 pb-4 border-b border-outline/5 flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-primary text-[20px]">info</span>
+                  </div>
+                  <div>
+                    <h3 className="text-[16px] font-bold text-on-surface leading-tight mb-1">
+                      {t('group.rental.general_info.title') || "General Info"}
+                    </h3>
+                    <p className="text-[12px] text-on-surface-variant leading-none">
+                      {t('group.rental.general_info.desc') || "Set currency and provide guidelines for your space."}
+                    </p>
                   </div>
                 </div>
+                
+                <div className="p-6 space-y-5">
+                  <div className="flex flex-col gap-2">
+                    <label className="text-[12px] font-bold text-on-surface-variant uppercase tracking-wider">
+                      {t('group.rental.general_info.currency_label') || "Currency"}
+                    </label>
+                    <div className="relative">
+                      <select 
+                        value={settings.currency}
+                        onChange={(e) => setSettings({ ...settings, currency: e.target.value })}
+                        className="w-full bg-surface-container-low border border-outline/10 focus:ring-2 focus:ring-primary/30 focus:border-primary rounded-xl px-4 py-3.5 text-on-surface text-[16px] font-medium appearance-none transition-all"
+                      >
+                        <option value="USD">USD ($)</option>
+                        <option value="EUR">EUR (€)</option>
+                        <option value="GBP">GBP (£)</option>
+                        <option value="JPY">JPY (¥)</option>
+                        <option value="KRW">KRW (₩)</option>
+                      </select>
+                      <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none text-[20px]">expand_more</span>
+                    </div>
+                  </div>
 
-                <div className="space-y-2 md:col-span-2">
-                  <label className="font-label font-bold text-[11px] uppercase tracking-wider text-[var(--on-surface-variant)] block">{t('group.rental.general_info.rules_label') || "Rental Info & Rules"}</label>
-                  <textarea 
-                    value={settings.rentalInfo || ""}
-                    onChange={(e) => setSettings({ ...settings, rentalInfo: e.target.value })}
-                    className="w-full bg-slate-50 border border-[var(--outline-variant)]/20 rounded-xl px-4 py-3 font-body text-[14px] text-[var(--on-surface)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/50 transition-shadow resize-none min-h-[100px]" 
-                    placeholder={t('group.rental.general_info.rules_placeholder') || "Enter facility rules, parking info, access instructions..."} 
-                  ></textarea>
-                </div>
-              </div>
-            </section>
-
-            <hr className="border-[var(--outline-variant)]/10" />
-
-            {/* Pricing Palette */}
-            <section className="space-y-4">
-              <div className="flex flex-col gap-1">
-                <h3 className="font-headline font-bold text-lg text-[var(--on-surface)]">{t('group.rental.pricing_palette.title') || "Pricing Palette"}</h3>
-                <p className="font-body text-[13px] text-[var(--on-surface-variant)]">{t('group.rental.pricing_palette.desc') || "Set hourly rates for each color tier."}</p>
-              </div>
-              
-              <div className="flex justify-between items-start w-full gap-1">
-                {COLORS.map(c => (
-                  <div key={c.id} className="flex flex-col items-center flex-1 overflow-hidden">
-                    <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full mb-1 sm:mb-2 ${c.bgClass} shadow-sm border border-black/5`}></div>
-                    <input 
-                      type="number"
-                      value={settings.pricePalette[c.id as PaletteColor]}
-                      onChange={(e) => setSettings(prev => ({...prev, pricePalette: {...prev.pricePalette, [c.id]: parseFloat(e.target.value) || 0}}))}
-                      className="w-full text-center bg-slate-50 border border-[var(--outline-variant)]/30 font-label font-bold text-[9px] sm:text-[11px] text-[var(--on-surface)] focus:outline-none focus:border-[var(--primary)]/50 focus:ring-1 focus:ring-[var(--primary)]/50 rounded py-1 px-0.5 shadow-inner"
-                      style={{ MozAppearance: 'textfield' }}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-[12px] font-bold text-on-surface-variant uppercase tracking-wider">
+                      {t('group.rental.general_info.rules_label') || "Rental Info & Rules"}
+                    </label>
+                    <textarea 
+                      value={settings.rentalInfo || ""}
+                      onChange={(e) => setSettings({ ...settings, rentalInfo: e.target.value })}
+                      className="w-full bg-surface-container-low border border-outline/10 focus:ring-2 focus:ring-primary/30 focus:border-primary rounded-xl px-4 py-3.5 text-on-surface text-[16px] font-medium transition-all resize-none min-h-[120px]" 
+                      placeholder={t('group.rental.general_info.rules_placeholder') || "Enter facility rules, parking info, access instructions..."} 
                     />
                   </div>
-                ))}
+                </div>
               </div>
             </section>
 
-            <hr className="border-[var(--outline-variant)]/10" />
-
-            {/* Time Grid Section - Clean, Box-less */}
-            <section className="space-y-4">
-              <div className="flex flex-col gap-1">
-                <h3 className="font-headline font-bold text-lg text-[var(--on-surface)]">{t('group.rental.time_grid.title') || "Time Grid"}</h3>
-                <p className="font-body text-[13px] text-[var(--on-surface-variant)]">
-                  {t('group.rental.time_grid.desc') || "Tap a time slot to select a pricing tier from the toolbar below."}
-                </p>
-              </div>
-
-              <div className="w-full flex flex-col select-none touch-none">
-                {/* Header Row */}
-                <div className="flex mb-1.5 border-b border-[var(--outline-variant)]/20 pb-1.5">
-                  <div className="w-8 sm:w-10 shrink-0"></div>
-                  {DAYS.map((d, idx) => (
-                    <div key={d} className={`flex-1 text-center font-label font-bold text-[9px] sm:text-[10px] uppercase ${idx >= 5 ? 'text-[var(--primary)]' : 'text-[var(--on-surface-variant)]'}`}>
-                      {d}
-                    </div>
-                  ))}
+            {/* Pricing Palette Card */}
+            <section className="px-4 mb-6">
+              <div className="bg-white rounded-2xl shadow-[0px_10px_30px_rgba(0,0,0,0.03)] border border-white/20 overflow-hidden">
+                <div className="px-6 pt-6 pb-4 border-b border-outline/5 flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-primary text-[20px]">payments</span>
+                  </div>
+                  <div>
+                    <h3 className="text-[16px] font-bold text-on-surface leading-tight mb-1">
+                      {t('group.rental.pricing_palette.title') || "Pricing Palette"}
+                    </h3>
+                    <p className="text-[12px] text-on-surface-variant leading-none">
+                      {t('group.rental.pricing_palette.desc') || "Set hourly rates for each color tier."}
+                    </p>
+                  </div>
                 </div>
-
-                {/* Grid Rows (0-23) */}
-                <div className="flex flex-col gap-0.5 sm:gap-1">
-                  {Array.from({length: 24}).map((_, hour) => (
-                    <div key={hour} className="flex h-5 sm:h-7 items-center">
-                      <div className="w-8 sm:w-10 shrink-0 flex items-center justify-start font-label text-[9px] sm:text-[10px] text-[var(--on-surface-variant)] opacity-70">
-                        {hour.toString().padStart(2, '0')}
+                
+                <div className="p-6">
+                  <div className="flex justify-between items-start w-full gap-2 overflow-x-auto no-scrollbar pb-2">
+                    {COLORS.map(c => (
+                      <div key={c.id} className="flex flex-col items-center min-w-[55px] flex-1">
+                        <div className={`w-8 h-8 rounded-full mb-2 ${c.bgClass} shadow-sm border border-black/5 flex-shrink-0`}></div>
+                        <input 
+                          type="number"
+                          value={settings.pricePalette[c.id as PaletteColor]}
+                          onChange={(e) => setSettings(prev => ({...prev, pricePalette: {...prev.pricePalette, [c.id]: parseFloat(e.target.value) || 0}}))}
+                          className="w-full text-center bg-surface-container-low border border-outline/10 focus:ring-2 focus:ring-primary/30 focus:border-primary rounded-lg py-1.5 px-1 font-label font-bold text-[12px] text-on-surface shadow-inner"
+                          style={{ MozAppearance: 'textfield' }}
+                        />
                       </div>
-                      {DAYS.map((_, day) => {
-                        const cellColor = settings.timeGrid[day]?.[hour] || "tier1";
-                        const colorObj = COLORS.find(c => c.id === cellColor) || COLORS[0];
-                        const isSelected = selectedCell?.day === day && selectedCell?.hour === hour;
-                        return (
-                          <div 
-                            key={`${day}-${hour}`} 
-                            className="flex-1 px-[1px] h-full cursor-pointer"
-                            onClick={() => handleCellClick(day, hour)}
-                          >
-                            <div className={`w-full h-full flex items-center justify-center rounded-sm transition-all ${colorObj?.bgClass} opacity-90 shadow-sm ${isSelected ? 'border-2 border-black scale-110 z-10 relative' : 'border border-black/5'}`}>
-                              <span className={`text-[7px] sm:text-[9px] font-bold tracking-tighter ${colorObj.textClass}`}>
-                                {settings.pricePalette[cellColor as PaletteColor]?.toLocaleString() || ""}
-                              </span>
-                            </div>
-                          </div>
-                        )
-                      })}
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Time Grid Card */}
+            <section className="px-4 mb-6">
+              <div className="bg-white rounded-2xl shadow-[0px_10px_30px_rgba(0,0,0,0.03)] border border-white/20 overflow-hidden">
+                <div className="px-6 pt-6 pb-4 border-b border-outline/5 flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-primary text-[20px]">schedule</span>
+                  </div>
+                  <div>
+                    <h3 className="text-[16px] font-bold text-on-surface leading-tight mb-1">
+                      {t('group.rental.time_grid.title') || "Time Grid"}
+                    </h3>
+                    <p className="text-[12px] text-on-surface-variant leading-none">
+                      {t('group.rental.time_grid.desc') || "Tap a time slot to select a pricing tier from the toolbar below."}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="p-6 overflow-x-auto no-scrollbar">
+                  <div className="min-w-[640px] flex flex-col select-none touch-none">
+                    {/* Header Row */}
+                    <div className="flex mb-3 border-b border-outline/5 pb-2">
+                      <div className="w-12 shrink-0"></div>
+                      {DAYS.map((d, idx) => (
+                        <div key={d} className={`flex-1 text-center font-label font-bold text-[11px] uppercase tracking-wider ${idx >= 5 ? 'text-primary' : 'text-on-surface-variant'}`}>
+                          {d}
+                        </div>
+                      ))}
                     </div>
-                  ))}
+
+                    {/* Grid Rows (0-23) */}
+                    <div className="flex flex-col gap-1">
+                      {Array.from({length: 24}).map((_, hour) => (
+                        <div key={hour} className="flex h-7 items-center">
+                          <div className="w-12 shrink-0 flex items-center justify-start font-label text-[11px] font-bold text-on-surface-variant opacity-70">
+                            {hour.toString().padStart(2, '0')}:00
+                          </div>
+                          {DAYS.map((_, day) => {
+                            const cellColor = settings.timeGrid[day]?.[hour] || "tier1";
+                            const colorObj = COLORS.find(c => c.id === cellColor) || COLORS[0];
+                            const isSelected = selectedCell?.day === day && selectedCell?.hour === hour;
+                            return (
+                              <div 
+                                key={`${day}-${hour}`} 
+                                className="flex-1 px-[2px] h-full cursor-pointer"
+                                onClick={() => handleCellClick(day, hour)}
+                              >
+                                <div className={`w-full h-full flex items-center justify-center rounded-md transition-all ${colorObj?.bgClass} opacity-90 shadow-sm ${isSelected ? 'ring-2 ring-primary ring-offset-1 scale-105 z-10 relative' : 'border border-black/5 hover:opacity-100'}`}>
+                                  <span className={`text-[9px] font-black tracking-tighter ${colorObj.textClass}`}>
+                                    {settings.pricePalette[cellColor as PaletteColor]?.toLocaleString() || ""}
+                                  </span>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             </section>
 
             {/* Action Buttons */}
-            <div className="pt-8 flex gap-3">
+            <div className="px-4 pb-12 flex gap-3">
               <button 
                 onClick={() => {
                   if (window.confirm(t('group.rental.actions.cancel_confirm') || "Are you sure you want to cancel your changes?")) {
@@ -284,14 +347,14 @@ const GroupRentalEditor: React.FC<GroupRentalEditorProps> = ({ group, onClose })
                   }
                 }}
                 disabled={isUpdating}
-                className="flex-1 bg-slate-100 text-[var(--on-surface-variant)] py-4 rounded-xl font-headline font-bold text-base hover:bg-slate-200 transition-all active:scale-[0.98] duration-200 disabled:opacity-50"
+                className="flex-1 bg-surface-container-high text-on-surface py-4 rounded-xl font-headline font-bold text-[16px] hover:bg-surface-container-highest transition-all duration-200 disabled:opacity-50"
               >
                 {t('group.rental.actions.cancel') || "Cancel"}
               </button>
               <button 
                 onClick={handleSave}
                 disabled={isUpdating}
-                className="flex-[2] bg-[#242C51] text-white py-4 rounded-xl font-headline font-bold text-base hover:bg-black transition-all shadow-lg active:scale-[0.98] duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-[2] bg-primary text-on-primary py-4 rounded-2xl font-headline font-bold text-[16px] hover:opacity-90 transition-all shadow-[0_10px_20px_rgba(0,88,188,0.15)] duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isUpdating ? (t('group.rental.actions.saving') || "Saving...") : (t('group.rental.actions.save') || "Save Settings")}
               </button>
@@ -300,15 +363,17 @@ const GroupRentalEditor: React.FC<GroupRentalEditorProps> = ({ group, onClose })
         )}
 
         {activeTab === "requests" && (
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }} 
-            animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-center justify-center py-20 text-center"
-          >
-            <span className="material-symbols-outlined text-6xl text-[var(--outline-variant)] mb-4" data-icon="inbox">inbox</span>
-            <h3 className="font-headline font-bold text-xl text-[var(--on-surface)] mb-2">{t('group.rental.requests.empty_title') || "No Rental Requests"}</h3>
-            <p className="font-body text-[var(--on-surface-variant)]">{t('group.rental.requests.empty_desc') || "When members request a rental, it will appear here."}</p>
-          </motion.div>
+          <section className="px-4">
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }} 
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white rounded-2xl shadow-[0px_10px_30px_rgba(0,0,0,0.03)] border border-white/20 p-12 flex flex-col items-center justify-center text-center"
+            >
+              <span className="material-symbols-outlined text-6xl text-outline/35 mb-4">inbox</span>
+              <h3 className="font-headline font-bold text-xl text-on-surface mb-2">{t('group.rental.requests.empty_title') || "No Rental Requests"}</h3>
+              <p className="font-body text-on-surface-variant">{t('group.rental.requests.empty_desc') || "When members request a rental, it will appear here."}</p>
+            </motion.div>
+          </section>
         )}
       </main>
 
@@ -319,36 +384,47 @@ const GroupRentalEditor: React.FC<GroupRentalEditorProps> = ({ group, onClose })
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
-            className="fixed bottom-0 left-0 right-0 bg-white border-t border-[var(--outline-variant)]/20 z-[100] px-4 py-4 pb-8 shadow-[0_-10px_40px_rgba(0,0,0,0.1)]"
+            className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-outline/5 z-[100] px-4 py-4 pb-8 shadow-[0_-10px_40px_rgba(0,0,0,0.06)]"
           >
             <div className="flex items-center justify-between mb-4 max-w-4xl mx-auto w-full">
-              <h3 className="font-headline font-bold text-sm text-[var(--on-surface)]">
+              <h3 className="font-headline font-bold text-[14px] text-on-surface">
                 {(t('group.rental.time_grid.color_set_title') || "Set color for {{day}} {{hour}}:00")
                   .replace('{{day}}', DAYS[selectedCell.day])
                   .replace('{{hour}}', selectedCell.hour.toString().padStart(2, '0'))}
               </h3>
-              <button onClick={() => setSelectedCell(null)} className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-[var(--on-surface-variant)] hover:bg-slate-200 transition-colors">
-                <span className="material-symbols-outlined text-sm">close</span>
+              <button onClick={() => setSelectedCell(null)} className="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant hover:bg-surface-container-highest transition-colors">
+                <span className="material-symbols-outlined text-[18px]">close</span>
               </button>
             </div>
-            <div className="flex justify-between items-end w-full max-w-4xl mx-auto px-2 h-[60px]">
+            <div className="flex justify-between items-end w-full max-w-4xl mx-auto px-2 gap-1.5 h-[65px] overflow-x-auto no-scrollbar">
               {COLORS.map(c => {
                 const isActive = settings.timeGrid[selectedCell.day]?.[selectedCell.hour] === c.id;
                 return (
-                  <div key={c.id} className="flex flex-col items-center gap-2">
+                  <div key={c.id} className="flex flex-col items-center gap-1.5 flex-1 min-w-[45px]">
                     <button
                       onClick={() => {
-                        setSettings(prev => ({
-                          ...prev,
-                          timeGrid: {
-                            ...prev.timeGrid,
-                            [selectedCell.day]: prev.timeGrid[selectedCell.day].map((color, i) => i === selectedCell.hour ? c.id : color)
-                          }
-                        }));
+                        setSettings(prev => {
+                          const currentDayGrid = prev.timeGrid[selectedCell.day];
+                          const normalizedDayGrid = Array.isArray(currentDayGrid) 
+                            ? currentDayGrid 
+                            : Array(24).fill("tier1").map((v, i) => {
+                                if (currentDayGrid && typeof currentDayGrid === "object") {
+                                  return (currentDayGrid as any)[i] || (currentDayGrid as any)[i.toString()] || "tier1";
+                                }
+                                return "tier1";
+                              });
+                          return {
+                            ...prev,
+                            timeGrid: {
+                              ...prev.timeGrid,
+                              [selectedCell.day]: normalizedDayGrid.map((color, i) => i === selectedCell.hour ? c.id : color)
+                            }
+                          };
+                        });
                       }}
-                      className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full transition-transform flex-shrink-0 ${c.bgClass} ${isActive ? 'ring-2 ring-offset-2 ring-black scale-110' : 'hover:scale-105 shadow-sm'}`}
+                      className={`w-9 h-9 rounded-full transition-all duration-200 shrink-0 ${c.bgClass} ${isActive ? 'ring-2 ring-primary ring-offset-2 scale-110 shadow-md' : 'hover:scale-105 shadow-sm border border-black/5'}`}
                     />
-                    <span className="text-[9px] sm:text-[10px] font-bold text-[var(--on-surface-variant)] tracking-tighter">
+                    <span className="text-[10px] font-black text-on-surface-variant tracking-tighter">
                       {settings.pricePalette[c.id as PaletteColor]?.toLocaleString() || ""}
                     </span>
                   </div>

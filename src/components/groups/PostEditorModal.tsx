@@ -15,8 +15,14 @@ import { KIND_ICON, KIND_COLOR } from '@/constants/tags';
 
 /* --- Types --- */
 interface MediaItem {
-  id: string; url: string; type: 'image' | 'video';
+  id: string; url: string; type: 'image' | 'video' | 'link';
   progress: number; status: 'uploading' | 'completed' | 'error'; file?: File;
+  linkMetadata?: {
+    title: string;
+    description: string;
+    image: string;
+    domain: string;
+  };
 }
 interface TagItem { id: string; label: string; kind: 'people' | 'event' | 'social' | 'group'; photo?: string; }
 interface PostEditorModalProps {
@@ -81,6 +87,68 @@ export default function PostEditorModal({ group, post, isOpen, onClose }: PostEd
   const imageCount = media.filter(m => m.type === 'image').length;
   const videoCount = media.filter(m => m.type === 'video').length;
 
+  /* 🔗 Link Auto Detection & Manual Adding 🔗 */
+  const [showLinkInput, setShowLinkInput] = useState(false);
+  const [linkInputVal, setLinkInputVal] = useState('');
+
+  const handleLinkSubmit = async () => {
+    if (!linkInputVal.trim()) return;
+    const url = linkInputVal.trim();
+    setLinkInputVal('');
+    setShowLinkInput(false);
+    await fetchLinkMetadata(url);
+  };
+
+  const fetchLinkMetadata = async (url: string) => {
+    if (media.some(m => m.url === url)) return;
+
+    const tempId = Math.random().toString(36).slice(7);
+    setMedia(prev => [...prev, {
+      id: tempId,
+      url,
+      type: 'link',
+      progress: 50,
+      status: 'uploading'
+    }]);
+
+    try {
+      const res = await fetch(`/api/link-preview?url=${encodeURIComponent(url)}`);
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      
+      setMedia(prev => prev.map(m => m.id === tempId ? {
+        ...m,
+        status: 'completed',
+        progress: 100,
+        linkMetadata: {
+          title: data.title || '',
+          description: data.description || '',
+          image: data.image || '',
+          domain: data.domain || ''
+        }
+      } : m));
+    } catch {
+      setMedia(prev => prev.filter(m => m.id !== tempId));
+    }
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const urlRegex = /(https?:\/\/[^\s]+)/gi;
+    const urls = content.match(urlRegex);
+    if (!urls || urls.length === 0) return;
+
+    const firstUrl = urls[0];
+    const hasAlready = media.some(m => m.type === 'link' && m.url === firstUrl);
+    if (hasAlready) return;
+
+    const timer = setTimeout(async () => {
+      await fetchLinkMetadata(firstUrl);
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [content, media, isOpen]);
+
   /* --- Reset --- */
   useEffect(() => {
     if (post) {
@@ -116,9 +184,15 @@ export default function PostEditorModal({ group, post, isOpen, onClose }: PostEd
       // Setup media
       const existingMedia: MediaItem[] = [];
       if (post.media && post.media.length > 0) {
-        post.media.forEach((url, i) => {
+        post.media.forEach((m: any, i) => {
+          const isStr = typeof m === 'string';
           existingMedia.push({
-            id: `e-${i}`, url, type: post.type === 'video' ? 'video' : 'image', status: 'completed', progress: 100
+            id: `e-${i}`,
+            url: isStr ? m : m.url,
+            type: isStr ? (post.type === 'video' ? 'video' : 'image') : (m.type || 'image'),
+            status: 'completed',
+            progress: 100,
+            linkMetadata: isStr ? undefined : m.linkMetadata
           });
         });
       } else if (post.image || post.video) {
@@ -233,11 +307,16 @@ export default function PostEditorModal({ group, post, isOpen, onClose }: PostEd
     
     setIsSubmitting(true);
     try {
-      const mediaUrls = media.filter(m => m.status === 'completed').map(m => m.url);
+      const mediaData = media.filter(m => m.status === 'completed').map(m => ({
+        url: m.url,
+        type: m.type,
+        ...(m.type === 'link' ? { linkMetadata: m.linkMetadata } : {})
+      }));
       const isVideo = media.some(m => m.status === 'completed' && m.type === 'video');
       const hasImage = media.some(m => m.status === 'completed' && m.type === 'image');
+      const hasLink = media.some(m => m.status === 'completed' && m.type === 'link');
       
-      const postType = isVideo ? 'video' : (hasImage ? 'image' : (showColorPreview ? 'text-card' : 'text'));
+      const postType = isVideo ? 'video' : (hasImage ? 'image' : (hasLink ? 'link' : (showColorPreview ? 'text-card' : 'text')));
 
       const bgThemeJson = showColorPreview ? JSON.stringify({
         bgColor: selectedColor!.bg, 
@@ -252,9 +331,9 @@ export default function PostEditorModal({ group, post, isOpen, onClose }: PostEd
         category,
         type: postType,
         bgTheme: bgThemeJson || null,
-        media: mediaUrls,
-        image: isVideo ? null : (mediaUrls[0] || null),
-        video: isVideo ? mediaUrls[0] : null,
+        media: mediaData,
+        image: isVideo ? null : (media.find(m => m.type === 'image')?.url || media.find(m => m.type === 'link')?.linkMetadata?.image || null),
+        video: isVideo ? (media.find(m => m.type === 'video')?.url || null) : null,
         taggedUserIds: tags.filter(t => t.kind === 'people').map(t => t.id),
         postTags: tags.map(t => ({ id: t.id, label: t.label, kind: t.kind, photo: t.photo })),
         author: {
@@ -451,24 +530,87 @@ export default function PostEditorModal({ group, post, isOpen, onClose }: PostEd
             <section className="space-y-4 pt-2 animate-in fade-in duration-700 delay-200">
               <div className="flex items-center justify-between">
                 <h3 className="font-label-xs text-label-xs text-outline tracking-[0.1em] uppercase">{t('feed.media', 'Media')}</h3>
-                {media.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowLinkInput(prev => !prev)}
+                    className="flex items-center gap-1.5 px-3 py-1 bg-surface-container text-on-surface-variant rounded-full text-xs font-bold hover:bg-surface-container-high transition-colors active:scale-95 duration-100"
+                  >
+                    <span className="material-symbols-outlined text-[15px]">link</span> {t('feed.add_link', 'Link')}
+                  </button>
                   <button
                     onClick={() => mediaInputRef.current?.click()}
-                    className="flex items-center gap-1 px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold hover:bg-primary/20 transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold hover:bg-primary/20 transition-colors active:scale-95 duration-100"
                   >
-                    <span className="material-symbols-outlined text-sm">add_photo_alternate</span> {t('feed.add', 'Add')}
+                    <span className="material-symbols-outlined text-[15px]">add_photo_alternate</span> {t('feed.add', 'Add')}
                   </button>
-                )}
+                </div>
               </div>
+
+              {/* Manual Link Input Form */}
+              {showLinkInput && (
+                <div className="flex gap-2 p-3 bg-surface-container-lowest border border-outline-variant/30 rounded-xl shadow-sm animate-in fade-in duration-200">
+                  <input
+                    type="url"
+                    placeholder="https://example.com"
+                    value={linkInputVal}
+                    onChange={e => setLinkInputVal(e.target.value)}
+                    className="flex-1 bg-transparent border-none text-sm font-body-md text-on-surface placeholder:text-outline-variant/50 focus:ring-0 outline-none"
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleLinkSubmit();
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={handleLinkSubmit}
+                    className="px-3.5 py-1.5 bg-primary-container text-white text-xs font-bold rounded-lg hover:opacity-90 active:scale-95 duration-100 transition-all shrink-0"
+                  >
+                    {t('common.add', 'Add')}
+                  </button>
+                </div>
+              )}
+
               {media.length > 0 ? (
                 <div className="flex gap-3 overflow-x-auto pb-2 snap-x no-scrollbar">
                   {media.map(item => (
                     <div key={item.id} className="relative flex-shrink-0 w-40 h-52 rounded-xl overflow-hidden snap-start group shadow border border-outline-variant/20">
-                      {item.type === 'video'
-                        ? <video className={`w-full h-full object-cover ${item.status === 'uploading' ? 'brightness-50' : ''}`} src={item.url} muted playsInline />
-                        : <img alt="" className={`w-full h-full object-cover ${item.status === 'uploading' ? 'brightness-50' : ''}`} src={item.url} />}
+                      {item.type === 'link' ? (
+                        <div className="w-full h-full bg-surface-container flex flex-col justify-between p-3 relative select-none">
+                          {/* Card Thumbnail */}
+                          {item.linkMetadata?.image ? (
+                            <img alt="" className="absolute inset-0 w-full h-full object-cover brightness-75 group-hover:brightness-[0.65] transition-all" src={item.linkMetadata.image} />
+                          ) : (
+                            <div className="absolute inset-0 bg-gradient-to-br from-primary-container/20 to-tertiary-container/30" />
+                          )}
+                          
+                          {/* Domain Badge */}
+                          <div className="relative z-10 flex items-center gap-1.5 px-2 py-0.5 bg-black/60 rounded-full w-fit max-w-full">
+                            <span className="material-symbols-outlined text-[12px] text-white shrink-0">link</span>
+                            <span className="text-[9px] text-white font-bold tracking-wide uppercase truncate">{item.linkMetadata?.domain || 'LINK'}</span>
+                          </div>
+
+                          {/* Play Icon for Youtube */}
+                          {item.linkMetadata?.domain?.includes('youtube') && (
+                            <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+                              <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                                <span className="material-symbols-outlined text-white" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Title Overlay */}
+                          <div className="relative z-10 bg-black/55 backdrop-blur-[2px] p-2 rounded-lg text-left mt-auto">
+                            <p className="text-white text-[10px] font-bold leading-snug line-clamp-2 drop-shadow">{item.linkMetadata?.title || item.url}</p>
+                          </div>
+                        </div>
+                      ) : (
+                        item.type === 'video'
+                          ? <video className={`w-full h-full object-cover ${item.status === 'uploading' ? 'brightness-50' : ''}`} src={item.url} muted playsInline />
+                          : <img alt="" className={`w-full h-full object-cover ${item.status === 'uploading' ? 'brightness-50' : ''}`} src={item.url} />
+                      )}
                       {item.status === 'uploading' && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
+                        <div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-black/40">
                           <p className="text-white font-bold text-xs mb-2">{item.progress}%</p>
                           <div className="w-full bg-white/30 h-1 rounded-full">
                             <div className="bg-white h-full rounded-full transition-all" style={{ width: `${item.progress}%` }} />
@@ -476,15 +618,15 @@ export default function PostEditorModal({ group, post, isOpen, onClose }: PostEd
                         </div>
                       )}
                       {item.status === 'completed' && (
-                        <button onClick={() => removeMedia(item.id)} className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => removeMedia(item.id)} className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity z-20">
                           <span className="material-symbols-outlined text-sm">close</span>
                         </button>
                       )}
                       {item.type === 'video' && item.status === 'completed' && (
-                        <div className="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">{t('feed.video_badge', 'VIDEO')}</div>
+                        <div className="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded font-bold z-10">{t('feed.video_badge', 'VIDEO')}</div>
                       )}
                       {item.status === 'error' && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-red-500/20">
+                        <div className="absolute inset-0 flex items-center justify-center bg-red-500/20 z-10">
                           <span className="material-symbols-outlined text-red-500">error</span>
                         </div>
                       )}

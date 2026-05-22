@@ -1,3 +1,4 @@
+// 신규 장소(숙박 및 수련회/Stay) 등록 모달
 'use client';
 
 import React, { useState, useRef } from 'react';
@@ -5,9 +6,9 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { stayService } from '@/lib/firebase/stayService';
 import { plazaService } from '@/lib/firebase/plazaService';
 import { StayType } from '@/types/stay';
-import FullScreenRegistration from '@/components/common/FullScreenRegistration';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { CITY_COORDINATES } from '@/lib/constants/locations';
+import { motion } from 'framer-motion';
 
 interface CreateStayProps {
   isOpen: boolean;
@@ -22,7 +23,7 @@ export default function CreateStay({ isOpen, onClose, onSuccess }: CreateStayPro
   const { user } = useAuth();
   const { t } = useLanguage();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   
   const [title, setTitle] = useState('');
   const [type, setType] = useState<StayType>('1-Room');
@@ -53,7 +54,7 @@ export default function CreateStay({ isOpen, onClose, onSuccess }: CreateStayPro
     const filesToAdd = files.slice(0, availableSlots);
 
     if (files.length > availableSlots) {
-      alert(`You can only upload up to ${MAX_PHOTOS} photos.`);
+      alert(t('stay.create.alert.max_photos').replace('{max}', MAX_PHOTOS.toString()));
     }
 
     setMediaFiles(prev => [...prev, ...filesToAdd]);
@@ -94,7 +95,7 @@ export default function CreateStay({ isOpen, onClose, onSuccess }: CreateStayPro
 
   const handleSubmit = async () => {
     if (!user || !title || !price || mediaFiles.length === 0 || !region) {
-      alert("Please fill in all required fields and add at least one photo.");
+      alert(t('stay.create.alert.required_fields'));
       return;
     }
 
@@ -104,15 +105,15 @@ export default function CreateStay({ isOpen, onClose, onSuccess }: CreateStayPro
     try {
       let uploadedUrls: string[] = [];
       const totalFiles = mediaFiles.length;
+      setUploadProgress(0);
       
-      uploadedUrls = await Promise.all(
-        mediaFiles.map(async (file, index) => {
-          const url = await plazaService.uploadMedia(file, (p) => {
-            setUploadProgress(Math.round(((index * 100) + p) / totalFiles));
-          });
-          return url;
-        })
-      );
+      for (let i = 0; i < totalFiles; i++) {
+        const file = mediaFiles[i];
+        const url = await plazaService.uploadMedia(file, (p) => {
+          setUploadProgress(Math.round(((i * 100) + p) / totalFiles));
+        });
+        uploadedUrls.push(url);
+      }
 
       await stayService.registerStay({
         groupId: '', // Will be set when creating from group context
@@ -157,195 +158,251 @@ export default function CreateStay({ isOpen, onClose, onSuccess }: CreateStayPro
       onClose();
     } catch (error) {
       console.error("Error creating stay:", error);
-      alert("Failed to register stay. Please try again.");
+      alert(t('stay.create.alert.failed'));
     } finally {
       setIsSubmitting(false);
+      setUploadProgress(null);
     }
   };
 
   const isValid = !!(title && price && mediaFiles.length > 0 && region);
 
+  if (!isOpen) return null;
+
   return (
-    <FullScreenRegistration
-      id="stay"
-      isOpen={isOpen}
-      onClose={onClose}
-      title="CREATE STAY"
-      submitLabel="SAVE"
-      submittingLabel={`UPLOADING ${uploadProgress}%`}
-      onSubmit={handleSubmit}
-      isSubmitting={isSubmitting}
-      isValid={isValid}
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center font-['Plus_Jakarta_Sans']"
     >
-      <div className="space-y-10 pt-4">
-        
-        {/* Photo Upload Area */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between ml-1">
-            <label className="text-[13px] font-black text-gray-400 uppercase tracking-widest">
-              PHOTOS <span className="text-primary">*</span>
-            </label>
-            <span className="text-[13px] font-bold text-gray-400">{mediaFiles.length}/{MAX_PHOTOS}</span>
-          </div>
-          
-          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 items-center">
-            {mediaFiles.length < MAX_PHOTOS && (
-              <button 
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="shrink-0 w-24 h-24 rounded-2xl bg-gray-50 border-2 border-dashed border-gray-200 flex flex-col items-center justify-center hover:border-primary/40 hover:bg-primary/5 transition-all"
-              >
-                <span className="material-symbols-outlined text-gray-400 mb-1">add_a_photo</span>
-                <span className="text-[9px] font-black text-gray-400 uppercase">ADD</span>
-              </button>
-            )}
+      <motion.main
+        initial={{ opacity: 0, y: '100%' }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: '100%' }}
+        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+        className="relative w-full max-w-md h-[100dvh] sm:h-[85vh] bg-white flex flex-col overflow-hidden sm:rounded-3xl sm:shadow-2xl text-left"
+      >
+        {/* Header */}
+        <div className="flex-shrink-0 bg-white border-b border-[#e0e4e5]/30 px-4 h-14 flex items-center justify-between z-50">
+          <button type="button" onClick={onClose} className="w-10 h-10 flex items-center justify-center -ml-2 active:scale-95 transition-transform text-slate-700">
+            <span className="material-symbols-outlined text-2xl">arrow_back</span>
+          </button>
+          <h1 className="text-[14px] font-black uppercase tracking-widest text-slate-800">
+            {t('stay.create.title')}
+          </h1>
+          <div className="w-10" />
+        </div>
+
+        <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="flex-1 flex flex-col overflow-hidden">
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-5 py-6 space-y-6 no-scrollbar text-left">
             
-            {previewUrls.map((url, i) => (
-              <div key={i} className="shrink-0 relative w-24 h-24 rounded-2xl overflow-hidden group">
-                <img src={url} className="w-full h-full object-cover" alt={`Preview ${i}`} />
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            {/* Photo Upload Area */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between ml-1">
+                <label className="block text-xs font-bold text-[#596061] uppercase tracking-wider">
+                  {t('stay.create.photos')} <span className="text-primary">*</span>
+                </label>
+                <span className="text-[11px] font-bold text-gray-400">{mediaFiles.length}/{MAX_PHOTOS}</span>
+              </div>
+              
+              <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 items-center">
+                {mediaFiles.length < MAX_PHOTOS && (
                   <button 
                     type="button"
-                    onClick={() => removePhoto(i)}
-                    className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center backdrop-blur-md transition-all"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="shrink-0 w-24 h-24 rounded-2xl bg-[#f8f9fa] border border-[#e0e4e5] border-dashed flex flex-col items-center justify-center hover:border-primary/40 hover:bg-primary/5 transition-all active:scale-95"
                   >
-                    <span className="material-symbols-outlined text-white text-[18px]">delete</span>
+                    <span className="material-symbols-outlined text-gray-400 mb-1">add_a_photo</span>
+                    <span className="text-[9px] font-black text-gray-400 uppercase">{t('stay.create.add')}</span>
                   </button>
-                </div>
-                {i === 0 && (
-                  <div className="absolute top-2 left-2 bg-primary px-2 py-0.5 rounded text-[8px] font-black text-white uppercase tracking-widest shadow-sm">
-                    Main
-                  </div>
                 )}
+                
+                {previewUrls.map((url, i) => (
+                  <div key={i} className="shrink-0 relative w-24 h-24 rounded-2xl overflow-hidden group border border-[#e0e4e5]">
+                    <img src={url} className="w-full h-full object-cover" alt={`Preview ${i}`} />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <button 
+                        type="button"
+                        onClick={() => removePhoto(i)}
+                        className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center backdrop-blur-md transition-all active:scale-90"
+                      >
+                        <span className="material-symbols-outlined text-white text-[18px]">delete</span>
+                      </button>
+                    </div>
+                    {i === 0 && (
+                      <div className="absolute top-2 left-2 bg-primary px-2 py-0.5 rounded text-[8px] font-black text-white uppercase tracking-widest shadow-sm">
+                        {t('stay.create.main')}
+                      </div>
+                    )}
+                  </div>
+                ))}
+                <input type="file" ref={fileInputRef} className="hidden" accept="image/*" multiple onChange={handleFileChange} />
               </div>
-            ))}
-            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" multiple onChange={handleFileChange} />
+            </div>
+
+            {/* Basic Info */}
+            <div>
+              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
+                {t('stay.create.stay_title')} <span className="text-primary">*</span>
+              </label>
+              <input
+                required
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder={t('stay.create.title_placeholder')}
+                className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-medium"
+                type="text"
+              />
+            </div>
+
+            {/* Stay Type */}
+            <div>
+              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
+                {t('stay.create.type')}
+              </label>
+              <div className="relative">
+                <select 
+                  value={type}
+                  onChange={(e) => setType(e.target.value as StayType)}
+                  className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none pr-10 font-bold"
+                >
+                  {stayTypes.map(st => <option key={st} value={st}>{t(`stay.type.${st}`)}</option>)}
+                </select>
+                <span className="material-symbols-rounded absolute right-3 top-1/2 -translate-y-1/2 text-[#acb3b4] pointer-events-none">expand_more</span>
+              </div>
+            </div>
+            
+            {/* Price & Currency */}
+            <div>
+              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
+                {t('stay.create.price_night')} <span className="text-primary">*</span>
+              </label>
+              
+              <div className="flex w-full items-center gap-3">
+                <div className="relative w-[100px] shrink-0">
+                  <select 
+                    value={currency}
+                    onChange={(e) => setCurrency(e.target.value)}
+                    className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none pr-8 font-black"
+                  >
+                    {CURRENCIES.map(curr => (
+                      <option key={curr} value={curr}>{curr}</option>
+                    ))}
+                  </select>
+                  <span className="material-symbols-rounded absolute right-3 top-1/2 -translate-y-1/2 text-[#acb3b4] pointer-events-none">expand_more</span>
+                </div>
+                <input
+                  required
+                  type="text"
+                  value={formatPrice(price)}
+                  onChange={handlePriceChange}
+                  placeholder="0"
+                  className="flex-1 min-w-0 bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-right font-black"
+                />
+              </div>
+            </div>
+
+            {/* Location Region Selector */}
+            <div className="space-y-3">
+              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
+                {t('stay.create.location')} <span className="text-primary">*</span>
+              </label>
+              <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+                {regions.map(r => (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => setRegion(r)}
+                    className={`px-5 py-2.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border ${
+                      region === r 
+                        ? 'bg-primary text-white border-primary shadow-md' 
+                        : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    {t(`common.${r.toLowerCase()}`) || r}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Location Detail Text Input */}
+            <div>
+              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
+                {t('stay.create.location_detail')}
+              </label>
+              <input
+                type="text"
+                value={addressDetail}
+                onChange={(e) => setAddressDetail(e.target.value)}
+                placeholder={t('stay.create.location_detail_placeholder')}
+                className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+              />
+            </div>
+
+            {/* Amenities */}
+            <div className="space-y-3">
+              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
+                {t('stay.create.amenities')}
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {amenityOptions.map(opt => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => toggleAmenity(opt)}
+                    className={`px-4 py-2.5 rounded-full text-[11px] font-black transition-all flex items-center gap-1.5 uppercase border ${
+                      amenities.includes(opt) 
+                        ? 'bg-gray-900 text-white border-gray-900 shadow-md' 
+                        : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <span className="material-symbols-rounded text-[16px]">{opt}</span>
+                    {t(`stay.amenity.${opt}`)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
+                {t('stay.create.experience')}
+              </label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder={t('stay.create.experience_placeholder')}
+                className="w-full min-h-[140px] bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none leading-relaxed"
+              />
+              <div className="flex justify-end mt-1.5 mr-1">
+                <span className="text-[10px] font-bold text-gray-300">{description?.length || 0} / 2000</span>
+              </div>
+            </div>
+
           </div>
-        </div>
 
-        {/* Basic Info */}
-        <div className="space-y-2">
-          <label className="text-[13px] font-black text-gray-400 uppercase tracking-widest ml-1">
-            STAY TITLE <span className="text-primary">*</span>
-          </label>
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Ex. The Creative Nomad Loft"
-            className="w-full text-[24px] font-black tracking-tighter border-none focus:ring-0 placeholder:text-gray-200 p-0 bg-transparent"
-            required
-          />
-        </div>
-
-        <div className="space-y-3">
-          <label className="text-[13px] font-black text-gray-400 uppercase tracking-widest ml-1">TYPE</label>
-          <select 
-            value={type}
-            onChange={(e) => setType(e.target.value as StayType)}
-            className="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-primary/10"
-          >
-            {stayTypes.map(t => <option key={t} value={t}>{t}</option>)}
-          </select>
-        </div>
-        
-        {/* Price & Currency */}
-        <div className="space-y-4">
-          <label className="text-[13px] font-black text-gray-400 uppercase tracking-widest ml-1">
-            PRICE / NIGHT <span className="text-primary">*</span>
-          </label>
-          
-          <div className="flex w-full items-center gap-3">
-            <select 
-              value={currency}
-              onChange={(e) => setCurrency(e.target.value)}
-              className="bg-gray-50 border-none rounded-2xl px-4 py-4 text-sm font-black focus:ring-2 focus:ring-primary/10 w-[100px] shrink-0"
+          {/* Submit Floating Bar */}
+          <div className="flex-shrink-0 w-full p-4 border-t border-slate-100 bg-white pb-[calc(1rem+env(safe-area-inset-bottom))] z-50">
+            <button 
+              type="submit" 
+              disabled={isSubmitting || !isValid}
+              className="w-full bg-primary text-white font-bold py-3.5 rounded-xl shadow-lg shadow-primary/20 active:scale-[0.98] transition-transform disabled:opacity-50 flex items-center justify-center"
             >
-              {CURRENCIES.map(curr => (
-                <option key={curr} value={curr}>{curr}</option>
-              ))}
-            </select>
-            <input
-              type="text"
-              value={formatPrice(price)}
-              onChange={handlePriceChange}
-              placeholder="0"
-              className="flex-1 min-w-0 bg-gray-50 border-none rounded-2xl px-5 py-4 text-lg font-black focus:ring-2 focus:ring-primary/10 text-right overflow-hidden"
-              required
-            />
+              {isSubmitting ? (
+                uploadProgress !== null ? (
+                  `${uploadProgress}%`
+                ) : (
+                  t('stay.create.saving')
+                )
+              ) : (
+                t('stay.create.save')
+              )}
+            </button>
           </div>
-        </div>
-
-        {/* Location Region Selector */}
-        <div className="space-y-3">
-          <label className="text-[13px] font-black text-gray-400 uppercase tracking-widest ml-1">
-            LOCATION <span className="text-primary">*</span>
-          </label>
-          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
-            {regions.map(r => (
-              <button
-                key={r}
-                type="button"
-                onClick={() => setRegion(r)}
-                className={`px-5 py-2.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border ${
-                  region === r 
-                    ? 'bg-primary text-white border-primary shadow-md' 
-                    : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                {r}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Location Detail Text Input */}
-        <div className="space-y-3">
-          <label className="text-[13px] font-black text-gray-400 uppercase tracking-widest ml-1">
-            LOCATION DETAIL
-          </label>
-          <input
-            type="text"
-            value={addressDetail}
-            onChange={(e) => setAddressDetail(e.target.value)}
-            placeholder="Enter specific location details"
-            className="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-primary/10"
-          />
-        </div>
-
-        {/* Amenities */}
-        <div className="space-y-3">
-          <label className="text-[13px] font-black text-gray-400 uppercase tracking-widest ml-1">AMENITIES</label>
-          <div className="flex flex-wrap gap-2">
-            {amenityOptions.map(opt => (
-              <button
-                key={opt}
-                type="button"
-                onClick={() => toggleAmenity(opt)}
-                className={`px-4 py-2.5 rounded-full text-[11px] font-black transition-all flex items-center gap-1.5 uppercase border ${
-                  amenities.includes(opt) 
-                    ? 'bg-gray-900 text-white border-gray-900 shadow-md' 
-                    : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <span className="material-symbols-rounded text-[16px]">{opt}</span>
-                {opt}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Description */}
-        <div className="space-y-3 pb-8">
-          <label className="text-[13px] font-black text-gray-400 uppercase tracking-widest ml-1">THE EXPERIENCE</label>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Describe what makes your stay special..."
-            className="w-full min-h-[160px] bg-gray-50 border-none rounded-[28px] px-6 py-5 text-sm font-medium focus:ring-2 focus:ring-primary/10 resize-y leading-relaxed"
-          />
-        </div>
-
-      </div>
-    </FullScreenRegistration>
+        </form>
+      </motion.main>
+    </motion.div>
   );
 }

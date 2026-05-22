@@ -1,11 +1,14 @@
+// 번들 할인을 등록하고 수정하기 위한 코어 에디터 컴포넌트
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
-
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Group, ClassDiscount } from "@/types/group";
 import { groupService } from "@/lib/firebase/groupService";
+import { storageService } from "@/lib/firebase/storageService";
+import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { motion } from "framer-motion";
 
 const getDayOfWeek = (dateStr: string): string => {
   if (!dateStr) return '';
@@ -49,8 +52,21 @@ interface GroupClassDiscountEditorProps {
   targetMonth?: string;
 }
 
-const GroupClassDiscountEditor: React.FC<GroupClassDiscountEditorProps> = ({ group, allClasses: allClassesProp, onClose, onSave, initialData, targetMonth }) => {
+const GroupClassDiscountEditor: React.FC<GroupClassDiscountEditorProps> = ({
+  group,
+  allClasses: allClassesProp,
+  onClose,
+  onSave,
+  initialData,
+  targetMonth,
+}) => {
   const [loading, setLoading] = useState(false);
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string>("");
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+
+  const imageInputRef = useRef<HTMLInputElement>(null);
+
   const [formData, setFormData] = useState<ClassDiscount>({
     id: initialData?.id || uuidv4(),
     title: initialData?.title || "",
@@ -59,13 +75,15 @@ const GroupClassDiscountEditor: React.FC<GroupClassDiscountEditorProps> = ({ gro
     amount: initialData?.amount || 0,
     discountDescription: initialData?.discountDescription || "",
     includedClassIds: initialData?.includedClassIds || [],
-    targetMonth: initialData?.targetMonth || targetMonth || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`
+    targetMonth: initialData?.targetMonth || targetMonth || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`,
+    imageUrl: initialData?.imageUrl || group.coverImage || group.logo || ""
   });
 
   const { t, language } = useLanguage();
   const isEditMode = !!initialData;
   const currentMonth = formData.targetMonth;
   const classSource = allClassesProp || group.classes || [];
+  
   const classes = useMemo(() => {
     const filtered = classSource.filter(cls => !cls.targetMonth || cls.targetMonth === currentMonth);
     return [...filtered].sort((a, b) => {
@@ -85,8 +103,25 @@ const GroupClassDiscountEditor: React.FC<GroupClassDiscountEditorProps> = ({ gro
   useEffect(() => {
     if (initialData) {
       setFormData(initialData);
+      setImagePreviewUrl(initialData.imageUrl || group.coverImage || group.logo || "");
+    } else {
+      setImagePreviewUrl(group.coverImage || group.logo || "");
     }
-  }, [initialData]);
+  }, [initialData, group]);
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setSelectedImageFile(file);
+    const url = URL.createObjectURL(file);
+    setImagePreviewUrl(url);
+    if (imageInputRef.current) imageInputRef.current.value = "";
+  };
+
+  const removeImage = () => {
+    setSelectedImageFile(null);
+    setImagePreviewUrl("");
+  };
 
   const handleToggleClass = (classId: string) => {
     setFormData(prev => {
@@ -101,203 +136,281 @@ const GroupClassDiscountEditor: React.FC<GroupClassDiscountEditorProps> = ({ gro
 
   const handleSave = async () => {
     if (!formData.title.trim()) {
-      alert(t('discount.enter_title') || "Please enter a bundle title.");
+      toast.error(t('discount.enter_title') || "Please enter a bundle title.");
       return;
     }
     if (formData.includedClassIds.length < 2) {
-      alert(t('discount.select_classes_alert') || "Please select at least 2 classes.");
+      toast.error(t('discount.select_classes_alert') || "Please select at least 2 classes.");
       return;
     }
     if (formData.amount < 0) {
-      alert(t('discount.enter_amount') || "Please enter a discount amount.");
+      toast.error(t('discount.enter_amount') || "Please enter a discount amount.");
       return;
     }
 
     setLoading(true);
     try {
+      let finalImageUrl = imagePreviewUrl;
+
+      if (selectedImageFile) {
+        setUploadProgress(0);
+        const folder = "images";
+        const path = `groups/${group.id}/discounts/${folder}/${uuidv4()}_${selectedImageFile.name}`;
+        
+        const url = await storageService.uploadFile(selectedImageFile, path, progress => {
+          setUploadProgress(progress);
+        });
+        finalImageUrl = url;
+        setUploadProgress(null);
+      }
+
+      if (!finalImageUrl) {
+        finalImageUrl = group.coverImage || group.logo || "";
+      }
+
+      const updatedFormData: ClassDiscount = {
+        ...formData,
+        imageUrl: finalImageUrl,
+      };
+
       if (initialData) {
-        await groupService.updateDiscount(group.id, formData.id, formData);
+        await groupService.updateDiscount(group.id, formData.id, updatedFormData);
       } else {
-        await groupService.addDiscount(group.id, formData);
+        await groupService.addDiscount(group.id, updatedFormData);
       }
       
+      toast.success(t('pics.admin.save_success') || "Successfully saved.");
       if (onSave) onSave();
       onClose();
     } catch (error) {
       console.error("Failed to save discount:", error);
-      alert(t('discount.save_failed') || "Failed to save the bundle.");
+      toast.error(t('discount.save_failed') || "Failed to save the bundle.");
     } finally {
       setLoading(false);
     }
   };
 
+  if (typeof window === "undefined") return null;
+
   return (
-    <div
-      className="fixed inset-0 z-[200] text-[#242c51] bg-[#F3F4F6] min-h-screen overflow-y-auto font-['Inter'] animate-in slide-in-from-bottom-[100%] duration-300"
+    <motion.div
+      initial={{ opacity: 0, y: "100%" }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: "100%" }}
+      transition={{ type: "spring", damping: 25, stiffness: 200 }}
+      className="fixed inset-0 z-[110] bg-white flex items-center justify-center font-['Plus_Jakarta_Sans']"
     >
-      <style>{`
-        input[type="number"]::-webkit-inner-spin-button,
-        input[type="number"]::-webkit-outer-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #CBD5E1;
-            border-radius: 10px;
-        }
-      `}</style>
-      
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-[#F3F4F6] px-6 py-4 flex items-center border-b border-[#6c759e]/20">
-        <div className="max-w-md mx-auto w-full flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button onClick={onClose} className="material-symbols-outlined text-[#515981] p-2 hover:bg-[#d6dbff] rounded-full transition-colors active:scale-[0.98]">close</button>
-            <h1 className="text-xl font-extrabold tracking-tight text-[#242c51] font-['Plus_Jakarta_Sans']">{isEditMode ? (t('discount.edit_bundle') || "Edit Bundle") : (t('discount.add_bundle') || "Discount Editor")}</h1>
-          </div>
-          <button 
-            onClick={handleSave}
-            disabled={loading}
-            className="bg-[#0057bd] text-white font-bold text-sm px-6 py-2 rounded-lg shadow-sm shadow-[#0057bd]/20 hover:bg-[#0057bd]/90 transition-all active:scale-[0.98] flex items-center gap-2"
-          >
-            {loading && <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>}
-            {t('common.save') || "Save"}
+      <main className="max-w-md w-full h-[100dvh] bg-white flex flex-col overflow-hidden relative text-left">
+        {/* Header */}
+        <div className="flex-shrink-0 bg-white border-b border-slate-100 px-4 h-14 flex items-center justify-between z-50">
+          <button type="button" onClick={onClose} className="w-10 h-10 flex items-center justify-center -ml-2 active:scale-95 transition-transform text-slate-700">
+            <span className="material-symbols-rounded text-2xl">arrow_back</span>
           </button>
-        </div>
-      </header>
-
-      <main className="max-w-md mx-auto px-6 py-8 space-y-6">
-        {/* Basic Info Card */}
-        <div className="bg-[#ffffff] p-6 rounded-xl border border-[#6c759e]/20 shadow-sm space-y-5">
-          <div>
-            <label className="block text-[10px] font-bold text-[#515981] mb-2 uppercase tracking-widest opacity-70" htmlFor="discount-title">{t('discount.class_title') || "Class Title"}</label>
-            <input 
-              id="discount-title"
-              className="w-full bg-[#d6dbff]/30 border border-[#6c759e]/30 rounded-lg px-4 py-3 text-[#242c51] focus:ring-2 focus:ring-[#0057bd]/20 focus:border-[#0057bd] placeholder:text-[#515981]/40 outline-none transition-all" 
-              placeholder={t('discount.title_placeholder') || "Enter discount title"}
-              type="text"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            />
-          </div>
-          <div>
-            <label className="block text-[10px] font-bold text-[#515981] mb-2 uppercase tracking-widest opacity-70" htmlFor="discount-desc">{t('discount.description') || "Description"}</label>
-            <textarea 
-              id="discount-desc"
-              className="w-full bg-[#d6dbff]/30 border border-[#6c759e]/30 rounded-lg px-4 py-3 text-[#242c51] focus:ring-2 focus:ring-[#0057bd]/20 focus:border-[#0057bd] placeholder:text-[#515981]/40 outline-none resize-none text-sm transition-all" 
-              placeholder={t('discount.desc_placeholder') || "Describe the discount..."}
-              rows={4}
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            ></textarea>
-          </div>
+          <h1 className="text-[14px] font-black uppercase tracking-widest text-slate-800">
+            {isEditMode ? t("discount.edit_bundle") || "Edit Bundle" : t("discount.add_bundle") || "Discount Editor"}
+          </h1>
+          <div className="w-10" />
         </div>
 
-        {/* Pricing & Discount Details Card */}
-        <div className="bg-[#ffffff] p-6 rounded-xl border border-[#6c759e]/20 shadow-sm space-y-5">
-          <h2 className="text-sm font-extrabold font-['Plus_Jakarta_Sans'] text-[#242c51] uppercase tracking-widest mb-4">{t('discount.pricing') || "Pricing"}</h2>
-          <div className="space-y-4">
+        <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="flex-1 flex flex-col overflow-hidden">
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-4 mt-4 space-y-6 pb-6 text-left no-scrollbar">
+            {/* Title */}
             <div>
-              <label className="block text-[10px] font-bold text-[#515981] mb-2 uppercase tracking-widest opacity-70">{t('discount.currency') || "Currency"}</label>
-              <div className="relative">
-                <select 
-                  className="w-full bg-[#d6dbff]/30 border border-[#6c759e]/30 rounded-lg px-4 py-3 text-[#242c51] focus:ring-2 focus:ring-[#0057bd]/20 focus:border-[#0057bd] appearance-none outline-none transition-all text-sm"
-                  value={formData.currency}
-                  onChange={(e) => setFormData({ ...formData, currency: e.target.value as any })}
-                >
-                  <option value="KRW">KRW - South Korean Won</option>
-                  <option value="USD">USD - US Dollar</option>
-                  <option value="EUR">EUR - Euro</option>
-                  <option value="JPY">JPY - Japanese Yen</option>
-                </select>
-                <span className="material-symbols-outlined absolute right-3 top-3 pointer-events-none text-[#515981]">expand_more</span>
+              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
+                {t("discount.class_title") || "Bundle Title"} <span className="text-red-400">*</span>
+              </label>
+              <input
+                required
+                id="discount-title"
+                value={formData.title}
+                onChange={e => setFormData({ ...formData, title: e.target.value })}
+                className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                placeholder={t("discount.title_placeholder") || "e.g. Contemporary Dance 2-Class Bundle"}
+                type="text"
+              />
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
+                {t("discount.description") || "Description"}
+              </label>
+              <textarea
+                id="discount-desc"
+                value={formData.description}
+                onChange={e => setFormData({ ...formData, description: e.target.value })}
+                className="w-full min-h-[120px] bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none leading-relaxed"
+                placeholder={t("discount.desc_placeholder") || "Provide details about this bundle discount..."}
+                rows={4}
+              />
+            </div>
+
+            {/* Cover Image Upload */}
+            <div>
+              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
+                {t("discount.image_url") || "Cover Image"}
+              </label>
+              <input
+                type="file"
+                ref={imageInputRef}
+                className="hidden"
+                accept="image/*"
+                onChange={handleImageSelect}
+              />
+              <div
+                onClick={() => imageInputRef.current?.click()}
+                className="w-full h-40 border border-[#e0e4e5] rounded-xl flex flex-col items-center justify-center text-center bg-[#f8f9fa] active:scale-95 transition-transform cursor-pointer relative overflow-hidden"
+              >
+                {imagePreviewUrl ? (
+                  <>
+                    <img src={imagePreviewUrl} alt="Thumbnail preview" className="w-full h-full object-cover absolute inset-0" />
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); removeImage(); }}
+                      className="absolute top-2 right-2 w-6 h-6 bg-black/60 rounded-full text-white flex items-center justify-center active:scale-95 z-10 animate-fade-in"
+                    >
+                      <span className="material-symbols-rounded text-[16px]">close</span>
+                    </button>
+                    {uploadProgress !== null && (
+                      <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white z-20">
+                        <span className="material-symbols-rounded animate-spin text-2xl mb-1">progress_activity</span>
+                        <span className="text-xs font-bold">{uploadProgress}%</span>
+                      </div>
+                    )}
+                    <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[9px] font-bold text-center py-1 uppercase tracking-wider z-10">
+                      {t("class.change_photo") || "Change Photo"}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-rounded text-2xl text-slate-400 mb-1">add_photo_alternate</span>
+                    <p className="text-xs font-bold text-[#596061] mb-0.5">{t("class.upload_photo") || "Upload Photo"}</p>
+                    <p className="text-[10px] text-slate-400">{t("class.photo_desc") || "Support JPG, PNG, GIF"}</p>
+                  </>
+                )}
               </div>
             </div>
-            <div>
-              <label className="block text-[10px] font-bold text-[#515981] mb-2 uppercase tracking-widest opacity-70">{t('discount.amount') || "Amount"}</label>
-              <div className="relative">
-                <span className="absolute left-4 top-3.5 text-[#515981] font-bold text-sm">
-                  {formData.currency === 'KRW' ? '₩' : formData.currency === 'USD' ? '$' : formData.currency === 'EUR' ? '€' : formData.currency === 'JPY' ? '¥' : '₩'}
-                </span>
-                <input 
-                  className="w-full bg-[#d6dbff]/30 border border-[#6c759e]/30 rounded-lg pl-8 pr-4 py-3 text-[#242c51] focus:ring-2 focus:ring-[#0057bd]/20 focus:border-[#0057bd] outline-none transition-all text-sm" 
-                  placeholder="0" 
-                  type="text"
-                  value={formData.amount ? formData.amount.toLocaleString() : ""}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/[^0-9]/g, '');
-                    setFormData({ ...formData, amount: Number(val) });
-                  }}
-                />
+
+            {/* Pricing & Discount Details */}
+            <div className="bg-[#f8f9fa] rounded-xl p-4 border border-[#e0e4e5] space-y-4">
+              <h3 className="text-xs font-bold text-[#596061] uppercase tracking-wider">{t("discount.pricing") || "Pricing"}</h3>
+              
+              <div className="space-y-4">
+                {/* Currency */}
+                <div>
+                  <label className="block text-[10px] font-bold text-[#596061] mb-1 uppercase tracking-wider">{t("discount.currency") || "Currency"}</label>
+                  <div className="relative">
+                    <select
+                      value={formData.currency}
+                      onChange={e => setFormData({ ...formData, currency: e.target.value as any })}
+                      className="w-full bg-white border border-[#e0e4e5] rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none pr-8"
+                    >
+                      <option value="KRW">KRW - South Korean Won</option>
+                      <option value="USD">USD - US Dollar</option>
+                      <option value="EUR">EUR - Euro</option>
+                      <option value="JPY">JPY - Japanese Yen</option>
+                    </select>
+                    <span className="material-symbols-rounded absolute right-3 top-1/2 -translate-y-1/2 text-[#acb3b4] pointer-events-none">expand_more</span>
+                  </div>
+                </div>
+
+                {/* Amount */}
+                <div>
+                  <label className="block text-[10px] font-bold text-[#596061] mb-1 uppercase tracking-wider">{t("discount.amount") || "Amount"}</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">
+                      {formData.currency === "KRW" ? "₩" : formData.currency === "USD" ? "$" : formData.currency === "EUR" ? "€" : formData.currency === "JPY" ? "¥" : "₩"}
+                    </span>
+                    <input
+                      value={formData.amount ? formData.amount.toLocaleString() : ""}
+                      onChange={e => {
+                        const val = e.target.value.replace(/[^0-9]/g, "");
+                        setFormData({ ...formData, amount: Number(val) });
+                      }}
+                      className="w-full bg-white border border-[#e0e4e5] rounded-lg pl-8 pr-4 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-right font-bold"
+                      placeholder="0"
+                      type="text"
+                    />
+                  </div>
+                </div>
+
+                {/* Discount Description */}
+                <div>
+                  <label className="block text-[10px] font-bold text-[#596061] mb-1 uppercase tracking-wider">{t("discount.discount_description") || "Discount Description"}</label>
+                  <input
+                    id="discount-details"
+                    value={formData.discountDescription}
+                    onChange={e => setFormData({ ...formData, discountDescription: e.target.value })}
+                    className="w-full bg-white border border-[#e0e4e5] rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                    placeholder={t("discount.discount_placeholder") || "e.g. Save 20% by booking together!"}
+                    type="text"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Select Classes */}
+            <div className="bg-[#f8f9fa] rounded-xl p-4 border border-[#e0e4e5] space-y-4">
+              <div>
+                <h3 className="text-xs font-bold text-[#596061] uppercase tracking-wider">{t("discount.select_classes") || "Select Classes"}</h3>
+                <p className="text-[10px] font-medium text-slate-400 mt-0.5 leading-normal">{t("discount.select_classes_desc") || "Choose existing classes from this month to include in the bundle."}</p>
+              </div>
+
+              <div className="space-y-2">
+                {classes.length === 0 ? (
+                  <p className="text-xs text-center py-4 text-slate-400 font-bold">{t("discount.no_classes") || "No classes available."}</p>
+                ) : (
+                  classes.map((cls) => {
+                    const isSelected = formData.includedClassIds.includes(cls.id);
+                    return (
+                      <label key={cls.id} className="flex items-center gap-3 p-3 bg-white rounded-xl border border-[#e0e4e5] cursor-pointer hover:border-primary transition-all active:scale-[0.99]">
+                        <div className="relative flex items-center justify-center w-5 h-5 shrink-0">
+                          <input
+                            type="checkbox"
+                            className="peer appearance-none w-5 h-5 border border-slate-300 rounded bg-transparent checked:bg-primary checked:border-primary transition-all duration-200 cursor-pointer"
+                            checked={isSelected}
+                            onChange={() => handleToggleClass(cls.id)}
+                          />
+                          <span className="material-symbols-rounded absolute text-white opacity-0 peer-checked:opacity-100 pointer-events-none text-xs font-bold transition-opacity duration-200">check</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-slate-800 truncate">{cls.title}</p>
+                          <p className="text-[10px] font-semibold text-slate-400 mt-0.5">
+                            {cls.schedule && cls.schedule.length > 0 ? (
+                              (() => {
+                                const baseDate = cls.schedule[0].date;
+                                const day = getDayOfWeek(baseDate);
+                                const daySuffix = language === "KR"
+                                  ? `(${DAY_LABELS[day]?.ko || ""})`
+                                  : ` (${DAY_LABELS[day]?.en || ""})`;
+                                return `${baseDate}${daySuffix} • ${cls.schedule[0].timeSlot}`;
+                              })()
+                            ) : (
+                              t("discount.no_schedule") || "No schedule"
+                            )}
+                          </p>
+                        </div>
+                      </label>
+                    );
+                  })
+                )}
               </div>
             </div>
           </div>
-          <div className="mt-5">
-            <label className="block text-[10px] font-bold text-[#515981] mb-2 uppercase tracking-widest opacity-70" htmlFor="discount-details">{t('discount.discount_description') || "Discount Description"}</label>
-            <input 
-              id="discount-details"
-              className="w-full bg-[#d6dbff]/30 border border-[#6c759e]/30 rounded-lg px-4 py-3 text-[#242c51] focus:ring-2 focus:ring-[#0057bd]/20 focus:border-[#0057bd] placeholder:text-[#515981]/40 outline-none transition-all text-sm" 
-              placeholder={t('discount.discount_placeholder') || "e.g., '20% discount for bundle classes'"}
-              type="text"
-              value={formData.discountDescription}
-              onChange={(e) => setFormData({ ...formData, discountDescription: e.target.value })}
-            />
-          </div>
-        </div>
 
-        {/* Select Classes Card */}
-        <div className="bg-[#ffffff] p-6 rounded-xl border border-[#6c759e]/20 shadow-sm">
-          <div className="mb-6">
-            <h2 className="text-sm font-extrabold font-['Plus_Jakarta_Sans'] text-[#242c51] uppercase tracking-widest">{t('discount.select_classes') || "Select Classes"}</h2>
-            <p className="font-['Inter'] text-xs text-[#515981] opacity-70 mt-1">{t('discount.select_classes_desc') || "Choose existing classes from this month to include in the bundle."}</p>
+          {/* Submit Save Floating Bar */}
+          <div className="flex-shrink-0 w-full p-4 border-t border-slate-100 bg-white pb-[calc(1rem+env(safe-area-inset-bottom))] z-50">
+            <button type="submit" disabled={loading}
+              className="w-full bg-primary text-white font-bold py-3.5 rounded-xl shadow-lg shadow-primary/20 active:scale-[0.98] transition-transform disabled:opacity-50 flex items-center justify-center gap-2">
+              {loading && <span className="material-symbols-rounded animate-spin text-sm">progress_activity</span>}
+              {t("common.save") || "SAVE"}
+            </button>
           </div>
-          <div className="space-y-3">
-            {classes.length === 0 ? (
-              <p className="text-sm text-center py-4 text-[#515981]/60 font-bold">{t('discount.no_classes') || "No classes available."}</p>
-            ) : (
-              classes.map((cls) => {
-                const isSelected = formData.includedClassIds.includes(cls.id);
-                return (
-                  <label key={cls.id} className="flex items-center gap-4 p-4 bg-[#d6dbff]/30 rounded-xl border border-[#6c759e]/20 cursor-pointer group">
-                    <div className="relative flex items-center justify-center w-5 h-5 shrink-0">
-                      <input 
-                        type="checkbox"
-                        className="peer appearance-none w-5 h-5 border border-[#6c759e]/40 rounded bg-transparent checked:bg-[#0057bd] checked:border-[#0057bd] transition-all duration-200 cursor-pointer"
-                        checked={isSelected}
-                        onChange={() => handleToggleClass(cls.id)}
-                      />
-                      <span className="material-symbols-outlined absolute text-white opacity-0 peer-checked:opacity-100 pointer-events-none text-xs font-bold transition-opacity duration-200">check</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-[#242c51] group-hover:text-[#0057bd] transition-colors truncate">{cls.title}</p>
-                      <p className="text-[11px] font-bold text-[#515981] opacity-70 truncate mt-0.5">
-                        {cls.schedule && cls.schedule.length > 0 
-                          ? (() => {
-                              const baseDate = cls.schedule[0].date;
-                              const day = getDayOfWeek(baseDate);
-                              const daySuffix = language === 'KR' 
-                                ? `(${DAY_LABELS[day]?.ko || ''})` 
-                                : ` (${DAY_LABELS[day]?.en || ''})`;
-                              return `${baseDate}${daySuffix} • ${cls.schedule[0].timeSlot}`;
-                            })()
-                          : (t('discount.no_schedule') || "No schedule")}
-                      </p>
-                    </div>
-                  </label>
-                );
-              })
-            )}
-          </div>
-        </div>
+        </form>
       </main>
-    </div>
+    </motion.div>
   );
 };
 
 export default GroupClassDiscountEditor;
-

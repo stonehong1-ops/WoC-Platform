@@ -147,6 +147,11 @@ export default function NotificationPage() {
     let title = noti.title || '';
     let message = noti.message || '';
 
+    const getUserName = (name: string) => {
+      if (name === 'Unknown User') return t('common.unknown_user', 'Unknown User');
+      return name;
+    };
+
     const titleMap: Record<string, string> = {
       'New Booking Request': t('notification.title.new_booking_request'),
       'Request Submitted': t('notification.title.request_submitted'),
@@ -158,12 +163,14 @@ export default function NotificationPage() {
       'New Stay Booking': t('notification.title.new_stay_booking'),
       'Social Event Reservation Received': t('notification.title.social_reserved'),
       'New Reservation Received': t('notification.title.new_reservation'),
+      'New Class Application': t('notification.title.new_class_application'),
+      'Class Application Received': t('notification.title.class_application_received'),
     };
     if (titleMap[title]) title = titleMap[title];
 
     if (message.includes('requested to join')) {
       const match = message.match(/(.+) requested to join '(.+)'\. Please review in chat\./);
-      if (match) message = t('notification.msg.booking_request', { user: match[1], item: match[2] });
+      if (match) message = t('notification.msg.booking_request', { user: getUserName(match[1]), item: match[2] });
     } else if (message.includes('is submitted and waiting for host confirmation')) {
       const match = message.match(/Your request for '(.+)' is submitted and waiting for host confirmation\./);
       if (match) message = t('notification.msg.request_submitted', { item: match[1] });
@@ -183,16 +190,22 @@ export default function NotificationPage() {
       }
     } else if (message.includes('has placed a new order for')) {
       const match = message.match(/(.+) has placed a new order for '(.+)'\. Please check the details\./);
-      if (match) message = t('notification.msg.new_order', { user: match[1], item: match[2] });
+      if (match) message = t('notification.msg.new_order', { user: getUserName(match[1]), item: match[2] });
     } else if (message.includes('has been received') && message.includes('Your booking for')) {
       const match = message.match(/Your booking for '(.+)' has been received\./);
       if (match) message = t('notification.msg.stay_requested', { item: match[1] });
     } else if (message.includes('has applied for') && message.includes('Awaiting approval')) {
       const match = message.match(/(.+) has applied for '(.+)'\. Awaiting approval\./);
-      if (match) message = t('notification.msg.new_stay_booking', { user: match[1], item: match[2] });
+      if (match) message = t('notification.msg.new_stay_booking', { user: getUserName(match[1]), item: match[2] });
+    } else if (message.includes('has applied for') && message.includes('Please verify payment.')) {
+      const match = message.match(/(.+) has applied for '(.+)'\. Please verify payment\./);
+      if (match) message = t('notification.msg.new_class_application', { user: getUserName(match[1]), item: match[2] });
+    } else if (message.includes('Application for') && message.includes('has been received. It will be approved after payment is verified.')) {
+      const match = message.match(/Application for '(.+)' has been received\. It will be approved after payment is verified\./);
+      if (match) message = t('notification.msg.class_application_received', { item: match[1] });
     } else if (message.includes('has reserved for')) {
       const match = message.match(/(.+) has reserved for '(.+)'\./);
-      if (match) message = t('notification.msg.new_reservation', { user: match[1], item: match[2] });
+      if (match) message = t('notification.msg.new_reservation', { user: getUserName(match[1]), item: match[2] });
     }
 
     return { title, message };
