@@ -1057,7 +1057,10 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
                 return (
                   <div key={reg.id} className="bg-slate-50/70 rounded-2xl p-4 border border-slate-100 flex flex-col gap-2">
                     <div className="flex items-start justify-between gap-4">
-                      <h4 className="font-black text-[14px] text-slate-900 leading-snug">{getRegistrationTitle(reg)}</h4>
+                      <h4 className="font-black text-[14px] text-slate-900 leading-snug">
+                        {getRegistrationTitle(reg)}
+                        {reg.partnerName && reg.partnerName.trim() !== '' && t('class-dashboard.partner_suffix', { name: reg.partnerName })}
+                      </h4>
                       <span className={`px-2.5 py-0.5 rounded-full border text-[9px] font-black shrink-0 ${badge.bg}`}>
                         {badge.label}
                       </span>

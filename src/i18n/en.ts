@@ -18,6 +18,7 @@ export const en: Record<string, string> = {
     'class-dashboard.noRegistrationsYet': 'No registrations yet.',
     'class-dashboard.consultation': 'Inquiry',
     'class-dashboard.modifyApplication': 'Modify Registration',
+    'class-dashboard.partner_suffix': ' (Partner: {name})',
     'class-dashboard.registerClass': 'Register Classes',
     'class-dashboard.startDate': 'Starts: {date}',
     'class-dashboard.tab.list': 'Classes',

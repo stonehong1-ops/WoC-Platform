@@ -38,6 +38,7 @@ export const kr: Record<string, string> = {
     'class-dashboard.noRegistrationsYet': '아직 등록된 신청이 없습니다.',
     'class-dashboard.consultation': '문의하기',
     'class-dashboard.modifyApplication': '신청 내역 수정',
+    'class-dashboard.partner_suffix': ' (파트너: {name})',
     'class-dashboard.registerClass': '수업 신청하기',
     'class-dashboard.startDate': '시작일 : {date}',
     'days.MON': '월요일',
