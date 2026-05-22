@@ -1363,6 +1363,27 @@ export const kr: Record<string, string> = {
     'stay.less': '접기',
     'stay.more': '더보기',
 
+    // Stay Creation Standardized Localization (한글 끝에 콜론 금지)
+    'stay.create.title': '신규 장소 등록',
+    'stay.create.photos': '숙소 사진',
+    'stay.create.add': '사진 추가',
+    'stay.create.main': '대표 사진',
+    'stay.create.stay_title': '숙소 이름',
+    'stay.create.title_placeholder': '예. 숲속 아늑한 통나무 펜션',
+    'stay.create.type': '숙소 유형',
+    'stay.create.price_night': '1박 가격',
+    'stay.create.location': '지역 선택',
+    'stay.create.location_detail': '상세 주소',
+    'stay.create.location_detail_placeholder': '상세한 주소나 오시는 길을 입력해 주세요.',
+    'stay.create.amenities': '편의 시설',
+    'stay.create.experience': '숙소 소개',
+    'stay.create.experience_placeholder': '게스트에게 숙소의 매력이나 제공되는 혜택을 상세히 소개해 주세요.',
+    'stay.create.save': '저장하기',
+    'stay.create.saving': '저장 중...',
+    'stay.create.alert.required_fields': '필수 입력 필드를 모두 작성해 주세요. (제목, 가격, 지역 및 1장 이상의 사진 필수)',
+    'stay.create.alert.max_photos': '사진은 최대 {max}장까지만 등록할 수 있습니다.',
+    'stay.create.alert.failed': '숙소 등록에 실패했습니다. 다시 시도해 주세요.',
+
     // Lost & Found
     'lost.latest': '최신순',
     'lost.highest_reward': '보상금순',
