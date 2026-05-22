@@ -36,10 +36,10 @@ if (!initialized && !admin.apps.length) {
 const db = admin.firestore();
 
 // 6월 정규 클래스 상수 정의
-const CLASS_1_ID = 'b33ca2ce-df0b-4996-af58-06292e5566a2';
+const CLASS_1_ID = '1JlzEhhZ0UcLjew4xbMN';
 const CLASS_1_TITLE = '4대 악단 뮤지컬리티';
 
-const CLASS_2_ID = '70abe9f2-6a45-4739-97c2-3f75e718b046';
+const CLASS_2_ID = '1WJhqvySB6pahCaIQVma';
 const CLASS_2_TITLE = '뮤즈와 함께하는 트레이닝';
 
 const GROUP_ID = 'freestyle-tango';
@@ -205,8 +205,9 @@ async function generateJuneRegistrations() {
   let cleanupCount = 0;
   for (const doc of existingSnapshot.docs) {
     const data = doc.data();
-    // 6월 클래스 ID에 해당하는 신청서만 삭제
-    if (data.classId === CLASS_1_ID || data.classId === CLASS_2_ID) {
+    // 6월 클래스 ID 및 이전 오기입된 임시 ID에 해당하는 신청서만 안전하게 삭제
+    const tempIds = ['b33ca2ce-df0b-4996-af58-06292e5566a2', '70abe9f2-6a45-4739-97c2-3f75e718b046'];
+    if (data.classId === CLASS_1_ID || data.classId === CLASS_2_ID || tempIds.includes(data.classId)) {
       await registrationsRef.doc(doc.id).delete();
       cleanupCount++;
     }
