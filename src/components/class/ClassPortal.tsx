@@ -61,6 +61,7 @@ export default function ClassPortal() {
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
   const [checkoutClass, setCheckoutClass] = useState<any>(null);
   const [checkoutRole, setCheckoutRole] = useState<'leader' | 'follower'>('leader');
+  const [checkoutPartnerName, setCheckoutPartnerName] = useState('');
 
   const [isAddingSpecialClass, setIsAddingSpecialClass] = useState(false);
   const [selectedGroupForAdd, setSelectedGroupForAdd] = useState<Group | null>(null);
@@ -594,7 +595,8 @@ export default function ClassPortal() {
         currency: 'KRW',
         payload: {
           role: checkoutRole,
-          classDate: new Date().toISOString()
+          classDate: new Date().toISOString(),
+          partnerName: checkoutPartnerName.trim() !== '' ? checkoutPartnerName : undefined
         }
       });
       return orderId;
@@ -1184,6 +1186,7 @@ export default function ClassPortal() {
             setCheckoutInitialBookingId(undefined);
             setCheckoutInitialOrderNumber(undefined);
             setCheckoutInitialCreatedAt(undefined);
+            setCheckoutPartnerName('');
           }}
           title={checkoutClass.isSpecial ? t('class.booking_special_title') : t('class.booking_daily_title')}
           subtitle={`${checkoutClass.title} · ${new Date().toLocaleDateString(language === 'KR' ? 'ko-KR' : 'en-US', { weekday: 'long', month: 'short', day: 'numeric' })}`}
@@ -1251,6 +1254,17 @@ export default function ClassPortal() {
                   <span className={`text-sm font-black uppercase ${checkoutRole === 'follower' ? 'text-purple-700 dark:text-purple-400' : 'text-neutral-700 dark:text-neutral-300'}`}>Follower</span>
                 </button>
               </div>
+            </div>
+
+            <div>
+              <h4 className="text-sm font-bold text-neutral-900 dark:text-white mb-3">{t('class.partner_name')}</h4>
+              <input
+                type="text"
+                value={checkoutPartnerName}
+                onChange={(e) => setCheckoutPartnerName(e.target.value)}
+                placeholder={t('class.partner_name_placeholder') || "파트너 이름을 입력하세요"}
+                className="w-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-xl px-4 py-3 text-xs text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              />
             </div>
             
             <div className="bg-neutral-50 dark:bg-neutral-800 rounded-xl p-4 border border-neutral-100 dark:border-neutral-700">

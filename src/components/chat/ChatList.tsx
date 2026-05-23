@@ -100,13 +100,48 @@ function RoomName({ room, currentUserId }: { room: ChatRoom; currentUserId?: str
 }
 
 function RoomItem({ room, userId, selectedRoomId, onSelectRoom }: { room: ChatRoom; userId?: string; selectedRoomId?: string | null; onSelectRoom: (id: string) => void }) {
-  const { formatRelativeTime } = useLanguage();
+  const { formatRelativeTime, t } = useLanguage();
   const isSelected = selectedRoomId === room.id;
   const unreadCount = room.unreadCounts?.[userId || ''] || 0;
   const lastTime = (() => {
     const d = safeDate(room.lastMessageTime);
     return d ? formatRelativeTime(d) : '';
   })();
+
+  const renderLastMessage = (msg: string) => {
+    if (!msg) return '';
+    if (msg.startsWith('chat.system_join_params::')) {
+      try {
+        const paramsStr = msg.split('chat.system_join_params::')[1];
+        const { name } = JSON.parse(paramsStr);
+        return t('chat.system_join', { name });
+      } catch (e) {
+        return msg;
+      }
+    }
+    if (msg.startsWith('chat.system_leave_params::')) {
+      try {
+        const paramsStr = msg.split('chat.system_leave_params::')[1];
+        const { name } = JSON.parse(paramsStr);
+        return t('chat.system_leave', { name });
+      } catch (e) {
+        return msg;
+      }
+    }
+    if (msg.startsWith('chat.system_kick_params::')) {
+      try {
+        const paramsStr = msg.split('chat.system_kick_params::')[1];
+        const { name } = JSON.parse(paramsStr);
+        return t('chat.system_kick', { name });
+      } catch (e) {
+        return msg;
+      }
+    }
+    if (msg.startsWith('chat.')) {
+      return t(msg);
+    }
+    return msg;
+  };
 
   return (
     <button
@@ -142,7 +177,7 @@ function RoomItem({ room, userId, selectedRoomId, onSelectRoom }: { room: ChatRo
         </div>
         <div className="flex justify-between items-center">
           <p className={`text-[13px] truncate font-medium ${unreadCount > 0 ? 'text-gray-500' : 'text-gray-400'}`}>
-            {room.lastMessage}
+            {renderLastMessage(room.lastMessage || '')}
           </p>
           {(room.type === 'groups' || room.type === 'group') && room.participants && (
             <span className="text-[10px] text-gray-300 font-bold ml-2 shrink-0 flex items-center gap-0.5">

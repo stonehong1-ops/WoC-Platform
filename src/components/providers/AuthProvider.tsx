@@ -37,6 +37,8 @@ interface UserProfile {
   pinnedPostIds?: string[];
   interactedUserIds?: string[];
   pinnedUserIds?: string[];
+  career?: string;
+  partnerStatus?: string;
 }
 
 interface AuthContextType {
@@ -173,6 +175,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               pinnedPostIds: data.pinnedPostIds || [],
               interactedUserIds: data.interactedUserIds || [],
               pinnedUserIds: data.pinnedUserIds || [],
+              career: data.career || '',
+              partnerStatus: data.partnerStatus || '',
             });
           } else {
             setProfile({
@@ -186,6 +190,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               pinnedPostIds: [],
               interactedUserIds: [],
               pinnedUserIds: [],
+              career: '',
+              partnerStatus: '',
             });
           }
           setLoading(false);

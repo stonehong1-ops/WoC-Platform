@@ -70,7 +70,6 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
     currentAdmin,
     isAdminUser,
     isFullMember,
-    isLocked,
     safeFormat,
     safeFormatRelative,
     isPostNew,
@@ -341,8 +340,6 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
   return (
     <div className="bg-background text-on-background min-h-screen font-body relative pb-24 antialiased">
       <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap');
-        
         .font-headline { font-family: 'Plus Jakarta Sans', sans-serif; }
         .font-body { font-family: 'Inter', sans-serif; }
 
@@ -392,62 +389,50 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
 
       {/* Main Content */}
       <main className="pt-[120px] md:pt-[176px] pb-12">
-        {isLocked ? (
-          <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center mt-10">
-            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-              <span className="material-symbols-outlined text-3xl text-slate-400">lock</span>
+        <div className={`max-w-7xl mx-auto ${activeTab === 'feed' || activeTab === 'home' || activeTab === 'live' || activeTab === 'calendar' || activeTab === 'board' || activeTab === 'members' || activeTab === 'about' || activeTab === 'settings' || activeTab === 'brand' || activeTab === 'class-setting' ? 'px-0 md:px-0 mt-0 space-y-0 pb-0' : 'px-4 md:px-8 space-y-10 mt-6 pb-12'}`}>
+          
+          {/* 1. 홈 피드 대시보드 탭 (Home) */}
+          {visitedTabs.has('home') && (
+            <div style={{ display: activeTab === 'home' ? 'block' : 'none' }}>
+              <GroupFeedSection
+                currentGroup={currentGroup}
+                members={members}
+                isFullMember={isFullMember}
+                isAdminUser={isAdminUser}
+                noticePost={noticePost}
+                recentFeedPosts={recentFeedPosts}
+                upcomingEvents={upcomingEvents}
+                moments={moments}
+                adminTodos={adminTodos}
+                handleTabClick={handleTabClick}
+                safeFormat={safeFormat}
+                safeFormatRelative={safeFormatRelative}
+                isPostNew={isPostNew}
+                pathname={pathname}
+                t={t}
+              />
             </div>
-            <h2 className="text-xl font-bold text-slate-800 mb-2">{t('group.unsetup.title') || 'This group has not been set up yet'}</h2>
-            <p className="text-slate-500 mb-6 max-w-sm">
-              {t('group.unsetup.desc') || 'If you are the admin of this community, please claim your rights and activate the group.'}
-            </p>
-          </div>
-        ) : (
-          <div className={`max-w-7xl mx-auto ${activeTab === 'feed' || activeTab === 'home' || activeTab === 'live' || activeTab === 'calendar' || activeTab === 'board' || activeTab === 'members' || activeTab === 'about' || activeTab === 'settings' || activeTab === 'brand' || activeTab === 'class-setting' ? 'px-0 md:px-0 mt-0 space-y-0 pb-0' : 'px-4 md:px-8 space-y-10 mt-6 pb-12'}`}>
-            
-            {/* 1. 홈 피드 대시보드 탭 (Home) */}
-            {visitedTabs.has('home') && (
-              <div style={{ display: activeTab === 'home' ? 'block' : 'none' }}>
-                <GroupFeedSection
-                  currentGroup={currentGroup}
-                  members={members}
-                  isFullMember={isFullMember}
-                  isAdminUser={isAdminUser}
-                  noticePost={noticePost}
-                  recentFeedPosts={recentFeedPosts}
-                  upcomingEvents={upcomingEvents}
-                  moments={moments}
-                  adminTodos={adminTodos}
-                  handleTabClick={handleTabClick}
-                  safeFormat={safeFormat}
-                  safeFormatRelative={safeFormatRelative}
-                  isPostNew={isPostNew}
-                  pathname={pathname}
-                  t={t}
-                />
-              </div>
-            )}
+          )}
 
-            {/* 2. 동적 모듈 탭 렌더러 (about, members, calendar, feed, class 등) */}
-            <GroupModuleRenderer
-              activeTab={activeTab}
-              visitedTabs={visitedTabs}
-              currentGroup={currentGroup}
-              members={members}
-              isFullMember={isFullMember}
-              isAdminUser={isAdminUser}
-              user={user}
-              profile={profile}
-              setSelectedMember={setSelectedMember}
-              openClassFlow={openClassFlow}
-              handleTabClick={handleTabClick}
-              allUsers={allUsers}
-              isClaiming={isClaiming}
-              handleClaimAdmin={handleClaimAdmin}
-            />
+          {/* 2. 동적 모듈 탭 렌더러 (about, members, calendar, feed, class 등) */}
+          <GroupModuleRenderer
+            activeTab={activeTab}
+            visitedTabs={visitedTabs}
+            currentGroup={currentGroup}
+            members={members}
+            isFullMember={isFullMember}
+            isAdminUser={isAdminUser}
+            user={user}
+            profile={profile}
+            setSelectedMember={setSelectedMember}
+            openClassFlow={openClassFlow}
+            handleTabClick={handleTabClick}
+            allUsers={allUsers}
+            isClaiming={isClaiming}
+            handleClaimAdmin={handleClaimAdmin}
+          />
 
-          </div>
-        )}
+        </div>
       </main>
 
       {/* Join Modal */}

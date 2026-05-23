@@ -264,8 +264,9 @@ export const chatService = {
       createdBy: creatorId,
       createdAt: serverTimestamp(),
       lastMessageTime: serverTimestamp(),
-      lastMessage: type === 'business' ? '상품 문의가 시작되었습니다.' : '대화가 시작되었습니다.'
+      lastMessage: type === 'business' ? 'chat.last_message_business' : 'chat.last_message_personal'
     });
+
     
     return docRef.id;
   },
@@ -598,11 +599,11 @@ export const chatService = {
 
       let text = '';
       if (action === 'join') {
-        text = `👋 ${name} joined the group.`;
+        text = `chat.system_join_params::${JSON.stringify({ name })}`;
       } else if (action === 'leave') {
-        text = `${name} left the group.`;
+        text = `chat.system_leave_params::${JSON.stringify({ name })}`;
       } else if (action === 'kick') {
-        text = `${name} has been removed from the group.`;
+        text = `chat.system_kick_params::${JSON.stringify({ name })}`;
       }
 
       const messageData = {

@@ -8,7 +8,7 @@ export const en: Record<string, string> = {
 
     // Group Class Dashboard
     'class-dashboard.schedule': 'Schedule',
-    'class-dashboard.pass': 'Monthly Pass',
+
     'class-dashboard.bundle': 'Bundle',
     'class-dashboard.class': 'Class',
     'class-dashboard.registeredMembers': 'Registered Members',
@@ -39,26 +39,7 @@ export const en: Record<string, string> = {
     'days.SAT': 'Saturday',
     'days.SUN': 'Sunday',
 
-    // Monthly Pass
-    'pass.alert_title_req': 'Please enter a title for the monthly pass.',
-    'pass.alert_class_req': 'Please select at least one class.',
-    'pass.alert_save_fail': 'Failed to save the monthly pass.',
-    'pass.edit_title': 'Edit Monthly Pass',
-    'pass.create_title': 'Monthly Pass Editor',
-    'pass.saving_status': 'Saving...',
-    'pass.save_button': 'Save',
-    'pass.title_label': 'Class Title',
-    'pass.title_placeholder': 'Enter pass title',
-    'pass.desc_label': 'Description',
-    'pass.desc_placeholder': 'Describe the pass...',
-    'pass.pricing_title': 'Pricing',
-    'pass.currency_label': 'Currency',
-    'pass.amount_label': 'Amount',
-    'pass.rule_label': 'Discount Rule',
-    'pass.rule_display': 'Allows attendance to all selected classes below',
-    'pass.select_classes_title': 'Select Classes',
-    'pass.select_classes_desc': 'Choose existing classes from this month to include in the pass.',
-    'pass.no_classes': 'No classes available',
+
 
     'nav.home': 'SOCIETY',
     'nav.plaza': 'PLAZA',
@@ -351,6 +332,7 @@ export const en: Record<string, string> = {
     'feed.style': 'Style',
     'feed.media': 'MEDIA',
     'feed.add': 'Add',
+    'feed.add_link': 'Add Link',
     'feed.add_photos_video': 'Add Photos or Video',
     'feed.photo_count': 'Photos',
     'feed.video_count': 'Video',
@@ -534,7 +516,7 @@ export const en: Record<string, string> = {
     'group.tab.members': 'MEMBERS',
     'group.tab.class_user': 'CLASS',
     'group.tab.class_admin': 'CLASS SETTING',
-    'group.tab.settings': 'SETTINGS',
+    'group.tab.settings': 'Menu Settings',
     'group.tab.stay': 'STAY SETTING',
     'group.tab.shop': 'SHOP SETTING',
     'group.tab.rental': 'RENTAL SETTING',
@@ -729,7 +711,7 @@ export const en: Record<string, string> = {
     'history.waiting_payment': 'Waiting for bank transfer',
     'history.pending_admin': 'Pending admin confirmation',
     'history.info_bundle': 'Bundle Information',
-    'history.info_pass': 'Monthly Pass Information',
+
     'history.info_class': 'Class Information',
     'history.instructor': 'Instructor',
     'history.venue': 'Venue',
@@ -768,6 +750,16 @@ export const en: Record<string, string> = {
     'history.toast_success_desc': 'Finalized after admin confirmation.',
     'history.toast_error_process': 'An error occurred during processing.',
     'history.toast_copy_account': 'Account number copied to clipboard.',
+    'history.change_class_partners': 'Change Classes / Partners',
+    'group.class.popup.title': 'Select Classes & Edit Partners',
+    'group.class.popup.selected': 'Selected {selected} / {total}',
+    'group.class.popup.partner_placeholder': 'Enter partner name (optional)',
+    'group.class.popup.no_classes': 'No classes available to select.',
+    'group.class.popup.save': 'Save Changes',
+    'group.class.popup.save_success': 'Changes saved successfully.',
+    'group.class.popup.save_error': 'Failed to save changes.',
+    'group.class.popup.read_only_warning': 'You do not have permission to edit.',
+    'group.class.popup.partner_label': 'Partner',
 
     // My Info Bottom Sheet
     'myinfo.photo_change': 'Change Photo',
@@ -817,6 +809,14 @@ export const en: Record<string, string> = {
     'myinfo.career_placeholder': 'e.g. 2 years',
     'myinfo.partner': 'Partner Status',
     'myinfo.partner_placeholder': 'e.g. Searching',
+    'myinfo.career_start_date': 'Career Start Date',
+    'myinfo.career_year': 'yr',
+    'myinfo.career_month': 'mo',
+    'myinfo.career_less_than_month': '< 1 month',
+    'myinfo.partnership': 'Partnership',
+    'myinfo.partnership_has': 'Has Partner',
+    'myinfo.partnership_none': 'No Partner',
+    'myinfo.partnership_searching': 'Looking for Partner',
 
     // Deactivate Bottom Sheet
     'deactivate.title': 'Deactivate Account',
@@ -1150,7 +1150,7 @@ export const en: Record<string, string> = {
 
     // Class Module
     'class.registration_title': 'Class Registration',
-    'class.monthlyPasses': 'MONTHLY PASSES',
+
     'class.bundlePackages': 'BUNDLE PACKAGES',
     'class.monthlyCourses': 'MONTHLY COURSES',
     'class.specialEvent': 'SPECIAL EVENT',
@@ -1165,6 +1165,8 @@ export const en: Record<string, string> = {
     'class.complete_application': 'Complete Application',
     'class.applicant_memo': 'Class Registration Memo (Optional)',
     'class.memo_placeholder': 'Leave a message (max 100 characters)',
+    'class.partner_name': 'Partner Name (Optional)',
+    'class.partner_name_placeholder': 'Enter partner name',
     'class.sort_by_classes': 'By Classes',
     'class.sort_by_name': 'By Name',
     'class.stats_classes': 'Classes',
@@ -2267,6 +2269,12 @@ export const en: Record<string, string> = {
     'chat.noConversations': 'No Conversations Yet',
     'chat.searchToStart': 'Search for a user to start a conversation.',
     'chat.noConversationsCategory': 'No conversations in this category yet.',
+    'chat.last_message_business': 'Product inquiry started.',
+    'chat.last_message_personal': 'Conversation started.',
+    'chat.system_join': '{name} joined the group.',
+    'chat.system_leave': '{name} left the group.',
+    'chat.system_kick': '{name} has been removed from the group.',
+
 
     // Plaza & Feed Module
     'plaza.tab_all': 'All',
@@ -2437,6 +2445,14 @@ export const en: Record<string, string> = {
     'search.activeGroups': 'Active Groups',
     'search.viewAll': 'View All',
     'search.members': 'members',
+    'search.searching': 'Searching...',
+    'search.noResults': 'No results found',
+    'search.tryDifferent': 'Try different keywords',
+    'search.resultsFor': 'Search Results for "{query}"',
+    'search.type.shop': 'Shop',
+    'search.type.class': 'Class',
+    'search.type.event': 'Event',
+    'search.type.group': 'Group',
 
     // Group Settings Module
     'group.settings.title': 'Group Settings',
@@ -2748,20 +2764,7 @@ export const en: Record<string, string> = {
     'discount.no_schedule': 'No schedule',
     'discount.image_url': 'Cover Image',
     'discount.image_url_placeholder': 'Please select a cover image.',
-    'pass.enter_title': 'Please enter a title for the monthly pass.',
-    'pass.select_classes_alert': 'Please select at least one class.',
-    'pass.save_failed': 'Failed to save the monthly pass.',
-    'pass.edit_pass': 'Edit Monthly Pass',
-    'pass.add_pass': 'Monthly Pass Editor',
-    'pass.saving': 'Saving...',
-    'pass.class_title': 'Class Title',
-    'pass.description': 'Description',
-    'pass.pricing': 'Pricing',
-    'pass.currency': 'Currency',
-    'pass.amount': 'Amount',
-    'pass.discount_rule': 'Discount Rule',
-    'pass.discount_rule_display': 'Allows attendance to all selected classes below',
-    'pass.select_classes': 'Select Classes',
+
   
     // === Auto-injected missing translations ===
     'rental.default_desc': 'Studio rental space',

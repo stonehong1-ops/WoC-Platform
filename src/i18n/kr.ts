@@ -6,30 +6,11 @@ export const kr: Record<string, string> = {
     'common.add': '추가',
     'common.unknown_user': '알 수 없는 사용자',
 
-    // Monthly Pass
-    'pass.alert_title_req': '월간 패스 제목을 입력해주세요.',
-    'pass.alert_class_req': '최소 하나의 클래스를 선택해주세요.',
-    'pass.alert_save_fail': '월간 패스 저장에 실패했습니다.',
-    'pass.edit_title': '월간 패스 수정',
-    'pass.create_title': '월간 패스 생성',
-    'pass.saving_status': '저장 중...',
-    'pass.save_button': '저장',
-    'pass.title_label': '클래스 제목',
-    'pass.title_placeholder': '패스 제목을 입력하세요',
-    'pass.desc_label': '설명',
-    'pass.desc_placeholder': '패스에 대한 설명을 입력하세요...',
-    'pass.pricing_title': '가격 설정',
-    'pass.currency_label': '통화',
-    'pass.amount_label': '금액',
-    'pass.rule_label': '할인 규칙',
-    'pass.rule_display': '아래 선택된 모든 클래스의 참석을 허용합니다',
-    'pass.select_classes_title': '클래스 선택',
-    'pass.select_classes_desc': '패스에 포함할 이번 달 클래스를 선택하세요.',
-    'pass.no_classes': '사용 가능한 클래스가 없습니다',
+
 
     // Group Class Dashboard
     'class-dashboard.schedule': '일정',
-    'class-dashboard.pass': '월간패스',
+
     'class-dashboard.bundle': '번들',
     'class-dashboard.class': '개별클래스',
     'class-dashboard.registeredMembers': '신청 멤버',
@@ -591,6 +572,7 @@ export const kr: Record<string, string> = {
     'feed.style': '스타일',
     'feed.media': '미디어',
     'feed.add': '추가',
+    'feed.add_link': '링크 추가',
     'feed.add_photos_video': '사진 또는 동영상 추가',
     'feed.photo_count': '사진',
     'feed.video_count': '동영상',
@@ -864,6 +846,16 @@ export const kr: Record<string, string> = {
     'history.toast_success_desc': '관리자 확인 후 최종 완료됩니다.',
     'history.toast_error_process': '처리 중 오류가 발생했습니다.',
     'history.toast_copy_account': '계좌번호가 복사되었습니다.',
+    'history.change_class_partners': '참여 수업 / 파트너 변경',
+    'group.class.popup.title': '수업 선택 및 파트너 변경',
+    'group.class.popup.selected': '선택됨 {selected} / {total}',
+    'group.class.popup.partner_placeholder': '파트너 이름 입력 (선택)',
+    'group.class.popup.no_classes': '선택 가능한 클래스가 없습니다.',
+    'group.class.popup.save': '변경 사항 저장',
+    'group.class.popup.save_success': '성공적으로 저장되었습니다.',
+    'group.class.popup.save_error': '변경 사항 저장에 실패했습니다.',
+    'group.class.popup.read_only_warning': '수정 권한이 없습니다.',
+    'group.class.popup.partner_label': '파트너',
 
     // My Info Bottom Sheet
     'myinfo.photo_change': '사진 변경',
@@ -913,6 +905,14 @@ export const kr: Record<string, string> = {
     'myinfo.career_placeholder': '예: 2년',
     'myinfo.partner': '파트너 상태 (Partner)',
     'myinfo.partner_placeholder': '예: Searching',
+    'myinfo.career_start_date': '경력 시작 연월',
+    'myinfo.career_year': '년',
+    'myinfo.career_month': '개월',
+    'myinfo.career_less_than_month': '1개월 미만',
+    'myinfo.partnership': '파트너십',
+    'myinfo.partnership_has': '있음',
+    'myinfo.partnership_none': '없음',
+    'myinfo.partnership_searching': '찾는중',
 
     // Deactivate Bottom Sheet
     'deactivate.title': '계정 비활성화',
@@ -1245,7 +1245,7 @@ export const kr: Record<string, string> = {
 
     // Class Module
     'class.registration_title': '수강신청',
-    'class.monthlyPasses': '먼슬리 패스',
+
     'class.bundlePackages': '번들 패키지',
     'class.monthlyCourses': '정규 클래스',
     'class.specialEvent': '스페셜 이벤트',
@@ -1260,6 +1260,8 @@ export const kr: Record<string, string> = {
     'class.complete_application': '신청 완료하기',
     'class.applicant_memo': '수업신청메모(필요시)',
     'class.memo_placeholder': '남기실 말씀을 적어주세요. (최대 100자)',
+    'class.partner_name': '파트너 이름 (선택)',
+    'class.partner_name_placeholder': '파트너 이름을 입력하세요',
     'class.sort_by_classes': '클래스 많은순',
     'class.sort_by_name': '이름순',
     'class.stats_classes': '클래스',
@@ -2359,6 +2361,12 @@ export const kr: Record<string, string> = {
     'chat.noConversations': '아직 대화가 없습니다',
     'chat.searchToStart': '사용자를 검색하여 대화를 시작하세요.',
     'chat.noConversationsCategory': '이 카테고리에는 아직 대화가 없습니다.',
+    'chat.last_message_business': '상품 문의가 시작되었습니다.',
+    'chat.last_message_personal': '대화가 시작되었습니다.',
+    'chat.system_join': '{name}님이 그룹에 입장했습니다.',
+    'chat.system_leave': '{name}님이 그룹을 퇴장했습니다.',
+    'chat.system_kick': '{name}님이 그룹에서 퇴장 처리되었습니다.',
+
 
     // Plaza & Feed Module
     'plaza.tab_all': '전체',
@@ -2495,6 +2503,14 @@ export const kr: Record<string, string> = {
     'search.activeGroups': '활성 모임',
     'search.viewAll': '전체 보기',
     'search.members': '멤버',
+    'search.searching': '검색 중...',
+    'search.noResults': '검색 결과가 없습니다',
+    'search.tryDifferent': '다른 키워드로 다시 검색해 보세요',
+    'search.resultsFor': '"{query}"에 대한 검색 결과',
+    'search.type.shop': '숍',
+    'search.type.class': '클래스',
+    'search.type.event': '이벤트',
+    'search.type.group': '모임',
 
     // Group Settings Module
     'group.settings.title': '그룹 설정',
@@ -2805,20 +2821,7 @@ export const kr: Record<string, string> = {
     'discount.no_schedule': '일정 없음',
     'discount.image_url': '대표 사진',
     'discount.image_url_placeholder': '대표 사진을 선택해주세요.',
-    'pass.enter_title': '먼슬리 패스 제목을 입력해주세요.',
-    'pass.select_classes_alert': '최소 1개의 클래스를 선택해주세요.',
-    'pass.save_failed': '먼슬리 패스 저장에 실패했습니다.',
-    'pass.edit_pass': '먼슬리 패스 수정',
-    'pass.add_pass': '먼슬리 패스 에디터',
-    'pass.saving': '저장 중...',
-    'pass.class_title': '패스 제목',
-    'pass.description': '설명',
-    'pass.pricing': '가격 설정',
-    'pass.currency': '통화',
-    'pass.amount': '금액',
-    'pass.discount_rule': '할인 규정',
-    'pass.discount_rule_display': '아래 선택된 모든 클래스에 참석 가능합니다',
-    'pass.select_classes': '클래스 선택',
+
   
     // === Auto-injected missing translations ===
     'rental.default_desc': '스튜디오 대여 공간',

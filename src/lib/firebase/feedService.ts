@@ -49,11 +49,11 @@ import { Post, Comment, ReactionType, Reaction } from '@/types/feed';
 const COLLECTION_NAME = 'feeds';
 
 export const feedService = {
-  // 실시간 게시글 목록 구독
+  // 실시간 게시글 목록 구독 (동적 limit 지원)
   subscribePosts: (
     targetId: string, 
     callback: (posts: Post[]) => void, 
-    filters?: { city?: string; category?: string },
+    filters?: { city?: string; category?: string; limitCount?: number },
     onError?: (error: any) => void
   ) => {
     const constraints: QueryConstraint[] = [
@@ -61,7 +61,6 @@ export const feedService = {
     ];
 
     if (filters?.city && filters.city !== 'ALL') {
-      // 대소문자 구분 없이 검색하기 위해 원본 값을 사용하도록 수정 (DB 저장 방식에 맞춤)
       constraints.push(where('location.city', '==', filters.city));
     }
 
@@ -70,6 +69,10 @@ export const feedService = {
     }
 
     constraints.push(orderBy('createdAt', 'desc'));
+
+    if (filters?.limitCount) {
+      constraints.push(limit(filters.limitCount));
+    }
 
     const q = query(collection(db, COLLECTION_NAME), ...constraints);
     
@@ -80,10 +83,8 @@ export const feedService = {
       })) as Post[];
       callback(posts);
     }, (error) => {
-      // 에러 메시지를 더 구체적으로 출력하여 원인 파악
       console.error(`[FeedService] Subscription failed for target: ${targetId}`, error);
       if (onError) {
-        // 실제 Firebase 에러 메시지를 사용자에게 전달
         onError(error.message || String(error));
       }
     });

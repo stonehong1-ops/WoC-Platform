@@ -81,6 +81,7 @@ export function GroupClassRegistrations({ group, validClassIds, allClasses = [],
   }, [registrations, validClassIds, group.members]);
 
   const getResolvedItemType = (type?: string, classId?: string) => {
+    if (type === 'discount') return type;
     if (classId) {
       if (allDiscounts?.some(d => d.id === classId)) return 'discount';
     }
@@ -165,9 +166,15 @@ export function GroupClassRegistrations({ group, validClassIds, allClasses = [],
     if (!actionReg) return;
     let includedIds: string[] = [];
     const resolvedType = getResolvedItemType(actionReg.itemType, actionReg.classId);
+    
     if (resolvedType === 'discount') {
       const discount = allDiscounts?.find(d => d.id === actionReg.classId);
-      if (discount && discount.includedClassIds) includedIds = discount.includedClassIds;
+      if (discount && discount.includedClassIds && discount.includedClassIds.length > 0) {
+        includedIds = discount.includedClassIds;
+      } else {
+        // Fallback: 번들 세부 룰 유실 시 그룹의 전체 개설 클래스를 선택할 수 있도록 안전 복구
+        includedIds = allClasses?.map(c => c.id) || [];
+      }
     }
     
     setPopupIncludedIds(includedIds);

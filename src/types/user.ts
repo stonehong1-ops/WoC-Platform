@@ -21,6 +21,8 @@ export interface UserProfile {
   joinedGroups?: string[];
   lastVisitedAt?: any;
   authMethod?: string;
+  career?: string;
+  partnerStatus?: string;
 }
 
 export interface PlatformUser extends UserProfile { }

@@ -1,24 +1,29 @@
-# 클래스 상세 보강 및 버그 해결 체크리스트
+# 5대 도메인 피플 표준 배지(UserBadge) 전격 확대 체크리스트
 
-이 체크리스트는 클래스 상세 정보 모달(`ClassDetail.tsx`)의 강사 배지 누락을 해결하고 브라우저 뒤로가기 이탈 방지 및 정원 표시 영역의 숫자 '0' 렌더링 결함을 완전히 박멸하기 위한 세부 과제 목록입니다.
+이 체크리스트는 숙소, 분실물, 중고장터, 그룹소개, 피드상세 등 5대 도메인 전역의 인적 데이터 노출 영역을 피플 표준 배지(`UserBadge`)로 전격 표준화 및 디버깅하기 위한 실무 액션 체크리스트입니다.
 
 ---
 
-- [ ] **1단계: 강사 배지 UID 바인딩 키 보강**
-  - [ ] `ClassDetail.tsx` 파일 내 강사 목록 `UserBadge` 렌더링 구문을 찾습니다.
-  - [ ] `uid` 속성에 `inst.id || inst.uid || inst.userId || ''` 로 `inst.userId` 매핑을 정밀 보강합니다.
+- [ ] **1단계: 숙소 상세 모달 (`StayDetail.tsx`) 호스트 배지 이식**
+  - [ ] `StayDetail.tsx` 의 호스트 소개 렌더링 구절을 탐색합니다.
+  - [ ] `UserBadge` 임포트 코드를 추가하고 기존 하드코딩 구문을 뱃지로 1:1 대체합니다.
 
-- [ ] **2단계: 뒤로가기 popstate 제어 파이프라인 구현**
-  - [ ] `ClassDetail.tsx`에 `didPushState` useRef 상태값을 추가합니다.
-  - [ ] `isOpen` 라이프사이클에 연동해 모달이 열릴 때 더미 히스토리 `history.pushState`를 실행하도록 처리합니다.
-  - [ ] `popstate` 이벤트 리스너를 장착하여 브라우저 뒤로가기 시 `onClose()`가 트리거되도록 구현합니다.
-  - [ ] 기존 닫기용 `handleClose`를 보강해 UI 상에서 모달을 수동으로 닫을 시 `history.back()`을 수행하여 가상 히스토리를 정리하게 만듭니다.
+- [ ] **2단계: 분실물 상세 모달 (`LostFoundDetail.tsx`) 등록자 배지 이식**
+  - [ ] `LostFoundDetail.tsx` 하단 바 등록자 아바타/닉네임 렌더링 구절을 식별합니다.
+  - [ ] `UserBadge` 임포트를 마크업하고, w-6 규격의 아바타에 맞춰 표준 뱃지를 이식합니다.
 
-- [ ] **3단계: 숫자 '0' 렌더링 결함 전격 박멸**
-  - [ ] `ClassDetail.tsx` 내의 Capacity 정원 렌더링 조건식을 점검합니다.
-  - [ ] 0 평가값 출력을 예방하기 위해 `!!(itemDetail.maxCapacity || itemDetail.leaderCount || itemDetail.followerCount) && (...)` 로 형변환 처리를 적용합니다.
-  - [ ] `sched.content && (...)` 구문을 `sched.content ? <p>...</p> : null` 삼항 연산자 형태로 안전하게 변환합니다.
+- [ ] **3단계: 중고장터 상세 모달 (`ResaleItemDetail.tsx`) 판매자 배지 이식**
+  - [ ] `ResaleItemDetail.tsx` 의 판매자 프로필 카드 렌더링 구절을 식별합니다.
+  - [ ] `person` 아이콘과 수동 닉네임 노출부 전체를 w-10 규격의 표준 `UserBadge`로 변환합니다.
 
-- [ ] **4단계: 컴파일 및 빌드 무결성 검증**
-  - [ ] `npx tsc --noEmit`을 실행하여 TypeScript 타입 무결성을 완전 실증합니다.
-  - [ ] `npm run build`를 돌려 Next.js 정적 빌드가 에러 없이 완벽히 끝나는지 테스트합니다.
+- [ ] **4단계: 그룹 소개 탭 (`GroupAbout.tsx`) 스탭/운영진 배지 이식**
+  - [ ] `GroupAbout.tsx` 의 `renderTeamMemberCard` 내부 마크업을 확인합니다.
+  - [ ] 기존 `UserAvatar` 와 일반 텍스트 라인을 w-12 규격의 표준 `UserBadge`로 스왑 및 연계합니다.
+
+- [ ] **5단계: 포스트 상세 모달 (`PostDetailModal.tsx`) 본문/댓글 작성자 배지 이식**
+  - [ ] `PostDetailModal.tsx` 내의 게시글 작성자 영역 및 댓글 리스트 렌더링 루프를 추적합니다.
+  - [ ] `UserBadge` 임포트 추가 후 본문(w-12) 및 각 댓글(w-10) 작성자 노출 구절을 뱃지 형태로 전면 교체합니다.
+
+- [ ] **6단계: 정적/동적 검증 및 실서버 배포**
+  - [ ] `npx tsc --noEmit` 정적 타입 컴파일을 완벽 성공시킵니다.
+  - [ ] `npm run build` Next.js 빌드가 오류 없이 통과하는 것을 검증합니다.

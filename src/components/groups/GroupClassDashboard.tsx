@@ -1186,8 +1186,9 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
                           {includedClassObjs.map((cls, idx) => {
                             const clsDay = getSingleClassDay(cls);
                             const dayPrefix = clsDay ? `(${clsDay}) ` : '';
-                            const partnerSuffix = reg.partnerName && reg.partnerName.trim() !== '' 
-                              ? ` (${reg.partnerName})` 
+                            const specificPartner = reg.participatingClassPartners?.[cls.id] || reg.partnerName;
+                            const partnerSuffix = specificPartner && specificPartner.trim() !== '' 
+                              ? ` (${specificPartner})` 
                               : '';
                             return (
                               <div key={idx} className="text-[11px] font-bold text-slate-500 flex items-center gap-1.5">

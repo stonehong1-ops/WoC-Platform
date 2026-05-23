@@ -266,7 +266,6 @@ export function useGroupData({ initialGroup }: UseGroupDataProps) {
   }, [admins, user, currentGroup.ownerId, profile]);
 
   const isFullMember = memberStatus === 'active';
-  const isLocked = currentGroup.isPublished === false && !isAdminUser;
 
   useEffect(() => {
     if (!user || !isAdminUser) return;
@@ -377,7 +376,6 @@ export function useGroupData({ initialGroup }: UseGroupDataProps) {
     currentAdmin,
     isAdminUser,
     isFullMember,
-    isLocked,
     ensureTimestamp,
     safeFormat,
     safeFormatRelative,

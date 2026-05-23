@@ -376,6 +376,14 @@ export default function AuthModal() {
       alert(t('auth.alert_invalid_phone'));
       return;
     }
+    
+    // 1차 차단: 너무 짧은 번호 사전 방어
+    const pureDigits = phoneNumber.replace(/[^\d]/g, '');
+    if (pureDigits.length < 7) {
+      alert(language === 'KR' ? '너무 짧은 번호입니다. 올바른 전화번호를 입력해 주세요.' : 'Phone number is too short. Please enter a valid number.');
+      return;
+    }
+
     setIsLoading(true);
     try {
       const sendSmsProcess = async () => {
@@ -385,22 +393,25 @@ export default function AuthModal() {
         
         console.log("RAW_INPUT:", phoneNumber);
         
-        let cleanedNumber = phoneNumber;
+        // 1. 방어: 공백 및 하이픈 등 특수문자 제거하고 숫자와 +만 남김
+        let cleanedNumber = phoneNumber.replace(/[^\d+]/g, '');
         const currentCC = phoneCountryCode;
         const currentCCNumeric = currentCC.replace('+', '');
         
-        // 1. 방어: 사용자가 +82나 82를 직접 입력한 경우 제거
+        // 2. 방어: 국가코드 중복 입력 핀셋 도려내기
         if (cleanedNumber.startsWith(currentCC)) {
           cleanedNumber = cleanedNumber.slice(currentCC.length);
+        } else if (cleanedNumber.startsWith('+' + currentCCNumeric)) {
+          cleanedNumber = cleanedNumber.slice(currentCCNumeric.length + 1);
         } else if (cleanedNumber.startsWith(currentCCNumeric)) {
           cleanedNumber = cleanedNumber.slice(currentCCNumeric.length);
         }
         
-        // 2. 방어: 맨 앞의 0 제거 (010 -> 10)
-        cleanedNumber = cleanedNumber.replace(/^0/, '');
+        // 3. 방어: 맨 앞의 불필요한 0 제거
+        cleanedNumber = cleanedNumber.replace(/^0+/, '');
         console.log("NORMALIZED_PHONE:", cleanedNumber);
         
-        // 3. E.164 포맷 조합
+        // 4. E.164 규격 조합
         const finalPhoneE164 = `${currentCC}${cleanedNumber}`;
         console.log("FINAL_PHONE_E164:", finalPhoneE164);
 

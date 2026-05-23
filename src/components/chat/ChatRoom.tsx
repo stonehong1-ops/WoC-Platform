@@ -551,7 +551,28 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
       );
     }
 
-    const displayString = translations[msg.id] || text;
+    let displayString = translations[msg.id] || text;
+    if (displayString.startsWith('chat.system_join_params::')) {
+      try {
+        const paramsStr = displayString.split('chat.system_join_params::')[1];
+        const { name } = JSON.parse(paramsStr);
+        displayString = t('chat.system_join', { name });
+      } catch (e) {}
+    } else if (displayString.startsWith('chat.system_leave_params::')) {
+      try {
+        const paramsStr = displayString.split('chat.system_leave_params::')[1];
+        const { name } = JSON.parse(paramsStr);
+        displayString = t('chat.system_leave', { name });
+      } catch (e) {}
+    } else if (displayString.startsWith('chat.system_kick_params::')) {
+      try {
+        const paramsStr = displayString.split('chat.system_kick_params::')[1];
+        const { name } = JSON.parse(paramsStr);
+        displayString = t('chat.system_kick', { name });
+      } catch (e) {}
+    } else if (displayString.startsWith('chat.')) {
+      displayString = t(displayString);
+    }
     return (
       <div className="flex flex-col gap-1">
         <div>

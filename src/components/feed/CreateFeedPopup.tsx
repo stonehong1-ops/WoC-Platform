@@ -265,12 +265,62 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
     });
     if (mediaInputRef.current) mediaInputRef.current.value = '';
   };
+  // Canvas API를 활용한 초경량 클라이언트 사이드 이미지 압축
+  const compressImage = (file: File, maxWidth = 1200, quality = 0.8): Promise<File> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+                  type: 'image/jpeg',
+                  lastModified: Date.now()
+                });
+                resolve(compressedFile);
+              } else {
+                resolve(file);
+              }
+            },
+            'image/jpeg',
+            quality
+          );
+        };
+        img.onerror = () => resolve(file);
+      };
+      reader.onerror = () => resolve(file);
+    });
+  };
+
   const handleUpload = async (file: File, type: 'image' | 'video') => {
     const id = Math.random().toString(36).slice(7);
     setMedia(prev => [...prev, { id, url: URL.createObjectURL(file), type, progress: 0, status: 'uploading', file }]);
     try {
-      const path = `feeds/${user?.uid || 'anon'}/${Date.now()}_${file.name}`;
-      const url = await storageService.uploadFile(file, path, p => setMedia(prev => prev.map(m => m.id === id ? { ...m, progress: Math.round(p) } : m)));
+      let fileToUpload = file;
+      if (type === 'image') {
+        fileToUpload = await compressImage(file);
+      }
+      const path = `feeds/${user?.uid || 'anon'}/${Date.now()}_${fileToUpload.name}`;
+      const url = await storageService.uploadFile(fileToUpload, path, p => setMedia(prev => prev.map(m => m.id === id ? { ...m, progress: Math.round(p) } : m)));
       setMedia(prev => prev.map(m => m.id === id ? { ...m, url, status: 'completed', progress: 100 } : m));
     } catch {
       setMedia(prev => prev.map(m => m.id === id ? { ...m, status: 'error' } : m));

@@ -53,7 +53,6 @@ import NotificationTray from "@/components/layout/NotificationTray";
 import LocationSelector from "@/components/layout/LocationSelector";
 import AuthModal from "@/components/auth/AuthModal";
 import AuthGuard from "@/components/auth/AuthGuard";
-import PWAInstallPrompt from "@/components/layout/PWAInstallPrompt";
 import InAppBrowserGuard from "@/components/layout/InAppBrowserGuard";
 import { Toaster } from "sonner";
 
@@ -67,7 +66,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`light notranslate ${inter.variable} ${jakarta.variable} ${manrope.variable}`} translate="no">
       <head>
-        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" rel="stylesheet" />
       </head>
       <body className="overflow-x-hidden bg-background text-on-surface font-body selection:bg-primary-container selection:text-on-primary-container antialiased">
         <div className="w-full relative flex flex-col min-h-[100dvh]">
@@ -100,9 +99,6 @@ export default function RootLayout({
 
                           {/* In-App Browser Guard (KakaoTalk etc.) */}
                           <InAppBrowserGuard />
-
-                          {/* PWA Install Prompt (3 days or 3 visits) */}
-                          <PWAInstallPrompt />
                         </GlobalNavigation>
                       </ClassCartProvider>
                     </NavigationProvider>

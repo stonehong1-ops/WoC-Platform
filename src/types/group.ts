@@ -354,15 +354,16 @@ export interface ClassRegistration {
   appliedAt: any;
   updatedAt: any;
   confirmedAt?: any;          // 관리자가 접수 완료 처리 시 (향후 구현)
-  itemType?: 'class' | 'discount' | 'monthlyPass';  // 신규 등록 시 저장
+  itemType?: 'class' | 'discount';  // 신규 등록 시 저장
   groupName?: string;         // 신규 등록 시 저장
   contactNumber?: string;
   partnerName?: string; // For couple registrations
-  selectedClassIds?: string[]; // Custom selection for monthly passes
+  selectedClassIds?: string[]; // Custom selection for bundles
   adminMemo?: string;
   applicantMemo?: string;
   paymentAmount?: number;
   paymentStatus?: 'pending' | 'reported' | 'completed' | 'canceled';
   orderNumber?: string;
+  participatingClassPartners?: Record<string, string>;
 }
 

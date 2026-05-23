@@ -3,6 +3,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { calculateCareerDuration } from '@/utils/date';
 
 export interface NamecardUser {
   uid: string;
@@ -33,6 +35,7 @@ interface NamecardModalProps {
 }
 
 export default function NamecardModal({ user, isOpen, onClose, onChat, onCall }: NamecardModalProps) {
+  const { t } = useLanguage();
   const [isClosing, setIsClosing] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -175,11 +178,21 @@ export default function NamecardModal({ user, isOpen, onClose, onChat, onCall }:
                 </div>
                 <div className="bg-primary-container/10 p-[14px] rounded-xl flex flex-col items-center justify-center text-center">
                   <span className="text-[9px] uppercase tracking-wider font-bold text-primary/60 mb-0.5">Career</span>
-                  <span className="font-headline-sm text-[15px] font-bold text-primary">{user.career || '2년'}</span>
+                  <span className="font-headline-sm text-[15px] font-bold text-primary">
+                    {user.career 
+                      ? calculateCareerDuration(user.career, t) 
+                      : t('my.not_linked')}
+                  </span>
                 </div>
                 <div className="bg-tertiary-fixed/30 p-[14px] rounded-xl flex flex-col items-center justify-center text-center">
                   <span className="text-[9px] uppercase tracking-wider font-bold text-on-tertiary-fixed-variant/60 mb-0.5">Partner</span>
-                  <span className="font-headline-sm text-[15px] font-bold text-on-tertiary-fixed-variant">{user.partnerStatus || 'Searching'}</span>
+                  <span className="font-headline-sm text-[15px] font-bold text-on-tertiary-fixed-variant">
+                    {user.partnerStatus === 'has' 
+                      ? t('myinfo.partnership_has') 
+                      : user.partnerStatus === 'searching' 
+                        ? t('myinfo.partnership_searching') 
+                        : t('myinfo.partnership_none')}
+                  </span>
                 </div>
               </div>
 

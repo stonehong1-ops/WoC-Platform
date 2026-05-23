@@ -65,6 +65,9 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
     partnerStatus: ''
   });
 
+  const [careerYear, setCareerYear] = useState('');
+  const [careerMonth, setCareerMonth] = useState('');
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -87,8 +90,37 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
         career: profile.career || '',
         partnerStatus: profile.partnerStatus || ''
       });
+
+      // 경력 YYYY-MM 파싱
+      let cYear = '';
+      let cMonth = '';
+      if (profile.career && /^\d{4}-\d{2}$/.test(profile.career)) {
+        const [y, m] = profile.career.split('-');
+        cYear = y;
+        cMonth = m;
+      }
+      setCareerYear(cYear);
+      setCareerMonth(cMonth);
     }
   }, [profile, isOpen]);
+
+  const handleCareerYearChange = (year: string) => {
+    setCareerYear(year);
+    if (year && careerMonth) {
+      setDetails(prev => ({ ...prev, career: `${year}-${careerMonth}` }));
+    } else {
+      setDetails(prev => ({ ...prev, career: '' }));
+    }
+  };
+
+  const handleCareerMonthChange = (month: string) => {
+    setCareerMonth(month);
+    if (careerYear && month) {
+      setDetails(prev => ({ ...prev, career: `${careerYear}-${month}` }));
+    } else {
+      setDetails(prev => ({ ...prev, career: '' }));
+    }
+  };
 
   const handlePhotoClick = () => {
     fileInputRef.current?.click();
@@ -439,26 +471,68 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
             {/* Section 4.7: Career & Partner Status */}
             <section className="space-y-6">
               <h2 className="font-headline text-lg font-bold text-on-surface">Dance Profile Info</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Career Selector */}
                 <div className="space-y-1.5 col-span-2 md:col-span-1">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-outline">{t('myinfo.career')}</label>
-                  <input 
-                    className="w-full bg-surface border border-outline-variant rounded px-4 py-2.5 text-on-surface focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none" 
-                    placeholder={t('myinfo.career_placeholder')}
-                    type="text"
-                    value={details.career}
-                    onChange={(e) => setDetails(prev => ({ ...prev, career: e.target.value }))}
-                  />
+                  <label className="text-xs font-semibold uppercase tracking-wider text-outline">{t('myinfo.career_start_date')}</label>
+                  <div className="flex gap-2">
+                    {/* Year Select */}
+                    <div className="relative flex-1">
+                      <select 
+                        className="w-full bg-surface border border-outline-variant rounded px-3 py-2.5 text-sm text-on-surface focus:ring-1 focus:ring-primary focus:border-primary appearance-none outline-none"
+                        value={careerYear}
+                        onChange={(e) => handleCareerYearChange(e.target.value)}
+                      >
+                        <option value="">{t('myinfo.career_year')}</option>
+                        {Array.from({ length: new Date().getFullYear() - 1970 + 1 }, (_, i) => {
+                          const year = new Date().getFullYear() - i;
+                          return <option key={year} value={year}>{year}{t('myinfo.career_year')}</option>;
+                        })}
+                      </select>
+                      <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-outline text-lg">expand_more</span>
+                    </div>
+
+                    {/* Month Select */}
+                    <div className="relative flex-1">
+                      <select 
+                        className="w-full bg-surface border border-outline-variant rounded px-3 py-2.5 text-sm text-on-surface focus:ring-1 focus:ring-primary focus:border-primary appearance-none outline-none"
+                        value={careerMonth}
+                        onChange={(e) => handleCareerMonthChange(e.target.value)}
+                      >
+                        <option value="">{t('myinfo.career_month')}</option>
+                        {Array.from({ length: 12 }, (_, i) => {
+                          const monthStr = String(i + 1).padStart(2, '0');
+                          return <option key={monthStr} value={monthStr}>{i + 1}{t('myinfo.career_month')}</option>;
+                        })}
+                      </select>
+                      <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-outline text-lg">expand_more</span>
+                    </div>
+                  </div>
                 </div>
+
+                {/* Partnership Status (Segmented Button) */}
                 <div className="space-y-1.5 col-span-2 md:col-span-1">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-outline">{t('myinfo.partner')}</label>
-                  <input 
-                    className="w-full bg-surface border border-outline-variant rounded px-4 py-2.5 text-on-surface focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none" 
-                    placeholder={t('myinfo.partner_placeholder')}
-                    type="text"
-                    value={details.partnerStatus}
-                    onChange={(e) => setDetails(prev => ({ ...prev, partnerStatus: e.target.value }))}
-                  />
+                  <label className="text-xs font-semibold uppercase tracking-wider text-outline">{t('myinfo.partnership')}</label>
+                  <div className="flex bg-surface-container rounded p-1">
+                    {[
+                      { id: 'none', label: t('myinfo.partnership_none') },
+                      { id: 'has', label: t('myinfo.partnership_has') },
+                      { id: 'searching', label: t('myinfo.partnership_searching') }
+                    ].map((opt) => (
+                      <button 
+                        key={opt.id}
+                        onClick={() => setDetails(prev => ({ ...prev, partnerStatus: opt.id }))}
+                        type="button"
+                        className={`flex-1 py-2 text-sm font-semibold rounded transition-all ${
+                          details.partnerStatus === opt.id 
+                            ? 'bg-surface text-primary shadow-sm' 
+                            : 'text-on-surface-variant hover:text-on-surface'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </section>

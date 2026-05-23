@@ -70,15 +70,7 @@ export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDeta
           return;
         }
 
-        // 2. monthlyPasses 컬렉션 조회
-        const passDocRef = doc(db, 'groups', groupId, 'monthlyPasses', id);
-        const passDoc = await getDoc(passDocRef);
-        if (passDoc.exists()) {
-          setItemDetail({ id: passDoc.id, itemType: 'monthlyPass', ...passDoc.data() });
-          return;
-        }
-
-        // 3. discounts 컬렉션 조회
+        // 2. discounts 컬렉션 조회
         const discountDocRef = doc(db, 'groups', groupId, 'discounts', id);
         const discountDoc = await getDoc(discountDocRef);
         if (discountDoc.exists()) {
@@ -154,14 +146,12 @@ export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDeta
   const getItemTypeLabel = (type: string) => {
     if (language === 'KR') {
       switch (type) {
-        case 'monthlyPass': return '월간 패스';
         case 'discount': return '패키지 할인';
         case 'class': return '일반 클래스';
         default: return '클래스';
       }
     }
     switch (type) {
-      case 'monthlyPass': return 'Monthly Pass';
       case 'discount': return 'Bundle Package';
       case 'class': return 'Regular Class';
       default: return 'Class';
@@ -170,7 +160,6 @@ export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDeta
 
   const getItemTypeColor = (type: string) => {
     switch (type) {
-      case 'monthlyPass': return 'bg-[#0057bd]/10 text-[#0057bd]';
       case 'discount': return 'bg-[#d97706]/10 text-[#d97706]';
       case 'class': return 'bg-[#059669]/10 text-[#059669]';
       default: return 'bg-slate-100 text-slate-600';
@@ -349,8 +338,8 @@ export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDeta
               )}
             </div>
 
-            {/* Included Classes 정적 목록 (월간 패스나 번들인 경우 단순 텍스트 정보로만 렌더링) */}
-            {(itemDetail.itemType === 'monthlyPass' || itemDetail.itemType === 'discount') && itemDetail.includedClasses && itemDetail.includedClasses.length > 0 && (
+            {/* Included Classes 정적 목록 (번들인 경우 단순 텍스트 정보로만 렌더링) */}
+            {itemDetail.itemType === 'discount' && itemDetail.includedClasses && itemDetail.includedClasses.length > 0 && (
               <div className="mx-5 my-4 border border-[#e0e4e5] rounded-2xl overflow-hidden">
                 <div className="bg-[#f8f9fa] px-4 py-2.5 border-b border-[#e0e4e5] flex items-center gap-2">
                   <span className="material-symbols-outlined text-sm text-primary">school</span>

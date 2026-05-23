@@ -25,6 +25,26 @@ export default function UniversalFeed({ context, currentUser, profile, activeFil
   const [localFilter, setLocalFilter] = useState('all');
   const { t } = useLanguage();
 
+  const [visibleLimit, setVisibleLimit] = useState(15);
+  const [hasMore, setHasMore] = useState(true);
+
+  // 스크롤 감지를 통한 무한 스크롤 트리거
+  useEffect(() => {
+    if (loading) return;
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+      if (scrollHeight - scrollTop - clientHeight < 150) {
+        if (posts.length >= visibleLimit) {
+          setVisibleLimit(prev => prev + 15);
+        } else {
+          setHasMore(false);
+        }
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [loading, posts.length, visibleLimit]);
+
   const isCreateModalOpen = !!createFlowValue;
   const editingPost = createFlowValue && createFlowValue !== 'new' ? posts.find(p => p.id === createFlowValue) || null : null;
 
@@ -40,13 +60,19 @@ export default function UniversalFeed({ context, currentUser, profile, activeFil
     let targetId = context.scope === 'plaza' ? 'plaza' : (context.scopeId || 'freestyle-tango');
     if (context.scope === 'helpdesk') targetId = 'helpdesk';
     
+    setLoading(true);
     const unsubscribe = feedService.subscribePosts(
       targetId,
       (newPosts) => {
         setPosts(newPosts);
         setLoading(false);
+        if (newPosts.length < visibleLimit) {
+          setHasMore(false);
+        } else {
+          setHasMore(true);
+        }
       },
-      {},
+      { limitCount: visibleLimit },
       (error) => {
         console.error("Feed subscription error:", error);
         setLoading(false);
@@ -54,7 +80,7 @@ export default function UniversalFeed({ context, currentUser, profile, activeFil
     );
 
     return () => unsubscribe();
-  }, [context.scopeId]);
+  }, [context.scopeId, visibleLimit]);
 
   const { location } = useLocation();
 
@@ -147,7 +173,7 @@ export default function UniversalFeed({ context, currentUser, profile, activeFil
 
         {/* Feed Posts List */}
         <div className="flex flex-col pb-24 w-full">
-          {loading ? (
+          {loading && posts.length === 0 ? (
             <div className="flex flex-col gap-0 w-full">
               {[1, 2, 3].map(i => (
                 <div key={i} className="bg-surface-container-lowest h-80 animate-pulse border-b border-outline-variant/10 shadow-sm w-full" />
@@ -163,27 +189,40 @@ export default function UniversalFeed({ context, currentUser, profile, activeFil
               </p>
             </div>
           ) : (
-            filteredPosts.map((post) => (
-              <FeedPostCard
-                key={post.id}
-                post={post}
-                currentUser={currentUser}
-                profile={profile}
-                hideUserInfo={context.scope === 'helpdesk'}
-                onEdit={(post) => {
-                  openCreate(post.id);
-                }}
-                onDelete={async (postId) => {
-                  if (window.confirm(t('plaza.confirm_delete_post'))) {
-                    try {
-                      await feedService.deletePost(postId);
-                    } catch (error) {
-                      alert(t('plaza.fail_delete'));
+            <>
+              {filteredPosts.map((post) => (
+                <FeedPostCard
+                  key={post.id}
+                  post={post}
+                  currentUser={currentUser}
+                  profile={profile}
+                  hideUserInfo={context.scope === 'helpdesk'}
+                  onEdit={(post) => {
+                    openCreate(post.id);
+                  }}
+                  onDelete={async (postId) => {
+                    if (window.confirm(t('plaza.confirm_delete_post'))) {
+                      try {
+                        await feedService.deletePost(postId);
+                      } catch (error) {
+                        alert(t('plaza.fail_delete'));
+                      }
                     }
-                  }
-                }}
-              />
-            ))
+                  }}
+                />
+              ))}
+
+              {/* Infinite Scroll Loader & Ending Caption */}
+              {hasMore ? (
+                <div className="py-6 flex items-center justify-center">
+                  <span className="material-symbols-rounded animate-spin text-slate-300 text-3xl">progress_activity</span>
+                </div>
+              ) : (
+                <div className="py-10 text-center text-slate-400 text-xs font-bold tracking-wider uppercase select-none">
+                  {t('pics.end_of_collection', 'End of Collection')}
+                </div>
+              )}
+            </>
           )}
         </div>
         </div>

@@ -53,8 +53,6 @@ function mapBookingToRegistration(booking: any): ClassRegistration {
   let itemType: ClassRegistration['itemType'] = 'class';
   if (booking.domain === 'class_discount') {
     itemType = 'discount';
-  } else if (booking.domain === 'class_pass') {
-    itemType = 'monthlyPass';
   }
 
   return {
@@ -85,6 +83,7 @@ function mapBookingToRegistration(booking: any): ClassRegistration {
     selectedClassIds: payload.selectedClassIds || payload.participatingClassIds || undefined,
     adminMemo: payload.adminMemo || undefined,
     applicantMemo: payload.applicantMemo || payload.memo || undefined,
+    participatingClassPartners: payload.participatingClassPartners || undefined,
     paymentAmount: booking.totalAmount || 0,
     paymentStatus: regStatus === 'PAYMENT_PENDING' ? 'pending' : 
                    regStatus === 'PAYMENT_REPORTED' ? 'reported' : 
@@ -107,8 +106,6 @@ function mapRegistrationToBooking(reg: Partial<ClassRegistration>): any {
   let domain: any = 'class_4w';
   if (reg.itemType === 'discount') {
     domain = 'class_discount';
-  } else if (reg.itemType === 'monthlyPass') {
-    domain = 'class_pass';
   }
 
   const payload: any = {
@@ -128,6 +125,7 @@ function mapRegistrationToBooking(reg: Partial<ClassRegistration>): any {
     selectedClassIds: reg.selectedClassIds || undefined,
     adminMemo: reg.adminMemo || undefined,
     applicantMemo: reg.applicantMemo || undefined,
+    participatingClassPartners: reg.participatingClassPartners || undefined,
     itemType: reg.itemType || 'class'
   };
 

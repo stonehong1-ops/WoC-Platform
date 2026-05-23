@@ -18,6 +18,45 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid URL format' }, { status: 400 });
     }
 
+    // 유튜브 주소 판별 및 고도화된 파싱 (oEmbed API 호출)
+    const isYouTube = parsedUrl.hostname.includes('youtube.com') || parsedUrl.hostname.includes('youtu.be');
+    if (isYouTube) {
+      try {
+        const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
+        const oembedRes = await fetch(oembedUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36',
+          },
+          next: { revalidate: 3600 },
+        });
+        if (oembedRes.ok) {
+          const oembedData = await oembedRes.json();
+          const channelName = oembedData.author_name ? `${oembedData.author_name}` : 'YouTube';
+          return NextResponse.json({
+            title: oembedData.title || 'YouTube 동영상',
+            description: `${channelName} • YouTube 동영상`,
+            image: oembedData.thumbnail_url || '',
+            domain: 'youtube.com',
+          });
+        }
+      } catch (e) {
+        console.error('YouTube oEmbed parsing failed, trying fallback:', e);
+      }
+
+      // oEmbed 실패 시의 견고한 Fallback (정규식을 활용한 동영상 ID 추출 및 썸네일 주소 복구)
+      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/)([^#\&\?]*).*/;
+      const match = url.match(regExp);
+      const videoId = (match && match[2].length === 11) ? match[2] : null;
+      if (videoId) {
+        return NextResponse.json({
+          title: 'YouTube 동영상',
+          description: '클릭하여 YouTube에서 시청하세요.',
+          image: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+          domain: 'youtube.com',
+        });
+      }
+    }
+
     // HTML Fetch (User-Agent를 추가하여 봇 감지 우회)
     const response = await fetch(url, {
       headers: {

@@ -17,6 +17,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { chatService } from '@/lib/firebase/chatService';
 import ChatRoom from '@/components/chat/ChatRoom';
 import { useModalNavigation } from '@/hooks/useModalNavigation';
+import { GroupClassSelectionPopup } from '@/components/groups/GroupClassSelectionPopup';
 
 const getTimestamp = (val: any) => {
   if (!val) return 0;
@@ -145,6 +146,7 @@ function HistoryContent() {
   const [selectedDetail, setSelectedDetail] = useState<any | null>(null);
   const [groupDetails, setGroupDetails] = useState<Group | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isSelectionPopupOpen, setIsSelectionPopupOpen] = useState(false);
   
   const { value: chatId, openModal: openChat, closeModal: handleCloseChat } = useModalNavigation('chatId');
   const chatRoomId = chatId;
@@ -664,18 +666,53 @@ function HistoryContent() {
                 )}
 
                 {selectedDetail.raw?.itemType === 'discount' && itemInfo && (
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-start gap-3 w-full">
                     <div className="w-8 h-8 rounded-full bg-[#f2f4f4] flex items-center justify-center shrink-0 text-[#596061]">
                       <span className="material-symbols-outlined text-[16px]">list_alt</span>
                     </div>
-                    <div className="pt-0.5">
-                      <p className="font-['Inter'] text-[10px] font-black uppercase tracking-wider text-[#acb3b4] mb-0.5">{t('history.included_classes')}</p>
-                      <ul className="font-['Inter'] text-[13px] font-medium text-[#596061] list-disc list-inside mt-1 space-y-1">
-                        {itemInfo.includedClassIds?.map((cId: string, idx: number) => {
+                    <div className="pt-0.5 flex-1 min-w-0">
+                      <p className="font-['Inter'] text-[10px] font-black uppercase tracking-wider text-[#acb3b4] mb-2">{t('history.included_classes')}</p>
+                      
+                      <div className="flex flex-col gap-2 mb-3 bg-slate-50/70 p-3 rounded-2xl border border-slate-100">
+                        {(itemInfo.includedClassIds && itemInfo.includedClassIds.length > 0 ? itemInfo.includedClassIds : (groupDetails?.classes?.map((c: any) => c.id) || [])).map((cId: string, idx: number) => {
                           const cls = groupDetails?.classes?.find(c => c.id === cId);
-                          return <li key={idx}>{cls?.title || 'Unknown Class'}</li>;
+                          if (!cls) return null;
+                          const isParticipating = selectedDetail.raw?.selectedClassIds?.includes(cId);
+                          const partnerName = selectedDetail.raw?.participatingClassPartners?.[cId];
+                          
+                          return (
+                            <div key={idx} className="flex flex-col gap-1 p-2.5 rounded-xl bg-white border border-slate-100/80 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+                              <div className="flex items-center gap-2">
+                                <span className={`material-symbols-outlined text-[16px] shrink-0 ${isParticipating ? 'text-emerald-500 font-bold' : 'text-slate-300'}`}>
+                                  {isParticipating ? 'check_circle' : 'circle'}
+                                </span>
+                                <span className={`text-[12.5px] font-semibold truncate ${isParticipating ? 'text-slate-800' : 'text-slate-400'}`}>
+                                  {cls.title}
+                                </span>
+                              </div>
+                              {isParticipating && partnerName && (
+                                <div className="pl-6 flex items-center gap-1.5 mt-0.5">
+                                  <span className="material-symbols-outlined text-slate-400 text-[12px]">group</span>
+                                  <span className="text-[11px] font-medium text-slate-500">
+                                    {t('group.class.popup.partner_label')}: {partnerName}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          );
                         })}
-                      </ul>
+                      </div>
+
+                      {/* 수업/파트너 변경 버튼 */}
+                      <button
+                        onClick={() => setIsSelectionPopupOpen(true)}
+                        className="flex items-center justify-center gap-1.5 px-4 py-2 border border-slate-200 hover:border-slate-300 rounded-xl bg-white hover:bg-slate-50 active:scale-95 transition-all shadow-xs"
+                      >
+                        <span className="material-symbols-outlined text-[16px] text-slate-600">edit_note</span>
+                        <span className="text-[11.5px] font-bold text-slate-700">
+                          {t('history.change_class_partners')}
+                        </span>
+                      </button>
                     </div>
                   </div>
                 )}
@@ -769,6 +806,18 @@ function HistoryContent() {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Class/Partner Selection Popup for Students */}
+      {isSelectionPopupOpen && selectedDetail && (
+        <GroupClassSelectionPopup
+          isOpen={isSelectionPopupOpen}
+          onClose={() => setIsSelectionPopupOpen(false)}
+          registration={selectedDetail.raw}
+          allClasses={groupDetails?.classes || []}
+          includedClassIds={itemInfo?.includedClassIds && itemInfo.includedClassIds.length > 0 ? itemInfo.includedClassIds : (groupDetails?.classes?.map((c: any) => c.id) || [])}
+          canEdit={true}
+        />
       )}
 
       {/* Chat Room Modal */}

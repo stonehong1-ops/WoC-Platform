@@ -6,6 +6,7 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { useRouter } from 'next/navigation';
 import MyInfoBottomSheet from '@/components/profile/MyInfoBottomSheet';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { calculateCareerDuration } from '@/utils/date';
 
 const ADMIN_ITEMS = [
   { icon: 'view_carousel', label: 'BANNERS', href: '/admin/banners' },
@@ -136,7 +137,7 @@ export default function MyInfoPage() {
                 <p className="text-on-surface font-medium truncate max-w-[200px]">{user?.email}</p>
               </div>
             </div>
-            <div className="flex gap-4 items-center">
+            <div className="flex gap-4 items-center mb-6">
               <div className="w-10 h-10 flex flex-shrink-0 items-center justify-center rounded-lg bg-primary-fixed text-on-primary-fixed">
                 <span className="material-symbols-outlined text-[24px]">call</span>
               </div>
@@ -146,6 +147,34 @@ export default function MyInfoPage() {
                   <span className="text-on-surface font-medium">{profile?.countryCode}</span>
                   <span className="text-on-surface font-medium">{profile?.phoneNumber || t('my.not_linked')}</span>
                 </div>
+              </div>
+            </div>
+            <div className="flex gap-4 items-center mb-6">
+              <div className="w-10 h-10 flex flex-shrink-0 items-center justify-center rounded-lg bg-primary-fixed text-on-primary-fixed">
+                <span className="material-symbols-outlined text-[24px]">timeline</span>
+              </div>
+              <div className="flex-grow">
+                <p className="text-xs font-bold text-outline uppercase tracking-widest">{t('myinfo.career')}</p>
+                <p className="text-on-surface font-medium">
+                  {profile?.career 
+                    ? calculateCareerDuration(profile.career, t) 
+                    : t('my.not_linked')}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-4 items-center">
+              <div className="w-10 h-10 flex flex-shrink-0 items-center justify-center rounded-lg bg-primary-fixed text-on-primary-fixed">
+                <span className="material-symbols-outlined text-[24px]">handshake</span>
+              </div>
+              <div className="flex-grow">
+                <p className="text-xs font-bold text-outline uppercase tracking-widest">{t('myinfo.partnership')}</p>
+                <p className="text-on-surface font-medium">
+                  {profile?.partnerStatus === 'has' 
+                    ? t('myinfo.partnership_has') 
+                    : profile?.partnerStatus === 'searching' 
+                      ? t('myinfo.partnership_searching') 
+                      : t('myinfo.partnership_none')}
+                </p>
               </div>
             </div>
           </div>

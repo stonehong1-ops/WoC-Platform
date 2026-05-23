@@ -950,7 +950,11 @@ export default function ClubClassSelectionPage({
                 participatingClassPartners: Object.fromEntries(
                   Object.entries(classPartners).filter(([id, val]) => passSelectedClassIds.has(id) && val.trim() !== '')
                 )
-              } : {})
+              } : {
+                participatingClassPartners: Object.fromEntries(
+                  Object.entries(classPartners).filter(([id, val]) => selectedClasses.has(id) && val.trim() !== '')
+                )
+              })
             }
           });
           return orderId;
@@ -1148,17 +1152,34 @@ export default function ClubClassSelectionPage({
             </>
           ) : (
             /* Applied Items - 일반 클래스/번들 */
-            <div className="bg-neutral-50 dark:bg-neutral-800 rounded-2xl p-4 border border-neutral-200 dark:border-neutral-700">
-              <h4 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-3">{language === 'KR' ? "신청된 클래스" : "Applied Classes"}</h4>
+            <div className="space-y-3">
+              <h4 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest px-1">{language === 'KR' ? "신청된 클래스" : "Applied Classes"}</h4>
               {Array.from(selectedClasses).map(classId => {
                 const item = allItems.find(c => c.id === classId);
                 if (!item) return null;
                 return (
-                  <div key={classId} className="flex justify-between items-center mb-3 last:mb-0">
-                    <span className="text-sm font-bold text-neutral-900 dark:text-white truncate mr-2">{item.title}</span>
-                    <span className="text-sm font-black text-neutral-900 dark:text-white whitespace-nowrap">
-                      {item.currency === 'KRW' || !item.currency ? `₩${item.amount ? item.amount.toLocaleString() : '0'}` : `${item.amount ? item.amount.toLocaleString() : '0'} ${item.currency}`}
-                    </span>
+                  <div key={classId} className="bg-neutral-50 dark:bg-neutral-800 rounded-2xl p-4 border border-neutral-200 dark:border-neutral-700 flex flex-col gap-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-bold text-neutral-900 dark:text-white truncate mr-2">{item.title}</span>
+                      <span className="text-sm font-black text-neutral-900 dark:text-white whitespace-nowrap">
+                        {item.currency === 'KRW' || !item.currency ? `₩${item.amount ? item.amount.toLocaleString() : '0'}` : `${item.amount ? item.amount.toLocaleString() : '0'} ${item.currency}`}
+                      </span>
+                    </div>
+                    {/* 파트너명 인풋 필드 */}
+                    <div className="pt-2 border-t border-neutral-200 dark:border-neutral-700 animate-in slide-in-from-top-1 duration-200">
+                      <input
+                        type="text"
+                        value={classPartners[classId] || ''}
+                        onChange={(e) => {
+                          setClassPartners(prev => ({
+                            ...prev,
+                            [classId]: e.target.value
+                          }));
+                        }}
+                        placeholder={t('class.partner_name_placeholder') || "파트너 이름을 입력하세요"}
+                        className="w-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-1.5 text-xs text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                      />
+                    </div>
                   </div>
                 );
               })}

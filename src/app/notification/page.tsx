@@ -166,44 +166,92 @@ export default function NotificationPage() {
     };
     if (titleMap[title]) title = titleMap[title];
 
+    // Resilient parsed metadata
+    const userFallback = noti.fromUserName || 'A member';
+    const itemFallback = noti.groupName || (noti as any).itemName || 'item';
+
     if (message.includes('requested to join')) {
-      const match = message.match(/(.+) requested to join '(.+)'\. Please review in chat\./);
-      if (match) message = t('notification.msg.booking_request', { user: getUserName(match[1]), item: match[2] });
+      const match = message.match(/(.+) requested to join '(.+)'\.? Please review in chat\.?/i);
+      if (match) {
+        message = t('notification.msg.booking_request', { user: getUserName(match[1]), item: match[2] });
+      } else {
+        message = t('notification.msg.booking_request', { user: getUserName(userFallback), item: itemFallback });
+      }
     } else if (message.includes('is submitted and waiting for host confirmation')) {
-      const match = message.match(/Your request for '(.+)' is submitted and waiting for host confirmation\./);
-      if (match) message = t('notification.msg.request_submitted', { item: match[1] });
+      const match = message.match(/Your request for '(.+)' is submitted and waiting for host confirmation\.?/i);
+      if (match) {
+        message = t('notification.msg.request_submitted', { item: match[1] });
+      } else {
+        message = t('notification.msg.request_submitted', { item: itemFallback });
+      }
     } else if (message.includes('has been confirmed!')) {
-      const match = message.match(/Your booking for '(.+)' has been confirmed!/);
-      if (match) message = t('notification.msg.booking_confirmed', { item: match[1] });
+      const match = message.match(/Your booking for '(.+)' has been confirmed!?/i);
+      if (match) {
+        message = t('notification.msg.booking_confirmed', { item: match[1] });
+      } else {
+        message = t('notification.msg.booking_confirmed', { item: itemFallback });
+      }
     } else if (message.includes('has been cancelled')) {
-      const match = message.match(/Your booking for '(.+)' has been cancelled\./);
-      if (match) message = t('notification.msg.booking_cancelled', { item: match[1] });
+      const match = message.match(/Your booking for '(.+)' has been cancelled\.?/i);
+      if (match) {
+        message = t('notification.msg.booking_cancelled', { item: match[1] });
+      } else {
+        message = t('notification.msg.booking_cancelled', { item: itemFallback });
+      }
     } else if (message.includes('has been successfully received')) {
-      const match1 = message.match(/Order for '(.+)' has been successfully received\./);
+      const match1 = message.match(/Order for '(.+)' has been successfully received\.?/i);
       if (match1) {
          message = t('notification.msg.order_received', { item: match1[1] });
       } else {
-        const match2 = message.match(/'(.+)' reservation has been successfully received\./);
-        if (match2) message = t('notification.msg.social_reserved', { item: match2[1] });
+        const match2 = message.match(/'(.+)' reservation has been successfully received\.?/i);
+        if (match2) {
+          message = t('notification.msg.social_reserved', { item: match2[1] });
+        } else {
+          message = t('notification.msg.order_received', { item: itemFallback });
+        }
       }
     } else if (message.includes('has placed a new order for')) {
-      const match = message.match(/(.+) has placed a new order for '(.+)'\. Please check the details\./);
-      if (match) message = t('notification.msg.new_order', { user: getUserName(match[1]), item: match[2] });
+      const match = message.match(/(.+) has placed a new order for '(.+)'\.? Please check the details\.?/i);
+      if (match) {
+        message = t('notification.msg.new_order', { user: getUserName(match[1]), item: match[2] });
+      } else {
+        message = t('notification.msg.new_order', { user: getUserName(userFallback), item: itemFallback });
+      }
     } else if (message.includes('has been received') && message.includes('Your booking for')) {
-      const match = message.match(/Your booking for '(.+)' has been received\./);
-      if (match) message = t('notification.msg.stay_requested', { item: match[1] });
+      const match = message.match(/Your booking for '(.+)' has been received\.?/i);
+      if (match) {
+        message = t('notification.msg.stay_requested', { item: match[1] });
+      } else {
+        message = t('notification.msg.stay_requested', { item: itemFallback });
+      }
     } else if (message.includes('has applied for') && message.includes('Awaiting approval')) {
-      const match = message.match(/(.+) has applied for '(.+)'\. Awaiting approval\./);
-      if (match) message = t('notification.msg.new_stay_booking', { user: getUserName(match[1]), item: match[2] });
+      const match = message.match(/(.+) has applied for '(.+)'\.? Awaiting approval\.?/i);
+      if (match) {
+        message = t('notification.msg.new_stay_booking', { user: getUserName(match[1]), item: message.includes('class') ? (noti as any).itemName : match[2] });
+      } else {
+        message = t('notification.msg.new_stay_booking', { user: getUserName(userFallback), item: itemFallback });
+      }
     } else if (message.includes('has applied for') && message.includes('Please verify payment.')) {
-      const match = message.match(/(.+) has applied for '(.+)'\. Please verify payment\./);
-      if (match) message = t('notification.msg.new_class_application', { user: getUserName(match[1]), item: match[2] });
+      const match = message.match(/(.+) has applied for '(.+)'\.? Please verify payment\.?/i);
+      if (match) {
+        message = t('notification.msg.new_class_application', { user: getUserName(match[1]), item: match[2] });
+      } else {
+        message = t('notification.msg.new_class_application', { user: getUserName(userFallback), item: itemFallback });
+      }
     } else if (message.includes('Application for') && message.includes('has been received. It will be approved after payment is verified.')) {
-      const match = message.match(/Application for '(.+)' has been received\. It will be approved after payment is verified\./);
-      if (match) message = t('notification.msg.class_application_received', { item: match[1] });
+      const match = message.match(/Application for '(.+)' has been received\. It will be approved after payment is verified\.?/i);
+      if (match) {
+        message = t('notification.msg.class_application_received', { item: match[1] });
+      } else {
+        message = t('notification.msg.class_application_received', { item: itemFallback });
+      }
     } else if (message.includes('has reserved for')) {
-      const match = message.match(/(.+) has reserved for '(.+)'\./);
-      if (match) message = t('notification.msg.new_reservation', { user: getUserName(match[1]), item: match[2] });
+      const match = message.match(/(.+) has reserved for '(.+)'\.?/i);
+      if (match) {
+        message = t('notification.msg.new_reservation', { user: getUserName(match[1]), item: match[2] });
+      } else {
+        message = t('notification.msg.new_reservation', { user: getUserName(userFallback), item: itemFallback });
+      }
     }
 
     return { title, message };

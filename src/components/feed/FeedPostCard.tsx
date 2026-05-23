@@ -24,6 +24,15 @@ interface FeedPostCardProps {
   hideUserInfo?: boolean;
 }
 
+// 유튜브 썸네일 실시간 추출 및 복구 헬퍼 함수
+function getYouTubeThumbnail(url: string): string | null {
+  if (!url) return null;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  const videoId = (match && match[2].length === 11) ? match[2] : null;
+  return videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : null;
+}
+
 export default function FeedPostCard({ post, currentUser, profile, onEdit, onDelete, hideUserInfo }: FeedPostCardProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -571,9 +580,7 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
       )}
 
       <div className="px-4 py-2">
-        {renderActionBar()}
-        
-        <p className="text-[14px] font-medium text-on-surface leading-relaxed whitespace-pre-wrap break-words mt-2">
+        <p className="text-[14px] font-medium text-on-surface leading-relaxed whitespace-pre-wrap break-words mt-1">
           {renderedContent}
           {shouldTruncate && (
             <button
@@ -589,56 +596,63 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
         </p>
 
         {/* Link Previews */}
-        {linkMedia.map((item, idx) => (
-          <a
-            key={idx}
-            href={item.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-stretch gap-3 mt-3 overflow-hidden rounded-xl border border-outline-variant/30 bg-surface-container-low hover:bg-surface-container-high transition-all duration-200 group active:scale-[0.99] cursor-pointer shadow-sm"
-          >
-            {/* Thumbnail Image */}
-            <div className="relative w-24 sm:w-28 shrink-0 bg-surface-container aspect-square overflow-hidden border-r border-outline-variant/20">
-              {item.linkMetadata?.image ? (
-                <img
-                  src={item.linkMetadata.image}
-                  alt=""
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-br from-primary-container/20 to-tertiary-container/30 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-outline text-[32px]">link</span>
-                </div>
-              )}
-              {/* Play icon overlay for YouTube */}
-              {item.linkMetadata?.domain?.includes('youtube') && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/10 group-hover:bg-black/20 transition-colors">
-                  <div className="w-9 h-9 rounded-full bg-red-600 flex items-center justify-center shadow-md">
-                    <span className="material-symbols-outlined text-white text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
+        {linkMedia.map((item, idx) => {
+          const thumbnailUrl = item.linkMetadata?.image || getYouTubeThumbnail(item.url);
+          return (
+            <a
+              key={idx}
+              href={item.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-stretch gap-3 mt-3 overflow-hidden rounded-xl border border-outline-variant/30 bg-surface-container-low hover:bg-surface-container-high transition-all duration-200 group active:scale-[0.99] cursor-pointer shadow-sm"
+            >
+              {/* Thumbnail Image */}
+              <div className="relative w-24 sm:w-28 shrink-0 bg-surface-container aspect-square overflow-hidden border-r border-outline-variant/20">
+                {thumbnailUrl ? (
+                  <img
+                    src={thumbnailUrl}
+                    alt=""
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-primary-container/20 to-tertiary-container/30 flex items-center justify-center">
+                    <span className="material-symbols-outlined text-outline text-[32px]">link</span>
                   </div>
-                </div>
-              )}
-            </div>
-
-            {/* Info Text Area */}
-            <div className="flex flex-col justify-center min-w-0 pr-3 py-2">
-              <div className="flex items-center gap-1.5 mb-1 shrink-0">
-                <span className="material-symbols-outlined text-[12px] text-primary">link</span>
-                <span className="text-[9px] text-primary font-bold tracking-wide uppercase truncate">
-                  {item.linkMetadata?.domain || 'LINK'}
-                </span>
+                )}
+                {/* Play icon overlay for YouTube */}
+                {item.linkMetadata?.domain?.includes('youtube') && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/10 group-hover:bg-black/20 transition-colors">
+                    <div className="w-9 h-9 rounded-full bg-red-600 flex items-center justify-center shadow-md">
+                      <span className="material-symbols-outlined text-white text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
+                    </div>
+                  </div>
+                )}
               </div>
-              <h5 className="font-bold text-xs text-on-surface line-clamp-1 mb-0.5 leading-snug group-hover:text-primary transition-colors">
-                {item.linkMetadata?.title || item.url}
-              </h5>
-              <p className="text-[10px] text-on-surface-variant/80 line-clamp-2 leading-normal">
-                {item.linkMetadata?.description || item.url}
-              </p>
-            </div>
-          </a>
-        ))}
+
+              {/* Info Text Area */}
+              <div className="flex flex-col justify-center min-w-0 pr-3 py-2">
+                <div className="flex items-center gap-1.5 mb-1 shrink-0">
+                  <span className="material-symbols-outlined text-[12px] text-primary">link</span>
+                  <span className="text-[9px] text-primary font-bold tracking-wide uppercase truncate">
+                    {item.linkMetadata?.domain || 'LINK'}
+                  </span>
+                </div>
+                <h5 className="font-bold text-xs text-on-surface line-clamp-1 mb-0.5 leading-snug group-hover:text-primary transition-colors">
+                  {item.linkMetadata?.title || item.url}
+                </h5>
+                <p className="text-[10px] text-on-surface-variant/80 line-clamp-2 leading-normal">
+                  {item.linkMetadata?.description || item.url}
+                </p>
+              </div>
+            </a>
+          );
+        })}
 
         {renderTags()}
+
+        <div className="mt-3">
+          {renderActionBar()}
+        </div>
 
         <p className="text-[10px] text-on-surface-variant font-medium tracking-wide uppercase mt-2">
           {timeAgo}

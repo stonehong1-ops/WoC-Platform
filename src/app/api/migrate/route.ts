@@ -2,16 +2,24 @@ import { NextResponse } from 'next/server';
 import admin from 'firebase-admin';
 
 if (!admin.apps.length) {
-  try {
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID?.trim(),
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL?.trim(),
-        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n').trim(),
-      }),
-    });
-  } catch (error: any) {
-    console.error('Firebase Admin 초기화 오류:', error.stack);
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+
+  if (privateKey && clientEmail && projectId) {
+    try {
+      admin.initializeApp({
+        credential: admin.credential.cert({
+          projectId: projectId.trim(),
+          clientEmail: clientEmail.trim(),
+          privateKey: privateKey.replace(/\\n/g, '\n').trim(),
+        }),
+      });
+    } catch (error: any) {
+      console.error('Firebase Admin 초기화 오류:', error.stack);
+    }
+  } else {
+    console.warn('Firebase Admin 환경 변수가 누락되어 초기화를 건너뜁니다.');
   }
 }
 

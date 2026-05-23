@@ -89,18 +89,16 @@ export default function ActivitySpotlight() {
         const combined = [...todayRegular, ...todayPopup];
         if (!cancelled) setTodaySocials(combined);
 
-        // ── 2. Open Classes 카운트 (classes + bundles + monthlyPasses 합산) ──
+        // ── 2. Open Classes 카운트 (classes + bundles 합산) ──
         const groupsSnap = await getDocs(collection(db, 'groups'));
         const classCountResults = await Promise.all(
           groupsSnap.docs.map(async groupDoc => {
-            const [classSnap, bundleSnap, passSnap] = await Promise.allSettled([
+            const [classSnap, bundleSnap] = await Promise.allSettled([
               getDocs(collection(db, 'groups', groupDoc.id, 'classes')),
               getDocs(collection(db, 'groups', groupDoc.id, 'bundles')),
-              getDocs(collection(db, 'groups', groupDoc.id, 'monthlyPasses')),
             ]);
             return (classSnap.status === 'fulfilled' ? classSnap.value.size : 0)
-                 + (bundleSnap.status === 'fulfilled' ? bundleSnap.value.size : 0)
-                 + (passSnap.status === 'fulfilled' ? passSnap.value.size : 0);
+                 + (bundleSnap.status === 'fulfilled' ? bundleSnap.value.size : 0);
           })
         );
         const openCount = classCountResults.reduce((sum, c) => sum + c, 0);
