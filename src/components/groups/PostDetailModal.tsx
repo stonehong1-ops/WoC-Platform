@@ -8,6 +8,7 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { KIND_ICON, KIND_COLOR } from '@/constants/tags';
 import UserProfileClickable from '@/components/common/UserProfileClickable';
+import UserBadge from '@/components/common/UserBadge';
 
 interface PostDetailModalProps {
   groupId: string;
@@ -156,31 +157,21 @@ export default function PostDetailModal({ groupId, post, isOpen, onClose, onEdit
                   {post.title}
                 </h1>
                 
-                <UserProfileClickable 
+                <UserBadge
                   uid={post.author.id || ''}
-                  initialData={{
-                    nickname: post.author.name,
-                    photoURL: post.author.avatar
-                  }}
-                >
-                  <div className="flex items-center gap-element_gap pt-6 border-t border-outline-variant/15 mt-6 cursor-pointer">
-                    <div className="w-12 h-12 rounded-full bg-surface-variant flex-shrink-0 overflow-hidden outline outline-1 outline-outline-variant/30 flex items-center justify-center">
-                      {post.author.avatar ? (
-                        <img alt="Author Avatar" className="w-full h-full object-cover" src={post.author.avatar}/>
-                      ) : (
-                        <span className="material-symbols-outlined text-on-surface-variant">person</span>
-                      )}
+                  nickname={post.author.name}
+                  photoURL={post.author.avatar}
+                  avatarSize="w-12 h-12 rounded-full outline outline-1 outline-outline-variant/30"
+                  nameClassName="font-label-md text-label-md text-on-surface"
+                  className="w-full pt-6 border-t border-outline-variant/15 mt-6 cursor-pointer block text-left"
+                  subText={
+                    <div className="flex items-center gap-2 font-label-sm text-label-sm text-on-surface-variant mt-0.5">
+                      <time>{formatDate(post.createdAt, 'dateOnly')}</time>
+                      <span className="w-1 h-1 rounded-full bg-outline-variant"></span>
+                      <span>{readTime} {t('group.min_read', 'min read')}</span>
                     </div>
-                    <div className="flex flex-col text-left">
-                      <span className="font-label-md text-label-md text-on-surface">{post.author.name}</span>
-                      <div className="flex items-center gap-2 font-label-sm text-label-sm text-on-surface-variant mt-0.5">
-                        <time>{formatDate(post.createdAt, 'dateOnly')}</time>
-                        <span className="w-1 h-1 rounded-full bg-outline-variant"></span>
-                        <span>{readTime} {t('group.min_read', 'min read')}</span>
-                      </div>
-                    </div>
-                  </div>
-                </UserProfileClickable>
+                  }
+                />
               </div>
 
               {/* Article Body */}
@@ -278,50 +269,36 @@ export default function PostDetailModal({ groupId, post, isOpen, onClose, onEdit
                     <p className="font-body-md text-body-md text-on-surface-variant text-center py-6">{t('group.no_comments', 'No comments yet.')}</p>
                   ) : (
                     comments.map((comment) => (
-                      <div key={comment.id} className="flex gap-4 group/comment">
-                        <UserProfileClickable 
-                          uid={comment.author.id || ''}
-                          initialData={{
-                            nickname: comment.author.name,
-                            photoURL: comment.author.avatar
-                          }}
-                        >
-                          <div className="w-10 h-10 rounded-full bg-surface-variant shrink-0 overflow-hidden outline outline-1 outline-outline-variant/30 flex items-center justify-center cursor-pointer">
-                            {comment.author.avatar ? (
-                              <img alt={comment.author.name} className="w-full h-full object-cover" src={comment.author.avatar}/>
-                            ) : (
-                              <span className="material-symbols-outlined text-sm text-on-surface-variant">person</span>
-                            )}
-                          </div>
-                        </UserProfileClickable>
+                      <div key={comment.id} className="flex items-start justify-between group/comment w-full py-1">
                         <div className="flex-1 text-left">
-                          <div className="flex items-center justify-between mb-1">
-                            <div className="flex items-center gap-2">
-                              <UserProfileClickable 
-                                uid={comment.author.id || ''}
-                                initialData={{
-                                  nickname: comment.author.name,
-                                  photoURL: comment.author.avatar
-                                }}
-                              >
-                                <span className="font-label-md text-label-md text-on-surface cursor-pointer hover:underline">{comment.author.name}</span>
-                              </UserProfileClickable>
-                              <span className="font-label-sm text-label-sm text-on-surface-variant">{formatDate(comment.createdAt, 'dateOnly')}</span>
-                            </div>
-                            {user?.uid === comment.author.id && (
-                              <button 
-                                onClick={() => handleDeleteComment(comment.id)}
-                                className="opacity-0 group-hover/comment:opacity-100 transition-opacity text-error hover:scale-110 p-1"
-                                aria-label="Delete comment"
-                              >
-                                <span className="material-symbols-outlined text-sm">delete</span>
-                              </button>
-                            )}
-                          </div>
-                          <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
-                            {comment.content}
-                          </p>
+                          <UserBadge
+                            uid={comment.author.id || ''}
+                            nickname={comment.author.name}
+                            photoURL={comment.author.avatar}
+                            avatarSize="w-10 h-10 ring-1 ring-slate-100/50 shadow-2xs"
+                            nameClassName="font-label-md text-label-md text-on-surface hover:underline cursor-pointer"
+                            className="block"
+                            subText={
+                              <div className="flex flex-col gap-1.5 mt-1">
+                                <span className="font-label-sm text-label-sm text-on-surface-variant/70 font-medium">
+                                  {formatDate(comment.createdAt, 'dateOnly')}
+                                </span>
+                                <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed mt-0.5 whitespace-pre-wrap">
+                                  {comment.content}
+                                </p>
+                              </div>
+                            }
+                          />
                         </div>
+                        {user?.uid === comment.author.id && (
+                          <button 
+                            onClick={() => handleDeleteComment(comment.id)}
+                            className="opacity-0 group-hover/comment:opacity-100 transition-opacity text-error hover:scale-110 p-1 shrink-0 self-start mt-1"
+                            aria-label="Delete comment"
+                          >
+                            <span className="material-symbols-outlined text-sm">delete</span>
+                          </button>
+                        )}
                       </div>
                     ))
                   )}

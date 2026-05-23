@@ -8,6 +8,7 @@ import { lostFoundService } from '@/lib/firebase/lostFoundService';
 import { LostFoundItem } from '@/types/lostFound';
 
 import { useLanguage } from '@/contexts/LanguageContext';
+import UserBadge from '@/components/common/UserBadge';
 
 interface LostFoundDetailProps {
   id: string;
@@ -297,10 +298,15 @@ export default function LostFoundDetail({ id, onClose }: LostFoundDetailProps) {
       {/* ━━━ Fixed Bottom Bar (compact) ━━━ */}
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-100 px-4 py-2.5 flex items-center gap-3 max-w-md mx-auto">
         <div className="flex-1 min-w-0">
-          <p className="text-lg font-black text-[#2d3435] font-headline leading-tight flex items-center gap-1">
-            <img src={item.authorPhoto || '/assets/avatar.png'} alt="author" className="w-6 h-6 rounded-full object-cover" onError={(e) => e.currentTarget.src='/assets/avatar.png'} />
-            <span className="text-sm">{item.authorName}</span>
-          </p>
+          <div className="flex items-center">
+            <UserBadge
+              uid={item.authorId || ''}
+              photoURL={item.authorPhoto}
+              nickname={item.authorName}
+              avatarSize="w-6 h-6"
+              nameClassName="text-sm font-semibold text-slate-800"
+            />
+          </div>
         </div>
         <button onClick={handleToggleLike} disabled={togglingLike}
           className={`w-11 h-11 rounded-xl flex items-center justify-center border transition-colors active:scale-90 ${isLiked ? 'bg-red-50 border-red-100 text-red-500' : 'bg-white border-[#e0e4e5] text-[#596061]'}`}>

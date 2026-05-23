@@ -15,6 +15,7 @@ import ChatRoom from '@/components/chat/ChatRoom';
 import Link from 'next/link';
 import { useModalNavigation } from '@/hooks/useModalNavigation';
 import { useNavigation } from '@/components/providers/NavigationProvider';
+import UserBadge from '@/components/common/UserBadge';
 
 import {
   addMonths,
@@ -434,19 +435,18 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike }: S
         <div className="mx-4 my-4">
           <SectionCard icon="person" title={t('stay.meet_your_host', 'Meet Your Host')}>
             <div className="flex items-center gap-4 mb-4 px-1">
-              <div className="w-14 h-14 rounded-full overflow-hidden bg-white border border-[#f2f4f4] shadow-sm">
-                {stay.host?.photo ? (
-                  <img src={stay.host.photo} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-primary/5 text-primary">
-                    <span className="material-symbols-rounded">person</span>
-                  </div>
-                )}
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-[#2d3435]">{stay.host?.name || t('stay.host', 'Host')}</h3>
-                <p className="text-[10px] text-[#acb3b4] font-black uppercase tracking-widest mt-0.5">{t('stay.verified_host', 'Verified Host')}</p>
-              </div>
+              <UserBadge
+                uid={stay.host?.userId || ''}
+                photoURL={stay.host?.photo}
+                nickname={stay.host?.name}
+                avatarSize="w-14 h-14 ring-1 ring-slate-100/50 shadow-sm"
+                nameClassName="text-sm font-bold text-[#2d3435]"
+                subText={
+                  <p className="text-[10px] text-[#acb3b4] font-black uppercase tracking-widest mt-0.5">
+                    {t('stay.verified_host', 'Verified Host')}
+                  </p>
+                }
+              />
             </div>
             <button
               onClick={handleChatWithHost}

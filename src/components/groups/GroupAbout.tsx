@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '@/lib/firebase/clientApp';
 import { doc, getDoc } from 'firebase/firestore';
 import { groupService } from '@/lib/firebase/groupService';
-import UserAvatar from '@/components/common/UserAvatar';
+import UserBadge from '@/components/common/UserBadge';
 
 
 interface GroupAboutProps {
@@ -295,18 +295,18 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
 
   const renderTeamMemberCard = (member: any) => (
     <div key={member.id} className="flex items-center justify-between p-3.5 bg-surface border border-outline-variant/20 rounded-2xl">
-      <div className="flex items-center gap-4">
-        <UserAvatar 
-          photoURL={member.avatar} 
-          alt={member.name} 
-          className="w-12 h-12 rounded-full ring-2 ring-primary/5" 
-          iconSize="24px"
-        />
-        <div>
-          <p className="font-label-md text-label-md font-bold text-on-surface">{member.name}</p>
-          <p className="font-label-sm text-label-sm text-on-surface-variant capitalize">{member.roleName}</p>
-        </div>
-      </div>
+      <UserBadge
+        uid={member.id || ''}
+        photoURL={member.avatar}
+        nickname={member.name}
+        avatarSize="w-12 h-12"
+        nameClassName="font-label-md text-label-md font-bold text-on-surface"
+        subText={
+          <p className="font-label-sm text-label-sm text-on-surface-variant capitalize mt-0.5">
+            {member.roleName}
+          </p>
+        }
+      />
       <div className="flex gap-1">
         <button 
           className="p-2 text-primary hover:bg-primary-container rounded-full"

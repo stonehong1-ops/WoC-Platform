@@ -11,6 +11,7 @@ import ResalePurchaseFlow from './ResalePurchaseFlow';
 import ChatRoom from '@/components/chat/ChatRoom';
 import UserProfileClickable from '@/components/common/UserProfileClickable';
 import { useNavigation } from '@/components/providers/NavigationProvider';
+import UserBadge from '@/components/common/UserBadge';
 
 interface ResaleItemDetailProps {
   item: ResaleItem;
@@ -279,21 +280,19 @@ export default function ResaleItemDetail({ item, onClose }: ResaleItemDetailProp
 
         {/* Location / Seller Info */}
         <div className="px-4 py-4 border-b border-[#f2f4f4]">
-          <UserProfileClickable uid={item.sellerId} initialData={{ nickname: item.sellerName }}>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
-                <span className="material-symbols-rounded text-xl">person</span>
+          <UserBadge
+            uid={item.sellerId || ''}
+            nickname={item.sellerName}
+            avatarSize="w-10 h-10"
+            nameClassName="font-headline font-bold text-sm text-[#2d3435]"
+            subText={
+              <div className="flex items-center gap-1 text-[11px] font-medium text-[#596061] mt-0.5">
+                <span className="material-symbols-rounded text-[12px]">location_on</span>
+                <span>{item.location === 'Seoul, Gangnam-gu' || item.location === 'Gangnam' ? t('resale.seoul_korea') : item.location}</span>
+                {item.locationDetail && <span>· {item.locationDetail}</span>}
               </div>
-              <div className="flex-1">
-                <h4 className="font-headline font-bold text-sm text-[#2d3435]">{item.sellerName}</h4>
-                <div className="flex items-center gap-1 text-[11px] font-medium text-[#596061]">
-                  <span className="material-symbols-rounded text-[12px]">location_on</span>
-                  <span>{item.location === 'Seoul, Gangnam-gu' || item.location === 'Gangnam' ? t('resale.seoul_korea') : item.location}</span>
-                  {item.locationDetail && <span>· {item.locationDetail}</span>}
-                </div>
-              </div>
-            </div>
-          </UserProfileClickable>
+            }
+          />
         </div>
 
         {/* Specs Boxed */}
