@@ -116,8 +116,39 @@ export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDeta
     };
   }, [loading, itemDetail]);
 
+  const didPushState = React.useRef(false);
+
+  // 팝업 열릴 때 더미 히스토리 추가, 닫힐 때 초기화
+  useEffect(() => {
+    if (isOpen) {
+      history.pushState({ classDetail: true }, '');
+      didPushState.current = true;
+    } else {
+      if (didPushState.current) {
+        didPushState.current = false;
+      }
+    }
+  }, [isOpen]);
+
+  // popstate 이벤트 = 디바이스/브라우저 뒤로가기
+  useEffect(() => {
+    const handlePopState = () => {
+      if (isOpen && didPushState.current) {
+        didPushState.current = false;
+        if (onClose) onClose();
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [isOpen, onClose]);
+
   const handleClose = () => {
-    if (onClose) onClose();
+    if (didPushState.current) {
+      didPushState.current = false;
+      history.back(); // popstate 발생 → handlePopState에서 onClose() 호출
+    } else {
+      if (onClose) onClose();
+    }
   };
 
   const getItemTypeLabel = (type: string) => {
@@ -278,7 +309,7 @@ export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDeta
                               {sched.timeSlot || `${itemDetail.startTime || ''} - ${itemDetail.endTime || ''}`}
                             </span>
                           </p>
-                          {sched.content && <p className="text-xs text-[#acb3b4] mt-0.5">{sched.content}</p>}
+                          {sched.content ? <p className="text-xs text-[#acb3b4] mt-0.5">{sched.content}</p> : null}
                         </div>
                       );
                     })}
@@ -286,7 +317,7 @@ export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDeta
                 </div>
               )}
 
-              {(itemDetail.maxCapacity || itemDetail.leaderCount || itemDetail.followerCount) && (
+              {!!(itemDetail.maxCapacity || itemDetail.leaderCount || itemDetail.followerCount) && (
                 <div className="flex items-start gap-3">
                   <span className="material-symbols-outlined text-[#acb3b4] mt-0.5">group</span>
                   <div>
@@ -351,7 +382,7 @@ export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDeta
                   {itemDetail.instructors.map((inst: any, idx: number) => (
                     <div key={inst.id || inst.uid || idx} className="flex items-center justify-between bg-slate-50/50 border border-slate-100 rounded-2xl p-3">
                       <UserBadge
-                        uid={inst.id || inst.uid || ''}
+                        uid={inst.id || inst.uid || inst.userId || ''}
                         nickname={inst.name}
                         photoURL={inst.avatar || inst.photoURL || inst.image || inst.imageUrl}
                         avatarSize="w-9 h-9"

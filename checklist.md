@@ -1,30 +1,24 @@
-# 0ms 오버레이 안착 렌더링 파이프라인 리팩토링 체크리스트
+# 클래스 상세 보강 및 버그 해결 체크리스트
 
-이 체크리스트는 `/groups` 오버레이 진입 시의 FOUC(깜빡임), 레이아웃 쉬프트, 첫 로딩 랙 현상을 완벽하게 근절하고 네이티브 앱 수준의 0ms 극강 사용성을 구현하기 위해 수행해야 하는 세부 액션 아이템 목록입니다.
+이 체크리스트는 클래스 상세 정보 모달(`ClassDetail.tsx`)의 강사 배지 누락을 해결하고 브라우저 뒤로가기 이탈 방지 및 정원 표시 영역의 숫자 '0' 렌더링 결함을 완전히 박멸하기 위한 세부 과제 목록입니다.
 
 ---
 
-- [ ] **1단계: 전역 폰트 시스템 이관 및 로컬 중복 선언 제거**
-  - [ ] `src/app/layout.tsx`에서 `Inter` 및 `Plus_Jakarta_Sans`를 `next/font/google` 체계로 불러옵니다.
-  - [ ] `src/app/globals.css`에서 `--font-body: var(--font-inter)` 및 `--font-display: var(--font-jakarta)` 연동 설정을 완료하고 body와 전역 클래스들에 일괄 바인딩합니다.
-  - [ ] `GroupHome.tsx` 내의 `@import` 및 style jsx global 내부 폰트 하드코딩 선언을 완전히 삭제합니다.
+- [ ] **1단계: 강사 배지 UID 바인딩 키 보강**
+  - [ ] `ClassDetail.tsx` 파일 내 강사 목록 `UserBadge` 렌더링 구문을 찾습니다.
+  - [ ] `uid` 속성에 `inst.id || inst.uid || inst.userId || ''` 로 `inst.userId` 매핑을 정밀 보강합니다.
 
-- [ ] **2단계: GroupOverlay 영구 마운트화 및 데이터 지연 해제 가드 확보**
-  - [ ] `src/app/groups/page.tsx` 내의 `{selectedGroup && ...}` 조건부 마운트 구조를 제거하고 항상 DOM에 상주하도록 수정합니다.
-  - [ ] `selectedGroup`이 없을 때 런타임 크래시가 발생하지 않도록 `GroupDetail` 및 `GroupHome` Props 타입을 `Group | null`로 우아하게 넓힙니다.
-  - [ ] `GroupHome.tsx` 내부에 `activeGroup` 지연 상태(Deferred State)를 구축하여, 오버레이가 닫힐 때 직전 그룹 데이터가 고정 유지되며 페이드 아웃되도록 처리합니다.
-  - [ ] `useGroupData.ts` 훅 내부에 `initialGroup.id`가 유효하지 않을 때 Firestore 구독 등을 조기 중단(Early Return)시키는 Null-Safety 가드를 안전 장치로 장착합니다.
+- [ ] **2단계: 뒤로가기 popstate 제어 파이프라인 구현**
+  - [ ] `ClassDetail.tsx`에 `didPushState` useRef 상태값을 추가합니다.
+  - [ ] `isOpen` 라이프사이클에 연동해 모달이 열릴 때 더미 히스토리 `history.pushState`를 실행하도록 처리합니다.
+  - [ ] `popstate` 이벤트 리스너를 장착하여 브라우저 뒤로가기 시 `onClose()`가 트리거되도록 구현합니다.
+  - [ ] 기존 닫기용 `handleClose`를 보강해 UI 상에서 모달을 수동으로 닫을 시 `history.back()`을 수행하여 가상 히스토리를 정리하게 만듭니다.
 
-- [ ] **3단계: Skeleton Branching 제거 및 동일 Layout Shell 정착**
-  - [ ] `GroupHome.tsx` 내의 `isLocked` 분기로 컴포넌트 껍데기가 통째로 달라지는 스케줄링을 개선합니다.
-  - [ ] 컨텐츠 하위 컴포넌트들에서 로딩 시 Layout 구조 전체를 탈바꿈하는 코드 분기를 배제하고, 고정 레이아웃 내에서 알맹이 데이터만 스왑되도록 개선합니다.
+- [ ] **3단계: 숫자 '0' 렌더링 결함 전격 박멸**
+  - [ ] `ClassDetail.tsx` 내의 Capacity 정원 렌더링 조건식을 점검합니다.
+  - [ ] 0 평가값 출력을 예방하기 위해 `!!(itemDetail.maxCapacity || itemDetail.leaderCount || itemDetail.followerCount) && (...)` 로 형변환 처리를 적용합니다.
+  - [ ] `sched.content && (...)` 구문을 `sched.content ? <p>...</p> : null` 삼항 연산자 형태로 안전하게 변환합니다.
 
-- [ ] **4단계: KeepAlive & Lazy Tabs 구조 정립**
-  - [ ] `GroupHome.tsx` 내의 500ms 전체 탭 일괄 비동기 프리마운트 타이머 로직을 완전히 들어냅니다.
-  - [ ] 사용자가 탭을 실제로 클릭해 진입할 때만 `mountedTabs` Set에 등록하는 Lazy Mount를 확립합니다.
-  - [ ] 마운트된 탭은 unmount되지 않고 `hidden={activeTab !== tabName}`으로 메모리에 상주하는 KeepAlive 아키텍처를 도입합니다.
-
-- [ ] **5단계: GPU 합성 레이어 상주 및 Idle-Time Prewarming 적용**
-  - [ ] 오버레이 루트 컨테이너에 `will-change: opacity, transform;` 및 `transform: translateZ(0); contain: layout paint style;` GPU 가속 격리 속성을 반영합니다.
-  - [ ] `requestIdleCallback`을 가동하여 메인 목록 로딩 완료 후, 유휴(Idle) 시간에 오버레이 복합 레이어 사전 웜업을 부드럽게 예약 기동시킵니다.
-  - [ ] `npm run build` 컴파일 무결성을 통과시킨 후 최종 검증을 완료합니다.
+- [ ] **4단계: 컴파일 및 빌드 무결성 검증**
+  - [ ] `npx tsc --noEmit`을 실행하여 TypeScript 타입 무결성을 완전 실증합니다.
+  - [ ] `npm run build`를 돌려 Next.js 정적 빌드가 에러 없이 완벽히 끝나는지 테스트합니다.
