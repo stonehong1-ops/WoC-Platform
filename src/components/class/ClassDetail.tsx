@@ -8,6 +8,7 @@ import { db } from '@/lib/firebase/clientApp';
 import Portal from '@/components/common/Portal';
 import { useLanguage } from '@/contexts/LanguageContext';
 import UserProfileClickable from '@/components/common/UserProfileClickable';
+import UserBadge from '@/components/common/UserBadge';
 
 interface ClassDetailProps {
   groupId: string;
@@ -346,53 +347,18 @@ export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDeta
                 <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest mb-4">
                   {language === 'KR' ? '강사' : 'Instructors'}
                 </p>
-                <div className="flex gap-4 overflow-x-auto detail-scrollbar pb-2">
+                <div className="flex flex-col gap-3">
                   {itemDetail.instructors.map((inst: any, idx: number) => (
-                    <UserProfileClickable 
-                      key={inst.id || inst.uid || idx} 
-                      uid={inst.id || inst.uid || ''}
-                      initialData={{
-                        nickname: inst.name,
-                        photoURL: inst.avatar || inst.photoURL || inst.image || inst.imageUrl
-                      }}
-                    >
-                      <div className="flex flex-col items-center flex-shrink-0 w-20 cursor-pointer">
-                        {(() => {
-                          const instKey = `inst-img-${itemDetail.id}-${inst.id || inst.uid || idx}`;
-                          const hasInstError = imageErrors[instKey];
-                          if (hasInstError) {
-                            return (
-                              <>
-                                <div className="w-14 h-14 rounded-full bg-[#f2f4f4] text-[#596061] flex items-center justify-center text-xl font-bold mb-2 border border-[#e0e4e5]">
-                                  {inst.name.substring(0, 2).toUpperCase()}
-                                </div>
-                                <span className="text-xs font-bold text-[#2d3435] text-center line-clamp-1">{inst.name}</span>
-                              </>
-                            );
-                          }
-                          return inst.avatar || inst.photoURL || inst.image || inst.imageUrl ? (
-                            <>
-                              <img 
-                                src={inst.avatar || inst.photoURL || inst.image || inst.imageUrl} 
-                                alt={inst.name} 
-                                className="w-14 h-14 rounded-full object-cover mb-2 border border-[#e0e4e5]" 
-                                onError={() => { 
-                                  setImageErrors(prev => ({ ...prev, [instKey]: true }));
-                                }} 
-                              />
-                              <span className="text-xs font-bold text-[#2d3435] text-center line-clamp-1">{inst.name}</span>
-                            </>
-                          ) : (
-                            <>
-                              <div className="w-14 h-14 rounded-full bg-[#f2f4f4] text-[#596061] flex items-center justify-center text-xl font-bold mb-2 border border-[#e0e4e5]">
-                                {inst.name.substring(0, 2).toUpperCase()}
-                              </div>
-                              <span className="text-xs font-bold text-[#2d3435] text-center line-clamp-1">{inst.name}</span>
-                            </>
-                          );
-                        })()}
-                      </div>
-                    </UserProfileClickable>
+                    <div key={inst.id || inst.uid || idx} className="flex items-center justify-between bg-slate-50/50 border border-slate-100 rounded-2xl p-3">
+                      <UserBadge
+                        uid={inst.id || inst.uid || ''}
+                        nickname={inst.name}
+                        photoURL={inst.avatar || inst.photoURL || inst.image || inst.imageUrl}
+                        avatarSize="w-9 h-9"
+                        nameClassName="font-bold text-sm text-[#2d3435]"
+                        nativeClassName="text-xs font-semibold text-slate-400 ml-1.5"
+                      />
+                    </div>
                   ))}
                 </div>
               </div>

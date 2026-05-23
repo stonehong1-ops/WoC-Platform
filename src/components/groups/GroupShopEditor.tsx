@@ -232,7 +232,7 @@ const GroupShopEditor: React.FC<GroupShopEditorProps> = ({ group, onClose, isInl
       <main className="flex-1">
         <div className={`max-w-[896px] mx-auto space-y-6 ${isInline ? 'pb-24' : 'pb-48 md:pb-32'}`}>
           {/* Section Header */}
-          <div className="px-4 pt-4 pb-6">
+          <div className={`px-4 pb-6 ${isInline ? 'pt-1' : 'pt-4'}`}>
             <div className="mb-2">
               <h2 className="text-[24px] leading-[1.3] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>
                 {t("group.shop.management") || "Shop Management"}

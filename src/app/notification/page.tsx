@@ -74,8 +74,6 @@ export default function NotificationPage() {
     if (!noti.isRead) {
       await notificationService.markAsRead(noti.id);
     }
-    
-    router.push('/history');
   };
 
   const handleMarkAllAsRead = async () => {

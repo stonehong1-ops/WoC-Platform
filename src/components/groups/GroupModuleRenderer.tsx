@@ -91,6 +91,9 @@ export interface GroupModuleRendererProps {
   openClassFlow: (flow: string, options?: any) => void;
   handleTabClick: (tab: TabType) => void;
   onJoinPrompt?: () => void;
+  allUsers?: any[];
+  isClaiming?: boolean;
+  handleClaimAdmin?: (targetUserId: string, targetUserName: string) => Promise<void>;
 }
 
 export default function GroupModuleRenderer({
@@ -105,7 +108,10 @@ export default function GroupModuleRenderer({
   setSelectedMember,
   openClassFlow,
   handleTabClick,
-  onJoinPrompt
+  onJoinPrompt,
+  allUsers,
+  isClaiming,
+  handleClaimAdmin
 }: GroupModuleRendererProps) {
   const { t } = useLanguage();
 
@@ -114,7 +120,13 @@ export default function GroupModuleRenderer({
       {visitedTabs.has('about') && (
         <div style={{ display: activeTab === 'about' ? 'block' : 'none' }} className="px-4 py-4">
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <GroupAbout group={currentGroup} members={members} />
+            <GroupAbout
+              group={currentGroup}
+              members={members}
+              allUsers={allUsers}
+              isClaiming={isClaiming}
+              handleClaimAdmin={handleClaimAdmin}
+            />
           </div>
         </div>
       )}

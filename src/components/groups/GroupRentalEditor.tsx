@@ -137,7 +137,7 @@ const GroupRentalEditor: React.FC<GroupRentalEditorProps> = ({ group, onClose, i
       }
     >
       {/* Title Header with Stitch Spec */}
-      <div className="px-4 pt-6 pb-2 flex items-center gap-4">
+      <div className={`px-4 pb-2 flex items-center gap-4 ${isInline ? 'pt-1' : 'pt-6'}`}>
         {!isInline && (
           <button 
             onClick={onClose || (() => router.push(`/groups/${group.id}`))}

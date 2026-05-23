@@ -24,6 +24,7 @@ import { chatService } from '@/lib/firebase/chatService';
 import dynamic from 'next/dynamic';
 
 const ChatRoomComponent = dynamic(() => import('../chat/ChatRoom'));
+import UserBadge from '@/components/common/UserBadge';
 
 
 export default function ClassPortal() {
@@ -681,9 +682,21 @@ export default function ClassPortal() {
                             <p className="text-[12px] font-medium text-slate-500 truncate mb-0.5">
                               {startTimeStr}-{endTimeStr} · {cls.location || cls.group?.name}
                             </p>
-                            <p className="text-[12px] font-medium text-slate-500 truncate">
-                              {cls.instructors?.map((i:any)=>i.name).join(', ')}
-                            </p>
+                            {cls.instructors && cls.instructors.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5 mt-1">
+                                {cls.instructors.map((inst: any, idx: number) => (
+                                  <UserBadge
+                                    key={inst.id || inst.uid || inst.userId || idx}
+                                    uid={inst.id || inst.uid || inst.userId || ''}
+                                    nickname={inst.name}
+                                    photoURL={inst.avatar || inst.photoURL || inst.image || inst.imageUrl}
+                                    avatarSize="w-5 h-5"
+                                    nameClassName="font-bold text-[10px] text-slate-600 truncate max-w-[60px]"
+                                    nativeClassName="text-[8px] font-semibold text-slate-400 ml-1 truncate max-w-[40px]"
+                                  />
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
 
@@ -833,9 +846,21 @@ export default function ClassPortal() {
                             <p className="text-[12px] font-medium text-slate-500 truncate mb-0.5">
                               {startTimeStr}-{endTimeStr} · {cls.location || cls.group?.name}
                             </p>
-                            <p className="text-[12px] font-medium text-slate-500 truncate">
-                              {cls.instructors?.map((i:any)=>i.name).join(', ')}
-                            </p>
+                            {cls.instructors && cls.instructors.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5 mt-1">
+                                {cls.instructors.map((inst: any, idx: number) => (
+                                  <UserBadge
+                                    key={inst.id || inst.uid || inst.userId || idx}
+                                    uid={inst.id || inst.uid || inst.userId || ''}
+                                    nickname={inst.name}
+                                    photoURL={inst.avatar || inst.photoURL || inst.image || inst.imageUrl}
+                                    avatarSize="w-5 h-5"
+                                    nameClassName="font-bold text-[10px] text-slate-600 truncate max-w-[60px]"
+                                    nativeClassName="text-[8px] font-semibold text-slate-400 ml-1 truncate max-w-[40px]"
+                                  />
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
 

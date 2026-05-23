@@ -231,10 +231,22 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
           }
           return (
             <div key={tag.id || idx} className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-outline-variant/30 font-label-sm text-xs ${KIND_COLOR[tag.kind] || 'text-on-surface-variant bg-surface-container'}`}>
-              <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-                {KIND_ICON[tag.kind] || 'label'}
-              </span>
-              <span className="font-medium truncate max-w-[120px]">{tag.label}</span>
+              {tag.kind === 'people' ? (
+                <UserBadge
+                  uid={tag.id}
+                  nickname={tag.label}
+                  avatarSize="w-5 h-5"
+                  nameClassName="font-bold text-[10px] text-slate-600 truncate max-w-[60px]"
+                  nativeClassName="text-[8px] font-semibold text-slate-400 ml-1 truncate max-w-[40px]"
+                />
+              ) : (
+                <>
+                  <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                    {KIND_ICON[tag.kind] || 'label'}
+                  </span>
+                  <span className="font-medium truncate max-w-[120px]">{tag.label}</span>
+                </>
+              )}
             </div>
           );
         })}

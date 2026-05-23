@@ -29,6 +29,7 @@ function getNextEventDate(social: Social, language: string): string {
 
 import SocialDjLineupSheet from "./SocialDjLineupSheet";
 import NamecardModal, { NamecardUser } from "@/components/profile/NamecardModal";
+import UserBadge from "@/components/common/UserBadge";
 
 export default function SocialHomeTab({ social, onChatWithOrganizer, canEdit, onShowImages, isUnclaimed, isClaiming, onClaim }: Props) {
   const [venue, setVenue] = useState<any>(null);
@@ -159,8 +160,15 @@ export default function SocialHomeTab({ social, onChatWithOrganizer, canEdit, on
         </div>
         <div className="px-4 py-4 space-y-3">
           <div className="flex items-center justify-between">
-            <div 
-              className="flex items-center gap-3 cursor-pointer group"
+            <UserBadge
+              uid={social.organizerId || 'unknown'}
+              nickname={social.organizerName}
+              nativeNickname={social.organizerNameNative}
+              photoURL={orgPhoto}
+              avatarSize="w-10 h-10"
+              nameClassName="font-bold text-sm text-[#2d3435] group-active:text-primary transition-colors cursor-pointer"
+              nativeClassName="text-[11px] font-semibold text-slate-400 ml-1.5 cursor-pointer"
+              subText={<p className="text-[10px] text-[#acb3b4] font-bold uppercase cursor-pointer">{t('social.organizer')}</p>}
               onClick={() => {
                 setSelectedNamecardUser({
                   uid: social.organizerId || 'unknown',
@@ -174,16 +182,7 @@ export default function SocialHomeTab({ social, onChatWithOrganizer, canEdit, on
                   bio: orgProfile?.bio || undefined,
                 });
               }}
-            >
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden group-active:scale-95 transition-transform">
-                {orgPhoto ? <img src={orgPhoto} className="w-full h-full object-cover" alt="" /> :
-                  <span className="material-symbols-rounded text-lg text-primary">person</span>}
-              </div>
-              <div>
-                <p className="text-sm font-bold text-[#2d3435] group-active:text-primary transition-colors">{social.organizerNameNative || social.organizerName}</p>
-                <p className="text-[10px] text-[#acb3b4] font-bold uppercase">{t('social.organizer')}</p>
-              </div>
-            </div>
+            />
             <div className="flex items-center gap-2">
               {orgPhone && (
                 <a href={`tel:${orgPhone}`} className="w-9 h-9 rounded-full bg-[#f2f4f4] flex items-center justify-center">
@@ -197,27 +196,28 @@ export default function SocialHomeTab({ social, onChatWithOrganizer, canEdit, on
           </div>
           {social.staffNames && social.staffNames.length > 0 && (
             <div className="border-t border-[#f2f4f4] pt-3 space-y-2">
-              {social.staffNames.map((name, i) => (
-                <div 
-                  key={i} 
-                  className="flex items-center gap-3 cursor-pointer group"
-                  onClick={() => {
-                    setSelectedNamecardUser({
-                      uid: `staff-${i}`,
-                      name: name,
-                      roles: ['Staff'],
-                    });
-                  }}
-                >
-                  <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center group-active:scale-95 transition-transform">
-                    <span className="material-symbols-rounded text-sm text-[#acb3b4]">person</span>
+              {social.staffNames.map((name, i) => {
+                const staffId = social.staffIds?.[i];
+                return (
+                  <div key={i} className="flex items-center justify-between">
+                    <UserBadge
+                      uid={staffId || `staff-${i}`}
+                      nickname={name}
+                      avatarSize="w-8 h-8"
+                      nameClassName="font-bold text-xs text-[#2d3435] group-active:text-primary transition-colors cursor-pointer"
+                      nativeClassName="text-[10px] font-semibold text-slate-400 ml-1 truncate max-w-[80px] cursor-pointer"
+                      subText={<p className="text-[10px] text-[#acb3b4] cursor-pointer">{t('social.staff')}</p>}
+                      onClick={() => {
+                        setSelectedNamecardUser({
+                          uid: staffId || `staff-${i}`,
+                          name: name,
+                          roles: ['Staff'],
+                        });
+                      }}
+                    />
                   </div>
-                  <div>
-                    <p className="text-xs font-bold text-[#2d3435] group-active:text-primary transition-colors">{name}</p>
-                    <p className="text-[10px] text-[#acb3b4]">{t('social.staff')}</p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
           {isUnclaimed && onClaim && (

@@ -296,7 +296,7 @@ export const kr: Record<string, string> = {
     'group.tab.members': '멤버',
     'group.tab.class_user': '클래스',
     'group.tab.class_admin': '클래스 설정',
-    'group.tab.settings': '그룹 설정',
+    'group.tab.settings': '메뉴설정',
     'group.tab.stay': '스테이 설정',
     'group.tab.shop': '샵 설정',
     'group.tab.rental': '대관 설정',
@@ -362,6 +362,7 @@ export const kr: Record<string, string> = {
     'group.exit.message': '이 그룹 화면에서 나가시겠습니까?',
     'group.exit.stay': '머무르기',
     'group.exit.leave': '나가기',
+    'group.member_only_warning': '회원에게만 공개된 페이지입니다.',
 
     // Group Calendar
     'calendar.scheduleRegister': '일정 등록',

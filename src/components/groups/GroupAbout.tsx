@@ -15,6 +15,9 @@ import UserAvatar from '@/components/common/UserAvatar';
 interface GroupAboutProps {
   group: Group;
   members?: any[];
+  allUsers?: any[];
+  isClaiming?: boolean;
+  handleClaimAdmin?: (targetUserId: string, targetUserName: string) => Promise<void>;
 }
 
 const swipeConfidenceThreshold = 10000;
@@ -22,12 +25,23 @@ const swipePower = (offset: number, velocity: number) => {
   return Math.abs(offset) * velocity;
 };
 
-const GroupAbout: React.FC<GroupAboutProps> = ({ group, members }) => {
+const GroupAbout: React.FC<GroupAboutProps> = ({ 
+  group, 
+  members, 
+  allUsers = [], 
+  isClaiming = false, 
+  handleClaimAdmin 
+}) => {
   const { t } = useLanguage();
   const { user } = useAuth();
   
   const [isAboutExpanded, setIsAboutExpanded] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
+  
+  const [claimOwnerName, setClaimOwnerName] = useState("");
+  const [claimOwnerId, setClaimOwnerId] = useState("");
+  const [claimResults, setClaimResults] = useState<any[]>([]);
+  const [showClaimResults, setShowClaimResults] = useState(false);
 
   const handleLeaveGroup = async () => {
     if (!user || !group.id) return;
@@ -314,8 +328,149 @@ const GroupAbout: React.FC<GroupAboutProps> = ({ group, members }) => {
     </div>
   );
 
+  const isLocked = group.ownerId === 'system1' || !group.ownerId;
+
   return (
     <div className="space-y-8">
+      {/* 최상단 마운트 영역: 멤버 가입 & It's mine 클레임 */}
+      <div className="space-y-4">
+        {/* 1. It's mine 인라인 클레임 카드 (Locked 상태일 때 노출) */}
+        {isLocked && (
+          <div className="bg-white rounded-2xl p-6 border border-amber-200/50 shadow-md">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                <span className="material-symbols-outlined text-2xl font-bold">shield_person</span>
+              </div>
+              <div>
+                <h4 className="font-title-lg text-title-lg font-bold text-on-surface">{t('group.claim.title') || "Claim Group Admin"}</h4>
+                <p className="text-xs text-on-surface-variant font-medium mt-0.5">{t('group.claim.desc') || "Search and designate the owner of this community."}</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="relative">
+                <div className="relative flex items-center px-4 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+                  <span className="material-symbols-outlined text-on-surface-variant mr-2 text-[20px]">person_filled</span>
+                  <input
+                    value={claimOwnerName}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setClaimOwnerName(val);
+                      setClaimOwnerId('');
+                      if (val.length >= 1) {
+                        const lower = val.toLowerCase();
+                        const filtered = allUsers.filter((u: any) =>
+                          (u.nickname && u.nickname.toLowerCase().includes(lower)) ||
+                          (u.nativeNickname && u.nativeNickname.includes(val))
+                        );
+                        setClaimResults(filtered.slice(0, 6));
+                        setShowClaimResults(filtered.length > 0);
+                      } else {
+                        setShowClaimResults(false);
+                        setClaimResults([]);
+                      }
+                    }}
+                    onFocus={() => claimOwnerName.length >= 1 && setShowClaimResults(claimResults.length > 0)}
+                    onBlur={() => setTimeout(() => setShowClaimResults(false), 200)}
+                    className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-sm font-bold text-on-surface placeholder:text-on-surface-variant/40 outline-none font-body"
+                    placeholder={t('group.claim.search_placeholder') || "Enter name or nickname"}
+                    type="text"
+                  />
+                  {claimOwnerId && (
+                    <span className="material-symbols-outlined text-emerald-500 text-[18px]">check_circle</span>
+                  )}
+                </div>
+                {showClaimResults && (
+                  <div className="absolute top-full left-0 w-full mt-1 bg-white border border-[#e0e4e5] rounded-xl shadow-lg z-50 overflow-hidden">
+                    {claimResults.map((u: any) => (
+                      <button
+                        key={u.id}
+                        onClick={() => {
+                          setClaimOwnerName(u.nickname || u.nativeNickname || '');
+                          setClaimOwnerId(u.id);
+                          setShowClaimResults(false);
+                        }}
+                        className="w-full text-left px-4 py-3 hover:bg-[#f8f9fa] flex items-center gap-3 group transition-colors border-b border-[#f2f4f4] last:border-0"
+                      >
+                        <span className="material-symbols-outlined text-on-surface-variant text-[18px]">person</span>
+                        <div className="flex flex-col">
+                          <p className="font-bold text-on-surface text-sm group-hover:text-primary leading-tight font-body">{u.nickname}</p>
+                          {u.nativeNickname && <span className="text-[10px] text-on-surface-variant font-medium leading-tight font-body">{u.nativeNickname}</span>}
+                        </div>
+                        {u.id === user?.uid && (
+                          <span className="ml-auto text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full font-body">{t('group.claim.me') || "Me"}</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {claimOwnerId && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={async () => {
+                      if (!handleClaimAdmin) return;
+                      try {
+                        await handleClaimAdmin(claimOwnerId, claimOwnerName);
+                        setClaimOwnerName("");
+                        setClaimOwnerId("");
+                      } catch (e) {
+                        toast.error(t('group.claim.error') || 'Failed to claim group admin');
+                      }
+                    }}
+                    disabled={isClaiming}
+                    className="w-full py-3 bg-[#0057bd] text-white font-bold rounded-xl active:scale-95 transition-all text-sm shadow-sm font-body"
+                  >
+                    {isClaiming ? (t('group.claim.saving') || "Saving...") : (t('group.claim.button') || "Claim Ownership (소유권 주장)")}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 2. 멤버 가입 / 이미 가입된 멤버 카드 */}
+        {isJoined ? (
+          <div className="bg-[#f8f9fa] p-5 rounded-2xl border border-outline-variant/30 text-center shadow-sm">
+            <div className="w-12 h-12 rounded-full bg-[#0057bd]/10 text-[#0057bd] flex items-center justify-center mx-auto mb-3">
+              <span className="material-symbols-outlined text-2xl font-bold">verified</span>
+            </div>
+            <p className="text-[16px] leading-[1.6] text-on-surface font-bold mb-1 font-body">
+              {t("group.about.already_member", "이미 가입된 멤버입니다")}
+            </p>
+            {currentMember?.joinedAt && (
+              <p className="text-[12px] leading-[1.2] text-on-surface-variant mt-1 font-body">
+                {t("group.about.joined_date", { date: getJoinedDateString(currentMember.joinedAt) })}
+              </p>
+            )}
+            <div className="mt-4 pt-3 border-t border-[#f2f4f4]">
+              <button
+                onClick={handleLeaveGroup}
+                disabled={isLeaving}
+                className="text-[11px] font-bold text-on-surface-variant/40 hover:text-red-500 transition-colors duration-200 active:scale-95 disabled:opacity-50 font-body"
+              >
+                {isLeaving 
+                  ? t("group.about.leaving", "Leaving...") 
+                  : t("group.about.leave", "Leave Community (탈퇴하기)")
+                }
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-[#0057bd] p-5 rounded-2xl shadow-lg shadow-[#0057bd]/25">
+            <p className="text-[18px] leading-[1.8] text-white mb-2 font-bold font-body">{t("group.about.become_member")}</p>
+            <p className="text-[13px] leading-[1.3] text-white/80 mb-4 font-body">{t("group.about.join_desc", { name: group.name || 'our vibrant community' })}</p>
+            <button 
+              className="w-full py-3 bg-white text-[#0057bd] font-bold rounded-xl active:scale-[0.98] transition-transform shadow-sm font-body text-sm"
+              onClick={() => toast.success(t("group.about.join_requested") || "Join request sent!")}
+            >
+              {t("group.about.join_button")}
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* Fullscreen Photo Viewer */}
       <AnimatePresence>
         {isViewerOpen && (
@@ -458,45 +613,6 @@ const GroupAbout: React.FC<GroupAboutProps> = ({ group, members }) => {
           </div>
         )}
 
-        {/* Member Application Status */}
-        {isJoined ? (
-          <div className="bg-surface-container-high p-5 rounded-2xl border border-outline-variant/30 text-center">
-            <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto mb-3">
-              <span className="material-symbols-outlined text-2xl font-bold">verified</span>
-            </div>
-            <p className="font-title-lg text-title-lg text-on-surface font-bold mb-1">
-              {t("group.about.already_member", "이미 가입된 멤버입니다")}
-            </p>
-            {currentMember?.joinedAt && (
-              <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">
-                {t("group.about.joined_date", { date: getJoinedDateString(currentMember.joinedAt) })}
-              </p>
-            )}
-            <div className="mt-4 pt-3 border-t border-outline-variant/10">
-              <button
-                onClick={handleLeaveGroup}
-                disabled={isLeaving}
-                className="text-[11px] font-label-sm text-on-surface-variant/40 hover:text-error/85 transition-colors duration-200 active:scale-95 disabled:opacity-50"
-              >
-                {isLeaving 
-                  ? t("group.about.leaving", "Leaving...") 
-                  : t("group.about.leave", "Leave Community (탈퇴하기)")
-                }
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="bg-primary p-5 rounded-2xl shadow-lg shadow-primary/20">
-            <p className="font-title-lg text-title-lg text-on-primary mb-3 font-bold">{t("group.about.become_member")}</p>
-            <p className="font-body-md text-on-primary/80 mb-4 text-sm">{t("group.about.join_desc", { name: group.name || 'our vibrant community' })}</p>
-            <button 
-              className="w-full py-3 bg-on-primary text-primary font-label-md text-label-md rounded-xl active:scale-[0.98] transition-transform shadow-sm"
-              onClick={() => toast.success(t("group.about.join_requested") || "Join request sent!")}
-            >
-              {t("group.about.join_button")}
-            </button>
-          </div>
-        )}
       </section>
 
       {/* Section 3: Hours & Rules (Minimalist Cards) */}

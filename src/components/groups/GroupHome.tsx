@@ -49,7 +49,7 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { t } = useLanguage();
-  const { user, profile } = useAuth();
+  const { user, profile, loading } = useAuth();
   const { setGlobalNavHidden } = useNavigation();
   const { openModal: openClassFlow } = useModalNavigation('classFlow');
 
@@ -74,19 +74,43 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
     safeFormat,
     safeFormatRelative,
     isPostNew,
-    handleClaimAdmin,
     handleColorChange,
-    handleJoinAction
+    handleJoinAction,
+    handleClaimAdmin,
   } = useGroupData({ initialGroup });
 
   const [localClassFlow, setLocalClassFlow] = useState<string | null>(null);
   const [localModalId, setLocalModalId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<TabType>(() => (searchParams.get('tab') as TabType) || 'home');
-  const [visitedTabs, setVisitedTabs] = useState<Set<TabType>>(new Set<TabType>(['home']));
+  
+  // Intelligent Initial Tab Routing: Non-members default to 'about'
+  const [activeTab, setActiveTab] = useState<TabType>(() => {
+    const isMember = isFullMember || isAdminUser;
+    if (!isMember) return 'about' as TabType;
+    return (searchParams.get('tab') as TabType) || 'home' as TabType;
+  });
+  const [visitedTabs, setVisitedTabs] = useState<Set<TabType>>(() => new Set<TabType>([activeTab]));
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [selectedMoment, setSelectedMoment] = useState<any | null>(null);
 
   const [showJoinPromptSheet, setShowJoinPromptSheet] = useState(false);
+
+  // Dynamic Tab synchronization on member status changes
+  useEffect(() => {
+    if (loading || (user && members.length === 0)) return;
+
+    const isMember = isFullMember || isAdminUser;
+    if (!isMember) {
+      if (activeTab !== 'about') {
+        setActiveTab('about');
+        setVisitedTabs(prev => { const newSet = new Set(prev); newSet.add('about'); return newSet; });
+      }
+    } else {
+      const tabParam = searchParams.get('tab') as TabType | null;
+      if (!tabParam && activeTab === 'about') {
+        setActiveTab('home');
+      }
+    }
+  }, [isFullMember, isAdminUser, loading, user, members.length]);
 
   // URL searchParams와 로컬 상태(이중 안전 장치) 실시간 동기화
   useEffect(() => {
@@ -99,11 +123,19 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
   // URL의 ?tab= 파라미터가 변경되면 activeTab을 동기화
   useEffect(() => {
     const tabParam = searchParams.get('tab') as TabType | null;
-    if (tabParam && tabParam !== activeTab) {
-      setActiveTab(tabParam);
-      setVisitedTabs(prev => { const newSet = new Set(prev); newSet.add(tabParam); return newSet; });
+    const isMember = isFullMember || isAdminUser;
+    if (tabParam) {
+      if (!isMember && tabParam !== 'about' && tabParam !== 'board' && tabParam !== 'class') {
+        // Non-member guard bypass prevent
+        setActiveTab('about');
+        return;
+      }
+      if (tabParam !== activeTab) {
+        setActiveTab(tabParam);
+        setVisitedTabs(prev => { const newSet = new Set(prev); newSet.add(tabParam); return newSet; });
+      }
     }
-  }, [searchParams]);
+  }, [searchParams, isFullMember, isAdminUser]);
 
   // 모달 제어를 Query String으로 전환
   const showGroupChat = searchParams.get('modal') === 'chat';
@@ -137,6 +169,7 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
   // 안전한 Exit UX (Hybrid Trap + Exit Modal)
   const exitAttempted = useRef(false);
   const trapReady = useRef(false);
+  const hasInitiallyDetected = useRef(false);
 
   // Trap 초기 셋업: active=true를 push하여 뒤로가기 1회분 방어벽 생성
   useEffect(() => {
@@ -208,6 +241,10 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
           newSet.add('settings' as TabType);
           newSet.add('brand' as TabType);
           newSet.add('roles' as TabType);
+          newSet.add('class-setting' as TabType);
+          newSet.add('shop-setting' as TabType);
+          newSet.add('stay-setting' as TabType);
+          newSet.add('rental-setting' as TabType);
         }
         return newSet;
       });
@@ -228,6 +265,14 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
 
 
   const handleTabClick = (tab: TabType) => {
+    if (!isFullMember && !isAdminUser) {
+      const isAllowed = tab === 'about' || tab === 'board' || tab === 'class';
+      if (!isAllowed) {
+        toast.error(t('group.member_only_warning') || "회원에게만 공개된 페이지입니다.");
+        return;
+      }
+    }
+
     if (tab === 'settings' || tab === 'brand') {
       if (!isAdminUser) {
         toast(t('group.admin_only') || 'Admin only feature', { icon: '🔒' });
@@ -235,7 +280,7 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
       }
     }
 
-    if (tab === 'home' || tab === 'about' || tab === 'brand' || tab === 'settings') {
+    if (tab === 'home' || tab === 'about' || tab === 'brand' || tab === 'settings' || tab === 'members') {
       setActiveTab(tab);
       setVisitedTabs(prev => { const newSet = new Set(prev); newSet.add(tab); return newSet; });
       const params = new URLSearchParams(searchParams.toString());
@@ -249,17 +294,48 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
       return;
     }
 
-    if (!isFullMember && !isAdminUser) {
-      setShowJoinPromptSheet(true);
-      return;
-    }
-
     setActiveTab(tab);
     setVisitedTabs(prev => { const newSet = new Set(prev); newSet.add(tab); return newSet; });
     const params = new URLSearchParams(searchParams.toString());
     params.set('tab', tab);
     const qs = params.toString();
     router.replace(pathname + (qs ? '?' + qs : ''), { scroll: false });
+  };
+
+  // Footer menu interactions with non-member guards
+  const handleMembersFooterClick = () => {
+    if (!isFullMember && !isAdminUser) {
+      toast.error(t('group.member_only_warning') || "회원에게만 공개된 페이지입니다.");
+      return;
+    }
+    handleTabClick('members');
+  };
+
+  const handleChatFooterClick = () => {
+    if (!isFullMember && !isAdminUser) {
+      toast.error(t('group.member_only_warning') || "회원에게만 공개된 페이지입니다.");
+      return;
+    }
+    router.push(pathname + '?active=true&modal=chat', { scroll: false });
+  };
+
+  const handleDashboardFooterClick = () => {
+    if (!isFullMember && !isAdminUser) {
+      toast.error(t('group.member_only_warning') || "회원에게만 공개된 페이지입니다.");
+      return;
+    }
+    handleTabClick('home');
+  };
+
+  const handleFirstTabDetect = (tabId: string) => {
+    if (hasInitiallyDetected.current) return;
+    const tabParam = searchParams.get('tab');
+    const isMember = isFullMember || isAdminUser;
+    if (isMember && !tabParam && activeTab === 'home' && tabId !== 'home') {
+      hasInitiallyDetected.current = true;
+      setActiveTab(tabId as TabType);
+      setVisitedTabs(prev => { const newSet = new Set(prev); newSet.add(tabId as TabType); return newSet; });
+    }
   };
 
   return (
@@ -306,6 +382,10 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
         paletteColors={PALETTE_COLORS}
         currentColor={currentGroup.headerThemeColor || '#1a1c23'}
         onColorChange={handleColorChange}
+        onMembersClick={handleMembersFooterClick}
+        onChatClick={handleChatFooterClick}
+        onDashboardClick={handleDashboardFooterClick}
+        onFirstTabDetect={handleFirstTabDetect}
       >
         <></>
       </GroupAppShell>
@@ -361,6 +441,9 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
               setSelectedMember={setSelectedMember}
               openClassFlow={openClassFlow}
               handleTabClick={handleTabClick}
+              allUsers={allUsers}
+              isClaiming={isClaiming}
+              handleClaimAdmin={handleClaimAdmin}
             />
 
           </div>

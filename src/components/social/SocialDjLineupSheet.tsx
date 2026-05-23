@@ -5,6 +5,7 @@ import { userService } from "@/lib/firebase/userService";
 import { PlatformUser } from "@/types/user";
 import { v4 as uuidv4 } from "uuid";
 import { useLanguage } from "@/contexts/LanguageContext";
+import UserBadge from "@/components/common/UserBadge";
 
 interface Props {
   social: Social;
@@ -256,19 +257,36 @@ export default function SocialDjLineupSheet({ social, canEdit, onClose }: Props)
               <div className="space-y-2">
                 {upcomingDjs.map((dj) => (
                   <div key={dj.id} className="flex items-center justify-between p-3 border border-[#e0e4e5] rounded-xl bg-white">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-[#f8f9fa] flex items-center justify-center">
-                        <span className="material-symbols-rounded text-[#596061]">headphones</span>
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-[#2d3435]">{dj.djName}</p>
-                        <p className="text-[10px] font-bold text-primary mt-0.5">
-                          {new Date(dj.date).toLocaleDateString(dateLocale, { weekday: 'short', month: 'short', day: 'numeric' })}
-                        </p>
-                      </div>
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      {dj.djId ? (
+                        <UserBadge
+                          uid={dj.djId}
+                          nickname={dj.djName}
+                          avatarSize="w-10 h-10"
+                          nameClassName="font-bold text-sm text-[#2d3435] truncate"
+                          nativeClassName="text-[10px] font-semibold text-slate-400 ml-1.5 truncate max-w-[80px]"
+                          subText={
+                            <p className="text-[10px] font-bold text-primary mt-0.5">
+                              {new Date(dj.date).toLocaleDateString(dateLocale, { weekday: 'short', month: 'short', day: 'numeric' })}
+                            </p>
+                          }
+                        />
+                      ) : (
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-[#f8f9fa] flex items-center justify-center shrink-0">
+                            <span className="material-symbols-rounded text-[#596061]">headphones</span>
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-[#2d3435]">{dj.djName}</p>
+                            <p className="text-[10px] font-bold text-primary mt-0.5">
+                              {new Date(dj.date).toLocaleDateString(dateLocale, { weekday: 'short', month: 'short', day: 'numeric' })}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     {canEdit && (
-                      <button onClick={() => handleDeleteDj(dj.id)} className="w-8 h-8 flex items-center justify-center text-[#acb3b4] hover:text-red-500 hover:bg-red-50 rounded-full transition-colors">
+                      <button onClick={() => handleDeleteDj(dj.id)} className="w-8 h-8 flex items-center justify-center text-[#acb3b4] hover:text-red-500 hover:bg-red-50 rounded-full transition-colors shrink-0">
                         <span className="material-symbols-rounded text-sm">delete</span>
                       </button>
                     )}
@@ -284,19 +302,36 @@ export default function SocialDjLineupSheet({ social, canEdit, onClose }: Props)
               <div className="space-y-2 opacity-60">
                 {pastDjs.map((dj) => (
                   <div key={dj.id} className="flex items-center justify-between p-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa]">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-[#e8eaec] flex items-center justify-center">
-                        <span className="material-symbols-rounded text-xs text-[#acb3b4]">headphones</span>
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold text-[#596061]">{dj.djName}</p>
-                        <p className="text-[10px] font-medium text-[#acb3b4]">
-                          {new Date(dj.date).toLocaleDateString(dateLocale, { month: 'short', day: 'numeric', year: 'numeric' })}
-                        </p>
-                      </div>
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      {dj.djId ? (
+                        <UserBadge
+                          uid={dj.djId}
+                          nickname={dj.djName}
+                          avatarSize="w-8 h-8"
+                          nameClassName="font-bold text-xs text-[#596061] truncate"
+                          nativeClassName="text-[9px] font-semibold text-slate-400 ml-1.5 truncate max-w-[60px]"
+                          subText={
+                            <p className="text-[10px] font-medium text-[#acb3b4]">
+                              {new Date(dj.date).toLocaleDateString(dateLocale, { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </p>
+                          }
+                        />
+                      ) : (
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-[#e8eaec] flex items-center justify-center shrink-0">
+                            <span className="material-symbols-rounded text-xs text-[#acb3b4]">headphones</span>
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold text-[#596061]">{dj.djName}</p>
+                            <p className="text-[10px] font-medium text-[#acb3b4]">
+                              {new Date(dj.date).toLocaleDateString(dateLocale, { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     {canEdit && (
-                      <button onClick={() => handleDeleteDj(dj.id)} className="w-8 h-8 flex items-center justify-center text-[#c4cacc] hover:text-red-500 transition-colors">
+                      <button onClick={() => handleDeleteDj(dj.id)} className="w-8 h-8 flex items-center justify-center text-[#c4cacc] hover:text-red-500 transition-colors shrink-0">
                         <span className="material-symbols-rounded text-sm">delete</span>
                       </button>
                     )}

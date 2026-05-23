@@ -316,6 +316,7 @@ export const en: Record<string, string> = {
     'group.exit.message': 'Are you sure you want to exit this group?',
     'group.exit.stay': 'Stay',
     'group.exit.leave': 'Exit',
+    'group.member_only_warning': 'This page is for members only.',
 
     'header.resale': 'RESALE',
     'header.lost_found': 'LOST & FOUND',

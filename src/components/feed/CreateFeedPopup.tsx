@@ -16,6 +16,7 @@ import { FeedContext, Post } from '@/types/feed';
 import { useLocation } from '@/components/providers/LocationProvider';
 import { helpDeskAIService } from '@/lib/ai/helpDeskAI';
 import { KIND_ICON, KIND_COLOR } from '@/constants/tags';
+import UserBadge from '@/components/common/UserBadge';
 
 /* ?€?€?€ Types ?€?€?€ */
 interface MediaItem {
@@ -612,8 +613,20 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
                 <div className="flex flex-wrap gap-1.5">
                   {tags.map(t => (
                     <div key={t.id} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border transition-colors ${T_COLOR[t.kind] || 'bg-slate-50 text-slate-700 border-slate-200'}`}>
-                      <span className="material-symbols-rounded text-[13px]">{T_ICON[t.kind] || 'sell'}</span>
-                      <span>{t.label}</span>
+                      {t.kind === 'people' ? (
+                        <UserBadge
+                          uid={t.id}
+                          nickname={t.label}
+                          avatarSize="w-5 h-5"
+                          nameClassName="font-bold text-[10px] text-slate-600 truncate max-w-[60px]"
+                          nativeClassName="text-[8px] font-semibold text-slate-400 ml-1 truncate max-w-[40px]"
+                        />
+                      ) : (
+                        <>
+                          <span className="material-symbols-rounded text-[13px]">{T_ICON[t.kind] || 'sell'}</span>
+                          <span>{t.label}</span>
+                        </>
+                      )}
                       <button type="button" onClick={() => removeTag(t.id)} className="ml-0.5 opacity-55 hover:opacity-100 transition-opacity active:scale-90">
                         <span className="material-symbols-rounded text-[12px] leading-none">close</span>
                       </button>
@@ -704,20 +717,35 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
                         key={item.id}
                         type="button"
                         onClick={() => addTag(item)}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 rounded-xl text-left transition-colors"
+                        className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-slate-50 rounded-xl text-left transition-colors"
                       >
-                        {item.photo ? (
-                          <img src={item.photo} alt="" className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
-                        ) : (
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${T_COLOR[item.kind] || 'bg-slate-100 text-slate-500 border border-slate-200'}`}>
-                            <span className="material-symbols-rounded text-sm">{T_ICON[item.kind]}</span>
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-bold text-slate-800 truncate">{item.label}</p>
-                          <p className={`text-[9px] font-black uppercase tracking-wider mt-0.5 ${T_COLOR[item.kind] ? T_COLOR[item.kind].split(' ')[1] : 'text-slate-400'}`}>
-                            {item.kind}
-                          </p>
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          {item.kind === 'people' ? (
+                            <UserBadge
+                              uid={item.id}
+                              nickname={item.label}
+                              photoURL={item.photo}
+                              avatarSize="w-8 h-8"
+                              nameClassName="font-bold text-sm text-slate-800 truncate"
+                              nativeClassName="text-[11px] font-semibold text-slate-400 ml-1.5 truncate"
+                            />
+                          ) : (
+                            <>
+                              {item.photo ? (
+                                <img src={item.photo} alt="" className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+                              ) : (
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${T_COLOR[item.kind] || 'bg-slate-100 text-slate-500 border border-slate-200'}`}>
+                                  <span className="material-symbols-rounded text-sm">{T_ICON[item.kind]}</span>
+                                </div>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-bold text-slate-800 truncate">{item.label}</p>
+                                <p className={`text-[9px] font-black uppercase tracking-wider mt-0.5 ${T_COLOR[item.kind] ? T_COLOR[item.kind].split(' ')[1] : 'text-slate-400'}`}>
+                                  {item.kind}
+                                </p>
+                              </div>
+                            </>
+                          )}
                         </div>
                         {tags.find(t => t.id === item.id) && (
                           <span className="material-symbols-rounded text-primary text-lg shrink-0">check_circle</span>
