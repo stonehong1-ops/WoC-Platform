@@ -99,7 +99,7 @@ function RoomName({ room, currentUserId }: { room: ChatRoom; currentUserId?: str
   );
 }
 
-function RoomItem({ room, userId, selectedRoomId, onSelectRoom }: { room: ChatRoom; userId?: string; selectedRoomId?: string | null; onSelectRoom: (id: string) => void }) {
+function RoomItem({ room, userId, selectedRoomId, onSelectRoom, onLongPress }: { room: ChatRoom; userId?: string; selectedRoomId?: string | null; onSelectRoom: (id: string) => void; onLongPress: (room: ChatRoom) => void }) {
   const { formatRelativeTime, t } = useLanguage();
   const isSelected = selectedRoomId === room.id;
   const unreadCount = room.unreadCounts?.[userId || ''] || 0;
@@ -108,7 +108,76 @@ function RoomItem({ room, userId, selectedRoomId, onSelectRoom }: { room: ChatRo
     return d ? formatRelativeTime(d) : '';
   })();
 
-  const renderLastMessage = (msg: string) => {
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  const isLongPressActive = useRef(false);
+  const touchStartPos = useRef<{ x: number; y: number } | null>(null);
+
+  const startLongPress = (e: React.MouseEvent | React.TouchEvent) => {
+    isLongPressActive.current = false;
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+
+    if ('touches' in e && e.touches.length > 0) {
+      touchStartPos.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY
+      };
+    } else if ('clientX' in e) {
+      touchStartPos.current = {
+        x: e.clientX,
+        y: e.clientY
+      };
+    } else {
+      touchStartPos.current = null;
+    }
+
+    longPressTimer.current = setTimeout(() => {
+      isLongPressActive.current = true;
+      onLongPress(room);
+    }, 600); // 600ms threshold
+  };
+
+  const cancelLongPress = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+    touchStartPos.current = null;
+  };
+
+  const handleMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!touchStartPos.current || !longPressTimer.current) return;
+
+    let currentX = 0;
+    let currentY = 0;
+
+    if ('touches' in e && e.touches.length > 0) {
+      currentX = e.touches[0].clientX;
+      currentY = e.touches[0].clientY;
+    } else if ('clientX' in e) {
+      currentX = e.clientX;
+      currentY = e.clientY;
+    } else {
+      return;
+    }
+
+    const diffX = Math.abs(currentX - touchStartPos.current.x);
+    const diffY = Math.abs(currentY - touchStartPos.current.y);
+
+    // 10px 이상 이동 시 스크롤로 간주하여 롱클릭 취소
+    if (diffX > 10 || diffY > 10) {
+      cancelLongPress();
+    }
+  };
+
+  const handleClick = () => {
+    if (isLongPressActive.current) {
+      isLongPressActive.current = false;
+      return;
+    }
+    onSelectRoom(room.id);
+  };
+
+  const renderLastMessage = (msg?: string | null) => {
     if (!msg) return '';
     if (msg.startsWith('chat.system_join_params::')) {
       try {
@@ -146,7 +215,14 @@ function RoomItem({ room, userId, selectedRoomId, onSelectRoom }: { room: ChatRo
   return (
     <button
       key={room.id}
-      onClick={() => onSelectRoom(room.id)}
+      onClick={handleClick}
+      onMouseDown={startLongPress}
+      onMouseUp={cancelLongPress}
+      onMouseMove={handleMove}
+      onMouseLeave={cancelLongPress}
+      onTouchStart={startLongPress}
+      onTouchEnd={cancelLongPress}
+      onTouchMove={handleMove}
       className={`w-full flex items-center gap-4 p-5 transition-all text-left ${isSelected ? 'bg-primary/5' : 'hover:bg-gray-50'}`}
     >
       <div className="relative shrink-0">
@@ -203,9 +279,69 @@ export default function ChatList({ onSelectRoom, selectedRoomId, category = 'Per
   const [searchedUsers, setSearchedUsers] = useState<PlatformUser[]>([]);
   const [searchingUsers, setSearchingUsers] = useState(false);
   const [creatingRoom, setCreatingRoom] = useState<string | null>(null);
+  
+  // Custom Long Press and Resilient Localization cache states
+  const [roomParticipantsNicknames, setRoomParticipantsNicknames] = useState<Record<string, { nickname: string; nativeNickname?: string }>>({});
+  const [longPressActiveRoom, setLongPressActiveRoom] = useState<ChatRoom | null>(null);
+  const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
+  const [isLeaving, setIsLeaving] = useState(false);
+
   const searchRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+
+  // Fetch participant nicknames for case-insensitive local search
+  useEffect(() => {
+    if (!rooms.length || !user) return;
+    
+    const fetchParticipantNicknames = async () => {
+      const newCache = { ...roomParticipantsNicknames };
+      let changed = false;
+      
+      for (const room of rooms) {
+        if (room.type === 'personal' || room.type === 'private' || room.type === 'business') {
+          if (newCache[room.id]) continue;
+          
+          const otherId = room.participants.find(id => id !== user.uid);
+          if (otherId) {
+            try {
+              const u = await userService.getUserById(otherId);
+              if (u) {
+                newCache[room.id] = { nickname: u.nickname, nativeNickname: u.nativeNickname };
+                changed = true;
+              }
+            } catch (e) {
+              console.error(e);
+            }
+          }
+        }
+      }
+      if (changed) {
+        setRoomParticipantsNicknames(newCache);
+      }
+    };
+    
+    fetchParticipantNicknames();
+  }, [rooms, user]);
+
+  const handleLongPress = (room: ChatRoom) => {
+    setLongPressActiveRoom(room);
+    setIsLeaveModalOpen(true);
+  };
+
+  const handleLeaveRoom = async () => {
+    if (!longPressActiveRoom || !user) return;
+    setIsLeaving(true);
+    try {
+      await chatService.leaveRoom(longPressActiveRoom.id, user.uid);
+      setIsLeaveModalOpen(false);
+      setLongPressActiveRoom(null);
+    } catch (e) {
+      console.error("Failed to leave room:", e);
+    } finally {
+      setIsLeaving(false);
+    }
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -307,11 +443,23 @@ export default function ChatList({ onSelectRoom, selectedRoomId, category = 'Per
   const myGroupRooms = filteredRooms.filter(r => (r.type === 'groups' || r.type === 'group') && r.participants?.includes(user?.uid || ''));
   const discoverGroupRooms = filteredRooms.filter(r => (r.type === 'groups' || r.type === 'group') && !r.participants?.includes(user?.uid || ''));
 
-  // Filter rooms by search query (name match)
+  // Filter rooms by search query (name match & participant name match)
   const searchFilteredRooms = searchQuery.trim()
     ? filteredRooms.filter(room => {
-        const name = (room.name || '').toLowerCase();
-        return name.includes(searchQuery.toLowerCase());
+        const queryLower = searchQuery.toLowerCase();
+        const roomNameLower = (room.name || '').toLowerCase();
+        if (roomNameLower.includes(queryLower)) return true;
+        
+        // Check participant nickname from cache (personal/business chats)
+        const cached = roomParticipantsNicknames[room.id];
+        if (cached) {
+          const nickLower = (cached.nickname || '').toLowerCase();
+          const nativeLower = (cached.nativeNickname || '').toLowerCase();
+          if (nickLower.includes(queryLower) || nativeLower.includes(queryLower)) {
+            return true;
+          }
+        }
+        return false;
       })
     : filteredRooms;
 
@@ -493,7 +641,7 @@ export default function ChatList({ onSelectRoom, selectedRoomId, category = 'Per
                 </span>
               </div>
               <div className="divide-y divide-gray-50">
-                {publicRooms.map((room) => <RoomItem key={room.id} room={room} userId={user?.uid} selectedRoomId={selectedRoomId} onSelectRoom={onSelectRoom} />)}
+                {publicRooms.map((room) => <RoomItem key={room.id} room={room} userId={user?.uid} selectedRoomId={selectedRoomId} onSelectRoom={onSelectRoom} onLongPress={handleLongPress} />)}
               </div>
             </div>
           )}
@@ -509,7 +657,7 @@ export default function ChatList({ onSelectRoom, selectedRoomId, category = 'Per
                 </span>
               </div>
               <div className="divide-y divide-gray-50">
-                {myGroupRooms.map((room) => <RoomItem key={room.id} room={room} userId={user?.uid} selectedRoomId={selectedRoomId} onSelectRoom={onSelectRoom} />)}
+                {myGroupRooms.map((room) => <RoomItem key={room.id} room={room} userId={user?.uid} selectedRoomId={selectedRoomId} onSelectRoom={onSelectRoom} onLongPress={handleLongPress} />)}
               </div>
             </div>
           )}
@@ -525,14 +673,51 @@ export default function ChatList({ onSelectRoom, selectedRoomId, category = 'Per
                 </span>
               </div>
               <div className="divide-y divide-gray-50">
-                {discoverGroupRooms.map((room) => <RoomItem key={room.id} room={room} userId={user?.uid} selectedRoomId={selectedRoomId} onSelectRoom={onSelectRoom} />)}
+                {discoverGroupRooms.map((room) => <RoomItem key={room.id} room={room} userId={user?.uid} selectedRoomId={selectedRoomId} onSelectRoom={onSelectRoom} onLongPress={handleLongPress} />)}
               </div>
             </div>
           )}
         </div>
       ) : (
         <div className="divide-y divide-gray-50">
-          {searchFilteredRooms.map((room) => <RoomItem key={room.id} room={room} userId={user?.uid} selectedRoomId={selectedRoomId} onSelectRoom={onSelectRoom} />)}
+          {searchFilteredRooms.map((room) => <RoomItem key={room.id} room={room} userId={user?.uid} selectedRoomId={selectedRoomId} onSelectRoom={onSelectRoom} onLongPress={handleLongPress} />)}
+        </div>
+      )}
+
+      {/* Leave Room Confirmation Modal */}
+      {isLeaveModalOpen && longPressActiveRoom && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-100 flex flex-col items-center text-center animate-in zoom-in duration-300">
+            <div className="w-16 h-16 rounded-full bg-red-50 text-red-500 flex items-center justify-center mb-4 animate-pulse">
+              <span className="material-symbols-outlined text-[32px]">logout</span>
+            </div>
+            <h3 className="text-[18px] font-black text-gray-900 mb-2 uppercase tracking-tight">
+              {t('chat.leave_room_title')}
+            </h3>
+            <p className="text-[13px] text-gray-400 font-medium leading-relaxed mb-6 max-w-xs">
+              {t('chat.leave_room_desc')}
+            </p>
+            <div className="w-full flex gap-3">
+              <button
+                disabled={isLeaving}
+                onClick={() => { setIsLeaveModalOpen(false); setLongPressActiveRoom(null); }}
+                className="flex-1 py-3.5 bg-gray-50 border border-slate-100 text-slate-500 font-bold rounded-2xl text-[13px] hover:bg-gray-100 transition-colors"
+              >
+                {t('chat.cancel', '취소')}
+              </button>
+              <button
+                disabled={isLeaving}
+                onClick={handleLeaveRoom}
+                className="flex-1 py-3.5 bg-red-500 text-white font-bold rounded-2xl text-[13px] hover:bg-red-600 active:scale-95 transition-all shadow-lg shadow-red-500/20 disabled:opacity-60 flex items-center justify-center"
+              >
+                {isLeaving ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  t('chat.leave', '나가기')
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

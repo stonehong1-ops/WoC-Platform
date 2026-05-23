@@ -8,6 +8,7 @@ import { storageService } from '@/lib/firebase/storageService';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
 import DeactivateBottomSheet from './DeactivateBottomSheet';
+import { formatLocalPhoneNumber } from '@/utils/phone';
 
 interface UserProfile {
   uid: string;
@@ -27,6 +28,7 @@ interface UserProfile {
   isServiceProvider?: boolean;
   authMethod?: string;
   allowPhoneCalls?: boolean;
+  allowChatNotifications?: boolean;
   role?: 'leader' | 'follower';
   career?: string;
   partnerStatus?: string;
@@ -55,14 +57,15 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
     countryCode: '+1 (US)',
     isAdmin: false,
     isInstructor: false,
-    isOrganizer: false,
+     isOrganizer: false,
     isDj: false,
     isServiceProvider: false,
     photoURL: '',
-    allowPhoneCalls: false,
+    allowPhoneCalls: true,
+    allowChatNotifications: true,
     role: 'follower' as 'leader' | 'follower',
     career: '',
-    partnerStatus: ''
+    partnerStatus: 'none'
   });
 
   const [careerYear, setCareerYear] = useState('');
@@ -77,7 +80,7 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
         nativeNickname: profile.nativeNickname || '',
         bio: profile.bio || '',
         gender: profile.gender || 'Other',
-        phoneNumber: profile.phoneNumber || '',
+        phoneNumber: formatLocalPhoneNumber(profile.phoneNumber, profile.countryCode || '+1 (US)'),
         countryCode: profile.countryCode || '+1 (US)',
         isAdmin: profile.isAdmin || false,
         isInstructor: profile.isInstructor || false,
@@ -85,10 +88,11 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
         isDj: profile.isDj || false,
         isServiceProvider: profile.isServiceProvider || false,
         photoURL: profile.photoURL || '',
-        allowPhoneCalls: profile.allowPhoneCalls || false,
+        allowPhoneCalls: profile.allowPhoneCalls !== false,
+        allowChatNotifications: profile.allowChatNotifications !== false,
         role: profile.role || 'follower',
         career: profile.career || '',
-        partnerStatus: profile.partnerStatus || ''
+        partnerStatus: profile.partnerStatus || 'none'
       });
 
       // 경력 YYYY-MM 파싱
@@ -188,6 +192,7 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
         isServiceProvider: details.isServiceProvider,
         photoURL: details.photoURL,
         allowPhoneCalls: details.allowPhoneCalls,
+        allowChatNotifications: details.allowChatNotifications,
         career: details.career,
         partnerStatus: details.partnerStatus,
         updatedAt: serverTimestamp()
@@ -392,35 +397,73 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
                       onChange={(e) => setDetails(prev => ({ ...prev, phoneNumber: e.target.value }))}
                     />
                   </div>
-                  <div className="flex flex-col mt-3 p-4 bg-surface-container-lowest border border-outline-variant/30 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[13px] font-bold text-on-surface">{t('myinfo.allow_calls')}</span>
-                      <div className="flex items-center gap-5">
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input 
-                            type="radio" 
-                            name="allowPhoneCalls"
-                            checked={details.allowPhoneCalls === true}
-                            onChange={() => setDetails(prev => ({ ...prev, allowPhoneCalls: true }))}
-                            className="w-4 h-4 border-outline-variant text-primary focus:ring-primary accent-primary cursor-pointer"
-                          />
-                          <span className="text-xs font-bold text-on-surface-variant">{t('myinfo.allow_calls_on')}</span>
-                        </label>
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input 
-                            type="radio" 
-                            name="allowPhoneCalls"
-                            checked={details.allowPhoneCalls === false}
-                            onChange={() => setDetails(prev => ({ ...prev, allowPhoneCalls: false }))}
-                            className="w-4 h-4 border-outline-variant text-primary focus:ring-primary accent-primary cursor-pointer"
-                          />
-                          <span className="text-xs font-bold text-on-surface-variant">{t('myinfo.allow_calls_off')}</span>
-                        </label>
+                  <div className="flex flex-col mt-3 p-4 bg-surface-container-lowest border border-outline-variant/30 rounded-lg space-y-5">
+                    {/* Item 1: 전화번호 공개 여부 */}
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[13px] font-bold text-on-surface">{t('myinfo.allow_calls')}</span>
+                        <div className="flex items-center gap-5">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input 
+                              type="radio" 
+                              name="allowPhoneCalls"
+                              checked={details.allowPhoneCalls === true}
+                              onChange={() => setDetails(prev => ({ ...prev, allowPhoneCalls: true }))}
+                              className="w-4 h-4 border-outline-variant text-primary focus:ring-primary accent-primary cursor-pointer"
+                            />
+                            <span className="text-xs font-bold text-on-surface-variant">{t('myinfo.allow_calls_on')}</span>
+                          </label>
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input 
+                              type="radio" 
+                              name="allowPhoneCalls"
+                              checked={details.allowPhoneCalls === false}
+                              onChange={() => setDetails(prev => ({ ...prev, allowPhoneCalls: false }))}
+                              className="w-4 h-4 border-outline-variant text-primary focus:ring-primary accent-primary cursor-pointer"
+                            />
+                            <span className="text-xs font-bold text-on-surface-variant">{t('myinfo.allow_calls_off')}</span>
+                          </label>
+                        </div>
                       </div>
+                      <p className="text-[11px] text-outline font-medium leading-relaxed mt-2.5 bg-surface-container-low p-2.5 rounded">
+                        {t('myinfo.allow_calls_desc')}
+                      </p>
                     </div>
-                    <p className="text-[11px] text-outline font-medium leading-relaxed mt-2.5 bg-surface-container-low p-2.5 rounded">
-                      {t('myinfo.allow_calls_desc')}
-                    </p>
+
+                    {/* Divider */}
+                    <div className="border-t border-outline-variant/20"></div>
+
+                    {/* Item 2: 채팅 알림 허용 여부 */}
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[13px] font-bold text-on-surface">{t('myinfo.allow_chat_notifications')}</span>
+                        <div className="flex items-center gap-5">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input 
+                              type="radio" 
+                              name="allowChatNotifications"
+                              checked={details.allowChatNotifications === true}
+                              onChange={() => setDetails(prev => ({ ...prev, allowChatNotifications: true }))}
+                              className="w-4 h-4 border-outline-variant text-primary focus:ring-primary accent-primary cursor-pointer"
+                            />
+                            <span className="text-xs font-bold text-on-surface-variant">{t('myinfo.allow_calls_on')}</span>
+                          </label>
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input 
+                              type="radio" 
+                              name="allowChatNotifications"
+                              checked={details.allowChatNotifications === false}
+                              onChange={() => setDetails(prev => ({ ...prev, allowChatNotifications: false }))}
+                              className="w-4 h-4 border-outline-variant text-primary focus:ring-primary accent-primary cursor-pointer"
+                            />
+                            <span className="text-xs font-bold text-on-surface-variant">{t('myinfo.allow_calls_off')}</span>
+                          </label>
+                        </div>
+                      </div>
+                      <p className="text-[11px] text-outline font-medium leading-relaxed mt-2.5 bg-surface-container-low p-2.5 rounded">
+                        {t('myinfo.allow_chat_notifications_desc')}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>

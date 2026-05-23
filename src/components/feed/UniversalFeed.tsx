@@ -19,7 +19,10 @@ interface UniversalFeedProps {
 }
 
 export default function UniversalFeed({ context, currentUser, profile, activeFilter: propFilter }: UniversalFeedProps) {
-  const { openModal: openCreate, closeModal: closeCreate, value: createFlowValue } = useModalNavigation('createFlow');
+  // 0ms의 즉각적인 체감 성능을 위해 무거운 URL 쿼리 대신 순수 로컬 상태로 모달을 초고속 제어합니다.
+  const [createFlowValue, setCreateFlowValue] = useState<string | null>(null);
+  const openCreate = (value: string) => setCreateFlowValue(value);
+  const closeCreate = () => setCreateFlowValue(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [localFilter, setLocalFilter] = useState('all');

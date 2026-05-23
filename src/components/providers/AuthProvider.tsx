@@ -39,6 +39,8 @@ interface UserProfile {
   pinnedUserIds?: string[];
   career?: string;
   partnerStatus?: string;
+  allowPhoneCalls?: boolean;
+  allowChatNotifications?: boolean;
 }
 
 interface AuthContextType {
@@ -177,6 +179,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               pinnedUserIds: data.pinnedUserIds || [],
               career: data.career || '',
               partnerStatus: data.partnerStatus || '',
+              allowPhoneCalls: data.allowPhoneCalls !== false,
+              allowChatNotifications: data.allowChatNotifications !== false,
             });
           } else {
             setProfile({
@@ -192,6 +196,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               pinnedUserIds: [],
               career: '',
               partnerStatus: '',
+              allowPhoneCalls: true,
+              allowChatNotifications: true,
             });
           }
           setLoading(false);

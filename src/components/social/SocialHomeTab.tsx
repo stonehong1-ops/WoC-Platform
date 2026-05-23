@@ -5,6 +5,7 @@ import { Social, SocialSubEvent } from "@/types/social";
 import { socialService } from "@/lib/firebase/socialService";
 import { userService } from "@/lib/firebase/userService";
 import { useLanguage } from '@/contexts/LanguageContext';
+import { toast } from "sonner";
 
 interface Props {
   social: Social;
@@ -58,6 +59,14 @@ export default function SocialHomeTab({ social, onChatWithOrganizer, canEdit, on
 
   const orgPhone = orgProfile?.phone || orgProfile?.phoneNumber || social.organizerPhone;
   const orgPhoto = orgProfile?.photoURL;
+
+  const handleCallOrganizer = () => {
+    if (orgProfile?.allowPhoneCalls === false) {
+      toast.error(t('myinfo.phone_private_toast'));
+      return;
+    }
+    window.location.href = `tel:${orgPhone}`;
+  };
 
   // Map URLs
   const lat = venue?.coordinates?.latitude ?? venue?.coordinates?._lat;
@@ -180,14 +189,15 @@ export default function SocialHomeTab({ social, onChatWithOrganizer, canEdit, on
                   email: orgProfile?.email || undefined,
                   roles: ['Organizer'],
                   bio: orgProfile?.bio || undefined,
+                  allowPhoneCalls: orgProfile?.allowPhoneCalls !== false
                 });
               }}
             />
             <div className="flex items-center gap-2">
               {orgPhone && (
-                <a href={`tel:${orgPhone}`} className="w-9 h-9 rounded-full bg-[#f2f4f4] flex items-center justify-center">
+                <button onClick={handleCallOrganizer} className="w-9 h-9 rounded-full bg-[#f2f4f4] flex items-center justify-center">
                   <span className="material-symbols-rounded text-lg text-[#596061]">call</span>
-                </a>
+                </button>
               )}
               <button onClick={onChatWithOrganizer} className="w-9 h-9 rounded-full bg-[#f2f4f4] flex items-center justify-center">
                 <span className="material-symbols-rounded text-lg text-[#596061]">chat</span>

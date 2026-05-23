@@ -5,6 +5,7 @@ import { chatService } from '@/lib/firebase/chatService';
 import type { ChatRoom, ChatMessage, MessageType } from '@/types/chat';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { safeDate } from '@/lib/utils/safeDate';
+import { toast } from 'sonner';
 import VoiceBubble from './VoiceBubble';
 import GroupMembersPopup from './GroupMembersPopup';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -656,10 +657,10 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
           <div className="flex items-center gap-2">
             <button 
               onClick={() => {
-                if (otherUser?.allowPhoneCalls && otherUser?.phoneNumber) {
+                if (otherUser?.allowPhoneCalls !== false && otherUser?.phoneNumber) {
                   window.location.href = `tel:${otherUser.phoneNumber}`;
                 } else {
-                  alert(t('chatroom.call_not_allowed'));
+                  toast.error(t('myinfo.phone_private_toast'));
                 }
               }}
               className="w-10 h-10 rounded-full flex items-center justify-center text-gray-400 hover:text-primary hover:bg-primary/5 transition-all"

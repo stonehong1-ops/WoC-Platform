@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import MyInfoBottomSheet from '@/components/profile/MyInfoBottomSheet';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { calculateCareerDuration } from '@/utils/date';
+import { formatLocalPhoneNumber } from '@/utils/phone';
 
 const ADMIN_ITEMS = [
   { icon: 'view_carousel', label: 'BANNERS', href: '/admin/banners' },
@@ -145,7 +146,11 @@ export default function MyInfoPage() {
                 <p className="text-xs font-bold text-outline uppercase tracking-widest">{t('my.cell_phone')}</p>
                 <div className="flex gap-2 items-center">
                   <span className="text-on-surface font-medium">{profile?.countryCode}</span>
-                  <span className="text-on-surface font-medium">{profile?.phoneNumber || t('my.not_linked')}</span>
+                  <span className="text-on-surface font-medium">
+                    {profile?.phoneNumber 
+                      ? formatLocalPhoneNumber(profile.phoneNumber, profile.countryCode || '+1 (US)') 
+                      : t('my.not_linked')}
+                  </span>
                 </div>
               </div>
             </div>
@@ -162,7 +167,7 @@ export default function MyInfoPage() {
                 </p>
               </div>
             </div>
-            <div className="flex gap-4 items-center">
+            <div className="flex gap-4 items-center mb-6">
               <div className="w-10 h-10 flex flex-shrink-0 items-center justify-center rounded-lg bg-primary-fixed text-on-primary-fixed">
                 <span className="material-symbols-outlined text-[24px]">handshake</span>
               </div>
@@ -174,6 +179,32 @@ export default function MyInfoPage() {
                     : profile?.partnerStatus === 'searching' 
                       ? t('myinfo.partnership_searching') 
                       : t('myinfo.partnership_none')}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-4 items-center mb-6">
+              <div className="w-10 h-10 flex flex-shrink-0 items-center justify-center rounded-lg bg-primary-fixed text-on-primary-fixed">
+                <span className="material-symbols-outlined text-[24px]">visibility</span>
+              </div>
+              <div className="flex-grow">
+                <p className="text-xs font-bold text-outline uppercase tracking-widest">{t('myinfo.allow_calls')}</p>
+                <p className="text-on-surface font-medium">
+                  {profile?.allowPhoneCalls !== false 
+                    ? t('myinfo.allow_calls_on') 
+                    : t('myinfo.allow_calls_off')}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-4 items-center">
+              <div className="w-10 h-10 flex flex-shrink-0 items-center justify-center rounded-lg bg-primary-fixed text-on-primary-fixed">
+                <span className="material-symbols-outlined text-[24px]">notifications</span>
+              </div>
+              <div className="flex-grow">
+                <p className="text-xs font-bold text-outline uppercase tracking-widest">{t('myinfo.allow_chat_notifications')}</p>
+                <p className="text-on-surface font-medium">
+                  {profile?.allowChatNotifications !== false 
+                    ? t('myinfo.allow_calls_on') 
+                    : t('myinfo.allow_calls_off')}
                 </p>
               </div>
             </div>

@@ -215,7 +215,8 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
             isServiceProvider: userProfile?.isServiceProvider,
             name: userProfile?.nickname || member.name || member.nickname || 'Unknown',
             avatar: userProfile?.photoURL || member.avatar || member.photoURL || null,
-            phone: userProfile?.phoneNumber || member.phone || null
+            phone: userProfile?.phoneNumber || member.phone || null,
+            allowPhoneCalls: userProfile?.allowPhoneCalls !== false
           };
         } catch (error) {
           console.error(`Failed to fetch profile for user ${member.id}:`, error);
@@ -244,7 +245,8 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
       name: owner.name,
       roleName: t("group.about.role.representative", "대표"),
       avatar: owner.avatar || null,
-      phone: owner.phone || null
+      phone: owner.phone || null,
+      allowPhoneCalls: owner.allowPhoneCalls !== false
     });
   });
   if (ownersList.length === 0 && group.representative) {
@@ -266,7 +268,8 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
       name: m.name,
       roleName: t("group.about.role.instructor", "강사"),
       avatar: m.avatar || null,
-      phone: m.phone || null
+      phone: m.phone || null,
+      allowPhoneCalls: m.allowPhoneCalls !== false
     });
   });
   const instructorIds = new Set(instructorsList.map(i => i.id));
@@ -287,7 +290,8 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
       name: m.name,
       roleName: roleLabel,
       avatar: m.avatar || null,
-      phone: m.phone || null
+      phone: m.phone || null,
+      allowPhoneCalls: m.allowPhoneCalls !== false
     });
   });
 
@@ -318,6 +322,10 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
           <button 
             className="p-2 text-primary hover:bg-primary-container rounded-full"
             onClick={() => {
+              if (member.allowPhoneCalls === false) {
+                toast.error(t('myinfo.phone_private_toast'));
+                return;
+              }
               window.location.href = `tel:${member.phone}`;
             }}
           >

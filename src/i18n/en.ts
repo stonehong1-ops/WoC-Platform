@@ -777,10 +777,13 @@ export const en: Record<string, string> = {
     'myinfo.email': 'Email Address',
     'myinfo.verified': 'Verified',
     'myinfo.cell_phone': 'Cell Phone',
-    'myinfo.allow_calls': 'Allow Phone Calls',
+    'myinfo.allow_calls': 'Phone Number Public',
     'myinfo.allow_calls_on': 'ON',
     'myinfo.allow_calls_off': 'OFF',
-    'myinfo.allow_calls_desc': 'Note: When enabled, a call button will appear on your profile. Your actual phone number is not exposed.',
+    'myinfo.allow_calls_desc': 'Note: When enabled, a call button will be active on your profile so other users can call you directly.',
+    'myinfo.allow_chat_notifications': 'Allow Chat Notifications',
+    'myinfo.allow_chat_notifications_desc': 'Note: When enabled, you will receive real-time push notifications for new chat messages.',
+    'myinfo.phone_private_toast': 'This member has made their phone number private.',
     'myinfo.gender': 'Gender',
     'myinfo.gender_male': 'Male',
     'myinfo.gender_female': 'Female',
@@ -2274,6 +2277,11 @@ export const en: Record<string, string> = {
     'chat.system_join': '{name} joined the group.',
     'chat.system_leave': '{name} left the group.',
     'chat.system_kick': '{name} has been removed from the group.',
+    'chat.leave_room_title': 'Leave Room',
+    'chat.leave_room_desc': 'Are you sure you want to leave this room? Once you leave, the chat history will be completely deleted.',
+    'chat.leave': 'Leave',
+    'chat.cancel': 'Cancel',
+
 
 
     // Plaza & Feed Module

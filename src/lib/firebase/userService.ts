@@ -21,32 +21,20 @@ export const userService = {
   searchUsers: async (keyword: string, pageSize = 20): Promise<PlatformUser[]> => {
     if (!keyword || keyword.trim().length < 2) return [];
 
-    const kw = keyword.trim();
-
-    const [byNickname, byNative] = await Promise.all([
-      getDocs(query(
-        collection(db, USERS_COLLECTION),
-        where('nickname', '>=', kw),
-        where('nickname', '<=', kw + '\uf8ff'),
-        limit(pageSize)
-      )),
-      getDocs(query(
-        collection(db, USERS_COLLECTION),
-        where('nativeNickname', '>=', kw),
-        where('nativeNickname', '<=', kw + '\uf8ff'),
-        limit(pageSize)
-      )),
-    ]);
-
-    const seen = new Set<string>();
-    const results: PlatformUser[] = [];
-    [...byNickname.docs, ...byNative.docs].forEach(d => {
-      if (!seen.has(d.id)) {
-        seen.add(d.id);
-        results.push({ id: d.id, ...d.data() } as PlatformUser);
-      }
-    });
-    return results.slice(0, pageSize);
+    const kw = keyword.trim().toLowerCase();
+    try {
+      const allUsers = await userService.getAllUsers();
+      const results = allUsers.filter(u => {
+        const nick = (u.nickname || '').toLowerCase();
+        const native = (u.nativeNickname || '').toLowerCase();
+        const email = (u.email || '').toLowerCase();
+        return nick.includes(kw) || native.includes(kw) || email.includes(kw);
+      });
+      return results.slice(0, pageSize);
+    } catch (error) {
+      console.error("Error in client-side searchUsers:", error);
+      return [];
+    }
   },
 
   // Get single user by ID

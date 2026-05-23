@@ -101,7 +101,7 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
   }>({ people: [], venues: [], socials: [], groups: [] });
   const tagCacheLoaded = useRef(false);
 
-  const isShort = content.length <= 70 && content.length > 0;
+  const isShort = content.length <= 150 && content.length > 0;
   const colorActive = selectedColor && !selectedColor.isDefault;
   const showColorPreview = isShort && colorActive;
   const showMedia = !showColorPreview;
@@ -458,8 +458,8 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
                 />
               )}
               {content.length > 0 && (
-                <p className={`text-[10px] mt-1 text-right font-bold tracking-wide ${content.length <= 70 ? 'text-primary' : 'text-slate-400'}`}>
-                  {content.length}/70 {content.length <= 70 ? t('feed.style_available') : ''}
+                <p className={`text-[10px] mt-1 text-right font-bold tracking-wide ${content.length <= 150 ? 'text-primary' : 'text-slate-400'}`}>
+                  {content.length}/150 {content.length <= 150 ? t('feed.style_available') : ''}
                 </p>
               )}
             </section>

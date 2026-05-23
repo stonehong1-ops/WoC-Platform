@@ -227,7 +227,7 @@ export default function NotificationPage() {
     } else if (message.includes('has applied for') && message.includes('Awaiting approval')) {
       const match = message.match(/(.+) has applied for '(.+)'\.? Awaiting approval\.?/i);
       if (match) {
-        message = t('notification.msg.new_stay_booking', { user: getUserName(match[1]), item: message.includes('class') ? (noti as any).itemName : match[2] });
+        message = t('notification.msg.new_stay_booking', { user: getUserName(match[1]), item: message.includes('class') ? noti.itemName : match[2] });
       } else {
         message = t('notification.msg.new_stay_booking', { user: getUserName(userFallback), item: itemFallback });
       }

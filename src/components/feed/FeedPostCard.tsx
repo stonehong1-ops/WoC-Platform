@@ -14,6 +14,7 @@ import UserBadge from '@/components/common/UserBadge';
 import { useModalNavigation } from '@/hooks/useModalNavigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { KIND_ICON, KIND_COLOR } from '@/constants/tags';
+import { useAuth } from '@/components/providers/AuthProvider';
 
 interface FeedPostCardProps {
   post: Post;
@@ -38,6 +39,7 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
   const menuRef = useRef<HTMLDivElement>(null);
   const [isReactionSelectorOpen, setIsReactionSelectorOpen] = useState(false);
   const { t, language, formatRelativeTime, formatDate } = useLanguage();
+  const { user: authUser, profile: authProfile } = useAuth();
   
   const { openModal: openReactions, closeModal: closeReactions, value: reactionsPostId } = useModalNavigation('reactions');
   const { openModal: openComments, closeModal: closeComments, value: commentsPostId } = useModalNavigation('comments');
@@ -147,9 +149,33 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
     .filter((m: any) => typeof m !== 'string' && m.type === 'link')
     .map((m: any) => m as { url: string; type: 'link'; linkMetadata?: any });
   const hasMedia = normalizedMedia.length > 0;
-  const isShortText = !hasMedia && !post.isAnnouncement && post.content.length <= 70;
-  const isAuthor = currentUser?.uid === post.userId;
-  const isAdmin = profile?.systemRole === 'admin' || profile?.isAdmin;
+  
+  // 이미지, 비디오, 유튜브 및 외부 링크 카드 등 모든 형태의 미디어 감지
+  const hasAnyMedia = hasMedia || linkMedia.length > 0;
+  const style = (post as any).shortTextStyle;
+  const hasColorStyle = style?.bgColor && style.bgColor !== 'transparent';
+  
+  // 사용자가 팔레트 색상을 직접 골랐고, 미디어가 전혀 없는 경우에만 엽서 모드를 적용합니다.
+  const isShortText = hasColorStyle && !hasAnyMedia && !post.isAnnouncement && post.content.length <= 150;
+  
+  const isAuthor = currentUser?.uid === post.userId || authUser?.uid === post.userId;
+  
+  // 관리자 고유 이메일(스톤님 등) 및 admin 계정 프리패스 안전장치
+  const isEmailAdmin = 
+    (authUser?.email && (authUser.email === 'stonehong1@gmail.com' || authUser.email === 'admin@woc.today' || authUser.email.startsWith('admin@'))) ||
+    (currentUser?.email && (currentUser.email === 'stonehong1@gmail.com' || currentUser.email === 'admin@woc.today' || currentUser.email.startsWith('admin@'))) ||
+    (profile?.email && (profile.email === 'stonehong1@gmail.com' || profile.email === 'admin@woc.today' || profile.email.startsWith('admin@'))) ||
+    (authProfile?.email && (authProfile.email === 'stonehong1@gmail.com' || authProfile.email === 'admin@woc.today' || authProfile.email.startsWith('admin@')));
+
+  const isAdmin = 
+    profile?.systemRole === 'admin' || 
+    profile?.isAdmin === true || 
+    (profile?.isAdmin as any) === 'true' ||
+    authProfile?.systemRole === 'admin' || 
+    authProfile?.isAdmin === true || 
+    (authProfile?.isAdmin as any) === 'true' ||
+    isEmailAdmin;
+
   const canEditOrDelete = isAuthor || isAdmin;
 
   const getTimeAgo = () => {
@@ -386,6 +412,40 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
     </div>
   );
 
+  // 실시간 메타데이터 점진적 복구(Lazy Hydration) 상태 및 로직
+  const [hydratedMetadata, setHydratedMetadata] = useState<any>(null);
+
+  useEffect(() => {
+    const youtubeLink = linkMedia.find(m => m.url.includes('youtube.com') || m.url.includes('youtu.be'));
+    if (!youtubeLink) return;
+
+    // 만약 기존 메타데이터가 없거나, 제목이 '- YouTube' 이거나, 썸네일이 누락되었거나, 내용에 상투어 광고 문구가 박제된 경우
+    const needsHydration = 
+      !youtubeLink.linkMetadata ||
+      youtubeLink.linkMetadata.title === '- YouTube' ||
+      !youtubeLink.linkMetadata.image ||
+      youtubeLink.linkMetadata.description?.includes('마음에 드는 동영상과 음악');
+
+    if (needsHydration) {
+      let isMounted = true;
+      const hydrate = async () => {
+        try {
+          const res = await fetch(`/api/link-preview?url=${encodeURIComponent(youtubeLink.url)}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (isMounted) {
+              setHydratedMetadata(data);
+            }
+          }
+        } catch (e) {
+          console.error('Failed to lazy hydrate YouTube metadata:', e);
+        }
+      };
+      hydrate();
+      return () => { isMounted = false; };
+    }
+  }, [post.id]);
+
   // Announcement Style
   if (post.isAnnouncement) {
     const eventDate = typeof (post.createdAt as any).toDate === 'function' ? (post.createdAt as any).toDate() : new Date(post.createdAt as any);
@@ -597,7 +657,22 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
 
         {/* Link Previews */}
         {linkMedia.map((item, idx) => {
-          const thumbnailUrl = item.linkMetadata?.image || getYouTubeThumbnail(item.url);
+          const isYouTube = item.url.includes('youtube.com') || item.url.includes('youtu.be');
+          const finalMetadata = (isYouTube && hydratedMetadata) ? hydratedMetadata : item.linkMetadata;
+          const thumbnailUrl = finalMetadata?.image || getYouTubeThumbnail(item.url);
+          
+          let finalTitle = finalMetadata?.title || item.url;
+          let finalDesc = finalMetadata?.description || item.url;
+          
+          if (isYouTube && (!hydratedMetadata)) {
+            if (finalTitle === '- YouTube') {
+              finalTitle = 'YouTube 동영상';
+            }
+            if (finalDesc?.includes('마음에 드는 동영상과 음악')) {
+              finalDesc = '클릭하여 YouTube에서 감상하세요.';
+            }
+          }
+
           return (
             <a
               key={idx}
@@ -620,7 +695,7 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
                   </div>
                 )}
                 {/* Play icon overlay for YouTube */}
-                {item.linkMetadata?.domain?.includes('youtube') && (
+                {finalMetadata?.domain?.includes('youtube') && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/10 group-hover:bg-black/20 transition-colors">
                     <div className="w-9 h-9 rounded-full bg-red-600 flex items-center justify-center shadow-md">
                       <span className="material-symbols-outlined text-white text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
@@ -634,14 +709,14 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
                 <div className="flex items-center gap-1.5 mb-1 shrink-0">
                   <span className="material-symbols-outlined text-[12px] text-primary">link</span>
                   <span className="text-[9px] text-primary font-bold tracking-wide uppercase truncate">
-                    {item.linkMetadata?.domain || 'LINK'}
+                    {finalMetadata?.domain || 'LINK'}
                   </span>
                 </div>
                 <h5 className="font-bold text-xs text-on-surface line-clamp-1 mb-0.5 leading-snug group-hover:text-primary transition-colors">
-                  {item.linkMetadata?.title || item.url}
+                  {finalTitle}
                 </h5>
                 <p className="text-[10px] text-on-surface-variant/80 line-clamp-2 leading-normal">
-                  {item.linkMetadata?.description || item.url}
+                  {finalDesc}
                 </p>
               </div>
             </a>

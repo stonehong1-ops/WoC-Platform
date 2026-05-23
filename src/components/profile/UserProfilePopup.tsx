@@ -30,6 +30,8 @@ interface FullProfile {
   email?: string;
   career?: string;
   partnerStatus?: string;
+  allowPhoneCalls?: boolean;
+  allowChatNotifications?: boolean;
   socialLinks?: {
     facebook?: string;
     instagram?: string;
@@ -100,7 +102,8 @@ export default function UserProfilePopup({ isOpen, onClose, uid, initialData }: 
     socialLinks: profile.socialLinks,
     phone: profile.phone || profile.phoneNumber,
     phoneNumber: profile.phoneNumber,
-    role: profile.role
+    role: profile.role,
+    allowPhoneCalls: profile.allowPhoneCalls
   };
 
   return (

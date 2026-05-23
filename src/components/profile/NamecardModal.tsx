@@ -5,6 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { calculateCareerDuration } from '@/utils/date';
+import { toast } from 'sonner';
 
 export interface NamecardUser {
   uid: string;
@@ -24,6 +25,7 @@ export interface NamecardUser {
   phone?: string;
   phoneNumber?: string;
   role?: string;
+  allowPhoneCalls?: boolean;
 }
 
 interface NamecardModalProps {
@@ -55,6 +57,16 @@ export default function NamecardModal({ user, isOpen, onClose, onChat, onCall }:
       onClose();
       setIsClosing(false);
     }, 300); // transition duration
+  };
+
+  const handleCallClick = () => {
+    if (user.allowPhoneCalls === false) {
+      toast.error(t('myinfo.phone_private_toast'));
+      return;
+    }
+    if (onCall) {
+      onCall(user.phone || user.phoneNumber!);
+    }
   };
 
   const displayName = user.name || user.nativeName || 'User';
@@ -239,7 +251,7 @@ export default function NamecardModal({ user, isOpen, onClose, onChat, onCall }:
                 {/* phone 혹은 phoneNumber가 존재할 때 정상 노출되도록 철저히 가드 */}
                 {(user.phone || user.phoneNumber) && onCall && (
                   <button 
-                    onClick={() => onCall(user.phone || user.phoneNumber!)}
+                    onClick={handleCallClick}
                     className="w-12 h-12 rounded-xl border-2 border-outline-variant bg-transparent text-on-surface flex items-center justify-center active:bg-surface-container-high active:scale-[0.98] transition-all shrink-0"
                   >
                     <span className="material-symbols-outlined text-[20px]">call</span>

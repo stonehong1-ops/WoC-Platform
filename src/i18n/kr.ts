@@ -873,10 +873,13 @@ export const kr: Record<string, string> = {
     'myinfo.email': '이메일 주소',
     'myinfo.verified': '인증됨',
     'myinfo.cell_phone': '휴대폰 번호',
-    'myinfo.allow_calls': '전화연결 허용',
+    'myinfo.allow_calls': '전화번호 공개',
     'myinfo.allow_calls_on': 'ON',
     'myinfo.allow_calls_off': 'OFF',
-    'myinfo.allow_calls_desc': '안내: ON 설정 시 프로필에 전화걸기 버튼이 생성됩니다. 실제 전화번호는 상대방에게 노출되지 않습니다.',
+    'myinfo.allow_calls_desc': '안내: ON 설정 시 프로필에 전화걸기 버튼이 활성화되어 다른 사람이 내 전화번호로 바로 연결할 수 있습니다.',
+    'myinfo.allow_chat_notifications': '채팅 알림 허용',
+    'myinfo.allow_chat_notifications_desc': '안내: ON 설정 시 새로운 채팅 메시지가 도착했을 때 실시간 푸시 알림을 받습니다.',
+    'myinfo.phone_private_toast': '전화번호 비공개 회원입니다.',
     'myinfo.gender': '성별',
     'myinfo.gender_male': '남성',
     'myinfo.gender_female': '여성',
@@ -2366,6 +2369,11 @@ export const kr: Record<string, string> = {
     'chat.system_join': '{name}님이 그룹에 입장했습니다.',
     'chat.system_leave': '{name}님이 그룹을 퇴장했습니다.',
     'chat.system_kick': '{name}님이 그룹에서 퇴장 처리되었습니다.',
+    'chat.leave_room_title': '대화방 나가기',
+    'chat.leave_room_desc': '이 대화방에서 나가시겠습니까? 대화방을 나가면 대화 내용이 모두 사라집니다.',
+    'chat.leave': '나가기',
+    'chat.cancel': '취소',
+
 
 
     // Plaza & Feed Module

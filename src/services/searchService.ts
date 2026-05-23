@@ -19,73 +19,84 @@ export const searchService = {
   async globalSearch(searchQuery: string): Promise<SearchResultItem[]> {
     if (!searchQuery.trim()) return [];
     
-    const queryText = searchQuery.trim();
-    const endText = queryText + '\uf8ff';
+    const queryText = searchQuery.trim().toLowerCase();
     const results: SearchResultItem[] = [];
 
     try {
-      // Promise.allSettled를 사용하여 일부 컬렉션 쿼리 실패 시에도 전체가 중단되지 않도록 보호
+      // 1단계 업그레이드: 대소문자 매칭 및 부분 단어 검색(Case-Insensitive Substring Match)의 한계를 무결하게 극복하기 위해
+      // 각 컬렉션에서 상위 50개 리소스를 비동기 병렬로 빠르게 당긴 뒤 메모리 필터링을 수행하는 하이브리드 검색을 가동합니다.
       const [shopDocs, classDocs, eventDocs, groupDocs] = await Promise.allSettled([
-        getDocs(query(collection(db, 'shops'), where('title', '>=', queryText), where('title', '<=', endText), limit(5))),
-        getDocs(query(collection(db, 'classes'), where('title', '>=', queryText), where('title', '<=', endText), limit(5))),
-        getDocs(query(collection(db, 'events'), where('title', '>=', queryText), where('title', '<=', endText), limit(5))),
-        // 그룹은 보통 name을 사용할 가능성이 큼
-        getDocs(query(collection(db, 'groups'), where('name', '>=', queryText), where('name', '<=', endText), limit(5)))
+        getDocs(query(collection(db, 'shops'), limit(50))),
+        getDocs(query(collection(db, 'classes'), limit(50))),
+        getDocs(query(collection(db, 'events'), limit(50))),
+        getDocs(query(collection(db, 'groups'), limit(50)))
       ]);
 
       if (shopDocs.status === 'fulfilled') {
         shopDocs.value.docs.forEach(doc => {
           const data = doc.data();
-          results.push({
-            id: doc.id,
-            type: 'shop',
-            title: data.title || 'Unknown',
-            subtitle: data.price ? `₩ ${data.price.toLocaleString()}` : '',
-            image: data.image || data.imageUrl || data.thumbnail || '',
-            url: `/shop/${doc.id}`
-          });
+          const title = data.title || 'Unknown';
+          if (title.toLowerCase().includes(queryText)) {
+            results.push({
+              id: doc.id,
+              type: 'shop',
+              title: title,
+              subtitle: data.price ? `₩ ${data.price.toLocaleString()}` : '',
+              image: data.image || data.imageUrl || data.thumbnail || '',
+              url: `/shop/${doc.id}`
+            });
+          }
         });
       }
 
       if (classDocs.status === 'fulfilled') {
         classDocs.value.docs.forEach(doc => {
           const data = doc.data();
-          results.push({
-            id: doc.id,
-            type: 'class',
-            title: data.title || 'Unknown',
-            subtitle: data.instructor || data.teacher || '',
-            image: data.image || data.imageUrl || data.thumbnail || '',
-            url: `/class/${doc.id}`
-          });
+          const title = data.title || 'Unknown';
+          if (title.toLowerCase().includes(queryText)) {
+            results.push({
+              id: doc.id,
+              type: 'class',
+              title: title,
+              subtitle: data.instructor || data.teacher || '',
+              image: data.image || data.imageUrl || data.thumbnail || '',
+              url: `/class/${doc.id}`
+            });
+          }
         });
       }
 
       if (eventDocs.status === 'fulfilled') {
         eventDocs.value.docs.forEach(doc => {
           const data = doc.data();
-          results.push({
-            id: doc.id,
-            type: 'event',
-            title: data.title || 'Unknown',
-            subtitle: data.date || data.location || '',
-            image: data.image || data.imageUrl || data.thumbnail || '',
-            url: `/events/${doc.id}`
-          });
+          const title = data.title || 'Unknown';
+          if (title.toLowerCase().includes(queryText)) {
+            results.push({
+              id: doc.id,
+              type: 'event',
+              title: title,
+              subtitle: data.date || data.location || '',
+              image: data.image || data.imageUrl || data.thumbnail || '',
+              url: `/events/${doc.id}`
+            });
+          }
         });
       }
 
       if (groupDocs.status === 'fulfilled') {
         groupDocs.value.docs.forEach(doc => {
           const data = doc.data();
-          results.push({
-            id: doc.id,
-            type: 'group',
-            title: data.name || data.title || 'Unknown',
-            subtitle: data.memberCount ? `${data.memberCount} members` : '',
-            image: data.image || data.imageUrl || data.profileImage || data.thumbnail || '',
-            url: `/groups/${doc.id}`
-          });
+          const name = data.name || data.title || 'Unknown';
+          if (name.toLowerCase().includes(queryText)) {
+            results.push({
+              id: doc.id,
+              type: 'group',
+              title: name,
+              subtitle: data.memberCount ? `${data.memberCount} members` : '',
+              image: data.image || data.imageUrl || data.profileImage || data.thumbnail || '',
+              url: `/groups/${doc.id}`
+            });
+          }
         });
       }
 

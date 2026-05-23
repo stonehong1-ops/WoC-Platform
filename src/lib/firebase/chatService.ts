@@ -142,41 +142,68 @@ export const chatService = {
 
       // ---- 푸시 알림 전송 로직 시작 ----
       try {
-        if (otherParticipants.length > 0) {
-          // sender 정보 가져오기
-          const senderDoc = await getDoc(doc(db, USERS_COLLECTION, message.senderId));
-          const senderData = senderDoc.exists() ? senderDoc.data() : {};
-          const senderName = senderData.nickname || senderData.displayName || 'User';
+        // sender 정보 가져오기
+        const senderDoc = await getDoc(doc(db, USERS_COLLECTION, message.senderId));
+        const senderData = senderDoc.exists() ? senderDoc.data() : {};
+        const senderName = senderData.nickname || senderData.displayName || 'User';
 
-          // 상대방들의 FCM 토큰 수집
-          const tokens: string[] = [];
-          for (const pId of otherParticipants) {
-            const pDoc = await getDoc(doc(db, USERS_COLLECTION, pId));
-            if (pDoc.exists()) {
-              const pData = pDoc.data();
-              if (pData.fcmTokens && Array.isArray(pData.fcmTokens)) {
-                tokens.push(...pData.fcmTokens);
-              }
+        let targetUserIds: string[] = [];
+
+        // 그룹채팅방 등록 시, 연동된 그룹 모임의 모든 active 멤버들을 대상으로 전원 푸시 발송
+        if (roomData.type === 'groups' || roomData.type === 'group' || roomData.type === 'notice' || roomData.type === 'public') {
+          const groupId = roomData.linkedGroupId || message.roomId.replace('group_', '');
+          if (groupId) {
+            try {
+              const membersRef = collection(db, 'groups', groupId, 'members');
+              const membersSnap = await getDocs(query(membersRef, where('status', '==', 'active')));
+              targetUserIds = membersSnap.docs
+                .map(doc => doc.id)
+                .filter(uid => uid !== message.senderId);
+            } catch (err) {
+              console.error("Failed to fetch active group members for push:", err);
             }
           }
+        }
 
-          // 토큰이 있으면 API 호출
-          if (tokens.length > 0) {
-            await fetch('/api/notifications', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                tokens,
-                title: roomData.type === 'private' ? senderName : (roomData.name || senderName),
-                message: message.type === 'text' ? message.text : '📷 Photo',
-                data: {
-                  url: `/chat?roomId=${message.roomId}`,
-                  type: 'chat',
-                  roomId: message.roomId
-                }
-              })
-            });
+        // 만약 그룹이 아니거나 그룹 멤버 조회가 비어있다면, 기존 participants 폴백 사용
+        if (targetUserIds.length === 0) {
+          targetUserIds = otherParticipants;
+        }
+
+        // 대상자들의 FCM 토큰 수집 ( allowChatNotifications 설정이 명시적으로 false인 회원 제외 )
+        const tokens: string[] = [];
+        for (const pId of targetUserIds) {
+          const pDoc = await getDoc(doc(db, USERS_COLLECTION, pId));
+          if (pDoc.exists()) {
+            const pData = pDoc.data();
+            if (pData.allowChatNotifications === false) {
+              continue;
+            }
+            if (pData.fcmTokens && Array.isArray(pData.fcmTokens)) {
+              tokens.push(...pData.fcmTokens);
+            }
           }
+        }
+
+        // 토큰 중복 수집 배제
+        const uniqueTokens = Array.from(new Set(tokens));
+
+        // 토큰이 존재할 때 최종 API 호출하여 멀티캐스트 전송
+        if (uniqueTokens.length > 0) {
+          await fetch('/api/notifications', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              tokens: uniqueTokens,
+              title: roomData.type === 'private' ? senderName : (roomData.name || senderName),
+              message: message.type === 'text' ? message.text : '📷 Photo',
+              data: {
+                url: `/chat?roomId=${message.roomId}`,
+                type: 'chat',
+                roomId: message.roomId
+              }
+            })
+          });
         }
       } catch (pushErr) {
         console.error("Failed to send push notification:", pushErr);

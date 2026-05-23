@@ -67,7 +67,8 @@ export default function UserProfileModal({ userId, onClose }: UserProfileModalPr
       whatsapp: user.phoneNumber ? `https://wa.me/${user.phoneNumber.replace(/[^0-9]/g, '')}` : undefined
     },
     phone: user.phoneNumber,
-    role: (user as any).role
+    role: (user as any).role,
+    allowPhoneCalls: (user as any).allowPhoneCalls
   };
 
   return (

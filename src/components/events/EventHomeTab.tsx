@@ -6,6 +6,7 @@ import { userService } from "@/lib/firebase/userService";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/clientApp";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { toast } from "sonner";
 
 interface Props {
   event: Event;
@@ -53,6 +54,14 @@ export default function EventHomeTab({ event, onChatWithHost, canEdit }: Props) 
 
   const hostPhone = hostProfile?.phone || event.organizerPhone;
   const hostPhoto = hostProfile?.photoURL || event.hostPhoto;
+
+  const handleCallHost = () => {
+    if (hostProfile?.allowPhoneCalls === false) {
+      toast.error(t('myinfo.phone_private_toast'));
+      return;
+    }
+    window.location.href = `tel:${hostPhone}`;
+  };
 
   // Map URLs
   const lat = venue?.coordinates?.latitude ?? venue?.coordinates?._lat;
@@ -416,9 +425,9 @@ export default function EventHomeTab({ event, onChatWithHost, canEdit }: Props) 
             </div>
             <div className="flex items-center gap-2">
               {hostPhone && (
-                <a href={`tel:${hostPhone}`} className="w-9 h-9 rounded-full bg-[#f2f4f4] flex items-center justify-center">
+                <button onClick={handleCallHost} className="w-9 h-9 rounded-full bg-[#f2f4f4] flex items-center justify-center">
                   <span className="material-symbols-rounded text-lg text-[#596061]">call</span>
-                </a>
+                </button>
               )}
               <button onClick={onChatWithHost} className="w-9 h-9 rounded-full bg-[#f2f4f4] flex items-center justify-center">
                 <span className="material-symbols-rounded text-lg text-[#596061]">chat</span>

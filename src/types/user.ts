@@ -23,6 +23,8 @@ export interface UserProfile {
   authMethod?: string;
   career?: string;
   partnerStatus?: string;
+  allowPhoneCalls?: boolean;
+  allowChatNotifications?: boolean;
 }
 
 export interface PlatformUser extends UserProfile { }
