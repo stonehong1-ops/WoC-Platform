@@ -14,6 +14,7 @@ const ADMIN_ITEMS = [
   { icon: 'wallpaper', label: 'PICs', href: '/admin/pics' },
   { icon: 'person_search', label: 'People', href: '/admin/people' },
   { icon: 'location_city', label: 'Place', href: '/admin/place' },
+  { icon: 'terminal', label: 'Mobile Agent', href: '/admin/antigravity' },
   { icon: 'more_horiz', label: 'Others', href: '/admin/others' },
 ];
 
@@ -27,7 +28,7 @@ export default function MyInfoPage() {
     setMounted(true);
   }, []);
   const router = useRouter();
-  const { t } = useLanguage();
+  const { t, language, toggleLanguage } = useLanguage();
 
   const handleLogout = async () => {
     try {
@@ -58,56 +59,67 @@ export default function MyInfoPage() {
   return (
     <div className="bg-surface text-on-surface min-h-screen">
       <main className="max-w-3xl mx-auto px-4 py-6 md:py-8">
-        {/* Profile Hero Section (Ultra-compact) */}
-        <div className="flex items-center gap-5 mb-8">
-          <div className="relative group shrink-0">
-            <div className="w-16 h-16 md:w-20 md:h-20 overflow-hidden rounded-full border-2 border-surface-container-lowest shadow-md bg-surface-container">
-              <img 
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
-                src={profile?.photoURL || user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.nickname || 'User')}&background=1A73E8&color=fff`}
-                alt={t('my.profile_photo')}
-              />
-            </div>
-            <div 
-              onClick={() => setIsEditModalOpen(true)}
-              className="absolute -bottom-0.5 -right-0.5 bg-primary text-white p-1.5 rounded-full shadow-lg cursor-pointer hover:scale-110 transition-transform flex items-center justify-center z-10 border-2 border-surface"
-            >
-              <span className="material-symbols-outlined !text-[14px]">edit</span>
-            </div>
-          </div>
-          
-          <div className="flex-1 min-w-0">
-            <div className="flex flex-wrap items-baseline gap-2 mb-0.5">
-              <h1 className="text-xl md:text-2xl font-bold tracking-tight text-on-surface font-headline truncate">
-                {profile?.nickname || user?.displayName || t('my.default_nickname')}
-              </h1>
-              <div className="flex flex-wrap gap-1">
-                {profile?.isInstructor && (
-                  <span className="px-2 py-0.5 rounded bg-primary-container text-on-primary-container text-[9px] font-bold uppercase tracking-tighter">{t('my.role_instructor')}</span>
-                )}
-                {profile?.isDj && (
-                  <span className="px-2 py-0.5 rounded bg-secondary-container text-on-secondary-container text-[9px] font-bold uppercase tracking-tighter">DJ</span>
-                )}
-                {profile?.isServiceProvider && (
-                  <span className="px-2 py-0.5 rounded bg-tertiary-container text-on-tertiary-container text-[9px] font-bold uppercase tracking-tighter">{t('my.role_pro')}</span>
-                )}
+        {/* Profile Hero Section (Ultra-compact & Premium Card-like look) */}
+        <div className="relative overflow-hidden p-6 rounded-2xl bg-gradient-to-br from-surface-container-lowest to-surface-container/30 border border-surface-container shadow-sm mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="relative group shrink-0">
+              <div className="w-16 h-16 md:w-20 md:h-20 overflow-hidden rounded-full border-2 border-surface-container-lowest shadow-md bg-surface-container">
+                <img 
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+                  src={profile?.photoURL || user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.nickname || 'User')}&background=1A73E8&color=fff`}
+                  alt={t('my.profile_photo')}
+                />
+              </div>
+              <div 
+                onClick={() => setIsEditModalOpen(true)}
+                className="absolute -bottom-0.5 -right-0.5 bg-primary text-white p-1.5 rounded-full shadow-lg cursor-pointer hover:scale-110 transition-transform flex items-center justify-center z-10 border-2 border-surface"
+              >
+                <span className="material-symbols-outlined !text-[12px]">edit</span>
               </div>
             </div>
-            <p className="text-on-surface-variant font-medium text-sm line-clamp-1">
-              {profile?.bio || t('my.default_bio')}
-            </p>
+            
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-baseline gap-2 mb-0.5">
+                <h1 className="text-xl md:text-2xl font-bold tracking-tight text-on-surface font-headline truncate">
+                  {profile?.nickname || user?.displayName || t('my.default_nickname')}
+                </h1>
+                <div className="flex flex-wrap gap-1">
+                  {profile?.isInstructor && (
+                    <span className="px-2 py-0.5 rounded bg-primary-container text-on-primary-container text-[9px] font-bold uppercase tracking-tighter">{t('my.role_instructor')}</span>
+                  )}
+                  {profile?.isDj && (
+                    <span className="px-2 py-0.5 rounded bg-secondary-container text-on-secondary-container text-[9px] font-bold uppercase tracking-tighter">DJ</span>
+                  )}
+                  {profile?.isServiceProvider && (
+                    <span className="px-2 py-0.5 rounded bg-tertiary-container text-on-tertiary-container text-[9px] font-bold uppercase tracking-tighter">{t('my.role_pro')}</span>
+                  )}
+                </div>
+              </div>
+              <p className="text-on-surface-variant font-medium text-xs md:text-sm line-clamp-1">
+                {profile?.bio || t('my.default_bio')}
+              </p>
+            </div>
           </div>
+
+          {/* New Compact Edit Button In Hero Section */}
+          <button 
+            onClick={() => setIsEditModalOpen(true)}
+            className="flex items-center justify-center gap-1.5 self-start sm:self-center px-4 py-2 bg-primary/10 hover:bg-primary/15 active:scale-95 text-primary text-xs font-black uppercase tracking-wider rounded-xl transition-all border border-primary/20 shrink-0"
+          >
+            <span className="material-symbols-outlined text-[16px]">edit_square</span>
+            <span>{t('my.modify_profile', 'Edit Profile')}</span>
+          </button>
         </div>
 
         {/* Info Bento Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Primary Identity Card */}
-          <div className="p-8 rounded-xl bg-surface-container-lowest border border-surface-container shadow-sm hover:shadow-md transition-shadow">
+          <div className="p-8 rounded-2xl bg-surface-container-lowest border border-surface-container shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center gap-4 mb-6">
               <div className="w-10 h-10 flex flex-shrink-0 items-center justify-center rounded-lg bg-primary-fixed text-on-primary-fixed">
                 <span className="material-symbols-outlined text-[24px]">account_circle</span>
               </div>
-            <div>
+              <div>
                 <p className="text-xs font-bold text-outline uppercase tracking-widest">{t('my.login_method')}</p>
                 <p className="text-on-surface font-medium">
                   {profile?.authMethod 
@@ -182,7 +194,7 @@ export default function MyInfoPage() {
                 </p>
               </div>
             </div>
-            <div className="flex gap-4 items-center mb-6">
+            <div className="flex gap-4 items-center">
               <div className="w-10 h-10 flex flex-shrink-0 items-center justify-center rounded-lg bg-primary-fixed text-on-primary-fixed">
                 <span className="material-symbols-outlined text-[24px]">visibility</span>
               </div>
@@ -195,56 +207,93 @@ export default function MyInfoPage() {
                 </p>
               </div>
             </div>
-            <div className="flex gap-4 items-center">
-              <div className="w-10 h-10 flex flex-shrink-0 items-center justify-center rounded-lg bg-primary-fixed text-on-primary-fixed">
-                <span className="material-symbols-outlined text-[24px]">notifications</span>
-              </div>
-              <div className="flex-grow">
-                <p className="text-xs font-bold text-outline uppercase tracking-widest">{t('myinfo.allow_chat_notifications')}</p>
-                <p className="text-on-surface font-medium">
-                  {profile?.allowChatNotifications !== false 
-                    ? t('myinfo.allow_calls_on') 
-                    : t('myinfo.allow_calls_off')}
-                </p>
-              </div>
-            </div>
           </div>
 
-          {/* Account Summary Card */}
-          <div className="p-8 rounded-xl bg-on-surface text-surface-container-lowest flex flex-col justify-between">
+          {/* Account Summary Card - Refined to Premium Dark Glassmorphism */}
+          <div className="p-8 rounded-2xl bg-slate-900 border border-slate-800 text-white shadow-xl flex flex-col justify-between relative overflow-hidden group">
+            {/* Subtle glow effect */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/15 transition-all duration-500" />
             <div>
-              <p className="text-xs font-bold text-inverse-on-surface uppercase tracking-widest mb-1">{t('my.pro_status')}</p>
-              <div className="flex items-center gap-2 mb-4">
-                <h2 className="text-2xl font-bold text-surface-container-lowest font-headline">{t('my.verified')}</h2>
+              <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1.5">{t('my.pro_status')}</p>
+              <div className="flex items-center gap-2 mb-3.5">
+                <h2 className="text-xl md:text-2xl font-black text-white tracking-tight">{t('my.verified')}</h2>
                 <span className="material-symbols-outlined text-primary fill-1" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
               </div>
-              <p className="text-xs text-inverse-on-surface italic">{t('my.verified_desc')}</p>
+              <p className="text-xs text-slate-400 font-medium leading-relaxed">{t('my.verified_desc')}</p>
             </div>
-            <div className="mt-8 pt-6 border-t border-surface-container-lowest/10">
-              <p className="text-[10px] font-bold text-inverse-on-surface uppercase tracking-widest mb-3">{t('my.additional_verification')}</p>
-              <button className="w-full py-2.5 px-4 bg-surface-container-lowest/10 hover:bg-surface-container-lowest/20 border border-surface-container-lowest/20 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2">
+            <div className="mt-8 pt-6 border-t border-slate-800/80">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3.5">{t('my.additional_verification')}</p>
+              <button className="w-full py-3 px-4 bg-white/5 hover:bg-white/10 active:scale-98 border border-white/10 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2">
                 <span className="material-symbols-outlined text-sm">verified_user</span>
                 {t('my.apply_badge')}
               </button>
             </div>
           </div>
 
-          {/* Edit Trigger Card (Full Width) */}
-          <div 
-            onClick={() => setIsEditModalOpen(true)}
-            className="md:col-span-2 group cursor-pointer p-1 overflow-hidden rounded-xl bg-gradient-to-r from-on-primary-fixed-variant to-primary shadow-lg active:scale-[0.98] transition-transform"
-          >
-            <div className="bg-surface-container-lowest rounded-[10px] p-6 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 flex items-center justify-center rounded-full bg-primary-fixed text-on-primary-fixed group-hover:scale-110 transition-transform">
-                  <span className="material-symbols-outlined">edit_square</span>
+          {/* Preferences & Support Bento Card (Unified Settings Hub) */}
+          <div className="p-8 rounded-2xl bg-surface-container-lowest border border-surface-container shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between gap-6">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="material-symbols-outlined text-[20px] text-primary">settings</span>
+                <h3 className="text-xs font-black text-outline uppercase tracking-widest">{language === 'KR' ? '설정 및 고객지원' : 'PREFERENCES & SUPPORT'}</h3>
+              </div>
+              <p className="text-xs text-on-surface-variant leading-relaxed">
+                {language === 'KR' 
+                  ? '다국어 환경을 제어하고 AI 고객지원 서비스를 실시간으로 이용할 수 있습니다.' 
+                  : 'Manage language preferences and get immediate AI assistant support.'}
+              </p>
+            </div>
+
+            {/* Hub Row Items */}
+            <div className="space-y-4">
+              {/* Row 1: AI Helpdesk Route */}
+              <div 
+                onClick={() => router.push('/helpdesk')}
+                className="flex items-center justify-between p-3.5 bg-surface-container/50 hover:bg-surface-container hover:border-primary/20 border border-transparent rounded-xl cursor-pointer active:scale-98 transition-all duration-200 group/item"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-primary/10 text-primary group-hover/item:scale-105 transition-transform shrink-0">
+                    <span className="material-symbols-outlined text-[20px]">support_agent</span>
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-black text-on-surface tracking-tight">{t('header.help_desk', 'HELP DESK')}</h4>
+                    <p className="text-[10px] text-on-surface-variant font-medium mt-0.5">{language === 'KR' ? 'AI 상담원과 1:1 채팅 문의' : '1:1 chat support with AI agent'}</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-lg font-bold text-on-surface font-headline">{t('my.modify_profile')}</h3>
-                  <p className="text-sm text-on-surface-variant">{t('my.modify_profile_desc')}</p>
+                <span className="material-symbols-outlined text-[16px] text-outline group-hover/item:translate-x-0.5 transition-transform">arrow_forward_ios</span>
+              </div>
+
+              {/* Row 2: One-touch Language Toggle */}
+              <div className="flex items-center justify-between p-3.5 bg-surface-container/50 border border-transparent rounded-xl">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-secondary/10 text-secondary shrink-0">
+                    <span className="material-symbols-outlined text-[20px]">translate</span>
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-black text-on-surface tracking-tight">{language === 'KR' ? '앱 언어 설정' : 'Application Language'}</h4>
+                    <p className="text-[10px] text-on-surface-variant font-medium mt-0.5">{language === 'KR' ? '한글 / 영어 원터치 전환' : 'One-touch language switch'}</p>
+                  </div>
+                </div>
+                
+                {/* Premium Sliding Toggle Pill */}
+                <div 
+                  onClick={toggleLanguage}
+                  className="flex items-center p-0.5 bg-surface-container rounded-full border border-outline/10 w-24 shrink-0 shadow-inner relative h-7 cursor-pointer hover:border-outline/20 transition-colors"
+                >
+                  {/* Active Underlay */}
+                  <div 
+                    className={`absolute top-0.5 bottom-0.5 rounded-full bg-primary text-white shadow-sm transition-all duration-300 ${
+                      language === 'KR' ? 'left-0.5 w-[45px]' : 'left-[46.5px] w-[45px]'
+                    }`} 
+                  />
+                  <div className={`relative z-10 w-1/2 text-center text-[9px] font-black tracking-tight leading-6 transition-colors ${language === 'KR' ? 'text-white' : 'text-on-surface-variant'}`}>
+                    KR
+                  </div>
+                  <div className={`relative z-10 w-1/2 text-center text-[9px] font-black tracking-tight leading-6 transition-colors ${language === 'EN' ? 'text-white' : 'text-on-surface-variant'}`}>
+                    EN
+                  </div>
                 </div>
               </div>
-              <span className="material-symbols-outlined text-outline group-hover:translate-x-1 transition-transform">arrow_forward_ios</span>
             </div>
           </div>
         </div>
@@ -283,24 +332,27 @@ export default function MyInfoPage() {
           </button>
         </div>
 
-        {/* Admin Section ??Only visible for admin users */}
+        {/* Admin Section (Slimmer, flatter, elegant panel) */}
         {profile?.isAdmin && (
           <div className="mt-4 mb-8 border-t border-dashed border-surface-container pt-6">
             <div className="flex items-center gap-2 mb-4">
-              <span className="material-symbols-outlined !text-[18px] text-error/60">admin_panel_settings</span>
-              <span className="text-[10px] font-black tracking-[0.25em] uppercase text-error/60">Admin Panel</span>
+              <span className="material-symbols-outlined !text-[16px] text-error/60">admin_panel_settings</span>
+              <span className="text-[10px] font-black tracking-[0.25em] uppercase text-error/60">Admin Controls</span>
             </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {ADMIN_ITEMS.map((item) => (
                 <button
                   key={item.href}
                   onClick={() => setAdminPopupHref(item.href)}
-                  className="flex flex-col items-center gap-2 p-4 rounded-xl bg-surface-container-lowest border border-surface-container hover:border-error/30 hover:shadow-md transition-all active:scale-95"
+                  className="flex items-center gap-3 p-3.5 rounded-xl bg-surface-container-lowest border border-surface-container hover:border-error/20 hover:shadow-sm transition-all active:scale-98 text-left"
                 >
-                  <div className="w-10 h-10 rounded-full bg-error/5 flex items-center justify-center">
-                    <span className="material-symbols-outlined !text-[20px] text-error/70">{item.icon}</span>
+                  <div className="w-8 h-8 rounded-lg bg-error/5 flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined !text-[16px] text-error/70">{item.icon}</span>
                   </div>
-                  <span className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wide">{item.label}</span>
+                  <div className="min-w-0">
+                    <span className="text-[11px] font-black text-on-surface uppercase tracking-tight block truncate">{item.label}</span>
+                    <span className="text-[9px] text-on-surface-variant font-medium block uppercase tracking-tighter mt-0.5">{language === 'KR' ? '도구 관리' : 'Manage Tools'}</span>
+                  </div>
                 </button>
               ))}
             </div>

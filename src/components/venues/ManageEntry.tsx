@@ -45,6 +45,7 @@ export default function ManageEntry({ isOpen, onClose, isLoaded, initialData, mo
     latitude: 37.5575,
     longitude: 126.9244,
     images: [] as File[],
+    seoulArea: '',
   });
 
   const [saving, setSaving] = useState(false);
@@ -63,6 +64,7 @@ export default function ManageEntry({ isOpen, onClose, isLoaded, initialData, mo
         latitude: initialData.coordinates.latitude,
         longitude: initialData.coordinates.longitude,
         images: [], // Images are tricky, usually we handle them separately or keep existing ones
+        seoulArea: initialData.seoulArea || '',
       });
     } else {
       setFormData({
@@ -77,9 +79,11 @@ export default function ManageEntry({ isOpen, onClose, isLoaded, initialData, mo
         latitude: 37.5575,
         longitude: 126.9244,
         images: [],
+        seoulArea: '',
       });
     }
   }, [initialData, isOpen]);
+
 
   const categoriesList = [
     { id: 'Studio', label: 'Studio', icon: 'workspaces' },
@@ -111,6 +115,23 @@ export default function ManageEntry({ isOpen, onClose, isLoaded, initialData, mo
       if (types.includes('sublocality_level_1') || types.includes('administrative_area_level_2')) zone = comp.long_name;
     });
 
+    let detectedSeoulArea = '';
+    const isSeoulCity = (city || '').toUpperCase() === 'SEOUL' || (city || '').includes('서울') || (place.formatted_address || '').includes('서울');
+    if (isSeoulCity) {
+      const gangbukDistricts = ['마포구', '서대문구', '은평구', '종로구', '중구', '용산구', '성동구', '광진구', '동대문구', '중랑구', '성북구', '강북구', '도봉구', '노원구', '마포', '신촌', '홍대'];
+      const gangnamDistricts = ['강남구', '서초구', '송파구', '강동구', '동작구', '관악구', '영등포구', '구로구', '금천구', '강서구', '양천구', '압구정', '역삼', '청담'];
+      
+      const combinedText = `${zone} ${place.formatted_address || ''} ${place.name || ''}`;
+      const isGangbuk = gangbukDistricts.some(d => combinedText.includes(d));
+      const isGangnam = gangnamDistricts.some(d => combinedText.includes(d));
+      
+      if (isGangbuk) {
+        detectedSeoulArea = 'gangbuk';
+      } else if (isGangnam) {
+        detectedSeoulArea = 'gangnam';
+      }
+    }
+
     setFormData(prev => ({
       ...prev,
       address: place.formatted_address || '',
@@ -119,7 +140,8 @@ export default function ManageEntry({ isOpen, onClose, isLoaded, initialData, mo
       longitude: lng,
       city: city || prev.city,
       country: country || prev.country,
-      zone: zone || prev.zone
+      zone: zone || prev.zone,
+      seoulArea: detectedSeoulArea || prev.seoulArea
     }));
     
     map?.panTo({ lat, lng });
@@ -198,6 +220,12 @@ export default function ManageEntry({ isOpen, onClose, isLoaded, initialData, mo
         coordinates: { latitude: Number(formData.latitude), longitude: Number(formData.longitude) },
         status: 'active',
       };
+
+      const isSeoul = payload.city === 'SEOUL' || (formData.city || '').toUpperCase() === 'SEOUL' || (location.city || '').toUpperCase() === 'SEOUL';
+      if (isSeoul && formData.seoulArea) {
+        payload.seoulArea = formData.seoulArea;
+      }
+
 
       if (initialData?.id) {
         await venueService.updateVenue(initialData.id, payload);
@@ -329,6 +357,30 @@ export default function ManageEntry({ isOpen, onClose, isLoaded, initialData, mo
                 <DetailItem label={t('venues.city')} value={formData.city} readOnly={true} />
                 <DetailItem label={t('venues.zone')} value={formData.zone} readOnly={true} />
                 <DetailItem label={t('venues.street_addr')} value={formData.address} readOnly={true} />
+                
+                {(formData.city.toUpperCase() === 'SEOUL' || (location.city || '').toUpperCase() === 'SEOUL') && (
+                  <div className="flex items-center px-5 py-3 bg-white rounded-2xl shadow-sm border border-[#005BC0]/20 animate-fade-in">
+                    <label className="w-1/3 text-[9px] font-black text-[#005BC0] uppercase tracking-widest">{t('venues.seoul_area')}</label>
+                    <div className="w-2/3 grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, seoulArea: 'gangbuk' }))}
+                        className={`py-2 px-3 rounded-lg font-black text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-1 ${formData.seoulArea === 'gangbuk' ? 'bg-[#005BC0] text-white shadow-sm scale-[1.02]' : 'bg-[#eef5f6] text-[#596061] hover:bg-[#e8eff0]'}`}
+                      >
+                        <span className="material-symbols-rounded text-sm" style={{ fontVariationSettings: formData.seoulArea === 'gangbuk' ? "'FILL' 1" : "'FILL' 0" }}>south_east</span>
+                        {t('venues.gangbuk').split(' ')[0]}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, seoulArea: 'gangnam' }))}
+                        className={`py-2 px-3 rounded-lg font-black text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-1 ${formData.seoulArea === 'gangnam' ? 'bg-[#005BC0] text-white shadow-sm scale-[1.02]' : 'bg-[#eef5f6] text-[#596061] hover:bg-[#e8eff0]'}`}
+                      >
+                        <span className="material-symbols-rounded text-sm" style={{ fontVariationSettings: formData.seoulArea === 'gangnam' ? "'FILL' 1" : "'FILL' 0" }}>north_east</span>
+                        {t('venues.gangnam').split(' ')[0]}
+                      </button>
+                    </div>
+                  </div>
+                )}
                 
                 <div className="flex items-center px-5 py-4 bg-white rounded-2xl shadow-sm border-2 border-[#005BC0]/20">
                   <label className="w-1/3 text-[9px] font-black text-[#005BC0] uppercase tracking-widest">{t('venues.unit_floor')}</label>

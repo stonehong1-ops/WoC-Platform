@@ -82,7 +82,7 @@ export default function GroupFeedSection({
       {/* Notice Board Section */}
       <section>
         <div 
-          className={`rounded-xl p-4 flex flex-col gap-4 relative ${isFullMember ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}`} 
+          className="rounded-xl p-4 flex flex-col gap-4 relative cursor-pointer" 
           style={{ backgroundColor: currentGroup.headerThemeColor ? `${currentGroup.headerThemeColor}18` : '#f3f3f6' }} 
           onClick={() => {
             if (isFullMember) {
@@ -99,7 +99,6 @@ export default function GroupFeedSection({
           )}
           <div className="flex justify-between items-center">
             <h4 className="font-body text-[12px] font-medium uppercase tracking-widest text-on-surface-variant">{t('home.notice')}</h4>
-            {!isFullMember && <span className="material-symbols-outlined text-[16px] text-outline">lock</span>}
           </div>
           <ul className="flex flex-col gap-3">
             {noticePost ? (
@@ -128,7 +127,7 @@ export default function GroupFeedSection({
       {/* GROUP CHAT Button */}
       <section>
         <div
-          className={`bg-white border border-outline/15 rounded-2xl p-4 flex items-center justify-between gap-4 ${isFullMember ? 'cursor-pointer active:scale-[0.98] transition-transform' : 'cursor-not-allowed opacity-60'}`}
+          className="bg-white border border-outline/15 rounded-2xl p-4 flex items-center justify-between gap-4 cursor-pointer active:scale-[0.98] transition-transform"
           onClick={() => { 
             if (isFullMember) {
               router.push(pathname + '?modal=chat', { scroll: false }); 
@@ -147,7 +146,6 @@ export default function GroupFeedSection({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {!isFullMember && <span className="material-symbols-outlined text-[20px] text-outline">lock</span>}
             <span className="material-symbols-outlined text-[24px] text-on-surface-variant">chevron_right</span>
           </div>
         </div>
@@ -175,7 +173,7 @@ export default function GroupFeedSection({
             recentFeedPosts.slice(0, 1).map((post, idx) => (
               <div 
                 key={post.id || idx} 
-                className={`bg-surface-container-lowest border border-outline/15 rounded-xl p-4 flex justify-between items-center ${isFullMember ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}`} 
+                className="bg-surface-container-lowest border border-outline/15 rounded-xl p-4 flex justify-between items-center cursor-pointer" 
                 onClick={() => {
                   if (isFullMember || isAdminUser) {
                     handleTabClick('feed');
@@ -203,7 +201,6 @@ export default function GroupFeedSection({
                     </p>
                   </div>
                 </div>
-                {!isFullMember && <span className="material-symbols-outlined text-[20px] text-outline shrink-0 ml-2">lock</span>}
               </div>
             ))
           ) : (
@@ -219,11 +216,18 @@ export default function GroupFeedSection({
         <div className="flex items-center justify-between mb-2">
           <h2 className="font-headline text-[18px] leading-[1.4] font-bold text-on-background">{t('home.schedule')}</h2>
           <div className="flex items-center gap-3">
-            {isFullMember ? (
-              <span className="font-body text-[12px] font-medium text-primary cursor-pointer flex items-center" onClick={() => handleTabClick('calendar')}>{t('home.viewAll')} <span className="material-symbols-outlined text-[14px]">chevron_right</span></span>
-            ) : (
-              <span className="font-body text-[12px] font-medium text-outline flex items-center cursor-not-allowed opacity-60"><span className="material-symbols-outlined text-[14px] mr-1">lock</span></span>
-            )}
+            <span 
+              className="font-body text-[12px] font-medium text-primary cursor-pointer flex items-center" 
+              onClick={() => {
+                if (isFullMember) {
+                  handleTabClick('calendar');
+                } else {
+                  toast(t('group.members_only') || 'Members only feature', { icon: '🔒' });
+                }
+              }}
+            >
+              {t('home.viewAll')} <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+            </span>
           </div>
         </div>
         <div className="flex flex-col gap-4">
@@ -277,7 +281,7 @@ export default function GroupFeedSection({
                         </div>
                       )}
                       <div
-                        className={`flex items-start gap-4 relative ${isFullMember ? 'cursor-pointer active:scale-[0.98] transition-transform' : 'cursor-not-allowed opacity-80'}`}
+                        className="flex items-start gap-4 relative cursor-pointer active:scale-[0.98] transition-transform"
                         onClick={() => {
                           if (isFullMember) {
                             handleTabClick('calendar');

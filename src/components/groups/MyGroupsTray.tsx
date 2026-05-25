@@ -29,12 +29,18 @@ export default function MyGroupsTray({ groups, onGroupSelect }: MyGroupsTrayProp
     if (e) e.stopPropagation();
     setTrayState('COLLAPSED');
     
+    // My Groups 진입은 100% 검증된 회원이므로 동선 정보 플래그를 0ms 즉시 주입합니다.
+    const groupWithMemberFlag = {
+      ...group,
+      isConfirmedMember: true
+    };
+    
     // 약간의 딜레이를 주어 상태 변경(COLLAPSED)이 DOM에 먼저 반영되도록 함
     setTimeout(() => {
       if (onGroupSelect) {
-        onGroupSelect(group);
+        onGroupSelect(groupWithMemberFlag);
       } else {
-        router.push(`/groups/${group.id}`);
+        router.push(`/groups/${group.id}?isMember=true`);
       }
     }, 50);
   };

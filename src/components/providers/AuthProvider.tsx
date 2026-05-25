@@ -6,11 +6,12 @@ import {
   User,
   signOut as firebaseSignOut
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, deleteDoc, onSnapshot, Timestamp, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteDoc, onSnapshot, Timestamp, updateDoc, serverTimestamp, deleteField } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase/clientApp';
 import { toast } from 'sonner';
 import { fcmService } from '@/lib/firebase/fcmService';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface UserProfile {
   uid: string;
@@ -40,7 +41,6 @@ interface UserProfile {
   career?: string;
   partnerStatus?: string;
   allowPhoneCalls?: boolean;
-  allowChatNotifications?: boolean;
 }
 
 interface AuthContextType {
@@ -69,6 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [showLogin, setShowLogin] = useState(false);
+  const [activeNotification, setActiveNotification] = useState<{title: string; body: string; url?: string} | null>(null);
 
   useEffect(() => {
     let unsubscribeProfile: (() => void) | null = null;
@@ -180,8 +181,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               career: data.career || '',
               partnerStatus: data.partnerStatus || '',
               allowPhoneCalls: data.allowPhoneCalls !== false,
-              allowChatNotifications: data.allowChatNotifications !== false,
             });
+
+            // 구시대 알림 비허용 필드가 DB 문서에 남아 있다면 완전 영구 영탈(삭제)
+            if ('allowChatNotifications' in data) {
+              const uRef = doc(db, 'users', firebaseUser.uid);
+              updateDoc(uRef, {
+                allowChatNotifications: deleteField()
+              }).catch(e => console.error("Failed to delete legacy field allowChatNotifications:", e));
+            }
           } else {
             setProfile({
               uid: firebaseUser.uid,
@@ -197,7 +205,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               career: '',
               partnerStatus: '',
               allowPhoneCalls: true,
-              allowChatNotifications: true,
             });
           }
           setLoading(false);
@@ -217,69 +224,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Push Notification Permission Prompt (Option 1)
   useEffect(() => {
     if (user && typeof window !== 'undefined' && 'Notification' in window) {
-      // 이미 허용된 상태라면 백그라운드에서 토큰을 갱신/저장합니다.
-      if (Notification.permission === 'granted') {
-        fcmService.requestPermissionAndGetToken(user.uid).catch(console.error);
-      } 
-      // 권한을 아직 묻지 않은 상태(default)일 때만 토스트를 띄웁니다.
-      else if (Notification.permission === 'default') {
-        // 중복 토스트 방지를 위해 약간 지연
-        const timer = setTimeout(() => {
-          const toastId = toast(t('auth.push_noti_title'), {
-            description: t('auth.push_noti_desc'),
-            duration: 15000, // 15초 후 자동 닫힘
-            position: 'top-center',
-            action: {
-              label: t('auth.push_noti_enable'),
-              onClick: async () => {
-                toast.dismiss(toastId);
-                try {
-                  const token = await fcmService.requestPermissionAndGetToken(user.uid);
-                  if (token) {
-                    toast.success(t('auth.push_noti_success'));
-                  } else {
-                    if (Notification.permission === 'denied') {
-                      toast.error(t('auth.push_noti_blocked'));
-                    }
-                  }
-                } catch (error) {
-                  console.error('Error enabling notifications:', error);
-                }
-              }
-            },
-            cancel: {
-              label: t('common.later'),
-              onClick: () => toast.dismiss(toastId)
-            }
-          });
-        }, 3000); // 페이지 로딩 후 3초 뒤에 띄움
-
-        return () => clearTimeout(timer);
-      }
+      // 권한 여부에 관계없이 다이렉트로 디바이스 허용 팝업 및 토큰 갱신을 실행합니다.
+      fcmService.requestPermissionAndGetToken(user.uid).catch(console.error);
     }
   }, [user]);
 
-  // Foreground FCM Listener
+  // Foreground FCM Listener with In-App Banner Popup
   useEffect(() => {
     let unsubscribeMessage = () => {};
     
     if (typeof window !== 'undefined' && 'Notification' in window) {
-      if (Notification.permission === 'granted') {
-        unsubscribeMessage = fcmService.onMessageListener((payload: any) => {
-          console.log('[Foreground Push]', payload);
-          toast(payload.notification?.title || 'New Message', {
-            description: payload.notification?.body,
-            action: {
-              label: 'View',
-              onClick: () => {
-                if (payload.data?.url) {
-                  window.location.href = payload.data.url;
-                }
-              }
-            }
-          });
+      unsubscribeMessage = fcmService.onMessageListener((payload: any) => {
+        console.log('[Foreground Push]', payload);
+        
+        // Trigger Premium In-App Notification Banner
+        setActiveNotification({
+          title: payload.notification?.title || 'New Message',
+          body: payload.notification?.body || '',
+          url: payload.data?.url
         });
-      }
+
+        // Auto close after 4.5 seconds
+        const timer = setTimeout(() => {
+          setActiveNotification(null);
+        }, 4500);
+
+        return () => clearTimeout(timer);
+      });
     }
 
     return () => {
@@ -298,6 +269,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider value={{ user, profile, loading, showLogin, setShowLogin, signOut }}>
       {children}
+      
+      {/* Foreground In-App Notification Banner */}
+      <AnimatePresence>
+        {activeNotification && (
+          <motion.div 
+            initial={{ y: -100, opacity: 0 }}
+            animate={{ y: 16, opacity: 1 }}
+            exit={{ y: -100, opacity: 0 }}
+            onClick={() => {
+              if (activeNotification.url) {
+                window.location.href = activeNotification.url;
+              }
+              setActiveNotification(null);
+            }}
+            className="fixed top-0 left-4 right-4 md:left-auto md:right-4 md:w-96 z-[9999] bg-white/95 backdrop-blur-md px-5 py-4 rounded-2xl shadow-[0_8px_30px_rgba(11,90,192,0.18)] border border-blue-50/50 flex gap-3.5 items-center cursor-pointer select-none active:scale-[0.98] transition-transform duration-200"
+          >
+            <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white shrink-0 shadow-md shadow-blue-500/20">
+              <span className="material-symbols-outlined text-[22px]">notifications_active</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <h4 className="text-[13px] font-black text-gray-900 truncate uppercase tracking-tight">{activeNotification.title}</h4>
+              <p className="text-[12px] font-medium text-gray-500 truncate mt-0.5">{activeNotification.body}</p>
+            </div>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveNotification(null);
+              }}
+              className="w-7 h-7 rounded-full bg-gray-100/80 hover:bg-gray-200 flex items-center justify-center text-gray-400 shrink-0 transition-colors"
+            >
+              <span className="material-symbols-outlined text-[16px]">close</span>
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </AuthContext.Provider>
   );
 }

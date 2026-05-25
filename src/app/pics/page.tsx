@@ -14,15 +14,42 @@ const ACTIVITIES = ['All', 'Social', 'Dining', 'Explore', 'Relax', 'Party', 'Lea
 const SEASONS = ['All', 'Spring', 'Summer', 'Autumn', 'Winter'];
 const TIMES = ['All', 'Morning', 'Afternoon', 'Evening', 'Night'];
 
+// AI 감성 및 라이프스타일 자동 분류 키워드 매칭 사전 (국문/영문 동의어 통합 큐레이션)
+const AI_KEYWORDS: Record<string, string[]> = {
+  Romantic: ['romantic', 'couple', 'love', 'date', 'sunset', 'nightview', 'rose', 'heart', '로맨틱', '연인', '데이트', '커플', '사랑', '노을', '야경', '분위기', '감성'],
+  Vibrant: ['vibrant', 'bright', 'color', 'festival', 'neon', 'party', 'street', 'city', '활기찬', '축제', '네온', '파티', '화려한', '거리', '색감', '시티'],
+  Chill: ['chill', 'relax', 'cafe', 'coffee', 'beach', 'peace', 'cozy', 'rest', '여유로운', '휴식', '카페', '커피', '바다', '평화', '아늑한', '쉼'],
+  Energetic: ['energetic', 'sport', 'exercise', 'run', 'dance', 'active', 'play', '에너지', '운동', '스포츠', '댄스', '러닝', '액티브', '활동'],
+  Moody: ['moody', 'rain', 'shadow', 'night', 'fog', 'dark', 'retro', 'vintage', '감성적인', '비', '그림자', '밤', '안개', '어두운', '레트로', '빈티지'],
+  Elegant: ['elegant', 'luxury', 'classic', 'grace', 'art', 'gold', 'museum', '우아한', '럭셔리', '클래식', '품격', '예술', '골드', '뮤지엄'],
+  Warm: ['warm', 'sunshine', 'cozy', 'autumn', 'spring', 'fire', 'light', '따뜻한', '햇살', '아늑한', '가을', '봄', '벽난로', '조명'],
+  Calm: ['calm', 'quiet', 'forest', 'lake', 'sleep', 'rest', 'peaceful', '차분한', '조용한', '숲', '호수', '잠', '휴식', '평화로운'],
+  Social: ['social', 'talk', 'friend', 'meet', 'gather', 'community', '소셜', '대화', '친구', '만남', '모임', '커뮤니티'],
+  Dining: ['dining', 'eat', 'food', 'wine', 'restaurant', 'dinner', 'lunch', 'chef', '다이닝', '식사', '음식', '와인', '레스토랑', '저녁', '점심', '셰프'],
+  Explore: ['explore', 'travel', 'trip', 'walk', 'adventure', 'map', 'outdoor', '탐험', '여행', '산책', '모험', '지도', '아웃도어'],
+  Relax: ['relax', 'stay', 'spa', 'home', 'bed', 'book', 'tea', '휴식', '스테이', '스파', '집', '침대', '책', '차'],
+  Party: ['party', 'dance', 'club', 'celebrate', 'drink', 'music', 'nightlife', '파티', '댄스', '클럽', '축하', '음료', '음악', '나이트라이프'],
+  Learn: ['learn', 'class', 'studio', 'workshop', 'study', 'book', 'lecture', '배움', '클래스', '스튜디오', '워크숍', '공부', '강의'],
+  Exercise: ['exercise', 'sport', 'fitness', 'gym', 'workout', 'yoga', 'run', '운동', '스포츠', '피트니스', '체육관', '워크아웃', '요가', '러닝'],
+  Spring: ['spring', 'flower', 'cherry', 'blossom', 'green', 'warm', '봄', '꽃', '벚꽃', '초록', '따뜻함'],
+  Summer: ['summer', 'beach', 'sea', 'ocean', 'swim', 'hot', 'ice', 'vacation', '여름', '해변', '바다', '수영', '더운', '얼음', '휴가'],
+  Autumn: ['autumn', 'fall', 'leaf', 'maple', 'brown', 'cool', 'wind', '가을', '단풍', '갈색', '선선한', '바람'],
+  Winter: ['winter', 'snow', 'ice', 'cold', 'ski', 'christmas', 'santa', '겨울', '눈', '얼음', '추운', '스키', '크리스마스', '산타'],
+  Morning: ['morning', 'sunrise', 'breakfast', 'early', 'bright', 'coffee', '아침', '일출', '조식', '이른', '밝은', '커피'],
+  Afternoon: ['afternoon', 'lunch', 'sun', 'bright', 'day', 'work', '오후', '점심', '태양', '밝은', '낮', '업무'],
+  Evening: ['evening', 'sunset', 'dinner', 'gold', 'dusk', '퇴근', '저녁', '노을', '석식', '황금빛', '황혼'],
+  Night: ['night', 'dark', 'moon', 'star', 'sleep', 'nightview', 'neon', '밤', '어두운', '달', '별', '수면', '야경', '네온']
+};
+
 export default function PicsPage() {
   const { t } = useLanguage();
   const { setSubHeader } = useNavigation();
   
-  const [pics, setPics] = useState<Pic[]>([]);
+  const [allPics, setAllPics] = useState<Pic[]>([]);
+  const [filteredPics, setFilteredPics] = useState<Pic[]>([]);
+  const [visibleCount, setVisibleCount] = useState(20);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
   
   const [activeMood, setActiveMood] = useState('All');
   const [activeActivity, setActiveActivity] = useState('All');
@@ -41,47 +68,109 @@ export default function PicsPage() {
 
   const observerTarget = useRef(null);
 
-  const fetchPics = async (isLoadMore = false, currentLastDoc: any = null) => {
-    try {
-      if (isLoadMore) {
-        setLoadingMore(true);
-      } else {
+  // 1. 최초 전체 데이터 로드
+  useEffect(() => {
+    const initLoad = async () => {
+      try {
         setLoading(true);
+        const rawPics = await picService.getPics();
+        const valid = rawPics.filter(p => p.imageUrl);
+        setAllPics(valid);
+      } catch (error) {
+        console.error("Failed to load all pics", error);
+      } finally {
+        setLoading(false);
       }
+    };
+    initLoad();
+  }, []);
 
-      const response = await picService.getPicsPaginated({
-        limitCount: 20,
-        lastDoc: isLoadMore ? currentLastDoc : null,
-        filters: {
-          mood: activeMood !== 'All' ? activeMood : undefined,
-          activity: activeActivity !== 'All' ? activeActivity : undefined,
-          season: activeSeason !== 'All' ? activeSeason : undefined,
-          timeOfDay: activeTime !== 'All' ? activeTime : undefined,
-        }
-      });
-
-      const validPics = response.pics.filter(p => p.imageUrl);
-
-      setPics(prev => isLoadMore ? [...prev, ...validPics] : validPics);
-      setLastDoc(response.lastDoc);
-      setHasMore(response.hasMore);
-
-    } catch (error) {
-      console.error("Failed to load pics", error);
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
+  // 2. AI 자동 판단 매칭 논리 (최상위 분류 + 태그 연관 검색 스마트 결합)
+  const isPicMatchedByAi = (pic: Pic) => {
+    // Mood Filter
+    if (activeMood !== 'All') {
+      const moodLower = activeMood.toLowerCase();
+      const isDirectMatch = pic.mood && pic.mood.toLowerCase() === moodLower;
+      const associateKeywords = AI_KEYWORDS[activeMood] || [];
+      const isTagMatch = pic.tags && pic.tags.some(tag => 
+        associateKeywords.some(keyword => tag.toLowerCase().includes(keyword.toLowerCase()))
+      );
+      if (!isDirectMatch && !isTagMatch) return false;
     }
+
+    // Activity Filter
+    if (activeActivity !== 'All') {
+      const activityLower = activeActivity.toLowerCase();
+      const isDirectMatch = pic.activity && pic.activity.toLowerCase() === activityLower;
+      const associateKeywords = AI_KEYWORDS[activeActivity] || [];
+      const isTagMatch = pic.tags && pic.tags.some(tag => 
+        associateKeywords.some(keyword => tag.toLowerCase().includes(keyword.toLowerCase()))
+      );
+      if (!isDirectMatch && !isTagMatch) return false;
+    }
+
+    // Season Filter
+    if (activeSeason !== 'All') {
+      const seasonLower = activeSeason.toLowerCase();
+      const isDirectMatch = pic.season && pic.season.toLowerCase() === seasonLower;
+      const associateKeywords = AI_KEYWORDS[activeSeason] || [];
+      const isTagMatch = pic.tags && pic.tags.some(tag => 
+        associateKeywords.some(keyword => tag.toLowerCase().includes(keyword.toLowerCase()))
+      );
+      if (!isDirectMatch && !isTagMatch) return false;
+    }
+
+    // Time Filter
+    if (activeTime !== 'All') {
+      const timeLower = activeTime.toLowerCase();
+      const isDirectMatch = pic.timeOfDay && pic.timeOfDay.toLowerCase() === timeLower;
+      const associateKeywords = AI_KEYWORDS[activeTime] || [];
+      const isTagMatch = pic.tags && pic.tags.some(tag => 
+        associateKeywords.some(keyword => tag.toLowerCase().includes(keyword.toLowerCase()))
+      );
+      if (!isDirectMatch && !isTagMatch) return false;
+    }
+
+    return true;
   };
 
-  // Initial load & filter change
+  // 3. 필터 변경 시 AI 큐레이팅 필터 적용 및 카운팅 (중복 이미지 원천 제거 - 2중 정규화 방어 적용)
   useEffect(() => {
-    setPics([]);
-    setLastDoc(null);
-    setHasMore(true);
-    fetchPics(false, null);
+    const result = allPics.filter(isPicMatchedByAi);
+    
+    // 이미지 파일 경로(쿼리 스트링 제외) 및 제목(title) 기준 2중 중복 제거 수행
+    const uniquePics: Pic[] = [];
+    const seenUrls = new Set<string>();
+    const seenTitles = new Set<string>();
+    
+    for (const pic of result) {
+      if (pic.imageUrl && pic.title) {
+        // 물음표(?) 이전의 순수 파일 경로만 추출하여 토큰 난수 불일치 방지
+        const normalizedUrl = pic.imageUrl.split('?')[0].trim().toLowerCase();
+        const normalizedTitle = pic.title.trim().toLowerCase();
+        
+        if (!seenUrls.has(normalizedUrl) && !seenTitles.has(normalizedTitle)) {
+          seenUrls.add(normalizedUrl);
+          seenTitles.add(normalizedTitle);
+          uniquePics.push(pic);
+        }
+      } else if (pic.imageUrl) {
+        // 제목이 없는 경우 URL 기준 단독 방어
+        const normalizedUrl = pic.imageUrl.split('?')[0].trim().toLowerCase();
+        if (!seenUrls.has(normalizedUrl)) {
+          seenUrls.add(normalizedUrl);
+          uniquePics.push(pic);
+        }
+      }
+    }
+    
+    setFilteredPics(uniquePics);
+    setVisibleCount(20); // 무한스크롤 첫 페이지 초기화
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeMood, activeActivity, activeSeason, activeTime]);
+  }, [activeMood, activeActivity, activeSeason, activeTime, allPics]);
+
+  const picsToRender = filteredPics.slice(0, visibleCount);
+  const hasMore = visibleCount < filteredPics.length;
 
   // PICS 분류 필터 바를 setSubHeader를 통해 상단 서브헤더로 Teleport (Premium Standard: Dual Row)
   useEffect(() => {
@@ -219,12 +308,14 @@ export default function PicsPage() {
           </button>
         </div>
         
-        {/* Row 2: Stats & Reset Control */}
+        {/* Row 2: Stats & Reset Control (AI 결과 카운트 프리미엄 UI 매칭 노출) */}
         <div className="w-full h-11 px-4 flex items-center justify-between border-t border-slate-100 bg-white">
           <div className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-            <div className="text-[11px] font-bold text-slate-600 uppercase tracking-widest">
-              {pics.length} <span className="text-slate-400 font-medium">{t('pics.items')}</span>
+            <div className="text-[11px] font-bold text-slate-600 uppercase tracking-widest flex items-center gap-1">
+              <span>AI Curation</span>
+              <span className="bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-md font-extrabold text-[12px] leading-none flex items-center justify-center ml-1">{filteredPics.length}</span>
+              <span className="text-slate-400 font-medium">{t('pics.items')}</span>
             </div>
           </div>
           
@@ -243,14 +334,18 @@ export default function PicsPage() {
 
     setSubHeader(filterBar);
     return () => setSubHeader(null);
-  }, [activeMood, activeActivity, activeSeason, activeTime, pics.length, setSubHeader, t]);
+  }, [activeMood, activeActivity, activeSeason, activeTime, filteredPics.length, setSubHeader, t]);
 
-  // Infinite Scroll Observer
+  // Infinite Scroll Observer (메모리 로딩 UX용 부드러운 딜레이 적용)
   useEffect(() => {
     const observer = new IntersectionObserver(
       entries => {
         if (entries[0].isIntersecting && hasMore && !loading && !loadingMore) {
-          fetchPics(true, lastDoc);
+          setLoadingMore(true);
+          setTimeout(() => {
+            setVisibleCount(prev => prev + 20);
+            setLoadingMore(false);
+          }, 250);
         }
       },
       { threshold: 0.1 }
@@ -261,7 +356,7 @@ export default function PicsPage() {
     }
 
     return () => observer.disconnect();
-  }, [hasMore, loading, loadingMore, lastDoc, activeMood, activeActivity, activeSeason, activeTime]);
+  }, [hasMore, loading, loadingMore]);
 
   const openFilters = () => {
     setTempMood(activeMood);
@@ -329,12 +424,12 @@ export default function PicsPage() {
 
 
 
-        {loading && pics.length === 0 ? (
+        {loading && filteredPics.length === 0 ? (
           <div className="flex flex-col justify-center items-center h-64 gap-4">
             <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
             <p className="text-[13px] font-bold text-on-surface/40 uppercase tracking-[0.2em]">{t('pics.loading_assets')}</p>
           </div>
-        ) : pics.length === 0 ? (
+        ) : filteredPics.length === 0 ? (
           <div className="flex flex-col items-center justify-center text-on-surface/30 py-16 bg-surface rounded-[32px] border border-on-surface/[0.03]">
             <span className="material-symbols-outlined text-[64px] mb-4 opacity-50 select-none">wallpaper</span>
             <p className="text-[16px] font-bold tracking-tight">{t('pics.no_assets_found')}</p>
@@ -343,7 +438,7 @@ export default function PicsPage() {
         ) : (
           <>
             <div className="columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-4 space-y-4">
-              {pics.map((pic) => {
+              {picsToRender.map((pic) => {
                 if (failedImages[pic.id]) return null;
                 return (
                 <div 
@@ -394,7 +489,7 @@ export default function PicsPage() {
               </div>
             )}
             
-            {!hasMore && pics.length > 0 && (
+            {!hasMore && filteredPics.length > 0 && (
               <div className="text-center mt-8 mb-6">
                 <p className="text-on-surface/30 font-bold text-[13px] uppercase tracking-widest">{t('pics.end_of_collection')}</p>
               </div>

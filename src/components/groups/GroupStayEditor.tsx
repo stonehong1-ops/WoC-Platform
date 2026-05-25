@@ -113,10 +113,28 @@ export default function GroupStayEditor({ group, onClose, isInline }: GroupStayE
       return;
     }
 
-    setIsLoading(true);
+    // 0ms Cache Restore Guard
+    if (typeof window !== 'undefined') {
+      const cached = sessionStorage.getItem(`woc_group_stay_editor_${group.id}`);
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (parsed) {
+            populateFromStay(parsed);
+            setIsLoading(false);
+          }
+        } catch (e) {
+          console.error("Error restoring group stay cache", e);
+        }
+      }
+    }
+
     const unsubscribe = stayService.subscribeGroupStay(group.id, (stay) => {
       if (stay) {
         populateFromStay(stay);
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem(`woc_group_stay_editor_${group.id}`, JSON.stringify(stay));
+        }
       }
       setIsLoading(false);
     });
@@ -200,6 +218,44 @@ export default function GroupStayEditor({ group, onClose, isInline }: GroupStayE
           isNewlyListed: true,
         } as any);
         setExistingStayId(newStayId);
+      }
+
+      // Sync cache on save
+      if (typeof window !== 'undefined' && group?.id) {
+        const currentStay: Stay = {
+          ...originalData,
+          id: existingStayId || "",
+          groupId: group.id,
+          title,
+          nativeTitle,
+          headline,
+          location: {
+            address,
+            city: originalData?.location?.city || "Seoul",
+            district: originalData?.location?.district || "",
+            mapImageUrl: mapImageUrl || undefined,
+          },
+          images: displayImageUrls,
+          pricing: {
+            currency,
+            baseRate: parseFormattedNumber(baseRate),
+            weekendSurcharge: parseFormattedNumber(weekendSurcharge),
+            extraPersonFee: parseFormattedNumber(extraPersonFee),
+            cleaningFee: parseFormattedNumber(cleaningFee),
+          },
+          guides: {
+            roomFeatures,
+            gettingHere,
+            facilityGuide,
+          },
+          host: {
+            ...(originalData?.host || {}),
+            userId: originalData?.host?.userId || user?.uid || "",
+            name: hostName,
+            photo: hostPhoto,
+          } as any,
+        } as Stay;
+        sessionStorage.setItem(`woc_group_stay_editor_${group.id}`, JSON.stringify(currentStay));
       }
 
       setSaveMessage({ type: "success", text: "Changes saved successfully!" });

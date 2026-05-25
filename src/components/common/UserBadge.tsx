@@ -19,6 +19,7 @@ interface UserBadgeProps {
   subText?: React.ReactNode;
   onClick?: (e: React.MouseEvent) => void;
   showEditIcon?: boolean;
+  isCol?: boolean;
 }
 
 const userCache = new Map<string, Promise<any>>();
@@ -27,7 +28,24 @@ function fetchUserCached(uid: string) {
   if (!uid) return Promise.resolve(null);
   const cached = userCache.get(uid);
   if (cached) return cached;
-  const promise = getDoc(doc(db, 'users', uid)).then(snap => snap.exists() ? snap.data() : null);
+  
+  const promise = getDoc(doc(db, 'users', uid))
+    .then(snap => {
+      if (snap.exists()) {
+        return snap.data();
+      } else {
+        // 프로필이 아직 생성되지 않은 경우 캐시에서 삭제하여 재시도 가능케 함
+        userCache.delete(uid);
+        return null;
+      }
+    })
+    .catch(err => {
+      // 순간적 네트워크 오류인 경우 캐시에서 삭제하여 재시도 가능케 함
+      console.error(`Failed to fetch user profile for cache: ${uid}`, err);
+      userCache.delete(uid);
+      return null;
+    });
+
   userCache.set(uid, promise);
   return promise;
 }
@@ -43,7 +61,8 @@ export default function UserBadge({
   nativeClassName = 'text-[0.8em] font-normal text-on-surface-variant ml-1.5',
   subText,
   onClick,
-  showEditIcon = false
+  showEditIcon = false,
+  isCol = false
 }: UserBadgeProps) {
   const [userData, setUserData] = useState({
     nickname: initialNickname,
@@ -67,14 +86,17 @@ export default function UserBadge({
     }
   }, [uid]);
 
-  const displayName = userData.nickname || 'Anonymous';
+  // 영문 닉네임 필드에 한글이 들어있는 비정상 데이터 또는 임시 데이터 상태를 실시간 자가 교정하는 방어 로직
+  const hasKorean = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(userData.nickname || '');
+  const resolvedNickname = hasKorean ? '' : (userData.nickname || 'Anonymous');
+  const resolvedNativeNickname = hasKorean ? (userData.nickname || userData.nativeNickname) : userData.nativeNickname;
 
   return (
     <UserProfileClickable 
       uid={uid} 
       initialData={{ 
-        nickname: userData.nickname, 
-        nativeNickname: userData.nativeNickname, 
+        nickname: resolvedNickname, 
+        nativeNickname: resolvedNativeNickname, 
         photoURL: userData.photoURL 
       }}
       className={`inline-block ${className}`}
@@ -92,19 +114,21 @@ export default function UserBadge({
         {subText ? (
           <div className="flex flex-col">
             <UserName 
-              nickname={displayName} 
-              nativeNickname={userData.nativeNickname} 
+              nickname={resolvedNickname} 
+              nativeNickname={resolvedNativeNickname} 
               className={nameClassName} 
               nativeClassName={nativeClassName} 
+              isCol={isCol}
             />
             {subText}
           </div>
         ) : (
           <UserName 
-            nickname={displayName} 
-            nativeNickname={userData.nativeNickname} 
+            nickname={resolvedNickname} 
+            nativeNickname={resolvedNativeNickname} 
             className={nameClassName} 
             nativeClassName={nativeClassName} 
+            isCol={isCol}
           />
         )}
       </div>

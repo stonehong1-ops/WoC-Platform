@@ -16,21 +16,200 @@ interface ChatListProps {
   onRoomsLoaded?: (counts: { market: number, group: number, personal: number }) => void;
 }
 
+export function renderLastMessage(msg: string | null | undefined, t: (key: string, options?: any) => string): string {
+  if (!msg) return '';
+  if (msg.startsWith('chat.system_join_params::')) {
+    try {
+      const paramsStr = msg.split('chat.system_join_params::')[1];
+      const { name } = JSON.parse(paramsStr);
+      return t('chat.system_join', { name });
+    } catch (e) {
+      return msg;
+    }
+  }
+  if (msg.startsWith('chat.system_leave_params::')) {
+    try {
+      const paramsStr = msg.split('chat.system_leave_params::')[1];
+      const { name } = JSON.parse(paramsStr);
+      return t('chat.system_leave', { name });
+    } catch (e) {
+      return msg;
+    }
+  }
+  if (msg.startsWith('chat.system_kick_params::')) {
+    try {
+      const paramsStr = msg.split('chat.system_kick_params::')[1];
+      const { name } = JSON.parse(paramsStr);
+      return t('chat.system_kick', { name });
+    } catch (e) {
+      return msg;
+    }
+  }
+  if (msg.startsWith('chat.')) {
+    return t(msg);
+  }
+  return msg;
+}
+
+
 function RoomAvatar({ room, currentUserId }: { room: ChatRoom; currentUserId?: string }) {
+  const { t } = useLanguage();
   const [otherUser, setOtherUser] = useState<PlatformUser | null>(null);
+  const [otherUsers, setOtherUsers] = useState<PlatformUser[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const isGroup = room.participants && room.participants.length > 2;
 
   useEffect(() => {
-    if (room.imageUrl || (room.type !== 'personal' && room.type !== 'private' && room.type !== 'business')) return;
+    if (isGroup) {
+      if (room.imageUrl) {
+        setLoading(false);
+        return;
+      }
+      
+      const fetchGroupUsers = async () => {
+        const otherIds = room.participants.filter(id => id !== currentUserId);
+        try {
+          const promises = otherIds.map(id => userService.getUserById(id));
+          const users = await Promise.all(promises);
+          const activeUsers = users.filter(Boolean) as PlatformUser[];
+          
+          const sorted = activeUsers.sort((a, b) => {
+            const aHasPhoto = !!a.photoURL;
+            const bHasPhoto = !!b.photoURL;
+            if (aHasPhoto && !bHasPhoto) return -1;
+            if (!aHasPhoto && bHasPhoto) return 1;
+            return 0;
+          });
+          
+          setOtherUsers(sorted.slice(0, 4));
+        } catch (e) {
+          console.error(e);
+        }
+        setLoading(false);
+      };
+      fetchGroupUsers();
+      return;
+    }
+
+    if (room.imageUrl || (room.type !== 'personal' && room.type !== 'private' && room.type !== 'business')) {
+      setLoading(false);
+      return;
+    }
     
     const fetchOtherUser = async () => {
       const otherId = room.participants.find(id => id !== currentUserId);
       if (otherId) {
-        const user = await userService.getUserById(otherId);
-        setOtherUser(user);
+        try {
+          const user = await userService.getUserById(otherId);
+          setOtherUser(user);
+        } catch (e) {
+          console.error(e);
+        }
       }
+      setLoading(false);
     };
     fetchOtherUser();
-  }, [room, currentUserId]);
+  }, [room, currentUserId, isGroup]);
+
+  if (loading && (!room.imageUrl || isGroup)) {
+    return (
+      <div className="w-14 h-14 rounded-full bg-gray-50/50 ring-1 ring-gray-100 flex shrink-0 animate-pulse" />
+    );
+  }
+
+  if (room.imageUrl) {
+    return (
+      <div className="w-14 h-14 rounded-full overflow-hidden bg-gray-100 ring-1 ring-gray-100 shadow-inner flex items-center justify-center shrink-0">
+        <img 
+          src={room.imageUrl} 
+          alt={room.name || 'Chat'} 
+          className="w-full h-full object-cover" 
+        />
+      </div>
+    );
+  }
+
+  if ((room.type === 'groups' || room.type === 'group') && !room.imageUrl) {
+    return (
+      <div className="w-14 h-14 rounded-full overflow-hidden bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border border-purple-500/15 shadow-sm flex items-center justify-center shrink-0">
+        <span className="material-symbols-outlined text-purple-600/80 text-[24px]">
+          diversity_3
+        </span>
+      </div>
+    );
+  }
+
+  if (isGroup && !room.imageUrl) {
+    const list = otherUsers;
+    
+    if (list.length === 2) {
+      return (
+        <div className="w-14 h-14 rounded-full overflow-hidden bg-gray-50/50 ring-1 ring-gray-100 flex shrink-0">
+          <div className="w-1/2 h-full overflow-hidden border-r border-white flex-shrink-0">
+            {list[0].photoURL ? (
+              <img src={list[0].photoURL} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-blue-50 text-blue-500 text-[10px] font-black uppercase">
+                {list[0].nickname.charAt(0)}
+              </div>
+            )}
+          </div>
+          <div className="w-1/2 h-full overflow-hidden flex-shrink-0">
+            {list[1].photoURL ? (
+              <img src={list[1].photoURL} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-indigo-50 text-indigo-500 text-[10px] font-black uppercase">
+                {list[1].nickname.charAt(0)}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    if (list.length >= 3) {
+      return (
+        <div className="w-14 h-14 rounded-full overflow-hidden bg-gray-50/50 ring-1 ring-gray-100 flex shrink-0">
+          <div className="w-1/2 h-full overflow-hidden border-r border-white flex-shrink-0">
+            {list[0].photoURL ? (
+              <img src={list[0].photoURL} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-blue-50 text-blue-500 text-[10px] font-black uppercase">
+                {list[0].nickname.charAt(0)}
+              </div>
+            )}
+          </div>
+          <div className="w-1/2 h-full flex flex-col shrink-0">
+            <div className="h-1/2 w-full overflow-hidden border-b border-white">
+              {list[1].photoURL ? (
+                <img src={list[1].photoURL} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-indigo-50 text-indigo-500 text-[8px] font-black uppercase">
+                  {list[1].nickname.charAt(0)}
+                </div>
+              )}
+            </div>
+            <div className="h-1/2 w-full overflow-hidden">
+              {list[2].photoURL ? (
+                <img src={list[2].photoURL} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-purple-50 text-purple-500 text-[8px] font-black uppercase">
+                  {list[2].nickname.charAt(0)}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="w-14 h-14 rounded-full overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-50 ring-1 ring-blue-100/50 shadow-inner flex items-center justify-center shrink-0">
+        <span className="material-symbols-outlined text-primary/70 text-[26px]">group</span>
+      </div>
+    );
+  }
 
   const displayImage = room.imageUrl || otherUser?.photoURL;
 
@@ -52,10 +231,35 @@ function RoomAvatar({ room, currentUserId }: { room: ChatRoom; currentUserId?: s
 }
 
 function RoomName({ room, currentUserId }: { room: ChatRoom; currentUserId?: string }) {
+  const { t } = useLanguage();
   const [otherUser, setOtherUser] = useState<PlatformUser | null>(null);
+  const [otherUsers, setOtherUsers] = useState<PlatformUser[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const isGroup = room.participants && room.participants.length > 2;
+
   useEffect(() => {
+    if (isGroup) {
+      if (room.name) {
+        setLoading(false);
+        return;
+      }
+      
+      const fetchOtherUsers = async () => {
+        const otherIds = room.participants.filter(id => id !== currentUserId);
+        try {
+          const promises = otherIds.map(id => userService.getUserById(id));
+          const users = await Promise.all(promises);
+          setOtherUsers(users.filter(Boolean) as PlatformUser[]);
+        } catch (e) {
+          console.error(e);
+        }
+        setLoading(false);
+      };
+      fetchOtherUsers();
+      return;
+    }
+
     if (room.name || (room.type !== 'personal' && room.type !== 'private' && room.type !== 'business')) {
       setLoading(false);
       return;
@@ -74,14 +278,23 @@ function RoomName({ room, currentUserId }: { room: ChatRoom; currentUserId?: str
       setLoading(false);
     };
     fetchOtherUser();
-  }, [room, currentUserId]);
+  }, [room, currentUserId, isGroup]);
+
+  if (loading && (!room.name || isGroup)) {
+    return <span className="h-4 w-24 bg-gray-100 rounded animate-pulse inline-block" />;
+  }
+
+  if (isGroup) {
+    const displayName = room.name || otherUsers.map(u => u.nickname).join(', ') || t('chatroom.room_chat', '단체방');
+    return (
+      <span className="flex items-center gap-1">
+        <span className="truncate max-w-[200px]">{displayName}</span>
+      </span>
+    );
+  }
 
   if (room.name) {
     return <>{room.name}</>;
-  }
-
-  if (loading && (room.type === 'personal' || room.type === 'private' || room.type === 'business')) {
-    return <span className="h-4 w-24 bg-gray-100 rounded animate-pulse inline-block" />;
   }
 
   const nickname = otherUser?.nickname || 'Unknown User';
@@ -177,41 +390,6 @@ function RoomItem({ room, userId, selectedRoomId, onSelectRoom, onLongPress }: {
     onSelectRoom(room.id);
   };
 
-  const renderLastMessage = (msg?: string | null) => {
-    if (!msg) return '';
-    if (msg.startsWith('chat.system_join_params::')) {
-      try {
-        const paramsStr = msg.split('chat.system_join_params::')[1];
-        const { name } = JSON.parse(paramsStr);
-        return t('chat.system_join', { name });
-      } catch (e) {
-        return msg;
-      }
-    }
-    if (msg.startsWith('chat.system_leave_params::')) {
-      try {
-        const paramsStr = msg.split('chat.system_leave_params::')[1];
-        const { name } = JSON.parse(paramsStr);
-        return t('chat.system_leave', { name });
-      } catch (e) {
-        return msg;
-      }
-    }
-    if (msg.startsWith('chat.system_kick_params::')) {
-      try {
-        const paramsStr = msg.split('chat.system_kick_params::')[1];
-        const { name } = JSON.parse(paramsStr);
-        return t('chat.system_kick', { name });
-      } catch (e) {
-        return msg;
-      }
-    }
-    if (msg.startsWith('chat.')) {
-      return t(msg);
-    }
-    return msg;
-  };
-
   return (
     <button
       key={room.id}
@@ -223,7 +401,9 @@ function RoomItem({ room, userId, selectedRoomId, onSelectRoom, onLongPress }: {
       onTouchStart={startLongPress}
       onTouchEnd={cancelLongPress}
       onTouchMove={handleMove}
-      className={`w-full flex items-center gap-4 p-5 transition-all text-left ${isSelected ? 'bg-primary/5' : 'hover:bg-gray-50'}`}
+      onContextMenu={(e) => e.preventDefault()}
+      style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none', userSelect: 'none' }}
+      className={`w-full flex items-center gap-4 p-5 transition-all text-left select-none ${isSelected ? 'bg-primary/5' : 'hover:bg-gray-50'}`}
     >
       <div className="relative shrink-0">
         <RoomAvatar room={room} currentUserId={userId} />
@@ -232,7 +412,11 @@ function RoomItem({ room, userId, selectedRoomId, onSelectRoom, onLongPress }: {
             <span className="material-symbols-outlined text-[12px] font-black">campaign</span>
           </div>
         )}
-        {(room.type === 'groups' || room.type === 'group') && (
+        {room.participants && room.participants.length > 2 ? (
+          <div className="absolute -bottom-1 -right-1 bg-gradient-to-br from-blue-600 to-indigo-600 text-white min-w-[20px] h-5 rounded-full px-1.5 flex items-center justify-center text-[10px] font-black border-2 border-white shadow-sm">
+            {room.participants.length}
+          </div>
+        ) : (room.type === 'groups' || room.type === 'group') && (
           <div className="absolute -bottom-0.5 -right-0.5 bg-blue-500 text-white w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">
             <span className="material-symbols-outlined text-[10px]">group</span>
           </div>
@@ -253,7 +437,7 @@ function RoomItem({ room, userId, selectedRoomId, onSelectRoom, onLongPress }: {
         </div>
         <div className="flex justify-between items-center">
           <p className={`text-[13px] truncate font-medium ${unreadCount > 0 ? 'text-gray-500' : 'text-gray-400'}`}>
-            {renderLastMessage(room.lastMessage || '')}
+            {renderLastMessage(room.lastMessage || '', t)}
           </p>
           {(room.type === 'groups' || room.type === 'group') && room.participants && (
             <span className="text-[10px] text-gray-300 font-bold ml-2 shrink-0 flex items-center gap-0.5">
@@ -264,14 +448,84 @@ function RoomItem({ room, userId, selectedRoomId, onSelectRoom, onLongPress }: {
         </div>
       </div>
     </button>
+
   );
 }
 
 export default function ChatList({ onSelectRoom, selectedRoomId, category = 'Personal', onRoomsLoaded }: ChatListProps) {
   const { t } = useLanguage();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Group creation states
+  const [isGroupCreationModalOpen, setIsGroupCreationModalOpen] = useState(false);
+  const [groupChatName, setGroupChatName] = useState('');
+  const [groupSearchQuery, setGroupSearchQuery] = useState('');
+  const [allPlatformUsers, setAllPlatformUsers] = useState<PlatformUser[]>([]);
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
+  const [isCreatingGroup, setIsCreatingGroup] = useState(false);
+
+  useEffect(() => {
+    if (isGroupCreationModalOpen) {
+      userService.getAllUsers().then(users => {
+        setAllPlatformUsers(users.filter(u => u.id !== user?.uid));
+      }).catch(console.error);
+    } else {
+      setGroupChatName('');
+      setGroupSearchQuery('');
+      setSelectedUserIds(new Set());
+      setAllPlatformUsers([]);
+    }
+  }, [isGroupCreationModalOpen, user?.uid]);
+
+  const handleCreateGroupChat = async () => {
+    if (!user || selectedUserIds.size === 0 || isCreatingGroup) return;
+    setIsCreatingGroup(true);
+    try {
+      const participantIds = Array.from(selectedUserIds);
+      let roomId = '';
+      if (participantIds.length === 1) {
+        roomId = await chatService.getOrCreatePrivateRoom([user.uid, participantIds[0]], user.uid, 'personal');
+      } else {
+        roomId = await chatService.createGeneralGroupChatRoom(participantIds, user.uid, groupChatName.trim());
+      }
+      setIsGroupCreationModalOpen(false);
+      onSelectRoom(roomId);
+    } catch (err) {
+      console.error("Failed to create group chat:", err);
+      alert(t('common.error', '단체 대화방 개설에 실패했습니다.'));
+    } finally {
+      setIsCreatingGroup(false);
+    }
+  };
+
+  // Smart Snooze Push state
+  const [isSnoozed, setIsSnoozed] = useState(false);
+
+  useEffect(() => {
+    if (!profile) return;
+    const snoozedUntil = (profile as any).notificationSnoozedUntil;
+    if (snoozedUntil) {
+      const date = snoozedUntil.toDate?.() || new Date(snoozedUntil);
+      if (date > new Date()) {
+        setIsSnoozed(true);
+        return;
+      }
+    }
+    setIsSnoozed(false);
+  }, [profile]);
+
+  const handleToggleSnooze = async () => {
+    if (!user) return;
+    const nextState = !isSnoozed;
+    try {
+      await chatService.snoozeNotifications(user.uid, nextState);
+      setIsSnoozed(nextState);
+    } catch (err) {
+      console.error("Failed to toggle snooze:", err);
+    }
+  };
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -391,8 +645,21 @@ export default function ChatList({ onSelectRoom, selectedRoomId, category = 'Per
       debounceTimer.current = setTimeout(async () => {
         try {
           const results = await userService.searchUsers(value.trim());
-          // Exclude self
-          setSearchedUsers(results.filter(u => u.id !== user?.uid));
+          
+          // Get all other user IDs from existing 1:1 personal rooms
+          const existingPersonalUserIds = new Set<string>();
+          rooms.forEach(r => {
+            if (r.type === 'personal' || r.type === 'private') {
+              if (r.participants && r.participants.length === 2) {
+                const otherId = r.participants.find(uid => uid !== user?.uid);
+                if (otherId) existingPersonalUserIds.add(otherId);
+              }
+            }
+          });
+
+          // Exclude self AND users we already have an active 1:1 chat room with
+          const filtered = results.filter(u => u.id !== user?.uid && !existingPersonalUserIds.has(u.id));
+          setSearchedUsers(filtered);
         } catch (err) {
           console.error('User search failed:', err);
           setSearchedUsers([]);
@@ -403,7 +670,7 @@ export default function ChatList({ onSelectRoom, selectedRoomId, category = 'Per
       setSearchedUsers([]);
       setSearchingUsers(false);
     }
-  }, [category, user?.uid]);
+  }, [category, user?.uid, rooms]);
 
   // Create or navigate to 1:1 room
   const handleUserSelect = async (targetUser: PlatformUser) => {
@@ -505,14 +772,29 @@ export default function ChatList({ onSelectRoom, selectedRoomId, category = 'Per
             onChange={(e) => handleSearchChange(e.target.value)}
             onFocus={() => setIsSearchFocused(true)}
             placeholder={getPlaceholder()}
-            className="w-full pl-12 pr-10 py-3 bg-white border border-slate-100 rounded-2xl text-sm font-medium placeholder:text-gray-300 focus:ring-1 focus:ring-primary/10 focus:border-primary/20 transition-all"
+            className={`w-full pl-12 py-3 bg-white border border-slate-100 rounded-2xl text-sm font-medium placeholder:text-gray-300 focus:ring-1 focus:ring-primary/10 focus:border-primary/20 transition-all ${
+              category === 'Personal' 
+                ? (searchQuery ? 'pr-20' : 'pr-12') 
+                : 'pr-10'
+            }`}
           />
           {searchQuery && (
             <button 
               onClick={() => { setSearchQuery(''); setSearchedUsers([]); setIsSearchFocused(false); }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
+              className={`absolute top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors ${
+                category === 'Personal' ? 'right-12' : 'right-3'
+              }`}
             >
               <span className="material-symbols-outlined text-gray-400 text-[14px]">close</span>
+            </button>
+          )}
+          {category === 'Personal' && (
+            <button 
+              onClick={() => setIsGroupCreationModalOpen(true)}
+              title={t('chatroom.create_group_button', '그룹 만들기')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500/10 to-indigo-500/10 hover:from-blue-500/20 hover:to-indigo-500/20 text-primary flex items-center justify-center transition-all active:scale-95 border border-primary/5"
+            >
+              <span className="material-symbols-outlined text-[18px]">group_add</span>
             </button>
           )}
         </div>
@@ -538,7 +820,7 @@ export default function ChatList({ onSelectRoom, selectedRoomId, category = 'Per
                       <h4 className="text-[14px] font-bold text-gray-800 truncate">
                         <RoomName room={room} currentUserId={user?.uid} />
                       </h4>
-                      <p className="text-[12px] text-gray-400 truncate">{room.lastMessage}</p>
+                      <p className="text-[12px] text-gray-400 truncate">{renderLastMessage(room.lastMessage, t)}</p>
                     </div>
                   </button>
                 ))}
@@ -720,6 +1002,130 @@ export default function ChatList({ onSelectRoom, selectedRoomId, category = 'Per
           </div>
         </div>
       )}
+
+      {/* Premium Glassmorphism Bottom Sheet / Modal for Group Chat Creation */}
+      {isGroupCreationModalOpen && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
+          <div className="absolute inset-0" onClick={() => setIsGroupCreationModalOpen(false)} />
+          
+          <div className="relative w-full max-w-md bg-white/95 backdrop-blur-xl rounded-t-[32px] sm:rounded-[32px] p-6 shadow-2xl border border-white/20 z-10 flex flex-col gap-4 text-gray-800 animate-in slide-in-from-bottom sm:zoom-in duration-300 max-h-[85vh] sm:max-h-[80vh]">
+            <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto sm:hidden" />
+            
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-black uppercase tracking-tighter text-gray-900">{t('chatroom.create_group_button', 'New Group')}</h3>
+              <button 
+                onClick={() => setIsGroupCreationModalOpen(false)}
+                className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-100 hover:bg-gray-200 transition-all text-gray-500"
+              >
+                <span className="material-symbols-outlined text-base">close</span>
+              </button>
+            </div>
+
+            {/* Group Name input */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('chatroom.group_name_label', 'Group Name')}</label>
+              <input 
+                type="text"
+                value={groupChatName}
+                onChange={(e) => setGroupChatName(e.target.value)}
+                placeholder={t('chatroom.group_name_label', 'Group Chat Name (Optional)')}
+                className="w-full px-4 py-3 bg-gray-50/50 border border-slate-100 rounded-2xl text-sm font-medium placeholder:text-gray-300 focus:ring-1 focus:ring-primary/10 focus:border-primary/20 transition-all"
+              />
+            </div>
+
+            {/* User Search inside Modal */}
+            <div className="flex flex-col gap-1.5 flex-1 min-h-0">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('chatroom.invite_title', 'Invite Users')}</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-300 text-[18px]">search</span>
+                <input 
+                  type="text"
+                  value={groupSearchQuery}
+                  onChange={(e) => setGroupSearchQuery(e.target.value)}
+                  placeholder={t('chatroom.search_placeholder', 'Search by name...')}
+                  className="w-full pl-10 pr-4 py-2.5 bg-gray-50/50 border border-slate-100 rounded-2xl text-xs font-medium placeholder:text-gray-300 focus:ring-1 focus:ring-primary/10 focus:border-primary/20 transition-all"
+                />
+              </div>
+
+              {/* Users Multi-select List */}
+              <div className="flex-1 overflow-y-auto no-scrollbar border border-slate-50 rounded-2xl p-2 bg-gray-50/30 space-y-1 mt-2">
+                {allPlatformUsers
+                  .filter(u => {
+                    const q = groupSearchQuery.trim().toLowerCase();
+                    if (!q) return true;
+                    return (u.nickname || '').toLowerCase().includes(q) || 
+                           (u.nativeNickname || '').toLowerCase().includes(q) || 
+                           (u.email || '').toLowerCase().includes(q);
+                  })
+                  .map(u => {
+                    const isChecked = selectedUserIds.has(u.id);
+                    return (
+                      <button
+                        key={u.id}
+                        onClick={() => {
+                          const next = new Set(selectedUserIds);
+                          if (next.has(u.id)) next.delete(u.id);
+                          else next.add(u.id);
+                          setSelectedUserIds(next);
+                        }}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-left ${isChecked ? 'bg-primary/5 ring-1 ring-primary/10' : 'hover:bg-gray-50/50'}`}
+                      >
+                        <div className="shrink-0 relative">
+                          <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-100 ring-1 ring-gray-100 flex items-center justify-center">
+                            {u.photoURL ? (
+                              <img src={u.photoURL} alt={u.nickname} className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="material-symbols-outlined text-gray-400 text-[18px]">person</span>
+                            )}
+                          </div>
+                          {isChecked && (
+                            <div className="absolute -top-1 -right-1 bg-primary text-white w-4.5 h-4.5 rounded-full flex items-center justify-center border border-white text-[10px]">
+                              <span className="material-symbols-outlined text-[10px] font-black">check</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-baseline gap-1.5">
+                            <h4 className="text-[13px] font-bold text-gray-800 truncate">{u.nickname}</h4>
+                            {u.nativeNickname && (
+                              <span className="text-[10px] text-gray-400 font-normal">{u.nativeNickname}</span>
+                            )}
+                          </div>
+                          <p className="text-[9px] text-gray-400 font-medium truncate">{u.email || 'No email'}</p>
+                        </div>
+                        <div className="shrink-0">
+                          <input 
+                            type="checkbox"
+                            checked={isChecked}
+                            readOnly
+                            className="w-4 h-4 rounded text-primary focus:ring-primary/20 accent-primary"
+                          />
+                        </div>
+                      </button>
+                    );
+                  })}
+              </div>
+            </div>
+
+            {/* Create Button */}
+            <button
+              disabled={selectedUserIds.size === 0 || isCreatingGroup}
+              onClick={handleCreateGroupChat}
+              className="w-full py-4 bg-primary text-white font-black text-sm uppercase tracking-wider rounded-2xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {isCreatingGroup ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <>
+                  <span className="material-symbols-outlined text-lg">forum</span>
+                  <span>{t('chatroom.invite_button', 'Invite')} ({selectedUserIds.size})</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+

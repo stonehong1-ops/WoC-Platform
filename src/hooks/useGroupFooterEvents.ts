@@ -135,6 +135,16 @@ export function useGroupFooterEvents(
   const [galleryLoaded, setGalleryLoaded] = useState(hasCache);
   const [visitorsLoaded, setVisitorsLoaded] = useState(hasCache);
 
+  // 1.5초 강제 로딩 제한 타임아웃 쉴드 (로딩 락업 방지)
+  const [timeoutExpired, setTimeoutExpired] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setTimeoutExpired(true);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [groupId]);
+
   // 1. Subscribe to classes
   useEffect(() => {
     if (!groupId) return;
@@ -217,6 +227,8 @@ export function useGroupFooterEvents(
   }, [groupId]);
 
   // 7. Fetch member profiles → Section 2 (recent visitors + online count)
+  const membersKey = members.map(m => `${m.id}_${m.status || ''}`).join(',');
+
   useEffect(() => {
     if (!members.length) {
       setVisitorsLoaded(true);
@@ -227,34 +239,39 @@ export function useGroupFooterEvents(
     const sample = active.slice(0, 30); // 비용 제한
 
     const run = async () => {
-      const profiles = (await Promise.all(
-        sample.map(m => userService.getUserById(m.id).catch(() => null))
-      )).filter(Boolean) as PlatformUser[];
+      try {
+        const profiles = (await Promise.all(
+          sample.map(m => userService.getUserById(m.id).catch(() => null))
+        )).filter(Boolean) as PlatformUser[];
 
-      if (cancelled) return;
+        if (cancelled) return;
 
-      // Recent visitors: lastVisitedAt 순 정렬, 사진 있는 상위 3명
-      const sorted = [...profiles]
-        .sort((a, b) => toMillis(b.lastVisitedAt) - toMillis(a.lastVisitedAt))
-        .filter(p => p.photoURL);
-      setRecentVisitors(sorted.slice(0, 3).map(p => ({
-        id: p.id,
-        photoURL: p.photoURL || '',
-        name: p.nickname || p.id.substring(0, 6)
-      })));
+        // Recent visitors: lastVisitedAt 순 정렬, 사진 있는 상위 3명
+        const sorted = [...profiles]
+          .sort((a, b) => toMillis(b.lastVisitedAt) - toMillis(a.lastVisitedAt))
+          .filter(p => p.photoURL);
+        setRecentVisitors(sorted.slice(0, 3).map(p => ({
+          id: p.id,
+          photoURL: p.photoURL || '',
+          name: p.nickname || p.id.substring(0, 6)
+        })));
 
-      // Online count: 5분 이내 접속자
-      const fiveMinAgo = Date.now() - 5 * 60 * 1000;
-      const online = profiles.filter(p => toMillis(p.lastVisitedAt) >= fiveMinAgo).length;
-      // 30명 샘플 → 전체 추정
-      const estimated = active.length > 30 ? Math.round(online * (active.length / 30)) : online;
-      setOnlineCount(estimated);
-      setVisitorsLoaded(true);
+        // Online count: 5분 이내 접속자
+        const fiveMinAgo = Date.now() - 5 * 60 * 1000;
+        const online = profiles.filter(p => toMillis(p.lastVisitedAt) >= fiveMinAgo).length;
+        // 30명 샘플 → 전체 추정
+        const estimated = active.length > 30 ? Math.round(online * (active.length / 30)) : online;
+        setOnlineCount(estimated);
+      } catch (err) {
+        console.warn("Visitors profile loading failed but skipped to prevent lock:", err);
+      } finally {
+        setVisitorsLoaded(true);
+      }
     };
 
     run();
     return () => { cancelled = true; };
-  }, [members]);
+  }, [membersKey]);
 
   // 8. Fetch newest member profile (for Event 4 - people_recent)
   useEffect(() => {
@@ -266,7 +283,7 @@ export function useGroupFooterEvents(
     userService.getUserById(newest.id).then((p) => {
       setNewestProfile(p);
     }).catch(console.error);
-  }, [members]);
+  }, [membersKey]);
 
   // Combine all data into events
   const events = useMemo<FooterEvent[]>(() => {
@@ -413,6 +430,9 @@ export function useGroupFooterEvents(
 
   // 모든 비동기 Firestore 정보의 초기 로드 상태를 결합하여 isInitialLoading 상태를 제공합니다.
   const isInitialLoading = useMemo(() => {
+    // 1.5초 타임아웃 만료 시 로딩 스켈레튼 강제 폭파
+    if (timeoutExpired) return false;
+
     const needClasses = !!groupId;
     const needSocials = !!venueId;
     const needChat = !!groupId;
@@ -438,6 +458,7 @@ export function useGroupFooterEvents(
     feedsLoaded,
     galleryLoaded,
     visitorsLoaded,
+    timeoutExpired,
   ]);
 
   return { events, recentVisitors, onlineCount, isInitialLoading };

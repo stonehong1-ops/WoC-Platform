@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore, initializeFirestore } from "firebase/firestore";
+import { getFirestore, initializeFirestore, enableMultiTabIndexedDbPersistence } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { firebaseConfig } from "./config";
 
@@ -21,6 +21,19 @@ try {
   firestoreDb = getFirestore(app);
 }
 export const db = firestoreDb;
+
+// 브라우저 환경에서만 멀티 탭 IndexedDB 영속성 안전하게 활성화 (SSR Hydration 에러 방지)
+if (typeof window !== "undefined") {
+  enableMultiTabIndexedDbPersistence(db).catch((err) => {
+    if (err.code === 'failed-precondition') {
+      console.warn("Firestore persistence failed-precondition: multiple tabs open.");
+    } else if (err.code === 'unimplemented') {
+      console.warn("Firestore persistence unimplementd in this browser.");
+    } else {
+      console.error("Firestore persistence error:", err);
+    }
+  });
+}
 
 export const storage = getStorage(app);
 

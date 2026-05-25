@@ -15,7 +15,15 @@ interface GroupBoardProps {
 
 const GroupBoard = ({ group, isAdmin = false }: GroupBoardProps) => {
   const { t, formatDate } = useLanguage();
-  const [posts, setPosts] = useState<Post[]>([]);
+  const [posts, setPosts] = useState<Post[]>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = sessionStorage.getItem(`woc_board_posts_${group.id}`);
+      if (cached) {
+        try { return JSON.parse(cached); } catch(e) {}
+      }
+    }
+    return [];
+  });
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isBoardEditorOpen, setIsBoardEditorOpen] = useState(false);
@@ -27,6 +35,9 @@ const GroupBoard = ({ group, isAdmin = false }: GroupBoardProps) => {
   useEffect(() => {
     const unsubscribe = groupService.subscribePosts(group.id, (fetchedPosts) => {
       setPosts(fetchedPosts);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem(`woc_board_posts_${group.id}`, JSON.stringify(fetchedPosts));
+      }
     });
     return () => unsubscribe();
   }, [group.id]);

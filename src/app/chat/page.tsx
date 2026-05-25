@@ -8,9 +8,11 @@ import ChatRoom from '@/components/chat/ChatRoom';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { chatService } from '@/lib/firebase/chatService';
+import { toast } from 'sonner';
 
 function ChatContent() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { t } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -20,6 +22,45 @@ function ChatContent() {
   const [activeTab, setActiveTab] = useState<'Personal' | 'Group' | 'Market'>('Personal');
   const [initialTabSet, setInitialTabSet] = useState(false);
   const tabs = ['Personal', 'Group', 'Market'] as const;
+
+  // Smart Snooze Push state
+  const [isSnoozed, setIsSnoozed] = useState(false);
+
+  useEffect(() => {
+    if (!profile) return;
+    const snoozedUntil = (profile as any).notificationSnoozedUntil;
+    if (snoozedUntil) {
+      const date = snoozedUntil.toDate?.() || new Date(snoozedUntil);
+      if (date > new Date()) {
+        setIsSnoozed(true);
+        return;
+      }
+    }
+    setIsSnoozed(false);
+  }, [profile]);
+
+  const handleToggleSnooze = async () => {
+    if (!user) return;
+    const nextState = !isSnoozed;
+    try {
+      await chatService.snoozeNotifications(user.uid, nextState);
+      setIsSnoozed(nextState);
+      if (nextState) {
+        toast.info(t('chat.snoozed_title', '알림 잠깐 꺼둠'), {
+          description: t('chat.snoozed_desc', '내일 오전 9:00까지 소리/화면 차단'),
+          icon: '🔕'
+        });
+      } else {
+        toast.success(t('chat.active_title', '실시간 알림 수신 중'), {
+          description: t('chat.active_desc', 'FCM 실시간 푸시 작동 중'),
+          icon: '🔔'
+        });
+      }
+    } catch (err) {
+      console.error("Failed to toggle snooze:", err);
+      toast.error(t('common.error', '오류가 발생했습니다.'));
+    }
+  };
 
   useEffect(() => {
     setSelectedRoomId(roomIdFromUrl);
@@ -53,21 +94,41 @@ function ChatContent() {
         {/* Left Side: Chat List (Always visible as background on mobile, side-by-side on desktop) */}
         <div className="w-full md:w-[380px] border-r border-slate-100 flex flex-col">
           <div className="p-6 pb-2">
-            {/* Tab Control */}
-            <div className="w-full flex items-center gap-1.5 overflow-x-auto no-scrollbar mb-4">
-              {tabs.map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`flex-shrink-0 px-4 py-2 rounded-lg text-[12px] font-bold tracking-wide transition-all whitespace-nowrap ${
-                    activeTab === tab
-                      ? 'bg-[#1E293B] text-white shadow-sm'
-                      : 'bg-slate-50 text-slate-500 border border-slate-100 hover:bg-slate-100'
+            {/* Tab Control & Snooze Trigger */}
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar flex-1">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`flex-shrink-0 px-4 py-2 rounded-lg text-[12px] font-bold tracking-wide transition-all whitespace-nowrap ${
+                      activeTab === tab
+                        ? 'bg-[#1E293B] text-white shadow-sm'
+                        : 'bg-slate-50 text-slate-500 border border-slate-100 hover:bg-slate-100'
+                    }`}
+                  >
+                    {t(`chat.tab_${tab.toLowerCase()}`)}
+                  </button>
+                ))}
+              </div>
+
+              {/* Ultra-compact Mini Snooze Button */}
+              {user && (
+                <button 
+                  onClick={handleToggleSnooze}
+                  title={isSnoozed ? t('chat.snoozed_desc', '내일 오전 9:00까지 소리/화면 차단') : t('chat.active_title', '실시간 알림 수신 중')}
+                  className={`flex-shrink-0 px-2.5 py-1.5 rounded-md text-[11px] font-bold transition-all duration-300 flex items-center gap-1.5 border select-none ${
+                    isSnoozed 
+                      ? 'bg-amber-50 text-amber-600 border-amber-200 shadow-xs' 
+                      : 'bg-slate-50 text-slate-500 border-slate-100 hover:bg-slate-100 hover:text-slate-600'
                   }`}
                 >
-                  {t(`chat.tab_${tab.toLowerCase()}`)}
+                  <span className={`w-1.5 h-1.5 rounded-full ${isSnoozed ? 'bg-amber-500 animate-pulse' : 'bg-slate-400'}`} />
+                  <span className="whitespace-nowrap font-semibold">
+                    {isSnoozed ? t('chat.snooze_off', '잠깐 꺼짐') : t('chat.snooze_on', '알림 On')}
+                  </span>
                 </button>
-              ))}
+              )}
             </div>
           </div>
           <ChatList 

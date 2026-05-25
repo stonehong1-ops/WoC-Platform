@@ -39,10 +39,17 @@ const LayoutClassic = ({ d }: { d: PosterData }) => (
     </div>
     {/* DJ bottom-left */}
     {d.djName && (
-      <div className="absolute bottom-[22%] left-[7%]">
-        <Label>DJ</Label>
-        <Sep />
-        <p className="text-[32px] font-black text-white leading-tight">{d.djName}</p>
+      <div className="absolute bottom-[22%] left-[7%] flex items-center gap-3">
+        {d.djPhotoUrl && (
+          <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white/40 shadow-md shrink-0 bg-gray-900">
+            <img src={d.djPhotoUrl} className="w-full h-full object-cover" alt="" crossOrigin="anonymous" />
+          </div>
+        )}
+        <div>
+          <Label>DJ</Label>
+          <Sep />
+          <p className="text-[32px] font-black text-white leading-tight">{d.djName}</p>
+        </div>
       </div>
     )}
     {/* Bottom info grid */}
@@ -77,7 +84,16 @@ const LayoutCenter = ({ d }: { d: PosterData }) => (
       <div className="w-12 h-[2px] bg-white/40 my-4" />
       <p className="text-[20px] font-bold">{d.dateStr} <span className="text-white/60">{d.dayStr}</span></p>
       <p className="text-[14px] text-white/70 mt-1">{d.timeStr}</p>
-      {d.djName && <p className="text-[16px] font-bold mt-4">DJ {d.djName}</p>}
+      {d.djName && (
+        <div className="flex items-center gap-2 mt-4 bg-black/35 px-4 py-1.5 rounded-full border border-white/10">
+          {d.djPhotoUrl && (
+            <div className="w-7 h-7 rounded-full overflow-hidden border border-white/30 shrink-0 bg-gray-900">
+              <img src={d.djPhotoUrl} className="w-full h-full object-cover" alt="" crossOrigin="anonymous" />
+            </div>
+          )}
+          <p className="text-[15px] font-bold">DJ {d.djName}</p>
+        </div>
+      )}
     </div>
     <div className="absolute bottom-0 left-0 right-0 text-center py-4 bg-gradient-to-t from-black/80 to-transparent">
       <p className="text-[12px] text-white/60">{d.venueName}{d.venueLocation ? ` • ${d.venueLocation}` : ""}</p>
@@ -209,7 +225,16 @@ const LayoutMagazine = ({ d }: { d: PosterData }) => (
     <div className="absolute bottom-[6%] left-[7%] right-[7%] text-white">
       <div className="flex justify-between items-end">
         <div>
-          {d.djName && <p className="text-[18px] font-black mb-1">DJ {d.djName}</p>}
+          {d.djName && (
+            <div className="flex items-center gap-2 mb-1">
+              {d.djPhotoUrl && (
+                <div className="w-8 h-8 rounded-full overflow-hidden border border-white/20 shrink-0 bg-gray-900">
+                  <img src={d.djPhotoUrl} className="w-full h-full object-cover" alt="" crossOrigin="anonymous" />
+                </div>
+              )}
+              <p className="text-[18px] font-black">DJ {d.djName}</p>
+            </div>
+          )}
           <p className="text-[11px] text-white/50">{d.orgName}</p>
         </div>
         <div className="text-right">

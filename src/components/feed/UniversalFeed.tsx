@@ -23,6 +23,7 @@ export default function UniversalFeed({ context, currentUser, profile, activeFil
   const [createFlowValue, setCreateFlowValue] = useState<string | null>(null);
   const openCreate = (value: string) => setCreateFlowValue(value);
   const closeCreate = () => setCreateFlowValue(null);
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [localFilter, setLocalFilter] = useState('all');
@@ -148,6 +149,11 @@ export default function UniversalFeed({ context, currentUser, profile, activeFil
     return result;
   }, [posts, activeFilter, currentUser, profile, location, context.scope]);
 
+  // 1. 공지글/공식글을 상단 Spotlight 영역으로 분리
+  const spotlightPosts = posts.filter(p => p.isAnnouncement || p.isOfficial);
+  // 아래 타임라인 목록에서는 중복 렌더링되지 않도록 Spotlight 글은 제외
+  const regularPosts = filteredPosts.filter(p => !p.isAnnouncement && !p.isOfficial);
+
   return (
     <div className={`text-on-surface font-body relative ${context.scope === 'plaza' ? 'min-h-screen' : ''}`}>
       {/* Ambient Background Effects */}
@@ -158,21 +164,82 @@ export default function UniversalFeed({ context, currentUser, profile, activeFil
 
       <main className={`max-w-[600px] mx-auto flex flex-col ${context.scope === 'plaza' ? 'pt-0' : 'pt-0 pb-16'}`}>
         <div className="flex flex-col w-full">
-          {/* Action Hub: Inline Compose Bar (Standardized) */}
-          {(context.scope === 'plaza' || context.scope === 'group' || context.scope === 'social' || context.scope === 'helpdesk') && (
-            <div className="mx-4 my-3 px-5 py-3 flex items-center justify-between bg-white rounded-xl border border-slate-100 shadow-sm">
-              <p className="text-[12px] font-bold text-slate-400 uppercase tracking-tight">
-                {t('plaza.compose_prompt', 'Share your thoughts...')}
-              </p>
-              <button 
-                onClick={() => openCreate('new')}
-                className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 transition-colors py-2"
-              >
-                <span className="text-[13px] font-bold">{t('plaza.create_post', 'Post')}</span>
-                <span className="material-symbols-outlined text-[18px]">add_circle</span>
-              </button>
+
+
+        {/* 📌 Spotlight Carousel (공지/공식글 상단 배너) */}
+        {spotlightPosts.length > 0 && (
+          <div className="mx-4 mb-4 mt-2 overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/5 to-tertiary/5 backdrop-blur-md p-4 shadow-md relative">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-primary text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>push_pin</span>
+                <span className="text-[11px] font-black text-primary tracking-wider uppercase">Plaza Spotlight</span>
+              </div>
+              <span className="text-[9px] font-bold text-primary/70 bg-primary-container px-2 py-0.5 rounded-full uppercase tracking-wider">Official Announcement</span>
             </div>
-          )}
+            <div className="flex flex-col gap-3">
+              {spotlightPosts.map((post) => (
+                <div key={post.id} className="bg-white/80 dark:bg-slate-900/80 rounded-xl p-3 border border-outline-variant/10 shadow-sm relative group overflow-hidden">
+                  <FeedPostCard
+                    post={post}
+                    currentUser={currentUser}
+                    profile={profile}
+                    hideUserInfo={context.scope === 'helpdesk'}
+                    onEdit={(post) => openCreate(post.id)}
+                    onDelete={async (postId) => {
+                      if (window.confirm(t('plaza.confirm_delete_post'))) {
+                        try {
+                          await feedService.deletePost(postId);
+                        } catch (error) {
+                          alert(t('plaza.fail_delete'));
+                        }
+                      }
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ⚡ 프리미엄 피드 한 줄 툴바 (브랜드 글쓰기 프롬프트 + 고급 세그먼티드 뷰 스위치) */}
+        <div className="mx-4 my-3 px-3 py-2 bg-white/95 backdrop-blur-md rounded-3xl border border-slate-100/80 shadow-sm shadow-slate-100/50 flex items-center justify-between gap-3 shrink-0">
+          {/* 좌측: 감각적인 브랜드 그라데이션 글쓰기 알약 칩 */}
+          <div 
+            onClick={() => openCreate('new')}
+            className="flex items-center gap-2 flex-grow cursor-pointer bg-gradient-to-r from-blue-500/[0.04] to-indigo-500/[0.02] hover:from-blue-500/[0.07] hover:to-indigo-500/[0.04] transition-all px-4 py-2 rounded-full border border-blue-500/10 hover:border-blue-500/20 active:scale-[0.98] select-none"
+          >
+            <span className="material-symbols-outlined text-[16px] text-blue-500 font-bold">edit_note</span>
+            <span className="text-[11.5px] font-black text-slate-600 tracking-tight truncate">
+              {t('plaza.compose_prompt', 'Share your thoughts...')}
+            </span>
+          </div>
+
+          {/* 우측: 슬랙/애플 감성의 부드러운 뷰 세그먼트 스위치 */}
+          <div className="flex bg-slate-50/80 p-0.5 rounded-2xl border border-slate-200/20 shrink-0 select-none">
+            <button
+              onClick={() => setViewMode('list')}
+              className={`px-3 py-1.5 rounded-xl flex items-center transition-all active:scale-95 duration-100 ${
+                viewMode === 'list'
+                  ? 'bg-white text-blue-600 shadow-[0_2px_6px_rgba(0,0,0,0.06)] border border-slate-200/40 font-bold scale-[1.01]'
+                  : 'text-slate-400 hover:text-slate-600'
+              }`}
+              title={t('plaza.list_view', 'List View')}
+            >
+              <span className="material-symbols-outlined text-[14px]">format_list_bulleted</span>
+            </button>
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`px-3 py-1.5 rounded-xl flex items-center transition-all active:scale-95 duration-100 ${
+                viewMode === 'grid'
+                  ? 'bg-white text-blue-600 shadow-[0_2px_6px_rgba(0,0,0,0.06)] border border-slate-200/40 font-bold scale-[1.01]'
+                  : 'text-slate-400 hover:text-slate-600'
+              }`}
+              title={t('plaza.board_view', 'Pinterest Board')}
+            >
+              <span className="material-symbols-outlined text-[14px]">dashboard</span>
+            </button>
+          </div>
+        </div>
 
         {/* Feed Posts List */}
         <div className="flex flex-col pb-24 w-full">
@@ -182,7 +249,7 @@ export default function UniversalFeed({ context, currentUser, profile, activeFil
                 <div key={i} className="bg-surface-container-lowest h-80 animate-pulse border-b border-outline-variant/10 shadow-sm w-full" />
               ))}
             </div>
-          ) : filteredPosts.length === 0 ? (
+          ) : regularPosts.length === 0 ? (
             <div className="py-20 text-center bg-surface-container-lowest border-b border-outline-variant/10 shadow-sm w-full">
               <span className="material-symbols-outlined text-outline-variant text-6xl mb-4">post_add</span>
               <p className="text-on-surface-variant font-medium px-10">
@@ -193,27 +260,52 @@ export default function UniversalFeed({ context, currentUser, profile, activeFil
             </div>
           ) : (
             <>
-              {filteredPosts.map((post) => (
-                <FeedPostCard
-                  key={post.id}
-                  post={post}
-                  currentUser={currentUser}
-                  profile={profile}
-                  hideUserInfo={context.scope === 'helpdesk'}
-                  onEdit={(post) => {
-                    openCreate(post.id);
-                  }}
-                  onDelete={async (postId) => {
-                    if (window.confirm(t('plaza.confirm_delete_post'))) {
-                      try {
-                        await feedService.deletePost(postId);
-                      } catch (error) {
-                        alert(t('plaza.fail_delete'));
-                      }
-                    }
-                  }}
-                />
-              ))}
+              {viewMode === 'list' ? (
+                <div className="flex flex-col gap-0 w-full">
+                  {regularPosts.map((post) => (
+                    <FeedPostCard
+                      key={post.id}
+                      post={post}
+                      currentUser={currentUser}
+                      profile={profile}
+                      hideUserInfo={context.scope === 'helpdesk'}
+                      onEdit={(post) => openCreate(post.id)}
+                      onDelete={async (postId) => {
+                        if (window.confirm(t('plaza.confirm_delete_post'))) {
+                          try {
+                            await feedService.deletePost(postId);
+                          } catch (error) {
+                            alert(t('plaza.fail_delete'));
+                          }
+                        }
+                      }}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="columns-2 gap-3 mx-4 pb-4 [column-fill:balance] break-inside-avoid-wrap">
+                  {regularPosts.map((post) => (
+                    <div key={post.id} className="break-inside-avoid mb-3 inline-block w-full">
+                      <FeedPostCard
+                        post={post}
+                        currentUser={currentUser}
+                        profile={profile}
+                        hideUserInfo={context.scope === 'helpdesk'}
+                        onEdit={(post) => openCreate(post.id)}
+                        onDelete={async (postId) => {
+                          if (window.confirm(t('plaza.confirm_delete_post'))) {
+                            try {
+                              await feedService.deletePost(postId);
+                            } catch (error) {
+                              alert(t('plaza.fail_delete'));
+                            }
+                          }
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {/* Infinite Scroll Loader & Ending Caption */}
               {hasMore ? (

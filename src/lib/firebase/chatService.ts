@@ -17,7 +17,8 @@ import {
   arrayRemove,
   setDoc,
   increment,
-  writeBatch
+  writeBatch,
+  runTransaction
 } from 'firebase/firestore';
 import { db } from './clientApp';
 import { ChatRoom, ChatMessage } from '@/types/chat';
@@ -103,10 +104,20 @@ export const chatService = {
   },
 
   // 3. Send Message
-  sendMessage: async (message: Omit<ChatMessage, 'id' | 'timestamp' | 'readBy'>) => {
+  sendMessage: async (message: Omit<ChatMessage, 'id' | 'timestamp' | 'readBy'> & { tempId?: string }) => {
+    const tempId = message.tempId || `temp_${Date.now()}`;
+    const cleanMessage = { ...message };
+    delete (cleanMessage as any).tempId;
+
     try {
+      // 1. 오프라인 상태일 때는 즉시 로컬 큐에 보관 후 에러 발생
+      if (typeof window !== 'undefined' && !navigator.onLine) {
+        chatService.savePendingMessage({ ...cleanMessage, tempId });
+        throw new Error("Offline: Message queued locally");
+      }
+
       const messageData: any = {
-        ...message,
+        ...cleanMessage,
         readBy: [message.senderId],
         timestamp: serverTimestamp()
       };
@@ -134,13 +145,17 @@ export const chatService = {
       });
 
       await updateDoc(roomRef, {
-        lastMessage: message.type === 'text' ? message.text : `[${message.type}]`,
+        lastMessage: message.type === 'text' ? message.text : (message.type === 'sticker' ? '이모티콘' : `[${message.type}]`),
         lastMessageTime: serverTimestamp(),
         lastMessageSenderId: message.senderId,
         unreadCounts: unreadCounts
       });
 
       // ---- 푸시 알림 전송 로직 시작 ----
+      if (message.metadata?.isSilent) {
+        console.log(`[Smart Silent Push] Message is silent. Skipping FCM notification completely.`);
+        return docRef.id;
+      }
       try {
         // sender 정보 가져오기
         const senderDoc = await getDoc(doc(db, USERS_COLLECTION, message.senderId));
@@ -170,14 +185,19 @@ export const chatService = {
           targetUserIds = otherParticipants;
         }
 
-        // 대상자들의 FCM 토큰 수집 ( allowChatNotifications 설정이 명시적으로 false인 회원 제외 )
+        // 대상자들의 FCM 토큰 수집
         const tokens: string[] = [];
         for (const pId of targetUserIds) {
           const pDoc = await getDoc(doc(db, USERS_COLLECTION, pId));
           if (pDoc.exists()) {
             const pData = pDoc.data();
-            if (pData.allowChatNotifications === false) {
-              continue;
+
+            // 잠깐 꺼두기(Snooze) 활성화 여부 검사
+            if (pData.notificationSnoozedUntil) {
+              const snoozedUntil = pData.notificationSnoozedUntil.toDate?.() || new Date(pData.notificationSnoozedUntil);
+              if (snoozedUntil > new Date()) {
+                continue;
+              }
             }
             if (pData.fcmTokens && Array.isArray(pData.fcmTokens)) {
               tokens.push(...pData.fcmTokens);
@@ -196,7 +216,7 @@ export const chatService = {
             body: JSON.stringify({
               tokens: uniqueTokens,
               title: roomData.type === 'private' ? senderName : (roomData.name || senderName),
-              message: message.type === 'text' ? message.text : '📷 Photo',
+              message: message.type === 'text' ? message.text : (message.type === 'sticker' ? '이모티콘' : '📷 Photo'),
               data: {
                 url: `/chat?roomId=${message.roomId}`,
                 type: 'chat',
@@ -213,6 +233,13 @@ export const chatService = {
       return docRef.id;
     } catch (error) {
       console.error("Error in sendMessage:", error);
+      // 전송 중 에러가 발생한 경우 로컬 큐에 스마트하게 자동 저장
+      if (typeof window !== 'undefined') {
+        const alreadyQueued = chatService.getPendingMessages().some((m: any) => m.tempId === tempId);
+        if (!alreadyQueued) {
+          chatService.savePendingMessage({ ...cleanMessage, tempId });
+        }
+      }
       throw error;
     }
   },
@@ -654,5 +681,388 @@ export const chatService = {
     } catch (error) {
       console.error("Error sending group system message:", error);
     }
+  },
+
+  // ---- Hybrid Pending Message Queue Helpers ----
+  getPendingMessages: (roomId?: string): any[] => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const stored = localStorage.getItem('woc_pending_messages');
+      const all: any[] = stored ? JSON.parse(stored) : [];
+      if (roomId) {
+        return all.filter((m: any) => m.roomId === roomId);
+      }
+      return all;
+    } catch (e) {
+      console.error("Error reading pending messages from localStorage:", e);
+      return [];
+    }
+  },
+
+  savePendingMessage: (message: any) => {
+    if (typeof window === 'undefined') return;
+    try {
+      const stored = localStorage.getItem('woc_pending_messages');
+      const all = stored ? JSON.parse(stored) : [];
+      
+      // 이미 같은 tempId가 대기 큐에 들어있는지 중복 방지
+      const exists = all.some((m: any) => m.tempId === message.tempId);
+      if (!exists) {
+        all.push(message);
+        localStorage.setItem('woc_pending_messages', JSON.stringify(all));
+      }
+    } catch (e) {
+      console.error("Error saving pending message:", e);
+    }
+  },
+
+  removePendingMessage: (tempId: string) => {
+    if (typeof window === 'undefined') return;
+    try {
+      const stored = localStorage.getItem('woc_pending_messages');
+      if (!stored) return;
+      const all = JSON.parse(stored);
+      const filtered = all.filter((m: any) => m.tempId !== tempId);
+      localStorage.setItem('woc_pending_messages', JSON.stringify(filtered));
+    } catch (e) {
+      console.error("Error removing pending message:", e);
+    }
+  },
+
+  processPendingQueue: async () => {
+    if (typeof window === 'undefined' || !navigator.onLine) return;
+    try {
+      const stored = localStorage.getItem('woc_pending_messages');
+      if (!stored) return;
+      const all = JSON.parse(stored);
+      if (all.length === 0) return;
+
+      console.log(`[Smart Queue] Processing ${all.length} pending messages...`);
+      
+      // 복구 전송 루프
+      for (const item of all) {
+        try {
+          // sendMessage 호출 시 tempId를 넘겨주어, 성공적으로 가면 큐에서 제거되도록 처리
+          await chatService.sendMessage(item);
+          chatService.removePendingMessage(item.tempId);
+          console.log(`[Smart Queue] Resent pending message ${item.tempId} successfully.`);
+        } catch (err) {
+          console.error(`[Smart Queue] Failed to resend pending message ${item.tempId}:`, err);
+          // 실패 시 순차 전송 꼬임을 방지하기 위해 중단
+          break;
+        }
+      }
+    } catch (e) {
+      console.error("Error processing pending messages queue:", e);
+    }
+  },
+
+  // 21. Toggle Meetup Attendance (Atomic Transaction)
+  toggleMeetupAttendance: async (messageId: string, userId: string) => {
+    const messageRef = doc(db, MESSAGES_COLLECTION, messageId);
+    try {
+      await runTransaction(db, async (transaction) => {
+        const msgDoc = await transaction.get(messageRef);
+        if (!msgDoc.exists()) {
+          throw new Error("Message does not exist");
+        }
+
+        const data = msgDoc.data() as ChatMessage;
+        const metadata = data.metadata || {};
+        const attendees = metadata.attendees || [];
+        const maxCapacity = metadata.maxCapacity || 0;
+
+        let newAttendees = [...attendees];
+        if (newAttendees.includes(userId)) {
+          // 이미 참가 중인 경우: 참가 취소
+          newAttendees = newAttendees.filter(uid => uid !== userId);
+        } else {
+          // 참가 시도: 정원 초과 검증
+          if (maxCapacity > 0 && newAttendees.length >= maxCapacity) {
+            throw new Error("Meetup is full");
+          }
+          newAttendees.push(userId);
+        }
+
+        transaction.update(messageRef, {
+          'metadata.attendees': newAttendees
+        });
+      });
+    } catch (err) {
+      console.error("Error toggling meetup attendance:", err);
+      throw err;
+    }
+  },
+
+  // 22. Confirm Meetup Schedule
+  confirmMeetupSchedule: async (messageId: string) => {
+    const messageRef = doc(db, MESSAGES_COLLECTION, messageId);
+    try {
+      await updateDoc(messageRef, {
+        'metadata.isConfirmed': true
+      });
+      console.log(`[Smart Scheduler] Meetup ${messageId} confirmed and linked to WoC Calendar.`);
+    } catch (err) {
+      console.error("Error confirming meetup schedule:", err);
+      throw err;
+    }
+  },
+
+  // 23. Snooze Notifications (잠깐 꺼두기 - 내일 아침 09:00 까지)
+  snoozeNotifications: async (userId: string, isSnoozed: boolean) => {
+    const userRef = doc(db, USERS_COLLECTION, userId);
+    try {
+      if (isSnoozed) {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(9, 0, 0, 0);
+        
+        await updateDoc(userRef, {
+          notificationSnoozedUntil: tomorrow
+        });
+        console.log(`[Smart Snooze] Notifications snoozed until: ${tomorrow.toLocaleString()}`);
+      } else {
+        await updateDoc(userRef, {
+          notificationSnoozedUntil: null
+        });
+        console.log(`[Smart Snooze] Notifications unsnoozed immediately.`);
+      }
+    } catch (err) {
+      console.error("Error setting notification snooze:", err);
+      throw err;
+    }
+  },
+
+  // 24. Create General Group Chat Room (Not linked to Group module)
+  createGeneralGroupChatRoom: async (participantIds: string[], creatorId: string, roomName?: string) => {
+    const sortedIds = Array.from(new Set([...participantIds, creatorId])).sort();
+    const docRef = await addDoc(collection(db, ROOMS_COLLECTION), {
+      type: 'private', // To show in Personal tab
+      participants: sortedIds,
+      createdBy: creatorId,
+      createdAt: serverTimestamp(),
+      lastMessageTime: serverTimestamp(),
+      lastMessage: 'chat.last_message_personal_group',
+      name: roomName || ''
+    });
+    return docRef.id;
+  },
+
+  // 25. Set Room Notice (Pinned Sticky Notice)
+  setRoomNotice: async (roomId: string, noticeText: string) => {
+    try {
+      const roomRef = doc(db, ROOMS_COLLECTION, roomId);
+      await updateDoc(roomRef, {
+        notice: noticeText
+      });
+      console.log(`[Notice System] Pinned notice for room ${roomId}: ${noticeText}`);
+    } catch (err) {
+      console.error("Error setting room notice:", err);
+      throw err;
+    }
+  },
+
+  // 26. Add Multi Room Notice
+  addRoomNotice: async (roomId: string, noticeText: string, existingNotices: string[] = []) => {
+    try {
+      const roomRef = doc(db, ROOMS_COLLECTION, roomId);
+      const updatedNotices = [noticeText, ...existingNotices].slice(0, 5); // 최대 5개까지 보관
+      await updateDoc(roomRef, {
+        notices: updatedNotices,
+        notice: noticeText // 하위 호환성을 위해 최신 공지를 단일 notice에도 연동
+      });
+      console.log(`[Notice System] Added notice for room ${roomId}: ${noticeText}`);
+    } catch (err) {
+      console.error("Error adding room notice:", err);
+      throw err;
+    }
+  },
+
+  // 27. Remove Multi Room Notice
+  removeRoomNotice: async (roomId: string, indexToRemove: number, existingNotices: string[] = []) => {
+    try {
+      const roomRef = doc(db, ROOMS_COLLECTION, roomId);
+      const updatedNotices = existingNotices.filter((_, idx) => idx !== indexToRemove);
+      await updateDoc(roomRef, {
+        notices: updatedNotices,
+        notice: updatedNotices.length > 0 ? updatedNotices[0] : "" // 최신 공지로 동기화하거나 지움
+      });
+      console.log(`[Notice System] Removed notice index ${indexToRemove} for room ${roomId}`);
+    } catch (err) {
+      console.error("Error removing room notice:", err);
+      throw err;
+    }
+  },
+
+  // 28. Woc Meetup Scheduler: Send Meetup Card
+  sendMeetupMessage: async (roomId: string, senderId: string, senderName: string, meetupData: { title: string, date: string, time: string, location: string, maxCapacity: number, description?: string }) => {
+    try {
+      const messagesRef = collection(db, MESSAGES_COLLECTION);
+      const docRef = await addDoc(messagesRef, {
+        roomId,
+        senderId,
+        senderName,
+        text: `[약속] ${meetupData.title}`,
+        type: 'meetup',
+        timestamp: serverTimestamp(),
+        readBy: [senderId],
+        metadata: {
+          meetupId: `meetup_${Date.now()}`,
+          title: meetupData.title,
+          date: meetupData.date,
+          time: meetupData.time,
+          location: meetupData.location,
+          maxCapacity: meetupData.maxCapacity,
+          attendees: [senderId], // 발의자는 자동 참가
+          isConfirmed: false,
+          description: meetupData.description || ''
+        }
+      });
+      
+      const roomRef = doc(db, ROOMS_COLLECTION, roomId);
+      await updateDoc(roomRef, {
+        lastMessage: `chat.last_message_meetup`,
+        lastMessageSenderId: senderId,
+        lastMessageTime: serverTimestamp()
+      });
+
+      return docRef.id;
+    } catch (err) {
+      console.error("Error sending meetup message:", err);
+      throw err;
+    }
+  },
+
+  // 31. Woc Remittance: Propose 1/N Settlement Card
+  sendSettlementMessage: async (roomId: string, senderId: string, senderName: string, settlementData: { title: string, totalAmount: number, perPersonAmount: number, bankName: string, accountNumber: string, attendees: string[] }) => {
+    try {
+      const messagesRef = collection(db, MESSAGES_COLLECTION);
+      const docRef = await addDoc(messagesRef, {
+        roomId,
+        senderId,
+        senderName,
+        text: `[정산] ${settlementData.title}`,
+        type: 'remittance',
+        timestamp: serverTimestamp(),
+        readBy: [senderId],
+        metadata: {
+          settlementId: `settlement_${Date.now()}`,
+          title: settlementData.title,
+          totalAmount: settlementData.totalAmount,
+          perPersonAmount: settlementData.perPersonAmount,
+          bankName: settlementData.bankName,
+          accountNumber: settlementData.accountNumber,
+          attendees: settlementData.attendees,
+          paidUsers: []
+        }
+      });
+      
+      const roomRef = doc(db, ROOMS_COLLECTION, roomId);
+      await updateDoc(roomRef, {
+        lastMessage: `chat.last_message_remittance`,
+        lastMessageSenderId: senderId,
+        lastMessageTime: serverTimestamp()
+      });
+
+      return docRef.id;
+    } catch (err) {
+      console.error("Error sending settlement message:", err);
+      throw err;
+    }
+  },
+
+  // 32. Woc Remittance: Toggle Settlement Payment (Transaction Safe)
+  toggleSettlementPayment: async (messageId: string, userId: string) => {
+    try {
+      const msgRef = doc(db, MESSAGES_COLLECTION, messageId);
+      await runTransaction(db, async (transaction) => {
+        const msgDoc = await transaction.get(msgRef);
+        if (!msgDoc.exists()) {
+          throw new Error("Message does not exist");
+        }
+        const data = msgDoc.data();
+        const metadata = data.metadata || {};
+        const paidUsers: string[] = metadata.paidUsers || [];
+
+        let updated: string[];
+        if (paidUsers.includes(userId)) {
+          updated = paidUsers.filter(id => id !== userId);
+        } else {
+          updated = [...paidUsers, userId];
+        }
+
+        transaction.update(msgRef, {
+          "metadata.paidUsers": updated
+        });
+      });
+    } catch (err) {
+      console.error("Error toggling settlement payment:", err);
+      throw err;
+    }
+  },
+
+  // 33. Woc Polls: Toggle Poll Vote (Transaction Safe)
+  togglePollVote: async (messageId: string, optionIndex: number, userId: string) => {
+    try {
+      const msgRef = doc(db, MESSAGES_COLLECTION, messageId);
+      await runTransaction(db, async (transaction) => {
+        const msgDoc = await transaction.get(msgRef);
+        if (!msgDoc.exists()) {
+          throw new Error("Message does not exist");
+        }
+        const data = msgDoc.data() as ChatMessage;
+        const metadata = data.metadata || {};
+        if (metadata.isClosed) {
+          throw new Error("Poll is closed");
+        }
+        
+        const votes = metadata.votes || {};
+        const allowMultiple = metadata.allowMultiple || false;
+        const key = String(optionIndex);
+        
+        let newVotes = { ...votes };
+        
+        // 해당 옵션의 투표자 목록
+        let currentOptionVotes = newVotes[key] || [];
+        
+        if (currentOptionVotes.includes(userId)) {
+          // 이미 해당 옵션에 투표한 경우: 투표 취소
+          currentOptionVotes = currentOptionVotes.filter(id => id !== userId);
+          newVotes[key] = currentOptionVotes;
+        } else {
+          // 투표 추가
+          if (!allowMultiple) {
+            // 중복 투표 비허용 시: 다른 모든 옵션에서 이 유저의 투표를 제거
+            Object.keys(newVotes).forEach(k => {
+              newVotes[k] = (newVotes[k] || []).filter(id => id !== userId);
+            });
+          }
+          currentOptionVotes = [...currentOptionVotes, userId];
+          newVotes[key] = currentOptionVotes;
+        }
+        
+        transaction.update(msgRef, {
+          "metadata.votes": newVotes
+        });
+      });
+    } catch (err) {
+      console.error("Error toggling poll vote:", err);
+      throw err;
+    }
+  },
+
+  // 34. Woc Polls: Close Poll
+  closePoll: async (messageId: string) => {
+    try {
+      const msgRef = doc(db, MESSAGES_COLLECTION, messageId);
+      await updateDoc(msgRef, {
+        "metadata.isClosed": true
+      });
+      console.log(`[Smart Polls] Poll ${messageId} closed.`);
+    } catch (err) {
+      console.error("Error closing poll:", err);
+      throw err;
+    }
   }
 };
+

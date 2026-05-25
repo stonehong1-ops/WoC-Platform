@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo, useCallback, Suspense } from 'react';
+import { db } from '@/lib/firebase/clientApp';
+import { onSnapshot, collection } from 'firebase/firestore';
 import { socialService } from '@/lib/firebase/socialService';
 import { Social } from '@/types/social';
 import { safeDate } from '@/lib/utils/safeDate';
@@ -45,6 +47,48 @@ function SocialContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSocial, setSelectedSocial] = useState<Social | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+
+  // Fullscreen and Horizontal City Swipable State using PWA back-button friendly URL Sync
+  const { isOpen: isFullscreenOpen, openModal: openFullscreen, closeModal: closeFullscreen } = useModalNavigation('fullscreenBrief');
+  const [activeCityTab, setActiveCityTab] = useState('서울');
+  const cityScrollRef = useRef<HTMLDivElement>(null);
+
+  // 실시간 모든 장소(Venues)의 실제 주소/구역 데이터베이스 동기화 및 자동 마이그레이션 상태
+  const [venuesMap, setVenuesMap] = useState<Record<string, any>>({});
+  
+  useEffect(() => {
+    return onSnapshot(collection(db, 'venues'), (snapshot) => {
+      const map: Record<string, any> = {};
+      snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        map[doc.id] = { id: doc.id, ...data };
+        
+        // 서울에 위치하고 seoulArea 필드가 없는 베뉴에 대해 1회성 마이그레이션 실시간 자동 수행
+        const city = (data.city || '').toUpperCase();
+        if (city === 'SEOUL' && !data.seoulArea) {
+          const address = (data.address || '').toLowerCase();
+          const district = (data.district || '').toLowerCase();
+          
+          const gangbukDists = ['마포', '용산', '성동', '서대문', '종로', '중구', '광진', '은평', '성북', '동대문', '중랑', '강북', '도봉', '노원'];
+          let assignedArea = 'gangnam'; // 기본값 강남
+          
+          for (const d of gangbukDists) {
+            if (address.includes(d) || district.includes(d)) {
+              assignedArea = 'gangbuk';
+              break;
+            }
+          }
+          
+          // Firestore updateDoc 원격 동적 마운트 실행
+          import('firebase/firestore').then(({ doc: fireDoc, updateDoc }) => {
+            updateDoc(fireDoc(db, 'venues', doc.id), { seoulArea: assignedArea })
+              .catch(err => console.error('seoulArea 자동 마이그레이션 실패:', err));
+          });
+        }
+      });
+      setVenuesMap(map);
+    });
+  }, []);
 
   // New Header Filter States
   const [activeTab, setActiveTab] = useState<'this_week' | 'popup' | 'favorite' | 'overview'>('this_week');
@@ -491,6 +535,135 @@ function SocialContent() {
     });
   };
 
+  // 특정 날짜가 해당 월의 몇 번째 요일인지 계산하는 헬퍼 (1st, 2nd, 3rd, 4th, 5th)
+  const getWeekOrdinal = (d: Date) => Math.ceil(d.getDate() / 7);
+
+  // 특정 날짜의 요일이 해당 월의 마지막 요일인지 계산하는 헬퍼
+  const isLastWeekOfMonth = (d: Date) => {
+    const currentMonth = d.getMonth();
+    const nextWeekDate = new Date(d);
+    nextWeekDate.setDate(d.getDate() + 7);
+    return nextWeekDate.getMonth() !== currentMonth;
+  };
+
+  // Filtered regular socials for the currently active day (with intelligent ID-based deduplication & recurrence matching)
+  const todaysSocials = useMemo(() => {
+    const targetDate = weekDays[activeDayOffset];
+    const targetDay = targetDate.getDay();
+    const ordinal = getWeekOrdinal(targetDate);
+    const isLast = isLastWeekOfMonth(targetDate);
+
+    const list = filterSocials(regulars).filter(s => {
+      // 1. 요일 매칭
+      if (Number(s.dayOfWeek) !== targetDay) return false;
+
+      // 2. 주기(recurrence) 매칭
+      const rec = (s.recurrence || 'every').trim().toLowerCase();
+      if (rec === 'every' || rec === '') return true;
+      if (rec === '1st' && ordinal === 1) return true;
+      if (rec === '2nd' && ordinal === 2) return true;
+      if (rec === '3rd' && ordinal === 3) return true;
+      if (rec === '4th' && ordinal === 4) return true;
+      if (rec === 'last' && isLast) return true;
+
+      return false;
+    });
+
+    const seen = new Set<string>();
+    return list.filter(s => {
+      if (!s.id) return true;
+      if (seen.has(s.id)) return false;
+      seen.add(s.id);
+      return true;
+    });
+  }, [regulars, activeDayOffset, searchQuery, selectedOrganizer, selectedClub]);
+
+  // Replaced with fixed 7 major cities for persistent quick tag filter UI
+  const activeCities = useMemo(() => ['서울', '부산', '대전', '대구', '광주', '인천', '제주'], []);
+
+
+  // Set default city tab once activeCities are computed
+  useEffect(() => {
+    if (activeCities.length > 0 && !activeCities.includes(activeCityTab)) {
+      setActiveCityTab(activeCities[0]);
+    }
+  }, [activeCities]);
+
+  // Swipe Scroll handler to bind horizontal scroll index back to activeCityTab
+  const handleCityScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const container = e.currentTarget;
+    const width = container.offsetWidth;
+    if (width <= 0) return;
+    const index = Math.round(container.scrollLeft / width);
+    if (activeCities[index] && activeCities[index] !== activeCityTab) {
+      setActiveCityTab(activeCities[index]);
+    }
+  };
+
+  // Scroll to active city container smoothly when city tab is tapped
+  const scrollToCity = (city: string) => {
+    setActiveCityTab(city);
+    const index = activeCities.indexOf(city);
+    const container = cityScrollRef.current;
+    if (container && index !== -1) {
+      container.scrollTo({
+        left: container.offsetWidth * index,
+        behavior: "smooth"
+      });
+    }
+  };
+
+  // District ordering priority helper
+  const subDistrictOrder = (d?: string) => {
+    if (!d) return 9;
+    const lower = d.toLowerCase();
+    if (lower.includes('홍대') || lower.includes('한강위')) return 0;
+    if (lower.includes('강남') || lower.includes('한강아래')) return 1;
+    if (lower.includes('강북')) return 2;
+    return 3;
+  };
+
+  // 지능형 서울 한강 기준 강북(홍대인근) / 강남(강남지역) 초고속 지리 매퍼
+  const detectSeoulDistrict = (social: Social): string => {
+    // 1. 소셜 자체에 district가 이미 입력되어 있는 경우
+    if (social.district && social.district.trim()) {
+      const d = social.district.trim().toLowerCase();
+      if (d.includes('강남') || d.includes('서초') || d.includes('송파') || d.includes('강동') || d.includes('양재')) {
+        return language === 'KR' ? '한강아래 (강남지역)' : 'South of River (Gangnam)';
+      }
+      if (d.includes('강북') || d.includes('홍대') || d.includes('마포') || d.includes('신촌') || d.includes('종로') || d.includes('합정')) {
+        return language === 'KR' ? '한강위 (홍대인근)' : 'North of River (Hongdae)';
+      }
+    }
+
+    // 2. 실시간 동기화된 venue.seoulArea 초고속 쿼리 매핑 (서울 강남북 구분)
+    const venue = venuesMap[social.venueId];
+    if (venue && venue.seoulArea) {
+      if (venue.seoulArea === 'gangbuk') {
+        return language === 'KR' ? '한강위 (홍대인근)' : 'North of River (Hongdae)';
+      }
+      if (venue.seoulArea === 'gangnam') {
+        return language === 'KR' ? '한강아래 (강남지역)' : 'South of River (Gangnam)';
+      }
+    }
+
+    // 3. Fallback: 텍스트 키워드 기반 비상 분류 (DB 로딩 지연 대비)
+    const venueName = (social.venueNameNative || social.venueName || '').toLowerCase();
+    const gangbukKeywords = [
+      '홍대', '마포', '신촌', '합정', '망원', '종로', '중구', '성동', '서대문', '이대', '상수', '광진', '용산', '한남', '이태원', '을지로', '광화문',
+      'hongdae', 'mapo', 'sinchon', 'hapjeong', 'jongno', 'yongsan', 'hannam', 'itaewon',
+      '바르샤', 'barsha', '엘빠소', 'elpaso', '아반', 'aban', '보헤미안', 'bohemian', '아르헨티나', 'argentina',
+      '오쵸', 'ocho', '땅고마니아', 'tangomania', '라비다', 'lavida', '마구아', 'magua', '밀롱가헤이', 'milongahei',
+      '라벤타나', '라 벤타나', 'ventana', 'la ventana', '알마', 'alma', '오나다', 'onada', 'atta', '아똬'
+    ];
+
+    for (const key of gangbukKeywords) {
+      if (venueName.includes(key)) return language === 'KR' ? '한강위 (홍대인근)' : 'North of River (Hongdae)';
+    }
+
+    return language === 'KR' ? '한강아래 (강남지역)' : 'South of River (Gangnam)';
+  };
+
   return (
     <main className="w-full relative pb-32 bg-slate-50/30 overflow-x-hidden">
       <div className="px-4 space-y-6 pt-4">
@@ -498,6 +671,21 @@ function SocialContent() {
         {/* THIS WEEK TAB */}
         {activeTab === 'this_week' && (
           <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+
+            {/* Section Header with Premium Fullscreen Button */}
+            <div className="flex justify-between items-center px-1 mb-3">
+              <h2 className="text-[13px] font-black text-slate-800 uppercase tracking-widest flex items-center gap-1.5">
+                <span className="material-symbols-rounded text-base text-blue-600">calendar_today</span>
+                {t('social.tab_regular')}
+              </h2>
+              <button
+                onClick={() => openFullscreen('true')}
+                className="flex items-center gap-1 px-3 py-1.5 bg-slate-900 text-white rounded-xl active:scale-95 transition-all text-[11px] font-black shadow-md shadow-slate-900/10 hover:bg-slate-800"
+              >
+                <span className="material-symbols-rounded text-[14px]">grid_view</span>
+                {language === 'KR' ? '풀스크린 브리프' : 'Fullscreen'}
+              </button>
+            </div>
 
             {/* Calendar (Date Selector Grid) */}
             <div className="w-full bg-white rounded-2xl p-2 shadow-sm border border-slate-100 mb-4">
@@ -536,17 +724,17 @@ function SocialContent() {
               ref={carouselRef}
               className="flex gap-4 overflow-x-auto no-scrollbar pt-2 -mx-4 px-4"
             >
-              {filterSocials(regulars).filter(s => Number(s.dayOfWeek) === weekDays[activeDayOffset].getDay()).length === 0 ? (
+              {todaysSocials.length === 0 ? (
                 <div className="w-full h-40 flex flex-col items-center justify-center opacity-20 bg-white rounded-lg border border-dashed border-gray-200">
                   <span className="material-symbols-outlined text-4xl mb-2">event_busy</span>
                   <p className="text-xs font-black uppercase tracking-widest">{t('social.no_regular_today')}</p>
                 </div>
               ) : (
-                filterSocials(regulars).filter(s => Number(s.dayOfWeek) === weekDays[activeDayOffset].getDay()).map(social => (
+                todaysSocials.map(social => (
                   <div
-                    key={social.id}
-                    onClick={() => handleOpenView(social)}
-                    className="relative flex-shrink-0 w-60 h-80 rounded-lg overflow-hidden group shadow-sm transition-all md:hover:shadow-md cursor-pointer animate-in zoom-in-95 duration-500 text-left"
+                     key={social.id}
+                     onClick={() => handleOpenView(social)}
+                     className="relative flex-shrink-0 w-60 h-80 rounded-lg overflow-hidden group shadow-sm transition-all md:hover:shadow-md cursor-pointer animate-in zoom-in-95 duration-500 text-left"
                   >
                     <SocialHeroCard social={social} date={weekDays[activeDayOffset]} />
 
@@ -855,30 +1043,405 @@ function SocialContent() {
             )}
           </section>
         )}
-
       </div>
 
-      {/* 신규 등록 (Create 모드) */}
-      {isCreateOpen && (
-        <EditSocialEvent
-          onClose={handleCloseCreate}
-          onSuccess={handleCloseCreate}
+      {/* FULLSCREEN CROP BRIEF VIEW LAYER WITH CITY HORIZONTAL SWIPE */}
+        {isFullscreenOpen && (
+          <div className="fixed inset-0 z-[500] bg-[#f8f9fa] flex flex-col animate-in fade-in slide-in-from-bottom duration-300">
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 shrink-0 border-b border-slate-200 bg-white">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-rounded text-blue-600 text-lg">grid_view</span>
+              <span className="text-slate-800 font-black text-[12px] tracking-widest uppercase">
+                {weekDays[activeDayOffset].toLocaleDateString(dateLocale, { weekday: "short", month: "long", day: "numeric" })}
+              </span>
+            </div>
+            <button 
+              onClick={() => closeFullscreen()} 
+              className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center active:scale-90 transition-transform hover:bg-slate-200"
+            >
+              <span className="material-symbols-rounded text-slate-600 text-lg">close</span>
+            </button>
+          </div>
+
+          {/* City Swiper Indicator Tabs */}
+          {activeCities.length > 0 && (
+            <div className="flex px-3 py-2 bg-white border-b border-slate-200 gap-1.5 overflow-x-auto no-scrollbar shrink-0">
+              {activeCities.map((city) => {
+                const isActive = activeCityTab === city;
+                const displayLabel = 
+                  city === '서울' ? (language === 'KR' ? '서울' : 'Seoul') :
+                  city === '부산' ? (language === 'KR' ? '부산' : 'Busan') :
+                  city === '대전' ? (language === 'KR' ? '대전' : 'Daejeon') :
+                  city === '대구' ? (language === 'KR' ? '대구' : 'Daegu') :
+                  city === '광주' ? (language === 'KR' ? '광주' : 'Gwangju') :
+                  city === '인천' ? (language === 'KR' ? '인천' : 'Incheon') :
+                  city === '제주' ? (language === 'KR' ? '제주' : 'Jeju') : city;
+                
+                return (
+                  <button
+                    key={city}
+                    onClick={() => scrollToCity(city)}
+                    className={`px-3.5 py-1.5 rounded-xl text-[11px] font-black tracking-tight transition-all whitespace-nowrap border flex items-center gap-1 active:scale-95 ${
+                      isActive
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20 scale-[1.02]'
+                        : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
+                    }`}
+                  >
+                    <span className="material-symbols-rounded text-xs" style={{ fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}>push_pin</span>
+                    <span className="mt-[0.5px]">{displayLabel}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+
+          {/* City Horizontal Swipe Layout */}
+          <div 
+            ref={cityScrollRef}
+            onScroll={handleCityScroll}
+            className="flex-1 flex overflow-x-auto snap-x snap-mandatory scroll-smooth no-scrollbar bg-[#f8f9fa]"
+          >
+            {activeCities.length === 0 ? (
+              <div className="w-full h-full flex flex-col items-center justify-center text-slate-400">
+                <span className="material-symbols-outlined text-3xl mb-2">event_busy</span>
+                <p className="text-xs font-black uppercase tracking-widest">{t('social.no_regular_today')}</p>
+              </div>
+            ) : (
+              activeCities.map((city) => {
+                const citySocials = todaysSocials.filter(s => {
+                  const sCity = (s.city || '').trim().toLowerCase();
+                  const targetCity = city.toLowerCase();
+                  if (targetCity === '서울') return sCity === '서울' || sCity === 'seoul';
+                  if (targetCity === '부산') return sCity === '부산' || sCity === 'busan';
+                  if (targetCity === '대전') return sCity === '대전' || sCity === 'daejeon';
+                  if (targetCity === '대구') return sCity === '대구' || sCity === 'daegu';
+                  if (targetCity === '광주') return sCity === '광주' || sCity === 'gwangju';
+                  if (targetCity === '인천') return sCity === '인천' || sCity === 'incheon';
+                  if (targetCity === '제주') return sCity === '제주' || sCity === 'jeju';
+                  return sCity === targetCity;
+                });
+                
+                const isSeoul = city.includes('서울') || city.toLowerCase().includes('seoul');
+                const isMany = citySocials.length >= 10;
+
+                const grouped: Record<string, Social[]> = {};
+                if (isSeoul) {
+                  citySocials.forEach(s => {
+                    const dist = detectSeoulDistrict(s);
+                    if (!grouped[dist]) grouped[dist] = [];
+                    grouped[dist].push(s);
+                  });
+                } else {
+                  const key = language === 'KR' ? `${city} 전체` : `${city} Area`;
+                  grouped[key] = citySocials;
+                }
+
+                const isDaySocial = (s: Social) => {
+                  const time = s.startTime || '19:00';
+                  const hour = parseInt(time.split(':')[0]);
+                  return hour < 18;
+                };
+
+                const sortedDists = Object.keys(grouped).sort((a, b) => {
+                  if (a.includes('한강위')) return -1;
+                  if (b.includes('한강위')) return 1;
+                  return a.localeCompare(b);
+                });
+
+                return (
+                  <div 
+                    key={city}
+                    className="w-full h-full flex-shrink-0 snap-start flex flex-col overflow-y-auto px-4 py-4 space-y-6"
+                  >
+                    {citySocials.length === 0 ? (
+                      <div className="w-full flex-1 flex flex-col items-center justify-center text-slate-400/40 p-8 bg-white rounded-3xl border border-slate-100/50 my-6 shadow-sm">
+                        <span className="material-symbols-outlined text-5xl mb-3 text-slate-300">event_busy</span>
+                        <p className="text-sm font-black uppercase tracking-widest text-slate-400">
+                          {language === 'KR' ? '오늘 예정된 소셜이 없습니다' : 'No Socials Scheduled Today'}
+                        </p>
+                        <p className="text-[11px] font-bold text-slate-400/70 mt-1">
+                          {language === 'KR' ? '다른 날짜의 소셜을 탐색해보세요!' : 'Explore other dates!'}
+                        </p>
+                      </div>
+                    ) : (
+                      sortedDists.map((dist) => {
+                      const list = grouped[dist];
+                      const dayList = list.filter(s => isDaySocial(s));
+                      const nightList = list.filter(s => !isDaySocial(s));
+
+                      const renderCardList = (cards: Social[], mode: 'emperor' | 'wide' | 'slim' | 'grid') => {
+                        if (mode === 'emperor') {
+                          return (
+                            <div className="space-y-3">
+                              {cards.map((social) => (
+                                <div 
+                                  key={social.id}
+                                  onClick={() => handleOpenView(social)}
+                                  className="relative w-full h-56 rounded-3xl overflow-hidden border border-slate-200 active:scale-[0.99] transition-all cursor-pointer shadow-sm bg-white flex flex-col justify-end p-5 select-none"
+                                >
+                                  {social.imageUrl ? (
+                                    <div className="absolute inset-0 z-0">
+                                      <img src={social.imageUrl} alt="" className="w-full h-full object-cover brightness-[0.95]" />
+                                      <div className="absolute inset-0 bg-gradient-to-t from-white via-white/85 to-white/40" />
+                                    </div>
+                                  ) : (
+                                    <div className="absolute inset-0 z-0 bg-gradient-to-br from-blue-50/30 via-slate-50 to-white" />
+                                  )}
+                                  
+                                  <div className="relative z-10 flex flex-col h-full justify-between">
+                                    <div className="flex justify-between items-center w-full">
+                                      <div className="flex items-center gap-1.5 px-3 py-1 bg-blue-600 text-white rounded-xl text-[10px] font-black shadow-md shadow-blue-500/10">
+                                        <span className="material-symbols-rounded text-xs">schedule</span>
+                                        <span>{social.startTime} - {social.endTime}</span>
+                                        <span className="ml-1 bg-white/20 px-1 rounded text-[8px] font-bold">
+                                          {isDaySocial(social) ? (language === 'KR' ? '낮' : 'Day') : (language === 'KR' ? '밤' : 'Night')}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    <div className="mt-auto">
+                                      <h3 className="text-lg font-black text-slate-800 leading-tight">
+                                        {social.title}
+                                        {social.titleNative && <span className="block text-xs font-bold text-slate-400 mt-0.5">{social.titleNative}</span>}
+                                      </h3>
+                                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 mt-3 text-[10px] font-bold text-slate-600">
+                                        <span className="inline-flex items-center gap-1 bg-slate-100 px-2.5 py-1 rounded-xl"><span className="material-symbols-outlined text-[13px] text-blue-500">location_on</span>{social.venueNameNative || social.venueName}</span>
+                                        <span className="inline-flex items-center gap-1 bg-slate-100 px-2.5 py-1 rounded-xl"><span className="material-symbols-outlined text-[13px] text-slate-500">person</span>{social.organizerNameNative || social.organizerName}</span>
+                                        {social.djName && <span className="inline-flex items-center gap-1 bg-slate-100 px-2.5 py-1 rounded-xl"><span className="material-symbols-outlined text-[13px] text-amber-500">headphones</span>DJ {social.djName}</span>}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        }
+
+                        if (mode === 'wide') {
+                          return (
+                            <div className="space-y-3">
+                              {cards.map((social) => (
+                                <div 
+                                  key={social.id}
+                                  onClick={() => handleOpenView(social)}
+                                  className="flex items-center gap-4 p-4 bg-white border border-slate-150 rounded-2xl active:scale-[0.98] transition-all cursor-pointer select-none text-left shadow-sm hover:border-blue-300 h-[104px]"
+                                >
+                                  <div className="shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-slate-50 border border-slate-100">
+                                    {social.imageUrl ? (
+                                      <img src={social.imageUrl} alt="" className="w-full h-full object-cover" />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center bg-slate-50 text-slate-300">
+                                        <span className="material-symbols-outlined text-lg">music_note</span>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  <div className="flex-1 min-w-0 pr-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-[10px] font-black bg-blue-50 text-blue-600 px-2 py-0.5 rounded-lg border border-blue-100 leading-none">{social.startTime} - {social.endTime}</span>
+                                      <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md leading-none shrink-0 ${
+                                        isDaySocial(social) 
+                                          ? 'bg-amber-50 text-amber-600 border border-amber-100' 
+                                          : 'bg-indigo-50 text-indigo-600 border border-indigo-100'
+                                      }`}>
+                                        {isDaySocial(social) ? (language === 'KR' ? '낮' : 'Day') : (language === 'KR' ? '밤' : 'Night')}
+                                      </span>
+                                      {social.djName && <span className="text-[9.5px] font-bold text-slate-400 truncate">DJ {social.djName}</span>}
+                                    </div>
+                                    <h4 className="text-[14.5px] font-black text-slate-800 truncate leading-tight mt-1.5 flex items-baseline gap-1.5">
+                                      {social.title}
+                                      {social.titleNative && <span className="text-[10px] font-semibold text-slate-400 truncate">{social.titleNative}</span>}
+                                    </h4>
+                                    <div className="flex items-center gap-2.5 mt-1.5 text-[10px] font-bold text-slate-500 truncate leading-none">
+                                      <span className="inline-flex items-center gap-0.5"><span className="material-symbols-outlined text-[11px] text-blue-500 shrink-0">location_on</span>{social.venueNameNative || social.venueName}</span>
+                                      <span className="inline-flex items-center gap-0.5"><span className="material-symbols-outlined text-[11px] text-slate-400 shrink-0">person</span>{social.organizerNameNative || social.organizerName}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        }
+
+                        if (mode === 'slim') {
+                          return (
+                            <div className="space-y-2">
+                              {cards.map((social) => (
+                                <div 
+                                  key={social.id}
+                                  onClick={() => handleOpenView(social)}
+                                  className="flex items-center gap-3 p-3 bg-white border border-slate-150 rounded-2xl active:scale-[0.98] transition-all cursor-pointer select-none text-left shadow-sm hover:border-blue-300 h-[78px]"
+                                >
+                                  <div className="shrink-0 w-12 h-12 rounded-xl overflow-hidden bg-slate-50 border border-slate-100">
+                                    {social.imageUrl ? (
+                                      <img src={social.imageUrl} alt="" className="w-full h-full object-cover" />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center bg-slate-50 text-slate-300">
+                                        <span className="material-symbols-outlined text-sm">music_note</span>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  <div className="flex-1 min-w-0 pr-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-[9.5px] font-black bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-lg border border-blue-100 leading-none">{social.startTime} - {social.endTime}</span>
+                                      <span className={`text-[8.5px] font-black px-1.5 py-0.5 rounded-md leading-none shrink-0 ${
+                                        isDaySocial(social) 
+                                          ? 'bg-amber-50 text-amber-600 border border-amber-100' 
+                                          : 'bg-indigo-50 text-indigo-600 border border-indigo-100'
+                                      }`}>
+                                        {isDaySocial(social) ? (language === 'KR' ? '낮' : 'Day') : (language === 'KR' ? '밤' : 'Night')}
+                                      </span>
+                                      {social.djName && <span className="text-[9.5px] font-bold text-slate-400 truncate">DJ {social.djName}</span>}
+                                    </div>
+                                    <h4 className="text-[13.5px] font-black text-slate-800 truncate leading-tight mt-1 flex items-baseline gap-1.5">
+                                      {social.title}
+                                      {social.titleNative && <span className="text-[9.5px] font-semibold text-slate-400 truncate">{social.titleNative}</span>}
+                                    </h4>
+                                    <div className="flex items-center gap-2 mt-1 text-[9.5px] font-bold text-slate-500 truncate leading-none">
+                                      <span className="inline-flex items-center gap-0.5"><span className="material-symbols-outlined text-[10px] text-blue-500 shrink-0">location_on</span>{social.venueNameNative || social.venueName}</span>
+                                      <span className="inline-flex items-center gap-0.5"><span className="material-symbols-outlined text-[10px] text-slate-400 shrink-0">person</span>{social.organizerNameNative || social.organizerName}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        }
+
+                        // 2-column Compact Simple Card layout for 10+ items
+                        // 시작시간, 밀롱가명(가장 중요), 장소 • 오거
+                        return (
+                          <div className="grid grid-cols-2 gap-2">
+                            {cards.map((social) => {
+                              const displayTitle = getSocialDisplayTitle(social);
+                              const venueText = social.venueNameNative || social.venueName;
+                              const organizerText = social.organizerNameNative || social.organizerName;
+                              
+                              return (
+                                <div 
+                                  key={social.id}
+                                  onClick={() => handleOpenView(social)}
+                                  className="flex flex-col justify-between p-3 bg-white border border-slate-150 rounded-2xl active:scale-[0.98] transition-all cursor-pointer select-none text-left shadow-sm hover:border-blue-300 h-[88px]"
+                                >
+                                  {/* 시작시간 및 낮/밤 배지 */}
+                                  <div className="flex items-center justify-between w-full">
+                                    <div className="text-[11px] font-black text-blue-600 tracking-tight leading-none">
+                                      {social.startTime}
+                                    </div>
+                                    <span className={`text-[8px] font-black px-1.5 py-0.5 rounded leading-none shrink-0 scale-90 origin-right ${
+                                      isDaySocial(social) 
+                                        ? 'bg-amber-50 text-amber-600 border border-amber-100' 
+                                        : 'bg-indigo-50 text-indigo-600 border border-indigo-100'
+                                    }`}>
+                                      {isDaySocial(social) ? (language === 'KR' ? '낮' : 'Day') : (language === 'KR' ? '밤' : 'Night')}
+                                    </span>
+                                  </div>
+                                  
+                                  {/* 밀롱가명 (가장 중요) */}
+                                  <div className="text-[13px] font-black text-slate-900 truncate leading-tight mt-1">
+                                    {displayTitle.primary}
+                                    {displayTitle.secondary && (
+                                      <span className="text-[10px] font-semibold text-slate-400 ml-1">
+                                        ({displayTitle.secondary})
+                                      </span>
+                                    )}
+                                  </div>
+                                  
+                                  {/* 장소 • 주최자 */}
+                                  <div className="text-[10.5px] font-bold text-slate-500 truncate leading-none mt-1.5 mb-0.5">
+                                    <span>{venueText}</span>
+                                    {organizerText && (
+                                      <>
+                                        <span className="text-slate-350 font-normal mx-1">•</span>
+                                        <span className="text-slate-400 font-semibold">{organizerText}</span>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      };
+
+                      // Evaluate optimal density mode
+                      const getDensityMode = (): 'emperor' | 'wide' | 'slim' | 'grid' => {
+                        if (list.length === 1) return 'emperor';
+                        if (list.length >= 2 && list.length <= 4) return 'wide';
+                        if (list.length >= 5 && list.length <= 9) return 'slim';
+                        return 'grid';
+                      };
+
+                      const currentMode = getDensityMode();
+
+                      return (
+                        <div key={dist} className="space-y-3">
+                          {/* Sub-District Section Title */}
+                          <div className="flex items-center gap-2 py-1 px-1">
+                            <span className="material-symbols-rounded text-blue-600 text-xs">location_searching</span>
+                            <span className="text-[11px] font-black text-slate-600 uppercase tracking-widest">
+                              {dist} ({list.length})
+                            </span>
+                            <div className="flex-1 h-px bg-slate-200" />
+                          </div>
+
+                          {isMany ? (
+                            // Grouped afternoon/night list in 2-column grid for 10+ items
+                            <div className="space-y-4">
+                              {dayList.length > 0 && (
+                                <div className="space-y-2">
+                                  <div className="flex items-center gap-1 text-[10px] font-black text-amber-500 uppercase tracking-wider pl-1">
+                                    <span className="material-symbols-rounded text-xs">light_mode</span>
+                                    {language === 'KR' ? '낮 시간 밀롱가 (18시 이전)' : 'Afternoon Milonga (Before 18:00)'}
+                                  </div>
+                                  {renderCardList(dayList, 'grid')}
+                                </div>
+                              )}
+                              {nightList.length > 0 && (
+                                <div className="space-y-2">
+                                  <div className="flex items-center gap-1 text-[10px] font-black text-indigo-500 uppercase tracking-wider pl-1">
+                                    <span className="material-symbols-rounded text-xs">dark_mode</span>
+                                    {language === 'KR' ? '밤 시간 밀롱가 (18시 이후)' : 'Night Milonga (After 18:00)'}
+                                  </div>
+                                  {renderCardList(nightList, 'grid')}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            // Use density-controlled layouts (emperor / wide / slim)
+                            renderCardList(list, currentMode)
+                          )}
+                        </div>
+                      );
+                    })
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+      {isViewOpenURL && viewSocial && (
+        <SocialViewer
+          social={viewSocial}
+          onClose={handleCloseView}
         />
       )}
 
-      {/* 기존 소셜 편집 (Edit 모드) */}
-      {selectedSocial && (
+      {isEditOpenURL && selectedSocial && (
         <EditSocialEvent
           socialData={selectedSocial}
           onClose={handleCloseEdit}
         />
       )}
 
-      {/* 뷰 모드 (일반 사용자) */}
-      {viewSocial && (
-        <SocialViewer
-          social={viewSocial}
-          onClose={handleCloseView}
+      {isCreateOpen && (
+        <EditSocialEvent
+          onClose={handleCloseCreate}
         />
       )}
     </main>

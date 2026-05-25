@@ -80,12 +80,21 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
 
   const [localClassFlow, setLocalClassFlow] = useState<string | null>(null);
   const [localModalId, setLocalModalId] = useState<string | null>(null);
+
+  // 0ms 동기식 회원 여부 로컬 캐시 판정 및 동선 추적
+  const isCachedMember = typeof window !== 'undefined' && 
+    (localStorage.getItem(`woc_member_${initialGroup.id}`) === 'true' || 
+     (initialGroup as any).isConfirmedMember === true || 
+     searchParams.get('isMember') === 'true');
   
-  // Intelligent Initial Tab Routing: Non-members default to 'about'
+  // Intelligent Initial Tab Routing: Default to 'home' for verified/cached members and 'about' for non-members
   const [activeTab, setActiveTab] = useState<TabType>(() => {
-    const isMember = isFullMember || isAdminUser;
-    if (!isMember) return 'about' as TabType;
-    return (searchParams.get('tab') as TabType) || 'home' as TabType;
+    const tabParam = searchParams.get('tab') as TabType | null;
+    if (tabParam) return tabParam;
+
+    // 로컬 스토리지에 가입 증명이 들어있거나 검증된 동선 회원이라면 0ms 즉시 'home'으로 직행, 그 외에는 소개('about') 탭으로 안착합니다.
+    if (isCachedMember) return 'home' as TabType;
+    return 'about' as TabType;
   });
   const [visitedTabs, setVisitedTabs] = useState<Set<TabType>>(() => new Set<TabType>([activeTab]));
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
@@ -93,23 +102,18 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
 
   const [showJoinPromptSheet, setShowJoinPromptSheet] = useState(false);
 
-  // Dynamic Tab synchronization on member status changes
+  // 회원 여부 브라우저 로컬 캐시 실시간 갱신 및 보관
   useEffect(() => {
-    if (loading || (user && members.length === 0)) return;
-
-    const isMember = isFullMember || isAdminUser;
-    if (!isMember) {
-      if (activeTab !== 'about') {
-        setActiveTab('about');
-        setVisitedTabs(prev => { const newSet = new Set(prev); newSet.add('about'); return newSet; });
-      }
-    } else {
-      const tabParam = searchParams.get('tab') as TabType | null;
-      if (!tabParam && activeTab === 'about') {
-        setActiveTab('home');
-      }
+    if (loading) return;
+    if (isFullMember || isAdminUser) {
+      localStorage.setItem(`woc_member_${currentGroup.id}`, 'true');
+    } else if (user) {
+      localStorage.removeItem(`woc_member_${currentGroup.id}`);
     }
-  }, [isFullMember, isAdminUser, loading, user, members.length]);
+  }, [isFullMember, isAdminUser, loading, currentGroup.id, user]);
+
+  // Dynamic Tab synchronization on member status changes (Removed to prevent loading flicker)
+  // 비동기 회원 데이터 로딩 중 탭이 'about'에서 'home'으로 갑자기 스위칭되며 발생하는 깜빡임(flicker)을 근본적으로 제거하기 위해 비동기 강제 동기화 이펙트를 비활성화합니다.
 
   // URL searchParams와 로컬 상태(이중 안전 장치) 실시간 동기화
   useEffect(() => {
@@ -121,11 +125,14 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
 
   // URL의 ?tab= 파라미터가 변경되면 activeTab을 동기화
   useEffect(() => {
+    // 멤버 데이터가 아직 로드되지 않은 상태라면 가드 판정을 대기하여 깜빡임을 방지합니다.
+    if (loading || (user && members.length === 0)) return;
+
     const tabParam = searchParams.get('tab') as TabType | null;
     const isMember = isFullMember || isAdminUser;
     if (tabParam) {
       if (!isMember && tabParam !== 'about' && tabParam !== 'board' && tabParam !== 'class') {
-        // Non-member guard bypass prevent
+        // 비회원의 허가되지 않은 메뉴 우회 진입을 방지합니다.
         setActiveTab('about');
         return;
       }
@@ -134,7 +141,7 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
         setVisitedTabs(prev => { const newSet = new Set(prev); newSet.add(tabParam); return newSet; });
       }
     }
-  }, [searchParams, isFullMember, isAdminUser]);
+  }, [searchParams, isFullMember, isAdminUser, loading, members.length, user]);
 
   // 모달 제어를 Query String으로 전환
   const showGroupChat = searchParams.get('modal') === 'chat';
@@ -225,31 +232,7 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
     return () => setGlobalNavHidden(false);
   }, [setGlobalNavHidden]);
 
-  // Prefetch: 그룹 활성 탭을 프리마운트하여 깜빡임 최소화
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setVisitedTabs(prev => {
-        const newSet = new Set(prev);
-        newSet.add('about' as TabType);
-        const selectedFns = initialGroup.selectedFunctions || [];
-        selectedFns.forEach((fnId: string) => {
-          const mapping = FUNCTION_TAB_MAP[fnId];
-          if (mapping) newSet.add(mapping.id as TabType);
-        });
-        if (isAdminUser) {
-          newSet.add('settings' as TabType);
-          newSet.add('brand' as TabType);
-          newSet.add('roles' as TabType);
-          newSet.add('class-setting' as TabType);
-          newSet.add('shop-setting' as TabType);
-          newSet.add('stay-setting' as TabType);
-          newSet.add('rental-setting' as TabType);
-        }
-        return newSet;
-      });
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [isAdminUser, initialGroup.selectedFunctions]);
+
 
   const handleExit = () => {
     if (onClose) {
@@ -430,6 +413,7 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
             allUsers={allUsers}
             isClaiming={isClaiming}
             handleClaimAdmin={handleClaimAdmin}
+            isMembersLoading={loading || (user ? members.length === 0 : false)}
           />
 
         </div>

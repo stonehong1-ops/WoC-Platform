@@ -21,7 +21,19 @@ export default function NotificationPage() {
     { id: 'System', label: t('notification.tabs.system') }
   ];
   
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>(() => {
+    if (typeof window !== 'undefined' && user) {
+      const cached = sessionStorage.getItem(`woc_user_notifications_${user.uid}`);
+      if (cached) {
+        try {
+          return JSON.parse(cached);
+        } catch (e) {
+          console.error('Failed to parse cached notifications:', e);
+        }
+      }
+    }
+    return [];
+  });
 
   const getTime = (date: any) => {
     if (!date) return 0;
@@ -38,6 +50,18 @@ export default function NotificationPage() {
   useEffect(() => {
     let unsubNoti: (() => void) | null = null;
     if (user) {
+      // 0ms Cache Load immediately when user is verified
+      if (typeof window !== 'undefined') {
+        const cached = sessionStorage.getItem(`woc_user_notifications_${user.uid}`);
+        if (cached) {
+          try {
+            setNotifications(JSON.parse(cached));
+          } catch (e) {
+            console.error('Failed to parse cached notifications:', e);
+          }
+        }
+      }
+
       unsubNoti = notificationService.subscribeToUserNotifications(
         user.uid,
         (data) => {
@@ -47,6 +71,9 @@ export default function NotificationPage() {
              return timeB - timeA;
           });
           setNotifications(sorted);
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem(`woc_user_notifications_${user.uid}`, JSON.stringify(sorted));
+          }
         }
       );
     }

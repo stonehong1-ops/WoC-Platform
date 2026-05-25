@@ -1,8 +1,9 @@
 "use client";
 // 선택한 날짜의 일정 상세 및 목록 조회를 담당하는 컴포넌트.
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { CalendarEvent } from '@/types/group';
+import { MapSelectorBottomSheet, MapType } from '@/components/common/MapSelectorBottomSheet';
 
 interface EventDetailBottomSheetProps {
   selectedDate: Date;
@@ -29,6 +30,61 @@ export const EventDetailBottomSheet: React.FC<EventDetailBottomSheetProps> = ({
   t,
   formatDate,
 }) => {
+  const [selectedMapLocation, setSelectedMapLocation] = useState<string | null>(null);
+  const [hasMapCache, setHasMapCache] = useState<boolean>(false);
+  const [cachedMapBrand, setCachedMapBrand] = useState<string>('');
+
+  // 선호 지도 캐싱 상태 모니터링
+  const updateCacheState = () => {
+    if (typeof window === 'undefined') return;
+    const cached = localStorage.getItem('woc_preferred_map') as MapType | null;
+    if (cached) {
+      setHasMapCache(true);
+      const brandNames: Record<string, string> = {
+        naver: t('map.naver') || '네이버 지도',
+        kakao: t('map.kakao') || '카카오맵',
+        google: t('map.google') || '구글 지도'
+      };
+      setCachedMapBrand(brandNames[cached] || cached);
+    } else {
+      setHasMapCache(false);
+      setCachedMapBrand('');
+    }
+  };
+
+  useEffect(() => {
+    updateCacheState();
+  }, []);
+
+  const handleResetMapPreference = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (typeof window === 'undefined') return;
+    localStorage.removeItem('woc_preferred_map');
+    updateCacheState();
+  };
+
+  const handleOpenMapSelector = (location: string) => {
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('woc_preferred_map') as MapType | null;
+      if (cached) {
+        const encoded = encodeURIComponent(location);
+        const getMapLink = (type: MapType, name: string) => {
+          switch (type) {
+            case 'naver': return `https://map.naver.com/v5/search/${encoded}`;
+            case 'kakao': return `https://map.kakao.com/?q=${encoded}`;
+            case 'google': return `https://www.google.com/maps/search/?api=1&query=${encoded}`;
+            default: return `https://www.google.com/maps/search/?api=1&query=${encoded}`;
+          }
+        };
+        window.open(getMapLink(cached, location), '_blank');
+        return;
+      }
+    }
+    setSelectedMapLocation(location);
+    // 캐시 변경에 반응할 수 있도록 즉시 상태 업데이트
+    setTimeout(updateCacheState, 100);
+  };
+
   return (
     <>
       {/* Selected Date Header */}
@@ -57,6 +113,53 @@ export const EventDetailBottomSheet: React.FC<EventDetailBottomSheetProps> = ({
                       {event.description}
                     </p>
                   )}
+
+                  {/* Smart Location Navigation Sample */}
+                  {event.location && (
+                    <div className="mt-4 border-t border-slate-50 pt-3">
+                      <div className="flex flex-col gap-2">
+                        <button
+                          onClick={() => handleOpenMapSelector(event.location!)}
+                          className="flex items-center justify-between w-full p-3 bg-[#0057bd]/5 hover:bg-[#0057bd]/10 active:scale-[0.99] border border-[#0057bd]/10 rounded-xl transition-all text-left"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span className="material-symbols-outlined text-[18px] text-[#0057bd] shrink-0">
+                              location_on
+                            </span>
+                            <div className="min-w-0">
+                              <p className="text-[12px] font-black text-[#242c51] truncate">
+                                {event.location}
+                              </p>
+                              <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
+                                {hasMapCache 
+                                  ? `${cachedMapBrand}${t('map.immediate_connection') || '(으)로 즉시 바로 연결됨'}`
+                                  : t('map.select_connection') || '터치하여 길찾기 지도 연결'}
+                              </p>
+                            </div>
+                          </div>
+                          <span className="material-symbols-outlined text-[#0057bd] text-[16px] shrink-0">
+                            navigation
+                          </span>
+                        </button>
+
+                        {/* 스마트 선호도 초기화 칩 */}
+                        {hasMapCache && (
+                          <div className="flex items-center justify-between px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-100">
+                            <span className="text-[10px] text-slate-400 font-semibold">
+                              {cachedMapBrand}{t('map.setting_active') || '(으)로 자동 연결 중'}
+                            </span>
+                            <button
+                              onClick={handleResetMapPreference}
+                              className="text-[10px] font-black text-red-500 hover:text-red-600 transition-colors flex items-center gap-1 active:scale-95"
+                            >
+                              <span className="material-symbols-outlined text-[12px]">refresh</span>
+                              {t('map.reset_setting') || '지도 변경하기'}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
               {/* Edit/Delete Actions */}
@@ -74,6 +177,18 @@ export const EventDetailBottomSheet: React.FC<EventDetailBottomSheetProps> = ({
           <span className="material-symbols-outlined text-5xl text-slate-300 mb-3 block">event_busy</span>
           <p className="text-sm font-bold text-slate-500">{t('calendar.noEventsScheduledForThisDay') || 'No events scheduled for this day'}</p>
         </div>
+      )}
+
+      {/* Map selector bottomsheet integration */}
+      {selectedMapLocation && (
+        <MapSelectorBottomSheet
+          isOpen={!!selectedMapLocation}
+          onClose={() => {
+            setSelectedMapLocation(null);
+            updateCacheState();
+          }}
+          locationName={selectedMapLocation}
+        />
       )}
     </>
   );

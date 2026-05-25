@@ -1,52 +1,70 @@
+'use client';
+
 import React from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function PrivacyPage() {
+  const { t } = useLanguage();
+
   return (
     <div className="max-w-4xl mx-auto px-6 py-16 text-on-surface">
-      <h1 className="text-3xl font-black mb-8">Privacy Policy</h1>
+      <h1 className="text-3xl font-black mb-8">{t('privacy.title')}</h1>
       
       <p className="mb-6 text-on-surface/70 leading-relaxed">
-        Last updated: April 16, 2026
+        {t('privacy.last_updated')}
       </p>
 
       <section className="mb-10">
-        <h2 className="text-xl font-bold mb-4 uppercase tracking-wider text-primary">1. Overview</h2>
+        <h2 className="text-xl font-bold mb-4 uppercase tracking-wider text-primary">
+          {t('privacy.overview_title')}
+        </h2>
         <p className="leading-relaxed text-on-surface/80">
-          World of Group ("we," "our," or "us") operates the WoC platform. This Privacy Policy informs you of our policies regarding the collection, use, and disclosure of personal data when you use our Service and the choices you have associated with that data.
+          {t('privacy.overview_content')}
         </p>
       </section>
 
       <section className="mb-10">
-        <h2 className="text-xl font-bold mb-4 uppercase tracking-wider text-primary">2. Information Collection and Use</h2>
+        <h2 className="text-xl font-bold mb-4 uppercase tracking-wider text-primary">
+          {t('privacy.collection_title')}
+        </h2>
         <p className="mb-4 leading-relaxed text-on-surface/80">
-          We collect several different types of information for various purposes to provide and improve our Service to you:
+          {t('privacy.collection_content')}
         </p>
         <ul className="list-disc pl-5 space-y-2 text-on-surface/80">
-          <li><strong>Personal Data:</strong> Email address, First name and last name, Phone number, Profile image (via Social Login).</li>
-          <li><strong>Usage Data:</strong> We may also collect information on how the Service is accessed and used.</li>
+          <li><strong>{t('privacy.collection_personal').split(':')[0]}:</strong> {t('privacy.collection_personal').split(':').slice(1).join(':')}</li>
+          <li><strong>{t('privacy.collection_usage').split(':')[0]}:</strong> {t('privacy.collection_usage').split(':').slice(1).join(':')}</li>
         </ul>
       </section>
 
       <section className="mb-10">
-        <h2 className="text-xl font-bold mb-4 uppercase tracking-wider text-primary">3. Data from Social Networks</h2>
+        <h2 className="text-xl font-bold mb-4 uppercase tracking-wider text-primary">
+          {t('privacy.social_title')}
+        </h2>
         <p className="leading-relaxed text-on-surface/80">
-          If you use Facebook, Google or other social networks to log in to our Service, we receive certain information from those networks (such as your name, email, and profile picture). We use this information strictly to create your account and provide you with a personalized experience.
+          {t('privacy.social_content')}
         </p>
       </section>
 
       <section className="mb-10">
-        <h2 className="text-xl font-bold mb-4 uppercase tracking-wider text-primary">4. Data Deletion</h2>
+        <h2 className="text-xl font-bold mb-4 uppercase tracking-wider text-primary">
+          {t('privacy.deletion_title')}
+        </h2>
         <p className="leading-relaxed text-on-surface/80">
-          You have the right to request the deletion of your personal data at any time. For specific instructions on how to delete your account or specific data points, please visit our <a href="/deleteURL" className="text-primary underline">Data Deletion Instructions</a> page.
+          {t('privacy.deletion_content').replace('Helpdesk', '').replace('고객센터', '')}
+          <a href="/helpdesk" className="text-primary underline font-bold hover:text-primary-dark transition-colors ml-1">
+            {t('help_desk.title') || 'Helpdesk'}
+          </a>
         </p>
       </section>
 
       <section className="mb-10">
-        <h2 className="text-xl font-bold mb-4 uppercase tracking-wider text-primary">5. Contact Us</h2>
+        <h2 className="text-xl font-bold mb-4 uppercase tracking-wider text-primary">
+          {t('privacy.contact_title')}
+        </h2>
         <p className="leading-relaxed text-on-surface/80">
-          If you have any questions about this Privacy Policy, please contact us:
+          {t('privacy.contact_content')}
           <br />
-          Email: stonehong1@gmail.com
+          Email: <a href="mailto:stonehong1@gmail.com" className="text-primary underline">stonehong1@gmail.com</a>
         </p>
       </section>
     </div>

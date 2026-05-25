@@ -7,9 +7,9 @@ import { Group, Member } from "@/types/group";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { TabType } from "@/constants/groupTabs";
 
-const GroupCalendar = dynamic(() => import("./GroupCalendar"));
-const GroupBoard = dynamic(() => import("./GroupBoard"));
-const GroupAbout = dynamic(() => import("./GroupAbout"));
+import GroupCalendar from "./GroupCalendar";
+import GroupBoard from "./GroupBoard";
+import GroupAbout from "./GroupAbout";
 const GroupClassEditor = dynamic(() => import("./GroupClassEditor"));
 const GroupMemberManager = dynamic(() => import("./GroupMemberManager"));
 const GroupMembers = dynamic(() => import("./GroupMembers"));
@@ -94,6 +94,7 @@ export interface GroupModuleRendererProps {
   allUsers?: any[];
   isClaiming?: boolean;
   handleClaimAdmin?: (targetUserId: string, targetUserName: string) => Promise<void>;
+  isMembersLoading?: boolean;
 }
 
 export default function GroupModuleRenderer({
@@ -111,7 +112,8 @@ export default function GroupModuleRenderer({
   onJoinPrompt,
   allUsers,
   isClaiming,
-  handleClaimAdmin
+  handleClaimAdmin,
+  isMembersLoading = false
 }: GroupModuleRendererProps) {
   const { t } = useLanguage();
 
@@ -126,6 +128,7 @@ export default function GroupModuleRenderer({
               allUsers={allUsers}
               isClaiming={isClaiming}
               handleClaimAdmin={handleClaimAdmin}
+              isMembersLoading={isMembersLoading}
             />
           </div>
         </div>
@@ -136,6 +139,7 @@ export default function GroupModuleRenderer({
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 z-[100]">
             {isFullMember || isAdminUser ? (
               <GroupMembers
+                groupId={currentGroup.id}
                 members={members}
                 memberCount={currentGroup.memberCount}
                 onMemberClick={(member) => setSelectedMember(member)}
@@ -283,7 +287,7 @@ export default function GroupModuleRenderer({
       {visitedTabs.has('polls') && (isFullMember || isAdminUser) && (
         <div style={{ display: activeTab === 'polls' ? 'block' : 'none' }}>
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <GroupPolls />
+            <GroupPolls groupId={currentGroup.id} user={user} members={members} />
           </div>
         </div>
       )}

@@ -246,9 +246,12 @@ function LostFoundPageContent() {
             {filteredItems.map(item => (
               <div key={item.id} onClick={() => handleCardClick(item.id)} className="group cursor-pointer animate-in fade-in slide-in-from-bottom-2 duration-500">
                 <div className="relative aspect-square rounded-xl bg-[#f2f4f4] overflow-hidden mb-3 border border-slate-100">
-                  {/* Fallback View */}
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-[#c4cacc]">
-                    <span className="material-symbols-outlined text-4xl mb-1">help_outline</span>
+                  {/* Refined Stitch-like Placeholder View */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 text-slate-400">
+                    <span className="material-symbols-outlined text-4xl mb-1 text-slate-300">inventory_2</span>
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                      {t('lost.no_image_placeholder') || 'No Image'}
+                    </span>
                   </div>
                   
                   {/* Actual Image */}
@@ -313,7 +316,7 @@ function LostFoundPageContent() {
                       {item.reward && item.reward > 0 && (
                         <span className="text-sm font-bold text-[#1A73E8] font-headline mt-0.5 flex items-center gap-1">
                           <span className="material-symbols-rounded text-[14px]">payments</span>
-                          {t('lost.reward')}: ${item.reward.toLocaleString()}
+                          {t('lost.reward_with_symbol', { symbol: t('lost.currency_symbol'), amount: item.reward.toLocaleString() })}
                         </span>
                       )}
                     </div>

@@ -31,8 +31,24 @@ export function useGroupData({ initialGroup }: UseGroupDataProps) {
   const [currentGroup, setCurrentGroup] = useState<Group>(initialGroup);
   const [members, setMembers] = useState<Member[]>([]);
   const [memberStatus, setMemberStatus] = useState<'active' | 'pending' | 'rejected' | 'none'>('none');
-  const [noticePost, setNoticePost] = useState<Post | null>(null);
-  const [moments, setMoments] = useState<GalleryPost[]>([]);
+  const [noticePost, setNoticePost] = useState<Post | null>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = sessionStorage.getItem(`woc_notice_${initialGroup.id}`);
+      if (cached) {
+        try { return JSON.parse(cached); } catch(e) {}
+      }
+    }
+    return null;
+  });
+  const [moments, setMoments] = useState<GalleryPost[]>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = sessionStorage.getItem(`woc_moments_${initialGroup.id}`);
+      if (cached) {
+        try { return JSON.parse(cached); } catch(e) {}
+      }
+    }
+    return [];
+  });
   const [upcomingCalEvents, setUpcomingCalEvents] = useState<any[]>([]);
   const [upcomingSocialEvents, setUpcomingSocialEvents] = useState<any[]>([]);
   const [upcomingClassEvents, setUpcomingClassEvents] = useState<any[]>([]);
@@ -134,6 +150,9 @@ export function useGroupData({ initialGroup }: UseGroupDataProps) {
       const normalized = posts.map(p => ({ ...p, createdAt: ensureTimestamp(p.createdAt) }));
       const notice = normalized.find(p => p.category?.toLowerCase() === 'notice') || normalized[0] || null;
       setNoticePost(notice);
+      if (notice && typeof window !== 'undefined') {
+        sessionStorage.setItem(`woc_notice_${currentGroup.id}`, JSON.stringify(notice));
+      }
     });
 
     const unsubscribeGallery = galleryService.subscribeFeed((galleryPosts) => {
@@ -141,7 +160,11 @@ export function useGroupData({ initialGroup }: UseGroupDataProps) {
         ...p,
         createdAt: ensureTimestamp(p.createdAt)
       }));
-      setMoments(normalizedGallery.slice(0, 5));
+      const sliced = normalizedGallery.slice(0, 5);
+      setMoments(sliced);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem(`woc_moments_${currentGroup.id}`, JSON.stringify(sliced));
+      }
     }, { entityType: 'group', entityId: currentGroup.id });
 
     return () => {

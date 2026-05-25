@@ -32,6 +32,21 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
       return;
     }
 
+    // Restore cached notifications immediately (0ms loading)
+    if (typeof window !== 'undefined') {
+      const cached = sessionStorage.getItem(`woc_user_notifications_${user.uid}`);
+      if (cached) {
+        try {
+          setNotifications(JSON.parse(cached));
+          setLoading(false);
+        } catch (e) {
+          console.error('Failed to parse cached notifications:', e);
+        }
+      } else {
+        setLoading(true);
+      }
+    }
+
     const q = query(
       collection(db, 'notifications'),
       where('targetUserId', '==', user.uid),
@@ -46,6 +61,9 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
       
       setNotifications(notis);
       setLoading(false);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem(`woc_user_notifications_${user.uid}`, JSON.stringify(notis));
+      }
     }, (error) => {
       console.error('Error fetching notifications:', error);
       setLoading(false);

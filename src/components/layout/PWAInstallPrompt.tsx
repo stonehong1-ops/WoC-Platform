@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 // --- Storage Keys ---
 const STORAGE_KEYS = {
@@ -36,6 +37,7 @@ function daysBetween(date1: number, date2: number): number {
 }
 
 export default function PWAInstallPrompt() {
+  const { t } = useLanguage();
   const [shouldShow, setShouldShow] = useState(false);
   const [platform, setPlatform] = useState<Platform>('android');
   const [isVisible, setIsVisible] = useState(false);
@@ -160,32 +162,32 @@ export default function PWAInstallPrompt() {
 
           {/* Content Area */}
           <h2
-            className="font-['Plus_Jakarta_Sans'] text-[24px] leading-[1.3] tracking-[-0.01em] font-semibold text-on-surface mb-[4px]"
+            className="font-['Plus_Jakarta_Sans'] text-[20px] leading-[1.3] tracking-[-0.01em] font-bold text-on-surface mb-[8px]"
             id="install-title"
           >
-            You&apos;re in ✨
+            {t('pwa.install_title', '앱으로 간편 설치 ✨')}
           </h2>
-          <p className="font-['Inter'] text-[16px] leading-[1.5] text-secondary mb-[24px]">
-            Use it like an app for faster access.
+          <p className="font-['Inter'] text-[13px] leading-[1.6] text-secondary mb-[20px] px-2">
+            {t('pwa.install_desc_android', '안정적인 실시간 알림을 위해 [앱스 화면] 또는 [앱 설치]를 선택해 주세요.')}
           </p>
 
           {/* Actions Area */}
-          <div className="w-full space-y-[12px] flex flex-col items-center mt-2">
+          <div className="w-full space-y-[10px] flex flex-col items-center mt-1">
             {/* Primary CTA */}
             <button
               onClick={handleInstall}
-              className="w-full bg-primary text-on-primary font-['Inter'] text-[14px] leading-[1] tracking-[0.02em] font-semibold py-3 px-6 rounded-lg hover:bg-surface-tint focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface transition-colors shadow-sm flex items-center justify-center gap-[4px]"
+              className="w-full bg-primary text-on-primary font-['Inter'] text-[13px] leading-[1] tracking-[0.02em] font-bold py-3.5 px-6 rounded-xl hover:bg-surface-tint focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface transition-colors shadow-md flex items-center justify-center gap-[6px]"
             >
-              <span>Continue in App</span>
-              <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+              <span>{t('pwa.install_btn_android', '1클릭 앱 설치 진행')}</span>
+              <span className="material-symbols-outlined text-[16px]">download</span>
             </button>
 
             {/* Secondary Action */}
             <button
               onClick={handleDismiss}
-              className="text-secondary font-['Inter'] text-[14px] leading-[1] tracking-[0.02em] font-semibold py-2 px-4 hover:text-on-surface transition-colors focus:outline-none"
+              className="text-slate-400 font-['Inter'] text-[12px] leading-[1] tracking-[0.02em] font-semibold py-2 px-4 hover:text-on-surface transition-colors focus:outline-none"
             >
-              Maybe later
+              {t('pwa.install_dismiss', '나중에 하기')}
             </button>
           </div>
         </div>
@@ -194,72 +196,4 @@ export default function PWAInstallPrompt() {
   }
 
   // ============================================================
-  // iOS PROMPT — 0-pixel match from aiantigravity.txt design 2
-  // ============================================================
-  return (
-    <div
-      className={`fixed inset-0 z-[9999] transition-opacity duration-400 ${isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-      style={{ pointerEvents: isVisible ? 'auto' : 'none' }}
-    >
-      {/* Glassmorphism Overlay */}
-      <div
-        className="absolute inset-0 z-40 flex flex-col justify-end items-center pb-8 px-[24px] md:px-0"
-        style={{ background: 'rgba(255, 255, 255, 0.7)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
-      >
-        {/* PWA Installation Guide Modal */}
-        <div
-          className={`w-full max-w-md bg-surface-container-lowest rounded-xl border border-surface-variant shadow-[0_30px_60px_rgba(17,24,39,0.08)] overflow-hidden transform transition-all duration-400 relative ${isVisible ? 'translate-y-0' : 'translate-y-full'}`}
-        >
-          {/* Close Button (Subtle) */}
-          <button
-            aria-label="Close guide"
-            onClick={handleDismiss}
-            className="absolute top-[12px] right-[12px] text-secondary hover:text-on-surface transition-colors p-[4px] rounded-full hover:bg-surface-container-low"
-          >
-            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>close</span>
-          </button>
-
-          <div className="p-[24px] flex flex-col items-center text-center">
-            {/* Icon/Illustration Area */}
-            <div className="w-16 h-16 bg-primary-container text-on-primary-container rounded-full flex items-center justify-center mb-[24px]">
-              <span className="material-symbols-outlined text-[36px]" style={{ fontVariationSettings: "'FILL' 1" }}>add_to_home_screen</span>
-            </div>
-
-            {/* Headline & Body */}
-            <h2 className="font-['Plus_Jakarta_Sans'] text-[24px] leading-[1.3] tracking-[-0.01em] font-semibold text-on-surface mb-[4px]">Install App</h2>
-            <p className="font-['Inter'] text-[16px] leading-[1.5] text-on-surface-variant mb-[48px] max-w-[280px]">
-              Add to Home Screen for the best experience. Access faster, offline, and full-screen.
-            </p>
-
-            {/* Instruction Steps */}
-            <div className="w-full bg-surface-container-low rounded-lg p-[12px] flex flex-col gap-[12px] border border-surface-variant">
-              <div className="flex items-center justify-between">
-                <span className="font-['Inter'] text-[14px] leading-[1.5] text-on-surface-variant">1. Tap the Share icon below</span>
-                <div className="w-8 h-8 rounded-full bg-surface-container-lowest border border-outline-variant flex items-center justify-center shadow-sm">
-                  <span className="material-symbols-outlined text-primary text-[18px]">ios_share</span>
-                </div>
-              </div>
-              <hr className="border-t border-surface-variant w-full" />
-              <div className="flex items-center justify-between">
-                <span className="font-['Inter'] text-[14px] leading-[1.5] text-on-surface-variant">2. Select Add to Home Screen</span>
-                <div className="w-8 h-8 rounded-full bg-surface-container-lowest border border-outline-variant flex items-center justify-center shadow-sm">
-                  <span className="material-symbols-outlined text-primary text-[18px]">add_box</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Pointer indicating bottom action (iOS specific design hint) */}
-          <div className="w-full h-8 flex justify-center items-end pb-[4px] bg-surface-container-lowest rounded-b-xl hidden md:flex">
-            <span className="material-symbols-outlined text-secondary animate-bounce">arrow_downward</span>
-          </div>
-        </div>
-
-        {/* iOS Bottom Safe Area Pointer (Mobile Only) */}
-        <div className="mt-4 flex flex-col items-center text-primary md:hidden animate-bounce">
-          <span className="material-symbols-outlined">arrow_downward</span>
-        </div>
-      </div>
-    </div>
-  );
 }

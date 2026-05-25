@@ -116,6 +116,13 @@ export default function AuthModal() {
     return () => clearInterval(timer);
   }, [isLoading, step]);
 
+  // 6자리 인증번호 완성 시 자동 제출 프리패스 기폭 장치
+  useEffect(() => {
+    if (verificationCode.length === 6 && confirmationResult && !isLoading) {
+      handleVerifyCode();
+    }
+  }, [verificationCode, confirmationResult, isLoading]);
+
   // Lock body scroll when open
   useEffect(() => {
     if (showLogin) {
@@ -393,22 +400,22 @@ export default function AuthModal() {
         
         console.log("RAW_INPUT:", phoneNumber);
         
-        // 1. 방어: 공백 및 하이픈 등 특수문자 제거하고 숫자와 +만 남김
-        let cleanedNumber = phoneNumber.replace(/[^\d+]/g, '');
-        const currentCC = phoneCountryCode;
-        const currentCCNumeric = currentCC.replace('+', '');
+        // 1. 방어: 공백 및 하이픈 등 특수문자 제거하고 숫자만 남김
+        let cleanedNumber = phoneNumber.replace(/[^\d]/g, '');
+        const currentCC = phoneCountryCode; // 예: "+82"
+        const currentCCNumeric = currentCC.replace('+', ''); // 예: "82"
         
-        // 2. 방어: 국가코드 중복 입력 핀셋 도려내기
-        if (cleanedNumber.startsWith(currentCC)) {
-          cleanedNumber = cleanedNumber.slice(currentCC.length);
-        } else if (cleanedNumber.startsWith('+' + currentCCNumeric)) {
-          cleanedNumber = cleanedNumber.slice(currentCCNumeric.length + 1);
-        } else if (cleanedNumber.startsWith(currentCCNumeric)) {
+        // 2. 방어: 입력창에 실수로 국가코드 82를 추가 기입한 경우를 완벽하게 도려내기
+        if (cleanedNumber.startsWith(currentCCNumeric)) {
           cleanedNumber = cleanedNumber.slice(currentCCNumeric.length);
         }
         
         // 3. 방어: 맨 앞의 불필요한 0 제거
         cleanedNumber = cleanedNumber.replace(/^0+/, '');
+        
+        // ★ 대박 포인트: 정제된 순수 10자리(1072092468) 번호를 유저 입력창 UI 상태에 실시간으로 강제 덮어쓰기!
+        setPhoneNumber(cleanedNumber);
+        
         console.log("NORMALIZED_PHONE:", cleanedNumber);
         
         // 4. E.164 규격 조합
@@ -441,8 +448,8 @@ export default function AuthModal() {
         setTimeoutCount(prev => prev + 1);
         const isKo = language === 'KR';
         alert(isKo 
-          ? '인증 요청이 지연되고 있습니다.\nSafari 또는 Chrome에서 다시 시도해주세요.' 
-          : 'Verification is taking too long.\nPlease retry in Safari or Chrome.');
+          ? '보안 인증 처리가 지연되고 있습니다. 잠시 후 다시 시도해 주세요.' 
+          : 'Security verification is taking too long. Please try again in a moment.');
           
         setCooldown(true);
         setTimeout(() => setCooldown(false), 3000);
@@ -627,6 +634,32 @@ export default function AuthModal() {
                 <span className="absolute top-1.5 right-2 text-[8px] font-black text-gray-300 uppercase tracking-wider">Soon</span>
               </button>
             </div>
+
+            {/* Premium iOS Installation Guide - Non-modal Native Scroll Flow */}
+            {typeof window !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.matchMedia('(display-mode: standalone)').matches && (
+              <div className="mt-8 p-6 bg-blue-50/50 border border-blue-100 rounded-3xl text-left animate-in slide-in-from-bottom-2 duration-500">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-md">
+                    <span className="material-symbols-outlined text-[20px] font-variation-fill" style={{ fontVariationSettings: "'FILL' 1" }}>add_to_home_screen</span>
+                  </div>
+                  <div>
+                    <h3 className="text-[14px] font-black text-blue-950 font-headline">아이폰 홈화면 앱 설치 안내 ✨</h3>
+                    <p className="text-[10px] text-blue-600/80 font-bold">1초 만에 홈 화면에 저장하고 실시간 알림을 받아보세요.</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-2.5 font-body text-xs font-semibold text-blue-900/90">
+                  <div className="flex items-center justify-between p-3.5 bg-white rounded-2xl border border-blue-50 shadow-sm">
+                    <span>1. 사파리 하단의 [공유 버튼 ⇧]을 누릅니다.</span>
+                    <span className="material-symbols-outlined text-blue-600 text-[18px]">ios_share</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3.5 bg-white rounded-2xl border border-blue-50 shadow-sm">
+                    <span>2. 나타나는 메뉴에서 [홈 화면에 추가]를 선택합니다.</span>
+                    <span className="material-symbols-outlined text-blue-600 text-[18px]">add_box</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         ) : step === 'EMAIL_INPUT' ? (
           <div className="animate-in slide-in-from-bottom-4 duration-500 space-y-6">

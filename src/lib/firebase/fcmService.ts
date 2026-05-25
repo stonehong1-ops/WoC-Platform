@@ -27,7 +27,7 @@ export const fcmService = {
       }
 
       // 서비스 워커 명시적 등록 (Next.js 환경에서 필수적일 수 있음)
-      const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+      const registration = await navigator.serviceWorker.register('/sw.js');
       await navigator.serviceWorker.ready;
 
       const token = await getToken(messaging, {

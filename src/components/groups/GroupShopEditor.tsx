@@ -39,8 +39,32 @@ const GroupShopEditor: React.FC<GroupShopEditorProps> = ({ group, onClose, isInl
     CANCELLED: { label: t("group.shop.order.status.cancelled") || "Cancelled", color: "text-red-700", bg: "bg-red-100/50" },
   };
   const [activeTab, setActiveTab] = useState<AdminTab>("products");
-  const [products, setProducts] = useState<Product[]>([]);
-  const [orders, setOrders] = useState<ShopOrder[]>([]);
+  const [products, setProducts] = useState<Product[]>(() => {
+    if (typeof window !== 'undefined' && group?.id) {
+      const cached = sessionStorage.getItem(`woc_group_products_${group.id}`);
+      if (cached) {
+        try {
+          return JSON.parse(cached);
+        } catch (e) {
+          console.error('Failed to parse cached group products:', e);
+        }
+      }
+    }
+    return [];
+  });
+  const [orders, setOrders] = useState<ShopOrder[]>(() => {
+    if (typeof window !== 'undefined' && group?.id) {
+      const cached = sessionStorage.getItem(`woc_group_orders_${group.id}`);
+      if (cached) {
+        try {
+          return JSON.parse(cached);
+        } catch (e) {
+          console.error('Failed to parse cached group orders:', e);
+        }
+      }
+    }
+    return [];
+  });
   const [productFilter, setProductFilter] = useState<ProductFilter>("All");
   const [orderFilter, setOrderFilter] = useState<string>("ALL");
   const [editingItem, setEditingItem] = useState<Product | undefined>(undefined);
@@ -66,14 +90,48 @@ const GroupShopEditor: React.FC<GroupShopEditorProps> = ({ group, onClose, isInl
   // Subscribe to products
   useEffect(() => {
     if (!group.id) return;
-    const unsub = shopService.subscribeGroupProducts(group.id, setProducts);
+
+    if (typeof window !== 'undefined') {
+      const cached = sessionStorage.getItem(`woc_group_products_${group.id}`);
+      if (cached) {
+        try {
+          setProducts(JSON.parse(cached));
+        } catch (e) {
+          console.error('Failed to parse cached products:', e);
+        }
+      }
+    }
+
+    const unsub = shopService.subscribeGroupProducts(group.id, (data) => {
+      setProducts(data);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem(`woc_group_products_${group.id}`, JSON.stringify(data));
+      }
+    });
     return () => unsub();
   }, [group.id]);
 
   // Subscribe to orders
   useEffect(() => {
     if (!group.id) return;
-    const unsub = shopService.subscribeGroupOrders(group.id, setOrders);
+
+    if (typeof window !== 'undefined') {
+      const cached = sessionStorage.getItem(`woc_group_orders_${group.id}`);
+      if (cached) {
+        try {
+          setOrders(JSON.parse(cached));
+        } catch (e) {
+          console.error('Failed to parse cached orders:', e);
+        }
+      }
+    }
+
+    const unsub = shopService.subscribeGroupOrders(group.id, (data) => {
+      setOrders(data);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem(`woc_group_orders_${group.id}`, JSON.stringify(data));
+      }
+    });
     return () => unsub();
   }, [group.id]);
 

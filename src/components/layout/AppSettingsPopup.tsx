@@ -16,9 +16,9 @@ const INSTRUCTIONS = [
     browser: 'Google Chrome',
     image: 'chrome_guide.png',
     steps: [
-      'Tap the three dots (⋮) in the top right corner.',
-      'Select "Install App" or "Add to Home screen".',
-      'Confirm the installation when prompted.'
+      '우측 상단 더보기(⋮) 메뉴를 터치합니다.',
+      '[앱 설치] 또는 [홈 화면에 추가] 단추를 선택합니다.',
+      '실시간 알림(푸시) 수신을 보장하기 위해 반드시 [앱 설치]를 눌러 앱스 화면에 입주시켜 주세요!'
     ]
   },
   {
@@ -28,9 +28,9 @@ const INSTRUCTIONS = [
     browser: 'Samsung Internet',
     image: 'samsung_guide.png',
     steps: [
-      'Tap the menu (≡) in the bottom right corner.',
-      'Tap on the "Add page to" icon.',
-      'Select "Home screen" from the menu.'
+      '우측 하단 메뉴(≡) 버튼을 터치합니다.',
+      '[현재 페이지 추가] 아이콘을 터치합니다.',
+      '반드시 [앱스 화면]을 선택하여 설치하셔야 절전 모드 차단 없이 실시간 알림이 100% 무결 작동합니다!'
     ]
   },
   {
@@ -40,9 +40,9 @@ const INSTRUCTIONS = [
     browser: 'Safari (iOS)',
     image: 'safari_guide.png',
     steps: [
-      'Tap the "Share" button (the square with an arrow) at the bottom.',
-      'Scroll down and select "Add to Home Screen".',
-      'Tap "Add" in the top right corner.'
+      '하단 중앙의 [공유] 단추(화살표 상자 모양)를 터치합니다.',
+      '아래로 스크롤하여 [홈 화면에 추가]를 선택합니다.',
+      '바탕화면에 생성된 앱 아이콘을 터치하여 실행한 뒤 [알림 허용] 팝업창을 꼭 최종 승인해 줍니다!'
     ]
   }
 ];

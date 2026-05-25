@@ -9,6 +9,7 @@ import Portal from '@/components/common/Portal';
 import { useLanguage } from '@/contexts/LanguageContext';
 import UserProfileClickable from '@/components/common/UserProfileClickable';
 import UserBadge from '@/components/common/UserBadge';
+import { MapSelectorBottomSheet, MapType } from '@/components/common/MapSelectorBottomSheet';
 
 interface ClassDetailProps {
   groupId: string;
@@ -26,7 +27,59 @@ export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDeta
   const [isScrolled, setIsScrolled] = useState(false);
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
   const [groupImage, setGroupImage] = useState<string>('');
+  const [selectedMapLocation, setSelectedMapLocation] = useState<string | null>(null);
+  const [hasMapCache, setHasMapCache] = useState<boolean>(false);
+  const [cachedMapBrand, setCachedMapBrand] = useState<string>('');
   const scrollRef = React.useRef<HTMLDivElement>(null);
+
+  const updateCacheState = () => {
+    if (typeof window === 'undefined') return;
+    const cached = localStorage.getItem('woc_preferred_map') as MapType | null;
+    if (cached) {
+      setHasMapCache(true);
+      const brandNames: Record<string, string> = {
+        naver: language === 'KR' ? '네이버 지도' : 'Naver Map',
+        kakao: language === 'KR' ? '카카오맵' : 'Kakao Map',
+        google: language === 'KR' ? '구글 지도' : 'Google Map'
+      };
+      setCachedMapBrand(brandNames[cached] || cached);
+    } else {
+      setHasMapCache(false);
+      setCachedMapBrand('');
+    }
+  };
+
+  useEffect(() => {
+    updateCacheState();
+  }, [isOpen, language]);
+
+  const handleResetMapPreference = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (typeof window === 'undefined') return;
+    localStorage.removeItem('woc_preferred_map');
+    updateCacheState();
+  };
+
+  const handleOpenMapSelector = (location: string) => {
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('woc_preferred_map') as MapType | null;
+      if (cached) {
+        const encoded = encodeURIComponent(location);
+        const getMapLink = (type: MapType, name: string) => {
+          switch (type) {
+            case 'naver': return `https://map.naver.com/v5/search/${encoded}`;
+            case 'kakao': return `https://map.kakao.com/?q=${encoded}`;
+            case 'google': return `https://www.google.com/maps/search/?api=1&query=${encoded}`;
+            default: return `https://www.google.com/maps/search/?api=1&query=${encoded}`;
+          }
+        };
+        window.open(getMapLink(cached, location), '_blank');
+        return;
+      }
+    }
+    setSelectedMapLocation(location);
+    setTimeout(updateCacheState, 100);
+  };
 
   useEffect(() => {
     if (!groupId || !isOpen) return;
@@ -265,13 +318,53 @@ export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDeta
             {/* Schedule & Location block */}
             <div className="px-5 py-4 space-y-4">
               {itemDetail.location && (
-                <div className="flex items-start gap-3">
-                  <span className="material-symbols-outlined text-[#acb3b4] mt-0.5">location_on</span>
-                  <div>
-                    <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest">
-                      {language === 'KR' ? '장소' : 'Venue'}
-                    </p>
-                    <p className="text-sm font-bold text-[#2d3435]">{itemDetail.location}</p>
+                <div className="flex flex-col gap-2.5">
+                  <div className="flex items-center gap-1 text-[10px] font-black text-[#596061] uppercase tracking-widest">
+                    <span className="material-symbols-outlined text-[#acb3b4] text-[15px]">location_on</span>
+                    {language === 'KR' ? '장소' : 'Venue'}
+                  </div>
+
+                  {/* 스마트 지도 연동 샘플 적용 */}
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={() => handleOpenMapSelector(itemDetail.location!)}
+                      className="flex items-center justify-between w-full p-3.5 bg-[#0057bd]/5 hover:bg-[#0057bd]/10 active:scale-[0.99] border border-[#0057bd]/10 rounded-2xl transition-all text-left"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="material-symbols-outlined text-[18px] text-[#0057bd] shrink-0">
+                          navigation
+                        </span>
+                        <div className="min-w-0">
+                          <p className="text-[12px] font-black text-[#242c51] truncate">
+                            {itemDetail.location}
+                          </p>
+                          <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
+                            {hasMapCache 
+                              ? `${cachedMapBrand}${language === 'KR' ? '(으)로 즉시 바로 연결됨' : ' (Direct connection)'}`
+                              : language === 'KR' ? '터치하여 길찾기 지도 연결' : 'Tap to open map navigation'}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="material-symbols-outlined text-[#0057bd] text-[16px] shrink-0">
+                        chevron_right
+                      </span>
+                    </button>
+
+                    {/* 스마트 선호도 초기화 칩 */}
+                    {hasMapCache && (
+                      <div className="flex items-center justify-between px-3.5 py-2 bg-slate-50 rounded-xl border border-slate-100 animate-in fade-in duration-200">
+                        <span className="text-[10px] text-slate-400 font-semibold">
+                          {cachedMapBrand}{language === 'KR' ? '(으)로 자동 연결 중' : ' set as default map'}
+                        </span>
+                        <button
+                          onClick={handleResetMapPreference}
+                          className="text-[10px] font-black text-red-500 hover:text-red-600 transition-colors flex items-center gap-1 active:scale-95"
+                        >
+                          <span className="material-symbols-outlined text-[12px]">refresh</span>
+                          {language === 'KR' ? '지도 변경하기' : 'Change Map'}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -284,7 +377,15 @@ export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDeta
                       {language === 'KR' ? '일정' : 'Schedule'}
                     </p>
                     {itemDetail.schedule.map((sched: any, idx: number) => {
-                      const dateObj = new Date(sched.date);
+                      // sched.date가 Timestamp 객체인 경우 등 모든 시나리오에 대비한 방어 코드
+                      const dateObj = (() => {
+                        if (!sched.date) return new Date();
+                        if (typeof sched.date.toDate === 'function') return sched.date.toDate();
+                        if (sched.date.seconds) return new Date(sched.date.seconds * 1000);
+                        const parsed = new Date(sched.date);
+                        return isNaN(parsed.getTime()) ? new Date() : parsed;
+                      })();
+                      
                       const month = dateObj.toLocaleString('en-US', { month: 'short' });
                       const day = dateObj.getDate();
                       const formattedDate = language === 'KR' 
@@ -417,6 +518,17 @@ export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDeta
             {language === 'KR' ? '닫기' : 'CLOSE'}
           </button>
         </div>
+      )}
+      {/* Map selector bottomsheet integration */}
+      {selectedMapLocation && (
+        <MapSelectorBottomSheet
+          isOpen={!!selectedMapLocation}
+          onClose={() => {
+            setSelectedMapLocation(null);
+            updateCacheState();
+          }}
+          locationName={selectedMapLocation}
+        />
       )}
     </div>
   );

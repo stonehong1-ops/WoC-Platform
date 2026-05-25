@@ -36,7 +36,9 @@ export default function VenueForm({ isOpen, onClose, initialData }: VenueFormPro
     status: 'active',
     coordinates: { latitude: 37.5665, longitude: 126.9780 },
     imageUrl: '',
+    seoulArea: '',
   });
+
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFetchingPhoto, setIsFetchingPhoto] = useState(false);
@@ -144,6 +146,7 @@ export default function VenueForm({ isOpen, onClose, initialData }: VenueFormPro
         status: initialData.status,
         coordinates: initialData.coordinates,
         imageUrl: initialData.imageUrl || '',
+        seoulArea: initialData.seoulArea || '',
       });
       if (initialData.imageUrl) {
         setFetchedPhotoUrl(initialData.imageUrl);
@@ -151,14 +154,22 @@ export default function VenueForm({ isOpen, onClose, initialData }: VenueFormPro
     }
   }, [initialData, isOpen]);
 
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+
+    const isSeoul = (formData.city || '').toLowerCase() === 'seoul' || (formData.region || '').toLowerCase() === 'seoul';
+    const finalFormData = {
+      ...formData,
+      seoulArea: isSeoul ? formData.seoulArea || '' : '',
+    };
+
     try {
       if (initialData?.id) {
-        await venueService.updateVenue(initialData.id, formData);
+        await venueService.updateVenue(initialData.id, finalFormData);
       } else {
-        await venueService.addVenue(formData);
+        await venueService.addVenue(finalFormData);
       }
       onClose();
       toast.success(initialData ? 'Venue updated!' : 'Venue created!');
@@ -353,6 +364,36 @@ export default function VenueForm({ isOpen, onClose, initialData }: VenueFormPro
                   </div>
                 </div>
               </div>
+              
+              {/* Seoul Area Selection (Conditional) */}
+              {((formData.city || '').toLowerCase() === 'seoul' || (formData.region || '').toLowerCase() === 'seoul') && (
+                <div className="mt-6 space-y-3 p-4 bg-surface-container-low rounded-xl border border-outline-variant/30 animate-fade-in">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest ml-1">
+                      Seoul Area Category
+                    </label>
+                    <span className="text-[10px] font-extrabold text-[#005BC0] uppercase tracking-tighter">Fast Query</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, seoulArea: 'gangbuk' }))}
+                      className={`py-3 px-4 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 ${formData.seoulArea === 'gangbuk' ? 'bg-[#005BC0] text-white shadow-md' : 'bg-surface-container-lowest text-on-surface hover:bg-surface-container-high'}`}
+                    >
+                      <span className="material-symbols-rounded text-sm" style={{ fontVariationSettings: formData.seoulArea === 'gangbuk' ? "'FILL' 1" : "'FILL' 0" }}>south_east</span>
+                      Gangbuk (North)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, seoulArea: 'gangnam' }))}
+                      className={`py-3 px-4 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 ${formData.seoulArea === 'gangnam' ? 'bg-[#005BC0] text-white shadow-md' : 'bg-surface-container-lowest text-on-surface hover:bg-surface-container-high'}`}
+                    >
+                      <span className="material-symbols-rounded text-sm" style={{ fontVariationSettings: formData.seoulArea === 'gangnam' ? "'FILL' 1" : "'FILL' 0" }}>north_east</span>
+                      Gangnam (South)
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </section>
 

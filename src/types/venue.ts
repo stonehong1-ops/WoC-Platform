@@ -13,6 +13,7 @@ export interface Venue {
   country?: string; // e.g. 'KOREA', 'JAPAN'
   city: string; // Compatible with legacy map scripts
   district: string;
+  seoulArea?: string; // 'gangbuk' or 'gangnam'
   status: 'active' | 'inactive';
   coordinates: {
     latitude: number;

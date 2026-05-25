@@ -19,14 +19,78 @@ export default function SearchPage() {
   const [isFocused, setIsFocused] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResultItem[]>([]);
-  const [initialData, setInitialData] = useState<{shops: SearchResultItem[], classes: SearchResultItem[], events: SearchResultItem[], groups: SearchResultItem[]}>({
-    shops: [], classes: [], events: [], groups: []
+  
+  // Restore initial trending data from sessionStorage
+  const [initialData, setInitialData] = useState<{shops: SearchResultItem[], classes: SearchResultItem[], events: SearchResultItem[], groups: SearchResultItem[]}>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = sessionStorage.getItem('woc_search_initial');
+      if (cached) {
+        try {
+          return JSON.parse(cached);
+        } catch (e) {
+          console.error('Failed to parse cached search initial data:', e);
+        }
+      }
+    }
+    return { shops: [], classes: [], events: [], groups: [] };
   });
+
+  // Restore recent searches from localStorage
+  const [recentSearches, setRecentSearches] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('woc_recent_searches');
+      if (cached) {
+        try {
+          return JSON.parse(cached);
+        } catch (e) {
+          console.error('Failed to parse cached recent searches:', e);
+        }
+      }
+    }
+    return [];
+  });
+
+  const addRecentSearch = (query: string) => {
+    if (!query || !query.trim()) return;
+    const cleanQuery = query.trim();
+    setRecentSearches(prev => {
+      const filtered = prev.filter(q => q !== cleanQuery);
+      const next = [cleanQuery, ...filtered].slice(0, 5);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('woc_recent_searches', JSON.stringify(next));
+      }
+      return next;
+    });
+  };
+
+  const removeRecentSearch = (query: string) => {
+    setRecentSearches(prev => {
+      const next = prev.filter(q => q !== query);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('woc_recent_searches', JSON.stringify(next));
+      }
+      return next;
+    });
+  };
+
+  const clearAllRecentSearches = () => {
+    setRecentSearches([]);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('woc_recent_searches');
+    }
+  };
 
   useEffect(() => {
     const fetchInitial = async () => {
-      const data = await searchService.getInitialData();
-      setInitialData(data);
+      try {
+        const data = await searchService.getInitialData();
+        setInitialData(data);
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('woc_search_initial', JSON.stringify(data));
+        }
+      } catch (error) {
+        console.error("Failed to fetch search initial data:", error);
+      }
     };
     fetchInitial();
   }, []);
@@ -83,13 +147,55 @@ export default function SearchPage() {
       <div className="flex-1 overflow-y-auto no-scrollbar pb-24">
         {!debouncedQuery ? (
           <>
+            {/* Recent Searches Section */}
+            {recentSearches.length > 0 && (
+              <div className="px-4 mt-6 mb-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-[12px] font-black text-on-surface/40 uppercase tracking-widest">{t('search.recentSearches', 'Recent Searches')}</h2>
+                  <button 
+                    onClick={clearAllRecentSearches}
+                    className="text-[11px] font-extrabold text-primary hover:underline active:scale-95 transition-transform"
+                  >
+                    {t('search.clearAll', 'Clear All')}
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {recentSearches.map((tag) => (
+                    <div 
+                      key={tag}
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 bg-on-surface/5 hover:bg-on-surface/10 rounded-full transition-all group"
+                    >
+                      <button 
+                        onClick={() => {
+                          setSearchQuery(tag);
+                          addRecentSearch(tag);
+                        }}
+                        className="text-[13px] font-semibold text-on-surface hover:text-primary transition-colors"
+                      >
+                        {tag}
+                      </button>
+                      <button 
+                        onClick={() => removeRecentSearch(tag)}
+                        className="w-4 h-4 rounded-full bg-on-surface/10 flex items-center justify-center text-on-surface/60 hover:bg-on-surface/20 active:scale-90 transition-all"
+                      >
+                        <span className="material-symbols-outlined text-[10px]">close</span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="px-4 mt-6 mb-8">
               <h2 className="text-[12px] font-black text-on-surface/40 mb-3 uppercase tracking-widest">{t('search.trendingNow')}</h2>
               <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
                 {TRENDING_TAGS.map((tag) => (
                   <button 
                     key={tag}
-                    onClick={() => setSearchQuery(tag)}
+                    onClick={() => {
+                      setSearchQuery(tag);
+                      addRecentSearch(tag);
+                    }}
                     className="px-4 py-2 bg-primary/5 text-primary hover:bg-primary/10 font-bold text-[13px] rounded-full whitespace-nowrap active:scale-95 transition-all"
                   >
                     {tag}
@@ -249,7 +355,12 @@ export default function SearchPage() {
                   {t('search.resultsFor', { query: debouncedQuery })}
                 </h2>
                 {searchResults.map((item) => (
-                  <Link href={item.url} key={`${item.type}-${item.id}`} className="flex gap-4 items-center bg-surface p-3 rounded-2xl active:scale-[0.98] transition-all hover:shadow-md border border-on-surface/5">
+                  <Link 
+                    href={item.url} 
+                    key={`${item.type}-${item.id}`} 
+                    onClick={() => addRecentSearch(debouncedQuery)}
+                    className="flex gap-4 items-center bg-surface p-3 rounded-2xl active:scale-[0.98] transition-all hover:shadow-md border border-on-surface/5"
+                  >
                     <div className="w-[60px] h-[60px] rounded-xl overflow-hidden relative flex-shrink-0 bg-on-surface/5">
                       {item.image ? (
                         <Image src={item.image} alt={item.title} fill className="object-cover" />

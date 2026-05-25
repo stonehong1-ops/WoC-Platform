@@ -27,8 +27,24 @@ export const useGroupCalendar = (group: Group) => {
   const [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [selectedDate, setSelectedDate] = useState(new Date());
   
-  const [groupCalendarEvents, setGroupCalendarEvents] = useState<CalendarEvent[]>([]);
-  const [socialEvents, setSocialEvents] = useState<CalendarEvent[]>([]);
+  const [groupCalendarEvents, setGroupCalendarEvents] = useState<CalendarEvent[]>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = sessionStorage.getItem(`woc_cal_events_${group.id}`);
+      if (cached) {
+        try { return JSON.parse(cached); } catch(e) {}
+      }
+    }
+    return [];
+  });
+  const [socialEvents, setSocialEvents] = useState<CalendarEvent[]>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = sessionStorage.getItem(`woc_social_events_${group.id}`);
+      if (cached) {
+        try { return JSON.parse(cached); } catch(e) {}
+      }
+    }
+    return [];
+  });
   const [subClasses, setSubClasses] = useState<GroupClass[]>([]);
 
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -56,6 +72,9 @@ export const useGroupCalendar = (group: Group) => {
     if (!group.id) return;
     const unsubscribe = groupService.subscribeCalendarEvents(group.id, (fetchedEvents) => {
       setGroupCalendarEvents(fetchedEvents);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem(`woc_cal_events_${group.id}`, JSON.stringify(fetchedEvents));
+      }
     });
     return () => unsubscribe();
   }, [group.id]);
@@ -112,6 +131,9 @@ export const useGroupCalendar = (group: Group) => {
         }
       });
       setSocialEvents(socialAsCalendarEvents);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem(`woc_social_events_${group.id}`, JSON.stringify(socialAsCalendarEvents));
+      }
     });
     return () => unsubscribe();
   }, [group.venueId]);

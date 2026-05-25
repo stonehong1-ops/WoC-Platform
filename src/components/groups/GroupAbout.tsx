@@ -18,6 +18,7 @@ interface GroupAboutProps {
   allUsers?: any[];
   isClaiming?: boolean;
   handleClaimAdmin?: (targetUserId: string, targetUserName: string) => Promise<void>;
+  isMembersLoading?: boolean;
 }
 
 const swipeConfidenceThreshold = 10000;
@@ -30,7 +31,8 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
   members, 
   allUsers = [], 
   isClaiming = false, 
-  handleClaimAdmin 
+  handleClaimAdmin,
+  isMembersLoading = false
 }) => {
   const { t } = useLanguage();
   const { user } = useAuth();
@@ -42,6 +44,7 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
   const [claimOwnerId, setClaimOwnerId] = useState("");
   const [claimResults, setClaimResults] = useState<any[]>([]);
   const [showClaimResults, setShowClaimResults] = useState(false);
+  const [showLiveMap, setShowLiveMap] = useState(false);
 
   const handleLeaveGroup = async () => {
     if (!user || !group.id) return;
@@ -439,7 +442,11 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
         )}
 
         {/* 2. 멤버 가입 / 이미 가입된 멤버 카드 */}
-        {isJoined ? (
+        {isMembersLoading ? (
+          <div className="animate-pulse bg-[#f8f9fa] p-5 rounded-2xl border border-outline-variant/30 text-center shadow-sm h-36 flex flex-col items-center justify-center">
+            <div className="w-8 h-8 border-4 border-[#0057bd]/20 border-t-[#0057bd] rounded-full animate-spin"></div>
+          </div>
+        ) : isJoined ? (
           <div className="bg-[#f8f9fa] p-5 rounded-2xl border border-outline-variant/30 text-center shadow-sm">
             <div className="w-12 h-12 rounded-full bg-[#0057bd]/10 text-[#0057bd] flex items-center justify-center mx-auto mb-3">
               <span className="material-symbols-outlined text-2xl font-bold">verified</span>
@@ -459,8 +466,8 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
                 className="text-[11px] font-bold text-on-surface-variant/40 hover:text-red-500 transition-colors duration-200 active:scale-95 disabled:opacity-50 font-body"
               >
                 {isLeaving 
-                  ? t("group.about.leaving", "Leaving...") 
-                  : t("group.about.leave", "Leave Community (탈퇴하기)")
+                  ? t("group.about.leaving") || "Leaving..." 
+                  : t("group.about.leave") || "Leave Community"
                 }
               </button>
             </div>
@@ -551,7 +558,7 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
             className="col-span-4 row-span-1 rounded-xl overflow-hidden shadow-sm cursor-pointer relative group"
             onClick={() => openViewer(0)}
           >
-            <img className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Atmosphere 1" src={img1} />
+            <img className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Atmosphere 1" src={img1} loading="lazy" decoding="async" />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
           </div>
           {/* Emotional Moment 2: Portrait */}
@@ -559,7 +566,7 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
             className="col-span-2 row-span-2 rounded-xl overflow-hidden shadow-sm cursor-pointer relative group"
             onClick={() => openViewer(1)}
           >
-            <img className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Atmosphere 2" src={img2} />
+            <img className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Atmosphere 2" src={img2} loading="lazy" decoding="async" />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
           </div>
           {/* Emotional Moment 3: Detail */}
@@ -567,7 +574,7 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
             className="col-span-2 row-span-1 rounded-xl overflow-hidden shadow-sm cursor-pointer relative group"
             onClick={() => openViewer(2)}
           >
-            <img className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Atmosphere 3" src={img3} />
+            <img className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Atmosphere 3" src={img3} loading="lazy" decoding="async" />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
           </div>
           {/* More Card: Dark blur overlay */}
@@ -575,7 +582,7 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
             className="col-span-2 row-span-1 rounded-xl overflow-hidden shadow-sm relative cursor-pointer group"
             onClick={() => openViewer(3)}
           >
-            <img className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Atmosphere 4" src={img4} />
+            <img className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Atmosphere 4" src={img4} loading="lazy" decoding="async" />
             <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors" />
             {moreCount > 0 && (
               <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center">
@@ -757,28 +764,39 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
           
           {/* Actual Google Maps iframe Preview */}
           <div 
-            className="rounded-2xl overflow-hidden border border-outline-variant/30 mb-3 h-48 relative shadow-sm group"
+            className="rounded-2xl overflow-hidden border border-outline-variant/30 mb-3 h-48 relative shadow-sm group bg-slate-50 flex items-center justify-center"
           >
-            <iframe
-              width="100%"
-              height="100%"
-              style={{ border: 0 }}
-              loading="lazy"
-              allowFullScreen
-              src={`https://www.google.com/maps?q=${encodeURIComponent(venueAddress.split(',')[0].trim())}&output=embed`}
-            ></iframe>
+            {showLiveMap ? (
+              <iframe
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                loading="lazy"
+                allowFullScreen
+                src={`https://www.google.com/maps?q=${encodeURIComponent(venueAddress.split(',')[0].trim())}&output=embed`}
+              ></iframe>
+            ) : (
+              <div 
+                className="w-full h-full flex flex-col items-center justify-center cursor-pointer bg-slate-100/50 hover:bg-slate-100 transition-colors"
+                onClick={() => setShowLiveMap(true)}
+              >
+                <span className="material-symbols-outlined text-3xl text-primary mb-2">map</span>
+                <span className="text-xs font-bold text-on-surface-variant">지도 불러오기 (데이터 절약 모드)</span>
+              </div>
+            )}
             
-            {/* Clickable Overlay to open map */}
-            <div 
-              className="absolute inset-0 bg-transparent cursor-pointer z-10"
-              onClick={() => {
-                const query = encodeURIComponent(venueAddress.split(',')[0].trim() || "");
-                window.open(`https://map.naver.com/v5/search/${query}`, '_blank');
-              }}
-            ></div>
+            {showLiveMap && (
+              <div 
+                className="absolute inset-0 bg-transparent cursor-pointer z-10"
+                onClick={() => {
+                  const query = encodeURIComponent(venueAddress.split(',')[0].trim() || "");
+                  window.open(`https://map.naver.com/v5/search/${query}`, '_blank');
+                }}
+              ></div>
+            )}
 
             <div className="absolute bottom-3 right-3 bg-surface/90 backdrop-blur px-3 py-1.5 rounded-full text-[10px] font-label-md text-on-surface-variant border border-outline-variant/20 z-20 pointer-events-none">
-              {t("group.about.tap_expand")}
+              {showLiveMap ? t("group.about.tap_expand") : "터치하여 지도 활성화"}
             </div>
           </div>
 

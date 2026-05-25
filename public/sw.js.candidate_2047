@@ -1,0 +1,62 @@
+"const fs = require('fs');
+const path = require('path');
+
+const logPath = 'C:\\Users\\stone\\.gemini\\antigravity\\brain\\aaa4de1b-1dd1-42ad-be9e-7041fe55b36a\\.system_generated\\logs\\	ranscript.jsonl';
+
+try {
+  const content = fs.readFileSync(logPath, 'utf-8');
+  const lines = content.split('\
+');
+  
+  let swCandidates = [];
+  
+  function searchForSW(obj) {
+    if (typeof obj === 'string') {
+      // 스톤님이 어제 작성하셨던 sw.js의 특징적인 키워드나 fetch respondWith 구조가 들어있는지 검사!
+      const hasSW = obj.includes('self.addEventListener') && obj.includes('fetch');
+      const isRecoverScript = obj.includes('const fs =') || obj.includes('searchForSW');
+      
+      if (hasSW && !isRecoverScript) {
+        swCandidates.push(obj);
+      }
+    } else if (typeof obj === 'object' && obj !== null) {
+      for (const key in obj) {
+        searchForSW(obj[key]);
+      }
+    }
+  }
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    try {
+      const obj = JSON.parse(line);
+      searchForSW(obj);
+    } catch (e) {}
+  }
+
+  console.log(`Found ${swCandidates.length} custom service worker candidates in logs.`);
+  
+  let bestSW = '';
+  for (const cand of swCandidates) {
+    // 단순히 빈 껍데기가 아니고, 실제 respondWith 나 caches.match 등 실질적인 fetch 대행 코드가 장착되어 있는 것 우선!
+    const hasRespond = cand.includes('respondWith') || cand.includes('event.respondWith') || cand.includes('caches.match');
+    if (hasRespond && cand.length > bestSW.length) {
+      bestSW = cand;
+    }
+  }
+  
+  if (!bestSW && swCandidates.length > 0) {
+    for (const cand of swCandidates) {
+      if (cand.length > bestSW.length) bestSW = cand;
+    }
+  }
+
+  if (bestSW) {
+    let clean = bestSW.trim();
+    if (clean.startsWith('"') && clean.endsWith('"')) {
+      try { clean = JSON.parse(clean); } catch (e) {}
+    }
+    
+    if (clean.inc
+<truncated 705 bytes>

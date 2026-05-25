@@ -18,9 +18,9 @@ export default function InAppBrowserGuard() {
   useEffect(() => {
     if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
 
-    // PT 및 PT1 경로는 인앱 브라우저 가드 대상에서 제외
+    // PT, PT1 및 app 경로는 인앱 브라우저 가드 대상에서 제외
     const path = window.location.pathname;
-    if (path === '/pt' || path === '/pt1' || path.startsWith('/pt/') || path.startsWith('/pt1/')) {
+    if (path === '/pt' || path === '/pt1' || path === '/app' || path.startsWith('/pt/') || path.startsWith('/pt1/') || path.startsWith('/app/')) {
       return;
     }
 
@@ -35,6 +35,12 @@ export default function InAppBrowserGuard() {
 
     const isIOS = /iPad|iPhone|iPod/.test(ua);
     const currentUrl = window.location.href;
+
+    // iOS KakaoTalk: Auto escape to Safari immediately
+    if (isIOS && /KAKAOTALK/i.test(ua)) {
+      window.location.href = `kakaotalk://web/openExternalApp?url=${encodeURIComponent(currentUrl)}`;
+      return;
+    }
 
     if (!isIOS) {
       // Android: Auto-redirect to Chrome via intent scheme
@@ -57,6 +63,12 @@ export default function InAppBrowserGuard() {
       // Android: Use intent scheme to escape in-app browser when explicitly clicked
       const stripped = url.replace(/https?:\/\//i, '');
       window.location.href = `intent://${stripped}#Intent;scheme=https;package=com.android.chrome;end`;
+      return;
+    }
+
+    // iOS KakaoTalk: Escape to Safari immediately on click
+    if (/KAKAOTALK/i.test(ua)) {
+      window.location.href = `kakaotalk://web/openExternalApp?url=${encodeURIComponent(url)}`;
       return;
     }
 

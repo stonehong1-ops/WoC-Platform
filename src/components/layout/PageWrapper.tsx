@@ -15,18 +15,24 @@ export default function PageWrapper({ children }: { children: React.ReactNode })
   const isSocial = pathname.startsWith('/social');
   const isLanding = pathname === '/';
   const isLogin = pathname === '/login';
+  const isApp = pathname === '/app';
   const isSpace = pathname.startsWith('/groups/');
   const isPlaza = pathname.startsWith('/plaza');
   const isExplore = pathname.startsWith('/explore');
   const isNation = pathname.startsWith('/class') || pathname.startsWith('/shop') || pathname.startsWith('/resale') || pathname.startsWith('/stay') || pathname.startsWith('/lost') || pathname.startsWith('/hub');
   
-  const isPublic = isLanding || isLogin || isLive || isVenues || isEvents || isSocial || isPlaza || isExplore || isNation;
+  const isPublic = isLanding || isLogin || isApp || isLive || isVenues || isEvents || isSocial || isPlaza || isExplore || isNation;
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // Strict PWA Standalone Mode Check
+    const isGatewayPath = pathname === '/' || pathname === '/login' || pathname === '/app';
+
     if (!loading && !isPublic && !isSpace && (!user || !profile?.isRegistered)) {
       setShowLogin(true);
     }
-  }, [user, profile, loading, isPublic, isSpace, setShowLogin]);
+  }, [user, profile, loading, isPublic, isSpace, pathname, router, setShowLogin]);
 
   return (
     <>
@@ -34,3 +40,4 @@ export default function PageWrapper({ children }: { children: React.ReactNode })
     </>
   );
 }
+

@@ -54,6 +54,7 @@ export default function MapComponent({
   const { t } = useLanguage();
   const shrinkTimerRef = React.useRef<NodeJS.Timeout | null>(null);
 
+
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
   const [bounds, setBounds] = useState<google.maps.LatLngBounds | null>(null);

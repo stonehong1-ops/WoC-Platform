@@ -37,8 +37,26 @@ const STAY_FILTER_KEYS = ['all', '1-Room', '2-Room', '3-Room', 'Dormitory', 'Cou
 
 function StayPageContent() {
   const { t } = useLanguage();
-  const [stays, setStays] = useState<Stay[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [stays, setStays] = useState<Stay[]>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = sessionStorage.getItem('woc_stay_active_stays');
+      if (cached) {
+        try {
+          return JSON.parse(cached);
+        } catch (e) {
+          console.error("Failed to parse cached stays", e);
+        }
+      }
+    }
+    return [];
+  });
+  const [isLoading, setIsLoading] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const cached = sessionStorage.getItem('woc_stay_active_stays');
+      if (cached) return false;
+    }
+    return true;
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
   const [activeCity, setActiveCity] = useState('All');
@@ -84,9 +102,27 @@ function StayPageContent() {
   }, [openCreate]);
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const cached = sessionStorage.getItem('woc_stay_active_stays');
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (parsed && parsed.length > 0) {
+            setStays(parsed);
+            setIsLoading(false);
+          }
+        } catch (e) {
+          console.error("Error restoring stays cache", e);
+        }
+      }
+    }
+
     const unsub = stayService.subscribeActiveStays(null, (data) => {
       setStays(data);
       setIsLoading(false);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('woc_stay_active_stays', JSON.stringify(data));
+      }
     });
     return () => unsub();
   }, []);
@@ -311,6 +347,8 @@ function StayPageContent() {
                         alt={stay.title}
                         className="absolute inset-0 z-10 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 bg-[#f2f4f4]"
                         src={stay.images[0]}
+                        loading="lazy"
+                        decoding="async"
                         onError={(e) => {
                           e.currentTarget.style.display = 'none';
                         }}

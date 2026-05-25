@@ -14,6 +14,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     // Sync public routes with PageWrapper to prevent conflicting auth checks
     const isPublic = pathname === '/' || 
                     pathname === '/login' ||
+                    pathname === '/app' ||
                     pathname.startsWith('/live') || 
                     pathname.startsWith('/events') || 
                     pathname.startsWith('/social') || 

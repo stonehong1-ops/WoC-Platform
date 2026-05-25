@@ -20,7 +20,9 @@ import {
   GraduationCap,
   Building2,
   AlertCircle,
-  RefreshCcw
+  RefreshCcw,
+  FlipHorizontal,
+  SlidersHorizontal
 } from 'lucide-react';
 import { galleryService, GalleryPost, GalleryComment, GalleryTag } from '@/lib/firebase/galleryService';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -28,7 +30,6 @@ import { safeDate } from '@/lib/utils/safeDate';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useNavigation } from '@/components/providers/NavigationProvider';
 import BottomSheet from '@/components/common/BottomSheet';
-import { SlidersHorizontal } from 'lucide-react';
 
 interface LiveFilter {
   category: 'all' | 'social' | 'class' | 'event' | 'na';
@@ -46,6 +47,7 @@ interface LiveFeedProps {
 }
 
 export default function LiveFeed({ entityType, entityId, userId, className = '' }: LiveFeedProps) {
+  const { user } = useAuth();
   const [posts, setPosts] = useState<GalleryPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -57,10 +59,77 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
   const containerRef = useRef<HTMLDivElement>(null);
   const [isImmersive, setIsImmersive] = useState(false);
 
+  const [showDashboardIntro, setShowDashboardIntro] = useState(!entityType && !entityId && !userId);
+  
+  // entityType, entityId, userId가 존재하거나 비동기로 넘어오면 대시보드 인트로를 강제로 비활성화합니다.
+  useEffect(() => {
+    if (entityType || entityId || userId) {
+      setShowDashboardIntro(false);
+    }
+  }, [entityType, entityId, userId]);
+
+  const [firstCardReady, setFirstCardReady] = useState(false);
+  const [loadingPercent, setLoadingPercent] = useState(0);
+  const [isClassVideoLoaded, setIsClassVideoLoaded] = useState(false);
+  const [isSocialVideoLoaded, setIsSocialVideoLoaded] = useState(false);
+  const [isEventVideoLoaded, setIsEventVideoLoaded] = useState(false);
+
+  const handleProgress = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    const video = e.currentTarget;
+    if (video.buffered.length > 0 && video.duration) {
+      const bufferedEnd = video.buffered.end(video.buffered.length - 1);
+      const percent = Math.round((bufferedEnd / video.duration) * 100);
+      setLoadingPercent(Math.min(percent, 100));
+    }
+  };
+
   const [activeFilter, setActiveFilter] = useState<LiveFilter>({ category: 'all' });
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [tempFilter, setTempFilter] = useState<LiveFilter>({ category: 'all' });
   const [activeCategoryTab, setActiveCategoryTab] = useState<'all' | 'social' | 'class' | 'event' | 'na'>('all');
+
+  const stats = React.useMemo(() => {
+    const yesterday = Date.now() - 24 * 60 * 60 * 1000;
+    
+    // 어제 게시물 필터링
+    const yesterdayPosts = posts.filter(post => {
+      const createdTime = safeDate(post.createdAt)?.getTime() || 0;
+      return createdTime >= yesterday;
+    });
+
+    const targetPosts = yesterdayPosts.length >= 3 ? yesterdayPosts : posts.slice(0, 15);
+
+    const classes = targetPosts.filter(p => Array.isArray(p.tags) && p.tags.some(t => t && t.type === 'class'));
+    const socials = targetPosts.filter(p => Array.isArray(p.tags) && p.tags.some(t => t && t.type === 'social'));
+    const events = targetPosts.filter(p => Array.isArray(p.tags) && (p.tags.some(t => t && t.type === 'event') || p.eventId));
+    const groups = targetPosts.filter(p => Array.isArray(p.tags) && p.tags.some(t => t && t.type === 'group'));
+    const my = targetPosts.filter(p => p.authorId === user?.uid);
+
+    const getMediaInfo = (filteredPosts: GalleryPost[], fallbackUrl: string) => {
+      const post = filteredPosts[0]; // 다른 카테고리의 데이터를 절대 임의로 훔쳐오지 않음
+      if (!post || !post.media?.[0]) {
+        return { url: fallbackUrl, isVideo: false };
+      }
+      const url = post.media[0];
+      const isVideo = post.mediaTypes ? post.mediaTypes[0] === 'video' : (url.toLowerCase().includes('.mp4') || url.toLowerCase().includes('.mov') || url.toLowerCase().includes('.webm') || url.toLowerCase().includes('video'));
+      return { url, isVideo };
+    };
+
+    const classMedia = getMediaInfo(classes, 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=500&auto=format&fit=crop');
+    const socialMedia = getMediaInfo(socials, 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=500&auto=format&fit=crop');
+    const eventMedia = getMediaInfo(events, 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?q=80&w=500&auto=format&fit=crop');
+
+    return {
+      classCount: classes.length,
+      socialCount: socials.length,
+      eventCount: events.length,
+      groupCount: groups.length,
+      myCount: my.length,
+      classMedia,
+      socialMedia,
+      eventMedia,
+    };
+  }, [posts, user?.uid]);
 
   // Dynamic filter options extraction
   const filterOptions = React.useMemo(() => {
@@ -222,10 +291,50 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
     setMounted(true);
     setLoading(true);
     setError(null);
+
+    const preloadMedia = (url: string) => {
+      if (!url) return;
+      try {
+        const link = document.createElement('link');
+        link.rel = 'preload';
+        link.as = url.toLowerCase().includes('.mp4') || url.toLowerCase().includes('.mov') || url.toLowerCase().includes('.webm') ? 'video' : 'image';
+        link.href = url;
+        document.head.appendChild(link);
+      } catch (e) {
+        console.error('Preload failed:', e);
+      }
+    };
+
     const unsubscribe = galleryService.subscribeFeed(
       (data) => {
         setPosts(data);
         setLoading(false);
+
+        // 대시보드 영상/이미지 백그라운드 프리로드 최적화
+        try {
+          if (data && data.length > 0) {
+            const yesterday = Date.now() - 24 * 60 * 60 * 1000;
+            const yesterdayPosts = data.filter(post => {
+              const createdTime = safeDate(post.createdAt)?.getTime() || 0;
+              return createdTime >= yesterday;
+            });
+            const targetPosts = yesterdayPosts.length >= 3 ? yesterdayPosts : data.slice(0, 15);
+            
+            const classes = targetPosts.filter(p => Array.isArray(p.tags) && p.tags.some(t => t && t.type === 'class'));
+            const socials = targetPosts.filter(p => Array.isArray(p.tags) && p.tags.some(t => t && t.type === 'social'));
+            const events = targetPosts.filter(p => Array.isArray(p.tags) && (p.tags.some(t => t && t.type === 'event') || p.eventId));
+            
+            const classPost = classes[0] || data.find(p => p.media?.[0]);
+            const socialPost = socials[0] || data.find(p => p.media?.[0]);
+            const eventPost = events[0] || data.find(p => p.media?.[0]);
+            
+            if (classPost?.media?.[0]) preloadMedia(classPost.media[0]);
+            if (socialPost?.media?.[0]) preloadMedia(socialPost.media[0]);
+            if (eventPost?.media?.[0]) preloadMedia(eventPost.media[0]);
+          }
+        } catch (err) {
+          console.error("Dashboard preloading failed:", err);
+        }
       },
       { entityType, entityId, userId },
       (err) => {
@@ -280,6 +389,207 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
   return (
     <div className={`${isImmersive ? 'fixed inset-0 z-[100]' : 'relative w-full h-full min-h-[500px]'} bg-black overflow-hidden flex flex-col ${className}`}>
 
+      {/* 어제 현황판 인트로 대시보드 */}
+      <AnimatePresence>
+        {showDashboardIntro && !entityType && !entityId && !userId && (
+          <motion.div
+            initial={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: '-100%', scale: 0.95 }}
+            transition={{ type: 'spring', damping: 26, stiffness: 170 }}
+            className="absolute inset-0 bg-[#070709] z-[120] flex flex-col justify-between p-6 select-none overflow-hidden"
+          >
+            {/* 은은하게 깔리는 글로우 스크림 */}
+            <div className="absolute top-[-20%] left-[-10%] w-[120%] h-[60%] bg-gradient-to-b from-[#007AFF]/15 to-transparent blur-[120px] rounded-full pointer-events-none" />
+            <div className="absolute bottom-[-10%] right-[-10%] w-[80%] h-[50%] bg-gradient-to-t from-purple-500/10 to-transparent blur-[100px] rounded-full pointer-events-none" />
+
+            {/* 상단 바 - Skip 서클 */}
+            <div className="relative z-10 flex justify-between items-center w-full mt-safe pt-safe">
+              <span className="text-[11px] font-black tracking-widest text-[#007AFF] uppercase bg-[#007AFF]/10 px-3 py-1 rounded-full border border-[#007AFF]/20">
+                WoC Live
+              </span>
+              <button
+                onClick={() => setShowDashboardIntro(false)}
+                className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 active:scale-95 transition-all text-white text-xs font-bold backdrop-blur-md shadow-lg"
+              >
+                <span>Skip</span>
+                <SlidersHorizontal size={12} className="rotate-90 opacity-60" />
+              </button>
+            </div>
+
+            {/* 중앙 마름모(다이아몬드) 썸네일 그리드 */}
+            <div className="relative flex-1 w-full flex items-center justify-center py-8">
+              <div className="relative w-full max-w-[340px] h-[340px] flex items-center justify-center">
+                
+                {/* 1. 좌측 마름모 카드 (수업 시연) */}
+                <motion.div
+                  animate={{ y: [0, -6, 0] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 0.2 }}
+                  className="absolute left-0 bottom-4 w-[130px] h-[130px] z-10 flex flex-col items-center"
+                >
+                  <div 
+                    className="w-full h-full shadow-[0_15px_30px_rgba(0,0,0,0.5)] border border-white/20 transition-all duration-300 hover:border-[#007AFF]/50 cursor-pointer overflow-hidden relative"
+                    style={{ 
+                      clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
+                    }}
+                  >
+                    {stats.classMedia.isVideo && (
+                      <video 
+                        src={stats.classMedia.url} 
+                        muted 
+                        playsInline 
+                        autoPlay 
+                        loop 
+                        preload="auto"
+                        onCanPlay={() => setIsClassVideoLoaded(true)}
+                        onPlaying={() => setIsClassVideoLoaded(true)}
+                        className="w-full h-full object-cover"
+                      />
+                    )}
+                    <img 
+                      src="https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=500&auto=format&fit=crop"
+                      alt="" 
+                      className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${
+                        (stats.classMedia.isVideo && isClassVideoLoaded) ? 'opacity-0 pointer-events-none' : 'opacity-100'
+                      }`}
+                    />
+                  </div>
+                  {/* 글로우 텍스트 배지 */}
+                  <div className="absolute bottom-[-16px] bg-black/85 px-2.5 py-1 rounded-full border border-white/10 shadow-[0_0_12px_rgba(255,255,255,0.05)] flex items-center gap-1 backdrop-blur-md shrink-0">
+                    <span className="text-[9px] font-black text-white whitespace-nowrap">🎬 {stats.classCount} Classes</span>
+                  </div>
+                </motion.div>
+
+                {/* 2. 중앙 메인 마름모 카드 (소셜 밀롱가) */}
+                <motion.div
+                  animate={{ y: [0, -8, 0] }}
+                  transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
+                  className="absolute z-20 w-[170px] h-[170px] flex flex-col items-center"
+                  style={{ top: '22%' }}
+                >
+                  <div 
+                    className="w-full h-full shadow-[0_20px_45px_rgba(0,74,255,0.3)] border-2 border-white/30 transition-all duration-300 hover:border-[#007AFF] cursor-pointer overflow-hidden relative"
+                    style={{ 
+                      clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
+                    }}
+                  >
+                    {stats.socialMedia.isVideo && (
+                      <video 
+                        src={stats.socialMedia.url} 
+                        muted 
+                        playsInline 
+                        autoPlay 
+                        loop 
+                        preload="auto"
+                        onCanPlay={() => setIsSocialVideoLoaded(true)}
+                        onPlaying={() => setIsSocialVideoLoaded(true)}
+                        className="w-full h-full object-cover"
+                      />
+                    )}
+                    <img 
+                      src="https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=500&auto=format&fit=crop"
+                      alt="" 
+                      className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${
+                        (stats.socialMedia.isVideo && isSocialVideoLoaded) ? 'opacity-0 pointer-events-none' : 'opacity-100'
+                      }`}
+                    />
+                  </div>
+                  {/* 글로우 텍스트 배지 */}
+                  <div className="absolute bottom-[-20px] bg-black/90 px-3.5 py-1.5 rounded-full border border-[#007AFF]/40 shadow-[0_0_15px_rgba(0,122,255,0.3)] flex items-center gap-1 backdrop-blur-md shrink-0">
+                    <span className="text-[10px] font-black text-[#007AFF] whitespace-nowrap">💃 {stats.socialCount} Socials</span>
+                  </div>
+                </motion.div>
+
+                {/* 3. 우측 마름모 카드 (특별 공연) */}
+                <motion.div
+                  animate={{ y: [0, -6, 0] }}
+                  transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut", delay: 0.4 }}
+                  className="absolute right-0 bottom-4 w-[130px] h-[130px] z-10 flex flex-col items-center"
+                >
+                  <div 
+                    className="w-full h-full shadow-[0_15px_30px_rgba(0,0,0,0.5)] border border-white/20 transition-all duration-300 hover:border-purple-500/50 cursor-pointer overflow-hidden relative"
+                    style={{ 
+                      clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
+                    }}
+                  >
+                    {stats.eventMedia.isVideo && (
+                      <video 
+                        src={stats.eventMedia.url} 
+                        muted 
+                        playsInline 
+                        autoPlay 
+                        loop 
+                        preload="auto"
+                        onCanPlay={() => setIsEventVideoLoaded(true)}
+                        onPlaying={() => setIsEventVideoLoaded(true)}
+                        className="w-full h-full object-cover"
+                      />
+                    )}
+                    <img 
+                      src="https://images.unsplash.com/photo-1465847899084-d164df4dedc6?q=80&w=500&auto=format&fit=crop"
+                      alt="" 
+                      className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${
+                        (stats.eventMedia.isVideo && isEventVideoLoaded) ? 'opacity-0 pointer-events-none' : 'opacity-100'
+                      }`}
+                    />
+                  </div>
+                  {/* 글로우 텍스트 배지 */}
+                  <div className="absolute bottom-[-16px] bg-black/85 px-2.5 py-1 rounded-full border border-white/10 shadow-[0_0_12px_rgba(255,255,255,0.05)] flex items-center gap-1 backdrop-blur-md shrink-0">
+                    <span className="text-[9px] font-black text-white whitespace-nowrap">🎪 {stats.eventCount} Events</span>
+                  </div>
+                </motion.div>
+
+              </div>
+            </div>
+
+            {/* 하단부 감성 텍스트 타이포 및 Enter 버튼 */}
+            <div className="relative z-10 w-full flex flex-col items-center text-center gap-4 mb-safe pb-4">
+              <div className="flex flex-col gap-1">
+                <h1 className="text-lg font-black tracking-tight text-white/90 drop-shadow-md">
+                  Yesterday in Tango Society
+                </h1>
+                <p className="text-[11px] text-white/50 font-bold max-w-xs leading-relaxed drop-shadow-sm px-4">
+                  어제 우리 커뮤니티에는 수많은 교감의 모먼트들이 기록되었습니다. 준비 완료된 라이브 속으로 입장해 보세요!
+                </p>
+              </div>
+
+              {/* 스톤님 제안: ENTER LIVE 버튼 */}
+              <button
+                onClick={() => setShowDashboardIntro(false)}
+                className="w-full max-w-[260px] py-4 rounded-2xl text-[11px] font-black tracking-widest uppercase transition-all duration-300 active:scale-95 shadow-lg border flex items-center justify-center gap-2.5 select-none bg-primary text-white border-primary/20 hover:bg-primary-dark cursor-pointer shadow-[0_0_20px_rgba(0,122,255,0.4)] animate-pulse"
+              >
+                <span>ENTER LIVE</span>
+                {firstCardReady ? (
+                  <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                ) : (
+                  <div className="flex items-center gap-1.5 ml-1 bg-black/35 px-2 py-0.5 rounded-full border border-white/10">
+                    <div className="w-2.5 h-2.5 border border-white/20 border-t-[#007AFF] rounded-full animate-spin shrink-0" />
+                    <span className="text-[8px] font-black tracking-tighter text-[#007AFF]">{loadingPercent}%</span>
+                  </div>
+                )}
+              </button>
+
+              {/* Closed 보안 개체 정직한 통계 배지 */}
+              <div className="flex items-center gap-3.5 bg-white/5 border border-white/10 px-4 py-2 rounded-full backdrop-blur-md shadow-md mt-1">
+                <div className="flex items-center gap-1.5 text-[9px] font-black text-white/50 tracking-wider">
+                  <span className="material-symbols-outlined text-[11px] text-white/40">lock</span>
+                  <span>{stats.groupCount} Group Streams</span>
+                </div>
+                <div className="w-[1px] h-2.5 bg-white/15" />
+                <div className="flex items-center gap-1.5 text-[9px] font-black text-white/50 tracking-wider">
+                  <span className="material-symbols-outlined text-[11px] text-white/40">person</span>
+                  <span>{stats.myCount} My Moments</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 mt-1">
+                <div className="w-1.5 h-1.5 bg-[#007AFF] rounded-full animate-ping" />
+                <span className="text-[8px] font-black tracking-widest text-[#007AFF] uppercase">Yesterday Dashboard</span>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Feed Container - Vertical Snap */}
       <div
         ref={containerRef}
@@ -312,7 +622,7 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
           </div>
         )}
 
-        {filteredPosts.map((post) => (
+        {filteredPosts.map((post, idx) => (
           <GalleryCard
             key={post.id}
             post={post}
@@ -326,6 +636,9 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
               setIsFilterOpen(true);
             }}
             activeFilter={activeFilter}
+            onFirstCardLoaded={idx === 0 ? () => setFirstCardReady(true) : undefined}
+            loadingPercent={idx === 0 ? loadingPercent : undefined}
+            handleProgress={idx === 0 ? handleProgress : undefined}
           />
         ))}
       </div>
@@ -509,36 +822,36 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
                       {/* Classes List */}
                       <div className="p-2 flex flex-col gap-1 bg-surface-container-lowest">
                         {club.classes.map((cls) => {
-                          const isSelected = tempFilter.category === 'class' && tempFilter.subId === cls.id;
-                          return (
-                            <button
-                              key={cls.id}
-                              onClick={() =>
-                                setTempFilter({
-                                  category: 'class',
-                                  id: club.id,
-                                  name: club.name,
-                                  subId: cls.id,
-                                  subName: cls.name,
-                                })
-                              }
-                              className={`w-full py-3.5 px-4 flex items-center gap-3 hover:bg-on-surface/5 active:bg-on-surface/10 transition-all text-left text-[13px] rounded-2xl border ${
-                                isSelected
-                                  ? 'text-primary font-bold bg-primary/5 border-primary/20 shadow-xs'
-                                  : 'text-on-surface border-transparent font-medium'
-                              }`}
-                            >
-                              <GraduationCap
-                                size={15}
-                                className={isSelected ? 'text-primary' : 'text-on-surface-variant/70'}
-                              />
-                              <span className="flex-1 truncate">{cls.name}</span>
-                              {isSelected && (
-                                <span className="material-symbols-outlined text-[16px] text-primary font-bold">check</span>
-                              )}
-                            </button>
-                          );
-                        })}
+                           const isSelected = tempFilter.category === 'class' && tempFilter.subId === cls.id;
+                           return (
+                             <button
+                               key={cls.id}
+                               onClick={() =>
+                                 setTempFilter({
+                                   category: 'class',
+                                   id: club.id,
+                                   name: club.name,
+                                   subId: cls.id,
+                                   subName: cls.name,
+                                 })
+                               }
+                               className={`w-full py-3.5 px-4 flex items-center gap-3 hover:bg-on-surface/5 active:bg-on-surface/10 transition-all text-left text-[13px] rounded-2xl border ${
+                                 isSelected
+                                   ? 'text-primary font-bold bg-primary/5 border-primary/20 shadow-xs'
+                                   : 'text-on-surface border-transparent font-medium'
+                               }`}
+                             >
+                               <GraduationCap
+                                 size={15}
+                                 className={isSelected ? 'text-primary' : 'text-on-surface-variant/70'}
+                               />
+                               <span className="flex-1 truncate">{cls.name}</span>
+                               {isSelected && (
+                                 <span className="material-symbols-outlined text-[16px] text-primary font-bold">check</span>
+                               )}
+                             </button>
+                           );
+                         })}
                       </div>
                     </div>
                   ))
@@ -559,7 +872,10 @@ const GalleryCard = ({
   onOpenImmersive,
   onCloseImmersive,
   onOpenFilter,
-  activeFilter
+  activeFilter,
+  onFirstCardLoaded,
+  loadingPercent: parentLoadingPercent,
+  handleProgress: parentHandleProgress
 }: {
   post: GalleryPost,
   onOpenComments: () => void,
@@ -567,11 +883,32 @@ const GalleryCard = ({
   onOpenImmersive: () => void,
   onCloseImmersive: () => void,
   onOpenFilter?: () => void,
-  activeFilter?: LiveFilter
+  activeFilter?: LiveFilter,
+  onFirstCardLoaded?: () => void,
+  loadingPercent?: number,
+  handleProgress?: (e: React.SyntheticEvent<HTMLVideoElement>) => void
 }) => {
   const { user } = useAuth();
   const { t } = useLanguage();
   const [activeDot, setActiveDot] = useState(0);
+  const [isMirrored, setIsMirrored] = useState(false);
+  const [isVideoLoading, setIsVideoLoading] = useState(true);
+  const [localLoadingPercent, setLocalLoadingPercent] = useState(0);
+  
+  const effectiveLoadingPercent = parentLoadingPercent !== undefined ? parentLoadingPercent : localLoadingPercent;
+
+  const handleProgress = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    const video = e.currentTarget;
+    if (video.buffered.length > 0 && video.duration) {
+      const bufferedEnd = video.buffered.end(video.buffered.length - 1);
+      const percent = Math.round((bufferedEnd / video.duration) * 100);
+      const targetPercent = Math.min(percent, 100);
+      setLocalLoadingPercent(targetPercent);
+      if (parentHandleProgress) {
+        parentHandleProgress(e);
+      }
+    }
+  };
 
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -724,20 +1061,62 @@ const GalleryCard = ({
           return (
             <div key={idx} className="relative flex-none w-full h-full snap-start flex items-center justify-center">
               {isVideo ? (
-                <video
-                  ref={el => { videoRefs.current[idx] = el }}
-                  src={url}
-                  className="w-full h-full object-cover"
-                  loop
-                  muted={isMuted}
-                  playsInline
-                />
+                <div className="relative w-full h-full">
+                  <video
+                    ref={el => { videoRefs.current[idx] = el }}
+                    src={url}
+                    className={`w-full h-full object-cover transition-transform duration-300 ${isMirrored ? 'scale-x-[-1]' : 'scale-x-[1]'}`}
+                    loop
+                    muted={isMuted}
+                    playsInline
+                    onProgress={handleProgress}
+                    onWaiting={() => setIsVideoLoading(true)}
+                    onPlaying={() => { setIsVideoLoading(false); onFirstCardLoaded?.(); }}
+                    onCanPlay={() => { setIsVideoLoading(false); onFirstCardLoaded?.(); }}
+                    onLoadedData={() => { setIsVideoLoading(false); onFirstCardLoaded?.(); }}
+                  />
+                  <AnimatePresence>
+                    {isVideoLoading && (
+                      <motion.div
+                        initial={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.35 }}
+                        className="absolute inset-0 bg-black flex items-center justify-center z-10 overflow-hidden"
+                      >
+                        {/* 썸네일 먼저 선노출 - 원본 선명도 유지 */}
+                        <div 
+                          className="absolute inset-0 bg-cover bg-center opacity-100 scale-100 transition-all duration-300"
+                          style={{ backgroundImage: `url(${post.media[0] || ''})` }}
+                        />
+                        {/* 이미지 위의 어두운 스크림 필터 */}
+                        <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
+                        
+                        {/* Stitch 프리미엄 퍼센티지 원형 로딩 게이지 */}
+                        <div className="relative flex flex-col items-center gap-3 z-20">
+                          <div className="relative w-16 h-16 flex items-center justify-center select-none">
+                            <div className="absolute inset-0 border-4 border-white/10 border-t-[#007AFF] rounded-full animate-spin shadow-[0_0_15px_rgba(0,122,255,0.4)]" />
+                            <span className="text-[12px] text-white font-black tracking-tighter drop-shadow-lg z-10">
+                              {effectiveLoadingPercent}%
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-white font-black tracking-widest uppercase bg-black/55 px-3 py-1 rounded-full border border-white/10 shadow-lg backdrop-blur-xs select-none">
+                            Buffering
+                          </span>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               ) : (
-                <img src={url} alt="" className="w-full h-full object-cover" />
+                <img 
+                  src={url} 
+                  alt="" 
+                  className={`w-full h-full object-cover transition-transform duration-300 ${isMirrored ? 'scale-x-[-1]' : 'scale-x-[1]'}`} 
+                />
               )}
 
               {!isPlaying && isVideo && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                <div className="absolute inset-0 flex items-center justify-center bg-black/20 z-[5]">
                   <div className="w-16 h-16 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center text-white">
                     <span className="material-symbols-outlined text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
                   </div>
@@ -908,6 +1287,24 @@ const GalleryCard = ({
                 : 'text-white border-white/10'
             }`}>
               <SlidersHorizontal size={18} className="drop-shadow-md" />
+            </div>
+          </button>
+
+          {/* Mirror Toggle Button */}
+          <button 
+            className="flex flex-col items-center group" 
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsMirrored(!isMirrored);
+            }}
+            title={t('gallery.mirror_mode') || 'Mirror Mode'}
+          >
+            <div className={`w-9 h-9 rounded-full flex items-center justify-center bg-black/20 backdrop-blur-md border transition-all duration-300 active:scale-90 cursor-pointer ${
+              isMirrored
+                ? 'text-[#007AFF] border-[#007AFF]/50 bg-[#007AFF]/10 shadow-[0_0_8px_rgba(0,122,255,0.4)]'
+                : 'text-white border-white/10'
+            }`}>
+              <FlipHorizontal size={18} className="drop-shadow-md" />
             </div>
           </button>
 

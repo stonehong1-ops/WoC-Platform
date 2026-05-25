@@ -31,7 +31,6 @@ interface FullProfile {
   career?: string;
   partnerStatus?: string;
   allowPhoneCalls?: boolean;
-  allowChatNotifications?: boolean;
   socialLinks?: {
     facebook?: string;
     instagram?: string;

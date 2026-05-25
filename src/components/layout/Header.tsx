@@ -20,7 +20,7 @@ export default function Header() {
   const { location, toggleSelector } = useLocation();
   const { unreadCount: notiUnreadCount } = useNotification();
   const [unreadCount, setUnreadCount] = React.useState(0);
-  const { language, toggleLanguage, t } = useLanguage();
+  const { t } = useLanguage();
 
   React.useEffect(() => {
     if (!user) return;
@@ -62,6 +62,7 @@ export default function Header() {
     '/admin/place': { headlineKey: 'header.place', sub: 'Admin' },
     '/admin/others': { headlineKey: 'header.others', sub: 'Admin' },
     '/admin/pics': { headlineKey: 'header.pics', sub: 'Admin' },
+    '/admin/antigravity': { headlineKey: 'header.antigravity', sub: 'Admin' },
     '/notification': { headlineKey: 'header.notification', sub: 'System' },
     '/search': { headlineKey: 'header.search', sub: 'System' },
     '/live': { headlineKey: 'header.live', sub: 'Activity' },
@@ -111,14 +112,6 @@ export default function Header() {
             <span className="material-symbols-outlined text-on-surface !text-[18px]" data-icon="pin_drop">pin_drop</span>
           </button>
 
-          {/* Language Toggle */}
-          <button 
-            onClick={toggleLanguage}
-            className="relative hover:opacity-70 transition-opacity active:scale-95 duration-100 flex items-center justify-center w-8 h-8"
-          >
-            <span className="font-bold text-[13px] text-on-surface tracking-tight">{language.toUpperCase()}</span>
-          </button>
-
           {/* Chat */}
           <Link 
             href="/chat" 
@@ -130,14 +123,6 @@ export default function Header() {
                 {unreadCount > 99 ? '99+' : unreadCount}
               </span>
             )}
-          </Link>
-
-          {/* Help Desk */}
-          <Link 
-            href="/helpdesk" 
-            className="hover:opacity-70 transition-opacity active:scale-95 duration-100 flex items-center justify-center w-8 h-8"
-          >
-            <span className="material-symbols-outlined text-on-surface !text-[18px]" data-icon="support_agent">support_agent</span>
           </Link>
 
           {/* Search */}

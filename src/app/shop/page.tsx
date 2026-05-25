@@ -38,8 +38,37 @@ const SHOP_FILTER_DEFS: Record<string, { labelKey: string; fullLabelKey?: string
 function ShopPageContent() {
   const { t } = useLanguage();
   const { user, profile } = useAuth();
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
-  const [allVenues, setAllVenues] = useState<Venue[]>([]);
+  // Restore cached products and venues to achieve 0ms initial render
+  const cachedProducts = React.useMemo(() => {
+    if (typeof window !== 'undefined') {
+      const cached = sessionStorage.getItem('woc_shop_all_products');
+      if (cached) {
+        try {
+          return JSON.parse(cached);
+        } catch (e) {
+          console.error('Failed to parse cached shop products:', e);
+        }
+      }
+    }
+    return [];
+  }, []);
+
+  const cachedVenues = React.useMemo(() => {
+    if (typeof window !== 'undefined') {
+      const cached = sessionStorage.getItem('woc_shop_all_venues');
+      if (cached) {
+        try {
+          return JSON.parse(cached);
+        } catch (e) {
+          console.error('Failed to parse cached shop venues:', e);
+        }
+      }
+    }
+    return [];
+  }, []);
+
+  const [allProducts, setAllProducts] = useState<Product[]>(cachedProducts);
+  const [allVenues, setAllVenues] = useState<Venue[]>(cachedVenues);
   const [activeFilter, setActiveFilter] = useState('all');
   const [activeBrand, setActiveBrand] = useState('All');
   const [sortOption, setSortOption] = useState<SortOption>('latest');
@@ -96,14 +125,44 @@ function ShopPageContent() {
 
   // 1. Subscribe to ALL active products (client-side filter/sort)
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const cached = sessionStorage.getItem('woc_shop_all_products');
+      if (cached) {
+        try {
+          setAllProducts(JSON.parse(cached));
+        } catch (e) {
+          console.error('Failed to parse cached products:', e);
+        }
+      }
+    }
+
     const unsub = shopService.subscribeAllProducts((data) => {
       setAllProducts(data);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('woc_shop_all_products', JSON.stringify(data));
+      }
     });
     return () => unsub();
   }, []);
 
   useEffect(() => {
-    const unsub = venueService.subscribeVenues((data) => setAllVenues(data));
+    if (typeof window !== 'undefined') {
+      const cached = sessionStorage.getItem('woc_shop_all_venues');
+      if (cached) {
+        try {
+          setAllVenues(JSON.parse(cached));
+        } catch (e) {
+          console.error('Failed to parse cached venues:', e);
+        }
+      }
+    }
+
+    const unsub = venueService.subscribeVenues((data) => {
+      setAllVenues(data);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('woc_shop_all_venues', JSON.stringify(data));
+      }
+    });
     return () => unsub();
   }, []);
 
@@ -367,6 +426,8 @@ function ShopPageContent() {
                       alt={product.title || product.name}
                       className="absolute inset-0 z-10 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 bg-[#f2f4f4]"
                       src={product.images?.[0] || product.imageUrl}
+                      loading="lazy"
+                      decoding="async"
                       onError={(e) => {
                         e.currentTarget.style.display = 'none';
                       }}

@@ -10,6 +10,7 @@ export interface PosterData {
   endTime: string;
   djName?: string;
   djNameNative?: string;
+  djPhotoUrl?: string; // DJ 프로필 이미지 자동 매핑용
   orgName: string;
   orgNameNative?: string;
   orgPhone?: string;
@@ -77,6 +78,7 @@ export function extractPosterData(social: Social): PosterData {
     endTime: social.endTime,
     djName: social.djName,
     djNameNative: social.djNameNative,
+    djPhotoUrl: (social as any).djPhotoUrl, // social의 djPhotoUrl 매핑
     orgName: social.organizerName,
     orgNameNative: social.organizerNameNative,
     orgPhone: social.organizerPhone,

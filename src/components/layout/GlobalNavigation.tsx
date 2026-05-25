@@ -61,7 +61,7 @@ const BOTTOM_TABS = [
 ];
 
 export default function GlobalNavigation({ children }: { children: React.ReactNode }) {
-  const { language, toggleLanguage, t } = useLanguage();
+  const { t } = useLanguage();
   const pathname = usePathname();
   const [isMyView, setIsMyView] = useState(false);
   const { user, profile } = useAuth();
@@ -219,7 +219,8 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
 
   // Compute effective hidden state based on context and pathname
   const isDetailPage = /^\/(class|shop|people|social|resale|rental|stay|events)\/[^\/]+/.test(pathname);
-  const isHiddenPath = pathname.startsWith('/admin') || pathname.includes('/checkout') || pathname.includes('/register') || isDetailPage;
+  const isAppPage = pathname === '/app' || pathname.startsWith('/app/');
+  const isHiddenPath = pathname === '/' || pathname.startsWith('/admin') || pathname.includes('/checkout') || pathname.includes('/register') || isDetailPage || isAppPage;
   const effectiveIsGlobalNavHidden = isGlobalNavHidden || isHiddenPath;
 
   return (
@@ -271,18 +272,19 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
               {/* Notification */}
               <Link 
                 href="/notification" 
-                className={`w-[32px] h-[32px] rounded-full flex items-center justify-center active:scale-95 transition-all relative ${
+                className={`w-[38px] h-[38px] rounded-full flex items-center justify-center active:scale-95 transition-all relative ${
                   pathname === '/notification' ? 'bg-[#007AFF]/10 text-[#007AFF]' : 'bg-[#F1F5F9] text-[#1E293B]'
                 }`}
+                title={t('notification.title', '알림')}
               >
                 <span 
-                  className="material-symbols-outlined !text-[18px]"
+                  className="material-symbols-outlined !text-[22px]"
                   style={{ fontVariationSettings: pathname === '/notification' ? "'FILL' 1" : "'FILL' 0" }}
                 >
                   notifications
                 </span>
                 {totalNotiCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-[7px] font-black text-white outline outline-2 outline-white animate-in zoom-in">
+                  <span className="absolute -top-1 -right-1 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-red-500 text-[9px] font-black text-white outline outline-2 outline-white animate-pulse">
                     {totalNotiCount > 99 ? '99+' : totalNotiCount}
                   </span>
                 )}
@@ -291,18 +293,19 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
               {/* Chat */}
               <Link 
                 href="/chat" 
-                className={`w-[32px] h-[32px] rounded-full flex items-center justify-center active:scale-95 transition-all relative ${
+                className={`w-[38px] h-[38px] rounded-full flex items-center justify-center active:scale-95 transition-all relative ${
                   pathname.startsWith('/chat') ? 'bg-[#007AFF]/10 text-[#007AFF]' : 'bg-[#F1F5F9] text-[#1E293B]'
                 }`}
+                title={t('chatroom.room_chat', '채팅')}
               >
                 <span 
-                  className="material-symbols-outlined !text-[18px]"
+                  className="material-symbols-outlined !text-[22px]"
                   style={{ fontVariationSettings: pathname.startsWith('/chat') ? "'FILL' 1" : "'FILL' 0" }}
                 >
                   chat_bubble
                 </span>
                 {unreadCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-[7px] font-black text-white outline outline-2 outline-white animate-in zoom-in">
+                  <span className="absolute -top-1 -right-1 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-red-500 text-[9px] font-black text-white outline outline-2 outline-white animate-pulse">
                     {unreadCount > 99 ? '99+' : unreadCount}
                   </span>
                 )}
@@ -322,33 +325,6 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
                   search
                 </span>
               </Link>
-
-              {/* Helpdesk */}
-              <Link 
-                href="/helpdesk" 
-                className={`w-[32px] h-[32px] rounded-full flex items-center justify-center active:scale-95 transition-all ${
-                  pathname === '/helpdesk' ? 'bg-[#007AFF]/10 text-[#007AFF]' : 'bg-[#F1F5F9] text-[#1E293B]'
-                }`}
-              >
-                <span 
-                  className="material-symbols-outlined !text-[18px]"
-                  style={{ fontVariationSettings: pathname === '/helpdesk' ? "'FILL' 1" : "'FILL' 0" }}
-                >
-                  support_agent
-                </span>
-              </Link>
-
-
-              {/* Separator */}
-              <div className="w-[1px] h-[20px] bg-slate-200 mx-0.5" />
-
-              {/* Language Toggle - Rightmost */}
-              <button 
-                onClick={toggleLanguage}
-                className="w-[32px] h-[32px] rounded-full flex items-center justify-center active:scale-95 transition-all bg-[#F1F5F9] text-[#1E293B]"
-              >
-                <span className="font-bold text-[11px] tracking-tight">{language.toUpperCase()}</span>
-              </button>
             </div>
           </div>
 

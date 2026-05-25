@@ -35,6 +35,12 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      document.documentElement.lang = language === 'KR' ? 'ko' : 'en';
+    }
+  }, [language]);
+
   const setLanguage = (lang: Language) => {
     setLangState(lang);
     localStorage.setItem('woc_language', lang);

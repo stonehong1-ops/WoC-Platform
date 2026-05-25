@@ -33,12 +33,28 @@ export default function ClassPortal() {
   const { t, language } = useLanguage();
   
   const [activeTab, setActiveTab] = useState<'TODAY' | 'WEEK' | 'MONTH' | 'SPECIAL'>('TODAY');
-  const [loading, setLoading] = useState(true);
-  const [groups, setGroups] = useState<Group[]>([]);
-  const [venues, setVenues] = useState<Venue[]>([]);
-  const [allClasses, setAllClasses] = useState<any[]>([]);
-  const [specialClasses, setSpecialClasses] = useState<any[]>([]);
-  const [allDiscountsGlobal, setAllDiscountsGlobal] = useState<any[]>([]);
+  
+  // Restore cached class portal data to achieve 0ms initial render
+  const cachedPortal = React.useMemo(() => {
+    if (typeof window !== 'undefined') {
+      const cached = sessionStorage.getItem('woc_class_portal_data');
+      if (cached) {
+        try {
+          return JSON.parse(cached);
+        } catch (e) {
+          console.error('Failed to parse cached class portal data:', e);
+        }
+      }
+    }
+    return null;
+  }, []);
+
+  const [loading, setLoading] = useState(cachedPortal ? false : true);
+  const [groups, setGroups] = useState<Group[]>(cachedPortal?.groups || []);
+  const [venues, setVenues] = useState<Venue[]>(cachedPortal?.venues || []);
+  const [allClasses, setAllClasses] = useState<any[]>(cachedPortal?.allClasses || []);
+  const [specialClasses, setSpecialClasses] = useState<any[]>(cachedPortal?.specialClasses || []);
+  const [allDiscountsGlobal, setAllDiscountsGlobal] = useState<any[]>(cachedPortal?.allDiscountsGlobal || []);
   
   const { user, profile } = useAuth();
   
@@ -72,7 +88,19 @@ export default function ClassPortal() {
   const [selectedDetailClass, setSelectedDetailClass] = useState<any | null>(null);
   const [chatOverlayRoomId, setChatOverlayRoomId] = useState<string | null>(null);
 
-  const [userBookings, setUserBookings] = useState<BaseBooking[]>([]);
+  const [userBookings, setUserBookings] = useState<BaseBooking[]>(() => {
+    if (typeof window !== 'undefined' && user) {
+      const cached = sessionStorage.getItem(`woc_user_bookings_${user.uid}`);
+      if (cached) {
+        try {
+          return JSON.parse(cached);
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+    return [];
+  });
   const [checkoutInitialStep, setCheckoutInitialStep] = useState<'summary' | 'payment' | 'complete' | undefined>(undefined);
   const [checkoutInitialBookingId, setCheckoutInitialBookingId] = useState<string | undefined>(undefined);
   const [checkoutInitialOrderNumber, setCheckoutInitialOrderNumber] = useState<string | undefined>(undefined);
@@ -83,15 +111,34 @@ export default function ClassPortal() {
       setUserBookings([]);
       return;
     }
+
+    // 0ms Cache Load immediately when user is verified
+    if (typeof window !== 'undefined') {
+      const cached = sessionStorage.getItem(`woc_user_bookings_${user.uid}`);
+      if (cached) {
+        try {
+          setUserBookings(JSON.parse(cached));
+        } catch (e) {
+          console.error('Failed to parse cached bookings:', e);
+        }
+      }
+    }
+
     const unsub = bookingService.subscribeToUserBookings(user.uid, (bookings) => {
       setUserBookings(bookings);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem(`woc_user_bookings_${user.uid}`, JSON.stringify(bookings));
+      }
     });
     return () => unsub();
   }, [user]);
 
   useEffect(() => {
     const fetchData = async () => {
-      setLoading(true);
+      const hasCache = typeof window !== 'undefined' && sessionStorage.getItem('woc_class_portal_data');
+      if (!hasCache) {
+        setLoading(true);
+      }
       try {
         const [groupsData, allData, specialData, venuesData, discountsData] = await Promise.all([
           groupService.getGroups(),
@@ -106,9 +153,19 @@ export default function ClassPortal() {
         setSpecialClasses(specialData);
         setVenues(venuesData || []);
         setAllDiscountsGlobal(discountsData);
+        setLoading(false);
+
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('woc_class_portal_data', JSON.stringify({
+            groups: groupsData,
+            allClasses: allData,
+            specialClasses: specialData,
+            venues: venuesData || [],
+            allDiscountsGlobal: discountsData
+          }));
+        }
       } catch (error) {
         console.error("Failed to fetch class portal data:", error);
-      } finally {
         setLoading(false);
       }
     };

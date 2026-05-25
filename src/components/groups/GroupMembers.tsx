@@ -13,17 +13,40 @@ interface MemberWithProfile extends Member {
 }
 
 interface GroupMembersProps {
+  groupId?: string;
   members: Member[];
   memberCount: number;
   onMemberClick?: (member: Member) => void;
   onClose: () => void;
 }
 
-export default function GroupMembers({ members, memberCount, onMemberClick, onClose }: GroupMembersProps) {
+export default function GroupMembers({ groupId, members, memberCount, onMemberClick, onClose }: GroupMembersProps) {
   const { t, formatDate, formatRelativeTime } = useLanguage();
   const [activeSubTab, setActiveSubTab] = useState('Member');
-  const [membersWithProfiles, setMembersWithProfiles] = useState<MemberWithProfile[]>([]);
-  const [loading, setLoading] = useState(true);
+  
+  // Get cached members to achieve 0ms initial render
+  const getCachedMembers = (): MemberWithProfile[] => {
+    if (typeof window !== 'undefined' && groupId) {
+      const cached = sessionStorage.getItem(`woc_group_members_${groupId}`);
+      if (cached) {
+        try {
+          return JSON.parse(cached);
+        } catch (e) {
+          console.error('Failed to parse cached group members:', e);
+        }
+      }
+    }
+    return [];
+  };
+
+  const cachedData = getCachedMembers();
+
+  const [membersWithProfiles, setMembersWithProfiles] = useState<MemberWithProfile[]>(() => {
+    return cachedData.length > 0 ? cachedData : [];
+  });
+  const [loading, setLoading] = useState(() => {
+    return cachedData.length > 0 ? false : true;
+  });
   const [searchQuery, setSearchQuery] = useState('');
   
   const { user, profile } = useAuth();
@@ -43,7 +66,11 @@ export default function GroupMembers({ members, memberCount, onMemberClick, onCl
   useEffect(() => {
     let isMounted = true;
     const fetchProfiles = async () => {
-      setLoading(true);
+      const hasCache = typeof window !== 'undefined' && groupId && sessionStorage.getItem(`woc_group_members_${groupId}`);
+      if (!hasCache) {
+        setLoading(true);
+      }
+      
       const withProfiles = await Promise.all(members.map(async (member) => {
         try {
           const { userService } = await import('@/lib/firebase/userService');
@@ -60,11 +87,14 @@ export default function GroupMembers({ members, memberCount, onMemberClick, onCl
       if (isMounted) {
         setMembersWithProfiles(withProfiles);
         setLoading(false);
+        if (typeof window !== 'undefined' && groupId) {
+          sessionStorage.setItem(`woc_group_members_${groupId}`, JSON.stringify(withProfiles));
+        }
       }
     };
     fetchProfiles();
     return () => { isMounted = false; };
-  }, [members]);
+  }, [members, groupId]);
 
   const getMillis = (date: any): number => {
     if (!date) return 0;
