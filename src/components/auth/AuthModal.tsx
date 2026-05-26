@@ -169,19 +169,13 @@ export default function AuthModal() {
       setTimeout(() => {
         if (lastContext) {
           localStorage.removeItem('woc_context');
-          // Skip push if already on the target page to prevent flicker
-          if (currentPathname !== lastContext) {
-            router.push(lastContext);
-          }
+          window.location.replace(lastContext);
         } else {
-          // Skip push if already on /social to prevent flicker
-          if (currentPathname !== '/social') {
-            router.push('/social');
-          }
+          window.location.replace('/live');
         }
       }, 50);
     }
-  }, [user, profile, showLogin, handleClose, router, currentPathname]);
+  }, [user, profile, showLogin, handleClose, currentPathname]);
 
   if (!showLogin) return null;
 
@@ -208,9 +202,9 @@ export default function AuthModal() {
         setTimeout(() => {
           if (lastContext) {
             localStorage.removeItem('woc_context');
-            if (currentPathname !== lastContext) router.push(lastContext);
+            window.location.replace(lastContext);
           } else {
-            if (currentPathname !== '/social') router.push('/social');
+            window.location.replace('/live');
           }
         }, 50);
       } else {
@@ -228,9 +222,9 @@ export default function AuthModal() {
             setTimeout(() => {
               if (lastContext) {
                 localStorage.removeItem('woc_context');
-                if (currentPathname !== lastContext) router.push(lastContext);
+                window.location.replace(lastContext);
               } else {
-                if (currentPathname !== '/social') router.push('/social');
+                window.location.replace('/live');
               }
             }, 50);
           } else {
@@ -479,7 +473,7 @@ export default function AuthModal() {
         // Already registered user — close modal and navigate
         handleClose();
         setTimeout(() => {
-          router.push('/social');
+          window.location.replace('/live');
         }, 50);
       } else {
         setStep('FORM');
@@ -729,7 +723,8 @@ export default function AuthModal() {
                 </div>
                 <input 
                   type="tel"
-                  autoComplete="tel"
+                  autoComplete="off"
+                  data-lpignore="true"
                   inputMode="tel"
                   autoFocus
                   value={phoneNumber}
@@ -760,24 +755,64 @@ export default function AuthModal() {
             </button>
           </div>
         ) : step === 'PHONE_VERIFY' ? (
-          <div className="animate-in slide-in-from-bottom-4 duration-500 space-y-4">
+          <div className="animate-in slide-in-from-bottom-4 duration-500 space-y-5">
             <div>
               <label className="block text-sm font-bold text-gray-900 mb-2">{t('auth.code_label')}</label>
-              <input 
-                autoFocus
-                ref={(input) => { if (input) input.focus(); }}
-                type="text"
-                autoComplete="one-time-code"
-                inputMode="numeric"
-                value={verificationCode}
-                onChange={(e) => setVerificationCode(e.target.value.replace(/[^0-9]/g, ''))}
-                placeholder="●●●●●●"
-                className="w-full h-14 px-4 text-center tracking-[0.5em] text-xl font-bold bg-gray-50 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder-gray-200/40 text-gray-800"
-              />
+              
+              {/* OTP 6-Digit Container Area */}
+              <div className="relative w-full h-16 flex items-center justify-between gap-2.5 select-none">
+                
+                {/* 1. Behind-the-scenes Real Hidden Input */}
+                <input 
+                  type="text"
+                  autoComplete="one-time-code"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={verificationCode}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9]/g, '');
+                    setVerificationCode(val);
+                  }}
+                  disabled={isLoading}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-default z-20 outline-none"
+                  autoFocus
+                  ref={(input) => { if (input && !isLoading) input.focus(); }}
+                />
+
+                {/* 2. Visual Premium 6 Boxes */}
+                {Array.from({ length: 6 }).map((_, idx) => {
+                  const digit = verificationCode[idx] || '';
+                  const isActive = verificationCode.length === idx;
+                  return (
+                    <div 
+                      key={idx}
+                      className={`flex-1 h-full rounded-2xl border-2 bg-gray-50/50 flex items-center justify-center text-2xl font-extrabold transition-all duration-200 ${
+                        digit ? 'border-blue-600 bg-white text-blue-600 shadow-sm' : 'border-gray-200 text-gray-800'
+                      } ${isActive && !isLoading ? 'border-blue-500 bg-white ring-2 ring-blue-500/20' : ''}`}
+                    >
+                      {/* Character display with subtle animation if populated */}
+                      <span className={digit ? 'animate-in zoom-in-75 duration-100' : 'text-gray-300'}>
+                        {digit || (isActive && !isLoading ? 'I' : '•')}
+                      </span>
+                    </div>
+                  );
+                })}
+
+                {/* 3. Real-Time Processing Blur Lock & Loader Overlay */}
+                {isLoading && (
+                  <div className="absolute inset-0 bg-white/80 backdrop-blur-[1px] rounded-2xl z-30 flex items-center justify-center gap-2.5 border border-blue-100 transition-all duration-300">
+                    <span className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></span>
+                    <span className="text-sm font-bold text-blue-600 tracking-tight animate-pulse">인증번호 확인 중...</span>
+                  </div>
+                )}
+
+              </div>
+              
               <p className="mt-3 text-xs text-blue-600 leading-relaxed font-bold break-keep">
                 {t('auth.enter_6_digits')}
               </p>
             </div>
+            
             <button 
               disabled={isLoading}
               onClick={handleVerifyCode}

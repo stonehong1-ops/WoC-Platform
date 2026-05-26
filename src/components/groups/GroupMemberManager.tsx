@@ -1,5 +1,6 @@
 'use client';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { toast } from 'sonner';
 
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -35,13 +36,17 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
 
   // Handle click outside to close menu
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: Event) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setOpenMenuId(null);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
   }, []);
 
   // Fetch all members with profiles
@@ -118,6 +123,28 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
     }
   };
 
+  const updateGroupMemberRole = async (userId: string, newRole: string) => {
+    try {
+      const memberRef = doc(db, 'groups', group.id, 'members', userId);
+      await updateDoc(memberRef, { role: newRole });
+      
+      setMembers(prev => prev.map(m => {
+        if (m.id === userId) {
+          return {
+            ...m,
+            role: newRole
+          };
+        }
+        return m;
+      }));
+      setOpenMenuId(null);
+      toast.success("역할이 성공적으로 변경되었습니다.");
+    } catch (error) {
+      console.error("Error updating member role:", error);
+      alert("역할 변경 중 오류가 발생했습니다.");
+    }
+  };
+
   const deleteMember = async (userId: string) => {
     if (!window.confirm("Are you sure you want to remove this member from the group? They will also be removed from the group chat.")) {
       return;
@@ -175,10 +202,9 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
     
     if (!nameMatch) return false;
 
-    const isAdmin = member.role === 'owner' || member.id === group.ownerId || profile?.systemRole === 'admin' || profile?.isAdmin;
-    const isInstructor = member.role === 'instructor' || profile?.isInstructor;
-    const isStaff = member.role === 'staff' || member.role === 'moderator' || profile?.isStaff || profile?.systemRole === 'staff' || 
-                    profile?.isDj || profile?.isStayHost || profile?.isServiceProvider;
+    const isAdmin = member.role === 'owner' || member.id === group.ownerId;
+    const isInstructor = member.role === 'instructor';
+    const isStaff = member.role === 'staff' || member.role === 'moderator';
     
     if (activeSubTab === 'Owner') return isAdmin && member.status === 'active';
     if (activeSubTab === 'Instructor') return isInstructor && !isAdmin && member.status === 'active';
@@ -234,9 +260,9 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
       danceRole: member.profile?.role,
       groupRole: member.role,
       gender: member.profile?.gender,
-      isAdmin: member.profile?.isAdmin || member.profile?.systemRole === 'admin' || member.role === 'owner' || member.id === group.ownerId,
-      isStaff: member.profile?.isStaff || member.profile?.systemRole === 'staff',
-      isInstructor: member.profile?.isInstructor,
+      isAdmin: member.role === 'owner' || member.id === group.ownerId,
+      isStaff: member.role === 'staff' || member.role === 'moderator',
+      isInstructor: member.role === 'instructor',
       isDj: member.profile?.isDj,
       isStayHost: member.profile?.isStayHost,
       isServiceProvider: member.profile?.isServiceProvider,
@@ -285,7 +311,10 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
           {/* Action Menu */}
           <div className="relative">
             <button 
-              onClick={() => setOpenMenuId(openMenuId === member.id ? null : member.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpenMenuId(openMenuId === member.id ? null : member.id);
+              }}
               className="text-[#6c759e] hover:text-[#0057bd] transition-colors"
             >
               <span className="material-symbols-outlined">more_vert</span>
@@ -297,50 +326,37 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
                 className="absolute right-0 top-8 w-56 bg-white rounded-xl shadow-2xl border border-[#e4e7ff] z-[100] max-h-[400px] flex flex-col"
               >
                 <div className="flex-1 overflow-y-auto py-2">
-                {/* Section: System Role */}
+                {/* Section: Group Role */}
                 <div className="px-4 py-2 border-b border-[#e4e7ff]">
-                  <p className="text-[10px] font-bold text-[#6c759e] tracking-widest uppercase mb-2">System Role</p>
+                  <p className="text-[10px] font-bold text-[#6c759e] tracking-widest uppercase mb-2">Group Role</p>
                   <button 
-                    onClick={() => updateUserInfo(member.id, { systemRole: 'admin', isAdmin: true, isStaff: false })}
-                    className={`w-full flex items-center justify-between py-2 text-[13px] font-medium transition-colors ${user.isAdmin ? 'text-[#b31b25] font-bold' : 'text-[#242c51] hover:text-[#b31b25]'}`}
+                    onClick={() => updateGroupMemberRole(member.id, 'owner')}
+                    className={`w-full flex items-center justify-between py-2 text-[13px] font-medium transition-colors ${member.role === 'owner' ? 'text-[#b31b25] font-bold' : 'text-[#242c51] hover:text-[#b31b25]'}`}
                   >
-                    Admin
-                    {user.isAdmin && <span className="material-symbols-outlined text-[#b31b25] text-lg">verified</span>}
+                    Owner
+                    {member.role === 'owner' && <span className="material-symbols-outlined text-[#b31b25] text-lg">verified</span>}
                   </button>
                   <button 
-                    onClick={() => updateUserInfo(member.id, { systemRole: 'staff', isStaff: true, isAdmin: false })}
-                    className={`w-full flex items-center justify-between py-2 text-[13px] font-medium transition-colors ${user.isStaff && !user.isAdmin ? 'text-[#0057bd] font-bold' : 'text-[#242c51] hover:text-[#0057bd]'}`}
+                    onClick={() => updateGroupMemberRole(member.id, 'staff')}
+                    className={`w-full flex items-center justify-between py-2 text-[13px] font-medium transition-colors ${member.role === 'staff' ? 'text-[#0057bd] font-bold' : 'text-[#242c51] hover:text-[#0057bd]'}`}
                   >
                     Staff
-                    {user.isStaff && !user.isAdmin && <span className="material-symbols-outlined text-[#0057bd] text-lg">verified</span>}
+                    {member.role === 'staff' && <span className="material-symbols-outlined text-[#0057bd] text-lg">verified</span>}
                   </button>
                   <button 
-                    onClick={() => updateUserInfo(member.id, { systemRole: 'member', isStaff: false, isAdmin: false })}
-                    className={`w-full flex items-center justify-between py-2 text-[13px] font-medium transition-colors ${!user.isStaff && !user.isAdmin ? 'text-[#0057bd] font-bold' : 'text-[#242c51] hover:text-[#0057bd]'}`}
+                    onClick={() => updateGroupMemberRole(member.id, 'instructor')}
+                    className={`w-full flex items-center justify-between py-2 text-[13px] font-medium transition-colors ${member.role === 'instructor' ? 'text-[#0057bd] font-bold' : 'text-[#242c51] hover:text-[#0057bd]'}`}
+                  >
+                    Instructor (강사)
+                    {member.role === 'instructor' && <span className="material-symbols-outlined text-[#0057bd] text-lg">verified</span>}
+                  </button>
+                  <button 
+                    onClick={() => updateGroupMemberRole(member.id, 'member')}
+                    className={`w-full flex items-center justify-between py-2 text-[13px] font-medium transition-colors ${member.role === 'member' || !member.role ? 'text-[#0057bd] font-bold' : 'text-[#242c51] hover:text-[#0057bd]'}`}
                   >
                     Member
-                    {!user.isStaff && !user.isAdmin && <span className="material-symbols-outlined text-[#0057bd] text-lg">verified</span>}
+                    {(member.role === 'member' || !member.role) && <span className="material-symbols-outlined text-[#0057bd] text-lg">verified</span>}
                   </button>
-                </div>
-
-                {/* Section: Staff Roles */}
-                <div className="px-4 py-2 border-b border-[#e4e7ff]">
-                  <p className="text-[10px] font-bold text-[#6c759e] tracking-widest uppercase mb-2">Service Staff Roles</p>
-                  {[
-                    { key: 'isInstructor', label: 'Instructor', value: user.isInstructor },
-                    { key: 'isDj', label: 'DJ', value: user.isDj },
-                    { key: 'isStayHost', label: 'Stay Host', value: user.isStayHost },
-                    { key: 'isServiceProvider', label: 'Service Provider', value: user.isServiceProvider },
-                  ].map((role) => (
-                    <button 
-                      key={role.key}
-                      onClick={() => updateUserInfo(member.id, { [role.key]: !role.value } as any)}
-                      className={`w-full flex items-center justify-between py-2 text-[13px] font-medium transition-colors ${role.value ? 'text-[#0057bd] font-bold' : 'text-[#242c51] hover:text-[#0057bd]'}`}
-                    >
-                      {role.label}
-                      {role.value && <span className="material-symbols-outlined text-[#0057bd] text-lg">check_circle</span>}
-                    </button>
-                  ))}
                 </div>
 
                 </div>

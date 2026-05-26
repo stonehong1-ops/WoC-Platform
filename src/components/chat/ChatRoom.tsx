@@ -15,8 +15,9 @@ import PollCard from './PollCard';
 import EmojiParticleCanvas, { EmojiParticleCanvasRef } from './EmojiParticleCanvas';
 import GroupMembersPopup from './GroupMembersPopup';
 import { motion, AnimatePresence } from 'framer-motion';
-import { doc, onSnapshot, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/clientApp';
+import { groupService } from '@/lib/firebase/groupService';
 
 import UserProfileClickable from '../common/UserProfileClickable';
 import UserAvatar from '../common/UserAvatar';
@@ -107,6 +108,126 @@ const getGroupedReactions = (reactions: Record<string, string> = {}) => {
   return Object.entries(counts);
 };
 
+
+function GroupJoinActionCard({ message }: { message: ChatMessage }) {
+  const { t } = useLanguage();
+  const { user, profile } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const metadata = message.metadata || {};
+  const { actionType, groupId, userId, status = 'pending', groupName = 'Group' } = metadata;
+  
+  // 권한 판별: 보낸 사람이 아닌 수신자 측에서 결정을 내려야 함
+  const canDecide = user?.uid && message.senderId !== user.uid;
+
+  const handleDecision = async (decision: 'approved' | 'rejected') => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      if (actionType === 'group_join_request') {
+        if (decision === 'approved') {
+          await groupService.approveMember(groupId, userId);
+          toast.success("가입 승인이 완료되었습니다.");
+        } else {
+          await groupService.rejectMember(groupId, userId);
+          toast.success("가입 승인이 거절되었습니다.");
+        }
+      } else if (actionType === 'group_invite') {
+        if (decision === 'approved') {
+          const { userService } = await import('@/lib/firebase/userService');
+          const userProfile = await userService.getUserById(userId);
+          const memberData = {
+            name: userProfile?.nickname || 'Anonymous',
+            avatar: userProfile?.photoURL || '',
+            role: 'member',
+            joinedAt: Date.now()
+          };
+          await groupService.joinGroup(groupId, userId, memberData);
+          toast.success("초대를 수락하여 가입이 완료되었습니다!");
+        } else {
+          toast.success("초대를 거절하셨습니다.");
+        }
+      }
+
+      const msgRef = doc(db, 'chat_messages', message.id);
+      await updateDoc(msgRef, {
+        'metadata.status': decision
+      });
+    } catch (e) {
+      console.error("Decision update failed:", e);
+      toast.error("처리에 실패했습니다. 다시 시도해 주세요.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const isRequest = actionType === 'group_join_request';
+
+  return (
+    <div className="bg-white dark:bg-zinc-900 rounded-3xl p-5 border border-zinc-100 dark:border-zinc-800 shadow-md min-w-[280px] max-w-[340px] space-y-4 text-left">
+      <div className="flex items-center gap-3">
+        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
+          isRequest ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20' : 'bg-purple-50 text-purple-600 dark:bg-purple-900/20'
+        }`}>
+          <span className="material-symbols-outlined text-2xl font-bold">
+            {isRequest ? 'person_add' : 'mail'}
+          </span>
+        </div>
+        <div>
+          <h4 className="text-sm font-black text-gray-900 dark:text-white">
+            {isRequest ? "그룹 가입 승인 요청" : "그룹 초대 알림"}
+          </h4>
+          <span className="text-[10px] font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-widest leading-none">
+            {groupName}
+          </span>
+        </div>
+      </div>
+
+      <p className="text-[13px] leading-relaxed text-gray-700 dark:text-zinc-300 font-medium">
+        {message.text}
+      </p>
+
+      <div className="pt-2">
+        {status === 'pending' ? (
+          canDecide ? (
+            <div className="flex gap-2">
+              <button
+                disabled={loading}
+                onClick={() => handleDecision('rejected')}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-zinc-700 text-xs font-bold text-gray-600 dark:text-zinc-400 hover:bg-gray-50 active:scale-95 transition-all"
+              >
+                거절
+              </button>
+              <button
+                disabled={loading}
+                onClick={() => handleDecision('approved')}
+                className="flex-1 py-2.5 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary/90 active:scale-95 transition-all shadow-sm"
+              >
+                {loading ? "처리 중..." : "수락"}
+              </button>
+            </div>
+          ) : (
+            <div className="text-center py-2 bg-gray-50 dark:bg-zinc-800/50 rounded-xl">
+              <span className="text-[11px] font-bold text-gray-400 dark:text-zinc-500">
+                {isRequest ? "대표자의 결정을 기다리는 중입니다" : "상대방의 수락 결정을 기다리는 중입니다"}
+              </span>
+            </div>
+          )
+        ) : (
+          <div className={`text-center py-2.5 rounded-xl text-xs font-bold ${
+            status === 'approved' 
+              ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400' 
+              : 'bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400'
+          }`}>
+            {status === 'approved' 
+              ? (isRequest ? "가입이 수락되었습니다" : "초대를 수락하여 가입되었습니다") 
+              : (isRequest ? "가입이 거절되었습니다" : "초대를 거절하셨습니다")}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 interface ChatRoomProps {
   roomId: string;
   onBack: () => void;
@@ -132,6 +253,9 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
     return [];
   });
   const [inputText, setInputText] = useState('');
+  const [isInputVisible, setIsInputVisible] = useState(true);
+  const lastScrollTopRef = useRef<number>(0);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [otherUser, setOtherUser] = useState<any>(null);
   const [otherUsers, setOtherUsers] = useState<any[]>([]);
 
@@ -550,6 +674,13 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
   const [meetupMaxCapacity, setMeetupMaxCapacity] = useState('5');
   const [meetupDescription, setMeetupDescription] = useState('');
 
+  // 약속 생성 시 정원의 기본값을 실제 톡방 참여 인원수로 동적 할당
+  useEffect(() => {
+    if (isMeetupModalOpen && room?.participants) {
+      setMeetupMaxCapacity(room.participants.length.toString());
+    }
+  }, [isMeetupModalOpen, room]);
+
   const [isSettlementModalOpen, setIsSettlementModalOpen] = useState(false);
   const [settlementTitle, setSettlementTitle] = useState('');
   const [settlementTotalAmount, setSettlementTotalAmount] = useState('');
@@ -919,11 +1050,37 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
   }, [messages]);
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    if (e.currentTarget.scrollTop === 0 && messages.length >= messageLimit) {
-      prevScrollHeightRef.current = e.currentTarget.scrollHeight;
+    const target = e.currentTarget;
+    const currentScrollTop = target.scrollTop;
+    const scrollHeight = target.scrollHeight;
+    const clientHeight = target.clientHeight;
+
+    if (currentScrollTop === 0 && messages.length >= messageLimit) {
+      prevScrollHeightRef.current = scrollHeight;
       setIsLoadingMore(true);
       setMessageLimit(prev => prev + 50);
     }
+
+    // 스마트 스크롤 숨김/노출 감지 로직 (Immersive dynamic scroll bar)
+    const isAtBottom = currentScrollTop + clientHeight >= scrollHeight - 80;
+    
+    if (isAtBottom) {
+      setIsInputVisible(true);
+    } else {
+      const lastScrollTop = lastScrollTopRef.current;
+      // 스크롤 방향 감지 (임계값 5px 이상 움직였을 때만 판정하여 불필요한 떨림 방지)
+      if (Math.abs(currentScrollTop - lastScrollTop) > 5) {
+        if (currentScrollTop > lastScrollTop) {
+          // 아래로 스크롤 (최신 대화 방향) -> 입력창 노출
+          setIsInputVisible(true);
+        } else {
+          // 위로 스크롤 (과거 대화 방향) -> 입력창 숨김
+          setIsInputVisible(false);
+        }
+      }
+    }
+    
+    lastScrollTopRef.current = currentScrollTop;
   };
 
   // 3. Send Logic
@@ -1549,7 +1706,7 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
                 </div>
               )}
 
-              <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} group max-w-[85%] ${isOwn ? 'ml-auto' : ''}`}>
+              <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} group max-w-[85%] ${isOwn ? 'ml-auto mr-2' : 'mr-auto ml-2'}`}>
                 {/* Sender Name */}
                 {!isOwn && (
                   <div className="mb-2 ml-1">
@@ -1580,15 +1737,13 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
                       }
                     }}
                     className={`relative text-[14px] font-medium leading-relaxed transition-all duration-300 ${
-                      !msg.isDeleted && msg.type === 'sticker'
+                      !msg.isDeleted && (msg.type === 'sticker' || msg.type === 'meetup' || msg.type === 'poll' || msg.type === 'remittance')
                         ? 'bg-transparent shadow-none border-none px-0 py-0'
                         : !msg.isDeleted && (msg.type === 'image' || msg.type === 'video')
                           ? `rounded-[20px] overflow-hidden ${isOwn ? 'rounded-tr-sm' : 'rounded-tl-sm'} bg-transparent shadow-sm`
                           : `px-5 py-3.5 rounded-3xl shadow-sm ${
                               isOwn 
-                                ? (isAllRead
-                                    ? 'bg-blue-100 text-blue-900 rounded-tr-sm border border-blue-200/50' 
-                                    : 'bg-primary text-white rounded-tr-sm') 
+                                ? 'bg-[#FEE500] text-gray-900 rounded-tr-sm border border-[#e2cc00]/25' 
                                 : 'bg-white border border-gray-100 text-gray-800 rounded-tl-sm hover:border-primary/20'
                             } ${isMessageMentionsMe(msg) ? 'mention-glow' : ''}`
                     } ${menuMsgId === msg.id ? 'scale-[1.02] shadow-xl' : ''}`}
@@ -1642,6 +1797,8 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
                       <SettlementCard message={msg} />
                     ) : msg.type === 'poll' ? (
                       <PollCard message={msg} />
+                    ) : msg.metadata?.actionType === 'group_join_request' || msg.metadata?.actionType === 'group_invite' ? (
+                      <GroupJoinActionCard message={msg} />
                     ) : msg.type === 'sticker' ? (
                       <div className="py-1 select-none pointer-events-none animate-in zoom-in-50 duration-300">
                         <img 
@@ -1918,7 +2075,16 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
         </AnimatePresence>
 
         {/* Kakao-style Integrated Input Area */}
-        <div className="w-full bg-white border-t border-gray-200/80 p-2.5 pb-3 flex flex-col shrink-0">
+        <motion.div 
+          initial={false}
+          animate={{
+            height: isInputVisible ? 'auto' : 0,
+            opacity: isInputVisible ? 1 : 0,
+            y: isInputVisible ? 0 : 80
+          }}
+          transition={{ type: 'spring', damping: 30, stiffness: 250 }}
+          className="w-full bg-white border-t border-gray-200/80 px-3 py-2 flex flex-col shrink-0 overflow-hidden"
+        >
           <input 
             type="file" 
             ref={fileInputRef} 
@@ -1949,239 +2115,218 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
             accept="video/*"
           />
 
-          {/* Line 1: Rich Text Input (No Border) */}
-          <div className="w-full min-h-[48px] sm:min-h-[56px] relative">
-            {/* Smart Mention Suggestion Popup Menu */}
-            <AnimatePresence>
-              {isMentionOpen && filteredMentionTargets.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 15, scale: 0.98 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.98 }}
-                  className="absolute bottom-full left-0 right-0 mb-3 bg-white/95 backdrop-blur-md border border-gray-100 rounded-3xl p-3 shadow-xl z-[150] flex flex-col gap-1.5 max-h-[220px] overflow-y-auto no-scrollbar dark:bg-zinc-900/95 dark:border-zinc-800 text-left"
-                >
-                  <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-2 pb-1 border-b border-gray-100/50 dark:border-zinc-800">
-                    {t('poll.options_label', '멘션 대상 선택')}
-                  </div>
-                  {filteredMentionTargets.map((target) => (
-                    <button
-                      key={target.id}
-                      type="button"
-                      onClick={() => handleSelectMention(target.name)}
-                      className="w-full flex items-center justify-between p-2 rounded-2xl hover:bg-primary/5 active:scale-99 transition-all text-left group"
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        {target.isRole ? (
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white shrink-0 shadow-sm ${
-                            target.id === 'all' 
-                              ? 'bg-gradient-to-br from-pink-500 to-rose-500' 
-                              : target.id === 'admins'
-                                ? 'bg-gradient-to-br from-amber-400 to-orange-500'
-                                : 'bg-gradient-to-br from-emerald-400 to-teal-500'
-                          }`}>
-                            <span className="material-symbols-outlined text-[18px]">{target.icon}</span>
-                          </div>
-                        ) : (
-                          target.icon ? (
-                            <img src={target.icon} className="w-8 h-8 rounded-full object-cover shrink-0 shadow-sm" alt="" />
-                          ) : (
-                            <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 font-black text-xs uppercase shadow-sm">
-                              {target.name.charAt(0)}
-                            </div>
-                          )
-                        )}
-                        
-                        <div className="min-w-0 flex flex-col justify-center">
-                          <span className={`text-[13px] font-black leading-none mb-0.5 truncate ${
-                            target.isRole
-                              ? target.id === 'all'
-                                ? 'text-pink-500'
-                                : target.id === 'admins'
-                                  ? 'text-amber-600 dark:text-amber-500'
-                                  : 'text-emerald-600 dark:text-emerald-500'
-                              : 'text-gray-800 dark:text-zinc-100'
-                          }`}>
-                            {target.label}
-                          </span>
-                          <span className="text-[10px] text-gray-400 font-bold truncate">{target.desc}</span>
-                        </div>
-                      </div>
-                      
-                      <span className="material-symbols-outlined text-[16px] text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity pr-1">
-                        arrow_forward_ios
-                      </span>
-                    </button>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            <textarea 
-              value={inputText}
-              onChange={(e) => {
-                handleInputChange(e.target.value);
-                if (user && roomId) {
-                  const now = Date.now();
-                  if (now - lastTypingTimeRef.current > 2000) {
-                    chatService.setTypingStatus(roomId, user.uid, true);
-                    lastTypingTimeRef.current = now;
-                  }
-                  if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-                  typingTimeoutRef.current = setTimeout(() => {
-                    chatService.setTypingStatus(roomId, user.uid, false);
-                    lastTypingTimeRef.current = 0;
-                  }, 2000);
-                }
-              }}
-              onFocus={() => {
-                setIsInputFocused(true);
-                setIsStickerDrawerOpen(false);
-                setIsFeatureDrawerOpen(false);
-              }}
-              onBlur={() => {
-                setTimeout(() => setIsInputFocused(false), 150);
-              }}
-              disabled={isRecording}
-              placeholder={isRecording ? t('chatroom.recording') : t('chatroom.type_message')}
-              className="w-full bg-transparent border-none focus:ring-0 focus:border-none text-[14px] sm:text-[15px] leading-[22px] font-medium placeholder:text-gray-400 text-gray-900 resize-none py-1 px-1 no-scrollbar disabled:opacity-50 min-h-[38px] sm:min-h-[46px]"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
-            />
-          </div>
-
-          {/* Line 2: Toolbar & Send Button */}
-          <div className="flex justify-between items-center w-full mt-1">
-            {/* Left Toolbar Icons */}
-            <div className="flex items-center gap-4 sm:gap-5.5">
-              {/* Plus More Feature */}
+          {/* 단층 가로 1줄 flex 구조 */}
+          <div className="flex items-center gap-2.5 w-full py-0.5">
+            {/* 1. Left Toolbar Buttons */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              {/* Plus Button */}
               <button 
                 disabled={isRecording}
                 onClick={() => {
                   setIsFeatureDrawerOpen(!isFeatureDrawerOpen);
                   setIsStickerDrawerOpen(false);
                 }}
-                className={`w-7 h-7 flex items-center justify-center transition-all ${
-                  isFeatureDrawerOpen ? 'text-primary scale-110' : 'text-gray-400 hover:text-gray-600'
+                className={`w-9 h-9 flex items-center justify-center rounded-full transition-all ${
+                  isFeatureDrawerOpen ? 'bg-primary/10 text-primary scale-105 shadow-sm' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
                 }`}
                 title={t('chat.more_features', '더보기')}
               >
-                <span className="material-symbols-outlined text-[23px] sm:text-[25px]">add</span>
+                <span className="material-symbols-outlined text-[24px]">add</span>
               </button>
 
-              {/* Emoticon Smiley */}
+              {/* Emoticon Button */}
               {!isRecording && (
                 <button 
                   onClick={() => {
                     setIsStickerDrawerOpen(!isStickerDrawerOpen);
                     setIsFeatureDrawerOpen(false);
                   }}
-                  className={`w-7 h-7 flex items-center justify-center shrink-0 relative transition-all ${
-                    isStickerDrawerOpen ? 'text-primary scale-110' : 'text-gray-400 hover:text-gray-600'
+                  className={`w-9 h-9 flex items-center justify-center rounded-full shrink-0 relative transition-all ${
+                    isStickerDrawerOpen ? 'bg-primary/10 text-primary scale-105 shadow-sm' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
                   }`}
                   title={t('chatroom.sticker_title', '이모티콘')}
                 >
-                  <span className="material-symbols-outlined text-[22px] sm:text-[24px]">sentiment_satisfied</span>
-                  {/* Small Red/Orange Notification Dot on top right */}
-                  <span className="absolute top-0.5 right-0.5 w-[5px] h-[5px] sm:w-[6px] sm:h-[6px] bg-red-500 rounded-full ring-1 ring-white" />
+                  <span className="material-symbols-outlined text-[24px]">sentiment_satisfied</span>
+                  <span className="absolute top-1.5 right-1.5 w-[5px] h-[5px] bg-red-500 rounded-full ring-1 ring-white" />
                 </button>
               )}
             </div>
 
-            {/* Right Opacity Slider & Send Combo */}
-            <div className="flex items-center gap-4 sm:gap-6">
-              {/* Opacity Control Slider (Exactly like Kakao PC) */}
-              <div className="hidden sm:flex items-center gap-2">
-                <div className="relative flex items-center w-20 md:w-24 group">
-                  <input 
-                    type="range" 
-                    min="20" 
-                    max="100" 
-                    value={bgOpacity}
-                    onChange={(e) => setBgOpacity(parseInt(e.target.value))}
-                    className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-gray-400/80 hover:accent-primary focus:outline-none"
-                    style={{
-                      background: `linear-gradient(to right, #9ca3af 0%, #9ca3af ${((bgOpacity - 20) / 80) * 100}%, #e5e7eb ${((bgOpacity - 20) / 80) * 100}%, #e5e7eb 100%)`
+            {/* 2. Center Pill-shaped Text Input Field */}
+            <div className="flex-1 bg-gray-50 border border-gray-200/60 rounded-2xl px-3 py-1 flex items-center relative min-h-[38px] max-h-[120px] shadow-inner">
+              {/* Smart Mention Suggestion Popup Menu */}
+              <AnimatePresence>
+                {isMentionOpen && filteredMentionTargets.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 15, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.98 }}
+                    className="absolute bottom-full left-0 right-0 mb-3 bg-white/95 backdrop-blur-md border border-gray-100 rounded-3xl p-3 shadow-xl z-[150] flex flex-col gap-1.5 max-h-[220px] overflow-y-auto no-scrollbar dark:bg-zinc-900/95 dark:border-zinc-800 text-left"
+                  >
+                    <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-2 pb-1 border-b border-gray-100/50 dark:border-zinc-800">
+                      {t('poll.options_label', '멘션 대상 선택')}
+                    </div>
+                    {filteredMentionTargets.map((target) => (
+                      <button
+                        key={target.id}
+                        type="button"
+                        onClick={() => handleSelectMention(target.name)}
+                        className="w-full flex items-center justify-between p-2 rounded-2xl hover:bg-primary/5 active:scale-99 transition-all text-left group"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          {target.isRole ? (
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white shrink-0 shadow-sm ${
+                              target.id === 'all' 
+                                ? 'bg-gradient-to-br from-pink-500 to-rose-500' 
+                                : target.id === 'admins'
+                                  ? 'bg-gradient-to-br from-amber-400 to-orange-500'
+                                  : 'bg-gradient-to-br from-emerald-400 to-teal-500'
+                            }`}>
+                              <span className="material-symbols-outlined text-[18px]">{target.icon}</span>
+                            </div>
+                          ) : (
+                            target.icon ? (
+                              <img src={target.icon} className="w-8 h-8 rounded-full object-cover shrink-0 shadow-sm" alt="" />
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 font-black text-xs uppercase shadow-sm">
+                                {target.name.charAt(0)}
+                              </div>
+                            )
+                          )}
+                          
+                          <div className="min-w-0 flex flex-col justify-center">
+                            <span className={`text-[13px] font-black leading-none mb-0.5 truncate ${
+                              target.isRole
+                                ? target.id === 'all'
+                                  ? 'text-pink-500'
+                                  : target.id === 'admins'
+                                    ? 'text-amber-600 dark:text-amber-500'
+                                    : 'text-emerald-600 dark:text-emerald-500'
+                                : 'text-gray-800 dark:text-zinc-100'
+                            }`}>
+                              {target.label}
+                            </span>
+                            <span className="text-[10px] text-gray-400 font-bold truncate">{target.desc}</span>
+                          </div>
+                        </div>
+                        
+                        <span className="material-symbols-outlined text-[16px] text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity pr-1">
+                          arrow_forward_ios
+                        </span>
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <textarea 
+                value={inputText}
+                ref={textareaRef}
+                onChange={(e) => {
+                  handleInputChange(e.target.value);
+                  // Auto-grow height logic
+                  if (textareaRef.current) {
+                    textareaRef.current.style.height = 'auto';
+                    textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
+                  }
+                  if (user && roomId) {
+                    const now = Date.now();
+                    if (now - lastTypingTimeRef.current > 2000) {
+                      chatService.setTypingStatus(roomId, user.uid, true);
+                      lastTypingTimeRef.current = now;
+                    }
+                    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+                    typingTimeoutRef.current = setTimeout(() => {
+                      chatService.setTypingStatus(roomId, user.uid, false);
+                      lastTypingTimeRef.current = 0;
+                    }, 2000);
+                  }
+                }}
+                onFocus={() => {
+                  setIsInputFocused(true);
+                  setIsStickerDrawerOpen(false);
+                  setIsFeatureDrawerOpen(false);
+                }}
+                onBlur={() => {
+                  setTimeout(() => setIsInputFocused(false), 150);
+                }}
+                disabled={isRecording}
+                placeholder={isRecording ? t('chatroom.recording') : t('chatroom.type_message')}
+                rows={1}
+                className="w-full bg-transparent border-none focus:ring-0 focus:border-none text-[14px] sm:text-[15px] leading-[20px] font-medium placeholder:text-gray-400 text-gray-900 resize-none py-1.5 px-0.5 no-scrollbar disabled:opacity-50 min-h-[24px] max-h-[110px]"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                    if (textareaRef.current) {
+                      textareaRef.current.style.height = 'auto';
+                    }
+                  }
+                }}
+              />
+            </div>
+
+            {/* 3. Right Action Send Button / Mic Controls */}
+            <div className="flex items-center shrink-0 relative gap-1">
+              {/* Silent Push Option Chip */}
+              {showSilentOption && (
+                <div className="absolute bottom-full right-0 mb-2 z-50 bg-white border border-gray-200 shadow-xl rounded-lg p-1 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsSilentMode(true);
+                      setShowSilentOption(false);
                     }}
-                  />
-                  <div className="w-2.5 h-2.5 rounded-full bg-gray-400 absolute right-0 border border-white translate-x-1/2 pointer-events-none group-hover:bg-primary transition-colors" />
+                    className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-50 text-slate-700 rounded-md transition-all whitespace-nowrap"
+                  >
+                    <span className="material-symbols-outlined text-[16px] text-[#4682b4] animate-pulse">notifications_paused</span>
+                    <span className="text-[12px] font-bold">{t('chat.silent_send_option', '조용히 보내기')}</span>
+                  </button>
                 </div>
-              </div>
+              )}
 
-              {/* Send Button Combo */}
-              <div className="flex items-center shrink-0 relative">
-                {/* Silent Push Option Chip */}
-                {showSilentOption && (
-                  <div className="absolute bottom-full right-0 mb-2 z-50 bg-white border border-gray-200 shadow-xl rounded-lg p-1 animate-in fade-in slide-in-from-bottom-2 duration-200">
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setIsSilentMode(true);
-                        setShowSilentOption(false);
-                      }}
-                      className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-50 text-slate-700 rounded-md transition-all whitespace-nowrap"
-                    >
-                      <span className="material-symbols-outlined text-[16px] text-[#4682b4] animate-pulse">notifications_paused</span>
-                      <span className="text-[12px] font-bold">{t('chat.silent_send_option', '조용히 보내기')}</span>
-                    </button>
-                  </div>
-                )}
-
-                {isRecording ? (
-                  <div className="flex items-center gap-2 px-1 animate-in fade-in zoom-in">
-                    <span className="text-[12px] font-black text-red-500 animate-pulse">{Math.floor(recordDuration/60)}:{(recordDuration%60).toString().padStart(2, '0')}</span>
-                    <button 
-                      onClick={stopRecording}
-                      className="w-8 h-8 shrink-0 rounded-full bg-red-500 text-white flex items-center justify-center shadow-md shadow-red-500/20"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">stop</span>
-                    </button>
-                  </div>
-                ) : isSilentMode ? (
-                  <div className="flex items-center rounded-[4px] bg-gradient-to-r from-slate-400 to-[#4682b4] hover:from-slate-500 hover:to-[#36648b] text-white transition-all shadow-md shadow-[#4682b4]/20 select-none">
-                    <button 
-                      onClick={() => setIsSilentMode(false)}
-                      className="px-4 py-1.5 text-[12px] sm:text-[13px] font-black tracking-tighter flex items-center gap-1.5 text-white"
-                    >
-                      <span className="material-symbols-outlined text-[16px] animate-bounce">notifications_paused</span>
-                      <span>{t('chat.silent_mode_badge', '조용히')}</span>
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex items-center rounded-[4px] bg-[#f9f9f9] border border-gray-200 hover:bg-gray-100 transition-all select-none">
-                    <button 
-                      onClick={handleSend}
-                      onMouseDown={startLongPress}
-                      onMouseUp={cancelLongPress}
-                      onMouseLeave={cancelLongPress}
-                      onTouchStart={startLongPress}
-                      onTouchEnd={cancelLongPress}
-                      disabled={!inputText.trim()}
-                      className="px-4.5 py-1.5 text-[12px] sm:text-[13px] font-black tracking-tighter text-[#5c5c5c] disabled:opacity-40 disabled:hover:bg-[#f9f9f9]"
-                    >
-                      {t('chatroom.send', '전송')}
-                    </button>
-                    {/* Vertical separator */}
-                    <div className="w-[1px] h-3.5 bg-gray-300" />
-                    {/* Dropdown arrow */}
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toast.info(t('chatroom.send_info', 'Enter 키로 전송 가능합니다!'));
-                      }}
-                      className="px-1.5 py-1.5 text-gray-400 hover:text-gray-600 flex items-center justify-center"
-                    >
-                      <span className="material-symbols-outlined text-[15px] leading-none">keyboard_arrow_down</span>
-                    </button>
-                  </div>
-                )}
-              </div>
+              {isRecording ? (
+                <div className="flex items-center gap-1.5 px-1 animate-in fade-in zoom-in">
+                  <span className="text-[12px] font-black text-red-500 animate-pulse">{Math.floor(recordDuration/60)}:{(recordDuration%60).toString().padStart(2, '0')}</span>
+                  <button 
+                    onClick={stopRecording}
+                    className="w-8 h-8 shrink-0 rounded-full bg-red-500 text-white flex items-center justify-center shadow-md shadow-red-500/20"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">stop</span>
+                  </button>
+                </div>
+              ) : isSilentMode ? (
+                <div className="flex items-center rounded-full bg-gradient-to-r from-slate-400 to-[#4682b4] hover:from-slate-500 hover:to-[#36648b] text-white transition-all shadow-md shadow-[#4682b4]/20 select-none">
+                  <button 
+                    onClick={() => setIsSilentMode(false)}
+                    className="px-3.5 py-2 text-[12px] sm:text-[13px] font-black tracking-tighter flex items-center gap-1 text-white"
+                  >
+                    <span className="material-symbols-outlined text-[15px] animate-bounce">notifications_paused</span>
+                    <span>{t('chat.silent_mode_badge', '조용히')}</span>
+                  </button>
+                </div>
+              ) : (
+                <button 
+                  onClick={() => {
+                    handleSend();
+                    if (textareaRef.current) {
+                      textareaRef.current.style.height = 'auto';
+                    }
+                  }}
+                  onMouseDown={startLongPress}
+                  onMouseUp={cancelLongPress}
+                  onMouseLeave={cancelLongPress}
+                  onTouchStart={startLongPress}
+                  onTouchEnd={cancelLongPress}
+                  disabled={!inputText.trim()}
+                  className="px-5 py-2 text-[13px] sm:text-[14px] font-black tracking-tighter text-[#5c5c5c] bg-[#f9f9f9] border border-gray-200 rounded-xl hover:bg-gray-100 transition-all select-none disabled:opacity-40 disabled:hover:bg-[#f9f9f9] flex items-center justify-center shrink-0 min-h-[38px] shadow-sm"
+                >
+                  {t('chatroom.send', '전송')}
+                </button>
+              )}
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Upload Status */}
         <AnimatePresence>
@@ -2206,7 +2351,7 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
         {isFeatureDrawerOpen && (
           <motion.div 
             initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 320, opacity: 1 }}
+            animate={{ height: 380, opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             className="bg-[#f8f9fa] border-t border-gray-100 overflow-hidden relative z-20 flex flex-col shrink-0"
           >
@@ -2222,7 +2367,7 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
             </div>
             
             {/* Features Board Content */}
-            <div className="flex-1 flex items-center justify-center p-4">
+            <div className="flex-1 flex items-center justify-center p-4 overflow-y-auto no-scrollbar">
               <div className="grid grid-cols-3 sm:grid-cols-7 gap-x-3 gap-y-5 w-full max-w-2xl px-2 sm:px-4 justify-items-center">
                 {/* Feature 1: Camera */}
                 <button 

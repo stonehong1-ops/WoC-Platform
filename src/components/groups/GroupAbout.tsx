@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Group } from '@/types/group';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -9,6 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '@/lib/firebase/clientApp';
 import { doc, getDoc } from 'firebase/firestore';
 import { groupService } from '@/lib/firebase/groupService';
+import { chatService } from '@/lib/firebase/chatService';
 import UserBadge from '@/components/common/UserBadge';
 
 
@@ -35,10 +37,12 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
   isMembersLoading = false
 }) => {
   const { t } = useLanguage();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const router = useRouter();
   
   const [isAboutExpanded, setIsAboutExpanded] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
+  const [isJoining, setIsJoining] = useState(false);
   
   const [claimOwnerName, setClaimOwnerName] = useState("");
   const [claimOwnerId, setClaimOwnerId] = useState("");
@@ -198,6 +202,7 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
   // Check current user's membership
   const currentMember = user ? mergedMembers.find(m => m.id === user.uid) : null;
   const isJoined = !!currentMember;
+  const isOwner = user && group.ownerId && user.uid === group.ownerId;
 
   // State to hold members with their full UserProfile fetched from DB
   const [membersWithProfiles, setMembersWithProfiles] = useState<any[]>([]);
@@ -264,7 +269,7 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
   const ownerIds = new Set(ownersList.map(o => o.id));
 
   const instructorsList: any[] = [];
-  const instructors = targetMembers.filter(m => (m.role === 'instructor' || m.isInstructor) && !ownerIds.has(m.id));
+  const instructors = targetMembers.filter(m => m.role === 'instructor' && !ownerIds.has(m.id));
   instructors.forEach(m => {
     instructorsList.push({
       id: m.id,
@@ -339,150 +344,351 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
     </div>
   );
 
+  const renderClaimInputForm = () => {
+    return (
+      <div className="space-y-3 mt-3 p-3 bg-slate-800/80 border border-slate-700/60 rounded-xl shadow-inner">
+        <div className="relative">
+          <div className="relative flex items-center px-3.5 py-2 border border-slate-600 rounded-xl bg-slate-900 focus-within:bg-slate-950 focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+            <span className="material-symbols-outlined text-slate-400 mr-2 text-[18px]">person_filled</span>
+            <input
+              value={claimOwnerName}
+              onChange={(e) => {
+                const val = e.target.value;
+                setClaimOwnerName(val);
+                setClaimOwnerId('');
+                if (val.length >= 1) {
+                  const lower = val.toLowerCase();
+                  const filtered = allUsers.filter((u: any) =>
+                    (u.nickname && u.nickname.toLowerCase().includes(lower)) ||
+                    (u.nativeNickname && u.nativeNickname.includes(val))
+                  );
+                  setClaimResults(filtered.slice(0, 6));
+                  setShowClaimResults(filtered.length > 0);
+                } else {
+                  setShowClaimResults(false);
+                  setClaimResults([]);
+                }
+              }}
+              onFocus={() => claimOwnerName.length >= 1 && setShowClaimResults(claimResults.length > 0)}
+              onBlur={() => setTimeout(() => setShowClaimResults(false), 200)}
+              className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-xs font-bold text-white placeholder:text-slate-500 outline-none font-body"
+              placeholder={t('group.claim.search_placeholder') || "Enter name or nickname"}
+              type="text"
+            />
+            {claimOwnerId && (
+              <span className="material-symbols-outlined text-emerald-500 text-[16px]">check_circle</span>
+            )}
+          </div>
+          {showClaimResults && (
+            <div className="absolute bottom-full left-0 w-full mb-1 bg-slate-900 border border-slate-700 rounded-xl shadow-lg z-50 overflow-hidden">
+              {claimResults.map((u: any) => (
+                <button
+                  key={u.id}
+                  onClick={() => {
+                    setClaimOwnerName(u.nickname || u.nativeNickname || '');
+                    setClaimOwnerId(u.id);
+                    setShowClaimResults(false);
+                  }}
+                  className="w-full text-left px-3 py-2.5 hover:bg-slate-800 flex items-center gap-2 group transition-colors border-b border-slate-800 last:border-0"
+                >
+                  <span className="material-symbols-outlined text-slate-400 text-[16px]">person</span>
+                  <div className="flex flex-col">
+                    <p className="font-bold text-white text-xs group-hover:text-primary leading-tight font-body">{u.nickname}</p>
+                    {u.nativeNickname && <span className="text-[9px] text-slate-400 font-medium leading-tight font-body">{u.nativeNickname}</span>}
+                  </div>
+                  {u.id === user?.uid && (
+                    <span className="ml-auto text-[9px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full font-body">{t('group.claim.me') || "Me"}</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {claimOwnerId && (
+          <button
+            onClick={async () => {
+              if (!handleClaimAdmin) return;
+              try {
+                await handleClaimAdmin(claimOwnerId, claimOwnerName);
+                setClaimOwnerName("");
+                setClaimOwnerId("");
+              } catch (e) {
+                toast.error(t('group.claim.error') || 'Failed to claim group admin');
+              }
+            }}
+            disabled={isClaiming}
+            className="w-full py-2.5 bg-[#0057bd] text-white font-bold rounded-xl active:scale-95 transition-all text-xs shadow-sm font-body"
+          >
+            {isClaiming ? (t('group.claim.saving') || "Saving...") : (t('group.claim.button') || "Claim Ownership (소유권 주장)")}
+          </button>
+        )}
+      </div>
+    );
+  };
+
   const isLocked = group.ownerId === 'system1' || !group.ownerId;
 
   return (
     <div className="space-y-8">
       {/* 최상단 마운트 영역: 멤버 가입 & It's mine 클레임 */}
       <div className="space-y-4">
-        {/* 1. It's mine 인라인 클레임 카드 (Locked 상태일 때 노출) */}
-        {isLocked && (
-          <div className="bg-white rounded-2xl p-6 border border-amber-200/50 shadow-md">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                <span className="material-symbols-outlined text-2xl font-bold">shield_person</span>
-              </div>
-              <div>
-                <h4 className="font-title-lg text-title-lg font-bold text-on-surface">{t('group.claim.title') || "Claim Group Admin"}</h4>
-                <p className="text-xs text-on-surface-variant font-medium mt-0.5">{t('group.claim.desc') || "Search and designate the owner of this community."}</p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="relative">
-                <div className="relative flex items-center px-4 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/20 transition-all">
-                  <span className="material-symbols-outlined text-on-surface-variant mr-2 text-[20px]">person_filled</span>
-                  <input
-                    value={claimOwnerName}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setClaimOwnerName(val);
-                      setClaimOwnerId('');
-                      if (val.length >= 1) {
-                        const lower = val.toLowerCase();
-                        const filtered = allUsers.filter((u: any) =>
-                          (u.nickname && u.nickname.toLowerCase().includes(lower)) ||
-                          (u.nativeNickname && u.nativeNickname.includes(val))
-                        );
-                        setClaimResults(filtered.slice(0, 6));
-                        setShowClaimResults(filtered.length > 0);
-                      } else {
-                        setShowClaimResults(false);
-                        setClaimResults([]);
-                      }
-                    }}
-                    onFocus={() => claimOwnerName.length >= 1 && setShowClaimResults(claimResults.length > 0)}
-                    onBlur={() => setTimeout(() => setShowClaimResults(false), 200)}
-                    className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-sm font-bold text-on-surface placeholder:text-on-surface-variant/40 outline-none font-body"
-                    placeholder={t('group.claim.search_placeholder') || "Enter name or nickname"}
-                    type="text"
-                  />
-                  {claimOwnerId && (
-                    <span className="material-symbols-outlined text-emerald-500 text-[18px]">check_circle</span>
-                  )}
-                </div>
-                {showClaimResults && (
-                  <div className="absolute top-full left-0 w-full mt-1 bg-white border border-[#e0e4e5] rounded-xl shadow-lg z-50 overflow-hidden">
-                    {claimResults.map((u: any) => (
-                      <button
-                        key={u.id}
-                        onClick={() => {
-                          setClaimOwnerName(u.nickname || u.nativeNickname || '');
-                          setClaimOwnerId(u.id);
-                          setShowClaimResults(false);
-                        }}
-                        className="w-full text-left px-4 py-3 hover:bg-[#f8f9fa] flex items-center gap-3 group transition-colors border-b border-[#f2f4f4] last:border-0"
-                      >
-                        <span className="material-symbols-outlined text-on-surface-variant text-[18px]">person</span>
-                        <div className="flex flex-col">
-                          <p className="font-bold text-on-surface text-sm group-hover:text-primary leading-tight font-body">{u.nickname}</p>
-                          {u.nativeNickname && <span className="text-[10px] text-on-surface-variant font-medium leading-tight font-body">{u.nativeNickname}</span>}
-                        </div>
-                        {u.id === user?.uid && (
-                          <span className="ml-auto text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full font-body">{t('group.claim.me') || "Me"}</span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {claimOwnerId && (
-                <div className="flex gap-2">
-                  <button
-                    onClick={async () => {
-                      if (!handleClaimAdmin) return;
-                      try {
-                        await handleClaimAdmin(claimOwnerId, claimOwnerName);
-                        setClaimOwnerName("");
-                        setClaimOwnerId("");
-                      } catch (e) {
-                        toast.error(t('group.claim.error') || 'Failed to claim group admin');
-                      }
-                    }}
-                    disabled={isClaiming}
-                    className="w-full py-3 bg-[#0057bd] text-white font-bold rounded-xl active:scale-95 transition-all text-sm shadow-sm font-body"
-                  >
-                    {isClaiming ? (t('group.claim.saving') || "Saving...") : (t('group.claim.button') || "Claim Ownership (소유권 주장)")}
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* 2. 멤버 가입 / 이미 가입된 멤버 카드 */}
+        {/* 1. 멤버 가입 / 이미 가입된 멤버 카드 */}
         {isMembersLoading ? (
           <div className="animate-pulse bg-[#f8f9fa] p-5 rounded-2xl border border-outline-variant/30 text-center shadow-sm h-36 flex flex-col items-center justify-center">
             <div className="w-8 h-8 border-4 border-[#0057bd]/20 border-t-[#0057bd] rounded-full animate-spin"></div>
           </div>
-        ) : isJoined ? (
+        ) : (isJoined && currentMember?.status === 'active') || isOwner ? (
           <div className="bg-[#f8f9fa] p-5 rounded-2xl border border-outline-variant/30 text-center shadow-sm">
             <div className="w-12 h-12 rounded-full bg-[#0057bd]/10 text-[#0057bd] flex items-center justify-center mx-auto mb-3">
               <span className="material-symbols-outlined text-2xl font-bold">verified</span>
             </div>
             <p className="text-[16px] leading-[1.6] text-on-surface font-bold mb-1 font-body">
-              {t("group.about.already_member", "이미 가입된 멤버입니다")}
+              {isOwner 
+                ? t("group.about.owner_active", "대표자(오너)로 활동 중입니다") 
+                : t("group.about.already_member", "이미 가입된 멤버입니다")
+              }
             </p>
-            {currentMember?.joinedAt && (
+            {(currentMember?.joinedAt || isOwner) && (
               <p className="text-[12px] leading-[1.2] text-on-surface-variant mt-1 font-body">
-                {t("group.about.joined_date", { date: getJoinedDateString(currentMember.joinedAt) })}
+                {t("group.about.joined_date", { date: getJoinedDateString(currentMember?.joinedAt || group.updatedAt || Date.now()) })}
               </p>
             )}
-            <div className="mt-4 pt-3 border-t border-[#f2f4f4]">
+            
+            {!isOwner && (
+              <div className="mt-4 pt-3 border-t border-[#f2f4f4]">
+                <button
+                  onClick={handleLeaveGroup}
+                  disabled={isLeaving}
+                  className="text-[11px] font-bold text-on-surface-variant/40 hover:text-red-500 transition-colors duration-200 active:scale-95 disabled:opacity-50 font-body"
+                >
+                  {isLeaving 
+                    ? t("group.about.leaving") || "Leaving..." 
+                    : t("group.about.leave") || "Leave Community"
+                  }
+                </button>
+              </div>
+            )}
+          </div>
+        ) : isJoined && currentMember?.status === 'pending' ? (
+          // 가입 승인 대기 상태의 유저에게 노출하는 특화 대기 카드
+          <div className="bg-[#fcf8e3] p-5 rounded-2xl border border-amber-200/60 text-center shadow-sm">
+            <div className="w-12 h-12 rounded-full bg-amber-500/10 text-amber-600 flex items-center justify-center mx-auto mb-3 animate-pulse">
+              <span className="material-symbols-outlined text-2xl font-bold">pending_actions</span>
+            </div>
+            <p className="text-[16px] leading-[1.6] text-on-surface font-bold mb-1 font-body">
+              가입 승인을 대기 중입니다
+            </p>
+            <p className="text-[12px] leading-[1.4] text-on-surface-variant mt-1 px-2 font-body">
+              대표자가 가입 신청을 확인하고 있습니다. 승인이 완료되면 모든 클래스와 피드가 자동으로 활성화됩니다.
+            </p>
+            <div className="mt-4 pt-3 border-t border-amber-200/30">
               <button
                 onClick={handleLeaveGroup}
                 disabled={isLeaving}
                 className="text-[11px] font-bold text-on-surface-variant/40 hover:text-red-500 transition-colors duration-200 active:scale-95 disabled:opacity-50 font-body"
               >
-                {isLeaving 
-                  ? t("group.about.leaving") || "Leaving..." 
-                  : t("group.about.leave") || "Leave Community"
-                }
+                신청 취소하기
               </button>
             </div>
           </div>
         ) : (
-          <div className="bg-[#0057bd] p-5 rounded-2xl shadow-lg shadow-[#0057bd]/25">
-            <p className="text-[18px] leading-[1.8] text-white mb-2 font-bold font-body">{t("group.about.become_member")}</p>
-            <p className="text-[13px] leading-[1.3] text-white/80 mb-4 font-body">{t("group.about.join_desc", { name: group.name || 'our vibrant community' })}</p>
-            <button 
-              className="w-full py-3 bg-white text-[#0057bd] font-bold rounded-xl active:scale-[0.98] transition-transform shadow-sm font-body text-sm"
-              onClick={() => toast.success(t("group.about.join_requested") || "Join request sent!")}
-            >
-              {t("group.about.join_button")}
-            </button>
-          </div>
+          // 비회원 가입 동선 - 가입 정책 3종 세트별 맞춤형 카드 렌더링
+          (() => {
+            const strategy = group.membershipPolicy?.joinStrategy || 'open';
+            
+            if (strategy === 'open') {
+              return (
+                <div className="bg-[#0057bd] p-5 rounded-2xl shadow-lg shadow-[#0057bd]/25 space-y-4">
+                  <div>
+                    <p className="text-[18px] leading-[1.8] text-white mb-2 font-bold font-body">정식 멤버가 되어 보세요</p>
+                    <p className="text-[13px] leading-[1.3] text-white/80 mb-4 font-body">가입 즉시 승인 대기 없이 모든 클래스 정보와 소통 공간을 자유롭게 이용하실 수 있습니다.</p>
+                  </div>
+                  
+                  <button 
+                    className="w-full py-3 bg-white text-[#0057bd] font-bold rounded-xl active:scale-[0.98] transition-transform shadow-sm font-body text-sm disabled:opacity-50"
+                    disabled={isJoining}
+                    onClick={async () => {
+                      if (!user) {
+                        toast.error("로그인이 필요합니다.");
+                        return;
+                      }
+                      setIsJoining(true);
+                      try {
+                        const memberData = {
+                          name: profile?.nickname || user.displayName || 'Anonymous',
+                          avatar: profile?.photoURL || user.photoURL || '',
+                          role: 'member',
+                          joinedAt: Date.now()
+                        };
+                        await groupService.joinGroup(group.id!, user.uid, memberData);
+                        router.push(`${window.location.pathname}?modal=join`, { scroll: false });
+                      } catch (error) {
+                        console.error("Error joining group:", error);
+                        toast.error("가입 처리 중 오류가 발생했습니다.");
+                      } finally {
+                        setIsJoining(false);
+                      }
+                    }}
+                  >
+                    {isJoining ? "처리 중..." : "커뮤니티 가입하기"}
+                  </button>
+
+                  {isLocked && (
+                    <div id="claim-owner-input-section" className="mt-3 pt-3 border-t border-white/20 text-center space-y-2">
+                      <p className="text-[11px] text-white/70 font-medium leading-relaxed font-body">
+                        {t('group.about.open_no_owner_notice', '현재 대표자가 공석인 그룹입니다. 대표자이신 경우 소유권을 획득해 주세요.')}
+                      </p>
+                      
+                      <div className="text-left">
+                        <p className="text-[11px] font-bold text-white/90 mb-2 font-body">
+                          {t('group.about.is_representative_question', '혹시 이 커뮤니티의 대표자이신가요?')}
+                        </p>
+                        {renderClaimInputForm()}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            } else if (strategy === 'approval') {
+              return (
+                <div className="bg-[#1e293b] p-5 rounded-2xl shadow-lg shadow-[#1e293b]/25 space-y-4">
+                  <div>
+                    <p className="text-[18px] leading-[1.8] text-white mb-2 font-bold font-body">가입 승인 신청하기</p>
+                    <p className="text-[13px] leading-[1.3] text-white/80 mb-4 font-body">대표자의 가입 승인을 거쳐 이 커뮤니티의 정식 멤버가 되실 수 있습니다.</p>
+                  </div>
+
+                  {isLocked ? (
+                    <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 text-center">
+                      <span className="material-symbols-outlined text-amber-500 text-2xl mb-1">warning</span>
+                      <p className="text-[12px] font-bold text-amber-400 font-body mb-2">
+                        {t('group.about.no_owner_error', '현재 대표자가 없어서 가입을 요청하실 수 없습니다.')}
+                      </p>
+                      
+                      <div className="mt-4 pt-3 border-t border-amber-500/20 text-left space-y-2">
+                        <p className="text-[11px] font-bold text-slate-300 font-body">
+                          {t('group.about.is_representative_question', '혹시 이 커뮤니티의 대표자이신가요?')}
+                        </p>
+                        {renderClaimInputForm()}
+                      </div>
+                    </div>
+                  ) : (
+                    <button 
+                      className="w-full py-3 bg-white text-[#1e293b] font-bold rounded-xl active:scale-[0.98] transition-transform shadow-sm font-body text-sm disabled:opacity-50"
+                      disabled={isJoining}
+                      onClick={async () => {
+                        if (!user) {
+                          toast.error("로그인이 필요합니다.");
+                          return;
+                        }
+                        setIsJoining(true);
+                        try {
+                          const memberData = {
+                            name: profile?.nickname || user.displayName || 'Anonymous',
+                            avatar: profile?.photoURL || user.photoURL || '',
+                            role: 'member',
+                            joinedAt: Date.now()
+                          };
+                          await groupService.requestJoinGroup(group.id!, user.uid, memberData);
+                          
+                          // 오너와 1:1 비즈니스 챗방을 개설하여 오너 화면에 수락/거절 Todo 알림 메시지 발송
+                          try {
+                            const chatRoomId = await chatService.getOrCreatePrivateRoom([user.uid, group.ownerId!], user.uid, 'business');
+                            await chatService.sendMessage({
+                              roomId: chatRoomId,
+                              senderId: user.uid,
+                              senderName: profile?.nickname || user.displayName || '가입 신청자',
+                              text: `${profile?.nickname || user.displayName || 'Anonymous'}님이 '${group.name}' 그룹 가입 승인을 요청하셨습니다.`,
+                              type: 'text',
+                              metadata: {
+                                actionType: 'group_join_request',
+                                groupId: group.id!,
+                                groupName: group.name,
+                                userId: user.uid,
+                                status: 'pending'
+                              }
+                            });
+                          } catch (chatErr) {
+                            console.error("Failed to send approval todo chat:", chatErr);
+                          }
+
+                          router.push(`${window.location.pathname}?modal=join`, { scroll: false });
+                        } catch (error) {
+                          console.error("Error requesting join group:", error);
+                          toast.error("가입 신청 중 오류가 발생했습니다.");
+                        } finally {
+                          setIsJoining(false);
+                        }
+                      }}
+                    >
+                      {isJoining ? "처리 중..." : "가입 승인 신청"}
+                    </button>
+                  )}
+                </div>
+              );
+            } else {
+              // strategy === 'invite' (초대 전용 그룹)
+              return (
+                <div className="bg-[#64748b] p-5 rounded-2xl shadow-lg shadow-[#64748b]/25 space-y-4">
+                  <div>
+                    <p className="text-[18px] leading-[1.8] text-white mb-2 font-bold font-body">초대 전용 프라이빗 그룹</p>
+                    <p className="text-[13px] leading-[1.3] text-white/80 mb-4 font-body">대표자 및 운영진의 직접 초대를 통하여 가입 및 이용이 가능한 공간입니다.</p>
+                  </div>
+
+                  {isLocked ? (
+                    <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 text-center">
+                      <span className="material-symbols-outlined text-amber-500 text-2xl mb-1">warning</span>
+                      <p className="text-[12px] font-bold text-amber-400 font-body mb-2">
+                        {t('group.about.no_owner_error', '현재 대표자가 없어서 가입을 요청하실 수 없습니다.')}
+                      </p>
+                      
+                      <div className="mt-4 pt-3 border-t border-amber-500/20 text-left space-y-2">
+                        <p className="text-[11px] font-bold text-slate-300 font-body">
+                          {t('group.about.is_representative_question', '혹시 이 커뮤니티의 대표자이신가요?')}
+                        </p>
+                        {renderClaimInputForm()}
+                      </div>
+                    </div>
+                  ) : (
+                    <button 
+                      className="w-full py-3 bg-white text-[#64748b] font-bold rounded-xl active:scale-[0.98] transition-transform shadow-sm font-body text-sm disabled:opacity-50"
+                      disabled={isJoining}
+                      onClick={async () => {
+                        if (!user) {
+                          toast.error("로그인이 필요합니다.");
+                          return;
+                        }
+                        if (group.ownerId === user.uid) {
+                          toast.warning(t('group.about.owner_cant_chat_self', '본인이 대표자인 그룹 클래스입니다.'));
+                          return;
+                        }
+                        setIsJoining(true);
+                        try {
+                          const chatRoomId = await chatService.getOrCreatePrivateRoom([user.uid, group.ownerId!], user.uid);
+                          await chatService.sendMessage({
+                            roomId: chatRoomId,
+                            senderId: user.uid,
+                            senderName: profile?.nickname || user.displayName || 'Anonymous',
+                            text: `안녕하세요! '${group.name}' 그룹에 가입하고 싶습니다. 초대를 부탁드립니다!`,
+                            type: 'text'
+                          });
+                          toast.success("대표자에게 가입 문의 메시지를 전송했습니다.");
+                          router.push(`/chat?roomId=${chatRoomId}`);
+                        } catch (error) {
+                          console.error("Error creating invite chat:", error);
+                          toast.error("대표자와의 채팅방 개설 중 오류가 발생했습니다.");
+                        } finally {
+                          setIsJoining(false);
+                        }
+                      }}
+                    >
+                      {isJoining ? "처리 중..." : "대표자에게 문의하기"}
+                    </button>
+                  )}
+                </div>
+              );
+            }
+          })()
         )}
       </div>
 

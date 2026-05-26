@@ -23,6 +23,7 @@ interface FeedPostCardProps {
   onEdit?: (post: Post) => void;
   onDelete?: (postId: string) => void;
   hideUserInfo?: boolean;
+  isGridView?: boolean;
 }
 
 // 유튜브 썸네일 실시간 추출 및 복구 헬퍼 함수
@@ -34,7 +35,7 @@ function getYouTubeThumbnail(url: string): string | null {
   return videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : null;
 }
 
-export default function FeedPostCard({ post, currentUser, profile, onEdit, onDelete, hideUserInfo }: FeedPostCardProps) {
+export default function FeedPostCard({ post, currentUser, profile, onEdit, onDelete, hideUserInfo, isGridView }: FeedPostCardProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const [isReactionSelectorOpen, setIsReactionSelectorOpen] = useState(false);
@@ -526,34 +527,36 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
   }
 
   // 미디어 아이템 렌더 헬퍼 (비디오 아이콘 + 오버레이 포함)
-  const renderMediaThumb = (item: { url: string; type: string }, index: number, showMoreOverlay?: boolean, moreCount?: number) => (
-    <div
-      key={index}
-      className="relative w-full h-full overflow-hidden cursor-pointer group"
-      onClick={() => { openMedia(post.id, { mediaIdx: index.toString() }); }}
-    >
-      {item.type === 'video' ? (
-        <>
-          <video src={item.url} className="w-full h-full object-cover" autoPlay loop muted playsInline />
-        </>
-      ) : (
-        <img
-          alt={`Post media ${index + 1}`}
-          src={item.url}
-          className="w-full h-full object-cover group-hover:brightness-95 transition-all duration-200 select-none"
-          draggable={false}
-        />
-      )}
-      {showMoreOverlay && (
-        <div className="absolute inset-0 bg-black/55 group-hover:bg-black/65 transition-colors flex items-center justify-center">
-          <span className="text-white font-bold text-2xl drop-shadow-lg">+{moreCount}</span>
-        </div>
-      )}
-    </div>
-  );
+  function renderMediaThumb(item: { url: string; type: string }, index: number, showMoreOverlay?: boolean, moreCount?: number) {
+    return (
+      <div
+        key={index}
+        className="relative w-full h-full overflow-hidden cursor-pointer group"
+        onClick={() => { openMedia(post.id, { mediaIdx: index.toString() }); }}
+      >
+        {item.type === 'video' ? (
+          <>
+            <video src={item.url} className="w-full h-full object-cover" autoPlay loop muted playsInline />
+          </>
+        ) : (
+          <img
+            alt={`Post media ${index + 1}`}
+            src={item.url}
+            className="w-full h-full object-cover group-hover:brightness-95 transition-all duration-200 select-none"
+            draggable={false}
+          />
+        )}
+        {showMoreOverlay && (
+          <div className="absolute inset-0 bg-black/55 group-hover:bg-black/65 transition-colors flex items-center justify-center">
+            <span className="text-white font-bold text-2xl drop-shadow-lg">+{moreCount}</span>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   // 미디어 그리드 레이아웃
-  const renderMediaGrid = () => {
+  function renderMediaGrid() {
     const count = normalizedMedia.length;
     if (count === 0) return null;
 
@@ -623,7 +626,116 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
         </div>
       </div>
     );
-  };
+  }
+
+  if (isGridView) {
+    const { text: renderedContent } = getTruncatedContent(post.content);
+    return (
+      <article
+        ref={cardRef}
+        onClick={() => {
+          if (hasMedia) {
+            openMedia(post.id, { mediaIdx: '0' });
+          } else {
+            openComments(post.id);
+          }
+        }}
+        className="rounded-2xl border border-outline-variant/20 shadow-sm bg-surface-container-lowest overflow-hidden select-none hover:shadow-md cursor-pointer transition-all duration-300 active:scale-[0.98]"
+      >
+        {/* 미디어 / 유튜브 프리뷰 영역 */}
+        {hasMedia && (
+          <div className="w-full aspect-square overflow-hidden bg-surface-container-low">
+            {renderMediaGrid()}
+          </div>
+        )}
+        
+        {/* Link Previews (유튜브 포함) */}
+        {!hasMedia && linkMedia.map((item, idx) => {
+          const isYouTube = item.url.includes('youtube.com') || item.url.includes('youtu.be');
+          const finalMetadata = (isYouTube && hydratedMetadata) ? hydratedMetadata : item.linkMetadata;
+          const thumbnailUrl = finalMetadata?.image || getYouTubeThumbnail(item.url);
+          
+          return (
+            <a
+              key={idx}
+              href={item.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => {
+                e.stopPropagation(); // 카드 자체 클릭 팝업 방출 차단
+              }}
+              className="block relative w-full aspect-square overflow-hidden bg-surface-container-low border-b border-outline-variant/10 group"
+            >
+              {thumbnailUrl ? (
+                <img
+                  src={thumbnailUrl}
+                  alt=""
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-primary-container/20 to-tertiary-container/30 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-outline text-[24px]">link</span>
+                </div>
+              )}
+              {isYouTube && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                  <div className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center shadow-md">
+                    <span className="material-symbols-outlined text-white text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
+                  </div>
+                </div>
+              )}
+            </a>
+          );
+        })}
+
+        {/* 본문 텍스트 (최대 2줄 제한) */}
+        {post.content && (
+          <p className="line-clamp-2 text-xs font-semibold text-on-surface leading-snug mt-2.5 px-3 break-words">
+            {renderedContent}
+          </p>
+        )}
+
+        {/* 미니멀한 반응 정보 표시 (좋아요 및 댓글 수) */}
+        <div className="flex items-center justify-between px-3 py-2 mt-2 border-t border-outline-variant/5">
+          <div className="flex items-center gap-1 text-[10px] text-on-surface-variant/80 font-bold">
+            <span className="material-symbols-outlined text-[12px] text-red-500" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>
+            <span>{localLikesCount}</span>
+            <span className="material-symbols-outlined text-[12px] ml-2 text-primary">chat_bubble</span>
+            <span>{post.commentsCount || 0}</span>
+          </div>
+          
+          {/* 어드민이나 작성자인 경우 팝업 제어 칩 */}
+          {canEditOrDelete && (
+            <div className="relative" ref={menuRef}>
+              <button onClick={(e) => { e.stopPropagation(); setIsMenuOpen(!isMenuOpen); }} className="text-on-surface-variant hover:text-on-surface p-0.5 rounded-full transition-colors flex items-center">
+                <span className="material-symbols-outlined text-[14px]">more_horiz</span>
+              </button>
+              {isMenuOpen && (
+                <div className="absolute right-0 bottom-6 w-28 bg-surface-container-lowest rounded-lg shadow-xl border border-outline-variant/10 z-50 py-0.5 overflow-hidden">
+                  <button onClick={(e) => { e.stopPropagation(); onEdit?.(post); setIsMenuOpen(false); }} className="w-full px-2.5 py-1 text-left text-[10px] hover:bg-primary/10 flex items-center gap-1.5 text-on-surface">
+                    <span className="material-symbols-outlined text-xs">edit</span> {t('plaza.edit_post', 'Edit')}
+                  </button>
+                  <button onClick={(e) => { e.stopPropagation(); onDelete?.(post.id); setIsMenuOpen(false); }} className="w-full px-2.5 py-1 text-left text-[10px] hover:bg-error/10 flex items-center gap-1.5 text-error">
+                    <span className="material-symbols-outlined text-xs">delete</span> {t('plaza.delete_post', 'Delete')}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* 비주얼 뷰용 전용 팝업 렌더러 이식 */}
+        <ReactionListBottomSheet post={post} isOpen={isReactionListOpen} onClose={closeReactions} />
+        <CommentBottomSheet post={post} isOpen={isCommentSheetOpen} onClose={closeComments} currentUser={currentUser} profile={profile} hideUserInfo={hideUserInfo} />
+        <MediaViewerPopup
+          isOpen={isMediaViewerOpen}
+          onClose={closeMedia}
+          media={normalizedMedia as any}
+          initialIndex={initialMediaIndex}
+        />
+      </article>
+    );
+  }
 
   // Standard / Image Style
   const { text: renderedContent, shouldTruncate } = getTruncatedContent(post.content);

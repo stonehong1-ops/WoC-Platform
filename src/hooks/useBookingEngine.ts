@@ -149,38 +149,25 @@ export function useBookingEngine() {
       
       const bookingData = snap.data() as BaseBooking & { orderNumber?: string };
 
+      // 방어막(Guard): 이미 입금 확인 완료(SELLER_CONFIRMED) 되었거나 결제 완료(PAYMENT_COMPLETED) 등 최종 승인/취소 상태라면 중복 처리 및 메시지 발송 원천 차단
+      if (
+        bookingData.status === 'SELLER_CONFIRMED' || 
+        bookingData.status === 'DELIVERED' || 
+        bookingData.status === 'CONFIRMED' ||
+        bookingData.status === 'CANCELLED'
+      ) {
+        console.log(`[reportPayment Guard] Booking ${bookingId} is already confirmed or completed (status: ${bookingData.status}). Skipping duplicate payment report.`);
+        setIsLoading(false);
+        return;
+      }
+
       batch.update(bookingRef, {
         status: 'BANK_TRANSFERRED',
         updatedAt: serverTimestamp(),
         ...(memo ? { paymentMemo: memo } : {})
       });
 
-      // 1. Host Notification (No functions)
-      if (bookingData.hostId) {
-        await notificationService.createNotification(
-          {
-            targetUserId: bookingData.hostId,
-            category: 'BOOKING',
-            type: 'BOOKING_REQUEST',
-            title: 'New Booking Request',
-            message: `${bookingData.buyerName} requested to join '${bookingData.itemName}'. Please review in chat.`,
-            actionUrl: `/history`, 
-            referenceId: bookingId,
-          },
-          batch
-        );
-      }
-
-      // 2. User Info
-      await notificationService.createNotification({
-        targetUserId: user.uid,
-        category: 'BOOKING',
-        type: 'BOOKING_CREATED',
-        title: 'Request Submitted',
-        message: `Your request for '${bookingData.itemName}' is submitted and waiting for host confirmation.`,
-        actionUrl: `/history`,
-        referenceId: bookingId,
-      }, batch);
+      // 1. Host & Buyer Notification (Skipped to avoid double notifications since chat cards and SMS are handled)
 
       await batch.commit();
 
@@ -259,16 +246,7 @@ export function useBookingEngine() {
         updatedAt: serverTimestamp()
       });
 
-      // Notify User
-      await notificationService.createNotification({
-        targetUserId: bookingData.buyerId,
-        category: 'BOOKING',
-        type: 'BOOKING_CONFIRMED',
-        title: 'Booking Confirmed',
-        message: `Your booking for '${bookingData.itemName}' has been confirmed!`,
-        actionUrl: `/history`,
-        referenceId: bookingId,
-      }, batch);
+      // Notify User (Skipped - chat message is dispatched)
 
       await batch.commit();
 
@@ -326,8 +304,16 @@ export function useBookingEngine() {
     setError(null);
     try {
       const batch = writeBatch(db);
-      const bookingRef = doc(db, COLLECTION_NAME, bookingId);
-      const snap = await getDoc(bookingRef);
+      let colName = COLLECTION_NAME;
+      let bookingRef = doc(db, colName, bookingId);
+      let snap = await getDoc(bookingRef);
+      
+      // Fallback for stay_bookings collection
+      if (!snap.exists()) {
+        colName = 'stay_bookings';
+        bookingRef = doc(db, colName, bookingId);
+        snap = await getDoc(bookingRef);
+      }
       
       if (!snap.exists()) {
         throw new Error("Booking not found");
@@ -383,8 +369,16 @@ export function useBookingEngine() {
     setError(null);
     try {
       const batch = writeBatch(db);
-      const bookingRef = doc(db, COLLECTION_NAME, bookingId);
-      const snap = await getDoc(bookingRef);
+      let colName = COLLECTION_NAME;
+      let bookingRef = doc(db, colName, bookingId);
+      let snap = await getDoc(bookingRef);
+      
+      // Fallback for stay_bookings collection
+      if (!snap.exists()) {
+        colName = 'stay_bookings';
+        bookingRef = doc(db, colName, bookingId);
+        snap = await getDoc(bookingRef);
+      }
       
       if (!snap.exists()) {
         throw new Error("Booking not found");
@@ -397,16 +391,7 @@ export function useBookingEngine() {
         updatedAt: serverTimestamp()
       });
 
-      // Notify User
-      await notificationService.createNotification({
-        targetUserId: bookingData.buyerId,
-        category: 'BOOKING',
-        type: 'BOOKING_CANCELLED',
-        title: 'Booking Cancelled',
-        message: `Your booking for '${bookingData.itemName}' has been cancelled by the host.`,
-        actionUrl: `/history`,
-        referenceId: bookingId,
-      }, batch);
+      // Notify User (Skipped - chat message is dispatched)
 
       await batch.commit();
 

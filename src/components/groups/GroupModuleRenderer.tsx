@@ -10,17 +10,17 @@ import { TabType } from "@/constants/groupTabs";
 import GroupCalendar from "./GroupCalendar";
 import GroupBoard from "./GroupBoard";
 import GroupAbout from "./GroupAbout";
-const GroupClassEditor = dynamic(() => import("./GroupClassEditor"));
-const GroupMemberManager = dynamic(() => import("./GroupMemberManager"));
-const GroupMembers = dynamic(() => import("./GroupMembers"));
-const GroupFunctionBuilder = dynamic(() => import("./GroupFunctionBuilder"));
+import GroupMembers from "./GroupMembers";
+import GroupClassDashboard from "./GroupClassDashboard";
+import GroupClassEditor from "./GroupClassEditor";
+import GroupMemberManager from "./GroupMemberManager";
+import GroupFunctionBuilder from "./GroupFunctionBuilder";
+import GroupHomeConfig from "./GroupHomeConfig";
+import GroupShopEditor from "./GroupShopEditor";
+import GroupStayEditor from "./GroupStayEditor";
+import GroupRentalEditor from "./GroupRentalEditor";
 const UniversalFeed = dynamic(() => import("../feed/UniversalFeed"));
-const GroupShopEditor = dynamic(() => import("./GroupShopEditor"));
-const GroupStayEditor = dynamic(() => import("./GroupStayEditor"));
-const GroupRentalEditor = dynamic(() => import("./GroupRentalEditor"));
-const GroupHomeConfig = dynamic(() => import("./GroupHomeConfig"));
 const LiveFeed = dynamic(() => import("@/components/live/LiveFeed"));
-const GroupClassDashboard = dynamic(() => import("./GroupClassDashboard"));
 
 // Community module mockups
 const GroupPolls = dynamic(() => import("./GroupPolls"));
@@ -121,7 +121,7 @@ export default function GroupModuleRenderer({
     <>
       {visitedTabs.has('about') && (
         <div style={{ display: activeTab === 'about' ? 'block' : 'none' }} className="px-4 py-4">
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="animate-in fade-in slide-in-from-bottom-1 duration-150 ease-out">
             <GroupAbout
               group={currentGroup}
               members={members}
@@ -136,7 +136,7 @@ export default function GroupModuleRenderer({
 
       {visitedTabs.has('members') && (
         <div style={{ display: activeTab === 'members' ? 'block' : 'none' }}>
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 z-[100]">
+          <div className="animate-in fade-in slide-in-from-bottom-1 duration-150 ease-out z-[100]">
             {isFullMember || isAdminUser ? (
               <GroupMembers
                 groupId={currentGroup.id}
@@ -170,9 +170,9 @@ export default function GroupModuleRenderer({
         </div>
       )}
 
-      {visitedTabs.has('roles') && (isFullMember || isAdminUser) && (
+      {visitedTabs.has('roles') && (
         <div style={{ display: activeTab === 'roles' ? 'block' : 'none' }}>
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
+          <div className="animate-in fade-in slide-in-from-bottom-1 duration-150 ease-out w-full">
             <GroupMemberManager group={currentGroup} />
           </div>
         </div>
@@ -180,7 +180,7 @@ export default function GroupModuleRenderer({
 
       {visitedTabs.has('live') && (
         <div style={{ display: activeTab === 'live' ? 'block' : 'none' }}>
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 w-full h-[calc(100vh-104px)]">
+          <div className="animate-in fade-in slide-in-from-bottom-1 duration-150 ease-out w-full h-[calc(100vh-104px)]">
             <LiveFeed entityType="group" entityId={currentGroup.id} />
           </div>
         </div>
@@ -188,7 +188,7 @@ export default function GroupModuleRenderer({
 
       {visitedTabs.has('calendar') && (isFullMember || isAdminUser) && (
         <div style={{ display: activeTab === 'calendar' ? 'block' : 'none' }}>
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="animate-in fade-in slide-in-from-bottom-1 duration-150 ease-out">
             <GroupCalendar group={currentGroup} />
           </div>
         </div>
@@ -196,7 +196,7 @@ export default function GroupModuleRenderer({
 
       {visitedTabs.has('feed') && (isFullMember || isAdminUser) && (
         <div style={{ display: activeTab === 'feed' ? 'block' : 'none' }}>
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="animate-in fade-in slide-in-from-bottom-1 duration-150 ease-out">
             <UniversalFeed
               context={{ scope: 'group', scopeId: currentGroup.id }}
               currentUser={{
@@ -211,18 +211,19 @@ export default function GroupModuleRenderer({
 
       {visitedTabs.has('class') && (isFullMember || isAdminUser) && (
         <div style={{ display: activeTab === 'class' ? 'block' : 'none' }}>
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
+          <div className="animate-in fade-in slide-in-from-bottom-1 duration-150 ease-out w-full">
             <GroupClassDashboard
               group={currentGroup}
+              members={members}
               onApplyClick={(monthStr) => openClassFlow('apply', { month: monthStr })}
             />
           </div>
         </div>
       )}
 
-      {visitedTabs.has('class-setting') && isAdminUser && (
+      {visitedTabs.has('class-setting') && (
         <div style={{ display: activeTab === 'class-setting' ? 'block' : 'none' }}>
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
+          <div className="animate-in fade-in slide-in-from-bottom-1 duration-150 ease-out w-full">
             <GroupClassEditor group={currentGroup} isInline={true} />
           </div>
         </div>
@@ -230,7 +231,7 @@ export default function GroupModuleRenderer({
 
       {visitedTabs.has('board') && (isFullMember || isAdminUser) && (
         <div style={{ display: activeTab === 'board' ? 'block' : 'none' }}>
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="animate-in fade-in slide-in-from-bottom-1 duration-150 ease-out">
             <GroupBoard group={currentGroup} isAdmin={isAdminUser} />
           </div>
         </div>
@@ -260,7 +261,7 @@ export default function GroupModuleRenderer({
         </div>
       )}
 
-      {visitedTabs.has('shop-setting') && isAdminUser && (
+      {visitedTabs.has('shop-setting') && (
         <div style={{ display: activeTab === 'shop-setting' ? 'block' : 'none' }}>
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
             <GroupShopEditor group={currentGroup} isInline={true} />
@@ -268,7 +269,7 @@ export default function GroupModuleRenderer({
         </div>
       )}
 
-      {visitedTabs.has('stay-setting') && isAdminUser && (
+      {visitedTabs.has('stay-setting') && (
         <div style={{ display: activeTab === 'stay-setting' ? 'block' : 'none' }}>
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
             <GroupStayEditor group={currentGroup} isInline={true} />
@@ -276,7 +277,7 @@ export default function GroupModuleRenderer({
         </div>
       )}
 
-      {visitedTabs.has('rental-setting') && isAdminUser && (
+      {visitedTabs.has('rental-setting') && (
         <div style={{ display: activeTab === 'rental-setting' ? 'block' : 'none' }}>
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
             <GroupRentalEditor group={currentGroup} isInline={true} />
@@ -627,7 +628,7 @@ export default function GroupModuleRenderer({
       )}
 
       {/* Group Settings */}
-      {visitedTabs.has('settings') && isAdminUser && (
+      {visitedTabs.has('settings') && (
         <div style={{ display: activeTab === 'settings' ? 'block' : 'none' }}>
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <GroupFunctionBuilder
@@ -641,7 +642,7 @@ export default function GroupModuleRenderer({
       )}
 
       {/* Brand Settings */}
-      {visitedTabs.has('brand') && isAdminUser && (
+      {visitedTabs.has('brand') && (
         <div style={{ display: activeTab === 'brand' ? 'block' : 'none' }}>
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <GroupHomeConfig

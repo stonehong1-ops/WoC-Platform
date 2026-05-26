@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Group, GroupClass, ClassDiscount, ClassRegistration } from '@/types/group';
+import { Group, Member, GroupClass, ClassDiscount, ClassRegistration } from '@/types/group';
 import { chatService } from '@/lib/firebase/chatService';
 import { groupService } from '@/lib/firebase/groupService';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -15,13 +15,14 @@ import { toast } from 'sonner';
 
 interface GroupClassDashboardProps {
   group: Group;
+  members: Member[];
   onApplyClick: (monthStr: string) => void;
 }
 
 const CURRENCY_SYMBOL: Record<string, string> = { KRW: '₩', USD: '$', EUR: '€' };
 const getCurrencySymbol = (c: string) => CURRENCY_SYMBOL[c] || c + ' ';
 
-export default function GroupClassDashboard({ group, onApplyClick }: GroupClassDashboardProps) {
+export default function GroupClassDashboard({ group, members, onApplyClick }: GroupClassDashboardProps) {
   const { t, language } = useLanguage();
   const { user } = useAuth();
   const router = useRouter();
@@ -86,7 +87,6 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
     };
   }, [group.id]);
 
-  const [ownerInfo, setOwnerInfo] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'list' | 'registrations' | 'class_status' | 'payments'>('list');
   const [viewMode, setViewMode] = useState<'personal' | 'byClass'>('personal');
 
@@ -109,17 +109,26 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
     ? `${currentDate.getFullYear()}년 ${currentDate.getMonth() + 1}월`
     : `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][currentDate.getMonth()]} ${currentDate.getFullYear()}`;
 
-  useEffect(() => {
-    if (group?.ownerId) {
-      const fetchOwner = async () => {
-        const userDoc = await getDoc(doc(db, 'users', group.ownerId as string));
-        if (userDoc.exists()) {
-          setOwnerInfo({ id: group.ownerId, ...userDoc.data() });
-        }
-      };
-      fetchOwner();
+  // 1. 진짜 대표자 UID 식별 (오직 group.ownerId 필드만을 절대적인 기준으로 삼음. system1은 공석 처리)
+  const resolvedOwnerId = useMemo(() => {
+    if (group?.ownerId && group.ownerId !== 'system1') {
+      return group.ownerId;
     }
+    return '';
   }, [group?.ownerId]);
+
+  // 2. 대표자 프로필 정보 동적 세팅 (부모의 실시간 members 리스트 매핑. members에 없으면 group.representative 폴백)
+  const ownerInfo = useMemo(() => {
+    if (!resolvedOwnerId) {
+      return null;
+    }
+    const ownerMember = members.find(m => m.id === resolvedOwnerId);
+    return {
+      id: resolvedOwnerId,
+      nickname: ownerMember?.name || group.representative?.name || 'Owner',
+      avatar: ownerMember?.avatar || group.representative?.avatar || ''
+    };
+  }, [resolvedOwnerId, members, group.representative]);
 
   const monthClasses = useMemo(() => allClasses.filter(c => {
     if (c.targetMonth) return c.targetMonth === currentMonthStr;
@@ -160,12 +169,24 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
   const handleNextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
 
   const handleChatWithOwner = async () => {
-    if (!user || !ownerInfo?.id) return;
+    if (!user) {
+      toast.error("로그인이 필요합니다.");
+      return;
+    }
+    if (!ownerInfo?.id) {
+      toast.error(t('group.about.no_owner_error', '현재 문의할 수 있는 대표자가 없습니다.'));
+      return;
+    }
+    if (ownerInfo.id === user.uid) {
+      toast.warning(t('group.about.owner_cant_chat_self', '본인이 대표자인 그룹 클래스입니다.'));
+      return;
+    }
     try {
       const roomId = await chatService.getOrCreatePrivateRoom([user.uid, ownerInfo.id], user.uid);
       router.push(`/chat?roomId=${roomId}`);
     } catch (error) {
       console.error("Chat error:", error);
+      toast.error("대표자와의 대화방 개설에 실패했습니다.");
     }
   };
 
@@ -223,11 +244,6 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
   };
 
   const getStartTime = (cls: any): string => {
-    if (cls.startTime) {
-      const match = cls.startTime.match(/^(\d{1,2}):(\d{2})/);
-      if (match) return `${match[1].padStart(2, '0')}:${match[2]}`;
-      return cls.startTime;
-    }
     if (cls.schedule && cls.schedule.length > 0) {
       const sortedSched = [...cls.schedule].sort((a, b) => a.date.localeCompare(b.date));
       const firstSlot = sortedSched[0]?.timeSlot;
@@ -237,6 +253,11 @@ export default function GroupClassDashboard({ group, onApplyClick }: GroupClassD
           return `${match[1].padStart(2, '0')}:${match[2]}`;
         }
       }
+    }
+    if (cls.startTime) {
+      const match = cls.startTime.match(/^(\d{1,2}):(\d{2})/);
+      if (match) return `${match[1].padStart(2, '0')}:${match[2]}`;
+      return cls.startTime;
     }
     return '';
   };

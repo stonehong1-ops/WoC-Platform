@@ -41,74 +41,6 @@ function getDateKey(d: Date) {
 
 function isKoreanHoliday(d: Date) { return KR_HOLIDAYS[getDateKey(d)] || null; }
 
-const districtOrder = (d?: string) => {
-  if (d === '강북') return 0;
-  if (d === '강남') return 1;
-  return 2;
-};
-
-const subDistrictOrder = (d?: string) => {
-  if (!d) return 9;
-  const lower = d.toLowerCase();
-  if (lower.includes('홍대') || lower.includes('한강위')) return 0;
-  if (lower.includes('강남') || lower.includes('한강아래')) return 1;
-  if (lower.includes('강북')) return 2;
-  return 3;
-};
-
-const getWeekOrdinal = (d: Date) => Math.ceil(d.getDate() / 7);
-
-const isLastWeekOfMonth = (d: Date) => {
-  const currentMonth = d.getMonth();
-  const nextWeekDate = new Date(d);
-  nextWeekDate.setDate(d.getDate() + 7);
-  return nextWeekDate.getMonth() !== currentMonth;
-};
-
-const getDensityMode = (length: number): 'emperor' | 'wide' | 'slim' | 'grid' => {
-  if (length <= 2) return 'emperor';
-  if (length >= 3 && length <= 4) return 'wide';
-  if (length >= 5 && length <= 9) return 'slim';
-  return 'grid';
-};
-
-const detectSeoulDistrict = (social: Social, language: string, venuesMap: Record<string, any>): string => {
-  if (social.district && typeof social.district === 'string' && social.district.trim()) {
-    const d = social.district.trim().toLowerCase();
-    if (d.includes('강남') || d.includes('서초') || d.includes('송파') || d.includes('강동') || d.includes('양재')) {
-      return language === 'KR' ? '한강아래 (강남지역)' : 'South of River (Gangnam)';
-    }
-    if (d.includes('강북') || d.includes('홍대') || d.includes('마포') || d.includes('신촌') || d.includes('종로') || d.includes('합정')) {
-      return language === 'KR' ? '한강위 (홍대인근)' : 'North of River (Hongdae)';
-    }
-  }
-
-  const venue = venuesMap[social.venueId];
-  if (venue && venue.seoulArea) {
-    if (venue.seoulArea === 'gangbuk') {
-      return language === 'KR' ? '한강위 (홍대인근)' : 'North of River (Hongdae)';
-    }
-    if (venue.seoulArea === 'gangnam') {
-      return language === 'KR' ? '한강아래 (강남지역)' : 'South of River (Gangnam)';
-    }
-  }
-
-  const venueName = String(social.venueNameNative || social.venueName || '').toLowerCase();
-  const gangbukKeywords = [
-    '홍대', '마포', '신촌', '합정', '망원', '종로', '중구', '성동', '서대문', '이대', '상수', '광진', '용산', '한남', '이태원', '을지로', '광화문',
-    'hongdae', 'mapo', 'sinchon', 'hapjeong', 'jongno', 'yongsan', 'hannam', 'itaewon',
-    '바르샤', 'barsha', '엘빠소', 'elpaso', '아반', 'aban', '보헤미안', 'bohemian', '아르헨티나', 'argentina',
-    '오쵸', 'ocho', '땅고마니아', 'tangomania', '라비다', 'lavida', '마구아', 'magua', '밀롱가헤이', 'milongahei',
-    '라벤타나', '라 벤타나', 'ventana', 'la ventana', '알마', 'alma', '오나다', 'onada', 'atta', '아똬'
-  ];
-
-  for (const key of gangbukKeywords) {
-    if (venueName.includes(key)) return language === 'KR' ? '한강위 (홍대인근)' : 'North of River (Hongdae)';
-  }
-
-  return language === 'KR' ? '한강아래 (강남지역)' : 'South of River (Gangnam)';
-};
-
 function SocialContent() {
   const [regulars, setRegulars] = useState<Social[]>([]);
   const [popups, setPopups] = useState<Social[]>([]);
@@ -371,15 +303,12 @@ function SocialContent() {
           instances.push({ date: sDate, social: s });
         }
       } else if (s.type === 'regular' && s.dayOfWeek !== undefined) {
-        const dayNum = Number(s.dayOfWeek);
-        if (!isNaN(dayNum)) {
-          for (let i = 0; i < 1; i++) {
-            const d = new Date(today);
-            let offset = dayNum - d.getDay();
-            if (offset < 0) offset += 7;
-            d.setDate(d.getDate() + offset + (i * 7));
-            instances.push({ date: d, social: s });
-          }
+        for (let i = 0; i < 1; i++) {
+          const d = new Date(today);
+          let offset = Number(s.dayOfWeek) - d.getDay();
+          if (offset < 0) offset += 7;
+          d.setDate(d.getDate() + offset + (i * 7));
+          instances.push({ date: d, social: s });
         }
       }
     });
@@ -414,8 +343,7 @@ function SocialContent() {
       const targetDateTime = targetDate.getTime();
 
       filtered.forEach(s => {
-        const dayNum = Number(s.dayOfWeek);
-        if (s.type === 'regular' && !isNaN(dayNum) && dayNum === targetDayOfWeek) {
+        if (s.type === 'regular' && Number(s.dayOfWeek) === targetDayOfWeek) {
           instances.push({ date: targetDate, social: s });
         } else if (s.type === 'popup' && s.date) {
           const sDate = typeof s.date.toDate === 'function' ? s.date.toDate() : new Date(s.date as any);
@@ -477,8 +405,17 @@ function SocialContent() {
           })}
         </div>
 
-        {/* 신규 소셜 등록 원라인 통합 (중복 지역 선택 칩 제거) */}
+        {/* 지역선택 칩 & 신규 소셜 등록 원라인 통합 */}
         <div className="flex items-center gap-1.5">
+          <button
+            onClick={toggleSelector}
+            className="flex items-center gap-0.5 px-2 py-0.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-lg text-[10px] font-black active:scale-95 transition-all hover:bg-slate-100 shrink-0"
+          >
+            <span className="material-symbols-rounded text-[11px] text-blue-500">location_on</span>
+            <span>{cityDisplay}</span>
+            <span className="material-symbols-rounded text-[9px] text-slate-400">keyboard_arrow_down</span>
+          </button>
+
           {(profile?.isAdmin || (profile as any)?.systemRole === 'admin' || profile?.isRegistered) && (
             <button
               onClick={() => handleOpenCreate()}
@@ -499,7 +436,11 @@ function SocialContent() {
     return () => setSubHeader(null);
   }, [setSubHeader]);
 
-
+  const districtOrder = (d?: string) => {
+    if (d === '강북') return 0;
+    if (d === '강남') return 1;
+    return 2;
+  };
 
   // 1주일 날짜별 융합 스트림 (정기 + 오늘 팝업 결합 & 날짜별 DJ 치환 & 중복 병합)
   const todaysSocials = useMemo(() => {
@@ -511,8 +452,8 @@ function SocialContent() {
     const pad = (n: number) => n.toString().padStart(2, '0');
     const targetDateStr = `${targetDate.getFullYear()}-${pad(targetDate.getMonth() + 1)}-${pad(targetDate.getDate())}`;
 
-    // 1. 정기 밀롱가 필터링 (지역 필터 strict 매칭 반영)
-    const matchedRegulars = regulars.filter(matchLocation).filter(s => {
+    // 1. 정기 밀롱가 필터링
+    const matchedRegulars = regulars.filter(s => {
       if (Number(s.dayOfWeek) !== targetDay) return false;
 
       const rec = (s.recurrence || 'every').trim().toLowerCase();
@@ -526,8 +467,8 @@ function SocialContent() {
       return false;
     });
 
-    // 2. 오늘 날짜에 매칭되는 팝업 밀롱가 필터링 (지역 필터 strict 매칭 반영)
-    const matchedPopups = popups.filter(matchLocation).filter(s => {
+    // 2. 오늘 날짜에 매칭되는 팝업 밀롱가 필터링
+    const matchedPopups = popups.filter(s => {
       if (!s.date) return false;
       const sDate = typeof s.date.toDate === 'function' ? s.date.toDate() : new Date(s.date as any);
       return sDate.toDateString() === targetDate.toDateString();
@@ -537,22 +478,20 @@ function SocialContent() {
 
     // 3. 각 소셜 객체를 복제하며 오늘 날짜에 매칭되는 DJ 라인업 동적 치환 적용
     const listWithActiveDj = unifiedList.map(s => {
-      const cloned = { ...s, hasActiveDj: false };
-      if (cloned.djs && Array.isArray(cloned.djs) && cloned.djs.length > 0) {
-        const matchedDj = cloned.djs.find(dj => dj && dj.date === targetDateStr);
+      const cloned = { ...s };
+      if (cloned.djs && cloned.djs.length > 0) {
+        const matchedDj = cloned.djs.find(dj => dj.date === targetDateStr);
         if (matchedDj && matchedDj.djName) {
           cloned.djName = matchedDj.djName;
-          cloned.hasActiveDj = true;
         } else {
           cloned.djName = '';
-          cloned.hasActiveDj = true;
         }
       }
       return cloned;
     });
 
     // 4. 지능형 병합 알고리즘: 동일한 날짜, 장소, 시간에 중복 등록된 이벤트 지능적 병합
-    const mergedList: any[] = [];
+    const mergedList: Social[] = [];
     listWithActiveDj.forEach(s => {
       const venueKey = String(s.venueId || s.venueName || '').trim().toLowerCase();
       const timeKey = String(s.startTime || '').trim();
@@ -567,24 +506,14 @@ function SocialContent() {
 
       if (existingIdx > -1) {
         const existing = mergedList[existingIdx];
-        
-        // 지능형 DJ 배정 우선순위 판별 정책 이식
         const currentDj = String(s.djName || '').trim();
         const existingDj = String(existing.djName || '').trim();
-        const currentHasActive = !!s.hasActiveDj;
-        const existingHasActive = !!existing.hasActiveDj;
-
-        if (currentHasActive && !existingHasActive) {
+        
+        // 오늘 날짜에 매칭된 유효한 DJ가 있는 데이터를 우선 채택
+        if (currentDj && !existingDj) {
           existing.djName = currentDj;
-          existing.hasActiveDj = true;
-        } else if (!currentHasActive && existingHasActive) {
-          // 이미 배정된 진짜 DJ가 있으므로 레거시 기본 DJ명 무시
-        } else {
-          if (currentDj && !existingDj) {
-            existing.djName = currentDj;
-          } else if (currentDj && existingDj && currentDj !== existingDj) {
-            existing.djName = `${existingDj} / ${currentDj}`;
-          }
+        } else if (currentDj && existingDj && currentDj !== existingDj) {
+          existing.djName = `${existingDj} / ${currentDj}`;
         }
 
         if (!existing.imageUrl && s.imageUrl) {
@@ -608,6 +537,68 @@ function SocialContent() {
   }, [regulars, popups, activeDayOffset]);
 
   const activeCities = useMemo(() => ['서울', '부산', '대전', '대구', '광주', '인천', '제주'], []);
+
+  const subDistrictOrder = (d?: string) => {
+    if (!d) return 9;
+    const lower = d.toLowerCase();
+    if (lower.includes('홍대') || lower.includes('한강위')) return 0;
+    if (lower.includes('강남') || lower.includes('한강아래')) return 1;
+    if (lower.includes('강북')) return 2;
+    return 3;
+  };
+
+  const detectSeoulDistrict = (social: Social): string => {
+    if (social.district && social.district.trim()) {
+      const d = social.district.trim().toLowerCase();
+      if (d.includes('강남') || d.includes('서초') || d.includes('송파') || d.includes('강동') || d.includes('양재')) {
+        return language === 'KR' ? '한강아래 (강남지역)' : 'South of River (Gangnam)';
+      }
+      if (d.includes('강북') || d.includes('홍대') || d.includes('마포') || d.includes('신촌') || d.includes('종로') || d.includes('합정')) {
+        return language === 'KR' ? '한강위 (홍대인근)' : 'North of River (Hongdae)';
+      }
+    }
+
+    const venue = venuesMap[social.venueId];
+    if (venue && venue.seoulArea) {
+      if (venue.seoulArea === 'gangbuk') {
+        return language === 'KR' ? '한강위 (홍대인근)' : 'North of River (Hongdae)';
+      }
+      if (venue.seoulArea === 'gangnam') {
+        return language === 'KR' ? '한강아래 (강남지역)' : 'South of River (Gangnam)';
+      }
+    }
+
+    const venueName = (social.venueNameNative || social.venueName || '').toLowerCase();
+    const gangbukKeywords = [
+      '홍대', '마포', '신촌', '합정', '망원', '종로', '중구', '성동', '서대문', '이대', '상수', '광진', '용산', '한남', '이태원', '을지로', '광화문',
+      'hongdae', 'mapo', 'sinchon', 'hapjeong', 'jongno', 'yongsan', 'hannam', 'itaewon',
+      '바르샤', 'barsha', '엘빠소', 'elpaso', '아반', 'aban', '보헤미안', 'bohemian', '아르헨티나', 'argentina',
+      '오쵸', 'ocho', '땅고마니아', 'tangomania', '라비다', 'lavida', '마구아', 'magua', '밀롱가헤이', 'milongahei',
+      '라벤타나', '라 벤타나', 'ventana', 'la ventana', '알마', 'alma', '오나다', 'onada', 'atta', '아똬'
+    ];
+
+    for (const key of gangbukKeywords) {
+      if (venueName.includes(key)) return language === 'KR' ? '한강위 (홍대인근)' : 'North of River (Hongdae)';
+    }
+
+    return language === 'KR' ? '한강아래 (강남지역)' : 'South of River (Gangnam)';
+  };
+
+  const getWeekOrdinal = (d: Date) => Math.ceil(d.getDate() / 7);
+
+  const isLastWeekOfMonth = (d: Date) => {
+    const currentMonth = d.getMonth();
+    const nextWeekDate = new Date(d);
+    nextWeekDate.setDate(d.getDate() + 7);
+    return nextWeekDate.getMonth() !== currentMonth;
+  };
+
+  const getDensityMode = (length: number): 'emperor' | 'wide' | 'slim' | 'grid' => {
+    if (length <= 2) return 'emperor';
+    if (length >= 3 && length <= 4) return 'wide';
+    if (length >= 5 && length <= 9) return 'slim';
+    return 'grid';
+  };
 
   // 콤팩트 카드 세로 목록 렌더링 헬퍼 (기존 풀스크린 목록 이식)
   const renderCardList = (cards: Social[], mode: 'emperor' | 'wide' | 'slim' | 'grid') => {
@@ -640,11 +631,9 @@ function SocialContent() {
                   <div className="flex items-center gap-1.5 px-3 py-1 bg-blue-600 text-white rounded-xl text-[10px] font-black shadow-md shadow-blue-500/10">
                     <span className="material-symbols-rounded text-xs">schedule</span>
                     <span>{social.startTime} - {social.endTime}</span>
-                    {isDaySocial(social) && (
-                      <span className="ml-1 bg-white/20 px-1 rounded text-[8px] font-bold">
-                        {language === 'KR' ? '낮' : 'Day'}
-                      </span>
-                    )}
+                    <span className="ml-1 bg-white/20 px-1 rounded text-[8px] font-bold">
+                      {isDaySocial(social) ? (language === 'KR' ? '낮' : 'Day') : (language === 'KR' ? '밤' : 'Night')}
+                    </span>
                   </div>
                   {social.type === 'popup' && (
                     <span className="px-2.5 py-1 bg-rose-600 text-white rounded-xl text-[9px] font-black tracking-widest uppercase shadow-md shadow-rose-500/10">
@@ -698,11 +687,13 @@ function SocialContent() {
               <div className="flex-1 min-w-0 pr-1">
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-black bg-blue-50 text-blue-600 px-2 py-0.5 rounded-lg border border-blue-100 leading-none">{social.startTime} - {social.endTime}</span>
-                  {isDaySocial(social) && (
-                    <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md leading-none shrink-0 bg-amber-50 text-amber-600 border border-amber-100">
-                      {language === 'KR' ? '낮' : 'Day'}
-                    </span>
-                  )}
+                  <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md leading-none shrink-0 ${
+                    isDaySocial(social) 
+                      ? 'bg-amber-50 text-amber-600 border border-amber-100' 
+                      : 'bg-indigo-50 text-indigo-600 border border-indigo-100'
+                  }`}>
+                    {isDaySocial(social) ? (language === 'KR' ? '낮' : 'Day') : (language === 'KR' ? '밤' : 'Night')}
+                  </span>
                   {social.djName && <span className="text-[9.5px] font-bold text-slate-400 truncate">DJ {social.djName}</span>}
                 </div>
                 <h4 className="text-[14.5px] font-black text-slate-800 truncate leading-tight mt-1.5 flex items-baseline gap-1.5">
@@ -747,11 +738,13 @@ function SocialContent() {
               <div className="flex-1 min-w-0 pr-1">
                 <div className="flex items-center gap-2">
                   <span className="text-[9.5px] font-black bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-lg border border-blue-100 leading-none">{social.startTime} - {social.endTime}</span>
-                  {isDaySocial(social) && (
-                    <span className="text-[8.5px] font-black px-1.5 py-0.5 rounded-md leading-none shrink-0 bg-amber-50 text-amber-600 border border-amber-100">
-                      {language === 'KR' ? '낮' : 'Day'}
-                    </span>
-                  )}
+                  <span className={`text-[8.5px] font-black px-1.5 py-0.5 rounded-md leading-none shrink-0 ${
+                    isDaySocial(social) 
+                      ? 'bg-amber-50 text-amber-600 border border-amber-100' 
+                      : 'bg-indigo-50 text-indigo-600 border border-indigo-100'
+                  }`}>
+                    {isDaySocial(social) ? (language === 'KR' ? '낮' : 'Day') : (language === 'KR' ? '밤' : 'Night')}
+                  </span>
                   {social.djName && <span className="text-[9.5px] font-bold text-slate-400 truncate">DJ {social.djName}</span>}
                 </div>
                 <h4 className="text-[13.5px] font-black text-slate-800 truncate leading-tight mt-1 flex items-baseline gap-1.5">
@@ -791,11 +784,13 @@ function SocialContent() {
                     {language === 'KR' ? '팝업' : 'Popup'}
                   </span>
                 ) : (
-                  isDaySocial(social) ? (
-                    <span className="text-[8px] font-black px-1.5 py-0.5 rounded leading-none shrink-0 scale-90 origin-right bg-amber-50 text-amber-600 border border-amber-100">
-                      {language === 'KR' ? '낮' : 'Day'}
-                    </span>
-                  ) : null
+                  <span className={`text-[8px] font-black px-1.5 py-0.5 rounded leading-none shrink-0 scale-90 origin-right ${
+                    isDaySocial(social) 
+                      ? 'bg-amber-50 text-amber-600 border border-amber-100' 
+                      : 'bg-indigo-50 text-indigo-600 border border-indigo-100'
+                  }`}>
+                    {isDaySocial(social) ? (language === 'KR' ? '낮' : 'Day') : (language === 'KR' ? '밤' : 'Night')}
+                  </span>
                 )}
               </div>
               
@@ -908,76 +903,23 @@ function SocialContent() {
             ) : (
               (() => {
                 const grouped: Record<string, Social[]> = {};
-                const isSeoul = location.city === 'SEOUL';
                 
+                // 지역 필터가 서울(SEOUL)인 경우에만 지능형 한강 기준 강남북(구역) 분류 적용
+                const isSeoul = location.city === 'SEOUL';
                 if (isSeoul) {
-                  const preGrouped: Record<string, Social[]> = {};
                   todaysSocials.forEach(s => {
-                    const dist = detectSeoulDistrict(s, language, venuesMap);
-                    if (!preGrouped[dist]) preGrouped[dist] = [];
-                    preGrouped[dist].push(s);
-                  });
-
-                  Object.keys(preGrouped).forEach(dist => {
-                    const list = preGrouped[dist];
-                    const hasDaySocial = list.some(s => {
-                      const time = s.startTime || '19:00';
-                      const hour = parseInt(time.split(':')[0]);
-                      return !isNaN(hour) && hour < 18;
-                    });
-
-                    if (hasDaySocial) {
-                      const dayList: Social[] = [];
-                      const nightList: Social[] = [];
-
-                      list.forEach(s => {
-                        const time = s.startTime || '19:00';
-                        const hour = parseInt(time.split(':')[0]);
-                        if (!isNaN(hour) && hour < 18) {
-                          dayList.push(s);
-                        } else {
-                          nightList.push(s);
-                        }
-                      });
-
-                      if (dayList.length > 0) {
-                        const key = language === 'KR' ? `${dist} - 낮 소셜` : `${dist} - Day`;
-                        grouped[key] = dayList;
-                      }
-                      if (nightList.length > 0) {
-                        const key = language === 'KR' ? `${dist} - 밤 소셜` : `${dist} - Night`;
-                        grouped[key] = nightList;
-                      }
-                    } else {
-                      grouped[dist] = list;
-                    }
+                    const dist = detectSeoulDistrict(s);
+                    if (!grouped[dist]) grouped[dist] = [];
+                    grouped[dist].push(s);
                   });
                 } else {
                   const key = cityDisplay;
                   grouped[key] = todaysSocials;
                 }
 
-                // 각 그룹 내부의 소셜 리스트를 startTime 기준 빠른 시간순으로 정렬
-                Object.keys(grouped).forEach(key => {
-                  grouped[key].sort((a, b) => {
-                    const timeA = a.startTime || '00:00';
-                    const timeB = b.startTime || '00:00';
-                    return timeA.localeCompare(timeB);
-                  });
-                });
-
-                // 한강 위(강북) -> 한강 아래(강남) 순으로 정렬하며, 동일 구역 내에서는 낮 소셜이 먼저 오도록 정렬
                 const sortedDists = Object.keys(grouped).sort((a, b) => {
-                  const aIsGangbuk = a.includes('한강위') || a.includes('강북') || a.includes('홍대');
-                  const bIsGangbuk = b.includes('한강위') || b.includes('강북') || b.includes('홍대');
-                  if (aIsGangbuk && !bIsGangbuk) return -1;
-                  if (!aIsGangbuk && bIsGangbuk) return 1;
-
-                  const aIsDay = a.includes('낮') || a.includes('Day');
-                  const bIsDay = b.includes('낮') || b.includes('Day');
-                  if (aIsDay && !bIsDay) return -1;
-                  if (!aIsDay && bIsDay) return 1;
-
+                  if (a.includes('한강위')) return -1;
+                  if (b.includes('한강위')) return 1;
                   return a.localeCompare(b);
                 });
 
@@ -1192,11 +1134,11 @@ function SocialContent() {
 }
 
 const getDjDisplay = (social: Social, date?: Date): string => {
-  if (!social.djs || !Array.isArray(social.djs) || social.djs.length === 0) return social.djName || '';
+  if (!social.djs || social.djs.length === 0) return social.djName || '';
   if (!date) return social.djName || '';
   const pad = (n: number) => n.toString().padStart(2, '0');
   const dStr = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-  const matched = social.djs.find(dj => dj && dj.date === dStr);
+  const matched = social.djs.find(dj => dj.date === dStr);
   return matched ? matched.djName : (social.djName || '');
 };
 

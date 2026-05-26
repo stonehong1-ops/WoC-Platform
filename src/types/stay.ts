@@ -68,6 +68,27 @@ export interface StaySmsTemplates {
   doorCode?: string;         // 비밀번호 전송 템플릿
 }
 
+export interface StayAutomationStep {
+  enabled: boolean;
+  webContent: string;
+}
+
+export interface StayAutomationSettings {
+  enabled: boolean;
+  steps: {
+    applied: StayAutomationStep;
+    before3Days: StayAutomationStep;
+    checkInDay: StayAutomationStep;
+    checkOutDay: StayAutomationStep;
+  };
+}
+
+export interface GalleryItem {
+  url: string;
+  descKo: string;
+  descEn: string;
+}
+
 export interface Stay {
   id: string;
   groupId: string;            // FK → groups/{groupId}
@@ -78,6 +99,7 @@ export interface Stay {
   location: StayLocation;
   pricing: StayPricing;
   images: string[];
+  gallery?: GalleryItem[];
   guides?: StayGuides;
   checkInTime: string;        // "15:00"
   checkOutTime: string;       // "11:00"
@@ -88,6 +110,11 @@ export interface Stay {
   cancellation?: StayCancellation;
   host: StayHost;
   smsTemplates?: StaySmsTemplates;
+  automationSettings?: StayAutomationSettings;
+  descriptions?: {
+    ko: string[];
+    en: string[];
+  };
   tags?: string[];
   amenities?: string[];
   isActive: boolean;
@@ -130,7 +157,7 @@ export interface BookingStatusHistoryEntry {
 }
 
 export interface BookingSmsLogEntry {
-  type: 'applied' | 'payment_request' | 'confirmed' | 'door_code';
+  type: 'applied' | 'payment_request' | 'paid' | 'confirmed' | 'door_code';
   sentAt: any;               // Timestamp
   sentBy: string;            // 발송자 userId
   to: string;                // 수신 전화번호

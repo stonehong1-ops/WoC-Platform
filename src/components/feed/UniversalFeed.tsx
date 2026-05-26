@@ -154,6 +154,14 @@ export default function UniversalFeed({ context, currentUser, profile, activeFil
   // 아래 타임라인 목록에서는 중복 렌더링되지 않도록 Spotlight 글은 제외
   const regularPosts = filteredPosts.filter(p => !p.isAnnouncement && !p.isOfficial);
 
+  // [스톤님 기획안] 격자 뷰모드일 때 텍스트 전용 글은 100% 필터링(제외)하여 순수 미디어 갤러리화
+  const gridMediaPosts = regularPosts.filter(p => {
+    const mediaItems = p.media || [];
+    const hasMedia = mediaItems.filter((m: any) => typeof m === 'string' || m.type !== 'link').length > 0;
+    const hasLink = mediaItems.filter((m: any) => typeof m !== 'string' && m.type === 'link').length > 0;
+    return hasMedia || hasLink;
+  });
+
   return (
     <div className={`text-on-surface font-body relative ${context.scope === 'plaza' ? 'min-h-screen' : ''}`}>
       {/* Ambient Background Effects */}
@@ -284,13 +292,14 @@ export default function UniversalFeed({ context, currentUser, profile, activeFil
                 </div>
               ) : (
                 <div className="columns-2 gap-3 mx-4 pb-4 [column-fill:balance] break-inside-avoid-wrap">
-                  {regularPosts.map((post) => (
+                  {gridMediaPosts.map((post) => (
                     <div key={post.id} className="break-inside-avoid mb-3 inline-block w-full">
                       <FeedPostCard
                         post={post}
                         currentUser={currentUser}
                         profile={profile}
                         hideUserInfo={context.scope === 'helpdesk'}
+                        isGridView={true}
                         onEdit={(post) => openCreate(post.id)}
                         onDelete={async (postId) => {
                           if (window.confirm(t('plaza.confirm_delete_post'))) {

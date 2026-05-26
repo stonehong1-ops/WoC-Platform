@@ -88,16 +88,37 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
   const [tempFilter, setTempFilter] = useState<LiveFilter>({ category: 'all' });
   const [activeCategoryTab, setActiveCategoryTab] = useState<'all' | 'social' | 'class' | 'event' | 'na'>('all');
 
+  // 100% 무결한 시간순 내림차순(최신순) 강제 정렬 포스트 목록 생성
+  const sortedPosts = React.useMemo(() => {
+    return [...posts].sort((a, b) => {
+      const timeA = safeDate(a.createdAt)?.getTime() || 0;
+      const timeB = safeDate(b.createdAt)?.getTime() || 0;
+      return timeB - timeA; // 최신이 위로!
+    });
+  }, [posts]);
+
+  // 최초 렌더링용 대표 영상 (가장 최신 라이브 피드 포스트 비디오) URL 정밀 추출
+  const firstVideoUrl = React.useMemo(() => {
+    const firstPost = sortedPosts[0];
+    if (!firstPost || !firstPost.media?.[0]) return null;
+    const url = firstPost.media[0];
+    const isVideo = firstPost.mediaTypes 
+      ? firstPost.mediaTypes[0] === 'video' 
+      : (url.toLowerCase().includes('.mp4') || url.toLowerCase().includes('.mov') || url.toLowerCase().includes('.webm') || url.toLowerCase().includes('video'));
+    return isVideo ? url : null;
+  }, [sortedPosts]);
+
   const stats = React.useMemo(() => {
-    const yesterday = Date.now() - 24 * 60 * 60 * 1000;
+    // 스톤님 지침: 최근 초기이므로 최근 30일(한 달) 기준으로 집계
+    const last30Days = Date.now() - 30 * 24 * 60 * 60 * 1000;
     
-    // 어제 게시물 필터링
-    const yesterdayPosts = posts.filter(post => {
+    // 최근 30일 게시물 필터링 (최신순 정렬된 sortedPosts 활용)
+    const recentPosts = sortedPosts.filter(post => {
       const createdTime = safeDate(post.createdAt)?.getTime() || 0;
-      return createdTime >= yesterday;
+      return createdTime >= last30Days;
     });
 
-    const targetPosts = yesterdayPosts.length >= 3 ? yesterdayPosts : posts.slice(0, 15);
+    const targetPosts = recentPosts.length >= 3 ? recentPosts : sortedPosts.slice(0, 15);
 
     const classes = targetPosts.filter(p => Array.isArray(p.tags) && p.tags.some(t => t && t.type === 'class'));
     const socials = targetPosts.filter(p => Array.isArray(p.tags) && p.tags.some(t => t && t.type === 'social'));
@@ -106,7 +127,7 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
     const my = targetPosts.filter(p => p.authorId === user?.uid);
 
     const getMediaInfo = (filteredPosts: GalleryPost[], fallbackUrl: string) => {
-      const post = filteredPosts[0]; // 다른 카테고리의 데이터를 절대 임의로 훔쳐오지 않음
+      const post = filteredPosts[0]; // 무결하게 정렬된 최신 게시글 0번째 요소를 활용
       if (!post || !post.media?.[0]) {
         return { url: fallbackUrl, isVideo: false };
       }
@@ -346,6 +367,153 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
     return () => unsubscribe();
   }, [entityType, entityId, userId, retryCount]);
 
+  // 스톤님 정적 HTML DIVE IN 버튼 이벤트 위임 핸들러 (비동기 데이터 갱신에 100% 면역 및 로딩 잠금 결합)
+  const handleDashboardClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const btn = (e.target as HTMLElement).closest('button[aria-label="Enter Live"]');
+    if (btn) {
+      // 100% 로딩 완료 전에는 진입 차단 (잠금 장치)
+      if (loadingPercent < 100) {
+        return;
+      }
+      setShowDashboardIntro(false);
+    }
+  };
+
+  // 대시보드 렌더링 후 대표 영상 단 1개의 백그라운드 프리로드 진행률 추적 및 리스너 등록
+  useEffect(() => {
+    if (!showDashboardIntro) return;
+    
+    const container = containerRef.current;
+    if (!container) return;
+
+    // 만약 첫 피드가 비디오가 아니거나 없는 경우 즉시 100% (안전장치)
+    if (!firstVideoUrl) {
+      setLoadingPercent(100);
+      return;
+    }
+
+    const preloadVid = container.querySelector('#bg-preload-video') as HTMLVideoElement | null;
+    if (!preloadVid) {
+      // DOM 상에 비디오 요소를 아직 찾지 못한 경우 대기
+      return;
+    }
+
+    let progressInterval: NodeJS.Timeout | null = null;
+    let currentPercent = 0;
+
+    const startSmoothProgress = () => {
+      progressInterval = setInterval(() => {
+        if (currentPercent < 90) {
+          currentPercent += Math.random() > 0.5 ? 2 : 1;
+          setLoadingPercent(Math.min(currentPercent, 90));
+        }
+      }, 60); // 60ms 간격으로 스무스하게 올라가 기분 좋은 체감 선사
+    };
+
+    const handleVideoProgress = (e: Event) => {
+      const video = e.currentTarget as HTMLVideoElement;
+      if (video.buffered.length > 0 && video.duration) {
+        const bufferedEnd = video.buffered.end(video.buffered.length - 1);
+        const percent = Math.round((bufferedEnd / video.duration) * 100);
+        // 실제 네트워크 버퍼율이 가상 진행률보다 크면 실시간 동기화
+        if (percent > currentPercent) {
+          currentPercent = percent;
+          setLoadingPercent(Math.min(currentPercent, 100));
+        }
+        if (percent >= 100) {
+          completeLoading();
+        }
+      }
+    };
+
+    const completeLoading = () => {
+      if (progressInterval) {
+        clearInterval(progressInterval);
+        progressInterval = null;
+      }
+      currentPercent = 100;
+      setLoadingPercent(100);
+    };
+
+    // 재생 준비가 완료(loadeddata, canplay)되면 35%에 멈추지 않고 즉시 100%로 강제 채우기 완수
+    const handleVideoReady = () => {
+      completeLoading();
+    };
+
+    startSmoothProgress();
+
+    preloadVid.addEventListener('progress', handleVideoProgress);
+    preloadVid.addEventListener('canplay', handleVideoReady);
+    preloadVid.addEventListener('canplaythrough', handleVideoReady);
+    preloadVid.addEventListener('loadeddata', handleVideoReady);
+
+    // 이미 충분히 캐시되었거나 바로 재생 가능 상태라면 즉시 100%
+    if (preloadVid.readyState >= 2) {
+      completeLoading();
+    }
+
+    return () => {
+      if (progressInterval) {
+        clearInterval(progressInterval);
+      }
+      preloadVid.removeEventListener('progress', handleVideoProgress);
+      preloadVid.removeEventListener('canplay', handleVideoReady);
+      preloadVid.removeEventListener('canplaythrough', handleVideoReady);
+      preloadVid.removeEventListener('loadeddata', handleVideoReady);
+    };
+  }, [showDashboardIntro, firstVideoUrl, posts]);
+
+  // 비디오 재생 방해 없이 DIVE IN 프로그레스 링 및 활성 상태만 실시간으로 정밀 업데이트하는 DOM 연동 효과
+  useEffect(() => {
+    if (!showDashboardIntro) return;
+    const container = containerRef.current;
+    if (!container) return;
+
+    const button = container.querySelector('[aria-label="Enter Live"]') as HTMLButtonElement | null;
+    const progressContainer = container.querySelector('[aria-label="Enter Live"] div.relative');
+    if (!progressContainer) return;
+
+    let filledPath = progressContainer.querySelector('path.text-primary') as SVGPathElement | null;
+    let percentText = progressContainer.querySelector('span.absolute') as HTMLSpanElement | null;
+
+    if (!filledPath) {
+      const svg = progressContainer.querySelector('svg');
+      if (svg) {
+        const basePath = svg.querySelector('path');
+        if (basePath) {
+          filledPath = basePath.cloneNode(true) as SVGPathElement;
+          filledPath.setAttribute('class', 'text-primary transition-all duration-300');
+          filledPath.setAttribute('stroke-dasharray', '0, 100');
+          svg.appendChild(filledPath);
+        }
+      }
+    }
+
+    if (filledPath) {
+      filledPath.setAttribute('stroke-dasharray', `${loadingPercent}, 100`);
+    }
+
+    if (button) {
+      if (loadingPercent < 100) {
+        button.style.opacity = '0.6';
+        button.style.cursor = 'not-allowed';
+        button.classList.remove('animate-bounce-subtle');
+      } else {
+        button.style.opacity = '1.0';
+        button.style.cursor = 'pointer';
+        button.classList.add('animate-bounce-subtle');
+      }
+    }
+
+    if (percentText) {
+      if (loadingPercent === 100) {
+        percentText.innerHTML = '<span class="material-symbols-outlined text-[14px] font-bold text-white select-none">play_arrow</span>';
+      } else {
+        percentText.innerText = `${loadingPercent}%`;
+      }
+    }
+  }, [loadingPercent, showDashboardIntro]);
+
   // Listen to global compose event
   useEffect(() => {
     const handleComposeOpen = (e: CustomEvent) => {
@@ -356,6 +524,100 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
     window.addEventListener('woc:compose:open', handleComposeOpen as EventListener);
     return () => window.removeEventListener('woc:compose:open', handleComposeOpen as EventListener);
   }, [router]);
+
+  // 스톤님 정적 HTML 동적 데이터 바인딩 치환 헬퍼 (애니메이션, 영상, 7일 집계 카운트 자동 매핑)
+  const getDashboardHtml = () => {
+    if (typeof window === "undefined") return "";
+    
+    // 1. 순수 바디 HTML 조각 복원
+    let html = decodeURIComponent(atob(ANTIGRAVITY_HTML).split("").map(function(c) { 
+      return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2); 
+    }).join(""));
+
+    // [이중 바디 방지 핵심 조치] 중간에 묻어 있는 </head> 및 <body> 찌꺼기를 완전히 도려내어 파서 교란을 방지합니다.
+    html = html.replace('</head>', '');
+    html = html.replace(/<body[^>]*>/i, '');
+
+    // 다이아몬드 레이아웃이 모바일 뷰포트 공간 내에 정교하게 핏(Fit)되도록 상한 가로 크기를 250px로 우아하게 스케일 다운합니다.
+    // 이렇게 하면 밀려 올라가서 안 보였던 상단 Streams / Moments 정보바가 상단 탭 바로 아래에 100% 온전히 드러납니다!
+    html = html.replace('max-width: 320px;', 'max-width: 250px;');
+
+    // 2. 카운트 데이터 실시간 바인딩 치환
+    html = html.replace('7 Group Streams', `${stats.groupCount} Group Streams`);
+    html = html.replace('3 My Moments', `${stats.myCount} My Moments`);
+    html = html.replace('3 Socials', `${stats.socialCount} Socials`);
+    html = html.replace('0 Events', `${stats.eventCount} Events`);
+    html = html.replace('3 Classes', `${stats.classCount} Classes`);
+
+    // 2.5. 프로그레스 링 실시간 초기 수치 반영
+    const initialRingHtml = `
+<div class="relative w-8 h-8 flex items-center justify-center bg-black/20 rounded-full shrink-0">
+<svg class="w-full h-full -rotate-90" viewbox="0 0 36 36">
+<path class="text-white/20" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3"></path>
+<path class="text-primary transition-all duration-300" stroke-dasharray="${loadingPercent}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3"></path>
+</svg>
+<span class="absolute text-[10px] font-bold text-white">${loadingPercent}%</span>
+</div>
+    `.trim();
+
+    const ringPattern = /<div class="relative w-8 h-8 flex items-center justify-center bg-black\/20 rounded-full shrink-0">[\s\S]*?<\/div>/;
+    html = html.replace(ringPattern, initialRingHtml);
+
+    // DIVE IN 버튼 초기 비활성화/활성화 인라인 스타일 동적 매핑
+    const initialOpacity = loadingPercent < 100 ? '0.6' : '1.0';
+    const initialCursor = loadingPercent < 100 ? 'not-allowed' : 'pointer';
+    const initialBounceClass = loadingPercent < 100 ? '' : ' animate-bounce-subtle';
+    
+    html = html.replace(
+      '<button aria-label="Enter Live" class="',
+      `<button aria-label="Enter Live" style="opacity: ${initialOpacity}; cursor: ${initialCursor};" class="${initialBounceClass} `
+    );
+
+    // 3. 미디어(이미지 및 비디오) 리얼타임 동적 스왑 바인딩
+    // Top Social Diamond
+    if (stats.socialMedia.isVideo) {
+      const socialPoster = 'https://lh3.googleusercontent.com/aida-public/AB6AXuBoLBgIoFjrCPv3ecTx1KjvquuH8D8fF_vfuOzg0uYlLNIUxmZ_iZ1baVNy-fIb23AK5MdEcYsvejAm3rrWwE-wC7_UpQB9TGr86NGHQeISKGYTo4JT63BJa6gdCZZxFSreuQ16G-4_z02wF0HHdXXFAOUFCDXWRffPiCxzWkdI_RJBnsNKud5b7DquLHJxLxZ4rLGca4rYn_KVJeU3NtlqGI5Qu5JSJkSCyAXvh2Y-O58vufupimBLzoGbs-pQEMZCV5_P7ZukfcKr';
+      html = html.replace(
+        `<img alt="Tango Social Event" class="diamond-img" src="${socialPoster}"/>`,
+        `<video class="diamond-img" src="${stats.socialMedia.url}" poster="${socialPoster}" autoPlay loop muted playsInline preload="auto" />`
+      );
+    } else {
+      html = html.replace(
+        'https://lh3.googleusercontent.com/aida-public/AB6AXuBoLBgIoFjrCPv3ecTx1KjvquuH8D8fF_vfuOzg0uYlLNIUxmZ_iZ1baVNy-fIb23AK5MdEcYsvejAm3rrWwE-wC7_UpQB9TGr86NGHQeISKGYTo4JT63BJa6gdCZZxFSreuQ16G-4_z02wF0HHdXXFAOUFCDXWRffPiCxzWkdI_RJBnsNKud5b7DquLHJxLxZ4rLGca4rYn_KVJeU3NtlqGI5Qu5JSJkSCyAXvh2Y-O58vufupimBLzoGbs-pQEMZCV5_P7ZukfcKr',
+        stats.socialMedia.url
+      );
+    }
+
+    // Bottom Left Events Diamond (0 Events 라벨이 붙은 탱고 이벤트 퍼포먼스 이미지)
+    if (stats.eventMedia.isVideo) {
+      const eventPoster = 'https://lh3.googleusercontent.com/aida-public/AB6AXuBLZtZiHjgb9n4h41W4-Yy8Us7Of-l5RN8_SWlnOt5rF5TWoKsugs_FZmktcFz2kTQSDmd9gsAjAmIvl5i_UcyqJo308W7iOPhcD3O4cF2zGvtoGaO05xayARNQXBbynXhWGomy2J3bEIImZKHzHk8TMtnJ5zq1dIhbS8JQtxirTWKdJbFzmV5EN8YF9J1MnHwzasY6cOLLo3UJUAXd1ENMIIDrzZuXKsxss_xNo2-Ui7jY1M4GfyeZo7jOTY4UpKDPxKIpztk-7Wmm';
+      html = html.replace(
+        `<img alt="Tango Event Performance" class="diamond-img" src="${eventPoster}"/>`,
+        `<video class="diamond-img" src="${stats.eventMedia.url}" poster="${eventPoster}" autoPlay loop muted playsInline preload="auto" />`
+      );
+    } else {
+      html = html.replace(
+        'https://lh3.googleusercontent.com/aida-public/AB6AXuBLZtZiHjgb9n4h41W4-Yy8Us7Of-l5RN8_SWlnOt5rF5TWoKsugs_FZmktcFz2kTQSDmd9gsAjAmIvl5i_UcyqJo308W7iOPhcD3O4cF2zGvtoGaO05xayARNQXBbynXhWGomy2J3bEIImZKHzHk8TMtnJ5zq1dIhbS8JQtxirTWKdJbFzmV5EN8YF9J1MnHwzasY6cOLLo3UJUAXd1ENMIIDrzZuXKsxss_xNo2-Ui7jY1M4GfyeZo7jOTY4UpKDPxKIpztk-7Wmm',
+        stats.eventMedia.url
+      );
+    }
+
+    // Bottom Right Classes Diamond (3 Classes 라벨이 붙은 탱고 클래스 이미지)
+    if (stats.classMedia.isVideo) {
+      const classPoster = 'https://lh3.googleusercontent.com/aida-public/AB6AXuAklN_kd0yAyHkvd4ERre0XpOU-Th5WUC7IHRv1g-YjWgFZrYZFC0_j5-_rfSxv62kY0Zh1WKelSdeRJZTxG3WCxdm4Gx3cu9ODbUMhUtG-D7DmJK7zAK_bKwB04Tzei8wezqWVabv8iHJFTdZ1bDvLGu-6WW8P4sPxgDW0PMKeAcRzYko1DUr7qlhcSRMhzOneih5rbMoeHTcbhm5O117SF3FEzMw-8NbuKXCVkTgDo9F3A91PGrqrkF_DGCnYj_QVMQGCWAMdHIos';
+      html = html.replace(
+        `<img alt="Tango Class" class="diamond-img" src="${classPoster}"/>`,
+        `<video class="diamond-img" src="${stats.classMedia.url}" poster="${classPoster}" autoPlay loop muted playsInline preload="auto" />`
+      );
+    } else {
+      html = html.replace(
+        'https://lh3.googleusercontent.com/aida-public/AB6AXuAklN_kd0yAyHkvd4ERre0XpOU-Th5WUC7IHRv1g-YjWgFZrYZFC0_j5-_rfSxv62kY0Zh1WKelSdeRJZTxG3WCxdm4Gx3cu9ODbUMhUtG-D7DmJK7zAK_bKwB04Tzei8wezqWVabv8iHJFTdZ1bDvLGu-6WW8P4sPxgDW0PMKeAcRzYko1DUr7qlhcSRMhzOneih5rbMoeHTcbhm5O117SF3FEzMw-8NbuKXCVkTgDo9F3A91PGrqrkF_DGCnYj_QVMQGCWAMdHIos',
+        stats.classMedia.url
+      );
+    }
+
+    return html;
+  };
 
   if (!mounted) return null;
 
@@ -387,261 +649,81 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
   }
 
   return (
-    <div className={`${isImmersive ? 'fixed inset-0 z-[100]' : 'relative w-full h-full min-h-[500px]'} bg-black overflow-hidden flex flex-col ${className}`}>
+    <div 
+      ref={containerRef}
+      className={`${isImmersive ? 'fixed inset-0 z-[100]' : 'relative w-full h-full min-h-[500px]'} bg-black overflow-hidden flex flex-col ${className}`}
+    >
+      {showDashboardIntro && firstVideoUrl && (
+        <video
+          id="bg-preload-video"
+          src={firstVideoUrl}
+          muted
+          playsInline
+          preload="auto"
+          className="hidden"
+        />
+      )}
 
-      {/* 어제 현황판 인트로 대시보드 */}
-      <AnimatePresence>
-        {showDashboardIntro && !entityType && !entityId && !userId && (
-          <motion.div
-            initial={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: '-100%', scale: 0.95 }}
-            transition={{ type: 'spring', damping: 26, stiffness: 170 }}
-            className="absolute inset-0 bg-[#070709] z-[120] flex flex-col justify-between p-6 select-none overflow-hidden"
-          >
-            {/* 은은하게 깔리는 글로우 스크림 */}
-            <div className="absolute top-[-20%] left-[-10%] w-[120%] h-[60%] bg-gradient-to-b from-[#007AFF]/15 to-transparent blur-[120px] rounded-full pointer-events-none" />
-            <div className="absolute bottom-[-10%] right-[-10%] w-[80%] h-[50%] bg-gradient-to-t from-purple-500/10 to-transparent blur-[100px] rounded-full pointer-events-none" />
+      {showDashboardIntro ? (
+        /* 어제 현황판 인트로 대시보드 (하단 푸터바 가림 방지 pb-20 적용 및 동적 데이터 바인딩 헬퍼 결합) */
+        <div 
+          className="w-full h-full bg-surface text-on-surface font-sans flex flex-col items-center justify-start gap-4 pt-[120px] pb-20 px-4 selection:bg-primary selection:text-white select-none overflow-y-auto"
+          onClick={handleDashboardClick}
+          dangerouslySetInnerHTML={{ __html: getDashboardHtml() }}
+        />
+      ) : (
+        /* Feed Container - Vertical Snap */
+        <div
+          className="flex-1 overflow-y-scroll snap-y snap-mandatory no-scrollbar"
+          style={{ scrollBehavior: 'smooth' }}
+        >
+          {posts.length === 0 && (
+            <div className="flex flex-col items-center justify-center h-full text-white/50 pb-20">
+              <Link href="/live/create?source=live" className="bg-white/10 p-6 rounded-full mb-4 backdrop-blur-md hover:bg-white/20 transition-colors">
+                <Plus size={40} />
+              </Link>
+              <p className="font-bold">{t('gallery.no_posts')}</p>
+              <p className="text-sm">{t('gallery.be_first')}</p>
+            </div>
+          )}
 
-            {/* 상단 바 - Skip 서클 */}
-            <div className="relative z-10 flex justify-between items-center w-full mt-safe pt-safe">
-              <span className="text-[11px] font-black tracking-widest text-[#007AFF] uppercase bg-[#007AFF]/10 px-3 py-1 rounded-full border border-[#007AFF]/20">
-                WoC Live
-              </span>
+          {posts.length > 0 && filteredPosts.length === 0 && (
+            <div className="flex flex-col items-center justify-center h-full text-white/50 pb-20 px-6 text-center">
+              <div className="bg-white/10 p-5 rounded-full mb-4 backdrop-blur-md">
+                <span className="material-symbols-outlined text-[36px] text-white/60 select-none">filter_list_off</span>
+              </div>
+              <p className="font-bold text-sm text-white">{t('pics.no_assets_found') || '조건에 맞는 라이브 피드가 없습니다.'}</p>
+              <p className="text-xs text-white/40 mt-1">{t('pics.try_adjusting_filters') || '필터를 조정해 보세요.'}</p>
               <button
-                onClick={() => setShowDashboardIntro(false)}
-                className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 active:scale-95 transition-all text-white text-xs font-bold backdrop-blur-md shadow-lg"
+                onClick={() => setActiveFilter({ category: 'all' })}
+                className="mt-6 px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-full text-xs font-black transition-all active:scale-95 border border-white/10 shadow-md"
               >
-                <span>Skip</span>
-                <SlidersHorizontal size={12} className="rotate-90 opacity-60" />
+                {t('gallery.filter.reset') || '필터 초기화'}
               </button>
             </div>
+          )}
 
-            {/* 중앙 마름모(다이아몬드) 썸네일 그리드 */}
-            <div className="relative flex-1 w-full flex items-center justify-center py-8">
-              <div className="relative w-full max-w-[340px] h-[340px] flex items-center justify-center">
-                
-                {/* 1. 좌측 마름모 카드 (수업 시연) */}
-                <motion.div
-                  animate={{ y: [0, -6, 0] }}
-                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 0.2 }}
-                  className="absolute left-0 bottom-4 w-[130px] h-[130px] z-10 flex flex-col items-center"
-                >
-                  <div 
-                    className="w-full h-full shadow-[0_15px_30px_rgba(0,0,0,0.5)] border border-white/20 transition-all duration-300 hover:border-[#007AFF]/50 cursor-pointer overflow-hidden relative"
-                    style={{ 
-                      clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
-                    }}
-                  >
-                    {stats.classMedia.isVideo && (
-                      <video 
-                        src={stats.classMedia.url} 
-                        muted 
-                        playsInline 
-                        autoPlay 
-                        loop 
-                        preload="auto"
-                        onCanPlay={() => setIsClassVideoLoaded(true)}
-                        onPlaying={() => setIsClassVideoLoaded(true)}
-                        className="w-full h-full object-cover"
-                      />
-                    )}
-                    <img 
-                      src="https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=500&auto=format&fit=crop"
-                      alt="" 
-                      className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${
-                        (stats.classMedia.isVideo && isClassVideoLoaded) ? 'opacity-0 pointer-events-none' : 'opacity-100'
-                      }`}
-                    />
-                  </div>
-                  {/* 글로우 텍스트 배지 */}
-                  <div className="absolute bottom-[-16px] bg-black/85 px-2.5 py-1 rounded-full border border-white/10 shadow-[0_0_12px_rgba(255,255,255,0.05)] flex items-center gap-1 backdrop-blur-md shrink-0">
-                    <span className="text-[9px] font-black text-white whitespace-nowrap">🎬 {stats.classCount} Classes</span>
-                  </div>
-                </motion.div>
-
-                {/* 2. 중앙 메인 마름모 카드 (소셜 밀롱가) */}
-                <motion.div
-                  animate={{ y: [0, -8, 0] }}
-                  transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
-                  className="absolute z-20 w-[170px] h-[170px] flex flex-col items-center"
-                  style={{ top: '22%' }}
-                >
-                  <div 
-                    className="w-full h-full shadow-[0_20px_45px_rgba(0,74,255,0.3)] border-2 border-white/30 transition-all duration-300 hover:border-[#007AFF] cursor-pointer overflow-hidden relative"
-                    style={{ 
-                      clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
-                    }}
-                  >
-                    {stats.socialMedia.isVideo && (
-                      <video 
-                        src={stats.socialMedia.url} 
-                        muted 
-                        playsInline 
-                        autoPlay 
-                        loop 
-                        preload="auto"
-                        onCanPlay={() => setIsSocialVideoLoaded(true)}
-                        onPlaying={() => setIsSocialVideoLoaded(true)}
-                        className="w-full h-full object-cover"
-                      />
-                    )}
-                    <img 
-                      src="https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=500&auto=format&fit=crop"
-                      alt="" 
-                      className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${
-                        (stats.socialMedia.isVideo && isSocialVideoLoaded) ? 'opacity-0 pointer-events-none' : 'opacity-100'
-                      }`}
-                    />
-                  </div>
-                  {/* 글로우 텍스트 배지 */}
-                  <div className="absolute bottom-[-20px] bg-black/90 px-3.5 py-1.5 rounded-full border border-[#007AFF]/40 shadow-[0_0_15px_rgba(0,122,255,0.3)] flex items-center gap-1 backdrop-blur-md shrink-0">
-                    <span className="text-[10px] font-black text-[#007AFF] whitespace-nowrap">💃 {stats.socialCount} Socials</span>
-                  </div>
-                </motion.div>
-
-                {/* 3. 우측 마름모 카드 (특별 공연) */}
-                <motion.div
-                  animate={{ y: [0, -6, 0] }}
-                  transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut", delay: 0.4 }}
-                  className="absolute right-0 bottom-4 w-[130px] h-[130px] z-10 flex flex-col items-center"
-                >
-                  <div 
-                    className="w-full h-full shadow-[0_15px_30px_rgba(0,0,0,0.5)] border border-white/20 transition-all duration-300 hover:border-purple-500/50 cursor-pointer overflow-hidden relative"
-                    style={{ 
-                      clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
-                    }}
-                  >
-                    {stats.eventMedia.isVideo && (
-                      <video 
-                        src={stats.eventMedia.url} 
-                        muted 
-                        playsInline 
-                        autoPlay 
-                        loop 
-                        preload="auto"
-                        onCanPlay={() => setIsEventVideoLoaded(true)}
-                        onPlaying={() => setIsEventVideoLoaded(true)}
-                        className="w-full h-full object-cover"
-                      />
-                    )}
-                    <img 
-                      src="https://images.unsplash.com/photo-1465847899084-d164df4dedc6?q=80&w=500&auto=format&fit=crop"
-                      alt="" 
-                      className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${
-                        (stats.eventMedia.isVideo && isEventVideoLoaded) ? 'opacity-0 pointer-events-none' : 'opacity-100'
-                      }`}
-                    />
-                  </div>
-                  {/* 글로우 텍스트 배지 */}
-                  <div className="absolute bottom-[-16px] bg-black/85 px-2.5 py-1 rounded-full border border-white/10 shadow-[0_0_12px_rgba(255,255,255,0.05)] flex items-center gap-1 backdrop-blur-md shrink-0">
-                    <span className="text-[9px] font-black text-white whitespace-nowrap">🎪 {stats.eventCount} Events</span>
-                  </div>
-                </motion.div>
-
-              </div>
-            </div>
-
-            {/* 하단부 감성 텍스트 타이포 및 Enter 버튼 */}
-            <div className="relative z-10 w-full flex flex-col items-center text-center gap-4 mb-safe pb-4">
-              <div className="flex flex-col gap-1">
-                <h1 className="text-lg font-black tracking-tight text-white/90 drop-shadow-md">
-                  Yesterday in Tango Society
-                </h1>
-                <p className="text-[11px] text-white/50 font-bold max-w-xs leading-relaxed drop-shadow-sm px-4">
-                  어제 우리 커뮤니티에는 수많은 교감의 모먼트들이 기록되었습니다. 준비 완료된 라이브 속으로 입장해 보세요!
-                </p>
-              </div>
-
-              {/* 스톤님 제안: ENTER LIVE 버튼 */}
-              <button
-                onClick={() => setShowDashboardIntro(false)}
-                className="w-full max-w-[260px] py-4 rounded-2xl text-[11px] font-black tracking-widest uppercase transition-all duration-300 active:scale-95 shadow-lg border flex items-center justify-center gap-2.5 select-none bg-primary text-white border-primary/20 hover:bg-primary-dark cursor-pointer shadow-[0_0_20px_rgba(0,122,255,0.4)] animate-pulse"
-              >
-                <span>ENTER LIVE</span>
-                {firstCardReady ? (
-                  <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
-                ) : (
-                  <div className="flex items-center gap-1.5 ml-1 bg-black/35 px-2 py-0.5 rounded-full border border-white/10">
-                    <div className="w-2.5 h-2.5 border border-white/20 border-t-[#007AFF] rounded-full animate-spin shrink-0" />
-                    <span className="text-[8px] font-black tracking-tighter text-[#007AFF]">{loadingPercent}%</span>
-                  </div>
-                )}
-              </button>
-
-              {/* Closed 보안 개체 정직한 통계 배지 */}
-              <div className="flex items-center gap-3.5 bg-white/5 border border-white/10 px-4 py-2 rounded-full backdrop-blur-md shadow-md mt-1">
-                <div className="flex items-center gap-1.5 text-[9px] font-black text-white/50 tracking-wider">
-                  <span className="material-symbols-outlined text-[11px] text-white/40">lock</span>
-                  <span>{stats.groupCount} Group Streams</span>
-                </div>
-                <div className="w-[1px] h-2.5 bg-white/15" />
-                <div className="flex items-center gap-1.5 text-[9px] font-black text-white/50 tracking-wider">
-                  <span className="material-symbols-outlined text-[11px] text-white/40">person</span>
-                  <span>{stats.myCount} My Moments</span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 mt-1">
-                <div className="w-1.5 h-1.5 bg-[#007AFF] rounded-full animate-ping" />
-                <span className="text-[8px] font-black tracking-widest text-[#007AFF] uppercase">Yesterday Dashboard</span>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Feed Container - Vertical Snap */}
-      <div
-        ref={containerRef}
-        className="flex-1 overflow-y-scroll snap-y snap-mandatory no-scrollbar"
-        style={{ scrollBehavior: 'smooth' }}
-      >
-        {posts.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full text-white/50 pb-20">
-            <Link href="/live/create?source=live" className="bg-white/10 p-6 rounded-full mb-4 backdrop-blur-md hover:bg-white/20 transition-colors">
-              <Plus size={40} />
-            </Link>
-            <p className="font-bold">{t('gallery.no_posts')}</p>
-            <p className="text-sm">{t('gallery.be_first')}</p>
-          </div>
-        )}
-
-        {posts.length > 0 && filteredPosts.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full text-white/50 pb-20 px-6 text-center">
-            <div className="bg-white/10 p-5 rounded-full mb-4 backdrop-blur-md">
-              <span className="material-symbols-outlined text-[36px] text-white/60 select-none">filter_list_off</span>
-            </div>
-            <p className="font-bold text-sm text-white">{t('pics.no_assets_found') || '조건에 맞는 라이브 피드가 없습니다.'}</p>
-            <p className="text-xs text-white/40 mt-1">{t('pics.try_adjusting_filters') || '필터를 조정해 보세요.'}</p>
-            <button
-              onClick={() => setActiveFilter({ category: 'all' })}
-              className="mt-6 px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-full text-xs font-black transition-all active:scale-95 border border-white/10 shadow-md"
-            >
-              {t('gallery.filter.reset') || '필터 초기화'}
-            </button>
-          </div>
-        )}
-
-        {filteredPosts.map((post, idx) => (
-          <GalleryCard
-            key={post.id}
-            post={post}
-            onOpenComments={() => handleOpenComments(post.id)}
-            isImmersive={isImmersive}
-            onOpenImmersive={() => handleOpenImmersive(post.id)}
-            onCloseImmersive={handleImmersiveClose}
-            onOpenFilter={() => {
-              setTempFilter(activeFilter);
-              setActiveCategoryTab(activeFilter.category);
-              setIsFilterOpen(true);
-            }}
-            activeFilter={activeFilter}
-            onFirstCardLoaded={idx === 0 ? () => setFirstCardReady(true) : undefined}
-            loadingPercent={idx === 0 ? loadingPercent : undefined}
-            handleProgress={idx === 0 ? handleProgress : undefined}
-          />
-        ))}
-      </div>
+          {filteredPosts.map((post, idx) => (
+            <GalleryCard
+              key={post.id}
+              post={post}
+              onOpenComments={() => handleOpenComments(post.id)}
+              isImmersive={isImmersive}
+              onOpenImmersive={() => handleOpenImmersive(post.id)}
+              onCloseImmersive={handleImmersiveClose}
+              onOpenFilter={() => {
+                setTempFilter(activeFilter);
+                setActiveCategoryTab(activeFilter.category);
+                setIsFilterOpen(true);
+              }}
+              activeFilter={activeFilter}
+              onFirstCardLoaded={idx === 0 ? () => setFirstCardReady(true) : undefined}
+              loadingPercent={idx === 0 ? loadingPercent : undefined}
+              handleProgress={idx === 0 ? handleProgress : undefined}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Comment Bottom Sheet */}
       <AnimatePresence>
@@ -1446,3 +1528,6 @@ const CommentBottomSheet = ({ postId, onClose }: { postId: string, onClose: () =
     </div>
   );
 };
+
+const ANTIGRAVITY_HTML = "PHN0eWxlIGRhdGEtcHVycG9zZT0iZGlhbW9uZC1sYXlvdXQiPgogICAgLyogRGlhbW9uZCBzaGFwaW5nIGFuZCBwb3NpdGlvbmluZyAqLwogICAgLmRpYW1vbmQtY29udGFpbmVyIHsKICAgICAgcG9zaXRpb246IHJlbGF0aXZlOwogICAgICB3aWR0aDogMTAwJTsKICAgICAgYXNwZWN0LXJhdGlvOiAxIC8gMS4xOyAvKiBBZGp1c3QgcmF0aW8gZm9yIHN0YWdnZXJlZCBsYXlvdXQgKi8KICAgICAgbWF4LXdpZHRoOiAzMjBweDsKICAgICAgbWFyZ2luOiAwIGF1dG87CiAgICB9CiAgICAKICAgIC5kaWFtb25kLXdyYXBwZXIgewogICAgICBwb3NpdGlvbjogYWJzb2x1dGU7CiAgICAgIHdpZHRoOiA1NSU7CiAgICAgIGFzcGVjdC1yYXRpbzogMSAvIDE7CiAgICAgIGJvcmRlci1yYWRpdXM6IDFyZW07IC8qIFNvZnRlbmVkIGNvcm5lcnMgZm9yIGRpYW1vbmQgKi8KICAgICAgb3ZlcmZsb3c6IGhpZGRlbjsKICAgICAgLyogQW5pbWF0aW9uIGFwcGxpZWQgaW4gdGFpbHdpbmQgY2xhc3NlcyAqLwogICAgICB0cmFuc2l0aW9uOiBhbGwgMC4zcyBlYXNlOwogICAgfQogICAgCiAgICAvKiBDb3VudGVyLXJvdGF0ZSBpbWFnZSBpbnNpZGUgZGlhbW9uZCAqLwogICAgLmRpYW1vbmQtaW1nIHsKICAgICAgd2lkdGg6IDE1MCU7CiAgICAgIGhlaWdodDogMTUwJTsKICAgICAgb2JqZWN0LWZpdDogY292ZXI7CiAgICAgIHRyYW5zZm9ybTogcm90YXRlKC00NWRlZykgc2NhbGUoMS40KTsKICAgICAgdHJhbnNmb3JtLW9yaWdpbjogY2VudGVyIGNlbnRlcjsKICAgIH0KCiAgICAvKiBQb3NpdGlvbmluZyBpbmRpdmlkdWFsIGRpYW1vbmRzICovCiAgICAuZGlhbW9uZC10b3AgewogICAgICB0b3A6IDA7CiAgICAgIGxlZnQ6IDUwJTsKICAgICAgdHJhbnNmb3JtOiB0cmFuc2xhdGVYKC01MCUpIHJvdGF0ZSg0NWRlZyk7CiAgICAgIHotaW5kZXg6IDEwOwogICAgfQogICAgCiAgICAuZGlhbW9uZC1ib3R0b20tbGVmdCB7CiAgICAgIHRvcDogNDUlOwogICAgICBsZWZ0OiA1JTsKICAgICAgdHJhbnNmb3JtOiByb3RhdGUoNDVkZWcpOwogICAgfQogICAgCiAgICAuZGlhbW9uZC1ib3R0b20tcmlnaHQgewogICAgICB0b3A6IDQ1JTsKICAgICAgcmlnaHQ6IDUlOwogICAgICB0cmFuc2Zvcm06IHJvdGF0ZSg0NWRlZyk7CiAgICB9CgogICAgLyogRmxvYXRpbmcgbGFiZWxzICovCiAgICAuZmxvYXRpbmctbGFiZWwgewogICAgICBwb3NpdGlvbjogYWJzb2x1dGU7CiAgICAgIHotaW5kZXg6IDIwOwogICAgICB0cmFuc2Zvcm06IHRyYW5zbGF0ZVgoLTUwJSk7CiAgICAgIHdoaXRlLXNwYWNlOiBub3dyYXA7CiAgICB9CiAgICAKICAgIC5sYWJlbC10b3AgewogICAgICB0b3A6IGNhbGMoNDUlIC0gMS41cmVtKTsKICAgICAgbGVmdDogNTAlOwogICAgfQogICAgCiAgICAubGFiZWwtYm90dG9tLWxlZnQgewogICAgICB0b3A6IGNhbGMoOTAlICsgMXJlbSk7CiAgICAgIGxlZnQ6IDI3LjUlOwogICAgfQogICAgCiAgICAubGFiZWwtYm90dG9tLXJpZ2h0IHsKICAgICAgdG9wOiBjYWxjKDkwJSArIDFyZW0pOwogICAgICBsZWZ0OiA3Mi41JTsKICAgIH0KICA8L3N0eWxlPgo8L2hlYWQ+Cjxib2R5IGNsYXNzPSJiZy1zdXJmYWNlIHRleHQtb24tc3VyZmFjZSBmb250LXNhbnMgaC1bMTAwZHZoXSBvdmVyZmxvdy1oaWRkZW4gZmxleCBmbGV4LWNvbCBpdGVtcy1jZW50ZXIganVzdGlmeS1iZXR3ZWVuIHB5LTYgcHgtNCBzZWxlY3Rpb246YmctcHJpbWFyeSBzZWxlY3Rpb246dGV4dC13aGl0ZSI+CjwhLS0gQkVHSU46IFRvcCBJbmZvIEJhciAtLT4KPGhlYWRlciBjbGFzcz0idy1mdWxsIG1heC13LW1kIGZsZXgganVzdGlmeS1zdGFydCBnYXAtMyBtdC00IiBkYXRhLXB1cnBvc2U9InRvcC1pbmZvIj4KPGRpdiBjbGFzcz0iZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTIgYmctc3VyZmFjZS1kaW0vNDAgYm9yZGVyIGJvcmRlci1vdXRsaW5lLzIwIHB4LTMgcHktMS41IHJvdW5kZWQtZnVsbCB0ZXh0LXhzIGZvbnQtc2VtaWJvbGQgdGV4dC1vbi1zdXJmYWNlLXZhcmlhbnQgc2hhZG93LXNtIGJhY2tkcm9wLWJsdXItc20iPgo8c3ZnIGZpbGw9Im5vbmUiIGhlaWdodD0iMTQiIHN0cm9rZT0iY3VycmVudENvbG9yIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIHN0cm9rZS13aWR0aD0iMiIgdmlld2JveD0iMCAwIDI0IDI0IiB3aWR0aD0iMTQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3QgaGVpZ2h0PSIxMSIgcng9IjIiIHJ5PSIyIiB3aWR0aD0iMTgiIHg9IjMiIHk9IjExIj48L3JlY3Q+PHBhdGggZD0iTTcgMTFWN2E1IDUgMCAwIDEgMTAgMHY0Ij48L3BhdGg+PC9zdmc+CjxzcGFuPjcgR3JvdXAgU3RyZWFtczwvc3Bhbj4KPC9kaXY+CjxkaXYgY2xhc3M9ImZsZXggaXRlbXMtY2VudGVyIGdhcC0yIGJnLXN1cmZhY2UtZGltLzQwIGJvcmRlciBib3JkZXItb3V0bGluZS8yMCBweC0zIHB5LTEuNSByb3VuZGVkLWZ1bGwgdGV4dC14cyBmb250LXNlbWlib2xkIHRleHQtb24tc3VyZmFjZS12YXJpYW50IHNoYWRvdy1zbSBiYWNrZHJvcC1ibHVyLXNtIj4KPHN2ZyBmaWxsPSJub25lIiBoZWlnaHQ9IjE0IiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBzdHJva2Utd2lkdGg9IjIiIHZpZXdib3g9IjAgMCAyNCAyNCIgd2lkdGg9IjE0IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik0yMCAyMXYtMmE0IDQgMCAwIDAtNC00SDhhNCA0IDAgMCAwLTQgNHYyIj48L3BhdGg+PGNpcmNsZSBjeD0iMTIiIGN5PSI3IiByPSI0Ij48L2NpcmNsZT48L3N2Zz4KPHNwYW4+MyBNeSBNb21lbnRzPC9zcGFuPgo8L2Rpdj4KPC9oZWFkZXI+CjwhLS0gRU5EOiBUb3AgSW5mbyBCYXIgLS0+CjwhLS0gQkVHSU46IERpYW1vbmQgR2FsbGVyeSAtLT4KPG1haW4gY2xhc3M9InctZnVsbCBmbGV4LTEgZmxleCBmbGV4LWNvbCBqdXN0aWZ5LWNlbnRlciBpdGVtcy1jZW50ZXIgbWItMiBtYXgtdy1tZCBtdC0wIiBkYXRhLXB1cnBvc2U9ImdhbGxlcnktYXJlYSI+CjxkaXYgY2xhc3M9ImRpYW1vbmQtY29udGFpbmVyIj4KPCEtLSBUb3AgRGlhbW9uZDogU29jaWFscyAtLT4KPGRpdiBjbGFzcz0iZGlhbW9uZC13cmFwcGVyIGRpYW1vbmQtdG9wIGFuaW1hdGUtcHVsc2Utc2VxLTEgc2hhZG93LW1kIGJnLXdoaXRlIGJvcmRlci0yIGJvcmRlci13aGl0ZS81MCI+CjxpbWcgYWx0PSJUYW5nbyBTb2NpYWwgRXZlbnQiIGNsYXNzPSJkaWFtb25kLWltZyIgc3JjPSJodHRwczovL2xoMy5nb29nbGV1c2VyY29udGVudC5jb20vYWlkYS1wdWJsaWMvQUI2QVh1Qm9MQmdJb0ZqckNQdjNlY1R4MUtqdnF1dUg4RDhmRl92ZnVPemcwdVlsTE5JVXhtWl9pWjFiYVZOeS1mSWIyM0FLNU1kRWNZc3ZlakFtM3JyV3dFLXdDN19VcFFCOVRHcjg2TkdIUWVJU0tHWVRvNEpUNjNCSmE2Z2RDWlp4RlNyZXVRMTZHLTRfejAyd0YwSEhkWFhGQU9VRkNEWFdSZmZQaUN4eldrZElfUkpCbnNOS3VkNWI3RHF1TEhKeEx4WjRyTEdjYTRyWW5fS1ZKZVUzTnRscUdJNVF1NUpTSmtTQ3lBWHZoMlktTzU4dnVmdXBpbUJMem9HYnMtcFFFTVpDVjVfUDdadWtmY0tyIi8+CjwvZGl2Pgo8IS0tIExhYmVsIC0tPgo8ZGl2IGNsYXNzPSJmbG9hdGluZy1sYWJlbCBsYWJlbC10b3AgYmctYmxhY2sgdGV4dC13aGl0ZSBweC00IHB5LTEuNSByb3VuZGVkLWZ1bGwgdGV4dC1zbSBmb250LWJvbGQgZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTIgc2hhZG93LWxnIGJvcmRlciBib3JkZXItcHJpbWFyeS8zMCBzaGFkb3ctcHJpbWFyeS8yMCI+CjxzcGFuPvCfkoM8L3NwYW4+IDxzcGFuIGNsYXNzPSJ0ZXh0LXByaW1hcnkiPjMgU29jaWFsczwvc3Bhbj4KPC9kaXY+CjwhLS0gQm90dG9tIExlZnQgRGlhbW9uZDogQ2xhc3NlcyAtLT4KPGRpdiBjbGFzcz0iZGlhbW9uZC13cmFwcGVyIGRpYW1vbmQtYm90dG9tLWxlZnQgYW5pbWF0ZS1wdWxzZS1zZXEtMiBzaGFkb3ctbWQgYmctd2hpdGUgYm9yZGVyLTIgYm9yZGVyLXdoaXRlLzUwIj4KPGltZyBhbHQ9IlRhbmdvIEV2ZW50IFBlcmZvcm1hbmNlIiBjbGFzcz0iZGlhbW9uZC1pbWciIHNyYz0iaHR0cHM6Ly9saDMuZ29vZ2xldXNlcmNvbnRlbnQuY29tL2FpZGEtcHVibGljL0FCNkFYdUJMWnRaaUhqZ2I5bjRoNDFXNC1ZeThVczdPZi1sNVJOOF9TV2xuT3Q1ckY1VFdvS3N1Z3NfRlpta3RjRnoya1RRU0RtZDlnc0FqQW1Jdmw1aV9VY3lxSm8zMDhXN2lPUGhjRDNPNGNGMnpHdnRvR2FPMDV4YXlBUk5RWEJieW5YaFdHb215MkozYkVJSW1aS0h6SGs4VE10bko1enExZEloYlM4SlF0eGlyVFdLZEpiRnptVjVFTjhZRjlKMU1uSHd6YXNZNmNPTExvM1VKVUFYZDFFTk1JSURyelp1WEtzeHNzX3hObzItVWk3alkxTTRHZnllWm83ak9UWTRVcEtEUHhLSXB6dGstN1dtbSIvPgo8L2Rpdj4KPCEtLSBMYWJlbCAtLT4KPGRpdiBjbGFzcz0iZmxvYXRpbmctbGFiZWwgbGFiZWwtYm90dG9tLWxlZnQgYmctc3VyZmFjZS1kaW0gdGV4dC1vbi1zdXJmYWNlIHB4LTMgcHktMSByb3VuZGVkLWZ1bGwgdGV4dC14cyBmb250LWJvbGQgZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTEuNSBzaGFkb3ctbWQgYm9yZGVyIGJvcmRlci1vdXRsaW5lLzEwIj4KPHNwYW4+8J+Oqjwvc3Bhbj4gPHNwYW4+MCBFdmVudHM8L3NwYW4+CjwvZGl2Pgo8IS0tIEJvdHRvbSBSaWdodCBEaWFtb25kOiBFdmVudHMgLS0+CjxkaXYgY2xhc3M9ImRpYW1vbmQtd3JhcHBlciBkaWFtb25kLWJvdHRvbS1yaWdodCBhbmltYXRlLXB1bHNlLXNlcS0zIHNoYWRvdy1tZCBiZy13aGl0ZSBib3JkZXItMiBib3JkZXItd2hpdGUvNTAiPgo8aW1nIGFsdD0iVGFuZ28gQ2xhc3MiIGNsYXNzPSJkaWFtb25kLWltZyIgc3JjPSJodHRwczovL2xoMy5nb29nbGV1c2VyY29udGVudC5jb20vYWlkYS1wdWJsaWMvQUI2QVh1QWtsTl9rZDB5QXlIa3ZkNEVScmUwWHBPVS1UaDVXVUM3SUhSdjFnLVlqV2dGWnJZWkZDMF9qNS1fcmZTeHY2MmtZMFpoMVdLZWxTZGVSSlpUeEczV0N4ZG00R3gzY3U5T0RiVU1oVXRHLUQ3RG1KSzd6QUtfYkt3QjA0VHplaTh3ZXpxV1ZhYnY4aUhKRlRkWjFiRHZMR3UtNldXOFA0c1B4Z0RXMFBNS2VBY1J6WWtvMURVcjdxbGhjU1JNaHpPbmVpaDVyYk1vZUhUY2JobTVPMTE3U0YzRkV6TXctOE5idUtYQ1ZrVGdEbzlGM0E5MVBHcnFya0ZfREdDbllqX1FWTVFHQ1dBTWRISW9zIi8+CjwvZGl2Pgo8IS0tIExhYmVsIC0tPgo8ZGl2IGNsYXNzPSJmbG9hdGluZy1sYWJlbCBsYWJlbC1ib3R0b20tcmlnaHQgYmctc3VyZmFjZS1kaW0gdGV4dC1vbi1zdXJmYWNlIHB4LTMgcHktMSByb3VuZGVkLWZ1bGwgdGV4dC14cyBmb250LWJvbGQgZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTEuNSBzaGFkb3ctbWQgYm9yZGVyIGJvcmRlci1vdXRsaW5lLzEwIj4KPHNwYW4+8J+OrDwvc3Bhbj4gPHNwYW4+MyBDbGFzc2VzPC9zcGFuPgo8L2Rpdj4KPC9kaXY+CjwvbWFpbj4KPCEtLSBFTkQ6IERpYW1vbmQgR2FsbGVyeSAtLT4KPCEtLSBCRUdJTjogQm90dG9tIEFjdGlvbiBBcmVhIC0tPgo8Zm9vdGVyIGNsYXNzPSJ3LWZ1bGwgbWF4LXctbWQgZmxleCBmbGV4LWNvbCBpdGVtcy1jZW50ZXIgbWItNiBnYXAtNCIgZGF0YS1wdXJwb3NlPSJib3R0b20tYWN0aW9ucyI+CjwhLS0gVGV4dCBDb250ZW50IC0tPgo8ZGl2IGNsYXNzPSJ0ZXh0LWNlbnRlciBweC00IHNwYWNlLXktMiI+CjxoMSBjbGFzcz0idGV4dC1bMS4zNXJlbV0gd2hpdGVzcGFjZS1ub3dyYXAgZm9udC1leHRyYWJvbGQgdHJhY2tpbmctdGlnaHQgdGV4dC1vbi1zdXJmYWNlIj5ZZXN0ZXJkYXkgaW4gVEFOR08gU09DSUVUWTwvaDE+CjxwIGNsYXNzPSJ0ZXh0LVsxMXB4XSB3aGl0ZXNwYWNlLW5vd3JhcCB0cmFja2luZy10aWdodCBmb250LW1lZGl1bSB0ZXh0LW9uLXN1cmZhY2UtdmFyaWFudCBsZWFkaW5nLXJlbGF4ZWQiPuyImCDrp47snYAg6rWQ6rCQ7J2YIOyInOqwhOydtCDquLDroZ3rkJjsl4jsirXri4jri6QuPC9wPgo8L2Rpdj4KPCEtLSBDVEEgQnV0dG9uIC0tPgo8YnV0dG9uIGFyaWEtbGFiZWw9IkVudGVyIExpdmUiIGNsYXNzPSJ3LVs5MCVdIG1heC13LVszNDBweF0gaG92ZXI6YmctcHJpbWFyeS85MCB0ZXh0LXdoaXRlIHJvdW5kZWQtZnVsbCBweS00IHB4LTYgZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1iZXR3ZWVuIGZvbnQtYm9sZCB0ZXh0LWxnIHRyYWNraW5nLXdpZGUgdHJhbnNpdGlvbi10cmFuc2Zvcm0gYWN0aXZlOnNjYWxlLTk1IGJnLWdyYWRpZW50LXRvLXIgZnJvbS1wcmltYXJ5LWNvbnRhaW5lciB0by1wcmltYXJ5IGJhY2tkcm9wLWJsdXItbWQgYm9yZGVyIGJvcmRlci13aGl0ZS8yMCBzaGFkb3ctMnhsIHNoYWRvdy1wcmltYXJ5LzQwIj4KPHNwYW4gY2xhc3M9ImZsZXgtMSB0ZXh0LWNlbnRlciBwbC04Ij5ESVZFIElOPC9zcGFuPgo8IS0tIFByb2dyZXNzIFJpbmcgSW5kaWNhdG9yIC0tPgo8ZGl2IGNsYXNzPSJyZWxhdGl2ZSB3LTggaC04IGZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktY2VudGVyIGJnLWJsYWNrLzIwIHJvdW5kZWQtZnVsbCBzaHJpbmstMCI+CjxzdmcgY2xhc3M9InctZnVsbCBoLWZ1bGwgLXJvdGF0ZS05MCIgdmlld2JveD0iMCAwIDM2IDM2Ij4KPHBhdGggY2xhc3M9InRleHQtd2hpdGUvMjAiIGQ9Ik0xOCAyLjA4NDUgYSAxNS45MTU1IDE1LjkxNTUgMCAwIDEgMCAzMS44MzEgYSAxNS45MTU1IDE1LjkxNTUgMCAwIDEgMCAtMzEuODMxIiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIzIj48L3BhdGg+CjwhLS0gMCUgcHJvZ3Jlc3MsIHNvIG5vIHN0cm9rZS1kYXNoYXJyYXkgbmVlZGVkIGZvciB0aGUgZmlsbGVkIHBhcnQsIGp1c3Qga2VlcGluZyBpdCBlbXB0eSAtLT4KPC9zdmc+CjxzcGFuIGNsYXNzPSJhYnNvbHV0ZSB0ZXh0LVsxMHB4XSBmb250LWJvbGQiPjAlPC9zcGFuPgo8L2Rpdj4KPC9idXR0b24+CjwvZm9vdGVyPg==";
+

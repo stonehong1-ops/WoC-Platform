@@ -9,9 +9,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: 'Message is required' }, { status: 400 });
     }
 
-    // Write to public/antigravity.txt (local file system for development backup)
+    // Write to public/mobileagent.txt (local file system for development backup)
     try {
-      const publicPath = path.join(process.cwd(), 'public', 'antigravity.txt');
+      const publicPath = path.join(process.cwd(), 'public', 'mobileagent.txt');
       let fileContent = `스톤님의 실시간 지시사항:\n${message}\n`;
       if (imageUrl) {
         fileContent += `첨부 이미지: ${imageUrl}\n`;

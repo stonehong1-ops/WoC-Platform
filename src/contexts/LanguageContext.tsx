@@ -51,7 +51,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   };
 
   const t = (key: string, params?: any): string => {
-    let text = dictionary[language]?.[key] || key;
+    const langKey = (language || 'KR').toUpperCase() as Language;
+    let text = dictionary[langKey]?.[key] || key;
 
     if (params && typeof params === 'object') {
       Object.keys(params).forEach(p => {
@@ -64,6 +65,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   const formatDate = (date: any, formatStr: string = 'yyyy-MM-dd') => {
     if (!date) return '';
+    const langKey = (language || 'KR').toUpperCase() as Language;
     // Map custom alias strings to date-fns format tokens based on active language
     const formatAliases: Record<Language, Record<string, string>> = {
       KR: {
@@ -93,10 +95,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         'dateTime': 'yyyy.MM.dd HH:mm',
       }
     };
-    const resolvedFormat = formatAliases[language][formatStr] || formatStr;
+    const resolvedFormat = formatAliases[langKey]?.[formatStr] || formatStr;
     try {
       const d = typeof date?.toDate === 'function' ? date.toDate() : new Date(date);
-      return format(d, resolvedFormat, { locale: language === 'KR' ? ko : enUS });
+      return format(d, resolvedFormat, { locale: langKey === 'KR' ? ko : enUS });
     } catch (e) {
       return '';
     }

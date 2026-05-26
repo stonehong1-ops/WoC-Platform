@@ -755,10 +755,10 @@ export const groupService = {
       updatedAt: Timestamp.now(),
     });
 
-    // 2. Add the user to the members subcollection as an admin
+    // 2. Add the user to the members subcollection as an owner
     batch.set(memberRef, {
       ...memberData,
-      role: 'admin',
+      role: 'owner',
       status: 'active',
       joinedAt: Timestamp.now()
     });

@@ -977,13 +977,13 @@ export default function ClubClassSelectionPage({
                 onClick={() => setSelectedRole('leader')}
                 className={`flex flex-col items-center justify-center py-4 rounded-xl border-2 transition-all ${selectedRole === 'leader' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-300'}`}
               >
-                <span className={`text-sm font-black uppercase ${selectedRole === 'leader' ? 'text-blue-700 dark:text-blue-400' : 'text-neutral-700 dark:text-neutral-300'}`}>{language === 'KR' ? "리더 (Leader)" : "Leader"}</span>
+                <span className={`text-sm font-black uppercase ${selectedRole === 'leader' ? 'text-blue-700 dark:text-blue-400' : 'text-neutral-700 dark:text-neutral-300'}`}>{language === 'KR' ? "리더 ♂️" : "Leader ♂️"}</span>
               </button>
               <button
                 onClick={() => setSelectedRole('follower')}
                 className={`flex flex-col items-center justify-center py-4 rounded-xl border-2 transition-all ${selectedRole === 'follower' ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20' : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-300'}`}
               >
-                <span className={`text-sm font-black uppercase ${selectedRole === 'follower' ? 'text-purple-700 dark:text-purple-400' : 'text-neutral-700 dark:text-neutral-300'}`}>{language === 'KR' ? "팔로어 (Follower)" : "Follower"}</span>
+                <span className={`text-sm font-black uppercase ${selectedRole === 'follower' ? 'text-purple-700 dark:text-purple-400' : 'text-neutral-700 dark:text-neutral-300'}`}>{language === 'KR' ? "팔로어 ♀️" : "Follower ♀️"}</span>
               </button>
             </div>
           </div>
@@ -1080,10 +1080,10 @@ export default function ClubClassSelectionPage({
                       return (
                         <React.Fragment key={cls.id}>
                           {isNewDay && (
-                            <div className="border-t border-neutral-200 dark:border-neutral-700 my-4" />
+                            <div className="border-t border-neutral-200 dark:border-neutral-700 my-3" />
                           )}
-                          <div className="flex flex-col p-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 transition-colors">
-                            <label className="flex items-center gap-3 cursor-pointer">
+                          <div className="flex flex-col p-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 transition-colors">
+                            <label className="flex items-start gap-2.5 cursor-pointer">
                               <input
                                 type="checkbox"
                                 checked={isChecked}
@@ -1095,29 +1095,28 @@ export default function ClubClassSelectionPage({
                                     return newSet;
                                   });
                                 }}
-                                className="w-5 h-5 rounded border-neutral-300 text-blue-600 focus:ring-blue-500 accent-blue-600"
+                                className="w-4.5 h-4.5 rounded border-neutral-300 text-blue-600 focus:ring-blue-500 accent-blue-600 mt-0.5 shrink-0"
                               />
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="text-[10px] bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded font-bold whitespace-nowrap">
+                              <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                                {/* 첫 번째 줄: 요일 배지 + 제목 */}
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <span className="text-[9px] bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-1.5 py-0.2 rounded font-bold whitespace-nowrap shrink-0">
                                     {dayLabel}
                                   </span>
-                                  <p className="text-sm font-bold text-neutral-900 dark:text-white truncate">{cls.title}</p>
+                                  <p className="text-xs font-bold text-neutral-900 dark:text-white truncate">{cls.title}</p>
                                 </div>
-                                <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-1">
-                                  {datesStr ? `${datesStr} | ` : ''}{timeStr}
+                                
+                                {/* 두 번째 줄: 시작일/시간표 | 강사명 */}
+                                <p className="text-[10px] text-neutral-500 dark:text-neutral-400 truncate leading-normal">
+                                  {datesStr ? `${datesStr} (${timeStr})` : timeStr}
+                                  {cls.instructors?.length > 0 && ` | ${cls.instructors.map((i: any) => i.name).join(', ')}`}
                                 </p>
-                                {cls.instructors?.length > 0 && (
-                                  <p className="text-[10px] text-neutral-400 dark:text-neutral-500 mt-0.5 truncate">
-                                    {cls.instructors.map((i: any) => i.name).join(', ')}
-                                  </p>
-                                )}
                               </div>
                             </label>
 
                             {/* 파트너명 인풋 필드 */}
                             {isChecked && (
-                              <div className="mt-3 pl-8 animate-in slide-in-from-top-1 duration-200">
+                              <div className="mt-2 pl-7 animate-in slide-in-from-top-1 duration-200">
                                 <input
                                   type="text"
                                   value={classPartners[cls.id] || ''}
@@ -1127,8 +1126,8 @@ export default function ClubClassSelectionPage({
                                       [cls.id]: e.target.value
                                     }));
                                   }}
-                                  placeholder={language === 'KR' ? "파트너 이름 (선택)" : "Partner Name (Optional)"}
-                                  className="w-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-1.5 text-xs text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                  placeholder={language === 'KR' ? "동반 파트너 이름 (선택)" : "Partner Name (Optional)"}
+                                  className="w-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg px-2.5 py-1 text-[11px] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                                 />
                               </div>
                             )}

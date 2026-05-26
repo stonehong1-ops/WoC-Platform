@@ -48,14 +48,31 @@ export default function StayReservationFlow({
   }, [stay?.groupId]);
 
   const getBankDetails = () => {
-    if (group?.staySettings?.bankDetails?.accountNumber) return group.staySettings.bankDetails;
-    if (group?.classPaymentSettings?.bankDetails?.accountNumber) return group.classPaymentSettings.bankDetails;
+    if (group?.bankDetails?.accountNumber) return {
+      bankName: group.bankDetails.bankName,
+      accountNumber: group.bankDetails.accountNumber,
+      holderName: group.bankDetails.accountHolder
+    };
+    if (group?.staySettings?.bankDetails?.accountNumber) return {
+      bankName: group.staySettings.bankDetails.bankName,
+      accountNumber: group.staySettings.bankDetails.accountNumber,
+      holderName: group.staySettings.bankDetails.ownerName
+    };
+    if (group?.classPaymentSettings?.bankDetails?.accountNumber) return {
+      bankName: group.classPaymentSettings.bankDetails.bankName,
+      accountNumber: group.classPaymentSettings.bankDetails.accountNumber,
+      holderName: group.classPaymentSettings.bankDetails.accountHolder
+    };
     const stayBank = stay.payment?.methods?.find((m: any) => m.type === 'bank_domestic') || stay.payment?.methods?.[0];
-    if (stayBank) return stayBank;
+    if (stayBank) return {
+      bankName: stayBank.bankName,
+      accountNumber: stayBank.accountNumber,
+      holderName: stayBank.holderName
+    };
     return undefined;
   };
   const bankDetails = getBankDetails();
-  const bd = bankDetails as { bankName?: string; accountNumber?: string; holderName?: string; ownerName?: string; accountHolder?: string; } | undefined;
+  const bd = bankDetails as { bankName?: string; accountNumber?: string; holderName?: string; } | undefined;
 
   useEffect(() => {
     if (profile || user) {
@@ -136,7 +153,7 @@ export default function StayReservationFlow({
         method: 'bank_domestic',
         bankName: bd?.bankName || '',
         accountNumber: bd?.accountNumber || '',
-        holderName: bd?.holderName || bd?.ownerName || bd?.accountHolder || '',
+        holderName: bd?.holderName || '',
         depositDate: formatDate(new Date(), 'iso')
       },
       status: 'APPLIED' as StayBookingStatus,
@@ -150,62 +167,7 @@ export default function StayReservationFlow({
       console.error('Failed to update stay to in_progress:', e);
     }
 
-    // Send SMS
-    if (buyerPhone) {
-      let formattedPhone = buyerPhone.replace(/[^0-9]/g, '');
-      if (!formattedPhone.startsWith('0') && formattedPhone.length >= 9) {
-        formattedPhone = '0' + formattedPhone;
-      }
-      
-      if (formattedPhone.startsWith('0') && formattedPhone.length >= 10) {
-        const smsContent = t('checkout.sms_content', '[WoC] 예약이 접수되었습니다.\n숙소: {title}\n일정: {checkIn} - {checkOut}\n예약자: {name}\n금액: {amount}원\n\n호스트의 확인 후 최종 확정됩니다.')
-          .replace('{title}', stay.title)
-          .replace('{checkIn}', formatDate(checkIn, 'shortMonthDay'))
-          .replace('{checkOut}', formatDate(checkOut, 'shortMonthDay'))
-          .replace('{name}', applicantName)
-          .replace('{amount}', grandTotal.toLocaleString());
-          
-        const smsResult = await sendSmsViaSolapi(formattedPhone, smsContent);
-        
-        await stayBookingService.addSmsLog(booking.id, {
-          type: 'applied',
-          sentAt: new Date().toISOString(),
-          sentBy: user.uid,
-          to: formattedPhone,
-          message: smsContent,
-          status: smsResult.success ? 'SUCCESS' : 'FAILED',
-          errorMessage: smsResult.error || undefined
-        });
-      }
-    }
-
-    // Chat Notification to Host
-    try {
-      const hostId = stay.host?.userId || 'adminstone';
-      if (hostId) {
-        const roomId = await chatService.getOrCreatePrivateRoom([user.uid, hostId], user.uid, 'business');
-        const msg = `🏨 [STAY BOOKING]\n` +
-          `Stay: ${stay.title}\n` +
-          `Dates: ${formatDate(checkIn, 'shortMonthDay')} - ${formatDate(checkOut, 'shortMonthDay')}\n` +
-          `Nights: ${nights}\n` +
-          `Guests: ${guests}\n` +
-          `Amount: ${sym}${fmt(grandTotal)}\n` +
-          `Applicant: ${applicantName}\n` +
-          `Image: ${stay.images?.[0] || ''}`;
-
-        await chatService.sendMessage({
-          roomId,
-          senderId: user.uid,
-          senderName: profile?.nativeNickname || profile?.nickname || user.displayName || applicantName,
-          text: msg,
-          type: 'text'
-        });
-      }
-    } catch (chatErr) {
-      console.error('Stay booking chat notification failed:', chatErr);
-    }
-
-    return orderNum;
+    return `${booking.id}|${orderNum}`;
   };
 
   const handleReportPayment = async (reportedOrderId: string) => {
@@ -225,20 +187,85 @@ export default function StayReservationFlow({
       await stayBookingService.updateBookingStatus(createdBookingId, 'PAID', user.uid, 'Payment reported by user');
 
       const hostId = stay.host?.userId || 'adminstone';
+
+      // 1. Send SMS at this reported payment stage
+      if (buyerPhone) {
+        let formattedPhone = buyerPhone.replace(/[^0-9]/g, '');
+        if (!formattedPhone.startsWith('0') && formattedPhone.length >= 9) {
+          formattedPhone = '0' + formattedPhone;
+        }
+        
+        if (formattedPhone.startsWith('0') && formattedPhone.length >= 10) {
+          const smsContent = t('checkout.sms_payment_reported', '[WoC] 예약 송금 보고가 완료되었습니다.\n숙소: {title}\n일정: {checkIn} - {checkOut}\n금액: {amount}원\n\n호스트가 입금 확인 후 최종 승인합니다.')
+            .replace('{title}', stay.title)
+            .replace('{checkIn}', formatDate(checkIn, 'shortMonthDay'))
+            .replace('{checkOut}', formatDate(checkOut, 'shortMonthDay'))
+            .replace('{amount}', grandTotal.toLocaleString());
+            
+          try {
+            const smsResult = await sendSmsViaSolapi(formattedPhone, smsContent);
+            await stayBookingService.addSmsLog(createdBookingId, {
+              type: 'paid',
+              sentAt: new Date().toISOString(),
+              sentBy: user.uid,
+              to: formattedPhone,
+              message: smsContent,
+              status: smsResult.success ? 'SUCCESS' : 'FAILED',
+              errorMessage: smsResult.error || undefined
+            });
+          } catch (smsErr) {
+            console.error('Failed to send payment report SMS:', smsErr);
+          }
+        }
+      }
+
+      // 2. Send Chat Notification Card to Host
       if (hostId && user) {
         const roomId = await chatService.getOrCreatePrivateRoom([user.uid, hostId], user.uid, 'business');
+        
+        // 2-1. Initial Stay Detail Card Message in chat room
+        try {
+          const bookingMsg = `🏨 [STAY BOOKING]\n` +
+            `Stay: ${stay.title}\n` +
+            `Dates: ${formatDate(checkIn, 'shortMonthDay')} - ${formatDate(checkOut, 'shortMonthDay')}\n` +
+            `Nights: ${nights}\n` +
+            `Guests: ${guests}\n` +
+            `Amount: ${sym}${fmt(grandTotal)}\n` +
+            `Applicant: ${applicantName}\n` +
+            `Image: ${stay.images?.[0] || ''}`;
+
+          await chatService.sendMessage({
+            roomId,
+            senderId: user.uid,
+            senderName: profile?.nativeNickname || profile?.nickname || user.displayName || applicantName,
+            text: bookingMsg,
+            type: 'text'
+          });
+        } catch (cardErr) {
+          console.error('Failed to send stay detail card:', cardErr);
+        }
+
+        // 2-2. Payment Reported Approval Card in chat room
         const msg = `💸 ${t('stay.chat_payment_prefix', '[PAYMENT REPORTED]')}\n${t('stay.chat_order_no', 'Booking No')}: ${createdOrderNumber}\n${t('stay.chat_depositor', 'Depositor')}: ${profile?.nativeNickname || profile?.nickname || user.displayName || applicantName}\n${t('stay.chat_payment_msg', 'I have transferred the payment. Please confirm!')}`;
         
-        // 1. Buyer's payment report message
         await chatService.sendMessage({
           roomId,
           senderId: user.uid,
           senderName: profile?.nativeNickname || profile?.nickname || user.displayName || applicantName,
           text: msg,
-          type: 'text'
+          type: 'text',
+          metadata: {
+            actionType: 'booking_approval',
+            bookingId: createdBookingId,
+            status: 'PAYMENT_REPORTED',
+            domain: 'stay',
+            sellerId: hostId,
+            buyerId: user.uid,
+            itemName: stay.title
+          }
         });
 
-        // 2. Seller's automated review reply
+        // 2-3. Seller's automated review reply
         await chatService.sendMessage({
           roomId,
           senderId: hostId,
@@ -260,11 +287,12 @@ export default function StayReservationFlow({
       title={t('stay.reservation_summary', 'Reservation Summary')}
       totalAmount={grandTotal}
       currency={currency}
-      buttonText={t('stay.confirm_booking', 'Confirm Booking')}
+      buttonText={t('stay.confirm_booking', 'Apply Reservation')}
+      isSubmitDisabled={!agreedToTerms}
       bankDetails={bd ? {
         bankName: bd.bankName || '',
         accountNumber: bd.accountNumber || '',
-        accountHolder: bd.holderName || bd.ownerName || bd.accountHolder || ''
+        accountHolder: bd.holderName || ''
       } : undefined}
       onCheckout={handleCheckout}
       onReportPayment={handleReportPayment}
@@ -277,14 +305,14 @@ export default function StayReservationFlow({
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[10px] font-bold text-outline uppercase tracking-widest mb-1">STAY</p>
+          <p className="text-[10px] font-bold text-outline uppercase tracking-widest mb-1">{t('common.stay', 'STAY')}</p>
           <p className="text-sm font-bold text-on-surface truncate">{stay.title}</p>
           <div className="flex flex-wrap gap-1 mt-1">
             <span className="text-[10px] bg-surface-container text-on-surface-variant px-2 py-0.5 rounded-full font-bold">
               {formatDate(checkIn, 'shortMonthDay')} - {formatDate(checkOut, 'shortMonthDay')}
             </span>
             <span className="text-[10px] bg-surface-container text-on-surface-variant px-2 py-0.5 rounded-full font-bold">
-              {nights} Nights
+              {nights} {t('stay.nights_unit', 'Nights')}
             </span>
           </div>
         </div>
@@ -293,7 +321,7 @@ export default function StayReservationFlow({
       <div className="space-y-4 mb-2">
         {/* Guests Selection */}
         <div className="flex items-center justify-between px-1">
-          <label className="text-xs font-bold text-on-surface-variant">Number of Guests</label>
+          <label className="text-xs font-bold text-on-surface-variant">{t('stay.num_guests', 'Number of Guests')}</label>
           <div className="flex items-center gap-4 bg-surface-container-lowest rounded-xl p-1.5 border border-surface-container">
             <button 
               onClick={() => setGuests(Math.max(1, guests - 1))}
@@ -315,10 +343,10 @@ export default function StayReservationFlow({
 
         {/* Breakdown preview */}
         <div className="bg-surface-container-lowest rounded-xl p-3 border border-surface-container text-xs space-y-1">
-           <div className="flex justify-between"><span className="text-on-surface-variant">Base ({nights} nights)</span><span>{sym}{fmt(baseTotal)}</span></div>
-           {weekendSurcharge > 0 && <div className="flex justify-between"><span className="text-on-surface-variant">Weekend Surcharge</span><span>+{sym}{fmt(weekendSurcharge)}</span></div>}
-           {extraPersonTotal > 0 && <div className="flex justify-between"><span className="text-on-surface-variant">Extra Guests</span><span>+{sym}{fmt(extraPersonTotal)}</span></div>}
-           {cleaningFee > 0 && <div className="flex justify-between"><span className="text-on-surface-variant">Cleaning Fee</span><span>+{sym}{fmt(cleaningFee)}</span></div>}
+           <div className="flex justify-between"><span className="text-on-surface-variant">{t('stay.base_rate_calc', 'Base Room Rate')} ({nights} {t('stay.nights_unit', 'Nights')})</span><span>{sym}{fmt(baseTotal)}</span></div>
+           {weekendSurcharge > 0 && <div className="flex justify-between"><span className="text-on-surface-variant">{t('stay.weekend_surcharge_calc', 'Weekend Surcharge')}</span><span>+{sym}{fmt(weekendSurcharge)}</span></div>}
+           {extraPersonTotal > 0 && <div className="flex justify-between"><span className="text-on-surface-variant">{t('stay.extra_person_fee_calc', 'Extra Guest Fee')}</span><span>+{sym}{fmt(extraPersonTotal)}</span></div>}
+           {cleaningFee > 0 && <div className="flex justify-between"><span className="text-on-surface-variant">{t('stay.cleaning_fee_calc', 'Cleaning Fee')}</span><span>+{sym}{fmt(cleaningFee)}</span></div>}
         </div>
 
         <div className="space-y-1.5">

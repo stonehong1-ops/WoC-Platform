@@ -1,14 +1,64 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { chatService } from '@/lib/firebase/chatService';
 import { ChatMessage } from '@/types/chat';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from 'sonner';
+import { userService } from '@/lib/firebase/userService';
 
 interface PollCardProps {
   message: ChatMessage;
+}
+
+// 투표한 참여자들의 닉네임을 비동기로 실시간 파싱 및 동기화하는 컴포넌트 (아이콘과 텍스트 없이 닉네임만 단독 노출)
+function VoterList({ uids }: { uids: string[] }) {
+  const { t } = useLanguage();
+  const [voters, setVoters] = useState<{ id: string; nickname: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!uids || uids.length === 0) {
+      setLoading(false);
+      return;
+    }
+    let active = true;
+    const fetchVoters = async () => {
+      try {
+        const promises = uids.map(async (uid) => {
+          const u = await userService.getUserById(uid);
+          return {
+            id: uid,
+            nickname: u?.nickname || t('chatroom.unknown', '알수없음')
+          };
+        });
+        const results = await Promise.all(promises);
+        if (active) {
+          setVoters(results);
+        }
+      } catch (e) {
+        console.error("Error fetching voters:", e);
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+    fetchVoters();
+    return () => { active = false; };
+  }, [uids, t]);
+
+  if (loading) return <span className="text-[10px] text-zinc-400/80 animate-pulse block mt-1 px-1">...</span>;
+  if (voters.length === 0) return null;
+
+  return (
+    <div className="flex items-center gap-1 mt-1.5 px-1 flex-wrap select-none text-left w-full animate-in fade-in duration-200">
+      <span className="text-[10.5px] font-extrabold text-zinc-500/90 leading-normal">
+        {voters.map(v => v.nickname).join(', ')}
+      </span>
+    </div>
+  );
 }
 
 export default function PollCard({ message }: PollCardProps) {
@@ -67,13 +117,13 @@ export default function PollCard({ message }: PollCardProps) {
 
   return (
     <div className="w-full max-w-[340px] bg-white/95 border border-zinc-100 rounded-3xl p-5 shadow-md relative overflow-hidden transition-all duration-300 hover:shadow-lg my-2 dark:bg-zinc-900/90 dark:border-zinc-800 animate-in zoom-in-95 duration-200">
-      {/* Accent Bar */}
-      <div className={`absolute top-0 left-0 right-0 h-1.5 ${isClosed ? 'bg-zinc-400' : 'bg-primary'}`} />
+      {/* Accent Bar (Golden-Amber instead of Blue) */}
+      <div className={`absolute top-0 left-0 right-0 h-1.5 ${isClosed ? 'bg-zinc-400' : 'bg-amber-500'}`} />
 
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-2">
-          <span className={`material-symbols-outlined text-[20px] ${isClosed ? 'text-zinc-400' : 'text-primary'}`}>
+          <span className={`material-symbols-outlined text-[20px] ${isClosed ? 'text-zinc-400' : 'text-amber-500'}`}>
             how_to_vote
           </span>
           <span className="text-[11px] font-black uppercase tracking-widest text-zinc-400">
@@ -89,7 +139,7 @@ export default function PollCard({ message }: PollCardProps) {
 
       {/* Poll Title */}
       <div className="mb-4">
-        <h4 className="text-[15px] font-extrabold text-zinc-800 dark:text-zinc-100 leading-snug">
+        <h4 className="text-[15px] font-extrabold text-zinc-800 dark:text-zinc-100 leading-snug text-left">
           {message.text}
         </h4>
       </div>
@@ -109,7 +159,7 @@ export default function PollCard({ message }: PollCardProps) {
               onClick={() => handleVote(idx)}
               className={`w-full text-left relative overflow-hidden rounded-2xl border p-3 transition-all duration-300 flex items-center justify-between gap-3 group ${
                 hasVoted
-                  ? 'border-primary/40 bg-primary/5 dark:border-primary/30 dark:bg-primary/10'
+                  ? 'border-[#e2cc00]/45 bg-[#FEE500]/6 dark:border-[#e2cc00]/30 dark:bg-[#FEE500]/10'
                   : 'border-zinc-100 hover:border-zinc-200 dark:border-zinc-800 dark:hover:border-zinc-700 bg-zinc-50/50 dark:bg-zinc-800/30'
               }`}
             >
@@ -117,24 +167,28 @@ export default function PollCard({ message }: PollCardProps) {
               <div
                 style={{ width: `${percentage}%` }}
                 className={`absolute left-0 top-0 bottom-0 transition-all duration-500 opacity-15 pointer-events-none ${
-                  hasVoted ? 'bg-primary' : 'bg-zinc-400 dark:bg-zinc-500'
+                  hasVoted ? 'bg-[#FEE500] dark:bg-[#e2cc00]' : 'bg-zinc-400 dark:bg-zinc-500'
                 }`}
               />
 
-              {/* Option Text and Checkbox */}
-              <div className="flex items-center gap-2.5 z-10 relative">
-                <span className={`material-symbols-outlined text-[18px] transition-colors ${
-                  hasVoted ? 'text-primary' : 'text-zinc-300 group-hover:text-zinc-400'
+              {/* Option Text, Checkbox & Voter List */}
+              <div className="flex items-start gap-2.5 z-10 relative flex-1 min-w-0">
+                <span className={`material-symbols-outlined text-[18px] transition-colors shrink-0 mt-0.5 ${
+                  hasVoted ? 'text-amber-500' : 'text-zinc-300 group-hover:text-zinc-400'
                 }`}>
                   {hasVoted ? 'check_box' : 'check_box_outline_blank'}
                 </span>
-                <span className="text-[13px] font-bold text-zinc-700 dark:text-zinc-300 truncate">
-                  {option}
-                </span>
+                <div className="flex-1 min-w-0 flex flex-col items-start">
+                  <span className="text-[13px] font-bold text-zinc-700 dark:text-zinc-300 whitespace-normal break-all leading-normal text-left">
+                    {option}
+                  </span>
+                  {/* 투표 참여 멤버 닉네임 실시간 비동기 노출 */}
+                  <VoterList uids={optionVotes} />
+                </div>
               </div>
 
               {/* Vote Count & Percent */}
-              <div className="flex items-center gap-2 z-10 relative shrink-0">
+              <div className="flex items-center gap-2 z-10 relative shrink-0 self-start mt-0.5">
                 <span className="text-[11px] font-medium text-zinc-400">
                   {voteCount}{t('chat.people_unit', '명')}
                 </span>

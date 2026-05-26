@@ -1,8 +1,78 @@
-c:\Users\stone\WoC\src\app\admin\people\page.tsx:126 {/* Search Bar Section - 유지하면서 하단 여백 조정 */}
-c:\Users\stone\WoC\src\app\admin\people\page.tsx:153 {/* Member List - 여백을 시원하게 (mt-12) */}
-c:\Users\stone\WoC\src\app\admin\people\page.tsx:234 {/* 수동 더 보기 버튼 */}
-c:\Users\stone\WoC\src\app\admin\seed-scenario\page.tsx:101 instructors: [{ name: adminUser.nickname || '강사', role: 'Main Instructor' }],
-c:\Users\stone\WoC\src\app\admin\seed-scenario\page.tsx:120 status: 'PAYMENT_REPORTED', // 관리자 승인 대기 상태
+c:\Users\stone\WoC\src\app\admin\antigravity\page.tsx:141 {language === "KR" ? "모바일 에이전트" : "Mobile Agent"}
+c:\Users\stone\WoC\src\app\admin\antigravity\page.tsx:149 {language === "KR" ? "돌아가기" : "Back"}
+c:\Users\stone\WoC\src\app\admin\antigravity\page.tsx:169 <strong>🤖 {language === "KR" ? "모바일 에이전트 소통 채널" : "Mobile Agent Hot-Line"}</strong><br />
+c:\Users\stone\WoC\src\app\admin\antigravity\page.tsx:171 "모바일 환경에서 사용자 테스트 중에 버그 제보나 기획 수정을 즉각 요청하실 수 있는 1:1 대화방입니다. 카메라 모양 버튼을 눌러 스크린샷 캡처 이미지도 함께 툭 던져주시면 바로 인지하고 수정에 착수합니다." :
+c:\Users\stone\WoC\src\app\admin\antigravity\page.tsx:228 ? "배포 완료"
+c:\Users\stone\WoC\src\app\admin\antigravity\page.tsx:230 ? "작업 중"
+c:\Users\stone\WoC\src\app\admin\antigravity\page.tsx:231 : "대기 중"}
+c:\Users\stone\WoC\src\app\admin\antigravity\page.tsx:248 <span>{language === "KR" ? `이미지 업로드 중... (${uploadProgress || 0}%)` : `Uploading image... (${uploadProgress || 0}%)`}</span>
+c:\Users\stone\WoC\src\app\admin\antigravity\page.tsx:293 language === "KR" ? "에이전트에게 지시할 코멘트 입력..." : "Instruct your agent..."
+c:\Users\stone\WoC\src\app\admin\banners\page.tsx:192 <p className="text-sm text-outline mb-4">Home 페이지 &quot;Stories from Seoul&quot; 섹션에 표시될 2개의 포스트를 선택하세요.</p>
+c:\Users\stone\WoC\src\app\admin\people\page.tsx:156 if (method.toLowerCase() === 'phone') return '전화';
+c:\Users\stone\WoC\src\app\admin\people\page.tsx:157 if (method.toLowerCase() === 'google') return '구글';
+c:\Users\stone\WoC\src\app\admin\people\page.tsx:158 if (method.toLowerCase() === 'email' || method.toLowerCase() === 'password') return '이메일';
+c:\Users\stone\WoC\src\app\admin\people\page.tsx:159 if (method.toLowerCase() === 'apple') return '애플';
+c:\Users\stone\WoC\src\app\admin\people\page.tsx:160 if (user.phoneNumber) return '전화';
+c:\Users\stone\WoC\src\app\admin\people\page.tsx:161 if (user.email) return '이메일';
+c:\Users\stone\WoC\src\app\admin\people\page.tsx:162 return '기타';
+c:\Users\stone\WoC\src\app\admin\people\page.tsx:188 {/* 4단 탭 내비게이션 바 */}
+c:\Users\stone\WoC\src\app\admin\people\page.tsx:200 {tab === 'people' && '피플'}
+c:\Users\stone\WoC\src\app\admin\people\page.tsx:201 {tab === 'stats1' && '통계1'}
+c:\Users\stone\WoC\src\app\admin\people\page.tsx:202 {tab === 'stats2' && '통계2'}
+c:\Users\stone\WoC\src\app\admin\people\page.tsx:203 {tab === 'stats3' && '통계3'}
+c:\Users\stone\WoC\src\app\admin\people\page.tsx:262 {/* 닉네임 / 자국어 및 배지류 2줄 세로 병합 구조 - 가로 깨짐 방지 */}
+c:\Users\stone\WoC\src\app\admin\people\page.tsx:345 {/* 수동 더 보기 버튼 */}
+c:\Users\stone\WoC\src\app\admin\people\page.tsx:363 {/* 통계1 탭: 가입 날짜별 가입자 통계 및 역순 테이블 */}
+c:\Users\stone\WoC\src\app\admin\people\page.tsx:368 <h2 className="text-title-lg font-title-lg text-on-surface font-bold">날짜별 회원 가입 추이</h2>
+c:\Users\stone\WoC\src\app\admin\people\page.tsx:369 <p className="text-body-sm text-outline mt-1">한국 표준시(KST) 기준으로 실시간 집계된 일자별 신규 회원 및 누적 가입 데이터입니다.</p>
+c:\Users\stone\WoC\src\app\admin\people\page.tsx:372 총 {users.length}명
+c:\Users\stone\WoC\src\app\admin\people\page.tsx:379 <th className="py-4 px-6">가입 날짜 (KST)</th>
+c:\Users\stone\WoC\src\app\admin\people\page.tsx:380 <th className="py-4 px-6 text-center">신규 가입자 수</th>
+c:\Users\stone\WoC\src\app\admin\people\page.tsx:381 <th className="py-4 px-6 text-center">누적 회원 수</th>
+c:\Users\stone\WoC\src\app\admin\people\page.tsx:393 {row.count}명
+c:\Users\stone\WoC\src\app\admin\people\page.tsx:396 <td className="py-4 px-6 text-center text-on-surface-variant font-bold">{row.cumulative}명</td>
+c:\Users\stone\WoC\src\app\admin\people\page.tsx:405 {/* 통계2 탭: 준비 중 페이지 */}
+c:\Users\stone\WoC\src\app\admin\people\page.tsx:411 <h3 className="text-title-lg font-title-lg text-on-surface font-bold">통계 2 준비 중입니다.</h3>
+c:\Users\stone\WoC\src\app\admin\people\page.tsx:412 <p className="text-body-md text-outline max-w-md">가입 채널별 분석 및 상세 그룹 활동 지수 통계 분석 기능이 추가될 예정입니다.</p>
+c:\Users\stone\WoC\src\app\admin\people\page.tsx:416 {/* 통계3 탭: 준비 중 페이지 */}
+c:\Users\stone\WoC\src\app\admin\people\page.tsx:422 <h3 className="text-title-lg font-title-lg text-on-surface font-bold">통계 3 준비 중입니다.</h3>
+c:\Users\stone\WoC\src\app\admin\people\page.tsx:423 <p className="text-body-md text-outline max-w-md">월간 활성 회원수(MAU) 및 일일 활동 회원수(DAU) 통계 등 리포팅 시스템이 구축될 예정입니다.</p>
+c:\Users\stone\WoC\src\app\admin\people\page.tsx:427 {/* 풀스크린 상세 가입자 팝업 모달 */}
+c:\Users\stone\WoC\src\app\admin\people\page.tsx:431 {/* 모달 헤더 */}
+c:\Users\stone\WoC\src\app\admin\people\page.tsx:436 {selectedDetail.date} 신규 가입자 목록
+c:\Users\stone\WoC\src\app\admin\people\page.tsx:438 <p className="text-body-sm text-outline mt-1">총 {selectedDetail.users.length}명의 회원이 이날 가입했습니다.</p>
+c:\Users\stone\WoC\src\app\admin\people\page.tsx:448 {/* 모달 바디 (표) */}
+c:\Users\stone\WoC\src\app\admin\people\page.tsx:453 <th className="py-3 px-4">닉네임</th>
+c:\Users\stone\WoC\src\app\admin\people\page.tsx:454 <th className="py-3 px-4">자국어 닉네임</th>
+c:\Users\stone\WoC\src\app\admin\people\page.tsx:455 <th className="py-3 px-4 text-center">가입 방식</th>
+c:\Users\stone\WoC\src\app\admin\people\page.tsx:480 {/* 모달 푸터 */}
+c:\Users\stone\WoC\src\app\admin\people\page.tsx:486 닫기
+c:\Users\stone\WoC\src\app\class\[groupId]\page.tsx:240 ? `${currentDate.getMonth() + 1}월, ${currentDate.getFullYear()}`
+c:\Users\stone\WoC\src\app\class\[groupId]\page.tsx:427 {language === 'KR' ? '지금은 수업신청이 불가합니다.' : 'Registrations are currently closed for this month.'}
+c:\Users\stone\WoC\src\app\class\[groupId]\page.tsx:517 const daysKr = ['일', '월', '화', '수', '목', '금', '토'];
+c:\Users\stone\WoC\src\app\class\[groupId]\page.tsx:669 const daysKr = ['일', '월', '화', '수', '목', '금', '토'];
+c:\Users\stone\WoC\src\app\class\[groupId]\page.tsx:899 {/* Class Registration - UnifiedCheckoutModal (SHOP과 동일한 워크플로) */}
+c:\Users\stone\WoC\src\app\class\[groupId]\page.tsx:908 title={language === 'KR' ? (isDiscountSelected ? "번들 패키지 신청" : "클래스 신청") : (isDiscountSelected ? "Bundle Package Registration" : "Class Registration")}
+c:\Users\stone\WoC\src\app\class\[groupId]\page.tsx:963 buttonText={language === 'KR' ? "신청서 제출" : "Submit Request"}
+c:\Users\stone\WoC\src\app\class\[groupId]\page.tsx:974 <h4 className="text-sm font-bold text-neutral-900 dark:text-white mb-3">{language === 'KR' ? "역할 선택" : "Select Role"} <span className="text-error">*</span></h4>
+c:\Users\stone\WoC\src\app\class\[groupId]\page.tsx:980 <span className={`text-sm font-black uppercase ${selectedRole === 'leader' ? 'text-blue-700 dark:text-blue-400' : 'text-neutral-700 dark:text-neutral-300'}`}>{language === 'KR' ? "리더 (Leader)" : "Leader"}</span>
+c:\Users\stone\WoC\src\app\class\[groupId]\page.tsx:986 <span className={`text-sm font-black uppercase ${selectedRole === 'follower' ? 'text-purple-700 dark:text-purple-400' : 'text-neutral-700 dark:text-neutral-300'}`}>{language === 'KR' ? "팔로어 (Follower)" : "Follower"}</span>
+c:\Users\stone\WoC\src\app\class\[groupId]\page.tsx:995 <h4 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-3">{language === 'KR' ? "신청된 번들" : "Applied Bundle"}</h4>
+c:\Users\stone\WoC\src\app\class\[groupId]\page.tsx:1012 <h4 className="text-sm font-bold text-neutral-900 dark:text-white mb-3">{language === 'KR' ? "참여할 클래스 선택" : "Select Classes to Attend"} <span className="text-error">*</span></h4>
+c:\Users\stone\WoC\src\app\class\[groupId]\page.tsx:1037 MON: { en: 'Mon', ko: '월' },
+c:\Users\stone\WoC\src\app\class\[groupId]\page.tsx:1038 TUE: { en: 'Tue', ko: '화' },
+c:\Users\stone\WoC\src\app\class\[groupId]\page.tsx:1039 WED: { en: 'Wed', ko: '수' },
+c:\Users\stone\WoC\src\app\class\[groupId]\page.tsx:1040 THU: { en: 'Thu', ko: '목' },
+c:\Users\stone\WoC\src\app\class\[groupId]\page.tsx:1041 FRI: { en: 'Fri', ko: '금' },
+c:\Users\stone\WoC\src\app\class\[groupId]\page.tsx:1042 SAT: { en: 'Sat', ko: '토' },
+c:\Users\stone\WoC\src\app\class\[groupId]\page.tsx:1043 SUN: { en: 'Sun', ko: '일' },
+c:\Users\stone\WoC\src\app\class\[groupId]\page.tsx:1063 const dayLabel = language === 'KR' ? (DAY_LABELS[day]?.ko || '월') : (DAY_LABELS[day]?.en || 'Mon');
+c:\Users\stone\WoC\src\app\class\[groupId]\page.tsx:1118 {/* 파트너명 인풋 필드 */}
+c:\Users\stone\WoC\src\app\class\[groupId]\page.tsx:1130 placeholder={language === 'KR' ? "파트너 이름 (선택)" : "Partner Name (Optional)"}
+c:\Users\stone\WoC\src\app\class\[groupId]\page.tsx:1142 {language === 'KR' ? "선택됨: " : "Selected: "}{passSelectedClassIds.size} / {(() => {
+c:\Users\stone\WoC\src\app\class\[groupId]\page.tsx:1156 <h4 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest px-1">{language === 'KR' ? "신청된 클래스" : "Applied Classes"}</h4>
+c:\Users\stone\WoC\src\app\class\[groupId]\page.tsx:1168 {/* 파트너명 인풋 필드 */}
+c:\Users\stone\WoC\src\app\class\[groupId]\page.tsx:1179 placeholder={ || "파트너 이름을 입력하세요"}
 c:\Users\stone\WoC\src\app\events\page.tsx:31 'korea': 'kr', 'south korea': 'kr', 'korea, republic of': 'kr', '대한민국': 'kr', '한국': 'kr',
 c:\Users\stone\WoC\src\app\events\page.tsx:32 'japan': 'jp', '일본': 'jp',
 c:\Users\stone\WoC\src\app\events\page.tsx:33 'china': 'cn', '중국': 'cn',
@@ -30,73 +100,554 @@ c:\Users\stone\WoC\src\app\events\page.tsx:191 'korea': [/\bkr\b/i, /\bkorea\b/i
 c:\Users\stone\WoC\src\app\events\page.tsx:192 'japan': [/\bjp\b/i, /\bjapan\b/i, /일본/],
 c:\Users\stone\WoC\src\app\events\page.tsx:193 'china': [/\bcn\b/i, /\bchina\b/i, /중국/],
 c:\Users\stone\WoC\src\app\events\page.tsx:194 'taiwan': [/\btw\b/i, /\btaiwan\b/i, /대만/],
-c:\Users\stone\WoC\src\app\groups\page.tsx:24 const dongMatch = address.match(/(\S+동)/);
+c:\Users\stone\WoC\src\app\events\page.tsx:447 ? `${getNormalizedDate(featuredEvent.startDate).getFullYear()}년 ${getNormalizedDate(featuredEvent.startDate).getMonth() + 1}월 ${getNormalizedDate(featuredEvent.startDate).getDate()}일`
+c:\Users\stone\WoC\src\app\groups\page.tsx:22 '합정동': 'Hapjeong-dong', '서교동': 'Seogyo-dong', '상수동': 'Sangsu-dong',
+c:\Users\stone\WoC\src\app\groups\page.tsx:23 '망원동': 'Mangwon-dong', '연남동': 'Yeonnam-dong', '성산동': 'Seongsan-dong',
+c:\Users\stone\WoC\src\app\groups\page.tsx:24 '이태원동': 'Itaewon-dong', '한남동': 'Hannam-dong', '청담동': 'Cheongdam-dong',
+c:\Users\stone\WoC\src\app\groups\page.tsx:25 '압구정동': 'Apgujeong-dong', '신사동': 'Sinsa-dong', '역삼동': 'Yeoksam-dong',
+c:\Users\stone\WoC\src\app\groups\page.tsx:26 '삼성동': 'Samsung-dong', '강남동': 'Gangnam-dong', '서초동': 'Seocho-dong',
+c:\Users\stone\WoC\src\app\groups\page.tsx:27 '방배동': 'Bangbae-dong', '논현동': 'Nonhyeon-dong', '대치동': 'Daechi-dong',
+c:\Users\stone\WoC\src\app\groups\page.tsx:28 '잠실동': 'Jamsil-dong', '송파동': 'Songpa-dong', '홍대동': 'Hongdae-dong',
+c:\Users\stone\WoC\src\app\groups\page.tsx:29 '을지로동': 'Euljiro-dong', '명동': 'Myeongdong', '종로동': 'Jongno-dong',
+c:\Users\stone\WoC\src\app\groups\page.tsx:30 '혜화동': 'Hyehwa-dong', '동대문동': 'Dongdaemun-dong', '마포동': 'Mapo-dong',
+c:\Users\stone\WoC\src\app\groups\page.tsx:31 '용산동': 'Yongsan-dong', '구로동': 'Guro-dong', '영등포동': 'Yeongdeungpo-dong',
+c:\Users\stone\WoC\src\app\groups\page.tsx:32 '여의도동': 'Yeouido-dong', '관악동': 'Gwanak-dong', '봉천동': 'Bongcheon-dong',
+c:\Users\stone\WoC\src\app\groups\page.tsx:33 '신림동': 'Sillim-dong', '건대동': 'Geondae-dong', '성수동': 'Seongsu-dong',
+c:\Users\stone\WoC\src\app\groups\page.tsx:34 '왕십리동': 'Wangsimni-dong', '행당동': 'Haengdang-dong', '금호동': 'Geumho-dong',
+c:\Users\stone\WoC\src\app\groups\page.tsx:35 '옥수동': 'Oksu-dong', '약수동': 'Yaksu-dong', '신당동': 'Sindang-dong',
+c:\Users\stone\WoC\src\app\groups\page.tsx:36 '교대동': 'Gyodae-dong', '선릉동': 'Seolleung-dong',
+c:\Users\stone\WoC\src\app\groups\page.tsx:42 const dongMatch = address.match(/(\S+동)/);
+c:\Users\stone\WoC\src\app\groups\page.tsx:128 impor.then(({ toast }) => toast('한 번 더 누르시면 이 방에서 나가게 됩니다.', {
+c:\Users\stone\WoC\src\app\history\page.tsx:706 {/* 수업/파트너 변경 버튼 */}
 c:\Users\stone\WoC\src\app\home\page.tsx:607 {/* Footer — 번역 미대상 영역 */}
+c:\Users\stone\WoC\src\app\page.tsx:14 const [installBtnText, setInstallBtnText] = useState('앱 설치');
+c:\Users\stone\WoC\src\app\page.tsx:171 하나의 <span className="text-blue-600">세계,</span><br />
+c:\Users\stone\WoC\src\app\page.tsx:172 탱고의 모든 순간
+c:\Users\stone\WoC\src\app\page.tsx:202 웹앱으로 설치됩니다_
+c:\Users\stone\WoC\src\app\page.tsx:221 사파리 브라우저의 안내를 따라 홈 화면에 추가하시면 즉시 설치가 완료됩니다.
+c:\Users\stone\WoC\src\app\page.tsx:233 축하합니다!
+c:\Users\stone\WoC\src\app\page.tsx:236 '탱고월드' 앱을 검색해서 앱을 실행해 주시기 바랍니다.<br />
+c:\Users\stone\WoC\src\app\page.tsx:237 앱을 홈 화면에 추가하시면 더욱 편리합니다.
+c:\Users\stone\WoC\src\app\page.tsx:245 <span>재설치 하기</span>
+c:\Users\stone\WoC\src\app\page.tsx:262 <span className="text-[8px] text-gray-400 font-bold mt-1.5 break-keep leading-tight">전 세계 탱고인과 연결</span>
+c:\Users\stone\WoC\src\app\page.tsx:271 <span className="text-[8px] text-gray-400 font-bold mt-1.5 break-keep leading-tight">행사, 소식, 정보를 한곳에</span>
+c:\Users\stone\WoC\src\app\page.tsx:280 <span className="text-[8px] text-gray-400 font-bold mt-1.5 break-keep leading-tight">소통하고 함께 성장하는 커뮤니티</span>
+c:\Users\stone\WoC\src\app\pics\page.tsx:19 Romantic: ['romantic', 'couple', 'love', 'date', 'sunset', 'nightview', 'rose', 'heart', '로맨틱', '연인', '데이트', '커플', '사랑', '노을', '야경', '분위기', '감성'],
+c:\Users\stone\WoC\src\app\pics\page.tsx:20 Vibrant: ['vibrant', 'bright', 'color', 'festival', 'neon', 'party', 'street', 'city', '활기찬', '축제', '네온', '파티', '화려한', '거리', '색감', '시티'],
+c:\Users\stone\WoC\src\app\pics\page.tsx:21 Chill: ['chill', 'relax', 'cafe', 'coffee', 'beach', 'peace', 'cozy', 'rest', '여유로운', '휴식', '카페', '커피', '바다', '평화', '아늑한', '쉼'],
+c:\Users\stone\WoC\src\app\pics\page.tsx:22 Energetic: ['energetic', 'sport', 'exercise', 'run', 'dance', 'active', 'play', '에너지', '운동', '스포츠', '댄스', '러닝', '액티브', '활동'],
+c:\Users\stone\WoC\src\app\pics\page.tsx:23 Moody: ['moody', 'rain', 'shadow', 'night', 'fog', 'dark', 'retro', 'vintage', '감성적인', '비', '그림자', '밤', '안개', '어두운', '레트로', '빈티지'],
+c:\Users\stone\WoC\src\app\pics\page.tsx:24 Elegant: ['elegant', 'luxury', 'classic', 'grace', 'art', 'gold', 'museum', '우아한', '럭셔리', '클래식', '품격', '예술', '골드', '뮤지엄'],
+c:\Users\stone\WoC\src\app\pics\page.tsx:25 Warm: ['warm', 'sunshine', 'cozy', 'autumn', 'spring', 'fire', 'light', '따뜻한', '햇살', '아늑한', '가을', '봄', '벽난로', '조명'],
+c:\Users\stone\WoC\src\app\pics\page.tsx:26 Calm: ['calm', 'quiet', 'forest', 'lake', 'sleep', 'rest', 'peaceful', '차분한', '조용한', '숲', '호수', '잠', '휴식', '평화로운'],
+c:\Users\stone\WoC\src\app\pics\page.tsx:27 Social: ['social', 'talk', 'friend', 'meet', 'gather', 'community', '소셜', '대화', '친구', '만남', '모임', '커뮤니티'],
+c:\Users\stone\WoC\src\app\pics\page.tsx:28 Dining: ['dining', 'eat', 'food', 'wine', 'restaurant', 'dinner', 'lunch', 'chef', '다이닝', '식사', '음식', '와인', '레스토랑', '저녁', '점심', '셰프'],
+c:\Users\stone\WoC\src\app\pics\page.tsx:29 Explore: ['explore', 'travel', 'trip', 'walk', 'adventure', 'map', 'outdoor', '탐험', '여행', '산책', '모험', '지도', '아웃도어'],
+c:\Users\stone\WoC\src\app\pics\page.tsx:30 Relax: ['relax', 'stay', 'spa', 'home', 'bed', 'book', 'tea', '휴식', '스테이', '스파', '집', '침대', '책', '차'],
+c:\Users\stone\WoC\src\app\pics\page.tsx:31 Party: ['party', 'dance', 'club', 'celebrate', 'drink', 'music', 'nightlife', '파티', '댄스', '클럽', '축하', '음료', '음악', '나이트라이프'],
+c:\Users\stone\WoC\src\app\pics\page.tsx:32 Learn: ['learn', 'class', 'studio', 'workshop', 'study', 'book', 'lecture', '배움', '클래스', '스튜디오', '워크숍', '공부', '강의'],
+c:\Users\stone\WoC\src\app\pics\page.tsx:33 Exercise: ['exercise', 'sport', 'fitness', 'gym', 'workout', 'yoga', 'run', '운동', '스포츠', '피트니스', '체육관', '워크아웃', '요가', '러닝'],
+c:\Users\stone\WoC\src\app\pics\page.tsx:34 Spring: ['spring', 'flower', 'cherry', 'blossom', 'green', 'warm', '봄', '꽃', '벚꽃', '초록', '따뜻함'],
+c:\Users\stone\WoC\src\app\pics\page.tsx:35 Summer: ['summer', 'beach', 'sea', 'ocean', 'swim', 'hot', 'ice', 'vacation', '여름', '해변', '바다', '수영', '더운', '얼음', '휴가'],
+c:\Users\stone\WoC\src\app\pics\page.tsx:36 Autumn: ['autumn', 'fall', 'leaf', 'maple', 'brown', 'cool', 'wind', '가을', '단풍', '갈색', '선선한', '바람'],
+c:\Users\stone\WoC\src\app\pics\page.tsx:37 Winter: ['winter', 'snow', 'ice', 'cold', 'ski', 'christmas', 'santa', '겨울', '눈', '얼음', '추운', '스키', '크리스마스', '산타'],
+c:\Users\stone\WoC\src\app\pics\page.tsx:38 Morning: ['morning', 'sunrise', 'breakfast', 'early', 'bright', 'coffee', '아침', '일출', '조식', '이른', '밝은', '커피'],
+c:\Users\stone\WoC\src\app\pics\page.tsx:39 Afternoon: ['afternoon', 'lunch', 'sun', 'bright', 'day', 'work', '오후', '점심', '태양', '밝은', '낮', '업무'],
+c:\Users\stone\WoC\src\app\pics\page.tsx:40 Evening: ['evening', 'sunset', 'dinner', 'gold', 'dusk', '퇴근', '저녁', '노을', '석식', '황금빛', '황혼'],
+c:\Users\stone\WoC\src\app\pics\page.tsx:41 Night: ['night', 'dark', 'moon', 'star', 'sleep', 'nightview', 'neon', '밤', '어두운', '달', '별', '수면', '야경', '네온']
+c:\Users\stone\WoC\src\app\pics\page.tsx:168 setVisibleCoun; // 무한스크롤 첫 페이지 초기화
+c:\Users\stone\WoC\src\app\pics\page.tsx:189 {/* More Filters Chip (맨 왼쪽 배치) */}
+c:\Users\stone\WoC\src\app\pics\page.tsx:207 {/* 세련된 세로 구분선 */}
+c:\Users\stone\WoC\src\app\pics\page.tsx:311 {/* Row 2: Stats & Reset Control (AI 결과 카운트 프리미엄 UI 매칭 노출) */}
+c:\Users\stone\WoC\src\app\privacy\page.tsx:53 {.replace('Helpdesk', '').replace('고객센터', '')}
+c:\Users\stone\WoC\src\app\profile\page.tsx:238 <h3 className="text-xs font-black text-outline uppercase tracking-widest">{language === 'KR' ? '설정 및 고객지원' : 'PREFERENCES & SUPPORT'}</h3>
+c:\Users\stone\WoC\src\app\profile\page.tsx:242 ? '다국어 환경을 제어하고 AI 고객지원 서비스를 실시간으로 이용할 수 있습니다.'
+c:\Users\stone\WoC\src\app\profile\page.tsx:260 <p className="text-[10px] text-on-surface-variant font-medium mt-0.5">{language === 'KR' ? 'AI 상담원과 1:1 채팅 문의' : '1:1 chat support with AI agent'}</p>
+c:\Users\stone\WoC\src\app\profile\page.tsx:273 <h4 className="text-xs font-black text-on-surface tracking-tight">{language === 'KR' ? '앱 언어 설정' : 'Application Language'}</h4>
+c:\Users\stone\WoC\src\app\profile\page.tsx:274 <p className="text-[10px] text-on-surface-variant font-medium mt-0.5">{language === 'KR' ? '한글 / 영어 원터치 전환' : 'One-touch language switch'}</p>
+c:\Users\stone\WoC\src\app\profile\page.tsx:354 <span className="text-[9px] text-on-surface-variant font-medium block uppercase tracking-tighter mt-0.5">{language === 'KR' ? '도구 관리' : 'Manage Tools'}</span>
 c:\Users\stone\WoC\src\app\resale\page.tsx:311 {/* ⑤ Product Grid (필터+정렬 결과) */}
-c:\Users\stone\WoC\src\app\seed-rentals\page.tsx:61 rentalInfo: groupData.description || '쾌적한 대관 공간입니다.',
-c:\Users\stone\WoC\src\app\seed-rentals\page.tsx:75 title: (groupData.name || '스튜디오') + ' 대관',
-c:\Users\stone\WoC\src\app\seed-rentals\page.tsx:76 description: groupData.description || '쾌적한 다목적 공간입니다.',
-c:\Users\stone\WoC\src\app\seed-rentals\page.tsx:77 location: '서울',
-c:\Users\stone\WoC\src\app\seed-rentals\page.tsx:78 address: groupData.description?.spli?.[0]?.trim() || '서울',
-c:\Users\stone\WoC\src\app\seed-rentals\page.tsx:82 facilities: ['Wi-Fi', '거울', '냉난방기'],
-c:\Users\stone\WoC\src\app\seed-rentals\page.tsx:83 rules: '실내화 착용 필수, 음식물 반입 금지',
-c:\Users\stone\WoC\src\app\shop\page.tsx:342 {/* ⑤ Product Grid (필터+정렬 결과) */}
-c:\Users\stone\WoC\src\app\shop\page.tsx:411 {/* ④ Hero Banner (Admin UX — 광고 배너) */}
-c:\Users\stone\WoC\src\app\shop\page.tsx:428 {/* ⑥ Wishlist Tray (Map-style FAB — 완료) */}
-c:\Users\stone\WoC\src\app\social\page.tsx:453 if (d === '강북') return 0;
-c:\Users\stone\WoC\src\app\social\page.tsx:454 if (d === '강남') return 1;
-c:\Users\stone\WoC\src\app\social\page.tsx:819 {/* 소형 썸네일 */}
-c:\Users\stone\WoC\src\app\social\page.tsx:858 {/* 신규 등록 (Create 모드) */}
-c:\Users\stone\WoC\src\app\social\page.tsx:866 {/* 기존 소셜 편집 (Edit 모드) */}
-c:\Users\stone\WoC\src\app\social\page.tsx:874 {/* 뷰 모드 (일반 사용자) */}
-c:\Users\stone\WoC\src\app\stay\page.tsx:266 {/* ④ Stay Grid (필터+정렬 결과) */}
+c:\Users\stone\WoC\src\app\shop\page.tsx:401 {/* ⑤ Product Grid (필터+정렬 결과) */}
+c:\Users\stone\WoC\src\app\shop\page.tsx:472 {/* ④ Hero Banner (Admin UX — 광고 배너) */}
+c:\Users\stone\WoC\src\app\shop\page.tsx:489 {/* ⑥ Wishlist Tray (Map-style FAB — 완료) */}
+c:\Users\stone\WoC\src\app\social\page.tsx:53 const [activeCityTab, setActiveCityTab] = useState('서울');
+c:\Users\stone\WoC\src\app\social\page.tsx:72 const gangbukDists = ['마포', '용산', '성동', '서대문', '종로', '중구', '광진', '은평', '성북', '동대문', '중랑', '강북', '도봉', '노원'];
+c:\Users\stone\WoC\src\app\social\page.tsx:73 let assignedArea = 'gangnam'; // 기본값 강남
+c:\Users\stone\WoC\src\app\social\page.tsx:85 .catch(err => console.error('seoulArea 자동 마이그레이션 실패:', err));
+c:\Users\stone\WoC\src\app\social\page.tsx:501 if (d === '강북') return 0;
+c:\Users\stone\WoC\src\app\social\page.tsx:502 if (d === '강남') return 1;
+c:\Users\stone\WoC\src\app\social\page.tsx:582 const activeCities = useMemo(() => ['서울', '부산', '대전', '대구', '광주', '인천', '제주'], []);
+c:\Users\stone\WoC\src\app\social\page.tsx:620 if (lower.includes('홍대') || lower.includes('한강위')) return 0;
+c:\Users\stone\WoC\src\app\social\page.tsx:621 if (lower.includes('강남') || lower.includes('한강아래')) return 1;
+c:\Users\stone\WoC\src\app\social\page.tsx:622 if (lower.includes('강북')) return 2;
+c:\Users\stone\WoC\src\app\social\page.tsx:631 if (d.includes('강남') || d.includes('서초') || d.includes('송파') || d.includes('강동') || d.includes('양재')) {
+c:\Users\stone\WoC\src\app\social\page.tsx:632 return language === 'KR' ? '한강아래 (강남지역)' : 'South of River (Gangnam)';
+c:\Users\stone\WoC\src\app\social\page.tsx:634 if (d.includes('강북') || d.includes('홍대') || d.includes('마포') || d.includes('신촌') || d.includes('종로') || d.includes('합정')) {
+c:\Users\stone\WoC\src\app\social\page.tsx:635 return language === 'KR' ? '한강위 (홍대인근)' : 'North of River (Hongdae)';
+c:\Users\stone\WoC\src\app\social\page.tsx:643 return language === 'KR' ? '한강위 (홍대인근)' : 'North of River (Hongdae)';
+c:\Users\stone\WoC\src\app\social\page.tsx:646 return language === 'KR' ? '한강아래 (강남지역)' : 'South of River (Gangnam)';
+c:\Users\stone\WoC\src\app\social\page.tsx:653 '홍대', '마포', '신촌', '합정', '망원', '종로', '중구', '성동', '서대문', '이대', '상수', '광진', '용산', '한남', '이태원', '을지로', '광화문',
+c:\Users\stone\WoC\src\app\social\page.tsx:655 '바르샤', 'barsha', '엘빠소', 'elpaso', '아반', 'aban', '보헤미안', 'bohemian', '아르헨티나', 'argentina',
+c:\Users\stone\WoC\src\app\social\page.tsx:656 '오쵸', 'ocho', '땅고마니아', 'tangomania', '라비다', 'lavida', '마구아', 'magua', '밀롱가헤이', 'milongahei',
+c:\Users\stone\WoC\src\app\social\page.tsx:657 '라벤타나', '라 벤타나', 'ventana', 'la ventana', '알마', 'alma', '오나다', 'onada', 'atta', '아똬'
+c:\Users\stone\WoC\src\app\social\page.tsx:661 if (venueName.includes(key)) return language === 'KR' ? '한강위 (홍대인근)' : 'North of River (Hongdae)';
+c:\Users\stone\WoC\src\app\social\page.tsx:664 return language === 'KR' ? '한강아래 (강남지역)' : 'South of River (Gangnam)';
+c:\Users\stone\WoC\src\app\social\page.tsx:686 {language === 'KR' ? '풀스크린 브리프' : 'Fullscreen'}
+c:\Users\stone\WoC\src\app\social\page.tsx:1010 {/* 소형 썸네일 */}
+c:\Users\stone\WoC\src\app\social\page.tsx:1073 city === '서울' ? (language === 'KR' ? '서울' : 'Seoul') :
+c:\Users\stone\WoC\src\app\social\page.tsx:1074 city === '부산' ? (language === 'KR' ? '부산' : 'Busan') :
+c:\Users\stone\WoC\src\app\social\page.tsx:1075 city === '대전' ? (language === 'KR' ? '대전' : 'Daejeon') :
+c:\Users\stone\WoC\src\app\social\page.tsx:1076 city === '대구' ? (language === 'KR' ? '대구' : 'Daegu') :
+c:\Users\stone\WoC\src\app\social\page.tsx:1077 city === '광주' ? (language === 'KR' ? '광주' : 'Gwangju') :
+c:\Users\stone\WoC\src\app\social\page.tsx:1078 city === '인천' ? (language === 'KR' ? '인천' : 'Incheon') :
+c:\Users\stone\WoC\src\app\social\page.tsx:1079 city === '제주' ? (language === 'KR' ? '제주' : 'Jeju') : city;
+c:\Users\stone\WoC\src\app\social\page.tsx:1116 if (targetCity === '서울') return sCity === '서울' || sCity === 'seoul';
+c:\Users\stone\WoC\src\app\social\page.tsx:1117 if (targetCity === '부산') return sCity === '부산' || sCity === 'busan';
+c:\Users\stone\WoC\src\app\social\page.tsx:1118 if (targetCity === '대전') return sCity === '대전' || sCity === 'daejeon';
+c:\Users\stone\WoC\src\app\social\page.tsx:1119 if (targetCity === '대구') return sCity === '대구' || sCity === 'daegu';
+c:\Users\stone\WoC\src\app\social\page.tsx:1120 if (targetCity === '광주') return sCity === '광주' || sCity === 'gwangju';
+c:\Users\stone\WoC\src\app\social\page.tsx:1121 if (targetCity === '인천') return sCity === '인천' || sCity === 'incheon';
+c:\Users\stone\WoC\src\app\social\page.tsx:1122 if (targetCity === '제주') return sCity === '제주' || sCity === 'jeju';
+c:\Users\stone\WoC\src\app\social\page.tsx:1126 const isSeoul = city.includes('서울') || city.toLowerCase().includes('seoul');
+c:\Users\stone\WoC\src\app\social\page.tsx:1137 const key = language === 'KR' ? `${city} 전체` : `${city} Area`;
+c:\Users\stone\WoC\src\app\social\page.tsx:1148 if (a.includes('한강위')) return -1;
+c:\Users\stone\WoC\src\app\social\page.tsx:1149 if (b.includes('한강위')) return 1;
+c:\Users\stone\WoC\src\app\social\page.tsx:1162 {language === 'KR' ? '오늘 예정된 소셜이 없습니다' : 'No Socials Scheduled Today'}
+c:\Users\stone\WoC\src\app\social\page.tsx:1165 {language === 'KR' ? '다른 날짜의 소셜을 탐색해보세요!' : 'Explore other dates!'}
+c:\Users\stone\WoC\src\app\social\page.tsx:1199 {isDaySocial(social) ? (language === 'KR' ? '낮' : 'Day') : (language === 'KR' ? '밤' : 'Night')}
+c:\Users\stone\WoC\src\app\social\page.tsx:1249 {isDaySocial(social) ? (language === 'KR' ? '낮' : 'Day') : (language === 'KR' ? '밤' : 'Night')}
+c:\Users\stone\WoC\src\app\social\page.tsx:1295 {isDaySocial(social) ? (language === 'KR' ? '낮' : 'Day') : (language === 'KR' ? '밤' : 'Night')}
+c:\Users\stone\WoC\src\app\social\page.tsx:1329 {/* 시작시간 및 낮/밤 배지 */}
+c:\Users\stone\WoC\src\app\social\page.tsx:1339 {isDaySocial(social) ? (language === 'KR' ? '낮' : 'Day') : (language === 'KR' ? '밤' : 'Night')}
+c:\Users\stone\WoC\src\app\social\page.tsx:1343 {/* 밀롱가명 (가장 중요) */}
+c:\Users\stone\WoC\src\app\social\page.tsx:1353 {/* 장소 • 주최자 */}
+c:\Users\stone\WoC\src\app\social\page.tsx:1398 {language === 'KR' ? '낮 시간 밀롱가 (18시 이전)' : 'Afternoon Milonga (Before 18:00)'}
+c:\Users\stone\WoC\src\app\social\page.tsx:1407 {language === 'KR' ? '밤 시간 밀롱가 (18시 이후)' : 'Night Milonga (After 18:00)'}
+c:\Users\stone\WoC\src\app\stay\page.tsx:302 {/* ④ Stay Grid (필터+정렬 결과) */}
 c:\Users\stone\WoC\src\app\stay\[id]\checkout\complete\page.tsx:26 await stayBookingService.updateBookingStatus(bookingId, 'PAID', user.uid, '입금 완료 보고');
-c:\Users\stone\WoC\src\app\venues\page.tsx:157 {/* Group 앱인앱 오버레이 - groups/page.tsx와 동일한 패턴 */}
-c:\Users\stone\WoC\src\components\auth\AuthModal.tsx:391 setTimeoutCoun; // 성공 시 카운트 초기화
-c:\Users\stone\WoC\src\components\class\ClassDetail.tsx:68 const [todayDistrict, setTodayDistrict] = useState<'ALL' | '강북' | '강남'>('ALL');
-c:\Users\stone\WoC\src\components\class\ClassDetail.tsx:381 { id: '강북', key: 'common.district_gangbuk' },
-c:\Users\stone\WoC\src\components\class\ClassDetail.tsx:382 { id: '강남', key: 'common.district_gangnam' }
-c:\Users\stone\WoC\src\components\feed\CreateFeedPopup.tsx:343 {/* Style Row ??Impact + Emphasis ??以?(??0?????쒖떆) */}
+c:\Users\stone\WoC\src\components\auth\AuthModal.tsx:30 ? '너무 많은 요청이 발생했습니다. 잠시 후 다시 시도해주세요.'
+c:\Users\stone\WoC\src\components\auth\AuthModal.tsx:33 ? '인증 코드가 올바르지 않습니다. 다시 확인해주세요.'
+c:\Users\stone\WoC\src\components\auth\AuthModal.tsx:36 ? '인증 코드가 만료되었습니다. 새 코드를 요청해주세요.'
+c:\Users\stone\WoC\src\components\auth\AuthModal.tsx:39 ? '유효하지 않은 전화번호입니다.'
+c:\Users\stone\WoC\src\components\auth\AuthModal.tsx:42 ? '네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.'
+c:\Users\stone\WoC\src\components\auth\AuthModal.tsx:45 ? 'SMS 전송 한도를 초과했습니다. 잠시 후 다시 시도해주세요.'
+c:\Users\stone\WoC\src\components\auth\AuthModal.tsx:48 ? '보안 인증에 실패했습니다. 페이지를 새로고침 후 다시 시도해주세요.'
+c:\Users\stone\WoC\src\components\auth\AuthModal.tsx:51 return messages[code] || (isKo ? `오류: ${fallback}` : `Error: ${fallback}`);
+c:\Users\stone\WoC\src\components\auth\AuthModal.tsx:145 const hasKorean = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.tes;
+c:\Users\stone\WoC\src\components\auth\AuthModal.tsx:399 const currentCC = phoneCountryCode; // 예: "+82"
+c:\Users\stone\WoC\src\components\auth\AuthModal.tsx:400 const currentCCNumeric = currentCC.replace('+', ''); // 예: "82"
+c:\Users\stone\WoC\src\components\auth\AuthModal.tsx:433 setTimeoutCoun; // 성공 시 카운트 초기화
+c:\Users\stone\WoC\src\components\auth\AuthModal.tsx:445 ? '보안 인증 처리가 지연되고 있습니다. 잠시 후 다시 시도해 주세요.'
+c:\Users\stone\WoC\src\components\auth\AuthModal.tsx:640 <h3 className="text-[14px] font-black text-blue-950 font-headline">아이폰 홈화면 앱 설치 안내 ✨</h3>
+c:\Users\stone\WoC\src\components\auth\AuthModal.tsx:641 <p className="text-[10px] text-blue-600/80 font-bold">1초 만에 홈 화면에 저장하고 실시간 알림을 받아보세요.</p>
+c:\Users\stone\WoC\src\components\auth\AuthModal.tsx:647 <span>1. 사파리 하단의 [공유 버튼 ⇧]을 누릅니다.</span>
+c:\Users\stone\WoC\src\components\auth\AuthModal.tsx:651 <span>2. 나타나는 메뉴에서 [홈 화면에 추가]를 선택합니다.</span>
+c:\Users\stone\WoC\src\components\auth\AuthModal.tsx:661 <label className="block text-sm font-bold text-gray-900 mb-2">{language === 'KR' ? '이메일' : 'Email'}</label>
+c:\Users\stone\WoC\src\components\auth\AuthModal.tsx:673 <label className="block text-sm font-bold text-gray-900 mb-2">{language === 'KR' ? '비밀번호' : 'Password'}</label>
+c:\Users\stone\WoC\src\components\auth\AuthModal.tsx:683 {language === 'KR' ? '계정이 없다면 자동으로 안전하게 가입됩니다.' : 'If you don\'t have an account, you will be registered automatically.'}
+c:\Users\stone\WoC\src\components\auth\AuthModal.tsx:693 {language === 'KR' ? '이메일로 계속하기' : 'Continue with Email'}
+c:\Users\stone\WoC\src\components\auth\AuthModal.tsx:805 <span className="text-sm font-bold text-blue-600 tracking-tight animate-pulse">인증번호 확인 중...</span>
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:31 { id: 'sticker_daily_1', fileId: 'sticker_hello', label: '인사' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:32 { id: 'sticker_daily_2', fileId: 'sticker_thanks', label: '감사' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:33 { id: 'sticker_daily_3', fileId: 'sticker_cheer', label: '응원' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:34 { id: 'sticker_daily_4', fileId: 'sticker_pray', label: '기도' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:35 { id: 'sticker_daily_5', fileId: 'sticker_congrats', label: '축하' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:36 { id: 'sticker_daily_6', fileId: 'sticker_sorry', label: '죄송' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:37 { id: 'sticker_daily_7', fileId: 'sticker_love', label: '사랑' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:38 { id: 'sticker_daily_8', fileId: 'sticker_question', label: '질문' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:39 { id: 'sticker_daily_9', fileId: 'sticker_hello', label: '기쁨' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:40 { id: 'sticker_daily_10', fileId: 'sticker_thanks', label: '슬픔' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:41 { id: 'sticker_daily_11', fileId: 'sticker_cheer', label: '놀람' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:42 { id: 'sticker_daily_12', fileId: 'sticker_pray', label: '화남' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:43 { id: 'sticker_daily_13', fileId: 'sticker_congrats', label: '윙크' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:44 { id: 'sticker_daily_14', fileId: 'sticker_sorry', label: '메롱' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:45 { id: 'sticker_daily_15', fileId: 'sticker_love', label: '졸림' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:46 { id: 'sticker_daily_16', fileId: 'sticker_question', label: '눈물' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:47 { id: 'sticker_daily_17', fileId: 'sticker_hello', label: '당황' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:48 { id: 'sticker_daily_18', fileId: 'sticker_thanks', label: '삐짐' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:49 { id: 'sticker_daily_19', fileId: 'sticker_cheer', label: '부끄' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:50 { id: 'sticker_daily_20', fileId: 'sticker_pray', label: '최고' }
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:54 { id: 'sticker_animal_1', fileId: 'sticker_pray', label: '냥이 안녕' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:55 { id: 'sticker_animal_2', fileId: 'sticker_congrats', label: '냥이 감사' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:56 { id: 'sticker_animal_3', fileId: 'sticker_sorry', label: '냥이 리액' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:57 { id: 'sticker_animal_4', fileId: 'sticker_love', label: '냥이 하트' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:58 { id: 'sticker_animal_5', fileId: 'sticker_question', label: '냥이 슬픔' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:59 { id: 'sticker_animal_6', fileId: 'sticker_hello', label: '댕댕 안녕' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:60 { id: 'sticker_animal_7', fileId: 'sticker_thanks', label: '댕댕 감사' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:61 { id: 'sticker_animal_8', fileId: 'sticker_cheer', label: '댕댕 최고' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:62 { id: 'sticker_animal_9', fileId: 'sticker_pray', label: '댕댕 하트' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:63 { id: 'sticker_animal_10', fileId: 'sticker_congrats', label: '댕댕 슬픔' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:64 { id: 'sticker_animal_11', fileId: 'sticker_sorry', label: '곰돌 인사' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:65 { id: 'sticker_animal_12', fileId: 'sticker_love', label: '곰돌 응원' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:66 { id: 'sticker_animal_13', fileId: 'sticker_question', label: '곰돌 축하' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:67 { id: 'sticker_animal_14', fileId: 'sticker_hello', label: '토끼 하트' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:68 { id: 'sticker_animal_15', fileId: 'sticker_thanks', label: '토끼 메롱' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:69 { id: 'sticker_animal_16', fileId: 'sticker_cheer', label: '판다 굿' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:70 { id: 'sticker_animal_17', fileId: 'sticker_pray', label: '판다 잠잠' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:71 { id: 'sticker_animal_18', fileId: 'sticker_congrats', label: '햄찌 냠냠' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:72 { id: 'sticker_animal_19', fileId: 'sticker_sorry', label: '햄찌 미안' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:73 { id: 'sticker_animal_20', fileId: 'sticker_love', label: '아기새 럽' }
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:80 { id: 'sticker_reaction_4', fileId: 'sticker_hello', label: '대박' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:81 { id: 'sticker_reaction_5', fileId: 'sticker_thanks', label: '축하축하' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:82 { id: 'sticker_reaction_6', fileId: 'sticker_cheer', label: '화이팅' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:83 { id: 'sticker_reaction_7', fileId: 'sticker_pray', label: '인정' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:84 { id: 'sticker_reaction_8', fileId: 'sticker_congrats', label: '깜놀' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:85 { id: 'sticker_reaction_9', fileId: 'sticker_sorry', label: '헐' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:86 { id: 'sticker_reaction_10', fileId: 'sticker_love', label: '쉿' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:87 { id: 'sticker_reaction_11', fileId: 'sticker_question', label: '굿모닝' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:88 { id: 'sticker_reaction_12', fileId: 'sticker_hello', label: '굿나잇' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:89 { id: 'sticker_reaction_13', fileId: 'sticker_thanks', label: '문의하기' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:90 { id: 'sticker_reaction_14', fileId: 'sticker_cheer', label: '주문완료' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:91 { id: 'sticker_reaction_15', fileId: 'sticker_pray', label: '예약완료' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:92 { id: 'sticker_reaction_16', fileId: 'sticker_congrats', label: '약속완료' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:93 { id: 'sticker_reaction_17', fileId: 'sticker_sorry', label: '환영해요' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:94 { id: 'sticker_reaction_18', fileId: 'sticker_love', label: '감사해요' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:95 { id: 'sticker_reaction_19', fileId: 'sticker_question', label: '최고에요' },
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:96 { id: 'sticker_reaction_20', fileId: 'sticker_hello', label: '수고했어' }
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:129 toast.success("가입 승인이 완료되었습니다.");
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:132 toast.success("가입 승인이 거절되었습니다.");
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:145 toast.success("초대를 수락하여 가입이 완료되었습니다!");
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:147 toast.success("초대를 거절하셨습니다.");
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:157 toast.error("처리에 실패했습니다. 다시 시도해 주세요.");
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:177 {isRequest ? "그룹 가입 승인 요청" : "그룹 초대 알림"}
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:198 거절
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:205 {loading ? "처리 중..." : "수락"}
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:211 {isRequest ? "대표자의 결정을 기다리는 중입니다" : "상대방의 수락 결정을 기다리는 중입니다"}
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:222 ? (isRequest ? "가입이 수락되었습니다" : "초대를 수락하여 가입되었습니다")
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:223 : (isRequest ? "가입이 거절되었습니다" : "초대를 거절하셨습니다")}
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:302 clean.includes("축하") ||
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:306 clean.includes("경축") ||
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:316 clean.includes("사랑") ||
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:317 clean.includes("하트") ||
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:329 clean.includes("응원") ||
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:330 clean.includes("화이팅") ||
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:331 clean.includes("최고") ||
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:332 clean.includes("파이팅") ||
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:344 clean.includes("감사") ||
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:345 clean.includes("고마워") ||
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:620 setChatBgColor('#b2c7da'); // 카톡 시그니처 기본값
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:638 nickname: user.displayName || '나',
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:1217 ORDER_PLACED: ['[ORDER PLACED]', '[새 주문 알림]', '[주문 완료]'],
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:1218 PAYMENT_REPORTED: ['[PAYMENT REPORTED]', '[입금 완료 보고]', '[결제 보고됨]'],
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:1219 PRODUCT_INQUIRY: ['[PRODUCT INQUIRY]', '[상품 문의]'],
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:1220 STAY_BOOKING: ['[STAY BOOKING]', '[숙소 예약]', '[스테이 예약]'],
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:1221 STAY_PAYMENT: ['[STAY PAYMENT]', '[숙소 입금]', '[스테이 결제]'],
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:1222 RENTAL_INQUIRY: ['[RENTAL INQUIRY]', '[대관 문의]', '[렌탈 문의]']
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:1228 const orderNo = getVal(lines, ['Order No', '주문번호', '주문 번호']);
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:1229 const product = getVal(lines, ['Product', '상품명', 'Item', 'Title']);
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:1230 const option = getVal(lines, ['Option', '옵션']);
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:1231 const amount = getVal(lines, ['Amount', '결제금액', '금액', '수량']);
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:1232 const image = getVal(lines, ['Image', '이미지']);
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:1263 const orderNo = getVal(lines, ['Order No', '주문번호', '주문 번호']);
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:1264 const productName = getVal(lines, ['Product', '상품명', 'Item', 'Title']);
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:1265 const depositor = getVal(lines, ['Depositor', '입금자명', '입금자']);
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:1295 const brand = getVal(lines, ['Brand', '브랜드']);
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:1296 const title = getVal(lines, ['Title', '상품명']);
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:1297 const price = getVal(lines, ['Price', '가격']);
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:1298 const link = getVal(lines, ['Link', '링크', '바로가기']);
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:1299 const image = getVal(lines, ['Image', '이미지']);
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:1337 const stayName = getVal(lines, ['Stay', '숙소']);
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:1338 const dates = getVal(lines, ['Dates', '일정']);
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:1339 const nights = getVal(lines, ['Nights', '박', '숙박 일수']);
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:1340 const guests = getVal(lines, ['Guests', '인원']);
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:1341 const amount = getVal(lines, ['Amount', '금액']);
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:1342 const applicant = getVal(lines, ['Applicant', '예약자']);
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:1343 const image = getVal(lines, ['Image', '이미지']);
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:1372 const stayName = getVal(lines, ['Stay', '숙소']);
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:1373 const dates = getVal(lines, ['Dates', '일정']);
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:1394 const space = getVal(lines, ['Space', '공간']);
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:1395 const date = getVal(lines, ['Date', '날짜']);
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:1396 const time = getVal(lines, ['Time', '시간']);
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:1397 const purpose = getVal(lines, ['Purpose', '목적']);
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:1398 const headcount = getVal(lines, ['Headcount', '인원']);
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:1399 const message = getVal(lines, ['Message', '메시지']);
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:1582 title="메뉴"
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:1608 title="메뉴"
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:1886 {readCount}읽음
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:2118 {/* 단층 가로 1줄 flex 구조 */}
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:2470 {/* Feature 8: Poll (투표 만들기) */}
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:2692 setCurrentNoticeIdx(0); // 새 공지가 맨 앞으로 가므로 인덱스를 0으로 세팅
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:3057 <span className="text-xs font-black text-primary">{meetupMaxCapacity}명</span>
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:3154 {/* 1/N 계산 실시간 안내 문구 */}
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:3546 {/* 4단계: 실시간 리액티브 기여 뱃지 이식 */}
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:3552 {/* 🗣️ 수다왕 뱃지 */}
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:3561 {/* 🎉 분위기 요정 뱃지 */}
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:3570 {/* 💸 성실 송금러 뱃지 */}
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:3579 {/* 🤝 모임 오거나이저 뱃지 */}
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:3613 "#b2c7da", // 기본 카톡 연하늘
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:3614 "#f6ecf0", // 소프트 핑크
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:3615 "#fcf0e7", // 부드러운 살구
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:3616 "#faf5e6", // 소프트 옐로우
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:3617 "#eef7f2", // 민트 그린
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:3618 "#e6f4f8", // 소프트 아쿠아
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:3619 "#f0eff5", // 연라벤더
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:3620 "#e8ecef", // 소프트 실버
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:3621 "#eef2f3", // 연그레이
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:3622 "#eafaf1", // 소프트 그린
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:3623 "#fbf2eb", // 부드러운 오렌지
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:3624 "#fef9e7", // 파스텔 레몬
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:3625 "#f4ecf7", // 파스텔 퍼플
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:3626 "#ebf5fb", // 파스텔 윈드블루
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:3627 "#eaecee"  // 매트 그레이
+c:\Users\stone\WoC\src\components\chat\ChatRoom.tsx:3654 {/* 4단계: 감정 이모티콘 팡팡 이펙트 오버레이 */}
+c:\Users\stone\WoC\src\components\chat\PollCard.tsx:185 {/* 투표 참여 멤버 닉네임 실시간 비동기 노출 */}
+c:\Users\stone\WoC\src\components\chat\SettlementCard.tsx:40 <div className="relative shrink-0" title={`${name} (${isPaid ? '입금 완료' : '미입금'})`}>
+c:\Users\stone\WoC\src\components\chat\SettlementCard.tsx:138 (총 {totalAmount.toLocaleString()}원)
+c:\Users\stone\WoC\src\components\chat\SettlementCard.tsx:165 {/* 7번 기능: 실시간 입금/수납 아바타 현황 트래커 */}
+c:\Users\stone\WoC\src\components\class\ClassDetail.tsx:41 naver: language === 'KR' ? '네이버 지도' : 'Naver Map',
+c:\Users\stone\WoC\src\components\class\ClassDetail.tsx:42 kakao: language === 'KR' ? '카카오맵' : 'Kakao Map',
+c:\Users\stone\WoC\src\components\class\ClassDetail.tsx:43 google: language === 'KR' ? '구글 지도' : 'Google Map'
+c:\Users\stone\WoC\src\components\class\ClassDetail.tsx:193 history.back(); // popstate 발생 → handlePopState에서 onClose() 호출
+c:\Users\stone\WoC\src\components\class\ClassDetail.tsx:202 case 'discount': return '패키지 할인';
+c:\Users\stone\WoC\src\components\class\ClassDetail.tsx:203 case 'class': return '일반 클래스';
+c:\Users\stone\WoC\src\components\class\ClassDetail.tsx:204 default: return '클래스';
+c:\Users\stone\WoC\src\components\class\ClassDetail.tsx:254 {language === 'KR' ? '상세 정보를 불러오는 중입니다...' : 'Loading details...'}
+c:\Users\stone\WoC\src\components\class\ClassDetail.tsx:281 {language === 'KR' ? '패키지 할인 상품' : 'Bundle Deal'}
+c:\Users\stone\WoC\src\components\class\ClassDetail.tsx:296 {language === 'KR' ? '난이도' : 'Level'}: {(() => {
+c:\Users\stone\WoC\src\components\class\ClassDetail.tsx:299 if (lvl.includes('ALL')) return '모든 레벨';
+c:\Users\stone\WoC\src\components\class\ClassDetail.tsx:300 if (lvl.includes('BEGINNER')) return '초급';
+c:\Users\stone\WoC\src\components\class\ClassDetail.tsx:301 if (lvl.includes('INTERMEDIATE')) return '중급';
+c:\Users\stone\WoC\src\components\class\ClassDetail.tsx:302 if (lvl.includes('ADVANCED')) return '고급';
+c:\Users\stone\WoC\src\components\class\ClassDetail.tsx:310 {language === 'KR' ? '설명' : 'Description'}
+c:\Users\stone\WoC\src\components\class\ClassDetail.tsx:313 {itemDetail.description || itemDetail.discountDescription || (language === 'KR' ? '등록된 설명이 없습니다.' : 'No description provided.')}
+c:\Users\stone\WoC\src\components\class\ClassDetail.tsx:324 {language === 'KR' ? '장소' : 'Venue'}
+c:\Users\stone\WoC\src\components\class\ClassDetail.tsx:327 {/* 스마트 지도 연동 샘플 적용 */}
+c:\Users\stone\WoC\src\components\class\ClassDetail.tsx:343 ? `${cachedMapBrand}${language === 'KR' ? '(으)로 즉시 바로 연결됨' : ' (Direct connection)'}`
+c:\Users\stone\WoC\src\components\class\ClassDetail.tsx:344 : language === 'KR' ? '터치하여 길찾기 지도 연결' : 'Tap to open map navigation'}
+c:\Users\stone\WoC\src\components\class\ClassDetail.tsx:353 {/* 스마트 선호도 초기화 칩 */}
+c:\Users\stone\WoC\src\components\class\ClassDetail.tsx:357 {cachedMapBrand}{language === 'KR' ? '(으)로 자동 연결 중' : ' set as default map'}
+c:\Users\stone\WoC\src\components\class\ClassDetail.tsx:364 {language === 'KR' ? '지도 변경하기' : 'Change Map'}
+c:\Users\stone\WoC\src\components\class\ClassDetail.tsx:377 {language === 'KR' ? '일정' : 'Schedule'}
+c:\Users\stone\WoC\src\components\class\ClassDetail.tsx:392 ? (isNaN(day) ? '미정' : `${dateObj.getMonth() + 1}월 ${day}일`)
+c:\Users\stone\WoC\src\components\class\ClassDetail.tsx:415 {language === 'KR' ? '정원' : 'Capacity'}
+c:\Users\stone\WoC\src\components\class\ClassDetail.tsx:421 <p className="text-[10px] text-[#acb3b4]">{language === 'KR' ? '남성 (리더)' : 'Male'}</p>
+c:\Users\stone\WoC\src\components\class\ClassDetail.tsx:427 <p className="text-[10px] text-[#acb3b4]">{language === 'KR' ? '여성 (팔로어)' : 'Female'}</p>
+c:\Users\stone\WoC\src\components\class\ClassDetail.tsx:433 <p className="text-[10px] text-[#acb3b4]">{language === 'KR' ? '전체 정원' : 'Total'}</p>
+c:\Users\stone\WoC\src\components\class\ClassDetail.tsx:442 {/* Included Classes 정적 목록 (번들인 경우 단순 텍스트 정보로만 렌더링) */}
+c:\Users\stone\WoC\src\components\class\ClassDetail.tsx:448 {language === 'KR' ? '포함된 클래스' : 'Included Classes'}
+c:\Users\stone\WoC\src\components\class\ClassDetail.tsx:469 {language === 'KR' ? '강사' : 'Instructors'}
+c:\Users\stone\WoC\src\components\class\ClassDetail.tsx:494 {language === 'KR' ? '정보를 찾을 수 없습니다.' : 'Item Not Found'}
+c:\Users\stone\WoC\src\components\class\ClassDetail.tsx:497 {language === 'KR' ? '선택하신 클래스 또는 패스 정보를 불러올 수 없습니다.' : 'The selected class or pass could not be retrieved.'}
+c:\Users\stone\WoC\src\components\class\ClassDetail.tsx:503 {/* Fixed Bottom Price Bar - 오직 CLOSE 버튼만 존재 */}
+c:\Users\stone\WoC\src\components\class\ClassDetail.tsx:508 {language === 'KR' ? '금액' : 'Price'}
+c:\Users\stone\WoC\src\components\class\ClassDetail.tsx:518 {language === 'KR' ? '닫기' : 'CLOSE'}
+c:\Users\stone\WoC\src\components\class\ClassPortal.tsx:549 {language === 'KR' ? '입금대기중...' : 'Pending Deposit...'}
+c:\Users\stone\WoC\src\components\class\ClassPortal.tsx:556 {language === 'KR' ? '입금완료' : 'Payment Completed'}
+c:\Users\stone\WoC\src\components\class\ClassPortal.tsx:571 {language === 'KR' ? '승인대기중...' : 'Pending Approval...'}
+c:\Users\stone\WoC\src\components\class\ClassPortal.tsx:578 {language === 'KR' ? '관리자와 채팅' : 'Chat with Host'}
+c:\Users\stone\WoC\src\components\class\ClassPortal.tsx:592 {language === 'KR' ? '신청완료' : 'Completed'}
+c:\Users\stone\WoC\src\components\class\ClassPortal.tsx:972 ? `${targetYear}년 ${targetMonthNum + 1}월`
+c:\Users\stone\WoC\src\components\class\ClassPortal.tsx:1322 placeholder={ || "파트너 이름을 입력하세요"}
+c:\Users\stone\WoC\src\components\class\ClassPortal.tsx:1398 {/* Class Detail Overlay - state 기반, 페이지 이동 없이 열고 닫힘 */}
+c:\Users\stone\WoC\src\components\class\ClassPortal.tsx:1407 {/* Chat Overlay - 관리자와 채팅을 현재 페이지 위에 오버레이로 표시 */}
+c:\Users\stone\WoC\src\components\common\MapSelectorBottomSheet.tsx:78 { || '길찾기에 연결할 선호 지도를 하나 선택해 주세요.'}
+c:\Users\stone\WoC\src\components\common\MapSelectorBottomSheet.tsx:81 { || '선택하신 지도는 로컬에 저장되어 다음 터치 시 무조건 즉시 바로 열립니다.'}
+c:\Users\stone\WoC\src\components\common\MapSelectorBottomSheet.tsx:98 { || '네이버 지도'}
+c:\Users\stone\WoC\src\components\common\MapSelectorBottomSheet.tsx:101 { || '국내 최우선 디폴트'}
+c:\Users\stone\WoC\src\components\common\MapSelectorBottomSheet.tsx:121 { || '카카오맵'}
+c:\Users\stone\WoC\src\components\common\MapSelectorBottomSheet.tsx:124 { || '빠르고 쾌적한 이동 안내'}
+c:\Users\stone\WoC\src\components\common\MapSelectorBottomSheet.tsx:144 { || '구글 지도'}
+c:\Users\stone\WoC\src\components\common\MapSelectorBottomSheet.tsx:147 { || '글로벌 여행 및 광범위 지원'}
+c:\Users\stone\WoC\src\components\common\MapSelectorBottomSheet.tsx:162 { || '닫기'}
+c:\Users\stone\WoC\src\components\common\UnifiedCheckoutModal.tsx:74 return `${month}월 ${day}일 ${hours}:${minutes}분`;
+c:\Users\stone\WoC\src\components\common\UnifiedCheckoutModal.tsx:210 <span className="text-sm font-medium text-neutral-500 dark:text-neutral-400">{language === 'KR' ? '총 금액' : 'Total'}</span>
+c:\Users\stone\WoC\src\components\common\UnifiedCheckoutModal.tsx:222 <span className="animate-pulse">{language === 'KR' ? '처리 중...' : 'Processing...'}</span>
+c:\Users\stone\WoC\src\components\common\UnifiedCheckoutModal.tsx:226 language === 'KR' ? '로그인 후 신청하기' : 'Login to Book'
+c:\Users\stone\WoC\src\components\common\UnifiedCheckoutModal.tsx:258 <span className="animate-pulse">{language === 'KR' ? '처리 중...' : 'Processing...'}</span>
+c:\Users\stone\WoC\src\components\common\UnifiedCheckoutModal.tsx:279 <span className="font-bold text-orange-600">{formatAppliedTime(initialCreatedAt, true)}</span>에 신청하셨습니다.<br/>
+c:\Users\stone\WoC\src\components\common\UnifiedCheckoutModal.tsx:280 입금 후 <span className="font-bold text-[#0057bd]">송금을 완료했습니다</span> 버튼을 클릭해주십시오.
+c:\Users\stone\WoC\src\components\common\UnifiedCheckoutModal.tsx:344 {language === 'KR' ? '메모' : 'Memo'} <span className="normal-case tracking-normal text-[#acb3b4] dark:text-neutral-600">({language === 'KR' ? '선택' : 'Optional'})</span>
+c:\Users\stone\WoC\src\components\common\UnifiedCheckoutModal.tsx:349 placeholder={language === 'KR' ? '입금자명, 멤버쉽등 사유 등 입금확인 가능정보' : 'Depositor name, membership info, or payment reference'}
+c:\Users\stone\WoC\src\components\common\UnifiedCheckoutModal.tsx:389 <>신청서 <span className="font-mono font-bold text-[#2d3435] dark:text-white">{displayOrderNumber}</span>번이 정상적으로 접수되었습니다.</>
+c:\Users\stone\WoC\src\components\common\UserBadge.tsx:90 const hasKorean = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.tes;
+c:\Users\stone\WoC\src\components\feed\FeedPostCard.tsx:427 youtubeLink.linkMetadata.description?.includes('마음에 드는 동영상과 음악');
+c:\Users\stone\WoC\src\components\feed\FeedPostCard.tsx:669 finalTitle = 'YouTube 동영상';
+c:\Users\stone\WoC\src\components\feed\FeedPostCard.tsx:671 if (finalDesc?.includes('마음에 드는 동영상과 음악')) {
+c:\Users\stone\WoC\src\components\feed\FeedPostCard.tsx:672 finalDesc = '클릭하여 YouTube에서 감상하세요.';
 c:\Users\stone\WoC\src\components\feed\MediaViewerPopup.tsx:63 history.back(); // popstate 발생 → handlePopState에서 onClose() 호출
 c:\Users\stone\WoC\src\components\feed\MediaViewerPopup.tsx:144 {/* 상단 헤더 */}
 c:\Users\stone\WoC\src\components\feed\MediaViewerPopup.tsx:157 {/* 미디어 영역 */}
 c:\Users\stone\WoC\src\components\feed\MediaViewerPopup.tsx:186 {/* 이전/다음 버튼 */}
 c:\Users\stone\WoC\src\components\feed\MediaViewerPopup.tsx:205 {/* 하단 도트 인디케이터 */}
-c:\Users\stone\WoC\src\components\groups\GroupAccountEditor.tsx:121 <option value="KB국민은행" className="bg-[#0a0f1d] text-white font-normal">{}</option>
-c:\Users\stone\WoC\src\components\groups\GroupAccountEditor.tsx:122 <option value="신한은행" className="bg-[#0a0f1d] text-white font-normal">{}</option>
-c:\Users\stone\WoC\src\components\groups\GroupAccountEditor.tsx:123 <option value="하나은행" className="bg-[#0a0f1d] text-white font-normal">{}</option>
-c:\Users\stone\WoC\src\components\groups\GroupAccountEditor.tsx:124 <option value="우리은행" className="bg-[#0a0f1d] text-white font-normal">{}</option>
-c:\Users\stone\WoC\src\components\groups\GroupAccountEditor.tsx:125 <option value="NH농협은행" className="bg-[#0a0f1d] text-white font-normal">{}</option>
-c:\Users\stone\WoC\src\components\groups\GroupAccountEditor.tsx:126 <option value="IBK기업은행" className="bg-[#0a0f1d] text-white font-normal">{}</option>
-c:\Users\stone\WoC\src\components\groups\GroupAccountEditor.tsx:127 <option value="카카오뱅크" className="bg-[#0a0f1d] text-white font-normal">{}</option>
-c:\Users\stone\WoC\src\components\groups\GroupAccountEditor.tsx:128 <option value="토스뱅크" className="bg-[#0a0f1d] text-white font-normal">{}</option>
-c:\Users\stone\WoC\src\components\groups\GroupAccountEditor.tsx:129 <option value="케이뱅크" className="bg-[#0a0f1d] text-white font-normal">{}</option>
-c:\Users\stone\WoC\src\components\groups\GroupAccountEditor.tsx:132 <option value="iM뱅크" className="bg-[#0a0f1d] text-white font-normal">{}</option>
-c:\Users\stone\WoC\src\components\groups\GroupAccountEditor.tsx:133 <option value="부산은행" className="bg-[#0a0f1d] text-white font-normal">{}</option>
-c:\Users\stone\WoC\src\components\groups\GroupAccountEditor.tsx:134 <option value="경남은행" className="bg-[#0a0f1d] text-white font-normal">{}</option>
-c:\Users\stone\WoC\src\components\groups\GroupAccountEditor.tsx:135 <option value="광주은행" className="bg-[#0a0f1d] text-white font-normal">{}</option>
-c:\Users\stone\WoC\src\components\groups\GroupAccountEditor.tsx:136 <option value="전북은행" className="bg-[#0a0f1d] text-white font-normal">{}</option>
-c:\Users\stone\WoC\src\components\groups\GroupAccountEditor.tsx:137 <option value="제주은행" className="bg-[#0a0f1d] text-white font-normal">{}</option>
-c:\Users\stone\WoC\src\components\groups\GroupAccountEditor.tsx:140 <option value="SC제일은행" className="bg-[#0a0f1d] text-white font-normal">{}</option>
-c:\Users\stone\WoC\src\components\groups\GroupAccountEditor.tsx:141 <option value="한국씨티은행" className="bg-[#0a0f1d] text-white font-normal">{}</option>
-c:\Users\stone\WoC\src\components\groups\GroupAccountEditor.tsx:142 <option value="수협은행" className="bg-[#0a0f1d] text-white font-normal">{}</option>
-c:\Users\stone\WoC\src\components\groups\GroupAccountEditor.tsx:145 <option value="우체국" className="bg-[#0a0f1d] text-white font-normal">{}</option>
-c:\Users\stone\WoC\src\components\groups\GroupAccountEditor.tsx:146 <option value="새마을금고" className="bg-[#0a0f1d] text-white font-normal">{}</option>
-c:\Users\stone\WoC\src\components\groups\GroupAccountEditor.tsx:147 <option value="신협" className="bg-[#0a0f1d] text-white font-normal">{}</option>
-c:\Users\stone\WoC\src\components\groups\GroupAccountEditor.tsx:148 <option value="저축은행" className="bg-[#0a0f1d] text-white font-normal">{}</option>
-c:\Users\stone\WoC\src\components\groups\GroupAccountEditor.tsx:149 <option value="산림조합" className="bg-[#0a0f1d] text-white font-normal">{}</option>
-c:\Users\stone\WoC\src\components\groups\GroupCalendar.tsx:90 type: s.title.toLowerCase().includes('milonga') || s.title.toLowerCase().includes('밀롱가') ? 'milonga' : 'social',
-c:\Users\stone\WoC\src\components\groups\GroupCalendar.tsx:105 type: s.title.toLowerCase().includes('milonga') || s.title.toLowerCase().includes('밀롱가') ? 'milonga' : 'social',
-c:\Users\stone\WoC\src\components\groups\GroupHome.tsx:437 type: s.title.toLowerCase().includes('milonga') || s.title.toLowerCase().includes('밀롱가') ? 'milonga' : 'social',
-c:\Users\stone\WoC\src\components\groups\GroupHome.tsx:450 type: s.title.toLowerCase().includes('milonga') || s.title.toLowerCase().includes('밀롱가') ? 'milonga' : 'social',
-c:\Users\stone\WoC\src\components\groups\GroupHome.tsx:477 if (total === 0) return { male: 45, female: 55 }; // 기본 비율 (데이터 없을 시)
-c:\Users\stone\WoC\src\components\groups\GroupHome.tsx:582 setShowJoinModal(true); // "환영합니다" 팝업
-c:\Users\stone\WoC\src\components\groups\GroupHome.tsx:585 setShowJoinModal(true); // "신청 완료" 팝업
-c:\Users\stone\WoC\src\components\groups\GroupHome.tsx:788 {/* [Fix #1] 히어로: 최초 진입 시 한 번만 표시 */}
+c:\Users\stone\WoC\src\components\feed\UniversalFeed.tsx:169 {/* 📌 Spotlight Carousel (공지/공식글 상단 배너) */}
+c:\Users\stone\WoC\src\components\feed\UniversalFeed.tsx:204 {/* ⚡ 프리미엄 피드 한 줄 툴바 (브랜드 글쓰기 프롬프트 + 고급 세그먼티드 뷰 스위치) */}
+c:\Users\stone\WoC\src\components\feed\UniversalFeed.tsx:206 {/* 좌측: 감각적인 브랜드 그라데이션 글쓰기 알약 칩 */}
+c:\Users\stone\WoC\src\components\feed\UniversalFeed.tsx:217 {/* 우측: 슬랙/애플 감성의 부드러운 뷰 세그먼트 스위치 */}
+c:\Users\stone\WoC\src\components\groups\EventDetailBottomSheet.tsx:44 naver:  || '네이버 지도',
+c:\Users\stone\WoC\src\components\groups\EventDetailBottomSheet.tsx:45 kakao:  || '카카오맵',
+c:\Users\stone\WoC\src\components\groups\EventDetailBottomSheet.tsx:46 google:  || '구글 지도'
+c:\Users\stone\WoC\src\components\groups\EventDetailBottomSheet.tsx:135 ? `${cachedMapBrand}${ || '(으)로 즉시 바로 연결됨'}`
+c:\Users\stone\WoC\src\components\groups\EventDetailBottomSheet.tsx:136 :  || '터치하여 길찾기 지도 연결'}
+c:\Users\stone\WoC\src\components\groups\EventDetailBottomSheet.tsx:145 {/* 스마트 선호도 초기화 칩 */}
+c:\Users\stone\WoC\src\components\groups\EventDetailBottomSheet.tsx:149 {cachedMapBrand}{ || '(으)로 자동 연결 중'}
+c:\Users\stone\WoC\src\components\groups\EventDetailBottomSheet.tsx:156 { || '지도 변경하기'}
+c:\Users\stone\WoC\src\components\groups\GroupAbout.tsx:422 {isClaiming ? ( || "Saving...") : ( || "Claim Ownership (소유권 주장)")}
+c:\Users\stone\WoC\src\components\groups\GroupAbout.tsx:433 {/* 최상단 마운트 영역: 멤버 가입 & It's mine 클레임 */}
+c:\Users\stone\WoC\src\components\groups\GroupAbout.tsx:435 {/* 1. 멤버 가입 / 이미 가입된 멤버 카드 */}
+c:\Users\stone\WoC\src\components\groups\GroupAbout.tsx:473 가입 승인을 대기 중입니다
+c:\Users\stone\WoC\src\components\groups\GroupAbout.tsx:476 대표자가 가입 신청을 확인하고 있습니다. 승인이 완료되면 모든 클래스와 피드가 자동으로 활성화됩니다.
+c:\Users\stone\WoC\src\components\groups\GroupAbout.tsx:484 신청 취소하기
+c:\Users\stone\WoC\src\components\groups\GroupAbout.tsx:497 <p className="text-[18px] leading-[1.8] text-white mb-2 font-bold font-body">정식 멤버가 되어 보세요</p>
+c:\Users\stone\WoC\src\components\groups\GroupAbout.tsx:498 <p className="text-[13px] leading-[1.3] text-white/80 mb-4 font-body">가입 즉시 승인 대기 없이 모든 클래스 정보와 소통 공간을 자유롭게 이용하실 수 있습니다.</p>
+c:\Users\stone\WoC\src\components\groups\GroupAbout.tsx:506 toast.error("로그인이 필요합니다.");
+c:\Users\stone\WoC\src\components\groups\GroupAbout.tsx:521 toast.error("가입 처리 중 오류가 발생했습니다.");
+c:\Users\stone\WoC\src\components\groups\GroupAbout.tsx:527 {isJoining ? "처리 중..." : "커뮤니티 가입하기"}
+c:\Users\stone\WoC\src\components\groups\GroupAbout.tsx:550 <p className="text-[18px] leading-[1.8] text-white mb-2 font-bold font-body">가입 승인 신청하기</p>
+c:\Users\stone\WoC\src\components\groups\GroupAbout.tsx:551 <p className="text-[13px] leading-[1.3] text-white/80 mb-4 font-body">대표자의 가입 승인을 거쳐 이 커뮤니티의 정식 멤버가 되실 수 있습니다.</p>
+c:\Users\stone\WoC\src\components\groups\GroupAbout.tsx:574 toast.error("로그인이 필요합니다.");
+c:\Users\stone\WoC\src\components\groups\GroupAbout.tsx:593 senderName: profile?.nickname || user.displayName || '가입 신청자',
+c:\Users\stone\WoC\src\components\groups\GroupAbout.tsx:594 text: `${profile?.nickname || user.displayName || 'Anonymous'}님이 '${group.name}' 그룹 가입 승인을 요청하셨습니다.`,
+c:\Users\stone\WoC\src\components\groups\GroupAbout.tsx:611 toast.error("가입 신청 중 오류가 발생했습니다.");
+c:\Users\stone\WoC\src\components\groups\GroupAbout.tsx:617 {isJoining ? "처리 중..." : "가입 승인 신청"}
+c:\Users\stone\WoC\src\components\groups\GroupAbout.tsx:627 <p className="text-[18px] leading-[1.8] text-white mb-2 font-bold font-body">초대 전용 프라이빗 그룹</p>
+c:\Users\stone\WoC\src\components\groups\GroupAbout.tsx:628 <p className="text-[13px] leading-[1.3] text-white/80 mb-4 font-body">대표자 및 운영진의 직접 초대를 통하여 가입 및 이용이 가능한 공간입니다.</p>
+c:\Users\stone\WoC\src\components\groups\GroupAbout.tsx:651 toast.error("로그인이 필요합니다.");
+c:\Users\stone\WoC\src\components\groups\GroupAbout.tsx:661 text: `안녕하세요! '${group.name}' 그룹에 가입하고 싶습니다. 초대를 부탁드립니다!`,
+c:\Users\stone\WoC\src\components\groups\GroupAbout.tsx:664 toast.success("대표자에게 가입 문의 메시지를 전송했습니다.");
+c:\Users\stone\WoC\src\components\groups\GroupAbout.tsx:668 toast.error("대표자와의 채팅방 개설 중 오류가 발생했습니다.");
+c:\Users\stone\WoC\src\components\groups\GroupAbout.tsx:674 {isJoining ? "처리 중..." : "대표자에게 문의하기"}
+c:\Users\stone\WoC\src\components\groups\GroupAbout.tsx:979 <span className="text-xs font-bold text-on-surface-variant">지도 불러오기 (데이터 절약 모드)</span>
+c:\Users\stone\WoC\src\components\groups\GroupAbout.tsx:994 {showLiveMap ?  : "터치하여 지도 활성화"}
+c:\Users\stone\WoC\src\components\groups\GroupClassDashboard.tsx:109 ? `${currentDate.getFullYear()}년 ${currentDate.getMonth() + 1}월`
+c:\Users\stone\WoC\src\components\groups\GroupClassDashboard.tsx:376 label: language === 'KR' ? '입금대기' : 'Pending',
+c:\Users\stone\WoC\src\components\groups\GroupClassDashboard.tsx:382 label: language === 'KR' ? '송금완료' : 'Reported',
+c:\Users\stone\WoC\src\components\groups\GroupClassDashboard.tsx:388 label: language === 'KR' ? '입금완료' : 'Completed',
+c:\Users\stone\WoC\src\components\groups\GroupClassDashboard.tsx:394 label: language === 'KR' ? '대기중' : 'Pending',
+c:\Users\stone\WoC\src\components\groups\GroupClassDashboard.tsx:428 const daysKr = ['일', '월', '화', '수', '목', '금', '토'];
+c:\Users\stone\WoC\src\components\groups\GroupClassDashboard.tsx:430 const dayOrderKr = ['월', '화', '수', '목', '금', '토', '일'];
+c:\Users\stone\WoC\src\components\groups\GroupClassDashboard.tsx:461 return `${reg.classTitle} (${count}${language === 'KR' ? '개 수업' : ' classes'})`;
+c:\Users\stone\WoC\src\components\groups\GroupClassDashboard.tsx:485 const daysKr = ['일', '월', '화', '수', '목', '금', '토'];
+c:\Users\stone\WoC\src\components\groups\GroupClassDashboard.tsx:513 const daysKr = ['일', '월', '화', '수', '목', '금', '토'];
+c:\Users\stone\WoC\src\components\groups\GroupClassDashboard.tsx:544 toast.success(language === 'KR' ? '신청 정보가 정상적으로 수정되었습니다.' : 'Registration details updated successfully.');
+c:\Users\stone\WoC\src\components\groups\GroupClassDashboard.tsx:548 toast.error(language === 'KR' ? '정보 수정에 실패했습니다.' : 'Failed to update details.');
+c:\Users\stone\WoC\src\components\groups\GroupClassDashboard.tsx:594 {language === 'KR' ? '지금은 수업신청이 불가합니다.' : 'Class registration is currently unavailable.'}
+c:\Users\stone\WoC\src\components\groups\GroupClassDashboard.tsx:681 const daysKr = ['일', '월', '화', '수', '목', '금', '토'];
+c:\Users\stone\WoC\src\components\groups\GroupClassDashboard.tsx:795 ? ` 외 ${totalCount - 1}개`
+c:\Users\stone\WoC\src\components\groups\GroupClassDashboard.tsx:812 <strong className="text-indigo-600 font-bold">{language === 'KR' ? '멤버쉽' : 'Membership'}.</strong> {representativeReg.adminMemo}
+c:\Users\stone\WoC\src\components\groups\GroupClassDashboard.tsx:820 <strong className="text-emerald-600 font-bold">{language === 'KR' ? '입금메모' : 'Deposit Memo'}.</strong> {representativeReg.applicantMemo}
+c:\Users\stone\WoC\src\components\groups\GroupClassDashboard.tsx:857 ? { 'MON': '월', 'TUE': '화', 'WED': '수', 'THU': '목', 'FRI': '금', 'SAT': '토', 'SUN': '일' }[dayKey] || dayKey
+c:\Users\stone\WoC\src\components\groups\GroupClassDashboard.tsx:921 {language === 'KR' ? '신청한 리더가 없습니다.' : 'No leaders registered.'}
+c:\Users\stone\WoC\src\components\groups\GroupClassDashboard.tsx:970 {language === 'KR' ? '신청한 팔로워가 없습니다.' : 'No followers registered.'}
+c:\Users\stone\WoC\src\components\groups\GroupClassDashboard.tsx:978 <p className="text-[11px] font-medium text-slate-400 italic pt-1">{language === 'KR' ? '신청자가 아직 없습니다.' : 'No members registered yet.'}</p>
+c:\Users\stone\WoC\src\components\groups\GroupClassDashboard.tsx:985 <p className="text-slate-500 font-medium text-sm">{language === 'KR' ? '수업 정보가 존재하지 않습니다.' : 'No class data available.'}</p>
+c:\Users\stone\WoC\src\components\groups\GroupClassDashboard.tsx:1003 {language === 'KR' ? '내 입금 및 신청 상태' : 'My Payment Status'}
+c:\Users\stone\WoC\src\components\groups\GroupClassDashboard.tsx:1030 {language === 'KR' ? '전체 입금 현황 리스트' : 'All Payments Directory'}
+c:\Users\stone\WoC\src\components\groups\GroupClassDashboard.tsx:1121 {/* DETAIL MODAL (모바일 친화적인 바텀시트 모달) */}
+c:\Users\stone\WoC\src\components\groups\GroupClassDashboard.tsx:1208 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">{language === 'KR' ? '진행 상태' : 'Progress Status'}</span>
+c:\Users\stone\WoC\src\components\groups\GroupClassDashboard.tsx:1213 {/* Step 1: 신청완료 */}
+c:\Users\stone\WoC\src\components\groups\GroupClassDashboard.tsx:1218 <span className="text-[10px] font-black text-slate-700 mt-1">{language === 'KR' ? '신청완료' : 'Applied'}</span>
+c:\Users\stone\WoC\src\components\groups\GroupClassDashboard.tsx:1222 {/* Step 2: 송금완료 */}
+c:\Users\stone\WoC\src\components\groups\GroupClassDashboard.tsx:1234 <span className={`text-[10px] font-black mt-1 ${isTransferred ? 'text-slate-700' : 'text-slate-400'}`}>{language === 'KR' ? '송금완료' : 'Reported'}</span>
+c:\Users\stone\WoC\src\components\groups\GroupClassDashboard.tsx:1240 {/* Step 3: 입금확인 */}
+c:\Users\stone\WoC\src\components\groups\GroupClassDashboard.tsx:1251 <span className={`text-[10px] font-black mt-1 ${isDone ? 'text-slate-700' : 'text-slate-400'}`}>{language === 'KR' ? '입금확인' : 'Confirmed'}</span>
+c:\Users\stone\WoC\src\components\groups\GroupClassDashboard.tsx:1261 {language === 'KR' ? '댄스 역할' : 'Dance Role'}: <strong className="text-slate-600">{(reg.role || 'Leader').toUpperCase()}</strong>
+c:\Users\stone\WoC\src\components\groups\GroupClassDashboard.tsx:1275 {/* EDIT MODAL (본인 정보 수정) */}
+c:\Users\stone\WoC\src\components\groups\GroupClassDashboard.tsx:1298 {language === 'KR' ? '댄스 역할' : 'Dance Role'}
+c:\Users\stone\WoC\src\components\groups\GroupClassDashboard.tsx:1328 {language === 'KR' ? '입금자명' : 'Depositor Name'}
+c:\Users\stone\WoC\src\components\groups\GroupClassDashboard.tsx:1335 placeholder={language === 'KR' ? '실제 입금자명을 입력하세요' : 'Enter depositor name'}
+c:\Users\stone\WoC\src\components\groups\GroupClassDashboard.tsx:1342 {language === 'KR' ? '입금메모' : 'Deposit Memo'}
+c:\Users\stone\WoC\src\components\groups\GroupClassDashboard.tsx:1349 placeholder={language === 'KR' ? '입금 관련 메모를 기재하세요' : 'Enter deposit memo'}
+c:\Users\stone\WoC\src\components\groups\GroupClassDashboard.tsx:1360 {language === 'KR' ? '취소' : 'Cancel'}
+c:\Users\stone\WoC\src\components\groups\GroupClassDashboard.tsx:1366 {language === 'KR' ? '저장' : 'Save'}
+c:\Users\stone\WoC\src\components\groups\GroupClassDiscountEditor.tsx:37 MON: { en: 'Mon', ko: '월' },
+c:\Users\stone\WoC\src\components\groups\GroupClassDiscountEditor.tsx:38 TUE: { en: 'Tue', ko: '화' },
+c:\Users\stone\WoC\src\components\groups\GroupClassDiscountEditor.tsx:39 WED: { en: 'Wed', ko: '수' },
+c:\Users\stone\WoC\src\components\groups\GroupClassDiscountEditor.tsx:40 THU: { en: 'Thu', ko: '목' },
+c:\Users\stone\WoC\src\components\groups\GroupClassDiscountEditor.tsx:41 FRI: { en: 'Fri', ko: '금' },
+c:\Users\stone\WoC\src\components\groups\GroupClassDiscountEditor.tsx:42 SAT: { en: 'Sat', ko: '토' },
+c:\Users\stone\WoC\src\components\groups\GroupClassDiscountEditor.tsx:43 SUN: { en: 'Sun', ko: '일' },
+c:\Users\stone\WoC\src\components\groups\GroupHome.tsx:253 toast.error( || "회원에게만 공개된 페이지입니다.");
+c:\Users\stone\WoC\src\components\groups\GroupHome.tsx:290 toast.error( || "회원에게만 공개된 페이지입니다.");
+c:\Users\stone\WoC\src\components\groups\GroupHome.tsx:298 toast.error( || "회원에게만 공개된 페이지입니다.");
+c:\Users\stone\WoC\src\components\groups\GroupHome.tsx:306 toast.error( || "회원에게만 공개된 페이지입니다.");
+c:\Users\stone\WoC\src\components\groups\GroupHome.tsx:377 {/* 1. 홈 피드 대시보드 탭 (Home) */}
+c:\Users\stone\WoC\src\components\groups\GroupHome.tsx:400 {/* 2. 동적 모듈 탭 렌더러 (about, members, calendar, feed, class 등) */}
+c:\Users\stone\WoC\src\components\groups\GroupHome.tsx:586 이 메뉴는 회원만 사용 가능합니다.
+c:\Users\stone\WoC\src\components\groups\GroupHome.tsx:589 회원 가입을 먼저 진행해 주십시요.
+c:\Users\stone\WoC\src\components\groups\GroupHome.tsx:599 커뮤니티 가입하기
+c:\Users\stone\WoC\src\components\groups\GroupPolls.tsx:475 {/* 3. 투표 생성 팝업 모달 창 */}
+c:\Users\stone\WoC\src\components\groups\shell\GroupAppShell.tsx:399 z-index: 100; /* 드롭다운을 확실히 위로 띄움 */
+c:\Users\stone\WoC\src\components\groups\shell\GroupAppShell.tsx:435 height: 0px; /* 스크롤바 감추기 */
+c:\Users\stone\WoC\src\components\groups\shell\GroupShellHeader.tsx:64 {/* 장식용 원형 배경 (헤더 밖으로 넘치는 부분을 가리면서 드롭다운은 자르지 않기 위함) */}
+c:\Users\stone\WoC\src\components\groups\shell\GroupShellHeader.tsx:79 {/* 그룹 정보 */}
+c:\Users\stone\WoC\src\components\groups\shell\GroupShellHeader.tsx:108 {/* Leave/Switch 버튼 */}
+c:\Users\stone\WoC\src\components\groups\shell\GroupShellHeader.tsx:135 {/* 현재 그룹 */}
+c:\Users\stone\WoC\src\components\groups\shell\GroupShellHeader.tsx:150 {/* 다른 그룹 */}
+c:\Users\stone\WoC\src\components\groups\shell\GroupShellHeader.tsx:175 {/* 나가기 */}
+c:\Users\stone\WoC\src\components\groups\shell\GroupShellMore.tsx:77 {/* 백드롭 레이어: 외부 클릭 감지 및 차단을 위해 최상위 바로 아래인 z-[99]로 조정 */}
+c:\Users\stone\WoC\src\components\groups\shell\GroupShellMore.tsx:94 {/* 일반 메뉴 */}
+c:\Users\stone\WoC\src\components\groups\shell\GroupShellMore.tsx:111 {/* 서비스 설정 메뉴 */}
+c:\Users\stone\WoC\src\components\groups\shell\GroupShellMore.tsx:129 {/* 관리자 메뉴 */}
+c:\Users\stone\WoC\src\components\groups\shell\GroupShellMore.tsx:147 {/* 팔레트 (관리자만) */}
+c:\Users\stone\WoC\src\components\groups\shell\GroupShellMore.tsx:160 onClose(); // 컬러 선택 시 드롭다운 자동으로 닫히도록 바인딩
+c:\Users\stone\WoC\src\components\groups\shell\GroupShellNav.tsx:48 {/* More 버튼 — 항상 마지막 */}
+c:\Users\stone\WoC\src\components\groups\shell\GroupShellNav.tsx:56 <div className="nav-label">더 보기</div>
+c:\Users\stone\WoC\src\components\groups\shell\GroupShellSkeleton.tsx:8 const paletteVars = usePalette(undefined); // 기본 테마 컬러로 설정 (#1a1c23)
+c:\Users\stone\WoC\src\components\groups\shell\GroupShellSkeleton.tsx:248 {/* 그룹 정보 스켈레톤 */}
+c:\Users\stone\WoC\src\components\groups\shell\GroupShellSkeleton.tsx:257 {/* Leave/Switch 버튼 스켈레톤 */}
+c:\Users\stone\WoC\src\components\groups\shell\GroupShellSkeleton.tsx:264 {/* Nav 탭 슬롯 6개 모방 스켈레톤 */}
+c:\Users\stone\WoC\src\components\layout\AppSettingsPopup.tsx:19 '우측 상단 더보기(⋮) 메뉴를 터치합니다.',
+c:\Users\stone\WoC\src\components\layout\AppSettingsPopup.tsx:20 '[앱 설치] 또는 [홈 화면에 추가] 단추를 선택합니다.',
+c:\Users\stone\WoC\src\components\layout\AppSettingsPopup.tsx:21 '실시간 알림(푸시) 수신을 보장하기 위해 반드시 [앱 설치]를 눌러 앱스 화면에 입주시켜 주세요!'
+c:\Users\stone\WoC\src\components\layout\AppSettingsPopup.tsx:31 '우측 하단 메뉴(≡) 버튼을 터치합니다.',
+c:\Users\stone\WoC\src\components\layout\AppSettingsPopup.tsx:32 '[현재 페이지 추가] 아이콘을 터치합니다.',
+c:\Users\stone\WoC\src\components\layout\AppSettingsPopup.tsx:33 '반드시 [앱스 화면]을 선택하여 설치하셔야 절전 모드 차단 없이 실시간 알림이 100% 무결 작동합니다!'
+c:\Users\stone\WoC\src\components\layout\AppSettingsPopup.tsx:43 '하단 중앙의 [공유] 단추(화살표 상자 모양)를 터치합니다.',
+c:\Users\stone\WoC\src\components\layout\AppSettingsPopup.tsx:44 '아래로 스크롤하여 [홈 화면에 추가]를 선택합니다.',
+c:\Users\stone\WoC\src\components\layout\AppSettingsPopup.tsx:45 '바탕화면에 생성된 앱 아이콘을 터치하여 실행한 뒤 [알림 허용] 팝업창을 꼭 최종 승인해 줍니다!'
 c:\Users\stone\WoC\src\components\layout\NavigationDrawer.tsx:14 { code: 'ko', name: 'Korean', native: '한국어', active: false },
-c:\Users\stone\WoC\src\components\providers\AuthProvider.tsx:204 duration: 15000, // 15초 후 자동 닫힘
-c:\Users\stone\WoC\src\components\providers\AuthProvider.tsx:229 }, 3000); // 페이지 로딩 후 3초 뒤에 띄움
+c:\Users\stone\WoC\src\components\layout\NavigationDrawer.tsx:286 <span className="text-[10px] font-medium opacity-50">쨌 {lang.native}</span>
+c:\Users\stone\WoC\src\components\layout\NavigationDrawer.tsx:320 <p className="text-[8px] font-black tracking-[0.3em] text-on-surface/20 uppercase">World of Group 짤 2026</p>
+c:\Users\stone\WoC\src\components\live\LiveFeed.tsx:37 name?: string;      // 필터 대상 이름
+c:\Users\stone\WoC\src\components\live\LiveFeed.tsx:38 subId?: string;     // 수업시연의 경우 classId
+c:\Users\stone\WoC\src\components\live\LiveFeed.tsx:39 subName?: string;   // 수업시연의 경우 className
+c:\Users\stone\WoC\src\components\live\LiveFeed.tsx:109 const post = filteredPosts[0]; // 다른 카테고리의 데이터를 절대 임의로 훔쳐오지 않음
+c:\Users\stone\WoC\src\components\live\LiveFeed.tsx:161 let groupName = '기타 클럽';
+c:\Users\stone\WoC\src\components\live\LiveFeed.tsx:392 {/* 어제 현황판 인트로 대시보드 */}
+c:\Users\stone\WoC\src\components\live\LiveFeed.tsx:401 {/* 은은하게 깔리는 글로우 스크림 */}
+c:\Users\stone\WoC\src\components\live\LiveFeed.tsx:405 {/* 상단 바 - Skip 서클 */}
+c:\Users\stone\WoC\src\components\live\LiveFeed.tsx:419 {/* 중앙 마름모(다이아몬드) 썸네일 그리드 */}
+c:\Users\stone\WoC\src\components\live\LiveFeed.tsx:423 {/* 1. 좌측 마름모 카드 (수업 시연) */}
+c:\Users\stone\WoC\src\components\live\LiveFeed.tsx:456 {/* 글로우 텍스트 배지 */}
+c:\Users\stone\WoC\src\components\live\LiveFeed.tsx:462 {/* 2. 중앙 메인 마름모 카드 (소셜 밀롱가) */}
+c:\Users\stone\WoC\src\components\live\LiveFeed.tsx:496 {/* 글로우 텍스트 배지 */}
+c:\Users\stone\WoC\src\components\live\LiveFeed.tsx:502 {/* 3. 우측 마름모 카드 (특별 공연) */}
+c:\Users\stone\WoC\src\components\live\LiveFeed.tsx:535 {/* 글로우 텍스트 배지 */}
+c:\Users\stone\WoC\src\components\live\LiveFeed.tsx:544 {/* 하단부 감성 텍스트 타이포 및 Enter 버튼 */}
+c:\Users\stone\WoC\src\components\live\LiveFeed.tsx:551 어제 우리 커뮤니티에는 수많은 교감의 모먼트들이 기록되었습니다. 준비 완료된 라이브 속으로 입장해 보세요!
+c:\Users\stone\WoC\src\components\live\LiveFeed.tsx:555 {/* 스톤님 제안: ENTER LIVE 버튼 */}
+c:\Users\stone\WoC\src\components\live\LiveFeed.tsx:571 {/* Closed 보안 개체 정직한 통계 배지 */}
+c:\Users\stone\WoC\src\components\live\LiveFeed.tsx:614 <p className="font-bold text-sm text-white">{ || '조건에 맞는 라이브 피드가 없습니다.'}</p>
+c:\Users\stone\WoC\src\components\live\LiveFeed.tsx:615 <p className="text-xs text-white/40 mt-1">{ || '필터를 조정해 보세요.'}</p>
+c:\Users\stone\WoC\src\components\live\LiveFeed.tsx:620 { || '필터 초기화'}
+c:\Users\stone\WoC\src\components\live\LiveFeed.tsx:725 <p className="text-xs text-on-surface-variant/70 mt-1.5 px-4 leading-relaxed">모든 라이브 스트림과 포스트를 제한 없이 시청합니다.</p>
+c:\Users\stone\WoC\src\components\live\LiveFeed.tsx:733 <p className="text-xs text-on-surface-variant/70 mt-1.5 px-4 leading-relaxed">특정 그룹, 소셜, 클래스에 연결되지 않은 기본 피드만 시청합니다.</p>
+c:\Users\stone\WoC\src\components\live\LiveFeed.tsx:742 <span>등록된 소셜 라이브가 없습니다.</span>
+c:\Users\stone\WoC\src\components\live\LiveFeed.tsx:774 <span>등록된 공연 라이브가 없습니다.</span>
+c:\Users\stone\WoC\src\components\live\LiveFeed.tsx:806 <span>등록된 수업시연 라이브가 없습니다.</span>
+c:\Users\stone\WoC\src\components\live\LiveFeed.tsx:1086 {/* 썸네일 먼저 선노출 - 원본 선명도 유지 */}
+c:\Users\stone\WoC\src\components\live\LiveFeed.tsx:1091 {/* 이미지 위의 어두운 스크림 필터 */}
+c:\Users\stone\WoC\src\components\live\LiveFeed.tsx:1094 {/* Stitch 프리미엄 퍼센티지 원형 로딩 게이지 */}
+c:\Users\stone\WoC\src\components\profile\MyInfoBottomSheet.tsx:397 {/* Item 1: 전화번호 공개 여부 */}
+c:\Users\stone\WoC\src\components\profile\NamecardModal.tsx:92 {/* Backdrop - z-index를 푸터보다 높게 9998로 상향 조정 */}
+c:\Users\stone\WoC\src\components\profile\NamecardModal.tsx:98 {/* Bottom Sheet Container - z-index를 푸터보다 높은 9999로 조치 */}
+c:\Users\stone\WoC\src\components\profile\NamecardModal.tsx:122 {/* Profile Visual Section - shrink-0 부여로 이미지 찌그러짐 원천 봉쇄, 모바일에서는 h-40으로 축소 */}
+c:\Users\stone\WoC\src\components\profile\NamecardModal.tsx:251 {/* phone 혹은 phoneNumber가 존재할 때 정상 노출되도록 철저히 가드 */}
+c:\Users\stone\WoC\src\components\rental\RentalDetail.tsx:73 return [""]; // ImageWithFallback 카테고리 기반 fallback을 트리거하도록 빈 문자열 추가
 c:\Users\stone\WoC\src\components\shop\ProductDetail.tsx:377 {/* 2) Scarcity Bar — 제일 위로 */}
+c:\Users\stone\WoC\src\components\shop\PurchaseFlow.tsx:447 text: '입금 확인 후 답변드리겠습니다. I will review and reply.',
 c:\Users\stone\WoC\src\components\social\SocialHeroCard.tsx:11 const hasKorean = /[가-힣]/.tes;
 c:\Users\stone\WoC\src\components\social\SocialHeroCard.tsx:15 main = text.replace(/[가-힣()]+/g, '').replace(/\s+/g, ' ').trim();
 c:\Users\stone\WoC\src\components\social\SocialHeroCard.tsx:16 const subMatch = text.match(/[가-힣]+/g);
+c:\Users\stone\WoC\src\components\social\SocialPosterEditor.tsx:504 ? "✓ DJ 프로필 사진을 성공적으로 자동 조회 및 연동하였습니다."
+c:\Users\stone\WoC\src\components\social\SocialPosterEditor.tsx:505 : "※ 이름 입력 시 가입된 DJ 유저의 프로필 사진을 자동으로 찾아 매핑합니다."
+c:\Users\stone\WoC\src\components\social\SocialPosterEditor.tsx:515 <span>DJ 사진 크기 (지름)</span>
+c:\Users\stone\WoC\src\components\social\SocialPosterEditor.tsx:532 <span>가로 위치 (X-Pos)</span>
+c:\Users\stone\WoC\src\components\social\SocialPosterEditor.tsx:546 <span>세로 위치 (Y-Pos)</span>
+c:\Users\stone\WoC\src\components\social\SocialPosterEditor.tsx:566 <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Pics 갤러리 고화질 스냅 연동</p>
+c:\Users\stone\WoC\src\components\stay\StayReservationFlow.tsx:246 text: '입금 확인 후 답변드리겠습니다. I will review and reply.',
+c:\Users\stone\WoC\src\components\venues\ManageEntry.tsx:119 const isSeoulCity = (city || '').toUpperCase() === 'SEOUL' || (city || '').includes('서울') || (place.formatted_address || '').includes('서울');
+c:\Users\stone\WoC\src\components\venues\ManageEntry.tsx:121 const gangbukDistricts = ['마포구', '서대문구', '은평구', '종로구', '중구', '용산구', '성동구', '광진구', '동대문구', '중랑구', '성북구', '강북구', '도봉구', '노원구', '마포', '신촌', '홍대'];
+c:\Users\stone\WoC\src\components\venues\ManageEntry.tsx:122 const gangnamDistricts = ['강남구', '서초구', '송파구', '강동구', '동작구', '관악구', '영등포구', '구로구', '금천구', '강서구', '양천구', '압구정', '역삼', '청담'];
+c:\Users\stone\WoC\src\components\venues\MapComponent.tsx:461 {/* 소셜 모드: 소셜 마커 렌더링 */}
+c:\Users\stone\WoC\src\components\venues\MapComponent.tsx:625 {/* Layer 1: Floating Filter Icons (Top) - 소셜 모드에서 숨김 */}

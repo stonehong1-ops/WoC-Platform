@@ -23,14 +23,16 @@ export default function LandingPage() {
 
     if (isStandalone) {
       localStorage.setItem('woc_pwa_installed', 'true');
-      window.location.replace('/social');
+      window.location.replace('/live');
       return;
     }
 
-    // 2. 디바이스 및 브라우저 환경 판독
+    // 2. 디바이스 및 브라우저 환경 판독 (개발용 수동 테스트 ?device=ios 또는 ?test=ios 대응 지원)
     const ua = navigator.userAgent || '';
-    const iosCheck = /iPad|iPhone|iPod/.test(ua);
-    const inAppCheck = /KAKAOTALK|Instagram|FBAN|FBAV|Line/i.test(ua);
+    const urlParams = new URLSearchParams(window.location.search);
+    const isTestIos = urlParams.get('device') === 'ios' || urlParams.get('test') === 'ios';
+    const iosCheck = isTestIos || /iPad|iPhone|iPod/.test(ua);
+    const inAppCheck = !isTestIos && /KAKAOTALK|Instagram|FBAN|FBAV|Line/i.test(ua);
     
     setIsIOS(iosCheck);
     setIsInApp(inAppCheck);
@@ -204,31 +206,20 @@ export default function LandingPage() {
 
           {/* Scenario B: iOS In-Page Guide (Always visible on iOS) */}
           {!isAlreadyInstalled && isIOS && (
-            <div className="w-full flex flex-col items-center text-left bg-blue-50/70 border border-blue-100 rounded-[2rem] p-6 shadow-inner">
-              <div className="flex items-center gap-3 mb-4 w-full">
-                <div className="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-md shrink-0">
-                  <span className="material-symbols-outlined text-[18px]">add_to_home_screen</span>
-                </div>
-                <div>
-                  <h3 className="text-[14px] font-black text-blue-950">아이폰 홈화면 앱 설치 안내 📲</h3>
-                  <p className="text-[10px] text-blue-600 font-bold">사파리(Safari) 브라우저를 통해 설치가 가능합니다.</p>
-                </div>
+            <div className="w-full flex flex-col items-center text-left animate-in fade-in duration-300 px-1">
+              
+              {/* Unified single image without double borders/frames or crop */}
+              <div className="w-full select-none pointer-events-none">
+                <img 
+                  src="/images/iphoneinstall.png" 
+                  alt="How to add to Home Screen on iOS" 
+                  className="w-full h-auto object-contain"
+                />
               </div>
               
-              <div className="space-y-2.5 w-full text-xs font-semibold text-blue-900/90">
-                <div className="flex items-start gap-2.5 p-3 bg-white rounded-xl border border-blue-50/50 shadow-sm">
-                  <span className="w-5 h-5 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-[10px] font-bold mt-0.5 shrink-0">1</span>
-                  <span>사파리 하단의 <span className="text-blue-600 font-black">공유 [ ]</span> 단추를 터치합니다.</span>
-                </div>
-                <div className="flex items-start gap-2.5 p-3 bg-white rounded-xl border border-blue-50/50 shadow-sm">
-                  <span className="w-5 h-5 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-[10px] font-bold mt-0.5 shrink-0">2</span>
-                  <span>나타나는 메뉴 리스트에서 <span className="text-blue-600 font-black">[홈 화면에 추가]</span>를 터치합니다.</span>
-                </div>
-                <div className="flex items-start gap-2.5 p-3 bg-white rounded-xl border border-blue-50/50 shadow-sm">
-                  <span className="w-5 h-5 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-[10px] font-bold mt-0.5 shrink-0">3</span>
-                  <span>우측 상단의 <span className="text-blue-600 font-black">[추가]</span> 단추를 터치해 완료합니다.</span>
-                </div>
-              </div>
+              <p className="mt-5 text-[11px] text-gray-500 font-bold text-center w-full tracking-tight break-keep">
+                사파리 브라우저의 안내를 따라 홈 화면에 추가하시면 즉시 설치가 완료됩니다.
+              </p>
             </div>
           )}
 

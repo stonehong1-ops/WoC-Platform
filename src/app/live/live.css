@@ -481,3 +481,51 @@
   font-size: 14px;
   font-weight: 600;
 }
+
+@keyframes bounceSubtle {
+  0%, 100% {
+    transform: scale(1) translateY(0);
+  }
+  50% {
+    transform: scale(1.025) translateY(-1px);
+  }
+}
+
+.animate-bounce-subtle {
+  animation: bounceSubtle 1.8s infinite ease-in-out;
+  box-shadow: 0 10px 25px -5px rgba(46, 91, 255, 0.4), 0 8px 10px -5px rgba(46, 91, 255, 0.2) !important;
+}
+
+@keyframes pulseSeqTop {
+  0%, 100% { 
+    transform: translateX(-50%) scale(1) rotate(45deg); 
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); 
+  }
+  50% { 
+    transform: translateX(-50%) scale(1.15) rotate(45deg); 
+    box-shadow: 0 20px 25px -5px rgba(46, 91, 255, 0.2), 0 10px 10px -5px rgba(46, 91, 255, 0.1); 
+  }
+}
+
+@keyframes pulseSeq {
+  0%, 100% { 
+    transform: scale(1) rotate(45deg); 
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); 
+  }
+  50% { 
+    transform: scale(1.15) rotate(45deg); 
+    box-shadow: 0 20px 25px -5px rgba(46, 91, 255, 0.2), 0 10px 10px -5px rgba(46, 91, 255, 0.1); 
+  }
+}
+
+.animate-pulse-seq-1 {
+  animation: pulseSeqTop 4s infinite 0s !important;
+}
+
+.animate-pulse-seq-2 {
+  animation: pulseSeq 4s infinite 1s !important;
+}
+
+.animate-pulse-seq-3 {
+  animation: pulseSeq 4s infinite 2s !important;
+}

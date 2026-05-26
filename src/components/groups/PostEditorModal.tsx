@@ -12,6 +12,7 @@ import { socialService } from '@/lib/firebase/socialService';
 import { Group, Post, GroupBoard as GroupBoardType, DEFAULT_BOARDS } from '@/types/group';
 import { toast } from 'sonner';
 import { KIND_ICON, KIND_COLOR } from '@/constants/tags';
+import UserBadge from '@/components/common/UserBadge';
 
 /* --- Types --- */
 interface MediaItem {
@@ -67,8 +68,14 @@ export default function PostEditorModal({ group, post, isOpen, onClose }: PostEd
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [category, setCategory] = useState(boards[0]?.id || 'notice');
-  const [media, setMedia] = useState<MediaItem[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // 독립된 대표 커버 이미지 전용 상태
+  const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const [media, setMedia] = useState<MediaItem[]>([]);
+  const [coverImageId, setCoverImageId] = useState<string | null>(null);
+
   const [selectedColor, setSelectedColor] = useState<typeof COLOR_PALETTE[0] | null>(null);
   const [selectedImpact, setSelectedImpact] = useState(0);
   const [selectedEmphasis, setSelectedEmphasis] = useState<number[]>([]);
@@ -76,7 +83,34 @@ export default function PostEditorModal({ group, post, isOpen, onClose }: PostEd
   const [tagKeyword, setTagKeyword] = useState('');
   const [tagResults, setTagResults] = useState<TagItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  
+  const contentRef = useRef<HTMLTextAreaElement>(null);
+  const coverImageInputRef = useRef<HTMLInputElement>(null);
+  const bodyImageInputRef = useRef<HTMLInputElement>(null);
   const mediaInputRef = useRef<HTMLInputElement>(null);
+
+  // Auto-grow height for content textarea
+  useEffect(() => {
+    if (contentRef.current) {
+      contentRef.current.style.height = 'auto';
+      contentRef.current.style.height = `${contentRef.current.scrollHeight}px`;
+    }
+  }, [content]);
+
+  const insertText = (before: string, after: string = '') => {
+    const textarea = contentRef.current;
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    const selected = text.substring(start, end);
+    const replacement = before + (selected || '') + after;
+    setContent(text.substring(0, start) + replacement + text.substring(end));
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + before.length, start + before.length + (selected ? selected.length : 0));
+    }, 0);
+  };
 
   const isShort = content.length <= 70 && content.length > 0;
   const colorActive = selectedColor && !selectedColor.isDefault;
@@ -84,8 +118,8 @@ export default function PostEditorModal({ group, post, isOpen, onClose }: PostEd
   const showMedia = !showColorPreview;
 
   const previewClass = [IMPACT_SIZES[selectedImpact].cls, ...selectedEmphasis.map(i => EMPHASIS_OPTIONS[i].cls)].join(' ');
-  const imageCount = media.filter(m => m.type === 'image').length;
-  const videoCount = media.filter(m => m.type === 'video').length;
+  const imageCount = coverImageUrl ? 1 : 0;
+  const videoCount = 0;
 
   /* 🔗 Link Auto Detection & Manual Adding 🔗 */
   const [showLinkInput, setShowLinkInput] = useState(false);
@@ -181,35 +215,42 @@ export default function PostEditorModal({ group, post, isOpen, onClose }: PostEd
         setSelectedEmphasis([]);
       }
       
-      // Setup media
+      // Setup media (커버 이미지는 철저히 제외하고 본문 이미지/링크/비디오만 분리하여 격리 수용)
       const existingMedia: MediaItem[] = [];
       if (post.media && post.media.length > 0) {
         post.media.forEach((m: any, i) => {
           const isStr = typeof m === 'string';
+          const url = isStr ? m : m.url;
+          // 대표 커버와 주소가 일치하면 중복 처리를 차단하기 위해 스킵
+          if (url === post.image) return;
+
           existingMedia.push({
             id: `e-${i}`,
-            url: isStr ? m : m.url,
+            url,
             type: isStr ? (post.type === 'video' ? 'video' : 'image') : (m.type || 'image'),
             status: 'completed',
             progress: 100,
             linkMetadata: isStr ? undefined : m.linkMetadata
           });
         });
-      } else if (post.image || post.video) {
-        const url = post.image || post.video;
-        if (url) {
-          existingMedia.push({
-            id: `e-0`, url, type: post.video ? 'video' : 'image', status: 'completed', progress: 100
-          });
-        }
       }
       setMedia(existingMedia);
+      
+      // 대표 커버 이미지 전독 상태 직결 바인딩
+      if (post.image) {
+        setCoverImageUrl(post.image);
+      } else {
+        setCoverImageUrl(null);
+      }
+
       setTags((post.postTags as TagItem[]) || []);
     } else {
       setTitle('');
       setContent('');
       setCategory(boards[0]?.id || 'notice');
       setMedia([]);
+      setCoverImageUrl(null);
+      setCoverImageId(null);
       setSelectedColor(null); 
       setSelectedImpact(0); 
       setSelectedEmphasis([]);
@@ -258,18 +299,42 @@ export default function PostEditorModal({ group, post, isOpen, onClose }: PostEd
   }, [tagKeyword]);
 
   /* --- Media --- */
+  const handleCoverSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error(t('feed.max_images', 'Images only'));
+      return;
+    }
+    
+    setIsUploadingCover(true);
+    try {
+      const path = `groups/${group.id}/posts/${user?.uid || 'anon'}/cover_${Date.now()}_${file.name}`;
+      const url = await storageService.uploadFile(file, path);
+      setCoverImageUrl(url);
+      toast.success(t('blog.cover_updated', 'Cover image updated successfully'));
+    } catch (err) {
+      console.error('Cover upload failed:', err);
+      toast.error(t('common.error', 'An error occurred'));
+    } finally {
+      setIsUploadingCover(false);
+      if (coverImageInputRef.current) coverImageInputRef.current.value = '';
+    }
+  };
+
   const handleMediaSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
     const curVideos = media.filter(m => m.type === 'video').length;
-    const curImages = media.filter(m => m.type === 'image').length;
     files.forEach(file => {
-      if (file.type.startsWith('video/') && curVideos >= 1) { toast.error(t('feed.max_video', 'Maximum 1 video allowed')); return; }
-      if (file.type.startsWith('image/') && curImages >= 20) { toast.error(t('feed.max_images', 'Maximum 20 images allowed')); return; }
+      if (file.type.startsWith('video/') && curVideos >= 1) { 
+        toast.error(t('feed.max_video', 'Maximum 1 video allowed')); 
+        return; 
+      }
       if (file.type.startsWith('video/')) handleUpload(file, 'video');
       else if (file.type.startsWith('image/')) handleUpload(file, 'image');
     });
-    if (mediaInputRef.current) mediaInputRef.current.value = '';
+    if (e.target) e.target.value = '';
   };
 
   const handleUpload = async (file: File, type: 'image' | 'video') => {
@@ -278,7 +343,34 @@ export default function PostEditorModal({ group, post, isOpen, onClose }: PostEd
     try {
       const path = `groups/${group.id}/posts/${user?.uid || 'anon'}/${Date.now()}_${file.name}`;
       const url = await storageService.uploadFile(file, path, p => setMedia(prev => prev.map(m => m.id === id ? { ...m, progress: Math.round(p) } : m)));
-      setMedia(prev => prev.map(m => m.id === id ? { ...m, url, status: 'completed', progress: 100 } : m));
+      
+      if (type === 'image') {
+        // 본문 첨부 이미지인 경우: 업로드 완료 즉시 임시 미디어를 지우고 본문에 예술적 다이아몬드/16:9 마크다운 주입
+        setMedia(prev => prev.filter(m => m.id !== id));
+        
+        const templateTitle = t('blog.template_title', '이미지 제목');
+        const templateDesc = t('blog.template_desc', '이미지에 대한 아름다운 설명');
+        const imageMarkdown = `\n![${templateTitle}: ${templateDesc}](${url})\n`;
+        const textarea = contentRef.current;
+        
+        if (textarea) {
+          const start = textarea.selectionStart;
+          const end = textarea.selectionEnd;
+          const text = textarea.value;
+          setContent(text.substring(0, start) + imageMarkdown + text.substring(end));
+          
+          setTimeout(() => {
+            textarea.focus();
+            textarea.setSelectionRange(start + imageMarkdown.length, start + imageMarkdown.length);
+          }, 50);
+        } else {
+          setContent(prev => prev + imageMarkdown);
+        }
+        toast.success(t('blog.image_inserted', 'Image inserted into body'));
+      } else {
+        // 비디오 등 메타 미디어는 media 배열에 completed 상태로 온전히 유지
+        setMedia(prev => prev.map(m => m.id === id ? { ...m, url, status: 'completed', progress: 100 } : m));
+      }
     } catch {
       setMedia(prev => prev.map(m => m.id === id ? { ...m, status: 'error' } : m));
       toast.error(t('common.error', 'An error occurred'));
@@ -302,18 +394,37 @@ export default function PostEditorModal({ group, post, isOpen, onClose }: PostEd
     }
     
     if (isSubmitting) return;
-    if (!content.trim() && media.length === 0) return;
-    if (media.some(m => m.status === 'uploading')) { toast.error(t('feed.upload_in_progress', 'Please wait for upload to complete')); return; }
+    if (!content.trim() && !coverImageUrl && media.length === 0) return;
+    if (media.some(m => m.status === 'uploading')) { 
+      toast.error(t('feed.upload_in_progress', 'Please wait for upload to complete')); 
+      return; 
+    }
     
     setIsSubmitting(true);
     try {
-      const mediaData = media.filter(m => m.status === 'completed').map(m => ({
-        url: m.url,
-        type: m.type,
-        ...(m.type === 'link' ? { linkMetadata: m.linkMetadata } : {})
-      }));
+      // 본문 첨부 마크다운에서 이미지 URL 정밀 추출
+      const bodyImageUrls: string[] = [];
+      const imgRegex = /!\[.*?\]\((.*?)\)/g;
+      let match;
+      while ((match = imgRegex.exec(content)) !== null) {
+        bodyImageUrls.push(match[1]);
+      }
+
+      // 호환용 mediaData 구성 (본문 첨부 이미지 + 기타 미디어)
+      const mediaData = [
+        ...media.filter(m => m.status === 'completed').map(m => ({
+          url: m.url,
+          type: m.type,
+          ...(m.type === 'link' ? { linkMetadata: m.linkMetadata } : {})
+        })),
+        ...bodyImageUrls.map(url => ({
+          url,
+          type: 'image' as const
+        }))
+      ];
+
       const isVideo = media.some(m => m.status === 'completed' && m.type === 'video');
-      const hasImage = media.some(m => m.status === 'completed' && m.type === 'image');
+      const hasImage = coverImageUrl || bodyImageUrls.length > 0 || media.some(m => m.status === 'completed' && m.type === 'image');
       const hasLink = media.some(m => m.status === 'completed' && m.type === 'link');
       
       const postType = isVideo ? 'video' : (hasImage ? 'image' : (hasLink ? 'link' : (showColorPreview ? 'text-card' : 'text')));
@@ -332,7 +443,7 @@ export default function PostEditorModal({ group, post, isOpen, onClose }: PostEd
         type: postType,
         bgTheme: bgThemeJson || null,
         media: mediaData,
-        image: isVideo ? null : (media.find(m => m.type === 'image')?.url || media.find(m => m.type === 'link')?.linkMetadata?.image || null),
+        image: isVideo ? null : coverImageUrl,
         video: isVideo ? (media.find(m => m.type === 'video')?.url || null) : null,
         taggedUserIds: tags.filter(t => t.kind === 'people').map(t => t.id),
         postTags: tags.map(t => ({ id: t.id, label: t.label, kind: t.kind, photo: t.photo })),
@@ -368,361 +479,257 @@ export default function PostEditorModal({ group, post, isOpen, onClose }: PostEd
       <div className="fixed inset-0 z-[10000] bg-surface-bright text-on-surface font-body-md antialiased flex flex-col">
 
         {/* --- TopAppBar --- */}
-        <header className="fixed top-0 w-full z-50 flex items-center justify-between px-4 h-16 bg-white shadow-sm border-b border-slate-100">
-          <div className="flex items-center gap-3">
-            <button onClick={onClose} className="p-2 rounded-full active:scale-95 duration-150 hover:bg-slate-50">
-              <span className="material-symbols-outlined text-slate-500">close</span>
+        <header className="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-md flex justify-between items-center px-6 h-20 transition-all duration-300 header-ui border-b border-outline-variant/10">
+          <div className="flex items-center gap-4">
+            <button onClick={onClose} className="p-2 rounded-full active:scale-95 duration-150 hover:bg-surface-container-low flex items-center justify-center">
+              <span className="material-symbols-outlined text-on-surface-variant text-[24px]">close</span>
             </button>
-            <h1 className="font-title-md text-title-md text-on-surface">{post ? t('group.edit_post', 'Edit Post') : t('group.create_post', 'Create Post')}</h1>
+            <h1 className="font-headline-md text-headline-md font-bold tracking-tighter text-on-surface text-xl sm:text-2xl">{group.name}</h1>
           </div>
-          <button
-            onClick={handleSubmit}
-            disabled={isSubmitting || (!content.trim() && media.length === 0) || media.some(m => m.status === 'uploading')}
-            className="px-5 py-2 rounded-xl bg-primary-container text-white font-title-md text-body-md hover:opacity-90 active:scale-95 duration-150 transition-all disabled:opacity-40"
-          >
-            {isSubmitting ? (post ? t('common.updating', 'Updating...') : t('common.posting', 'Posting...')) : (post ? t('common.update', 'Update') : t('common.post', 'Post'))}
-          </button>
+          <div className="flex items-center gap-6">
+            <span className="font-label-md text-label-md text-outline cursor-pointer hover:text-primary transition-colors hidden md:block">{t('blog.drafts', 'Drafts')}</span>
+            <button
+              onClick={handleSubmit}
+              disabled={isSubmitting || (!content.trim() && media.length === 0) || media.some(m => m.status === 'uploading')}
+              className="bg-primary text-on-primary px-8 py-2.5 rounded-full font-label-md text-label-md hover:opacity-90 active:scale-95 transition-all shadow-sm disabled:opacity-40"
+            >
+              {isSubmitting ? (post ? t('common.updating') : t('common.posting')) : (post ? t('common.update') : t('common.post') || 'Publish')}
+            </button>
+          </div>
         </header>
 
         {/* --- Scrollable Canvas --- */}
-        <main className="flex-1 overflow-y-auto pt-20 pb-32 px-[1.5rem] max-w-[56rem] mx-auto w-full space-y-4 no-scrollbar">
+        <main className="flex-1 overflow-y-auto pt-24 pb-32 px-6 max-w-4xl mx-auto w-full space-y-8 no-scrollbar">
 
-          {/* Profile & Board Section */}
-          <section className="flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="w-12 h-12 rounded-full shadow-sm border-2 border-primary-container/20 flex-shrink-0 overflow-hidden bg-surface-container relative flex items-center justify-center">
-              <span className="material-symbols-outlined text-on-surface-variant absolute" style={{ fontSize: '28px', fontVariationSettings: "'FILL' 1" }}>person</span>
-              {((profile?.photoURL && profile.photoURL !== 'https://lh3.googleusercontent.com/a/default-user') || (user?.photoURL && user.photoURL !== 'https://lh3.googleusercontent.com/a/default-user')) && (
-                <img
-                  alt={profile?.nickname || 'User'}
-                  className="w-full h-full object-cover relative z-10"
-                  src={(profile?.photoURL && profile.photoURL !== 'https://lh3.googleusercontent.com/a/default-user') ? profile.photoURL : user?.photoURL!}
-                  onError={(e) => e.currentTarget.style.display = 'none'}
+          {/* Media Section: Cover Image Area */}
+          <section className="relative mb-8 group">
+            {coverImageUrl ? (
+              <div className="relative w-full aspect-[21/9] bg-surface-container rounded-xl overflow-hidden shadow-sm border border-outline-variant/15 flex items-center justify-center">
+                <img 
+                  src={coverImageUrl} 
+                  alt="Cover" 
+                  className="w-full h-full object-cover group-hover:scale-[1.01] transition-transform duration-500" 
                 />
-              )}
-            </div>
-            <div className="space-y-1 w-full max-w-[200px]">
-              <div className="flex items-baseline gap-1">
-                <h2 className="font-title-md text-title-sm">{profile?.nickname || user?.displayName || t('common.anonymous', 'Anonymous')}</h2>
-                {profile?.nativeNickname && <span className="text-[11px] text-on-surface-variant font-medium">({profile.nativeNickname})</span>}
+                <div className="absolute inset-0 bg-black/15 pointer-events-none" />
+                <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                     type="button"
+                     onClick={() => coverImageInputRef.current?.click()}
+                     className="px-4 py-2 bg-black/65 hover:bg-black/85 text-white text-xs font-bold rounded-full flex items-center gap-1.5 transition-all shadow-md active:scale-95"
+                  >
+                    <span className="material-symbols-outlined text-sm">edit</span>
+                    {t('blog.change_cover', 'Change Cover')}
+                  </button>
+                  <button
+                     type="button"
+                     onClick={() => setCoverImageUrl(null)}
+                     className="w-8 h-8 bg-error text-on-error rounded-full flex items-center justify-center hover:opacity-90 transition-all shadow-md active:scale-95"
+                  >
+                    <span className="material-symbols-outlined text-sm">delete</span>
+                  </button>
+                </div>
               </div>
-              
-              {/* Category Dropdown */}
-              <div className="relative w-full">
-                <select 
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="appearance-none flex items-center gap-1.5 px-3 py-1 bg-surface-container-low rounded-full border border-outline-variant/30 w-full font-label-sm text-[12px] text-on-surface-variant focus:outline-none focus:ring-2 focus:ring-primary/20"
-                >
-                  {boards.map((board) => (
-                    <option key={board.id} value={board.id}>
-                      {board.id === 'notice' ? (t('group.board.editor.notice_title') || board.title) : board.title}
-                    </option>
-                  ))}
-                </select>
-                <span className="material-symbols-outlined text-[14px] text-outline absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">expand_more</span>
+            ) : (
+              <div 
+                onClick={() => coverImageInputRef.current?.click()}
+                className="relative w-full aspect-[21/9] bg-surface-container rounded-xl overflow-hidden flex flex-col items-center justify-center border border-dashed border-outline-variant/50 hover:border-primary/50 transition-colors cursor-pointer group-hover:bg-surface-container-high"
+              >
+                <div className="rhombus-mask w-16 h-16 bg-primary-container flex items-center justify-center mb-3 transition-transform group-hover:scale-110 duration-500">
+                  <span className="material-symbols-outlined text-on-primary-container text-2xl">add</span>
+                </div>
+                <p className="font-label-md text-label-md text-on-surface-variant tracking-wide">{t('blog.cover_prompt', 'Let your moments speak')}</p>
+                <span className="absolute bottom-4 right-4 font-label-sm text-label-sm text-outline opacity-0 group-hover:opacity-100 transition-opacity">{t('blog.add_cover', 'Add Cover Image')}</span>
               </div>
-            </div>
+            )}
+            <input ref={coverImageInputRef} type="file" className="hidden" accept="image/*" onChange={handleCoverSelect} />
           </section>
 
-          {/* Title Input */}
-          <section className="w-full animate-in fade-in slide-in-from-bottom-4 duration-500 delay-75">
+          {/* Content Area */}
+          <section className="space-y-6 distraction-free-focus">
+            {/* Title Input */}
             <input 
-              type="text" 
+              className="w-full bg-transparent border-none focus:ring-0 font-display-lg text-4xl sm:text-5xl font-black text-on-surface placeholder:text-outline-variant p-0 selection:bg-primary-fixed/30 tracking-tight leading-tight outline-none"
+              placeholder={t('blog.title_placeholder_sample', 'A Night at Milonga Paraiso')}
+              type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder={t('group.title_placeholder', 'Title (Optional)')}
-              className="w-full bg-transparent border-none px-1 py-2 text-xl font-title-lg text-on-surface focus:ring-0 outline-none placeholder:text-outline-variant/70 border-b border-transparent focus:border-outline-variant/30 transition-colors"
+            />
+            
+            {/* Metadata / Category Chips */}
+            <div className="flex flex-wrap items-center gap-3 pt-2">
+              <span className="font-label-sm text-label-sm text-outline uppercase tracking-widest mr-2">{t('blog.categories', 'Categories')}</span>
+              {boards.map((board) => {
+                const isSelected = category === board.id;
+                return (
+                  <button
+                    key={board.id}
+                    type="button"
+                    onClick={() => setCategory(board.id)}
+                    className={`px-5 py-1.5 rounded-full border font-label-md text-[13px] font-bold transition-all active:scale-95 duration-100 ${
+                      isSelected 
+                        ? 'bg-primary/10 text-primary border-primary' 
+                        : 'border-outline-variant text-on-surface-variant hover:bg-primary/5 hover:border-primary/50'
+                    }`}
+                  >
+                    {board.id === 'notice' ? (t('group.board.editor.notice_title') || board.title) : board.title}
+                  </button>
+                );
+              })}
+            </div>
+            
+            <hr className="border-outline-variant/20"/>
+
+            {/* Manual Link Input Form */}
+            {showLinkInput && (
+              <div className="flex gap-2 p-3 bg-surface-container-lowest border border-outline-variant/30 rounded-xl shadow-sm animate-in fade-in duration-200">
+                <input
+                  type="url"
+                  placeholder="https://example.com"
+                  value={linkInputVal}
+                  onChange={e => setLinkInputVal(e.target.value)}
+                  className="flex-1 bg-transparent border-none text-sm font-body-md text-on-surface placeholder:text-outline-variant/50 focus:ring-0 outline-none"
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleLinkSubmit();
+                    }
+                  }}
+                />
+                <button
+                  onClick={handleLinkSubmit}
+                  className="px-3.5 py-1.5 bg-primary text-on-primary text-xs font-bold rounded-lg hover:opacity-90 active:scale-95 duration-100 transition-all shrink-0"
+                >
+                  {t('feed.add')}
+                </button>
+              </div>
+            )}
+            
+            {/* Body Content */}
+            <textarea
+              ref={contentRef}
+              className="w-full min-h-[400px] bg-transparent border-none focus:ring-0 font-body-lg text-lg text-on-surface-variant leading-relaxed p-0 outline-none selection:bg-primary-fixed/30 resize-none overflow-hidden placeholder:text-outline/50"
+              placeholder={t('blog.content_placeholder', 'Write your story...')}
+              value={content}
+              onChange={e => setContent(e.target.value)}
             />
           </section>
 
-          {/* Text Input / Color Preview */}
-          <section className="w-full animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
-            {showColorPreview ? (
-              <div
-                className="rounded-2xl p-5 min-h-[120px] flex items-center justify-center transition-all cursor-pointer"
-                style={{ background: selectedColor!.bg, color: selectedColor!.text }}
-                onClick={() => setSelectedColor(null)}
-                title={t('feed.click_to_edit', 'Click to edit text')}
-              >
-                <p className={`text-center break-words w-full ${previewClass}`} style={{ color: selectedColor!.text }}>{content}</p>
-              </div>
-            ) : (
-              <textarea
-                className="w-full min-h-[120px] bg-transparent border-none focus:ring-0 text-lg font-body-md text-on-surface placeholder:text-outline/60 resize-none outline-none"
-                placeholder={t('group.compose_prompt', 'What do you want to share with the group?')}
-                value={content}
-                onChange={e => setContent(e.target.value)}
-              />
-            )}
-            {content.length > 0 && (
-              <p className={`text-[10px] mt-1 text-right font-bold tracking-wide ${content.length <= 70 ? 'text-primary' : 'text-outline'}`}>
-                {content.length}/70 {content.length <= 70 ? t('feed.style_available', 'Style available') : ''}
-              </p>
-            )}
-          </section>
-
-          {/* Palette + Style Section */}
-          <section className="flex flex-col gap-2 animate-in fade-in duration-700 delay-150">
-            {/* Color Row */}
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold text-outline tracking-wider uppercase shrink-0 w-[42px]">{t('feed.palette', 'Palette')}</span>
-              <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-1 no-scrollbar">
-                {COLOR_PALETTE.map((c, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setSelectedColor(selectedColor?.name === c.name ? null : c)}
-                    title={c.name}
-                    className={`rounded-full border-2 flex-shrink-0 transition-all hover:scale-110 active:scale-95 duration-150 ${
-                      selectedColor?.name === c.name
-                        ? 'ring-2 ring-primary ring-offset-1 border-primary scale-110'
-                        : 'border-outline-variant/50'
-                    } ${i === 0 ? 'w-6 h-6' : 'w-[20px] h-[20px]'}`}
-                    style={c.isDefault ? {} : { backgroundColor: c.bg }}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Style Row */}
-            {isShort && (
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold text-outline tracking-wider uppercase shrink-0 w-[42px]">{t('feed.style', 'Style')}</span>
-                <div className="flex items-center gap-1">
-                  {IMPACT_SIZES.map((s, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setSelectedImpact(i)}
-                      title={[t('feed.style_normal', 'Normal'), t('feed.style_bold', 'Bold'), t('feed.style_impact', 'Impact')][i]}
-                      style={{ fontWeight: s.weight, fontSize: s.size }}
-                      className={`w-8 h-7 rounded-md border transition-all active:scale-95 flex items-center justify-center leading-none ${
-                        selectedImpact === i
-                          ? 'bg-primary text-white border-primary shadow-sm'
-                          : 'border-outline-variant/40 text-outline hover:bg-surface-container'
-                      }`}
-                    >
-                      A
-                    </button>
-                  ))}
-                </div>
-                <div className="w-px h-4 bg-outline-variant/30 mx-1" />
-                <div className="flex items-center gap-1">
-                  {EMPHASIS_OPTIONS.map((o, i) => (
-                    <button
-                      key={i}
-                      title={[t('feed.style_bold', 'Bold'), t('feed.style_italic', 'Italic'), t('feed.style_uppercase', 'Uppercase')][i]}
-                      onClick={() => setSelectedEmphasis(prev => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i])}
-                      className={`w-7 h-7 rounded-md text-[11px] border transition-all active:scale-95 flex items-center justify-center ${
-                        selectedEmphasis.includes(i)
-                          ? 'bg-primary text-white border-primary shadow-sm'
-                          : 'border-outline-variant/40 text-outline hover:bg-surface-container'
-                      } ${o.cls}`}
-                    >
-                      {o.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </section>
-
-          {/* Media Section */}
-          {showMedia && (
-            <section className="space-y-4 pt-2 animate-in fade-in duration-700 delay-200">
-              <div className="flex items-center justify-between">
-                <h3 className="font-label-xs text-label-xs text-outline tracking-[0.1em] uppercase">{t('feed.media', 'Media')}</h3>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setShowLinkInput(prev => !prev)}
-                    className="flex items-center gap-1.5 px-3 py-1 bg-surface-container text-on-surface-variant rounded-full text-xs font-bold hover:bg-surface-container-high transition-colors active:scale-95 duration-100"
-                  >
-                    <span className="material-symbols-outlined text-[15px]">link</span> {t('feed.add_link', 'Link')}
-                  </button>
-                  <button
-                    onClick={() => mediaInputRef.current?.click()}
-                    className="flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold hover:bg-primary/20 transition-colors active:scale-95 duration-100"
-                  >
-                    <span className="material-symbols-outlined text-[15px]">add_photo_alternate</span> {t('feed.add', 'Add')}
-                  </button>
-                </div>
-              </div>
-
-              {/* Manual Link Input Form */}
-              {showLinkInput && (
-                <div className="flex gap-2 p-3 bg-surface-container-lowest border border-outline-variant/30 rounded-xl shadow-sm animate-in fade-in duration-200">
-                  <input
-                    type="url"
-                    placeholder="https://example.com"
-                    value={linkInputVal}
-                    onChange={e => setLinkInputVal(e.target.value)}
-                    className="flex-1 bg-transparent border-none text-sm font-body-md text-on-surface placeholder:text-outline-variant/50 focus:ring-0 outline-none"
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleLinkSubmit();
-                      }
-                    }}
-                  />
-                  <button
-                    onClick={handleLinkSubmit}
-                    className="px-3.5 py-1.5 bg-primary-container text-white text-xs font-bold rounded-lg hover:opacity-90 active:scale-95 duration-100 transition-all shrink-0"
-                  >
-                    {t('common.add', 'Add')}
-                  </button>
-                </div>
-              )}
-
-              {media.length > 0 ? (
-                <div className="flex gap-3 overflow-x-auto pb-2 snap-x no-scrollbar">
-                  {media.map(item => (
-                    <div key={item.id} className="relative flex-shrink-0 w-40 h-52 rounded-xl overflow-hidden snap-start group shadow border border-outline-variant/20">
+          {/* Additional Media List (for non-cover files like videos or sub-images) */}
+          {media.length > 1 && (
+            <section className="space-y-4 pt-4 border-t border-outline-variant/10">
+              <h3 className="font-label-xs text-label-xs text-outline tracking-[0.1em] uppercase">{t('blog.gallery', 'Gallery')}</h3>
+              <div className="flex gap-3 overflow-x-auto pb-2 snap-x no-scrollbar">
+                {media.map(item => {
+                  const isCover = coverImageId === item.id;
+                  // Skip main cover image to avoid duplication
+                  if (isCover) return null;
+                  return (
+                    <div key={item.id} className="relative flex-shrink-0 w-32 h-40 rounded-xl overflow-hidden snap-start group shadow border border-outline-variant/20">
                       {item.type === 'link' ? (
                         <div className="w-full h-full bg-surface-container flex flex-col justify-between p-3 relative select-none">
-                          {/* Card Thumbnail */}
                           {item.linkMetadata?.image ? (
-                            <img alt="" className="absolute inset-0 w-full h-full object-cover brightness-75 group-hover:brightness-[0.65] transition-all" src={item.linkMetadata.image} />
+                            <img alt="" className="absolute inset-0 w-full h-full object-cover brightness-75" src={item.linkMetadata.image} />
                           ) : (
-                            <div className="absolute inset-0 bg-gradient-to-br from-primary-container/20 to-tertiary-container/30" />
+                            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-tertiary-container/20" />
                           )}
-                          
-                          {/* Domain Badge */}
-                          <div className="relative z-10 flex items-center gap-1.5 px-2 py-0.5 bg-black/60 rounded-full w-fit max-w-full">
-                            <span className="material-symbols-outlined text-[12px] text-white shrink-0">link</span>
-                            <span className="text-[9px] text-white font-bold tracking-wide uppercase truncate">{item.linkMetadata?.domain || 'LINK'}</span>
+                          <div className="relative z-10 flex items-center gap-1 px-1.5 py-0.5 bg-black/60 rounded-full w-fit max-w-full">
+                            <span className="text-[8px] text-white font-bold truncate">{item.linkMetadata?.domain || 'LINK'}</span>
                           </div>
-
-                          {/* Play Icon for Youtube */}
-                          {item.linkMetadata?.domain?.includes('youtube') && (
-                            <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
-                              <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                                <span className="material-symbols-outlined text-white" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Title Overlay */}
-                          <div className="relative z-10 bg-black/55 backdrop-blur-[2px] p-2 rounded-lg text-left mt-auto">
-                            <p className="text-white text-[10px] font-bold leading-snug line-clamp-2 drop-shadow">{item.linkMetadata?.title || item.url}</p>
+                          <div className="relative z-10 bg-black/50 p-1.5 rounded text-left mt-auto">
+                            <p className="text-white text-[9px] font-bold line-clamp-2">{item.linkMetadata?.title || item.url}</p>
                           </div>
                         </div>
                       ) : (
                         item.type === 'video'
-                          ? <video className={`w-full h-full object-cover ${item.status === 'uploading' ? 'brightness-50' : ''}`} src={item.url} muted playsInline />
-                          : <img alt="" className={`w-full h-full object-cover ${item.status === 'uploading' ? 'brightness-50' : ''}`} src={item.url} />
-                      )}
-                      {item.status === 'uploading' && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-black/40">
-                          <p className="text-white font-bold text-xs mb-2">{item.progress}%</p>
-                          <div className="w-full bg-white/30 h-1 rounded-full">
-                            <div className="bg-white h-full rounded-full transition-all" style={{ width: `${item.progress}%` }} />
-                          </div>
-                        </div>
+                          ? <video className="w-full h-full object-cover" src={item.url} muted playsInline />
+                          : <img alt="" className="w-full h-full object-cover" src={item.url} />
                       )}
                       {item.status === 'completed' && (
-                        <button onClick={() => removeMedia(item.id)} className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                          <span className="material-symbols-outlined text-sm">close</span>
+                        <button onClick={() => removeMedia(item.id)} className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/50 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                          <span className="material-symbols-outlined text-xs">close</span>
                         </button>
                       )}
-                      {item.type === 'video' && item.status === 'completed' && (
-                        <div className="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded font-bold z-10">{t('feed.video_badge', 'VIDEO')}</div>
-                      )}
-                      {item.status === 'error' && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-red-500/20 z-10">
-                          <span className="material-symbols-outlined text-red-500">error</span>
-                        </div>
-                      )}
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div
-                  onClick={() => mediaInputRef.current?.click()}
-                  className="relative group h-48 rounded-xl border-2 border-dashed border-outline-variant hover:border-primary-container hover:bg-primary-container/5 transition-all cursor-pointer flex flex-col items-center justify-center gap-2 overflow-hidden shadow-sm active:scale-[0.98] duration-150"
-                >
-                  <div className="w-12 h-12 rounded-full bg-primary-container/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <span className="material-symbols-outlined text-primary-container text-[28px]">add_photo_alternate</span>
-                  </div>
-                  <p className="font-title-md text-body-md text-on-surface-variant">{t('feed.add_photos_video', 'Add photos or video')}</p>
-                  <span className="text-[10px] text-on-surface-variant/60 font-medium">{imageCount}/20 {t('feed.photo_count', 'Photos')} · {videoCount}/1 {t('feed.video_count', 'Video')}</span>
-                  <span className="material-symbols-outlined absolute -bottom-6 -right-6 text-[120px] text-primary-container/5 pointer-events-none select-none">cloud_upload</span>
-                </div>
-              )}
-              <input ref={mediaInputRef} type="file" className="hidden" accept="image/*,video/*" multiple onChange={handleMediaSelect} />
+                  );
+                })}
+              </div>
             </section>
           )}
 
-          {/* Tagging Section */}
-          <section className="space-y-4 pt-2 pb-6">
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-outline text-[20px]">sell</span>
-              <h3 className="font-label-xs text-label-xs text-outline tracking-[0.1em] uppercase">{t('feed.tags', 'Tags')}</h3>
-            </div>
-
-            {/* Selected Tags */}
-            {tags.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {tags.map(t => (
-                  <div key={t.id} className="flex items-center gap-1 px-2.5 py-1 bg-primary/10 text-primary rounded-full text-xs font-semibold border border-primary/20">
-                    <span className={`material-symbols-outlined text-[13px] ${KIND_COLOR[t.kind]}`}>{KIND_ICON[t.kind]}</span>
-                    <span>{t.label}</span>
-                    <button onClick={() => removeTag(t.id)} className="ml-0.5 hover:text-red-500 transition-colors">
-                      <span className="material-symbols-outlined text-[13px]">close</span>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Search Input */}
-            <div className="relative group">
-              <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none h-14">
-                <span className={`material-symbols-outlined text-outline group-focus-within:text-primary-container transition-colors ${isSearching ? 'animate-spin' : ''}`}>
-                  {isSearching ? 'progress_activity' : 'search'}
-                </span>
-              </div>
-              <input
-                type="text"
-                value={tagKeyword}
-                onChange={e => setTagKeyword(e.target.value)}
-                placeholder={t('feed.tag_placeholder', 'Search people, places, events, or groups to tag')}
-                className="w-full h-14 pl-12 pr-4 bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm focus:ring-2 focus:ring-primary-container focus:border-transparent transition-all outline-none font-body-md"
-              />
-
-              {/* Search Results Dropdown */}
-              {tagResults.length > 0 && (
-                <div className="absolute top-16 left-0 right-0 z-10 bg-white rounded-xl shadow-lg border border-outline-variant/20 overflow-hidden max-h-64 overflow-y-auto">
-                  {tagResults.map(item => (
-                    <button
-                      key={item.id}
-                      onClick={() => addTag(item)}
-                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-surface-container transition-colors text-left"
-                    >
-                      {item.photo
-                        ? <img src={item.photo} alt="" className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
-                        : <div className={`w-8 h-8 rounded-full flex items-center justify-center bg-surface-container flex-shrink-0 ${KIND_COLOR[item.kind]}`}>
-                            <span className="material-symbols-outlined text-base">{KIND_ICON[item.kind]}</span>
-                          </div>
-                      }
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-on-surface truncate">{item.label}</p>
-                        <p className={`text-xs capitalize ${KIND_COLOR[item.kind]}`}>{item.kind}</p>
-                      </div>
-                      {tags.find(t => t.id === item.id) && (
-                        <span className="material-symbols-outlined text-primary text-lg">check_circle</span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
-              {tagKeyword.length >= 2 && !isSearching && tagResults.length === 0 && (
-                <div className="absolute top-16 left-0 right-0 z-10 bg-white rounded-xl shadow-lg border border-outline-variant/20 py-4">
-                  <p className="text-center text-xs text-outline">{t('search.no_results', 'No results found')}</p>
-                </div>
-              )}
-            </div>
-          </section>
-
         </main>
+
+        {/* Floating Formatting Bar (Brunch style) - 모바일 반응형 간격 슬림화 개정 */}
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 max-w-[95vw] px-2 animate-in slide-in-from-bottom-5 duration-300">
+          <div className="bg-surface/90 backdrop-blur-xl shadow-2xl rounded-full px-4 md:px-6 py-3 md:py-3.5 flex items-center gap-3.5 md:gap-6 border border-outline-variant/15">
+            <div className="flex items-center gap-3 md:gap-5 border-r border-outline-variant/30 pr-3.5 md:pr-5">
+              <button 
+                type="button"
+                onClick={() => insertText('**', '**')}
+                className="text-outline hover:text-primary transition-colors p-1 flex items-center justify-center active:scale-95 duration-100" 
+                title="Bold"
+              >
+                <span className="material-symbols-outlined text-[20px]">format_bold</span>
+              </button>
+              <button 
+                type="button"
+                onClick={() => insertText('*', '*')}
+                className="text-outline hover:text-primary transition-colors p-1 flex items-center justify-center active:scale-95 duration-100" 
+                title="Italic"
+              >
+                <span className="material-symbols-outlined text-[20px]">format_italic</span>
+              </button>
+              <button 
+                type="button"
+                onClick={() => insertText('## ', '\n')}
+                className="text-outline hover:text-primary transition-colors p-1 flex items-center justify-center active:scale-95 duration-100" 
+                title="Heading"
+              >
+                <span className="material-symbols-outlined text-[20px]">format_size</span>
+              </button>
+            </div>
+            
+            <div className="flex items-center gap-3 md:gap-5 border-r border-outline-variant/30 pr-3.5 md:pr-5">
+              <button 
+                type="button"
+                onClick={() => insertText('> ', '\n')}
+                className="text-outline hover:text-primary transition-colors p-1 flex items-center justify-center active:scale-95 duration-100" 
+                title="Quote"
+              >
+                <span className="material-symbols-outlined text-[20px]">format_quote</span>
+              </button>
+              <button 
+                type="button"
+                onClick={() => insertText('- ', '\n')}
+                className="text-outline hover:text-primary transition-colors p-1 flex items-center justify-center active:scale-95 duration-100" 
+                title="List"
+              >
+                <span className="material-symbols-outlined text-[20px]">format_list_bulleted</span>
+              </button>
+            </div>
+            
+            <div className="flex items-center gap-3 md:gap-5">
+              <button 
+                type="button"
+                onClick={() => mediaInputRef.current?.click()}
+                className="text-outline hover:text-primary transition-colors p-1 flex items-center justify-center active:scale-95 duration-100" 
+                title="Insert Image"
+              >
+                <span className="material-symbols-outlined text-[20px]">image</span>
+              </button>
+              <button 
+                type="button"
+                onClick={() => setShowLinkInput(prev => !prev)}
+                className={`text-outline hover:text-primary transition-colors p-1 flex items-center justify-center active:scale-95 duration-100 ${showLinkInput ? 'text-primary font-bold' : ''}`}
+                title="Insert Link"
+              >
+                <span className="material-symbols-outlined text-[20px]">link</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
       </div>
+      <input ref={mediaInputRef} type="file" className="hidden" accept="image/*,video/*" multiple onChange={handleMediaSelect} />
     </Portal>
   );
 }

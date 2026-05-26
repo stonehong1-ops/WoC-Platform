@@ -28,7 +28,7 @@ const GroupBoard = ({ group, isAdmin = false }: GroupBoardProps) => {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isBoardEditorOpen, setIsBoardEditorOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<Post | null>(null);
-  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [pageSize, setPageSize] = useState(15);
 
@@ -58,8 +58,26 @@ const GroupBoard = ({ group, isAdmin = false }: GroupBoardProps) => {
 
   // Uses formatDate from LanguageContext
 
+  // 마크다운 기호를 정화하고 알맹이 텍스트만 추출하는 헬퍼 함수
+  const stripMarkdown = (text: string) => {
+    if (!text) return '';
+    return text
+      .replace(/!\[.*?\]\(.*?\)/g, '') // 이미지 제거
+      .replace(/\[(.*?)\]\(.*?\)/g, '$1') // 링크 제거
+      .replace(/^>\s*/gm, '') // 인용구 제거
+      .replace(/^##\s+/gm, '') // 헤더 제거
+      .replace(/\s+/g, ' ') // 공백 개행 정돈
+      .trim();
+  };
+
+  // posts가 실시간으로 갱신될 때마다 가장 신선한 최신 상태의 데이터를 뷰창으로 바인딩
+  const selectedPost = useMemo(() => {
+    if (!selectedPostId) return null;
+    return posts.find(p => p.id === selectedPostId) || null;
+  }, [posts, selectedPostId]);
+
   const handlePostClick = (post: Post) => {
-    setSelectedPost(post);
+    setSelectedPostId(post.id);
     setIsDetailOpen(true);
     groupService.incrementPostViews(group.id, post.id);
   };
@@ -100,14 +118,14 @@ const GroupBoard = ({ group, isAdmin = false }: GroupBoardProps) => {
       `}} />
 
       {/* Header & Categories */}
-      <div className="px-4 pt-4 mb-4 border-b border-slate-200 bg-white sticky top-0 z-10 shadow-sm">
+      <div className="px-4 pt-4 mb-4 border-b border-outline-variant/15 bg-surface-container-lowest sticky top-0 z-10 shadow-sm">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-[#242c51] tracking-tight">{t('group.board.title') || 'Notice Board'}</h2>
+          <h2 className="text-xl font-bold font-headline text-on-surface tracking-tight">{t('group.board.title')}</h2>
           <div className="flex items-center gap-2">
             {isAdmin && (
               <button 
                 onClick={() => setIsBoardEditorOpen(true)}
-                className="w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:text-[#0057bd] hover:bg-[#0057bd]/10 transition-colors"
+                className="w-8 h-8 flex items-center justify-center rounded-full text-on-surface-variant/70 hover:text-primary hover:bg-primary/10 transition-colors"
               >
                 <span className="material-symbols-outlined text-[20px]">settings</span>
               </button>
@@ -117,10 +135,10 @@ const GroupBoard = ({ group, isAdmin = false }: GroupBoardProps) => {
                 setEditingPost(null);
                 setIsEditorOpen(true);
               }}
-              className="bg-[#0057bd] text-white font-['Plus_Jakarta_Sans'] font-bold py-1.5 px-3 rounded-lg shadow-sm shadow-[#0057bd]/20 flex items-center justify-center gap-1.5 hover:bg-[#004ca6] transition-colors active:scale-[0.99] text-xs"
+              className="bg-primary text-on-primary font-headline font-bold py-1.5 px-3 rounded-lg shadow-sm shadow-primary/20 flex items-center justify-center gap-1.5 hover:opacity-95 transition-opacity active:scale-[0.99] text-xs"
             >
               <span className="material-symbols-outlined text-[14px]">edit_document</span>
-              {t('group.board.write_post') || 'Write'}
+              {t('group.board.write_post')}
             </button>
           </div>
         </div>
@@ -133,8 +151,8 @@ const GroupBoard = ({ group, isAdmin = false }: GroupBoardProps) => {
               onClick={() => setSelectedCategory(cat.id)}
               className={`pb-3 text-sm font-bold transition-all whitespace-nowrap border-b-2 -mb-[1px] ${
                 selectedCategory === cat.id
-                  ? 'text-[#0057bd] border-[#0057bd]'
-                  : 'text-slate-400 border-transparent hover:text-slate-600'
+                  ? 'text-primary border-primary'
+                  : 'text-on-surface-variant/70 border-transparent hover:text-on-surface'
               }`}
             >
               {cat.title}
@@ -144,50 +162,64 @@ const GroupBoard = ({ group, isAdmin = false }: GroupBoardProps) => {
       </div>
 
       {/* Post List */}
-      <div className="px-4 flex flex-col gap-3">
+      <div className="px-4 flex flex-col gap-4">
         {currentPosts.map((post) => {
           const hasImage = !!post.image;
           const categoryLabel = getCategoryLabel(post);
           const isNotice = post.category === 'notice';
+          const readTime = Math.max(1, Math.ceil((post.content || '').length / 500));
 
           return (
             <article
               key={post.id}
               onClick={() => handlePostClick(post)}
-              className={`bg-white rounded-xl p-4 border shadow-sm hover:shadow-md transition-shadow cursor-pointer flex gap-4 ${isNotice ? 'border-[#0057bd]/30' : 'border-slate-100'}`}
+              className={`bg-surface-container-lowest rounded-2xl p-5 border shadow-sm hover:shadow-md hover:scale-[1.005] active:scale-[0.995] transition-all duration-200 cursor-pointer flex gap-5 items-start ${
+                isNotice ? 'border-primary/25 bg-primary/[0.01]' : 'border-outline-variant/15'
+              }`}
             >
-              <div className="flex-1 min-w-0 flex flex-col">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${isNotice ? 'bg-[#0057bd]/10 text-[#0057bd]' : 'bg-slate-100 text-slate-500'}`}>
-                    {categoryLabel}
-                  </span>
-                  {isNotice && <span className="material-symbols-outlined text-[#0057bd] text-[14px]">push_pin</span>}
-                  <span className="text-xs font-medium text-slate-400 ml-auto">{formatDate(post.createdAt, 'dateTime')}</span>
-                </div>
-                <h3 className="text-base font-bold text-[#242c51] truncate mb-1">{post.title}</h3>
-                <p className="text-sm font-medium text-slate-500 line-clamp-2 mb-2">{post.content}</p>
-                {renderTags(post)}
-              </div>
-              
               {hasImage && (
-                <div className="w-20 h-20 shrink-0 rounded-lg overflow-hidden bg-slate-100 border border-slate-100">
+                <div className="w-24 h-24 shrink-0 rounded-xl overflow-hidden bg-surface-container-low border border-outline-variant/20 shadow-inner">
                   <ImageWithFallback
                     src={post.image}
                     alt={post.title || ""}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                     fallbackType="gallery"
                   />
                 </div>
               )}
+
+              <div className="flex-1 min-w-0 flex flex-col">
+                <div className="flex items-center gap-2 mb-2.5">
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${
+                    isNotice ? 'bg-primary/10 text-primary' : 'bg-surface-container-low text-on-surface-variant'
+                  }`}>
+                    {categoryLabel}
+                  </span>
+                  {isNotice && <span className="material-symbols-outlined text-primary text-[14px]">push_pin</span>}
+                  
+                  <div className="flex items-center gap-1.5 text-[11px] font-semibold text-on-surface-variant/75 ml-auto">
+                    <time>{formatDate(post.createdAt, 'dateTime')}</time>
+                    <span className="w-0.5 h-0.5 rounded-full bg-outline-variant/40" />
+                    <span>{readTime}{t('group.min_read') || 'min read'}</span>
+                  </div>
+                </div>
+                
+                <h3 className="text-lg font-black font-headline text-on-surface line-clamp-2 mb-1.5 leading-snug tracking-tight hover:text-primary transition-colors">
+                  {post.title}
+                </h3>
+                <p className="text-sm font-medium text-on-surface-variant/85 line-clamp-2 mb-1.5 leading-relaxed">
+                  {stripMarkdown(post.content)}
+                </p>
+              </div>
             </article>
           );
         })}
 
         {currentPosts.length === 0 && (
-          <div className="py-16 text-center bg-white rounded-xl border border-slate-100 shadow-sm mt-4">
-            <span className="material-symbols-outlined text-4xl text-slate-300 mb-3 block">inbox</span>
-            <h3 className="text-sm font-bold text-[#242c51]">{t('noPostsFound') || 'No posts found'}</h3>
-            <p className="text-xs font-medium text-slate-400 mt-1">{t('beTheFirstToShare') || 'Be the first to share something with the community!'}</p>
+          <div className="py-16 text-center bg-surface-container-lowest rounded-xl border border-outline-variant/15 shadow-sm mt-4">
+            <span className="material-symbols-outlined text-4xl text-outline-variant mb-3 block">inbox</span>
+            <h3 className="text-sm font-bold font-headline text-on-surface">{t('noPostsFound')}</h3>
+            <p className="text-xs font-medium text-on-surface-variant/70 mt-1">{t('beTheFirstToShare')}</p>
           </div>
         )}
 
@@ -196,9 +228,9 @@ const GroupBoard = ({ group, isAdmin = false }: GroupBoardProps) => {
           <div className="flex justify-center mt-6 mb-4">
             <button
               onClick={() => setPageSize(prev => prev + 15)}
-              className="flex items-center gap-2 px-6 py-2 bg-white text-slate-600 font-bold text-xs rounded-full shadow-sm border border-slate-200 hover:bg-slate-50 transition-colors"
+              className="flex items-center gap-2 px-6 py-2 bg-surface-container-lowest text-on-surface font-bold text-xs rounded-full shadow-sm border border-outline-variant/30 hover:bg-surface-container-low transition-colors"
             >
-              {t('loadMorePosts') || 'Load More'}
+              {t('loadMorePosts')}
               <span className="material-symbols-outlined text-[16px]">expand_more</span>
             </button>
           </div>
@@ -223,7 +255,10 @@ const GroupBoard = ({ group, isAdmin = false }: GroupBoardProps) => {
           groupId={group.id}
           post={selectedPost}
           isOpen={isDetailOpen}
-          onClose={() => setIsDetailOpen(false)}
+          onClose={() => {
+            setIsDetailOpen(false);
+            setSelectedPostId(null);
+          }}
           onEdit={(post) => {
             setIsDetailOpen(false);
             setEditingPost(post);

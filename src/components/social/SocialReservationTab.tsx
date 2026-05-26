@@ -34,6 +34,24 @@ function formatDateKey(d: Date): string {
   return d.toISOString().split("T")[0];
 }
 
+function getUserBookingName(user: any, profile: any): string {
+  if (!user) return "User";
+  if (profile) {
+    const nickname = (profile.nickname || "").trim();
+    const nativeNickname = (profile.nativeNickname || "").trim();
+    if (nickname && nativeNickname) {
+      if (nickname.toLowerCase() === nativeNickname.toLowerCase()) {
+        return nickname;
+      }
+      return `${nickname} ${nativeNickname}`;
+    }
+    if (nickname) return nickname;
+    if (nativeNickname) return nativeNickname;
+  }
+  if (user.displayName) return user.displayName;
+  return "User";
+}
+
 export default function SocialReservationTab({ social }: Props) {
   const { user, profile } = useAuth();
   const { t, language } = useLanguage();
@@ -88,7 +106,7 @@ export default function SocialReservationTab({ social }: Props) {
     try {
       await socialService.addReservation(social.id, {
         userId: user.uid,
-        userName: user.displayName || profile?.nickname || "User",
+        userName: getUserBookingName(user, profile),
         userPhotoURL: user.photoURL || undefined,
         peopleCount,
         selectedEventId: selectedEventId || undefined,
@@ -259,7 +277,7 @@ export default function SocialReservationTab({ social }: Props) {
               {/* Guest */}
               <div className="mb-5">
                 <label className="text-[10px] font-bold text-[#596061] uppercase tracking-wider block mb-2">{t('social.guest')}</label>
-                <p className="text-sm font-bold text-[#2d3435]">{user?.displayName || "User"}</p>
+                <p className="text-sm font-bold text-[#2d3435]">{getUserBookingName(user, profile)}</p>
               </div>
 
               {/* Party Size */}

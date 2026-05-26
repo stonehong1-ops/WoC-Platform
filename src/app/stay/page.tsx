@@ -173,17 +173,18 @@ function StayPageContent() {
   // Dynamic cities from data
   const cities = useMemo(() => {
     const cs = Array.from(new Set(stays.map(s => s.location?.city).filter(Boolean)));
-    return ['All', ...cs.sort()];
-  }, [stays]);
+    return [t('stay.filter_all_full') || 'All', ...cs.sort()];
+  }, [stays, t]);
 
   const filtered = useMemo(() => {
     let result = stays.filter(s => {
+      if (!s || !s.title) return false;
       const matchSearch = !searchQuery ||
         s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         s.location?.address?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         s.location?.city?.toLowerCase().includes(searchQuery.toLowerCase());
       const matchType = activeFilter === 'all' || s.type === activeFilter || (activeFilter === 'Couchsurfing' && s.type === 'Couchsurfing');
-      const matchCity = activeCity === 'All' || s.location?.city === activeCity;
+      const matchCity = activeCity === 'All' || activeCity === t('stay.filter_all_full') || s.location?.city === activeCity;
       return matchSearch && matchType && matchCity;
     });
 
@@ -192,10 +193,10 @@ function StayPageContent() {
         result.sort((a, b) => (b.likesCount || 0) - (a.likesCount || 0));
         break;
       case 'price_asc':
-        result.sort((a, b) => (a.pricing?.baseRate || 0) - (b.pricing?.baseRate || 0));
+        result.sort((a, b) => Number(a.pricing?.baseRate || 0) - Number(b.pricing?.baseRate || 0));
         break;
       case 'price_desc':
-        result.sort((a, b) => (b.pricing?.baseRate || 0) - (a.pricing?.baseRate || 0));
+        result.sort((a, b) => Number(b.pricing?.baseRate || 0) - Number(a.pricing?.baseRate || 0));
         break;
       case 'latest':
       default:
@@ -210,7 +211,7 @@ function StayPageContent() {
   }, [stays, activeFilter, activeCity, searchQuery, sortOption]);
 
   const formatPrice = (stay: Stay) => {
-    const rate = stay.pricing?.baseRate || 0;
+    const rate = stay.pricing?.baseRate !== undefined && stay.pricing?.baseRate !== null ? Number(stay.pricing.baseRate) : 0;
     const currency = stay.pricing?.currency || 'KRW';
     const symbol = currency === 'KRW' ? '₩' : '$';
     return `${symbol}${rate.toLocaleString()}`;

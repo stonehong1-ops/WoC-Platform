@@ -55,6 +55,7 @@ export function useGroupData({ initialGroup }: UseGroupDataProps) {
   const [adminTodos, setAdminTodos] = useState<Notification[]>([]);
   const [recentFeedPosts, setRecentFeedPosts] = useState<any[]>([]);
   const [allUsers, setAllUsers] = useState<PlatformUser[]>([]);
+  const [isMembersLoading, setIsMembersLoading] = useState(true);
   
   const [isJoining, setIsJoining] = useState(false);
   const [isClaiming, setIsClaiming] = useState(false);
@@ -72,11 +73,18 @@ export function useGroupData({ initialGroup }: UseGroupDataProps) {
 
   // 실시간 멤버 상태 확인
   useEffect(() => {
-    if (!user || !currentGroup.id) {
+    if (!currentGroup.id) {
+      setIsMembersLoading(false);
+      return;
+    }
+    if (!user) {
+      setMembers([]);
       setMemberStatus('none');
+      setIsMembersLoading(false);
       return;
     }
 
+    setIsMembersLoading(true);
     const unsubscribe = groupService.subscribeMembers(currentGroup.id, (fetchedMembers) => {
       setMembers(fetchedMembers);
       const myMemberInfo = fetchedMembers.find(m => m.id === user.uid);
@@ -85,6 +93,7 @@ export function useGroupData({ initialGroup }: UseGroupDataProps) {
       } else {
         setMemberStatus('none');
       }
+      setIsMembersLoading(false);
     });
 
     return () => unsubscribe();
@@ -395,6 +404,7 @@ export function useGroupData({ initialGroup }: UseGroupDataProps) {
     allUsers,
     isJoining,
     isClaiming,
+    isMembersLoading,
     admins,
     currentAdmin,
     isAdminUser,

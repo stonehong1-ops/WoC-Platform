@@ -66,6 +66,7 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
     allUsers,
     isJoining,
     isClaiming,
+    isMembersLoading,
     admins,
     currentAdmin,
     isAdminUser,
@@ -86,6 +87,10 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
     (localStorage.getItem(`woc_member_${initialGroup.id}`) === 'true' || 
      (initialGroup as any).isConfirmedMember === true || 
      searchParams.get('isMember') === 'true');
+  
+  const isCachedAdmin = typeof window !== 'undefined' && 
+    (localStorage.getItem(`woc_admin_${initialGroup.id}`) === 'true' || 
+     (initialGroup as any).isConfirmedAdmin === true);
   
   // Intelligent Initial Tab Routing: Default to 'home' for verified/cached members and 'about' for non-members
   const [activeTab, setActiveTab] = useState<TabType>(() => {
@@ -110,10 +115,26 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
     } else if (user) {
       localStorage.removeItem(`woc_member_${currentGroup.id}`);
     }
+
+    if (isAdminUser) {
+      localStorage.setItem(`woc_admin_${currentGroup.id}`, 'true');
+    } else if (user) {
+      localStorage.removeItem(`woc_admin_${currentGroup.id}`);
+    }
   }, [isFullMember, isAdminUser, loading, currentGroup.id, user]);
 
-  // Dynamic Tab synchronization on member status changes (Removed to prevent loading flicker)
-  // 비동기 회원 데이터 로딩 중 탭이 'about'에서 'home'으로 갑자기 스위칭되며 발생하는 깜빡임(flicker)을 근본적으로 제거하기 위해 비동기 강제 동기화 이펙트를 비활성화합니다.
+  // Dynamic Tab synchronization: 멤버 데이터 비동기 로드 완료 시 캐시가 없어서 about에 임시 안착했던 멤버를 첫 메뉴인 'feed'로 지능적 강제 리다이렉트합니다.
+  useEffect(() => {
+    if (loading || isMembersLoading) return;
+    const isMember = isFullMember || isAdminUser;
+    const tabParam = searchParams.get('tab');
+
+    if (isMember && !tabParam && activeTab === 'about') {
+      const defaultFirstTab = 'feed';
+      setActiveTab(defaultFirstTab as TabType);
+      setVisitedTabs(prev => { const newSet = new Set(prev); newSet.add(defaultFirstTab as TabType); return newSet; });
+    }
+  }, [loading, isMembersLoading, isFullMember, isAdminUser, searchParams, activeTab]);
 
   // URL searchParams와 로컬 상태(이중 안전 장치) 실시간 동기화
   useEffect(() => {
@@ -126,11 +147,19 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
   // URL의 ?tab= 파라미터가 변경되면 activeTab을 동기화
   useEffect(() => {
     // 멤버 데이터가 아직 로드되지 않은 상태라면 가드 판정을 대기하여 깜빡임을 방지합니다.
-    if (loading || (user && members.length === 0)) return;
+    if (loading || isMembersLoading) return;
 
     const tabParam = searchParams.get('tab') as TabType | null;
-    const isMember = isFullMember || isAdminUser;
+    const isMember = isFullMember || isAdminUser || isCachedMember;
+    const isAdmin = isAdminUser || isCachedAdmin;
+
     if (tabParam) {
+      const isAdminTab = tabParam === 'settings' || tabParam === 'brand' || tabParam === 'class-setting' || tabParam === 'shop-setting' || tabParam === 'stay-setting' || tabParam === 'rental-setting';
+      if (isAdminTab && !isAdmin) {
+        setActiveTab('about');
+        return;
+      }
+
       if (!isMember && tabParam !== 'about' && tabParam !== 'board' && tabParam !== 'class') {
         // 비회원의 허가되지 않은 메뉴 우회 진입을 방지합니다.
         setActiveTab('about');
@@ -141,7 +170,7 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
         setVisitedTabs(prev => { const newSet = new Set(prev); newSet.add(tabParam); return newSet; });
       }
     }
-  }, [searchParams, isFullMember, isAdminUser, loading, members.length, user]);
+  }, [searchParams, isFullMember, isAdminUser, loading, isMembersLoading, user]);
 
   // 모달 제어를 Query String으로 전환
   const showGroupChat = searchParams.get('modal') === 'chat';
@@ -313,7 +342,7 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
     if (hasInitiallyDetected.current) return;
     const tabParam = searchParams.get('tab');
     const isMember = isFullMember || isAdminUser;
-    if (isMember && !tabParam && activeTab === 'home' && tabId !== 'home') {
+    if (isMember && !tabParam && (activeTab === 'home' || activeTab === 'about') && tabId !== 'home' && tabId !== 'about') {
       hasInitiallyDetected.current = true;
       setActiveTab(tabId as TabType);
       setVisitedTabs(prev => { const newSet = new Set(prev); newSet.add(tabId as TabType); return newSet; });
@@ -372,7 +401,7 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
 
       {/* Main Content */}
       <main className="pt-[120px] md:pt-[176px] pb-12">
-        <div className={`max-w-7xl mx-auto ${activeTab === 'feed' || activeTab === 'home' || activeTab === 'live' || activeTab === 'calendar' || activeTab === 'board' || activeTab === 'members' || activeTab === 'about' || activeTab === 'settings' || activeTab === 'brand' || activeTab === 'class-setting' ? 'px-0 md:px-0 mt-0 space-y-0 pb-0' : 'px-4 md:px-8 space-y-10 mt-6 pb-12'}`}>
+        <div className={`max-w-7xl mx-auto ${activeTab === 'feed' || activeTab === 'home' || activeTab === 'live' || activeTab === 'calendar' || activeTab === 'board' || activeTab === 'members' || activeTab === 'about' || activeTab === 'settings' || activeTab === 'brand' || activeTab === 'class-setting' || activeTab === 'shop-setting' || activeTab === 'stay-setting' || activeTab === 'rental-setting' ? 'px-0 md:px-0 mt-0 space-y-0 pb-0' : 'px-4 md:px-8 space-y-10 mt-6 pb-12'}`}>
           
           {/* 1. 홈 피드 대시보드 탭 (Home) */}
           {visitedTabs.has('home') && (
@@ -413,7 +442,7 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
             allUsers={allUsers}
             isClaiming={isClaiming}
             handleClaimAdmin={handleClaimAdmin}
-            isMembersLoading={loading || (user ? members.length === 0 : false)}
+            isMembersLoading={loading || isMembersLoading}
           />
 
         </div>

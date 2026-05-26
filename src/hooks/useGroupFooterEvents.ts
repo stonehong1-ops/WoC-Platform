@@ -135,15 +135,15 @@ export function useGroupFooterEvents(
   const [galleryLoaded, setGalleryLoaded] = useState(hasCache);
   const [visitorsLoaded, setVisitorsLoaded] = useState(hasCache);
 
-  // 1.5초 강제 로딩 제한 타임아웃 쉴드 (로딩 락업 방지)
+  // 300ms 강제 로딩 제한 절대 타임아웃 쉴드 (최초 로드 체감 초고속화)
   const [timeoutExpired, setTimeoutExpired] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setTimeoutExpired(true);
-    }, 1500);
+    }, 300);
     return () => clearTimeout(timer);
-  }, [groupId]);
+  }, []);
 
   // 1. Subscribe to classes
   useEffect(() => {
@@ -180,7 +180,13 @@ export function useGroupFooterEvents(
       unsub = fs.onSnapshot(q, (snap) => {
         if (!snap.empty) setChatRoom({ id: snap.docs[0].id, ...snap.docs[0].data() } as ChatRoom);
         setChatLoaded(true);
+      }, (err) => {
+        console.warn("ChatRoom subscription blocked or failed:", err);
+        setChatLoaded(true);
       });
+    }).catch((err) => {
+      console.warn("Dynamic import failed for chatRoom:", err);
+      setChatLoaded(true);
     });
     return () => unsub?.();
   }, [groupId]);
@@ -201,7 +207,11 @@ export function useGroupFooterEvents(
       );
       unsub = fs.onSnapshot(q, (snap) => {
         setRecentMsgs(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      }, (err) => {
+        console.warn("ChatMessages subscription failed but skipped:", err);
       });
+    }).catch((err) => {
+      console.warn("Dynamic import failed for chatMessages:", err);
     });
     return () => unsub?.();
   }, [chatRoom?.id]);
@@ -430,34 +440,27 @@ export function useGroupFooterEvents(
 
   // 모든 비동기 Firestore 정보의 초기 로드 상태를 결합하여 isInitialLoading 상태를 제공합니다.
   const isInitialLoading = useMemo(() => {
-    // 1.5초 타임아웃 만료 시 로딩 스켈레튼 강제 폭파
+    // 300ms 타임아웃 만료 시 로딩 스켈레튼 강제 폭파 (최초 로드 체감 쾌속화)
     if (timeoutExpired) return false;
 
     const needClasses = !!groupId;
     const needSocials = !!venueId;
-    const needChat = !!groupId;
     const needFeeds = !!groupId;
     const needGallery = !!groupId;
-    const needVisitors = !!members.length;
 
     if (needClasses && !classesLoaded) return true;
     if (needSocials && !socialsLoaded) return true;
-    if (needChat && !chatLoaded) return true;
     if (needFeeds && !feedsLoaded) return true;
     if (needGallery && !galleryLoaded) return true;
-    if (needVisitors && !visitorsLoaded) return true;
 
     return false;
   }, [
     groupId,
     venueId,
-    members.length,
     classesLoaded,
     socialsLoaded,
-    chatLoaded,
     feedsLoaded,
     galleryLoaded,
-    visitorsLoaded,
     timeoutExpired,
   ]);
 

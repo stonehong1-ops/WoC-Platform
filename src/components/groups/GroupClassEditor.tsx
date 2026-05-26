@@ -223,13 +223,17 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
 
   // Detect outside clicks to handle closing the menu
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
+    const handleClickOutside = (e: Event) => {
       if (!(e.target as Element).closest('.action-menu-container')) {
         setActiveMenuId(null);
       }
     };
     document.addEventListener("click", handleClickOutside);
-    return () => document.removeEventListener("click", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
   }, []);
 
   const getLevelColor = (level: string) => {

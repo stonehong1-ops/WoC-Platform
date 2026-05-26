@@ -93,7 +93,26 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
   const [showOrganizerResults, setShowOrganizerResults] = useState(false);
 
   // DJ State
-  const [djName, setDjName] = useState(socialData?.djName || '');
+  const getInitialDjName = () => {
+    if (!socialData) return '';
+    if (socialData.type === 'regular' && socialData.djs && Array.isArray(socialData.djs) && socialData.djs.length > 0) {
+      const today = new Date();
+      const targetDay = Number(socialData.dayOfWeek ?? today.getDay());
+      const d = new Date();
+      const diff = (targetDay - d.getDay() + 7) % 7;
+      d.setDate(d.getDate() + diff);
+      const pad = (n: number) => n.toString().padStart(2, '0');
+      const targetDateStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      
+      const matched = socialData.djs.find(dj => dj && dj.date === targetDateStr);
+      if (matched && matched.djName) {
+        return matched.djName;
+      }
+    }
+    return socialData.djName || '';
+  };
+
+  const [djName, setDjName] = useState(getInitialDjName());
   const [djResults, setDjResults] = useState<PlatformUser[]>([]);
   const [showDjResults, setShowDjResults] = useState(false);
 
