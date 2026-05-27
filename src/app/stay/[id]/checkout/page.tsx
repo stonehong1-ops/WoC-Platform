@@ -108,7 +108,7 @@ function CheckoutContent() {
       <div className="bg-surface font-sans text-on-surface min-h-[max(884px,100dvh)] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="w-8 h-8 border-3 border-primary/30 border-t-primary rounded-full animate-spin" />
-          <span className="font-body-md text-on-surface-variant">Loading checkout...</span>
+          <span className="font-body-md text-on-surface-variant">{t('stay.checkout.processing', 'Processing...')}</span>
         </div>
       </div>
     );
@@ -313,14 +313,14 @@ function CheckoutContent() {
           <button onClick={() => router.back()} className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-[#f2f4f4] transition-colors">
             <span className="material-symbols-outlined text-[#596061]">arrow_back</span>
           </button>
-          <h1 className="font-['Plus_Jakarta_Sans'] font-extrabold text-lg text-[#2d3435]">Confirm Reservation</h1>
+          <h1 className="font-['Plus_Jakarta_Sans'] font-extrabold text-lg text-[#2d3435]">{t('stay.checkout.confirm_reservation')}</h1>
           <div className="w-10"></div>
         </div>
       </header>
 
       <main className="pt-20 pb-[200px] px-4 max-w-[600px] mx-auto space-y-4">
         {/* Reservation Summary */}
-        <SectionCard icon="bed" title="Stay Summary">
+        <SectionCard icon="bed" title={t('stay.checkout.stay_summary')}>
           <div className="flex gap-4 p-4 bg-[#f8f9fa] rounded-2xl border border-[#e0e4e5]">
             <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-slate-100">
               {stay.images?.[0] && (
@@ -328,14 +328,14 @@ function CheckoutContent() {
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-black text-[#acb3b4] uppercase tracking-widest mb-1">STAY</p>
+              <p className="text-[10px] font-black text-[#acb3b4] uppercase tracking-widest mb-1">{t('common.stay', 'STAY')}</p>
               <h2 className="text-base font-black text-[#2d3435] truncate mb-2">{stay.title}</h2>
               <div className="flex flex-wrap gap-2">
                 <span className="text-[10px] bg-[#e8eaec] text-[#596061] px-2 py-0.5 rounded-full font-bold">
                   {formatDate(checkIn, 'shortMonthDay')} - {formatDate(addDays(checkOut, -1), 'shortMonthDay')}
                 </span>
                 <span className="text-[10px] bg-[#e8eaec] text-[#596061] px-2 py-0.5 rounded-full font-bold">
-                  {nights} Nights · {formatDate(checkOut, 'shortMonthDay')} 퇴실
+                  {nights} {t('stay.nights_unit', 'Nights')} · {t('stay.checkout_date_label', '{date} 퇴실').replace('{date}', formatDate(checkOut, 'shortMonthDay'))}
                 </span>
               </div>
             </div>
@@ -343,10 +343,10 @@ function CheckoutContent() {
         </SectionCard>
 
         {/* Guest Information */}
-        <SectionCard icon="person" title="Guest & Contact Info">
+        <SectionCard icon="person" title={t('stay.checkout.guest_contact_info')}>
           <div className="space-y-4">
             <div className="flex items-center justify-between px-1">
-              <label className="text-xs font-bold text-[#596061]">Number of Guests</label>
+              <label className="text-xs font-bold text-[#596061]">{t('stay.checkout.num_guests')}</label>
               <div className="flex items-center gap-4 bg-[#f2f4f4] rounded-xl p-1.5 border border-[#e0e4e5]">
                 <button 
                   onClick={() => setGuests(Math.max(1, guests - 1))}
@@ -367,18 +367,18 @@ function CheckoutContent() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-[#596061]">Applicant Name <span className="text-red-500">*</span></label>
+              <label className="text-xs font-bold text-[#596061]">{t('stay.checkout.applicant_name')} <span className="text-red-500">*</span></label>
               <input 
                 type="text" 
                 value={applicantName}
                 onChange={(e) => setApplicantName(e.target.value)}
                 className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm text-[#2d3435] focus:outline-none focus:border-[#0057bd] transition-all"
-                placeholder="Enter your name"
+                placeholder={t('stay.checkout.enter_name') || ''}
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-[#596061]">Contact Number (SMS) <span className="text-red-500">*</span></label>
+              <label className="text-xs font-bold text-[#596061]">{t('stay.checkout.contact_number')} <span className="text-red-500">*</span></label>
               <div className="flex gap-2">
                 <select 
                   value={countryCode}
@@ -398,59 +398,59 @@ function CheckoutContent() {
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value.replace(/[^0-9-]/g, ''))}
                   className="flex-1 bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm text-[#2d3435] focus:outline-none focus:border-[#0057bd] transition-all"
-                  placeholder="e.g. 010-0000-0000"
+                  placeholder="010-0000-0000"
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-[#596061]">Depositor Name <span className="text-red-500">*</span></label>
+              <label className="text-xs font-bold text-[#596061]">{t('stay.checkout.depositor_name')} <span className="text-red-500">*</span></label>
               <input 
                 type="text" 
                 value={depositorName}
                 onChange={(e) => setDepositorName(e.target.value)}
                 className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm text-[#2d3435] focus:outline-none focus:border-[#0057bd] transition-all"
-                placeholder="Name of person transferring funds"
+                placeholder={t('stay.checkout.enter_depositor') || ''}
               />
             </div>
           </div>
         </SectionCard>
 
         {/* Price Breakdown */}
-        <SectionCard icon="receipt_long" title="Payment Details">
+        <SectionCard icon="receipt_long" title={t('stay.checkout.payment_details')}>
           <div className="space-y-3">
-            <InfoRow title={`Base Rate (${nights} nights)`} right={<span className="font-bold text-[#2d3435]">{baseTotal.toLocaleString()} {stay.pricing?.currency || 'KRW'}</span>} />
+            <InfoRow title={t('stay.checkout.base_rate_nights', { nights: String(nights) }) || `기본 요금 (${nights}박)`} right={<span className="font-bold text-[#2d3435]">{baseTotal.toLocaleString()} {stay.pricing?.currency || 'KRW'}</span>} />
             
             {weekendSurcharge > 0 && (
-              <InfoRow title="Weekend Surcharge" subtitle={`${weekendNights} night(s)`} right={<span className="font-bold text-[#2d3435]">+{weekendSurcharge.toLocaleString()} {stay.pricing?.currency || 'KRW'}</span>} />
+              <InfoRow title={t('stay.checkout.weekend_surcharge') || '주말 할증 요금'} subtitle={`${weekendNights} ${t('stay.nights_unit')}`} right={<span className="font-bold text-[#2d3435]">+{weekendSurcharge.toLocaleString()} {stay.pricing?.currency || 'KRW'}</span>} />
             )}
             
             {extraPersonTotal > 0 && (
-              <InfoRow title="Extra Person Fee" subtitle={`${extraGuests} extra guest(s)`} right={<span className="font-bold text-[#2d3435]">+{extraPersonTotal.toLocaleString()} {stay.pricing?.currency || 'KRW'}</span>} />
+              <InfoRow title={t('stay.checkout.extra_person_fee') || '추가 인원 요금'} subtitle={`${extraGuests} ${t('stay.guests_unit_pp', '명')}`} right={<span className="font-bold text-[#2d3435]">+{extraPersonTotal.toLocaleString()} {stay.pricing?.currency || 'KRW'}</span>} />
             )}
             
             {cleaningFee > 0 && (
-              <InfoRow title="Cleaning Fee" right={<span className="font-bold text-[#2d3435]">+{cleaningFee.toLocaleString()} {stay.pricing?.currency || 'KRW'}</span>} />
+              <InfoRow title={t('stay.checkout.cleaning_fee') || '청소비'} right={<span className="font-bold text-[#2d3435]">+{cleaningFee.toLocaleString()} {stay.pricing?.currency || 'KRW'}</span>} />
             )}
 
             <div className="flex justify-between items-center pt-4 border-t border-[#f2f4f4]">
-              <p className="text-sm font-black text-[#2d3435]">Total Amount</p>
+              <p className="text-sm font-black text-[#2d3435]">{t('stay.checkout.total_amount')}</p>
               <p className="text-xl font-black text-[#0057bd]">{grandTotal.toLocaleString()} {stay.pricing?.currency || 'KRW'}</p>
             </div>
           </div>
         </SectionCard>
 
         {/* Payment Info */}
-        <SectionCard icon="account_balance" title="Bank Transfer" badge="Required">
+        <SectionCard icon="account_balance" title={t('stay.checkout.bank_transfer')} badge="Required">
           <div className="bg-[#f8f9fa] rounded-2xl p-4 border border-[#e0e4e5] relative group hover:bg-[#f2f4f4] transition-colors">
             <div className="space-y-3">
               <div>
-                <p className="text-[10px] font-bold text-[#acb3b4] uppercase tracking-widest mb-1">Bank Name</p>
+                <p className="text-[10px] font-bold text-[#acb3b4] uppercase tracking-widest mb-1">{t('stay.checkout.bank_name')}</p>
                 <p className="text-sm font-bold text-[#2d3435]">{bankName || 'Unknown Bank'}</p>
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] font-bold text-[#acb3b4] uppercase tracking-widest mb-1">Account Number</p>
+                  <p className="text-[10px] font-bold text-[#acb3b4] uppercase tracking-widest mb-1">{t('stay.checkout.account_number')}</p>
                   <p className="text-base font-black text-[#2d3435] font-mono">{accountNumber || 'Unknown Account'}</p>
                 </div>
                 <button 
@@ -466,7 +466,7 @@ function CheckoutContent() {
                 </button>
               </div>
               <div>
-                <p className="text-[10px] font-bold text-[#acb3b4] uppercase tracking-widest mb-1">Account Holder</p>
+                <p className="text-[10px] font-bold text-[#acb3b4] uppercase tracking-widest mb-1">{t('stay.checkout.account_holder')}</p>
                 <p className="text-sm font-bold text-[#2d3435]">{accountHolder || 'Unknown Holder'}</p>
               </div>
             </div>
@@ -474,27 +474,27 @@ function CheckoutContent() {
           <div className="flex gap-2 p-3 bg-[#fff7ed] rounded-xl border border-[#fed7aa] mt-4">
             <span className="material-symbols-outlined text-sm text-orange-500 flex-shrink-0 mt-0.5">info</span>
             <p className="text-[11px] text-orange-700 leading-relaxed">
-              Please transfer within <span className="font-bold underline">{stay.payment?.transferDeadlineHours || 2} hours</span> to secure your booking.
+              {t('stay.checkout.transfer_deadline_msg', { hours: String(stay.payment?.transferDeadlineHours || 2) }) || `예약을 확정하기 위해 ${stay.payment?.transferDeadlineHours || 2}시간 이내에 송금해 주세요.`}
             </p>
           </div>
         </SectionCard>
 
         {/* Policy */}
-        <SectionCard icon="policy" title="Reservation Policy">
+        <SectionCard icon="policy" title={t('stay.checkout.reservation_policy')}>
           <div className="grid grid-cols-1 gap-6">
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <span className="material-symbols-outlined text-sm text-[#0057bd]">key</span>
-                <p className="text-xs font-bold text-[#2d3435]">Check-in / Out</p>
+                <p className="text-xs font-bold text-[#2d3435]">{t('stay.checkout.checkin_checkout')}</p>
               </div>
               <ul className="space-y-2 text-[11px] text-[#596061]">
                 <li className="flex items-center gap-2">
                   <div className="w-1 h-1 rounded-full bg-[#acb3b4]" />
-                  Check-in: After {stay.checkInTime || '15:00'}
+                  {t('stay.checkout.checkin_after', { time: stay.checkInTime || '15:00' })}
                 </li>
                 <li className="flex items-center gap-2">
                   <div className="w-1 h-1 rounded-full bg-[#acb3b4]" />
-                  Check-out: Before {stay.checkOutTime || '11:00'}
+                  {t('stay.checkout.checkout_before', { time: stay.checkOutTime || '11:00' })}
                 </li>
                 <li className="flex items-center gap-2">
                   <div className="w-1 h-1 rounded-full bg-[#acb3b4]" />
@@ -505,7 +505,7 @@ function CheckoutContent() {
             <div className="pt-4 border-t border-[#f2f4f4]">
               <div className="flex items-center gap-2 mb-3">
                 <span className="material-symbols-outlined text-sm text-red-400">event_busy</span>
-                <p className="text-xs font-bold text-[#2d3435]">Cancellation Policy</p>
+                <p className="text-xs font-bold text-[#2d3435]">{t('stay.checkout.cancellation_policy')}</p>
               </div>
               <p className="text-[11px] text-[#596061] leading-relaxed">
                 {stay.cancellation?.policyText || 'Full refund for cancellations made within 48 hours of booking.'}
@@ -529,7 +529,7 @@ function CheckoutContent() {
               <span className="material-symbols-outlined absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-white text-[14px] opacity-0 peer-checked:opacity-100 pointer-events-none">check</span>
             </div>
             <span className="text-[11px] text-[#596061] leading-snug">
-              I have read and agree to the <span className="underline font-bold text-[#2d3435]">House Rules</span> and <span className="underline font-bold text-[#2d3435]">Reservation Terms</span>.
+              {t('stay.checkout.agree_terms_msg')}
             </span>
           </label>
           <button 
@@ -537,7 +537,9 @@ function CheckoutContent() {
             disabled={isSubmitting || !agreedToTerms}
             className="w-full bg-[#0057bd] disabled:bg-[#e8eaec] disabled:text-[#acb3b4] text-white py-4 rounded-2xl font-black text-sm tracking-wide shadow-lg shadow-[#0057bd]/20 hover:shadow-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2"
           >
-            {isSubmitting ? 'Processing...' : `Confirm · ${grandTotal.toLocaleString()} ${stay.pricing?.currency || 'KRW'}`}
+            {isSubmitting 
+              ? t('stay.checkout.processing', 'Processing...') 
+              : t('stay.checkout.confirm_btn', { amount: `${grandTotal.toLocaleString()} ${stay.pricing?.currency || 'KRW'}` })}
             {!isSubmitting && <span className="material-symbols-outlined text-sm">send</span>}
           </button>
         </div>

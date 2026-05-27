@@ -6,6 +6,7 @@ import { stayBookingService } from '@/lib/firebase/stayBookingService';
 import { chatService } from '@/lib/firebase/chatService';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { StayBooking } from '@/types/stay';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 function CompleteContent() {
   const router = useRouter();
@@ -14,6 +15,7 @@ function CompleteContent() {
   const searchParams = useSearchParams();
   const bookingId = searchParams.get('bookingId');
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [booking, setBooking] = useState<StayBooking | null>(null);
   const [isReporting, setIsReporting] = useState(false);
   const [paymentReported, setPaymentReported] = useState(false);
@@ -87,13 +89,12 @@ function CompleteContent() {
         <span className="material-symbols-rounded text-4xl text-emerald-600" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
       </div>
 
-      <h2 className="text-xl font-black text-[#2d3435] mb-2">Reservation Applied!</h2>
+      <h2 className="text-xl font-black text-[#2d3435] mb-2">{t('stay.complete.applied')}</h2>
       <p className="text-sm text-[#596061] text-center leading-relaxed mb-2">
-        Your booking request has been successfully submitted.
+        {t('stay.complete.success_desc')}
       </p>
       <p className="text-xs text-[#acb3b4] text-center leading-relaxed mb-8">
-        We have sent a confirmation SMS to your registered phone number.
-        <br />Track your booking in <span className="font-bold">My {'>'} History</span>.
+        {t('stay.complete.sms_history_desc')}
       </p>
 
       {/* Summary Card (Shop pattern) */}
@@ -101,25 +102,25 @@ function CompleteContent() {
         <div className="w-full max-w-sm bg-[#f8f9fa] rounded-2xl p-4 border border-[#e0e4e5] mb-4">
           <div className="space-y-2.5">
             <div className="flex justify-between items-center">
-              <span className="text-[10px] font-bold text-[#acb3b4] uppercase tracking-widest">Stay</span>
+              <span className="text-[10px] font-bold text-[#acb3b4] uppercase tracking-widest">{t('common.stay', 'Stay')}</span>
               <span className="text-sm font-bold text-[#2d3435] truncate max-w-[200px]">{booking.stayTitle}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-[10px] font-bold text-[#acb3b4] uppercase tracking-widest">Dates</span>
+              <span className="text-[10px] font-bold text-[#acb3b4] uppercase tracking-widest">{t('stay.checkout.checkin_checkout', 'Dates')}</span>
               <span className="text-xs font-bold text-[#596061] text-right">
                 {(() => {
                   const checkOutDate = booking.checkOut.toDate ? booking.checkOut.toDate() : new Date(booking.checkOut);
                   const lastNightDate = new Date(checkOutDate.getTime() - 24 * 60 * 60 * 1000);
-                  return `${formatDate(booking.checkIn)} - ${formatDate(lastNightDate)} (${booking.nights}박 · ${formatDate(booking.checkOut)} 퇴실)`;
+                  return `${formatDate(booking.checkIn)} - ${formatDate(lastNightDate)} (${booking.nights}${t('stay.nights_unit', '박')} · ${t('stay.checkout_date_label', '{date} 퇴실').replace('{date}', formatDate(booking.checkOut))})`;
                 })()}
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-[10px] font-bold text-[#acb3b4] uppercase tracking-widest">Guests</span>
-              <span className="text-xs font-bold text-[#596061]">{booking.guests} guest(s)</span>
+              <span className="text-[10px] font-bold text-[#acb3b4] uppercase tracking-widest">{t('stay.checkout.num_guests', 'Guests')}</span>
+              <span className="text-xs font-bold text-[#596061]">{booking.guests} {t('stay.guests_unit_pp', 'Guest(s)')}</span>
             </div>
             <div className="flex justify-between items-center pt-2 border-t border-[#e0e4e5]">
-              <span className="text-[10px] font-bold text-[#acb3b4] uppercase tracking-widest">Total</span>
+              <span className="text-[10px] font-bold text-[#acb3b4] uppercase tracking-widest">{t('stay.checkout.total_amount', 'Total')}</span>
               <span className="text-base font-black text-primary">{booking.pricing.grandTotal.toLocaleString()} {booking.pricing.currency}</span>
             </div>
           </div>
@@ -140,21 +141,21 @@ function CompleteContent() {
           >
             <span className="material-symbols-rounded text-lg text-[#596061]">payments</span>
             <span className="text-sm font-bold text-[#2d3435]">
-              {isReporting ? 'Reporting...' : "I've Transferred the Payment"}
+              {isReporting ? t('stay.complete.reporting', 'Reporting...') : t('stay.complete.payment_transferred', "I've Transferred the Payment")}
             </span>
           </button>
         )}
         {paymentReported && (
           <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-100 rounded-xl">
             <span className="material-symbols-rounded text-emerald-600 text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-            <span className="text-xs font-bold text-[#2d3435]">Payment reported! The host will confirm shortly.</span>
+            <span className="text-xs font-bold text-[#2d3435]">{t('stay.complete.reported_success')}</span>
           </div>
         )}
         <button
           onClick={() => router.push(`/stay`)}
           className="w-full bg-primary text-white py-4 rounded-2xl font-black text-sm tracking-wide shadow-lg shadow-primary/20 active:scale-[0.98] transition-transform"
         >
-          Go to Stays
+          {t('stay.complete.go_to_stays')}
         </button>
       </div>
     </div>
