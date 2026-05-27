@@ -11,6 +11,14 @@ import ImageWithFallback from "@/components/common/ImageWithFallback";
 import GroupShopItemEditor from "./GroupShopItemEditor";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
+import {
+  AdminHeader,
+  AdminCard,
+  AdminInputField,
+  AdminSelectField,
+  AdminTextAreaField,
+  AdminToggle,
+} from "./GroupAdminCommon";
 
 interface GroupShopEditorProps {
   group: Group;
@@ -267,25 +275,7 @@ const GroupShopEditor: React.FC<GroupShopEditorProps> = ({ group, onClose, isInl
       <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
 
       {/* Top Bar */}
-      {!isInline && (
-        <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-outline/5">
-          <div className="max-w-[896px] mx-auto px-4 py-4 flex items-center justify-between w-full">
-            <div className="flex items-center gap-4">
-              {onClose && (
-                <button 
-                  onClick={onClose}
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-primary hover:bg-primary/5 transition-all"
-                >
-                  <span className="material-symbols-outlined text-primary">arrow_back</span>
-                </button>
-              )}
-              <h1 className="text-base font-bold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>
-                {t('group.shop.management') || "Shop Management"}
-              </h1>
-            </div>
-          </div>
-        </header>
-      )}
+      <AdminHeader title={t('group.shop.management') || "Shop Management"} onClose={onClose} isInline={isInline} />
 
       <main className="flex-1">
         <div className={`max-w-[896px] mx-auto space-y-6 ${isInline ? 'pb-24' : 'pb-48 md:pb-32'}`}>
@@ -618,160 +608,121 @@ const GroupShopEditor: React.FC<GroupShopEditorProps> = ({ group, onClose, isInl
         {activeTab === "info" && (
           <div className="space-y-6">
             {/* Payment Info */}
-            <section className="px-4 mb-6">
-              <div className="bg-surface-container-low border border-outline/5 rounded-2xl overflow-hidden shadow-sm">
-                <div className="px-6 pt-6 pb-4 border-b border-outline/5">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                      <span className="material-symbols-outlined text-primary text-[20px]">account_balance</span>
-                    </div>
-                    <div>
-                      <h3 className="text-[16px] leading-[1.6] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.shop.payment_account")}</h3>
-                      <p className="text-[12px] leading-[1.2] font-medium text-on-surface-variant" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.shop.payment_account_desc")}</p>
-                    </div>
+            <section className="px-4">
+              <AdminCard
+                icon="account_balance"
+                title={t("group.shop.payment_account")}
+                description={t("group.shop.payment_account_desc")}
+              >
+                <div className="bg-surface-container-high rounded-xl p-4 border border-outline/5 space-y-3">
+                  <div className="flex justify-between items-center text-[14px]">
+                    <span className="text-on-surface-variant font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.shop.bank")}</span>
+                    <span className="text-on-surface font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>{group.bankDetails?.bankName || t("group.shop.msg.not_set") || "Not set"}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-[14px]">
+                    <span className="text-on-surface-variant font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.shop.account_number")}</span>
+                    <span className="text-on-surface font-mono font-medium">{group.bankDetails?.accountNumber || t("group.shop.msg.not_set") || "Not set"}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-[14px]">
+                    <span className="text-on-surface-variant font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.shop.account_holder")}</span>
+                    <span className="text-on-surface font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>{group.bankDetails?.accountHolder || t("group.shop.msg.not_set") || "Not set"}</span>
                   </div>
                 </div>
-                <div className="p-6">
-                  <div className="bg-surface-container-high rounded-xl p-4 border border-outline/5 space-y-3">
-                    <div className="flex justify-between items-center text-[14px]">
-                      <span className="text-on-surface-variant font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.shop.bank")}</span>
-                      <span className="text-on-surface font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>{group.bankDetails?.bankName || t("group.shop.msg.not_set") || "Not set"}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-[14px]">
-                      <span className="text-on-surface-variant font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.shop.account_number")}</span>
-                      <span className="text-on-surface font-mono font-medium">{group.bankDetails?.accountNumber || t("group.shop.msg.not_set") || "Not set"}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-[14px]">
-                      <span className="text-on-surface-variant font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.shop.account_holder")}</span>
-                      <span className="text-on-surface font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>{group.bankDetails?.accountHolder || t("group.shop.msg.not_set") || "Not set"}</span>
-                    </div>
-                  </div>
-                  <p className="text-[11px] text-on-surface-variant/60 font-medium mt-3" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.shop.payment_account_hint")}</p>
-                </div>
-              </div>
+                <p className="text-[11px] text-on-surface-variant/60 font-medium mt-3" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.shop.payment_account_hint")}</p>
+              </AdminCard>
             </section>
 
             {/* Delivery Settings */}
-            <section className="px-4 mb-6">
-              <div className="bg-surface-container-low border border-outline/5 rounded-2xl overflow-hidden shadow-sm">
-                <div className="px-6 pt-6 pb-4 border-b border-outline/5">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                      <span className="material-symbols-outlined text-primary text-[20px]">local_shipping</span>
-                    </div>
-                    <div>
-                      <h3 className="text-[16px] leading-[1.6] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.shop.delivery_settings")}</h3>
-                      <p className="text-[12px] leading-[1.2] font-medium text-on-surface-variant" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.shop.delivery_settings_desc")}</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-6 space-y-5">
-                  <div className="space-y-2">
-                    <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider block" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.shop.currency")}</label>
-                    <select 
-                      value={shopSettings.currency || 'KRW'}
-                      onChange={e => setShopSettings({...shopSettings, currency: e.target.value})}
-                      className="w-full bg-surface-container-high border border-outline/10 focus:ring-2 focus:ring-primary/30 focus:border-primary rounded-xl px-4 py-3.5 text-on-surface text-[16px] font-medium appearance-none outline-none transition-all"
-                      style={{ fontFamily: "'Inter', sans-serif" }}
-                    >
-                      <option value="KRW">KRW (₩)</option>
-                      <option value="USD">USD ($)</option>
-                      <option value="EUR">EUR (€)</option>
-                      <option value="ARS">ARS ($)</option>
-                      <option value="CLP">CLP ($)</option>
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider block" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.shop.delivery_type")}</label>
-                    <div className="flex bg-surface-container-high p-1 rounded-xl shadow-inner gap-1">
-                      {(["shipping", "pickup", "both"] as const).map(dt => (
-                        <button 
-                          key={dt} 
-                          type="button"
-                          onClick={() => setShopSettings({...shopSettings, deliveryType: dt})}
-                          className={`flex-1 py-2.5 text-[12px] font-bold rounded-lg transition-colors ${
-                            shopSettings.deliveryType === dt 
-                              ? "bg-primary text-on-primary shadow-sm" 
-                              : "text-on-surface-variant/60 hover:text-on-surface hover:bg-surface-container-low"
-                          }`}
-                          style={{ fontFamily: "'Inter', sans-serif" }}
-                        >
-                          {dt === "shipping" 
-                            ? (t("group.shop.order.status.shipping") || "Shipping") 
-                            : dt === "pickup" 
-                              ? (t("group.shop.order.ready_pickup") || "Pickup") 
-                              : (t("group.shop.filter.all") || "Both")}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider block" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.shop.default_shipping_fee")}</label>
-                    <input 
-                      type="text" 
-                      inputMode="numeric" 
-                      value={formatNumber(shopSettings.defaultShippingFee)}
-                      onChange={e => setShopSettings({...shopSettings, defaultShippingFee: parseFormattedNumber(e.target.value)})}
-                      className="w-full bg-surface-container-high border border-outline/10 focus:ring-2 focus:ring-primary/30 focus:border-primary rounded-xl px-4 py-3.5 text-on-surface text-[16px] font-medium placeholder:text-on-surface-variant/30 transition-all"
-                      placeholder="0"
-                      style={{ fontFamily: "'Inter', sans-serif" }}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider block" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.shop.free_shipping_threshold")}</label>
-                    <input 
-                      type="text" 
-                      inputMode="numeric" 
-                      value={formatNumber(shopSettings.freeShippingThreshold)}
-                      onChange={e => setShopSettings({...shopSettings, freeShippingThreshold: parseFormattedNumber(e.target.value)})}
-                      className="w-full bg-surface-container-high border border-outline/10 focus:ring-2 focus:ring-primary/30 focus:border-primary rounded-xl px-4 py-3.5 text-on-surface text-[16px] font-medium placeholder:text-on-surface-variant/30 transition-all"
-                      placeholder="0"
-                      style={{ fontFamily: "'Inter', sans-serif" }}
-                    />
-                    <p className="text-[11px] text-on-surface-variant/60 font-medium ml-1" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.shop.free_shipping_threshold_hint")}</p>
-                  </div>
-                  {(shopSettings.deliveryType === "pickup" || shopSettings.deliveryType === "both") && (
-                    <div className="space-y-2">
-                      <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider block" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.shop.pickup_guide")}</label>
-                      <textarea 
-                        value={shopSettings.pickupGuide || ""}
-                        onChange={e => setShopSettings({...shopSettings, pickupGuide: e.target.value})}
-                        className="w-full bg-surface-container-high border border-outline/10 focus:ring-2 focus:ring-primary/30 focus:border-primary rounded-xl px-4 py-3.5 text-on-surface text-[14px] leading-relaxed font-normal resize-none placeholder:text-on-surface-variant/30 min-h-[100px] transition-all"
-                        rows={3} 
-                        placeholder={t("group.shop.pickup_guide_hint")}
+            <section className="px-4">
+              <AdminCard
+                icon="local_shipping"
+                title={t("group.shop.delivery_settings")}
+                description={t("group.shop.delivery_settings_desc")}
+              >
+                <AdminSelectField
+                  label={t("group.shop.currency")}
+                  value={shopSettings.currency || 'KRW'}
+                  onChange={e => setShopSettings({...shopSettings, currency: e.target.value})}
+                  options={[
+                    { value: "KRW", label: "KRW (₩)" },
+                    { value: "USD", label: "USD ($)" },
+                    { value: "EUR", label: "EUR (€)" },
+                    { value: "ARS", label: "ARS ($)" },
+                    { value: "CLP", label: "CLP ($)" },
+                  ]}
+                />
+                
+                <div className="space-y-2">
+                  <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider block" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.shop.delivery_type")}</label>
+                  <div className="flex bg-surface-container-high p-1 rounded-xl shadow-inner gap-1">
+                    {(["shipping", "pickup", "both"] as const).map(dt => (
+                      <button 
+                        key={dt} 
+                        type="button"
+                        onClick={() => setShopSettings({...shopSettings, deliveryType: dt})}
+                        className={`flex-1 py-2.5 text-[12px] font-bold rounded-lg transition-colors ${
+                          shopSettings.deliveryType === dt 
+                            ? "bg-primary text-on-primary shadow-sm" 
+                            : "text-on-surface-variant/60 hover:text-on-surface hover:bg-surface-container-low"
+                        }`}
                         style={{ fontFamily: "'Inter', sans-serif" }}
-                      />
-                    </div>
-                  )}
+                      >
+                        {dt === "shipping" 
+                          ? (t("group.shop.order.status.shipping") || "Shipping") 
+                          : dt === "pickup" 
+                            ? (t("group.shop.order.ready_pickup") || "Pickup") 
+                            : (t("group.shop.filter.all") || "Both")}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+
+                <AdminInputField
+                  label={t("group.shop.default_shipping_fee")}
+                  type="text"
+                  inputMode="numeric"
+                  value={formatNumber(shopSettings.defaultShippingFee)}
+                  onChange={e => setShopSettings({...shopSettings, defaultShippingFee: parseFormattedNumber(e.target.value)})}
+                  placeholder="0"
+                />
+
+                <AdminInputField
+                  label={t("group.shop.free_shipping_threshold")}
+                  type="text"
+                  inputMode="numeric"
+                  value={formatNumber(shopSettings.freeShippingThreshold)}
+                  onChange={e => setShopSettings({...shopSettings, freeShippingThreshold: parseFormattedNumber(e.target.value)})}
+                  placeholder="0"
+                />
+                <p className="text-[11px] text-on-surface-variant/60 font-medium ml-1" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.shop.free_shipping_threshold_hint")}</p>
+
+                {(shopSettings.deliveryType === "pickup" || shopSettings.deliveryType === "both") && (
+                  <AdminTextAreaField
+                    label={t("group.shop.pickup_guide")}
+                    value={shopSettings.pickupGuide || ""}
+                    onChange={e => setShopSettings({...shopSettings, pickupGuide: e.target.value})}
+                    rows={3}
+                    placeholder={t("group.shop.pickup_guide_hint")}
+                  />
+                )}
+              </AdminCard>
             </section>
 
             {/* Return Policy */}
-            <section className="px-4 mb-6">
-              <div className="bg-surface-container-low border border-outline/5 rounded-2xl overflow-hidden shadow-sm">
-                <div className="px-6 pt-6 pb-4 border-b border-outline/5">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                      <span className="material-symbols-outlined text-primary text-[20px]">policy</span>
-                    </div>
-                    <div>
-                      <h3 className="text-[16px] leading-[1.6] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.shop.return_policy")}</h3>
-                      <p className="text-[12px] leading-[1.2] font-medium text-on-surface-variant" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.shop.return_policy_desc")}</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-6">
-                  <textarea 
-                    value={shopSettings.returnPolicy || ""}
-                    onChange={e => setShopSettings({...shopSettings, returnPolicy: e.target.value})}
-                    className="w-full bg-surface-container-high border border-outline/10 focus:ring-2 focus:ring-primary/30 focus:border-primary rounded-xl px-4 py-4 text-on-surface text-[16px] leading-relaxed font-normal resize-none placeholder:text-on-surface-variant/30 min-h-[160px] transition-all"
-                    rows={5} 
-                    placeholder={t("group.shop.return_policy_hint")}
-                    style={{ fontFamily: "'Inter', sans-serif" }}
-                  />
-                </div>
-              </div>
+            <section className="px-4">
+              <AdminCard
+                icon="policy"
+                title={t("group.shop.return_policy")}
+                description={t("group.shop.return_policy_desc")}
+              >
+                <AdminTextAreaField
+                  label={t("group.shop.return_policy")}
+                  value={shopSettings.returnPolicy || ""}
+                  onChange={e => setShopSettings({...shopSettings, returnPolicy: e.target.value})}
+                  rows={5}
+                  placeholder={t("group.shop.return_policy_hint")}
+                />
+              </AdminCard>
             </section>
 
             {/* Save Button */}

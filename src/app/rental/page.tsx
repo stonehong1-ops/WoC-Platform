@@ -376,6 +376,7 @@ function RentalPageContent() {
           likes={likes} 
           userId={user.uid} 
           onSpaceClick={(spaceId) => openDetail(spaceId)} 
+          spaces={spaces}
         />
       )}
 

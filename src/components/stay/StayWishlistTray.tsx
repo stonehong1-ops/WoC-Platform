@@ -11,11 +11,12 @@ interface StayWishlistTrayProps {
   likes: StayLike[];
   userId: string;
   onStayClick: (stayId: string) => void;
+  stays: Stay[]; // 부모가 기확보한 모든 숙소 목록
 }
 
 type TrayState = 'COLLAPSED' | 'EXPANDED';
 
-export default function StayWishlistTray({ likes, userId, onStayClick }: StayWishlistTrayProps) {
+export default function StayWishlistTray({ likes, userId, onStayClick, stays }: StayWishlistTrayProps) {
   const { t } = useLanguage();
   const [trayState, setTrayState] = useState<TrayState>('COLLAPSED');
   const [likedStays, setLikedStays] = useState<Stay[]>([]);
@@ -23,40 +24,34 @@ export default function StayWishlistTray({ likes, userId, onStayClick }: StayWis
   const scrollRef = useRef<HTMLDivElement>(null);
   const { isHeaderVisible } = useNavigation();
 
-  // Fetch stay details for liked items
+  // 2단계 리팩토링: 데이터베이스 추가 개별 조회를 100% 제거하고 부모 기확보 데이터를 동기식 정적 매칭하여 0ms 렌더링
   useEffect(() => {
     if (likes.length === 0) {
       setLikedStays([]);
       return;
     }
 
-    const fetchStays = async () => {
-      setLoadingStays(true);
-      const stays = await Promise.all(
-        likes.map(like => stayService.getStay(like.stayId))
-      );
-      
-      // Filter out nulls and attach status (Standard pattern)
-      const validStays = stays
-        .map((s, i) => (s ? { ...s, _likeStatus: likes[i].status } : null))
-        .filter((s): s is Stay & { _likeStatus: 'liked' | 'pending' | 'in_progress' | undefined } => s !== null);
-      
-      // Sort: in_progress first, then pending, then liked (Standard pattern)
-      validStays.sort((a, b) => {
-        const getPriority = (status: string | undefined) => {
-          if (status === 'in_progress') return 1;
-          if (status === 'pending') return 2;
-          return 3;
-        };
-        return getPriority(a._likeStatus) - getPriority(b._likeStatus);
-      });
-      
-      setLikedStays(validStays);
-      setLoadingStays(false);
-    };
+    // 부모로부터 주입된 stays 배열에서 likes에 해당하는 객체들만 동기 필터링 매칭
+    const validStays = likes
+      .map(like => {
+        const found = stays.find(s => s.id === like.stayId);
+        return found ? { ...found, _likeStatus: like.status } : null;
+      })
+      .filter((s): s is Stay & { _likeStatus: 'liked' | 'pending' | 'in_progress' | undefined } => s !== null);
 
-    fetchStays();
-  }, [likes]);
+    // 우선순위 정렬: in_progress -> pending -> liked
+    validStays.sort((a, b) => {
+      const getPriority = (status: string | undefined) => {
+        if (status === 'in_progress') return 1;
+        if (status === 'pending') return 2;
+        return 3;
+      };
+      return getPriority(a._likeStatus) - getPriority(b._likeStatus);
+    });
+
+    setLikedStays(validStays);
+    setLoadingStays(false);
+  }, [likes, stays]);
 
   const handleUnlike = async (e: React.MouseEvent, stayId: string) => {
     e.stopPropagation();

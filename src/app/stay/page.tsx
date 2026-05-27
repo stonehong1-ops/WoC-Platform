@@ -405,6 +405,7 @@ function StayPageContent() {
           likes={likes} 
           userId={user.uid} 
           onStayClick={(id) => handleOpenDetail(id)} 
+          stays={stays}
         />
       )}
 

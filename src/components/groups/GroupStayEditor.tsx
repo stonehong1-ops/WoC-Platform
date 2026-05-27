@@ -12,6 +12,14 @@ import { PlatformUser } from "@/types/user";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
+import {
+  AdminHeader,
+  AdminCard,
+  AdminInputField,
+  AdminSelectField,
+  AdminTextAreaField,
+  AdminToggle,
+} from "./GroupAdminCommon";
 
 interface GroupStayEditorProps {
   group?: any;
@@ -561,21 +569,7 @@ export default function GroupStayEditor({ group, onClose, isInline }: GroupStayE
         }
       >
         {/* Top Bar */}
-        {!isInline && (
-          <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-outline/5">
-            <div className="max-w-[896px] mx-auto px-4 py-4 flex items-center justify-between w-full">
-              <div className="flex items-center gap-4">
-                <button 
-                  onClick={onClose}
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-primary hover:bg-primary/5 transition-all"
-                >
-                  <span className="material-symbols-outlined text-primary">arrow_back</span>
-                </button>
-                <h1 className="text-base font-bold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.title")}</h1>
-              </div>
-            </div>
-          </header>
-        )}
+        <AdminHeader title={t("group.stay.title")} onClose={onClose} isInline={isInline} />
 
         <main className="flex-1">
           <div className={`max-w-[896px] mx-auto space-y-6 ${isInline ? 'pb-24' : 'pb-48 md:pb-32'}`}>
@@ -593,493 +587,359 @@ export default function GroupStayEditor({ group, onClose, isInline }: GroupStayE
             </div>
 
             {/* 1. BASIC INFO */}
-            <section className="px-4 mb-6">
-              <div className="bg-white rounded-2xl shadow-[0px_10px_30px_rgba(0,0,0,0.03)] border border-white/20 overflow-hidden">
-                <div className="px-6 pt-6 pb-4 border-b border-outline/5">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                      <span className="material-symbols-outlined text-primary text-[20px]">info</span>
-                    </div>
-                    <div>
-                      <h3 className="text-[16px] leading-[1.6] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.basic_info")}</h3>
-                      <p className="text-[12px] leading-[1.2] font-medium text-on-surface-variant" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.basic_info_desc")}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-6 space-y-5">
-                  <div className="space-y-2">
-                    <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.stay_name_en")}</label>
-                    <input 
-                      className="w-full bg-surface-container-low border border-outline/10 focus:ring-2 focus:ring-primary/30 focus:border-primary rounded-xl px-4 py-3.5 text-on-surface text-[16px] font-medium placeholder:text-on-surface-variant/30" 
-                      type="text" 
-                      value={title} 
-                      onChange={(e) => setTitle(e.target.value)} 
-                      style={{ fontFamily: "'Inter', sans-serif" }}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.native_title")}</label>
-                    <input 
-                      className="w-full bg-surface-container-low border border-outline/10 focus:ring-2 focus:ring-primary/30 focus:border-primary rounded-xl px-4 py-3.5 text-on-surface text-[16px] font-medium placeholder:text-on-surface-variant/30" 
-                      type="text" 
-                      value={nativeTitle} 
-                      onChange={(e) => setNativeTitle(e.target.value)} 
-                      placeholder={t('group.stay.native_title', 'Enter native title')} 
-                      style={{ fontFamily: "'Inter', sans-serif" }}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.short_headline")}</label>
-                    <input 
-                      className="w-full bg-surface-container-low border border-outline/10 focus:ring-2 focus:ring-primary/30 focus:border-primary rounded-xl px-4 py-3.5 text-on-surface text-[16px] font-medium placeholder:text-on-surface-variant/30" 
-                      placeholder={t("group.stay.short_headline_placeholder")} 
-                      type="text" 
-                      value={headline} 
-                      onChange={(e) => setHeadline(e.target.value)} 
-                      style={{ fontFamily: "'Inter', sans-serif" }}
-                    />
-                  </div>
-                </div>
-              </div>
+            <section className="px-4">
+              <AdminCard icon="info" title={t("group.stay.basic_info")} description={t("group.stay.basic_info_desc")}>
+                <AdminInputField
+                  label={t("group.stay.stay_name_en")}
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                />
+                <AdminInputField
+                  label={t("group.stay.native_title")}
+                  type="text"
+                  value={nativeTitle}
+                  onChange={(e) => setNativeTitle(e.target.value)}
+                  placeholder={t('group.stay.native_title', 'Enter native title')}
+                />
+                <AdminInputField
+                  label={t("group.stay.short_headline")}
+                  type="text"
+                  value={headline}
+                  onChange={(e) => setHeadline(e.target.value)}
+                  placeholder={t("group.stay.short_headline_placeholder")}
+                />
+              </AdminCard>
             </section>
 
             {/* 3. MEDIA & CAPTIONS INTEGRATED */}
-            <section className="px-4 mb-6">
-              <div className="bg-white rounded-2xl shadow-[0px_10px_30px_rgba(0,0,0,0.03)] border border-white/20 overflow-hidden">
-                <div className="px-6 pt-6 pb-4 border-b border-outline/5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-secondary/10 flex items-center justify-center shrink-0">
-                        <span className="material-symbols-outlined text-secondary text-[20px]">photo_library</span>
-                      </div>
-                      <div>
-                        <h3 className="text-[16px] leading-[1.6] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.media")}</h3>
-                        <p className="text-[12px] leading-[1.2] font-medium text-on-surface-variant" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.media_desc")}</p>
-                      </div>
-                    </div>
-                    <span className="text-[12px] font-semibold text-on-surface-variant bg-surface-container-low px-3 py-1.5 rounded-full" style={{ fontFamily: "'Inter', sans-serif" }}>
-                      {t("group.stay.uploaded_count", { count: gallery.length })}
-                    </span>
-                  </div>
-                </div>
+            <section className="px-4">
+              <AdminCard
+                icon="photo_library"
+                iconColorClass="text-secondary bg-secondary/10"
+                title={t("group.stay.media")}
+                description={t("group.stay.media_desc")}
+                rightElement={
+                  <span className="text-[12px] font-semibold text-on-surface-variant bg-surface-container-low px-3 py-1.5 rounded-full" style={{ fontFamily: "'Inter', sans-serif" }}>
+                    {t("group.stay.uploaded_count", { count: gallery.length })}
+                  </span>
+                }
+              >
+                {/* 1:1 Gallery Cards List */}
+                <div className="space-y-4">
+                  {gallery.map((item, index) => {
+                    const progress = uploadProgress[index];
+                    const isOptimizing = optimizingSlots[index];
+                    const isUploadingImg = progress !== undefined;
 
-                <div className="p-6 space-y-5">
-                  {/* 1:1 Gallery Cards List */}
-                  <div className="space-y-4">
-                    {gallery.map((item, index) => {
-                      const progress = uploadProgress[index];
-                      const isOptimizing = optimizingSlots[index];
-                      const isUploadingImg = progress !== undefined;
-
-                      return (
-                        <div key={index} className="flex flex-col md:flex-row gap-4 p-4 bg-surface-container-lowest border border-outline/5 rounded-2xl relative group transition-all hover:border-outline/10">
+                    return (
+                      <div key={index} className="flex flex-col md:flex-row gap-4 p-4 bg-surface-container-lowest border border-outline/5 rounded-2xl relative group transition-all hover:border-outline/10">
+                        
+                        {/* Left Side: Image Thumbnail */}
+                        <div className="w-full md:w-[160px] aspect-[4/3] md:aspect-square relative rounded-xl overflow-hidden shrink-0 border border-outline/5 bg-surface-container-low">
+                          <img alt={`Room Image ${index + 1}`} className="w-full h-full object-cover" src={item.url} />
                           
-                          {/* Left Side: Image Thumbnail */}
-                          <div className="w-full md:w-[160px] aspect-[4/3] md:aspect-square relative rounded-xl overflow-hidden shrink-0 border border-outline/5 bg-surface-container-low">
-                            <img alt={`Room Image ${index + 1}`} className="w-full h-full object-cover" src={item.url} />
-                            
-                            {/* Upload Progress Overlay */}
-                            {(isUploadingImg || isOptimizing) && (
-                              <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center p-2 text-center backdrop-blur-[1px]">
-                                {isOptimizing ? (
-                                  <div className="flex flex-col items-center gap-2">
-                                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                    <span className="text-[10px] text-white font-bold uppercase tracking-tighter">Optimizing...</span>
-                                  </div>
-                                ) : (
-                                  <div className="relative w-12 h-12">
-                                    <svg className="w-full h-full transform -rotate-90">
-                                      <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="4" fill="transparent" className="text-white/20" />
-                                      <circle 
-                                        cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="4" fill="transparent" 
-                                        strokeDasharray={125.6} 
-                                        strokeDashoffset={125.6 * (1 - (progress || 0) / 100)} 
-                                        className="text-white transition-all duration-300" 
-                                      />
-                                    </svg>
-                                    <span className="absolute inset-0 flex items-center justify-center text-[10px] text-white font-bold">
-                                      {Math.round(progress || 0)}%
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-
-                            {/* Delete Button (Hover) */}
-                            {!isUploadingImg && !isOptimizing && (
-                              <button 
-                                onClick={() => handleImageDelete(index)}
-                                className="absolute top-2 right-2 w-8 h-8 rounded-full bg-error/90 hover:bg-error text-white flex items-center justify-center shadow-md active:scale-95 transition-all"
-                              >
-                                <span className="material-symbols-outlined text-[16px]">delete</span>
-                              </button>
-                            )}
-                          </div>
-
-                          {/* Right Side: Caption Inputs */}
-                          <div className="flex-1 space-y-3 flex flex-col justify-center">
-                            <div className="space-y-1.5">
-                              <div className="flex items-center gap-1.5 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">
-                                <span className="material-symbols-outlined text-[14px]">translate</span>
-                                {t("group.stay.caption_ko")}
-                              </div>
-                              <input
-                                type="text"
-                                className="w-full bg-surface-container-low border border-outline/10 focus:ring-2 focus:ring-primary/30 focus:border-primary rounded-xl px-4 py-2.5 text-on-surface text-[13px] font-medium placeholder:text-on-surface-variant/30"
-                                value={item.descKo}
-                                placeholder={t("group.stay.caption_ko_placeholder")}
-                                onChange={(e) => handleCaptionChange(index, 'ko', e.target.value)}
-                                style={{ fontFamily: "'Inter', sans-serif" }}
-                              />
+                          {/* Upload Progress Overlay */}
+                          {(isUploadingImg || isOptimizing) && (
+                            <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center p-2 text-center backdrop-blur-[1px]">
+                              {isOptimizing ? (
+                                <div className="flex flex-col items-center gap-2">
+                                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                  <span className="text-[10px] text-white font-bold uppercase tracking-tighter">Optimizing...</span>
+                                </div>
+                              ) : (
+                                <div className="relative w-12 h-12">
+                                  <svg className="w-full h-full transform -rotate-90">
+                                    <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="4" fill="transparent" className="text-white/20" />
+                                    <circle 
+                                      cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="4" fill="transparent" 
+                                      strokeDasharray={125.6} 
+                                      strokeDashoffset={125.6 * (1 - (progress || 0) / 100)} 
+                                      className="text-white transition-all duration-300" 
+                                    />
+                                  </svg>
+                                  <span className="absolute inset-0 flex items-center justify-center text-[10px] text-white font-bold">
+                                    {Math.round(progress || 0)}%
+                                  </span>
+                                </div>
+                              )}
                             </div>
-                            <div className="space-y-1.5">
-                              <div className="flex items-center gap-1.5 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">
-                                <span className="material-symbols-outlined text-[14px]">translate</span>
-                                {t("group.stay.caption_en")}
-                              </div>
-                              <input
-                                type="text"
-                                className="w-full bg-surface-container-low border border-outline/10 focus:ring-2 focus:ring-primary/30 focus:border-primary rounded-xl px-4 py-2.5 text-on-surface text-[13px] font-medium placeholder:text-on-surface-variant/30"
-                                value={item.descEn}
-                                placeholder={t("group.stay.caption_en_placeholder")}
-                                onChange={(e) => handleCaptionChange(index, 'en', e.target.value)}
-                                style={{ fontFamily: "'Inter', sans-serif" }}
-                              />
-                            </div>
-                          </div>
+                          )}
 
+                          {/* Delete Button (Hover) */}
+                          {!isUploadingImg && !isOptimizing && (
+                            <button 
+                              onClick={() => handleImageDelete(index)}
+                              className="absolute top-2 right-2 w-8 h-8 rounded-full bg-error/90 hover:bg-error text-white flex items-center justify-center shadow-md active:scale-95 transition-all"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">delete</span>
+                            </button>
+                          )}
                         </div>
-                      );
-                    })}
 
-                    {/* Empty State */}
-                    {gallery.length === 0 && (
-                      <div 
-                        onClick={() => fileInputRef.current?.click()}
-                        className="w-full py-12 rounded-2xl border-2 border-dashed border-outline/15 bg-surface-container-low hover:border-primary/30 flex flex-col items-center justify-center gap-2 transition-all cursor-pointer group"
-                      >
-                        <span className="material-symbols-outlined text-on-surface-variant/30 text-[36px]" data-icon="add_a_photo">add_a_photo</span>
-                        <span className="text-[13px] text-on-surface-variant/50 font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.add_photos_empty")}</span>
-                        <span className="text-[11px] text-on-surface-variant/30 font-medium">{t("group.stay.max_20_images")}</span>
+                        {/* Right Side: Caption Inputs */}
+                        <div className="flex-1 space-y-3 flex flex-col justify-center">
+                          <AdminInputField
+                            label={t("group.stay.caption_ko")}
+                            type="text"
+                            value={item.descKo}
+                            placeholder={t("group.stay.caption_ko_placeholder")}
+                            onChange={(e) => handleCaptionChange(index, 'ko', e.target.value)}
+                          />
+                          <AdminInputField
+                            label={t("group.stay.caption_en")}
+                            type="text"
+                            value={item.descEn}
+                            placeholder={t("group.stay.caption_en_placeholder")}
+                            onChange={(e) => handleCaptionChange(index, 'en', e.target.value)}
+                          />
+                        </div>
+
                       </div>
-                    )}
-                  </div>
+                    );
+                  })}
 
-                  {/* Add More Photos Button */}
-                  {gallery.length > 0 && gallery.length < 20 && (
-                    <div className="flex justify-end pt-2">
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="px-6 py-2.5 bg-secondary text-on-secondary rounded-xl font-semibold hover:opacity-90 active:scale-95 transition-all text-[13px] flex items-center gap-2 shadow-sm"
-                        style={{ fontFamily: "'Inter', sans-serif" }}
-                      >
-                        <span className="material-symbols-outlined text-[18px]">add_a_photo</span>
-                        {t("group.stay.add_more_photos")}
-                      </button>
+                  {/* Empty State */}
+                  {gallery.length === 0 && (
+                    <div 
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full py-12 rounded-2xl border-2 border-dashed border-outline/15 bg-surface-container-low hover:border-primary/30 flex flex-col items-center justify-center gap-2 transition-all cursor-pointer group"
+                    >
+                      <span className="material-symbols-outlined text-on-surface-variant/30 text-[36px]" data-icon="add_a_photo">add_a_photo</span>
+                      <span className="text-[13px] text-on-surface-variant/50 font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.add_photos_empty")}</span>
+                      <span className="text-[11px] text-on-surface-variant/30 font-medium">{t("group.stay.max_20_images")}</span>
                     </div>
                   )}
                 </div>
-              </div>
+
+                {/* Add More Photos Button */}
+                {gallery.length > 0 && gallery.length < 20 && (
+                  <div className="flex justify-end pt-2">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-6 py-2.5 bg-secondary text-on-secondary rounded-xl font-semibold hover:opacity-90 active:scale-95 transition-all text-[13px] flex items-center gap-2 shadow-sm"
+                      style={{ fontFamily: "'Inter', sans-serif" }}
+                    >
+                      <span className="material-symbols-outlined text-[18px]">add_a_photo</span>
+                      {t("group.stay.add_more_photos")}
+                    </button>
+                  </div>
+                )}
+              </AdminCard>
             </section>
 
             {/* 4. RATES */}
-            <section className="px-4 mb-6">
-              <div className="bg-white rounded-2xl shadow-[0px_10px_30px_rgba(0,0,0,0.03)] border border-white/20 overflow-hidden">
-                <div className="px-6 pt-6 pb-4 border-b border-outline/5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-tertiary/10 flex items-center justify-center shrink-0">
-                        <span className="material-symbols-outlined text-tertiary text-[20px]">payments</span>
-                      </div>
-                      <div>
-                        <h3 className="text-[16px] leading-[1.6] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.rates")}</h3>
-                        <p className="text-[12px] leading-[1.2] font-medium text-on-surface-variant" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.rates_desc")}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <label className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.currency")}</label>
-                      <select 
-                        className="bg-surface-container-low border border-outline/10 rounded-xl text-[14px] font-medium text-on-surface py-1.5 pl-3 pr-8 focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all" 
-                        value={currency} 
-                        onChange={(e) => setCurrency(e.target.value)}
-                        style={{ fontFamily: "'Inter', sans-serif" }}
-                      >
-                        <option value="KRW">KRW (₩)</option>
-                        <option value="USD">USD ($)</option>
-                      </select>
-                    </div>
+            <section className="px-4">
+              <AdminCard
+                icon="payments"
+                iconColorClass="text-tertiary bg-tertiary/10"
+                title={t("group.stay.rates")}
+                description={t("group.stay.rates_desc")}
+                rightElement={
+                  <div className="flex items-center gap-2">
+                    <label className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.currency")}</label>
+                    <select 
+                      className="bg-surface-container-low border border-outline/10 rounded-xl text-[14px] font-medium text-on-surface py-1.5 pl-3 pr-8 focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all outline-none" 
+                      value={currency} 
+                      onChange={(e) => setCurrency(e.target.value)}
+                      style={{ fontFamily: "'Inter', sans-serif" }}
+                    >
+                      <option value="KRW">KRW (₩)</option>
+                      <option value="USD">USD ($)</option>
+                    </select>
                   </div>
+                }
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <AdminInputField
+                    label={t("group.stay.weekday_base_rate")}
+                    type="text"
+                    value={baseRate}
+                    onChange={(e) => setBaseRate(e.target.value)}
+                  />
+                  <AdminInputField
+                    label={t("group.stay.weekend_surcharge")}
+                    type="text"
+                    value={weekendSurcharge}
+                    onChange={(e) => setWeekendSurcharge(e.target.value)}
+                  />
+                  <AdminInputField
+                    label={t("group.stay.extra_person_fee")}
+                    type="text"
+                    value={extraPersonFee}
+                    onChange={(e) => setExtraPersonFee(e.target.value)}
+                  />
+                  <AdminInputField
+                    label={t("group.stay.cleaning_fee")}
+                    type="text"
+                    value={cleaningFee}
+                    onChange={(e) => setCleaningFee(e.target.value)}
+                  />
                 </div>
-
-                <div className="p-6 space-y-5">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.weekday_base_rate")}</label>
-                      <input 
-                        className="w-full bg-surface-container-low border border-outline/10 focus:ring-2 focus:ring-primary/30 focus:border-primary rounded-xl px-4 py-3.5 text-on-surface text-[16px] font-medium placeholder:text-on-surface-variant/30" 
-                        type="text" 
-                        value={baseRate} 
-                        onChange={(e) => setBaseRate(e.target.value)} 
-                        style={{ fontFamily: "'Inter', sans-serif" }}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.weekend_surcharge")}</label>
-                      <input 
-                        className="w-full bg-surface-container-low border border-outline/10 focus:ring-2 focus:ring-primary/30 focus:border-primary rounded-xl px-4 py-3.5 text-on-surface text-[16px] font-medium placeholder:text-on-surface-variant/30" 
-                        type="text" 
-                        value={weekendSurcharge} 
-                        onChange={(e) => setWeekendSurcharge(e.target.value)} 
-                        style={{ fontFamily: "'Inter', sans-serif" }}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.extra_person_fee")}</label>
-                      <input 
-                        className="w-full bg-surface-container-low border border-outline/10 focus:ring-2 focus:ring-primary/30 focus:border-primary rounded-xl px-4 py-3.5 text-on-surface text-[16px] font-medium placeholder:text-on-surface-variant/30" 
-                        type="text" 
-                        value={extraPersonFee} 
-                        onChange={(e) => setExtraPersonFee(e.target.value)} 
-                        style={{ fontFamily: "'Inter', sans-serif" }}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.cleaning_fee")}</label>
-                      <input 
-                        className="w-full bg-surface-container-low border border-outline/10 focus:ring-2 focus:ring-primary/30 focus:border-primary rounded-xl px-4 py-3.5 text-on-surface text-[16px] font-medium placeholder:text-on-surface-variant/30" 
-                        type="text" 
-                        value={cleaningFee} 
-                        onChange={(e) => setCleaningFee(e.target.value)} 
-                        style={{ fontFamily: "'Inter', sans-serif" }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
+              </AdminCard>
             </section>
 
             {/* 5. GUIDES */}
-            <section className="px-4 mb-6">
-              <div className="bg-white rounded-2xl shadow-[0px_10px_30px_rgba(0,0,0,0.03)] border border-white/20 overflow-hidden">
-                <div className="px-6 pt-6 pb-4 border-b border-outline/5">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
-                      <span className="material-symbols-outlined text-blue-500 text-[20px]">menu_book</span>
-                    </div>
-                    <div>
-                      <h3 className="text-[16px] leading-[1.6] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.guides")}</h3>
-                      <p className="text-[12px] leading-[1.2] font-medium text-on-surface-variant" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.guides_desc")}</p>
-                    </div>
-                  </div>
+            <section className="px-4">
+              <AdminCard
+                icon="menu_book"
+                iconColorClass="text-blue-500 bg-blue-500/10"
+                title={t("group.stay.guides")}
+                description={t("group.stay.guides_desc")}
+              >
+                <div className="space-y-4">
+                  <AdminTextAreaField
+                    label={t("group.stay.room_features")}
+                    rows={3}
+                    value={roomFeatures}
+                    onChange={(e) => setRoomFeatures(e.target.value)}
+                  />
+                  <AdminTextAreaField
+                    label={t("group.stay.getting_here")}
+                    rows={3}
+                    value={gettingHere}
+                    onChange={(e) => setGettingHere(e.target.value)}
+                  />
+                  <AdminTextAreaField
+                    label={t("group.stay.facility_guide")}
+                    rows={3}
+                    value={facilityGuide}
+                    onChange={(e) => setFacilityGuide(e.target.value)}
+                  />
                 </div>
-
-                <div className="p-6 space-y-5">
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.room_features")}</label>
-                      <textarea 
-                        className="w-full bg-surface-container-low border border-outline/10 focus:ring-2 focus:ring-primary/30 focus:border-primary rounded-xl px-4 py-3.5 text-on-surface text-[14px] leading-relaxed font-normal placeholder:text-on-surface-variant/30 resize-none min-h-[100px]" 
-                        rows={3} 
-                        value={roomFeatures} 
-                        onChange={(e) => setRoomFeatures(e.target.value)} 
-                        style={{ fontFamily: "'Inter', sans-serif" }}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.getting_here")}</label>
-                      <textarea 
-                        className="w-full bg-surface-container-low border border-outline/10 focus:ring-2 focus:ring-primary/30 focus:border-primary rounded-xl px-4 py-3.5 text-on-surface text-[14px] leading-relaxed font-normal placeholder:text-on-surface-variant/30 resize-none min-h-[100px]" 
-                        rows={3} 
-                        value={gettingHere} 
-                        onChange={(e) => setGettingHere(e.target.value)} 
-                        style={{ fontFamily: "'Inter', sans-serif" }}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.facility_guide")}</label>
-                      <textarea 
-                        className="w-full bg-surface-container-low border border-outline/10 focus:ring-2 focus:ring-primary/30 focus:border-primary rounded-xl px-4 py-3.5 text-on-surface text-[14px] leading-relaxed font-normal placeholder:text-on-surface-variant/30 resize-none min-h-[100px]" 
-                        rows={3} 
-                        value={facilityGuide} 
-                        onChange={(e) => setFacilityGuide(e.target.value)} 
-                        style={{ fontFamily: "'Inter', sans-serif" }}
-                      />
-                    </div>
-
-
-                  </div>
-                </div>
-              </div>
+              </AdminCard>
             </section>
 
             {/* 6. HOST SETTINGS */}
-            <section className="px-4 mb-6">
-              <div className="bg-white rounded-2xl shadow-[0px_10px_30px_rgba(0,0,0,0.03)] border border-white/20 overflow-hidden">
-                <div className="px-6 pt-6 pb-4 border-b border-outline/5">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-error/10 flex items-center justify-center shrink-0">
-                      <span className="material-symbols-outlined text-error text-[20px]">person</span>
-                    </div>
-                    <div>
-                      <h3 className="text-[16px] leading-[1.6] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.host_settings")}</h3>
-                      <p className="text-[12px] leading-[1.2] font-medium text-on-surface-variant" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.host_settings_desc")}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-6 space-y-5">
-                  <div className="space-y-2">
-                    <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.primary_host")}</label>
-                    {isEditingHost ? (
-                      <div className="p-4 bg-surface-container-low rounded-xl space-y-4 relative">
-                        <div className="space-y-2 relative z-30">
-                          <label className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.host_name")}</label>
-                          <div className="relative flex items-center bg-white border border-outline/10 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary rounded-xl px-4 py-3 transition-all">
-                            <span className="material-symbols-outlined text-on-surface-variant/40 mr-2">search</span>
-                            <input 
-                              className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-[14px] font-medium text-on-surface placeholder:text-on-surface-variant/30 outline-none" 
-                              type="text" 
-                              value={hostName} 
-                              onChange={(e) => handleHostSearch(e.target.value)} 
-                              onFocus={() => hostName.length >= 1 && setShowHostResults(hostResults.length > 0)}
-                              onBlur={() => setTimeout(() => setShowHostResults(false), 200)}
-                              placeholder={t("group.stay.search_user_placeholder")}
-                              style={{ fontFamily: "'Inter', sans-serif" }}
-                            />
-                          </div>
-
-                          {showHostResults && (
-                            <div className="absolute top-full left-0 w-full mt-1 bg-white border border-outline/10 rounded-xl shadow-lg z-50 overflow-hidden">
-                              {hostResults.map(u => (
-                                <button 
-                                  key={u.id} 
-                                  type="button"
-                                  onClick={() => handleSelectHost(u)}
-                                  className="w-full text-left px-4 py-3 hover:bg-surface-container-low flex items-center gap-3 group transition-colors border-b border-outline/5 last:border-0"
-                                >
-                                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary overflow-hidden shrink-0">
-                                    {u.photoURL ? (
-                                      <img src={u.photoURL} alt="" className="w-full h-full object-cover" />
-                                    ) : (
-                                      <span className="material-symbols-outlined text-[16px]">person</span>
-                                    )}
-                                  </div>
-                                  <div className="flex flex-col">
-                                    <p className="font-semibold text-on-surface text-[13px] group-hover:text-primary leading-tight">{u.nickname}</p>
-                                    {u.nativeNickname && <span className="text-[10px] text-on-surface-variant/60 font-medium leading-tight mt-0.5">{u.nativeNickname}</span>}
-                                  </div>
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.host_photo")}</label>
+            <section className="px-4">
+              <AdminCard
+                icon="person"
+                iconColorClass="text-error bg-error/10"
+                title={t("group.stay.host_settings")}
+                description={t("group.stay.host_settings_desc")}
+              >
+                <div className="space-y-2">
+                  <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.primary_host")}</label>
+                  {isEditingHost ? (
+                    <div className="p-4 bg-surface-container-low rounded-xl space-y-4 relative">
+                      <div className="space-y-2 relative z-30">
+                        <label className="text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.host_name")}</label>
+                        <div className="relative flex items-center bg-white border border-outline/10 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary rounded-xl px-4 py-3 transition-all">
+                          <span className="material-symbols-outlined text-on-surface-variant/40 mr-2">search</span>
                           <input 
-                            className="w-full bg-white border border-outline/10 rounded-xl px-4 py-3 text-on-surface text-[14px] font-medium" 
+                            className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-[14px] font-medium text-on-surface placeholder:text-on-surface-variant/30 outline-none" 
                             type="text" 
-                            value={hostPhoto} 
-                            onChange={(e) => setHostPhoto(e.target.value)} 
-                            placeholder="https://..." 
+                            value={hostName} 
+                            onChange={(e) => handleHostSearch(e.target.value)} 
+                            onFocus={() => hostName.length >= 1 && setShowHostResults(hostResults.length > 0)}
+                            onBlur={() => setTimeout(() => setShowHostResults(false), 200)}
+                            placeholder={t("group.stay.search_user_placeholder")}
                             style={{ fontFamily: "'Inter', sans-serif" }}
                           />
                         </div>
-                        <div className="flex justify-end pt-2">
-                          <button 
-                            onClick={() => setIsEditingHost(false)} 
-                            className="px-6 py-2.5 bg-primary text-on-primary rounded-xl font-semibold hover:opacity-90 active:scale-95 transition-all text-[14px]"
-                            style={{ fontFamily: "'Inter', sans-serif" }}
-                          >
-                            {t("group.stay.done")}
-                          </button>
-                        </div>
+
+                        {showHostResults && (
+                          <div className="absolute top-full left-0 w-full mt-1 bg-white border border-outline/10 rounded-xl shadow-lg z-50 overflow-hidden">
+                            {hostResults.map(u => (
+                              <button 
+                                key={u.id} 
+                                type="button"
+                                onClick={() => handleSelectHost(u)}
+                                className="w-full text-left px-4 py-3 hover:bg-surface-container-low flex items-center gap-3 group transition-colors border-b border-outline/5 last:border-0"
+                              >
+                                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary overflow-hidden shrink-0">
+                                  {u.photoURL ? (
+                                    <img src={u.photoURL} alt="" className="w-full h-full object-cover" />
+                                  ) : (
+                                    <span className="material-symbols-outlined text-[16px]">person</span>
+                                  )}
+                                </div>
+                                <div className="flex flex-col">
+                                  <p className="font-semibold text-on-surface text-[13px] group-hover:text-primary leading-tight">{u.nickname}</p>
+                                  {u.nativeNickname && <span className="text-[10px] text-on-surface-variant/60 font-medium leading-tight mt-0.5">{u.nativeNickname}</span>}
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    ) : (
-                      <div className="flex items-center justify-between p-4 bg-surface-container-low rounded-xl">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary overflow-hidden">
-                            {hostPhoto || originalData?.host?.photo ? (
-                              <img src={hostPhoto || originalData?.host?.photo || ""} alt="" className="w-full h-full object-cover" />
-                            ) : (
-                              <span className="material-symbols-outlined">account_circle</span>
-                            )}
-                          </div>
-                          <div>
-                            <p className="font-body-md text-on-surface font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>{hostName}</p>
-                            <p className="text-[12px] text-on-surface-variant font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.default_host")}</p>
-                          </div>
-                        </div>
+                      <AdminInputField
+                        label={t("group.stay.host_photo")}
+                        type="text"
+                        value={hostPhoto}
+                        onChange={(e) => setHostPhoto(e.target.value)}
+                        placeholder="https://..."
+                      />
+                      <div className="flex justify-end pt-2">
                         <button 
-                          onClick={() => setIsEditingHost(true)} 
-                          className="px-4 py-2 bg-white border border-outline/10 rounded-xl font-semibold text-primary hover:bg-surface-container-low transition-all text-[13px] flex items-center gap-2 shadow-sm"
+                          onClick={() => setIsEditingHost(false)} 
+                          className="px-6 py-2.5 bg-primary text-on-primary rounded-xl font-semibold hover:opacity-90 active:scale-95 transition-all text-[14px]"
                           style={{ fontFamily: "'Inter', sans-serif" }}
                         >
-                          <span className="material-symbols-outlined text-[18px]">person_search</span>
-                          {t("group.stay.change_host")}
+                          {t("group.stay.done")}
                         </button>
                       </div>
-                    )}
-                    <p className="text-[11px] text-on-surface-variant/60 font-medium ml-1" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.host_settings_hint")}</p>
-                  </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between p-4 bg-surface-container-low rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary overflow-hidden">
+                          {hostPhoto || originalData?.host?.photo ? (
+                            <img src={hostPhoto || originalData?.host?.photo || ""} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="material-symbols-outlined">account_circle</span>
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-body-md text-on-surface font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>{hostName}</p>
+                          <p className="text-[12px] text-on-surface-variant font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.default_host")}</p>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => setIsEditingHost(true)} 
+                        className="px-4 py-2 bg-white border border-outline/10 rounded-xl font-semibold text-primary hover:bg-surface-container-low transition-all text-[13px] flex items-center gap-2 shadow-sm"
+                        style={{ fontFamily: "'Inter', sans-serif" }}
+                      >
+                        <span className="material-symbols-outlined text-[18px]">person_search</span>
+                        {t("group.stay.change_host")}
+                      </button>
+                    </div>
+                  )}
+                  <p className="text-[11px] text-on-surface-variant/60 font-medium ml-1" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.host_settings_hint")}</p>
                 </div>
-              </div>
+              </AdminCard>
             </section>
 
             {/* 7. GLOBAL AUTOMATION & WEB GUIDES */}
-            <section className="px-4 mb-6">
-              <div className="bg-white rounded-2xl shadow-[0px_10px_30px_rgba(0,0,0,0.03)] border border-white/20 overflow-hidden">
-                <div className="px-6 pt-6 pb-4 border-b border-outline/5 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                      <span className="material-symbols-outlined text-primary text-[20px]">mark_email_unread</span>
-                    </div>
-                    <div>
-                      <h3 className="text-[16px] leading-[1.6] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.automation_title", "Global Messaging & Web Guides")}</h3>
-                      <p className="text-[12px] leading-[1.2] font-medium text-on-surface-variant" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.automation_desc", "Configure automated SMS triggers and manage custom guest web guides.")}</p>
-                    </div>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      checked={automationEnabled} 
-                      onChange={(e) => setAutomationEnabled(e.target.checked)} 
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                  </label>
-                </div>
-
+            <section className="px-4">
+              <AdminCard
+                icon="mark_email_unread"
+                title={t("group.stay.automation_title", "Global Messaging & Web Guides")}
+                description={t("group.stay.automation_desc", "Configure automated SMS triggers and manage custom guest web guides.")}
+                rightElement={
+                  <AdminToggle enabled={automationEnabled} onChange={setAutomationEnabled} />
+                }
+              >
                 {automationEnabled && (
-                  <div className="p-6 space-y-6 divide-y divide-outline/5">
+                  <div className="space-y-6 divide-y divide-outline/5 -mt-5">
                     {/* Step 1 */}
-                    <div className="space-y-4 pt-0">
+                    <div className="space-y-4 pt-5">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500">1</span>
                           <h4 className="text-[14px] font-bold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.step1_title", "Step 1: Reservation Confirmed (Immediate SMS)")}</h4>
                         </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input 
-                            type="checkbox" 
-                            checked={appliedEnabled} 
-                            onChange={(e) => setAppliedEnabled(e.target.checked)} 
-                            className="sr-only peer"
-                          />
-                          <div className="w-9 h-5 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
-                        </label>
+                        <AdminToggle enabled={appliedEnabled} onChange={setAppliedEnabled} />
                       </div>
                       {appliedEnabled && (
                         <div className="space-y-2 pl-7">
-                          <label className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.web_content_label", "Guest Web Guide Content (Refund/Receipt Policy)")}</label>
-                          <textarea 
-                            className="w-full bg-surface-container-low border border-outline/10 focus:ring-2 focus:ring-primary/30 focus:border-primary rounded-xl px-4 py-3 text-on-surface text-[14px] leading-relaxed resize-none min-h-[80px]" 
+                          <AdminTextAreaField
+                            label={t("group.stay.web_content_label", "Guest Web Guide Content (Refund/Receipt Policy)")}
                             rows={2}
                             value={appliedContent}
                             onChange={(e) => setAppliedContent(e.target.value)}
                             placeholder={t("group.stay.step1_placeholder", "Enter host notes regarding payments, deposits, or refund guidelines for this booking...")}
-                            style={{ fontFamily: "'Inter', sans-serif" }}
                           />
                         </div>
                       )}
@@ -1092,26 +952,16 @@ export default function GroupStayEditor({ group, onClose, isInline }: GroupStayE
                           <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500">2</span>
                           <h4 className="text-[14px] font-bold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.step2_title", "Step 2: 3 Days Before Arrival (Directions Guide)")}</h4>
                         </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input 
-                            type="checkbox" 
-                            checked={before3DaysEnabled} 
-                            onChange={(e) => setBefore3DaysEnabled(e.target.checked)} 
-                            className="sr-only peer"
-                          />
-                          <div className="w-9 h-5 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
-                        </label>
+                        <AdminToggle enabled={before3DaysEnabled} onChange={setBefore3DaysEnabled} />
                       </div>
                       {before3DaysEnabled && (
                         <div className="space-y-2 pl-7">
-                          <label className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.web_content_label", "Guest Web Guide Content (Directions & Parking)")}</label>
-                          <textarea 
-                            className="w-full bg-surface-container-low border border-outline/10 focus:ring-2 focus:ring-primary/30 focus:border-primary rounded-xl px-4 py-3 text-on-surface text-[14px] leading-relaxed resize-none min-h-[80px]" 
+                          <AdminTextAreaField
+                            label={t("group.stay.web_content_label", "Guest Web Guide Content (Directions & Parking)")}
                             rows={2}
                             value={before3DaysContent}
                             onChange={(e) => setBefore3DaysContent(e.target.value)}
                             placeholder={t("group.stay.step2_placeholder", "Enter precise directions, parking rules, check-in instructions, or neighborhood travel recommendations...")}
-                            style={{ fontFamily: "'Inter', sans-serif" }}
                           />
                         </div>
                       )}
@@ -1124,26 +974,16 @@ export default function GroupStayEditor({ group, onClose, isInline }: GroupStayE
                           <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500">3</span>
                           <h4 className="text-[14px] font-bold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.step3_title", "Step 3: Check-in Day (Access Code & Wi-Fi)")}</h4>
                         </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input 
-                            type="checkbox" 
-                            checked={checkInDayEnabled} 
-                            onChange={(e) => setCheckInDayEnabled(e.target.checked)} 
-                            className="sr-only peer"
-                          />
-                          <div className="w-9 h-5 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
-                        </label>
+                        <AdminToggle enabled={checkInDayEnabled} onChange={setCheckInDayEnabled} />
                       </div>
                       {checkInDayEnabled && (
                         <div className="space-y-2 pl-7">
-                          <label className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.web_content_label", "Guest Web Guide Content (Access Code & Wi-Fi)")}</label>
-                          <textarea 
-                            className="w-full bg-surface-container-low border border-outline/10 focus:ring-2 focus:ring-primary/30 focus:border-primary rounded-xl px-4 py-3 text-on-surface text-[14px] leading-relaxed resize-none min-h-[80px]" 
+                          <AdminTextAreaField
+                            label={t("group.stay.web_content_label", "Guest Web Guide Content (Access Code & Wi-Fi)")}
                             rows={2}
                             value={checkInDayContent}
                             onChange={(e) => setCheckInDayContent(e.target.value)}
                             placeholder={t("group.stay.step3_placeholder", "Enter door access code, Wi-Fi password, host contacts, and essential room usage notes...")}
-                            style={{ fontFamily: "'Inter', sans-serif" }}
                           />
                         </div>
                       )}
@@ -1156,33 +996,23 @@ export default function GroupStayEditor({ group, onClose, isInline }: GroupStayE
                           <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500">4</span>
                           <h4 className="text-[14px] font-bold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.step4_title", "Step 4: Post Checkout (Thank You & Reviews)")}</h4>
                         </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input 
-                            type="checkbox" 
-                            checked={checkOutDayEnabled} 
-                            onChange={(e) => setCheckOutDayEnabled(e.target.checked)} 
-                            className="sr-only peer"
-                          />
-                          <div className="w-9 h-5 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
-                        </label>
+                        <AdminToggle enabled={checkOutDayEnabled} onChange={setCheckOutDayEnabled} />
                       </div>
                       {checkOutDayEnabled && (
                         <div className="space-y-2 pl-7">
-                          <label className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.stay.web_content_label", "Guest Web Guide Content (Checkout Guidelines)")}</label>
-                          <textarea 
-                            className="w-full bg-surface-container-low border border-outline/10 focus:ring-2 focus:ring-primary/30 focus:border-primary rounded-xl px-4 py-3 text-on-surface text-[14px] leading-relaxed resize-none min-h-[80px]" 
+                          <AdminTextAreaField
+                            label={t("group.stay.web_content_label", "Guest Web Guide Content (Checkout Guidelines)")}
                             rows={2}
                             value={checkOutDayContent}
                             onChange={(e) => setCheckOutDayContent(e.target.value)}
                             placeholder={t("group.stay.step4_placeholder", "Enter clean-up rules, garbage disposal guidelines, check-out time checks, or a thank-you note...")}
-                            style={{ fontFamily: "'Inter', sans-serif" }}
                           />
                         </div>
                       )}
                     </div>
                   </div>
                 )}
-              </div>
+              </AdminCard>
             </section>
 
             {/* ACTION BAR */}
@@ -1228,3 +1058,4 @@ export default function GroupStayEditor({ group, onClose, isInline }: GroupStayE
     </>
   );
 }
+

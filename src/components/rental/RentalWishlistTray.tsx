@@ -11,11 +11,12 @@ interface RentalWishlistTrayProps {
   likes: RentalLike[];
   userId: string;
   onSpaceClick: (spaceId: string) => void;
+  spaces: RentalSpace[]; // 부모가 기확보한 모든 공간 목록
 }
 
 type TrayState = 'COLLAPSED' | 'EXPANDED';
 
-export default function RentalWishlistTray({ likes, userId, onSpaceClick }: RentalWishlistTrayProps) {
+export default function RentalWishlistTray({ likes, userId, onSpaceClick, spaces }: RentalWishlistTrayProps) {
   const { t } = useLanguage();
   const [trayState, setTrayState] = useState<TrayState>('COLLAPSED');
   const [likedSpaces, setLikedSpaces] = useState<RentalSpace[]>([]);
@@ -23,40 +24,34 @@ export default function RentalWishlistTray({ likes, userId, onSpaceClick }: Rent
   const scrollRef = useRef<HTMLDivElement>(null);
   const { isHeaderVisible } = useNavigation();
 
-  // Fetch space details for liked items
+  // 2단계 리팩토링: 데이터베이스 추가 개별 조회를 100% 제거하고 부모 기확보 데이터를 동기식 정적 매칭하여 0ms 렌더링
   useEffect(() => {
     if (likes.length === 0) {
       setLikedSpaces([]);
       return;
     }
 
-    const fetchSpaces = async () => {
-      setLoadingSpaces(true);
-      const spaces = await Promise.all(
-        likes.map(like => rentalService.getSpace(like.spaceId))
-      );
-      
-      // Filter out nulls and attach status
-      const validSpaces = spaces
-        .map((s, i) => (s ? { ...s, _likeStatus: likes[i].status || 'liked' } : null))
-        .filter((s): s is RentalSpace & { _likeStatus: 'liked' | 'pending' | 'in_progress' } => s !== null);
-      
-      // Sort: in_progress first, then pending, then liked
-      validSpaces.sort((a, b) => {
-        const getPriority = (status: string) => {
-          if (status === 'in_progress') return 1;
-          if (status === 'pending') return 2;
-          return 3;
-        };
-        return getPriority(a._likeStatus) - getPriority(b._likeStatus);
-      });
-      
-      setLikedSpaces(validSpaces);
-      setLoadingSpaces(false);
-    };
+    // 부모로부터 주입된 spaces 배열에서 likes에 해당하는 객체들만 동기 필터링 매칭
+    const validSpaces = likes
+      .map(like => {
+        const found = spaces.find(s => s.id === like.spaceId);
+        return found ? { ...found, _likeStatus: like.status || 'liked' } : null;
+      })
+      .filter((s): s is RentalSpace & { _likeStatus: 'liked' | 'pending' | 'in_progress' } => s !== null);
 
-    fetchSpaces();
-  }, [likes]);
+    // 우선순위 정렬: in_progress -> pending -> liked
+    validSpaces.sort((a, b) => {
+      const getPriority = (status: string) => {
+        if (status === 'in_progress') return 1;
+        if (status === 'pending') return 2;
+        return 3;
+      };
+      return getPriority(a._likeStatus) - getPriority(b._likeStatus);
+    });
+
+    setLikedSpaces(validSpaces);
+    setLoadingSpaces(false);
+  }, [likes, spaces]);
 
   const handleUnlike = async (e: React.MouseEvent, spaceId: string) => {
     e.stopPropagation();
