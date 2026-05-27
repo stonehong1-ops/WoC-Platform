@@ -17,7 +17,11 @@ import {
   setDoc,
   deleteDoc,
   Timestamp,
-  QueryConstraint
+  QueryConstraint,
+  runTransaction,
+  writeBatch,
+  arrayUnion,
+  arrayRemove
 } from 'firebase/firestore';
 import { Post, Comment, ReactionType, Reaction } from '@/types/feed';
 
@@ -154,57 +158,55 @@ export const feedService = {
   toggleReaction: async (postId: string, userId: string, userName: string, type: ReactionType, postAuthorId?: string) => {
     try {
       const reactionRef = doc(db, COLLECTION_NAME, postId, 'reactions', userId);
-      const reactionSnap = await getDoc(reactionRef);
       const postRef = doc(db, COLLECTION_NAME, postId);
 
-      if (reactionSnap.exists()) {
-        const oldType = reactionSnap.data().type as ReactionType;
-        
-        if (oldType === type) {
-          // 같은 반응이면 취소
-          await deleteDoc(reactionRef);
-          await updateDoc(postRef, {
-            [`reactionCounts.${type}`]: increment(-1),
-            likesCount: increment(-1) // 하위 호환성
-          });
-        } else {
-          // 다른 반응으로 변경
-          await updateDoc(reactionRef, {
-            type,
-            updatedAt: serverTimestamp()
-          });
-          await updateDoc(postRef, {
-            [`reactionCounts.${oldType}`]: increment(-1),
-            [`reactionCounts.${type}`]: increment(1)
-          });
-        }
-      } else {
-        // 새 반응 추가
-        await setDoc(reactionRef, {
-          userId,
-          userName,
-          type,
-          createdAt: serverTimestamp()
-        });
-        await updateDoc(postRef, {
-          [`reactionCounts.${type}`]: increment(1),
-          likesCount: increment(1)
-        });
+      await runTransaction(db, async (transaction) => {
+        const reactionSnap = await transaction.get(reactionRef);
 
-        // Update interactedUserIds and likedPostIds
-        if (userId) {
-          try {
-            const { arrayUnion } = await import('firebase/firestore');
+        if (reactionSnap.exists()) {
+          const oldType = reactionSnap.data().type as ReactionType;
+          
+          if (oldType === type) {
+            // 같은 반응이면 취소
+            transaction.delete(reactionRef);
+            transaction.update(postRef, {
+              [`reactionCounts.${type}`]: increment(-1),
+              likesCount: increment(-1) // 하위 호환성
+            });
+          } else {
+            // 다른 반응으로 변경
+            transaction.update(reactionRef, {
+              type,
+              updatedAt: serverTimestamp()
+            });
+            transaction.update(postRef, {
+              [`reactionCounts.${oldType}`]: increment(-1),
+              [`reactionCounts.${type}`]: increment(1)
+            });
+          }
+        } else {
+          // 새 반응 추가
+          transaction.set(reactionRef, {
+            userId,
+            userName,
+            type,
+            createdAt: serverTimestamp()
+          });
+          transaction.update(postRef, {
+            [`reactionCounts.${type}`]: increment(1),
+            likesCount: increment(1)
+          });
+
+          // Update interactedUserIds and likedPostIds
+          if (userId) {
             const userRef = doc(db, 'users', userId);
-            await setDoc(userRef, {
+            transaction.set(userRef, {
               likedPostIds: arrayUnion(postId),
               ...(postAuthorId && postAuthorId !== userId ? { interactedUserIds: arrayUnion(postAuthorId) } : {})
             }, { merge: true });
-          } catch (e) {
-            console.error('Failed to update user interaction data:', e);
           }
         }
-      }
+      });
     } catch (error) {
       console.error("Error toggling reaction:", error);
       throw error;
@@ -227,7 +229,11 @@ export const feedService = {
   // 댓글 추가
   addComment: async (postId: string, commentData: Omit<Comment, 'id' | 'createdAt'>, postAuthorId?: string) => {
     try {
+      const batch = writeBatch(db);
       const commentsRef = collection(db, COLLECTION_NAME, postId, 'comments');
+      
+      // ID를 사전 생성하여 WriteBatch 내에서 setDoc 수행 가능하게 함
+      const newCommentRef = doc(commentsRef);
       
       const newComment = {
         ...commentData,
@@ -235,34 +241,34 @@ export const feedService = {
         createdAt: serverTimestamp(),
       };
 
-      await addDoc(commentsRef, newComment);
+      // 1. 댓글 본문 저장
+      batch.set(newCommentRef, newComment);
 
+      // 2. 포스트 댓글 개수 카운터 증가
       const postRef = doc(db, COLLECTION_NAME, postId);
-      
-      await updateDoc(postRef, {
+      batch.update(postRef, {
         commentsCount: increment(1)
       });
 
+      // 3. 대댓글인 경우 부모 댓글의 답글 카운터 증가
       if (commentData.parentId) {
         const parentRef = doc(db, COLLECTION_NAME, postId, 'comments', commentData.parentId);
-        await updateDoc(parentRef, {
+        batch.update(parentRef, {
           repliesCount: increment(1)
         });
       }
 
-      // Update interactedUserIds and commentedPostIds
+      // 4. 유저 상호작용 및 활동 기록 병합
       if (commentData.userId) {
-        try {
-          const { arrayUnion } = await import('firebase/firestore');
-          const userRef = doc(db, 'users', commentData.userId);
-          await setDoc(userRef, {
-            commentedPostIds: arrayUnion(postId),
-            ...(postAuthorId && commentData.userId !== postAuthorId ? { interactedUserIds: arrayUnion(postAuthorId) } : {})
-          }, { merge: true });
-        } catch (e) {
-          console.error('Failed to update user interaction data:', e);
-        }
+        const userRef = doc(db, 'users', commentData.userId);
+        batch.set(userRef, {
+          commentedPostIds: arrayUnion(postId),
+          ...(postAuthorId && commentData.userId !== postAuthorId ? { interactedUserIds: arrayUnion(postAuthorId) } : {})
+        }, { merge: true });
       }
+
+      // 배치 일괄 전송
+      await batch.commit();
     } catch (error) {
       console.error("Error adding comment:", error);
       throw error;

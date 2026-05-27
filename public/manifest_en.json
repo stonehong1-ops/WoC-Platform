@@ -3,7 +3,7 @@
   "name": "Tango World",
   "short_name": "Tango",
   "description": "One World, Every Moment of Tango",
-  "start_url": "/",
+  "start_url": "/live",
   "scope": "/",
   "display": "standalone",
   "background_color": "#F9F9F9",

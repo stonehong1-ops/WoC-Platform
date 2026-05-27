@@ -224,8 +224,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Push Notification Permission Prompt (Option 1)
   useEffect(() => {
     if (user && typeof window !== 'undefined' && 'Notification' in window) {
-      // 권한 여부에 관계없이 다이렉트로 디바이스 허용 팝업 및 토큰 갱신을 실행합니다.
-      fcmService.requestPermissionAndGetToken(user.uid).catch(console.error);
+      // PWA 앱(standalone) 환경에서만 알림 권한을 요청하여, 앱 미설치 상태의 설치 유도 화면에서 알림 팝업이 뜨지 않도록 방어
+      const isStandalone =
+        window.matchMedia('(display-mode: standalone)').matches ||
+        (window.navigator as any).standalone === true;
+      if (isStandalone) {
+        fcmService.requestPermissionAndGetToken(user.uid).catch(console.error);
+      }
     }
   }, [user]);
 

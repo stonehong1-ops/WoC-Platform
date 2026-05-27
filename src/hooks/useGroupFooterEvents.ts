@@ -141,6 +141,13 @@ export function useGroupFooterEvents(
   useEffect(() => {
     const timer = setTimeout(() => {
       setTimeoutExpired(true);
+      // 타임아웃 만료 시 모든 Loaded 플래그를 강제 해제하여 스켈레톤 무한 유지 원천 차단
+      setClassesLoaded(true);
+      setSocialsLoaded(true);
+      setChatLoaded(true);
+      setFeedsLoaded(true);
+      setGalleryLoaded(true);
+      setVisitorsLoaded(true);
     }, 300);
     return () => clearTimeout(timer);
   }, []);

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 
 export default function LandingPage() {
+  const [isCheckingPWA, setIsCheckingPWA] = useState(true);
   const [isAlreadyInstalled, setIsAlreadyInstalled] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [isInApp, setIsInApp] = useState(false);
@@ -26,6 +27,9 @@ export default function LandingPage() {
       window.location.replace('/live');
       return;
     }
+
+    // PWA 환경이 아닌 경우에만 checkingPWA를 풀어 일반 UI가 마운트되도록 차단막 해제
+    setIsCheckingPWA(false);
 
     // 2. 디바이스 및 브라우저 환경 판독 (개발용 수동 테스트 ?device=ios 또는 ?test=ios 대응 지원)
     const ua = navigator.userAgent || '';
@@ -136,6 +140,11 @@ export default function LandingPage() {
       setInstallProgress(0);
     }
   };
+
+  if (isCheckingPWA) {
+    // 0ms 무렌더 가드: 판정이 끝날 때까지 웰컴 화면이 절대 눈에 노출되지 않도록 새하얀 백스크린 유지
+    return <div className="bg-white min-h-screen w-full" />;
+  }
 
   return (
     <div className="bg-white text-gray-900 min-h-screen flex flex-col items-center justify-between overflow-x-hidden relative selection:bg-blue-100 font-sans">
