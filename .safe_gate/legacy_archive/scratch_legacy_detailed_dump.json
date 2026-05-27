@@ -1,0 +1,986 @@
+--- KO STAYS --- 
+stays: {
+    viewMonthlyStatus: '월별 전체 현황 보기',
+    monthlyStatusTitle: '월별 전체 예약 현황',
+    hapjeong: {
+      name: '합정',
+      hero: {
+        subtitle: '한강이 보이는 예술적인 휴식 공간'
+      },
+      location: {
+        title: '위치 안내',
+        addressLabel: '주소',
+        address: '서울 마포구 양화로 13',
+        bldgLabel: '상가/건물',
+        bldg: '합정스퀘어리버뷰'
+      },
+      guide: {
+        title: '합정 상세 안내',
+        subtitle: '서울의 중심에서 즐기는 예술적인 휴식',
+        highlights: {
+          title: '공간의 특징',
+          list: [
+            {
+              t: '위치',
+              d: '합정역 도보 1분 거리 (초역세권)'
+            },
+            {
+              t: '전망',
+              d: '고층에서 즐기는 탁 트인 한강뷰'
+            },
+            {
+              t: '분위기',
+              d: '예술가들이 선호하는 감각적인 인테리어'
+            }
+          ],
+          quote: '탱고와 일상이 하나가 되는 특별한 공간입니다.'
+        },
+        transport: {
+          title: '오시는 길',
+          list: [
+            {
+              t: '지하철',
+              d: '2호선/6호선 합정역 7번 출구에서 바로 앞'
+            },
+            {
+              t: '버스',
+              d: '합정역 정류장에서 도보 1분'
+            }
+          ]
+        },
+        facilities: {
+          title: '시설 안내',
+          base: '기본 시설',
+          baseDesc: '퀸 사이즈 베드, 시스템 에어컨, 초고속 Wi-Fi',
+          add: '주방/편의 시설',
+          addDesc: '냉장고, 인덕션, 드럼세탁기, 기본 조리도구',
+          freeTitle: '무료 제공 품목',
+          freeDesc: '생수, 고급 수건, 샴푸/바디워시, 드라이기'
+        },
+        attractions: {
+          title: '주변 명소',
+          list: [
+            {
+              t: '주변 상권',
+              d: '메세나폴리스, 딜라이트 스퀘어 인접'
+            },
+            {
+              t: '예술/문화',
+              d: '합정동 카페거리, 망리단길 도보 이용 가능'
+            }
+          ]
+        }
+      },
+      calendar: {
+        title: '예약 현황',
+        feeGuideTitle: '요금 안내',
+        feeGuideLines: [
+          '1박 8만원',
+          '추가 인원 1인당 1만원 추가 (최대 4인)',
+          '금,토,공휴일 1만원 할증',
+          '7박 이상 2만원, 14박 이상 4만원 d.c',
+          '퇴실청소비 3만원 별도'
+        ]
+      },
+      gallery: {
+        more: '사진 더 보기',
+        categories: [
+          '전체',
+          '거실',
+          '침실',
+          '키친',
+          '화장실',
+          '뷰'
+        ],
+        descriptions: [
+          '합정 거실 전경',
+          '아늑한 소파와 테이블',
+          '세련된 인테리어',
+          '거실 조명',
+          '채광이 좋은 공간',
+          '넓은 리빙룸',
+          '편안한 침실',
+          '깔끔한 침구류',
+          '아늑한 잠자리',
+          '침실 전경',
+          '화장대 및 수납공간',
+          '식기류가 완비된 키친',
+          '깔끔한 주방 환경',
+          '청결한 화장실',
+          '욕실 용품 완비',
+          '쾌적한 욕실',
+          '아름다운 한강 전망',
+          '야경이 멋진 창밖 풍경',
+          '여유로운 뷰 공간'
+        ]
+      }
+    },
+    deokeun: {
+      name: '덕은(상암)',
+      hero: {
+        subtitle: '최신 시설과 평온한 휴식을 제공하는 공간'
+      },
+      location: {
+        title: '위치 안내',
+        addressLabel: '주소',
+        address: '경기도 고양시 덕양구 으뜸로 110',
+        bldgLabel: '상가/건물',
+        bldg: '힐스테이트에코덕은'
+      },
+      guide: {
+        title: '덕은(상암) 상세 안내',
+        subtitle: '조용하고 안락한 나만의 휴식처',
+        highlights: {
+          title: '공간의 특징',
+          list: [
+            {
+              t: '신축',
+              d: '최신 건축 기술로 지어진 쾌적한 공간'
+            },
+            {
+              t: '평온',
+              d: '복잡한 도심을 벗어난 조용하고 평화로운 분위기'
+            },
+            {
+              t: '시설',
+              d: '최신 가전제품과 실용적인 공간 설계'
+            }
+          ],
+          quote: '진정한 휴식을 원하시는 분들을 위한 최적의 장소입니다.'
+        },
+        transport: {
+          title: '오시는 길',
+          list: [
+            {
+              t: '자차',
+              d: '상암동에서 차로 5분 거리'
+            },
+            {
+              t: '버스',
+              d: '덕은지구 정류장 하차 후 도보 3분'
+            }
+          ]
+        },
+        facilities: {
+          title: '시설 안내',
+          base: '기본 시설',
+          baseDesc: '편안한 침대, 개별 냉난방, 스마트 TV',
+          add: '주방/편의 시설',
+          addDesc: '전자레인지, 토스터기, 기본 식기류',
+          freeTitle: '무료 제공 품목',
+          freeDesc: '커피 캡슐, 생수, 위생 용품'
+        },
+        attractions: {
+          title: '주변 명소',
+          list: [
+            {
+              t: '자연',
+              d: '노을공원, 하늘공원 인접 (산책로 연결)'
+            },
+            {
+              t: '비즈니스',
+              d: '상암 DMC 업무지구 및 스튜디오 인접'
+            }
+          ]
+        }
+      },
+      calendar: {
+        title: '덕은(상암) 예약 현황',
+        feeGuideTitle: '요금 안내',
+        feeGuideLines: [
+          '1박 6만원',
+          '추가 인원 1인당 1만원 추가 (최대 4인)',
+          '금,토,공휴일 1만원 할증',
+          '7박 이상 2만원, 14박 이상 4만원 d.c',
+          '퇴실청소비 3만원 별도'
+        ]
+      },
+      gallery: {
+        more: '사진 더 보기',
+        categories: [
+          '전체',
+          '거실',
+          '침실',
+          '키친',
+          '화장실',
+          '뷰'
+        ],
+        descriptions: [
+          '덕은 메인 전경',
+          '침실 공간',
+          '출입문과 입구',
+          '책상과 화장대',
+          '아늑한 실내',
+          '스마트 TV 시설',
+          '넓은 옷장 가구',
+          '공기청정기 및 가전',
+          '정돈된 주방',
+          '조리기구 완비',
+          '식기류 세트',
+          '무료 차 서비스',
+          '간식 서비스',
+          '욕실 소모품',
+          '비데 시설',
+          '샤워룸 전경',
+          '구급 상자 상비',
+          '피트니스 센터',
+          '외부 건조 공간'
+        ]
+      }
+    },
+    hongdae: {
+      name: '홍대',
+      hero: {
+        subtitle: '젊음과 예술의 거리 홍대에서 즐기는 휴식'
+      },
+      location: {
+        title: '위치 안내',
+        addressLabel: '주소',
+        address: '서울 마포구 서교동 (상세주소 예정)',
+        bldgLabel: '상가/건물',
+        bldg: '스테이 홍대'
+      },
+      guide: {
+        title: '상세 정보 & 이용 안내',
+        subtitle: '"몸만 오셔도 바로 일상을 시작하실 수 있게 모든 것을 준비했습니다"',
+        highlights: {
+          title: '✨ 이 숙소의 포인트',
+          list: [
+            {
+              t: '홍대 중심가',
+              d: '홍대의 트렌디한 문화를 즐기기에 최적의 입지입니다.'
+            },
+            {
+              t: '타협 없는 완벽한 청결',
+              d: '침구와 러그는 매번 런드리고 전문 세탁, 실내 스팀 청소 실시, 수건과 행주는 매번 아낌없이 모두 새것으로 교체합니다.'
+            },
+            {
+              t: '프리미엄 휴식 가구',
+              d: '넓은 침대 2개(퀸, 슈퍼싱글), 편안한 소파, 고성능 리클라이닝 안마의자 완비.'
+            },
+            {
+              t: '풍성한 엔터테인먼트',
+              d: '거실에는 2026 삼성 무빙스타일 최신 스마트 TV, 그리고 침실에도 별도의 TV가 마련되어 있습니다.'
+            }
+          ],
+          quote: '"홍대의 열기를 즐긴 후, 프리미엄한 휴식을 만끽하세요~"'
+        },
+        transport: {
+          title: '📍 편리한 입지 & 교통',
+          list: [
+            {
+              t: '홍대입구역 역세권',
+              d: '2호선, 공항철도, 경의중앙선 이용이 매우 편리한 위치입니다.'
+            },
+            {
+              t: '풍부한 버스 노선',
+              d: '서울 전역 및 인천공항으로 향하는 다양한 버스를 이용 가능합니다.'
+            },
+            {
+              t: '도보 이동 최적',
+              d: '홍대, 합정, 연남동을 모두 도보로 탐방할 수 있는 최고의 장소에 위치합니다.'
+            }
+          ]
+        },
+        facilities: {
+          title: ' Stay 시설 & 옵션 (무료 소모품 안내)',
+          base: '기본 가전·가구',
+          baseDesc: '냉장고, 세탁기, 에어컨, 스마트TV(2대), 기가 Wi-Fi, 싱크대, 인덕션, 퀸 & 슈퍼싱글 침대',
+          add: '추가 편의 시설',
+          addDesc: '안전한 도어락과 CCTV/관리실, 다이닝 테이블, 위생적인 정수기, 폭신한 소파, 넓은 데스크, 대용량 옷장, 신발장',
+          freeTitle: '✨ 모든 소모품이 무료!!!',
+          freeDesc: '라면, 햇반, 롤휴지, 티슈, 칫솔세트, 샴푸/린스, 바디워시, 핸드워시 등 모든 일회용품·소모품이 준비되어 있습니다.\n세탁용 건조대와 세제, 유연제는 물론 종량제 봉투까지 모두 자유롭게 무료로 사용하세요!'
+        },
+        attractions: {
+          title: '🛍️ 주변 생활 인프라 & 즐길거리',
+          list: [
+            {
+              t: '홍대 걷고싶은거리',
+              d: '버스킹과 다양한 샵들이 즐비한 홍대의 메인 스트리트입니다.'
+            },
+            {
+              t: '연남동 경의선숲길',
+              d: '산책과 피크닉의 명소 "연트럴파크"를 즐길 수 있습니다.'
+            },
+            {
+              t: '셀 수 없는 맛집과 카페',
+              d: '수백 미터 이내에 국내외 유명 맛집과 숨은 감성 카페들이 밀집해 있습니다.'
+            }
+          ]
+        }
+      },
+      calendar: {
+        title: '홍대점 예약 현황',
+        feeGuideTitle: '요금 안내',
+        feeGuideLines: [
+          '1박 8만원',
+          '오픈 특가 적용 예정'
+        ]
+      },
+      gallery: {
+        more: '사진 더 보기',
+        categories: [
+          '전체',
+          '거실',
+          '침실',
+          '키친',
+          '화장실',
+          '뷰'
+        ],
+        descriptions: [
+          '홍대점 갤러리 준비 중',
+          '아늑한 공간 구성 예정',
+          '감각적인 인테리어'
+        ]
+      }
+    }
+  },
+  common: {
+    save: '저장',
+    cancel: '취소',
+    loading: '로딩 중...',
+    contact: {
+      title: '문의하기',
+      desc: '궁금하신 점은 언제든 문의주세요.',
+      call: '전화 상담',
+      callDesc: '직통 전화 연결',
+      sms: '문자 문의',
+      smsDesc: '문자로 문의하기',
+      kakao: '카카오톡',
+      kakaoDesc: '카카오톡 상담 채널',
+      whatsapp: 'WhatsApp',
+      whatsappDesc: '왓츠앱 상담',
+      fb: 'Messenger',
+      fbDesc: '페이스북 메시지'
+    },
+    hostGuide: {
+      title: '호스트 소개',
+      list: [
+        {
+          t: '호스트',
+          d: 'Stone Hong (홍병석)'
+        },
+        {
+          t: '소개',
+          d: '탱고 인스트럭터 / 스테이 호스트로 활동 중입니다.\n편안하고 예술적인 공간에서 여러분의 탱고 여행을 지원합니다.'
+        },
+        {
+          t: '문의',
+          d: '숙박 및 탱고 레슨 관련 문의는 카카오톡이나 왓츠앱으로 연락주세요.'
+        }
+      ]
+    },
+    story: {
+      title: '탱고스테이 스토리',
+      subtitle: '"몸만 오세요"… 탱고스테이의 [무인도 실험]을 소개합니다.',
+      p1: "호스트로서 이 공간을 준비하며 설정한 단 하나의 목표, 바로 '무인도 실험'입니다. 트렁크 하나만 들고 입실해도 일주일 이상 밖으로 한 발자국도 나가지 않고 완벽하게 쾌적한 생활이 가능한 공간을 만드는 것. 제가 게스트로서 경험했던 '수많은 불편함'들을 완벽하게 해결하기 위해 기획했습니다.",
+      sol1Title: '스테이 팩: 불쾌감 제로, 웰컴 기프트 세트',
+      sol1Text: "남이 쓰던 수건이나 비누의 찜찜함은 이제 그만. 모든 게스트분께 호텔 어메니티 급의 '새' 수건, 행주, 비누, 칫솔 세트를 제공합니다. 첫날 편의점으로 달려갈 필요가 전혀 없습니다.",
+      sol2Title: '물 걱정 끝! 최신 정수기 설치',
+      sol2Text: "무거운 생수를 나르는 고통에서 해방되세요. 최상위 정수기가 설치되어 언제든 깨끗하고 시원한 물을 마음껏 드실 수 있습니다.",
+      sol3Title: '타협 없는 청결함 (세탁 전문 런드리고)',
+      sol3Text: "모든 침구(이불, 커버, 패드, 베개커버)와 러그는 2세트씩 준비되어, 전문 비대면 세탁 업체(런드리고)를 통한 고온 살균과 건조를 거친 것으로 매번 교체됩니다. 눈에 보이지 않는 진드기까지 완벽하게 소독된 폭신한 침구에서 깊은 숙면을 경험하세요.",
+      closing: "세상에서 가장 편안한 나만의 '무인도'에서 진정한 휴식을 즐기실 여러분을 기다립니다.",
+      hostName: '👋 아르헨티나 탱고 추는 남자, 스톤입니다.',
+      hostBio: ''
+    },
+    footer: {
+      term: '이용약관',
+      privacy: '개인정보처리방침',
+      termTitle: 'TangoStay 이용약관',
+      privacyTitle: '개인정보처리방침',
+      termText: '제 1조 (목적)\n본 약관은 TangoStay에서 제공하는 예약 서비스를 이용함에 있어...',
+      privacyText: 'TangoStay는 이용자의 개인정보를 소중히 다루며...'
+    },
+  },
+  startTime: '시작 시간',
+  endTime: '종료 시간',
+  media: {
+    title: '미디어',
+    edit: '영상 수정',
+    type: {
+      youtube: '유튜브',
+      demonstration: '시연',
+      general: '일반'
+    },
+    filterAll: '수업별로 보기 (전체)',
+    addBtn: '등록',
+    like: '좋아요',
+    comment: '댓글',
+    views: '조회수',
+    noAccess: '수업 신청자만 볼 수 있습니다',
+    placeholder: {
+      title: '제목을 입력하세요',
+      url: '유투브 ID 또는 영상 URL',
+      desc: '설명을 입력하세요',
+      class: '관련 수업 선택 (선택사항)',
+      comment: '댓글을 남겨보세요...'
+    },
+    uploading: '업로드 중...',
+    deleteConfirm: '정말로 삭제하시겠습니까?',
+    saveSuccess: '저장되었습니다.',
+    deleteSuccess: '삭제되었습니다.'
+  },
+  story: {
+    campaign: {
+      title: '모두 함께',
+      slogan: 'Happy Space, Warm People',
+      sloganKo: '행복한 공간, 따뜻한 사람들'
+    },
+    hero: {
+      title: '우리가 꿈꾸는 놀이터,\n모두의 휴식처',
+      subtitle: '서로 존중하며 함께 성장하는 프리스타일 탱고 커뮤니티'
+    },
+    ethics: {
+      title: '커뮤니티 핵심 가치',
+      respectTitle: '태도가 먼저 (Respect)',
+      respectDesc: '서로 존중해야 한다는 것은 너무나 명확한 명제입니다. 그렇지 못할 경우 클럽 활동이 제한될 수 있습니다.',
+      teachingTitle: '티칭 금지 (No Teaching)',
+      teachingDesc: '학생 간 일방적인 가르침은 본인과 상대방 모두의 발전을 방해할 수 있습니다. 의견 교류는 환영하지만, 기술적인 문제는 강사진을 통해 해결해 주세요.',
+      teachingDetail: '선생님의 의도를 정확히 이해하는 것이 중요합니다. 경력에 관계없이 일방적인 티칭은 삼가 주시기 바랍니다.'
+    },
+    projects: {
+      title: '전략 프로젝트',
+      azit: {
+        title: "Project 'Azit'",
+        desc: '수업 전후로 편안하게 대화하며 음식과 술을 즐길 수 있는 우리만의 뒷풀이 공간.'
+      },
+      camp: {
+        title: "Project 'Camp'",
+        desc: '주말과 연휴, 도심을 벗어나 우리들만의 쉼터가 될 수 있는 펜션 공간.'
+      },
+      nuevo: {
+        title: "Project 프로페셔널 공연단 'Nuevo Company'",
+        desc: '프로페셔널 공연단 운영 및 웰니스를 위한 요가룸, 문화센터 활성화.'
+      },
+      orchestra: {
+        title: "Project 'House Ochestra'",
+        desc: '살롱 연주회와 라이브 밀롱가를 위한 프리스타일만의 하우스 오케스트라.'
+      }
+    },
+    roadmap: {
+      title: '지속가능한 미래',
+      cooperative: {
+        title: '협동조합 전환',
+        desc: '클럽의 소유권을 멤버들이 나누어 공동으로 운영하고 의사결정하는 시스템.'
+      },
+      donation: {
+        title: '기부 문화 정착',
+        desc: '장학제도와 자원봉사를 통해 신입 회원을 지원하고 클럽의 성장을 돕는 문화.'
+      },
+      instructor: {
+        title: '내부 강사 양성',
+        desc: '누구나 특정 주제를 깊이 있게 연구하여 직접 클래스를 개설할 수 있는 시스템.'
+      }
+    },
+    guidelines: {
+      title: '이용 수칙 (General Guide)',
+      cleaning: '바닥에 음료를 흘릴 경우 즉시 깨끗이 닦아주세요.',
+      shoes: '전용 슈즈나 맨발 외에는 실내 출입이 불가합니다.',
+      toilet: '변기에는 휴지만 넣어주세요 (핸드타올, 물티슈 절대 금지).',
+      trash: '퇴실 시 쓰레기는 분리수거하여 휴지통에 버려주세요.',
+      power: '입퇴실 시 출입문 옆 전체 스위치를 이용해 주세요.',
+      facilities: {
+        wifi: 'WiFi: freestyle1234',
+        pc: 'PC PW: 7788',
+        lockers: '개인 사물함 외 물품 보관은 불가합니다.'
+      }
+    }
+  },
+  coaching: {
+    title: '코칭 관리',
+    newCoaching: '새 코칭 등록',
+    empty: '등록된 코칭 항목이 없습니다.',
+    student: '수강생',
+    instructor: '담당 강사',
+    progress: '진행률',
+    status: '상태',
+    ongoing: '진행중',
+    solved: '문제해결',
+    solvedBadge: '해결됨',
+    itemTitle: '코칭 제목',
+    itemDesc: '코칭 설명',
+    selectStudent: '수강생 선택',
+    searchStudentPlaceholder: '이름 또는 전화번호 검색',
+    searchSearching: '검색 중...',
+    searchNoResults: '검색 결과가 없습니다.',
+    creating: '등록 중...',
+    updates: '활동 기록',
+    activityAdd: '활동 추가',
+    comment: '코멘트',
+    placeholderComment: '코멘트를 남겨보세요...',
+    media: '미디어',
+    addComment: '코멘트 작성...',
+    uploadMedia: '사진/동영상 추가',
+    updateProgress: '진행률 업데이트',
+    saveUpdate: '기록 저장',
+    noUpdates: '기록이 없습니다.',
+    confirmStatusChange: '상태를 변경하시겠습니까?',
+    reopen: '재개',
+    editActivity: '활동 수정',
+    deleteActivity: '활동 삭제',
+    confirmDelete: '정말로 삭제하시겠습니까?',
+    cancel: '취소',
+    confirm: '확인',
+    errorSave: '저장 중 오류가 발생했습니다.'
+  }
+};
+
+
+--- EN STAYS --- 
+stays: {
+    viewMonthlyStatus: 'View Monthly Status',
+    monthlyStatusTitle: 'Monthly Reservation Status',
+    hapjeong: {
+      name: 'Hapjeong',
+      hero: {
+        subtitle: 'Artistic space with Han River view'
+      },
+      location: {
+        title: 'Location',
+        addressLabel: 'Address',
+        address: '13 Yanghwa-ro, Mapo-gu, Seoul',
+        bldgLabel: 'Building',
+        bldg: 'Hapjeong Square Riverview'
+      },
+      guide: {
+        title: 'Details',
+        subtitle: 'Artistic rest in the heart of Seoul',
+        highlights: {
+          title: 'Highlights',
+          list: [
+            { t: 'Location', d: '1 min walk from Hapjeong Station' },
+            { t: 'View', d: 'Stunning Han River view from high floor' },
+            { t: 'Vibe', d: 'Sensible interior favored by artists' }
+          ],
+          quote: 'A special space where tango and daily life become one.'
+        },
+        transport: {
+          title: 'Directions',
+          list: [
+            { t: 'Subway', d: 'Line 2/6 Hapjeong Station Exit 7' },
+            { t: 'Bus', d: '1 min walk from Hapjeong Station stop' }
+          ]
+        },
+        facilities: {
+          title: 'Facilities',
+          base: 'Basic',
+          baseDesc: 'Queen bed, AC, high-speed Wi-Fi',
+          add: 'Kitchen/Conv',
+          addDesc: 'Fridge, induction, washer, cookware',
+          freeTitle: 'Freebies',
+          freeDesc: 'Water, towels, shampoo/body wash, hair dryer'
+        },
+        attractions: {
+          title: 'Attractions',
+          list: [
+            { t: 'Shopping', d: 'Mecenatpolis, Delight Square nearby' },
+            { t: 'Art/Culture', d: 'Hapjeong Cafe Street, Mangridan-gil walk' }
+          ]
+        }
+      },
+      calendar: {
+        title: 'Status',
+        feeGuideTitle: 'Price List',
+        feeGuideLines: [
+          '80,000 KRW per night',
+          '2 guests base / max 4',
+          '10,000 KRW per extra guest',
+          '10,000 KRW weekend surcharge',
+          'Discount: 20k for 7+ nights, 40k for 14+ nights',
+          '30,000 KRW separate cleaning fee'
+        ]
+      },
+      gallery: {
+        more: 'View More',
+        categories: ['All', 'Living', 'Bedroom', 'Kitchen', 'Bath', 'View'],
+        descriptions: [
+          'Hapjeong Living Room',
+          'Cozy Sofa',
+          'Sensible Interior',
+          'Living Lighting',
+          'Sunny Space',
+          'Large Living Room',
+          'Comfortable Bedroom',
+          'Clean Bedding',
+          'Cozy Night',
+          'Bedroom View',
+          'Dressing Table',
+          'Full Kitchen',
+          'Clean Kitchen',
+          'Clean Bathroom',
+          'Bath Amenities',
+          'Refreshing Bath',
+          'Beautiful River View',
+          'Night City View',
+          'Relaxing View'
+        ]
+      }
+    },
+    deokeun: {
+      name: 'Deokeun(Sangam)',
+      hero: {
+        subtitle: 'Modern facilities and peaceful rest'
+      },
+      location: {
+        title: 'Location',
+        addressLabel: 'Address',
+        address: '110 Eudeum-ro, Deogyang-gu, Goyang, Gyeonggi',
+        bldgLabel: 'Building',
+        bldg: 'Hillstate Eco Deokeun'
+      },
+      guide: {
+        title: 'Details',
+        subtitle: 'Your own quiet and cozy hideaway',
+        highlights: {
+          title: 'Highlights',
+          list: [
+            { t: 'New', d: 'Clean space with latest tech' },
+            { t: 'Peace', d: 'Quiet atmosphere away from city' },
+            { t: 'Facilities', d: 'Modern appliances and practical design' }
+          ],
+          quote: 'The perfect place for those seeking true rest.'
+        },
+        transport: {
+          title: 'Directions',
+          list: [
+            { t: 'Car', d: '5 min from Sangam-dong' },
+            { t: 'Bus', d: '3 min walk from Deokeun stop' }
+          ]
+        },
+        facilities: {
+          title: 'Facilities',
+          base: 'Basic',
+          baseDesc: 'Comfortable bed, AC/Heating, Smart TV',
+          add: 'Kitchen/Conv',
+          addDesc: 'Microwave, toaster, basic dishes',
+          freeTitle: 'Freebies',
+          freeDesc: 'Coffee capsules, water, hygiene kits'
+        },
+        attractions: {
+          title: 'Attractions',
+          list: [
+            { t: 'Nature', d: 'Noeul/Haneul Park nearby' },
+            { t: 'Business', d: 'Sangam DMC district adjacent' }
+          ]
+        }
+      },
+      calendar: {
+        title: 'Status',
+        feeGuideTitle: 'Price List',
+        feeGuideLines: [
+          '60,000 KRW per night',
+          '2 guests base / max 4',
+          '10,000 KRW per extra guest',
+          '10,000 KRW weekend surcharge',
+          'Discount: 20k for 7+ nights, 40k for 14+ nights',
+          '30,000 KRW separate cleaning fee'
+        ]
+      },
+      gallery: {
+        more: 'View More',
+        categories: ['All', 'Living', 'Bedroom', 'Kitchen', 'Bath', 'View'],
+        descriptions: [
+          'Deokeun Main',
+          'Bedroom space',
+          'Entrance',
+          'Desk',
+          'Cozy Interior',
+          'Smart TV',
+          'Closet',
+          'Purifier/Home appliances',
+          'Organized Kitchen',
+          'Cookware',
+          'Dish Set',
+          'Free Tea',
+          'Snack service',
+          'Bath amenities',
+          'Bidet',
+          'Shower room',
+          'First aid kit',
+          'Fitness center',
+          'Drying area'
+        ]
+      }
+    },
+    hongdae: {
+      name: 'Hongdae',
+      hero: {
+        subtitle: 'Rest in the street of youth and art'
+      },
+      location: {
+        title: 'Location',
+        addressLabel: 'Address',
+        address: 'Seogyo-dong, Mapo-gu, Seoul',
+        bldgLabel: 'Building',
+        bldg: 'Stay Hongdae'
+      },
+      guide: {
+        title: 'Details & Usage Guide',
+        subtitle: '"Everything is prepared so you can start your daily life right away"',
+        highlights: {
+          title: '✨ Points of This Stay',
+          list: [
+            {
+              t: 'Central Hongdae',
+              d: 'The perfect location to enjoy the trendy culture of Hongdae.'
+            },
+            {
+              t: 'Uncompromising Cleanliness',
+              d: 'Bedding and rugs are professionally laundered by LaundryGo every time. Indoor steam cleaning is performed, and towels/dishcloths are generously replaced with new ones for every guest.'
+            },
+            {
+              t: 'Premium Relaxation Furniture',
+              d: '2 large beds (Queen, Super Single), comfortable sofa, and a high-performance reclining massage chair.'
+            },
+            {
+              t: 'Abundant Entertainment',
+              d: 'The living room features the latest 2026 Samsung Moving Style Smart TV, and there is a separate TV in the bedroom.'
+            }
+          ],
+          quote: '"After enjoying the energy of Hongdae, indulge in premium relaxation~"'
+        },
+        transport: {
+          title: '📍 Convenient Location & Transport',
+          list: [
+            {
+              t: 'Hongdae Station Area',
+              d: 'Extremely convenient access to Line 2, Airport Railroad, and Gyeongui-Jungang Line.'
+            },
+            {
+              t: 'Rich Bus Routes',
+              d: 'Various buses to all parts of Seoul and Incheon Airport are available.'
+            },
+            {
+              t: 'Optimal Walking',
+              d: 'Located in the best spot to explore Hongdae, Hapjeong, and Yeonnam-dong all on foot.'
+            }
+          ]
+        },
+        facilities: {
+          title: 'Stay Facilities & Options (Free Supplies)',
+          base: 'Basic Appliances/Furniture',
+          baseDesc: 'Fridge, Washer, AC, 2 Smart TVs, Giga Wi-Fi, Kitchen sink, Induction, Queen & Super Single Beds',
+          add: 'Additional Amenities',
+          addDesc: 'Secure door lock and CCTV/Office, Dining table, Hygienic water purifier, Fluffy sofa, Large desk, Spacious wardrobe, Shoe rack',
+          freeTitle: '✨ All supplies are free!!!',
+          freeDesc: 'Ramen, Instant rice, Toilet paper, Tissues, Toothbrush sets, Shampoo/Rinse, Body wash, Hand wash - all disposables and consumables are ready.\nLaundry drying rack, detergent, and fabric softener, as well as waste bags, are all available for free!'
+        },
+        attractions: {
+          title: '🛍️ Neighborhood Infrastructure',
+          list: [
+            {
+              t: 'Hongdae Walking Street',
+              d: 'The main street of Hongdae with busking and various shops.'
+            },
+            {
+              t: 'Yeonnam-dong Forest Line',
+              d: 'Enjoy "Yeontral Park," a famous spot for walks and picnics.'
+            },
+            {
+              t: 'Countless Restaurants',
+              d: 'Home to hundreds of famous restaurants and hidden emotional cafes within walking distance.'
+            }
+          ]
+        }
+      },
+      calendar: {
+        title: 'Status',
+        feeGuideTitle: 'Price List',
+        feeGuideLines: [
+          '80,000 KRW per night',
+          'Opening special coming soon'
+        ]
+      },
+      gallery: {
+        more: 'View More',
+        categories: ['All', 'Living', 'Bedroom', 'Kitchen', 'Bath', 'View'],
+        descriptions: [
+          'Gallery coming soon',
+          'Cozy space prep',
+          'Sensible Interior'
+        ]
+      }
+    }
+  },
+  common: {
+    save: 'Save',
+    cancel: 'Cancel',
+    loading: 'Loading...',
+    contact: {
+      title: 'Contact',
+      desc: 'Feel free to contact us anytime.',
+      call: 'Phone',
+      callDesc: 'Direct Call',
+      sms: 'SMS',
+      smsDesc: 'Inquire via SMS',
+      kakao: 'KakaoTalk',
+      kakaoDesc: 'KakaoTalk Channel',
+      whatsapp: 'WhatsApp',
+      whatsappDesc: 'WhatsApp Inquiry',
+      fb: 'Messenger',
+      fbDesc: 'Facebook Message'
+    },
+    hostGuide: {
+      title: 'Host Intro',
+      list: [
+        { t: 'Host', d: 'Stone Hong (Hong Byong Seok)' },
+        { t: 'Intro', d: 'Tango Instructor / Stay Host. Supporting your tango journey in an artistic space.' },
+        { t: 'Inquiry', d: 'Contact us via KakaoTalk or WhatsApp for stay and lesson inquiries.' }
+      ]
+    },
+    story: {
+      title: 'TangoStay Story',
+      subtitle: '"Just Bring Yourself"… Introducing TangoStay\'s [Uninhabited Island Experiment]',
+      p1: "As a host, I set a single goal when preparing this space: the 'Uninhabited Island Experiment'. The goal was to create a place where you can live in complete comfort for over a week without stepping outside, even if you arrive with only a single suitcase. I planned this to perfectly solve the 'numerous inconveniences' I experienced as a guest.",
+      sol1Title: 'Stay Pack: Zero Discomfort, Welcome Gift Set',
+      sol1Text: "No more worrying about used towels or soap. We provide every guest with a set of 'new' towels, dishcloths, soap, and toothbrushes of hotel amenity quality. There's no need to rush to the convenience store on your first day.",
+      sol2Title: 'No more water worries! Latest water purifier installed',
+      sol2Text: "Free yourself from the hassle of carrying heavy bottled water. A top-of-the-line water purifier is installed, so you can enjoy clean, cold water whenever you want.",
+      sol3Title: 'Uncompromising Cleanliness (Professional Laundry via LaundryGo)',
+      sol3Text: "All bedding (duvets, covers, pads, pillowcases) and rugs are prepared in two sets and replaced every time after undergoing high-temperature sterilization and drying through a professional non-face-to-face laundry service (LaundryGo). Experience deep sleep in fluffy bedding that is perfectly disinfected, even down to invisible dust mites.",
+      closing: "We look forward to having you enjoy true relaxation in your own most comfortable 'uninhabited island' in the world.",
+      hostName: '👋 Stone, the man who dances Argentine Tango.',
+      hostBio: ''
+    },
+    footer: {
+      term: 'Terms',
+      privacy: 'Privacy',
+      termTitle: 'Terms of Service',
+      privacyTitle: 'Privacy Policy',
+      termText: 'Article 1 (Purpose)...',
+      privacyText: 'TangoStay values your personal information...'
+    },
+  },
+  startTime: 'Start Time',
+  endTime: 'End Time',
+  media: {
+    title: 'Media',
+    edit: 'Edit Media',
+    type: {
+      youtube: 'YouTube',
+      demonstration: 'Demo',
+      general: 'General'
+    },
+    filterAll: 'All',
+    addBtn: 'Register',
+    like: 'Like',
+    comment: 'Comment',
+    views: 'Views',
+    noAccess: 'Demonstration video for class participants only.',
+    placeholder: {
+      title: 'Enter title',
+      url: 'YouTube ID or Video URL',
+      desc: 'Enter description',
+      class: 'Select Class (Optional)',
+      comment: 'Leave a comment...'
+    },
+    uploading: 'Uploading...',
+    deleteConfirm: 'Delete this?',
+    saveSuccess: 'Saved.',
+    deleteSuccess: 'Deleted.'
+  },
+  story: {
+    campaign: {
+      title: 'Core Campaign',
+      slogan: 'Happy Space, Warm People',
+      sloganKo: 'Happy Space, Warm People'
+    },
+    hero: {
+      title: 'The Playground We Dream of,\nA Sanctuary for All',
+      subtitle: 'A Freestyle Tango community where we grow together with respect'
+    },
+    ethics: {
+      title: 'Community Core Values',
+      respectTitle: 'Attitude First (Respect)',
+      respectDesc: 'The premise that we must respect each other is too clear. Otherwise, club activities may be restricted.',
+      teachingTitle: 'No Teaching',
+      teachingDesc: 'One-sided teaching among students can hinder the progress of both yourself and others. We welcome exchange of opinions, but please resolve technical issues through the instructors.',
+      teachingDetail: 'It is important to accurately understand the teacher\'s intentions. Regardless of experience, please refrain from one-sided teaching.'
+    },
+    projects: {
+      title: 'Strategic Projects',
+      azit: {
+        title: "Project 'Azit'",
+        desc: 'Our own sanctuary where we can comfortably talk and enjoy food and drinks before and after classes.'
+      },
+      camp: {
+        title: "Project 'Camp'",
+        desc: 'A pension space that can be a sanctuary for us outside the city on weekends and holidays.'
+      },
+      nuevo: {
+        title: "Project Professional Performance Team 'Nuevo Company'",
+        desc: 'Operation of a professional performance team and activation of yoga rooms and cultural centers for wellness.'
+      },
+      orchestra: {
+        title: "Project 'House Ochestra'",
+        desc: 'Freestyle\'s own house orchestra for salon recitals and live milongas.'
+      }
+    },
+    roadmap: {
+      title: 'Sustainable Future',
+      cooperative: {
+        title: 'Cooperative Transition',
+        desc: 'A system where members share ownership of the club and jointly operate and make decisions.'
+      },
+      donation: {
+        title: 'Establishing a Donation Culture',
+        desc: 'A culture that supports new members and helps the club grow through scholarships and volunteering.'
+      },
+      instructor: {
+        title: 'Internal Instructor Training',
+        desc: 'A system to nurture the next generation of leaders from within our community.'
+      }
+    },
+    guidelines: {
+      title: 'General Guide',
+      cleaning: 'Wipe up spills immediately.',
+      shoes: 'Only dedicated shoes or bare feet are allowed inside.',
+      toilet: 'Only toilet paper in the toilet (No hand towels, wet wipes).',
+      trash: 'Sort trash and dispose of it in bins when leaving.',
+      power: 'Use the main switch next to the door when entering/leaving.',
+      facilities: {
+        wifi: 'WiFi: freestyle1234',
+        pc: 'PC PW: 7788',
+        lockers: 'Items cannot be stored outside personal lockers.'
+      }
+    }
+  },
+  coaching: {
+    title: 'Coaching Management',
+    newCoaching: 'New Coaching',
+    empty: 'No coaching items registered.',
+    student: 'Student',
+    instructor: 'Instructor',
+    progress: 'Progress',
+    status: 'Status',
+    ongoing: 'In Progress',
+    solved: 'Solve',
+    solvedBadge: 'Solved',
+    itemTitle: 'Coaching Title',
+    itemDesc: 'Coaching Description',
+    selectStudent: 'Select Student',
+    searchStudentPlaceholder: 'Search name or phone...',
+    searchSearching: 'Searching...',
+    searchNoResults: 'No results found.',
+    creating: 'Creating...',
+    updates: 'Activity Log',
+    activityAdd: 'Add Activity',
+    comment: 'Comment',
+    placeholderComment: 'Write a comment...',
+    media: 'Media',
+    addComment: 'Write a comment...',
+    uploadMedia: 'Add Photo/Video',
+    updateProgress: 'Update Progress',
+    saveUpdate: 'Save Log',
+    noUpdates: 'No logs found.',
+    confirmStatusChange: 'Change status?',
+    reopen: 'Reopen',
+    editActivity: 'Edit Activity',
+    deleteActivity: 'Delete Activity',
+    confirmDelete: 'Are you sure you want to delete this?',
+    cancel: 'Cancel',
+    confirm: 'Confirm',
+    errorSave: 'Error saving update.'
+  }
+};

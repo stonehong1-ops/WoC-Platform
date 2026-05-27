@@ -1,0 +1,30 @@
+{
+  "stays": [],
+  "collections": [
+    "admin_settings",
+    "chat_messages",
+    "chat_rooms",
+    "coaching_items",
+    "coaching_updates",
+    "communities",
+    "coupons",
+    "cron_locks_daily",
+    "cron_logs",
+    "extra_schedules",
+    "fcm_errors",
+    "fcm_logs",
+    "fcm_tokens",
+    "media",
+    "media_comments",
+    "media_likes",
+    "milonga_info",
+    "milonga_reservations",
+    "monthly_notices",
+    "registrations",
+    "reservations",
+    "stay_metadata",
+    "tango_classes",
+    "user_coupons",
+    "users"
+  ]
+}
