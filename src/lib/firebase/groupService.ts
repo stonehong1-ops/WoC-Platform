@@ -100,7 +100,6 @@ export const groupService = {
       })) as Member[];
       
       membersCache.set(groupId, members);
-      console.log(`[Warm Cache] Prefetched metadata, classes, discounts, and members for group ${groupId}.`);
     } catch (e) {
       console.error(`[Warm Cache] Prefetch failed for group ${groupId}:`, e);
     }
@@ -826,7 +825,6 @@ export const groupService = {
       // Use local time for YYYY-MM-DD format
       const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
       
-      console.log(`[ClassPortal] Searching classes for today: ${todayStr}`);
 
       const q = query(
         collectionGroup(db, 'classes'),
@@ -889,7 +887,6 @@ export const groupService = {
         }
       });
       
-      console.log(`[ClassPortal] Found ${results.length} classes for today.`);
       return results;
     } catch (error) {
       console.error('getGlobalClassesToday error:', error);

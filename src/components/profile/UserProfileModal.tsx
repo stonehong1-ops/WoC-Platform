@@ -76,9 +76,7 @@ export default function UserProfileModal({ userId, onClose }: UserProfileModalPr
       user={namecardUser}
       isOpen={true}
       onClose={onClose}
-      onChat={(uid) => {
-        console.log("Chat clicked for user:", uid);
-      }}
+      onChat={() => {}}
       onCall={(phone) => {
         if (phone) {
           window.open(`tel:${phone}`);

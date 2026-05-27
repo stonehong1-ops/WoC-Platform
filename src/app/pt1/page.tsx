@@ -202,9 +202,7 @@ const PresentationPage = () => {
   const handleStartPresentation = () => {
     const elem = document.documentElement;
     if (elem.requestFullscreen) {
-      elem.requestFullscreen().catch(err => {
-        console.log(`Error attempting to enable full-screen mode: ${err.message}`);
-      });
+      elem.requestFullscreen().catch(() => {});
     }
     setShowStartScreen(false);
   };

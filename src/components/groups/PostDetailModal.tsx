@@ -105,7 +105,7 @@ export default function PostDetailModal({ groupId, post, isOpen, onClose, onEdit
         title: post.title,
         text: post.content.substring(0, 100),
         url: shareUrl,
-      }).catch((err) => console.log('Share canceled', err));
+      }).catch(() => {});
     } else {
       navigator.clipboard.writeText(shareUrl);
       alert(t('blog.link_copied', '링크가 클립보드에 복사되었습니다.'));

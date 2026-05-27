@@ -13,7 +13,6 @@ export const fcmService = {
 
       const permission = await Notification.requestPermission();
       if (permission !== 'granted') {
-        console.log('푸시 알림 권한이 거부되었습니다.');
         return null;
       }
 
@@ -40,7 +39,6 @@ export const fcmService = {
         await fcmService.saveTokenToUser(userId, token);
         return token;
       } else {
-        console.log('FCM 토큰을 가져오지 못했습니다.');
         return null;
       }
     } catch (error) {

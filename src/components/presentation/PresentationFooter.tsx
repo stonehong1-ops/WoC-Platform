@@ -23,9 +23,7 @@ const PresentationFooter: React.FC<PresentationFooterProps> = ({ currentSlide, t
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch((err) => {
-        console.log(`Error attempting to enable full-screen mode: ${err.message}`);
-      });
+      document.documentElement.requestFullscreen().catch(() => {});
     } else {
       if (document.exitFullscreen) {
         document.exitFullscreen();

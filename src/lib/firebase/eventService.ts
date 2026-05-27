@@ -196,7 +196,6 @@ export const eventService = {
         }
       }
     } catch (e) {
-      console.log("Error fetching manual hero event, falling back to auto.", e);
     }
 
     const now = Timestamp.now();
@@ -217,7 +216,6 @@ export const eventService = {
         return ongoingEvents.sort((a, b) => a.startDate.toMillis() - b.startDate.toMillis())[0];
       }
     } catch (e) {
-      console.log("Error or missing index for ongoing events, falling back to upcoming.");
     }
 
     // If no ongoing event, get the nearest upcoming event for this society

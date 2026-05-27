@@ -156,7 +156,7 @@ export function useBookingEngine() {
         bookingData.status === 'CONFIRMED' ||
         bookingData.status === 'CANCELLED'
       ) {
-        console.log(`[reportPayment Guard] Booking ${bookingId} is already confirmed or completed (status: ${bookingData.status}). Skipping duplicate payment report.`);
+
         setIsLoading(false);
         return;
       }

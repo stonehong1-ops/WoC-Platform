@@ -153,7 +153,6 @@ export const chatService = {
 
       // ---- 푸시 알림 전송 로직 시작 ----
       if (message.metadata?.isSilent) {
-        console.log(`[Smart Silent Push] Message is silent. Skipping FCM notification completely.`);
         return docRef.id;
       }
       try {
@@ -737,7 +736,6 @@ export const chatService = {
       const all = JSON.parse(stored);
       if (all.length === 0) return;
 
-      console.log(`[Smart Queue] Processing ${all.length} pending messages...`);
       
       // 복구 전송 루프
       for (const item of all) {
@@ -745,7 +743,6 @@ export const chatService = {
           // sendMessage 호출 시 tempId를 넘겨주어, 성공적으로 가면 큐에서 제거되도록 처리
           await chatService.sendMessage(item);
           chatService.removePendingMessage(item.tempId);
-          console.log(`[Smart Queue] Resent pending message ${item.tempId} successfully.`);
         } catch (err) {
           console.error(`[Smart Queue] Failed to resend pending message ${item.tempId}:`, err);
           // 실패 시 순차 전송 꼬임을 방지하기 위해 중단
@@ -801,7 +798,6 @@ export const chatService = {
       await updateDoc(messageRef, {
         'metadata.isConfirmed': true
       });
-      console.log(`[Smart Scheduler] Meetup ${messageId} confirmed and linked to WoC Calendar.`);
     } catch (err) {
       console.error("Error confirming meetup schedule:", err);
       throw err;
@@ -820,12 +816,10 @@ export const chatService = {
         await updateDoc(userRef, {
           notificationSnoozedUntil: tomorrow
         });
-        console.log(`[Smart Snooze] Notifications snoozed until: ${tomorrow.toLocaleString()}`);
       } else {
         await updateDoc(userRef, {
           notificationSnoozedUntil: null
         });
-        console.log(`[Smart Snooze] Notifications unsnoozed immediately.`);
       }
     } catch (err) {
       console.error("Error setting notification snooze:", err);
@@ -855,7 +849,6 @@ export const chatService = {
       await updateDoc(roomRef, {
         notice: noticeText
       });
-      console.log(`[Notice System] Pinned notice for room ${roomId}: ${noticeText}`);
     } catch (err) {
       console.error("Error setting room notice:", err);
       throw err;
@@ -871,7 +864,6 @@ export const chatService = {
         notices: updatedNotices,
         notice: noticeText // 하위 호환성을 위해 최신 공지를 단일 notice에도 연동
       });
-      console.log(`[Notice System] Added notice for room ${roomId}: ${noticeText}`);
     } catch (err) {
       console.error("Error adding room notice:", err);
       throw err;
@@ -887,7 +879,6 @@ export const chatService = {
         notices: updatedNotices,
         notice: updatedNotices.length > 0 ? updatedNotices[0] : "" // 최신 공지로 동기화하거나 지움
       });
-      console.log(`[Notice System] Removed notice index ${indexToRemove} for room ${roomId}`);
     } catch (err) {
       console.error("Error removing room notice:", err);
       throw err;
@@ -1058,7 +1049,6 @@ export const chatService = {
       await updateDoc(msgRef, {
         "metadata.isClosed": true
       });
-      console.log(`[Smart Polls] Poll ${messageId} closed.`);
     } catch (err) {
       console.error("Error closing poll:", err);
       throw err;

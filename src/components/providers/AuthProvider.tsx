@@ -100,7 +100,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               
               if (phoneSnap.exists()) {
                 const migratedData = phoneSnap.data();
-                console.log('Migrating user data from phone ID to UID:', phone);
                 
                 // 새로운 UID 문서로 데이터 복사
                 await setDoc(userDocRef, {
@@ -124,7 +123,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     migratedAt: Timestamp.now()
                   });
                   await deleteDoc(oldMemberRef);
-                  console.log('Migrated membership for freestyle-tango');
                 }
                 
                 // 기존 전화번호 기반 문서 삭제
@@ -240,8 +238,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     if (typeof window !== 'undefined' && 'Notification' in window) {
       unsubscribeMessage = fcmService.onMessageListener((payload: any) => {
-        console.log('[Foreground Push]', payload);
-        
         // Trigger Premium In-App Notification Banner
         setActiveNotification({
           title: payload.notification?.title || 'New Message',

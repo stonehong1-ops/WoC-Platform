@@ -26,7 +26,6 @@ export async function sendSmsViaSolapi(to: string, message: string) {
       autoTypeDetect: true, // 메시지 길이에 따라 SMS/LMS/MMS 자동 전환
     });
 
-    console.log('Solapi 전송 완료:', response);
     return { success: true, data: response };
   } catch (error: any) {
     console.error('Solapi 전송 실패:', error);

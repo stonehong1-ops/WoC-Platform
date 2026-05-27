@@ -183,7 +183,7 @@ export default function EditEvent({ onClose, onSuccess, eventData }: Props) {
       if (hasMilonga && savedId) {
         const eventForSync = { ...finalData, id: savedId } as any;
         syncMilongasToSocial(eventForSync)
-          .then(r => console.log(`[Sync] Created:${r.created} Updated:${r.updated} Deleted:${r.deleted}`))
+          .then(() => {})
           .catch(e => console.error('[Sync] Failed:', e));
       }
       onSuccess?.(); onClose();

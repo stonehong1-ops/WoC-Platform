@@ -79,17 +79,17 @@ export default function EventsPage() {
       const urlSociety = params.get('society');
       const storedSociety = sessionStorage.getItem('woc_society');
       const sId = urlSociety || storedSociety;
-      console.log('[WoC Debug] Events page society detection:', { urlSociety, storedSociety, resolved: sId });
+
       if (sId) setSocietyId(sId);
     }
   }, []);
 
   // Real-time Subscription (society-aware)
   useEffect(() => {
-    console.log('[WoC Debug] Subscribing events for societyId:', societyId);
+
     const unsub = eventService.subscribeEventsBySociety(societyId, (data) => {
       const validEvents = data.filter(e => e.startDate);
-      console.log('[WoC Debug] Received events:', validEvents.length, 'for society:', societyId);
+
       setEvents(validEvents);
     });
     return () => unsub();

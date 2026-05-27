@@ -78,22 +78,14 @@ function GroupsContent() {
     
     const matches = inJoinedGroups || inMemberIds || isOwner;
     
-    if (isFreestyle) {
-      console.log('Freestyle Group Membership Check:', { 
-        id: g.id, 
-        inJoinedGroups, 
-        inMemberIds, 
-        isOwner,
-        profileJoined: profile?.joinedGroups
-      });
-    }
+
     
     return matches;
   }) : [];
   
   useEffect(() => {
     if (user) {
-      console.log('Total Joined Groups Found:', userJoinedGroups.length);
+
     }
   }, [user, profile?.joinedGroups, groups.length, userJoinedGroups.length]);
 
@@ -257,7 +249,7 @@ function GroupsContent() {
       // stonehong1@gmail.com 관리자 계정일 때만 한 번 자동 실행
       if (user?.email === 'stonehong1@gmail.com' && typeof window !== 'undefined' && !localStorage.getItem('category_migrated_v3')) {
         try {
-          console.log('Starting category migration...');
+
           const venuesSnap = await getDocs(query(collection(db, 'venues')));
           const venuesMap = new Map();
           venuesSnap.docs.forEach(d => venuesMap.set(d.id, d.data()));
@@ -293,12 +285,12 @@ function GroupsContent() {
                     activeServices: activeServices
                   });
                   count++;
-                  console.log(`Migrated Group ${groupData.name} to ${targetCat}`);
+
                 }
               }
             }
           }
-          console.log(`Migrated ${count} groups!`);
+
           localStorage.setItem('category_migrated_v3', 'true');
           fetchGroups(); // refresh the list
         } catch (e) {

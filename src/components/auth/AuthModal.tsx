@@ -392,8 +392,6 @@ export default function AuthModal() {
         await setupRecaptcha(useVisible);
         const appVerifier = (window as any).recaptchaVerifier;
         
-        console.log("RAW_INPUT:", phoneNumber);
-        
         // 1. 방어: 공백 및 하이픈 등 특수문자 제거하고 숫자만 남김
         let cleanedNumber = phoneNumber.replace(/[^\d]/g, '');
         const currentCC = phoneCountryCode; // 예: "+82"
@@ -410,11 +408,8 @@ export default function AuthModal() {
         // ★ 대박 포인트: 정제된 순수 10자리(1072092468) 번호를 유저 입력창 UI 상태에 실시간으로 강제 덮어쓰기!
         setPhoneNumber(cleanedNumber);
         
-        console.log("NORMALIZED_PHONE:", cleanedNumber);
-        
         // 4. E.164 규격 조합
         const finalPhoneE164 = `${currentCC}${cleanedNumber}`;
-        console.log("FINAL_PHONE_E164:", finalPhoneE164);
 
         return await signInWithPhoneNumber(auth, finalPhoneE164, appVerifier);
       };
@@ -431,10 +426,8 @@ export default function AuthModal() {
       setConfirmationResult(confirmation);
       setStep('PHONE_VERIFY');
       setTimeoutCount(0); // 성공 시 카운트 초기화
-      console.log("SEND_SMS_SUCCESS");
     } catch (error: any) {
       console.warn("SMS sending failed:", error);
-      console.log("SEND_SMS_FAIL");
       // Reset reCAPTCHA verifier so next attempt creates a fresh one
       resetRecaptcha();
       

@@ -110,9 +110,7 @@ export default function UserProfilePopup({ isOpen, onClose, uid, initialData }: 
       user={namecardUser}
       isOpen={isOpen}
       onClose={onClose}
-      onChat={(userId) => {
-        console.log("Chat clicked for user:", userId);
-      }}
+      onChat={() => {}}
       onCall={(phone) => {
         if (phone) {
           window.open(`tel:${phone}`);
