@@ -244,7 +244,7 @@ const GroupShopEditor: React.FC<GroupShopEditorProps> = ({ group, onClose, isInl
   const handleSaveShopInfo = async () => {
     setIsSavingInfo(true);
     try {
-      await groupService.updateGroupMetadata(group.id, { shopSettings } as any);
+      await groupService.updateGroupMetadata(group.id, { shopSettings } as Partial<Group>);
       setShowSaved(true);
       setTimeout(() => setShowSaved(false), 2000);
     } catch {

@@ -7,8 +7,9 @@ import "@/styles/groupstayeditor.css";
 import { stayService } from "@/lib/firebase/stayService";
 import { storageService } from "@/lib/firebase/storageService";
 import { userService } from "@/lib/firebase/userService";
-import { Stay, StayType } from "@/types/stay";
+import { Stay, StayType, StayHost } from "@/types/stay";
 import { PlatformUser } from "@/types/user";
+import { Group } from "@/types/group";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
@@ -22,7 +23,7 @@ import {
 } from "./GroupAdminCommon";
 
 interface GroupStayEditorProps {
-  group?: any;
+  group?: Group;
   onClose?: () => void;
   isInline?: boolean;
 }
@@ -137,17 +138,16 @@ export default function GroupStayEditor({ group, onClose, isInline }: GroupStayE
     setHostPhoto(stay.host?.photo || "");
 
     // Automation Settings
-    const settings = (stay as any).automationSettings || {};
-    const steps = settings.steps || {};
-    setAutomationEnabled(settings.enabled !== false);
-    setAppliedEnabled(steps.applied?.enabled !== false);
-    setAppliedContent(steps.applied?.webContent || "");
-    setBefore3DaysEnabled(steps.before3Days?.enabled !== false);
-    setBefore3DaysContent(steps.before3Days?.webContent || "");
-    setCheckInDayEnabled(steps.checkInDay?.enabled !== false);
-    setCheckInDayContent(steps.checkInDay?.webContent || "");
-    setCheckOutDayEnabled(steps.checkOutDay?.enabled !== false);
-    setCheckOutDayContent(steps.checkOutDay?.webContent || "");
+    const settings = stay.automationSettings;
+    setAutomationEnabled(settings?.enabled !== false);
+    setAppliedEnabled(settings?.steps?.applied?.enabled !== false);
+    setAppliedContent(settings?.steps?.applied?.webContent || "");
+    setBefore3DaysEnabled(settings?.steps?.before3Days?.enabled !== false);
+    setBefore3DaysContent(settings?.steps?.before3Days?.webContent || "");
+    setCheckInDayEnabled(settings?.steps?.checkInDay?.enabled !== false);
+    setCheckInDayContent(settings?.steps?.checkInDay?.webContent || "");
+    setCheckOutDayEnabled(settings?.steps?.checkOutDay?.enabled !== false);
+    setCheckOutDayContent(settings?.steps?.checkOutDay?.webContent || "");
   }, []);
 
   // -- Fetch All Platform Users for Host Searching --
@@ -243,7 +243,7 @@ export default function GroupStayEditor({ group, onClose, isInline }: GroupStayE
           userId: hostUserId || originalData?.host?.userId || user?.uid || "",
           name: hostName,
           photo: hostPhoto,
-        } as any,
+        } as StayHost,
         automationSettings: {
           enabled: automationEnabled,
           steps: {
@@ -295,7 +295,7 @@ export default function GroupStayEditor({ group, onClose, isInline }: GroupStayE
           },
           isActive: false,
           isNewlyListed: true,
-        } as any);
+        } as Stay);
         setExistingStayId(newStayId);
       }
 
@@ -341,7 +341,7 @@ export default function GroupStayEditor({ group, onClose, isInline }: GroupStayE
             userId: hostUserId || originalData?.host?.userId || user?.uid || "",
             name: hostName,
             photo: hostPhoto,
-          } as any,
+          } as StayHost,
           automationSettings: {
             enabled: automationEnabled,
             steps: {
