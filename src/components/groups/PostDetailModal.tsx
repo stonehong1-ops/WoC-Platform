@@ -430,6 +430,48 @@ export default function PostDetailModal({ groupId, post, isOpen, onClose, onEdit
             <article className="max-w-4xl mx-auto px-6 py-16">
               <div className="prose prose-lg max-w-none text-on-surface mb-20">
                 {renderParsedContent(post.content)}
+
+                {/* 미디어 갤러리: post.media의 이미지/비디오 렌더링 (마크다운 및 커버 이미지와 중복 제거) */}
+                {(() => {
+                  if (!post.media || post.media.length === 0) return null;
+                  
+                  // content 내 마크다운 이미지 URL 추출 (중복 방지)
+                  const contentImageUrls = new Set<string>();
+                  const imgRegex = /!\[.*?\]\((.+?)\)/g;
+                  let regMatch;
+                  while ((regMatch = imgRegex.exec(post.content || '')) !== null) {
+                    contentImageUrls.add(regMatch[1]);
+                  }
+
+                  const mediaItems = post.media.filter((m: any) => {
+                    const url = typeof m === 'string' ? m : m.url;
+                    const type = typeof m === 'string' ? 'image' : (m.type || 'image');
+                    if (type === 'link') return false;
+                    if (url === post.image) return false;
+                    if (contentImageUrls.has(url)) return false;
+                    return true;
+                  });
+
+                  if (mediaItems.length === 0) return null;
+
+                  return (
+                    <div className="space-y-8 mt-12">
+                      {mediaItems.map((m: any, idx: number) => {
+                        const url = typeof m === 'string' ? m : m.url;
+                        const type = typeof m === 'string' ? 'image' : (m.type || 'image');
+                        return (
+                          <div key={idx} className="relative w-full rounded-2xl overflow-hidden shadow-md border border-outline-variant/15 aspect-[16/9]">
+                            {type === 'video' ? (
+                              <video className="w-full h-full object-cover" src={url} controls playsInline />
+                            ) : (
+                              <img alt="" className="w-full h-full object-cover" src={url} />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* 하단 좋아요 & 공유 & 책갈피 반응형 패널 */}

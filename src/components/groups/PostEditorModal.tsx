@@ -345,27 +345,8 @@ export default function PostEditorModal({ group, post, isOpen, onClose }: PostEd
       const url = await storageService.uploadFile(file, path, p => setMedia(prev => prev.map(m => m.id === id ? { ...m, progress: Math.round(p) } : m)));
       
       if (type === 'image') {
-        // 본문 첨부 이미지인 경우: 업로드 완료 즉시 임시 미디어를 지우고 본문에 예술적 다이아몬드/16:9 마크다운 주입
-        setMedia(prev => prev.filter(m => m.id !== id));
-        
-        const templateTitle = t('blog.template_title', '이미지 제목');
-        const templateDesc = t('blog.template_desc', '이미지에 대한 아름다운 설명');
-        const imageMarkdown = `\n![${templateTitle}: ${templateDesc}](${url})\n`;
-        const textarea = contentRef.current;
-        
-        if (textarea) {
-          const start = textarea.selectionStart;
-          const end = textarea.selectionEnd;
-          const text = textarea.value;
-          setContent(text.substring(0, start) + imageMarkdown + text.substring(end));
-          
-          setTimeout(() => {
-            textarea.focus();
-            textarea.setSelectionRange(start + imageMarkdown.length, start + imageMarkdown.length);
-          }, 50);
-        } else {
-          setContent(prev => prev + imageMarkdown);
-        }
+        // 이미지를 media 배열에 completed 상태로 유지하여 갤러리 미리보기로 표시
+        setMedia(prev => prev.map(m => m.id === id ? { ...m, url, status: 'completed', progress: 100 } : m));
         toast.success(t('blog.image_inserted', 'Image inserted into body'));
       } else {
         // 비디오 등 메타 미디어는 media 배열에 completed 상태로 온전히 유지
@@ -615,7 +596,7 @@ export default function PostEditorModal({ group, post, isOpen, onClose }: PostEd
           </section>
 
           {/* Additional Media List (for non-cover files like videos or sub-images) */}
-          {media.length > 1 && (
+          {media.filter(m => m.status === 'completed').length > 0 && (
             <section className="space-y-4 pt-4 border-t border-outline-variant/10">
               <h3 className="font-label-xs text-label-xs text-outline tracking-[0.1em] uppercase">{t('blog.gallery', 'Gallery')}</h3>
               <div className="flex gap-3 overflow-x-auto pb-2 snap-x no-scrollbar">
