@@ -57,7 +57,8 @@ export const stayBookingService = {
 
       batch.set(bookingRef, booking);
 
-      // User Notification
+      // User Notification & Admin Todo (Disabled as per Stone's request - handled via Chat)
+      /*
       await notificationService.createNotification({
         targetUserId: data.userId,
         groupId: data.groupId,
@@ -69,7 +70,6 @@ export const stayBookingService = {
         category: 'STAY'
       }, batch);
 
-      // Admin Todo
       await notificationService.createTodoForGroupAdmins(data.groupId, {
         groupId: data.groupId,
         type: 'STAY_BOOKING_ADMIN',
@@ -79,6 +79,7 @@ export const stayBookingService = {
         referenceId: bookingRef.id,
         category: 'STAY'
       }, batch);
+      */
 
       await batch.commit();
       
@@ -193,7 +194,7 @@ export const stayBookingService = {
         where("groupId", "==", groupId)
       );
       const snapshot = await getDocs(q);
-      return snapshot.docs.map(doc => doc.data() as StayBooking);
+      return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as StayBooking));
     } catch (error) {
       console.error("Error getting group stay bookings:", error);
       throw error;
@@ -208,7 +209,7 @@ export const stayBookingService = {
         where("userId", "==", userId)
       );
       const snapshot = await getDocs(q);
-      return snapshot.docs.map(doc => doc.data() as StayBooking);
+      return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as StayBooking));
     } catch (error) {
       console.error("Error getting user stay bookings:", error);
       throw error;
@@ -224,7 +225,7 @@ export const stayBookingService = {
         where("status", "not-in", ["CANCELLED", "REJECTED"])
       );
       const snapshot = await getDocs(q);
-      return snapshot.docs.map(doc => doc.data() as StayBooking);
+      return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as StayBooking));
     } catch (error) {
       console.error("Error getting stay bookings:", error);
       throw error;
@@ -243,7 +244,7 @@ export const stayBookingService = {
     );
 
     return onSnapshot(q, (snapshot) => {
-      const bookings = snapshot.docs.map(doc => doc.data() as StayBooking);
+      const bookings = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as StayBooking));
       callback(bookings);
     }, (error) => {
       console.error("Error subscribing to group stay bookings:", error);
@@ -258,10 +259,25 @@ export const stayBookingService = {
     );
 
     return onSnapshot(q, (snapshot) => {
-      const bookings = snapshot.docs.map(doc => doc.data() as StayBooking);
+      const bookings = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as StayBooking));
       callback(bookings);
     }, (error) => {
       console.error("Error subscribing to user stay bookings:", error);
+    });
+  },
+
+  // 전화번호별 예약 구독 (히스토리)
+  subscribeToPhoneBookings: (phoneNumber: string, callback: (bookings: StayBooking[]) => void) => {
+    const q = query(
+      collection(db, COLLECTION_NAME),
+      where("contactNumber", "==", phoneNumber)
+    );
+
+    return onSnapshot(q, (snapshot) => {
+      const bookings = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as StayBooking));
+      callback(bookings);
+    }, (error) => {
+      console.error("Error subscribing to phone stay bookings:", error);
     });
   },
 
@@ -273,7 +289,7 @@ export const stayBookingService = {
     );
 
     return onSnapshot(q, (snapshot) => {
-      const bookings = snapshot.docs.map(doc => doc.data() as StayBooking);
+      const bookings = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as StayBooking));
       callback(bookings);
     }, (error) => {
       console.error("Error subscribing to stay bookings:", error);
@@ -292,7 +308,7 @@ export const stayBookingService = {
     );
 
     return onSnapshot(q, (snapshot) => {
-      const bookings = snapshot.docs.map(doc => doc.data() as StayBooking);
+      const bookings = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as StayBooking));
       callback(bookings);
     }, (error) => {
       console.error("Error subscribing to pending stay bookings:", error);

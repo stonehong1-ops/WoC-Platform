@@ -7,6 +7,7 @@ import { groupService } from "@/lib/firebase/groupService";
 import { Group } from "@/types/group";
 import { FUNCTION_SECTIONS } from "@/components/groups/functionBuilderData";
 import StepIndicator from "@/components/groups/StepIndicator";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 type MenuItem = {
   id: string;
@@ -27,6 +28,7 @@ export default function OrganizeMenuPage() {
   const router = useRouter();
   const params = useParams();
   const groupId = params.id as string;
+  const { t } = useLanguage();
 
   const [group, setGroup] = useState<Group | null>(null);
   const [loading, setLoading] = useState(true);
@@ -202,11 +204,11 @@ export default function OrganizeMenuPage() {
       await groupService.updateGroupMetadata(groupId, {
         menuOrder: items,
       });
-      toast.success("Menu structure saved successfully!");
+      toast.success(t("group.menu.save_success"));
       router.push(`/groups/${groupId}`);
     } catch (error) {
       console.error("Error saving menu structure:", error);
-      toast.error("Failed to save menu structure.");
+      toast.error(t("group.menu.save_fail"));
     } finally {
       setIsSaving(false);
     }

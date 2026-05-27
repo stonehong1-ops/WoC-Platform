@@ -157,9 +157,9 @@ const GroupShopEditor: React.FC<GroupShopEditorProps> = ({ group, onClose, isInl
     const newStatus = product.status === "Active" ? "Stopped" : "Active";
     try {
       await shopService.toggleProductStatus(product.id, newStatus);
-      toast.success(newStatus === "Active" ? "Item is now on sale." : "Item sale stopped.");
+      toast.success(newStatus === "Active" ? t("group.shop.toast.on_sale") : t("group.shop.toast.sale_stopped"));
     } catch {
-      toast.error("Failed to update status.");
+      toast.error(t("group.shop.toast.status_fail"));
     } finally {
       setIsUpdating(false);
     }
@@ -172,14 +172,14 @@ const GroupShopEditor: React.FC<GroupShopEditorProps> = ({ group, onClose, isInl
       await shopService.updateOrderStatus(orderId, newStatus, extras);
       
       const labels: Record<string, string> = {
-        CONFIRMED: "Payment confirmed.",
-        IN_PRODUCTION: "Production started.",
-        READY_PICKUP: "Ready for pickup.",
-        SHIPPING: "Shipment started.",
-        COMPLETED: "Order completed.",
-        CANCELLED: "Order cancelled.",
+        CONFIRMED: t("group.shop.toast.order_confirmed"),
+        IN_PRODUCTION: t("group.shop.toast.production_started"),
+        READY_PICKUP: t("group.shop.toast.ready_pickup"),
+        SHIPPING: t("group.shop.toast.shipment_started"),
+        COMPLETED: t("group.shop.toast.order_completed"),
+        CANCELLED: t("group.shop.toast.order_cancelled"),
       };
-      toast.success(labels[newStatus] || "Status updated.");
+      toast.success(labels[newStatus] || t("group.shop.toast.status_updated"));
 
       // Automated Chat Notification to Buyer
       if (targetOrder && targetOrder.buyerId) {
@@ -228,7 +228,7 @@ const GroupShopEditor: React.FC<GroupShopEditorProps> = ({ group, onClose, isInl
         setTrackingNumberInput("");
       }
     } catch {
-      toast.error("Failed to update order.");
+      toast.error(t("group.shop.toast.order_fail"));
     }
   };
 
@@ -240,7 +240,7 @@ const GroupShopEditor: React.FC<GroupShopEditorProps> = ({ group, onClose, isInl
       setShowSaved(true);
       setTimeout(() => setShowSaved(false), 2000);
     } catch {
-      toast.error("Failed to save.");
+      toast.error(t("group.shop.toast.save_fail"));
     } finally {
       setIsSavingInfo(false);
     }

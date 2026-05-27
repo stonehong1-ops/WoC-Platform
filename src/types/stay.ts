@@ -191,6 +191,7 @@ export interface StayBooking {
   stayId: string;            // FK → stays/{stayId}
   groupId: string;           // FK → groups/{groupId} (Manager Todo 필터)
   stayTitle: string;         // 비정규화
+  stayImageUrl?: string;     // 숙소 대표 이미지 URL 비정규화 저장
   hostId?: string;           // Host user ID
 
   // 사용자 정보

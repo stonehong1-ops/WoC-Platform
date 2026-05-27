@@ -37,6 +37,8 @@ export interface Notification {
   // Reference for bulk operations or transaction tracking
   referenceId?: string;
   itemName?: string;
+  i18nKey?: string;
+  i18nParams?: any;
   
   // Metadata
   createdAt: number | any; // number or Firestore Timestamp

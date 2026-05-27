@@ -36,7 +36,7 @@ const STAY_FILTER_DEFS: Record<string, { label: string; fullLabel?: string }> = 
 const STAY_FILTER_KEYS = ['all', '1-Room', '2-Room', '3-Room', 'Dormitory', 'Couchsurfing', 'Pension'];
 
 function StayPageContent() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [stays, setStays] = useState<Stay[]>(() => {
     if (typeof window !== 'undefined') {
       const cached = sessionStorage.getItem('woc_stay_active_stays');
@@ -325,9 +325,26 @@ function StayPageContent() {
         ) : (
           <div className="grid grid-cols-2 gap-4">
             {filtered.map(stay => {
-              const locationStr = stay.location?.city && stay.location?.district 
-              ? `${stay.location.city}, ${stay.location.district}` 
-              : stay.location?.city || stay.location?.address || t('stay.fallback_location');
+              // 한국어 환경일 때 한국어 주소(stay.location.address)를 미려하게 파싱하여 보여주거나 전체 주소 표기
+              let locationStr = t('stay.fallback_location', 'Location');
+              if (stay.location) {
+                if (language === 'KR') {
+                  // 한국어 주소(예: "서울특별시 마포구 양화로...")가 존재할 경우 앞의 두 단어("서울특별시 마포구")만 예쁘게 결합
+                  if (stay.location.address) {
+                    locationStr = stay.location.address.split(' ').slice(0, 2).join(' ');
+                  } else {
+                    locationStr = stay.location.city || t('stay.fallback_location', 'Location');
+                  }
+                } else {
+                  // 영어 환경일 경우 기존처럼 City, District 방식으로 표시
+                  locationStr = stay.location.city && stay.location.district 
+                    ? `${stay.location.city}, ${stay.location.district}` 
+                    : stay.location.city || stay.location.address || t('stay.fallback_location', 'Location');
+                }
+              }
+
+              // 한국어 환경일 때 nativeTitle이 존재한다면 노출, 그렇지 않다면 기본 title 노출
+              const displayTitle = language === 'KR' && stay.nativeTitle ? stay.nativeTitle : stay.title;
 
               return (
                 <div 
@@ -345,7 +362,7 @@ function StayPageContent() {
                     {/* Actual Image */}
                     {stay.images?.[0] && (
                       <img
-                        alt={stay.title}
+                        alt={displayTitle}
                         className="absolute inset-0 z-10 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 bg-[#f2f4f4]"
                         src={stay.images[0]}
                         loading="lazy"
@@ -368,7 +385,7 @@ function StayPageContent() {
                   
                   <div className="px-1">
                     <p className="text-[10px] font-bold text-[#5c5f62] uppercase tracking-tighter font-label truncate">{locationStr}</p>
-                    <h4 className="text-sm font-semibold text-[#2d3435] font-body truncate">{stay.title}</h4>
+                    <h4 className="text-sm font-semibold text-[#2d3435] font-body truncate">{displayTitle}</h4>
                     <div className="flex items-center gap-1.5">
                       <span className="text-sm font-bold text-[#2d3435] font-headline">
                         {formatPrice(stay)}

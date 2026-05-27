@@ -257,7 +257,8 @@ export const shopService = {
 
       batch.set(orderRef, orderData);
 
-      // User Notification
+      // User Notification & Admin Todo (Disabled as per Stone's request - handled via Chat)
+      /*
       await notificationService.createNotification({
         targetUserId: data.buyerId,
         groupId: data.groupId,
@@ -269,7 +270,6 @@ export const shopService = {
         category: 'SHOP'
       }, batch);
 
-      // Admin Todo
       await notificationService.createTodoForGroupAdmins(data.groupId, {
         groupId: data.groupId,
         type: 'SHOP_ORDER_ADMIN',
@@ -279,6 +279,7 @@ export const shopService = {
         referenceId: orderRef.id,
         category: 'SHOP'
       }, batch);
+      */
 
       await batch.commit();
 

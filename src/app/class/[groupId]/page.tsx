@@ -815,7 +815,7 @@ export default function ClubClassSelectionPage({
                 <button 
                   onClick={() => {
                     navigator.clipboard.writeText(bank.accountNumber);
-                    toast.success("Account number copied");
+                    toast.success(t("class.toast.account_copied"));
                   }}
                   className="text-[#0057bd] hover:text-[#0057bd]/80 transition-colors flex items-center justify-center bg-white border border-[#0057bd]/20 rounded-md p-1 shadow-sm"
                   title="Copy account number"
@@ -915,15 +915,15 @@ export default function ClubClassSelectionPage({
         currency={selectedClasses.size > 0 ? allItemsOriginal.find(c => c.id === Array.from(selectedClasses)[0])?.currency || 'KRW' : 'KRW'}
         onCheckout={async () => {
           if (!user) {
-            toast.error('You need to login first.');
+            toast.error(t("class.toast.login_required"));
             throw new Error('Not logged in');
           }
           if (!selectedRole) {
-            toast.error('Please select a role (Leader/Follower).');
+            toast.error(t("class.toast.role_required"));
             throw new Error('No role selected');
           }
           if (isDiscountSelected && passSelectedClassIds.size === 0) {
-            toast.error('Please select at least one class to attend.');
+            toast.error(t("class.toast.select_class"));
             throw new Error('No participating classes selected');
           }
           const selectedItems = Array.from(selectedClasses).map(id => {

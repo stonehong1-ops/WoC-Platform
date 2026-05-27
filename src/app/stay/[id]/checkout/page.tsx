@@ -50,7 +50,7 @@ function CheckoutContent() {
     const g = searchParams.get('guests');
     
     const d1 = start ? new Date(start) : new Date(Date.now() + 86400000);
-    const d2 = end ? new Date(end) : new Date(Date.now() + 86400000 * 3);
+    const d2 = end ? addDays(new Date(end), 1) : new Date(Date.now() + 86400000 * 3);
     setCheckIn(d1);
     setCheckOut(d2);
     setNights(Math.max(1, Math.ceil((d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24))));
@@ -231,12 +231,13 @@ function CheckoutContent() {
         }
         
         if (formattedPhone.startsWith('0') && formattedPhone.length >= 10) {
-          const smsContent = t('checkout.sms_content', '[WoC] 예약이 접수되었습니다.\n숙소: {title}\n일정: {checkIn} - {checkOut}\n예약자: {name}\n금액: {amount}원\n\n호스트의 확인 후 최종 확정됩니다.')
-            .replace('{title}', stay.title)
-            .replace('{checkIn}', formatDate(checkIn, 'shortMonthDay'))
-            .replace('{checkOut}', formatDate(checkOut, 'shortMonthDay'))
-            .replace('{name}', applicantName)
-            .replace('{amount}', grandTotal.toLocaleString());
+          const smsContent = `${t('checkout.sms_content', {
+            title: stay.title,
+            checkIn: formatDate(checkIn, 'shortMonthDay'),
+            checkOut: formatDate(addDays(checkOut, -1), 'shortMonthDay'),
+            name: applicantName,
+            amount: grandTotal.toLocaleString()
+          })} (${formatDate(checkOut, 'shortMonthDay')} 퇴실)`;
           const smsResult = await sendSmsViaSolapi(
             formattedPhone,
             smsContent
@@ -263,7 +264,7 @@ function CheckoutContent() {
 
         const stayBookingMsg = `🏨 [STAY BOOKING]\n` +
           `Stay: ${stay.title}\n` +
-          `Dates: ${formatDate(checkIn, 'shortMonthDay')} - ${formatDate(checkOut, 'shortMonthDay')}\n` +
+          `Dates: ${formatDate(checkIn, 'shortMonthDay')} - ${formatDate(addDays(checkOut, -1), 'shortMonthDay')} (Check-out: ${formatDate(checkOut, 'shortMonthDay')})\n` +
           `Nights: ${nights}\n` +
           `Guests: ${guests}\n` +
           `Amount: ${grandTotal.toLocaleString()} ${stay.pricing?.currency || 'KRW'}\n` +
@@ -331,10 +332,10 @@ function CheckoutContent() {
               <h2 className="text-base font-black text-[#2d3435] truncate mb-2">{stay.title}</h2>
               <div className="flex flex-wrap gap-2">
                 <span className="text-[10px] bg-[#e8eaec] text-[#596061] px-2 py-0.5 rounded-full font-bold">
-                  {formatDate(checkIn, 'shortMonthDay')} - {formatDate(checkOut, 'shortMonthDay')}
+                  {formatDate(checkIn, 'shortMonthDay')} - {formatDate(addDays(checkOut, -1), 'shortMonthDay')}
                 </span>
                 <span className="text-[10px] bg-[#e8eaec] text-[#596061] px-2 py-0.5 rounded-full font-bold">
-                  {nights} Nights
+                  {nights} Nights · {formatDate(checkOut, 'shortMonthDay')} 퇴실
                 </span>
               </div>
             </div>

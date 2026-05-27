@@ -18,7 +18,7 @@ import { useNavigation } from '@/components/providers/NavigationProvider';
 import UserBadge from '@/components/common/UserBadge';
 import { dictionary } from '@/i18n';
 import { db } from '@/lib/firebase/clientApp';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, Timestamp } from 'firebase/firestore';
 import StayReservationFlow from './StayReservationFlow';
 import { isWeekendOrHolidayStay } from '@/lib/utils/dateUtils';
 
@@ -123,6 +123,35 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike }: S
   const [groupCoords, setGroupCoords] = useState<{latitude: number; longitude: number} | null>(null);
   const [venueNameKo, setVenueNameKo] = useState<string>('');
 
+  const [isEditingDates, setIsEditingDates] = useState(false);
+  const [editCheckIn, setEditCheckIn] = useState('');
+  const [editCheckOut, setEditCheckOut] = useState('');
+
+  const toYYYYMMDD = (val: any, daysOffset: number = 0): string => {
+    if (!val) return '';
+    let d: Date;
+    if (val.toDate) d = val.toDate();
+    else if (val.seconds) d = new Date(val.seconds * 1000);
+    else d = new Date(val);
+    if (isNaN(d.getTime())) return '';
+    
+    if (daysOffset !== 0) {
+      d = new Date(d.getTime() + daysOffset * 24 * 60 * 60 * 1000);
+    }
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
+  useEffect(() => {
+    if (selectedBookingForDetail) {
+      setEditCheckIn(toYYYYMMDD(selectedBookingForDetail.checkIn));
+      setEditCheckOut(toYYYYMMDD(selectedBookingForDetail.checkOut, -1));
+      setIsEditingDates(false);
+    }
+  }, [selectedBookingForDetail]);
+
 
 
   useEffect(() => {
@@ -141,7 +170,7 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike }: S
       setAllBookings(bookings);
       const dates: Date[] = [];
       bookings.forEach(b => {
-        if (['APPLIED', 'PAYMENT_REQUESTED', 'PAID', 'CONFIRMED', 'CODE_SENT'].includes(b.status)) {
+        if (['APPLIED', 'PAYMENT_REQUESTED', 'PAID', 'CONFIRMED', 'SELLER_CONFIRMED', 'CODE_SENT'].includes(b.status)) {
           const checkInVal = parseFirebaseDate(b.checkIn);
           const checkOutVal = parseFirebaseDate(b.checkOut);
           if (!checkInVal || !checkOutVal) return;
@@ -232,7 +261,11 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike }: S
       const roomId = await chatService.getOrCreatePrivateRoom([user.uid, stay.host.userId], user.uid, 'business');
 
       // 3. Send initial stay info message (Standardized template)
-      const initialMessage = `Hello, I'm inquiring about the stay '${stay.title}'.\nLocation: ${stay.location?.district ? `${stay.location.district}, ${stay.location.city}` : stay.location?.city || ''}\nPrice: ₩${(stay.pricing?.baseRate || 0).toLocaleString()}/night\nLink: ${window.location.origin}/stay?itemId=${stay.id}`;
+      const displayTitle = language === 'KR' && stay.nativeTitle ? stay.nativeTitle : stay.title;
+      const displayLocation = language === 'KR' && stay.location?.address ? stay.location.address : (stay.location?.district ? `${stay.location.district}, ${stay.location.city}` : stay.location?.city || '');
+      const initialMessage = language === 'KR'
+        ? `안녕하세요, 스테이 '${displayTitle}' 예약 문의드립니다.\n위치: ${displayLocation}\n요금: 1박 ₩${(stay.pricing?.baseRate || 0).toLocaleString()}원\n링크: ${window.location.origin}/stay?itemId=${stay.id}`
+        : `Hello, I'm inquiring about the stay '${stay.title}'.\nLocation: ${stay.location?.district ? `${stay.location.district}, ${stay.location.city}` : stay.location?.city || ''}\nPrice: ₩${(stay.pricing?.baseRate || 0).toLocaleString()}/night\nLink: ${window.location.origin}/stay?itemId=${stay.id}`;
 
       await chatService.sendMessage({
         roomId,
@@ -256,7 +289,7 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike }: S
   const isDateBooked = (date: Date) => {
     const dayTime = startOfDay(new Date(date)).getTime();
     return allBookings.some(b => {
-      if (!['APPLIED', 'PAYMENT_REQUESTED', 'PAID', 'CONFIRMED', 'CODE_SENT'].includes(b.status)) return false;
+      if (!['APPLIED', 'PAYMENT_REQUESTED', 'PAID', 'CONFIRMED', 'SELLER_CONFIRMED', 'CODE_SENT'].includes(b.status)) return false;
       const start = parseFirebaseDate(b.checkIn);
       const end = parseFirebaseDate(b.checkOut);
       if (!start || !end) return false;
@@ -300,7 +333,7 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike }: S
 
   const handleBookedDateClick = (day: Date) => {
     const found = allBookings.find(b => {
-      if (!['APPLIED', 'PAYMENT_REQUESTED', 'PAID', 'CONFIRMED', 'CODE_SENT'].includes(b.status)) return false;
+      if (!['APPLIED', 'PAYMENT_REQUESTED', 'PAID', 'CONFIRMED', 'SELLER_CONFIRMED', 'CODE_SENT'].includes(b.status)) return false;
       const start = parseFirebaseDate(b.checkIn);
       const end = parseFirebaseDate(b.checkOut);
       if (!start || !end) return false;
@@ -339,7 +372,7 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike }: S
         let isMiddleDate = false;
 
         allBookings.forEach(b => {
-          if (!['APPLIED', 'PAYMENT_REQUESTED', 'PAID', 'CONFIRMED', 'CODE_SENT'].includes(b.status)) return;
+          if (!['APPLIED', 'PAYMENT_REQUESTED', 'PAID', 'CONFIRMED', 'SELLER_CONFIRMED', 'CODE_SENT'].includes(b.status)) return;
           const start = parseFirebaseDate(b.checkIn);
           const end = parseFirebaseDate(b.checkOut);
           if (!start || !end) return;
@@ -501,7 +534,7 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike }: S
   const calculatedPricing = useMemo(() => {
     if (!stay || !startDate || !endDate) return null;
     try {
-      const nights = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
+      const nights = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1);
       const baseRate = stay.pricing?.baseRate || 0;
       const baseTotal = baseRate * nights;
       const cleaningFee = stay.pricing?.cleaningFee || 0;
@@ -566,7 +599,13 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike }: S
         className={`fixed top-0 left-0 right-0 z-[130] pointer-events-auto flex items-center justify-between px-4 pb-3 transition-all duration-300 ${isScrolled ? 'bg-white/95 backdrop-blur-md shadow-sm' : 'bg-gradient-to-b from-black/30 to-transparent'}`}
         style={{ paddingTop: 'max(env(safe-area-inset-top), 24px)' }}
       >
-        <button onClick={onClose} className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors relative z-[140] ${isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'}`}>
+        <button onClick={() => {
+          if (window.history.length > 1) {
+            router.back();
+          } else {
+            onClose();
+          }
+        }} className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors relative z-[140] ${isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'}`}>
           <span className="material-symbols-rounded text-xl">arrow_back</span>
         </button>
         <div className={`text-base font-bold truncate max-w-[180px] transition-opacity ${isScrolled ? 'opacity-100 text-[#2d3435]' : 'opacity-0'}`}>{stay.title}</div>
@@ -649,7 +688,9 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike }: S
           ) : (
             <p className="text-[10px] font-black text-on-surface-variant/60 uppercase tracking-widest leading-none mb-1.5">STAY</p>
           )}
-          <h1 className="text-xl font-black text-on-surface leading-tight font-headline">{stay.title}</h1>
+          <h1 className="text-xl font-black text-on-surface leading-tight font-headline">
+            {language === 'KR' && stay.nativeTitle ? stay.nativeTitle : stay.title}
+          </h1>
           {stay.headline && (
             <p className="text-[13px] font-semibold text-on-surface-variant/80 mt-2.5 leading-relaxed whitespace-pre-line border-l-2 border-primary/20 pl-2.5">
               {stay.headline}
@@ -854,22 +895,7 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike }: S
                 </div>
               </CollapseSection>
 
-              {/* 4. 호스트 소개 */}
-              <CollapseSection icon="person" title={(dictionary[langKey] as any)?.common?.hostGuide?.title || t('stay.meet_your_host', 'Meet Your Host')}>
-                <div className="space-y-3 my-2 px-1">
-                  <ul className="space-y-3">
-                    {((dictionary[langKey] as any)?.common?.hostGuide?.list || []).map((item: any, idx: number) => (
-                      <li key={idx} className="flex items-start gap-2">
-                        <span className="text-primary text-base shrink-0 mt-0.5">•</span>
-                        <div className="text-sm leading-relaxed">
-                          <strong className="text-[#2d3435] font-extrabold">{item.t}</strong>
-                          <p className="text-[#596061] font-medium mt-0.5 whitespace-pre-line">{item.d}</p>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </CollapseSection>
+
 
               {/* 5. 주변 명소 */}
               {((stayLang?.guide?.attractions?.list && stayLang.guide.attractions.list.length > 0)) && (
@@ -991,7 +1017,7 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike }: S
         <StayReservationFlow
           stay={stay}
           checkIn={startDate}
-          checkOut={endDate}
+          checkOut={addDays(endDate, 1)}
           onClose={() => setShowReservationFlow(false)}
           onComplete={() => {
             setShowReservationFlow(false);
@@ -1011,14 +1037,25 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike }: S
               <span className="material-symbols-rounded text-lg">close</span>
             </button>
             
-            <div className="border-b border-slate-100 pb-3 flex items-center gap-2">
-              <span className="material-symbols-rounded text-primary text-xl">event_available</span>
-              <h4 className="font-headline text-base font-black text-[#2d3435]">
-                {t('stay.booking_detail_title', 'Reservation Detail')}
-              </h4>
+            <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-rounded text-primary text-xl">event_available</span>
+                <h4 className="font-headline text-base font-black text-[#2d3435]">
+                  {t('stay.booking_detail_title', 'Reservation Detail')}
+                </h4>
+              </div>
+              {isAdmin && !isEditingDates && (
+                <button 
+                  onClick={() => setIsEditingDates(true)}
+                  className="px-2.5 py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 font-bold rounded-xl text-[10px] flex items-center gap-1 active:scale-95 transition-all"
+                >
+                  <span className="material-symbols-rounded text-xs">edit</span>
+                  {t('stay.change_date', '계약 일정 변경')}
+                </button>
+              )}
             </div>
 
-            <div className="space-y-3.5 text-xs text-[#596061]">
+            <div className="space-y-3.5 text-xs text-[#596061] w-full">
               <div className="bg-[#fcf8f9] p-3 rounded-2xl border border-pink-100/50 mb-1 flex items-start gap-2.5">
                 <span className="bg-pink-100 text-pink-700 text-[9px] font-black px-2 py-0.5 rounded-full mt-0.5 uppercase tracking-wide shrink-0">STAY</span>
                 <div>
@@ -1027,20 +1064,141 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike }: S
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3.5 bg-slate-50 p-3 rounded-2xl border border-slate-100/50">
-                <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase block mb-0.5">{t('stay.check_in', 'Check-in')}</span>
-                  <strong className="text-[13px] font-black text-[#2d3435]">
-                    {formatDate(selectedBookingForDetail.checkIn?.toDate?.() || new Date(selectedBookingForDetail.checkIn), 'shortMonthDay')}
-                  </strong>
+              {isEditingDates ? (
+                <div className="space-y-3 bg-slate-50 p-3 rounded-2xl border border-slate-100 w-full text-left">
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-[10px] font-bold text-[#acb3b4] uppercase tracking-wider">{t('stay.move_in_date_label', '입주일 (체크인)')}</span>
+                    <input 
+                      type="date" 
+                      value={editCheckIn} 
+                      onChange={(e) => setEditCheckIn(e.target.value)}
+                      className="w-full bg-white border border-[#e0e4e5] rounded-xl px-3 py-2 text-xs text-[#2d3435] focus:outline-none focus:border-primary font-mono font-bold"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-[10px] font-bold text-[#acb3b4] uppercase tracking-wider">{t('stay.contract_expiry_date_label', '계약만료일 (마지막 숙박일)')}</span>
+                    <input 
+                      type="date" 
+                      value={editCheckOut} 
+                      onChange={(e) => setEditCheckOut(e.target.value)}
+                      className="w-full bg-white border border-[#e0e4e5] rounded-xl px-3 py-2 text-xs text-[#2d3435] focus:outline-none focus:border-primary font-mono font-bold"
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2 pt-2.5 border-t border-slate-100 mt-2">
+                    <button 
+                      onClick={() => setIsEditingDates(false)}
+                      className="px-3.5 py-2 bg-[#e8eaec] text-[#596061] hover:bg-[#d8dcde] font-black rounded-xl text-[10px] active:scale-95 transition-all"
+                    >
+                      {t('common.cancel', '취소')}
+                    </button>
+                    <button 
+                      onClick={async () => {
+                        if (!editCheckIn || !editCheckOut) {
+                          alert(t('stay.alert_select_both_dates', '입주일과 계약만료일을 모두 선택해 주세요.'));
+                          return;
+                        }
+                        const d1 = new Date(editCheckIn);
+                        const dExpiry = new Date(editCheckOut);
+                        if (dExpiry <= d1) {
+                          alert(t('stay.alert_expiry_after_move_in', '계약만료일은 입주일 이후여야 합니다.'));
+                          return;
+                        }
+
+                        try {
+                          // 계약만료일 다음 날짜를 실제 물리 퇴실일(d2)로 주입
+                          const d2 = new Date(dExpiry.getTime() + 24 * 60 * 60 * 1000);
+                          const newNights = Math.max(1, Math.ceil((d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24)));
+                          
+                          const baseRate = stay.pricing?.baseRate || 0;
+                          const cleaningFee = stay.pricing?.cleaningFee || 0;
+                          const extraPersonTotal = selectedBookingForDetail.pricing?.extraPersonFee || 0;
+
+                          let weekendNights = 0;
+                          let curr = new Date(d1);
+                          while (curr < d2) {
+                            const tomorrow = addDays(curr, 1);
+                            if (isWeekendOrHolidayStay(curr, tomorrow, formatDate)) { 
+                              weekendNights++;
+                            }
+                            curr.setDate(curr.getDate() + 1);
+                          }
+                          const weekendSurcharge = weekendNights * (stay.pricing?.weekendSurcharge || 0);
+                          const grandTotal = (baseRate * newNights) + cleaningFee + weekendSurcharge + extraPersonTotal;
+
+                          // DB 저장 시 Firestore Timestamp 객체로 직렬화하여 안전하게 주입
+                          await stayBookingService.updateBooking(selectedBookingForDetail.id, {
+                            checkIn: Timestamp.fromDate(d1),
+                            checkOut: Timestamp.fromDate(d2),
+                            nights: newNights,
+                            pricing: {
+                              currency: selectedBookingForDetail.pricing?.currency || 'KRW',
+                              baseTotal: baseRate * newNights,
+                              cleaningFee: cleaningFee || 0,
+                              weekendSurcharge: weekendSurcharge || 0,
+                              extraPersonFee: extraPersonTotal || 0,
+                              grandTotal: grandTotal || 0
+                            }
+                          });
+
+                          setSelectedBookingForDetail(prev => prev ? {
+                            ...prev,
+                            checkIn: Timestamp.fromDate(d1),
+                            checkOut: Timestamp.fromDate(d2),
+                            nights: newNights,
+                            pricing: {
+                              ...prev.pricing,
+                              baseTotal: baseRate * newNights,
+                              weekendSurcharge,
+                              grandTotal
+                            }
+                          } : null);
+
+                          setIsEditingDates(false);
+                          alert(t('stay.date_updated_success', '계약 일정이 성공적으로 변경되었습니다.'));
+                        } catch (err) {
+                          console.error(err);
+                          alert(t('stay.date_update_failed', '일정 변경에 실패했습니다.') + ' (' + (err instanceof Error ? err.message : String(err)) + ')');
+                        }
+                      }}
+                      className="px-3.5 py-2 bg-primary text-white hover:bg-blue-700 font-black rounded-xl text-[10px] active:scale-95 transition-all shadow-md shadow-primary/10"
+                    >
+                      {t('common.save', '저장')}
+                    </button>
+                  </div>
                 </div>
-                <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase block mb-0.5">{t('stay.check_out', 'Check-out')}</span>
-                  <strong className="text-[13px] font-black text-[#2d3435]">
-                    {formatDate(selectedBookingForDetail.checkOut?.toDate?.() || new Date(selectedBookingForDetail.checkOut), 'shortMonthDay')}
-                  </strong>
-                </div>
-              </div>
+              ) : (
+                (() => {
+                  const checkInVal = selectedBookingForDetail.checkIn;
+                  const checkOutVal = selectedBookingForDetail.checkOut;
+                  let stayStartLabel = '';
+                  let stayEndLabel = '';
+                  let checkOutLabel = '';
+
+                  if (checkInVal) {
+                    const dStart = checkInVal.toDate ? checkInVal.toDate() : new Date(checkInVal);
+                    stayStartLabel = formatDate(dStart, 'shortMonthDay');
+                  }
+
+                  if (checkOutVal) {
+                    const dOut = checkOutVal.toDate ? checkOutVal.toDate() : new Date(checkOutVal);
+                    checkOutLabel = formatDate(dOut, 'shortMonthDay');
+                    const dEnd = new Date(dOut.getTime() - 24 * 60 * 60 * 1000);
+                    stayEndLabel = formatDate(dEnd, 'shortMonthDay');
+                  }
+
+                  return (
+                    <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-100/50 w-full text-left">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">{t('stay.contract_period', '계약 기간')}</span>
+                      <strong className="text-sm font-black text-[#2d3435] block font-mono">
+                        {stayStartLabel} - {stayEndLabel}
+                      </strong>
+                      <span className="text-[11px] text-[#596061] font-bold mt-1 block">
+                        {selectedBookingForDetail.nights} {t('stay.nights_unit', 'Nights')} · {t('stay.checkout_date_label', '{date} 퇴실').replace('{date}', checkOutLabel)}
+                      </span>
+                    </div>
+                  );
+                })()
+              )}
 
               <div className="space-y-2.5 px-1">
                 <div className="flex justify-between items-center">

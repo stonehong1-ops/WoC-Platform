@@ -122,15 +122,14 @@ export default function StayWishlistTray({ likes, userId, onStayClick }: StayWis
                 </span>
               </div>
 
-              {/* Status Header text */}
               <span className="text-sm text-slate-800 font-bold ml-3 tracking-wide">
-                {likes.length === 0 ? 'No Activity' : (
+                {likes.length === 0 ? t('common.no_activity') : (
                   <>
                     {likes.filter(l => l.status === 'in_progress').length > 0 && (
-                      <span className="text-blue-500">{likes.filter(l => l.status === 'in_progress').length} In Progress, </span>
+                      <span className="text-blue-500">{likes.filter(l => l.status === 'in_progress').length}{t('common.in_progress_count')}</span>
                     )}
                     {likes.filter(l => l.status === 'pending').length > 0 && (
-                      <span className="text-primary">{likes.filter(l => l.status === 'pending').length} Pending, </span>
+                      <span className="text-primary">{likes.filter(l => l.status === 'pending').length}{t('common.pending_count')}</span>
                     )}
                     {likes.filter(l => l.status !== 'pending' && l.status !== 'in_progress').length}{t('common.liked')}
                   </>
@@ -175,7 +174,7 @@ export default function StayWishlistTray({ likes, userId, onStayClick }: StayWis
                   onClick={handleClearAll}
                   className="text-[12px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-widest transition-colors"
                 >
-                  Clear All
+                  {t('common.clear_all')}
                 </button>
               )}
 
@@ -223,12 +222,12 @@ export default function StayWishlistTray({ likes, userId, onStayClick }: StayWis
                             
                             {status === 'in_progress' && (
                               <div className="absolute -top-2 -right-2 bg-blue-500 text-white text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded shadow-sm">
-                                IN PROGRESS
+                                {t('common.badge_in_progress')}
                               </div>
                             )}
                             {status === 'pending' && (
                               <div className="absolute -top-2 -right-2 bg-primary text-white text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded shadow-sm">
-                                PENDING
+                                {t('common.badge_pending')}
                               </div>
                             )}
                           </div>
@@ -260,7 +259,7 @@ export default function StayWishlistTray({ likes, userId, onStayClick }: StayWis
                     })}
                     {likedStays.length === 0 && (
                       <div className="py-6 text-center text-slate-400 text-[13px] font-medium">
-                        No activity found.
+                        {t('common.no_activity_found')}
                       </div>
                     )}
                   </div>

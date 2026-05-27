@@ -303,6 +303,7 @@ export interface GroupClass {
   registrationOpenDate?: string;
   registrationCloseDate?: string;
   notice?: string;
+  feedbacks?: any[];
 }
 
 export interface ClassDiscount {
@@ -365,5 +366,6 @@ export interface ClassRegistration {
   paymentStatus?: 'pending' | 'reported' | 'completed' | 'canceled';
   orderNumber?: string;
   participatingClassPartners?: Record<string, string>;
+  attendance?: Record<number, boolean>;
 }
 

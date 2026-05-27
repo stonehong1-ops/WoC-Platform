@@ -9,6 +9,8 @@ import { classRegistrationService } from '@/lib/firebase/classRegistrationServic
 import { groupService } from '@/lib/firebase/groupService';
 import { notificationService } from '@/lib/firebase/notificationService';
 import { bookingService } from '@/lib/firebase/bookingService';
+import { stayBookingService } from '@/lib/firebase/stayBookingService';
+import { StayBooking } from '@/types/stay';
 import { ClassRegistration, Group } from '@/types/group';
 import { Notification } from '@/types/notification';
 import { BaseBooking } from '@/types/booking';
@@ -138,6 +140,8 @@ function HistoryContent() {
   const [uidRegistrations, setUidRegistrations] = useState<ClassRegistration[]>([]);
   const [phoneRegistrations, setPhoneRegistrations] = useState<ClassRegistration[]>([]);
   const [bookings, setBookings] = useState<BaseBooking[]>([]);
+  const [uidStayBookings, setUidStayBookings] = useState<StayBooking[]>([]);
+  const [phoneStayBookings, setPhoneStayBookings] = useState<StayBooking[]>([]);
 
   // Derived state from URL for Detail Overlay
   const view = searchParams.get('view');
@@ -150,6 +154,11 @@ function HistoryContent() {
   
   const { value: chatId, openModal: openChat, closeModal: handleCloseChat } = useModalNavigation('chatId');
   const chatRoomId = chatId;
+
+  // 1회 마운트 시 Next.js App Router Soft 캐시 플러시 강제 집행 (모바일 동기화 보장)
+  useEffect(() => {
+    router.refresh();
+  }, [router]);
 
   const unifiedItems = React.useMemo(() => {
     const items: any[] = [];
@@ -206,8 +215,33 @@ function HistoryContent() {
       });
     });
 
+    // 3. Stay Bookings (stay_bookings collection)
+    const stayMap = new Map<string, StayBooking>();
+    uidStayBookings.forEach(sb => stayMap.set(sb.id, sb));
+    phoneStayBookings.forEach(sb => stayMap.set(sb.id, sb));
+
+    Array.from(stayMap.values()).forEach(sb => {
+      items.push({
+        id: sb.id,
+        raw: sb,
+        source: 'stay_booking',
+        type: 'Stay',
+        domain: 'stay',
+        title: sb.stayTitle || 'Stay Room',
+        groupName: sb.groupId || '',
+        dateLabel: formatDate(sb, t, language),
+        timestamp: getTimestamp(sb.appliedAt),
+        status: sb.status as StatusKey,
+        amount: sb.pricing?.grandTotal || 0,
+        currency: sb.pricing?.currency || 'KRW',
+        appliedAt: sb.appliedAt,
+        confirmedAt: sb.payment?.confirmedAt || sb.updatedAt,
+        imageUrl: sb.stayImageUrl || ''
+      });
+    });
+
     return items.sort((a, b) => b.timestamp - a.timestamp);
-  }, [uidRegistrations, phoneRegistrations, bookings, t, language]);
+  }, [uidRegistrations, phoneRegistrations, bookings, uidStayBookings, phoneStayBookings, t, language]);
 
   // Sync selectedDetail with URL 'id'
   useEffect(() => {
@@ -232,6 +266,53 @@ function HistoryContent() {
       user.uid,
       (data) => setBookings(data)
     );
+
+    const unsubUidStayBookings = stayBookingService.subscribeToUserBookings(
+      user.uid,
+      (data) => setUidStayBookings(data)
+    );
+
+    let unsubPhoneStay: (() => void) | null = null;
+    let unsubPhoneStay010: (() => void) | null = null;
+
+    if (profile?.phoneNumber) {
+      unsubPhoneStay = stayBookingService.subscribeToPhoneBookings(
+        profile.phoneNumber,
+        (data) => setPhoneStayBookings(prev => {
+          const map = new Map([...prev.map(b => [b.id, b] as [string, StayBooking]), ...data.map(b => [b.id, b] as [string, StayBooking])]);
+          return Array.from(map.values());
+        })
+      );
+      
+      if (profile.phoneNumber.startsWith('+82')) {
+        const localPhone = '0' + profile.phoneNumber.slice(3);
+        unsubPhoneStay010 = stayBookingService.subscribeToPhoneBookings(
+          localPhone,
+          (data) => setPhoneStayBookings(prev => {
+            const map = new Map([...prev.map(b => [b.id, b] as [string, StayBooking]), ...data.map(b => [b.id, b] as [string, StayBooking])]);
+            return Array.from(map.values());
+          })
+        );
+      }
+    } else if (user.phoneNumber) {
+      unsubPhoneStay = stayBookingService.subscribeToPhoneBookings(
+        user.phoneNumber,
+        (data) => setPhoneStayBookings(prev => {
+          const map = new Map([...prev.map(b => [b.id, b] as [string, StayBooking]), ...data.map(b => [b.id, b] as [string, StayBooking])]);
+          return Array.from(map.values());
+        })
+      );
+      if (user.phoneNumber.startsWith('+82')) {
+        const localPhone = '0' + user.phoneNumber.slice(3);
+        unsubPhoneStay010 = stayBookingService.subscribeToPhoneBookings(
+          localPhone,
+          (data) => setPhoneStayBookings(prev => {
+            const map = new Map([...prev.map(b => [b.id, b] as [string, StayBooking]), ...data.map(b => [b.id, b] as [string, StayBooking])]);
+            return Array.from(map.values());
+          })
+        );
+      }
+    }
 
     let unsubPhone: (() => void) | null = null;
     let unsubPhone010: (() => void) | null = null;
@@ -279,6 +360,9 @@ function HistoryContent() {
     return () => {
       unsubUid();
       unsubBookings();
+      unsubUidStayBookings();
+      if (unsubPhoneStay) unsubPhoneStay();
+      if (unsubPhoneStay010) unsubPhoneStay010();
       if (unsubPhone) unsubPhone();
       if (unsubPhone010) unsubPhone010();
     };
@@ -339,9 +423,21 @@ function HistoryContent() {
   }
 
   // Use group payment settings or class specific
-  const bankInfo = itemInfo?.bankName && itemInfo?.accountNumber 
+  let bankInfo = itemInfo?.bankName && itemInfo?.accountNumber 
     ? { bankName: itemInfo.bankName, accountNumber: itemInfo.accountNumber, accountHolder: itemInfo.accountHolder } 
     : groupDetails?.classPaymentSettings?.bankDetails;
+
+  // Fallback for Stay Bookings
+  if (selectedDetail?.type === 'Stay' && selectedDetail?.raw?.payment) {
+    const pay = selectedDetail.raw.payment;
+    if (pay.bankName && pay.accountNumber) {
+      bankInfo = {
+        bankName: pay.bankName,
+        accountNumber: pay.accountNumber,
+        accountHolder: pay.holderName || pay.depositorName || ''
+      };
+    }
+  }
 
   const handleOpenDetail = (item: any) => {
     // URL-based open
@@ -625,6 +721,56 @@ function HistoryContent() {
                 <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">{selectedDetail.raw?.itemType === 'discount' ? t('history.info_bundle') : t('history.info_class')}</p>
               </div>
               <div className="px-4 py-4 flex flex-col gap-4">
+                {selectedDetail.type === 'Stay' && (() => {
+                  const checkInVal = selectedDetail.raw?.checkIn;
+                  const checkOutVal = selectedDetail.raw?.checkOut;
+                  let stayStartLabel = '';
+                  let stayEndLabel = '';
+                  let checkOutLabel = '';
+
+                  if (checkInVal) {
+                    const dStart = checkInVal.toDate ? checkInVal.toDate() : new Date(checkInVal);
+                    stayStartLabel = dStart.toLocaleDateString(language === 'KR' ? 'ko-KR' : 'en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+                  }
+
+                  if (checkOutVal) {
+                    const dOut = checkOutVal.toDate ? checkOutVal.toDate() : new Date(checkOutVal);
+                    checkOutLabel = dOut.toLocaleDateString(language === 'KR' ? 'ko-KR' : 'en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+                    const dEnd = new Date(dOut.getTime() - 24 * 60 * 60 * 1000);
+                    stayEndLabel = dEnd.toLocaleDateString(language === 'KR' ? 'ko-KR' : 'en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+                  }
+
+                  return (
+                    <>
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-full bg-[#f2f4f4] flex items-center justify-center shrink-0 text-[#596061]">
+                          <span className="material-symbols-outlined text-[16px]">calendar_month</span>
+                        </div>
+                        <div className="pt-0.5">
+                          <p className="font-['Inter'] text-[10px] font-black uppercase tracking-wider text-[#acb3b4] mb-0.5">{t('stay.check_in', 'Check-in')} - {t('stay.check_out', 'Check-out')}</p>
+                          <p className="font-['Inter'] text-[13px] font-bold text-[#2d3435]">
+                            {stayStartLabel} ~ {stayEndLabel}
+                            <span className="text-xs text-[#596061] font-medium ml-2">
+                              ({selectedDetail.raw?.nights} {t('stay.nights_unit', 'Nights')} · {checkOutLabel} 퇴실)
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-full bg-[#f2f4f4] flex items-center justify-center shrink-0 text-[#596061]">
+                          <span className="material-symbols-outlined text-[16px]">group</span>
+                        </div>
+                        <div className="pt-0.5">
+                          <p className="font-['Inter'] text-[10px] font-black uppercase tracking-wider text-[#acb3b4] mb-0.5">{t('stay.guests_label', 'Guests')}</p>
+                          <p className="font-['Inter'] text-[13px] font-bold text-[#2d3435]">
+                            {selectedDetail.raw?.guests} {t('stay.guests_unit_pp', 'Guest(s)')}
+                          </p>
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
+
                 {selectedDetail.type === 'Class' && itemInfo && (
                   <>
                     <div className="flex items-start gap-3">

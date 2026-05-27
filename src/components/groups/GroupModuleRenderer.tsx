@@ -216,6 +216,7 @@ export default function GroupModuleRenderer({
               group={currentGroup}
               members={members}
               onApplyClick={(monthStr) => openClassFlow('apply', { month: monthStr })}
+              openClassFlow={openClassFlow}
             />
           </div>
         </div>

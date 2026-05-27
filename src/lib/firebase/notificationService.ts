@@ -14,8 +14,44 @@ import {
   writeBatch
 } from 'firebase/firestore';
 import { Notification } from '@/types/notification';
+import { dictionary } from '@/i18n';
 
 const NOTIFICATIONS_COLLECTION = 'notifications';
+
+// 수신 사용자의 ID를 이용해 Firestore 에서 language 설정 ('KR' | 'EN')을 조회한 뒤, 다국어 템플릿 치환 적용
+async function getTranslatedText(targetUserId: string, key: string, params?: any): Promise<{ title: string; message: string }> {
+  try {
+    let language: 'KR' | 'EN' = 'KR'; // Default
+    if (targetUserId) {
+      const userSnap = await getDoc(doc(db, 'users', targetUserId));
+      if (userSnap.exists()) {
+        const uLang = userSnap.data()?.language;
+        if (uLang === 'EN' || uLang === 'KR') {
+          language = uLang;
+        }
+      }
+    }
+
+    const dict = dictionary[language] as Record<string, string>;
+    
+    // 알림 전용 키 네이밍 규칙에 맞추어 타이틀과 메시지 획득
+    let title = dict[`${key}_title`] || dict[`${key}.title`] || `${key}_title`;
+    let message = dict[`${key}_msg`] || dict[`${key}.msg`] || `${key}_msg`;
+
+    // 템플릿 치환
+    if (params && typeof params === 'object') {
+      Object.keys(params).forEach(p => {
+        title = title.replace(new RegExp(`\\{${p}\\}`, 'g'), params[p]);
+        message = message.replace(new RegExp(`\\{${p}\\}`, 'g'), params[p]);
+      });
+    }
+
+    return { title, message };
+  } catch (err) {
+    console.error('Failed to translate notification for user:', err);
+    return { title: key, message: key };
+  }
+}
 
 export const notificationService = {
   // --- New Unified Notification System ---
@@ -25,9 +61,20 @@ export const notificationService = {
     data: Omit<Notification, 'id' | 'createdAt' | 'isRead' | 'baseType'>,
     batch?: any // firebase/firestore WriteBatch for atomic writes
   ): Promise<string> => {
+    let finalTitle = data.title || 'New Notification';
+    let finalMessage = data.message;
+
+    if (data.i18nKey) {
+      const trans = await getTranslatedText(data.targetUserId, data.i18nKey, data.i18nParams);
+      finalTitle = trans.title;
+      finalMessage = trans.message;
+    }
+
     const docRef = doc(collection(db, NOTIFICATIONS_COLLECTION));
     const docData = {
       ...data,
+      title: finalTitle,
+      message: finalMessage,
       baseType: 'INFO',
       isRead: false,
       createdAt: Timestamp.now()
@@ -40,7 +87,7 @@ export const notificationService = {
     }
     
     // 비동기 푸시 발송
-    notificationService.sendFCM(data.targetUserId, data.title || 'New Notification', data.message, docData);
+    notificationService.sendFCM(data.targetUserId, finalTitle, finalMessage, docData);
     
     return docRef.id;
   },
@@ -50,9 +97,20 @@ export const notificationService = {
     data: Omit<Notification, 'id' | 'createdAt' | 'isRead' | 'isCompleted' | 'baseType'>,
     batch?: any // firebase/firestore WriteBatch for atomic writes
   ): Promise<string> => {
+    let finalTitle = data.title || 'New Notification';
+    let finalMessage = data.message;
+
+    if (data.i18nKey) {
+      const trans = await getTranslatedText(data.targetUserId, data.i18nKey, data.i18nParams);
+      finalTitle = trans.title;
+      finalMessage = trans.message;
+    }
+
     const docRef = doc(collection(db, NOTIFICATIONS_COLLECTION));
     const docData = {
       ...data,
+      title: finalTitle,
+      message: finalMessage,
       baseType: 'INFO',
       isRead: false,
       createdAt: Timestamp.now()
@@ -65,7 +123,7 @@ export const notificationService = {
     }
 
     // 비동기 푸시 발송
-    notificationService.sendFCM(data.targetUserId, data.title || 'New Notification', data.message, docData);
+    notificationService.sendFCM(data.targetUserId, finalTitle, finalMessage, docData);
 
     return docRef.id;
   },
@@ -212,8 +270,12 @@ export const notificationService = {
   }): Promise<string> => {
     const { fromUserId, fromUserName, targetUserId, groupId, groupName } = params;
     
-    // Formatted message
-    const message = `${fromUserName} invited you to the '${groupName}' group. Would you like to approve?`;
+    // 비동기 번역 처리
+    const { title: finalTitle, message: finalMessage } = await getTranslatedText(
+      targetUserId,
+      'notification.invite',
+      { user: fromUserName, group: groupName }
+    );
 
     const notificationData: Omit<Notification, 'id'> = {
       baseType: 'INFO',
@@ -225,9 +287,12 @@ export const notificationService = {
       targetUserId,
       groupId,
       groupName,
-      message,
+      title: finalTitle,
+      message: finalMessage,
       isRead: false,
-      createdAt: Date.now()
+      createdAt: Date.now(),
+      i18nKey: 'notification.invite',
+      i18nParams: { user: fromUserName, group: groupName }
     };
 
     const docRef = await addDoc(collection(db, NOTIFICATIONS_COLLECTION), {
@@ -235,7 +300,7 @@ export const notificationService = {
       createdAt: Timestamp.now() 
     });
 
-    notificationService.sendFCM(targetUserId, 'New Group Invitation', message, notificationData);
+    notificationService.sendFCM(targetUserId, finalTitle, finalMessage, notificationData);
 
     return docRef.id;
   }

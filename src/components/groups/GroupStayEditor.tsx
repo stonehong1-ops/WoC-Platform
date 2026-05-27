@@ -359,12 +359,12 @@ export default function GroupStayEditor({ group, onClose, isInline }: GroupStayE
         sessionStorage.setItem(`woc_group_stay_editor_${group.id}`, JSON.stringify(currentStay));
       }
 
-      setSaveMessage({ type: "success", text: "Changes saved successfully!" });
-      toast.success("Changes saved successfully!");
+      setSaveMessage({ type: "success", text: t("group.stay.toast.save_success") });
+      toast.success(t("group.stay.toast.save_success"));
     } catch (error) {
       console.error("Error saving stay:", error);
-      setSaveMessage({ type: "error", text: "Failed to save. Please try again." });
-      toast.error("Failed to save. Please try again.");
+      setSaveMessage({ type: "error", text: t("group.stay.toast.save_fail") });
+      toast.error(t("group.stay.toast.save_fail"));
     } finally {
       setIsSaving(false);
     }
@@ -473,7 +473,7 @@ export default function GroupStayEditor({ group, onClose, isInline }: GroupStayE
     const selectedFiles = Array.from(files);
     const totalNewImages = gallery.length + selectedFiles.length;
     if (totalNewImages > 20) {
-      toast.error("You can upload up to 20 images.");
+      toast.error(t("group.stay.toast.max_photos"));
       return;
     }
 

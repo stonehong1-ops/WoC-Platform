@@ -31,9 +31,11 @@ function CompleteContent() {
         const roomId = await chatService.getOrCreatePrivateRoom(
           [user.uid, hostId], user.uid, 'business'
         );
+        const checkOutDate = booking.checkOut.toDate ? booking.checkOut.toDate() : new Date(booking.checkOut);
+        const lastNightDate = new Date(checkOutDate.getTime() - 24 * 60 * 60 * 1000);
         const msg = `💸 [STAY PAYMENT]\n` +
           `Stay: ${booking.stayTitle}\n` +
-          `Dates: ${formatDate(booking.checkIn)} - ${formatDate(booking.checkOut)}\n` +
+          `Dates: ${formatDate(booking.checkIn)} - ${formatDate(lastNightDate)} (Check-out: ${formatDate(booking.checkOut)})\n` +
           `Amount: ${booking.pricing.grandTotal.toLocaleString()} ${booking.pricing.currency}\n` +
           `I have transferred the payment. Please confirm!`;
         await chatService.sendMessage({
@@ -104,8 +106,12 @@ function CompleteContent() {
             </div>
             <div className="flex justify-between items-center">
               <span className="text-[10px] font-bold text-[#acb3b4] uppercase tracking-widest">Dates</span>
-              <span className="text-xs font-bold text-[#596061]">
-                {formatDate(booking.checkIn)} - {formatDate(booking.checkOut)}
+              <span className="text-xs font-bold text-[#596061] text-right">
+                {(() => {
+                  const checkOutDate = booking.checkOut.toDate ? booking.checkOut.toDate() : new Date(booking.checkOut);
+                  const lastNightDate = new Date(checkOutDate.getTime() - 24 * 60 * 60 * 1000);
+                  return `${formatDate(booking.checkIn)} - ${formatDate(lastNightDate)} (${booking.nights}박 · ${formatDate(booking.checkOut)} 퇴실)`;
+                })()}
               </span>
             </div>
             <div className="flex justify-between items-center">

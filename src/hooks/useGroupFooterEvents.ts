@@ -244,55 +244,36 @@ export function useGroupFooterEvents(
       setVisitorsLoaded(true);
       return;
     }
-    let cancelled = false;
     const active = members.filter(m => m.status === 'active');
-    const sample = active.slice(0, 30); // 비용 제한
+    
+    // 1안 적용: 데이터베이스 개별 조회를 전면 제거하고 메모리 내의 가입자 데이터를 즉시 가공하여 0ms 노출
+    const sorted = [...active]
+      .filter(m => m.avatar || m.photoURL)
+      .sort((a, b) => toMillis(b.joinedAt) - toMillis(a.joinedAt));
+    setRecentVisitors(sorted.slice(0, 3).map(m => ({
+      id: m.id,
+      photoURL: m.avatar || m.photoURL || '',
+      name: m.name || m.id.substring(0, 6)
+    })));
 
-    const run = async () => {
-      try {
-        const profiles = (await Promise.all(
-          sample.map(m => userService.getUserById(m.id).catch(() => null))
-        )).filter(Boolean) as PlatformUser[];
-
-        if (cancelled) return;
-
-        // Recent visitors: lastVisitedAt 순 정렬, 사진 있는 상위 3명
-        const sorted = [...profiles]
-          .sort((a, b) => toMillis(b.lastVisitedAt) - toMillis(a.lastVisitedAt))
-          .filter(p => p.photoURL);
-        setRecentVisitors(sorted.slice(0, 3).map(p => ({
-          id: p.id,
-          photoURL: p.photoURL || '',
-          name: p.nickname || p.id.substring(0, 6)
-        })));
-
-        // Online count: 5분 이내 접속자
-        const fiveMinAgo = Date.now() - 5 * 60 * 1000;
-        const online = profiles.filter(p => toMillis(p.lastVisitedAt) >= fiveMinAgo).length;
-        // 30명 샘플 → 전체 추정
-        const estimated = active.length > 30 ? Math.round(online * (active.length / 30)) : online;
-        setOnlineCount(estimated);
-      } catch (err) {
-        console.warn("Visitors profile loading failed but skipped to prevent lock:", err);
-      } finally {
-        setVisitorsLoaded(true);
-      }
-    };
-
-    run();
-    return () => { cancelled = true; };
+    setOnlineCount(0);
+    setVisitorsLoaded(true);
   }, [membersKey]);
 
   // 8. Fetch newest member profile (for Event 4 - people_recent)
+  // 1안 적용: 데이터베이스 추가 조회를 제거하고 메모리 내의 가입 멤버 정보를 즉시 매핑
   useEffect(() => {
     const active = members.filter(m => m.status === 'active');
     if (!active.length) return;
     const newest = [...active].sort((a, b) => toMillis(b.joinedAt) - toMillis(a.joinedAt))[0];
     if (!newest) return;
 
-    userService.getUserById(newest.id).then((p) => {
-      setNewestProfile(p);
-    }).catch(console.error);
+    setNewestProfile({
+      id: newest.id,
+      nickname: newest.name,
+      role: newest.role,
+      photoURL: newest.avatar || newest.photoURL || ''
+    } as any);
   }, [membersKey]);
 
   // Combine all data into events

@@ -6,6 +6,7 @@ import { collection, query, getDocs, doc, getDoc, setDoc, where, orderBy, Timest
 import { plazaService, Post as PlazaPost } from '@/lib/firebase/plazaService';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const SOCIETIES = [
   { id: 'tango', label: 'Tango' },
@@ -13,6 +14,7 @@ const SOCIETIES = [
 ];
 
 export default function AdminBannersPage() {
+  const { t } = useLanguage();
   const [events, setEvents] = useState<any[]>([]);
   const [selectedSociety, setSelectedSociety] = useState('tango');
   const [heroEventIds, setHeroEventIds] = useState<Record<string, string>>({});
@@ -58,13 +60,13 @@ export default function AdminBannersPage() {
         }
       } catch (e) {
         console.error(e);
-        toast.error("Failed to load events");
+        toast.error(t("admin.banners.load_events_fail"));
       } finally {
         setLoading(false);
       }
     }
     fetchData();
-  }, []);
+  }, [t]);
 
   // Fetch recent 100 plaza posts for dropdown
   useEffect(() => {
@@ -74,13 +76,13 @@ export default function AdminBannersPage() {
         setPlazaPosts(posts);
       } catch (e) {
         console.error(e);
-        toast.error("Failed to load plaza posts");
+        toast.error(t("admin.banners.load_posts_fail"));
       } finally {
         setPlazaLoading(false);
       }
     }
     fetchPlazaPosts();
-  }, []);
+  }, [t]);
 
   // Filter events by selected society
   const filteredEvents = events.filter((ev: any) => {
@@ -97,10 +99,10 @@ export default function AdminBannersPage() {
         heroEventId: heroEventIds.tango || '',  // legacy compatibility
         heroEventIds: heroEventIds,
       }, { merge: true });
-      toast.success(`Hero event for ${selectedSociety.toUpperCase()} updated successfully.`);
+      toast.success(selectedSociety === 'tango' ? 'Tango 대표 이벤트가 성공적으로 저장되었습니다!' : 'Yoga 대표 이벤트가 성공적으로 저장되었습니다!');
     } catch (e) {
       console.error(e);
-      toast.error("Failed to update hero event.");
+      toast.error(t("admin.banners.update_hero_fail"));
     } finally {
       setSaving(false);
     }
@@ -113,10 +115,10 @@ export default function AdminBannersPage() {
       await setDoc(doc(db, 'settings', 'banners'), {
         featuredPlazaPostIds: ids
       }, { merge: true });
-      toast.success("Featured plaza posts updated successfully.");
+      toast.success(t("admin.banners.update_posts_success"));
     } catch (e) {
       console.error(e);
-      toast.error("Failed to update featured posts.");
+      toast.error(t("admin.banners.update_posts_fail"));
     } finally {
       setPlazaSaving(false);
     }

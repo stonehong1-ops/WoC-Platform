@@ -36,6 +36,7 @@ export default function StayReservationFlow({
   const [buyerPhone, setBuyerPhone] = useState('');
   const [guests, setGuests] = useState(1);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [showCancellationPolicy, setShowCancellationPolicy] = useState(false);
   
   const [createdBookingId, setCreatedBookingId] = useState('');
   const [createdOrderNumber, setCreatedOrderNumber] = useState('');
@@ -62,12 +63,6 @@ export default function StayReservationFlow({
       bankName: group.classPaymentSettings.bankDetails.bankName,
       accountNumber: group.classPaymentSettings.bankDetails.accountNumber,
       holderName: group.classPaymentSettings.bankDetails.accountHolder
-    };
-    const stayBank = stay.payment?.methods?.find((m: any) => m.type === 'bank_domestic') || stay.payment?.methods?.[0];
-    if (stayBank) return {
-      bankName: stayBank.bankName,
-      accountNumber: stayBank.accountNumber,
-      holderName: stayBank.holderName
     };
     return undefined;
   };
@@ -133,6 +128,7 @@ export default function StayReservationFlow({
       groupId: stay.groupId || 'freestyle-tango',
       hostId: stay.host?.userId || 'adminstone',
       stayTitle: stay.title,
+      stayImageUrl: stay.images?.[0] || '',
       userId: user.uid,
       applicantName,
       userAvatar: profile?.photoURL || user.photoURL || '',
@@ -196,11 +192,12 @@ export default function StayReservationFlow({
         }
         
         if (formattedPhone.startsWith('0') && formattedPhone.length >= 10) {
-          const smsContent = t('checkout.sms_payment_reported', '[WoC] 예약 송금 보고가 완료되었습니다.\n숙소: {title}\n일정: {checkIn} - {checkOut}\n금액: {amount}원\n\n호스트가 입금 확인 후 최종 승인합니다.')
-            .replace('{title}', stay.title)
-            .replace('{checkIn}', formatDate(checkIn, 'shortMonthDay'))
-            .replace('{checkOut}', formatDate(checkOut, 'shortMonthDay'))
-            .replace('{amount}', grandTotal.toLocaleString());
+          const smsContent = `${t('checkout.sms_payment_reported', {
+            title: stay.title,
+            checkIn: formatDate(checkIn, 'shortMonthDay'),
+            checkOut: formatDate(addDays(checkOut, -1), 'shortMonthDay'),
+            amount: grandTotal.toLocaleString()
+          })} (${formatDate(checkOut, 'shortMonthDay')} 퇴실)`;
             
           try {
             const smsResult = await sendSmsViaSolapi(formattedPhone, smsContent);
@@ -227,7 +224,7 @@ export default function StayReservationFlow({
         try {
           const bookingMsg = `🏨 [STAY BOOKING]\n` +
             `Stay: ${stay.title}\n` +
-            `Dates: ${formatDate(checkIn, 'shortMonthDay')} - ${formatDate(checkOut, 'shortMonthDay')}\n` +
+            `Dates: ${formatDate(checkIn, 'shortMonthDay')} - ${formatDate(addDays(checkOut, -1), 'shortMonthDay')} (Check-out: ${formatDate(checkOut, 'shortMonthDay')})\n` +
             `Nights: ${nights}\n` +
             `Guests: ${guests}\n` +
             `Amount: ${sym}${fmt(grandTotal)}\n` +
@@ -309,10 +306,10 @@ export default function StayReservationFlow({
           <p className="text-sm font-bold text-on-surface truncate">{stay.title}</p>
           <div className="flex flex-wrap gap-1 mt-1">
             <span className="text-[10px] bg-surface-container text-on-surface-variant px-2 py-0.5 rounded-full font-bold">
-              {formatDate(checkIn, 'shortMonthDay')} - {formatDate(checkOut, 'shortMonthDay')}
+              {formatDate(checkIn, 'shortMonthDay')} - {formatDate(addDays(checkOut, -1), 'shortMonthDay')}
             </span>
             <span className="text-[10px] bg-surface-container text-on-surface-variant px-2 py-0.5 rounded-full font-bold">
-              {nights} {t('stay.nights_unit', 'Nights')}
+              {nights} {t('stay.nights_unit', 'Nights')} · {t('stay.checkout_date_label', '{date} 퇴실').replace('{date}', formatDate(checkOut, 'shortMonthDay'))}
             </span>
           </div>
         </div>
@@ -368,6 +365,44 @@ export default function StayReservationFlow({
             placeholder="010-0000-0000"
             className="w-full bg-surface-container-lowest border border-surface-container rounded-xl px-4 py-3 text-sm text-on-surface focus:outline-none focus:border-primary transition-all"
           />
+        </div>
+
+        {/* Cancellation Policy Accordion */}
+        <div className="border border-surface-container rounded-2xl overflow-hidden bg-surface-container-lowest mt-1">
+          <button
+            type="button"
+            onClick={() => setShowCancellationPolicy(!showCancellationPolicy)}
+            className="w-full flex items-center justify-between p-3.5 hover:bg-surface-container transition-colors text-xs font-bold text-on-surface"
+          >
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-rounded text-sm text-[#596061]">info</span>
+              <span>{t('stay.cancellation_policy_title', '취소 및 환불 정책 보기')}</span>
+            </div>
+            <span className={`material-symbols-rounded text-sm transition-transform duration-200 ${showCancellationPolicy ? 'rotate-180' : ''}`}>
+              keyboard_arrow_down
+            </span>
+          </button>
+          
+          {showCancellationPolicy && (
+            <div className="px-4 pb-4 pt-1 text-[11px] leading-relaxed text-[#596061] border-t border-surface-container/30 bg-surface-container-lowest divide-y divide-surface-container/40 animate-in fade-in duration-200">
+              <div className="flex justify-between py-2">
+                <span className="font-semibold">{t('stay.cancellation_policy_15d', '입주 15일 전')}</span>
+                <span className="font-bold text-primary">{t('stay.refund_90', '90% 환불')}</span>
+              </div>
+              <div className="flex justify-between py-2">
+                <span className="font-semibold">{t('stay.cancellation_policy_14_8d', '입주 14~8일 전')}</span>
+                <span className="font-bold text-[#e0a800]">{t('stay.refund_70', '70% 환불')}</span>
+              </div>
+              <div className="flex justify-between py-2">
+                <span className="font-semibold">{t('stay.cancellation_policy_7_1d', '입주 7~1일 전')}</span>
+                <span className="font-bold text-orange-500">{t('stay.refund_50', '50% 환불')}</span>
+              </div>
+              <div className="flex justify-between py-2">
+                <span className="font-semibold">{t('stay.cancellation_policy_today', '입주 당일')}</span>
+                <span className="font-bold text-red-500">{t('stay.refund_none', '환불 불가')}</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Terms */}

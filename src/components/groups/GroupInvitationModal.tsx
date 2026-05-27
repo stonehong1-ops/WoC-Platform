@@ -93,11 +93,11 @@ const GroupInvitationModal = ({ isOpen, onClose, group, currentUser, existingMem
         setSentCount(prev => prev + 1);
       }
       
-      alert(`Successfully sent ${selectedUsers.length} invitation(s)!`);
+      alert(t('group.invite.success', { user: selectedUsers.map(u => u.nickname).join(', ') }));
       onClose();
     } catch (error) {
       console.error('Invitation failed:', error);
-      alert('Failed to send some invitations. Please try again.');
+      alert(t('group.invite.fail'));
     } finally {
       setIsSending(false);
     }
@@ -114,8 +114,8 @@ const GroupInvitationModal = ({ isOpen, onClose, group, currentUser, existingMem
         {/* Header */}
         <div className="p-6 border-b border-slate-100 flex items-center justify-between shrink-0">
           <div>
-            <h2 className="text-xl font-headline font-bold text-[#242c51]">Invite New Member</h2>
-            <p className="text-sm text-slate-500 mt-1">Search and invite people to <span className="font-semibold text-[#0057bd]">{group.name}</span></p>
+            <h2 className="text-xl font-headline font-bold text-[#242c51]">{t('group.invite.title')}</h2>
+            <p className="text-sm text-slate-500 mt-1">{t('group.invite.desc', { group: group.name })}</p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-slate-50 rounded-full transition-colors">
             <span className="material-symbols-outlined text-slate-400">close</span>
@@ -155,7 +155,7 @@ const GroupInvitationModal = ({ isOpen, onClose, group, currentUser, existingMem
               type="text" 
               value={searchKeyword}
               onChange={(e) => handleSearchChange(e.target.value)}
-              placeholder="Search by nickname or email..." 
+              placeholder={t('group.invite.search_placeholder', 'Search...')} 
               className="w-full pl-11 pr-4 py-3 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-[#0057bd]/20 transition-all"
               autoFocus
             />
@@ -174,17 +174,17 @@ const GroupInvitationModal = ({ isOpen, onClose, group, currentUser, existingMem
             {isSearching ? (
               <div className="py-8 text-center">
                 <div className="w-8 h-8 border-3 border-slate-200 border-t-[#0057bd] rounded-full animate-spin mx-auto mb-3"></div>
-                <p className="text-sm text-slate-400">Searching...</p>
+                <p className="text-sm text-slate-400">{t('group.invite.searching')}</p>
               </div>
             ) : searchResults.length === 0 && searchKeyword.trim().length >= 2 ? (
               <div className="py-10 text-center">
                 <span className="material-symbols-outlined text-4xl text-slate-200">person_off</span>
-                <p className="text-sm text-slate-400 mt-2">No users found for "{searchKeyword}"</p>
+                <p className="text-sm text-slate-400 mt-2">{t('group.invite.no_users_found', 'No users found for "{keyword}"').replace('{keyword}', searchKeyword)}</p>
               </div>
             ) : searchResults.length === 0 ? (
               <div className="py-10 text-center">
                 <span className="material-symbols-outlined text-4xl text-slate-200">person_search</span>
-                <p className="text-sm text-slate-400 mt-2">Type at least 2 characters to search</p>
+                <p className="text-sm text-slate-400 mt-2">{t('group.invite.empty_search')}</p>
               </div>
             ) : (
               searchResults.map((user) => {

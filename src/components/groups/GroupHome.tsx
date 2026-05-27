@@ -1,7 +1,7 @@
 "use client";
 // 그룹 홈 메인 오케스트레이터 컴포넌트 - 전체 레이아웃 구성 및 라우팅 상태를 관리함.
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -51,7 +51,14 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
   const { t } = useLanguage();
   const { user, profile, loading } = useAuth();
   const { setGlobalNavHidden } = useNavigation();
-  const { openModal: openClassFlow } = useModalNavigation('classFlow');
+  const { openModal: originalOpenClassFlow } = useModalNavigation('classFlow');
+  const openClassFlow = useCallback((flow: string, options?: any) => {
+    setLocalClassFlow(flow);
+    if (options?.modal) {
+      setLocalModalId(options.modal);
+    }
+    originalOpenClassFlow(flow, options);
+  }, [originalOpenClassFlow]);
 
   // 커스텀 훅을 통한 모든 데이터 바인딩 로직 호출
   const {
@@ -401,7 +408,7 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
 
       {/* Main Content */}
       <main className="pt-[120px] md:pt-[176px] pb-12">
-        <div className={`max-w-7xl mx-auto ${activeTab === 'feed' || activeTab === 'home' || activeTab === 'live' || activeTab === 'calendar' || activeTab === 'board' || activeTab === 'members' || activeTab === 'about' || activeTab === 'settings' || activeTab === 'brand' || activeTab === 'class-setting' || activeTab === 'shop-setting' || activeTab === 'stay-setting' || activeTab === 'rental-setting' ? 'px-0 md:px-0 mt-0 space-y-0 pb-0' : 'px-4 md:px-8 space-y-10 mt-6 pb-12'}`}>
+        <div className={`max-w-7xl mx-auto ${activeTab === 'feed' || activeTab === 'home' || activeTab === 'live' || activeTab === 'calendar' || activeTab === 'board' || activeTab === 'members' || activeTab === 'about' || activeTab === 'settings' || activeTab === 'brand' || activeTab === 'class' || activeTab === 'class-setting' || activeTab === 'shop-setting' || activeTab === 'stay-setting' || activeTab === 'rental-setting' ? 'px-0 md:px-0 mt-0 space-y-0 pb-0' : 'px-4 md:px-8 space-y-10 mt-6 pb-12'}`}>
           
           {/* 1. 홈 피드 대시보드 탭 (Home) */}
           {visitedTabs.has('home') && (

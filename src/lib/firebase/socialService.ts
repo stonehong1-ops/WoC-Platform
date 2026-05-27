@@ -206,7 +206,8 @@ export const socialService = {
     if (socialSnap.exists()) {
       const social = socialSnap.data() as Social;
 
-      // User Notification
+      // User Notification & Organizer Todo Notification (Disabled as per Stone's request - handled via Chat)
+      /*
       await notificationService.createNotification({
         targetUserId: data.userId,
         type: 'SOCIAL_RESERVATION',
@@ -217,7 +218,6 @@ export const socialService = {
         category: 'SOCIAL'
       }, batch);
 
-      // Organizer Todo Notification
       if (social.organizerId) {
         await notificationService.createTodo({
           targetUserId: social.organizerId,
@@ -229,6 +229,7 @@ export const socialService = {
           category: 'SOCIAL'
         }, batch);
       }
+      */
     }
 
     await batch.commit();

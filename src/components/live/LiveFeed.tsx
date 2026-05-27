@@ -69,7 +69,7 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
   }, [entityType, entityId, userId]);
 
   const [firstCardReady, setFirstCardReady] = useState(false);
-  const [loadingPercent, setLoadingPercent] = useState(0);
+  const [loadingPercent, setLoadingPercent] = useState(100);
   const [isClassVideoLoaded, setIsClassVideoLoaded] = useState(false);
   const [isSocialVideoLoaded, setIsSocialVideoLoaded] = useState(false);
   const [isEventVideoLoaded, setIsEventVideoLoaded] = useState(false);
@@ -379,140 +379,47 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
     }
   };
 
-  // 대시보드 렌더링 후 대표 영상 단 1개의 백그라운드 프리로드 진행률 추적 및 리스너 등록
+  // 대시보드 진입 즉시 비디오 강제 가동 엔진
   useEffect(() => {
     if (!showDashboardIntro) return;
     
     const container = containerRef.current;
     if (!container) return;
 
-    // 만약 첫 피드가 비디오가 아니거나 없는 경우 즉시 100% (안전장치)
-    if (!firstVideoUrl) {
-      setLoadingPercent(100);
-      return;
-    }
-
-    const preloadVid = container.querySelector('#bg-preload-video') as HTMLVideoElement | null;
-    if (!preloadVid) {
-      // DOM 상에 비디오 요소를 아직 찾지 못한 경우 대기
-      return;
-    }
-
-    let progressInterval: NodeJS.Timeout | null = null;
-    let currentPercent = 0;
-
-    const startSmoothProgress = () => {
-      progressInterval = setInterval(() => {
-        if (currentPercent < 90) {
-          currentPercent += Math.random() > 0.5 ? 2 : 1;
-          setLoadingPercent(Math.min(currentPercent, 90));
-        }
-      }, 60); // 60ms 간격으로 스무스하게 올라가 기분 좋은 체감 선사
+    const playAllDashboardVideos = () => {
+      if (!container) return;
+      const videos = container.querySelectorAll('video');
+      videos.forEach((video) => {
+        // 비디오가 멈추지 않고 즉시 구동될 수 있도록 재생 강제 트리거 발사
+        video.play().catch(() => {
+          // 브라우저 정책상 재생 거부 시 조용히 넘김
+        });
+      });
     };
 
-    const handleVideoProgress = (e: Event) => {
-      const video = e.currentTarget as HTMLVideoElement;
-      if (video.buffered.length > 0 && video.duration) {
-        const bufferedEnd = video.buffered.end(video.buffered.length - 1);
-        const percent = Math.round((bufferedEnd / video.duration) * 100);
-        // 실제 네트워크 버퍼율이 가상 진행률보다 크면 실시간 동기화
-        if (percent > currentPercent) {
-          currentPercent = percent;
-          setLoadingPercent(Math.min(currentPercent, 100));
-        }
-        if (percent >= 100) {
-          completeLoading();
-        }
-      }
-    };
-
-    const completeLoading = () => {
-      if (progressInterval) {
-        clearInterval(progressInterval);
-        progressInterval = null;
-      }
-      currentPercent = 100;
-      setLoadingPercent(100);
-    };
-
-    // 재생 준비가 완료(loadeddata, canplay)되면 35%에 멈추지 않고 즉시 100%로 강제 채우기 완수
-    const handleVideoReady = () => {
-      completeLoading();
-    };
-
-    startSmoothProgress();
-
-    preloadVid.addEventListener('progress', handleVideoProgress);
-    preloadVid.addEventListener('canplay', handleVideoReady);
-    preloadVid.addEventListener('canplaythrough', handleVideoReady);
-    preloadVid.addEventListener('loadeddata', handleVideoReady);
-
-    // 이미 충분히 캐시되었거나 바로 재생 가능 상태라면 즉시 100%
-    if (preloadVid.readyState >= 2) {
-      completeLoading();
-    }
+    // DOM이 안전하게 렌더링된 후 강제 재생 가동
+    const timer = setTimeout(() => {
+      playAllDashboardVideos();
+    }, 150);
 
     return () => {
-      if (progressInterval) {
-        clearInterval(progressInterval);
-      }
-      preloadVid.removeEventListener('progress', handleVideoProgress);
-      preloadVid.removeEventListener('canplay', handleVideoReady);
-      preloadVid.removeEventListener('canplaythrough', handleVideoReady);
-      preloadVid.removeEventListener('loadeddata', handleVideoReady);
+      clearTimeout(timer);
     };
-  }, [showDashboardIntro, firstVideoUrl, posts]);
+  }, [showDashboardIntro]);
 
-  // 비디오 재생 방해 없이 DIVE IN 프로그레스 링 및 활성 상태만 실시간으로 정밀 업데이트하는 DOM 연동 효과
+  // DIVE IN 버튼의 상시 활성화 인스턴트 트리거 효과
   useEffect(() => {
     if (!showDashboardIntro) return;
     const container = containerRef.current;
     if (!container) return;
 
     const button = container.querySelector('[aria-label="Enter Live"]') as HTMLButtonElement | null;
-    const progressContainer = container.querySelector('[aria-label="Enter Live"] div.relative');
-    if (!progressContainer) return;
-
-    let filledPath = progressContainer.querySelector('path.text-primary') as SVGPathElement | null;
-    let percentText = progressContainer.querySelector('span.absolute') as HTMLSpanElement | null;
-
-    if (!filledPath) {
-      const svg = progressContainer.querySelector('svg');
-      if (svg) {
-        const basePath = svg.querySelector('path');
-        if (basePath) {
-          filledPath = basePath.cloneNode(true) as SVGPathElement;
-          filledPath.setAttribute('class', 'text-primary transition-all duration-300');
-          filledPath.setAttribute('stroke-dasharray', '0, 100');
-          svg.appendChild(filledPath);
-        }
-      }
-    }
-
-    if (filledPath) {
-      filledPath.setAttribute('stroke-dasharray', `${loadingPercent}, 100`);
-    }
-
     if (button) {
-      if (loadingPercent < 100) {
-        button.style.opacity = '0.6';
-        button.style.cursor = 'not-allowed';
-        button.classList.remove('animate-bounce-subtle');
-      } else {
-        button.style.opacity = '1.0';
-        button.style.cursor = 'pointer';
-        button.classList.add('animate-bounce-subtle');
-      }
+      button.style.opacity = '1.0';
+      button.style.cursor = 'pointer';
+      button.classList.add('animate-bounce-subtle');
     }
-
-    if (percentText) {
-      if (loadingPercent === 100) {
-        percentText.innerHTML = '<span class="material-symbols-outlined text-[14px] font-bold text-white select-none">play_arrow</span>';
-      } else {
-        percentText.innerText = `${loadingPercent}%`;
-      }
-    }
-  }, [loadingPercent, showDashboardIntro]);
+  }, [showDashboardIntro]);
 
   // Listen to global compose event
   useEffect(() => {
@@ -549,14 +456,10 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
     html = html.replace('0 Events', `${stats.eventCount} Events`);
     html = html.replace('3 Classes', `${stats.classCount} Classes`);
 
-    // 2.5. 프로그레스 링 실시간 초기 수치 반영
+    // 2.5. 0% 및 진행률 링을 배제하고 즉시 활성화된 컴팩트 재생 아이콘으로 상시 고정
     const initialRingHtml = `
-<div class="relative w-8 h-8 flex items-center justify-center bg-black/20 rounded-full shrink-0">
-<svg class="w-full h-full -rotate-90" viewbox="0 0 36 36">
-<path class="text-white/20" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3"></path>
-<path class="text-primary transition-all duration-300" stroke-dasharray="${loadingPercent}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3"></path>
-</svg>
-<span class="absolute text-[10px] font-bold text-white">${loadingPercent}%</span>
+<div class="relative w-8 h-8 flex items-center justify-center bg-primary rounded-full shrink-0">
+<span class="material-symbols-outlined text-[16px] font-bold text-white select-none">play_arrow</span>
 </div>
     `.trim();
 
@@ -564,9 +467,9 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
     html = html.replace(ringPattern, initialRingHtml);
 
     // DIVE IN 버튼 초기 비활성화/활성화 인라인 스타일 동적 매핑
-    const initialOpacity = loadingPercent < 100 ? '0.6' : '1.0';
-    const initialCursor = loadingPercent < 100 ? 'not-allowed' : 'pointer';
-    const initialBounceClass = loadingPercent < 100 ? '' : ' animate-bounce-subtle';
+    const initialOpacity = '1.0';
+    const initialCursor = 'pointer';
+    const initialBounceClass = ' animate-bounce-subtle';
     
     html = html.replace(
       '<button aria-label="Enter Live" class="',
@@ -653,17 +556,6 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
       ref={containerRef}
       className={`${isImmersive ? 'fixed inset-0 z-[100]' : 'relative w-full h-full min-h-[500px]'} bg-black overflow-hidden flex flex-col ${className}`}
     >
-      {showDashboardIntro && firstVideoUrl && (
-        <video
-          id="bg-preload-video"
-          src={firstVideoUrl}
-          muted
-          playsInline
-          preload="auto"
-          className="hidden"
-        />
-      )}
-
       {showDashboardIntro ? (
         /* 어제 현황판 인트로 대시보드 (하단 푸터바 가림 방지 pb-20 적용 및 동적 데이터 바인딩 헬퍼 결합) */
         <div 
