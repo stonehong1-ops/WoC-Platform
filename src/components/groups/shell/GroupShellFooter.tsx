@@ -223,43 +223,6 @@ export default function GroupShellFooter({
       `}</style>
 
       <AnimatePresence mode="wait">
-        {isInitialLoading ? (
-          <motion.div
-            key="footer-skeleton"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            style={{ width: '100%', display: 'flex', alignItems: 'center', height: '100%' }}
-          >
-            {/* Section 1: Members Skeleton */}
-            <div className="presence-group" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0px', paddingRight: '4px', width: '50px', flexShrink: 0 }}>
-              <div className="w-10 h-4 skeleton-shimmer rounded-md" />
-              <div className="w-8 h-2 skeleton-shimmer rounded-md mt-1.5" />
-            </div>
-
-            {/* Divider */}
-            <div style={{ width: '1px', height: '32px', background: 'rgba(255,255,255,0.2)', flexShrink: 0 }} />
-
-            {/* Section 2: Active Users Skeleton */}
-            <div className="presence-group" style={{ flexShrink: 0 }}>
-              <div className="avatars" style={{ display: 'flex', alignItems: 'center' }}>
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="mini-avatar skeleton-shimmer" style={{ marginLeft: i > 1 ? '-16px' : '0', zIndex: 10 - i }} />
-                ))}
-              </div>
-            </div>
-
-            {/* Divider */}
-            <div style={{ width: '1px', height: '32px', background: 'rgba(255,255,255,0.2)', flexShrink: 0 }} />
-
-            {/* Section 3: Event Ticker Skeleton */}
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden', paddingLeft: '4px' }}>
-              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'rgba(255,255,255,0.4)', flexShrink: 0 }} />
-              <div className="w-1/2 h-4 skeleton-shimmer rounded-md" />
-            </div>
-          </motion.div>
-        ) : (
           <motion.div
             key="footer-real-data"
             initial={{ opacity: 0 }}
@@ -359,7 +322,6 @@ export default function GroupShellFooter({
               </div>
             </div>
           </motion.div>
-        )}
       </AnimatePresence>
     </div>
   );
