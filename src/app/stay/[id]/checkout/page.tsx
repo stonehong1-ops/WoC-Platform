@@ -237,7 +237,7 @@ function CheckoutContent() {
             checkOut: formatDate(addDays(checkOut, -1), 'shortMonthDay'),
             name: applicantName,
             amount: grandTotal.toLocaleString()
-          })} (${formatDate(checkOut, 'shortMonthDay')} 퇴실)`;
+          })} (${t('stay.checkout_date_label', '{date} 퇴실').replace('{date}', formatDate(checkOut, 'shortMonthDay'))})`;
           const smsResult = await sendSmsViaSolapi(
             formattedPhone,
             smsContent
@@ -441,7 +441,7 @@ function CheckoutContent() {
         </SectionCard>
 
         {/* Payment Info */}
-        <SectionCard icon="account_balance" title={t('stay.checkout.bank_transfer')} badge="Required">
+        <SectionCard icon="account_balance" title={t('stay.checkout.bank_transfer')} badge={t('common.required', 'Required')}>
           <div className="bg-[#f8f9fa] rounded-2xl p-4 border border-[#e0e4e5] relative group hover:bg-[#f2f4f4] transition-colors">
             <div className="space-y-3">
               <div>

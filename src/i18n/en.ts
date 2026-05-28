@@ -1605,6 +1605,11 @@ export const en: Record<string, string> = {
     'stay.create.alert.required_fields': 'Please fill out all required fields. (Title, Price, Region, and at least 1 Photo are required)',
     'stay.create.alert.max_photos': 'You can register up to {max} photos.',
     'stay.create.alert.failed': 'Failed to register stay. Please try again.',
+    'stay.host_automated_review_reply': 'I will review and reply after confirming the deposit.',
+    'stay.link_copied': 'Link copied to clipboard!',
+    'stay.map_guide': 'Map Guide',
+    'stay.confirm_clear_wishlist': 'Are you sure you want to clear your wishlist?',
+    'stay.address': 'Address',
 
     // Lost & Found
     'lost.latest': 'Latest',

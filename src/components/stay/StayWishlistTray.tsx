@@ -64,7 +64,7 @@ export default function StayWishlistTray({ likes, userId, onStayClick, stays }: 
 
   const handleClearAll = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm('Are you sure you want to clear your wishlist?')) return;
+    if (!confirm(t('stay.confirm_clear_wishlist', 'Are you sure you want to clear your wishlist?'))) return;
     try {
       await stayService.clearAllLikes(userId);
       setTrayState('COLLAPSED');

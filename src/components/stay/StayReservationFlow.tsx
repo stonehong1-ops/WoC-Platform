@@ -197,7 +197,7 @@ export default function StayReservationFlow({
             checkIn: formatDate(checkIn, 'shortMonthDay'),
             checkOut: formatDate(addDays(checkOut, -1), 'shortMonthDay'),
             amount: grandTotal.toLocaleString()
-          })} (${formatDate(checkOut, 'shortMonthDay')} 퇴실)`;
+          })} (${t('stay.checkout_date_label', '{date} 퇴실').replace('{date}', formatDate(checkOut, 'shortMonthDay'))})`;
             
           try {
             const smsResult = await sendSmsViaSolapi(formattedPhone, smsContent);
@@ -267,7 +267,7 @@ export default function StayReservationFlow({
           roomId,
           senderId: hostId,
           senderName: 'Host',
-          text: '입금 확인 후 답변드리겠습니다. I will review and reply.',
+          text: t('stay.host_automated_review_reply', '입금 확인 후 답변드리겠습니다. I will review and reply.'),
           type: 'text'
         });
       }

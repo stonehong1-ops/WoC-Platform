@@ -1700,6 +1700,11 @@ export const kr: Record<string, string> = {
     'stay.create.alert.required_fields': '필수 입력 필드를 모두 작성해 주세요. (제목, 가격, 지역 및 1장 이상의 사진 필수)',
     'stay.create.alert.max_photos': '사진은 최대 {max}장까지만 등록할 수 있습니다.',
     'stay.create.alert.failed': '숙소 등록에 실패했습니다. 다시 시도해 주세요.',
+    'stay.host_automated_review_reply': '입금 확인 후 답변드리겠습니다. I will review and reply.',
+    'stay.link_copied': '클립보드에 링크가 복사되었습니다!',
+    'stay.map_guide': '지도 안내',
+    'stay.confirm_clear_wishlist': '위시리스트를 모두 비우시겠습니까?',
+    'stay.address': '주소',
 
     // Lost & Found
     'lost.latest': '최신순',

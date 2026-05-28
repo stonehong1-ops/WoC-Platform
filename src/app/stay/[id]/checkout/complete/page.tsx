@@ -163,12 +163,13 @@ function CompleteContent() {
 }
 
 export default function BookingCompletePage() {
+  const { t } = useLanguage();
   return (
     <Suspense fallback={
       <div className="bg-white min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="w-8 h-8 border-3 border-primary/30 border-t-primary rounded-full animate-spin" />
-          <span className="text-xs font-bold text-[#acb3b4]">Loading...</span>
+          <span className="text-xs font-bold text-[#acb3b4]">{t('common.loading', 'Loading...')}</span>
         </div>
       </div>
     }>

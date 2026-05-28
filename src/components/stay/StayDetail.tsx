@@ -240,7 +240,7 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike }: S
       } catch (err) { console.error('Share failed:', err); }
     } else {
       navigator.clipboard.writeText(window.location.href);
-      alert('Link copied to clipboard.');
+      alert(t('stay.link_copied', 'Link copied to clipboard!'));
     }
   };
 
@@ -817,7 +817,7 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike }: S
                     <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-100/50 mb-3 flex items-start gap-2">
                       <span className="material-symbols-outlined text-primary text-[18px] shrink-0 mt-0.5">location_on</span>
                       <div>
-                        <strong className="text-[11px] text-[#acb3b4] font-black uppercase tracking-wider block mb-0.5">{t('stay.address') || 'ADDRESS'}</strong>
+                        <strong className="text-[11px] text-[#acb3b4] font-black uppercase tracking-wider block mb-0.5">{t('stay.address', 'Address')}</strong>
                         <p className="text-sm font-bold text-[#2d3435]">{stay.location.address}</p>
                       </div>
                     </div>
@@ -825,7 +825,7 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike }: S
                   
                   {stay.location?.mapImageUrl && (
                     <div className="w-full aspect-[16/9] rounded-2xl overflow-hidden border border-slate-100 shadow-sm mb-3">
-                      <img src={stay.location.mapImageUrl} alt="Map Guide" className="w-full h-full object-cover" />
+                      <img src={stay.location.mapImageUrl} alt={t('stay.map_guide', 'Map Guide')} className="w-full h-full object-cover" />
                     </div>
                   )}
 
