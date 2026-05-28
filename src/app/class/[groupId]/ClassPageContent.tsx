@@ -92,8 +92,8 @@ export default function ClassPageContent({
     return (
       <div className="min-h-screen bg-background flex flex-col justify-center items-center space-y-4">
         <span className="material-symbols-outlined text-4xl text-outline">error</span>
-        <h2 className="font-['Plus_Jakarta_Sans'] text-[1.125rem] font-bold leading-[1.5rem] text-on-surface">Club not found</h2>
-        <button onClick={() => isOverlay && onClose ? onClose() : router.back()} className="text-primary hover:underline">Go back</button>
+        <h2 className="font-['Plus_Jakarta_Sans'] text-[1.125rem] font-bold leading-[1.5rem] text-on-surface">{t('class.detail.club_not_found')}</h2>
+        <button onClick={() => isOverlay && onClose ? onClose() : router.back()} className="text-primary hover:underline">{t('class.detail.go_back')}</button>
       </div>
     );
   }
@@ -113,7 +113,7 @@ export default function ClassPageContent({
           <span className="material-symbols-outlined text-xl text-[#596061]">arrow_back</span>
         </button>
         <div className="flex flex-col items-center">
-          <h2 className="text-base font-black text-[#2d3435]">Class Schedule</h2>
+          <h2 className="text-base font-black text-[#2d3435]">{t('class.detail.schedule_title')}</h2>
         </div>
         
         <div className="flex items-center gap-2">
@@ -136,13 +136,13 @@ export default function ClassPageContent({
           {!isRegistrationOpen && (
             <div className="bg-rose-50 border border-rose-200 text-rose-600 rounded-xl px-4 py-3 text-xs font-bold mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-sm text-rose-500">warning</span>
-              {language === 'KR' ? '지금은 수업신청이 불가합니다.' : 'Registrations are currently closed for this month.'}
+              {t('class.registrationClosed')}
             </div>
           )}
           
           {/* Title Banner */}
           <div className="bg-gradient-to-r from-[#0057bd] to-[#3b82f6] rounded-2xl p-5 mb-6 text-center shadow-lg shadow-blue-500/20">
-            <p className="text-[10px] font-bold text-blue-200 uppercase tracking-[0.2em] mb-1">CLASS INFORMATION</p>
+            <p className="text-[10px] font-bold text-blue-200 uppercase tracking-[0.2em] mb-1">{t('class.detail.info_banner')}</p>
             <h1 className="text-xl font-black text-white mb-3">{group.name}</h1>
             <div className="flex items-center justify-center gap-8">
               <p className="text-base font-black text-white tracking-widest min-w-[120px] text-center">{monthDisplay}</p>
@@ -154,7 +154,7 @@ export default function ClassPageContent({
             <div className="mb-6 bg-[#fff8f0] border border-[#d97706]/20 rounded-2xl p-4">
               <div className="flex items-center gap-2 mb-2">
                 <span className="material-symbols-outlined text-[#d97706] text-lg">category</span>
-                <h3 className="text-sm font-black text-[#d97706]">Bundle Packages</h3>
+                <h3 className="text-sm font-black text-[#d97706]">{t('class.detail.bundle_packages')}</h3>
               </div>
               <div className="space-y-3">
                 {discounts.map(disc => (
@@ -195,7 +195,7 @@ export default function ClassPageContent({
 
           {/* Classes Sort & List */}
           <div className="flex items-center justify-between mb-4 mt-8">
-            <h3 className="text-sm font-black text-[#2d3435]">Class Schedule</h3>
+            <h3 className="text-sm font-black text-[#2d3435]">{t('class.detail.schedule_title')}</h3>
             <div className="relative" />
           </div>
 
@@ -213,7 +213,9 @@ export default function ClassPageContent({
                     <div className="px-4 py-2.5 flex items-center gap-2" style={{ backgroundColor: `${color}10` }}>
                       <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
                       <p className="text-xs font-black uppercase tracking-[0.15em]" style={{ color }}>{DAY_LABELS[day]}</p>
-                      <span className="text-[10px] font-bold text-[#acb3b4] ml-auto">{dayClasses.length} class{dayClasses.length > 1 ? 'es' : ''}</span>
+                      <span className="text-[10px] font-bold text-[#acb3b4] ml-auto">
+                        {dayClasses.length} {language === 'KR' ? '개 수업' : (dayClasses.length > 1 ? 'classes' : 'class')}
+                      </span>
                     </div>
 
                     <div className="divide-y divide-[#f2f4f4]">
@@ -281,7 +283,7 @@ export default function ClassPageContent({
                               </p>
                               <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1">
                                 {startDisplay && (
-                                  <span className="text-[11px] font-bold" style={{ color }}>Start: {startDisplay}</span>
+                                  <span className="text-[11px] font-bold" style={{ color }}>{t('class.detail.start')}: {startDisplay}</span>
                                 )}
                                 {timeDisplay && (
                                   <span className="text-[11px] text-[#596061]">{timeDisplay}</span>
@@ -289,7 +291,7 @@ export default function ClassPageContent({
                               </div>
                               {schedDates && (
                                 <p className="text-[10px] text-[#acb3b4] mt-0.5">
-                                  Schedule: <span className="font-bold text-[#596061]">{schedDates}</span>
+                                  {t('class.detail.schedule_label')}: <span className="font-bold text-[#596061]">{schedDates}</span>
                                 </p>
                               )}
                             </div>
@@ -339,7 +341,7 @@ export default function ClassPageContent({
                                       : 'text-[#0057bd] border-[#0057bd] hover:bg-[#0057bd]/5'
                                   }`}
                                 >
-                                  RESERVE
+                                  {t('class.reserve').toUpperCase()}
                                 </button>
                               ) : selectedClasses.has(cls.id) ? (
                                 <button 
@@ -433,7 +435,7 @@ export default function ClassPageContent({
                         </p>
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1">
                           {startDisplay && (
-                            <span className="text-[11px] font-bold text-[#0057bd]">Start: {startDisplay}</span>
+                            <span className="text-[11px] font-bold text-[#0057bd]">{t('class.detail.start')}: {startDisplay}</span>
                           )}
                           {timeDisplay && (
                             <span className="text-[11px] text-[#596061]">{timeDisplay}</span>
@@ -441,7 +443,7 @@ export default function ClassPageContent({
                         </div>
                         {schedDates && (
                           <p className="text-[10px] text-[#acb3b4] mt-0.5">
-                            Schedule: <span className="font-bold text-[#596061]">{schedDates}</span>
+                            {t('class.detail.schedule_label')}: <span className="font-bold text-[#596061]">{schedDates}</span>
                           </p>
                         )}
                       </div>
@@ -491,7 +493,7 @@ export default function ClassPageContent({
                                 : 'text-[#0057bd] border-[#0057bd] hover:bg-[#0057bd]/5'
                             }`}
                           >
-                            RESERVE
+                            {t('class.reserve').toUpperCase()}
                           </button>
                         ) : selectedClasses.has(cls.id) ? (
                           <button 
@@ -523,7 +525,7 @@ export default function ClassPageContent({
             <div className="mt-6 border border-[#e0e4e5] rounded-2xl overflow-hidden">
               <div className="bg-[#f8f9fa] px-4 py-2.5 border-b border-[#e0e4e5] flex items-center gap-2">
                 <span className="material-symbols-outlined text-sm text-[#0057bd]">account_balance</span>
-                <p className="text-[10px] font-black text-[#0057bd] uppercase tracking-[0.15em] flex-1">Class Payment Account</p>
+                <p className="text-[10px] font-black text-[#0057bd] uppercase tracking-[0.15em] flex-1">{t('class.detail.payment_account')}</p>
                 <button 
                   onClick={() => {
                     navigator.clipboard.writeText(bank.accountNumber);
@@ -537,15 +539,15 @@ export default function ClassPageContent({
               </div>
               <div className="p-4 space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-[11px] text-[#acb3b4] uppercase font-bold">Bank</span>
+                  <span className="text-[11px] text-[#acb3b4] uppercase font-bold">{t('class.detail.bank')}</span>
                   <span className="text-sm font-bold text-[#2d3435]">{bank.bankName}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-[11px] text-[#acb3b4] uppercase font-bold">Account</span>
+                  <span className="text-[11px] text-[#acb3b4] uppercase font-bold">{t('class.detail.account')}</span>
                   <span className="text-sm font-black text-[#2d3435] font-mono tracking-wide">{bank.accountNumber}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-[11px] text-[#acb3b4] uppercase font-bold">Holder</span>
+                  <span className="text-[11px] text-[#acb3b4] uppercase font-bold">{t('class.detail.holder')}</span>
                   <span className="text-sm font-bold text-[#2d3435]">{bank.accountHolder}</span>
                 </div>
               </div>
@@ -556,7 +558,7 @@ export default function ClassPageContent({
           <div className="mt-4 border border-[#e0e4e5] rounded-2xl overflow-hidden">
             <div className="bg-[#f8f9fa] px-4 py-2.5 border-b border-[#e0e4e5] flex items-center gap-2">
               <span className="material-symbols-outlined text-sm text-[#596061]">support_agent</span>
-              <p className="text-[10px] font-black text-[#596061] uppercase tracking-[0.15em]">Contact</p>
+              <p className="text-[10px] font-black text-[#596061] uppercase tracking-[0.15em]">{t('class.detail.contact')}</p>
             </div>
             <div className="p-4 flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-[#f0f4ff] flex items-center justify-center flex-shrink-0 overflow-hidden">
@@ -615,7 +617,7 @@ export default function ClassPageContent({
           setPassSelectedClassIds(new Set());
           setClassPartners({});
         }}
-        title={language === 'KR' ? (isDiscountSelected ? "번들 패키지 신청" : "클래스 신청") : (isDiscountSelected ? "Bundle Package Registration" : "Class Registration")}
+        title={isDiscountSelected ? t('class.checkout.bundle_registration') : t('class.checkout.class_registration')}
         subtitle={isDiscountSelected ? undefined : `${group?.name || 'Club'} · ${monthDisplay}`}
         isSubmitDisabled={isDiscountSelected && passSelectedClassIds.size === 0}
         totalAmount={Array.from(selectedClasses).reduce((sum, id) => {
@@ -625,7 +627,7 @@ export default function ClassPageContent({
         currency={selectedClasses.size > 0 ? allItemsOriginal.find(c => c.id === Array.from(selectedClasses)[0])?.currency || 'KRW' : 'KRW'}
         onCheckout={handleCheckoutSubmit}
         isProcessing={isBooking}
-        buttonText={language === 'KR' ? "신청서 제출" : "Submit Request"}
+        buttonText={t('class.submit_request')}
         bankDetails={{
           bankName: (group as any)?.classPaymentSettings?.bankDetails?.bankName || (group as any)?.bankDetails?.bankName || (group as any)?.bankName || 'Kookmin Bank',
           accountHolder: (group as any)?.classPaymentSettings?.bankDetails?.accountHolder || (group as any)?.bankDetails?.accountHolder || (group as any)?.accountHolder || group?.name || 'World of Community',
@@ -636,19 +638,19 @@ export default function ClassPageContent({
         <div className="space-y-6 py-2">
           {/* Role Selection */}
           <div>
-            <h4 className="text-sm font-bold text-neutral-900 dark:text-white mb-3">{language === 'KR' ? "역할 선택" : "Select Role"} <span className="text-error">*</span></h4>
+            <h4 className="text-sm font-bold text-neutral-900 dark:text-white mb-3">{t('class.checkout.select_role')} <span className="text-error">*</span></h4>
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => setSelectedRole('leader')}
                 className={`flex flex-col items-center justify-center py-4 rounded-xl border-2 transition-all ${selectedRole === 'leader' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-300'}`}
               >
-                <span className={`text-sm font-black uppercase ${selectedRole === 'leader' ? 'text-blue-700 dark:text-blue-400' : 'text-neutral-700 dark:text-neutral-300'}`}>{language === 'KR' ? "리더 ♂️" : "Leader ♂️"}</span>
+                <span className={`text-sm font-black uppercase ${selectedRole === 'leader' ? 'text-blue-700 dark:text-blue-400' : 'text-neutral-700 dark:text-neutral-300'}`}>{t('class.checkout.role_leader')}</span>
               </button>
               <button
                 onClick={() => setSelectedRole('follower')}
                 className={`flex flex-col items-center justify-center py-4 rounded-xl border-2 transition-all ${selectedRole === 'follower' ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20' : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-300'}`}
               >
-                <span className={`text-sm font-black uppercase ${selectedRole === 'follower' ? 'text-purple-700 dark:text-purple-400' : 'text-neutral-700 dark:text-neutral-300'}`}>{language === 'KR' ? "팔로어 ♀️" : "Follower ♀️"}</span>
+                <span className={`text-sm font-black uppercase ${selectedRole === 'follower' ? 'text-purple-700 dark:text-purple-400' : 'text-neutral-700 dark:text-neutral-300'}`}>{t('class.checkout.role_follower')}</span>
               </button>
             </div>
           </div>
@@ -657,7 +659,7 @@ export default function ClassPageContent({
             <>
               {/* Bundle Info */}
               <div className="bg-neutral-50 dark:bg-neutral-800 rounded-2xl p-4 border border-neutral-200 dark:border-neutral-700">
-                <h4 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-3">{language === 'KR' ? "신청된 번들" : "Applied Bundle"}</h4>
+                <h4 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-3">{t('class.checkout.applied_bundle')}</h4>
                 {Array.from(selectedClasses).map(classId => {
                   const item = allItemsOriginal.find(c => c.id === classId);
                   if (!item) return null;
@@ -674,7 +676,7 @@ export default function ClassPageContent({
 
               {/* Participating Classes Checkbox */}
               <div className="bg-neutral-50 dark:bg-neutral-800 rounded-2xl p-4 border border-neutral-200 dark:border-neutral-700">
-                <h4 className="text-sm font-bold text-neutral-900 dark:text-white mb-3">{language === 'KR' ? "참여할 클래스 선택" : "Select Classes to Attend"} <span className="text-error">*</span></h4>
+                <h4 className="text-sm font-bold text-neutral-900 dark:text-white mb-3">{t('class.checkout.select_classes_to_attend')} <span className="text-error">*</span></h4>
                 <div className="space-y-2">
                   {(() => {
                     const passId = Array.from(selectedClasses)[0];
@@ -798,7 +800,7 @@ export default function ClassPageContent({
                   })()}
                 </div>
                 <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-2 text-right">
-                  {language === 'KR' ? "선택됨: " : "Selected: "}{passSelectedClassIds.size} / {(() => {
+                  {t('class.checkout.selected_label')}{passSelectedClassIds.size} / {(() => {
                     const passId = Array.from(selectedClasses)[0];
                     const pass = allItems.find(c => c.id === passId);
                     const passClassIds = (pass as any)?.includedClassIds || [];
@@ -812,7 +814,7 @@ export default function ClassPageContent({
           ) : (
             /* Applied Items - 일반 클래스/번들 */
             <div className="space-y-3">
-              <h4 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest px-1">{language === 'KR' ? "신청된 클래스" : "Applied Classes"}</h4>
+              <h4 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest px-1">{t('class.checkout.applied_classes')}</h4>
               {Array.from(selectedClasses).map(classId => {
                 const item = allItems.find(c => c.id === classId);
                 if (!item) return null;
@@ -859,12 +861,12 @@ export default function ClassPageContent({
         <UnifiedCheckoutModal
           isOpen={checkoutModalOpen}
           onClose={() => setCheckoutModalOpen(false)}
-          title="Special Class Reservation"
+          title={t('class.booking_special_title')}
           subtitle={`${selectedClassDetail.title} · ${selectedClassDetail.schedule?.[0]?.date ? new Date(selectedClassDetail.schedule[0].date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }) : 'Date TBD'}`}
           totalAmount={selectedClassDetail.amount || 0}
           onCheckout={handleCheckoutSubmit}
           isProcessing={isBooking}
-          buttonText="Submit Request"
+          buttonText={t('class.submit_request')}
           bankDetails={{
             bankName: (group as any)?.bankName || 'Kookmin Bank',
             accountHolder: (group as any)?.accountHolder || group?.name || 'World of Community',
@@ -898,27 +900,27 @@ export default function ClassPageContent({
             </div>
 
             <div>
-              <h4 className="text-sm font-bold text-neutral-900 dark:text-white mb-3">Select Role</h4>
+              <h4 className="text-sm font-bold text-neutral-900 dark:text-white mb-3">{t('class.checkout.select_role')}</h4>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => setCheckoutRole('leader')}
                   className={`flex flex-col items-center justify-center py-4 rounded-xl border-2 transition-all ${checkoutRole === 'leader' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-300'}`}
                 >
-                  <span className={`text-sm font-black uppercase ${checkoutRole === 'leader' ? 'text-blue-700 dark:text-blue-400' : 'text-neutral-700 dark:text-neutral-300'}`}>Leader</span>
+                  <span className={`text-sm font-black uppercase ${checkoutRole === 'leader' ? 'text-blue-700 dark:text-blue-400' : 'text-neutral-700 dark:text-neutral-300'}`}>{t('class.leader')}</span>
                 </button>
                 <button
                   onClick={() => setCheckoutRole('follower')}
                   className={`flex flex-col items-center justify-center py-4 rounded-xl border-2 transition-all ${checkoutRole === 'follower' ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20' : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-300'}`}
                 >
-                  <span className={`text-sm font-black uppercase ${checkoutRole === 'follower' ? 'text-purple-700 dark:text-purple-400' : 'text-neutral-700 dark:text-neutral-300'}`}>Follower</span>
+                  <span className={`text-sm font-black uppercase ${checkoutRole === 'follower' ? 'text-purple-700 dark:text-purple-400' : 'text-neutral-700 dark:text-neutral-300'}`}>{t('class.follower')}</span>
                 </button>
               </div>
             </div>
             
             <div className="bg-neutral-50 dark:bg-neutral-800 rounded-xl p-4 border border-neutral-100 dark:border-neutral-700">
-              <h4 className="text-[13px] font-black text-neutral-900 dark:text-white mb-2 flex items-center gap-1.5"><span className="material-symbols-outlined text-[16px] text-blue-500">info</span> Notice</h4>
+              <h4 className="text-[13px] font-black text-neutral-900 dark:text-white mb-2 flex items-center gap-1.5"><span className="material-symbols-outlined text-[16px] text-blue-500">info</span> {t('class.booking_notice_title')}</h4>
               <p className="text-xs font-medium text-neutral-600 dark:text-neutral-400 leading-relaxed">
-                After submitting this request, your booking will be in "Waiting Confirmation" status. You will receive an instruction for the payment. Your spot is finalized once the host confirms the payment.
+                {t('class.booking_notice_desc')}
               </p>
             </div>
           </div>

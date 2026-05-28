@@ -72,7 +72,7 @@ export default function GroupsPageContent() {
         <section className="space-y-4">
           <div className="flex items-end justify-between">
             <div>
-              <h2 className="text-2xl font-extrabold font-headline tracking-tight text-on-background">What's New</h2>
+              <h2 className="text-2xl font-extrabold font-headline tracking-tight text-on-background">{t('groups.whats_new')}</h2>
               <p className="text-on-surface-variant text-sm font-medium">{t('groups.whats_new_desc')}</p>
             </div>
             <button
@@ -133,7 +133,7 @@ export default function GroupsPageContent() {
         {/* Category Best Section */}
         <section className="space-y-4">
           <div>
-            <h2 className="text-2xl font-extrabold font-headline tracking-tight text-on-background">Category Best</h2>
+            <h2 className="text-2xl font-extrabold font-headline tracking-tight text-on-background">{t('groups.category_best')}</h2>
             <p className="text-on-surface-variant text-sm font-medium">{t('groups.category_best_desc')}</p>
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -259,7 +259,7 @@ export default function GroupsPageContent() {
             )) : (
               <div className="flex flex-col items-center justify-center py-20 text-on-surface-variant/50">
                 <span className="material-symbols-outlined text-6xl mb-4 opacity-20">search_off</span>
-                <p className="font-medium">No communities found in this category.</p>
+                <p className="font-medium">{t('groups.no_communities_found')}</p>
               </div>
             )}
           </main>
