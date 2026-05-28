@@ -719,10 +719,81 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
                   </div>
                 )}
 
-                {/* 2. Theme Setting Section */}
-                <div className="space-y-3">
+                {/* 2. Group Settings / Participants */}
+                <div className="space-y-3.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-gray-400">{t('CHAT.SIDEBAR_MEMBERS_TITLE', '참여자 목록')}</span>
+                    {/* Invite Button directly in the header of members list */}
+                    {user && (
+                      <button 
+                        onClick={() => {
+                          setIsSidebarOpen(false);
+                          triggerInvite();
+                        }}
+                        className="px-2.5 py-1 bg-primary/5 hover:bg-primary/10 text-primary text-[10.5px] font-extrabold rounded-lg flex items-center gap-1 transition-all active:scale-95 border border-primary/10"
+                      >
+                        <span className="material-symbols-outlined text-[13px] font-black">person_add</span>
+                        <span>{t('chatroom.invite', '초대')}</span>
+                      </button>
+                    )}
+                  </div>
+                  
+                  {/* Real-time Member List directly visible in sidebar (no separate modal popup button needed) */}
+                  <div className="max-h-[280px] overflow-y-auto no-scrollbar space-y-2.5 pr-0.5">
+                    {allParticipantsList.map((participant) => (
+                      <div key={participant.id} className="flex items-center gap-3 py-2 px-2.5 hover:bg-gray-50/80 border border-transparent hover:border-gray-100/50 rounded-2xl transition-all">
+                        {participant.photoURL ? (
+                          <img 
+                            src={participant.photoURL} 
+                            className="w-7.5 h-7.5 rounded-xl object-cover ring-2 ring-white shadow-3xs shrink-0" 
+                            alt="" 
+                          />
+                        ) : (
+                          <div className="w-7.5 h-7.5 rounded-xl bg-gray-50 text-gray-400 flex items-center justify-center shrink-0 border border-gray-100">
+                            <span className="material-symbols-outlined text-[15px]">person</span>
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0 flex flex-col text-left">
+                          <span className="text-[11px] font-black text-gray-800 leading-tight truncate flex items-center gap-1">
+                            {participant.nickname}
+                            {participant.isMe && (
+                              <span className="text-[9px] font-extrabold text-[#0057bd] bg-[#0057bd]/10 px-1 py-0.5 rounded-md scale-90 origin-left">
+                                {t('chat.label_me', '나')}
+                              </span>
+                            )}
+                          </span>
+                          {participant.nativeNickname && (
+                            <span className="text-[8.5px] font-bold text-gray-400 truncate leading-none mt-0.5">
+                              {participant.nativeNickname}
+                            </span>
+                          )}
+                        </div>
+                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${participant.isOnline ? 'bg-green-500 shadow-[0_0_6px_#22c55e]' : 'bg-slate-300'}`} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 3. Opacity Control */}
+                <div className="space-y-3 border-t border-gray-100/50 pt-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-gray-400">{t('CHAT.SIDEBAR_OPACITY_TITLE', '대화방 불투명도 스케일')}</span>
+                    <span className="text-[10px] font-black text-primary">{bgOpacity}%</span>
+                  </div>
+                  <input 
+                    type="range" 
+                    min="30" 
+                    max="100" 
+                    value={bgOpacity}
+                    onChange={(e) => setBgOpacity(parseInt(e.target.value))}
+                    className="w-full h-1 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-primary"
+                  />
+                </div>
+
+                {/* 4. Theme Setting Section (Moved to the bottom, horizontal scrollable) */}
+                <div className="space-y-2.5 border-t border-gray-100/50 pt-4">
                   <span className="text-[10px] font-black uppercase tracking-wider text-gray-400">{t('CHAT.SIDEBAR_THEME_TITLE', '배경 테마 설정')}</span>
-                  <div className="grid grid-cols-5 gap-2.5">
+                  <div className="flex items-center gap-3 overflow-x-auto no-scrollbar whitespace-nowrap py-2 px-1 scroll-smooth">
                     {[
                       "#b2c7da", // 카톡 블루 기본
                       "#fadbd8", // 파스텔 핑크
@@ -738,8 +809,8 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
                       <button 
                         key={hexColor}
                         onClick={() => handleBgColorChange(hexColor)}
-                        className={`w-8 h-8 rounded-full flex items-center justify-center transition-all border shadow-xs hover:scale-110 active:scale-90 relative ${
-                          chatBgColor === hexColor ? 'border-primary ring-2 ring-primary/20 scale-102' : 'border-gray-200'
+                        className={`w-8.5 h-8.5 rounded-full flex-shrink-0 flex items-center justify-center transition-all border shadow-xs hover:scale-110 active:scale-90 relative ${
+                          chatBgColor === hexColor ? 'border-primary ring-2 ring-primary/20 scale-105' : 'border-gray-200'
                         }`}
                         style={{ backgroundColor: hexColor }}
                       >
@@ -748,93 +819,6 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
                         )}
                       </button>
                     ))}
-                  </div>
-                </div>
-
-                {/* 3. Opacity Control */}
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-gray-400">{t('CHAT.SIDEBAR_OPACITY_TITLE', '대화방 불투명도 스케일')}</span>
-                    <span className="text-[10px] font-black text-primary">{bgOpacity}%</span>
-                  </div>
-                  <input 
-                    type="range" 
-                    min="30" 
-                    max="100" 
-                    value={bgOpacity}
-                    onChange={(e) => setBgOpacity(parseInt(e.target.value))}
-                    className="w-full h-1 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-primary"
-                  />
-                </div>
-
-                {/* 4. Group Settings / Participants */}
-                <div className="space-y-3">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-gray-400">{t('CHAT.SIDEBAR_MEMBERS_TITLE', '참여자 목록')}</span>
-                  <div className="flex flex-col gap-2">
-                    <button 
-                      onClick={() => {
-                        setIsGroupMembersOpen(true);
-                        setIsSidebarOpen(false);
-                      }}
-                      className="w-full px-4 py-3 rounded-2xl border border-gray-100/80 bg-gray-50/50 hover:bg-gray-50 flex items-center justify-between group transition-all text-xs font-bold"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-[18px] text-gray-400">group</span>
-                        <span>{t('chat.view_all_members', '참여자 전체 보기')}</span>
-                      </div>
-                      <span className="material-symbols-outlined text-sm text-gray-400 group-hover:translate-x-0.5 transition-transform">arrow_forward_ios</span>
-                    </button>
-
-                    {room?.participants && room.participants.length > 2 && (
-                      <button 
-                        onClick={() => {
-                          setIsSidebarOpen(false);
-                          triggerInvite();
-                        }}
-                        className="w-full px-4 py-3 rounded-2xl border border-gray-100/80 bg-gray-50/50 hover:bg-gray-50 flex items-center justify-between group transition-all text-xs font-bold"
-                      >
-                        <div className="flex items-center gap-2 text-primary">
-                          <span className="material-symbols-outlined text-[18px] text-primary">person_add</span>
-                          <span>{t('chatroom.invite_members', '신규 참여자 초대')}</span>
-                        </div>
-                        <span className="material-symbols-outlined text-sm text-primary group-hover:translate-x-0.5 transition-transform">arrow_forward_ios</span>
-                      </button>
-                    )}
-
-                    {/* Real-time Member List inside Sidebar */}
-                    <div className="mt-4 max-h-[180px] overflow-y-auto no-scrollbar space-y-2 border-t border-gray-100/50 pt-4">
-                      {allParticipantsList.map((participant) => (
-                        <div key={participant.id} className="flex items-center gap-3 py-2 px-2.5 hover:bg-gray-50/80 rounded-2xl transition-all">
-                          {participant.photoURL ? (
-                            <img 
-                              src={participant.photoURL} 
-                              className="w-7 h-7 rounded-xl object-cover ring-2 ring-white shadow-3xs shrink-0" 
-                              alt="" 
-                            />
-                          ) : (
-                            <div className="w-7 h-7 rounded-xl bg-gray-50 text-gray-400 flex items-center justify-center shrink-0 border border-gray-100">
-                              <span className="material-symbols-outlined text-[15px]">person</span>
-                            </div>
-                          )}
-                          <div className="flex-1 min-w-0 flex flex-col text-left">
-                            <span className="text-[11px] font-black text-gray-800 leading-tight truncate flex items-center gap-1">
-                              {participant.nickname}
-                              {participant.isMe && (
-                                <span className="text-[9px] font-extrabold text-[#0057bd] bg-[#0057bd]/10 px-1 py-0.5 rounded-md scale-90 origin-left">
-                                  {t('chat.label_me', '나')}
-                                </span>
-                              )}
-                            </span>
-                            {participant.nativeNickname && (
-                              <span className="text-[8.5px] font-bold text-gray-400 truncate leading-none mt-0.5">
-                                {participant.nativeNickname}
-                              </span>
-                            )}
-                          </div>
-                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${participant.isOnline ? 'bg-green-500 shadow-[0_0_6px_#22c55e]' : 'bg-slate-300'}`} />
-                        </div>
-                      ))}
-                    </div>
                   </div>
                 </div>
               </div>

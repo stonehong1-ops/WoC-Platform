@@ -123,12 +123,16 @@ export function useSocialData() {
   const { isOpen: isViewOpenURL, value: viewSocialId, openModal: openViewURL, closeModal: closeViewURL } = useModalNavigation('viewSocial');
   const { isOpen: isEditOpenURL, openModal: openEditURL, closeModal: closeEditURL } = useModalNavigation('editSocial');
 
-  // 3. Auth Guard & URL Modal State Sync
+  const hasPromptedAuth = useRef(false);
+
+  // 3. Auth Guard & URL Modal State Sync (1회성 권유 가드 적용)
   useEffect(() => {
     if (!loading) {
-      if (!user) {
+      if (!user && !hasPromptedAuth.current) {
+        hasPromptedAuth.current = true;
         setShowLogin(true);
-      } else if (profile && !profile.isRegistered) {
+      } else if (profile && !profile.isRegistered && !hasPromptedAuth.current) {
+        hasPromptedAuth.current = true;
         setShowLogin(true);
       }
     }
@@ -168,8 +172,8 @@ export function useSocialData() {
         return sDate.getTime() >= today.getTime();
       });
       const sorted = valid.sort((a, b) => {
-        const dateA = a.date ? a.date.toMillis() : 0;
-        const dateB = b.date ? b.date.toMillis() : 0;
+        const dateA = a.date ? (typeof a.date.toDate === 'function' ? a.date.toDate().getTime() : new Date(a.date as any).getTime()) : 0;
+        const dateB = b.date ? (typeof b.date.toDate === 'function' ? b.date.toDate().getTime() : new Date(b.date as any).getTime()) : 0;
         return dateA - dateB;
       });
       setPopups(sorted);
