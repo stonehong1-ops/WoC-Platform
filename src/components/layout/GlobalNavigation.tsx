@@ -71,7 +71,7 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
     const params = new URLSearchParams(window.location.search);
     setIsMyView(params.get('view') === 'my');
   }, [pathname]); // Re-check when navigation occurs
-  const { isHeaderShrink, subHeader, setSubHeader, subHeaderHeight, isHeaderVisible, setIsHeaderVisible, isGlobalNavHidden } = useNavigation();
+  const { isHeaderShrink, subHeader, setSubHeader, subHeaderHeight, isHeaderVisible, setIsHeaderVisible, isGlobalNavHidden, setGlobalNavHidden } = useNavigation();
   const { location, setIsSelectorOpen } = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
   const headerRef = React.useRef<HTMLElement>(null);
@@ -92,6 +92,11 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
     });
     return () => unsub();
   }, [user]);
+
+  // pathname 변경 시 nav hidden 상태 강제 복원 (SocialViewer cleanup 실패 방어)
+  useEffect(() => {
+    setGlobalNavHidden(false);
+  }, [pathname, setGlobalNavHidden]);
 
   const totalNotiCount = notiUnreadCount;
 
@@ -223,30 +228,48 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
   const isHiddenPath = pathname === '/' || pathname.startsWith('/admin') || pathname.includes('/checkout') || pathname.includes('/register') || isDetailPage || isAppPage;
   const effectiveIsGlobalNavHidden = isGlobalNavHidden || isHiddenPath;
 
+  // 가시성 복구 시 스크롤 위치 및 인라인 transform 오프셋 강제 리셋 (Hit Test 영역 0px 편차 복원 방어막)
+  useEffect(() => {
+    if (!effectiveIsGlobalNavHidden) {
+      currentTranslateY.current = 0;
+      accumulatedScrollUp.current = 0;
+      lastScrollY.current = typeof window !== 'undefined' ? window.scrollY : 0;
+
+      // 헤더와 푸터의 인라인 transform 스타일을 즉시 0px로 리셋하여 강제 복귀시킴
+      if (headerRef.current) {
+        headerRef.current.style.transform = 'translateY(0px)';
+      }
+      if (footerRef.current) {
+        footerRef.current.style.transform = 'translateY(0px)';
+        document.documentElement.style.setProperty('--woc-bottom-nav-y', '0px');
+      }
+      setIsHeaderVisible(true);
+      lastSentVisibility.current = true;
+    }
+  }, [effectiveIsGlobalNavHidden, setIsHeaderVisible]);
+
   return (
     <div className="min-h-screen bg-[#faf8ff] font-manrope flex flex-col">
       {/* Header Placeholder to prevent layout shift and scroll thrashing */}
-      {!effectiveIsGlobalNavHidden && (
-        <div 
-          className="w-full flex-shrink-0 transition-all duration-300" 
-          style={{ 
-            height: `${placeholderHeight}px`,
-            visibility: 'visible'
-          }} 
-        />
-      )}
+      <div 
+        className="w-full flex-shrink-0 transition-all duration-200" 
+        style={{ 
+          height: `${effectiveIsGlobalNavHidden ? 0 : placeholderHeight}px`,
+          visibility: effectiveIsGlobalNavHidden ? 'hidden' : 'visible',
+          opacity: effectiveIsGlobalNavHidden ? 0 : 1
+        }} 
+      />
 
       {/* Fixed Top Navigation */}
-      {!effectiveIsGlobalNavHidden && (
-        <header 
-          ref={headerRef}
-          className={`fixed top-0 left-0 right-0 z-50 bg-white transition-shadow duration-300 transform will-change-transform ${
-            (isScrolled || isHeaderShrink) 
-              ? 'shadow-[0_4px_24px_rgba(11,90,192,0.10)]' 
-              : 'shadow-[0_2px_12px_rgba(11,90,192,0.05)] border-b border-slate-100/30'
-          }`}
-          style={{ transition: 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)' }}
-        >
+      <header 
+        ref={headerRef}
+        className={`fixed top-0 left-0 right-0 z-50 bg-white transition-all duration-200 transform will-change-transform ${
+          (isScrolled || isHeaderShrink) 
+            ? 'shadow-[0_4px_24px_rgba(11,90,192,0.10)]' 
+            : 'shadow-[0_2px_12px_rgba(11,90,192,0.05)] border-b border-slate-100/30'
+        } ${effectiveIsGlobalNavHidden ? 'opacity-0 pointer-events-none invisible translate-y-[-100px]' : 'opacity-100 translate-y-0'}`}
+        style={{ transition: 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s, visibility 0.2s' }}
+      >
         {/* Exact Image Replication: Header Top Row */}
           <div className="flex items-center justify-between pl-5 pr-4 h-[60px] border-b border-slate-100/50 bg-white">
             {/* Left Side: Location */}
@@ -361,7 +384,6 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
             </div>
           )}
         </header>
-      )}
 
       {/* Main Content */}
       <main className={`flex-1 w-full relative bg-[#faf8ff] ${effectiveIsGlobalNavHidden ? 'pb-0' : (pathname === '/venues' || pathname.startsWith('/chat') || pathname.startsWith('/notification') || pathname.startsWith('/search') ? 'pb-0' : 'pb-[120px]')}`}>
@@ -371,16 +393,17 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
 
 
       {/* Bottom Navigation Bar */}
-      {!effectiveIsGlobalNavHidden && (
-        <footer 
-          ref={footerRef}
-          className={`fixed bottom-0 left-0 w-full z-50 bg-white rounded-t-2xl px-6 flex justify-around items-center shadow-[0_-8px_30px_rgba(11,90,192,0.14)] will-change-transform`}
-          style={{ 
-            height: 'calc(64px + max(env(safe-area-inset-bottom), 12px))',
-            paddingBottom: 'max(env(safe-area-inset-bottom), 12px)',
-            transition: 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)'
-          }}
-        >
+      <footer 
+        ref={footerRef}
+        className={`fixed bottom-0 left-0 w-full z-50 bg-white rounded-t-2xl px-6 flex justify-around items-center shadow-[0_-8px_30px_rgba(11,90,192,0.14)] will-change-transform transition-all duration-200 ${
+          effectiveIsGlobalNavHidden ? 'opacity-0 pointer-events-none invisible translate-y-[100px]' : 'opacity-100 translate-y-0'
+        }`}
+        style={{ 
+          height: 'calc(64px + max(env(safe-area-inset-bottom), 12px))',
+          paddingBottom: 'max(env(safe-area-inset-bottom), 12px)',
+          transition: 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s, visibility 0.2s'
+        }}
+      >
         {BOTTOM_TABS.map((tab) => {
           const isActive = activeTab === tab.id;
           const isPhotoTab = tab.icon === "photo";
@@ -415,7 +438,6 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
             );
           })}
         </footer>
-      )}
     </div>
   );
 }

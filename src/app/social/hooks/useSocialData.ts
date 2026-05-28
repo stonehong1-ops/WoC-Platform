@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { db } from '@/lib/firebase/clientApp';
 import { onSnapshot, collection } from 'firebase/firestore';
 import { socialService } from '@/lib/firebase/socialService';
@@ -16,12 +17,15 @@ import {
 } from '../constants/seoulRegions';
 
 export function useSocialData() {
+  const searchParams = useSearchParams();
   const [regulars, setRegulars] = useState<Social[]>([]);
   const [popups, setPopups] = useState<Social[]>([]);
   const [dailySocials, setDailySocials] = useState<Social[]>([]);
   const [activeDayOffset, setActiveDayOffset] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSocial, setSelectedSocial] = useState<Social | null>(null);
+  const [localViewSocial, setLocalViewSocial] = useState<Social | null>(null);
+  const isClosingRef = useRef(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [viewType, setViewType] = useState<'slide' | 'list' | 'weekly' | 'favorite'>('slide');
   const [venuesMap, setVenuesMap] = useState<Record<string, any>>({});
@@ -32,7 +36,7 @@ export function useSocialData() {
   
   const { location, toggleSelector } = useLocation();
   const { user, profile, loading, setShowLogin } = useAuth();
-  const { setSubHeader } = useNavigation();
+  const { setSubHeader, setGlobalNavHidden } = useNavigation();
   const { t, language } = useLanguage();
   
   const dateLocale = language === 'KR' ? 'ko-KR' : 'en-US';
@@ -123,28 +127,53 @@ export function useSocialData() {
   const { isOpen: isViewOpenURL, value: viewSocialId, openModal: openViewURL, closeModal: closeViewURL } = useModalNavigation('viewSocial');
   const { isOpen: isEditOpenURL, openModal: openEditURL, closeModal: closeEditURL } = useModalNavigation('editSocial');
 
-  const hasPromptedAuth = useRef(false);
 
-  // 3. Auth Guard & URL Modal State Sync (1회성 권유 가드 적용)
+  // URL 쿼리와 로컬 등록 모달 상태의 무결점 실시간 정밀 동기화 (Single Source of Truth)
   useEffect(() => {
-    if (!loading) {
-      if (!user && !hasPromptedAuth.current) {
-        hasPromptedAuth.current = true;
-        setShowLogin(true);
-      } else if (profile && !profile.isRegistered && !hasPromptedAuth.current) {
-        hasPromptedAuth.current = true;
-        setShowLogin(true);
-      }
-    }
-
-    if (!isCreateOpenURL && isCreateOpen) {
+    if (isCreateOpenURL) {
+      setIsCreateOpen(true);
+    } else {
       setIsCreateOpen(false);
     }
+  }, [isCreateOpenURL]);
 
-    if (!isEditOpenURL && selectedSocial) {
+  // URL 쿼리와 로컬 수정 모달 상태의 무결점 실시간 정밀 동기화 (Single Source of Truth)
+  useEffect(() => {
+    const editId = searchParams.get('editSocial');
+    if (editId) {
+      const found = regulars.find(s => s.id === editId)
+        || popups.find(s => s.id === editId)
+        || dailySocials.find(s => s.id === editId);
+      if (found) {
+        setSelectedSocial(found);
+      }
+    } else {
       setSelectedSocial(null);
     }
-  }, [user, profile, loading, setShowLogin, isCreateOpenURL, isCreateOpen, isEditOpenURL, selectedSocial]);
+  }, [searchParams, regulars, popups, dailySocials]);
+
+  // URL의 viewSocial 파라미터와 로컬 viewSocial 상태의 실시간 정밀 동기화
+  useEffect(() => {
+    const viewId = searchParams.get('viewSocial');
+    
+    if (isClosingRef.current) {
+      if (!viewId) {
+        isClosingRef.current = false;
+      }
+      return;
+    }
+
+    if (viewId) {
+      const found = regulars.find(s => s.id === viewId)
+        || popups.find(s => s.id === viewId)
+        || dailySocials.find(s => s.id === viewId);
+      if (found) {
+        setLocalViewSocial(found);
+      }
+    } else {
+      setLocalViewSocial(null);
+    }
+  }, [searchParams, regulars, popups, dailySocials]);
 
   // 4. Social data listener subscription & Carousel scroll reset
   useEffect(() => {
@@ -199,33 +228,54 @@ export function useSocialData() {
     }
   };
 
-  const handleOpenCreate = () => {
+  const handleOpenCreate = useCallback(() => {
     setIsCreateOpen(true);
     openCreateURL('true');
-  };
+  }, [openCreateURL]);
 
-  const handleCloseCreate = () => {
+  const handleCloseCreate = useCallback(() => {
     setIsCreateOpen(false);
     closeCreateURL();
-  };
+  }, [closeCreateURL]);
 
-  const handleOpenView = (social: Social) => {
+  const handleOpenView = useCallback((social: Social) => {
+    isClosingRef.current = false;
+    setLocalViewSocial(social);
     openViewURL(social.id);
-  };
+  }, [openViewURL]);
 
-  const handleCloseView = () => {
+  const handleCloseView = useCallback(() => {
+    // 1. 로컬 상태 즉시 해제 → SocialViewer 언마운트
+    setLocalViewSocial(null);
+    isClosingRef.current = true;
+
+    // 2. React router 경유로 URL 쿼리 정리 (searchParams 동기화 보장)
     closeViewURL();
-  };
 
-  const handleOpenEdit = (social: Social) => {
+    // 3. 전역 네비게이션 가시성 복구
+    setGlobalNavHidden(false);
+
+    // 4. 터치 포커스 찌꺼기 해제
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+
+    // 5. closing guard 해제 (다음 틱에서 searchParams effect가 정상 반응하도록)
+    requestAnimationFrame(() => {
+      isClosingRef.current = false;
+    });
+  }, [closeViewURL, setGlobalNavHidden]);
+
+  const handleOpenEdit = useCallback((social: Social) => {
     setSelectedSocial(social);
     openEditURL(social.id);
-  };
+  }, [openEditURL]);
 
-  const handleCloseEdit = () => {
+  const handleCloseEdit = useCallback(() => {
     setSelectedSocial(null);
     closeEditURL();
-  };
+  }, [closeEditURL]);
+
 
   // Location filter checker
   const matchLocation = useCallback((s: Social) => {
@@ -505,6 +555,7 @@ export function useSocialData() {
     todaysSocials,
     cityDisplay,
     viewSocial,
+    localViewSocial,
     isViewOpenURL,
     isEditOpenURL,
     handleToggleLike,

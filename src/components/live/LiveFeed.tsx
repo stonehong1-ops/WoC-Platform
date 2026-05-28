@@ -476,6 +476,9 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
       `<button aria-label="Enter Live" style="opacity: ${initialOpacity}; cursor: ${initialCursor};" class="${initialBounceClass} `
     );
 
+    // DIVE IN 버튼 배경 그라디언트 대비 및 가독성 개선 (흰색 글씨와 겹치는 primary-container를 진한 WoC 시그니처 블루로 치환)
+    html = html.replace('from-primary-container to-primary', 'from-[#0057bd] to-[#0984e3]');
+
     // 3. 미디어(이미지 및 비디오) 리얼타임 동적 스왑 바인딩
     // Top Social Diamond
     if (stats.socialMedia.isVideo) {

@@ -40,6 +40,7 @@ export default function SocialPageContent() {
     todaysSocials,
     cityDisplay,
     viewSocial,
+    localViewSocial,
     isViewOpenURL,
     isEditOpenURL,
     handleOpenCreate,
@@ -661,9 +662,9 @@ export default function SocialPageContent() {
 
       </div>
 
-      {isViewOpenURL && viewSocial && (
+      {localViewSocial && (
         <SocialViewer
-          social={viewSocial}
+          social={localViewSocial}
           onClose={handleCloseView}
         />
       )}

@@ -141,11 +141,29 @@ export default function ClassPageContent({
           )}
           
           {/* Title Banner */}
-          <div className="bg-gradient-to-r from-[#0057bd] to-[#3b82f6] rounded-2xl p-5 mb-6 text-center shadow-lg shadow-blue-500/20">
-            <p className="text-[10px] font-bold text-blue-200 uppercase tracking-[0.2em] mb-1">{t('class.detail.info_banner')}</p>
-            <h1 className="text-xl font-black text-white mb-3">{group.name}</h1>
+          <div 
+            style={{ background: 'linear-gradient(to right, #0057bd, #3b82f6)' }}
+            className="rounded-2xl p-5 mb-6 text-center shadow-lg shadow-blue-500/20"
+          >
+            <p 
+              style={{ color: 'rgba(255, 255, 255, 0.8)' }}
+              className="text-[10px] font-bold uppercase tracking-[0.2em] mb-1"
+            >
+              {t('class.detail.info_banner')}
+            </p>
+            <h1 
+              style={{ color: '#ffffff' }}
+              className="text-xl font-black mb-3"
+            >
+              {group.name}
+            </h1>
             <div className="flex items-center justify-center gap-8">
-              <p className="text-base font-black text-white tracking-widest min-w-[120px] text-center">{monthDisplay}</p>
+              <p 
+                style={{ color: '#ffffff' }}
+                className="text-base font-black tracking-widest min-w-[120px] text-center"
+              >
+                {monthDisplay}
+              </p>
             </div>
           </div>
 
@@ -788,7 +806,7 @@ export default function ClassPageContent({
                                       [cls.id]: e.target.value
                                     }));
                                   }}
-                                  placeholder={language === 'KR' ? "동반 파트너 이름 (선택)" : "Partner Name (Optional)"}
+                                  placeholder={t('class.partner_name')}
                                   className="w-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg px-2.5 py-1 text-[11px] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                                 />
                               </div>
@@ -862,7 +880,7 @@ export default function ClassPageContent({
           isOpen={checkoutModalOpen}
           onClose={() => setCheckoutModalOpen(false)}
           title={t('class.booking_special_title')}
-          subtitle={`${selectedClassDetail.title} · ${selectedClassDetail.schedule?.[0]?.date ? new Date(selectedClassDetail.schedule[0].date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }) : 'Date TBD'}`}
+          subtitle={`${selectedClassDetail.title} · ${selectedClassDetail.schedule?.[0]?.date ? new Date(selectedClassDetail.schedule[0].date).toLocaleDateString(language === 'KR' ? 'ko-KR' : 'en-US', { weekday: 'long', month: 'short', day: 'numeric' }) : (language === 'KR' ? '날짜 미정' : 'Date TBD')}`}
           totalAmount={selectedClassDetail.amount || 0}
           onCheckout={handleCheckoutSubmit}
           isProcessing={isBooking}

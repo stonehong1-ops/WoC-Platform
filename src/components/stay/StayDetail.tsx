@@ -85,9 +85,10 @@ interface StayDetailProps {
   onClose: () => void;
   isLiked: boolean;
   onToggleLike: (e: React.MouseEvent) => void;
+  isExiting?: boolean;
 }
 
-export default function StayDetail({ stayId, onClose, isLiked, onToggleLike }: StayDetailProps) {
+export default function StayDetail({ stayId, onClose, isLiked, onToggleLike, isExiting = false }: StayDetailProps) {
   const { user, setShowLogin, profile } = useAuth();
   const { t, formatDate, language } = useLanguage();
   const { setGlobalNavHidden } = useNavigation();
@@ -587,7 +588,11 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike }: S
   if (!stay) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] bg-white flex flex-col animate-in slide-in-from-bottom duration-300">
+    <div className={`fixed inset-0 z-[100] bg-white flex flex-col ${
+      isExiting 
+        ? 'animate-out fade-out slide-out-to-bottom duration-200 fill-mode-forwards' 
+        : 'animate-in slide-in-from-bottom duration-300'
+    }`}>
       <style dangerouslySetInnerHTML={{ __html: `
         .detail-scrollbar::-webkit-scrollbar { display: none; }
         .detail-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

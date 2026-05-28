@@ -21,49 +21,23 @@ export default function MediaViewerPopup({ isOpen, onClose, media, initialIndex 
   const [isAnimating, setIsAnimating] = useState(false);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
-  // 뒤로가기 인터셉트용 - 우리가 pushState 했는지 추적
-  const didPushState = useRef(false);
-
-  // 팝업 열릴 때 더미 히스토리 추가, 닫힐 때 초기화
+  // 팝업 열릴 때 오버플로우 차단 및 리셋
   useEffect(() => {
     if (isOpen) {
       setCurrentIndex(initialIndex);
       setSlideDir(null);
       document.body.style.overflow = 'hidden';
-
-      // 더미 히스토리 상태 push → 뒤로가기가 이 상태를 pop하게 됨
-      history.pushState({ mediaViewer: true }, '');
-      didPushState.current = true;
     } else {
       document.body.style.overflow = '';
-      didPushState.current = false;
     }
     return () => {
       document.body.style.overflow = '';
     };
   }, [isOpen, initialIndex]);
 
-  // popstate 이벤트 = 디바이스/브라우저 뒤로가기
-  useEffect(() => {
-    const handlePopState = () => {
-      if (isOpen && didPushState.current) {
-        // 브라우저가 이미 더미 상태를 pop했으므로 그냥 닫기만 하면 됨
-        didPushState.current = false;
-        onClose();
-      }
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [isOpen, onClose]);
-
-  // UI로 닫을 때 (X버튼, 배경 클릭 등) → 우리가 push한 더미 상태를 직접 제거
+  // UI로 닫을 때 (X버튼, 배경 클릭 등)
   const handleClose = useCallback(() => {
-    if (didPushState.current) {
-      didPushState.current = false;
-      history.back(); // popstate 발생 → handlePopState에서 onClose() 호출
-    } else {
-      onClose();
-    }
+    onClose();
   }, [onClose]);
 
   const goTo = useCallback((nextIndex: number, dir: 'left' | 'right') => {

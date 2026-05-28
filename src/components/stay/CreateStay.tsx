@@ -14,12 +14,13 @@ interface CreateStayProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  isExiting?: boolean;
 }
 
 const CURRENCIES = ['KRW', 'USD', 'EUR', 'JPY', 'CNY'];
 const MAX_PHOTOS = 20;
 
-export default function CreateStay({ isOpen, onClose, onSuccess }: CreateStayProps) {
+export default function CreateStay({ isOpen, onClose, onSuccess, isExiting = false }: CreateStayProps) {
   const { user } = useAuth();
   const { t } = useLanguage();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -170,18 +171,17 @@ export default function CreateStay({ isOpen, onClose, onSuccess }: CreateStayPro
   if (!isOpen) return null;
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center font-['Plus_Jakarta_Sans']"
+    <div
+      className={`fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center font-['Plus_Jakarta_Sans'] ${
+        isExiting ? 'animate-out fade-out duration-200 fill-mode-forwards' : 'animate-in fade-in duration-300'
+      }`}
     >
-      <motion.main
-        initial={{ opacity: 0, y: '100%' }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: '100%' }}
-        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-        className="relative w-full max-w-md h-[100dvh] sm:h-[85vh] bg-white flex flex-col overflow-hidden sm:rounded-3xl sm:shadow-2xl text-left"
+      <main
+        className={`relative w-full max-w-md h-[100dvh] sm:h-[85vh] bg-white flex flex-col overflow-hidden sm:rounded-3xl sm:shadow-2xl text-left ${
+          isExiting 
+            ? 'animate-out slide-out-to-bottom duration-200 fill-mode-forwards' 
+            : 'animate-in slide-in-from-bottom duration-300'
+        }`}
       >
         {/* Header */}
         <div className="flex-shrink-0 bg-white border-b border-[#e0e4e5]/30 px-4 h-14 flex items-center justify-between z-50">
@@ -402,7 +402,7 @@ export default function CreateStay({ isOpen, onClose, onSuccess }: CreateStayPro
             </button>
           </div>
         </form>
-      </motion.main>
-    </motion.div>
+      </main>
+    </div>
   );
 }

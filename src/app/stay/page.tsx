@@ -82,6 +82,46 @@ function StayPageContent() {
     closeModal: closeCreate
   } = useModalNavigation('create');
 
+  // 1. 상세보기창 (StayDetail) 전용 격리 상태 머신
+  const [activeDetailId, setActiveDetailId] = useState<string | null>(itemId);
+  const [isDetailExiting, setIsDetailExiting] = useState(false);
+
+  useEffect(() => {
+    if (itemId) {
+      setActiveDetailId(itemId);
+      setIsDetailExiting(false);
+    } else {
+      if (activeDetailId) {
+        setIsDetailExiting(true);
+        const timer = setTimeout(() => {
+          setActiveDetailId(null);
+          setIsDetailExiting(false);
+        }, 220);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [itemId, activeDetailId]);
+
+  // 2. 등록창 (CreateStay) 전용 격리 상태 머신
+  const [activeCreateOpen, setActiveCreateOpen] = useState(showCreateModal);
+  const [isCreateExiting, setIsCreateExiting] = useState(false);
+
+  useEffect(() => {
+    if (showCreateModal) {
+      setActiveCreateOpen(true);
+      setIsCreateExiting(false);
+    } else {
+      if (activeCreateOpen) {
+        setIsCreateExiting(true);
+        const timer = setTimeout(() => {
+          setActiveCreateOpen(false);
+          setIsCreateExiting(false);
+        }, 220);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [showCreateModal, activeCreateOpen]);
+
   const handleOpenDetail = (id: string) => {
     openDetail(id);
   };
@@ -409,19 +449,21 @@ function StayPageContent() {
         />
       )}
 
-      {showCreateModal && (
+      {activeCreateOpen && (
         <CreateStay 
-          isOpen={showCreateModal}
+          isOpen={activeCreateOpen}
           onClose={closeCreate}
+          isExiting={isCreateExiting}
         />
       )}
 
-      {itemId && (
+      {activeDetailId && (
         <StayDetail 
-          stayId={itemId}
-          isLiked={likedStayIds.has(itemId)}
+          stayId={activeDetailId}
+          isLiked={likedStayIds.has(activeDetailId)}
           onClose={handleCloseDetail}
-          onToggleLike={(e) => toggleLike(e, itemId)}
+          onToggleLike={(e) => toggleLike(e, activeDetailId)}
+          isExiting={isDetailExiting}
         />
       )}
     </main>

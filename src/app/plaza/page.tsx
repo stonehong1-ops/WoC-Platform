@@ -73,6 +73,12 @@ function PlazaPageContent() {
     return sorted;
   }, [user, profile, storyUsers]);
 
+  // Stable refs for modal functions to avoid useEffect dependency instability
+  const openProfileRef = React.useRef(openProfile);
+  openProfileRef.current = openProfile;
+  const openCreateRef = React.useRef(openCreate);
+  openCreateRef.current = openCreate;
+
   // Teleport Filter Bar to Header (Premium Standard: Dual Row)
   useEffect(() => {
     const filterBar = (
@@ -108,9 +114,9 @@ function PlazaPageContent() {
                 className="flex flex-col items-center gap-1 cursor-pointer relative shrink-0"
                 onClick={() => {
                   if (storyUser.userId && !storyUser.isSelf) {
-                    openProfile(storyUser.userId);
+                    openProfileRef.current(storyUser.userId);
                   } else if (storyUser.isSelf) {
-                    openCreate('new');
+                    openCreateRef.current('new');
                   }
                 }}
               >
@@ -152,7 +158,7 @@ function PlazaPageContent() {
 
     setSubHeader(filterBar);
     return () => setSubHeader(null);
-  }, [activeFilter, setSubHeader, sortedStories, profile, openProfile]);
+  }, [activeFilter, setSubHeader, sortedStories, profile]);
 
 
 

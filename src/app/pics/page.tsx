@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { picService } from '@/services/picService';
@@ -8,6 +8,7 @@ import { Pic } from '@/types/pic';
 import { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import BottomSheet from '@/components/common/BottomSheet';
 import { useNavigation } from '@/components/providers/NavigationProvider';
+import { useModalNavigation } from '@/hooks/useModalNavigation';
 
 const MOODS = ['All', 'Romantic', 'Vibrant', 'Chill', 'Energetic', 'Moody', 'Elegant', 'Warm', 'Calm'];
 const ACTIVITIES = ['All', 'Social', 'Dining', 'Explore', 'Relax', 'Party', 'Learn', 'Exercise'];
@@ -41,7 +42,7 @@ const AI_KEYWORDS: Record<string, string[]> = {
   Night: ['night', 'dark', 'moon', 'star', 'sleep', 'nightview', 'neon', '밤', '어두운', '달', '별', '수면', '야경', '네온']
 };
 
-export default function PicsPage() {
+export function PicsPageContent() {
   const { t } = useLanguage();
   const { setSubHeader } = useNavigation();
   
@@ -63,7 +64,11 @@ export default function PicsPage() {
   const [tempSeason, setTempSeason] = useState('All');
   const [tempTime, setTempTime] = useState('All');
 
-  const [selectedPic, setSelectedPic] = useState<Pic | null>(null);
+  const { openModal: openPic, closeModal: closePic, value: picId } = useModalNavigation('picId');
+  const selectedPic = useMemo(() => {
+    if (!picId) return null;
+    return allPics.find(p => p.id === picId) || null;
+  }, [picId, allPics]);
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
 
   const observerTarget = useRef(null);
@@ -444,7 +449,7 @@ export default function PicsPage() {
                 <div 
                   key={pic.id} 
                   className="relative group break-inside-avoid overflow-hidden rounded-[24px] bg-surface-variant/30 border border-on-surface/[0.04] shadow-sm hover:shadow-xl transition-all duration-500 cursor-pointer"
-                  onClick={() => setSelectedPic(pic)}
+                  onClick={() => openPic(pic.id)}
                 >
                   <div className="relative w-full overflow-hidden bg-on-surface/5">
                     <Image 
@@ -734,14 +739,14 @@ export default function PicsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8 bg-black/90 backdrop-blur-xl transition-all">
           <div 
             className="absolute inset-0"
-            onClick={() => setSelectedPic(null)}
+            onClick={() => closePic()}
           ></div>
           
           <div className="relative max-w-5xl w-full max-h-full flex flex-col md:flex-row gap-6 bg-surface/5 rounded-[32px] border border-white/10 overflow-hidden pointer-events-auto">
             
             {/* Close Button */}
             <button 
-              onClick={() => setSelectedPic(null)}
+              onClick={() => closePic()}
               className="absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center bg-black/50 hover:bg-black/80 backdrop-blur-md rounded-full text-white transition-all"
             >
               <span className="material-symbols-outlined">close</span>
@@ -804,5 +809,19 @@ export default function PicsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+import { Suspense } from 'react';
+
+export default function PicsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col justify-center items-center h-screen gap-4 bg-[#FAF8FF]">
+        <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+      </div>
+    }>
+      <PicsPageContent />
+    </Suspense>
   );
 }

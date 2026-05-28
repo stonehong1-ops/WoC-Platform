@@ -1548,6 +1548,7 @@ export const en: Record<string, string> = {
     'stay.more': 'More',
     'stay.booking_detail_title': 'Reservation Detail',
     'common.cancel': 'Cancel',
+    'common.close': 'Close',
     'stay.change_date': 'Change Contract Period',
     'stay.contract_period': 'Contract Period',
     'stay.move_in_date_label': 'Move-in Date (Check-in)',
@@ -4267,4 +4268,11 @@ export const en: Record<string, string> = {
     'sticker.reaction_18': 'Thank You',
     'sticker.reaction_19': 'You\'re the Best',
     'sticker.reaction_20': 'Great Job',
+
+    // Error Page
+    'error.title': 'Something went wrong.',
+    'error.desc': 'We encountered an unexpected error. This usually happens due to data synchronization issues or network instability.',
+    'error.try_again': 'Try again',
+    'error.go_home': 'Go to Home',
+    'error.dev_details': 'Developer Details',
 };

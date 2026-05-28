@@ -214,16 +214,16 @@ export default function MyInfoPage() {
             {/* Subtle glow effect */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/15 transition-all duration-500" />
             <div>
-              <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1.5">{t('my.pro_status')}</p>
+              <p className="text-xs font-black text-slate-300 uppercase tracking-widest mb-1.5">{t('my.pro_status')}</p>
               <div className="flex items-center gap-2 mb-3.5">
                 <h2 className="text-xl md:text-2xl font-black text-white tracking-tight">{t('my.verified')}</h2>
                 <span className="material-symbols-outlined text-primary fill-1" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
               </div>
-              <p className="text-xs text-slate-400 font-medium leading-relaxed">{t('my.verified_desc')}</p>
+              <p className="text-xs text-slate-300 font-medium leading-relaxed">{t('my.verified_desc')}</p>
             </div>
             <div className="mt-8 pt-6 border-t border-slate-800/80">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3.5">{t('my.additional_verification')}</p>
-              <button className="w-full py-3 px-4 bg-white/5 hover:bg-white/10 active:scale-98 border border-white/10 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2">
+              <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-3.5">{t('my.additional_verification')}</p>
+              <button className="w-full py-3 px-4 bg-white/10 hover:bg-white/15 active:scale-98 border border-white/10 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2">
                 <span className="material-symbols-outlined text-sm">verified_user</span>
                 {t('my.apply_badge')}
               </button>

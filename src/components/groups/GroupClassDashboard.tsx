@@ -91,7 +91,8 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
 
   const [activeTab, setActiveTab] = useState<'dashboard' | 'list' | 'registrations' | 'class_status'>('dashboard');
   const [viewMode, setViewMode] = useState<'personal' | 'byClass'>('personal');
-  const [selectedDashboardClass, setSelectedDashboardClass] = useState<string | null>(null);
+  const { openModal: openDashboardClassModal, closeModal: closeDashboardClassModal, value: dashboardClassId } = useModalNavigation('dashboardClassId');
+  const selectedDashboardClass = dashboardClassId;
   const [activeWeekIndex, setActiveWeekIndex] = useState<number>(0);
 
 
@@ -239,7 +240,6 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
 
 
   // Detail & Editing Modals State
-  const [selectedGroupedReg, setSelectedGroupedReg] = useState<any | null>(null);
   const [editingGroupedReg, setEditingGroupedReg] = useState<any | null>(null);
 
   // Edit fields
@@ -365,6 +365,34 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
       return false;
     });
   }, [registrations, validClassIds]);
+
+  // 디바이스 하드웨어 뒤로가기 버튼 인터셉터 (PWA/웹뷰 최적화)
+  useEffect(() => {
+    if (!selectedDashboardClass) return;
+
+    // 모달이 열렸을 때 Next.js 라우팅과 별개로 브라우저 히스토리 state를 하나 추가로 쌓는다.
+    // 이를 통해 뒤로가기 클릭 시 페이지 이동 없이 popstate 이벤트만 트리거되도록 유도한다.
+    window.history.pushState({ modalOpen: 'dashboardClass' }, '');
+
+    const handlePopState = (event: PopStateEvent) => {
+      // popstate 이벤트 발생 시(뒤로가기 클릭 시) 상세 모달을 닫음
+      closeDashboardClassModal();
+      setShowVideoInput(false);
+      setIsEditingComment(false);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      // 만약 사용자가 뒤로가기가 아니라 '닫기' 버튼이나 'X' 헤더 버튼을 직접 눌러서 모달을 닫았을 경우,
+      // window.history.pushState로 쌓았던 더미 state가 히스토리 스택에 남아있으므로, 
+      // 이를 정리하기 위해 back()을 실행해 스택의 균형을 맞춘다.
+      if (window.history.state?.modalOpen === 'dashboardClass') {
+        window.history.back();
+      }
+    };
+  }, [selectedDashboardClass, closeDashboardClassModal]);
 
   const handlePrevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
   const handleNextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
@@ -576,6 +604,12 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
       return dateB.getTime() - dateA.getTime();
     });
   }, [filteredRegistrations]);
+
+  const { openModal: openRegModal, closeModal: closeRegModal, value: regId } = useModalNavigation('regId');
+  const selectedGroupedReg = useMemo(() => {
+    if (!regId) return null;
+    return groupedRegistrations.find((g: any) => g.key === regId) || null;
+  }, [regId, groupedRegistrations]);
 
   // Class Stats for 'By Class' view
   const classStats = useMemo(() => {
@@ -935,7 +969,7 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
                       return (
                         <div
                           key={cls.id}
-                          onClick={() => setSelectedDashboardClass(cls.id)}
+                          onClick={() => openDashboardClassModal(cls.id)}
                           className="flex items-center justify-between py-1.5 px-2 bg-surface hover:bg-surface-container-low rounded-lg border border-transparent hover:border-outline-variant transition-colors group cursor-pointer"
                         >
                           <div className="flex flex-col flex-1 min-w-0">
@@ -1210,7 +1244,7 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
                           {/* Middle Side: Dynamic Item Link */}
                           <div className="mt-2 bg-slate-50/75 rounded-xl p-3 border border-slate-100">
                             <button
-                              onClick={() => setSelectedGroupedReg(g)}
+                              onClick={() => openRegModal(g.key)}
                               className="w-full text-left flex items-center justify-between group"
                             >
                               <span className="text-xs font-black text-[#0057bd] leading-snug break-all hover:underline flex-1 pr-2">
@@ -1422,12 +1456,12 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
       {selectedGroupedReg && (
         <div className="fixed inset-0 z-[999] bg-black/60 backdrop-blur-xs animate-in fade-in duration-200 flex items-end justify-center">
           {/* Click outside to close */}
-          <div className="absolute inset-0" onClick={() => setSelectedGroupedReg(null)}></div>
+          <div className="absolute inset-0" onClick={() => closeRegModal()}></div>
           
           {/* Bottom Sheet Content */}
           <div className="w-full max-w-[768px] bg-white rounded-t-[32px] overflow-hidden shadow-2xl z-[1000] border-t border-slate-100 flex flex-col animate-in slide-in-from-bottom duration-300 max-h-[85vh]">
             {/* Handle bar */}
-            <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto my-3 shrink-0 cursor-pointer" onClick={() => setSelectedGroupedReg(null)}></div>
+            <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto my-3 shrink-0 cursor-pointer" onClick={() => closeRegModal()}></div>
             
             {/* Header */}
             <div className="px-6 pb-4 border-b border-slate-100 flex items-center justify-between">
@@ -1453,7 +1487,7 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
                 )}
               </div>
               <button
-                onClick={() => setSelectedGroupedReg(null)}
+                onClick={() => closeRegModal()}
                 className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
               >
                 <span className="material-symbols-outlined text-lg">close</span>
@@ -1680,7 +1714,7 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
             <header className="sticky top-0 z-40 bg-white border-b border-outline-variant flex items-center px-4 py-4 justify-between shrink-0">
               <button 
                 onClick={() => {
-                  setSelectedDashboardClass(null);
+                  closeDashboardClassModal();
                   setShowVideoInput(false);
                   setIsEditingComment(false);
                 }}

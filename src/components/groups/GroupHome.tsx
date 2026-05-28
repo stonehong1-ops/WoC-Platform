@@ -106,8 +106,11 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
     const tabParam = searchParams.get('tab') as TabType | null;
     if (tabParam) return tabParam;
 
-    // 로컬 스토리지에 가입 증명이 들어있거나 검증된 동선 회원이라면 0ms 즉시 'home'으로 직행, 그 외에는 소개('about') 탭으로 안착합니다.
-    if (isCachedMember) return 'home' as TabType;
+    // 로컬 스토리지에 가입 증명이 들어있거나 검증된 동선 회원이라면 0ms 즉시 이전에 계산해 둔 첫 번째 활성 탭으로 직행하고, 캐시가 없다면 'feed'로 우선 직행합니다.
+    if (isCachedMember) {
+      const cachedFirstTab = typeof window !== 'undefined' ? localStorage.getItem(`woc_first_tab_${initialGroup.id}`) : null;
+      return (cachedFirstTab || 'feed') as TabType;
+    }
     return 'about' as TabType;
   });
   const [visitedTabs, setVisitedTabs] = useState<Set<TabType>>(() => new Set<TabType>([activeTab]));
@@ -132,18 +135,19 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
     }
   }, [isFullMember, isAdminUser, loading, currentGroup.id, user]);
 
-  // Dynamic Tab synchronization: 멤버 데이터 비동기 로드 완료 시 캐시가 없어서 about에 임시 안착했던 멤버를 첫 메뉴인 'feed'로 지능적 강제 리다이렉트합니다.
+  // Dynamic Tab synchronization: 멤버 데이터 비동기 로드 완료 시 캐시가 없어서 about에 임시 안착했던 멤버를 첫 메뉴로 지능적 강제 리다이렉트합니다.
   useEffect(() => {
     if (loading || isMembersLoading) return;
     const isMember = isFullMember || isAdminUser;
     const tabParam = searchParams.get('tab');
 
     if (isMember && !tabParam && activeTab === 'about') {
-      const defaultFirstTab = 'feed';
+      const cachedFirstTab = typeof window !== 'undefined' ? localStorage.getItem(`woc_first_tab_${currentGroup.id}`) : null;
+      const defaultFirstTab = cachedFirstTab || 'feed';
       setActiveTab(defaultFirstTab as TabType);
       setVisitedTabs(prev => { const newSet = new Set(prev); newSet.add(defaultFirstTab as TabType); return newSet; });
     }
-  }, [loading, isMembersLoading, isFullMember, isAdminUser, searchParams, activeTab]);
+  }, [loading, isMembersLoading, isFullMember, isAdminUser, searchParams, activeTab, currentGroup.id]);
 
   // URL searchParams와 로컬 상태(이중 안전 장치) 실시간 동기화
   useEffect(() => {
@@ -191,14 +195,18 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
   const handleCloseClassDetail = () => {
     setLocalClassFlow(null);
     setLocalModalId(null);
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete('classFlow');
-    params.delete('modal');
-    if (!params.has('active')) {
-      params.set('active', 'true');
+    if (searchParams.has('classFlow') || searchParams.has('modal')) {
+      router.back();
+    } else {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete('classFlow');
+      params.delete('modal');
+      if (!params.has('active')) {
+        params.set('active', 'true');
+      }
+      const newQuery = params.toString();
+      router.replace(`${pathname}${newQuery ? `?${newQuery}` : ''}`, { scroll: false });
     }
-    const newQuery = params.toString();
-    router.replace(`${pathname}${newQuery ? `?${newQuery}` : ''}`, { scroll: false });
   };
 
   // 안전한 Exit UX (Hybrid Trap + Exit Modal)
@@ -225,6 +233,8 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
   useEffect(() => {
     if (!trapReady.current) return;
     if (searchParams.has('active') || searchParams.has('modal')) return;
+    // 클래스 상세 모달(classFlow)이 띄워져 있을 때는 뒤로가기 시 이탈 트랩이 작동해서 이전 메뉴로 강제 튕겨내는 오작동을 차단합니다.
+    if (localClassFlow === 'apply' || searchParams.has('classFlow')) return;
 
     if (!exitAttempted.current) {
       exitAttempted.current = true;
@@ -236,7 +246,7 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
         router.replace('/groups');
       }
     }
-  }, [searchParams]);
+  }, [searchParams, localClassFlow]);
 
   // Stay: 트랩 복구 + 모달 닫기
   const handleStay = () => {
@@ -339,6 +349,9 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
   };
 
   const handleFirstTabDetect = (tabId: string) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`woc_first_tab_${currentGroup.id}`, tabId);
+    }
     if (hasInitiallyDetected.current) return;
     const tabParam = searchParams.get('tab');
     const isMember = isFullMember || isAdminUser;

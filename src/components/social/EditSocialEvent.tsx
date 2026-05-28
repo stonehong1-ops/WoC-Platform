@@ -11,7 +11,6 @@ import { Social, SocialType } from '@/types/social';
 import { Venue } from '@/types/venue';
 import { PlatformUser } from '@/types/user';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useNavigation } from "@/components/providers/NavigationProvider";
 
 interface EditSocialEventProps {
   onClose: () => void;
@@ -22,15 +21,8 @@ interface EditSocialEventProps {
 export default function EditSocialEvent({ onClose, onSuccess, socialData }: EditSocialEventProps) {
   const { t } = useLanguage();
   const { user } = useAuth();
-  const { setGlobalNavHidden } = useNavigation();
   const { location, openSelectorWithCallback } = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Hide global navigation on mount, restore on unmount
-  useEffect(() => {
-    setGlobalNavHidden(true);
-    return () => setGlobalNavHidden(false);
-  }, [setGlobalNavHidden]);
 
   // Form State
   const [title, setTitle] = useState(socialData?.title || '');

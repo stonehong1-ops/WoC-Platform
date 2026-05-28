@@ -1,7 +1,7 @@
 'use client';
 // 다국어 상태 및 포맷팅 기능을 제공하는 컨텍스트 프로바이더.
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { enUS, ko } from 'date-fns/locale';
 import { dictionary } from '../i18n';
@@ -41,16 +41,16 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     }
   }, [language]);
 
-  const setLanguage = (lang: Language) => {
+  const setLanguage = useCallback((lang: Language) => {
     setLangState(lang);
     localStorage.setItem('woc_language', lang);
-  };
+  }, []);
 
-  const toggleLanguage = () => {
+  const toggleLanguage = useCallback(() => {
     setLanguage(language === 'EN' ? 'KR' : 'EN');
-  };
+  }, [language, setLanguage]);
 
-  const t = (key: string, params?: any): string => {
+  const t = useCallback((key: string, params?: any): string => {
     const langKey = (language || 'KR').toUpperCase() as Language;
     let text = dictionary[langKey]?.[key] || key;
 
@@ -61,9 +61,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     }
 
     return text;
-  };
+  }, [language]);
 
-  const formatDate = (date: any, formatStr: string = 'yyyy-MM-dd') => {
+  const formatDate = useCallback((date: any, formatStr: string = 'yyyy-MM-dd') => {
     if (!date) return '';
     const langKey = (language || 'KR').toUpperCase() as Language;
     // Map custom alias strings to date-fns format tokens based on active language
@@ -102,9 +102,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     } catch (e) {
       return '';
     }
-  };
+  }, [language]);
 
-  const formatRelativeTime = (date: any) => {
+  const formatRelativeTime = useCallback((date: any) => {
     if (!date) return '';
     try {
       const d = typeof date?.toDate === 'function' ? date.toDate() : new Date(date);
@@ -112,10 +112,14 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     } catch (e) {
       return '';
     }
-  };
+  }, [language]);
+
+  const contextValue = useMemo(() => ({
+    language, toggleLanguage, setLanguage, t, formatDate, formatRelativeTime
+  }), [language, toggleLanguage, setLanguage, t, formatDate, formatRelativeTime]);
 
   return (
-    <LanguageContext.Provider value={{ language, toggleLanguage, setLanguage, t, formatDate, formatRelativeTime }}>
+    <LanguageContext.Provider value={contextValue}>
       {children}
     </LanguageContext.Provider>
   );

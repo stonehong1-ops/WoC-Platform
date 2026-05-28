@@ -157,39 +157,8 @@ export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDeta
     };
   }, [loading, itemDetail]);
 
-  const didPushState = React.useRef(false);
-
-  // 팝업 열릴 때 더미 히스토리 추가, 닫힐 때 초기화
-  useEffect(() => {
-    if (isOpen) {
-      history.pushState({ classDetail: true }, '');
-      didPushState.current = true;
-    } else {
-      if (didPushState.current) {
-        didPushState.current = false;
-      }
-    }
-  }, [isOpen]);
-
-  // popstate 이벤트 = 디바이스/브라우저 뒤로가기
-  useEffect(() => {
-    const handlePopState = () => {
-      if (isOpen && didPushState.current) {
-        didPushState.current = false;
-        if (onClose) onClose();
-      }
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [isOpen, onClose]);
-
   const handleClose = () => {
-    if (didPushState.current) {
-      didPushState.current = false;
-      history.back(); // popstate 발생 → handlePopState에서 onClose() 호출
-    } else {
-      if (onClose) onClose();
-    }
+    if (onClose) onClose();
   };
 
   const getItemTypeLabel = (type: string) => {

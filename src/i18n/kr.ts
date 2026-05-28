@@ -1643,6 +1643,7 @@ export const kr: Record<string, string> = {
     'stay.more': '더보기',
     'stay.booking_detail_title': '예약 상세 내역',
     'common.cancel': '취소',
+    'common.close': '닫기',
     'stay.change_date': '계약 일정 변경',
     'stay.contract_period': '계약 기간',
     'stay.move_in_date_label': '입주일 (체크인)',
@@ -4266,4 +4267,11 @@ export const kr: Record<string, string> = {
     'sticker.reaction_18': '감사해요',
     'sticker.reaction_19': '최고에요',
     'sticker.reaction_20': '수고했어',
+
+    // Error Page
+    'error.title': '문제가 발생했습니다.',
+    'error.desc': '예기치 않은 오류가 발생했습니다. 이는 보통 데이터 동기화 문제나 네트워크 불안정으로 인해 발생합니다.',
+    'error.try_again': '다시 시도하기.',
+    'error.go_home': '홈으로 이동.',
+    'error.dev_details': '개발자 상세 정보.',
 };
