@@ -21,19 +21,31 @@ export default function MediaViewerPopup({ isOpen, onClose, media, initialIndex 
   const [isAnimating, setIsAnimating] = useState(false);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
-  // 팝업 열릴 때 오버플로우 차단 및 리셋
   useEffect(() => {
     if (isOpen) {
       setCurrentIndex(initialIndex);
       setSlideDir(null);
       document.body.style.overflow = 'hidden';
+
+      const stateKey = `media_viewer_${Date.now()}`;
+      window.history.pushState({ stateKey }, '');
+
+      const handlePopState = () => {
+        onClose();
+      };
+      window.addEventListener('popstate', handlePopState);
+
+      return () => {
+        document.body.style.overflow = '';
+        window.removeEventListener('popstate', handlePopState);
+        if (window.history.state?.stateKey === stateKey) {
+          window.history.back();
+        }
+      };
     } else {
       document.body.style.overflow = '';
     }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isOpen, initialIndex]);
+  }, [isOpen, initialIndex, onClose]);
 
   // UI로 닫을 때 (X버튼, 배경 클릭 등)
   const handleClose = useCallback(() => {

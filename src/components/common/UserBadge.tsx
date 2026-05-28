@@ -63,14 +63,35 @@ export default function UserBadge({
   showEditIcon = false,
   isCol = false
 }: UserBadgeProps) {
+  const ADMIN_UIDS = ['adminstone', '7iaZAmaYY9dNNEShmJmROI8XrtH2'];
+  const isStoneHongName = (name?: string | null): boolean => {
+    if (!name) return false;
+    const normalized = name.trim().toLowerCase().replace(/\s+/g, '');
+    return ['stone', 'stonehong', '스톤', '스톤홍'].includes(normalized);
+  };
+
   const [userData, setUserData] = useState({
     nickname: initialNickname,
     nativeNickname: initialNativeNickname,
     photoURL: initialPhotoURL,
   });
 
+  // Check if it's a virtual admin (non-member host) that shouldn't show Stone Hong's profile
+  const isVirtualAdmin = ADMIN_UIDS.includes(uid) && 
+    ((initialNickname && !isStoneHongName(initialNickname)) || 
+     (initialNativeNickname && !isStoneHongName(initialNativeNickname)));
+
   useEffect(() => {
     if (uid) {
+      if (isVirtualAdmin) {
+        setUserData({
+          nickname: initialNickname,
+          nativeNickname: initialNativeNickname,
+          photoURL: initialPhotoURL || null,
+        });
+        return;
+      }
+
       let isMounted = true;
       fetchUserCached(uid).then(data => {
         if (isMounted && data) {
@@ -83,7 +104,7 @@ export default function UserBadge({
       });
       return () => { isMounted = false; };
     }
-  }, [uid]);
+  }, [uid, initialNickname, initialNativeNickname, initialPhotoURL, isVirtualAdmin]);
 
   // 영문 닉네임 필드에 한글이 들어있는 비정상 데이터 또는 임시 데이터 상태를 실시간 자가 교정하는 방어 로직
   const hasKorean = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(userData.nickname || '');
@@ -99,7 +120,7 @@ export default function UserBadge({
         photoURL: userData.photoURL 
       }}
       className={`inline-block ${className}`}
-      onClickOverride={onClick}
+      onClickOverride={isVirtualAdmin ? (e) => { e.preventDefault(); e.stopPropagation(); } : onClick}
     >
       <div className="flex items-center gap-x-2">
         <div className="relative inline-block">

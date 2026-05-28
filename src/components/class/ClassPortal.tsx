@@ -1267,8 +1267,8 @@ export default function ClassPortal() {
           initialCreatedAt={checkoutInitialCreatedAt}
         >
           <div className="space-y-6 py-2">
-            <div className="flex gap-3 p-3 bg-neutral-50 dark:bg-neutral-800 rounded-2xl border border-neutral-200 dark:border-neutral-700">
-              <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-neutral-200 dark:bg-neutral-700">
+            <div className="flex gap-3 p-3 bg-neutral-50 rounded-2xl border border-neutral-200">
+              <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-neutral-200">
                 {(checkoutClass.imageUrl || checkoutClass.group?.coverImage || checkoutClass.group?.logo) ? (
                   <img src={checkoutClass.imageUrl || checkoutClass.group?.coverImage || checkoutClass.group?.logo} alt={checkoutClass.title} className="w-full h-full object-cover" />
                 ) : (
@@ -1279,16 +1279,16 @@ export default function ClassPortal() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-[10px] font-bold text-neutral-500 uppercase">{checkoutClass.group?.name || 'World of Community'}</p>
-                <p className="text-sm font-bold text-neutral-900 dark:text-white truncate">{checkoutClass.title}</p>
+                <p className="text-sm font-bold text-neutral-900 truncate">{checkoutClass.title}</p>
                 <div className="flex flex-wrap gap-1 mt-1">
-                  <span className="text-[10px] bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300 px-2 py-0.5 rounded-full font-bold">
+                  <span className="text-[10px] bg-neutral-200 text-neutral-600 px-2 py-0.5 rounded-full font-bold">
                     {((checkoutClass as any).scheduleEntry?.timeSlot?.split(/[-~]/)[0] || checkoutClass.startTime || '00:00').trim()}-{((checkoutClass as any).scheduleEntry?.timeSlot?.split(/[-~]/)[1] || checkoutClass.endTime || '00:00').trim()}
                   </span>
-                  <span className="text-[10px] bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300 px-2 py-0.5 rounded-full font-bold">
+                  <span className="text-[10px] bg-neutral-200 text-neutral-600 px-2 py-0.5 rounded-full font-bold">
                     {checkoutClass.location || checkoutClass.group?.name}
                   </span>
                   {checkoutClass.instructors && checkoutClass.instructors.length > 0 && (
-                    <span className="text-[10px] bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300 px-2 py-0.5 rounded-full font-bold">
+                    <span className="text-[10px] bg-neutral-200 text-neutral-600 px-2 py-0.5 rounded-full font-bold">
                       {checkoutClass.instructors.map((i)=>i.name).join(', ')}
                     </span>
                   )}
@@ -1297,37 +1297,37 @@ export default function ClassPortal() {
             </div>
 
             <div>
-              <h4 className="text-sm font-bold text-neutral-900 dark:text-white mb-3">{t('class.select_role')}</h4>
+              <h4 className="text-sm font-bold text-neutral-900 mb-3">{t('class.select_role')}</h4>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => setCheckoutRole('leader')}
-                  className={`flex flex-col items-center justify-center py-4 rounded-xl border-2 transition-all ${checkoutRole === 'leader' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-300'}`}
+                  className={`flex flex-col items-center justify-center py-4 rounded-xl border-2 transition-all ${checkoutRole === 'leader' ? 'border-blue-500 bg-blue-50' : 'border-neutral-200 hover:border-neutral-300'}`}
                 >
-                  <span className={`text-sm font-black uppercase ${checkoutRole === 'leader' ? 'text-blue-700 dark:text-blue-400' : 'text-neutral-700 dark:text-neutral-300'}`}>Leader</span>
+                  <span className={`text-sm font-black uppercase ${checkoutRole === 'leader' ? 'text-blue-700' : 'text-neutral-700'}`}>Leader</span>
                 </button>
                 <button
                   onClick={() => setCheckoutRole('follower')}
-                  className={`flex flex-col items-center justify-center py-4 rounded-xl border-2 transition-all ${checkoutRole === 'follower' ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20' : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-300'}`}
+                  className={`flex flex-col items-center justify-center py-4 rounded-xl border-2 transition-all ${checkoutRole === 'follower' ? 'border-purple-500 bg-purple-50' : 'border-neutral-200 hover:border-neutral-300'}`}
                 >
-                  <span className={`text-sm font-black uppercase ${checkoutRole === 'follower' ? 'text-purple-700 dark:text-purple-400' : 'text-neutral-700 dark:text-neutral-300'}`}>Follower</span>
+                  <span className={`text-sm font-black uppercase ${checkoutRole === 'follower' ? 'text-purple-700' : 'text-neutral-700'}`}>Follower</span>
                 </button>
               </div>
             </div>
 
             <div>
-              <h4 className="text-sm font-bold text-neutral-900 dark:text-white mb-3">{t('class.partner_name')}</h4>
+              <h4 className="text-sm font-bold text-neutral-900 mb-3">{t('class.partner_name')}</h4>
               <input
                 type="text"
                 value={checkoutPartnerName}
                 onChange={(e) => setCheckoutPartnerName(e.target.value)}
                 placeholder={t('class.partner_name_placeholder') || "파트너 이름을 입력하세요"}
-                className="w-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-xl px-4 py-3 text-xs text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-xs text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
               />
             </div>
             
-            <div className="bg-neutral-50 dark:bg-neutral-800 rounded-xl p-4 border border-neutral-100 dark:border-neutral-700">
-              <h4 className="text-[13px] font-black text-neutral-900 dark:text-white mb-2 flex items-center gap-1.5"><span className="material-symbols-outlined text-[16px] text-blue-500">info</span> {t('class.booking_notice_title')}</h4>
-              <p className="text-xs font-medium text-neutral-600 dark:text-neutral-400 leading-relaxed">
+            <div className="bg-neutral-50 rounded-xl p-4 border border-neutral-100">
+              <h4 className="text-[13px] font-black text-neutral-900 mb-2 flex items-center gap-1.5"><span className="material-symbols-outlined text-[16px] text-blue-500">info</span> {t('class.booking_notice_title')}</h4>
+              <p className="text-xs font-medium text-neutral-600 leading-relaxed">
                 {t('class.booking_notice_desc')}
               </p>
             </div>

@@ -205,10 +205,10 @@ export default function UnifiedCheckoutModal({
   // ━━━ STEP 1: SUMMARY ━━━
   if (step === 'summary') {
     const footerContent = (
-      <div className="p-5 bg-white dark:bg-neutral-900 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] dark:shadow-none pb-[calc(env(safe-area-inset-bottom)+20px)] sm:pb-5">
+      <div className="p-5 bg-white shadow-[0_-4px_20px_rgba(0,0,0,0.05)] pb-[calc(env(safe-area-inset-bottom)+20px)] sm:pb-5">
         <div className="flex items-center justify-between mb-4">
-          <span className="text-sm font-medium text-neutral-500 dark:text-neutral-400">{language === 'KR' ? '총 금액' : 'Total'}</span>
-          <span className="text-xl font-bold text-neutral-900 dark:text-white">
+          <span className="text-sm font-medium text-neutral-500">{language === 'KR' ? '총 금액' : 'Total'}</span>
+          <span className="text-xl font-bold text-neutral-900">
             {sym}{fmt(totalAmount)}
           </span>
         </div>
@@ -216,7 +216,7 @@ export default function UnifiedCheckoutModal({
         <button
           onClick={handleCheckoutClick}
           disabled={isProcessing || localProcessing || !user || isSubmitDisabled}
-          className="w-full h-12 flex items-center justify-center rounded-xl bg-black dark:bg-white text-white dark:text-black font-semibold text-lg transition-transform active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
+          className="w-full h-12 flex items-center justify-center rounded-xl bg-black text-white font-semibold text-lg transition-transform active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
         >
           {isProcessing || localProcessing ? (
             <span className="animate-pulse">{language === 'KR' ? '처리 중...' : 'Processing...'}</span>
@@ -231,9 +231,9 @@ export default function UnifiedCheckoutModal({
 
     return (
       <BottomSheet isOpen={isOpen} onClose={onClose} title={title} footer={footerContent}>
-        <div className="flex flex-col bg-white dark:bg-neutral-900">
+        <div className="flex flex-col bg-white">
           {subtitle && (
-            <div className="px-5 py-2 text-sm text-neutral-500 dark:text-neutral-400">
+            <div className="px-5 py-2 text-sm text-neutral-500">
               {subtitle}
             </div>
           )}
@@ -248,7 +248,7 @@ export default function UnifiedCheckoutModal({
   // ━━━ STEP 2: PAYMENT INSTRUCTIONS ━━━
   if (step === 'payment') {
     const footerContent = (
-      <div className="p-5 bg-white dark:bg-neutral-900 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] dark:shadow-none pb-[calc(env(safe-area-inset-bottom)+20px)] sm:pb-5">
+      <div className="p-5 bg-white shadow-[0_-4px_20px_rgba(0,0,0,0.05)] pb-[calc(env(safe-area-inset-bottom)+20px)] sm:pb-5">
         <button
           onClick={handleReportPayment}
           disabled={localProcessing}
@@ -265,14 +265,14 @@ export default function UnifiedCheckoutModal({
 
     return (
       <BottomSheet isOpen={isOpen} onClose={onClose} title={t('shop.payment_instructions', 'Payment Instructions')} footer={footerContent}>
-        <div className="flex-1 overflow-y-auto px-5 py-6 space-y-5 bg-white dark:bg-neutral-900">
+        <div className="flex-1 overflow-y-auto px-5 py-6 space-y-5 bg-white">
           {/* Timer */}
           <div className="text-center">
-            <div className="inline-flex items-center gap-2 bg-[#fff7ed] dark:bg-orange-950 border border-[#fed7aa] dark:border-orange-800 rounded-2xl px-5 py-3">
+            <div className="inline-flex items-center gap-2 bg-[#fff7ed] border border-[#fed7aa] rounded-2xl px-5 py-3">
               <span className="material-symbols-outlined text-lg text-orange-500">timer</span>
-              <span className="text-2xl font-black text-orange-600 dark:text-orange-400 font-mono tracking-wider">{mm}:{ss}</span>
+              <span className="text-2xl font-black text-orange-600 font-mono tracking-wider">{mm}:{ss}</span>
             </div>
-            <p className="text-xs text-[#596061] dark:text-neutral-400 mt-2 leading-relaxed">
+            <p className="text-xs text-[#596061] mt-2 leading-relaxed">
               {countdown === 0 ? (
                 language === 'KR' ? (
                   <>
@@ -288,60 +288,60 @@ export default function UnifiedCheckoutModal({
               ) : (
                 <>
                   {t('shop.transfer_within_1h', 'Please transfer within 1 hour.')}<br/>
-                  <span className="text-[#acb3b4] dark:text-neutral-500">{t('shop.order_expire_notice', 'Order may expire if not paid in time.')}</span>
+                  <span className="text-[#acb3b4]">{t('shop.order_expire_notice', 'Order may expire if not paid in time.')}</span>
                 </>
               )}
             </p>
           </div>
 
           {/* Order Number */}
-          <div className="bg-[#f8f9fa] dark:bg-neutral-800 rounded-2xl p-4 border border-[#e0e4e5] dark:border-neutral-700">
-            <p className="text-[10px] font-bold text-[#acb3b4] dark:text-neutral-500 uppercase tracking-widest mb-1">{t('shop.order_number', 'Order Number')}</p>
+          <div className="bg-[#f8f9fa] rounded-2xl p-4 border border-[#e0e4e5]">
+            <p className="text-[10px] font-bold text-[#acb3b4] uppercase tracking-widest mb-1">{t('shop.order_number', 'Order Number')}</p>
             <div className="flex items-center justify-between">
-              <p className="text-base font-black text-[#2d3435] dark:text-white font-mono">{displayOrderNumber}</p>
+              <p className="text-base font-black text-[#2d3435] font-mono">{displayOrderNumber}</p>
             </div>
           </div>
 
           {/* Bank Details */}
-          <div className="border border-[#e0e4e5] dark:border-neutral-700 rounded-2xl overflow-hidden">
-            <div className="bg-[#f8f9fa] dark:bg-neutral-800/50 px-4 py-2.5 border-b border-[#e0e4e5] dark:border-neutral-700 flex items-center gap-2">
-              <span className="material-symbols-outlined text-sm text-[#0057bd] dark:text-blue-400">account_balance</span>
-              <p className="text-[10px] font-black text-[#0057bd] dark:text-blue-400 uppercase tracking-widest">{t('shop.bank_transfer_details', 'Bank Transfer Details')}</p>
+          <div className="border border-[#e0e4e5] rounded-2xl overflow-hidden">
+            <div className="bg-[#f8f9fa] px-4 py-2.5 border-b border-[#e0e4e5] flex items-center gap-2">
+              <span className="material-symbols-outlined text-sm text-[#0057bd]">account_balance</span>
+              <p className="text-[10px] font-black text-[#0057bd] uppercase tracking-widest">{t('shop.bank_transfer_details', 'Bank Transfer Details')}</p>
             </div>
-            <div className="p-4 space-y-3 dark:bg-neutral-900">
+            <div className="p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] text-[#acb3b4] dark:text-neutral-500 uppercase font-bold">{t('shop.bank', 'Bank')}</p>
-                  <p className="text-sm font-bold text-[#2d3435] dark:text-white">{bankDetails?.bankName || t('shop.not_available', 'N/A')}</p>
+                  <p className="text-[10px] text-[#acb3b4] uppercase font-bold">{t('shop.bank', 'Bank')}</p>
+                  <p className="text-sm font-bold text-[#2d3435]">{bankDetails?.bankName || t('shop.not_available', 'N/A')}</p>
                 </div>
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] text-[#acb3b4] dark:text-neutral-500 uppercase font-bold">{t('shop.account_number', 'Account Number')}</p>
-                  <p className="text-base font-black text-[#2d3435] dark:text-white font-mono tracking-wide">{bankDetails?.accountNumber || t('shop.not_available', 'N/A')}</p>
+                  <p className="text-[10px] text-[#acb3b4] uppercase font-bold">{t('shop.account_number', 'Account Number')}</p>
+                  <p className="text-base font-black text-[#2d3435] font-mono tracking-wide">{bankDetails?.accountNumber || t('shop.not_available', 'N/A')}</p>
                 </div>
                 <button onClick={() => copyToClipboard(bankDetails?.accountNumber || '', 'account')}
-                  className={`text-[10px] font-bold px-3 py-1.5 rounded-full transition-colors ${copied === 'account' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400' : 'bg-[#0057bd] text-white'}`}>
+                  className={`text-[10px] font-bold px-3 py-1.5 rounded-full transition-colors ${copied === 'account' ? 'bg-emerald-100 text-emerald-700' : 'bg-[#0057bd] text-white'}`}>
                   {copied === 'account' ? t('shop.copied', '✓ Copied') : t('shop.copy', 'Copy')}
                 </button>
               </div>
               <div>
-                <p className="text-[10px] text-[#acb3b4] dark:text-neutral-500 uppercase font-bold">{t('shop.account_holder', 'Account Holder')}</p>
-                <p className="text-sm font-bold text-[#2d3435] dark:text-white">{bankDetails?.accountHolder || t('shop.not_available', 'N/A')}</p>
+                <p className="text-[10px] text-[#acb3b4] uppercase font-bold">{t('shop.account_holder', 'Account Holder')}</p>
+                <p className="text-sm font-bold text-[#2d3435]">{bankDetails?.accountHolder || t('shop.not_available', 'N/A')}</p>
               </div>
-              <div className="bg-[#f0f4ff] dark:bg-blue-900/10 rounded-xl p-3 flex items-center justify-between mt-2">
+              <div className="bg-[#f0f4ff] rounded-xl p-3 flex items-center justify-between mt-2">
                 <div>
-                  <p className="text-[10px] text-[#0057bd] dark:text-blue-400 uppercase font-bold">{t('shop.transfer_amount', 'Transfer Amount')}</p>
-                  <p className="text-xl font-black text-[#0057bd] dark:text-blue-400">{sym}{fmt(totalAmount)}</p>
+                  <p className="text-[10px] text-[#0057bd] uppercase font-bold">{t('shop.transfer_amount', 'Transfer Amount')}</p>
+                  <p className="text-xl font-black text-[#0057bd]">{sym}{fmt(totalAmount)}</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Payment Memo */}
-          <div className="bg-[#f8f9fa] dark:bg-neutral-800 rounded-2xl p-4 border border-[#e0e4e5] dark:border-neutral-700">
-            <p className="text-[10px] font-bold text-[#acb3b4] dark:text-neutral-500 uppercase tracking-widest mb-2">
-              {language === 'KR' ? '메모' : 'Memo'} <span className="normal-case tracking-normal text-[#acb3b4] dark:text-neutral-600">({language === 'KR' ? '선택' : 'Optional'})</span>
+          <div className="bg-[#f8f9fa] rounded-2xl p-4 border border-[#e0e4e5]">
+            <p className="text-[10px] font-bold text-[#acb3b4] uppercase tracking-widest mb-2">
+              {language === 'KR' ? '메모' : 'Memo'} <span className="normal-case tracking-normal text-[#acb3b4]">({language === 'KR' ? '선택' : 'Optional'})</span>
             </p>
             <textarea
               value={paymentMemo}
@@ -349,7 +349,7 @@ export default function UnifiedCheckoutModal({
               placeholder={language === 'KR' ? '입금자명, 멤버쉽등 사유 등 입금확인 가능정보' : 'Depositor name, membership info, or payment reference'}
               maxLength={200}
               rows={2}
-              className="w-full bg-white dark:bg-neutral-900 border border-[#e0e4e5] dark:border-neutral-700 rounded-xl px-3 py-2.5 text-sm text-[#2d3435] dark:text-white placeholder:text-[#acb3b4] dark:placeholder:text-neutral-600 focus:outline-none focus:ring-2 focus:ring-[#0057bd]/30 focus:border-[#0057bd] resize-none"
+              className="w-full bg-white border border-[#e0e4e5] rounded-xl px-3 py-2.5 text-sm text-[#2d3435] placeholder:text-[#acb3b4] focus:outline-none focus:ring-2 focus:ring-[#0057bd]/30 focus:border-[#0057bd] resize-none"
             />
           </div>
 
@@ -365,10 +365,10 @@ export default function UnifiedCheckoutModal({
   };
 
   const completeFooter = (
-    <div className="p-5 bg-white dark:bg-neutral-900 pb-[calc(env(safe-area-inset-bottom)+20px)] sm:pb-5">
+    <div className="p-5 bg-white pb-[calc(env(safe-area-inset-bottom)+20px)] sm:pb-5">
       <button
         onClick={handleCompleteClose}
-        className="w-full h-12 flex items-center justify-center rounded-xl bg-black dark:bg-white text-white dark:text-black font-semibold text-lg transition-transform active:scale-[0.98]"
+        className="w-full h-12 flex items-center justify-center rounded-xl bg-black text-white font-semibold text-lg transition-transform active:scale-[0.98]"
       >
         {t('common.done', language === 'KR' ? '완료' : 'Done')}
       </button>
@@ -377,21 +377,21 @@ export default function UnifiedCheckoutModal({
 
   return (
     <BottomSheet isOpen={isOpen} onClose={handleCompleteClose} title="" footer={completeFooter}>
-      <div className="flex flex-col items-center justify-center py-10 px-6 bg-white dark:bg-neutral-900">
-        <div className="w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-6 animate-in zoom-in duration-500">
-          <span className="material-symbols-outlined text-4xl text-emerald-600 dark:text-emerald-400" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+      <div className="flex flex-col items-center justify-center py-10 px-6 bg-white">
+        <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mb-6 animate-in zoom-in duration-500">
+          <span className="material-symbols-outlined text-4xl text-emerald-600" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
         </div>
-        <h2 className="text-xl font-black text-[#2d3435] dark:text-white mb-2 text-center">
+        <h2 className="text-xl font-black text-[#2d3435] mb-2 text-center">
           {t('shop.order_placed', language === 'KR' ? '신청이 완료되었습니다!' : 'Request Completed!')}
         </h2>
-        <p className="text-sm text-[#596061] dark:text-neutral-400 text-center leading-relaxed mb-4">
+        <p className="text-sm text-[#596061] text-center leading-relaxed mb-4">
           {language === 'KR' ? (
-            <>신청서 <span className="font-mono font-bold text-[#2d3435] dark:text-white">{displayOrderNumber}</span>번이 정상적으로 접수되었습니다.</>
+            <>신청서 <span className="font-mono font-bold text-[#2d3435]">{displayOrderNumber}</span>번이 정상적으로 접수되었습니다.</>
           ) : (
-            <>Order <span className="font-mono font-bold text-[#2d3435] dark:text-white">{displayOrderNumber}</span> has been reported.</>
+            <>Order <span className="font-mono font-bold text-[#2d3435]">{displayOrderNumber}</span> has been reported.</>
           )}
         </p>
-        <p className="text-xs text-[#acb3b4] dark:text-neutral-500 text-center leading-relaxed">
+        <p className="text-xs text-[#acb3b4] text-center leading-relaxed">
           {t('shop.order_placed_desc2', "You'll receive a notification when the seller confirms your payment.")}
         </p>
       </div>

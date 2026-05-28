@@ -43,10 +43,32 @@ export default function NamecardModal({ user, isOpen, onClose, onChat, onCall }:
 
   useEffect(() => {
     setMounted(true);
-    if (isOpen) {
-      setIsClosing(false);
-    }
-  }, [isOpen]);
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setIsClosing(false);
+
+    const stateKey = `namecard_modal_${Date.now()}`;
+    window.history.pushState({ stateKey }, '');
+
+    const handlePopstate = (e: PopStateEvent) => {
+      setIsClosing(true);
+      setTimeout(() => {
+        onClose();
+        setIsClosing(false);
+      }, 300);
+    };
+
+    window.addEventListener('popstate', handlePopstate);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopstate);
+      if (window.history.state?.stateKey === stateKey) {
+        window.history.back();
+      }
+    };
+  }, [isOpen, onClose]);
 
   if (!mounted) return null;
   if (!isOpen && !isClosing) return null;

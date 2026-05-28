@@ -116,7 +116,7 @@ export default function PollCard({ message }: PollCardProps) {
   };
 
   return (
-    <div className="w-full max-w-[340px] bg-white/95 border border-zinc-100 rounded-3xl p-5 shadow-md relative overflow-hidden transition-all duration-300 hover:shadow-lg my-2 dark:bg-zinc-900/90 dark:border-zinc-800 animate-in zoom-in-95 duration-200">
+    <div className="w-full max-w-[340px] bg-white/95 border border-zinc-100 rounded-3xl p-5 shadow-md relative overflow-hidden transition-all duration-300 hover:shadow-lg my-2 animate-in zoom-in-95 duration-200">
       {/* Accent Bar (Golden-Amber instead of Blue) */}
       <div className={`absolute top-0 left-0 right-0 h-1.5 ${isClosed ? 'bg-zinc-400' : 'bg-amber-500'}`} />
 
@@ -131,7 +131,7 @@ export default function PollCard({ message }: PollCardProps) {
           </span>
         </div>
         {allowMultiple && (
-          <span className="text-[10px] font-bold px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 rounded-full text-zinc-500">
+          <span className="text-[10px] font-bold px-2 py-0.5 bg-zinc-100 rounded-full text-zinc-500">
             {t('poll.multiple_choice', '복수 선택')}
           </span>
         )}
@@ -139,7 +139,7 @@ export default function PollCard({ message }: PollCardProps) {
 
       {/* Poll Title */}
       <div className="mb-4">
-        <h4 className="text-[15px] font-extrabold text-zinc-800 dark:text-zinc-100 leading-snug text-left">
+        <h4 className="text-[15px] font-extrabold text-zinc-800 leading-snug text-left">
           {message.text}
         </h4>
       </div>
@@ -159,15 +159,15 @@ export default function PollCard({ message }: PollCardProps) {
               onClick={() => handleVote(idx)}
               className={`w-full text-left relative overflow-hidden rounded-2xl border p-3 transition-all duration-300 flex items-center justify-between gap-3 group ${
                 hasVoted
-                  ? 'border-[#e2cc00]/45 bg-[#FEE500]/6 dark:border-[#e2cc00]/30 dark:bg-[#FEE500]/10'
-                  : 'border-zinc-100 hover:border-zinc-200 dark:border-zinc-800 dark:hover:border-zinc-700 bg-zinc-50/50 dark:bg-zinc-800/30'
+                  ? 'border-[#e2cc00]/45 bg-[#FEE500]/6'
+                  : 'border-zinc-100 hover:border-zinc-200 bg-zinc-50/50'
               }`}
             >
               {/* Animated Progress Bar Background */}
               <div
                 style={{ width: `${percentage}%` }}
                 className={`absolute left-0 top-0 bottom-0 transition-all duration-500 opacity-15 pointer-events-none ${
-                  hasVoted ? 'bg-[#FEE500] dark:bg-[#e2cc00]' : 'bg-zinc-400 dark:bg-zinc-500'
+                  hasVoted ? 'bg-[#FEE500]' : 'bg-zinc-400'
                 }`}
               />
 
@@ -179,7 +179,7 @@ export default function PollCard({ message }: PollCardProps) {
                   {hasVoted ? 'check_box' : 'check_box_outline_blank'}
                 </span>
                 <div className="flex-1 min-w-0 flex flex-col items-start">
-                  <span className="text-[13px] font-bold text-zinc-700 dark:text-zinc-300 whitespace-normal break-all leading-normal text-left">
+                  <span className="text-[13px] font-bold text-zinc-700 whitespace-normal break-all leading-normal text-left">
                     {option}
                   </span>
                   {/* 투표 참여 멤버 닉네임 실시간 비동기 노출 */}
@@ -192,7 +192,7 @@ export default function PollCard({ message }: PollCardProps) {
                 <span className="text-[11px] font-medium text-zinc-400">
                   {voteCount}{t('chat.people_unit', '명')}
                 </span>
-                <span className="text-[12px] font-extrabold text-zinc-600 dark:text-zinc-400">
+                <span className="text-[12px] font-extrabold text-zinc-600">
                   {percentage}%
                 </span>
               </div>
@@ -208,7 +208,7 @@ export default function PollCard({ message }: PollCardProps) {
           <button
             onClick={handleClosePoll}
             disabled={loading}
-            className="w-full py-3 bg-zinc-800 text-white dark:bg-zinc-700 dark:hover:bg-zinc-600 rounded-2xl text-[13px] font-black hover:bg-zinc-900 transition-all duration-300 flex items-center justify-center gap-1.5 shadow-sm"
+            className="w-full py-3 bg-zinc-800 text-white rounded-2xl text-[13px] font-black hover:bg-zinc-900 transition-all duration-300 flex items-center justify-center gap-1.5 shadow-sm"
           >
             <span className="material-symbols-outlined text-[16px]">lock</span>
             {t('poll.close_action', '투표 조기 마감하기')}
@@ -217,7 +217,7 @@ export default function PollCard({ message }: PollCardProps) {
 
         {/* Closed Banner */}
         {isClosed && (
-          <div className="w-full py-3 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200/50 dark:border-zinc-700/50 rounded-2xl text-[12px] font-bold text-zinc-500 dark:text-zinc-400 flex items-center justify-center gap-1.5 select-none">
+          <div className="w-full py-3 bg-zinc-100 border border-zinc-200/50 rounded-2xl text-[12px] font-bold text-zinc-500 flex items-center justify-center gap-1.5 select-none">
             <span className="material-symbols-outlined text-[16px]">verified</span>
             {t('poll.closed_desc', '의견 수렴이 마감된 투표입니다.')}
           </div>

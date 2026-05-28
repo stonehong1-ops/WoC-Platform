@@ -139,14 +139,14 @@ export default function GroupMembersPopup({ roomId, onClose }: GroupMembersPopup
   return (
     <div className="fixed inset-0 z-[10000] bg-[#f9f9ff] text-[#191b22] flex flex-col items-center overflow-y-auto">
       {/* TopAppBar */}
-      <header className="bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl docked full-width top-0 z-50 border-b border-slate-100 dark:border-slate-800 shadow-sm flex justify-between items-center w-full px-4 h-16 max-w-[896px] mx-auto fixed">
+      <header className="bg-white/80 backdrop-blur-xl docked full-width top-0 z-50 border-b border-slate-100 shadow-sm flex justify-between items-center w-full px-4 h-16 max-w-[896px] mx-auto fixed">
         <button 
           onClick={handleClose}
-          className="text-blue-600 dark:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors active:scale-95 transition-transform p-2 rounded-full flex items-center justify-center"
+          className="text-blue-600 hover:bg-slate-100 transition-colors active:scale-95 transition-transform p-2 rounded-full flex items-center justify-center"
         >
           <span className="material-symbols-outlined">arrow_back</span>
         </button>
-        <h1 className="font-['Plus_Jakarta_Sans'] font-bold text-lg text-slate-900 dark:text-slate-50">Group Members</h1>
+        <h1 className="font-['Plus_Jakarta_Sans'] font-bold text-lg text-slate-900">Group Members</h1>
         <div className="w-10 h-10" />
       </header>
 

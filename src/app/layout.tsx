@@ -64,8 +64,9 @@ export default function RootLayout({
   modal?: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`light notranslate ${inter.variable} ${jakarta.variable} ${manrope.variable}`} translate="no">
+    <html lang="en" className={`light notranslate ${inter.variable} ${jakarta.variable} ${manrope.variable}`} translate="no" style={{ colorScheme: 'light' }}>
       <head>
+        <meta name="color-scheme" content="light" />
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" rel="stylesheet" />
       </head>
       <body className="overflow-x-hidden bg-background text-on-surface font-body selection:bg-primary-container selection:text-on-primary-container antialiased">

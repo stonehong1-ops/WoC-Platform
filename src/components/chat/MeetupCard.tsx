@@ -100,7 +100,7 @@ export default function MeetupCard({ message }: MeetupCardProps) {
   };
 
   return (
-    <div className="w-full max-w-[340px] bg-white/95 border border-zinc-100 rounded-3xl p-5 shadow-md relative overflow-hidden transition-all duration-300 hover:shadow-lg my-2 dark:bg-zinc-900/90 dark:border-zinc-800 animate-in zoom-in-95 duration-200">
+    <div className="w-full max-w-[340px] bg-white/95 border border-zinc-100 rounded-3xl p-5 shadow-md relative overflow-hidden transition-all duration-300 hover:shadow-lg my-2 animate-in zoom-in-95 duration-200">
       {/* Confirmed Accent Bar */}
       <div className={`absolute top-0 left-0 right-0 h-1.5 ${isConfirmed ? 'bg-green-500' : 'bg-amber-500'}`} />
 
@@ -115,7 +115,7 @@ export default function MeetupCard({ message }: MeetupCardProps) {
           </span>
         </div>
         {maxCapacity > 0 && (
-          <span className="text-[10px] font-bold px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 rounded-full text-zinc-500">
+          <span className="text-[10px] font-bold px-2 py-0.5 bg-zinc-100 rounded-full text-zinc-500">
             {attendees.length} / {maxCapacity} {t('chat.people_unit', '명')}
           </span>
         )}
@@ -123,7 +123,7 @@ export default function MeetupCard({ message }: MeetupCardProps) {
 
       {/* Meetup Title & Description */}
       <div className="mb-4">
-        <h4 className="text-[15px] font-extrabold text-zinc-800 dark:text-zinc-100 mb-1 leading-snug text-left">
+        <h4 className="text-[15px] font-extrabold text-zinc-800 mb-1 leading-snug text-left">
           {message.text}
         </h4>
         {description && (
@@ -134,11 +134,11 @@ export default function MeetupCard({ message }: MeetupCardProps) {
       </div>
 
       {/* Meetup Details: Date & Location */}
-      <div className="bg-zinc-50/50 dark:bg-zinc-800/30 rounded-2xl p-3.5 space-y-2.5 border border-zinc-100/30 dark:border-zinc-800/30 mb-5">
+      <div className="bg-zinc-50/50 rounded-2xl p-3.5 space-y-2.5 border border-zinc-100/30 mb-5">
         <div className="flex items-start gap-2.5">
           <span className="material-symbols-outlined text-[16px] text-zinc-400 mt-0.5">schedule</span>
           <div className="flex flex-col text-left">
-            <span className="text-[12px] font-bold text-zinc-700 dark:text-zinc-300">
+            <span className="text-[12px] font-bold text-zinc-700">
               {dateStr ? new Date(dateStr).toLocaleString(undefined, { dateStyle: 'long', timeStyle: 'short' }) : t('chat.no_date', '일정 미지정')}
             </span>
           </div>
@@ -147,7 +147,7 @@ export default function MeetupCard({ message }: MeetupCardProps) {
         {location && (
           <div className="flex items-start gap-2.5">
             <span className="material-symbols-outlined text-[16px] text-zinc-400 mt-0.5">location_on</span>
-            <span className="text-[12px] font-bold text-zinc-700 dark:text-zinc-300 leading-tight text-left">
+            <span className="text-[12px] font-bold text-zinc-700 leading-tight text-left">
               {location}
             </span>
           </div>

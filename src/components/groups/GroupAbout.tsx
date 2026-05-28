@@ -208,8 +208,33 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
   useEffect(() => {
     let isMounted = true;
     const fetchProfiles = async () => {
+      const ADMIN_UIDS = ['adminstone', '7iaZAmaYY9dNNEShmJmROI8XrtH2'];
+      const isStoneHongName = (name?: string | null): boolean => {
+        if (!name) return false;
+        const normalized = name.trim().toLowerCase().replace(/\s+/g, '');
+        return ['stone', 'stonehong', '스톤', '스톤홍'].includes(normalized);
+      };
+
       const withProfiles = await Promise.all(mergedMembers.map(async (member) => {
         try {
+          const isVirtualAdmin = ADMIN_UIDS.includes(member.id) && 
+            member.name && !isStoneHongName(member.name);
+
+          if (isVirtualAdmin) {
+            return {
+              ...member,
+              profile: null,
+              isInstructor: member.role === 'instructor',
+              isStaff: member.role === 'staff' || member.role === 'moderator',
+              isDj: false,
+              isServiceProvider: false,
+              name: member.name || 'Unknown',
+              avatar: member.avatar || null,
+              phone: member.phone || null,
+              allowPhoneCalls: false
+            };
+          }
+
           const { userService } = await import('@/lib/firebase/userService');
           const userProfile = await userService.getUserById(member.id);
           return {
@@ -970,37 +995,25 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
           <div 
             className="rounded-2xl overflow-hidden border border-outline-variant/30 mb-3 h-48 relative shadow-sm group bg-slate-50 flex items-center justify-center"
           >
-            {showLiveMap ? (
-              <iframe
-                width="100%"
-                height="100%"
-                style={{ border: 0 }}
-                loading="lazy"
-                allowFullScreen
-                src={`https://www.google.com/maps?q=${encodeURIComponent(venueAddress.split(',')[0].trim())}&output=embed`}
-              ></iframe>
-            ) : (
-              <div 
-                className="w-full h-full flex flex-col items-center justify-center cursor-pointer bg-slate-100/50 hover:bg-slate-100 transition-colors"
-                onClick={() => setShowLiveMap(true)}
-              >
-                <span className="material-symbols-outlined text-3xl text-primary mb-2">map</span>
-                <span className="text-xs font-bold text-on-surface-variant">지도 불러오기 (데이터 절약 모드)</span>
-              </div>
-            )}
+            <iframe
+              width="100%"
+              height="100%"
+              style={{ border: 0 }}
+              loading="lazy"
+              allowFullScreen
+              src={`https://www.google.com/maps?q=${encodeURIComponent(venueAddress.split(',')[0].trim())}&output=embed`}
+            ></iframe>
             
-            {showLiveMap && (
-              <div 
-                className="absolute inset-0 bg-transparent cursor-pointer z-10"
-                onClick={() => {
-                  const query = encodeURIComponent(venueAddress.split(',')[0].trim() || "");
-                  window.open(`https://map.naver.com/v5/search/${query}`, '_blank');
-                }}
-              ></div>
-            )}
+            <div 
+              className="absolute inset-0 bg-transparent cursor-pointer z-10"
+              onClick={() => {
+                const query = encodeURIComponent(venueAddress.split(',')[0].trim() || "");
+                window.open(`https://map.naver.com/v5/search/${query}`, '_blank');
+              }}
+            ></div>
 
             <div className="absolute bottom-3 right-3 bg-surface/90 backdrop-blur px-3 py-1.5 rounded-full text-[10px] font-label-md text-on-surface-variant border border-outline-variant/20 z-20 pointer-events-none">
-              {showLiveMap ? t("group.about.tap_expand") : "터치하여 지도 활성화"}
+              {t("group.about.tap_expand")}
             </div>
           </div>
 

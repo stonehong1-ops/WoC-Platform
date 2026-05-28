@@ -24,9 +24,9 @@ const LiveFeed = dynamic(() => import("@/components/live/LiveFeed"), {
   loading: () => (
     <div className="w-full h-full flex flex-col items-center justify-center p-8 min-h-[400px]">
       <div className="w-full max-w-md space-y-4 animate-pulse">
-        <div className="h-8 bg-[#f2f4f4] dark:bg-zinc-800 rounded-xl w-3/4"></div>
-        <div className="h-4 bg-[#f2f4f4] dark:bg-zinc-800 rounded-lg w-1/2"></div>
-        <div className="h-48 bg-[#f2f4f4]/60 dark:bg-zinc-800/40 rounded-2xl w-full"></div>
+        <div className="h-8 bg-[#f2f4f4] rounded-xl w-3/4"></div>
+        <div className="h-4 bg-[#f2f4f4] rounded-lg w-1/2"></div>
+        <div className="h-48 bg-[#f2f4f4]/60 rounded-2xl w-full"></div>
       </div>
     </div>
   )
@@ -157,14 +157,14 @@ export default function GroupModuleRenderer({
               />
             ) : (
               <div className="max-w-md mx-auto px-4 py-8">
-                <div className="flex flex-col items-center justify-center text-center p-8 bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-3xl shadow-xl shadow-zinc-100/50 dark:shadow-none min-h-[400px]">
-                  <div className="w-16 h-16 rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 flex items-center justify-center mb-6 shadow-sm">
-                    <span className="material-symbols-outlined text-3xl text-zinc-400 dark:text-zinc-500 animate-bounce-subtle">lock</span>
+                <div className="flex flex-col items-center justify-center text-center p-8 bg-white border border-zinc-100 rounded-3xl shadow-xl shadow-zinc-100/50 min-h-[400px]">
+                  <div className="w-16 h-16 rounded-2xl bg-zinc-50 border border-zinc-100 flex items-center justify-center mb-6 shadow-sm">
+                    <span className="material-symbols-outlined text-3xl text-zinc-400 animate-bounce-subtle">lock</span>
                   </div>
-                  <h3 className="text-xl font-bold text-zinc-800 dark:text-zinc-100 mb-3 tracking-tight font-headline">
+                  <h3 className="text-xl font-bold text-zinc-800 mb-3 tracking-tight font-headline">
                     {t('group.members_only.title')}
                   </h3>
-                  <p className="text-sm leading-relaxed text-zinc-400 dark:text-zinc-500 max-w-xs mb-8 font-body">
+                  <p className="text-sm leading-relaxed text-zinc-400 max-w-xs mb-8 font-body">
                     {t('group.members_only.desc')}
                   </p>
                   <button
@@ -675,14 +675,14 @@ export default function GroupModuleRenderer({
 function UnderConstructionCard({ icon }: { icon: string }) {
   const { t } = useLanguage();
   return (
-    <div className="flex flex-col items-center justify-center text-center p-8 bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-3xl shadow-xl shadow-zinc-100/50 dark:shadow-none min-h-[400px]">
-      <div className="w-16 h-16 rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 flex items-center justify-center mb-6 shadow-sm">
-        <span className="material-symbols-outlined text-3xl text-zinc-400 dark:text-zinc-500 animate-pulse">{icon}</span>
+    <div className="flex flex-col items-center justify-center text-center p-8 bg-white border border-zinc-100 rounded-3xl shadow-xl shadow-zinc-100/50 min-h-[400px]">
+      <div className="w-16 h-16 rounded-2xl bg-zinc-50 border border-zinc-100 flex items-center justify-center mb-6 shadow-sm">
+        <span className="material-symbols-outlined text-3xl text-zinc-400 animate-pulse">{icon}</span>
       </div>
-      <h3 className="text-xl font-bold text-zinc-800 dark:text-zinc-100 mb-3 tracking-tight">
+      <h3 className="text-xl font-bold text-zinc-800 mb-3 tracking-tight">
         {t('group.under_construction.title')}
       </h3>
-      <p className="text-sm leading-relaxed text-zinc-400 dark:text-zinc-500 max-w-xs">
+      <p className="text-sm leading-relaxed text-zinc-400 max-w-xs">
         {t('group.under_construction.desc')}
       </p>
     </div>

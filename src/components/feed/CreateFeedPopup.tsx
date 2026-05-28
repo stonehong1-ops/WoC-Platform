@@ -126,6 +126,26 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
     setTagKeyword(''); setTagResults([]);
   }, [editingPost, isOpen]);
 
+  // Manage history stack for Android/Device back button in CreateFeedPopup
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const stateKey = `create_feed_${Date.now()}`;
+    window.history.pushState({ stateKey }, '');
+
+    const handlePopState = () => {
+      onClose();
+    };
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      if (window.history.state?.stateKey === stateKey) {
+        window.history.back();
+      }
+    };
+  }, [isOpen, onClose]);
+
   /* 🔗 Link Auto Detection & Manual Adding 🔗 */
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [linkInputVal, setLinkInputVal] = useState('');

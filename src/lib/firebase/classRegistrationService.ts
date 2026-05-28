@@ -28,7 +28,7 @@ function cleanData(obj: any): any {
 }
 
 // Helper to map booking document data to ClassRegistration type
-function mapBookingToRegistration(booking: any): ClassRegistration {
+function mapBookingToRegistration(booking: any, docId?: string): ClassRegistration {
   const payload = booking.payload || {};
   
   // Status mapping
@@ -56,7 +56,7 @@ function mapBookingToRegistration(booking: any): ClassRegistration {
   }
 
   return {
-    id: booking.id,
+    id: docId || booking.id || '',
     classId: payload.classId || booking.itemId || '',
     groupId: payload.groupId || '',
     userId: booking.buyerId || '',
@@ -200,6 +200,7 @@ export const classRegistrationService = {
         if (updates.contactNumber !== undefined) payloadUpdates.contactNumber = updates.contactNumber;
         if (updates.partnerName !== undefined) payloadUpdates.partnerName = updates.partnerName;
         if (updates.selectedClassIds !== undefined) payloadUpdates.selectedClassIds = updates.selectedClassIds;
+        if (updates.participatingClassPartners !== undefined) payloadUpdates.participatingClassPartners = updates.participatingClassPartners;
         
         if (Object.keys(payloadUpdates).length > 0) {
           const currentPayload = bookingSnap.data().payload || {};
@@ -231,7 +232,7 @@ export const classRegistrationService = {
         where("payload.groupId", "==", groupId)
       );
       const bookingSnapshot = await getDocs(qBooking);
-      const bookingRegs = bookingSnapshot.docs.map(doc => mapBookingToRegistration(doc.data()));
+      const bookingRegs = bookingSnapshot.docs.map(doc => mapBookingToRegistration(doc.data(), doc.id));
 
       return bookingRegs.sort((a, b) => {
         const timeA = a.appliedAt?.toMillis ? a.appliedAt.toMillis() : (a.appliedAt?.seconds ? a.appliedAt.seconds * 1000 : 0);
@@ -253,9 +254,8 @@ export const classRegistrationService = {
       );
       const bookingSnapshot = await getDocs(qBooking);
       const bookingRegs = bookingSnapshot.docs
-        .map(doc => doc.data())
-        .filter(b => b.domain && b.domain.startsWith("class"))
-        .map(b => mapBookingToRegistration(b));
+        .filter(doc => doc.data().domain && doc.data().domain.startsWith("class"))
+        .map(doc => mapBookingToRegistration(doc.data(), doc.id));
 
       return bookingRegs.sort((a, b) => {
         const timeA = a.appliedAt?.toMillis ? a.appliedAt.toMillis() : (a.appliedAt?.seconds ? a.appliedAt.seconds * 1000 : 0);
@@ -275,7 +275,7 @@ export const classRegistrationService = {
       where("payload.groupId", "==", groupId)
     );
     const unsubBooking = onSnapshot(qBooking, (snapshot) => {
-      const bookingRegs = snapshot.docs.map(doc => mapBookingToRegistration(doc.data()));
+      const bookingRegs = snapshot.docs.map(doc => mapBookingToRegistration(doc.data(), doc.id));
       const sortedList = bookingRegs.sort((a, b) => {
         const timeA = a.appliedAt?.toMillis ? a.appliedAt.toMillis() : (a.appliedAt?.seconds ? a.appliedAt.seconds * 1000 : 0);
         const timeB = b.appliedAt?.toMillis ? b.appliedAt.toMillis() : (b.appliedAt?.seconds ? b.appliedAt.seconds * 1000 : 0);
@@ -296,8 +296,9 @@ export const classRegistrationService = {
       where("buyerId", "==", userId)
     );
     const unsubBooking = onSnapshot(qBooking, (snapshot) => {
-      const docs = snapshot.docs.map(doc => doc.data()).filter(b => b.domain && b.domain.startsWith("class"));
-      const bookingRegs = docs.map(b => mapBookingToRegistration(b));
+      const bookingRegs = snapshot.docs
+        .filter(doc => doc.data().domain && doc.data().domain.startsWith("class"))
+        .map(doc => mapBookingToRegistration(doc.data(), doc.id));
       const sortedList = bookingRegs.sort((a, b) => {
         const timeA = a.appliedAt?.toMillis ? a.appliedAt.toMillis() : (a.appliedAt?.seconds ? a.appliedAt.seconds * 1000 : 0);
         const timeB = b.appliedAt?.toMillis ? b.appliedAt.toMillis() : (b.appliedAt?.seconds ? b.appliedAt.seconds * 1000 : 0);
@@ -318,8 +319,9 @@ export const classRegistrationService = {
       where("payload.contactNumber", "==", phoneNumber)
     );
     const unsubBooking = onSnapshot(qBooking, (snapshot) => {
-      const docs = snapshot.docs.map(doc => doc.data()).filter(b => b.domain && b.domain.startsWith("class"));
-      const bookingRegs = docs.map(b => mapBookingToRegistration(b));
+      const bookingRegs = snapshot.docs
+        .filter(doc => doc.data().domain && doc.data().domain.startsWith("class"))
+        .map(doc => mapBookingToRegistration(doc.data(), doc.id));
       const sortedList = bookingRegs.sort((a, b) => {
         const timeA = a.appliedAt?.toMillis ? a.appliedAt.toMillis() : (a.appliedAt?.seconds ? a.appliedAt.seconds * 1000 : 0);
         const timeB = b.appliedAt?.toMillis ? b.appliedAt.toMillis() : (b.appliedAt?.seconds ? b.appliedAt.seconds * 1000 : 0);

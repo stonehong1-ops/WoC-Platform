@@ -186,7 +186,7 @@ export default function UniversalFeed({ context, currentUser, profile, activeFil
             </div>
             <div className="flex flex-col gap-3">
               {spotlightPosts.map((post) => (
-                <div key={post.id} className="bg-white/80 dark:bg-slate-900/80 rounded-xl p-3 border border-outline-variant/10 shadow-sm relative group overflow-hidden">
+                <div key={post.id} className="bg-white/80 rounded-xl p-3 border border-outline-variant/10 shadow-sm relative group overflow-hidden">
                   <FeedPostCard
                     post={post}
                     currentUser={currentUser}

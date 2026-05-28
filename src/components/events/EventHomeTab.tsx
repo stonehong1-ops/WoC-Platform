@@ -21,6 +21,13 @@ const getNormalizedDate = (val: any): Date => {
   try { return new Date(val); } catch { return new Date(); }
 };
 
+const ADMIN_UIDS = ['adminstone', '7iaZAmaYY9dNNEShmJmROI8XrtH2'];
+const isStoneHongName = (name?: string | null): boolean => {
+  if (!name) return false;
+  const normalized = name.trim().toLowerCase().replace(/\s+/g, '');
+  return ['stone', 'stonehong', '스톤', '스톤홍'].includes(normalized);
+};
+
 export default function EventHomeTab({ event, onChatWithHost, canEdit }: Props) {
   const { t, formatDate } = useLanguage();
   const [venue, setVenue] = useState<any>(null);
@@ -41,9 +48,18 @@ export default function EventHomeTab({ event, onChatWithHost, canEdit }: Props) 
 
   useEffect(() => {
     if (event.hostId) {
+      const isVirtualAdmin = ADMIN_UIDS.includes(event.hostId) && 
+        ((event.hostName && !isStoneHongName(event.hostName)) || 
+         (event.hostNameNative && !isStoneHongName(event.hostNameNative)));
+
+      if (isVirtualAdmin) {
+        setHostProfile(null);
+        return;
+      }
+
       userService.getUserById(event.hostId).then(setHostProfile).catch(console.error);
     }
-  }, [event.hostId]);
+  }, [event.hostId, event.hostName, event.hostNameNative]);
 
   const startDate = getNormalizedDate(event.startDate);
   const endDate = event.endDate ? getNormalizedDate(event.endDate) : startDate;

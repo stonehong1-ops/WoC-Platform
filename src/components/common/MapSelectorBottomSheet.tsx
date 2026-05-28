@@ -51,6 +51,28 @@ export const MapSelectorBottomSheet: React.FC<MapSelectorBottomSheetProps> = ({
     }
   }, [isOpen, locationName, onClose]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const cachedMap = localStorage.getItem('woc_preferred_map');
+    if (cachedMap) return;
+
+    const stateKey = `map_selector_${Date.now()}`;
+    window.history.pushState({ stateKey }, '');
+
+    const handlePopState = () => {
+      onClose();
+    };
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      if (window.history.state?.stateKey === stateKey) {
+        window.history.back();
+      }
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   // 로컬 스토리지에 캐싱된 값이 있는 경우에는 렌더링을 건너뜀 (이미 딜레이 없이 실행된 상태)

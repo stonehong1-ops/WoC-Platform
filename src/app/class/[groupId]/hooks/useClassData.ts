@@ -297,6 +297,92 @@ export function useClassData(propGroupId?: string, propModalId?: string, onClose
     }
   };
 
+  const handleApplyModalSubmit = async () => {
+    if (selectedClasses.size === 0) return;
+    try {
+      const selectedClassesArray = Array.from(selectedClasses);
+      const isDiscount = isDiscountSelected;
+      
+      let finalItemName = '';
+      let finalItemId = '';
+      let finalTotalAmount = 0;
+      let finalCurrency = 'KRW';
+      let finalPayload: any = {
+        role: selectedRole || 'follower',
+        groupId: groupId,
+        groupName: group?.name || '',
+        userAvatar: (profile as any)?.photoURL || (profile as any)?.avatar || user?.photoURL || '',
+        contactNumber: (profile as any)?.phone || (profile as any)?.contactNumber || user?.phoneNumber || ''
+      };
+      
+      if (isDiscount) {
+        const discountId = selectedClassesArray[0];
+        const discountItem = allItemsOriginal.find(d => d.id === discountId);
+        if (!discountItem) throw new Error("Bundle item not found");
+        
+        finalItemName = discountItem.title;
+        finalItemId = discountId;
+        finalTotalAmount = discountItem.amount || 0;
+        finalCurrency = discountItem.currency || 'KRW';
+        
+        finalPayload.itemType = 'discount';
+        finalPayload.selectedClassIds = Array.from(passSelectedClassIds);
+        finalPayload.participatingClassPartners = classPartners;
+      } else {
+        if (selectedClassesArray.length === 1) {
+          const classId = selectedClassesArray[0];
+          const classItem = allGroupClasses.find(c => c.id === classId);
+          if (!classItem) throw new Error("Class item not found");
+          
+          finalItemName = classItem.title;
+          finalItemId = classId;
+          finalTotalAmount = classItem.amount || 0;
+          finalCurrency = classItem.currency || 'KRW';
+          
+          finalPayload.itemType = 'class';
+          finalPayload.classDate = classItem.schedule?.[0]?.date || new Date().toISOString();
+          finalPayload.partnerName = classPartners[classId] || '';
+        } else {
+          const firstClassId = selectedClassesArray[0];
+          const firstClassItem = allGroupClasses.find(c => c.id === firstClassId);
+          if (!firstClassItem) throw new Error("Class item not found");
+          
+          const totalSum = selectedClassesArray.reduce((sum, id) => {
+            const item = allGroupClasses.find(c => c.id === id);
+            return sum + (item?.amount || 0);
+          }, 0);
+          
+          finalItemName = language === 'KR' 
+            ? `${firstClassItem.title} 외 ${selectedClassesArray.length - 1}건`
+            : `${firstClassItem.title} and ${selectedClassesArray.length - 1} other(s)`;
+            
+          finalItemId = firstClassId;
+          finalTotalAmount = totalSum;
+          finalCurrency = firstClassItem.currency || 'KRW';
+          
+          finalPayload.itemType = 'class';
+          finalPayload.selectedClassIds = selectedClassesArray;
+          finalPayload.participatingClassPartners = classPartners;
+        }
+      }
+      
+      const orderId = await createBooking({
+        domain: isDiscount ? 'class_discount' : 'class_daily',
+        itemName: finalItemName,
+        itemImageUrl: group?.coverImage || group?.logo || '',
+        itemId: finalItemId,
+        hostId: group?.ownerId || '',
+        totalAmount: finalTotalAmount,
+        currency: finalCurrency,
+        payload: finalPayload
+      });
+      return orderId;
+    } catch (err: any) {
+      alert(err.message || 'Booking failed');
+      throw err;
+    }
+  };
+
   const handleDownload = async () => {
     if (!captureRef.current || isDownloading) return;
     setIsDownloading(true);
@@ -424,6 +510,7 @@ export function useClassData(propGroupId?: string, propModalId?: string, onClose
     handleCheckoutClick,
     handleDirectReserve,
     handleCheckoutSubmit,
+    handleApplyModalSubmit,
     handleDownload,
     reportPayment
   };

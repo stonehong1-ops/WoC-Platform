@@ -79,26 +79,26 @@ function GroupJoinActionCard({ message, user, t }: { message: ChatMessage; user:
   const isRequest = actionType === 'group_join_request';
 
   return (
-    <div className="bg-white dark:bg-zinc-900 rounded-3xl p-5 border border-zinc-100 dark:border-zinc-800 shadow-md min-w-[280px] max-w-[340px] space-y-4 text-left">
+    <div className="bg-white rounded-3xl p-5 border border-zinc-100 shadow-md min-w-[280px] max-w-[340px] space-y-4 text-left">
       <div className="flex items-center gap-3">
         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
-          isRequest ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20' : 'bg-purple-50 text-purple-600 dark:bg-purple-900/20'
+          isRequest ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'
         }`}>
           <span className="material-symbols-outlined text-2xl font-bold">
             {isRequest ? 'person_add' : 'mail'}
           </span>
         </div>
         <div>
-          <h4 className="text-sm font-black text-gray-900 dark:text-white">
+          <h4 className="text-sm font-black text-gray-900">
             {isRequest ? "그룹 가입 승인 요청" : "그룹 초대 알림"}
           </h4>
-          <span className="text-[10px] font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-widest leading-none">
+          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">
             {groupName}
           </span>
         </div>
       </div>
 
-      <p className="text-[13px] leading-relaxed text-gray-700 dark:text-zinc-300 font-medium">
+      <p className="text-[13px] leading-relaxed text-gray-700 font-medium">
         {message.text}
       </p>
 
@@ -109,7 +109,7 @@ function GroupJoinActionCard({ message, user, t }: { message: ChatMessage; user:
               <button
                 disabled={loading}
                 onClick={() => handleDecision('rejected')}
-                className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-zinc-700 text-xs font-bold text-gray-600 dark:text-zinc-400 hover:bg-gray-50 active:scale-95 transition-all"
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50 active:scale-95 transition-all"
               >
                 거절
               </button>
@@ -122,8 +122,8 @@ function GroupJoinActionCard({ message, user, t }: { message: ChatMessage; user:
               </button>
             </div>
           ) : (
-            <div className="text-center py-2 bg-gray-50 dark:bg-zinc-800/50 rounded-xl">
-              <span className="text-[11px] font-bold text-gray-400 dark:text-zinc-500">
+            <div className="text-center py-2 bg-gray-50 rounded-xl">
+              <span className="text-[11px] font-bold text-gray-400">
                 {isRequest ? "대표자의 결정을 기다리는 중입니다" : "상대방의 수락 결정을 기다리는 중입니다"}
               </span>
             </div>
@@ -131,8 +131,8 @@ function GroupJoinActionCard({ message, user, t }: { message: ChatMessage; user:
         ) : (
           <div className={`text-center py-2.5 rounded-xl text-xs font-bold ${
             status === 'approved' 
-              ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400' 
-              : 'bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400'
+              ? 'bg-emerald-50 text-emerald-600' 
+              : 'bg-rose-50 text-rose-600'
           }`}>
             {status === 'approved' 
               ? (isRequest ? "가입이 수락되었습니다" : "초대를 수락하여 가입되었습니다") 
@@ -688,7 +688,7 @@ export default function ChatMessageList({
           if (isSystem) {
             return (
               <div key={msg.id} className="w-full flex justify-center py-2">
-                <div className="bg-gray-100/70 dark:bg-zinc-800/40 text-gray-500 dark:text-zinc-400 px-4 py-1.5 rounded-full text-[11px] font-bold shadow-xs">
+                <div className="bg-gray-100/70 text-gray-500 px-4 py-1.5 rounded-full text-[11px] font-bold shadow-xs">
                   {renderMessageText(msg)}
                 </div>
               </div>
@@ -864,11 +864,11 @@ export default function ChatMessageList({
                         initial={{ scale: 0.92, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0.92, opacity: 0 }}
-                        className="bg-white rounded-3xl p-5 shadow-2xl border border-gray-100 w-full max-w-[280px] space-y-4 text-gray-800 dark:bg-zinc-900 dark:border-zinc-800 text-left"
+                        className="bg-white rounded-3xl p-5 shadow-2xl border border-gray-100 w-full max-w-[280px] space-y-4 text-gray-800 text-left"
                         onClick={(e) => e.stopPropagation()}
                       >
                         {/* Emojis row */}
-                        <div className="grid grid-cols-7 gap-2 pb-3 border-b border-gray-100 dark:border-zinc-800 justify-items-center">
+                        <div className="grid grid-cols-7 gap-2 pb-3 border-b border-gray-100 justify-items-center">
                           {REACTION_EMOJIS.map(emoji => (
                             <button 
                               key={emoji} 
@@ -889,7 +889,7 @@ export default function ChatMessageList({
                               setReplyTo(msg);
                               setMenuMsgId(null);
                             }}
-                            className="w-full px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-zinc-800/50 text-[13.5px] font-bold text-gray-700 dark:text-zinc-300 transition-colors"
+                            className="w-full px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-gray-50 text-[13.5px] font-bold text-gray-700 transition-colors"
                           >
                             <span className="material-symbols-outlined text-[18px] text-gray-400">reply</span>
                             <span>{t('chat.menu_reply', '답장')}</span>
@@ -898,7 +898,7 @@ export default function ChatMessageList({
                           {(msg.type === 'text' || !msg.type) && (
                             <button 
                               onClick={() => handleTranslate(msg.id, msg.text)}
-                              className="w-full px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-zinc-800/50 text-[13.5px] font-bold text-gray-700 dark:text-zinc-300 transition-colors"
+                              className="w-full px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-gray-50 text-[13.5px] font-bold text-gray-700 transition-colors"
                             >
                               <span className="material-symbols-outlined text-[18px] text-gray-400">g_translate</span>
                               <span>{translations[msg.id] ? t('chat.menu_undo_translate', '원문 보기') : t('chat.menu_translate', '번역')}</span>
@@ -911,7 +911,7 @@ export default function ChatMessageList({
                               setMenuMsgId(null);
                               toast.success(t('chat.copied_toast', '메시지가 클립보드에 복사되었습니다!'));
                             }}
-                            className="w-full px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-zinc-800/50 text-[13.5px] font-bold text-gray-700 dark:text-zinc-300 transition-colors"
+                            className="w-full px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-gray-50 text-[13.5px] font-bold text-gray-700 transition-colors"
                           >
                             <span className="material-symbols-outlined text-[18px] text-gray-400">content_copy</span>
                             <span>{t('chat.menu_copy', '복사')}</span>
@@ -920,7 +920,7 @@ export default function ChatMessageList({
                           {isOwn && (
                             <button 
                               onClick={() => handleMessageDelete(msg.id)}
-                              className="w-full px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/20 text-[13.5px] font-bold text-rose-500 transition-colors"
+                              className="w-full px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-rose-50 hover:text-rose-600 text-[13.5px] font-bold text-rose-500 transition-colors"
                             >
                               <span className="material-symbols-outlined text-[18px]">delete</span>
                               <span>{t('chat.menu_delete', '삭제')}</span>

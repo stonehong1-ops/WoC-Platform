@@ -263,10 +263,10 @@ export default function GroupPolls({ groupId, user, members }: GroupPollsProps) 
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-[20px] font-black text-zinc-800 dark:text-zinc-100 font-headline">
+          <h2 className="text-[20px] font-black text-zinc-800 font-headline">
             {t("group.tab.polls", "투표")}
           </h2>
-          <p className="text-[12.5px] text-zinc-400 dark:text-zinc-500 font-body">
+          <p className="text-[12.5px] text-zinc-400 font-body">
             {t("poll.subtitle", "멤버들의 지혜를 모으고 합리적인 결정을 내립니다.")}
           </p>
         </div>
@@ -280,15 +280,15 @@ export default function GroupPolls({ groupId, user, members }: GroupPollsProps) 
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex gap-2 bg-zinc-100/50 dark:bg-zinc-900/30 p-1 rounded-2xl w-fit">
+      <div className="flex gap-2 bg-zinc-100/50 p-1 rounded-2xl w-fit">
         {(["all", "active", "closed"] as const).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
             className={`px-4 py-1.5 rounded-xl text-[12px] font-black capitalize transition-all ${
               filter === f
-                ? "bg-white dark:bg-zinc-800 text-blue-600 dark:text-blue-400 shadow-sm"
-                : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+                ? "bg-white text-blue-600 shadow-sm"
+                : "text-zinc-500 hover:text-zinc-800"
             }`}
           >
             {f === "all" 
@@ -307,9 +307,9 @@ export default function GroupPolls({ groupId, user, members }: GroupPollsProps) 
           <span className="text-xs">{t("poll.syncing", "실시간 투표 목록 동기화 중...")}</span>
         </div>
       ) : filteredPolls.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-zinc-100 dark:border-zinc-800 rounded-3xl">
-          <span className="material-symbols-outlined text-4xl text-zinc-300 dark:text-zinc-600 mb-3">how_to_vote</span>
-          <p className="text-[13px] font-bold text-zinc-400 dark:text-zinc-500">{t("poll.no_polls", "등록된 투표가 없습니다.")}</p>
+        <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-zinc-100 rounded-3xl">
+          <span className="material-symbols-outlined text-4xl text-zinc-300 mb-3">how_to_vote</span>
+          <p className="text-[13px] font-bold text-zinc-400">{t("poll.no_polls", "등록된 투표가 없습니다.")}</p>
           <p className="text-[11px] text-zinc-400/80 mt-1">{t("poll.no_polls_desc", "상단의 투표 만들기 단추를 눌러 첫 제안을 올릴 수 있습니다.")}</p>
         </div>
       ) : (
@@ -328,23 +328,23 @@ export default function GroupPolls({ groupId, user, members }: GroupPollsProps) 
             return (
               <div
                 key={poll.id}
-                className={`bg-white dark:bg-zinc-900 border rounded-3xl p-5.5 relative transition-all ${
+                className={`bg-white border rounded-3xl p-5.5 relative transition-all ${
                   poll.isClosed 
-                    ? "border-zinc-100 dark:border-zinc-800/80 opacity-70" 
-                    : "border-zinc-100 dark:border-zinc-800 shadow-sm hover:shadow-md"
+                    ? "border-zinc-100 opacity-70" 
+                    : "border-zinc-100 shadow-sm hover:shadow-md"
                 }`}
               >
                 {/* Poll Top Header */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center shrink-0">
-                      <span className="material-symbols-outlined text-blue-600 dark:text-blue-400 text-[18px]">how_to_vote</span>
+                    <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+                      <span className="material-symbols-outlined text-blue-600 text-[18px]">how_to_vote</span>
                     </div>
                     <div>
-                      <p className="text-[12px] font-black text-zinc-700 dark:text-zinc-300 leading-none mb-1">
+                      <p className="text-[12px] font-black text-zinc-700 leading-none mb-1">
                         {poll.author?.name || "Anonymous"}
                       </p>
-                      <p className="text-[10px] text-zinc-400 dark:text-zinc-500">
+                      <p className="text-[10px] text-zinc-400">
                         {t("poll.ends_at", { date: poll.deadline })}
                       </p>
                     </div>
@@ -353,16 +353,16 @@ export default function GroupPolls({ groupId, user, members }: GroupPollsProps) 
                   {/* Badge Row */}
                   <div className="flex items-center gap-1.5">
                     {poll.isAnonymous && (
-                      <span className="px-2 py-0.5 rounded-lg bg-amber-50 dark:bg-amber-900/10 border border-amber-100/30 text-amber-600 dark:text-amber-400 text-[9.5px] font-black">
+                      <span className="px-2 py-0.5 rounded-lg bg-amber-50 border border-amber-100/30 text-amber-600 text-[9.5px] font-black">
                         {t("poll.anonymous_label", "익명")}
                       </span>
                     )}
                     {poll.isClosed ? (
-                      <span className="px-2 py-0.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-500 text-[9.5px] font-black">
+                      <span className="px-2 py-0.5 rounded-lg bg-zinc-100 text-zinc-500 text-[9.5px] font-black">
                         {t("poll.closed", "마감됨")}
                       </span>
                     ) : (
-                      <span className="px-2 py-0.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 text-[9.5px] font-black">
+                      <span className="px-2 py-0.5 rounded-lg bg-blue-50 text-blue-600 text-[9.5px] font-black">
                         {poll.type === "multiple" 
                           ? t("poll.multiple_choice", "복수선택") 
                           : t("poll.single_choice", "단일선택")}
@@ -372,7 +372,7 @@ export default function GroupPolls({ groupId, user, members }: GroupPollsProps) 
                 </div>
 
                 {/* Question */}
-                <h3 className="text-[15.5px] font-extrabold text-zinc-800 dark:text-zinc-100 mb-4 leading-snug">
+                <h3 className="text-[15.5px] font-extrabold text-zinc-800 mb-4 leading-snug">
                   {poll.question}
                 </h3>
 
@@ -392,16 +392,16 @@ export default function GroupPolls({ groupId, user, members }: GroupPollsProps) 
                         key={opt.id}
                         onClick={() => !poll.isClosed && handleVote(poll.id, opt.id, poll.type)}
                         disabled={poll.isClosed}
-                        className={`w-full relative overflow-hidden rounded-2xl p-3.5 text-left transition-all border ${
+                        className={`w-full text-left relative overflow-hidden rounded-2xl p-3.5 transition-all border ${
                           isVoted
-                            ? "bg-blue-50/30 dark:bg-blue-900/10 border-blue-500/30"
-                            : "bg-zinc-50/50 dark:bg-zinc-900/50 border-zinc-100/40 dark:border-zinc-800/40 hover:border-zinc-200"
+                            ? "bg-blue-50/30 border-blue-500/30"
+                            : "bg-zinc-50/50 border-zinc-100/40 hover:border-zinc-200"
                         }`}
                       >
                         {/* Interactive result percentage bar */}
                         <div
                           className={`absolute inset-y-0 left-0 rounded-2xl transition-all duration-700 ease-out ${
-                            isVoted ? "bg-blue-500/10" : "bg-zinc-200/20 dark:bg-zinc-800/25"
+                            isVoted ? "bg-blue-500/10" : "bg-zinc-200/20"
                           }`}
                           style={{ width: `${percentage}%` }}
                         />
@@ -412,21 +412,21 @@ export default function GroupPolls({ groupId, user, members }: GroupPollsProps) 
                             <div className={`w-4.5 h-4.5 rounded-full border flex items-center justify-center shrink-0 transition-all ${
                               isVoted 
                                 ? "border-blue-500 bg-blue-500" 
-                                : "border-zinc-300 dark:border-zinc-600"
+                                : "border-zinc-300"
                             }`}>
                               {isVoted && (
                                 <span className="material-symbols-outlined text-white text-[12px] font-black">check</span>
                               )}
                             </div>
                             <span className={`text-[13.5px] truncate ${
-                              isVoted ? "font-extrabold text-blue-600 dark:text-blue-400" : "text-zinc-700 dark:text-zinc-300"
+                              isVoted ? "font-extrabold text-blue-600" : "text-zinc-700"
                             }`}>
                               {opt.text}
                             </span>
                           </div>
                           
                           <div className="flex items-center gap-2 shrink-0 ml-4">
-                            <span className="text-[12.5px] font-black text-zinc-700 dark:text-zinc-300">
+                            <span className="text-[12.5px] font-black text-zinc-700">
                               {percentage}%
                             </span>
                             <span className="text-[10px] text-zinc-400">
@@ -440,7 +440,7 @@ export default function GroupPolls({ groupId, user, members }: GroupPollsProps) 
                 </div>
 
                 {/* Poll Footer Toolbar */}
-                <div className="flex items-center justify-between text-[11.5px] text-zinc-400 dark:text-zinc-500 border-t border-zinc-50 dark:border-zinc-800/50 pt-3">
+                <div className="flex items-center justify-between text-[11.5px] text-zinc-400 border-t border-zinc-50 pt-3">
                   <div className="flex items-center gap-1.5 font-bold">
                     <span className="material-symbols-outlined text-[15px] text-zinc-400 shrink-0">group</span>
                     <span>{t("poll.total_voters", { count: totalVotersCount })}</span>
@@ -452,14 +452,14 @@ export default function GroupPolls({ groupId, user, members }: GroupPollsProps) 
                       {!poll.isClosed && (
                         <button 
                           onClick={() => handleClosePoll(poll.id)}
-                          className="px-2.5 py-1 text-zinc-500 hover:text-amber-600 bg-zinc-100 dark:bg-zinc-800 hover:bg-amber-50 dark:hover:bg-amber-950/20 border border-zinc-200 dark:border-zinc-800 rounded-lg transition-all font-black"
+                          className="px-2.5 py-1 text-zinc-500 hover:text-amber-600 bg-zinc-100 hover:bg-amber-50 border border-zinc-200 rounded-lg transition-all font-black"
                         >
                           {t("poll.close_action", "마감하기")}
                         </button>
                       )}
                       <button 
                         onClick={() => handleDeletePoll(poll.id)}
-                        className="px-2.5 py-1 text-zinc-400 hover:text-red-600 bg-zinc-100 dark:bg-zinc-800 hover:bg-red-50 dark:hover:bg-red-950/20 border border-zinc-200 dark:border-zinc-800 rounded-lg transition-all font-black"
+                        className="px-2.5 py-1 text-zinc-400 hover:text-red-600 bg-zinc-100 hover:bg-red-50 border border-zinc-200 rounded-lg transition-all font-black"
                       >
                         {t("poll.delete_action", "삭제")}
                       </button>
@@ -481,19 +481,19 @@ export default function GroupPolls({ groupId, user, members }: GroupPollsProps) 
             onClick={() => setIsModalOpen(false)}
           />
           
-          <div className="bg-white dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-900 w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl relative z-10 animate-in zoom-in-95 duration-200">
+          <div className="bg-white border border-zinc-100 w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl relative z-10 animate-in zoom-in-95 duration-200">
             {/* Top Bar Accent */}
             <div className="h-1.5 bg-gradient-to-r from-blue-500 to-indigo-600 w-full" />
             
             <form onSubmit={handleCreatePoll} className="p-6 space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-[17px] font-black text-zinc-800 dark:text-zinc-100 font-headline">
+                <h3 className="text-[17px] font-black text-zinc-800 font-headline">
                   {t("poll.create", "투표 만들기")}
                 </h3>
                 <button 
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="w-8 h-8 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-900 flex items-center justify-center text-zinc-400 hover:text-zinc-700"
+                  className="w-8 h-8 rounded-full hover:bg-zinc-100 flex items-center justify-center text-zinc-400 hover:text-zinc-700"
                 >
                   <span className="material-symbols-outlined text-[20px]">close</span>
                 </button>
@@ -510,7 +510,7 @@ export default function GroupPolls({ groupId, user, members }: GroupPollsProps) 
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
                   placeholder={t("poll.question_placeholder", "예: 우리 이번 주 모임 뒤풀이 장소 어디가 좋을까요?")}
-                  className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 focus:border-blue-500 focus:bg-white rounded-2xl px-4 py-3.5 text-[13.5px] font-bold transition-all"
+                  className="w-full bg-zinc-50 border border-zinc-100 focus:border-blue-500 focus:bg-white rounded-2xl px-4 py-3.5 text-[13.5px] font-bold transition-all"
                 />
               </div>
 
@@ -529,12 +529,12 @@ export default function GroupPolls({ groupId, user, members }: GroupPollsProps) 
                         value={opt}
                         onChange={(e) => handleOptionChange(index, e.target.value)}
                         placeholder={t("poll.option_slot_label", { index: index + 1 })}
-                        className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 focus:border-blue-500 focus:bg-white rounded-xl px-4 py-2.5 text-[12.5px] font-bold transition-all"
+                        className="w-full bg-zinc-50 border border-zinc-100 focus:border-blue-500 focus:bg-white rounded-xl px-4 py-2.5 text-[12.5px] font-bold transition-all"
                       />
                       <button
                         type="button"
                         onClick={() => removeOptionSlot(index)}
-                        className="w-8 h-8 shrink-0 text-zinc-400 hover:text-red-500 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-900 flex items-center justify-center"
+                        className="w-8 h-8 shrink-0 text-zinc-400 hover:text-red-500 rounded-lg hover:bg-zinc-50 flex items-center justify-center"
                       >
                         <span className="material-symbols-outlined text-[18px]">delete_outline</span>
                       </button>
@@ -562,7 +562,7 @@ export default function GroupPolls({ groupId, user, members }: GroupPollsProps) 
                     type="date"
                     value={deadline}
                     onChange={(e) => setDeadline(e.target.value)}
-                    className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-2xl px-4 py-3 text-[12.5px] font-bold transition-all text-zinc-700 dark:text-zinc-300"
+                    className="w-full bg-zinc-50 border border-zinc-100 rounded-2xl px-4 py-3 text-[12.5px] font-bold transition-all text-zinc-700"
                   />
                 </div>
                 
@@ -576,8 +576,8 @@ export default function GroupPolls({ groupId, user, members }: GroupPollsProps) 
                       onClick={() => setPollType("single")}
                       className={`flex-1 py-3 text-[11px] font-black rounded-2xl border transition-all ${
                         pollType === "single"
-                          ? "bg-blue-50 dark:bg-blue-950/30 border-blue-500 text-blue-600"
-                          : "bg-zinc-50 dark:bg-zinc-900 border-zinc-100 text-zinc-500"
+                          ? "bg-blue-50 border-blue-500 text-blue-600"
+                          : "bg-zinc-50 border-zinc-100 text-zinc-500"
                       }`}
                     >
                       {t("poll.single_choice", "단일선택")}
@@ -587,8 +587,8 @@ export default function GroupPolls({ groupId, user, members }: GroupPollsProps) 
                       onClick={() => setPollType("multiple")}
                       className={`flex-1 py-3 text-[11px] font-black rounded-2xl border transition-all ${
                         pollType === "multiple"
-                          ? "bg-blue-50 dark:bg-blue-950/30 border-blue-500 text-blue-600"
-                          : "bg-zinc-50 dark:bg-zinc-900 border-zinc-100 text-zinc-500"
+                          ? "bg-blue-50 border-blue-500 text-blue-600"
+                          : "bg-zinc-50 border-zinc-100 text-zinc-500"
                       }`}
                     >
                       {t("poll.multiple_choice", "복수선택")}
@@ -598,9 +598,9 @@ export default function GroupPolls({ groupId, user, members }: GroupPollsProps) 
               </div>
 
               {/* Toggles (Anonymous) */}
-              <div className="flex items-center justify-between bg-zinc-50/50 dark:bg-zinc-900/30 p-3 rounded-2xl border border-zinc-100/50 dark:border-zinc-800/30">
+              <div className="flex items-center justify-between bg-zinc-50/50 p-3 rounded-2xl border border-zinc-100/50">
                 <div className="flex flex-col">
-                  <span className="text-[12.5px] font-black text-zinc-700 dark:text-zinc-300">
+                  <span className="text-[12.5px] font-black text-zinc-700">
                     {t("poll.anonymous", "익명 투표")}
                   </span>
                   <span className="text-[10px] text-zinc-400">
@@ -611,7 +611,7 @@ export default function GroupPolls({ groupId, user, members }: GroupPollsProps) 
                   type="button"
                   onClick={() => setIsAnonymous(!isAnonymous)}
                   className={`w-10 h-6.5 rounded-full p-1 transition-all ${
-                    isAnonymous ? "bg-blue-600 flex justify-end" : "bg-zinc-300 dark:bg-zinc-700 flex justify-start"
+                    isAnonymous ? "bg-blue-600 flex justify-end" : "bg-zinc-300 flex justify-start"
                   }`}
                 >
                   <div className="w-4.5 h-4.5 rounded-full bg-white shadow-xs" />
@@ -619,11 +619,11 @@ export default function GroupPolls({ groupId, user, members }: GroupPollsProps) 
               </div>
 
               {/* Submit Buttons */}
-              <div className="flex gap-2 pt-2 border-t border-zinc-50 dark:border-zinc-900/80">
+              <div className="flex gap-2 pt-2 border-t border-zinc-50">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="flex-1 py-3.5 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 text-[13px] font-black bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-2xl transition-all font-body"
+                  className="flex-1 py-3.5 text-zinc-500 hover:text-zinc-800 text-[13px] font-black bg-zinc-50 border border-zinc-100 rounded-2xl transition-all font-body"
                 >
                   {t("poll.cancel", "취소")}
                 </button>

@@ -32,6 +32,13 @@ function getNextEventDate(social: Social, language: string): string {
 import NamecardModal, { NamecardUser } from "@/components/profile/NamecardModal";
 import UserBadge from "@/components/common/UserBadge";
 
+const ADMIN_UIDS = ['adminstone', '7iaZAmaYY9dNNEShmJmROI8XrtH2'];
+const isStoneHongName = (name?: string | null): boolean => {
+  if (!name) return false;
+  const normalized = name.trim().toLowerCase().replace(/\s+/g, '');
+  return ['stone', 'stonehong', '스톤', '스톤홍'].includes(normalized);
+};
+
 export default function SocialHomeTab({ social, onChatWithOrganizer, canEdit, onShowImages, isUnclaimed, isClaiming, onClaim }: Props) {
   const [venue, setVenue] = useState<any>(null);
   const [orgProfile, setOrgProfile] = useState<any>(null);
@@ -67,9 +74,18 @@ export default function SocialHomeTab({ social, onChatWithOrganizer, canEdit, on
   // Auto-fetch org profile (for phone, photo, etc.)
   useEffect(() => {
     if (social.organizerId) {
+      const isVirtualAdmin = ADMIN_UIDS.includes(social.organizerId) && 
+        ((social.organizerName && !isStoneHongName(social.organizerName)) || 
+         (social.organizerNameNative && !isStoneHongName(social.organizerNameNative)));
+
+      if (isVirtualAdmin) {
+        setOrgProfile(null);
+        return;
+      }
+
       userService.getUserById(social.organizerId).then(setOrgProfile).catch(console.error);
     }
-  }, [social.organizerId]);
+  }, [social.organizerId, social.organizerName, social.organizerNameNative]);
 
   const subEvents: SocialSubEvent[] = Array.isArray(social.socialEvents)
     ? social.socialEvents.map((e: any) => typeof e === "string" ? { id: e, title: e, maxParticipants: 0 } : e)
@@ -503,6 +519,12 @@ export default function SocialHomeTab({ social, onChatWithOrganizer, canEdit, on
               nativeClassName="text-[11px] font-semibold text-slate-400 ml-1.5 cursor-pointer"
               subText={<p className="text-[10px] text-[#acb3b4] font-bold uppercase cursor-pointer">{t('social.organizer')}</p>}
               onClick={() => {
+                const isVirtualAdmin = ADMIN_UIDS.includes(social.organizerId || '') && 
+                  ((social.organizerName && !isStoneHongName(social.organizerName)) || 
+                   (social.organizerNameNative && !isStoneHongName(social.organizerNameNative)));
+                
+                if (isVirtualAdmin) return;
+
                 setSelectedNamecardUser({
                   uid: social.organizerId || 'unknown',
                   name: social.organizerName || 'Organizer',

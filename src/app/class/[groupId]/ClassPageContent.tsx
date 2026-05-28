@@ -76,6 +76,7 @@ export default function ClassPageContent({
     handleRemoveFromBasket,
     handleDirectReserve,
     handleCheckoutSubmit,
+    handleApplyModalSubmit,
     handleDownload,
     reportPayment
   } = useClassData(propGroupId, propModalId, onClose);
@@ -643,7 +644,7 @@ export default function ClassPageContent({
           return sum + (item?.amount || 0);
         }, 0)}
         currency={selectedClasses.size > 0 ? allItemsOriginal.find(c => c.id === Array.from(selectedClasses)[0])?.currency || 'KRW' : 'KRW'}
-        onCheckout={handleCheckoutSubmit}
+        onCheckout={handleApplyModalSubmit}
         isProcessing={isBooking}
         buttonText={t('class.submit_request')}
         bankDetails={{
@@ -656,19 +657,19 @@ export default function ClassPageContent({
         <div className="space-y-6 py-2">
           {/* Role Selection */}
           <div>
-            <h4 className="text-sm font-bold text-neutral-900 dark:text-white mb-3">{t('class.checkout.select_role')} <span className="text-error">*</span></h4>
+            <h4 className="text-sm font-bold text-neutral-900 mb-3">{t('class.checkout.select_role')} <span className="text-error">*</span></h4>
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => setSelectedRole('leader')}
-                className={`flex flex-col items-center justify-center py-4 rounded-xl border-2 transition-all ${selectedRole === 'leader' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-300'}`}
+                className={`flex flex-col items-center justify-center py-4 rounded-xl border-2 transition-all ${selectedRole === 'leader' ? 'border-blue-500 bg-blue-50' : 'border-neutral-200 hover:border-neutral-300'}`}
               >
-                <span className={`text-sm font-black uppercase ${selectedRole === 'leader' ? 'text-blue-700 dark:text-blue-400' : 'text-neutral-700 dark:text-neutral-300'}`}>{t('class.checkout.role_leader')}</span>
+                <span className={`text-sm font-black uppercase ${selectedRole === 'leader' ? 'text-blue-700' : 'text-neutral-700'}`}>{t('class.checkout.role_leader')}</span>
               </button>
               <button
                 onClick={() => setSelectedRole('follower')}
-                className={`flex flex-col items-center justify-center py-4 rounded-xl border-2 transition-all ${selectedRole === 'follower' ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20' : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-300'}`}
+                className={`flex flex-col items-center justify-center py-4 rounded-xl border-2 transition-all ${selectedRole === 'follower' ? 'border-purple-500 bg-purple-50' : 'border-neutral-200 hover:border-neutral-300'}`}
               >
-                <span className={`text-sm font-black uppercase ${selectedRole === 'follower' ? 'text-purple-700 dark:text-purple-400' : 'text-neutral-700 dark:text-neutral-300'}`}>{t('class.checkout.role_follower')}</span>
+                <span className={`text-sm font-black uppercase ${selectedRole === 'follower' ? 'text-purple-700' : 'text-neutral-700'}`}>{t('class.checkout.role_follower')}</span>
               </button>
             </div>
           </div>
@@ -676,15 +677,15 @@ export default function ClassPageContent({
           {isDiscountSelected ? (
             <>
               {/* Bundle Info */}
-              <div className="bg-neutral-50 dark:bg-neutral-800 rounded-2xl p-4 border border-neutral-200 dark:border-neutral-700">
+              <div className="bg-neutral-50 rounded-2xl p-4 border border-neutral-200">
                 <h4 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-3">{t('class.checkout.applied_bundle')}</h4>
                 {Array.from(selectedClasses).map(classId => {
                   const item = allItemsOriginal.find(c => c.id === classId);
                   if (!item) return null;
                   return (
                     <div key={classId} className="flex justify-between items-center">
-                      <span className="text-sm font-bold text-neutral-900 dark:text-white truncate mr-2">{item.title}</span>
-                      <span className="text-sm font-black text-neutral-900 dark:text-white whitespace-nowrap">
+                      <span className="text-sm font-bold text-neutral-900 truncate mr-2">{item.title}</span>
+                      <span className="text-sm font-black text-neutral-900 whitespace-nowrap">
                         {item.currency === 'KRW' || !item.currency ? `₩${item.amount ? item.amount.toLocaleString() : '0'}` : `${item.amount ? item.amount.toLocaleString() : '0'} ${item.currency}`}
                       </span>
                     </div>
@@ -693,8 +694,8 @@ export default function ClassPageContent({
               </div>
 
               {/* Participating Classes Checkbox */}
-              <div className="bg-neutral-50 dark:bg-neutral-800 rounded-2xl p-4 border border-neutral-200 dark:border-neutral-700">
-                <h4 className="text-sm font-bold text-neutral-900 dark:text-white mb-3">{t('class.checkout.select_classes_to_attend')} <span className="text-error">*</span></h4>
+              <div className="bg-neutral-50 rounded-2xl p-4 border border-neutral-200">
+                <h4 className="text-sm font-bold text-neutral-900 mb-3">{t('class.checkout.select_classes_to_attend')} <span className="text-error">*</span></h4>
                 <div className="space-y-2">
                   {(() => {
                     const passId = Array.from(selectedClasses)[0];
@@ -764,9 +765,9 @@ export default function ClassPageContent({
                       return (
                         <React.Fragment key={cls.id}>
                           {isNewDay && (
-                            <div className="border-t border-neutral-200 dark:border-neutral-700 my-3" />
+                            <div className="border-t border-neutral-200 my-3" />
                           )}
-                          <div className="flex flex-col p-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 transition-colors">
+                          <div className="flex flex-col p-2.5 rounded-xl border border-neutral-200 bg-white transition-colors">
                             <label className="flex items-start gap-2.5 cursor-pointer">
                               <input
                                 type="checkbox"
@@ -783,12 +784,12 @@ export default function ClassPageContent({
                               />
                               <div className="flex-1 min-w-0 flex flex-col gap-0.5">
                                 <div className="flex items-center gap-1.5 min-w-0">
-                                  <span className="text-[9px] bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-1.5 py-0.2 rounded font-bold whitespace-nowrap shrink-0">
+                                  <span className="text-[9px] bg-blue-100 text-blue-600 px-1.5 py-0.2 rounded font-bold whitespace-nowrap shrink-0">
                                     {dayLabel}
                                   </span>
-                                  <p className="text-xs font-bold text-neutral-900 dark:text-white truncate">{cls.title}</p>
+                                  <p className="text-xs font-bold text-neutral-900 truncate">{cls.title}</p>
                                 </div>
-                                <p className="text-[10px] text-neutral-500 dark:text-neutral-400 truncate leading-normal">
+                                <p className="text-[10px] text-neutral-500 truncate leading-normal">
                                   {datesStr ? `${datesStr} (${timeStr})` : timeStr}
                                   {cls.instructors?.length > 0 && ` | ${cls.instructors.map((i: any) => i.name).join(', ')}`}
                                 </p>
@@ -807,7 +808,7 @@ export default function ClassPageContent({
                                     }));
                                   }}
                                   placeholder={t('class.partner_name')}
-                                  className="w-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg px-2.5 py-1 text-[11px] text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                  className="w-full bg-neutral-50 border border-neutral-200 rounded-lg px-2.5 py-1 text-[11px] text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                                 />
                               </div>
                             )}
@@ -817,7 +818,7 @@ export default function ClassPageContent({
                     });
                   })()}
                 </div>
-                <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-2 text-right">
+                <p className="text-xs text-neutral-400 mt-2 text-right">
                   {t('class.checkout.selected_label')}{passSelectedClassIds.size} / {(() => {
                     const passId = Array.from(selectedClasses)[0];
                     const pass = allItems.find(c => c.id === passId);
@@ -837,14 +838,14 @@ export default function ClassPageContent({
                 const item = allItems.find(c => c.id === classId);
                 if (!item) return null;
                 return (
-                  <div key={classId} className="bg-neutral-50 dark:bg-neutral-800 rounded-2xl p-4 border border-neutral-200 dark:border-neutral-700 flex flex-col gap-3">
+                  <div key={classId} className="bg-neutral-50 rounded-2xl p-4 border border-neutral-200 flex flex-col gap-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm font-bold text-neutral-900 dark:text-white truncate mr-2">{item.title}</span>
-                      <span className="text-sm font-black text-neutral-900 dark:text-white whitespace-nowrap">
+                      <span className="text-sm font-bold text-neutral-900 truncate mr-2">{item.title}</span>
+                      <span className="text-sm font-black text-neutral-900 whitespace-nowrap">
                         {item.currency === 'KRW' || !item.currency ? `₩${item.amount ? item.amount.toLocaleString() : '0'}` : `${item.amount ? item.amount.toLocaleString() : '0'} ${item.currency}`}
                       </span>
                     </div>
-                    <div className="pt-2 border-t border-neutral-200 dark:border-neutral-700 animate-in slide-in-from-top-1 duration-200">
+                    <div className="pt-2 border-t border-neutral-200 animate-in slide-in-from-top-1 duration-200">
                       <input
                         type="text"
                         value={classPartners[classId] || ''}
@@ -855,7 +856,7 @@ export default function ClassPageContent({
                           }));
                         }}
                         placeholder={t('class.partner_name_placeholder') || "파트너 이름을 입력하세요"}
-                        className="w-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg px-3 py-1.5 text-xs text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                        className="w-full bg-white border border-neutral-200 rounded-lg px-3 py-1.5 text-xs text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                       />
                     </div>
                   </div>
@@ -865,9 +866,9 @@ export default function ClassPageContent({
           )}
 
           {/* Notice */}
-          <div className="bg-neutral-50 dark:bg-neutral-800 rounded-xl p-4 border border-neutral-100 dark:border-neutral-700">
-            <h4 className="text-[13px] font-black text-neutral-900 dark:text-white mb-2 flex items-center gap-1.5"><span className="material-symbols-outlined text-[16px] text-blue-500">info</span> {t('class.booking_notice_title')}</h4>
-            <p className="text-xs font-medium text-neutral-600 dark:text-neutral-400 leading-relaxed">
+          <div className="bg-neutral-50 rounded-xl p-4 border border-neutral-100">
+            <h4 className="text-[13px] font-black text-neutral-900 mb-2 flex items-center gap-1.5"><span className="material-symbols-outlined text-[16px] text-blue-500">info</span> {t('class.booking_notice_title')}</h4>
+            <p className="text-xs font-medium text-neutral-600 leading-relaxed">
               {t('class.booking_notice_desc')}
             </p>
           </div>
@@ -893,8 +894,8 @@ export default function ClassPageContent({
           onReportPayment={reportPayment}
         >
           <div className="space-y-6 py-2">
-            <div className="flex gap-3 p-3 bg-neutral-50 dark:bg-neutral-800 rounded-2xl border border-neutral-200 dark:border-neutral-700">
-              <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-neutral-200 dark:bg-neutral-700">
+            <div className="flex gap-3 p-3 bg-neutral-50 rounded-2xl border border-neutral-200">
+              <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-neutral-200">
                 {(selectedClassDetail.imageUrl || selectedClassDetail.image || selectedClassDetail.photoURL || selectedClassDetail.avatar || group?.coverImage || group?.logo) ? (
                   <img src={selectedClassDetail.imageUrl || selectedClassDetail.image || selectedClassDetail.photoURL || selectedClassDetail.avatar || group?.coverImage || group?.logo} alt={selectedClassDetail.title} className="w-full h-full object-cover" />
                 ) : (
@@ -905,12 +906,12 @@ export default function ClassPageContent({
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-[10px] font-bold text-neutral-500 uppercase">{group?.name || 'World of Community'}</p>
-                <p className="text-sm font-bold text-neutral-900 dark:text-white truncate">{selectedClassDetail.title}</p>
+                <p className="text-sm font-bold text-neutral-900 truncate">{selectedClassDetail.title}</p>
                 <div className="flex flex-wrap gap-1 mt-1">
-                  <span className="text-[10px] bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300 px-2 py-0.5 rounded-full font-bold">
+                  <span className="text-[10px] bg-neutral-200 text-neutral-600 px-2 py-0.5 rounded-full font-bold">
                     {selectedClassDetail.schedule?.[0]?.timeSlot || `${selectedClassDetail.startTime} - ${selectedClassDetail.endTime}`}
                   </span>
-                  <span className="text-[10px] bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300 px-2 py-0.5 rounded-full font-bold">
+                  <span className="text-[10px] bg-neutral-200 text-neutral-600 px-2 py-0.5 rounded-full font-bold">
                     {selectedClassDetail.location || group?.name}
                   </span>
                 </div>
@@ -918,26 +919,26 @@ export default function ClassPageContent({
             </div>
 
             <div>
-              <h4 className="text-sm font-bold text-neutral-900 dark:text-white mb-3">{t('class.checkout.select_role')}</h4>
+              <h4 className="text-sm font-bold text-neutral-900 mb-3">{t('class.checkout.select_role')}</h4>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => setCheckoutRole('leader')}
-                  className={`flex flex-col items-center justify-center py-4 rounded-xl border-2 transition-all ${checkoutRole === 'leader' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-300'}`}
+                  className={`flex flex-col items-center justify-center py-4 rounded-xl border-2 transition-all ${checkoutRole === 'leader' ? 'border-blue-500 bg-blue-50' : 'border-neutral-200 hover:border-neutral-300'}`}
                 >
-                  <span className={`text-sm font-black uppercase ${checkoutRole === 'leader' ? 'text-blue-700 dark:text-blue-400' : 'text-neutral-700 dark:text-neutral-300'}`}>{t('class.leader')}</span>
+                  <span className={`text-sm font-black uppercase ${checkoutRole === 'leader' ? 'text-blue-700' : 'text-neutral-700'}`}>{t('class.leader')}</span>
                 </button>
                 <button
                   onClick={() => setCheckoutRole('follower')}
-                  className={`flex flex-col items-center justify-center py-4 rounded-xl border-2 transition-all ${checkoutRole === 'follower' ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20' : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-300'}`}
+                  className={`flex flex-col items-center justify-center py-4 rounded-xl border-2 transition-all ${checkoutRole === 'follower' ? 'border-purple-500 bg-purple-50' : 'border-neutral-200 hover:border-neutral-300'}`}
                 >
-                  <span className={`text-sm font-black uppercase ${checkoutRole === 'follower' ? 'text-purple-700 dark:text-purple-400' : 'text-neutral-700 dark:text-neutral-300'}`}>{t('class.follower')}</span>
+                  <span className={`text-sm font-black uppercase ${checkoutRole === 'follower' ? 'text-purple-700' : 'text-neutral-700'}`}>{t('class.follower')}</span>
                 </button>
               </div>
             </div>
             
-            <div className="bg-neutral-50 dark:bg-neutral-800 rounded-xl p-4 border border-neutral-100 dark:border-neutral-700">
-              <h4 className="text-[13px] font-black text-neutral-900 dark:text-white mb-2 flex items-center gap-1.5"><span className="material-symbols-outlined text-[16px] text-blue-500">info</span> {t('class.booking_notice_title')}</h4>
-              <p className="text-xs font-medium text-neutral-600 dark:text-neutral-400 leading-relaxed">
+            <div className="bg-neutral-50 rounded-xl p-4 border border-neutral-100">
+              <h4 className="text-[13px] font-black text-neutral-900 mb-2 flex items-center gap-1.5"><span className="material-symbols-outlined text-[16px] text-blue-500">info</span> {t('class.booking_notice_title')}</h4>
+              <p className="text-xs font-medium text-neutral-600 leading-relaxed">
                 {t('class.booking_notice_desc')}
               </p>
             </div>

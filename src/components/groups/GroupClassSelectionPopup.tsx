@@ -175,7 +175,7 @@ export const GroupClassSelectionPopup: React.FC<GroupClassSelectionPopupProps> =
                       </label>
                       <div className="relative">
                         <input
-                          type="text"
+                           type="text"
                           disabled={!canEdit || isSaving}
                           value={partners[cls.id] || ''}
                           onChange={(e) => handlePartnerChange(cls.id, e.target.value)}

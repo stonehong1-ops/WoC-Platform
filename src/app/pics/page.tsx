@@ -544,7 +544,7 @@ export function PicsPageContent() {
                   onClick={() => setTempMood(mood)}
                   className={`px-4 py-2 rounded-full text-[13px] font-bold transition-all ${
                     tempMood === mood
-                      ? 'bg-red-50 dark:bg-red-950/30 text-red-500 dark:text-red-300 border border-red-200/50 dark:border-red-900/30 shadow-sm'
+                      ? 'bg-red-50 text-red-500 border border-red-200/50 shadow-sm'
                       : 'bg-surface border border-on-surface/10 text-on-surface/60 hover:bg-on-surface/5'
                   }`}
                 >
@@ -566,7 +566,7 @@ export function PicsPageContent() {
                   onClick={() => setTempActivity(activity)}
                   className={`px-4 py-2 rounded-full text-[13px] font-bold transition-all ${
                     tempActivity === activity
-                      ? 'bg-green-50 dark:bg-green-950/30 text-green-500 dark:text-green-300 border border-green-200/50 dark:border-green-900/30 shadow-sm'
+                      ? 'bg-green-50 text-green-500 border border-green-200/50 shadow-sm'
                       : 'bg-surface border border-on-surface/10 text-on-surface/60 hover:bg-on-surface/5'
                   }`}
                 >
@@ -588,7 +588,7 @@ export function PicsPageContent() {
                   onClick={() => setTempSeason(season)}
                   className={`px-4 py-2 rounded-full text-[13px] font-bold transition-all ${
                     tempSeason === season
-                      ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-500 dark:text-amber-300 border border-amber-200/50 dark:border-amber-900/30 shadow-sm'
+                      ? 'bg-amber-50 text-amber-500 border border-amber-200/50 shadow-sm'
                       : 'bg-surface border border-on-surface/10 text-on-surface/60 hover:bg-on-surface/5'
                   }`}
                 >
@@ -610,7 +610,7 @@ export function PicsPageContent() {
                   onClick={() => setTempTime(time)}
                   className={`px-4 py-2 rounded-full text-[13px] font-bold transition-all ${
                     tempTime === time
-                      ? 'bg-blue-50 dark:bg-blue-950/30 text-blue-500 dark:text-blue-300 border border-blue-200/50 dark:border-blue-900/30 shadow-sm'
+                      ? 'bg-blue-50 text-blue-500 border border-blue-200/50 shadow-sm'
                       : 'bg-surface border border-on-surface/10 text-on-surface/60 hover:bg-on-surface/5'
                   }`}
                 >
@@ -638,7 +638,7 @@ export function PicsPageContent() {
                 setActiveBottomSheet(null);
               }}
               className={`w-full py-4 px-5 flex items-center gap-3 hover:bg-on-surface/5 active:bg-on-surface/10 transition-all text-left text-[14px] rounded-2xl ${
-                activeMood === mood ? 'text-red-500 font-bold bg-red-50/50 dark:bg-red-950/20' : 'text-on-surface/70 font-medium'
+                activeMood === mood ? 'text-red-500 font-bold bg-red-50/50' : 'text-on-surface/70 font-medium'
               }`}
             >
               <span className="flex-1">{mood === 'All' ? t('pics.mood.All') : t(`pics.mood.${mood}`)}</span>
@@ -666,7 +666,7 @@ export function PicsPageContent() {
                 setActiveBottomSheet(null);
               }}
               className={`w-full py-4 px-5 flex items-center gap-3 hover:bg-on-surface/5 active:bg-on-surface/10 transition-all text-left text-[14px] rounded-2xl ${
-                activeActivity === activity ? 'text-green-500 font-bold bg-green-50/50 dark:bg-green-950/20' : 'text-on-surface/70 font-medium'
+                activeActivity === activity ? 'text-green-500 font-bold bg-green-50/50' : 'text-on-surface/70 font-medium'
               }`}
             >
               <span className="flex-1">{activity === 'All' ? t('pics.activity.All') : t(`pics.activity.${activity}`)}</span>
@@ -694,7 +694,7 @@ export function PicsPageContent() {
                 setActiveBottomSheet(null);
               }}
               className={`w-full py-4 px-5 flex items-center gap-3 hover:bg-on-surface/5 active:bg-on-surface/10 transition-all text-left text-[14px] rounded-2xl ${
-                activeSeason === season ? 'text-amber-500 font-bold bg-amber-50/50 dark:bg-amber-950/20' : 'text-on-surface/70 font-medium'
+                activeSeason === season ? 'text-amber-500 font-bold bg-amber-50/50' : 'text-on-surface/70 font-medium'
               }`}
             >
               <span className="flex-1">{season === 'All' ? t('pics.season.All') : t(`pics.season.${season}`)}</span>
@@ -722,7 +722,7 @@ export function PicsPageContent() {
                 setActiveBottomSheet(null);
               }}
               className={`w-full py-4 px-5 flex items-center gap-3 hover:bg-on-surface/5 active:bg-on-surface/10 transition-all text-left text-[14px] rounded-2xl ${
-                activeTime === time ? 'text-blue-500 font-bold bg-blue-50/50 dark:bg-blue-950/20' : 'text-on-surface/70 font-medium'
+                activeTime === time ? 'text-blue-500 font-bold bg-blue-50/50' : 'text-on-surface/70 font-medium'
               }`}
             >
               <span className="flex-1">{time === 'All' ? t('pics.time.All') : t(`pics.time.${time}`)}</span>
