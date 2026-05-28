@@ -43,39 +43,39 @@ export default function ExplorePage() {
         <article className="border-b border-slate-100/50 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
           <div className="max-w-4xl mx-auto">
             <img 
-              alt="Flamenco dance" 
+              alt={t('explore.alt.flamenco')} 
               className="w-full h-[300px] md:h-[400px] object-cover" 
               src="https://lh3.googleusercontent.com/aida-public/AB6AXuAQnfbpiak9voFwdv7HS5c-73EGpGhC40K4S_0uJZuMyKG7OjBepWk47PBukD_6PdT95j-NIXI3zY-K0YQdqudz_EF9cG1_ynpBRy2ILXmYUz7l3PaSYcNbmBmEuQXC5T5d2A3asZ6njUJQtzZoNo8s6JuKkohtMR_cCvucYUUjYP1UaQ29YR4NB2N3Wl8FYm1DWdSY9ZgD6Ia-HaHSxmRgv5EEgeEgykzAFnVbApHIhCESuSq2ISoFRKsqfQX1gLSJpscX8xt6BDxJ" 
             />
             <div className="p-6 md:p-12">
               <header className="mb-8">
-                <span className="text-sm italic text-gray-500 block mb-1">Life on</span>
-                <h2 className="text-5xl font-black tracking-tighter uppercase leading-none">STAGE</h2>
+                <span className="text-sm italic text-gray-500 block mb-1">{t('explore.life_on')}</span>
+                <h2 className="text-5xl font-black tracking-tighter uppercase leading-none">{t('explore.section.stage')}</h2>
               </header>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-4">
                 <div>
-                  <h4 className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-4">Social Dance</h4>
+                  <h4 className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-4">{t('explore.category.social_dance')}</h4>
                   <div className="flex flex-wrap gap-x-4 font-medium">
-                    <Link className="tap-target text-base hover:underline" href="/home?society=tango">Tango</Link>
-                    <Link className="tap-target text-base hover:underline" href="/home?society=salsa">Salsa</Link>
-                    <Link className="tap-target text-base hover:underline" href="/home?society=bachata">Bachata</Link>
-                    <Link className="tap-target text-base hover:underline" href="/home?society=swing">Swing</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=tango">{t('explore.society.tango')}</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=salsa">{t('explore.society.salsa')}</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=bachata">{t('explore.society.bachata')}</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=swing">{t('explore.society.swing')}</Link>
                   </div>
                 </div>
                 <div>
-                  <h4 className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-4">Stage Dance</h4>
+                  <h4 className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-4">{t('explore.category.stage_dance')}</h4>
                   <div className="flex flex-wrap gap-x-4 font-medium">
-                    <Link className="tap-target text-base hover:underline" href="/home?society=flamenco">Flamenco</Link>
-                    <Link className="tap-target text-base hover:underline" href="/home?society=street">Street</Link>
-                    <Link className="tap-target text-base hover:underline" href="/home?society=ballet">Ballet</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=flamenco">{t('explore.society.flamenco')}</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=street">{t('explore.society.street')}</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=ballet">{t('explore.society.ballet')}</Link>
                   </div>
                 </div>
                 <div>
-                  <h4 className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-4">Body Flow</h4>
+                  <h4 className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-4">{t('explore.category.body_flow')}</h4>
                   <div className="flex flex-wrap gap-x-4 font-medium">
-                    <Link className="tap-target text-base hover:underline" href="/home?society=yoga">Yoga</Link>
-                    <Link className="tap-target text-base hover:underline" href="/home?society=pilates">Pilates</Link>
-                    <Link className="tap-target text-base hover:underline" href="/home?society=contemporary">Contemporary</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=yoga">{t('explore.society.yoga')}</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=pilates">{t('explore.society.pilates')}</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=contemporary">{t('explore.society.contemporary')}</Link>
                   </div>
                 </div>
               </div>
@@ -87,38 +87,38 @@ export default function ExplorePage() {
         <article className="border-b border-gray-100">
           <div className="max-w-4xl mx-auto">
             <img 
-              alt="Motorcycle at night" 
+              alt={t('explore.alt.motorcycle')} 
               className="w-full h-[300px] md:h-[400px] object-cover" 
               src="https://lh3.googleusercontent.com/aida-public/AB6AXuAehR5qdh41IQFn8WKbV4LwGktsOIxv7TEr7czQF0YcVcK0g3bcPy1VpiW-jedSFHRQ-LbbtJONgTlZxBDd9886G9-KAMEdTa8wTO5VAgt9Xq0UKdS9IYzf_qjVLZGisRG3YIuiapv1IC35y8BiF2-uE1JmQjogU8Fx6sxuEcXmqLhObRUryjV-4Tz1Tvz6z3gSlpBOU7aeQtOyWFXNTII1StZPcwezkc9scxFg_sg8xy_n6MF10FY3f_lU8Ir-FCZ1v_K4Nkl5-Oa4" 
             />
             <div className="p-6 md:p-12">
               <header className="mb-8">
-                <span className="text-sm italic text-gray-500 block mb-1">Life on</span>
-                <h2 className="text-5xl font-black tracking-tighter uppercase leading-none">ROAD</h2>
+                <span className="text-sm italic text-gray-500 block mb-1">{t('explore.life_on')}</span>
+                <h2 className="text-5xl font-black tracking-tighter uppercase leading-none">{t('explore.section.road')}</h2>
               </header>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-4">
                 <div>
-                  <h4 className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-4">Two-Wheels</h4>
+                  <h4 className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-4">{t('explore.category.two_wheels')}</h4>
                   <div className="flex flex-wrap gap-x-4 font-medium">
-                    <Link className="tap-target text-base hover:underline" href="/home?society=bike">Bike</Link>
-                    <Link className="tap-target text-base hover:underline" href="/home?society=motorbike">Motorbike</Link>
-                    <Link className="tap-target text-base hover:underline" href="/home?society=e-scooter">E-Scooter</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=bike">{t('explore.society.bike')}</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=motorbike">{t('explore.society.motorbike')}</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=e-scooter">{t('explore.society.e_scooter')}</Link>
                   </div>
                 </div>
                 <div>
-                  <h4 className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-4">Urban Sports</h4>
+                  <h4 className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-4">{t('explore.category.urban_sports')}</h4>
                   <div className="flex flex-wrap gap-x-4 font-medium">
-                    <Link className="tap-target text-base hover:underline" href="/home?society=running">Running</Link>
-                    <Link className="tap-target text-base hover:underline" href="/home?society=skateboarding">Skateboarding</Link>
-                    <Link className="tap-target text-base hover:underline" href="/home?society=inline">Inline</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=running">{t('explore.society.running')}</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=skateboarding">{t('explore.society.skateboarding')}</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=inline">{t('explore.society.inline')}</Link>
                   </div>
                 </div>
                 <div>
-                  <h4 className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-4">Nature Path</h4>
+                  <h4 className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-4">{t('explore.category.nature_path')}</h4>
                   <div className="flex flex-wrap gap-x-4 font-medium">
-                    <Link className="tap-target text-base hover:underline" href="/home?society=camping">Camping</Link>
-                    <Link className="tap-target text-base hover:underline" href="/home?society=trekking">Trekking</Link>
-                    <Link className="tap-target text-base hover:underline" href="/home?society=climbing">Climbing</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=camping">{t('explore.society.camping')}</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=trekking">{t('explore.society.trekking')}</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=climbing">{t('explore.society.climbing')}</Link>
                   </div>
                 </div>
               </div>
@@ -130,39 +130,39 @@ export default function ExplorePage() {
         <article className="border-b border-gray-100">
           <div className="max-w-4xl mx-auto">
             <img 
-              alt="Pottery wheel" 
+              alt={t('explore.alt.pottery')} 
               className="w-full h-[300px] md:h-[400px] object-cover" 
               src="https://lh3.googleusercontent.com/aida-public/AB6AXuAznwU330iANlk6C6m1ID864OC6cqpzNJl9HQD-MBjwanqqDXzbTn51rsR1_K3NQ1Tc7PiMO4GB8qVy220wbIUO6KoMXSQWpaatOAFs_VxOUWtXHSsqEYDM7Z6bt6rXYWFaW_f4iXR8JHhb9l1-HRI0Nvt4dJm4bWUBqqEO73owcq83yJ-H58xB4wftIFj31v4LZqbJfYH85Mn2jHm_9o7npXvMnhIZAhp9QqfvRatp3-bmomQrWty89CLyaHx_zsN58ziw1dD30wur" 
             />
             <div className="p-6 md:p-12">
               <header className="mb-8">
-                <span className="text-sm italic text-gray-500 block mb-1">Life on</span>
-                <h2 className="text-5xl font-black tracking-tighter uppercase leading-none">TABLE</h2>
+                <span className="text-sm italic text-gray-500 block mb-1">{t('explore.life_on')}</span>
+                <h2 className="text-5xl font-black tracking-tighter uppercase leading-none">{t('explore.section.table')}</h2>
               </header>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-4">
                 <div>
-                  <h4 className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-4">Culinary</h4>
+                  <h4 className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-4">{t('explore.category.culinary')}</h4>
                   <div className="flex flex-wrap gap-x-4 font-medium">
-                    <Link className="tap-target text-base hover:underline" href="/home?society=cooking">Cooking</Link>
-                    <Link className="tap-target text-base hover:underline" href="/home?society=baking">Baking</Link>
-                    <Link className="tap-target text-base hover:underline" href="/home?society=dessert">Dessert</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=cooking">{t('explore.society.cooking')}</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=baking">{t('explore.society.baking')}</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=dessert">{t('explore.society.dessert')}</Link>
                   </div>
                 </div>
                 <div>
-                  <h4 className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-4">Beverage</h4>
+                  <h4 className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-4">{t('explore.category.beverage')}</h4>
                   <div className="flex flex-wrap gap-x-4 font-medium">
-                    <Link className="tap-target text-base hover:underline" href="/home?society=coffee">Coffee</Link>
-                    <Link className="tap-target text-base hover:underline" href="/home?society=wine">Wine</Link>
-                    <Link className="tap-target text-base hover:underline" href="/home?society=whisky">Whisky</Link>
-                    <Link className="tap-target text-base hover:underline" href="/home?society=tea">Tea</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=coffee">{t('explore.society.coffee')}</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=wine">{t('explore.society.wine')}</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=whisky">{t('explore.society.whisky')}</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=tea">{t('explore.society.tea')}</Link>
                   </div>
                 </div>
                 <div>
-                  <h4 className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-4">Handcraft</h4>
+                  <h4 className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-4">{t('explore.category.handcraft')}</h4>
                   <div className="flex flex-wrap gap-x-4 font-medium">
-                    <Link className="tap-target text-base hover:underline" href="/home?society=pottery">Pottery</Link>
-                    <Link className="tap-target text-base hover:underline" href="/home?society=woodworking">Woodworking</Link>
-                    <Link className="tap-target text-base hover:underline" href="/home?society=knitting">Knitting</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=pottery">{t('explore.society.pottery')}</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=woodworking">{t('explore.society.woodworking')}</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=knitting">{t('explore.society.knitting')}</Link>
                   </div>
                 </div>
               </div>
@@ -174,38 +174,38 @@ export default function ExplorePage() {
         <article className="border-b border-gray-100">
           <div className="max-w-4xl mx-auto">
             <img 
-              alt="Records and books" 
+              alt={t('explore.alt.records')} 
               className="w-full h-[300px] md:h-[400px] object-cover" 
               src="https://lh3.googleusercontent.com/aida-public/AB6AXuCkWU3GZ9Xuxv5bznIf2J9FxwA83wsQZnWX_58EO7OFKAZZ6enLdeZp1b3BpJ_5RDeG8xlZZHkzZj_p3kIfm9QKGDFzBEwkslLK5xOWm3EHbQMTHAUtbBqR5hiXbjF2jaQC5tpr0OvBC5-lZf1OJwjvaNILs_1T9jlGSX93_lYcu9Av95j9S0nrrnP7YpGTZloj-pCYd0XPyY6T4cQlacpS-W4oyfZVuZQ4N2a2gwn5_AL_093_sc2XzgGsObcXG-2mPLVEiJ0s8qWj" 
             />
             <div className="p-6 md:p-12">
               <header className="mb-8">
-                <span className="text-sm italic text-gray-500 block mb-1">Life on</span>
-                <h2 className="text-5xl font-black tracking-tighter uppercase leading-none">MUSE</h2>
+                <span className="text-sm italic text-gray-500 block mb-1">{t('explore.life_on')}</span>
+                <h2 className="text-5xl font-black tracking-tighter uppercase leading-none">{t('explore.section.muse')}</h2>
               </header>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-4">
                 <div>
-                  <h4 className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-4">The Artists</h4>
+                  <h4 className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-4">{t('explore.category.the_artists')}</h4>
                   <div className="flex flex-wrap gap-x-4 font-medium">
-                    <Link className="tap-target text-base hover:underline" href="/home?society=bts">BTS</Link>
-                    <Link className="tap-target text-base hover:underline" href="/home?society=k-pop">K-Pop</Link>
-                    <Link className="tap-target text-base hover:underline" href="/home?society=global-pop">Global Pop</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=bts">{t('explore.society.bts')}</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=k-pop">{t('explore.society.k_pop')}</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=global-pop">{t('explore.society.global_pop')}</Link>
                   </div>
                 </div>
                 <div>
-                  <h4 className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-4">Screen & Page</h4>
+                  <h4 className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-4">{t('explore.category.screen_page')}</h4>
                   <div className="flex flex-wrap gap-x-4 font-medium">
-                    <Link className="tap-target text-base hover:underline" href="/home?society=cinema">Cinema</Link>
-                    <Link className="tap-target text-base hover:underline" href="/home?society=anime">Anime</Link>
-                    <Link className="tap-target text-base hover:underline" href="/home?society=literature">Literature</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=cinema">{t('explore.society.cinema')}</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=anime">{t('explore.society.anime')}</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=literature">{t('explore.society.literature')}</Link>
                   </div>
                 </div>
                 <div>
-                  <h4 className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-4">Collectors</h4>
+                  <h4 className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-4">{t('explore.category.collectors')}</h4>
                   <div className="flex flex-wrap gap-x-4 font-medium">
-                    <Link className="tap-target text-base hover:underline" href="/home?society=vinyl">Vinyl</Link>
-                    <Link className="tap-target text-base hover:underline" href="/home?society=figures">Figures</Link>
-                    <Link className="tap-target text-base hover:underline" href="/home?society=art-pieces">Art Pieces</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=vinyl">{t('explore.society.vinyl')}</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=figures">{t('explore.society.figures')}</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=art-pieces">{t('explore.society.art_pieces')}</Link>
                   </div>
                 </div>
               </div>
@@ -217,37 +217,37 @@ export default function ExplorePage() {
         <article className="border-b border-gray-100">
           <div className="max-w-4xl mx-auto">
             <img 
-              alt="Journaling" 
+              alt={t('explore.alt.journaling')} 
               className="w-full h-[300px] md:h-[400px] object-cover" 
               src="https://lh3.googleusercontent.com/aida-public/AB6AXuDYvtNpW9Qt-qTDYS_T_SD0bSpakBq6upAD8Zz4Zl8omVXp-CMqQ5zdeudsC-gtqXJgZctXpSoK2f63IRZzQokEPv0-A6UYAKu0EYuR6Xm_VGekTUp-bCRr7mC0s7r-4lRX7qlXdcZh2q6nH7bC9CY2zZt9vVcuraieyf46wAYqklLA-agevz0A6vuSaPKZO6E58Ze2U3yL1lZG4ps-J4hOs2Gad6VCZMYehkCaasKNAJ1Th98zVie3dvzB6NuQ6hVp6FDkcuTl31Jv" 
             />
             <div className="p-6 md:p-12">
               <header className="mb-8">
-                <span className="text-sm italic text-gray-500 block mb-1">Life on</span>
-                <h2 className="text-5xl font-black tracking-tighter uppercase leading-none">MIND</h2>
+                <span className="text-sm italic text-gray-500 block mb-1">{t('explore.life_on')}</span>
+                <h2 className="text-5xl font-black tracking-tighter uppercase leading-none">{t('explore.section.mind')}</h2>
               </header>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-4">
                 <div>
-                  <h4 className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-4">Language</h4>
+                  <h4 className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-4">{t('explore.category.language')}</h4>
                   <div className="flex flex-wrap gap-x-4 font-medium">
-                    <Link className="tap-target text-base hover:underline" href="/home?society=english">English</Link>
-                    <Link className="tap-target text-base hover:underline" href="/home?society=spanish">Spanish</Link>
-                    <Link className="tap-target text-base hover:underline" href="/home?society=japanese">Japanese</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=english">{t('explore.society.english')}</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=spanish">{t('explore.society.spanish')}</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=japanese">{t('explore.society.japanese')}</Link>
                   </div>
                 </div>
                 <div>
-                  <h4 className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-4">Writing</h4>
+                  <h4 className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-4">{t('explore.category.writing')}</h4>
                   <div className="flex flex-wrap gap-x-4 font-medium">
-                    <Link className="tap-target text-base hover:underline" href="/home?society=journaling">Journaling</Link>
-                    <Link className="tap-target text-base hover:underline" href="/home?society=essay">Essay</Link>
-                    <Link className="tap-target text-base hover:underline" href="/home?society=copywriting">Copywriting</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=journaling">{t('explore.society.journaling')}</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=essay">{t('explore.society.essay')}</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=copywriting">{t('explore.society.copywriting')}</Link>
                   </div>
                 </div>
                 <div>
-                  <h4 className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-4">Home Styling</h4>
+                  <h4 className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-4">{t('explore.category.home_styling')}</h4>
                   <div className="flex flex-wrap gap-x-4 font-medium">
-                    <Link className="tap-target text-base hover:underline" href="/home?society=interior">Interior</Link>
-                    <Link className="tap-target text-base hover:underline" href="/home?society=plant-care">Plant Care</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=interior">{t('explore.society.interior')}</Link>
+                    <Link className="tap-target text-base hover:underline" href="/home?society=plant-care">{t('explore.society.plant_care')}</Link>
                   </div>
                 </div>
               </div>
