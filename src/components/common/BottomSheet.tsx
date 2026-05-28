@@ -21,21 +21,41 @@ export default function BottomSheet({
   footer,
   height = "80vh" 
 }: BottomSheetProps) {
-  // Lock body scroll when open
+  // Lock body scroll and manage history stack for Android/Device back button
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
+    if (!isOpen) return;
+
+    // a. Scroll Lock
+    document.body.style.overflow = 'hidden';
+
+    // b. History virtual stack creation
+    const stateKey = `bottom_sheet_${Date.now()}`;
+    window.history.pushState({ stateKey }, '');
+
+    // c. Popstate handler for Device back button
+    const handlePopState = (e: PopStateEvent) => {
+      // If the back button is pressed, the pushed state is popped, so we close the sheet
+      onClose();
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
       document.body.style.overflow = 'unset';
-    }
-    return () => { document.body.style.overflow = 'unset'; };
-  }, [isOpen]);
+      window.removeEventListener('popstate', handlePopState);
+
+      // d. Clean up the history stack if closed manually (X button, Backdrop click, Swipe down)
+      if (window.history.state?.stateKey === stateKey) {
+        window.history.back();
+      }
+    };
+  }, [isOpen, onClose]);
 
   return (
     <AnimatePresence>
       {isOpen && (
         <Portal>
-          <div className="fixed inset-0 flex items-end justify-center sm:items-center" style={{ zIndex: 99999 }}>
+          <div className="fixed inset-0 flex items-end justify-center sm:items-center animate-in fade-in duration-200" style={{ zIndex: 99999 }}>
             {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
@@ -48,20 +68,29 @@ export default function BottomSheet({
 
             {/* Sheet Container */}
             <motion.div
+              drag="y"
+              dragConstraints={{ top: 0 }}
+              dragElastic={{ top: 0.05, bottom: 0.85 }}
+              onDragEnd={(event, info) => {
+                // If dragged down past 120px or swiped fast enough, trigger close
+                if (info.offset.y > 120 || info.velocity.y > 350) {
+                  onClose();
+                }
+              }}
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              transition={{ type: "spring", damping: 30, stiffness: 350 }}
               className={`
                 relative w-full max-w-2xl bg-surface-container-lowest 
                 rounded-t-[32px] sm:rounded-3xl shadow-2xl 
                 flex flex-col overflow-hidden z-10
-                max-h-[90vh] sm:max-h-[85vh]
+                max-h-[90vh] sm:max-h-[85vh] touch-pan-y
               `}
               style={{ height: "auto", minHeight: "40vh" }}
             >
               {/* Drag Handle & Header */}
-              <div className="pt-3 pb-2 px-4 flex flex-col items-center shrink-0 border-b border-outline-variant/5">
+              <div className="pt-3 pb-2 px-4 flex flex-col items-center shrink-0 border-b border-outline-variant/5 cursor-grab active:cursor-grabbing">
                 <div className="w-10 h-1 bg-outline-variant/30 rounded-full mb-4 sm:hidden" />
                 <div className="w-full flex justify-between items-center mb-1">
                   <h3 className="text-lg font-headline font-bold text-on-surface">
