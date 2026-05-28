@@ -23,6 +23,34 @@ const SOCIALS_COLLECTION = 'socials';
 const LIKES_COLLECTION = 'social_likes';
 
 export const socialService = {
+  // Get active socials for today (regular by dayOfWeek, popup by date)
+  getTodayActiveSocials: async (dayOfWeek: number, todayDate: Date): Promise<Social[]> => {
+    try {
+      // 1. Regular socials
+      const regularSnap = await getDocs(
+        query(collection(db, SOCIALS_COLLECTION), where('type', '==', 'regular'))
+      );
+      const allRegular = regularSnap.docs.map(d => ({ id: d.id, ...d.data() })) as Social[];
+      const todayRegular = allRegular.filter(s => Number(s.dayOfWeek) === dayOfWeek);
+
+      // 2. Popup socials
+      const popupSnap = await getDocs(
+        query(collection(db, SOCIALS_COLLECTION), where('type', '==', 'popup'))
+      );
+      const allPopup = popupSnap.docs.map(d => ({ id: d.id, ...d.data() })) as Social[];
+      const todayPopup = allPopup.filter(s => {
+        if (!s.date) return false;
+        const sDate = typeof s.date.toDate === 'function' ? s.date.toDate() : new Date((s.date as any).seconds * 1000);
+        return sDate.toDateString() === todayDate.toDateString();
+      });
+
+      return [...todayRegular, ...todayPopup];
+    } catch (error) {
+      console.error("Error in getTodayActiveSocials:", error);
+      return [];
+    }
+  },
+
   // 1-0. Subscribe to all socials (for unified list)
   subscribeAllSocials: (callback: (socials: Social[]) => void) => {
     const q = query(collection(db, SOCIALS_COLLECTION));
@@ -387,7 +415,7 @@ export const socialService = {
   },
 
   // Get venue details by venueId (for address / map link)
-  async getVenueDetails(venueId: string) {
+  async getVenueDetails(venueId: string): Promise<any> {
     if (!venueId) return null;
     try {
       const venueRef = doc(db, 'venues', venueId);

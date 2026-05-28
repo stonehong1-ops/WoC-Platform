@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="100%" height="100%">
+  <defs>
+    <filter id="glow_10" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="3" stdDeviation="2.5" flood-color="#000" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+  <g filter="url(#glow_10)">
+    
+      <!-- Ears -->
+      <polygon points="18,22 10,8 26,16" fill="#FFA726" stroke="#E65100" stroke-width="2"/>
+      <polygon points="18,22 13,11 23,17" fill="#FF8A80"/>
+      <polygon points="62,22 70,8 54,16" fill="#FFA726" stroke="#E65100" stroke-width="2"/>
+      <polygon points="62,22 67,11 57,17" fill="#FF8A80"/>
+      <!-- Head -->
+      <circle cx="40" cy="40" r="26" fill="#FFB74D" stroke="#E65100" stroke-width="2"/>
+      <!-- Eyes -->
+      <ellipse cx="28" cy="38" rx="3" ry="5" fill="#3E2723"/>
+      <ellipse cx="52" cy="38" rx="3" ry="5" fill="#3E2723"/>
+      <circle cx="27" cy="36" r="1" fill="#fff"/>
+      <circle cx="51" cy="36" r="1" fill="#fff"/>
+      <!-- Whiskers -->
+      <line x1="12" y1="42" x2="4" y2="40" stroke="#E65100" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="12" y1="46" x2="3" y2="47" stroke="#E65100" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="68" y1="42" x2="76" y2="40" stroke="#E65100" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="68" y1="46" x2="77" y2="47" stroke="#E65100" stroke-width="1.5" stroke-linecap="round"/>
+      <!-- Nose & Mouth -->
+      <polygon points="40,43 38,41 42,41" fill="#FF8A80"/>
+      <path d="M36,46 Q40,49 40,46 Q40,49 44,46" stroke="#3E2723" stroke-width="2" stroke-linecap="round" fill="none"/>
+    
+  </g>
+</svg>

@@ -2,17 +2,16 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { db } from '@/lib/firebase/clientApp';
-import {
-  collection, query, where, getDocs, orderBy, limit,
-  Timestamp
-} from 'firebase/firestore';
+import { Timestamp } from 'firebase/firestore';
 import { Event } from '@/types/event';
 import { Social } from '@/types/social';
 import { useLocation } from '@/components/providers/LocationProvider';
 import EventDetail from '@/components/events/EventDetail';
 import { AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { socialService } from '@/lib/firebase/socialService';
+import { groupService } from '@/lib/firebase/groupService';
+import { eventService } from '@/lib/firebase/eventService';
 
 /* ─── 날짜 포맷 헬퍼 ─────────────────────────────── */
 function formatEventDate(ts: Timestamp | undefined): string {
@@ -68,52 +67,16 @@ export default function ActivitySpotlight() {
       const dayOfWeek = today.getDay(); // 0=Sun, 6=Sat
 
       try {
-        // ── 1. 오늘 소셜 (Regular: dayOfWeek 일치) ──
-        const socialSnap = await getDocs(
-          query(collection(db, 'socials'), where('type', '==', 'regular'))
-        );
-        const allRegular = socialSnap.docs.map(d => ({ id: d.id, ...d.data() })) as Social[];
-        const todayRegular = allRegular.filter(s => Number(s.dayOfWeek) === dayOfWeek);
-
-        // Popup: 오늘 날짜와 date 필드 일치
-        const popupSnap = await getDocs(
-          query(collection(db, 'socials'), where('type', '==', 'popup'))
-        );
-        const allPopup = popupSnap.docs.map(d => ({ id: d.id, ...d.data() })) as Social[];
-        const todayPopup = allPopup.filter(s => {
-          if (!s.date) return false;
-          const sDate = typeof s.date.toDate === 'function' ? s.date.toDate() : new Date((s.date as any).seconds * 1000);
-          return sDate.toDateString() === today.toDateString();
-        });
-
-        const combined = [...todayRegular, ...todayPopup];
+        // ── 1. 오늘 소셜 (서비스 레이어로 이관) ──
+        const combined = await socialService.getTodayActiveSocials(dayOfWeek, today);
         if (!cancelled) setTodaySocials(combined);
 
-        // ── 2. Open Classes 카운트 (classes + bundles 합산) ──
-        const groupsSnap = await getDocs(collection(db, 'groups'));
-        const classCountResults = await Promise.all(
-          groupsSnap.docs.map(async groupDoc => {
-            const [classSnap, bundleSnap] = await Promise.allSettled([
-              getDocs(collection(db, 'groups', groupDoc.id, 'classes')),
-              getDocs(collection(db, 'groups', groupDoc.id, 'bundles')),
-            ]);
-            return (classSnap.status === 'fulfilled' ? classSnap.value.size : 0)
-                 + (bundleSnap.status === 'fulfilled' ? bundleSnap.value.size : 0);
-          })
-        );
-        const openCount = classCountResults.reduce((sum, c) => sum + c, 0);
+        // ── 2. Open Classes 카운트 (서비스 레이어로 이관) ──
+        const openCount = await groupService.getOpenClassesCount();
         if (!cancelled) setOpenClassCount(openCount);
 
-        // ── 3. 가장 가까운 Upcoming Event ──
-        const eventSnap = await getDocs(
-          query(
-            collection(db, 'events'),
-            where('startDate', '>=', Timestamp.now()),
-            orderBy('startDate', 'asc'),
-            limit(1)
-          )
-        );
-        const events = eventSnap.docs.map(d => ({ id: d.id, ...d.data() })) as Event[];
+        // ── 3. 가장 가까운 Upcoming Event (서비스 레이어 활용) ──
+        const events = await eventService.getUpcomingEvents(1);
         if (!cancelled) setUpcomingEvent(events[0] ?? null);
 
       } catch (err) {
@@ -150,7 +113,7 @@ export default function ActivitySpotlight() {
       {/* Section Header */}
       <div className="flex items-end justify-between px-2">
         <h2 className="text-xl md:text-2xl font-extrabold text-slate-900 font-headline">
-          Activity Spotlight
+          {t('home.activity_spotlight')}
         </h2>
       </div>
 

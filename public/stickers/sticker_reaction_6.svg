@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="100%" height="100%">
+  <defs>
+    <!-- Multi-stage blurring filters to build organic, thick neon bloom -->
+    <filter id="neonBloom_6" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3.5" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <g filter="url(#neonBloom_6)">
+    <rect x="10" y="20" width="60" height="40" rx="20" ry="20" fill="none" stroke="#2979FF" stroke-width="3" opacity="0.9"/>
+    <rect x="10" y="20" width="60" height="40" rx="20" ry="20" fill="none" stroke="#82B1FF" stroke-width="1.2"/>
+    <text x="40" y="44" 
+          text-anchor="middle" 
+          dominant-baseline="middle" 
+          font-family="'Outfit', 'Inter', sans-serif" 
+          font-weight="900" 
+          font-size="20" 
+          fill="#FFFFFF" 
+          stroke="#2979FF" 
+          stroke-width="1.8" 
+          style="letter-spacing: 0.5px;">화이팅</text>
+  </g>
+</svg>

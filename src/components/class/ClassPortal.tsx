@@ -4,7 +4,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { groupService } from '@/lib/firebase/groupService';
 import { venueService } from '@/lib/firebase/venueService';
-import { Group, GroupClass } from '@/types/group';
+import { Group, GroupClass, ClassDiscount, ClassScheduleEntry } from '@/types/group';
 import { Venue } from '@/types/venue';
 import { useNavigation } from '@/components/providers/NavigationProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -52,9 +52,9 @@ export default function ClassPortal() {
   const [loading, setLoading] = useState(cachedPortal ? false : true);
   const [groups, setGroups] = useState<Group[]>(cachedPortal?.groups || []);
   const [venues, setVenues] = useState<Venue[]>(cachedPortal?.venues || []);
-  const [allClasses, setAllClasses] = useState<any[]>(cachedPortal?.allClasses || []);
-  const [specialClasses, setSpecialClasses] = useState<any[]>(cachedPortal?.specialClasses || []);
-  const [allDiscountsGlobal, setAllDiscountsGlobal] = useState<any[]>(cachedPortal?.allDiscountsGlobal || []);
+  const [allClasses, setAllClasses] = useState<GroupClass[]>(cachedPortal?.allClasses || []);
+  const [specialClasses, setSpecialClasses] = useState<GroupClass[]>(cachedPortal?.specialClasses || []);
+  const [allDiscountsGlobal, setAllDiscountsGlobal] = useState<ClassDiscount[]>(cachedPortal?.allDiscountsGlobal || []);
   
   const { user, profile } = useAuth();
   
@@ -67,7 +67,7 @@ export default function ClassPortal() {
   const [selectedClub, setSelectedClub] = useState('All');
   
   const [capacityModalOpen, setCapacityModalOpen] = useState(false);
-  const [editingClass, setEditingClass] = useState<any>(null);
+  const [editingClass, setEditingClass] = useState<GroupClass | null>(null);
   const [tempLeader, setTempLeader] = useState<number | undefined>(undefined);
   const [tempFollower, setTempFollower] = useState<number | undefined>(undefined);
   const [tempIsDailyBookingOpen, setTempIsDailyBookingOpen] = useState(false);
@@ -75,7 +75,7 @@ export default function ClassPortal() {
   const [tempDailyClassPrice, setTempDailyClassPrice] = useState<number>(0);
   
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
-  const [checkoutClass, setCheckoutClass] = useState<any>(null);
+  const [checkoutClass, setCheckoutClass] = useState<(GroupClass & { group?: Group; isSpecial?: boolean }) | null>(null);
   const [checkoutRole, setCheckoutRole] = useState<'leader' | 'follower'>('leader');
   const [checkoutPartnerName, setCheckoutPartnerName] = useState('');
 
@@ -85,7 +85,7 @@ export default function ClassPortal() {
 
   const { createBooking, reportPayment, isLoading: isBooking } = useBookingEngine();
   
-  const [selectedDetailClass, setSelectedDetailClass] = useState<any | null>(null);
+  const [selectedDetailClass, setSelectedDetailClass] = useState<GroupClass | null>(null);
   const [chatOverlayRoomId, setChatOverlayRoomId] = useState<string | null>(null);
 
   const [userBookings, setUserBookings] = useState<BaseBooking[]>(() => {
@@ -177,7 +177,7 @@ export default function ClassPortal() {
     const instSet = new Set<string>();
     allClasses.forEach(cls => {
       if (cls.instructors && Array.isArray(cls.instructors)) {
-        cls.instructors.forEach((inst: any) => {
+        cls.instructors.forEach((inst) => {
           if (inst.name) instSet.add(inst.name);
         });
       }
@@ -215,7 +215,7 @@ export default function ClassPortal() {
       }
     }
 
-    const grouped: Record<string, { date: Date, classes: any[] }> = {};
+    const grouped: Record<string, { date: Date, classes: (GroupClass & { group?: Group; scheduleEntry?: ClassScheduleEntry })[] }> = {};
     days.forEach(d => {
       const dateStr = d.toDateString();
       grouped[dateStr] = { date: d, classes: [] };
@@ -226,11 +226,11 @@ export default function ClassPortal() {
       
       if (selectedClub !== 'All' && group?.name !== selectedClub) return;
       if (selectedOrganizer !== 'All') {
-        const hasInstructor = cls.instructors?.some((i: any) => i.name === selectedOrganizer);
+        const hasInstructor = cls.instructors?.some((i) => i.name === selectedOrganizer);
         if (!hasInstructor) return;
       }
 
-      cls.schedule?.forEach((s: any) => {
+      cls.schedule?.forEach((s) => {
         if (!s.date) return;
         let dStr = '';
         if (typeof s.date === 'string') dStr = s.date.trim();
@@ -290,7 +290,7 @@ export default function ClassPortal() {
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id as 'TODAY' | 'WEEK' | 'MONTH' | 'SPECIAL')}
               className={`flex-shrink-0 px-2.5 py-1 rounded-xl text-[12px] font-bold tracking-tight transition-all whitespace-nowrap border ${
                 activeTab === tab.id
                   ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-100'
@@ -365,7 +365,7 @@ export default function ClassPortal() {
     return () => setSubHeader(null);
   }, [activeTab, selectedOrganizer, selectedClub, showOrganizerFilter, showClubFilter, organizers, clubs, setSubHeader]);
 
-  const handleClassClick = (cls: any) => {
+  const handleClassClick = (cls: GroupClass) => {
     setSelectedDetailClass(cls);
   };
 
@@ -380,16 +380,16 @@ export default function ClassPortal() {
     today.setHours(0, 0, 0, 0);
     const todayStr = today.toDateString();
 
-    const classes: any[] = [];
+    const classes: (GroupClass & { group?: Group; scheduleEntry?: ClassScheduleEntry })[] = [];
     allClasses.forEach(cls => {
       const group = groups.find(g => g.id === cls.groupId);
       if (selectedClub !== 'All' && group?.name !== selectedClub) return;
       if (selectedOrganizer !== 'All') {
-        const hasInstructor = cls.instructors?.some((i: any) => i.name === selectedOrganizer);
+        const hasInstructor = cls.instructors?.some((i) => i.name === selectedOrganizer);
         if (!hasInstructor) return;
       }
 
-      cls.schedule?.forEach((s: any) => {
+      cls.schedule?.forEach((s) => {
         if (!s.date) return;
         let dStr = '';
         if (typeof s.date === 'string') dStr = s.date.trim();
@@ -431,10 +431,10 @@ export default function ClassPortal() {
     });
 
     const blocks = [
-      { label: t('class.time_morning'), time: '06:00 - 11:59', icon: 'routine', classes: [] as any[] },
-      { label: t('class.time_afternoon'), time: '12:00 - 17:59', icon: 'light_mode', classes: [] as any[] },
-      { label: t('class.time_evening'), time: '18:00 - 20:59', icon: 'wb_twilight', classes: [] as any[] },
-      { label: t('class.time_night'), time: '21:00 -', icon: 'clear_night', classes: [] as any[] }
+      { label: t('class.time_morning'), time: '06:00 - 11:59', icon: 'routine', classes: [] as (GroupClass & { group?: Group; scheduleEntry?: ClassScheduleEntry })[] },
+      { label: t('class.time_afternoon'), time: '12:00 - 17:59', icon: 'light_mode', classes: [] as (GroupClass & { group?: Group; scheduleEntry?: ClassScheduleEntry })[] },
+      { label: t('class.time_evening'), time: '18:00 - 20:59', icon: 'wb_twilight', classes: [] as (GroupClass & { group?: Group; scheduleEntry?: ClassScheduleEntry })[] },
+      { label: t('class.time_night'), time: '21:00 -', icon: 'clear_night', classes: [] as (GroupClass & { group?: Group; scheduleEntry?: ClassScheduleEntry })[] }
     ];
 
     classes.forEach(cls => {
@@ -450,7 +450,7 @@ export default function ClassPortal() {
   }, [activeTab, allClasses, groups, selectedOrganizer, selectedClub]);
 
   const handleSaveCapacity = async () => {
-    if (!editingClass) return;
+    if (!editingClass || !editingClass.groupId) return;
     try {
       const classRef = doc(db, 'groups', editingClass.groupId, 'classes', editingClass.id);
       await updateDoc(classRef, {
@@ -463,7 +463,7 @@ export default function ClassPortal() {
         ...c, 
         isDailyBookingOpen: tempIsDailyBookingOpen,
         instructorComment: tempInstructorComment,
-        dailyClassPrice: tempDailyClassPrice || null
+        dailyClassPrice: tempDailyClassPrice || undefined
       } : c));
       setCapacityModalOpen(false);
     } catch (err) {
@@ -483,7 +483,7 @@ export default function ClassPortal() {
     setIsAddingSpecialClass(true);
   };
 
-  const handleCheckoutClick = (cls: any, isSpecial: boolean = false) => {
+  const handleCheckoutClick = (cls: GroupClass & { group?: Group }, isSpecial: boolean = false) => {
     let group = cls.group;
     if (!group && cls.groupId) {
       group = groups.find(g => g.id === cls.groupId);
@@ -501,7 +501,7 @@ export default function ClassPortal() {
     );
   };
 
-  const handleExistingCheckoutClick = (cls: any, booking: BaseBooking, isSpecial: boolean = false) => {
+  const handleExistingCheckoutClick = (cls: GroupClass & { group?: Group }, booking: BaseBooking, isSpecial: boolean = false) => {
     let group = cls.group;
     if (!group && cls.groupId) {
       group = groups.find(g => g.id === cls.groupId);
@@ -510,7 +510,7 @@ export default function ClassPortal() {
     setCheckoutRole((booking.payload?.role as 'leader' | 'follower') || 'leader');
     setCheckoutInitialStep('payment');
     setCheckoutInitialBookingId(booking.id);
-    setCheckoutInitialOrderNumber((booking as any).orderNumber || booking.id);
+    setCheckoutInitialOrderNumber((booking as BaseBooking & { orderNumber?: string }).orderNumber || booking.id);
     setCheckoutInitialCreatedAt(booking.createdAt);
     setCheckoutModalOpen(true);
   };
@@ -534,7 +534,7 @@ export default function ClassPortal() {
     }
   };
 
-  const renderBookingStatusArea = (cls: any, isPast: boolean, isSpecial: boolean = false) => {
+  const renderBookingStatusArea = (cls: GroupClass & { group?: Group }, isPast: boolean, isSpecial: boolean = false) => {
     const booking = getActiveBooking(cls.id);
     
     if (booking) {
@@ -640,7 +640,7 @@ export default function ClassPortal() {
     if (!checkoutClass) return;
     try {
       const price = checkoutClass.isSpecial 
-        ? (checkoutClass.amount || checkoutClass.price) 
+        ? (checkoutClass.amount || checkoutClass.price || 0) 
         : (checkoutClass.dailyClassPrice || Math.floor((checkoutClass.price || 0) / 3) + 5000);
       const orderId = await createBooking({
         domain: checkoutClass.isSpecial ? 'class_special' : 'class_daily',
@@ -657,8 +657,9 @@ export default function ClassPortal() {
         }
       });
       return orderId;
-    } catch (err: any) {
-      alert(err.message || 'Booking failed');
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : 'Booking failed';
+      alert(errMsg);
       throw err;
     }
   };
@@ -696,7 +697,7 @@ export default function ClassPortal() {
                   // Past or starting soon
                   const isPast = now.getTime() > classTime.getTime();
                   const isStartingSoon = !isPast && (classTime.getTime() - now.getTime() < 2 * 60 * 60 * 1000); // within 2 hours
-                  const isInstructor = user && (profile?.systemRole === 'admin' || profile?.isAdmin || cls.instructors?.some((i: any) => i.userId === user.uid || i.name === user.displayName) || cls.group?.ownerId === user.uid);
+                  const isInstructor = user && (profile?.systemRole === 'admin' || profile?.isAdmin || cls.instructors?.some((i) => i.userId === user.uid || i.name === user.displayName) || cls.group?.ownerId === user.uid);
                   
                   return (
                     <div 
@@ -857,7 +858,7 @@ export default function ClassPortal() {
                     const isPast = now.getTime() > classTime.getTime();
                     const isStartingSoon = !isPast && (classTime.getTime() - now.getTime() < 2 * 60 * 60 * 1000) && isToday;
                     
-                    const isInstructor = user && (profile?.systemRole === 'admin' || profile?.isAdmin || cls.instructors?.some((i: any) => i.userId === user.uid || i.name === user.displayName) || cls.group?.ownerId === user.uid);
+                    const isInstructor = user && (profile?.systemRole === 'admin' || profile?.isAdmin || cls.instructors?.some((i) => i.userId === user.uid || i.name === user.displayName) || cls.group?.ownerId === user.uid);
                     
                     return (
                     <div 
@@ -977,7 +978,7 @@ export default function ClassPortal() {
         if (cls.groupId !== groupId) return false;
         if (cls.targetMonth) return cls.targetMonth === targetMonthStr;
         if (cls.schedule && Array.isArray(cls.schedule)) {
-          return cls.schedule.some((s: any) => {
+          return cls.schedule.some((s) => {
             if (!s.date || typeof s.date !== 'string') return false;
             const normalized = s.date.replace(/[\.\/ ]/g, '-');
             return normalized.startsWith(targetMonthStr);
@@ -987,7 +988,7 @@ export default function ClassPortal() {
       }).length;
     };
 
-    const getGroupDiscountCount = (groupId: string) => allDiscountsGlobal.filter(d => {
+    const getGroupDiscountCount = (groupId: string) => allDiscountsGlobal.filter((d: ClassDiscount) => {
       if (d.groupId !== groupId) return false;
       if (d.targetMonth) return d.targetMonth === targetMonthStr;
       return true;
@@ -1085,7 +1086,7 @@ export default function ClassPortal() {
       )}
 
       {specialClasses.length > 0 ? (
-        specialClasses.map((cls) => {
+        specialClasses.map((cls: GroupClass) => {
           const group = groups.find(g => g.id === cls.groupId);
           return (
             <div 
@@ -1248,7 +1249,7 @@ export default function ClassPortal() {
           title={checkoutClass.isSpecial ? t('class.booking_special_title') : t('class.booking_daily_title')}
           subtitle={`${checkoutClass.title} · ${new Date().toLocaleDateString(language === 'KR' ? 'ko-KR' : 'en-US', { weekday: 'long', month: 'short', day: 'numeric' })}`}
           totalAmount={checkoutClass.isSpecial 
-            ? (checkoutClass.amount || checkoutClass.price) 
+            ? (checkoutClass.amount || checkoutClass.price || 0) 
             : (checkoutClass.dailyClassPrice || Math.floor((checkoutClass.price || 0) / 3) + 5000)
           }
           onCheckout={handleCheckoutSubmit}
@@ -1281,14 +1282,14 @@ export default function ClassPortal() {
                 <p className="text-sm font-bold text-neutral-900 dark:text-white truncate">{checkoutClass.title}</p>
                 <div className="flex flex-wrap gap-1 mt-1">
                   <span className="text-[10px] bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300 px-2 py-0.5 rounded-full font-bold">
-                    {(checkoutClass.scheduleEntry?.timeSlot?.split(/[-~]/)[0] || checkoutClass.startTime || '00:00').trim()}-{(checkoutClass.scheduleEntry?.timeSlot?.split(/[-~]/)[1] || checkoutClass.endTime || '00:00').trim()}
+                    {((checkoutClass as any).scheduleEntry?.timeSlot?.split(/[-~]/)[0] || checkoutClass.startTime || '00:00').trim()}-{((checkoutClass as any).scheduleEntry?.timeSlot?.split(/[-~]/)[1] || checkoutClass.endTime || '00:00').trim()}
                   </span>
                   <span className="text-[10px] bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300 px-2 py-0.5 rounded-full font-bold">
                     {checkoutClass.location || checkoutClass.group?.name}
                   </span>
-                  {checkoutClass.instructors?.length > 0 && (
+                  {checkoutClass.instructors && checkoutClass.instructors.length > 0 && (
                     <span className="text-[10px] bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300 px-2 py-0.5 rounded-full font-bold">
-                      {checkoutClass.instructors.map((i:any)=>i.name).join(', ')}
+                      {checkoutClass.instructors.map((i)=>i.name).join(', ')}
                     </span>
                   )}
                 </div>

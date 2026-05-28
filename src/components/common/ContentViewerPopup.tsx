@@ -3,9 +3,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { collection, query, orderBy, getDocs, addDoc, serverTimestamp, onSnapshot, updateDoc, doc, increment } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '@/lib/firebase/clientApp';
+import { storage } from '@/lib/firebase/clientApp';
+import * as contentService from '@/lib/firebase/contentService';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface ContentEntry {
@@ -109,9 +109,7 @@ export default function ContentViewerPopup({
   const fetchEntries = async () => {
     setLoading(true);
     try {
-      const q = query(collection(db, collectionName), orderBy('createdAt', 'desc'));
-      const snap = await getDocs(q);
-      const all = snap.docs.map(d => ({ id: d.id, ...d.data() } as ContentEntry));
+      const all = await contentService.fetchContentEntries(collectionName);
       setEntries(all);
       if (all.length > 0) setCurrentIndex(0);
       else setCurrentIndex(-1);
@@ -134,11 +132,11 @@ export default function ContentViewerPopup({
       setReviews([]);
       return;
     }
-    const reviewsRef = collection(db, collectionName, currentEntry.id, 'reviews');
-    const q = query(reviewsRef, orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setReviews(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Review)));
-    });
+    const unsubscribe = contentService.subscribeToReviews(
+      collectionName,
+      currentEntry.id,
+      (data) => setReviews(data)
+    );
     return () => unsubscribe();
   }, [currentEntry, collectionName]);
 
@@ -169,21 +167,13 @@ export default function ContentViewerPopup({
     if (!uploadFile) return;
     setUploading(true);
     try {
-      const q = query(collection(db, collectionName), orderBy('createdAt', 'desc'));
-      const snap = await getDocs(q);
-      const all = snap.docs.map(d => d.data() as ContentEntry);
-      const nextEp = all.length > 0 && all[0].episodeNumber ? all[0].episodeNumber + 1 : 1;
+      const nextEp = await contentService.fetchNextEpisodeNumber(collectionName);
 
       const fileRef = ref(storage, `${collectionName}/ep${nextEp}_${Date.now()}_${uploadFile.name}`);
       await uploadBytes(fileRef, uploadFile);
       const imageUrl = await getDownloadURL(fileRef);
 
-      await addDoc(collection(db, collectionName), {
-        imageUrl,
-        episodeNumber: nextEp,
-        createdAt: serverTimestamp(),
-        likeCount: 0,
-      });
+      await contentService.addContentEntry(collectionName, imageUrl, nextEp);
 
       setUploadFile(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -221,10 +211,7 @@ export default function ContentViewerPopup({
     if (!newReview.trim() || !currentEntry) return;
     setSubmittingReview(true);
     try {
-      await addDoc(collection(db, collectionName, currentEntry.id, 'reviews'), {
-        content: newReview.trim(),
-        createdAt: serverTimestamp()
-      });
+      await contentService.addReview(collectionName, currentEntry.id, newReview.trim());
       setNewReview('');
     } catch (error) {
       console.error(`[${collectionName}] review error:`, error);
@@ -235,10 +222,9 @@ export default function ContentViewerPopup({
 
   const toggleLike = async () => {
     if (!currentEntry) return;
-    const entryRef = doc(db, collectionName, currentEntry.id);
     const liked = likedEntries.has(currentEntry.id);
     try {
-      await updateDoc(entryRef, { likeCount: increment(liked ? -1 : 1) });
+      await contentService.toggleLike(collectionName, currentEntry.id, !liked);
       setLikedEntries(prev => {
         const next = new Set(prev);
         liked ? next.delete(currentEntry.id) : next.add(currentEntry.id);

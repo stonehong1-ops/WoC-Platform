@@ -1,9 +1,10 @@
 "use client";
-
 import React, { useState, useEffect } from "react";
-import { Social, SocialSubEvent } from "@/types/social";
+import { Social, SocialSubEvent, SocialDj } from "@/types/social";
 import { socialService } from "@/lib/firebase/socialService";
 import { userService } from "@/lib/firebase/userService";
+import { PlatformUser } from "@/types/user";
+import { v4 as uuidv4 } from "uuid";
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from "sonner";
 
@@ -28,16 +29,33 @@ function getNextEventDate(social: Social, language: string): string {
   return "TBA";
 }
 
-import SocialDjLineupSheet from "./SocialDjLineupSheet";
 import NamecardModal, { NamecardUser } from "@/components/profile/NamecardModal";
 import UserBadge from "@/components/common/UserBadge";
 
 export default function SocialHomeTab({ social, onChatWithOrganizer, canEdit, onShowImages, isUnclaimed, isClaiming, onClaim }: Props) {
   const [venue, setVenue] = useState<any>(null);
   const [orgProfile, setOrgProfile] = useState<any>(null);
-  const [showDjLineup, setShowDjLineup] = useState(false);
   const [selectedNamecardUser, setSelectedNamecardUser] = useState<NamecardUser | null>(null);
   const { t, language } = useLanguage();
+
+  // DJ 통합 라인업 상태 관리 변수들
+  const [isAdding, setIsAdding] = useState(false);
+  const [selectedDate, setSelectedDate] = useState("");
+  const [djNameInput, setDjNameInput] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [allUsers, setAllUsers] = useState<PlatformUser[]>([]);
+  const [djResults, setDjResults] = useState<PlatformUser[]>([]);
+  const [showDjResults, setShowDjResults] = useState(false);
+  const [selectedDjId, setSelectedDjId] = useState<string>("");
+  const [showPastDjs, setShowPastDjs] = useState(false);
+
+  // 어드민용 검색 리스트 fetch
+  useEffect(() => {
+    if (canEdit) {
+      userService.getAllUsers().then(setAllUsers).catch(console.error);
+    }
+  }, [canEdit]);
+
 
   // Auto-fetch venue details
   useEffect(() => {
@@ -76,12 +94,130 @@ export default function SocialHomeTab({ social, onChatWithOrganizer, canEdit, on
   const naverUrl = lat && lng ? `https://map.naver.com/v5/?c=${lng},${lat},15,0,0,0,dh` : addr ? `https://map.naver.com/v5/search/${encodeURIComponent(addr)}` : null;
   const kakaoUrl = lat && lng ? `https://map.kakao.com/link/map/${encodeURIComponent(social.venueName || "Venue")},${lat},${lng}` : addr ? `https://map.kakao.com/link/search/${encodeURIComponent(addr)}` : null;
 
+  // DJ 자동완성 검색
+  const handleDjSearch = (val: string) => {
+    setDjNameInput(val);
+    setSelectedDjId("");
+    if (val.length >= 1) {
+      const lower = val.toLowerCase();
+      const filtered = allUsers.filter(u =>
+        (u.nickname && u.nickname.toLowerCase().includes(lower)) ||
+        (u.nativeNickname && u.nativeNickname.includes(val))
+      );
+      setDjResults(filtered.slice(0, 6));
+      setShowDjResults(filtered.length > 0);
+    } else {
+      setShowDjResults(false);
+      setDjResults([]);
+    }
+  };
+
+  const handleSelectDj = (u: PlatformUser) => {
+    setDjNameInput(u.nickname || "");
+    setSelectedDjId(u.id);
+    setShowDjResults(false);
+  };
+
+  const handleAddDj = async () => {
+    if (!selectedDate) {
+      alert(t('social.alert_select_date_dj') || "Please select a date");
+      return;
+    }
+
+    const finalDjName = djNameInput.trim() || "TBD";
+    setIsSubmitting(true);
+    try {
+      const newDj: any = {
+        id: uuidv4(),
+        date: selectedDate,
+        djName: finalDjName,
+      };
+      if (selectedDjId) {
+        newDj.djId = selectedDjId;
+      }
+
+      const currentDjs = social.djs || [];
+      const updatedDjs = [...currentDjs, newDj].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      
+      await socialService.updateSocial(social.id, {
+        djs: updatedDjs,
+        djName: updatedDjs.find(d => new Date(d.date) >= new Date())?.djName || updatedDjs[updatedDjs.length - 1]?.djName || social.djName || ""
+      });
+
+      setIsAdding(false);
+      setSelectedDate("");
+      setDjNameInput("");
+      setSelectedDjId("");
+      toast.success(t('social.add_dj_success') || "DJ added successfully!");
+    } catch (err) {
+      console.error(err);
+      alert(t('social.alert_failed_add_dj') || "Failed to add DJ");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteDj = async (id: string) => {
+    if (!confirm(t('social.alert_remove_dj_confirm') || "Are you sure you want to remove this DJ?")) return;
+    try {
+      const currentDjs = social.djs || [];
+      const updatedDjs = currentDjs.filter(d => d.id !== id);
+      await socialService.updateSocial(social.id, {
+        djs: updatedDjs,
+        djName: updatedDjs.find(d => new Date(d.date) >= new Date())?.djName || updatedDjs[updatedDjs.length - 1]?.djName || ""
+      });
+      toast.success(t('social.delete_dj_success') || "DJ removed successfully!");
+    } catch (err) {
+      console.error(err);
+      alert(t('social.alert_failed_remove_dj') || "Failed to remove DJ");
+    }
+  };
+
+  // 날짜 및 라인업 정렬 파생 데이터
+  const sortedDjs = [...(social.djs || [])].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  
+  const upcomingDjs = sortedDjs.filter(d => new Date(d.date) >= today);
+  const pastDjs = sortedDjs.filter(d => new Date(d.date) < today);
+
+  const dateLocale = language === 'KR' ? 'ko-KR' : 'en-US';
+
+  // 8주간 다가올 예정일 날짜 배열 생성
+  const generateUpcomingDates = () => {
+    if (social.type !== "regular" || social.dayOfWeek === undefined) return [];
+    const dates = [];
+    const d = new Date();
+    d.setHours(0,0,0,0);
+    const diff = (social.dayOfWeek - d.getDay() + 7) % 7;
+    let next = new Date(d);
+    next.setDate(d.getDate() + diff);
+    
+    for (let i = 0; i < 8; i++) {
+      const year = next.getFullYear();
+      const month = String(next.getMonth() + 1).padStart(2, '0');
+      const day = String(next.getDate()).padStart(2, '0');
+      dates.push(`${year}-${month}-${day}`);
+      next.setDate(next.getDate() + 7);
+    }
+    return dates;
+  };
+  
+  const suggestedDates = generateUpcomingDates();
+  
+  // 날짜 추가 폼 열릴 시 자동 첫 제안일 선택
+  useEffect(() => {
+    if (isAdding && !selectedDate && suggestedDates.length > 0) {
+      setSelectedDate(suggestedDates[0]);
+    }
+  }, [isAdding, selectedDate]);
+
   const moments = social.moments || [];
 
   return (
     <div className="pb-8">
       {/* Next Event */}
-      <div className="mx-4 mt-4 border border-[#e0e4e5] rounded-2xl overflow-hidden">
+      <div className="mx-4 mt-4 border border-[#e0e4e5] rounded-2xl overflow-hidden bg-white">
         <div className="bg-[#f8f9fa] px-4 py-2.5 border-b border-[#e0e4e5] flex items-center gap-2">
           <span className="material-symbols-rounded text-sm text-primary">event</span>
           <p className="text-[10px] font-black text-primary uppercase tracking-widest">{t('social.next_event')}</p>
@@ -95,16 +231,6 @@ export default function SocialHomeTab({ social, onChatWithOrganizer, canEdit, on
             <span className="material-symbols-rounded text-lg text-[#acb3b4]">schedule</span>
             <div><p className="text-xs font-bold text-[#2d3435]">{t('social.time')}</p><p className="text-xs text-[#596061]">{social.startTime} - {social.endTime}</p></div>
           </div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-start gap-3">
-              <span className="material-symbols-rounded text-lg text-[#acb3b4]">headphones</span>
-              <div><p className="text-xs font-bold text-[#2d3435]">{t('social.dj')}</p><p className="text-xs text-[#596061]">{getDjDisplay(social).replace('TBD', t('social.tbd'))}</p></div>
-            </div>
-            <button onClick={() => setShowDjLineup(true)} className="flex items-center gap-1 px-3 py-1.5 bg-white border border-[#e0e4e5] rounded-full active:scale-95 transition-transform hover:bg-[#f8f9fa] shadow-sm">
-              <span className="material-symbols-rounded text-sm text-primary">view_list</span>
-              <span className="text-[10px] font-bold text-[#2d3435]">{t('social.lineup')}</span>
-            </button>
-          </div>
           <div className="flex items-start gap-3">
             <span className="material-symbols-rounded text-lg text-[#acb3b4]">payments</span>
             <div><p className="text-xs font-bold text-[#2d3435]">{t('social.entry_fee')}</p><p className="text-xs text-[#596061]">{social.price?.replace(/\d+/, m => parseInt(m).toLocaleString()) || t('social.tba')}</p></div>
@@ -112,13 +238,211 @@ export default function SocialHomeTab({ social, onChatWithOrganizer, canEdit, on
         </div>
       </div>
 
-      {showDjLineup && (
-        <SocialDjLineupSheet 
-          social={social}
-          canEdit={canEdit || false}
-          onClose={() => setShowDjLineup(false)}
-        />
-      )}
+      {/* DJ & Lineup Schedule Integrated Card */}
+      <div className="mx-4 mt-4 border border-[#e0e4e5] rounded-2xl overflow-hidden bg-white shadow-sm">
+        <div className="bg-[#f8f9fa] px-4 py-2.5 border-b border-[#e0e4e5] flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-rounded text-sm text-primary">headphones</span>
+            <p className="text-[10px] font-black text-primary uppercase tracking-widest">{t('social.dj_lineup')}</p>
+          </div>
+          {canEdit && (
+            <button 
+              onClick={() => setIsAdding(!isAdding)}
+              className="flex items-center gap-0.5 px-2.5 py-1 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-lg text-[10px] font-black active:scale-95 transition-transform"
+            >
+              <span className="material-symbols-rounded text-[11px]">{isAdding ? 'expand_less' : 'add'}</span>
+              <span>{isAdding ? t('common.close') || '닫기' : t('social.add_dj_lineup')}</span>
+            </button>
+          )}
+        </div>
+        
+        <div className="px-4 py-4 space-y-4">
+          {/* 1. 현재 DJ 강조 섹션 */}
+          <div className="flex items-center gap-4 p-3 bg-slate-50 border border-slate-100 rounded-xl">
+            <div className="w-11 h-11 rounded-full bg-primary/5 flex items-center justify-center shrink-0 border border-primary/10 shadow-inner">
+              <span className="material-symbols-rounded text-lg text-primary">headphones</span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t('social.dj')}</p>
+              <h4 className="text-[14.5px] font-black text-slate-800 mt-0.5 truncate">
+                {getDjDisplay(social).replace('TBD', t('social.tbd'))}
+              </h4>
+            </div>
+          </div>
+
+          {/* 어드민용 일정 추가 인라인 폼 (isAdding === true 일 때 펼쳐짐) */}
+          {canEdit && isAdding && (
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3.5 animate-in slide-in-from-top-2 duration-200">
+              <div>
+                <label className="block text-[10px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1.5">{t('social.date')}</label>
+                {social.type === "regular" && social.dayOfWeek !== undefined ? (
+                  <select
+                    value={selectedDate}
+                    onChange={e => setSelectedDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-[#e0e4e5] rounded-lg text-xs font-bold text-[#2d3435] focus:outline-none focus:border-primary/50 bg-white"
+                  >
+                    <option value="" disabled>{t('social.select_date') || "Select Date"}</option>
+                    {suggestedDates.map(dateStr => (
+                      <option key={dateStr} value={dateStr}>
+                        {new Date(dateStr).toLocaleDateString(dateLocale, { month: 'short', day: 'numeric', weekday: 'short' })}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input 
+                    type="date" 
+                    value={selectedDate}
+                    onChange={e => setSelectedDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-[#e0e4e5] rounded-lg text-xs font-bold text-[#2d3435] focus:outline-none focus:border-primary/50"
+                  />
+                )}
+              </div>
+              <div className="relative">
+                <label className="block text-[10px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1.5">{t('social.dj_label')}</label>
+                <div className="flex items-center px-3 py-2 border border-[#e0e4e5] rounded-lg focus-within:border-primary/50 bg-white transition-colors">
+                  <span className="material-symbols-rounded text-[#acb3b4] mr-1.5 text-xs">headphones</span>
+                  <input 
+                    type="text" 
+                    value={djNameInput}
+                    onChange={e => handleDjSearch(e.target.value)}
+                    onFocus={() => djNameInput.length >= 1 && setShowDjResults(djResults.length > 0)}
+                    onBlur={() => setTimeout(() => setShowDjResults(false), 200)}
+                    placeholder={t('social.search_dj_placeholder_sheet')}
+                    className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-xs font-bold text-[#2d3435] placeholder:text-[#acb3b4] outline-none"
+                  />
+                </div>
+                {showDjResults && (
+                  <div className="absolute top-full left-0 w-full mt-1 bg-white border border-[#e0e4e5] rounded-xl shadow-lg z-50 overflow-hidden">
+                    {djResults.map(u => (
+                      <button key={u.id} onClick={() => handleSelectDj(u)}
+                        className="w-full text-left px-4 py-2.5 hover:bg-[#f8f9fa] flex items-baseline gap-2 group transition-colors border-b border-[#f2f4f4] last:border-0">
+                        <p className="font-bold text-[#2d3435] text-xs group-hover:text-primary">{u.nickname}</p>
+                        {u.nativeNickname && <span className="text-[9px] text-[#acb3b4]">({u.nativeNickname})</span>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <button 
+                onClick={handleAddDj}
+                disabled={isSubmitting}
+                className="w-full py-2.5 bg-primary text-white rounded-lg text-xs font-black tracking-wide active:scale-95 transition-transform disabled:opacity-50"
+              >
+                {isSubmitting ? t('social.adding') : t('social.add_dj_lineup')}
+              </button>
+            </div>
+          )}
+
+          {/* 2. 다가오는 라인업 목록 */}
+          <div className="space-y-2">
+            <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t('social.upcoming_lineup')}</h5>
+            {upcomingDjs.length === 0 ? (
+              <div className="py-6 flex flex-col items-center justify-center border border-dashed border-[#e0e4e5] rounded-xl">
+                <span className="material-symbols-rounded text-2xl text-[#c4cacc] mb-1">headphones</span>
+                <p className="text-[10px] font-bold text-[#acb3b4]">{t('social.no_upcoming_djs')}</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {upcomingDjs.map((dj) => (
+                  <div key={dj.id} className="flex items-center justify-between p-3 border border-slate-100 rounded-xl bg-white shadow-sm">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      {dj.djId ? (
+                        <UserBadge
+                          uid={dj.djId}
+                          nickname={dj.djName}
+                          avatarSize="w-9 h-9"
+                          nameClassName="font-bold text-xs text-[#2d3435] truncate"
+                          nativeClassName="text-[9px] font-semibold text-slate-400 ml-1.5 truncate max-w-[80px]"
+                          subText={
+                            <p className="text-[9.5px] font-bold text-primary mt-0.5">
+                              {new Date(dj.date).toLocaleDateString(dateLocale, { weekday: 'short', month: 'short', day: 'numeric' })}
+                            </p>
+                          }
+                        />
+                      ) : (
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-[#f8f9fa] flex items-center justify-center shrink-0 border border-slate-100">
+                            <span className="material-symbols-rounded text-sm text-[#596061]">headphones</span>
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold text-[#2d3435]">{dj.djName}</p>
+                            <p className="text-[9.5px] font-bold text-primary mt-0.5">
+                              {new Date(dj.date).toLocaleDateString(dateLocale, { weekday: 'short', month: 'short', day: 'numeric' })}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    {canEdit && (
+                      <button onClick={() => handleDeleteDj(dj.id)} className="w-8 h-8 flex items-center justify-center text-[#acb3b4] hover:text-red-500 hover:bg-red-50 rounded-full transition-colors shrink-0">
+                        <span className="material-symbols-rounded text-sm">delete</span>
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* 3. 지난 라인업 목록 (아코디언 형태) */}
+          {pastDjs.length > 0 && (
+            <div className="pt-2 border-t border-slate-100">
+              <button 
+                onClick={() => setShowPastDjs(!showPastDjs)}
+                className="flex items-center justify-between w-full py-1 text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <span className="text-[10px] font-black uppercase tracking-widest">{t('social.past_djs')} ({pastDjs.length})</span>
+                <span className="material-symbols-rounded text-sm">
+                  {showPastDjs ? "expand_less" : "expand_more"}
+                </span>
+              </button>
+              
+              {showPastDjs && (
+                <div className="space-y-2 mt-2 opacity-70 animate-in slide-in-from-top-1 duration-200">
+                  {pastDjs.map((dj) => (
+                    <div key={dj.id} className="flex items-center justify-between p-2.5 border border-slate-100 rounded-xl bg-slate-50/50">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        {dj.djId ? (
+                          <UserBadge
+                            uid={dj.djId}
+                            nickname={dj.djName}
+                            avatarSize="w-8 h-8"
+                            nameClassName="font-bold text-[11px] text-[#596061] truncate"
+                            nativeClassName="text-[8px] font-semibold text-slate-400 ml-1 truncate max-w-[60px]"
+                            subText={
+                              <p className="text-[9px] font-medium text-[#acb3b4]">
+                                {new Date(dj.date).toLocaleDateString(dateLocale, { month: 'short', day: 'numeric', year: 'numeric' })}
+                              </p>
+                            }
+                          />
+                        ) : (
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-[#e8eaec] flex items-center justify-center shrink-0">
+                              <span className="material-symbols-rounded text-xs text-[#acb3b4]">headphones</span>
+                            </div>
+                            <div>
+                              <p className="text-[11px] font-bold text-[#596061]">{dj.djName}</p>
+                              <p className="text-[9px] font-medium text-[#acb3b4]">
+                                {new Date(dj.date).toLocaleDateString(dateLocale, { month: 'short', day: 'numeric', year: 'numeric' })}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      {canEdit && (
+                        <button onClick={() => handleDeleteDj(dj.id)} className="w-7 h-7 flex items-center justify-center text-[#c4cacc] hover:text-red-500 transition-colors shrink-0">
+                          <span className="material-symbols-rounded text-xs">delete</span>
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
 
       {/* Venue / Location with Multi-Map Buttons */}
       <div className="mx-4 mt-4 border border-[#e0e4e5] rounded-2xl overflow-hidden">

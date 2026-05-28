@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase/clientApp';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { groupService } from '@/lib/firebase/groupService';
+import { chatService } from '@/lib/firebase/chatService';
+import { userService } from '@/lib/firebase/userService';
 
 import UserBadge from '../common/UserBadge';
 
@@ -34,35 +34,33 @@ export default function GroupMembersPopup({ roomId, onClose }: GroupMembersPopup
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const roomDoc = await getDoc(doc(db, 'chat_rooms', roomId));
-      if (!roomDoc.exists()) return;
+      const roomData = await chatService.getChatRoom(roomId);
+      if (!roomData) return;
       
-      const roomData = roomDoc.data();
       setRoom(roomData);
       const groupId = roomData.linkedGroupId;
-      setLinkedGroupId(groupId);
+      setLinkedGroupId(groupId || null);
 
       // Fetch group members with roles from subcollection
       let roleMap: Record<string, string> = {};
       let groupOwnerId: string | null = null;
       
       if (groupId) {
-        const groupDoc = await getDoc(doc(db, 'groups', groupId));
-        if (groupDoc.exists()) {
-          groupOwnerId = groupDoc.data().ownerId || null;
+        const groupData = await groupService.getGroup(groupId);
+        if (groupData) {
+          groupOwnerId = groupData.ownerId || null;
         }
         
-        const membersSnap = await getDocs(collection(db, 'groups', groupId, 'members'));
-        membersSnap.forEach(mDoc => {
-          const data = mDoc.data();
-          roleMap[mDoc.id] = data.role || 'member';
+        const groupMembers = await groupService.getGroupMembersAll(groupId);
+        groupMembers.forEach(member => {
+          roleMap[member.id] = member.role || 'member';
         });
       }
 
       // Build members list from room participants
       const memberPromises = (roomData.participants || []).map(async (uid: string) => {
-        const userDoc = await getDoc(doc(db, 'users', uid));
-        const userData = userDoc.exists() ? userDoc.data() : {};
+        const userData = await userService.getUserById(uid);
+        const userDetails = (userData || {}) as any;
         
         let role: 'owner' | 'admin' | 'staff' | 'member' = 'member';
         if (uid === groupOwnerId) {
@@ -75,10 +73,10 @@ export default function GroupMembersPopup({ roomId, onClose }: GroupMembersPopup
         
         return {
           id: uid,
-          nickname: userData.nickname,
-          nativeNickname: userData.nativeNickname,
-          displayName: userData.displayName,
-          photoURL: userData.photoURL,
+          nickname: userDetails.nickname,
+          nativeNickname: userDetails.nativeNickname,
+          displayName: userDetails.displayName,
+          photoURL: userDetails.photoURL,
           role
         } as MemberInfo;
       });

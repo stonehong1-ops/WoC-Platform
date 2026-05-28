@@ -39,6 +39,18 @@ export const venueService = {
     await batch.commit();
   },
 
+  // Subscribe to all active venues (Real-time)
+  subscribeActiveVenues(callback: (venues: Venue[]) => void) {
+    const q = query(collection(db, VENUES_COLLECTION), where("status", "==", "active"));
+    return onSnapshot(q, (snapshot) => {
+      const venues = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Venue[];
+      callback(venues);
+    });
+  },
+
   // 3. Get All Venues (Real-time)
   subscribeVenues(callback: (venues: Venue[]) => void) {
     const q = query(collection(db, VENUES_COLLECTION), orderBy('name', 'asc'));

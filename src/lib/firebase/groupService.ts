@@ -22,7 +22,8 @@ import {
   where,
   writeBatch
 } from 'firebase/firestore';
-import { Group, Post, Member, GroupClass } from '@/types/group';
+import { Group, Post, Member, GroupClass, Comment, ClassDiscount } from '@/types/group';
+import { UserProfile } from '@/types/user';
 
 const GROUPS_COLLECTION = 'groups';
 
@@ -31,9 +32,89 @@ const groupCache = new Map<string, Group>();
 const membersCache = new Map<string, Member[]>();
 const postsCache = new Map<string, Post[]>();
 const classesCache = new Map<string, GroupClass[]>();
-const discountsCache = new Map<string, any[]>();
+const discountsCache = new Map<string, ClassDiscount[]>();
 
 export const groupService = {
+  // Get single class details
+  getClassById: async (groupId: string, classId: string): Promise<GroupClass | null> => {
+    try {
+      const docRef = doc(db, GROUPS_COLLECTION, groupId, 'classes', classId);
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        return { id: snap.id, ...groupService._convertTimestamps(snap.data()) } as GroupClass;
+      }
+      return null;
+    } catch (error) {
+      console.error('getClassById error:', error);
+      return null;
+    }
+  },
+
+  // Get single discount details
+  getDiscountById: async (groupId: string, discountId: string): Promise<ClassDiscount | null> => {
+    try {
+      const docRef = doc(db, GROUPS_COLLECTION, groupId, 'discounts', discountId);
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        return { id: snap.id, ...groupService._convertTimestamps(snap.data()) } as ClassDiscount;
+      }
+      return null;
+    } catch (error) {
+      console.error('getDiscountById error:', error);
+      return null;
+    }
+  },
+
+  // Get group by linked venueId
+  getGroupByVenueId: async (venueId: string): Promise<Group | null> => {
+    try {
+      const q = query(collection(db, GROUPS_COLLECTION), where('venueId', '==', venueId), limit(1));
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        return { id: snap.docs[0].id, ...groupService._convertTimestamps(snap.docs[0].data()) } as Group;
+      }
+      return null;
+    } catch (error) {
+      console.error('getGroupByVenueId error:', error);
+      return null;
+    }
+  },
+
+  // Get all open classes count (classes + bundles across groups)
+  getOpenClassesCount: async (): Promise<number> => {
+    try {
+      const groupsSnap = await getDocs(collection(db, GROUPS_COLLECTION));
+      const classCountResults = await Promise.all(
+        groupsSnap.docs.map(async groupDoc => {
+          const [classSnap, bundleSnap] = await Promise.allSettled([
+            getDocs(collection(db, GROUPS_COLLECTION, groupDoc.id, 'classes')),
+            getDocs(collection(db, GROUPS_COLLECTION, groupDoc.id, 'bundles')),
+          ]);
+          return (classSnap.status === 'fulfilled' ? classSnap.value.size : 0)
+               + (bundleSnap.status === 'fulfilled' ? bundleSnap.value.size : 0);
+        })
+      );
+      return classCountResults.reduce((sum, c) => sum + c, 0);
+    } catch (error) {
+      console.error('getOpenClassesCount error:', error);
+      return 0;
+    }
+  },
+
+  // Get all group members list
+  getGroupMembersAll: async (groupId: string): Promise<Member[]> => {
+    try {
+      const membersSnap = await getDocs(collection(db, GROUPS_COLLECTION, groupId, 'members'));
+      return membersSnap.docs.map(doc => ({
+        id: doc.id,
+        ...groupService._convertTimestamps(doc.data())
+      })) as Member[];
+    } catch (error) {
+      console.error('getGroupMembersAll error:', error);
+      return [];
+    }
+  },
+
   // 캐시 인메모리 조회 동기식 헬퍼
   getCachedGroup: (groupId: string): Group | null => {
     return groupCache.get(groupId) || null;
@@ -288,7 +369,7 @@ export const groupService = {
   },
 
   // Get group members with full profiles
-  getGroupMembersWithProfiles: async (groupId: string, pageSize = 20, lastVisible?: any): Promise<{ members: any[], lastVisible: any }> => {
+  getGroupMembersWithProfiles: async (groupId: string, pageSize = 20, lastVisible?: any): Promise<{ members: (Member & { profile: UserProfile | null })[], lastVisible: any }> => {
     const { members, lastVisible: newLastVisible } = await groupService.getGroupMembers(groupId, pageSize, lastVisible);
     
     const membersWithProfiles = await Promise.all(members.map(async (member) => {
@@ -296,7 +377,7 @@ export const groupService = {
       const userSnap = await getDoc(userRef);
       return {
         ...member,
-        profile: userSnap.exists() ? { id: userSnap.id, ...userSnap.data() } : null
+        profile: userSnap.exists() ? { id: userSnap.id, ...groupService._convertTimestamps(userSnap.data()) } as UserProfile : null
       };
     }));
 
@@ -351,7 +432,7 @@ export const groupService = {
   },
 
   // Subscribe to comments
-  subscribeComments: (groupId: string, postId: string, callback: (comments: any[]) => void) => {
+  subscribeComments: (groupId: string, postId: string, callback: (comments: Comment[]) => void) => {
     const commentsRef = collection(db, GROUPS_COLLECTION, groupId, 'posts', postId, 'comments');
     const q = query(commentsRef, orderBy('createdAt', 'asc'));
 
@@ -359,13 +440,13 @@ export const groupService = {
       const comments = snapshot.docs.map(doc => ({
         id: doc.id,
         ...groupService._convertTimestamps(doc.data())
-      }));
+      })) as Comment[];
       callback(comments);
     });
   },
 
   // Add a comment
-  addComment: async (groupId: string, postId: string, commentData: any) => {
+  addComment: async (groupId: string, postId: string, commentData: Omit<Comment, 'id' | 'createdAt'>) => {
     const commentsRef = collection(db, GROUPS_COLLECTION, groupId, 'posts', postId, 'comments');
     const postRef = doc(db, GROUPS_COLLECTION, groupId, 'posts', postId);
 

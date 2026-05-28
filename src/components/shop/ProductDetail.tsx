@@ -375,9 +375,9 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
         </div>
 
         {/* 2) Scarcity Bar — 제일 위로 */}
-        <div className="flex items-center gap-4 px-4 py-3 bg-[#fff8f0] border-b border-[#ffe8cc]">
+        <div className="flex items-center gap-4 px-4 py-3 bg-slate-50 border-b border-slate-100">
           {product.stock <= 5 && product.stock > 0 && (
-            <div className="flex items-center gap-1 text-[#e67700]">
+            <div className="flex items-center gap-1 text-rose-500">
               <span className="material-symbols-rounded text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>local_fire_department</span>
               <span className="text-xs font-bold">{t('shop.only_left', 'Only')} {product.stock} {t('shop.left', 'left')}</span>
             </div>
@@ -388,7 +388,7 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
               <span className="text-xs font-medium">{t('shop.in_stock', 'In Stock')}</span>
             </div>
           )}
-          <div className="flex items-center gap-1 text-[#e67700]">
+          <div className="flex items-center gap-1 text-slate-500">
             <span className="material-symbols-rounded text-sm">visibility</span>
             <span className="text-xs font-bold">{viewerCount} {t('shop.viewing_now', 'viewing now')}</span>
           </div>

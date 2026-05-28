@@ -99,6 +99,8 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
     (localStorage.getItem(`woc_admin_${initialGroup.id}`) === 'true' || 
      (initialGroup as any).isConfirmedAdmin === true);
   
+  const isTabClickActionRef = useRef(false);
+
   // Intelligent Initial Tab Routing: Default to 'home' for verified/cached members and 'about' for non-members
   const [activeTab, setActiveTab] = useState<TabType>(() => {
     const tabParam = searchParams.get('tab') as TabType | null;
@@ -157,27 +159,18 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
     if (loading || isMembersLoading) return;
 
     const tabParam = searchParams.get('tab') as TabType | null;
-    const isMember = isFullMember || isAdminUser || isCachedMember;
-    const isAdmin = isAdminUser || isCachedAdmin;
+    const currentTab = tabParam || 'home';
 
-    if (tabParam) {
-      const isAdminTab = tabParam === 'settings' || tabParam === 'brand' || tabParam === 'class-setting' || tabParam === 'shop-setting' || tabParam === 'stay-setting' || tabParam === 'rental-setting';
-      if (isAdminTab && !isAdmin) {
-        setActiveTab('about');
-        return;
+    // activeTab 상태값의 시차 문제를 차단하기 위해 함수형 또는 조건식으로 안정성 강화
+    setActiveTab(prev => {
+      if (currentTab !== prev) {
+        setVisitedTabs(v => { const newSet = new Set(v); newSet.add(currentTab); return newSet; });
+        return currentTab;
       }
-
-      if (!isMember && tabParam !== 'about' && tabParam !== 'board' && tabParam !== 'class') {
-        // 비회원의 허가되지 않은 메뉴 우회 진입을 방지합니다.
-        setActiveTab('about');
-        return;
-      }
-      if (tabParam !== activeTab) {
-        setActiveTab(tabParam);
-        setVisitedTabs(prev => { const newSet = new Set(prev); newSet.add(tabParam); return newSet; });
-      }
-    }
-  }, [searchParams, isFullMember, isAdminUser, loading, isMembersLoading, user]);
+      return prev;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, loading, isMembersLoading]);
 
   // 모달 제어를 Query String으로 전환
   const showGroupChat = searchParams.get('modal') === 'chat';
@@ -619,10 +612,10 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
                   <span className="material-symbols-outlined text-3xl text-primary">lock</span>
                 </div>
                 <h3 className="text-[18px] font-bold text-[#2d3435] mb-2 font-headline">
-                  이 메뉴는 회원만 사용 가능합니다.
+                  {t('group.non_member.title')}
                 </h3>
                 <p className="text-[15px] text-[#596061] mb-8 font-body">
-                  회원 가입을 먼저 진행해 주십시요.
+                  {t('group.non_member.desc')}
                 </p>
                 
                 <button
@@ -632,7 +625,7 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
                   }}
                   className="w-full h-14 bg-primary text-white font-bold rounded-xl text-[16px] active:scale-95 transition-all shadow-md font-body"
                 >
-                  커뮤니티 가입하기
+                  {t('group.non_member.join_btn')}
                 </button>
               </div>
             </motion.div>

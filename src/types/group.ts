@@ -257,18 +257,20 @@ export interface ActiveServices {
 
 export interface ClassScheduleEntry {
   week: number;
-  date: string;
+  date: any;
   timeSlot: string;
   content: string;
 }
 
 export interface GroupClass {
   id: string;
+  groupId?: string;
   title: string;
   description: string;
   level: 'Basic' | 'Beginner' | 'Intermediate' | 'Advanced' | 'Masterclass';
   currency: string;
   amount: number;
+  price?: number;
   instructors: {
     name: string;
     avatar?: string;
@@ -292,6 +294,7 @@ export interface GroupClass {
   todayLeaderRemaining?: number;
   todayFollowerRemaining?: number;
   isTodayBookingClosed?: boolean;
+  isDailyBookingOpen?: boolean;
   instructorComment?: string;
   dailyClassPrice?: number;
   
@@ -308,6 +311,7 @@ export interface GroupClass {
 
 export interface ClassDiscount {
   id: string;
+  groupId?: string;
   title: string;
   description: string;
   currency: string;

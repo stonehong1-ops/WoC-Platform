@@ -62,6 +62,9 @@ export default function GroupAppShell({
     setIsMoreOpen(false);
   }, [activeTab]);
 
+  const serializedSelectedFunctions = JSON.stringify(group.selectedFunctions || []);
+  const serializedMenuOrder = JSON.stringify(group.menuOrder || []);
+
   // 탭 목록 계산 — 기존 FUNCTION_TAB_MAP 로직 재사용
   const { navTabs, moreMenuItems, adminMenuItems } = useMemo(() => {
     const rawSelectedFns = group.selectedFunctions || [];
@@ -194,7 +197,7 @@ export default function GroupAppShell({
       moreMenuItems: moreItems,
       adminMenuItems: adminTabs,
     };
-  }, [group.selectedFunctions, group.menuOrder, isAdmin]);
+  }, [serializedSelectedFunctions, serializedMenuOrder, isAdmin]);
 
   React.useEffect(() => {
     if (navTabs.length > 0 && onFirstTabDetect) {
@@ -215,7 +218,7 @@ export default function GroupAppShell({
           width: 100%;
           max-width: 1280px;
           margin: 0 auto;
-          background: var(--background);
+          background: #FAF8FF;
           position: relative;
         }
 
@@ -228,7 +231,7 @@ export default function GroupAppShell({
           max-width: 1280px;
           margin: 0 auto;
           z-index: 100;
-          background: var(--background);
+          background: #FAF8FF;
         }
 
         /* HEADER */

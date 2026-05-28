@@ -7,10 +7,9 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
-import { db } from '@/lib/firebase/clientApp';
-import { doc, getDoc } from 'firebase/firestore';
 import { groupService } from '@/lib/firebase/groupService';
 import { chatService } from '@/lib/firebase/chatService';
+import { socialService } from '@/lib/firebase/socialService';
 import UserBadge from '@/components/common/UserBadge';
 
 
@@ -108,9 +107,8 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
     const fetchVenueAddress = async () => {
       if (group.venueId) {
         try {
-          const vSnap = await getDoc(doc(db, 'venues', group.venueId));
-          if (vSnap.exists()) {
-            const vData = vSnap.data();
+          const vData = await socialService.getVenueDetails(group.venueId) as any;
+          if (vData) {
             setVenueAddress(vData.address || vData.city || '');
           }
         } catch (e) {

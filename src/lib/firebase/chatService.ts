@@ -32,6 +32,21 @@ export const GLOBAL_LOUNGE_ID = 'woc_global_lounge';
 export const SYSTEM_NOTICE_ID = 'woc_notice';
 
 export const chatService = {
+  // Get single chat room
+  getChatRoom: async (roomId: string): Promise<ChatRoom | null> => {
+    try {
+      const docRef = doc(db, ROOMS_COLLECTION, roomId);
+      const snapshot = await getDoc(docRef);
+      if (snapshot.exists()) {
+        return { id: snapshot.id, ...snapshot.data() } as ChatRoom;
+      }
+      return null;
+    } catch (error) {
+      console.error("Error getting chat room:", error);
+      return null;
+    }
+  },
+
   // 1. Subscribe to Chat Rooms List
   subscribeRooms: (userId: string, callback: (rooms: ChatRoom[]) => void) => {
     const roomsRef = collection(db, ROOMS_COLLECTION);
@@ -373,6 +388,17 @@ export const chatService = {
       });
     } catch (err) {
       console.error("Error updating message:", err);
+    }
+  },
+
+  deleteMessage: async (messageId: string) => {
+    try {
+      const { deleteDoc } = await import('firebase/firestore');
+      const msgRef = doc(db, MESSAGES_COLLECTION, messageId);
+      await deleteDoc(msgRef);
+    } catch (err) {
+      console.error("Error deleting message:", err);
+      throw err;
     }
   },
 

@@ -20,7 +20,17 @@ import GroupShopEditor from "./GroupShopEditor";
 import GroupStayEditor from "./GroupStayEditor";
 import GroupRentalEditor from "./GroupRentalEditor";
 const UniversalFeed = dynamic(() => import("../feed/UniversalFeed"));
-const LiveFeed = dynamic(() => import("@/components/live/LiveFeed"));
+const LiveFeed = dynamic(() => import("@/components/live/LiveFeed"), {
+  loading: () => (
+    <div className="w-full h-full flex flex-col items-center justify-center p-8 min-h-[400px]">
+      <div className="w-full max-w-md space-y-4 animate-pulse">
+        <div className="h-8 bg-[#f2f4f4] dark:bg-zinc-800 rounded-xl w-3/4"></div>
+        <div className="h-4 bg-[#f2f4f4] dark:bg-zinc-800 rounded-lg w-1/2"></div>
+        <div className="h-48 bg-[#f2f4f4]/60 dark:bg-zinc-800/40 rounded-2xl w-full"></div>
+      </div>
+    </div>
+  )
+});
 
 // Community module mockups
 const GroupPolls = dynamic(() => import("./GroupPolls"));

@@ -1,0 +1,106 @@
+import { Social } from '@/types/social';
+
+// 대한민국 법정공휴일 (2025-2027)
+export const KR_HOLIDAYS: Record<string, string> = {
+  '2025-01-01': 'New Year', '2025-01-28': 'Seollal', '2025-01-29': 'Seollal', '2025-01-30': 'Seollal',
+  '2025-03-01': 'Independence Movement', '2025-05-05': 'Children\'s Day', '2025-05-06': 'Buddha\'s Birthday',
+  '2025-06-06': 'Memorial Day', '2025-08-15': 'Liberation Day', '2025-10-03': 'National Foundation',
+  '2025-10-05': 'Chuseok', '2025-10-06': 'Chuseok', '2025-10-07': 'Chuseok', '2025-10-09': 'Hangul Day',
+  '2025-12-25': 'Christmas',
+  '2026-01-01': 'New Year', '2026-02-16': 'Seollal', '2026-02-17': 'Seollal', '2026-02-18': 'Seollal',
+  '2026-03-01': 'Independence Movement', '2026-05-05': 'Children\'s Day', '2026-05-24': 'Buddha\'s Birthday',
+  '2026-06-06': 'Memorial Day', '2026-08-15': 'Liberation Day', '2026-09-24': 'Chuseok',
+  '2026-09-25': 'Chuseok', '2026-09-26': 'Chuseok', '2026-10-03': 'National Foundation', '2026-10-09': 'Hangul Day',
+  '2026-12-25': 'Christmas',
+  '2027-01-01': 'New Year', '2027-02-06': 'Seollal', '2027-02-07': 'Seollal', '2027-02-08': 'Seollal',
+  '2027-03-01': 'Independence Movement', '2027-05-05': 'Children\'s Day', '2027-05-13': 'Buddha\'s Birthday',
+  '2027-06-06': 'Memorial Day', '2027-08-15': 'Liberation Day', '2027-10-03': 'National Foundation',
+  '2027-10-09': 'Hangul Day', '2027-10-13': 'Chuseok', '2027-10-14': 'Chuseok', '2027-10-15': 'Chuseok',
+  '2027-12-25': 'Christmas',
+};
+
+export function getDateKey(d: Date) {
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+export function isKoreanHoliday(d: Date) {
+  return KR_HOLIDAYS[getDateKey(d)] || null;
+}
+
+export const districtOrder = (d?: string) => {
+  if (d === '강북') return 0;
+  if (d === '강남') return 1;
+  return 2;
+};
+
+export const subDistrictOrder = (d?: string) => {
+  if (!d) return 9;
+  const lower = d.toLowerCase();
+  if (lower.includes('홍대') || lower.includes('한강위')) return 0;
+  if (lower.includes('강남') || lower.includes('한강아래')) return 1;
+  if (lower.includes('강북')) return 2;
+  return 3;
+};
+
+export const getWeekOrdinal = (d: Date) => Math.ceil(d.getDate() / 7);
+
+export const isLastWeekOfMonth = (d: Date) => {
+  const currentMonth = d.getMonth();
+  const nextWeekDate = new Date(d);
+  nextWeekDate.setDate(d.getDate() + 7);
+  return nextWeekDate.getMonth() !== currentMonth;
+};
+
+export const getDensityMode = (length: number): 'emperor' | 'wide' | 'slim' | 'grid' => {
+  if (length <= 2) return 'emperor';
+  if (length >= 3 && length <= 4) return 'wide';
+  if (length >= 5 && length <= 9) return 'slim';
+  return 'grid';
+};
+
+export const detectSeoulDistrict = (social: Social, language: string, venuesMap: Record<string, any>): string => {
+  if (social.district && typeof social.district === 'string' && social.district.trim()) {
+    const d = social.district.trim().toLowerCase();
+    if (d.includes('강남') || d.includes('서초') || d.includes('송파') || d.includes('강동') || d.includes('양재')) {
+      return language === 'KR' ? '한강아래 (강남지역)' : 'South of River (Gangnam)';
+    }
+    if (d.includes('강북') || d.includes('홍대') || d.includes('마포') || d.includes('신촌') || d.includes('종로') || d.includes('합정')) {
+      return language === 'KR' ? '한강위 (홍대인근)' : 'North of River (Hongdae)';
+    }
+  }
+
+  const venue = venuesMap[social.venueId];
+  if (venue && venue.seoulArea) {
+    if (venue.seoulArea === 'gangbuk') {
+      return language === 'KR' ? '한강위 (홍대인근)' : 'North of River (Hongdae)';
+    }
+    if (venue.seoulArea === 'gangnam') {
+      return language === 'KR' ? '한강아래 (강남지역)' : 'South of River (Gangnam)';
+    }
+  }
+
+  const venueName = String(social.venueNameNative || social.venueName || '').toLowerCase();
+  const gangbukKeywords = [
+    '홍대', '마포', '신촌', '합정', '망원', '종로', '중구', '성동', '서대문', '이대', '상수', '광진', '용산', '한남', '이태원', '을지로', '광화문',
+    'hongdae', 'mapo', 'sinchon', 'hapjeong', 'jongno', 'yongsan', 'hannam', 'itaewon',
+    '바르샤', 'barsha', '엘빠소', 'elpaso', '아반', 'aban', '보헤미안', 'bohemian', '아르헨티나', 'argentina',
+    '오쵸', 'ocho', '땅고마니아', 'tangomania', '라비다', 'lavida', '마구아', 'magua', '밀롱가헤이', 'milongahei',
+    '라벤타나', '라 벤타나', 'ventana', 'la ventana', '알마', 'alma', '오나다', 'onada', 'atta', '아똬'
+  ];
+
+  for (const key of gangbukKeywords) {
+    if (venueName.includes(key)) return language === 'KR' ? '한강위 (홍대인근)' : 'North of River (Hongdae)';
+  }
+
+  return language === 'KR' ? '한강아래 (강남지역)' : 'South of River (Gangnam)';
+};
+
+export const getDjDisplay = (social: Social, date?: Date): string => {
+  if (!social.djs || !Array.isArray(social.djs) || social.djs.length === 0) return social.djName || '';
+  if (!date) return social.djName || '';
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  const dStr = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  const matched = social.djs.find(dj => dj && dj.date === dStr);
+  return matched ? matched.djName : (social.djName || '');
+};

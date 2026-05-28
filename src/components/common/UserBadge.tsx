@@ -4,8 +4,7 @@ import React, { useEffect, useState } from 'react';
 import UserAvatar from './UserAvatar';
 import UserProfileClickable from './UserProfileClickable';
 import UserName from './UserName';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase/clientApp';
+import { userService } from '@/lib/firebase/userService';
 
 interface UserBadgeProps {
   uid: string;
@@ -29,10 +28,10 @@ function fetchUserCached(uid: string) {
   const cached = userCache.get(uid);
   if (cached) return cached;
   
-  const promise = getDoc(doc(db, 'users', uid))
-    .then(snap => {
-      if (snap.exists()) {
-        return snap.data();
+  const promise = userService.getUserById(uid)
+    .then(data => {
+      if (data) {
+        return data;
       } else {
         // 프로필이 아직 생성되지 않은 경우 캐시에서 삭제하여 재시도 가능케 함
         userCache.delete(uid);

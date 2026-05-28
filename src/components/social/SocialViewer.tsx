@@ -14,7 +14,6 @@ import SocialHomeTab from "./SocialHomeTab";
 import SocialReservationTab from "./SocialReservationTab";
 import EditSocialEvent from "./EditSocialEvent";
 import SocialPosterEditor from "./SocialPosterEditor";
-import SocialDjLineupSheet from "./SocialDjLineupSheet";
 import PosterOverlay from "./poster/PosterOverlay";
 import { extractPosterData } from "./poster/posterTypes";
 import { POSTER_LAYOUTS } from "./poster/PosterLayouts";
@@ -37,7 +36,6 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
   const [social, setSocial] = useState<Social>(initialSocial);
   const [activeTab, setActiveTab] = useState<TabId>("home");
   const [showEditModal, setShowEditModal] = useState(false);
-  const [showDjLineup, setShowDjLineup] = useState(false);
 
   // Hide global navigation on mount, restore on unmount
   useEffect(() => {
@@ -380,12 +378,6 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
                   <div className="h-px bg-gray-100 mx-4 my-1" />
                 </>
               )}
-              <button onClick={() => { setShowMenu(false); setShowDjLineup(true); }}
-                className="flex items-center gap-4 w-full px-5 py-3.5 rounded-xl hover:bg-gray-50 active:bg-gray-100 transition-colors">
-                <span className="material-symbols-rounded text-[22px] text-primary">headphones</span>
-                <span className="text-[15px] font-medium text-primary">{t('social.dj_lineup')}</span>
-              </button>
-              <div className="h-px bg-gray-100 mx-4 my-1" />
               <button onClick={async () => {
                   setShowMenu(false);
                   setIsExporting(true);
@@ -472,15 +464,6 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
         <SocialPosterEditor 
           social={social} 
           onClose={() => setShowPosterEditor(false)} 
-        />
-      )}
-
-      {/* DJ Lineup Sheet */}
-      {showDjLineup && (
-        <SocialDjLineupSheet 
-          social={social}
-          canEdit={!!canEdit}
-          onClose={() => setShowDjLineup(false)}
         />
       )}
 

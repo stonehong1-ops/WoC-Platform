@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { collection, query, orderBy, getDocs, addDoc, serverTimestamp, onSnapshot, limit, updateDoc, doc, increment } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '@/lib/firebase/clientApp';
+import { storage } from '@/lib/firebase/clientApp';
+import * as contentService from '@/lib/firebase/contentService';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface GaviCartoonPopupProps {
@@ -74,15 +74,13 @@ export default function GaviCartoonPopup({ onClose }: GaviCartoonPopupProps) {
     if (!selectedCategory) return;
     setLoading(true);
     try {
-      const q = query(collection(db, 'cartoons'), orderBy('createdAt', 'desc'));
-      const snap = await getDocs(q);
-      const all = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Cartoon));
+      const all = await contentService.fetchContentEntries('cartoons');
       // Client-side filtering
       const filtered = all.filter(c => {
         const cat = c.category || 'imagination';
         return cat === selectedCategory;
       });
-      setCartoons(filtered);
+      setCartoons(filtered as Cartoon[]);
       if (filtered.length > 0) {
         setCurrentIndex(0); // Latest first
       } else {
@@ -104,10 +102,9 @@ export default function GaviCartoonPopup({ onClose }: GaviCartoonPopupProps) {
   useEffect(() => {
     const fetchLatest = async () => {
       try {
-        const q = query(collection(db, 'cartoons'), orderBy('createdAt', 'desc'), limit(1));
-        const snap = await getDocs(q);
-        if (!snap.empty) {
-          setLatestGlobalCartoon({ id: snap.docs[0].id, ...snap.docs[0].data() } as Cartoon);
+        const latest = await contentService.fetchLatestContentEntry('cartoons');
+        if (latest) {
+          setLatestGlobalCartoon(latest as Cartoon);
         }
       } catch (error) {
         console.error("Failed to fetch latest cartoon", error);
@@ -126,15 +123,11 @@ export default function GaviCartoonPopup({ onClose }: GaviCartoonPopupProps) {
       setReviews([]);
       return;
     }
-    const reviewsRef = collection(db, 'cartoons', currentCartoon.id, 'reviews');
-    const q = query(reviewsRef, orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const reviewsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Review[];
-      setReviews(reviewsData);
-    });
+    const unsubscribe = contentService.subscribeToReviews(
+      'cartoons',
+      currentCartoon.id,
+      (data) => setReviews(data as Review[])
+    );
     return () => unsubscribe();
   }, [currentCartoon]);
 
@@ -168,17 +161,7 @@ export default function GaviCartoonPopup({ onClose }: GaviCartoonPopupProps) {
     
     setUploading(true);
     try {
-      // Find max episode number for this category
-      const q = query(collection(db, 'cartoons'), orderBy('createdAt', 'desc'));
-      const snap = await getDocs(q);
-      const catCartoons = snap.docs
-        .map(d => d.data() as Cartoon)
-        .filter(c => (c.category || 'imagination') === uploadCategory);
-      
-      let nextEpisodeNumber = 1;
-      if (catCartoons.length > 0 && catCartoons[0].episodeNumber) {
-        nextEpisodeNumber = catCartoons[0].episodeNumber + 1;
-      }
+      const nextEpisodeNumber = await contentService.fetchNextEpisodeNumber('cartoons', uploadCategory);
 
       for (let i = 0; i < uploadFiles.length; i++) {
         const file = uploadFiles[i];
@@ -187,12 +170,7 @@ export default function GaviCartoonPopup({ onClose }: GaviCartoonPopupProps) {
         await uploadBytes(fileRef, file);
         const imageUrl = await getDownloadURL(fileRef);
         
-        await addDoc(collection(db, 'cartoons'), {
-          imageUrl,
-          episodeNumber: epNum,
-          category: uploadCategory,
-          createdAt: serverTimestamp()
-        });
+        await contentService.addContentEntry('cartoons', imageUrl, epNum, uploadCategory);
       }
       
       setUploadFiles([]);
@@ -247,11 +225,7 @@ export default function GaviCartoonPopup({ onClose }: GaviCartoonPopupProps) {
     
     setSubmittingReview(true);
     try {
-      const reviewsRef = collection(db, 'cartoons', currentCartoon.id, 'reviews');
-      await addDoc(reviewsRef, {
-        content: newReview.trim(),
-        createdAt: serverTimestamp()
-      });
+      await contentService.addReview('cartoons', currentCartoon.id, newReview.trim());
       setNewReview('');
     } catch (error) {
       console.error("Error submitting review:", error);
@@ -264,15 +238,12 @@ export default function GaviCartoonPopup({ onClose }: GaviCartoonPopupProps) {
   const toggleLike = async () => {
     if (!currentCartoon) return;
     
-    const cartoonRef = doc(db, 'cartoons', currentCartoon.id);
     const currentlyLiked = likedCartoons.has(currentCartoon.id);
     
     try {
+      await contentService.toggleLike('cartoons', currentCartoon.id, !currentlyLiked);
       if (currentlyLiked) {
         // Unlike
-        await updateDoc(cartoonRef, {
-          likeCount: increment(-1)
-        });
         setLikedCartoons(prev => {
           const next = new Set(prev);
           next.delete(currentCartoon.id);
@@ -281,9 +252,6 @@ export default function GaviCartoonPopup({ onClose }: GaviCartoonPopupProps) {
         setCartoons(prev => prev.map(c => c.id === currentCartoon.id ? { ...c, likeCount: Math.max(0, (c.likeCount || 0) - 1) } : c));
       } else {
         // Like
-        await updateDoc(cartoonRef, {
-          likeCount: increment(1)
-        });
         setLikedCartoons(prev => {
           const next = new Set(prev);
           next.add(currentCartoon.id);

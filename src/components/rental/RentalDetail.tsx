@@ -285,12 +285,12 @@ export default function RentalDetail({ space, isLiked, onClose, onToggleLike }: 
         </div>
 
         {/* 3) Scarcity Bar */}
-        <div className="flex items-center gap-4 px-4 py-3 bg-[#fff8f0] border-b border-[#ffe8cc]">
-          <div className="flex items-center gap-1 text-[#e67700]">
+        <div className="flex items-center gap-4 px-4 py-3 bg-slate-50 border-b border-slate-100">
+          <div className="flex items-center gap-1 text-rose-500">
             <span className="material-symbols-rounded text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>local_fire_department</span>
             <span className="text-xs font-bold">{t('rental.popular_space', 'Popular Space')}</span>
           </div>
-          <div className="flex items-center gap-1 text-[#e67700]">
+          <div className="flex items-center gap-1 text-slate-500">
             <span className="material-symbols-rounded text-sm">visibility</span>
             <span className="text-xs font-bold">{viewerCount} {t('rental.viewing_now', 'viewing now')}</span>
           </div>

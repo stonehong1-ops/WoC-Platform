@@ -3,26 +3,26 @@
 // 클래스, 월간 패스, 패키지 할인의 상세 정보를 단일 조회하여 보여주는 초경량 정보 모달 컴포넌트
 
 import React, { useEffect, useState } from 'react';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase/clientApp';
 import Portal from '@/components/common/Portal';
 import { useLanguage } from '@/contexts/LanguageContext';
 import UserProfileClickable from '@/components/common/UserProfileClickable';
 import UserBadge from '@/components/common/UserBadge';
 import { MapSelectorBottomSheet, MapType } from '@/components/common/MapSelectorBottomSheet';
+import { groupService } from '@/lib/firebase/groupService';
+import { GroupClass, ClassDiscount, ClassScheduleEntry } from '@/types/group';
 
 interface ClassDetailProps {
   groupId: string;
   onClose?: () => void;
   isOpen: boolean;
   itemId?: string;
-  itemDetail?: any;
+  itemDetail?: GroupClass | ClassDiscount | null;
   isModal?: boolean;
 }
 
 export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDetail: propItemDetail }: ClassDetailProps) {
   const { language } = useLanguage();
-  const [itemDetail, setItemDetail] = useState<any | null>(propItemDetail || null);
+  const [itemDetail, setItemDetail] = useState<GroupClass | ClassDiscount | any | null>(propItemDetail || null);
   const [loading, setLoading] = useState(!propItemDetail);
   const [isScrolled, setIsScrolled] = useState(false);
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
@@ -85,11 +85,9 @@ export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDeta
     if (!groupId || !isOpen) return;
     const fetchGroupImage = async () => {
       try {
-        const groupDocRef = doc(db, 'groups', groupId);
-        const groupDoc = await getDoc(groupDocRef);
-        if (groupDoc.exists()) {
-          const gData = groupDoc.data();
-          setGroupImage(gData.coverImage || gData.logo || '');
+        const groupData = await groupService.getGroup(groupId);
+        if (groupData) {
+          setGroupImage(groupData.coverImage || groupData.logo || '');
         }
       } catch (e) {
         console.error("Failed to fetch group image in ClassDetail:", e);
@@ -116,18 +114,16 @@ export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDeta
       setLoading(true);
       try {
         // 1. classes 컬렉션 조회
-        const classDocRef = doc(db, 'groups', groupId, 'classes', id);
-        const classDoc = await getDoc(classDocRef);
-        if (classDoc.exists()) {
-          setItemDetail({ id: classDoc.id, itemType: 'class', ...classDoc.data() });
+        const classData = await groupService.getClassById(groupId, id);
+        if (classData) {
+          setItemDetail({ itemType: 'class', ...classData });
           return;
         }
 
         // 2. discounts 컬렉션 조회
-        const discountDocRef = doc(db, 'groups', groupId, 'discounts', id);
-        const discountDoc = await getDoc(discountDocRef);
-        if (discountDoc.exists()) {
-          setItemDetail({ id: discountDoc.id, itemType: 'discount', ...discountDoc.data() });
+        const discountData = await groupService.getDiscountById(groupId, id);
+        if (discountData) {
+          setItemDetail({ itemType: 'discount', ...discountData });
           return;
         }
 
@@ -376,13 +372,14 @@ export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDeta
                     <p className="text-[10px] font-black text-[#596061] uppercase tracking-widest">
                       {language === 'KR' ? '일정' : 'Schedule'}
                     </p>
-                    {itemDetail.schedule.map((sched: any, idx: number) => {
+                    {itemDetail.schedule.map((sched: ClassScheduleEntry, idx: number) => {
                       // sched.date가 Timestamp 객체인 경우 등 모든 시나리오에 대비한 방어 코드
                       const dateObj = (() => {
-                        if (!sched.date) return new Date();
-                        if (typeof sched.date.toDate === 'function') return sched.date.toDate();
-                        if (sched.date.seconds) return new Date(sched.date.seconds * 1000);
-                        const parsed = new Date(sched.date);
+                        const sDate = sched.date as any;
+                        if (!sDate) return new Date();
+                        if (typeof sDate.toDate === 'function') return sDate.toDate();
+                        if (sDate.seconds) return new Date(sDate.seconds * 1000);
+                        const parsed = new Date(sDate);
                         return isNaN(parsed.getTime()) ? new Date() : parsed;
                       })();
                       
@@ -449,7 +446,7 @@ export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDeta
                   </p>
                 </div>
                 <div className="p-4 space-y-3">
-                  {itemDetail.includedClasses.map((cls: any, index: number) => (
+                  {itemDetail.includedClasses.map((cls: GroupClass, index: number) => (
                     <div key={cls.id || index} className="flex items-center gap-3 py-1">
                       <span className="material-symbols-outlined text-primary text-sm">circle</span>
                       <div className="flex-1 min-w-0">
@@ -469,12 +466,12 @@ export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDeta
                   {language === 'KR' ? '강사' : 'Instructors'}
                 </p>
                 <div className="flex flex-col gap-3">
-                  {itemDetail.instructors.map((inst: any, idx: number) => (
-                    <div key={inst.id || inst.uid || idx} className="flex items-center justify-between bg-slate-50/50 border border-slate-100 rounded-2xl p-3">
+                  {itemDetail.instructors.map((inst: { name: string; avatar?: string; role: string; userId?: string }, idx: number) => (
+                    <div key={inst.userId || idx} className="flex items-center justify-between bg-slate-50/50 border border-slate-100 rounded-2xl p-3">
                       <UserBadge
-                        uid={inst.id || inst.uid || inst.userId || ''}
+                        uid={inst.userId || ''}
                         nickname={inst.name}
-                        photoURL={inst.avatar || inst.photoURL || inst.image || inst.imageUrl}
+                        photoURL={inst.avatar}
                         avatarSize="w-9 h-9"
                         nameClassName="font-bold text-sm text-[#2d3435]"
                         nativeClassName="text-xs font-semibold text-slate-400 ml-1.5"

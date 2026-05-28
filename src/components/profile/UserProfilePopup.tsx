@@ -1,8 +1,7 @@
 // 사용자 프로필 정보를 불러와 프리미엄 NamecardModal로 렌더링하는 팝업 래퍼 컴포넌트
 import React, { useEffect, useState } from 'react';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase/clientApp';
 import NamecardModal, { NamecardUser } from './NamecardModal';
+import { userService } from '@/lib/firebase/userService';
 
 interface UserProfilePopupProps {
   isOpen: boolean;
@@ -50,10 +49,9 @@ export default function UserProfilePopup({ isOpen, onClose, uid, initialData }: 
     const fetchProfile = async () => {
       try {
         setLoading(true);
-        const docRef = doc(db, 'users', uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          setProfile(docSnap.data() as FullProfile);
+        const userData = await userService.getUserById(uid);
+        if (userData) {
+          setProfile(userData as FullProfile);
         }
       } catch (err) {
         console.error("Failed to fetch user profile:", err);

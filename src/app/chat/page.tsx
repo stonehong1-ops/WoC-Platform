@@ -85,6 +85,7 @@ function ChatContent() {
   };
 
   const handleBack = () => {
+    setSelectedRoomId(null);
     router.replace('/chat');
   };
 
@@ -166,6 +167,7 @@ function ChatContent() {
               className="fixed inset-0 h-[100dvh] w-full z-[100] bg-white flex flex-col md:relative md:h-auto md:w-auto md:inset-auto md:z-auto md:flex-1 md:shadow-none"
             >
               <ChatRoom 
+                key={selectedRoomId}
                 roomId={selectedRoomId} 
                 onBack={handleBack} 
               />

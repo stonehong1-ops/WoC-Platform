@@ -5,13 +5,13 @@ import { GoogleMap, Marker, Autocomplete } from '@react-google-maps/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from '@/components/providers/LocationProvider';
 import { useNavigation } from '@/components/providers/NavigationProvider';
-import { db } from '@/lib/firebase/clientApp';
-import { collection, onSnapshot, query, where, getDocs, limit } from 'firebase/firestore';
 import { CITY_COORDINATES, DEFAULT_COORDINATES } from '@/lib/constants/locations';
 import { OverlayView } from '@react-google-maps/api';
 import useSupercluster from 'use-supercluster';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { socialService } from '@/lib/firebase/socialService';
+import { groupService } from '@/lib/firebase/groupService';
+import { venueService } from '@/lib/firebase/venueService';
 import { Social } from '@/types/social';
 import { useRouter } from 'next/navigation';
 
@@ -127,10 +127,8 @@ export default function MapComponent({
 
   useEffect(() => {
     // Fetch all active venues globally to allow seamless discovery across bounds
-    const q = query(collection(db, "venues"), where("status", "==", "active"));
-    return onSnapshot(q, (snapshot) => {
-      const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Venue));
-      const validDocs = docs.filter(v => v.coordinates?.latitude && v.coordinates?.longitude);
+    return venueService.subscribeActiveVenues((activeVenues) => {
+      const validDocs = activeVenues.filter(v => v.coordinates?.latitude && v.coordinates?.longitude) as unknown as Venue[];
       // Filter by society context
       const filtered = validDocs.filter(v => {
         if (societyContext === 'tango') return !v.societyId || v.societyId === 'tango';
@@ -304,10 +302,8 @@ export default function MapComponent({
 
   const openGroupByVenueId = async (venueId: string) => {
     try {
-      const q = query(collection(db, 'groups'), where('venueId', '==', venueId), limit(1));
-      const snap = await getDocs(q);
-      if (!snap.empty) {
-        const groupDoc = snap.docs[0];
+      const groupDoc = await groupService.getGroupByVenueId(venueId);
+      if (groupDoc) {
         onGroupOpen?.(groupDoc.id);
       }
     } catch (e) {
