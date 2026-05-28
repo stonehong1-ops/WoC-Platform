@@ -3,6 +3,7 @@ import {
   GoogleAuthProvider, 
   FacebookAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
   RecaptchaVerifier,
   signInWithPhoneNumber,
   ConfirmationResult,
@@ -90,13 +91,18 @@ export function useAuthFlow() {
 
   // 2. Authentication Interaction Triggers (Countdown Timer, Auto-OTP verification, Profile Prefill)
   useEffect(() => {
-    // a. SMS Countdown Timer (PHONE_INPUT step)
+    // a. SMS Countdown Timer (PHONE_VERIFY step)
     let timer: NodeJS.Timeout;
-    if (isLoading && step === 'PHONE_INPUT') {
-      setCountdown(5);
+    if (step === 'PHONE_VERIFY') {
+      if (countdown === null) {
+        setCountdown(180); // 3 minutes
+      }
       timer = setInterval(() => {
         setCountdown((prev) => {
-          if (prev === null || prev <= 1) return 1;
+          if (prev === null || prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
           return prev - 1;
         });
       }, 1000);
@@ -265,19 +271,29 @@ export function useAuthFlow() {
     setAuthMethod('Google');
     try {
       const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      const loggedUser = result.user;
-      
-      const userDoc = await getDoc(doc(db, 'users', loggedUser.uid));
-      if (userDoc.exists() && userDoc.data()?.isRegistered === true) {
-        if (!userDoc.data()?.photoURL && loggedUser.photoURL) {
-          await setDoc(doc(db, 'users', loggedUser.uid), {
-            photoURL: loggedUser.photoURL,
-            updatedAt: serverTimestamp(),
-          }, { merge: true });
-        }
+      const isStandalone = typeof window !== 'undefined' && (
+        (window.navigator as any).standalone || 
+        window.matchMedia('(display-mode: standalone)').matches
+      );
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+      if (isStandalone || isMobile) {
+        await signInWithRedirect(auth, provider);
       } else {
-        setStep('FORM');
+        const result = await signInWithPopup(auth, provider);
+        const loggedUser = result.user;
+        
+        const userDoc = await getDoc(doc(db, 'users', loggedUser.uid));
+        if (userDoc.exists() && userDoc.data()?.isRegistered === true) {
+          if (!userDoc.data()?.photoURL && loggedUser.photoURL) {
+            await setDoc(doc(db, 'users', loggedUser.uid), {
+              photoURL: loggedUser.photoURL,
+              updatedAt: serverTimestamp(),
+            }, { merge: true });
+          }
+        } else {
+          setStep('FORM');
+        }
       }
     } catch (err: any) {
       console.error(err);
@@ -293,19 +309,29 @@ export function useAuthFlow() {
     setAuthMethod('Facebook');
     try {
       const provider = new FacebookAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      const loggedUser = result.user;
+      const isStandalone = typeof window !== 'undefined' && (
+        (window.navigator as any).standalone || 
+        window.matchMedia('(display-mode: standalone)').matches
+      );
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-      const userDoc = await getDoc(doc(db, 'users', loggedUser.uid));
-      if (userDoc.exists() && userDoc.data()?.isRegistered === true) {
-        if (!userDoc.data()?.photoURL && loggedUser.photoURL) {
-          await setDoc(doc(db, 'users', loggedUser.uid), {
-            photoURL: loggedUser.photoURL,
-            updatedAt: serverTimestamp(),
-          }, { merge: true });
-        }
+      if (isStandalone || isMobile) {
+        await signInWithRedirect(auth, provider);
       } else {
-        setStep('FORM');
+        const result = await signInWithPopup(auth, provider);
+        const loggedUser = result.user;
+
+        const userDoc = await getDoc(doc(db, 'users', loggedUser.uid));
+        if (userDoc.exists() && userDoc.data()?.isRegistered === true) {
+          if (!userDoc.data()?.photoURL && loggedUser.photoURL) {
+            await setDoc(doc(db, 'users', loggedUser.uid), {
+              photoURL: loggedUser.photoURL,
+              updatedAt: serverTimestamp(),
+            }, { merge: true });
+          }
+        } else {
+          setStep('FORM');
+        }
       }
     } catch (err: any) {
       console.error(err);
@@ -407,6 +433,7 @@ export function useAuthFlow() {
       }
     } catch (error: any) {
       console.warn("Verification failed:", error);
+      setVerificationCode('');
       const msg = getAuthErrorMessage(error.code, error.message, language);
       alert(msg);
     } finally {
