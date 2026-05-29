@@ -25,7 +25,7 @@ export function useGroupData({ initialGroup }: UseGroupDataProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { formatDate, formatRelativeTime } = useLanguage();
+  const { t, formatDate, formatRelativeTime } = useLanguage();
   const { user, profile } = useAuth();
 
   const [currentGroup, setCurrentGroup] = useState<Group>(initialGroup);
@@ -318,7 +318,7 @@ export function useGroupData({ initialGroup }: UseGroupDataProps) {
 
   const handleClaimAdmin = async (targetUserId: string, targetUserName: string) => {
     if (!user) {
-      toast.error("Sign-in required.", { description: "Redirecting to join request.", duration: 3000 });
+      toast.error(t('toast.group.signin_required'), { description: "Redirecting to join request.", duration: 3000 });
       setTimeout(() => router.push(`${pathname}?modal=join`, { scroll: false }), 1000);
       return;
     }
@@ -332,12 +332,12 @@ export function useGroupData({ initialGroup }: UseGroupDataProps) {
       };
 
       await groupService.claimGroupAdmin(currentGroup.id, targetUserId, memberData);
-      toast.success("Ownership claimed!", { description: `${targetUserName} is now the owner.` });
+      toast.success(t('toast.group.ownership_claimed'), { description: `${targetUserName} is now the owner.` });
       
       window.location.reload();
     } catch (error) {
       console.error("Error claiming admin:", error);
-      toast.error("An error occurred while claiming ownership.");
+      toast.error(t('toast.group.ownership_claim_failed'));
     } finally {
       setIsClaiming(false);
     }
@@ -348,16 +348,16 @@ export function useGroupData({ initialGroup }: UseGroupDataProps) {
       await groupService.updateGroupMetadata(currentGroup.id, {
         headerThemeColor: color
       });
-      toast.success("Theme updated", { duration: 1000 });
+      toast.success(t('toast.group.theme_updated'), { duration: 1000 });
     } catch (error) {
       console.error("Error updating theme color:", error);
-      toast.error("Failed to update theme");
+      toast.error(t('toast.group.theme_update_failed'));
     }
   };
 
   const handleJoinAction = async () => {
     if (!user) {
-      toast.error("Sign-in required.");
+      toast.error(t('toast.group.signin_required'));
       return;
     }
 
@@ -386,7 +386,7 @@ export function useGroupData({ initialGroup }: UseGroupDataProps) {
       }
     } catch (error) {
       console.error("Error joining currentGroup:", error);
-      toast.error("An error occurred while joining.");
+      toast.error(t('toast.group.join_failed'));
     } finally {
       setIsJoining(false);
     }

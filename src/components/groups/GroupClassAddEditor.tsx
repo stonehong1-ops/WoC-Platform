@@ -203,7 +203,7 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({
       });
       setFormData(prev => ({ ...prev, schedule: [{ ...prev.schedule[0], week: 1 }, ...generated] }));
     } else {
-      toast.error("Please set the first date before generating.");
+      toast.error(t('toast.class.set_first_date'));
     }
   };
 

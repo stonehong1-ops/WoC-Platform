@@ -57,23 +57,40 @@ export default function GroupFeedSection({
               <span className="material-symbols-outlined text-orange-600">notification_important</span> {t('home.actionRequired')}
             </h3>
             <div className="flex flex-col gap-2">
-              {adminTodos.map(todo => (
-                <div key={todo.id} className="bg-white rounded-lg p-3 border border-orange-100 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <h4 className="font-bold text-on-surface text-sm truncate">{todo.title}</h4>
-                    <p className="text-xs text-on-surface-variant mt-0.5 truncate">{todo.message}</p>
-                  </div>
-                  <button
-                    onClick={() => { 
-                      notificationService.markTodosAsCompletedByReference(todo.referenceId || todo.id); 
-                      toast.success("Task completed"); 
+              {adminTodos.map(todo => {
+                const isBusinessChat = todo.type === 'BUSINESS_CHAT';
+                
+                return (
+                  <div 
+                    key={todo.id} 
+                    className={`bg-white rounded-lg p-3 border border-orange-100 flex items-center justify-between gap-3 ${isBusinessChat ? 'cursor-pointer hover:bg-orange-50/50 transition-colors' : ''}`}
+                    onClick={() => {
+                      if (isBusinessChat && todo.referenceId) {
+                        router.push(`/chat?roomId=${todo.referenceId}`);
+                      }
                     }}
-                    className="bg-orange-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg shrink-0"
                   >
-                    {t('home.done')}
-                  </button>
-                </div>
-              ))}
+                    <div className="min-w-0 flex-1">
+                      <h4 className="font-bold text-on-surface text-sm truncate">{todo.title}</h4>
+                      <p className="text-xs text-on-surface-variant mt-0.5 truncate">{todo.message}</p>
+                    </div>
+                    {isBusinessChat ? (
+                      <span className="material-symbols-outlined text-orange-600 shrink-0 select-none">chevron_right</span>
+                    ) : (
+                      <button
+                        onClick={(e) => { 
+                          e.stopPropagation();
+                          notificationService.markTodosAsCompletedByReference(todo.referenceId || todo.id); 
+                          toast.success("Task completed"); 
+                        }}
+                        className="bg-orange-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg shrink-0"
+                      >
+                        {t('home.done')}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </section>

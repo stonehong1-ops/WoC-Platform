@@ -1,13 +1,14 @@
 {
   "name": "woc",
-  "version": "3.0.0",
+  "version": "2.6.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "prebuild": "node scripts/validate-i18n.mjs",
-    "build": "next build",
+    "build": "node scripts/validate-i18n.mjs && tsc --noEmit && next build",
     "start": "next start",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "prepare": "husky"
   },
   "dependencies": {
     "@react-google-maps/api": "^2.20.8",
@@ -43,6 +44,7 @@
     "dotenv": "^17.4.2",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.2.1",
+    "husky": "^9.1.7",
     "postcss": "^8.5.8",
     "tailwindcss": "^4.2.2",
     "tailwindcss-animate": "^1.0.7",

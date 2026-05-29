@@ -154,8 +154,8 @@ export default function GroupClassStatus({ groupId, isAdmin = false, group: init
     try {
       await setDoc(doc(db, 'groups', groupId, 'classNotices', currentMonthStr), { content: notice, updatedAt: Timestamp.now(), updatedBy: user?.uid });
       setIsEditingNotice(false);
-      toast.success('Notice updated');
-    } catch { toast.error('Failed to update notice'); }
+      toast.success(t('toast.class.notice_updated'));
+    } catch { toast.error(t('toast.class.notice_update_failed')); }
   };
 
   return (

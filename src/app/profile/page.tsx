@@ -10,12 +10,12 @@ import { calculateCareerDuration } from '@/utils/date';
 import { formatLocalPhoneNumber } from '@/utils/phone';
 
 const ADMIN_ITEMS = [
-  { icon: 'view_carousel', label: 'BANNERS', href: '/admin/banners' },
-  { icon: 'wallpaper', label: 'PICs', href: '/admin/pics' },
-  { icon: 'person_search', label: 'People', href: '/admin/people' },
-  { icon: 'location_city', label: 'Place', href: '/admin/place' },
-  { icon: 'terminal', label: 'Mobile Agent', href: '/admin/antigravity' },
-  { icon: 'more_horiz', label: 'Others', href: '/admin/others' },
+  { icon: 'view_carousel', label: 'BANNERS', labelKo: '배너관리', href: '/admin/banners' },
+  { icon: 'wallpaper', label: 'PICs', labelKo: '사진관리', href: '/admin/pics' },
+  { icon: 'person_search', label: 'People', labelKo: '피플관리', href: '/admin/people' },
+  { icon: 'location_city', label: 'Place', labelKo: '장소관리', href: '/admin/place' },
+  { icon: 'terminal', label: 'Mobile Agent', labelKo: '모바일 에이전트', href: '/admin/antigravity' },
+  { icon: 'more_horiz', label: 'Others', labelKo: '기타관리', href: '/admin/others' },
 ];
 
 export default function MyInfoPage() {
@@ -209,22 +209,22 @@ export default function MyInfoPage() {
             </div>
           </div>
 
-          {/* Account Summary Card - Refined to Premium Dark Glassmorphism */}
-          <div className="p-8 rounded-2xl bg-slate-900 border border-slate-800 text-white shadow-xl flex flex-col justify-between relative overflow-hidden group">
+          {/* Account Summary Card - Redesigned to Premium Champagne Gold Bento */}
+          <div className="p-8 rounded-2xl bg-gradient-to-br from-amber-50/80 via-orange-50/40 to-rose-50/50 border border-amber-200/50 shadow-sm flex flex-col justify-between relative overflow-hidden group hover:shadow-md transition-shadow">
             {/* Subtle glow effect */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/15 transition-all duration-500" />
+            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-200/20 rounded-full blur-3xl group-hover:bg-amber-200/30 transition-all duration-500" />
             <div>
-              <p className="text-xs font-black text-slate-300 uppercase tracking-widest mb-1.5">{t('my.pro_status')}</p>
+              <p className="text-[10px] font-extrabold text-amber-800/80 uppercase tracking-widest mb-2">{t('my.pro_status')}</p>
               <div className="flex items-center gap-2 mb-3.5">
-                <h2 className="text-xl md:text-2xl font-black text-white tracking-tight">{t('my.verified')}</h2>
-                <span className="material-symbols-outlined text-primary fill-1" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
+                <h2 className="text-xl md:text-2xl font-black text-slate-800 tracking-tight">{t('my.verified')}</h2>
+                <span className="material-symbols-outlined text-amber-500 fill-1" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
               </div>
-              <p className="text-xs text-slate-300 font-medium leading-relaxed">{t('my.verified_desc')}</p>
+              <p className="text-xs text-slate-600 font-medium leading-relaxed">{t('my.verified_desc')}</p>
             </div>
-            <div className="mt-8 pt-6 border-t border-slate-800/80">
-              <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-3.5">{t('my.additional_verification')}</p>
-              <button className="w-full py-3 px-4 bg-white/10 hover:bg-white/15 active:scale-98 border border-white/10 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2">
-                <span className="material-symbols-outlined text-sm">verified_user</span>
+            <div className="mt-8 pt-6 border-t border-amber-200/40">
+              <p className="text-[10px] font-extrabold text-amber-800/80 uppercase tracking-widest mb-3.5">{t('my.additional_verification')}</p>
+              <button className="w-full py-3 px-4 bg-white/95 hover:bg-white active:scale-98 border border-amber-200 text-amber-900 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-sm hover:shadow">
+                <span className="material-symbols-outlined text-sm text-amber-600">verified_user</span>
                 {t('my.apply_badge')}
               </button>
             </div>
@@ -351,7 +351,9 @@ export default function MyInfoPage() {
                   </div>
                   <div className="min-w-0">
                     <span className="text-[11px] font-black text-on-surface uppercase tracking-tight block truncate">{item.label}</span>
-                    <span className="text-[9px] text-on-surface-variant font-medium block uppercase tracking-tighter mt-0.5">{language === 'KR' ? '도구 관리' : 'Manage Tools'}</span>
+                    <span className="text-[9px] text-on-surface-variant font-medium block uppercase tracking-tighter mt-0.5">
+                      {language === 'KR' ? item.labelKo : 'Manage Tools'}
+                    </span>
                   </div>
                 </button>
               ))}

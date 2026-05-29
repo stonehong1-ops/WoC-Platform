@@ -42,7 +42,7 @@ export default function GroupBasicEditor({ group, onClose }: GroupBasicEditorPro
     const newFiles = Array.from(files);
     
     if (formData.aboutPhotos.length + newFiles.length > 20) {
-      toast.error("You can upload up to 20 photos in the gallery.");
+      toast.error(t('toast.group.gallery_max_photos'));
       return;
     }
 
@@ -76,7 +76,7 @@ export default function GroupBasicEditor({ group, onClose }: GroupBasicEditorPro
       toast.success(`${uploadedUrls.length} photos uploaded.`);
     } catch (error) {
       console.error("Error uploading photos:", error);
-      toast.error("Failed to upload some photos.");
+      toast.error(t('toast.group.gallery_upload_failed'));
     } finally {
       setUploadingField(null);
       setIsOptimizing(false);

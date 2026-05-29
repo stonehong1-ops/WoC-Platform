@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useCallback } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Group, Member } from '@/types/group';
 import { GoogleMap, Marker } from '@react-google-maps/api';
 import ImageWithFallback from '@/components/common/ImageWithFallback';
@@ -24,6 +25,7 @@ const mapOptions = {
 };
 
 const GroupInfo = ({ group, isLoaded, members = [], isFullMember = false, onJoinClick }: GroupInfoProps) => {
+  const { t } = useLanguage();
   const [isDescExpanded, setIsDescExpanded] = useState(false);
 
   // Flatten gallery media
@@ -343,7 +345,7 @@ const GroupInfo = ({ group, isLoaded, members = [], isFullMember = false, onJoin
                 </div>
                 <div className="flex gap-1">
                   <button
-                    onClick={() => toast.info('Chat feature coming soon.')}
+                    onClick={() => toast.info(t('toast.group.chat_coming_soon'))}
                     className="p-2 text-primary hover:bg-primary-container rounded-full"
                   >
                     <span className="material-symbols-outlined">chat</span>

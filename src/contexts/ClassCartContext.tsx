@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from 'sonner';
 
 export interface CartItem {
@@ -31,6 +32,7 @@ interface ClassCartContextType {
 const ClassCartContext = createContext<ClassCartContextType | undefined>(undefined);
 
 export const ClassCartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { t } = useLanguage();
   const [cart, setCart] = useState<CartState>({ groupId: null, groupName: null, items: [] });
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -73,7 +75,7 @@ export const ClassCartProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
       // Group matches, check if item already exists
       if (prev.items.some(i => i.itemId === item.itemId)) {
-        toast.info("This item is already in your cart.");
+        toast.info(t('toast.cart.already_in_cart'));
         return prev;
       }
 

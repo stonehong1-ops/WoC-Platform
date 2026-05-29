@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, Suspense, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import PageWrapper from '@/components/layout/PageWrapper';
 import ChatList from '@/components/chat/ChatList';
@@ -21,6 +21,11 @@ function ChatContent() {
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(roomIdFromUrl);
   const [activeTab, setActiveTab] = useState<'Personal' | 'Group' | 'Market'>('Personal');
   const [initialTabSet, setInitialTabSet] = useState(false);
+  const [tabCounts, setTabCounts] = useState<{ market: number; group: number; personal: number }>({
+    market: 0,
+    group: 0,
+    personal: 0
+  });
   const tabs = ['Personal', 'Group', 'Market'] as const;
 
   // Smart Snooze Push state
@@ -66,7 +71,8 @@ function ChatContent() {
     setSelectedRoomId(roomIdFromUrl);
   }, [roomIdFromUrl]);
 
-  const handleRoomsLoaded = (counts: { market: number, group: number, personal: number }) => {
+  const handleRoomsLoaded = useCallback((counts: { market: number, group: number, personal: number }) => {
+    setTabCounts(counts);
     // Set tab only once when initial rooms are loaded
     if (!initialTabSet) {
       if (counts.market > 0) {
@@ -78,7 +84,7 @@ function ChatContent() {
       }
       setInitialTabSet(true);
     }
-  };
+  }, [initialTabSet]);
 
   const handleSelectRoom = (id: string) => {
     router.push(`/chat?roomId=${id}`);
@@ -98,19 +104,27 @@ function ChatContent() {
             {/* Tab Control & Snooze Trigger */}
             <div className="flex items-center justify-between gap-3 mb-4">
               <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar flex-1">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`flex-shrink-0 px-4 py-2 rounded-lg text-[12px] font-bold tracking-wide transition-all whitespace-nowrap ${
-                      activeTab === tab
-                        ? 'bg-[#1E293B] text-white shadow-sm'
-                        : 'bg-slate-50 text-slate-500 border border-slate-100 hover:bg-slate-100'
-                    }`}
-                  >
-                    {t(`chat.tab_${tab.toLowerCase()}`)}
-                  </button>
-                ))}
+                {tabs.map((tab) => {
+                  const count = tabCounts[tab.toLowerCase() as 'market' | 'group' | 'personal'];
+                  return (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      className={`flex-shrink-0 px-4 py-2 rounded-lg text-[12px] font-bold tracking-wide transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                        activeTab === tab
+                          ? 'bg-[#1E293B] text-white shadow-sm'
+                          : 'bg-slate-50 text-slate-500 border border-slate-100 hover:bg-slate-100'
+                      }`}
+                    >
+                      <span>{t(`chat.tab_${tab.toLowerCase()}`)}</span>
+                      {count > 0 && (
+                        <span className="inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full text-[9px] font-black leading-none bg-red-500 text-white animate-in zoom-in">
+                          {count}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Ultra-compact Mini Snooze Button */}

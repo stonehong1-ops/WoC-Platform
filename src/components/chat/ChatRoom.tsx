@@ -502,8 +502,10 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
   };
 
   const getDomainTranslation = (domain: string) => {
-    if (domain === 'class') return t('common.class_domain', '수업/모임');
-    if (domain === 'shop') return t('common.shop_domain', '마켓');
+    if (domain === 'class' || domain.startsWith('class_')) return t('common.class_domain', '수업/모임');
+    if (domain === 'shop' || domain.startsWith('shop_')) return t('common.shop_domain', '마켓');
+    if (domain === 'stay' || domain.startsWith('stay_')) return t('common.stay', '숙소');
+    if (domain === 'rental' || domain.startsWith('rental_')) return t('nav.rental', '대관');
     return domain;
   };
 

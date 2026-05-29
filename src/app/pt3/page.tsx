@@ -5,26 +5,16 @@ import PresentationHeader from '@/components/presentation/PresentationHeader';
 import PresentationFooter from '@/components/presentation/PresentationFooter';
 import { useNavigation } from '@/components/providers/NavigationProvider';
 
-import { Slide0, Slide1, Slide2, Slide3, Slide4, Slide5 } from './slides-s1';
-import { Slide6, Slide7, Slide8, Slide9, Slide10, Slide11, Slide12 } from './slides-s2';
-import { Slide13, Slide14, Slide15, Slide16, Slide17 } from './slides-s3';
-import { Slide18, Slide19, Slide20, Slide21, Slide22 } from './slides-s4';
-import { Slide23, Slide24, Slide25, Slide26, Slide27, Slide28, Slide29, Slide30 } from './slides-s5';
-import { Slide31, Slide32, Slide33, Slide34, Slide35, Slide36 } from './slides-s6';
+import { Slide1, Slide2, Slide3, Slide4, Slide5, Slide6, Slide7 } from './slides-s1';
 
 const SLIDES = [
-  Slide0, Slide1, Slide2, Slide3, Slide4, Slide5,
-  Slide6, Slide7, Slide8, Slide9, Slide10, Slide11, Slide12,
-  Slide13, Slide14, Slide15, Slide16, Slide17,
-  Slide18, Slide19, Slide20, Slide21, Slide22,
-  Slide23, Slide24, Slide25, Slide26, Slide27, Slide28, Slide29, Slide30,
-  Slide31, Slide32, Slide33, Slide34, Slide35, Slide36,
+  Slide1, Slide2, Slide3, Slide4, Slide5, Slide6, Slide7,
 ];
 
 const SLIDE_URLS: Record<number, string> = {
-  7: '/groups/freestyletango?tab=calendar', // Slide 7: Calendar / 돈은 여기로 흐른다
-  14: '/groups/freestyletango?tab=class', // Slide 14: Booking / 커뮤니티 거대 경제
-  21: '/groups/freestyletango?tab=settings', // Slide 21: Function Builder / One Platform
+  1: '/groups/freestyle-tango',                  // Slide 2: Beyond Community Platforms
+  2: '/groups/freestyle-tango?tab=calendar',     // Slide 3: Tango Market Validation
+  3: '/groups/freestyle-tango?tab=class',        // Slide 4: Community Expansion Roadmap
 };
 
 const GLOBAL_ANIMATIONS = `
@@ -91,7 +81,7 @@ const PresentationPage = () => {
   const [isDemoMode, setIsDemoMode] = useState(false);
   
   // Iframe states
-  const [iframeUrl, setIframeUrl] = useState('/groups/freestyletango');
+  const [iframeUrl, setIframeUrl] = useState('/groups/freestyle-tango');
   const [fadeIframe, setFadeIframe] = useState(false);
 
   // Check demo mode from query params
@@ -250,6 +240,7 @@ const PresentationPage = () => {
           currentSlide={currentSlide} 
           totalSlides={totalSlides}
           onJump={jumpToSlide}
+          sectionIndexes={[0, 1, 2, 3, 4, 5, 6]}
         />
       </div>
 

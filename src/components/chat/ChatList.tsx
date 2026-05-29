@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase/clientApp';
 import { chatService } from '@/lib/firebase/chatService';
 import { userService } from '@/lib/firebase/userService';
 import { ChatRoom } from '@/types/chat';
@@ -296,8 +298,7 @@ function RoomName({ room, currentUserId }: { room: ChatRoom; currentUserId?: str
   if (room.name) {
     return <>{room.name}</>;
   }
-
-  const nickname = otherUser?.nickname || 'Unknown User';
+          const nickname = otherUser?.nickname || 'Unknown User';
   const nativeNickname = otherUser?.nativeNickname;
 
   return (
@@ -312,7 +313,21 @@ function RoomName({ room, currentUserId }: { room: ChatRoom; currentUserId?: str
   );
 }
 
-function RoomItem({ room, userId, selectedRoomId, onSelectRoom, onLongPress }: { room: ChatRoom; userId?: string; selectedRoomId?: string | null; onSelectRoom: (id: string) => void; onLongPress: (room: ChatRoom) => void }) {
+function RoomItem({ 
+  room, 
+  userId, 
+  selectedRoomId, 
+  onSelectRoom, 
+  onLongPress,
+  pendingTodoCount = 0
+}: { 
+  room: ChatRoom; 
+  userId?: string; 
+  selectedRoomId?: string | null; 
+  onSelectRoom: (id: string) => void; 
+  onLongPress: (room: ChatRoom) => void;
+  pendingTodoCount?: number;
+}) {
   const { formatRelativeTime, t } = useLanguage();
   const isSelected = selectedRoomId === room.id;
   const unreadCount = room.unreadCounts?.[userId || ''] || 0;
@@ -421,16 +436,18 @@ function RoomItem({ room, userId, selectedRoomId, onSelectRoom, onLongPress }: {
             <span className="material-symbols-outlined text-[10px]">group</span>
           </div>
         )}
-        {unreadCount > 0 && (
+        {unreadCount > 0 ? (
           <div className="absolute -top-1 -right-1 bg-red-500 text-white min-w-[20px] h-5 rounded-full px-1.5 flex items-center justify-center text-[10px] font-black border-2 border-white animate-in zoom-in">
             {unreadCount > 99 ? '99+' : unreadCount}
           </div>
-        )}
+        ) : pendingTodoCount > 0 ? (
+          <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-red-500 border-2 border-white shadow-sm animate-pulse z-10" />
+        ) : null}
       </div>
       
       <div className="flex-1 min-w-0">
         <div className="flex justify-between items-baseline mb-1">
-          <h3 className={`text-[15px] font-black truncate uppercase tracking-tight ${unreadCount > 0 ? 'text-gray-900' : 'text-gray-600'}`}>
+          <h3 className={`text-[15px] font-black truncate uppercase tracking-tight ${unreadCount > 0 || pendingTodoCount > 0 ? 'text-gray-900' : 'text-gray-600'}`}>
             <RoomName room={room} currentUserId={userId} />
           </h3>
           <span className="text-[10px] text-gray-400 font-bold ml-2 shrink-0">{lastTime}</span>
@@ -448,7 +465,6 @@ function RoomItem({ room, userId, selectedRoomId, onSelectRoom, onLongPress }: {
         </div>
       </div>
     </button>
-
   );
 }
 
@@ -597,24 +613,85 @@ export default function ChatList({ onSelectRoom, selectedRoomId, category = 'Per
     }
   };
 
+  const [businessTodoCounts, setBusinessTodoCounts] = useState<Record<string, number>>({});
+  const businessUnsubsRef = useRef<Record<string, () => void>>({});
+
+  const triggerOnRoomsLoaded = useCallback((currentRooms: ChatRoom[], pendingCounts: Record<string, number>) => {
+    if (!onRoomsLoaded || !user) return;
+    
+    const marketUnread = currentRooms.filter(r => r.type === 'business').reduce((sum, r) => sum + (r.unreadCounts?.[user.uid] || 0), 0);
+    let sumPending = 0;
+    Object.values(pendingCounts).forEach(c => sumPending += c);
+    const marketCount = marketUnread + sumPending;
+
+    const groupCount = currentRooms.filter(r => r.type === 'group' || r.type === 'groups' || r.type === 'notice' || r.type === 'public').reduce((sum, r) => sum + (r.unreadCounts?.[user.uid] || 0), 0);
+    const personalCount = currentRooms.filter(r => r.type === 'personal' || r.type === 'private').reduce((sum, r) => sum + (r.unreadCounts?.[user.uid] || 0), 0);
+
+    onRoomsLoaded({ market: marketCount, group: groupCount, personal: personalCount });
+  }, [user, onRoomsLoaded]);
+
   useEffect(() => {
     if (!user) return;
     
     chatService.initializeSystemRooms();
+    
     const unsub = chatService.subscribeRooms(user.uid, (updatedRooms) => {
       setRooms(updatedRooms);
       setLoading(false);
+
+      const activeBusinessRoomIds = new Set<string>();
       
-      if (onRoomsLoaded) {
-        const marketCount = updatedRooms.filter(r => r.type === 'business').reduce((sum, r) => sum + (r.unreadCounts?.[user.uid] || 0), 0);
-        const groupCount = updatedRooms.filter(r => r.type === 'group' || r.type === 'groups' || r.type === 'notice' || r.type === 'public').reduce((sum, r) => sum + (r.unreadCounts?.[user.uid] || 0), 0);
-        const personalCount = updatedRooms.filter(r => r.type === 'personal' || r.type === 'private').reduce((sum, r) => sum + (r.unreadCounts?.[user.uid] || 0), 0);
-        onRoomsLoaded({ market: marketCount, group: groupCount, personal: personalCount });
-      }
+      updatedRooms.forEach(room => {
+        if (room.type === 'business') {
+          activeBusinessRoomIds.add(room.id);
+          
+          if (!businessUnsubsRef.current[room.id]) {
+            const msgsRef = collection(db, 'chat_messages');
+            const q = query(msgsRef, where('roomId', '==', room.id));
+            
+            businessUnsubsRef.current[room.id] = onSnapshot(q, (mSnap) => {
+              const pendingCount = mSnap.docs.filter(mDoc => {
+                const mData = mDoc.data();
+                if (mData.senderId === user.uid) return false;
+                
+                const meta = mData.metadata;
+                if (!meta) return false;
+                
+                return meta.actionType === 'booking_approval' && 
+                       meta.sellerId === user.uid && 
+                       meta.status === 'BANK_TRANSFERRED';
+              }).length;
+              
+              setBusinessTodoCounts(prev => {
+                const next = { ...prev, [room.id]: pendingCount };
+                triggerOnRoomsLoaded(updatedRooms, next);
+                return next;
+              });
+            });
+          }
+        }
+      });
+
+      Object.keys(businessUnsubsRef.current).forEach(rId => {
+        if (!activeBusinessRoomIds.has(rId)) {
+          businessUnsubsRef.current[rId]();
+          delete businessUnsubsRef.current[rId];
+          setBusinessTodoCounts(prev => {
+            const next = { ...prev };
+            delete next[rId];
+            return next;
+          });
+        }
+      });
+
+      triggerOnRoomsLoaded(updatedRooms, businessTodoCounts);
     });
 
-    return () => unsub();
-  }, [user, onRoomsLoaded]);
+    return () => {
+      unsub();
+      Object.values(businessUnsubsRef.current).forEach(u => u());
+    };
+  }, [user, triggerOnRoomsLoaded]);
 
   // Close search overlay on outside click
   useEffect(() => {
@@ -923,7 +1000,17 @@ export default function ChatList({ onSelectRoom, selectedRoomId, category = 'Per
                 </span>
               </div>
               <div className="divide-y divide-gray-50">
-                {publicRooms.map((room) => <RoomItem key={room.id} room={room} userId={user?.uid} selectedRoomId={selectedRoomId} onSelectRoom={onSelectRoom} onLongPress={handleLongPress} />)}
+                {publicRooms.map((room) => (
+                  <RoomItem 
+                    key={room.id} 
+                    room={room} 
+                    userId={user?.uid} 
+                    selectedRoomId={selectedRoomId} 
+                    onSelectRoom={onSelectRoom} 
+                    onLongPress={handleLongPress} 
+                    pendingTodoCount={businessTodoCounts[room.id] || 0}
+                  />
+                ))}
               </div>
             </div>
           )}
@@ -939,7 +1026,17 @@ export default function ChatList({ onSelectRoom, selectedRoomId, category = 'Per
                 </span>
               </div>
               <div className="divide-y divide-gray-50">
-                {myGroupRooms.map((room) => <RoomItem key={room.id} room={room} userId={user?.uid} selectedRoomId={selectedRoomId} onSelectRoom={onSelectRoom} onLongPress={handleLongPress} />)}
+                {myGroupRooms.map((room) => (
+                  <RoomItem 
+                    key={room.id} 
+                    room={room} 
+                    userId={user?.uid} 
+                    selectedRoomId={selectedRoomId} 
+                    onSelectRoom={onSelectRoom} 
+                    onLongPress={handleLongPress} 
+                    pendingTodoCount={businessTodoCounts[room.id] || 0}
+                  />
+                ))}
               </div>
             </div>
           )}
@@ -955,14 +1052,34 @@ export default function ChatList({ onSelectRoom, selectedRoomId, category = 'Per
                 </span>
               </div>
               <div className="divide-y divide-gray-50">
-                {discoverGroupRooms.map((room) => <RoomItem key={room.id} room={room} userId={user?.uid} selectedRoomId={selectedRoomId} onSelectRoom={onSelectRoom} onLongPress={handleLongPress} />)}
+                {discoverGroupRooms.map((room) => (
+                  <RoomItem 
+                    key={room.id} 
+                    room={room} 
+                    userId={user?.uid} 
+                    selectedRoomId={selectedRoomId} 
+                    onSelectRoom={onSelectRoom} 
+                    onLongPress={handleLongPress} 
+                    pendingTodoCount={businessTodoCounts[room.id] || 0}
+                  />
+                ))}
               </div>
             </div>
           )}
         </div>
       ) : (
         <div className="divide-y divide-gray-50">
-          {searchFilteredRooms.map((room) => <RoomItem key={room.id} room={room} userId={user?.uid} selectedRoomId={selectedRoomId} onSelectRoom={onSelectRoom} onLongPress={handleLongPress} />)}
+          {searchFilteredRooms.map((room) => (
+            <RoomItem 
+              key={room.id} 
+              room={room} 
+              userId={user?.uid} 
+              selectedRoomId={selectedRoomId} 
+              onSelectRoom={onSelectRoom} 
+              onLongPress={handleLongPress} 
+              pendingTodoCount={businessTodoCounts[room.id] || 0}
+            />
+          ))}
         </div>
       )}
 

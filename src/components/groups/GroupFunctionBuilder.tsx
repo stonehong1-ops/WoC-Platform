@@ -98,7 +98,7 @@ const GroupFunctionBuilder = ({ group, onClose }: GroupFunctionBuilderProps) => 
 
   const handleApplyStep1 = async () => {
     if (selectedSet.size === 0) {
-      toast.error("Please select at least one function.");
+      toast.error(t('toast.group.select_function'));
       return;
     }
     setIsSaving(true);
@@ -106,11 +106,11 @@ const GroupFunctionBuilder = ({ group, onClose }: GroupFunctionBuilderProps) => 
       await groupService.updateGroupMetadata(group.id, {
         selectedFunctions: Array.from(selectedSet),
       });
-      toast.success("Functions saved! Proceeding to review...");
+      toast.success(t('toast.group.functions_saved'));
       setStep(2);
     } catch (error) {
       console.error("Error saving functions:", error);
-      toast.error("Failed to save functions.");
+      toast.error(t('toast.group.functions_save_failed'));
     } finally {
       setIsSaving(false);
     }
@@ -312,11 +312,11 @@ const GroupFunctionBuilder = ({ group, onClose }: GroupFunctionBuilderProps) => 
       await groupService.updateGroupMetadata(group.id, {
         menuOrder: items,
       });
-      toast.success("Menu structure saved successfully!");
+      toast.success(t('toast.group.menu_saved'));
       if (onClose) onClose();
     } catch (error) {
       console.error("Error saving menu structure:", error);
-      toast.error("Failed to save menu structure.");
+      toast.error(t('toast.group.menu_save_failed'));
     } finally {
       setIsSaving(false);
     }

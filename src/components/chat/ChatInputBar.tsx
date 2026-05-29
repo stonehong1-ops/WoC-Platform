@@ -110,7 +110,7 @@ export interface ChatInputBarProps {
   handleSelectMention: (targetName: string) => void;
   
   handleSend: () => Promise<void>;
-  handleFileUpload: (file: File) => Promise<void>;
+  handleFileUpload: (files: FileList | File[] | File) => Promise<void>;
   
   setIsMeetupModalOpen: (val: boolean) => void;
   setIsSettlementModalOpen: (val: boolean) => void;
@@ -345,9 +345,9 @@ export default function ChatInputBar({
       {/* Input Bar */}
       <div className="px-3.5 py-2.5 flex items-end gap-2 bg-white relative">
         {/* Hidden inputs */}
-        <input ref={fileInputRef} type="file" onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])} className="hidden" accept="image/*,video/*" />
-        <input ref={cameraInputRef} type="file" capture="environment" onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])} className="hidden" accept="image/*,video/*" />
-        <input ref={albumInputRef} type="file" onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])} className="hidden" accept="image/*,video/*" />
+        <input ref={fileInputRef} type="file" multiple onChange={(e) => e.target.files && handleFileUpload(e.target.files)} className="hidden" accept="image/*,video/*" />
+        <input ref={cameraInputRef} type="file" capture="environment" onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])} className="hidden" accept="image/*" />
+        <input ref={albumInputRef} type="file" multiple onChange={(e) => e.target.files && handleFileUpload(e.target.files)} className="hidden" accept="image/*" />
         <input ref={videoInputRef} type="file" onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])} className="hidden" accept="video/*" />
 
         {/* Feature board drawer button */}

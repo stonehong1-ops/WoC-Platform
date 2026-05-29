@@ -137,22 +137,30 @@ export default function AdminBannersPage() {
 
   return (
     <main className="max-w-[896px] mx-auto px-4 pt-4 pb-24 space-y-6">
-      <h1 className="text-2xl font-bold">Banners Management</h1>
+      <div className="flex items-center justify-between pb-2 border-b border-outline-variant/30">
+        <div>
+          <h1 className="text-2xl font-black text-on-surface tracking-tight">Banners Management</h1>
+          <p className="text-xs text-outline mt-1">플랫폼 메인 화면 배너와 추천 포스트를 정밀 제어하는 핵심 도구입니다.</p>
+        </div>
+      </div>
       
       {/* Hero Event Section — Society-Aware */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-outline-variant/30">
-        <h2 className="text-lg font-bold mb-4">Society Top Hero Event</h2>
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-outline-variant/30 transition-all hover:shadow-md">
+        <h2 className="text-base font-bold text-on-surface mb-4 flex items-center gap-2">
+          <span className="material-symbols-outlined text-primary text-[20px]">stars</span>
+          Society Top Hero Event
+        </h2>
         
         {/* Society Selector */}
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-2 mb-6 bg-surface-container-low p-1.5 rounded-xl w-fit border border-outline-variant/20">
           {SOCIETIES.map(s => (
             <button
               key={s.id}
               onClick={() => setSelectedSociety(s.id)}
-              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
                 selectedSociety === s.id
-                  ? 'bg-primary text-white shadow-sm'
-                  : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container'
+                  ? 'bg-primary text-on-primary shadow-md'
+                  : 'text-outline hover:text-on-surface hover:bg-surface-container/50'
               }`}
             >
               {s.label}
@@ -160,68 +168,80 @@ export default function AdminBannersPage() {
           ))}
         </div>
 
-        <div className="flex flex-col gap-2">
-          <label className="text-sm text-outline font-semibold">Select an upcoming event for {selectedSociety.toUpperCase()}</label>
-          <select 
-            value={heroEventIds[selectedSociety] || ''} 
-            onChange={(e) => setHeroEventIds(prev => ({ ...prev, [selectedSociety]: e.target.value }))}
-            className="border border-outline-variant rounded-lg p-3 bg-surface-container-lowest text-body-md"
-          >
-            <option value="">-- None (Auto select) --</option>
-            {filteredEvents.map(ev => {
-              const d = ev.startDate?.toDate ? ev.startDate.toDate() : new Date();
-              return (
-                <option key={ev.id} value={ev.id}>
-                  {format(d, 'yyyy-MM-dd')} | {ev.title}
-                </option>
-              );
-            })}
-          </select>
+        <div className="flex flex-col gap-2.5">
+          <label className="text-xs text-outline font-bold uppercase tracking-wider">Select an upcoming event for {selectedSociety.toUpperCase()}</label>
+          <div className="relative">
+            <select 
+              value={heroEventIds[selectedSociety] || ''} 
+              onChange={(e) => setHeroEventIds(prev => ({ ...prev, [selectedSociety]: e.target.value }))}
+              className="w-full border border-outline-variant/50 rounded-xl p-3 px-4 bg-surface-container-lowest text-sm font-bold text-on-surface appearance-none cursor-pointer focus:ring-2 focus:ring-primary focus:outline-none hover:bg-surface-container-low/30 transition-colors"
+            >
+              <option value="">-- None (Auto select) --</option>
+              {filteredEvents.map(ev => {
+                const d = ev.startDate?.toDate ? ev.startDate.toDate() : new Date();
+                return (
+                  <option key={ev.id} value={ev.id}>
+                    {format(d, 'yyyy-MM-dd')} | {ev.title}
+                  </option>
+                );
+              })}
+            </select>
+            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline text-[18px] pointer-events-none">unfold_more</span>
+          </div>
         </div>
         
         <button 
           onClick={handleSave} 
           disabled={saving}
-          className="mt-6 bg-primary text-white px-6 py-2 rounded-lg font-bold hover:bg-primary/90 transition-colors"
+          className="mt-6 bg-primary text-on-primary px-6 py-3 rounded-xl font-bold hover:brightness-105 active:scale-98 transition-all shadow-md w-full sm:w-auto"
         >
           {saving ? 'Saving...' : 'Save Selection'}
         </button>
       </div>
 
       {/* Featured Plaza Posts Section */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-outline-variant/30">
-        <h2 className="text-lg font-bold mb-1">Featured Plaza Posts</h2>
-        <p className="text-sm text-outline mb-4">Home 페이지 &quot;Stories from Seoul&quot; 섹션에 표시될 2개의 포스트를 선택하세요.</p>
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-outline-variant/30 transition-all hover:shadow-md">
+        <h2 className="text-base font-bold text-on-surface mb-1 flex items-center gap-2">
+          <span className="material-symbols-outlined text-secondary text-[20px]">wysiwyg</span>
+          Featured Plaza Posts
+        </h2>
+        <p className="text-xs text-outline mb-6">Home 페이지 &quot;Stories from Seoul&quot; 섹션에 표시될 2개의 포스트를 선택하세요.</p>
         
         {plazaLoading ? (
-          <div className="text-sm text-outline">Loading plaza posts...</div>
+          <div className="text-sm text-outline py-6 flex items-center gap-2">
+            <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+            Loading plaza posts...
+          </div>
         ) : (
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-6">
             {/* Slot 1 */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm text-outline font-semibold">Slot 1</label>
-              <select 
-                value={featuredSlot1} 
-                onChange={(e) => setFeaturedSlot1(e.target.value)}
-                className="border border-outline-variant rounded-lg p-3 bg-surface-container-lowest text-body-md"
-              >
-                <option value="">-- Select a post --</option>
-                {plazaPosts.map(post => (
-                  <option key={post.id} value={post.id} disabled={post.id === featuredSlot2}>
-                    {formatPostLabel(post)}
-                  </option>
-                ))}
-              </select>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs text-outline font-bold uppercase tracking-wider">Slot 1</label>
+              <div className="relative">
+                <select 
+                  value={featuredSlot1} 
+                  onChange={(e) => setFeaturedSlot1(e.target.value)}
+                  className="w-full border border-outline-variant/50 rounded-xl p-3 px-4 bg-surface-container-lowest text-sm font-bold text-on-surface appearance-none cursor-pointer focus:ring-2 focus:ring-primary focus:outline-none hover:bg-surface-container-low/30 transition-colors"
+                >
+                  <option value="">-- Select a post --</option>
+                  {plazaPosts.map(post => (
+                    <option key={post.id} value={post.id} disabled={post.id === featuredSlot2}>
+                      {formatPostLabel(post)}
+                    </option>
+                  ))}
+                </select>
+                <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline text-[18px] pointer-events-none">unfold_more</span>
+              </div>
               {featuredSlot1 && (() => {
                 const p = plazaPosts.find(pp => pp.id === featuredSlot1);
                 return p ? (
-                  <div className="mt-1 p-3 bg-surface-container-low rounded-lg border border-outline-variant/20 text-sm">
-                    <div className="font-semibold text-on-surface">{p.userName}</div>
-                    <div className="text-on-surface-variant mt-1 line-clamp-2">{p.content}</div>
+                  <div className="mt-2 p-4 bg-surface-container-low rounded-xl border border-outline-variant/20 text-xs">
+                    <div className="font-bold text-on-surface">{p.userName}</div>
+                    <div className="text-on-surface-variant mt-1.5 line-clamp-2 leading-relaxed">{p.content}</div>
                     {p.images && p.images.length > 0 && (
-                      <div className="flex gap-1 mt-2">
+                      <div className="flex gap-2 mt-3">
                         {p.images.slice(0, 3).map((img, i) => (
-                          <img key={i} src={img} alt="" className="w-12 h-12 object-cover rounded" />
+                          <img key={i} src={img} alt="" className="w-14 h-14 object-cover rounded-lg border border-black/5 shadow-sm" />
                         ))}
                       </div>
                     )}
@@ -231,30 +251,33 @@ export default function AdminBannersPage() {
             </div>
 
             {/* Slot 2 */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm text-outline font-semibold">Slot 2</label>
-              <select 
-                value={featuredSlot2} 
-                onChange={(e) => setFeaturedSlot2(e.target.value)}
-                className="border border-outline-variant rounded-lg p-3 bg-surface-container-lowest text-body-md"
-              >
-                <option value="">-- Select a post --</option>
-                {plazaPosts.map(post => (
-                  <option key={post.id} value={post.id} disabled={post.id === featuredSlot1}>
-                    {formatPostLabel(post)}
-                  </option>
-                ))}
-              </select>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs text-outline font-bold uppercase tracking-wider">Slot 2</label>
+              <div className="relative">
+                <select 
+                  value={featuredSlot2} 
+                  onChange={(e) => setFeaturedSlot2(e.target.value)}
+                  className="w-full border border-outline-variant/50 rounded-xl p-3 px-4 bg-surface-container-lowest text-sm font-bold text-on-surface appearance-none cursor-pointer focus:ring-2 focus:ring-primary focus:outline-none hover:bg-surface-container-low/30 transition-colors"
+                >
+                  <option value="">-- Select a post --</option>
+                  {plazaPosts.map(post => (
+                    <option key={post.id} value={post.id} disabled={post.id === featuredSlot1}>
+                      {formatPostLabel(post)}
+                    </option>
+                  ))}
+                </select>
+                <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline text-[18px] pointer-events-none">unfold_more</span>
+              </div>
               {featuredSlot2 && (() => {
                 const p = plazaPosts.find(pp => pp.id === featuredSlot2);
                 return p ? (
-                  <div className="mt-1 p-3 bg-surface-container-low rounded-lg border border-outline-variant/20 text-sm">
-                    <div className="font-semibold text-on-surface">{p.userName}</div>
-                    <div className="text-on-surface-variant mt-1 line-clamp-2">{p.content}</div>
+                  <div className="mt-2 p-4 bg-surface-container-low rounded-xl border border-outline-variant/20 text-xs">
+                    <div className="font-bold text-on-surface">{p.userName}</div>
+                    <div className="text-on-surface-variant mt-1.5 line-clamp-2 leading-relaxed">{p.content}</div>
                     {p.images && p.images.length > 0 && (
-                      <div className="flex gap-1 mt-2">
+                      <div className="flex gap-2 mt-3">
                         {p.images.slice(0, 3).map((img, i) => (
-                          <img key={i} src={img} alt="" className="w-12 h-12 object-cover rounded" />
+                          <img key={i} src={img} alt="" className="w-14 h-14 object-cover rounded-lg border border-black/5 shadow-sm" />
                         ))}
                       </div>
                     )}
@@ -266,7 +289,7 @@ export default function AdminBannersPage() {
             <button 
               onClick={handleSavePlaza} 
               disabled={plazaSaving}
-              className="mt-2 bg-primary text-white px-6 py-2 rounded-lg font-bold hover:bg-primary/90 transition-colors w-fit"
+              className="mt-2 bg-primary text-on-primary px-6 py-3 rounded-xl font-bold hover:brightness-105 active:scale-98 transition-all shadow-md w-full sm:w-auto"
             >
               {plazaSaving ? 'Saving...' : 'Save Featured Posts'}
             </button>

@@ -52,7 +52,25 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   const t = useCallback((key: string, params?: any): string => {
     const langKey = (language || 'KR').toUpperCase() as Language;
-    let text = dictionary[langKey]?.[key] || key;
+    const hasTranslation = dictionary[langKey]?.[key] !== undefined;
+    let text = dictionary[langKey]?.[key];
+
+    if (!hasTranslation) {
+      console.error(`🚨 [Missing Translation] Key "${key}" is missing in language "${langKey}"`);
+      
+      // 런타임 클라이언트 브라우저 환경에서 실시간 경고 토스트 송출
+      if (typeof window !== 'undefined') {
+        import('sonner').then(({ toast }) => {
+          const toastId = `missing-${key}-${langKey}`;
+          toast.error(`Missing translation: ${key} (${langKey})`, {
+            id: toastId,
+            duration: 10000,
+          });
+        }).catch(() => {});
+      }
+      
+      return `🚨 Missing Translation\n${key}`;
+    }
 
     if (params && typeof params === 'object') {
       Object.keys(params).forEach(p => {

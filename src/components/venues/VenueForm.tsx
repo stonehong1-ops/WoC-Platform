@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import imageCompression from 'browser-image-compression';
 import { toast } from 'sonner';
@@ -24,6 +25,7 @@ const CATEGORY_OPTIONS = [
 ];
 
 export default function VenueForm({ isOpen, onClose, initialData }: VenueFormProps) {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState<Omit<Venue, 'id' | 'createdAt'>>({
     name: '',
     nameKo: '',
@@ -62,14 +64,14 @@ export default function VenueForm({ isOpen, onClose, initialData }: VenueFormPro
       if (res.ok && data.photoUrl) {
         setFetchedPhotoUrl(data.photoUrl);
         setFormData(prev => ({ ...prev, imageUrl: data.photoUrl }));
-        toast.success('Representative photo fetched!');
+        toast.success(t('toast.venue.photo_fetched'));
       } else {
-        toast.error(data.error || 'Could not find a representative photo.');
+        toast.error(data.error || t('toast.venue.photo_not_found'));
         setFetchedPhotoUrl(null);
       }
     } catch (error) {
       console.error(error);
-      toast.error('An error occurred while fetching the photo.');
+      toast.error(t('toast.venue.photo_fetch_failed'));
     } finally {
       setIsFetchingPhoto(false);
     }
@@ -79,7 +81,7 @@ export default function VenueForm({ isOpen, onClose, initialData }: VenueFormPro
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 15 * 1024 * 1024) {
-        toast.error('File size too large (Max 15MB)');
+        toast.error(t('toast.venue.file_too_large'));
         return;
       }
 
@@ -113,20 +115,20 @@ export default function VenueForm({ isOpen, onClose, initialData }: VenueFormPro
           },
           (error) => {
             console.error('Upload error:', error);
-            toast.error('Upload failed.');
+            toast.error(t('toast.venue.upload_failed'));
             setIsUploading(false);
           },
           async () => {
             const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
             setFormData(prev => ({ ...prev, imageUrl: downloadURL }));
             setFetchedPhotoUrl(downloadURL);
-            toast.success('Photo uploaded successfully!');
+            toast.success(t('toast.venue.upload_success'));
             setIsUploading(false);
           }
         );
       } catch (err) {
         console.error('File handling error:', err);
-        toast.error('Error processing image.');
+        toast.error(t('toast.venue.process_failed'));
         setIsUploading(false);
       }
     }
@@ -172,10 +174,10 @@ export default function VenueForm({ isOpen, onClose, initialData }: VenueFormPro
         await venueService.addVenue(finalFormData);
       }
       onClose();
-      toast.success(initialData ? 'Venue updated!' : 'Venue created!');
+      toast.success(initialData ? t('toast.venue.save_success_update') : t('toast.venue.save_success_create'));
     } catch (error) {
       console.error('Failed to save venue:', error);
-      toast.error('Failed to save venue.');
+      toast.error(t('toast.venue.save_failed'));
     } finally {
       setIsSubmitting(false);
     }

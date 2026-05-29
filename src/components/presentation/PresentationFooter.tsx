@@ -4,11 +4,17 @@ interface PresentationFooterProps {
   currentSlide: number;
   totalSlides: number;
   onJump?: (index: number) => void;
+  sectionIndexes?: number[];
 }
 
-const sectionIndexes = [0, 6, 13, 18, 23, 31];
+const defaultSectionIndexes = [0, 6, 13, 18, 23, 31];
 
-const PresentationFooter: React.FC<PresentationFooterProps> = ({ currentSlide, totalSlides, onJump }) => {
+const PresentationFooter: React.FC<PresentationFooterProps> = ({ 
+  currentSlide, 
+  totalSlides, 
+  onJump, 
+  sectionIndexes = defaultSectionIndexes 
+}) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {

@@ -128,7 +128,7 @@ export function GroupClassRegistrations({ group, validClassIds, allClasses = [],
         toast.success(t('group.class.toast.payment_pending') || 'Payment marked as pending');
       }
     } catch (error) {
-      toast.error('Failed to update payment status');
+      toast.error(t('toast.class.payment_update_failed'));
     }
   };
 
@@ -139,9 +139,9 @@ export function GroupClassRegistrations({ group, validClassIds, allClasses = [],
     
     try {
       await classRegistrationService.updateRegistration(item.id, { paymentAmount: validAmount });
-      toast.success('Amount saved');
+      toast.success(t('toast.class.amount_saved'));
     } catch (error) {
-      toast.error('Failed to update amount');
+      toast.error(t('toast.class.amount_update_failed'));
     }
   };
 
@@ -149,9 +149,9 @@ export function GroupClassRegistrations({ group, validClassIds, allClasses = [],
     if (item.adminMemo === value || (!item.adminMemo && !value)) return;
     try {
       await classRegistrationService.updateRegistration(item.id, { adminMemo: value });
-      toast.success('Memo saved');
+      toast.success(t('toast.class.memo_saved'));
     } catch (error) {
-      toast.error('Failed to update memo');
+      toast.error(t('toast.class.memo_update_failed'));
     }
   };
 
@@ -189,24 +189,24 @@ export function GroupClassRegistrations({ group, validClassIds, allClasses = [],
     const isGroupAdmin = user.uid === group.ownerId || group.members?.some(m => m.id === user.uid && (m.role === 'admin' || m.role === 'owner'));
     
     if (!isItemOwner && !isGroupAdmin) {
-      toast.error('You do not have permission to delete this registration.');
+      toast.error(t('toast.class.delete_no_permission'));
       return;
     }
 
     const userInput = window.prompt("⚠️ WARNING: Deleted records cannot be recovered.\n\nTo confirm deletion, type 'DELETE' exactly in the field below.");
     if (userInput !== 'DELETE') {
       if (userInput !== null) {
-        toast.error('Text did not match. Deletion cancelled.');
+        toast.error(t('toast.class.delete_text_mismatch'));
       }
       return;
     }
 
     try {
       await classRegistrationService.deleteRegistration(item.id);
-      toast.success('Registration deleted successfully');
+      toast.success(t('toast.class.delete_success'));
       setActionReg(null);
     } catch (error) {
-      toast.error('Failed to delete registration');
+      toast.error(t('toast.class.delete_failed'));
     }
   };
 

@@ -138,11 +138,26 @@ export default function AdminPeoplePage() {
     const result = sortedDates.map(date => {
       const item = statsMap[date];
       cumulative += item.count;
+
+      let phoneCount = 0;
+      let emailCount = 0;
+
+      item.users.forEach(u => {
+        const method = u.authMethod || '';
+        const isPhone = method.toLowerCase() === 'phone' || !!u.phoneNumber;
+        const isEmail = method.toLowerCase() === 'email' || method.toLowerCase() === 'password' || (!!u.email && !isPhone);
+        
+        if (isPhone) phoneCount++;
+        else if (isEmail) emailCount++;
+      });
+
       return {
         date,
         count: item.count,
         cumulative,
-        users: item.users
+        users: item.users,
+        phoneCount,
+        emailCount
       };
     });
 
@@ -224,19 +239,34 @@ export default function AdminPeoplePage() {
             </button>
           </div>
 
-          {/* Filter Row */}
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2">
-            <button onClick={() => toggleSort('engagement')} className={`flex items-center gap-1 px-4 py-2 rounded-full text-label-sm font-label-sm transition-all ${sortBy === 'engagement' ? 'bg-primary-container text-on-primary-container shadow-sm hover:shadow-md' : 'bg-white text-on-surface-variant border border-outline-variant hover:bg-surface-container transition-colors'}`}>
-              Engagement
-              <span className="material-symbols-outlined text-[16px]">{sortBy === 'engagement' ? 'arrow_drop_down' : 'swap_vert'}</span>
-            </button>
-            <button onClick={() => toggleSort('joinDate')} className={`flex items-center gap-1 px-4 py-2 rounded-full text-label-sm font-label-sm transition-all ${sortBy === 'joinDate' ? 'bg-primary-container text-on-primary-container shadow-sm hover:shadow-md' : 'bg-white text-on-surface-variant border border-outline-variant hover:bg-surface-container transition-colors'}`}>
-              Join Date
-              <span className="material-symbols-outlined text-[16px]">{sortBy === 'joinDate' ? 'arrow_drop_down' : 'swap_vert'}</span>
-            </button>
-            <button onClick={() => toggleSort('lastVisit')} className={`flex items-center gap-1 px-4 py-2 rounded-full text-label-sm font-label-sm transition-all ${sortBy === 'lastVisit' ? 'bg-primary-container text-on-primary-container shadow-sm hover:shadow-md' : 'bg-white text-on-surface-variant border border-outline-variant hover:bg-surface-container transition-colors'}`}>
-              Last Visit
-              <span className="material-symbols-outlined text-[16px]">{sortBy === 'lastVisit' ? 'arrow_drop_down' : 'swap_vert'}</span>
+          {/* Filter Row - Unified Dropdown Select */}
+          <div className="flex items-center gap-3 mb-6 bg-white p-2 px-3 rounded-2xl border border-outline-variant/30 shadow-sm w-fit">
+            <div className="relative flex items-center">
+              <span className="material-symbols-outlined absolute left-3 text-outline text-[18px] pointer-events-none">sort</span>
+              <select
+                value={sortBy}
+                onChange={(e) => {
+                  setSortBy(e.target.value as 'engagement' | 'joinDate' | 'lastVisit');
+                  setVisibleCount(10);
+                }}
+                className="bg-surface-container-low border border-outline-variant/50 text-on-surface rounded-xl pl-9 pr-8 py-2 text-xs font-bold focus:ring-2 focus:ring-primary focus:outline-none appearance-none cursor-pointer hover:bg-surface-container/60 transition-colors"
+              >
+                <option value="engagement">Engagement</option>
+                <option value="joinDate">Join Date</option>
+                <option value="lastVisit">Last Visit</option>
+              </select>
+              <span className="material-symbols-outlined absolute right-2.5 text-outline text-[16px] pointer-events-none">keyboard_arrow_down</span>
+            </div>
+            
+            <button
+              onClick={() => setSortDir(prev => prev === 'desc' ? 'asc' : 'desc')}
+              className="h-8 px-3 bg-surface-container-low border border-outline-variant/50 rounded-xl flex items-center justify-center hover:bg-surface-container/60 transition-colors text-xs font-bold text-on-surface gap-1.5 shadow-sm active:scale-95 transition-all"
+              title="정렬 방향 토글"
+            >
+              <span className="material-symbols-outlined text-[16px] font-bold">
+                {sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward'}
+              </span>
+              {sortDir === 'desc' ? '내림차순' : '오름차순'}
             </button>
           </div>
 
@@ -386,12 +416,21 @@ export default function AdminPeoplePage() {
                   <tr key={row.date} className="hover:bg-surface-container/30 transition-colors">
                     <td className="py-4 px-6 font-semibold text-on-surface">{row.date}</td>
                     <td className="py-4 px-6 text-center">
-                      <button 
-                        onClick={() => setSelectedDetail({ date: row.date, users: row.users })}
-                        className="px-4 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary font-extrabold rounded-full transition-all text-body-sm active:scale-95 shadow-sm hover:shadow-md cursor-pointer border border-primary/20"
-                      >
-                        {row.count}명
-                      </button>
+                      <div className="flex flex-col items-center gap-1.5">
+                        <button 
+                          onClick={() => setSelectedDetail({ date: row.date, users: row.users })}
+                          className="px-4 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary font-extrabold rounded-full transition-all text-body-sm active:scale-95 shadow-sm hover:shadow-md cursor-pointer border border-primary/20"
+                        >
+                          {row.count}명
+                        </button>
+                        <span className="text-[10px] text-outline font-medium tracking-tight">
+                          전화 {row.phoneCount} / 메일 {row.emailCount}
+                        </span>
+                        <span className="text-[10px] text-outline-variant font-medium tracking-tight max-w-[180px] truncate" title={row.users.map(u => u.nickname || '-').join(', ')}>
+                          {row.users.map(u => u.nickname || '-').slice(0, 3).join(', ')}
+                          {row.users.length > 3 ? '...' : ''}
+                        </span>
+                      </div>
                     </td>
                     <td className="py-4 px-6 text-center text-on-surface-variant font-bold">{row.cumulative}명</td>
                   </tr>

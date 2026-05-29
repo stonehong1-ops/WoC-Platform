@@ -147,7 +147,7 @@ const GroupClassCloneEditor: React.FC<GroupClassCloneEditorProps> = ({
   const handleClone = async () => {
     const selected = candidates.filter(c => c.selected);
     if (!selected.length) {
-      toast.error("No classes selected.");
+      toast.error(t('toast.class.no_classes_selected'));
       return;
     }
 
@@ -173,7 +173,7 @@ const GroupClassCloneEditor: React.FC<GroupClassCloneEditorProps> = ({
       onClose();
     } catch (err) {
       console.error("Clone failed:", err);
-      toast.error("Failed to clone classes.");
+      toast.error(t('toast.class.clone_failed'));
     } finally {
       setIsCloning(false);
     }

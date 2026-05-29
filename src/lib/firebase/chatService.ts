@@ -341,20 +341,123 @@ export const chatService = {
 
   // 7. Subscribe to Total Unread Count
   subscribeTotalUnreadCount: (userId: string, callback: (count: number) => void) => {
+    let chatUnread = 0;
+    let todoUnread = 0;
+    let businessTodoUnread = 0;
+
+    const fireCallback = () => {
+      callback(chatUnread + todoUnread + businessTodoUnread);
+    };
+
+    // 1. 대화방 안 읽은 수 및 비즈니스 챗 pending 메시지(투두) 실시간 리스너
     const roomsRef = collection(db, ROOMS_COLLECTION);
+    const qRooms = query(roomsRef, where('participants', 'array-contains', userId));
     
-    // We listen to all rooms where the user is a participant
-    const q = query(roomsRef, where('participants', 'array-contains', userId));
-    
-    return onSnapshot(q, (snap) => {
+    const businessUnsubs: Record<string, () => void> = {};
+    const businessCounts: Record<string, number> = {};
+
+    const unsubRooms = onSnapshot(qRooms, (snap) => {
       let total = 0;
+      const activeBusinessRoomIds = new Set<string>();
+
       snap.docs.forEach(doc => {
         const data = doc.data();
+        const roomId = doc.id;
+        
         const unread = data.unreadCounts?.[userId] || 0;
         total += unread;
+
+        if (data.type === 'business') {
+          activeBusinessRoomIds.add(roomId);
+          if (!businessUnsubs[roomId]) {
+            const msgsRef = collection(db, MESSAGES_COLLECTION);
+            const qPendingMsgs = query(
+              msgsRef,
+              where('roomId', '==', roomId)
+            );
+            
+            businessUnsubs[roomId] = onSnapshot(qPendingMsgs, (mSnap) => {
+              const incomingPendingCount = mSnap.docs.filter(mDoc => {
+                const mData = mDoc.data();
+                if (mData.senderId === userId) return false;
+                
+                const meta = mData.metadata;
+                if (!meta) return false;
+                
+                return meta.actionType === 'booking_approval' && 
+                       meta.sellerId === userId && 
+                       meta.status === 'BANK_TRANSFERRED';
+              }).length;
+              
+              businessCounts[roomId] = incomingPendingCount;
+              
+              let sumBusiness = 0;
+              Object.values(businessCounts).forEach(c => sumBusiness += c);
+              businessTodoUnread = sumBusiness;
+              fireCallback();
+            });
+          }
+        }
       });
-      callback(total);
+
+      Object.keys(businessUnsubs).forEach(rId => {
+        if (!activeBusinessRoomIds.has(rId)) {
+          businessUnsubs[rId]();
+          delete businessUnsubs[rId];
+          delete businessCounts[rId];
+        }
+      });
+
+      chatUnread = total;
+      fireCallback();
     });
+
+    // 2. 가입 대기(Todo) 수 실시간 리스너 (오너 소유 모든 그룹의 pending 멤버 총합)
+    const groupsRef = collection(db, 'groups');
+    const qGroups = query(groupsRef, where('ownerId', '==', userId));
+    
+    const groupUnsubs: Record<string, () => void> = {};
+    const groupCounts: Record<string, number> = {};
+
+    const unsubGroups = onSnapshot(qGroups, (groupSnap) => {
+      const currentGroupIds = new Set(groupSnap.docs.map(d => d.id));
+      Object.keys(groupUnsubs).forEach(gId => {
+        if (!currentGroupIds.has(gId)) {
+          groupUnsubs[gId]();
+          delete groupUnsubs[gId];
+          delete groupCounts[gId];
+        }
+      });
+
+      if (groupSnap.docs.length === 0) {
+        todoUnread = 0;
+        fireCallback();
+        return;
+      }
+
+      groupSnap.docs.forEach(gDoc => {
+        const gId = gDoc.id;
+        if (!groupUnsubs[gId]) {
+          const membersRef = collection(db, 'groups', gId, 'members');
+          const qPending = query(membersRef, where('status', '==', 'pending'));
+          groupUnsubs[gId] = onSnapshot(qPending, (mSnap) => {
+            groupCounts[gId] = mSnap.docs.length;
+            
+            let sum = 0;
+            Object.values(groupCounts).forEach(c => sum += c);
+            todoUnread = sum;
+            fireCallback();
+          });
+        }
+      });
+    });
+
+    return () => {
+      unsubRooms();
+      unsubGroups();
+      Object.values(groupUnsubs).forEach(unsub => unsub());
+      Object.values(businessUnsubs).forEach(unsub => unsub());
+    };
   },
 
   // 8. Toggle Reaction

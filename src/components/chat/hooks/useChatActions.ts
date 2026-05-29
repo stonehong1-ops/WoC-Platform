@@ -201,11 +201,66 @@ export function useChatActions({
     }
   };
 
-  const handleFileUpload = async (file: File) => {
-    if (!file || !user) return;
-    const type: MessageType = file.type.startsWith('image/') ? 'image' : 'video';
-    const url = URL.createObjectURL(file);
-    setPreviewMedia({ file, url, type });
+  const handleFileUpload = async (files: FileList | File[] | File) => {
+    if (!user) return;
+
+    // files가 단일 File 객체인 경우
+    if (files instanceof File) {
+      const type: MessageType = files.type.startsWith('image/') ? 'image' : 'video';
+      const url = URL.createObjectURL(files);
+      setPreviewMedia({ file: files, url, type });
+      return;
+    }
+
+    // FileList 또는 File[] 인 경우
+    const fileList = Array.from(files);
+    if (fileList.length === 0) return;
+
+    if (fileList.length === 1) {
+      const file = fileList[0];
+      const type: MessageType = file.type.startsWith('image/') ? 'image' : 'video';
+      const url = URL.createObjectURL(file);
+      setPreviewMedia({ file, url, type });
+    } else {
+      // 복수 개인 경우 백그라운드 순차 발송
+      setIsUploading(true);
+      setUploadProgress(0);
+
+      const toastId = toast.loading(t('chat.uploading_multiple', '여러 장의 사진을 업로드하는 중입니다...'));
+
+      try {
+        let completed = 0;
+        for (const file of fileList) {
+          const type: MessageType = file.type.startsWith('image/') ? 'image' : 'video';
+          const extension = file.name.split('.').pop() || 'bin';
+          const path = `chat/${roomId}/${Date.now()}_media_${completed}.${extension}`;
+
+          const url = await chatService.uploadChatMedia(file, path, (p) => {
+            const currentProgress = Math.round(((completed + p / 100) / fileList.length) * 100);
+            setUploadProgress(currentProgress);
+          });
+
+          const defaultText = type === 'image' ? t('chatroom.sent_photo') : t('chatroom.sent_video');
+          await chatService.sendMessage({
+            roomId,
+            senderId: user.uid,
+            senderName: user.displayName || 'Anonymous',
+            text: defaultText,
+            type,
+            mediaUrl: url
+          });
+
+          completed++;
+        }
+        toast.success(t('chat.upload_multiple_success', '모든 파일 전송 완료!'), { id: toastId });
+      } catch (err) {
+        console.error("Multi-upload failed:", err);
+        toast.error(t('common.error', '업로드에 실패했습니다.'), { id: toastId });
+      } finally {
+        setIsUploading(false);
+        setUploadProgress(0);
+      }
+    }
   };
 
   const confirmAndSendMedia = async () => {

@@ -219,14 +219,171 @@ export const notificationService = {
     });
   },
 
-  // 8. 관리자 Todo 알림 실시간 구독 (TODO 제거에 따라 빈 구독 유지)
+  // 8. 관리자 Todo 알림 실시간 구독
   subscribeToAdminTodos: (
     adminId: string,
     groupId: string | undefined, // undefined면 모든 그룹의 Todo 가져오기
     callback: (todos: Notification[]) => void
   ) => {
-    callback([]);
-    return () => {};
+    const groupsRef = collection(db, 'groups');
+    
+    // adminId가 ownerId인 그룹 조회
+    const qGroups = groupId 
+      ? query(groupsRef, where('ownerId', '==', adminId), where('id', '==', groupId))
+      : query(groupsRef, where('ownerId', '==', adminId));
+
+    const groupUnsubs: Record<string, () => void> = {};
+    let groupTodosMap: Record<string, Notification[]> = {};
+    
+    const businessUnsubs: Record<string, () => void> = {};
+    const businessTodosMap: Record<string, Notification[]> = {};
+
+    const fireCallback = () => {
+      const allTodos = [
+        ...Object.values(groupTodosMap).flat(),
+        ...Object.values(businessTodosMap).flat()
+      ];
+      allTodos.sort((a, b) => {
+        const timeA = (a.createdAt as any)?.toMillis?.() || (a.createdAt as any)?.seconds * 1000 || a.createdAt || 0;
+        const timeB = (b.createdAt as any)?.toMillis?.() || (b.createdAt as any)?.seconds * 1000 || b.createdAt || 0;
+        return Number(timeB) - Number(timeA);
+      });
+      callback(allTodos);
+    };
+
+    const unsubGroups = onSnapshot(qGroups, (groupSnap) => {
+      const currentGroupIds = new Set(groupSnap.docs.map(d => d.id));
+      Object.keys(groupUnsubs).forEach(gId => {
+        if (!currentGroupIds.has(gId)) {
+          groupUnsubs[gId]();
+          delete groupUnsubs[gId];
+          delete groupTodosMap[gId];
+        }
+      });
+
+      if (groupSnap.docs.length === 0) {
+        groupTodosMap = {};
+        fireCallback();
+        return;
+      }
+
+      groupSnap.docs.forEach(gDoc => {
+        const gId = gDoc.id;
+        const gName = gDoc.data().name || 'Group';
+        
+        if (!groupUnsubs[gId]) {
+          const membersRef = collection(db, 'groups', gId, 'members');
+          const qPending = query(membersRef, where('status', '==', 'pending'));
+          
+          groupUnsubs[gId] = onSnapshot(qPending, (mSnap) => {
+            const groupTodos = mSnap.docs.map(mDoc => {
+              const mData = mDoc.data();
+              return {
+                id: `todo_${gId}_${mDoc.id}`,
+                targetUserId: adminId,
+                baseType: 'INFO',
+                category: 'ADMIN',
+                type: 'CLASS_APPLY',
+                referenceId: mDoc.id,
+                groupId: gId,
+                groupName: gName,
+                title: '가입 승인 대기',
+                message: `${mData.name || 'Anonymous'}님이 '${gName}' 그룹 가입 승인을 요청했습니다.`,
+                createdAt: mData.joinedAt || Date.now(),
+                isRead: false
+              } as Notification;
+            });
+
+            groupTodosMap[gId] = groupTodos;
+            fireCallback();
+          });
+        }
+      });
+    });
+
+    // 비즈니스 챗(마켓 챗) pending 리스너 병합
+    const roomsRef = collection(db, 'chat_rooms');
+    const qRooms = query(roomsRef, where('participants', 'array-contains', adminId), where('type', '==', 'business'));
+
+    const unsubRooms = onSnapshot(qRooms, (snap) => {
+      const currentRoomIds = new Set();
+      
+      snap.docs.forEach(rDoc => {
+        const rId = rDoc.id;
+        const rData = rDoc.data();
+        
+        // groupId 필터 적용
+        if (groupId && rData.linkedGroupId !== groupId) {
+          return;
+        }
+
+        currentRoomIds.add(rId);
+
+        if (!businessUnsubs[rId]) {
+          const msgsRef = collection(db, 'chat_messages');
+          const qPendingMsgs = query(
+            msgsRef,
+            where('roomId', '==', rId)
+          );
+
+          businessUnsubs[rId] = onSnapshot(qPendingMsgs, (mSnap) => {
+            const pendingTodos = mSnap.docs
+              .filter(mDoc => {
+                const mData = mDoc.data();
+                if (mData.senderId === adminId) return false;
+                
+                const meta = mData.metadata;
+                if (!meta) return false;
+                
+                return meta.actionType === 'booking_approval' && 
+                       meta.sellerId === adminId && 
+                       meta.status === 'BANK_TRANSFERRED';
+              })
+              .map(mDoc => {
+                const mData = mDoc.data();
+                return {
+                  id: `todo_business_${rId}_${mDoc.id}`,
+                  targetUserId: adminId,
+                  baseType: 'INFO',
+                  category: 'SHOP',
+                  type: 'BUSINESS_CHAT',
+                  referenceId: rId,
+                  groupId: rData.linkedGroupId || '',
+                  groupName: rData.name || 'Market Chat',
+                  title: '마켓 가입 승인 대기',
+                  message: mData.text || '마켓 가입 승인 요청이 있습니다.',
+                  createdAt: mData.timestamp || Date.now(),
+                  isRead: false
+                } as Notification;
+              });
+
+            businessTodosMap[rId] = pendingTodos;
+            fireCallback();
+          });
+        }
+      });
+
+      // 제거된 방 리스너 해제
+      Object.keys(businessUnsubs).forEach(rId => {
+        if (!currentRoomIds.has(rId)) {
+          businessUnsubs[rId]();
+          delete businessUnsubs[rId];
+          delete businessTodosMap[rId];
+        }
+      });
+
+      if (snap.docs.length === 0) {
+        Object.keys(businessTodosMap).forEach(key => delete businessTodosMap[key]);
+        fireCallback();
+      }
+    });
+
+    return () => {
+      unsubGroups();
+      unsubRooms();
+      Object.values(groupUnsubs).forEach(unsub => unsub());
+      Object.values(businessUnsubs).forEach(unsub => unsub());
+    };
   },
 
 

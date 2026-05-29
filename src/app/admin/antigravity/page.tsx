@@ -159,7 +159,7 @@ export default function AntigravityTerminalPage() {
             <div className="flex items-center justify-center h-full">
               <div className="flex flex-col items-center gap-2">
                 <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                <span className="text-xs text-slate-400 font-mono">LOADING TERMINAL LOGS...</span>
+                <span className="text-xs text-slate-400 font-semibold tracking-wider">LOGS LOADING...</span>
               </div>
             </div>
           ) : (
@@ -180,23 +180,23 @@ export default function AntigravityTerminalPage() {
                   }`}
                 >
                   {/* Speaker Name */}
-                  <span className="text-[9px] font-mono font-bold tracking-widest text-slate-400 mb-1 uppercase">
+                  <span className="text-[10px] font-extrabold tracking-wider text-slate-400 mb-1.5 uppercase">
                     {msg.sender === "stone" ? "STONE (LEADER)" : "MOBILE AGENT (AI)"}
                   </span>
 
                   {/* Message bubble */}
                   <div
-                    className={`p-3.5 rounded-2xl text-xs leading-relaxed font-mono whitespace-pre-wrap flex flex-col gap-2 ${
+                    className={`p-4 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap flex flex-col gap-2 ${
                       msg.sender === "stone"
-                        ? "bg-blue-600 text-white rounded-tr-none shadow-md shadow-blue-600/10"
-                        : "bg-white border border-slate-200 text-slate-800 rounded-tl-none shadow-sm shadow-slate-100/50"
+                        ? "bg-primary text-on-primary rounded-tr-none shadow-md shadow-primary/10"
+                        : "bg-white border border-outline-variant/30 text-on-surface rounded-tl-none shadow-sm shadow-slate-100/50"
                     }`}
                   >
                     {/* Attached Image Thumbnail */}
                     {msg.imageUrl && (
                       <div 
                         onClick={() => setLightboxUrl(msg.imageUrl || null)}
-                        className="rounded-lg overflow-hidden border border-black/5 cursor-zoom-in max-w-[240px] max-h-[320px] shadow-sm"
+                        className="rounded-xl overflow-hidden border border-black/5 cursor-zoom-in max-w-[240px] max-h-[320px] shadow-sm hover:scale-[1.01] transition-transform duration-200"
                       >
                         <img 
                           src={msg.imageUrl} 
@@ -210,18 +210,18 @@ export default function AntigravityTerminalPage() {
                   </div>
 
                   {/* Timestamp & Status Footer */}
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-[9px] font-mono text-slate-400">
+                  <div className="flex items-center gap-2 mt-1.5 mb-2">
+                    <span className="text-[10px] text-outline font-medium">
                       {new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                     </span>
                     {msg.sender === "stone" && (
                       <span
-                        className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${
+                        className={`text-[9px] font-bold px-2 py-0.5 rounded-md shadow-sm ${
                           msg.status === "completed"
-                            ? "bg-green-500/10 text-green-600 border border-green-200"
+                            ? "bg-emerald-500/10 text-emerald-600 border border-emerald-200"
                             : msg.status === "in_progress"
                             ? "bg-amber-500/10 text-amber-600 border border-amber-200 animate-pulse"
-                            : "bg-blue-500/10 text-blue-600 border border-blue-200"
+                            : "bg-primary/10 text-primary border border-primary/20"
                         }`}
                       >
                         {msg.status === "completed"
@@ -240,23 +240,23 @@ export default function AntigravityTerminalPage() {
         </div>
 
         {/* Input Bar Section with Photo Upload Button */}
-        <div className="shrink-0 bg-white border-t border-slate-200/80 p-3 shadow-lg relative z-10 flex flex-col gap-2">
+        <div className="shrink-0 bg-white border-t border-slate-200/60 p-4 shadow-xl relative z-10 flex flex-col gap-2 rounded-t-3xl">
           {/* File Attachment Status Bar */}
           {isUploading && (
-            <div className="flex items-center gap-2 px-2 py-1.5 bg-slate-50 rounded-lg border border-slate-200 animate-pulse text-[11px] font-mono text-slate-500">
-              <div className="w-3.5 h-3.5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-xl border border-slate-200/80 animate-pulse text-[11px] font-medium text-slate-500">
+              <div className="w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
               <span>{language === "KR" ? `이미지 업로드 중... (${uploadProgress || 0}%)` : `Uploading image... (${uploadProgress || 0}%)`}</span>
             </div>
           )}
           
           {attachedImageUrl && (
-            <div className="relative self-start p-1.5 bg-slate-50 border border-slate-200 rounded-lg flex items-center gap-2">
-              <div className="w-12 h-12 rounded overflow-hidden border border-slate-200">
+            <div className="relative self-start p-2 bg-slate-50 border border-slate-200/80 rounded-xl flex items-center gap-2">
+              <div className="w-14 h-14 rounded-lg overflow-hidden border border-slate-200 shadow-inner">
                 <img src={attachedImageUrl} alt="Attachment Preview" className="w-full h-full object-cover" />
               </div>
               <button 
                 onClick={() => setAttachedImageUrl(null)}
-                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-600 text-white flex items-center justify-center hover:bg-red-500 shadow-lg cursor-pointer"
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-600 text-white flex items-center justify-center hover:bg-red-500 shadow-lg cursor-pointer transition-transform active:scale-90"
               >
                 <span className="material-symbols-outlined !text-[12px]">close</span>
               </button>
@@ -264,7 +264,7 @@ export default function AntigravityTerminalPage() {
           )}
 
           {/* Form and buttons */}
-          <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+          <form onSubmit={handleSendMessage} className="flex items-center gap-3">
             {/* hidden file selector */}
             <input 
               type="file" 
@@ -292,19 +292,19 @@ export default function AntigravityTerminalPage() {
               placeholder={
                 language === "KR" ? "에이전트에게 지시할 코멘트 입력..." : "Instruct your agent..."
               }
-              className="flex-grow h-12 bg-slate-50 border border-slate-200 rounded-xl px-4 text-xs font-mono text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white transition-all"
+              className="flex-grow h-12 bg-slate-50 border border-slate-200/80 rounded-xl px-4 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white transition-all"
             />
 
             {/* Send Button */}
             <button
               type="submit"
               disabled={(!inputText.trim() && !attachedImageUrl) || isSending || isUploading}
-              className="h-12 w-12 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-white flex items-center justify-center shrink-0 transition-all disabled:opacity-50 disabled:active:scale-100 disabled:hover:bg-blue-600 shadow-lg shadow-blue-600/10 cursor-pointer"
+              className="h-12 w-12 rounded-xl bg-primary hover:bg-primary/90 active:scale-95 text-on-primary flex items-center justify-center shrink-0 transition-all disabled:opacity-40 disabled:active:scale-100 shadow-md cursor-pointer"
             >
               {isSending ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-4 h-4 border-2 border-on-primary border-t-transparent rounded-full animate-spin"></div>
               ) : (
-                <span className="material-symbols-outlined !text-[20px]">send</span>
+                <span className="material-symbols-outlined !text-[20px] font-bold">send</span>
               )}
             </button>
           </form>

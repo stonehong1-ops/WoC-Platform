@@ -298,16 +298,16 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
       await classRegistrationService.updateRegistration(reg.id, {
         attendance: newAttendance
       });
-      toast.success(language === 'KR' ? '출결 상태가 실시간 반영되었습니다.' : 'Attendance updated.');
+      toast.success(t('class-dashboard.toast.attendance_updated'));
     } catch (e) {
       console.error("Attendance update error:", e);
-      toast.error(language === 'KR' ? '출결 반영 실패' : 'Failed to update attendance');
+      toast.error(t('class-dashboard.toast.attendance_update_failed'));
     }
   };
 
   const handleRegisterFeedback = async () => {
     if (!user) {
-      toast.error(language === 'KR' ? '로그인이 필요한 서비스입니다.' : 'Login required.');
+      toast.error(t('class-dashboard.toast.login_required'));
       return;
     }
     if (!feedbackText.trim()) return;
@@ -328,10 +328,10 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
         feedbacks: [...prevFeedbacks, newFeedback]
       });
       setFeedbackText('');
-      toast.success(language === 'KR' ? '피드백이 성공적으로 등록되었습니다.' : 'Feedback posted successfully.');
+      toast.success(t('class-dashboard.toast.feedback_posted'));
     } catch (e) {
       console.error("Feedback post error:", e);
-      toast.error(language === 'KR' ? '등록 실패' : 'Failed to post feedback');
+      toast.error(t('class-dashboard.toast.feedback_post_failed'));
     }
   };
 
@@ -399,7 +399,7 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
 
   const handleChatWithOwner = async () => {
     if (!user) {
-      toast.error("로그인이 필요합니다.");
+      toast.error(t('class-dashboard.toast.login_required_general'));
       return;
     }
     if (!ownerInfo?.id) {
@@ -415,7 +415,7 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
       router.push(`/chat?roomId=${roomId}`);
     } catch (error) {
       console.error("Chat error:", error);
-      toast.error("대표자와의 대화방 개설에 실패했습니다.");
+      toast.error(t('class-dashboard.toast.chat_open_failed'));
     }
   };
 
@@ -815,11 +815,11 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
         })
       );
       await Promise.all(promises);
-      toast.success(language === 'KR' ? '신청 정보가 정상적으로 수정되었습니다.' : 'Registration details updated successfully.');
+      toast.success(t('class-dashboard.toast.registration_updated'));
       setEditingGroupedReg(null);
     } catch (error) {
       console.error("Error updating registrations:", error);
-      toast.error(language === 'KR' ? '정보 수정에 실패했습니다.' : 'Failed to update details.');
+      toast.error(t('class-dashboard.toast.registration_update_failed'));
     }
   };
 
@@ -1877,17 +1877,17 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
                               <button
                                 onClick={async () => {
                                   if (!videoInputLink.trim()) {
-                                    toast.warning("영상 링크를 입력하세요.");
+                                    toast.warning(t('class-dashboard.toast.enter_video_link'));
                                     return;
                                   }
                                   try {
                                     await groupService.updateClass(group.id, selectedDashboardClass, { videoUrl: videoInputLink });
-                                    toast.success("영상 등록 완료!");
+                                    toast.success(t('class-dashboard.toast.video_registered'));
                                     setShowVideoInput(false);
                                     setVideoInputLink('');
                                   } catch (e) {
                                     console.error(e);
-                                    toast.error("등록 실패");
+                                    toast.error(t('class-dashboard.toast.video_register_failed'));
                                   }
                                 }}
                                 className="px-3 py-1.5 bg-[#0057bd] text-white rounded-lg font-black text-[11px] hover:bg-[#004bb4] active:scale-95"
@@ -1941,11 +1941,11 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
                             onClick={async () => {
                               try {
                                 await groupService.updateClass(group.id, selectedDashboardClass, { instructorComment: instructorCommentInput });
-                                toast.success("강사 코멘트 저장 완료!");
+                                toast.success(t('class-dashboard.toast.instructor_comment_saved'));
                                 setIsEditingComment(false);
                               } catch (e) {
                                 console.error(e);
-                                toast.error("저장 실패");
+                                toast.error(t('class-dashboard.toast.instructor_comment_save_failed'));
                               }
                             }}
                             className="px-3 py-1.5 bg-[#0057bd] text-white rounded-lg font-black text-[11px]"

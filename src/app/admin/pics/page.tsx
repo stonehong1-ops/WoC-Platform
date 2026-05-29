@@ -206,53 +206,57 @@ export default function AdminPicsPage() {
     <main className="flex h-screen bg-surface overflow-hidden">
       {/* Sidebar / List */}
       <div className={`flex-1 border-r border-surface-container flex flex-col ${isEditing ? 'hidden md:flex md:max-w-md' : 'flex'}`}>
-        <div className="p-6 border-b border-surface-container shrink-0 flex items-center justify-between bg-surface-container-lowest">
+        <div className="p-6 border-b border-surface-container shrink-0 flex items-center justify-between bg-surface-container-lowest shadow-sm z-10">
           <div>
-            <h1 className="text-xl font-bold font-headline">{t('pics.admin.title')}</h1>
-            <p className="text-sm text-on-surface-variant">{t('pics.admin.desc')}</p>
+            <h1 className="text-xl font-black font-headline tracking-tight text-on-surface">{t('pics.admin.title')}</h1>
+            <p className="text-xs text-outline mt-0.5">{t('pics.admin.desc')}</p>
           </div>
           <div className="flex gap-2">
             <button 
               onClick={() => setShowImportModal(true)}
-              className="px-4 h-10 rounded-full bg-surface-container-high text-on-surface flex items-center justify-center hover:bg-surface-container-highest transition-colors shadow-sm gap-2 font-bold text-sm"
+              className="px-4 h-10 rounded-xl bg-surface-container-high text-on-surface flex items-center justify-center hover:bg-surface-container-highest hover:shadow-md transition-all active:scale-98 shadow-sm gap-2 font-bold text-xs"
             >
-              <span className="material-symbols-outlined !text-[18px]">view_cozy</span>
+              <span className="material-symbols-outlined !text-[16px] text-primary">view_cozy</span>
               {t('pics.admin.import_pack')}
             </button>
             <button 
               onClick={() => { setSelectedPic({ ...DEFAULT_PIC }); setIsEditing(true); }}
-              className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primary/90 transition-colors shadow-md"
+              className="w-10 h-10 rounded-xl bg-primary text-on-primary flex items-center justify-center hover:brightness-105 transition-all active:scale-95 shadow-md"
             >
-              <span className="material-symbols-outlined">add</span>
+              <span className="material-symbols-outlined text-[20px] font-bold">add</span>
             </button>
           </div>
         </div>
 
         {/* Filters */}
-        <div className="p-4 border-b border-surface-container bg-surface flex flex-col gap-3 shrink-0">
+        <div className="p-4 border-b border-surface-container bg-surface-container-lowest/50 flex flex-col gap-3.5 shrink-0 shadow-sm z-10">
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
-            <span className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider shrink-0 w-14">{t('pics.filter.mood')}</span>
-            {MOODS.map(mood => (
-              <button
-                key={mood}
-                onClick={() => setActiveMood(mood)}
-                className={`shrink-0 px-3 py-1 rounded-full text-xs font-bold transition-all ${activeMood === mood ? 'bg-primary text-white shadow-sm' : 'bg-surface-container-low border border-outline-variant/30 text-on-surface-variant hover:bg-surface-container'}`}
-              >
-                {mood === 'All' ? t('pics.mood.All') : t(`pics.mood.${mood}`)}
-              </button>
-            ))}
+            <span className="text-[10px] font-extrabold text-outline uppercase tracking-wider shrink-0 w-16">{t('pics.filter.mood')}</span>
+            <div className="flex gap-1.5">
+              {MOODS.map(mood => (
+                <button
+                  key={mood}
+                  onClick={() => setActiveMood(mood)}
+                  className={`shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${activeMood === mood ? 'bg-primary text-on-primary shadow-md' : 'bg-surface-container border border-outline-variant/30 text-outline hover:text-on-surface hover:bg-surface-container-high'}`}
+                >
+                  {mood === 'All' ? t('pics.mood.All') : t(`pics.mood.${mood}`)}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
-            <span className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider shrink-0 w-14">{t('pics.filter.activity')}</span>
-            {ACTIVITIES.map(activity => (
-              <button
-                key={activity}
-                onClick={() => setActiveActivity(activity)}
-                className={`shrink-0 px-3 py-1 rounded-full text-xs font-bold transition-all ${activeActivity === activity ? 'bg-primary text-white shadow-sm' : 'bg-surface-container-low border border-outline-variant/30 text-on-surface-variant hover:bg-surface-container'}`}
-              >
-                {activity === 'All' ? t('pics.activity.All') : t(`pics.activity.${activity}`)}
-              </button>
-            ))}
+            <span className="text-[10px] font-extrabold text-outline uppercase tracking-wider shrink-0 w-16">{t('pics.filter.activity')}</span>
+            <div className="flex gap-1.5">
+              {ACTIVITIES.map(activity => (
+                <button
+                  key={activity}
+                  onClick={() => setActiveActivity(activity)}
+                  className={`shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${activeActivity === activity ? 'bg-primary text-on-primary shadow-md' : 'bg-surface-container border border-outline-variant/30 text-outline hover:text-on-surface hover:bg-surface-container-high'}`}
+                >
+                  {activity === 'All' ? t('pics.activity.All') : t(`pics.activity.${activity}`)}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -312,35 +316,38 @@ export default function AdminPicsPage() {
             <div className="max-w-2xl mx-auto space-y-8">
               
               {/* Basic Info */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-bold text-primary uppercase tracking-widest border-b border-surface-container pb-2">{t('pics.admin.basic_info')}</h3>
+              <div className="space-y-5 bg-white p-5 rounded-2xl border border-outline-variant/20 shadow-sm">
+                <h3 className="text-xs font-bold text-primary uppercase tracking-widest border-b border-outline-variant/30 pb-3 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[18px]">badge</span>
+                  {t('pics.admin.basic_info')}
+                </h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-outline">{t('pics.admin.title_label')}</label>
+                    <label className="text-xs font-bold text-outline uppercase tracking-wider">{t('pics.admin.title_label')}</label>
                     <input 
                       type="text" 
                       value={selectedPic.title}
                       onChange={e => setSelectedPic({ ...selectedPic, title: e.target.value })}
-                      className="w-full p-3 bg-surface-container-low border border-outline-variant/30 rounded-xl text-sm focus:border-primary outline-none"
+                      className="w-full p-3 bg-surface-container-low border border-outline-variant/50 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:bg-white focus:outline-none transition-all font-bold text-on-surface placeholder:text-outline-variant"
                       placeholder="e.g. Cinematic Sunset"
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-outline">{t('pics.admin.slug_label')}</label>
+                    <label className="text-xs font-bold text-outline uppercase tracking-wider">{t('pics.admin.slug_label')}</label>
                     <input 
                       type="text" 
                       value={selectedPic.slug}
                       onChange={e => setSelectedPic({ ...selectedPic, slug: e.target.value })}
-                      className="w-full p-3 bg-surface-container-low border border-outline-variant/30 rounded-xl text-sm focus:border-primary outline-none"
+                      className="w-full p-3 bg-surface-container-low border border-outline-variant/50 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:bg-white focus:outline-none transition-all font-bold text-on-surface placeholder:text-outline-variant"
                       placeholder="e.g. cinematic-sunset"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-outline">{t('pics.admin.image_label')}</label>
+                    <label className="text-xs font-bold text-outline uppercase tracking-wider">{t('pics.admin.image_label')}</label>
                     <div className="relative">
                       <input 
                         type="file" 
@@ -352,7 +359,7 @@ export default function AdminPicsPage() {
                       <button 
                         type="button"
                         disabled={isUploading}
-                        className="text-[10px] font-bold px-3 py-1.5 bg-primary/10 text-primary rounded-full flex items-center gap-1 hover:bg-primary/20 transition-colors disabled:opacity-50"
+                        className="text-[10px] font-bold px-3 py-1.5 bg-primary/10 text-primary rounded-xl flex items-center gap-1.5 hover:bg-primary/20 transition-all active:scale-95 disabled:opacity-50"
                       >
                         <span className="material-symbols-outlined !text-[14px]">cloud_upload</span>
                         {isUploading ? `${t('pics.admin.saving')} ${uploadProgress}%` : t('pics.admin.upload_file')}
@@ -361,7 +368,7 @@ export default function AdminPicsPage() {
                   </div>
                   
                   {isUploading && (
-                    <div className="h-1 w-full bg-surface-container rounded-full overflow-hidden mt-1 mb-2">
+                    <div className="h-1.5 w-full bg-surface-container rounded-full overflow-hidden mt-1 mb-2 shadow-inner">
                       <div 
                         className="h-full bg-primary transition-all duration-300 ease-out"
                         style={{ width: `${uploadProgress}%` }}
@@ -373,11 +380,11 @@ export default function AdminPicsPage() {
                     type="text" 
                     value={selectedPic.imageUrl}
                     onChange={e => setSelectedPic({ ...selectedPic, imageUrl: e.target.value })}
-                    className="w-full p-3 bg-surface-container-low border border-outline-variant/30 rounded-xl text-sm focus:border-primary outline-none mt-2"
+                    className="w-full p-3 bg-surface-container-low border border-outline-variant/50 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:bg-white focus:outline-none transition-all text-on-surface font-semibold placeholder:text-outline-variant mt-2"
                     placeholder={t('pics.admin.paste_url_placeholder')}
                   />
                   {selectedPic.imageUrl && (
-                    <div className="mt-2 aspect-[3/4] max-h-[400px] w-auto mx-auto bg-surface-container-low rounded-xl overflow-hidden border border-outline-variant/20 relative">
+                    <div className="mt-3 aspect-[3/4] max-h-[400px] w-auto mx-auto bg-surface-container rounded-2xl overflow-hidden border border-outline-variant/30 relative shadow-md">
                       <img src={selectedPic.imageUrl} alt="Preview" className="w-full h-full object-contain" />
                     </div>
                   )}
@@ -385,33 +392,42 @@ export default function AdminPicsPage() {
               </div>
 
               {/* Metadata */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-bold text-primary uppercase tracking-widest border-b border-surface-container pb-2">{t('pics.admin.metadata')}</h3>
+              <div className="space-y-5 bg-white p-5 rounded-2xl border border-outline-variant/20 shadow-sm">
+                <h3 className="text-xs font-bold text-primary uppercase tracking-widest border-b border-outline-variant/30 pb-3 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[18px]">sell</span>
+                  {t('pics.admin.metadata')}
+                </h3>
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-outline">{t('pics.filter.mood')}</label>
-                    <select
-                      value={selectedPic.mood}
-                      onChange={e => setSelectedPic({ ...selectedPic, mood: e.target.value })}
-                      className="w-full p-3 bg-surface-container-low border border-outline-variant/30 rounded-xl text-sm focus:border-primary outline-none"
-                    >
-                      {MOODS.filter(m => m !== 'All').map(mood => (
-                        <option key={mood} value={mood}>{t(`pics.mood.${mood}`)}</option>
-                      ))}
-                    </select>
+                    <label className="text-xs font-bold text-outline uppercase tracking-wider">{t('pics.filter.mood')}</label>
+                    <div className="relative">
+                      <select
+                        value={selectedPic.mood}
+                        onChange={e => setSelectedPic({ ...selectedPic, mood: e.target.value })}
+                        className="w-full p-3 bg-surface-container-low border border-outline-variant/50 rounded-xl text-sm font-bold text-on-surface appearance-none cursor-pointer focus:ring-2 focus:ring-primary focus:outline-none hover:bg-surface-container-high transition-colors"
+                      >
+                        {MOODS.filter(m => m !== 'All').map(mood => (
+                          <option key={mood} value={mood}>{t(`pics.mood.${mood}`)}</option>
+                        ))}
+                      </select>
+                      <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline text-[18px] pointer-events-none">unfold_more</span>
+                    </div>
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-outline">{t('pics.filter.activity')}</label>
-                    <select
-                      value={selectedPic.activity}
-                      onChange={e => setSelectedPic({ ...selectedPic, activity: e.target.value })}
-                      className="w-full p-3 bg-surface-container-low border border-outline-variant/30 rounded-xl text-sm focus:border-primary outline-none"
-                    >
-                      {ACTIVITIES.filter(a => a !== 'All').map(activity => (
-                        <option key={activity} value={activity}>{t(`pics.activity.${activity}`)}</option>
-                      ))}
-                    </select>
+                    <label className="text-xs font-bold text-outline uppercase tracking-wider">{t('pics.filter.activity')}</label>
+                    <div className="relative">
+                      <select
+                        value={selectedPic.activity}
+                        onChange={e => setSelectedPic({ ...selectedPic, activity: e.target.value })}
+                        className="w-full p-3 bg-surface-container-low border border-outline-variant/50 rounded-xl text-sm font-bold text-on-surface appearance-none cursor-pointer focus:ring-2 focus:ring-primary focus:outline-none hover:bg-surface-container-high transition-colors"
+                      >
+                        {ACTIVITIES.filter(a => a !== 'All').map(activity => (
+                          <option key={activity} value={activity}>{t(`pics.activity.${activity}`)}</option>
+                        ))}
+                      </select>
+                      <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline text-[18px] pointer-events-none">unfold_more</span>
+                    </div>
                   </div>
                 </div>
               </div>
