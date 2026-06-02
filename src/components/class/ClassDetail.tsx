@@ -649,9 +649,9 @@ export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDeta
       )}
 
       {/* 2. 클래스 정보 수정 풀스크린 에디터 */}
-      {isEditOpen && groupDetails && itemDetail && (
+      {isEditOpen && itemDetail && (
         <GroupClassAddEditor
-          group={groupDetails}
+          group={groupDetails || null}
           initialData={itemDetail}
           onClose={() => setIsEditOpen(false)}
           onSave={() => {

@@ -585,16 +585,25 @@ export default function TodayPageContent() {
             </div>
           ) : practicas.length > 0 ? (
             <div className="flex gap-2 flex-wrap">
-              {practicas.map(s => (
-                <button
-                  key={s.id}
-                  onClick={() => openSocialModal(s.id)}
-                  className="inline-flex items-center gap-1.5 bg-white border border-[#e0e4e5] rounded-full px-3 py-1.5 text-[13px] font-bold text-[#2d3435] whitespace-nowrap shadow-sm active:scale-95 transition-transform"
-                >
-                  <span className="w-2 h-2 rounded-full bg-orange-400 flex-shrink-0" />
-                  {s.titleNative || s.title}
-                </button>
-              ))}
+              {practicas.map(s => {
+                const venueName = getVenueDisplay(s, language, venuesMap);
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => openSocialModal(s.id)}
+                    className="inline-flex flex-col items-start gap-0.5 bg-white border border-[#e0e4e5] rounded-2xl px-3.5 py-2 text-[13px] font-bold text-[#2d3435] shadow-sm active:scale-95 transition-transform"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-orange-400 flex-shrink-0" />
+                      <span>{s.titleNative || s.title}</span>
+                    </div>
+                    <div className="pl-3.5 text-[11px] font-semibold text-[#8e9a9c] whitespace-nowrap">
+                      {s.startTime && `${s.startTime}`}
+                      {venueName && ` • ${venueName}`}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           ) : (
             <div className="min-h-[32px] flex items-center">
