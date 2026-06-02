@@ -355,7 +355,7 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: "100%" }}
       transition={{ type: "spring", damping: 25, stiffness: 200 }}
-      className="fixed inset-0 z-[110] bg-white flex items-center justify-center font-['Plus_Jakarta_Sans']"
+      className="fixed inset-0 z-[10000] bg-white flex items-center justify-center font-['Plus_Jakarta_Sans']"
     >
       <main className="max-w-md w-full h-[100dvh] bg-white flex flex-col overflow-hidden relative text-left">
         {/* Header */}

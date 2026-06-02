@@ -59,6 +59,10 @@ export const useGroupCalendar = (group: Group) => {
     endDate: formatDate(new Date(), 'iso'),
     endTime: '21:00',
     type: 'general' as CalendarEvent['type'],
+    // 신규 추가 필드 상태 셋업
+    weekPlans: ['', '', '', ''] as string[],
+    org: '',
+    dj: '',
   });
 
   const handleFormClose = () => {
@@ -111,7 +115,10 @@ export const useGroupCalendar = (group: Group) => {
               endTime: s.endTime || '',
               type: s.title.toLowerCase().includes('milonga') || s.title.toLowerCase().includes('밀롱가') ? 'milonga' : 'social',
               createdBy: 'system',
-              createdAt: s.createdAt?.toMillis ? s.createdAt.toMillis() : Date.now()
+              createdAt: s.createdAt?.toMillis ? s.createdAt.toMillis() : Date.now(),
+              // 소셜/밀롱가 org 및 dj 주입
+              org: (s as any).org || (s as any).organizer || '',
+              dj: (s as any).dj || '',
             });
             d = addDays(d, 7);
           }
@@ -126,7 +133,10 @@ export const useGroupCalendar = (group: Group) => {
             endTime: s.endTime || '',
             type: s.title.toLowerCase().includes('milonga') || s.title.toLowerCase().includes('밀롱가') ? 'milonga' : 'social',
             createdBy: 'system',
-            createdAt: s.createdAt?.toMillis ? s.createdAt.toMillis() : Date.now()
+            createdAt: s.createdAt?.toMillis ? s.createdAt.toMillis() : Date.now(),
+            // 소셜/밀롱가 org 및 dj 주입
+            org: (s as any).org || (s as any).organizer || '',
+            dj: (s as any).dj || '',
           });
         }
       });
@@ -142,8 +152,16 @@ export const useGroupCalendar = (group: Group) => {
     const allClasses = [...(group.classes || []), ...subClasses];
     const uniqueClasses = Array.from(new Map(allClasses.map(c => [c.id, c])).values());
 
-    return uniqueClasses.flatMap(cls => 
-      (cls.schedule || []).map((sch, idx) => {
+    return uniqueClasses.flatMap(cls => {
+      // 해당 클래스의 1~4주차 수업 개요를 동적으로 파싱
+      const weekPlans = ['', '', '', ''];
+      (cls.schedule || []).forEach(sch => {
+        if (sch.week >= 1 && sch.week <= 4) {
+          weekPlans[sch.week - 1] = sch.content || '';
+        }
+      });
+
+      return (cls.schedule || []).map((sch, idx) => {
         let st = cls.startTime || '';
         let et = cls.endTime || '';
         if (sch.timeSlot) {
@@ -176,10 +194,12 @@ export const useGroupCalendar = (group: Group) => {
           endTime: et,
           type: 'class',
           createdBy: 'system',
-          createdAt: Date.now()
+          createdAt: Date.now(),
+          // 주차별 개요 배열 주입
+          weekPlans: weekPlans,
         };
-      })
-    );
+      });
+    });
   }, [group.classes, subClasses, t]);
 
   const events = useMemo(() => {
@@ -233,6 +253,10 @@ export const useGroupCalendar = (group: Group) => {
             endDate: formatDate(eventDate, 'iso'),
             endTime: foundEvent.endTime || '21:00',
             type: foundEvent.type,
+            // 에디팅 바인딩
+            weekPlans: (foundEvent as any).weekPlans || ['', '', '', ''],
+            org: (foundEvent as any).org || '',
+            dj: (foundEvent as any).dj || '',
           });
         }
       } else {
@@ -245,6 +269,10 @@ export const useGroupCalendar = (group: Group) => {
           endDate: formatDate(selectedDate, 'iso'),
           endTime: '21:00',
           type: 'general',
+          // 신규 일정 초기화
+          weekPlans: ['', '', '', ''],
+          org: '',
+          dj: '',
         });
       }
       setIsFormOpen(true);
@@ -268,6 +296,10 @@ export const useGroupCalendar = (group: Group) => {
         endTime: formData.endTime,
         type: formData.type, 
         createdBy: 'user',
+        // 페이로드 주입
+        weekPlans: formData.weekPlans || ['', '', '', ''],
+        org: formData.org || '',
+        dj: formData.dj || '',
       };
       if (editingEvent) {
         await groupService.updateCalendarEvent(group.id, editingEvent.id, eventPayload);

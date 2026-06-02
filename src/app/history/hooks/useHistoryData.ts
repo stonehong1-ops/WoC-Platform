@@ -12,6 +12,8 @@ import { BaseBooking } from '@/types/booking';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { chatService } from '@/lib/firebase/chatService';
 import { useModalNavigation } from '@/hooks/useModalNavigation';
+import { db } from '@/lib/firebase/clientApp';
+import { doc, updateDoc } from 'firebase/firestore';
 import {
   getTimestamp,
   formatDate,
@@ -62,7 +64,12 @@ export function useHistoryData() {
     uidRegistrations.forEach(r => regMap.set(r.id, r));
     phoneRegistrations.forEach(r => regMap.set(r.id, r));
 
+    const bookingIds = new Set(bookings.map(b => b.id));
+
     Array.from(regMap.values()).forEach(reg => {
+      // Avoid duplicate display for registrations loaded from the bookings collection
+      if (bookingIds.has(reg.id)) return;
+
       items.push({
         id: reg.id,
         raw: reg,
@@ -78,14 +85,14 @@ export function useHistoryData() {
         currency: reg.currency,
         appliedAt: reg.appliedAt,
         confirmedAt: reg.confirmedAt,
-        imageUrl: (reg as any).imageUrl || ''
+        imageUrl: reg.imageUrl || (reg as any).itemImageUrl || (reg as any).payload?.imageUrl || ''
       });
     });
 
     // 2. New Bookings (Daily Class, Shop, Stay, Rental)
     bookings.forEach(b => {
       let domainType = 'All';
-      if (b.domain === 'class_daily' || b.domain === 'class_4w') domainType = 'Class';
+      if (b.domain && b.domain.startsWith('class')) domainType = 'Class';
       else if (b.domain === 'shop') domainType = 'Shop';
       else if (b.domain === 'stay') domainType = 'Stay';
       else if (b.domain === 'rental') domainType = 'Rental';
@@ -344,10 +351,53 @@ export function useHistoryData() {
     }
   };
 
+  const updateHistoryItemMemo = async (itemId: string, source: string, newMemo: string) => {
+    if (!itemId) return;
+    try {
+      if (source === 'registration') {
+        await classRegistrationService.updateRegistration(itemId, { memo: newMemo } as any);
+      } else if (source === 'booking') {
+        await updateDoc(doc(db, 'bookings', itemId), { memo: newMemo });
+      } else if (source === 'stay_booking') {
+        await updateDoc(doc(db, 'stay_bookings', itemId), { notes: newMemo });
+      }
+      toast.success(language === 'KR' ? '메모가 저장되었습니다.' : 'Memo has been saved.');
+      
+      // Update selectedDetail locally if it is currently open
+      setSelectedDetail((prev: any) => prev && prev.id === itemId ? { ...prev, raw: { ...prev.raw, memo: newMemo } } : prev);
+    } catch (err) {
+      console.error("Failed to update history memo:", err);
+      toast.error(language === 'KR' ? '메모 저장에 실패했습니다.' : 'Failed to save memo.');
+      throw err;
+    }
+  };
+
+  const cancelHistoryItem = async (itemId: string, source: string) => {
+    if (!itemId) return;
+    try {
+      if (source === 'registration') {
+        await classRegistrationService.updateRegistration(itemId, { status: 'CANCELED' } as any);
+      } else if (source === 'booking') {
+        await updateDoc(doc(db, 'bookings', itemId), { status: 'CANCELED' });
+      } else if (source === 'stay_booking') {
+        await updateDoc(doc(db, 'stay_bookings', itemId), { status: 'CANCELED' });
+      }
+      toast.success(language === 'KR' ? '신청이 취소되었습니다.' : 'Application has been canceled.');
+      
+      // Update selectedDetail locally if it is currently open
+      setSelectedDetail((prev: any) => prev && prev.id === itemId ? { ...prev, status: 'CANCELED', raw: { ...prev.raw, status: 'CANCELED' } } : prev);
+    } catch (err) {
+      console.error("Failed to cancel history item:", err);
+      toast.error(language === 'KR' ? '신청 취소에 실패했습니다.' : 'Failed to cancel application.');
+      throw err;
+    }
+  };
+
   return {
     t,
     language,
     user,
+    profile,
     activeTab,
     setActiveTab,
     selectedDetail,
@@ -363,6 +413,8 @@ export function useHistoryData() {
     handleCopyAccount,
     handleOpenDetail,
     handleCloseDetail,
-    handleChatWithSeller
+    handleChatWithSeller,
+    updateHistoryItemMemo,
+    cancelHistoryItem
   };
 }

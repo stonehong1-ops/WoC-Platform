@@ -335,6 +335,9 @@ export interface CalendarEvent {
   color?: string;
   createdBy: string;
   createdAt: any;
+  weekPlans?: string[];
+  org?: string;
+  dj?: string;
 }
 export const DEFAULT_BOARDS: GroupBoard[] = [
   { id: 'notice', title: 'Notice', permission: 'Only Admin', order: 1 },
@@ -371,5 +374,6 @@ export interface ClassRegistration {
   orderNumber?: string;
   participatingClassPartners?: Record<string, string>;
   attendance?: Record<number, boolean>;
+  imageUrl?: string;
 }
 

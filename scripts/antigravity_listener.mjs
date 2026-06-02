@@ -43,13 +43,37 @@ try {
           console.log(`🖼️ 첨부 이미지: ${imageUrl}`);
         }
 
-        // A. 즉시 'in_progress' 상태로 전환하여 스톤님 모바일에 0.5초 피드백 전달
-        try {
-          const docRef = db.collection('antigravity_terminal').doc(docId);
-          await docRef.update({ status: 'in_progress' });
-          console.log(`⚡ [상태 갱신] 문서 ${docId} -> '작업 중(in_progress)' 전환 완료!`);
-        } catch (err) {
-          console.error('❌ 상태 갱신 실패:', err);
+        // A. 승인 여부 판독 및 보안 락 해제 토큰 주입
+        const normalizedMsg = (message || '').trim().toLowerCase();
+        const isApproval = ['승인', '승인합니다', 'y', 'yes', '고', 'go', '진행', '진행해'].some(term => normalizedMsg.includes(term));
+
+        if (isApproval) {
+          try {
+            const gateDir = path.join(process.cwd(), '.safe_gate');
+            if (!fs.existsSync(gateDir)) {
+              fs.mkdirSync(gateDir, { recursive: true });
+            }
+            const tokenPath = path.join(gateDir, 'approve.token');
+            fs.writeFileSync(tokenPath, 'approved', 'utf-8');
+            console.log(`🔑 [모바일 승인] 보안 락 토큰 생성 완료: ${tokenPath}`);
+
+            const docRef = db.collection('antigravity_terminal').doc(docId);
+            await docRef.update({ 
+              status: 'completed',
+              agentResponse: '⚡ [모바일 승인 확인] 보안 락이 일시적으로 완전 해제되었습니다! 대기 중인 모든 에이전트 작업 및 빌드 배포 처리가 논스톱 가동됩니다.'
+            });
+            console.log(`⚡ [상태 갱신] 문서 ${docId} -> '완료(completed)' 전환 및 피드백 전송 완료!`);
+          } catch (lockErr) {
+            console.error('❌ 모바일 승인 토큰 생성 실패:', lockErr);
+          }
+        } else {
+          try {
+            const docRef = db.collection('antigravity_terminal').doc(docId);
+            await docRef.update({ status: 'in_progress' });
+            console.log(`⚡ [상태 갱신] 문서 ${docId} -> '작업 중(in_progress)' 전환 완료!`);
+          } catch (err) {
+            console.error('❌ 상태 갱신 실패:', err);
+          }
         }
 
         // B. 로컬 public/antigravity.txt 백업 기록

@@ -1,5 +1,5 @@
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
-import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from './clientApp';
 import app from './clientApp';
 
@@ -43,19 +43,24 @@ export const fcmService = {
       }
     } catch (error) {
       console.error('FCM 토큰 발급 중 오류:', error);
-      // alert(`FCM 토큰 발급 실패: ${error}`); // 디버깅용
       return null;
     }
   },
 
-  // 발급된 토큰을 Firestore user 문서에 저장
+  // 발급된 토큰을 Firestore user 문서에 저장 (교체 방식 — 기기당 최신 토큰만 유지)
   saveTokenToUser: async (userId: string, token: string) => {
     try {
       const userRef = doc(db, 'users', userId);
-      // fcmTokens 배열에 추가 (중복 방지)
-      await updateDoc(userRef, {
-        fcmTokens: arrayUnion(token)
-      });
+      const userSnap = await getDoc(userRef);
+      
+      if (userSnap.exists()) {
+        const existingTokens: string[] = userSnap.data()?.fcmTokens || [];
+        // 이미 동일 토큰이면 저장 불필요
+        if (existingTokens.includes(token)) return;
+        // 최대 3개까지만 유지 (최신 토큰 우선, 오래된 토큰 삭제)
+        const updatedTokens = [token, ...existingTokens].slice(0, 3);
+        await updateDoc(userRef, { fcmTokens: updatedTokens });
+      }
     } catch (error) {
       console.error('FCM 토큰 저장 중 오류:', error);
     }

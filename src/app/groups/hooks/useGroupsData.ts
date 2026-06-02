@@ -6,6 +6,7 @@ import { groupService } from '@/lib/firebase/groupService';
 import { Group, Member } from '@/types/group';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useNavigation } from '@/components/providers/NavigationProvider';
 
 export function useGroupsData() {
   const router = useRouter();
@@ -13,6 +14,7 @@ export function useGroupsData() {
   const pathname = usePathname();
   const { user, profile, setShowLogin } = useAuth();
   const { t, language } = useLanguage();
+  const { setGlobalNavHidden } = useNavigation();
   
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
@@ -90,17 +92,21 @@ export function useGroupsData() {
     fetchGroups();
   }, [fetchGroups]);
 
-  // Scroll block prevention
+  // Scroll block and global navigation visibility control
   useEffect(() => {
-    if (isCreateOpen || selectedCategory || selectedGroup) {
+    const isModalActive = !!(isCreateOpen || selectedCategory || selectedGroup);
+    if (isModalActive) {
       document.body.style.overflow = 'hidden';
+      setGlobalNavHidden(true);
     } else {
       document.body.style.overflow = '';
+      setGlobalNavHidden(false);
     }
     return () => {
       document.body.style.overflow = '';
+      setGlobalNavHidden(false);
     };
-  }, [isCreateOpen, selectedCategory, selectedGroup]);
+  }, [isCreateOpen, selectedCategory, selectedGroup, setGlobalNavHidden]);
 
   // Watch URL params for specialized header triggers
   useEffect(() => {

@@ -107,9 +107,9 @@ export default function SocialReservationTab({ social }: Props) {
       await socialService.addReservation(social.id, {
         userId: user.uid,
         userName: getUserBookingName(user, profile),
-        userPhotoURL: user.photoURL || undefined,
+        ...(user.photoURL ? { userPhotoURL: user.photoURL } : {}),
         peopleCount,
-        selectedEventId: selectedEventId || undefined,
+        ...(selectedEventId ? { selectedEventId } : {}),
         weekStartDate: dateKey,
         status: "pending",
       });

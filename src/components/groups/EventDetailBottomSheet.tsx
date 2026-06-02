@@ -108,10 +108,63 @@ export const EventDetailBottomSheet: React.FC<EventDetailBottomSheetProps> = ({
                 </div>
                 <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
                   <h4 className="text-base font-bold text-[#242c51]">{event.title}</h4>
-                  {event.description && (
+                  {event.description && event.type !== 'social' && (
                     <p className="text-sm font-medium text-slate-500 mt-2 whitespace-pre-wrap">
                       {event.description}
                     </p>
+                  )}
+
+                  {/* 클래스 수업개요 (선택일 기준 오늘 주차것만 노출 / 없으면 흐리게 내용없음) */}
+                  {event.type === 'class' && (() => {
+                    const getWeekOfMonth = (date: Date) => {
+                      const currentDate = date.getDate();
+                      const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+                      const startDay = startOfMonth.getDay();
+                      return Math.ceil((currentDate + startDay) / 7);
+                    };
+                    const weekNum = Math.min(getWeekOfMonth(selectedDate), 4);
+                    const plan = event.weekPlans?.[weekNum - 1] || '';
+                    const hasPlan = plan && plan !== '빈칸';
+                    return (
+                      <div className="mt-4 pt-3.5 border-t border-slate-100 flex flex-col gap-2">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">주차별 수업개요</p>
+                        <div className="flex flex-col gap-2 mt-1 bg-slate-50/70 p-3.5 rounded-xl border border-slate-100/50">
+                          <div className="text-[13px] font-semibold text-slate-600 flex items-baseline gap-2.5">
+                            <span className="font-bold text-[#ba1a1a] shrink-0 min-w-[40px]">{weekNum}주차</span>
+                            {hasPlan ? (
+                              <span className="text-slate-700 break-all">{plan}</span>
+                            ) : (
+                              <span className="text-slate-400 font-normal italic break-all opacity-50">내용없음</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* 소셜/밀롱가 Org 및 DJ 노출 / 없으면 흐리게 내용없음 */}
+                  {(event.type === 'social' || event.type === 'milonga') && (
+                    <div className="mt-4 pt-3.5 border-t border-slate-100 flex flex-col gap-2">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">행사 상세 정보</p>
+                      <div className="flex flex-col gap-2 mt-1 bg-slate-50/70 p-3.5 rounded-xl border border-slate-100/50">
+                        <div className="text-[13px] font-semibold text-slate-600 flex items-baseline gap-2.5">
+                          <span className="font-bold text-[#004190] shrink-0 min-w-[40px]">Org</span>
+                          {event.org && event.org !== '빈칸' ? (
+                            <span className="text-slate-700 break-all">{event.org}</span>
+                          ) : (
+                            <span className="text-slate-400 font-normal italic break-all opacity-50">내용없음</span>
+                          )}
+                        </div>
+                        <div className="text-[13px] font-semibold text-slate-600 flex items-baseline gap-2.5">
+                          <span className="font-bold text-[#004190] shrink-0 min-w-[40px]">DJ</span>
+                          {event.dj && event.dj !== '빈칸' ? (
+                            <span className="text-slate-700 break-all">{event.dj}</span>
+                          ) : (
+                            <span className="text-slate-400 font-normal italic break-all opacity-50">내용없음</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   )}
 
                   {/* Smart Location Navigation Sample */}

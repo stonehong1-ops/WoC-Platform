@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { Social } from "@/types/social";
-import { extractPosterData } from "./poster/posterTypes";
+import { extractPosterData, getUpcomingDateStr } from "./poster/posterTypes";
 import { POSTER_LAYOUTS } from "./poster/PosterLayouts";
 import { socialService } from "@/lib/firebase/socialService";
 import { storageService } from "@/lib/firebase/storageService";
@@ -21,7 +21,21 @@ export default function SocialPosterEditor({ social, onClose }: Props) {
   const savedYOffset = (social as any).posterYOffset || 0;
   const savedBlur = (social as any).posterBlur || 0;
   const savedDjPhotoUrl = (social as any).djPhotoUrl || "";
-  const savedDjName = social.djName || "";
+
+  // djs 배열이 있으면 현재 시점 기준 다음 해당 요일 DJ를 초기값으로 사용
+  const savedDjName = (() => {
+    if (
+      social.type === "regular" &&
+      social.djs && Array.isArray(social.djs) && social.djs.length > 0 &&
+      social.dayOfWeek !== undefined
+    ) {
+      const upcomingDate = getUpcomingDateStr(social.dayOfWeek, social.endTime);
+      const matched = social.djs.find(dj => dj && dj.date === upcomingDate);
+      if (matched && matched.djName) return matched.djName;
+      return "미정"; // djs 배열 있지만 해당 날짜 미등록
+    }
+    return social.djName || "";
+  })();
   
   // 2D Floating Position Coordinates (default X: 50%, Y: 85%)
   const savedDjPosX = (social as any).posterDjPosX !== undefined ? (social as any).posterDjPosX : 50;
@@ -128,7 +142,7 @@ export default function SocialPosterEditor({ social, onClose }: Props) {
     imageUrl,
     djName,
     djPhotoUrl
-  } as any), [social, imageUrl, djName, djPhotoUrl]);
+  } as any, 'editor'), [social, imageUrl, djName, djPhotoUrl]);
 
   const selected = POSTER_LAYOUTS.find((l) => l.id === selectedId) || POSTER_LAYOUTS[0];
   const isDirty = selectedId !== savedId || yOffset !== savedYOffset || blur !== savedBlur || djName !== savedDjName || djPhotoUrl !== savedDjPhotoUrl || imageUrl !== social.imageUrl || djPosX !== savedDjPosX || djPosY !== savedDjPosY || djSize !== savedDjSize;

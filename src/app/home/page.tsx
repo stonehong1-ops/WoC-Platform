@@ -235,9 +235,26 @@ export default function SocietyPage() {
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
 
-      <div className="bg-background text-on-background antialiased font-body-md w-full relative">
+      <div className={`bg-background text-on-background antialiased font-body-md w-full relative transition-opacity duration-500 ${twReady ? 'opacity-100' : 'opacity-0'}`}>
+        {!twReady && (
+          <div className="fixed inset-0 z-[9999] bg-[#fdf7ff] flex flex-col items-center justify-center">
+            <div className="w-10 h-10 rounded-full border-4 border-[#004190]/10 border-t-[#004190] animate-spin"></div>
+            <p className="mt-4 font-label-sm text-[12px] text-slate-500 uppercase tracking-widest animate-pulse">Tango Society</p>
+          </div>
+        )}
+
         {/* Hero (Global) — Nearest Upcoming Event */}
-        {heroEvent && (
+        {!heroEvent ? (
+          <section className="relative w-full aspect-[3/4] md:max-h-[700px] md:w-auto md:mx-auto overflow-hidden flex items-end bg-gradient-to-b from-[#1e1b20] to-[#121114] animate-pulse">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom,_rgba(255,255,255,0.03),_transparent)]"></div>
+            <div className="relative z-10 max-w-7xl mx-auto px-page_margin pb-section_gap w-full space-y-4">
+              <div className="h-6 w-24 bg-white/10 rounded-lg"></div>
+              <div className="h-10 w-2/3 bg-white/10 rounded-lg"></div>
+              <div className="h-14 w-5/6 bg-white/10 rounded-lg"></div>
+              <div className="h-12 w-32 bg-[#004190]/30 rounded"></div>
+            </div>
+          </section>
+        ) : (
           <section className="relative w-full aspect-[3/4] md:max-h-[700px] md:w-auto md:mx-auto overflow-hidden flex items-end">
             <div className="absolute inset-0 z-0">
               {heroEvent.imageUrl && (

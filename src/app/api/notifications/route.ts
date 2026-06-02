@@ -45,24 +45,55 @@ export async function POST(request: Request) {
     // sendEachForMulticast를 사용하여 여러 디바이스 토큰에 한 번에 전송
     const response = await admin.messaging().sendEachForMulticast(payload);
     
-    // 실패한 토큰 정리 로직 등을 추가할 수 있습니다.
+    // 실패한 토큰 자동 정리 — 만료/무효 토큰은 Firestore에서 삭제
     const failedTokens: any[] = [];
+    const invalidTokens: string[] = [];
     if (response.failureCount > 0) {
       response.responses.forEach((resp, idx) => {
         if (!resp.success) {
+          const errorCode = resp.error?.code;
           failedTokens.push({
             token: tokens[idx],
             error: resp.error?.message,
-            code: resp.error?.code
+            code: errorCode
           });
+          // 무효 토큰 식별 (만료, 미등록, 잘못된 인수)
+          if (
+            errorCode === 'messaging/registration-token-not-registered' ||
+            errorCode === 'messaging/invalid-registration-token' ||
+            errorCode === 'messaging/invalid-argument'
+          ) {
+            invalidTokens.push(tokens[idx]);
+          }
         }
       });
+
+      // 무효 토큰 일괄 정리
+      if (invalidTokens.length > 0) {
+        try {
+          const firestore = admin.firestore();
+          const usersSnap = await firestore.collection('users')
+            .where('fcmTokens', 'array-contains-any', invalidTokens.slice(0, 10))
+            .get();
+
+          const batch = firestore.batch();
+          usersSnap.docs.forEach(userDoc => {
+            const currentTokens: string[] = userDoc.data().fcmTokens || [];
+            const cleaned = currentTokens.filter(t => !invalidTokens.includes(t));
+            batch.update(userDoc.ref, { fcmTokens: cleaned });
+          });
+          await batch.commit();
+        } catch (cleanupErr) {
+          console.error('Failed to cleanup invalid tokens:', cleanupErr);
+        }
+      }
     }
 
     return NextResponse.json({ 
       success: true, 
       successCount: response.successCount,
       failureCount: response.failureCount,
+      invalidTokensCleaned: invalidTokens.length,
       failedTokens 
     });
   } catch (error: any) {

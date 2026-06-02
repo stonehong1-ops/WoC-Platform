@@ -12,14 +12,27 @@ export const storageService = {
     }
     
     try {
+      const isMobileWebView = typeof window !== 'undefined' && 
+        /KAKAOTALK|Lines|Instagram|FBAN|FBAV/i.test(navigator.userAgent);
+        
       const options = {
         maxSizeMB: 1,
         maxWidthOrHeight: 1200,
-        useWebWorker: true,
+        useWebWorker: !isMobileWebView,
         fileType: 'image/jpeg' as string,
       };
       
-      const compressedFile = await imageCompression(file, options);
+      // 5-second safety timeout for compression to prevent infinite loading in restricted webviews
+      const compressionPromise = imageCompression(file, options);
+      const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000));
+      
+      const compressedFile = await Promise.race([compressionPromise, timeoutPromise]);
+      
+      if (!compressedFile) {
+        console.warn("Image compression timed out. Falling back to original file.");
+        return file;
+      }
+      
       // Ensure the file name has the correct extension if converted
       const newFileName = file.name.replace(/\.(heic|HEIC|heif|HEIF|png|PNG)$/, '.jpg');
       
@@ -55,7 +68,10 @@ export const storageService = {
     }
 
     const storageRef = ref(storage, finalPath);
-    const uploadTask = uploadBytesResumable(storageRef, processedFile);
+    const metadata = {
+      contentType: processedFile.type || 'image/jpeg'
+    };
+    const uploadTask = uploadBytesResumable(storageRef, processedFile, metadata);
 
     return new Promise((resolve, reject) => {
       uploadTask.on(

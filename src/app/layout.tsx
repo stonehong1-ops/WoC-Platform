@@ -66,6 +66,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`light notranslate ${inter.variable} ${jakarta.variable} ${manrope.variable}`} translate="no" style={{ colorScheme: 'light' }}>
       <head>
+        <meta name="google" content="notranslate" />
         <meta name="color-scheme" content="light" />
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" rel="stylesheet" />
       </head>
@@ -106,7 +107,7 @@ export default function RootLayout({
                   </LocationProvider>
                 </NotificationProvider>
               </AuthGuard>
-              <Toaster position="top-center" richColors />
+              <Toaster position="top-center" richColors theme="light" />
             </AuthProvider>
           </LanguageProvider>
         </div>

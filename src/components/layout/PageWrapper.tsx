@@ -16,7 +16,7 @@ export default function PageWrapper({ children }: { children: React.ReactNode })
   const isLanding = pathname === '/';
   const isLogin = pathname === '/login';
   const isApp = pathname === '/app';
-  const isSpace = pathname.startsWith('/groups/');
+
   const isPlaza = pathname.startsWith('/plaza');
   const isExplore = pathname.startsWith('/explore');
   const isNation = pathname.startsWith('/class') || pathname.startsWith('/shop') || pathname.startsWith('/resale') || pathname.startsWith('/stay') || pathname.startsWith('/lost') || pathname.startsWith('/hub');
@@ -29,10 +29,10 @@ export default function PageWrapper({ children }: { children: React.ReactNode })
     // Strict PWA Standalone Mode Check
     const isGatewayPath = pathname === '/' || pathname === '/login' || pathname === '/app';
 
-    if (!loading && !isPublic && !isSpace && (!user || !profile?.isRegistered)) {
+    if (!loading && !isPublic && (!user || !profile?.isRegistered)) {
       setShowLogin(true);
     }
-  }, [user, profile, loading, isPublic, isSpace, pathname, router, setShowLogin]);
+  }, [user, profile, loading, isPublic, pathname, router, setShowLogin]);
 
   return (
     <>

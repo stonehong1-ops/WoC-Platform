@@ -1,5 +1,7 @@
 {
-  "projects": {},
+  "projects": {
+    "default": "woc-platform-seoul-1234"
+  },
   "targets": {},
   "etags": {}
 }

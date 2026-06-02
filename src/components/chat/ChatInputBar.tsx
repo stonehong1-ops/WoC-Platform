@@ -116,6 +116,7 @@ export interface ChatInputBarProps {
   setIsSettlementModalOpen: (val: boolean) => void;
   setIsPollModalOpen: (val: boolean) => void;
   triggerEmotionEffect: (text: string) => void;
+  onNoticeOpen?: () => void;
   
   t: (key: string, ...args: any[]) => string;
 }
@@ -157,6 +158,7 @@ export default function ChatInputBar({
   setIsSettlementModalOpen,
   setIsPollModalOpen,
   triggerEmotionEffect,
+  onNoticeOpen,
   t
 }: ChatInputBarProps) {
   const [activeStickerTab, setActiveStickerTab] = React.useState<'daily' | 'animal' | 'neon'>('daily');
@@ -343,7 +345,7 @@ export default function ChatInputBar({
       )}
 
       {/* Input Bar */}
-      <div className="px-3.5 py-2.5 flex items-end gap-2 bg-white relative">
+      <div className="px-3.5 py-2.5 flex items-center gap-2 bg-white relative">
         {/* Hidden inputs */}
         <input ref={fileInputRef} type="file" multiple onChange={(e) => e.target.files && handleFileUpload(e.target.files)} className="hidden" accept="image/*,video/*" />
         <input ref={cameraInputRef} type="file" capture="environment" onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])} className="hidden" accept="image/*" />
@@ -389,7 +391,7 @@ export default function ChatInputBar({
               setIsFeatureDrawerOpen(false);
               setIsStickerDrawerOpen(!isStickerDrawerOpen);
             }}
-            className={`w-8.5 h-8.5 rounded-full flex items-center justify-center transition-all self-end shrink-0 ${
+            className={`w-8.5 h-8.5 rounded-full flex items-center justify-center transition-all self-center shrink-0 ${
               isStickerDrawerOpen ? 'text-primary' : 'text-gray-400 hover:text-gray-600'
             }`}
           >
@@ -406,7 +408,7 @@ export default function ChatInputBar({
             <span className="material-symbols-outlined text-[22px]">mic</span>
           </button>
         ) : (
-          <div className="relative self-end">
+          <div className="relative self-center">
             <button 
               onClick={handleSend}
               onMouseDown={startLongPress}
@@ -575,8 +577,8 @@ export default function ChatInputBar({
             </div>
             
             {/* Features Board Content */}
-            <div className="flex-1 flex items-center justify-center p-4 overflow-y-auto no-scrollbar">
-              <div className="grid grid-cols-3 sm:grid-cols-7 gap-x-3 gap-y-5 w-full max-w-2xl px-2 sm:px-4 justify-items-center">
+            <div className="flex-1 flex items-start justify-center p-4 pt-6 overflow-y-auto no-scrollbar">
+              <div className="grid grid-cols-4 sm:grid-cols-7 gap-x-3 gap-y-5 w-full max-w-2xl px-2 sm:px-4 justify-items-center">
                 
                 {/* Feature 1: Image Album */}
                 <button 
@@ -584,12 +586,12 @@ export default function ChatInputBar({
                     setIsFeatureDrawerOpen(false);
                     albumInputRef.current?.click();
                   }}
-                  className="group flex flex-col items-center gap-2 hover:scale-105 active:scale-95 transition-all w-full max-w-[80px]"
+                  className="group flex flex-col items-center justify-start gap-2 hover:scale-105 active:scale-95 transition-all w-full max-w-[80px] h-[76px]"
                 >
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-[18px] bg-blue-50 hover:bg-blue-100 text-blue-500 flex items-center justify-center shadow-sm border border-blue-100/50 group-hover:shadow-md transition-all">
-                    <span className="material-symbols-outlined text-[26px] sm:text-[28px]">image</span>
+                  <div className="w-12 h-12 rounded-[18px] bg-blue-50 hover:bg-blue-100 text-blue-500 flex items-center justify-center shadow-sm border border-blue-100/50 group-hover:shadow-md transition-all shrink-0">
+                    <span className="material-symbols-outlined text-[26px]">image</span>
                   </div>
-                  <span className="text-[10px] sm:text-[11px] font-black text-gray-500 group-hover:text-gray-800 transition-colors truncate">{t('chatroom.album', '앨범')}</span>
+                  <span className="text-[10px] font-black text-gray-500 group-hover:text-gray-800 transition-colors truncate leading-none">{t('chatroom.album', '앨범')}</span>
                 </button>
 
                 {/* Feature 2: Camera */}
@@ -598,12 +600,12 @@ export default function ChatInputBar({
                     setIsFeatureDrawerOpen(false);
                     cameraInputRef.current?.click();
                   }}
-                  className="group flex flex-col items-center gap-2 hover:scale-105 active:scale-95 transition-all w-full max-w-[80px]"
+                  className="group flex flex-col items-center justify-start gap-2 hover:scale-105 active:scale-95 transition-all w-full max-w-[80px] h-[76px]"
                 >
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-[18px] bg-rose-50 hover:bg-rose-100 text-rose-500 flex items-center justify-center shadow-sm border border-rose-100/50 group-hover:shadow-md transition-all">
-                    <span className="material-symbols-outlined text-[26px] sm:text-[28px]">photo_camera</span>
+                  <div className="w-12 h-12 rounded-[18px] bg-rose-50 hover:bg-rose-100 text-rose-500 flex items-center justify-center shadow-sm border border-rose-100/50 group-hover:shadow-md transition-all shrink-0">
+                    <span className="material-symbols-outlined text-[26px]">photo_camera</span>
                   </div>
-                  <span className="text-[10px] sm:text-[11px] font-black text-gray-500 group-hover:text-gray-800 transition-colors truncate">{t('chatroom.camera', '카메라')}</span>
+                  <span className="text-[10px] font-black text-gray-500 group-hover:text-gray-800 transition-colors truncate leading-none">{t('chatroom.camera', '카메라')}</span>
                 </button>
 
                 {/* Feature 3: Video */}
@@ -612,54 +614,70 @@ export default function ChatInputBar({
                     setIsFeatureDrawerOpen(false);
                     videoInputRef.current?.click();
                   }}
-                  className="group flex flex-col items-center gap-2 hover:scale-105 active:scale-95 transition-all w-full max-w-[80px]"
+                  className="group flex flex-col items-center justify-start gap-2 hover:scale-105 active:scale-95 transition-all w-full max-w-[80px] h-[76px]"
                 >
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-[18px] bg-amber-50 hover:bg-amber-100 text-amber-500 flex items-center justify-center shadow-sm border border-amber-100/50 group-hover:shadow-md transition-all">
-                    <span className="material-symbols-outlined text-[26px] sm:text-[28px]">movie</span>
+                  <div className="w-12 h-12 rounded-[18px] bg-amber-50 hover:bg-amber-100 text-amber-500 flex items-center justify-center shadow-sm border border-amber-100/50 group-hover:shadow-md transition-all shrink-0">
+                    <span className="material-symbols-outlined text-[26px]">movie</span>
                   </div>
-                  <span className="text-[10px] sm:text-[11px] font-black text-gray-500 group-hover:text-gray-800 transition-colors truncate">{t('chatroom.video', '동영상')}</span>
+                  <span className="text-[10px] font-black text-gray-500 group-hover:text-gray-800 transition-colors truncate leading-none">{t('chatroom.video', '동영상')}</span>
                 </button>
 
-                {/* Feature 4: Schedule */}
+                {/* Feature 4: Notice */}
+                {onNoticeOpen && (
+                  <button 
+                    onClick={() => {
+                      setIsFeatureDrawerOpen(false);
+                      onNoticeOpen();
+                    }}
+                    className="group flex flex-col items-center justify-start gap-2 hover:scale-105 active:scale-95 transition-all w-full max-w-[80px] h-[76px]"
+                  >
+                    <div className="w-12 h-12 rounded-[18px] bg-sky-50 hover:bg-sky-100 text-sky-500 flex items-center justify-center shadow-sm border border-sky-100/50 group-hover:shadow-md transition-all shrink-0">
+                      <span className="material-symbols-outlined text-[26px]">campaign</span>
+                    </div>
+                    <span className="text-[10px] font-black text-gray-500 group-hover:text-gray-800 transition-colors truncate leading-none">{t('chatroom.notice', '공지')}</span>
+                  </button>
+                )}
+
+                {/* Feature 5: Schedule */}
                 <button 
                   onClick={() => {
                     setIsFeatureDrawerOpen(false);
                     setIsMeetupModalOpen(true);
                   }}
-                  className="group flex flex-col items-center gap-2 hover:scale-105 active:scale-95 transition-all w-full max-w-[80px]"
+                  className="group flex flex-col items-center justify-start gap-2 hover:scale-105 active:scale-95 transition-all w-full max-w-[80px] h-[76px]"
                 >
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-[18px] bg-purple-50 hover:bg-purple-100 text-purple-500 flex items-center justify-center shadow-sm border border-purple-100/50 group-hover:shadow-md transition-all">
-                    <span className="material-symbols-outlined text-[26px] sm:text-[28px]">calendar_today</span>
+                  <div className="w-12 h-12 rounded-[18px] bg-purple-50 hover:bg-purple-100 text-purple-500 flex items-center justify-center shadow-sm border border-purple-100/50 group-hover:shadow-md transition-all shrink-0">
+                    <span className="material-symbols-outlined text-[26px]">calendar_today</span>
                   </div>
-                  <span className="text-[10px] sm:text-[11px] font-black text-gray-500 group-hover:text-gray-800 transition-colors truncate">{t('chatroom.schedule', '톡캘린더')}</span>
+                  <span className="text-[10px] font-black text-gray-500 group-hover:text-gray-800 transition-colors truncate leading-none">{t('chatroom.schedule', '톡캘린더')}</span>
                 </button>
 
-                {/* Feature 5: Settlement */}
+                {/* Feature 6: Settlement */}
                 <button 
                   onClick={() => {
                     setIsFeatureDrawerOpen(false);
                     setIsSettlementModalOpen(true);
                   }}
-                  className="group flex flex-col items-center gap-2 hover:scale-105 active:scale-95 transition-all w-full max-w-[80px]"
+                  className="group flex flex-col items-center justify-start gap-2 hover:scale-105 active:scale-95 transition-all w-full max-w-[80px] h-[76px]"
                 >
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-[18px] bg-emerald-50 hover:bg-emerald-100 text-emerald-500 flex items-center justify-center shadow-sm border border-emerald-100/50 group-hover:shadow-md transition-all">
-                    <span className="material-symbols-outlined text-[26px] sm:text-[28px]">payments</span>
+                  <div className="w-12 h-12 rounded-[18px] bg-emerald-50 hover:bg-emerald-100 text-emerald-500 flex items-center justify-center shadow-sm border border-emerald-100/50 group-hover:shadow-md transition-all shrink-0">
+                    <span className="material-symbols-outlined text-[26px]">payments</span>
                   </div>
-                  <span className="text-[10px] sm:text-[11px] font-black text-gray-500 group-hover:text-gray-800 transition-colors truncate">{t('chatroom.remittance', '송금/정산')}</span>
+                  <span className="text-[10px] font-black text-gray-500 group-hover:text-gray-800 transition-colors truncate leading-none">{t('chatroom.remittance', '송금/정산')}</span>
                 </button>
 
-                {/* Feature 6: Polls */}
+                {/* Feature 7: Polls */}
                 <button 
                   onClick={() => {
                     setIsFeatureDrawerOpen(false);
                     setIsPollModalOpen(true);
                   }}
-                  className="group flex flex-col items-center gap-2 hover:scale-105 active:scale-95 transition-all w-full max-w-[80px]"
+                  className="group flex flex-col items-center justify-start gap-2 hover:scale-105 active:scale-95 transition-all w-full max-w-[80px] h-[76px]"
                 >
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-[18px] bg-teal-50 hover:bg-teal-100 text-teal-500 flex items-center justify-center shadow-sm border border-teal-100/50 group-hover:shadow-md transition-all">
-                    <span className="material-symbols-outlined text-[26px] sm:text-[28px]">ballot</span>
+                  <div className="w-12 h-12 rounded-[18px] bg-teal-50 hover:bg-teal-100 text-teal-500 flex items-center justify-center shadow-sm border border-teal-100/50 group-hover:shadow-md transition-all shrink-0">
+                    <span className="material-symbols-outlined text-[26px]">ballot</span>
                   </div>
-                  <span className="text-[10px] sm:text-[11px] font-black text-gray-500 group-hover:text-gray-800 transition-colors truncate">{t('chatroom.vote', '투표')}</span>
+                  <span className="text-[10px] font-black text-gray-500 group-hover:text-gray-800 transition-colors truncate leading-none">{t('chatroom.vote', '투표')}</span>
                 </button>
 
               </div>

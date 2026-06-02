@@ -5,6 +5,7 @@ interface PresentationFooterProps {
   totalSlides: number;
   onJump?: (index: number) => void;
   sectionIndexes?: number[];
+  onPrint?: () => void;
 }
 
 const defaultSectionIndexes = [0, 6, 13, 18, 23, 31];
@@ -13,7 +14,8 @@ const PresentationFooter: React.FC<PresentationFooterProps> = ({
   currentSlide, 
   totalSlides, 
   onJump, 
-  sectionIndexes = defaultSectionIndexes 
+  sectionIndexes = defaultSectionIndexes,
+  onPrint
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -58,8 +60,22 @@ const PresentationFooter: React.FC<PresentationFooterProps> = ({
         </div>
       </div>
       
-      {/* Center: Slide Indicator and Fullscreen Toggle */}
+      {/* Center: Slide Indicator, PDF Download and Fullscreen Toggle */}
       <div className="flex items-center gap-3 font-['Space_Grotesk'] text-[14px] font-bold text-[#1c1b1b]/50 tracking-widest backdrop-blur-sm bg-white/30 px-6 py-2 rounded-full border border-black/5 pointer-events-auto">
+        {onPrint && (
+          <>
+            <button 
+              onClick={(e) => { e.stopPropagation(); onPrint(); }} 
+              className="hover:text-[#1c1b1b] transition-colors flex items-center justify-center" 
+              title="Save as PDF (PPT)"
+            >
+              <span className="material-symbols-outlined text-[18px]">
+                picture_as_pdf
+              </span>
+            </button>
+            <span className="w-1 h-1 rounded-full bg-[#1c1b1b]/30"></span>
+          </>
+        )}
         <button 
           onClick={toggleFullscreen} 
           className="hover:text-[#1c1b1b] transition-colors flex items-center justify-center" 

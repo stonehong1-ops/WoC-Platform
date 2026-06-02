@@ -86,8 +86,12 @@ export default function AdminPeoplePage() {
 
   const filteredUsers = users.filter(user => {
     if (!searchQuery) return true;
-    const q = searchQuery.toLowerCase();
-    return user.nickname?.toLowerCase().includes(q) || user.phoneNumber?.includes(searchQuery) || user.email?.toLowerCase().includes(q);
+    const q = searchQuery.trim().toLowerCase();
+    const nick = (user.nickname || '').toLowerCase();
+    const native = (user.nativeNickname || '').toLowerCase();
+    const phone = (user.phoneNumber || '');
+    const email = (user.email || '').toLowerCase();
+    return nick.includes(q) || native.includes(q) || phone.includes(searchQuery) || email.includes(q);
   });
 
   const sortedUsers = [...filteredUsers].sort((a, b) => {

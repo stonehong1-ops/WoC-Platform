@@ -8,24 +8,20 @@ export const rentalService = {
   subscribeSpaces: (
     callback: (spaces: RentalSpace[]) => void
   ) => {
-    let q = query(collection(db, 'rental_spaces'), orderBy('createdAt', 'desc'));
-    
-    // First, let's keep a local cache of groups with rental enabled
-    const fetchActiveGroupsAndSpaces = async (snapshotDocs: any[]) => {
-      const groupsSnap = await getDocs(collection(db, 'groups'));
-      const activeGroupSettings = new Map<string, any>();
-      const groupDataMap = new Map<string, any>();
-      
-      groupsSnap.forEach(doc => {
-        const data = doc.data();
-        if (data.activeServices?.rental === true) {
-          activeGroupSettings.set(doc.id, data.rentalSettings || {});
-          groupDataMap.set(doc.id, data);
-        }
-      });
+    const q = query(collection(db, 'rental_spaces'), orderBy('createdAt', 'desc'));
 
-      let spaces = snapshotDocs.map(doc => {
-        const sData = doc.data();
+    // groups 데이터를 메모리 캐시로 유지 (별도 구독)
+    let activeGroupSettings = new Map<string, any>();
+    let groupDataMap = new Map<string, any>();
+    let latestSpaceDocs: any[] = [];
+    let groupsReady = false;
+    let spacesReady = false;
+
+    const emitIfReady = () => {
+      if (!groupsReady || !spacesReady) return;
+
+      let spaces = latestSpaceDocs.map(d => {
+        const sData = d.data();
         let minPrice = sData.pricePerHour || 0;
         let maxPrice = sData.pricePerHour || 0;
         let groupCoverImage = '';
@@ -49,7 +45,7 @@ export const rentalService = {
         }
 
         return {
-          id: doc.id,
+          id: d.id,
           ...sData,
           minPrice,
           maxPrice,
@@ -58,15 +54,36 @@ export const rentalService = {
         };
       }) as (RentalSpace & { minPrice?: number, maxPrice?: number, groupCoverImage?: string, groupCategory?: string })[];
 
-      // Filter to only include spaces associated with an active studio group
       spaces = spaces.filter(s => s.groupId && activeGroupSettings.has(s.groupId));
-
       callback(spaces);
     };
 
-    return onSnapshot(q, (snapshot) => {
-      fetchActiveGroupsAndSpaces(snapshot.docs);
+    // groups 구독 (1회 구독, 변경 시 자동 갱신)
+    const unsubGroups = onSnapshot(collection(db, 'groups'), (snapshot) => {
+      activeGroupSettings = new Map();
+      groupDataMap = new Map();
+      snapshot.forEach(d => {
+        const data = d.data();
+        if (data.activeServices?.rental === true) {
+          activeGroupSettings.set(d.id, data.rentalSettings || {});
+          groupDataMap.set(d.id, data);
+        }
+      });
+      groupsReady = true;
+      emitIfReady();
     });
+
+    // rental_spaces 구독
+    const unsubSpaces = onSnapshot(q, (snapshot) => {
+      latestSpaceDocs = snapshot.docs;
+      spacesReady = true;
+      emitIfReady();
+    });
+
+    return () => {
+      unsubGroups();
+      unsubSpaces();
+    };
   },
 
   getSpace: async (id: string): Promise<RentalSpace | null> => {

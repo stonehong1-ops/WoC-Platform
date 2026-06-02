@@ -322,3 +322,71 @@
   border-width: 1.5px !important;
   background-image: linear-gradient(to bottom right, rgba(0, 87, 189, 0.02), rgba(244, 63, 94, 0.02)) !important;
 }
+
+/* ================================================
+   🌓 SYSTEM DARK MODE INTERACTION BLOCKER
+   브라우저 강제 다크모드 개입으로부터 라이트 테마 무결성을 100% 사수
+   ================================================ */
+
+/* 1. 브라우저 기본 정보 자동완성(Autofill) 가독성 오염 차단 */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--foreground) !important;
+  -webkit-box-shadow: 0 0 0px 1000px #ffffff inset !important;
+  box-shadow: 0 0 0px 1000px #ffffff inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* 2. 구글 맵 주소 검색 자동완성창(.pac-container)의 다크모드 반전 방어 */
+.pac-container {
+  background-color: #ffffff !important;
+  color: #242c51 !important;
+}
+
+.pac-item {
+  background-color: #ffffff !important;
+  color: #515981 !important;
+  border-top: 1px solid rgba(163,171,215,0.2) !important;
+}
+
+.pac-item:hover {
+  background-color: #f7f5ff !important;
+}
+
+.pac-item-query {
+  color: #242c51 !important;
+}
+
+.pac-secondary-query {
+  color: #515981 !important;
+}
+
+/* 3. 모바일 브라우저의 "스마트 다크모드" 강제 필터(invert) 반전 차단 */
+.gm-style, 
+.gm-style-cc, 
+.gmnoprint, 
+.gm-style img,
+#map,
+#kakao-map,
+iframe[src*="kakao"],
+iframe[src*="daum"] {
+  filter: none !important;
+  color-scheme: light !important;
+}
+
+/* 4. 모바일 네이티브 제어기(Select, Date/Time Picker) 테마 고정 */
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"],
+select,
+option {
+  color-scheme: light !important;
+}
+
+/* 5. Sonner 토스트 알림 다크모드 영향성 배제 */
+[data-sonner-toaster],
+.sonner {
+  color-scheme: light !important;
+}

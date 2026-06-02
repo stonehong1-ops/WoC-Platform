@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: 'Tango World',
     short_name: '탱고월드',
     description: '하나의 세계, 탱고의 모든 순간',
-    start_url: '/live',
+    start_url: '/today',
     scope: '/',
     display: 'standalone',
     background_color: '#F9F9F9',

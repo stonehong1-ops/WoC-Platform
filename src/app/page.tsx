@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function LandingPage() {
+  const { language, t } = useLanguage();
   const [isCheckingPWA, setIsCheckingPWA] = useState(true);
   const [isAlreadyInstalled, setIsAlreadyInstalled] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
@@ -24,7 +26,7 @@ export default function LandingPage() {
 
     if (isStandalone) {
       localStorage.setItem('woc_pwa_installed', 'true');
-      window.location.replace('/live');
+      window.location.replace('/today');
       return;
     }
 
@@ -87,46 +89,19 @@ export default function LandingPage() {
         if (outcome === 'accepted') {
           setDeferredPrompt(null);
           setIsInstalling(true);
-          setInstallBtnText('설치 진행 중...');
+          setInstallBtnText(t('pwa.installing_progress', '설치 진행 중...'));
           setInstallProgress(70);
         }
       } catch (err) {
         console.error('PWA prompt fire failed', err);
       }
     } else {
-      // Native prompt 로딩 폴링
-      setIsInstalling(true);
-      setInstallBtnText('설치 준비 중...');
-      
-      let checkCount = 0;
-      const checkInterval = setInterval(async () => {
-        checkCount++;
-        if (deferredPrompt) {
-          clearInterval(checkInterval);
-          setIsInstalling(false);
-          setInstallBtnText('앱 설치');
-          
-          try {
-            await deferredPrompt.prompt();
-            const { outcome } = await deferredPrompt.userChoice;
-            if (outcome === 'accepted') {
-              setDeferredPrompt(null);
-              setIsInstalling(true);
-              setInstallBtnText('설치 진행 중...');
-              setInstallProgress(70);
-            }
-          } catch (err) {
-            console.error('PWA prompt fire failed inside poll', err);
-          }
-        } else if (checkCount >= 12) {
-          clearInterval(checkInterval);
-          setInstallBtnText('잠시 후 다시 설치해 주세요');
-          setIsInstalling(false);
-          setTimeout(() => {
-            setInstallBtnText('앱 설치');
-          }, 2000);
-        }
-      }, 150);
+      // PWA 1클릭 API 미지원 기기/브라우저에 대한 즉각적이고 친절한 가이드 제공
+      if (isIOS) {
+        alert(t('pwa.unsupported_ios_desc'));
+      } else {
+        alert(t('pwa.unsupported_android_desc'));
+      }
     }
   };
 
@@ -208,7 +183,7 @@ export default function LandingPage() {
                 </div>
               </button>
               <p className="text-[11px] text-gray-400/80 font-medium mt-3.5 tracking-tight">
-                웹앱으로 설치됩니다_
+                {t('pwa.will_be_installed')}
               </p>
             </div>
           )}
@@ -227,7 +202,7 @@ export default function LandingPage() {
               </div>
               
               <p className="mt-5 text-[11px] text-gray-500 font-bold text-center w-full tracking-tight break-keep">
-                사파리 브라우저의 안내를 따라 홈 화면에 추가하시면 즉시 설치가 완료됩니다.
+                {t('pwa.ios_safari_guide')}
               </p>
             </div>
           )}
@@ -235,15 +210,15 @@ export default function LandingPage() {
           {/* Scenario C: Already Installed State */}
           {isAlreadyInstalled && (
             <div className="w-full flex flex-col items-center text-center px-4 animate-in fade-in duration-300">
-              <div className="w-14 h-14 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 mb-4 shadow-inner">
-                <span className="material-symbols-outlined text-3xl font-bold">check_circle</span>
+              <p className="text-[13px] font-bold text-green-600 mb-5 flex items-center gap-1">
+                <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                {t('pwa.congrats')}
+              </p>
+              <div className="w-24 h-24 rounded-[22px] overflow-hidden shadow-lg mb-5 ring-1 ring-gray-200/60">
+                <img src="/icons/icon-192x192.png" alt="TANGO World" className="w-full h-full object-cover" />
               </div>
-              <h3 className="text-[18px] font-extrabold text-gray-900 mb-2 break-keep">
-                축하합니다!
-              </h3>
-              <p className="text-[13px] font-semibold text-gray-500 leading-relaxed break-keep mb-5">
-                '탱고월드' 앱을 검색해서 앱을 실행해 주시기 바랍니다.<br />
-                앱을 홈 화면에 추가하시면 더욱 편리합니다.
+              <p className="text-[14px] font-semibold text-gray-700 leading-relaxed break-keep mb-6">
+                {t('pwa.installed_desc')}
               </p>
               
               <button 
@@ -251,7 +226,7 @@ export default function LandingPage() {
                 className="w-[70%] h-12 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl text-sm transition-all active:scale-95 flex items-center justify-center gap-1.5 shadow-inner"
               >
                 <span className="material-symbols-outlined text-[18px]">restart_alt</span>
-                <span>재설치 하기</span>
+                <span>{t('pwa.reinstall_btn')}</span>
               </button>
             </div>
           )}
@@ -267,8 +242,8 @@ export default function LandingPage() {
               <div className="w-10 h-10 rounded-full flex items-center justify-center text-blue-600 mb-2">
                 <span className="material-symbols-outlined text-2xl font-light">language</span>
               </div>
-              <span className="text-[11px] font-extrabold text-gray-900 tracking-tight">Global Connect</span>
-              <span className="text-[8px] text-gray-400 font-bold mt-1.5 break-keep leading-tight">전 세계 탱고인과 연결</span>
+              <span className="text-[11px] font-extrabold text-gray-900 tracking-tight">{t('pwa.tab_global_title')}</span>
+              <span className="text-[8px] text-gray-400 font-bold mt-1.5 break-keep leading-tight">{t('pwa.tab_global_desc')}</span>
             </div>
 
             {/* Tab 2 */}
@@ -276,8 +251,8 @@ export default function LandingPage() {
               <div className="w-10 h-10 rounded-full flex items-center justify-center text-blue-600 mb-2">
                 <span className="material-symbols-outlined text-2xl font-light">calendar_today</span>
               </div>
-              <span className="text-[11px] font-extrabold text-gray-900 tracking-tight">Events & News</span>
-              <span className="text-[8px] text-gray-400 font-bold mt-1.5 break-keep leading-tight">행사, 소식, 정보를 한곳에</span>
+              <span className="text-[11px] font-extrabold text-gray-900 tracking-tight">{t('pwa.tab_events_title')}</span>
+              <span className="text-[8px] text-gray-400 font-bold mt-1.5 break-keep leading-tight">{t('pwa.tab_events_desc')}</span>
             </div>
 
             {/* Tab 3 */}
@@ -285,8 +260,8 @@ export default function LandingPage() {
               <div className="w-10 h-10 rounded-full flex items-center justify-center text-blue-600 mb-2">
                 <span className="material-symbols-outlined text-2xl font-light">group</span>
               </div>
-              <span className="text-[11px] font-extrabold text-gray-900 tracking-tight">Community</span>
-              <span className="text-[8px] text-gray-400 font-bold mt-1.5 break-keep leading-tight">소통하고 함께 성장하는 커뮤니티</span>
+              <span className="text-[11px] font-extrabold text-gray-900 tracking-tight">{t('pwa.tab_community_title')}</span>
+              <span className="text-[8px] text-gray-400 font-bold mt-1.5 break-keep leading-tight">{t('pwa.tab_community_desc')}</span>
             </div>
 
           </div>

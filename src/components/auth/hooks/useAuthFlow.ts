@@ -43,16 +43,32 @@ export function useAuthFlow() {
     gender: 'Other'
   });
 
-  const handleClose = () => setShowLogin(false);
+  const handleClose = () => {
+    try {
+      localStorage.removeItem('woc_prefill_phone');
+      localStorage.removeItem('woc_prefill_cc');
+      localStorage.removeItem('woc_prefill_step');
+    } catch (e) {}
+    setShowLogin(false);
+  };
 
-  // 1. Modal Lifecycle Management (Form Reset, Body Scroll Lock, and Registered User Warp Redirect)
+  // 1. Modal Lifecycle Management (Form Reset & Body Scroll Lock) - showLogin 최초 변경 시에만 실행!
   useEffect(() => {
     if (showLogin) {
-      // a. Reset form states
+      // [Memory Safe Guard] 백그라운드 리프레시 후 튕겨서 돌아온 유저를 위해 이전 폰 번호 및 국가코드 안전 복구 (재입력 낭비 100% 방지)
+      let savedPhone = '';
+      let savedCC = '+82';
+      try {
+        savedPhone = localStorage.getItem('woc_prefill_phone') || '';
+        savedCC = localStorage.getItem('woc_prefill_cc') || '+82';
+      } catch (e) {
+        console.warn("Storage read blocked:", e);
+      }
+
       setStep('SOCIAL');
       setAuthMethod('');
-      setPhoneCountryCode('+82');
-      setPhoneNumber('');
+      setPhoneCountryCode(savedCC || '+82');
+      setPhoneNumber(savedPhone || '');
       setVerificationCode('');
       setEmail('');
       setPassword('');
@@ -64,20 +80,6 @@ export function useAuthFlow() {
       // b. Scroll Lock
       document.body.style.overflow = 'hidden';
       document.body.classList.add('auth-open');
-
-      // c. Fast Warp for already registered users
-      if (user && profile?.isRegistered) {
-        handleClose();
-        const lastContext = localStorage.getItem('woc_context');
-        setTimeout(() => {
-          if (lastContext) {
-            localStorage.removeItem('woc_context');
-            window.location.replace(lastContext);
-          } else {
-            window.location.replace('/live');
-          }
-        }, 50);
-      }
     } else {
       document.body.style.overflow = 'unset';
       document.body.classList.remove('auth-open');
@@ -87,7 +89,23 @@ export function useAuthFlow() {
       document.body.style.overflow = 'unset';
       document.body.classList.remove('auth-open');
     };
-  }, [showLogin, user, profile, currentPathname]);
+  }, [showLogin]);
+
+  // 1.5. Fast Warp for already registered users - user 및 profile 변경 감지 시 리다이렉트
+  useEffect(() => {
+    if (showLogin && user && profile?.isRegistered) {
+      handleClose();
+      const lastContext = localStorage.getItem('woc_context');
+      setTimeout(() => {
+        if (lastContext) {
+          localStorage.removeItem('woc_context');
+          window.location.replace(lastContext);
+        } else {
+          window.location.replace('/today');
+        }
+      }, 50);
+    }
+  }, [showLogin, user, profile]);
 
   // 2. Authentication Interaction Triggers (Countdown Timer, Auto-OTP verification, Profile Prefill)
   useEffect(() => {
@@ -222,7 +240,7 @@ export function useAuthFlow() {
             localStorage.removeItem('woc_context');
             window.location.replace(lastContext);
           } else {
-            window.location.replace('/live');
+            window.location.replace('/today');
           }
         }, 50);
       } else {
@@ -242,7 +260,7 @@ export function useAuthFlow() {
                 localStorage.removeItem('woc_context');
                 window.location.replace(lastContext);
               } else {
-                window.location.replace('/live');
+                window.location.replace('/today');
               }
             }, 50);
           } else {
@@ -386,8 +404,22 @@ export function useAuthFlow() {
       const confirmation = await Promise.race([sendSmsProcess(), timeoutProcess]) as ConfirmationResult;
       
       setConfirmationResult(confirmation);
+      
+      // [Memory Safe Guard] 백그라운드 리프레시 대비 입력값 임시 보존 (예외 분기 없이 일관된 안전 재인증 유도)
+      try {
+        localStorage.setItem('woc_prefill_phone', phoneNumber);
+        localStorage.setItem('woc_prefill_cc', phoneCountryCode);
+        localStorage.setItem('woc_prefill_step', 'PHONE_VERIFY');
+      } catch (e) {
+        console.warn("Storage write blocked:", e);
+      }
+
       setStep('PHONE_VERIFY');
       setTimeoutCount(0);
+      
+      // 발송 성공 시 30초 동안 중복 클릭 및 재전송 방지를 위한 강제 쿨다운 활성화
+      setCooldown(true);
+      setTimeout(() => setCooldown(false), 30000);
     } catch (error: any) {
       console.warn("SMS sending failed:", error);
       resetRecaptcha();
@@ -404,6 +436,10 @@ export function useAuthFlow() {
       } else {
         const msg = getAuthErrorMessage(error.code, error.message, language);
         alert(msg);
+        
+        // 발송 실패(너무 많은 요청 등) 발생 시에도 연속적인 광클로 인한 추가 차단을 방지하기 위해 10초 쿨다운 적용
+        setCooldown(true);
+        setTimeout(() => setCooldown(false), 10000);
       }
     } finally {
       setIsLoading(false);
@@ -426,7 +462,7 @@ export function useAuthFlow() {
       if (userDoc.exists() && userDoc.data()?.isRegistered === true) {
         handleClose();
         setTimeout(() => {
-          window.location.replace('/live');
+          window.location.replace('/today');
         }, 50);
       } else {
         setStep('FORM');
@@ -470,6 +506,17 @@ export function useAuthFlow() {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       }, { merge: true });
+
+      handleClose();
+      const lastContext = localStorage.getItem('woc_context');
+      setTimeout(() => {
+        if (lastContext) {
+          localStorage.removeItem('woc_context');
+          window.location.replace(lastContext);
+        } else {
+          window.location.replace('/today');
+        }
+      }, 50);
     } catch (err: any) {
       console.warn(err);
       alert(t('auth.alert_reg_failed') + err.message);

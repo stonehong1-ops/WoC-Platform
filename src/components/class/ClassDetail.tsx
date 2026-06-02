@@ -10,6 +10,10 @@ import UserBadge from '@/components/common/UserBadge';
 import { MapSelectorBottomSheet, MapType } from '@/components/common/MapSelectorBottomSheet';
 import { groupService } from '@/lib/firebase/groupService';
 import { GroupClass, ClassDiscount, ClassScheduleEntry } from '@/types/group';
+import { useAuth } from '@/components/providers/AuthProvider';
+import { toast } from 'sonner';
+import BottomSheet from '@/components/common/BottomSheet';
+import GroupClassAddEditor from '@/components/groups/GroupClassAddEditor';
 
 interface ClassDetailProps {
   groupId: string;
@@ -18,11 +22,18 @@ interface ClassDetailProps {
   itemId?: string;
   itemDetail?: GroupClass | ClassDiscount | null;
   isModal?: boolean;
+  onManage?: (item: GroupClass) => void;
 }
 
-export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDetail: propItemDetail }: ClassDetailProps) {
-  const { language } = useLanguage();
-  const [itemDetail, setItemDetail] = useState<GroupClass | ClassDiscount | any | null>(propItemDetail || null);
+export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDetail: propItemDetail, onManage }: ClassDetailProps) {
+  const { language, t } = useLanguage();
+  const { user, profile } = useAuth();
+  const [itemDetail, setItemDetail] = useState<GroupClass | ClassDiscount | any | null>(() => {
+    if (!propItemDetail) return null;
+    const detail = propItemDetail as any;
+    const itemType = detail.itemType || (detail.includedClassIds || detail.includedClasses ? 'discount' : 'class');
+    return { itemType, ...detail };
+  });
   const [loading, setLoading] = useState(!propItemDetail);
   const [isScrolled, setIsScrolled] = useState(false);
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
@@ -31,6 +42,37 @@ export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDeta
   const [hasMapCache, setHasMapCache] = useState<boolean>(false);
   const [cachedMapBrand, setCachedMapBrand] = useState<string>('');
   const scrollRef = React.useRef<HTMLDivElement>(null);
+
+  // 관리 제어반용 추가 상태들
+  const [groupDetails, setGroupDetails] = useState<any | null>(null);
+  const [isManageMenuOpen, setIsManageMenuOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  
+  // 수정 폼 임시 상태들
+  const [tempMaxCapacity, setTempMaxCapacity] = useState<number>(0);
+  const [tempLeaderCount, setTempLeaderCount] = useState<number>(0);
+  const [tempFollowerCount, setTempFollowerCount] = useState<number>(0);
+  const [tempAmount, setTempAmount] = useState<number>(0);
+  const [tempIsDailyBookingOpen, setTempIsDailyBookingOpen] = useState<boolean>(false);
+  const [tempDailyClassPrice, setTempDailyClassPrice] = useState<number>(0);
+  const [tempInstructorComment, setTempInstructorComment] = useState<string>('');
+  
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // itemDetail 변경 시 수정 폼 데이터 동기화
+  useEffect(() => {
+    if (itemDetail) {
+      setTempMaxCapacity(itemDetail.maxCapacity || 0);
+      setTempLeaderCount(itemDetail.leaderCount || 0);
+      setTempFollowerCount(itemDetail.followerCount || 0);
+      setTempAmount(itemDetail.amount || 0);
+      setTempIsDailyBookingOpen(!!itemDetail.isDailyBookingOpen);
+      setTempDailyClassPrice(itemDetail.dailyClassPrice || 0);
+      setTempInstructorComment(itemDetail.instructorComment || '');
+    }
+  }, [itemDetail]);
 
   const updateCacheState = () => {
     if (typeof window === 'undefined') return;
@@ -83,22 +125,52 @@ export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDeta
 
   useEffect(() => {
     if (!groupId || !isOpen) return;
-    const fetchGroupImage = async () => {
+    const fetchGroupDetails = async () => {
       try {
         const groupData = await groupService.getGroup(groupId);
         if (groupData) {
+          setGroupDetails(groupData);
           setGroupImage(groupData.coverImage || groupData.logo || '');
         }
       } catch (e) {
-        console.error("Failed to fetch group image in ClassDetail:", e);
+        console.error("Failed to fetch group image/details in ClassDetail:", e);
       }
     };
-    fetchGroupImage();
+    fetchGroupDetails();
   }, [groupId, isOpen]);
+
+  const fetchItemDetail = async (id: string) => {
+    if (!groupId || !id) return;
+    setLoading(true);
+    try {
+      // 1. classes 컬렉션 조회
+      const classData = await groupService.getClassById(groupId, id);
+      if (classData) {
+        setItemDetail({ itemType: 'class', ...classData });
+        return;
+      }
+
+      // 2. discounts 컬렉션 조회
+      const discountData = await groupService.getDiscountById(groupId, id);
+      if (discountData) {
+        setItemDetail({ itemType: 'discount', ...discountData });
+        return;
+      }
+
+      setItemDetail(null);
+    } catch (error) {
+      console.error("Failed to fetch item details:", error);
+      setItemDetail(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (propItemDetail) {
-      setItemDetail(propItemDetail);
+      const detail = propItemDetail as any;
+      const itemType = detail.itemType || (detail.includedClassIds || detail.includedClasses ? 'discount' : 'class');
+      setItemDetail({ itemType, ...detail });
       setLoading(false);
       return;
     }
@@ -109,32 +181,6 @@ export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDeta
       }
       return;
     }
-
-    const fetchItemDetail = async (id: string) => {
-      setLoading(true);
-      try {
-        // 1. classes 컬렉션 조회
-        const classData = await groupService.getClassById(groupId, id);
-        if (classData) {
-          setItemDetail({ itemType: 'class', ...classData });
-          return;
-        }
-
-        // 2. discounts 컬렉션 조회
-        const discountData = await groupService.getDiscountById(groupId, id);
-        if (discountData) {
-          setItemDetail({ itemType: 'discount', ...discountData });
-          return;
-        }
-
-        setItemDetail(null);
-      } catch (error) {
-        console.error("Failed to fetch item details:", error);
-        setItemDetail(null);
-      } finally {
-        setLoading(false);
-      }
-    };
 
     fetchItemDetail(itemId);
   }, [isOpen, groupId, itemId, propItemDetail]);
@@ -156,6 +202,56 @@ export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDeta
       }
     };
   }, [loading, itemDetail]);
+
+  // 권한 계산 변수들
+  const isGroupAdmin = !!(user && (groupDetails?.ownerId === user.uid || groupDetails?.admins?.includes(user.uid) || itemDetail?.groupId === user.uid));
+  const isInstructor = !!(user && itemDetail?.instructors?.some((i: any) => i.userId === user.uid || i.name === user.displayName));
+  const isSystemAdmin = !!(profile?.systemRole === 'admin' || profile?.isAdmin);
+  const hasManagePermission = !!(user && itemDetail && itemDetail.itemType === 'class' && (isSystemAdmin || isGroupAdmin || isInstructor));
+
+  const handleSaveEdit = async () => {
+    if (!groupId || !itemDetail?.id) return;
+    setIsSaving(true);
+    try {
+      const updatedFields = {
+        maxCapacity: tempMaxCapacity,
+        leaderCount: tempLeaderCount,
+        followerCount: tempFollowerCount,
+        amount: tempAmount,
+        isDailyBookingOpen: tempIsDailyBookingOpen,
+        dailyClassPrice: tempDailyClassPrice,
+        instructorComment: tempInstructorComment
+      };
+      await groupService.updateClass(groupId, itemDetail.id, updatedFields);
+      setItemDetail((prev: any) => prev ? { ...prev, ...updatedFields } : null);
+      setIsEditOpen(false);
+      
+      toast.success(language === 'KR' ? '클래스 정보가 성공적으로 수정되었습니다.' : 'Class information has been successfully updated.');
+    } catch (err) {
+      console.error("Failed to update class:", err);
+      toast.error(language === 'KR' ? '클래스 정보 수정에 실패했습니다.' : 'Failed to update class information.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteClass = async () => {
+    if (!groupId || !itemDetail?.id) return;
+    setIsDeleting(true);
+    try {
+      await groupService.deleteClass(groupId, itemDetail.id);
+      setShowDeleteConfirm(false);
+      setIsManageMenuOpen(false);
+      
+      toast.success(language === 'KR' ? '클래스가 정상적으로 삭제되었습니다.' : 'The class has been successfully deleted.');
+      if (onClose) onClose();
+    } catch (err) {
+      console.error("Failed to delete class:", err);
+      toast.error(language === 'KR' ? '클래스 삭제에 실패했습니다.' : 'Failed to delete class.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const handleClose = () => {
     if (onClose) onClose();
@@ -204,7 +300,18 @@ export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDeta
         <h1 className={`text-sm font-bold truncate max-w-[180px] transition-opacity ${isScrolled ? 'opacity-100 text-[#2d3435]' : 'opacity-0'}`}>
           {itemDetail ? itemDetail.title : 'Detail'}
         </h1>
-        <div className="w-10 h-10" />
+        {hasManagePermission ? (
+          <button
+            onClick={() => {
+              setIsManageMenuOpen(true);
+            }}
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-95 ${isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'}`}
+          >
+            <span className="material-symbols-outlined text-xl">more_vert</span>
+          </button>
+        ) : (
+          <div className="w-10 h-10" />
+        )}
       </header>
 
       {/* Scrollable Content */}
@@ -495,6 +602,101 @@ export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDeta
           }}
           locationName={selectedMapLocation}
         />
+      )}
+
+      {/* 1. 관리 옵션 메뉴 커스텀 팝업 (바텀시트 대신 소셜 스타일 공통 룰 적용) */}
+      {isManageMenuOpen && (
+        <>
+          <div 
+            className="fixed inset-0 z-[10000] bg-black/40 animate-in fade-in duration-150" 
+            onClick={() => setIsManageMenuOpen(false)} 
+          />
+          <div 
+            className="fixed bottom-0 left-0 right-0 z-[10001] bg-white rounded-t-2xl shadow-2xl animate-in slide-in-from-bottom duration-200 pb-safe max-w-[56rem] mx-auto"
+          >
+            <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mt-3 mb-2" />
+            <div className="px-2 pb-4">
+              <button 
+                onClick={() => { 
+                  setIsManageMenuOpen(false); 
+                  setIsEditOpen(true); 
+                }}
+                className="flex items-center gap-4 w-full px-5 py-3.5 rounded-xl hover:bg-gray-50 active:bg-gray-100 transition-colors text-left"
+              >
+                <span className="material-symbols-outlined text-[22px] text-[#2d3435]">edit</span>
+                <span className="text-[15px] font-bold text-[#2d3435]">{t('class.edit_class') || 'Edit'}</span>
+              </button>
+              <button 
+                onClick={() => { 
+                  setIsManageMenuOpen(false); 
+                  setShowDeleteConfirm(true); 
+                }}
+                className="flex items-center gap-4 w-full px-5 py-3.5 rounded-xl hover:bg-red-50 active:bg-red-100 transition-colors text-left"
+              >
+                <span className="material-symbols-outlined text-[22px] text-red-500">delete</span>
+                <span className="text-[15px] font-bold text-red-500">{t('class.delete_class') || 'Delete'}</span>
+              </button>
+              <div className="h-px bg-gray-100 mx-4 my-1" />
+              <button 
+                onClick={() => setIsManageMenuOpen(false)}
+                className="flex items-center justify-center w-full py-3.5 rounded-xl hover:bg-gray-50 active:bg-gray-100 transition-colors text-center text-sm font-black text-slate-500"
+              >
+                {t('class.cancel') || 'Cancel'}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* 2. 클래스 정보 수정 풀스크린 에디터 */}
+      {isEditOpen && groupDetails && itemDetail && (
+        <GroupClassAddEditor
+          group={groupDetails}
+          initialData={itemDetail}
+          onClose={() => setIsEditOpen(false)}
+          onSave={() => {
+            setIsEditOpen(false);
+            if (itemId) {
+              fetchItemDetail(itemId);
+            }
+          }}
+          targetMonth={itemDetail.targetMonth || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`}
+        />
+      )}
+
+      {/* 3. 클래스 삭제 확인 컨펌 다이얼로그 */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-auto overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 text-center">
+              <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+                <span className="material-symbols-outlined text-red-500 text-[26px]">warning</span>
+              </div>
+              <h2 className="text-base font-black text-[#2d3435] mb-2">{t('class.delete_confirm')}</h2>
+              <p className="text-xs text-[#596061] font-semibold leading-relaxed">
+                {t('class.delete_confirm_desc')}
+              </p>
+            </div>
+            <div className="px-6 pb-6 pt-2 flex gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 py-3.5 rounded-xl border border-[#e0e4e5] text-xs font-bold text-[#596061] hover:bg-[#f8f9fa] active:scale-95 transition-all"
+              >
+                {t('class.cancel')}
+              </button>
+              <button
+                onClick={handleDeleteClass}
+                disabled={isDeleting}
+                className="flex-1 py-3.5 rounded-xl bg-red-500 text-white text-xs font-bold hover:bg-red-600 active:scale-95 transition-all flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50"
+              >
+                {isDeleting ? (
+                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : null}
+                {t('class.delete_btn')}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

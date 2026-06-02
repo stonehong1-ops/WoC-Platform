@@ -40,6 +40,7 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isGroupMembersOpen, setIsGroupMembersOpen] = useState(false);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [isNoticeInputOpen, setIsNoticeInputOpen] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState<{ msgId: string, url: string, type: 'image' | 'video', isOwn: boolean } | null>(null);
   
   // Notice collapsible states
@@ -262,6 +263,63 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
     setSelectedInviteUserIds,
     triggerEmotionEffect
   });
+
+  // 1. Any Modal Open State tracker (for device back button PWA override)
+  const isAnyModalOpen = 
+    isSidebarOpen || 
+    isNoticeInputOpen || 
+    isNoticeDetailOpen || 
+    isManageModalOpen ||
+    isGroupMembersOpen ||
+    isInviteModalOpen ||
+    isMeetupModalOpen || 
+    isSettlementModalOpen || 
+    isPollModalOpen || 
+    isStickerDrawerOpen || 
+    isFeatureDrawerOpen ||
+    !!selectedMedia;
+
+  const closeAllModals = () => {
+    setIsSidebarOpen(false);
+    setIsNoticeInputOpen(false);
+    setIsNoticeDetailOpen(false);
+    setIsManageModalOpen(false);
+    setIsGroupMembersOpen(false);
+    setIsInviteModalOpen(false);
+    setIsMeetupModalOpen(false);
+    setIsSettlementModalOpen(false);
+    setIsPollModalOpen(false);
+    setIsStickerDrawerOpen(false);
+    setIsFeatureDrawerOpen(false);
+    setSelectedMedia(null);
+  };
+
+  // Handle browser history pushState logic for active modals
+  useEffect(() => {
+    if (isAnyModalOpen) {
+      if (window.history.state?.modalOpen !== true) {
+        window.history.pushState({ modalOpen: true }, '');
+      }
+    } else {
+      if (window.history.state?.modalOpen === true) {
+        window.history.back();
+      }
+    }
+  }, [isAnyModalOpen]);
+
+  // Intercept PopState event (device back button click)
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      if (isAnyModalOpen) {
+        closeAllModals();
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [isAnyModalOpen]);
 
   // Dynamic mention targets
   const filteredMentionTargets = useMemo(() => {
@@ -668,6 +726,7 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
           setIsSettlementModalOpen={setIsSettlementModalOpen}
           setIsPollModalOpen={setIsPollModalOpen}
           triggerEmotionEffect={triggerEmotionEffect}
+          onNoticeOpen={() => setIsNoticeInputOpen(true)}
           t={t}
         />
       )}
@@ -698,28 +757,7 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
               </div>
               
               <div className="flex-1 overflow-y-auto p-5 space-y-6 no-scrollbar">
-                {/* 1. Announcement Setup form (Admins only) */}
-                {room?.admins?.includes(user?.uid || '') && (
-                  <div className="space-y-3">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-gray-400">{t('CHAT.SIDEBAR_NOTICE_TITLE', '공지사항 관리')}</span>
-                    <form onSubmit={handleAddNotice} className="flex gap-2">
-                      <input 
-                        type="text" 
-                        value={newNoticeText}
-                        onChange={(e) => setNewNoticeText(e.target.value)}
-                        placeholder={t('chat.new_notice_placeholder', '새 공지 등록 (최대 5개)...')}
-                        className="flex-1 px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl text-xs font-semibold placeholder:text-gray-300 focus:bg-white transition-all"
-                      />
-                      <button 
-                        type="submit"
-                        disabled={isAddingNotice}
-                        className="px-3.5 py-2 bg-primary text-white text-xs font-black rounded-xl hover:bg-primary/95 active:scale-95 transition-all shadow-xs"
-                      >
-                        {isAddingNotice ? '...' : t('common.register', '등록')}
-                      </button>
-                    </form>
-                  </div>
-                )}
+
 
                 {/* 2. Group Settings / Participants */}
                 <div className="space-y-3.5">
@@ -1008,6 +1046,54 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
                   </div>
                 ))}
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 7-b. Notice Input Bottom Sheet (from Feature Drawer) */}
+      <AnimatePresence>
+        {isNoticeInputOpen && (
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs" onClick={() => setIsNoticeInputOpen(false)}>
+            <motion.div 
+              initial={{ y: "100%", opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: "100%", opacity: 0 }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="relative w-full max-w-md bg-white rounded-t-[32px] sm:rounded-[32px] p-6 shadow-2xl border border-gray-100 z-10 flex flex-col gap-4 text-gray-800 text-left"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto sm:hidden" />
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-black uppercase tracking-tighter text-gray-900 flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-sky-500 text-[22px]">campaign</span>
+                  {t('chat.notice_input_title', '새 공지 등록')}
+                </h3>
+                <button 
+                  onClick={() => setIsNoticeInputOpen(false)}
+                  className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-500 transition-all"
+                >
+                  <span className="material-symbols-outlined text-[18px]">close</span>
+                </button>
+              </div>
+              <form onSubmit={(e) => { handleAddNotice(e); setIsNoticeInputOpen(false); }} className="flex flex-col gap-3">
+                <input 
+                  type="text" 
+                  value={newNoticeText}
+                  onChange={(e) => setNewNoticeText(e.target.value)}
+                  placeholder={t('chat.new_notice_placeholder', '새 공지 등록 (최대 5개)...')}
+                  className="w-full px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-[14px] font-bold text-gray-800 placeholder:text-gray-300 focus:bg-white focus:border-primary/20 transition-all"
+                  autoFocus
+                />
+                <button 
+                  type="submit"
+                  disabled={isAddingNotice || !newNoticeText.trim()}
+                  className="w-full py-4 bg-primary text-white text-sm font-black rounded-2xl hover:bg-primary/95 active:scale-95 transition-all shadow-md shadow-blue-500/10 flex items-center justify-center gap-1.5 disabled:bg-gray-100 disabled:text-gray-400 disabled:shadow-none"
+                >
+                  <span className="material-symbols-outlined text-[18px] font-black">campaign</span>
+                  <span>{isAddingNotice ? t('common.processing', '처리 중...') : t('chat.register_notice_btn', '공지 등록하기')}</span>
+                </button>
+              </form>
             </motion.div>
           </div>
         )}

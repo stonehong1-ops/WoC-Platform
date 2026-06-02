@@ -88,7 +88,8 @@ function mapBookingToRegistration(booking: any, docId?: string): ClassRegistrati
     paymentStatus: regStatus === 'PAYMENT_PENDING' ? 'pending' : 
                    regStatus === 'PAYMENT_REPORTED' ? 'reported' : 
                    regStatus === 'PAYMENT_COMPLETED' ? 'completed' : 'canceled',
-    orderNumber: booking.orderNumber || undefined
+    orderNumber: booking.orderNumber || undefined,
+    imageUrl: booking.itemImageUrl || payload.imageUrl || ''
   };
 }
 

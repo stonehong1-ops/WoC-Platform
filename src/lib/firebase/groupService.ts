@@ -250,7 +250,7 @@ export const groupService = {
     const membersRef = collection(db, GROUPS_COLLECTION, groupId, 'members');
     const q = query(membersRef);
 
-    return onSnapshot(q, (snapshot) => {
+    return onSnapshot(q, async (snapshot) => {
       const members = snapshot.docs.map(doc => ({
         id: doc.id,
         ...groupService._convertTimestamps(doc.data())
@@ -258,6 +258,19 @@ export const groupService = {
       
       // 캐시 적재
       membersCache.set(groupId, members);
+
+      // memberCount 자동 보정 — 실제 멤버 수와 다르면 교정
+      try {
+        const groupRef = doc(db, GROUPS_COLLECTION, groupId);
+        const groupSnap = await getDoc(groupRef);
+        if (groupSnap.exists()) {
+          const currentCount = groupSnap.data()?.memberCount;
+          const activeMembers = members.filter(m => !m.status || m.status === 'active');
+          if (typeof currentCount === 'number' && currentCount !== activeMembers.length) {
+            await updateDoc(groupRef, { memberCount: activeMembers.length });
+          }
+        }
+      } catch (e) { /* 보정 실패 시 무시 */ }
 
       callback(members);
     }, (error) => {

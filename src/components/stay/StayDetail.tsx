@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { stayService } from '@/lib/firebase/stayService';
 import { stayBookingService } from '@/lib/firebase/stayBookingService';
@@ -80,6 +80,8 @@ const formatPhoneNumberForDisplay = (phone: string): string => {
   return phone;
 };
 
+const DETAIL_STYLES = `.detail-scrollbar::-webkit-scrollbar{display:none}.detail-scrollbar{-ms-overflow-style:none;scrollbar-width:none}.material-symbols-rounded{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24}`;
+
 interface StayDetailProps {
   stayId: string;
   onClose: () => void;
@@ -103,6 +105,7 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike, isE
   const [isScrolled, setIsScrolled] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef(0);
+  const scarcityCount = useRef(Math.floor(Math.random() * 15) + 3);
 
   const isAdmin = useMemo(() => {
     if (!user) return false;
@@ -287,28 +290,35 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike, isE
     }
   };
 
-  const isDateBooked = (date: Date) => {
-    const dayTime = startOfDay(new Date(date)).getTime();
-    return allBookings.some(b => {
-      if (!['APPLIED', 'PAYMENT_REQUESTED', 'PAID', 'CONFIRMED', 'SELLER_CONFIRMED', 'CODE_SENT'].includes(b.status)) return false;
-      const start = parseFirebaseDate(b.checkIn);
-      const end = parseFirebaseDate(b.checkOut);
-      if (!start || !end) return false;
-      
-      const startK = startOfDay(new Date(start)).getTime();
-      const endK = startOfDay(new Date(end)).getTime();
-      
-      return (dayTime > startK && dayTime < endK) || dayTime === startK;
+  // C. 예약 날짜를 Set<number>로 전환 — O(1) 조회
+  const bookedDateSet = useMemo(() => {
+    const set = new Set<number>();
+    allBookings.forEach(b => {
+      if (!['APPLIED', 'PAYMENT_REQUESTED', 'PAID', 'CONFIRMED', 'SELLER_CONFIRMED', 'CODE_SENT'].includes(b.status)) return;
+      const ci = parseFirebaseDate(b.checkIn);
+      const co = parseFirebaseDate(b.checkOut);
+      if (!ci || !co) return;
+      let d = new Date(ci);
+      const end = new Date(co);
+      while (d < end) {
+        set.add(startOfDay(new Date(d)).getTime());
+        d.setDate(d.getDate() + 1);
+      }
     });
-  };
+    return set;
+  }, [allBookings]);
 
-  const isRangeBlocked = (start: Date, end: Date) => {
+  const isDateBooked = useCallback((date: Date) => {
+    return bookedDateSet.has(startOfDay(new Date(date)).getTime());
+  }, [bookedDateSet]);
+
+  const isRangeBlocked = useCallback((start: Date, end: Date) => {
     try {
       const range = eachDayOfInterval({ start, end });
       range.pop();
       return range.some(d => isDateBooked(d));
     } catch { return true; }
-  };
+  }, [isDateBooked]);
 
   const onDateClick = (day: Date) => {
     if (isBefore(day, startOfDay(new Date()))) return;
@@ -350,11 +360,37 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike, isE
     }
   };
 
-  const renderCells = () => {
+  // C. 예약 날짜별 역할 사전(Map) — O(1) 조회로 캘린더 렌더링 최적화
+  const bookingDateMap = useMemo(() => {
+    const map = new Map<number, 'checkIn' | 'checkOut' | 'lastNight' | 'middle'>();
+    allBookings.forEach(b => {
+      if (!['APPLIED', 'PAYMENT_REQUESTED', 'PAID', 'CONFIRMED', 'SELLER_CONFIRMED', 'CODE_SENT'].includes(b.status)) return;
+      const start = parseFirebaseDate(b.checkIn);
+      const end = parseFirebaseDate(b.checkOut);
+      if (!start || !end) return;
+      const startK = startOfDay(new Date(start)).getTime();
+      const endK = startOfDay(new Date(end)).getTime();
+      const lastNightK = endK - (24 * 60 * 60 * 1000);
+      let d = new Date(start);
+      while (d.getTime() < endK) {
+        const dk = startOfDay(new Date(d)).getTime();
+        if (dk === startK) map.set(dk, 'checkIn');
+        else if (dk === lastNightK) map.set(dk, 'lastNight');
+        else if (!map.has(dk)) map.set(dk, 'middle');
+        d.setDate(d.getDate() + 1);
+      }
+      if (!map.has(endK)) map.set(endK, 'checkOut');
+    });
+    return map;
+  }, [allBookings]);
+
+  // C. renderCells를 useMemo로 캐싱
+  const calendarCells = useMemo(() => {
     const monthStart = startOfMonth(currentMonth);
     const monthEnd = endOfMonth(monthStart);
     const startDateView = startOfWeek(monthStart);
     const endDateView = endOfWeek(monthEnd);
+    const todayStart = startOfDay(new Date());
 
     const rows = [];
     let days = [];
@@ -364,34 +400,15 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike, isE
       for (let i = 0; i < 7; i++) {
         const formattedDate = formatDate(day, 'calendarDay');
         const cloneDay = day;
-        const isPast = isBefore(day, startOfDay(new Date()));
+        const isPast = isBefore(day, todayStart);
         const isToday = isSameDay(day, new Date());
         const dayTime = startOfDay(new Date(day)).getTime();
-        let isCheckInDate = false;
-        let isCheckOutDate = false;
-        let isLastNightsDate = false; 
-        let isMiddleDate = false;
-
-        allBookings.forEach(b => {
-          if (!['APPLIED', 'PAYMENT_REQUESTED', 'PAID', 'CONFIRMED', 'SELLER_CONFIRMED', 'CODE_SENT'].includes(b.status)) return;
-          const start = parseFirebaseDate(b.checkIn);
-          const end = parseFirebaseDate(b.checkOut);
-          if (!start || !end) return;
-
-          const startK = startOfDay(new Date(start)).getTime();
-          const endK = startOfDay(new Date(end)).getTime();
-          const lastNightK = endK - (24 * 60 * 60 * 1000); 
-
-          if (dayTime === startK) {
-            isCheckInDate = true;
-          } else if (dayTime === endK) {
-            isCheckOutDate = true;
-          } else if (dayTime === lastNightK) {
-            isLastNightsDate = true;
-          } else if (dayTime > startK && dayTime < lastNightK) {
-            isMiddleDate = true;
-          }
-        });
+        
+        const role = bookingDateMap.get(dayTime);
+        const isCheckInDate = role === 'checkIn';
+        const isCheckOutDate = role === 'checkOut';
+        const isLastNightsDate = role === 'lastNight';
+        const isMiddleDate = role === 'middle';
 
         const isBookedDay = isMiddleDate || isCheckInDate || isLastNightsDate;
         const isCurrentMonth = isSameMonth(day, monthStart);
@@ -480,7 +497,7 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike, isE
       days = [];
     }
     return rows;
-  };
+  }, [currentMonth, allBookings, bookingDateMap, startDate, endDate, isAdmin, formatDate, t]);
 
   const langKey = (language || 'KR').toUpperCase() === 'KR' ? 'KR' : 'EN';
   const stayKey = stayId === 'tango-stay-canaro' ? 'deokeun' : (stayId === 'tango-stay-hapjeong' ? 'hapjeong' : 'hongdae');
@@ -584,8 +601,61 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike, isE
     setShowReservationFlow(true);
   };
 
-  if (isLoading) return <div className="fixed inset-0 z-[100] bg-white flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>;
-  if (!stay) return null;
+  if (!stay) {
+    return (
+      <div className={`fixed inset-0 z-[100] bg-white flex flex-col ${
+        isExiting 
+          ? 'animate-out fade-out slide-out-to-bottom duration-200 fill-mode-forwards' 
+          : 'animate-in slide-in-from-bottom duration-300'
+      }`}>
+        <style dangerouslySetInnerHTML={{ __html: DETAIL_STYLES }} />
+
+        {/* Header */}
+        <div 
+          className="fixed top-0 left-0 right-0 z-[130] pointer-events-auto flex items-center justify-between px-4 pb-3 bg-gradient-to-b from-black/30 to-transparent"
+          style={{ paddingTop: 'max(env(safe-area-inset-top), 24px)' }}
+        >
+          <button onClick={() => {
+            if (window.history.length > 1) {
+              router.back();
+            } else {
+              onClose();
+            }
+          }} className="w-10 h-10 rounded-full flex items-center justify-center transition-colors relative z-[140] bg-black/20 backdrop-blur-sm text-white">
+            <span className="material-symbols-rounded text-xl">arrow_back</span>
+          </button>
+          <div className="text-base font-bold truncate max-w-[180px] opacity-0 text-[#2d3435]">Loading...</div>
+          <div className="flex items-center gap-2">
+            <button className="w-10 h-10 rounded-full flex items-center justify-center bg-black/20 backdrop-blur-sm text-white opacity-40" disabled>
+              <span className="material-symbols-rounded text-xl">share</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto detail-scrollbar pb-[80px]">
+          {/* Skeleton Image Area */}
+          <div className="relative aspect-square bg-slate-200/80 animate-pulse w-full animate-in fade-in duration-300" />
+          
+          {/* Skeleton Header Info */}
+          <div className="px-4 pt-5 pb-4 border-b border-surface-variant/10 text-left animate-pulse">
+            <div className="h-3 bg-slate-200/60 rounded w-1/4 mb-3" />
+            <div className="h-6 bg-slate-200/80 rounded w-3/4 mb-4" />
+            <div className="h-4 bg-slate-200/60 rounded w-1/2" />
+          </div>
+
+          {/* Skeleton Scarcity Bar */}
+          <div className="flex items-center gap-4 px-4 py-3 bg-slate-50 border-b border-slate-100 animate-pulse">
+            <div className="h-4 bg-slate-200/60 rounded w-1/3" />
+          </div>
+
+          {/* Skeleton Calendar Section */}
+          <div className="mx-4 my-4 animate-pulse">
+            <div className="h-[280px] bg-slate-200/40 rounded-3xl" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`fixed inset-0 z-[100] bg-white flex flex-col ${
@@ -593,11 +663,7 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike, isE
         ? 'animate-out fade-out slide-out-to-bottom duration-200 fill-mode-forwards' 
         : 'animate-in slide-in-from-bottom duration-300'
     }`}>
-      <style dangerouslySetInnerHTML={{ __html: `
-        .detail-scrollbar::-webkit-scrollbar { display: none; }
-        .detail-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .material-symbols-rounded { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-      `}} />
+      <style dangerouslySetInnerHTML={{ __html: DETAIL_STYLES }} />
 
       {/* Header */}
       <div 
@@ -645,7 +711,7 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike, isE
           <div className="flex h-full transition-transform duration-300 ease-out" style={{ transform: `translateX(-${safeImgIdx * 100}%)` }}>
             {images.map((img, i) => (
               <div key={i} className="w-full flex-shrink-0 h-full" onClick={() => openModal('images')}>
-                <img src={img} className="w-full h-full object-cover" />
+                <img src={img} className="w-full h-full object-cover" loading={i === 0 ? 'eager' : 'lazy'} />
               </div>
             ))}
           </div>
@@ -707,7 +773,7 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike, isE
         <div className="flex items-center gap-4 px-4 py-3 bg-[#fff8f0] border-b border-[#ffe8cc]">
           <div className="flex items-center gap-1 text-[#e67700]">
             <span className="material-symbols-rounded text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>local_fire_department</span>
-            <span className="text-xs font-bold">{Math.floor(Math.random() * 15) + 3} {t('stay.people_looking', 'people looking at this now')}</span>
+            <span className="text-xs font-bold">{scarcityCount.current} {t('stay.people_looking', 'people looking at this now')}</span>
           </div>
           <div className="flex items-center gap-1 text-[#596061]">
             <span className="material-symbols-rounded text-sm">event_available</span>
@@ -732,7 +798,7 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike, isE
                 <div key={day} className="text-center text-[11px] font-black text-[#acb3b4] uppercase">{day}</div>
               ))}
             </div>
-            <div className="space-y-1">{renderCells()}</div>
+            <div className="space-y-1">{calendarCells}</div>
           </SectionCard>
         </div>
 

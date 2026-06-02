@@ -524,45 +524,43 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
               return (
                 <div className="bg-[#0057bd] p-5 rounded-2xl shadow-lg shadow-[#0057bd]/25 space-y-4">
                   <div>
-                    <p className="text-[18px] leading-[1.8] text-white mb-2 font-bold font-body">정식 멤버가 되어 보세요</p>
-                    <p className="text-[13px] leading-[1.3] text-white/80 mb-4 font-body">가입 즉시 승인 대기 없이 모든 클래스 정보와 소통 공간을 자유롭게 이용하실 수 있습니다.</p>
+                    <p className="text-[18px] leading-[1.8] text-white mb-2 font-bold font-body">{isLocked ? t('group.about.owner_not_joined', '현재 오너가 아직 참여하지 않은 그룹입니다') : '정식 멤버가 되어 보세요'}</p>
+                    <p className="text-[13px] leading-[1.3] text-white/80 mb-4 font-body">{isLocked ? t('group.about.owner_not_joined_desc', '대표자가 참여한 이후에 멤버 가입이 가능합니다.') : '가입 즉시 승인 대기 없이 모든 클래스 정보와 소통 공간을 자유롭게 이용하실 수 있습니다.'}</p>
                   </div>
                   
-                  <button 
-                    className="w-full py-3 bg-white text-[#0057bd] font-bold rounded-xl active:scale-[0.98] transition-transform shadow-sm font-body text-sm disabled:opacity-50"
-                    disabled={isJoining}
-                    onClick={async () => {
-                      if (!user) {
-                        toast.error("로그인이 필요합니다.");
-                        return;
-                      }
-                      setIsJoining(true);
-                      try {
-                        const memberData = {
-                          name: profile?.nickname || user.displayName || 'Anonymous',
-                          avatar: profile?.photoURL || user.photoURL || '',
-                          role: 'member',
-                          joinedAt: Date.now()
-                        };
-                        await groupService.joinGroup(group.id!, user.uid, memberData);
-                        router.push(`${window.location.pathname}?modal=join`, { scroll: false });
-                      } catch (error) {
-                        console.error("Error joining group:", error);
-                        toast.error("가입 처리 중 오류가 발생했습니다.");
-                      } finally {
-                        setIsJoining(false);
-                      }
-                    }}
-                  >
-                    {isJoining ? "처리 중..." : "커뮤니티 가입하기"}
-                  </button>
+                  {!isLocked && (
+                    <button 
+                      className="w-full py-3 bg-white text-[#0057bd] font-bold rounded-xl active:scale-[0.98] transition-transform shadow-sm font-body text-sm disabled:opacity-50"
+                      disabled={isJoining}
+                      onClick={async () => {
+                        if (!user || !profile?.isRegistered) {
+                          toast.error(t('toast.group.signin_required'));
+                          return;
+                        }
+                        setIsJoining(true);
+                        try {
+                          const memberData = {
+                            name: profile.nickname,
+                            avatar: profile?.photoURL || user.photoURL || '',
+                            role: 'member',
+                            joinedAt: Date.now()
+                          };
+                          await groupService.joinGroup(group.id!, user.uid, memberData);
+                          router.push(`${window.location.pathname}?modal=join`, { scroll: false });
+                        } catch (error) {
+                          console.error("Error joining group:", error);
+                          toast.error(t('toast.group.join_failed'));
+                        } finally {
+                          setIsJoining(false);
+                        }
+                      }}
+                    >
+                      {isJoining ? t('common.processing', '처리 중...') : t('group.about.join_button', '커뮤니티 가입하기')}
+                    </button>
+                  )}
 
                   {isLocked && (
                     <div id="claim-owner-input-section" className="mt-3 pt-3 border-t border-white/20 text-center space-y-2">
-                      <p className="text-[11px] text-white/70 font-medium leading-relaxed font-body">
-                        {t('group.about.open_no_owner_notice', '현재 대표자가 공석인 그룹입니다. 대표자이신 경우 소유권을 획득해 주세요.')}
-                      </p>
-                      
                       <div className="text-left">
                         <p className="text-[11px] font-bold text-white/90 mb-2 font-body">
                           {t('group.about.is_representative_question', '혹시 이 커뮤니티의 대표자이신가요?')}
@@ -600,15 +598,15 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
                       className="w-full py-3 bg-white text-[#1e293b] font-bold rounded-xl active:scale-[0.98] transition-transform shadow-sm font-body text-sm disabled:opacity-50"
                       disabled={isJoining}
                       onClick={async () => {
-                        if (!user) {
-                          toast.error("로그인이 필요합니다.");
+                        if (!user || !profile?.isRegistered) {
+                          toast.error(t('toast.group.signin_required'));
                           return;
                         }
                         setIsJoining(true);
                         try {
                           const memberData = {
-                            name: profile?.nickname || user.displayName || 'Anonymous',
-                            avatar: profile?.photoURL || user.photoURL || '',
+                            name: profile.nickname,
+                            avatar: profile.photoURL || '',
                             role: 'member',
                             joinedAt: Date.now()
                           };

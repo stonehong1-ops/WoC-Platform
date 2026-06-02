@@ -572,7 +572,7 @@ export default function ChatMessageList({
 
     return (
       <div className="flex flex-col gap-1">
-        <div className="whitespace-pre-wrap break-words leading-relaxed select-text">
+        <div className="whitespace-pre-wrap break-words leading-relaxed select-none">
           {displayString.split('\n').map((line, i) => (
             <React.Fragment key={i}>
               {renderParsedMentionText(line)}
@@ -760,6 +760,9 @@ export default function ChatMessageList({
                     onClick={() => {
                       if (msg.type === 'image' || msg.type === 'video') {
                         setSelectedMedia({ msgId: msg.id, url: msg.mediaUrl || '', type: msg.type || 'image', isOwn });
+                      } else if (msg.type === 'text' || !msg.type) {
+                        navigator.clipboard.writeText(msg.text || '');
+                        toast.success(t('chat.copied_toast', '메시지가 클립보드에 복사되었습니다!'));
                       }
                     }}
                     className={`rounded-[24px] text-[14.5px] font-medium leading-relaxed relative ${

@@ -9,9 +9,11 @@ import { Stay, StayLike } from '@/types/stay';
 import StayWishlistTray from '@/components/stay/StayWishlistTray';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useModalNavigation } from '@/hooks/useModalNavigation';
-import StayDetail from '@/components/stay/StayDetail';
+import dynamic from 'next/dynamic';
+const StayDetail = dynamic(() => import('@/components/stay/StayDetail'), { ssr: false });
 import CreateStay from '@/components/stay/CreateStay';
 import { useLanguage } from '@/contexts/LanguageContext';
+import ImageWithFallback from '@/components/common/ImageWithFallback';
 
 
 type SortOption = 'latest' | 'popular' | 'price_asc' | 'price_desc';
@@ -393,25 +395,15 @@ function StayPageContent() {
                   className="group cursor-pointer animate-in fade-in slide-in-from-bottom-2 duration-500 block text-left"
                 >
                   <div className="relative aspect-square rounded-xl bg-[#f2f4f4] overflow-hidden mb-3">
-                    {/* Fallback View */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-[#c4cacc]">
-                      <span className="material-symbols-outlined text-4xl mb-1">bed</span>
-                      <span className="text-[10px] font-bold tracking-wider uppercase">{t('stay.no_image')}</span>
-                    </div>
-                    
-                    {/* Actual Image */}
-                    {stay.images?.[0] && (
-                      <img
-                        alt={displayTitle}
-                        className="absolute inset-0 z-10 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 bg-[#f2f4f4]"
-                        src={stay.images[0]}
-                        loading="lazy"
-                        decoding="async"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
-                    )}
+                    <ImageWithFallback
+                      alt={displayTitle}
+                      className="absolute inset-0 z-10 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 bg-[#f2f4f4]"
+                      src={stay.images?.[0] || ''}
+                      fallbackType="cover"
+                      category="Stay"
+                      loading="lazy"
+                      decoding="async"
+                    />
                     
                     <button
                       onClick={(e) => toggleLike(e, stay.id)}

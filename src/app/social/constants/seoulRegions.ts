@@ -104,3 +104,25 @@ export const getDjDisplay = (social: Social, date?: Date): string => {
   const matched = social.djs.find(dj => dj && dj.date === dStr);
   return matched ? matched.djName : (social.djName || '');
 };
+
+export const getVenueDisplay = (
+  social: Social,
+  language: string,
+  venuesMap?: Record<string, any>
+): string => {
+  const dbVenue = social.venueId && venuesMap ? venuesMap[social.venueId] : null;
+  if (dbVenue) {
+    if (language === 'KR') {
+      return dbVenue.nameKo || dbVenue.nameNative || dbVenue.titleNative || dbVenue.name || '';
+    } else {
+      return dbVenue.name || dbVenue.nameKo || dbVenue.nameNative || dbVenue.titleNative || '';
+    }
+  }
+  
+  if (language === 'KR') {
+    return social.venueNameNative || social.venueName || '';
+  } else {
+    return social.venueName || social.venueNameNative || '';
+  }
+};
+

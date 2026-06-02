@@ -356,8 +356,15 @@ export function useGroupData({ initialGroup }: UseGroupDataProps) {
   };
 
   const handleJoinAction = async () => {
-    if (!user) {
+    if (!user || !profile?.isRegistered) {
       toast.error(t('toast.group.signin_required'));
+      return;
+    }
+
+    // 오너 없는 그룹은 가입 차단
+    const isLocked = currentGroup.ownerId === 'system1' || !currentGroup.ownerId;
+    if (isLocked) {
+      toast.error(t('group.about.owner_not_joined', '현재 오너가 아직 참여하지 않은 그룹입니다'));
       return;
     }
 
@@ -371,8 +378,8 @@ export function useGroupData({ initialGroup }: UseGroupDataProps) {
     setIsJoining(true);
     try {
       const memberData = {
-        name: profile?.nickname || 'Anonymous',
-        avatar: profile?.photoURL || '',
+        name: profile.nickname,
+        avatar: profile.photoURL || '',
         role: 'member',
         joinedAt: Date.now()
       };

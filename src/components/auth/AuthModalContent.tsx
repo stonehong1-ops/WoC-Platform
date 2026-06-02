@@ -97,6 +97,25 @@ export function AuthModalContent() {
         {step === 'SOCIAL' ? (
           /* Step 1: Select Auth Method */
           <div className="space-y-4 mb-10">
+            {/* PWA Standalone Secure Sync Guide Card */}
+            {typeof window !== 'undefined' && window.matchMedia('(display-mode: standalone)').matches && (
+              <div className="mb-6 p-6 bg-blue-50/70 border border-blue-200/80 rounded-3xl text-left animate-in slide-in-from-bottom-2 duration-500 shadow-sm">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-lg shrink-0 mt-0.5">
+                    <span className="material-symbols-outlined text-[24px] font-variation-fill" style={{ fontVariationSettings: "'FILL' 1" }}>security</span>
+                  </div>
+                  <div className="space-y-1.5">
+                    <h3 className="text-[15px] font-black text-blue-950 font-headline leading-tight">
+                      {t('auth.pwa_sync_title')}
+                    </h3>
+                    <p className="text-[12px] text-blue-800 font-semibold leading-relaxed font-body">
+                      {t('auth.pwa_sync_desc')}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-3">
               <button 
                 disabled={isLoading}
@@ -345,7 +364,7 @@ export function AuthModalContent() {
             <button 
               disabled={isLoading || cooldown}
               onClick={handleSendCode}
-              className="w-full h-12 text-blue-600 font-bold text-sm hover:text-blue-700 transition-colors"
+              className="w-full h-12 text-blue-600 font-bold text-sm hover:text-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               {t('auth.resend_code') || 'Resend Code'}
             </button>

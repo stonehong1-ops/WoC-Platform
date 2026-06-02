@@ -30,6 +30,9 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
   const [description, setDescription] = useState((socialData as any)?.description || '');
   const [titleError, setTitleError] = useState('');
   const [type, setType] = useState<SocialType>(socialData?.type || 'regular');
+  const [subCategory, setSubCategory] = useState<'milonga' | 'practica'>(
+    (socialData as any)?.subCategory || 'milonga'
+  );
   
   // Date & Time
   const [startDate, setStartDate] = useState(
@@ -41,6 +44,28 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
   const [endTime, setEndTime] = useState(socialData?.endTime || '23:00');
   const [dayOfWeek, setDayOfWeek] = useState<number>(socialData?.dayOfWeek ?? new Date().getDay());
   const [recurrence, setRecurrence] = useState(socialData?.recurrence || 'every');
+
+  const handleRecurrenceToggle = (id: string) => {
+    if (id === 'every') {
+      setRecurrence('every');
+      return;
+    }
+    const currentParts = recurrence.split(',').map(x => x.trim()).filter(x => x !== 'every' && x !== '');
+    let newParts: string[] = [];
+    if (currentParts.includes(id)) {
+      newParts = currentParts.filter(x => x !== id);
+    } else {
+      newParts = [...currentParts, id];
+    }
+    if (newParts.length === 0) {
+      setRecurrence('every');
+    } else {
+      const order = ['1st', '2nd', '3rd', '4th', '5th', 'last'];
+      newParts.sort((a, b) => order.indexOf(a) - order.indexOf(b));
+      setRecurrence(newParts.join(','));
+    }
+  };
+
 
   const getAvailableRecurrences = (dateStr: string) => {
     const d = dateStr ? new Date(dateStr) : new Date();
@@ -156,7 +181,9 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
   useEffect(() => {
     if (type === 'regular' && startDate) {
       const options = getAvailableRecurrences(startDate);
-      if (!options.find(o => o.id === recurrence)) {
+      const currentParts = recurrence.split(',').map(x => x.trim());
+      const hasInvalid = currentParts.some(part => part !== 'every' && !options.find(o => o.id === part));
+      if (hasInvalid) {
         setRecurrence('every');
       }
     }
@@ -287,8 +314,9 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
         moments: finalMoments,
         startTime: startTime || '',
         endTime: endTime || '',
-        djName: djName || '',
-        dressCode: dressCode || '',
+        djName: subCategory === 'practica' ? '' : djName || '',
+        dressCode: subCategory === 'practica' ? '' : dressCode || '',
+        subCategory: subCategory,
         price: `${currency} ${priceAmount}`,
         socialEvents: socialEvents.filter(e => e.title.trim() !== '').map(e => ({ id: String(e.id), title: e.title, description: e.description, maxParticipants: e.isUnlimited ? 0 : e.maxParticipants })),
         staffIds: staffList.map(s => s.id),
@@ -505,6 +533,21 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
                 </button>
               </div>
             </div>
+
+            {/* 기본 분류: 밀롱가 / 쁘락띠까 */}
+            <div>
+              <label className="block text-[11px] font-bold text-[#acb3b4] uppercase tracking-wider mb-2">{t('social.sub_category')}</label>
+              <div className="flex gap-2 p-1 bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl">
+                <button onClick={() => setSubCategory('milonga')}
+                  className={`flex-1 py-2 rounded-lg font-bold text-sm flex items-center justify-center gap-1.5 transition-all ${subCategory === 'milonga' ? 'bg-white text-primary shadow-sm border border-[#e0e4e5]' : 'text-[#acb3b4] hover:text-[#596061]'}`}>
+                  <span className="material-symbols-rounded text-[18px]">music_note</span>{t('social.milonga')}
+                </button>
+                <button onClick={() => setSubCategory('practica')}
+                  className={`flex-1 py-2 rounded-lg font-bold text-sm flex items-center justify-center gap-1.5 transition-all ${subCategory === 'practica' ? 'bg-white text-primary shadow-sm border border-[#e0e4e5]' : 'text-[#acb3b4] hover:text-[#596061]'}`}>
+                  <span className="material-symbols-rounded text-[18px]">self_improvement</span>{t('social.practica')}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -547,12 +590,17 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
             <div className={`transition-opacity ${type === 'regular' ? 'opacity-100' : 'hidden'}`}>
               <label className="block text-[11px] font-bold text-[#acb3b4] uppercase tracking-wider mb-2">{t('social.frequency')}</label>
               <div className="flex flex-wrap gap-2">
-                {getAvailableRecurrences(startDate).map(r => (
-                  <button key={r.id} onClick={() => setRecurrence(r.id)}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${recurrence === r.id ? 'bg-primary text-white border-primary shadow-sm' : 'bg-[#f8f9fa] text-[#acb3b4] border-[#e0e4e5] hover:border-primary/50'}`}>
-                    {r.label}
-                  </button>
-                ))}
+                {getAvailableRecurrences(startDate).map(r => {
+                  const isActive = r.id === 'every' 
+                    ? (recurrence === 'every' || recurrence === '')
+                    : recurrence.split(',').map(x => x.trim()).includes(r.id);
+                  return (
+                    <button key={r.id} onClick={() => handleRecurrenceToggle(r.id)}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${isActive ? 'bg-primary text-white border-primary shadow-sm' : 'bg-[#f8f9fa] text-[#acb3b4] border-[#e0e4e5] hover:border-primary/50'}`}>
+                      {r.label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -642,7 +690,8 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
               )}
             </div>
 
-            {/* DJ */}
+            {/* DJ — 쁘락띠까일 때 숨김 */}
+            {subCategory !== 'practica' && (
             <div className="relative z-20">
               <label className="block text-[11px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1.5">{t('social.dj_label')}</label>
               <div className="relative flex items-center px-4 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/20 transition-all">
@@ -668,6 +717,7 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
                 </div>
               )}
             </div>
+            )}
 
             {/* Staff */}
             <div className="relative z-10">
@@ -760,6 +810,8 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
               </div>
             </div>
  
+            {/* 드레스코드 — 쁘락띠까일 때 숨김 */}
+            {subCategory !== 'practica' && (
             <div>
               <label className="block text-[11px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1.5">{t('social.dress_code')}</label>
               <div className="flex items-center px-4 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/20 transition-all">
@@ -768,6 +820,7 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
                   className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-sm font-bold text-[#2d3435] placeholder:text-[#acb3b4] outline-none" placeholder={t('social.dress_code_placeholder')} type="text" />
               </div>
             </div>
+            )}
           </div>
         </div>
 

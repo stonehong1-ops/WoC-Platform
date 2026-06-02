@@ -27,6 +27,7 @@ const NAV_STRUCTURE = {
     { name: "nav.stay", icon: "bed", path: "/stay" },
   ],
   Now: [
+    { name: "nav.today", icon: "today", path: "/today" },
     { name: "nav.live", icon: "cinematic_blur", path: "/live" },
     { name: "nav.social", icon: "autoplay", path: "/social" },
     { name: "nav.class", icon: "school", path: "/class" },
@@ -54,10 +55,9 @@ const NAV_STRUCTURE = {
 const BOTTOM_TABS = [
   { id: "World", icon: "globe", label: "nav.world", basePath: "/home" },
   { id: "Market", icon: "redeem", label: "nav.market", basePath: "/shop" },
-  { id: "Now", icon: "contactless", label: "nav.now", basePath: "/live" },
+  { id: "Now", icon: "contactless", label: "nav.now", basePath: "/today" },
   { id: "Lounge", icon: "weekend", label: "nav.lounge", basePath: "/pics" },
   { id: "Groups", icon: "communities", label: "nav.groups", basePath: "/groups" },
-  { id: "My", icon: "photo", label: "nav.my", basePath: "/profile" },
 ];
 
 export default function GlobalNavigation({ children }: { children: React.ReactNode }) {
@@ -183,7 +183,7 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
   let activeTab = "World";
   if (pathname.startsWith("/shop") || pathname.startsWith("/resale") || pathname.startsWith("/rental") || pathname.startsWith("/stay")) {
     activeTab = "Market";
-  } else if (pathname.startsWith("/social") || pathname.startsWith("/events") || pathname.startsWith("/class") || (pathname.startsWith("/live") && !isMyView)) {
+  } else if (pathname.startsWith("/today") || pathname.startsWith("/social") || pathname.startsWith("/events") || pathname.startsWith("/class") || (pathname.startsWith("/live") && !isMyView)) {
     activeTab = "Now";
   } else if (pathname.startsWith("/pics") || pathname.startsWith("/lost") || pathname.startsWith("/hub") || pathname.startsWith("/explore")) {
     activeTab = "Lounge";
@@ -263,7 +263,7 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
       {/* Fixed Top Navigation */}
       <header 
         ref={headerRef}
-        className={`fixed top-0 left-0 right-0 z-50 bg-white transition-all duration-200 transform will-change-transform ${
+        className={`fixed top-0 left-0 right-0 z-50 bg-white transition-all duration-200 transform will-change-transform notranslate ${
           (isScrolled || isHeaderShrink) 
             ? 'shadow-[0_4px_24px_rgba(11,90,192,0.10)]' 
             : 'shadow-[0_2px_12px_rgba(11,90,192,0.05)] border-b border-slate-100/30'
@@ -347,6 +347,21 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
                 >
                   search
                 </span>
+              </Link>
+
+              {/* My Profile Avatar (상단 이전 배치) */}
+              <Link 
+                href="/profile" 
+                className={`w-[32px] h-[32px] rounded-full flex items-center justify-center active:scale-95 transition-all overflow-hidden relative ${
+                  pathname.startsWith('/profile') ? 'ring-[2px] ring-[#007AFF] ring-offset-1' : 'opacity-80 hover:opacity-100'
+                }`}
+                title={t('nav.my', '마이')}
+              >
+                <UserAvatar 
+                  photoURL={profile?.photoURL}
+                  className="!w-[28px] !h-[28px] rounded-full"
+                  iconSize="18px"
+                />
               </Link>
             </div>
           </div>

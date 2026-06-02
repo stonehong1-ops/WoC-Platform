@@ -34,13 +34,17 @@ export default function BottomSheet({
 
     // c. Popstate handler for Device back button
     const handlePopState = (e: PopStateEvent) => {
-      // If the back button is pressed, the pushed state is popped, so we close the sheet
       onClose();
     };
 
-    window.addEventListener('popstate', handlePopState);
+    // Delay listener registration to avoid catching stale popstate events
+    // fired asynchronously by a previous BottomSheet's cleanup history.back()
+    const guardTimer = setTimeout(() => {
+      window.addEventListener('popstate', handlePopState);
+    }, 50);
 
     return () => {
+      clearTimeout(guardTimer);
       document.body.style.overflow = 'unset';
       window.removeEventListener('popstate', handlePopState);
 

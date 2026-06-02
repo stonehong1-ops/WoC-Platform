@@ -49,7 +49,7 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
   const [formData, setFormData] = useState({
     name: group.name || "",
     nativeName: group.nativeName || "",
-    slug: group.slug || "",
+    slug: group.slug || group.id,
     story: group.story || "",
     coverImage: group.coverImage || "",
     logo: group.logo || "",
@@ -293,13 +293,13 @@ export default function GroupHomeConfig({ group, onClose, onSave }: GroupHomeCon
             {/* Slug */}
             <div className="space-y-2">
               <label className="text-[12px] leading-[1.2] font-semibold text-on-surface-variant uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>{t("group.brand.unique_path")}</label>
-              <div className="flex items-center bg-surface-container-low border border-outline/10 rounded-xl px-4 overflow-hidden focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary transition-all">
+              <div className="flex items-center bg-surface-container-low/50 border border-outline/10 rounded-xl px-4 overflow-hidden cursor-not-allowed transition-all">
                 <span className="text-on-surface-variant/40 text-[14px] font-medium py-3.5 whitespace-nowrap" style={{ fontFamily: "'Inter', sans-serif" }}>woc.today/groups/</span>
                 <input
                   value={formData.slug}
-                  onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                  className="flex-1 bg-transparent border-none focus:ring-0 py-3.5 text-on-surface text-[14px] font-medium"
-                  placeholder="brandname"
+                  readOnly
+                  disabled
+                  className="flex-1 bg-transparent border-none focus:ring-0 py-3.5 text-on-surface/50 text-[14px] font-medium cursor-not-allowed"
                   type="text"
                   style={{ fontFamily: "'Inter', sans-serif" }}
                 />

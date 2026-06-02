@@ -85,19 +85,10 @@ export function useChatMembers({ roomId, user, messages, t }: UseChatMembersProp
       }
     }
 
-    // Group chat access control
+    // Group chat access control — 그룹 채팅방은 그룹 가입의 결과로만 진입 가능
     if (room.type === 'groups') {
       const isAlreadyMember = room.participants?.includes(user.uid);
-      if (room.joinPolicy === 'open' && room.linkedGroupId) {
-        if (!isAlreadyMember) {
-          chatService.autoJoinGroupChat(room.linkedGroupId, user.uid);
-        }
-        setIsAccessBlocked(false);
-      } else if (!isAlreadyMember) {
-        setIsAccessBlocked(true);
-      } else {
-        setIsAccessBlocked(false);
-      }
+      setIsAccessBlocked(!isAlreadyMember);
     }
   }, [room, user]);
 

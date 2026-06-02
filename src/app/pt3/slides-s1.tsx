@@ -53,14 +53,14 @@ export const Slide2 = () => {
   ];
 
   const networkCities = [
-    { name: '서울', x: 410, y: 250 },
-    { name: '부산', x: 360, y: 360 },
-    { name: '도쿄', x: 250, y: 410 },
-    { name: '뉴욕', x: 140, y: 360 },
-    { name: '런던', x: 90, y: 250 },
-    { name: '파리', x: 140, y: 140 },
-    { name: '부에노스아이레스', x: 250, y: 90 },
-    { name: '싱가포르', x: 360, y: 140 },
+    { name: '서울', x: 425, y: 250 },
+    { name: '부산', x: 370, y: 370 },
+    { name: '도쿄', x: 250, y: 425 },
+    { name: '뉴욕', x: 130, y: 370 },
+    { name: '런던', x: 75, y: 250 },
+    { name: '파리', x: 130, y: 130 },
+    { name: '부에노스아이레스', x: 250, y: 75 },
+    { name: '싱가포르', x: 370, y: 130 },
   ];
 
   return (
@@ -222,9 +222,9 @@ export const Slide2 = () => {
 export const Slide3 = () => {
   const Milongas = ['수업', '밀롱가', '워크샵', '공연', '축제'];
   const metrics = [
-    { val: '연간 108억 원', label: '전체 시장 거래 규모', eng: 'TANGO MARKET SIZE', sub: '수업 · 밀롱가 · 워크샵 · 공연 · 축제' },
-    { val: '연간 32억 원', label: 'WoC 처리 거래액', eng: 'PLATFORM GMV', sub: 'WoC를 통해 실제 결제되는 금액' },
-    { val: '연간 2.2억 원', label: 'WoC 플랫폼 매출', eng: 'WOC REVENUE', sub: '결제 · 정산 · 솔루션 수수료 기반' },
+    { num: '108', unit: '억 원', period: '연간', label: '전체 시장 거래 규모', eng: 'TANGO MARKET SIZE', sub: '수업 · 밀롱가 · 워크샵 · 공연 · 축제' },
+    { num: '32', unit: '억 원', period: '연간', label: 'WoC 처리 거래액', eng: 'PLATFORM GMV', sub: 'WoC를 통해 실제 결제되는 금액' },
+    { num: '2.2', unit: '억 원', period: '연간', label: 'WoC 플랫폼 매출', eng: 'WOC REVENUE', sub: '결제 · 정산 · 솔루션 수수료 기반' },
   ];
 
   return (
@@ -234,12 +234,12 @@ export const Slide3 = () => {
           <div>
             <span className="font-['Space_Grotesk'] text-[13px] font-bold tracking-[0.3em] text-[#111111]/30 uppercase block mb-4 pt1-fu">MONEY FLOWS HERE</span>
             <h2 className="text-[44px] md:text-[68px] font-black tracking-tighter leading-none mb-6 pt1-cu pt1-d2">
-              2,000명이 만드는<br/>
-              <span className="text-[#111111]/60">연간 108억 규모의 활동 경제</span>
+              <span className="font-['Space_Grotesk']">2,000</span>명이 만드는<br/>
+              <span className="text-[#111111]/60">연간 <span className="font-['Space_Grotesk']">108</span>억 규모의 활동 경제</span>
             </h2>
             <div className="text-[17px] md:text-[20px] font-medium text-[#111111]/55 tracking-tight break-keep pt1-fu pt1-d3 flex flex-col gap-2.5 leading-relaxed">
               <p>
-                통계청 기준 국민 1인당 월 평균 약 45만원은<br/>
+                통계청 기준 국민 1인당 월 평균 약 <span className="font-['Space_Grotesk']">45</span>만원은<br/>
                 <span className="text-[#111111] font-black">취미 · 여가 · 문화 · 활동에 사용됩니다.</span>
               </p>
               <p className="mt-1">
@@ -263,7 +263,11 @@ export const Slide3 = () => {
         <div className="grid grid-cols-3 border-t border-b border-[#111111]/10 py-12 gap-12">
           {metrics.map((s, i) => (
             <div key={s.label} className="flex flex-col pt1-cu" style={{ animationDelay: `${500 + i * 120}ms` }}>
-              <p className="text-[36px] md:text-[44px] font-black tracking-tight leading-none mb-3">{s.val}</p>
+              <div className="flex items-baseline gap-1 mb-3">
+                <span className="text-[11px] font-bold text-[#111111]/30 tracking-wider uppercase">{s.period}</span>
+                <span className="font-['Space_Grotesk'] text-[40px] md:text-[48px] font-black tracking-tight leading-none">{s.num}</span>
+                <span className="text-[20px] md:text-[24px] font-bold text-[#111111]/60">{s.unit}</span>
+              </div>
               <p className="text-[15px] font-black text-[#111111] mb-1.5 leading-tight flex items-baseline gap-1.5 flex-wrap">
                 {s.label}
                 <span className="font-['Space_Grotesk'] text-[10px] font-bold tracking-wider text-[#111111]/30 uppercase shrink-0">{s.eng}</span>

@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react';
 import { useLocation } from '@/components/providers/LocationProvider';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { dictionary } from '@/i18n';
 
 
 export const REGIONS = [
@@ -289,6 +291,7 @@ export const REGIONS = [
 
 export default function LocationSelector() {
   const { location, setLocation, isSelectorOpen, setIsSelectorOpen, selectorCallback, clearSelectorCallback } = useLocation();
+  const { t, language } = useLanguage();
   const [expandedCountry, setExpandedCountry] = useState<string | null>(location.country);
 
   const handleClose = () => setIsSelectorOpen(false); // Replaced useHistoryBack
@@ -309,6 +312,15 @@ export default function LocationSelector() {
 
   const filteredRegions = REGIONS;
 
+  const getLocalizedText = (key: string, defaultValue: string) => {
+    const langKey = (language || 'KR').toUpperCase() as 'EN' | 'KR';
+    const hasKey = dictionary[langKey]?.[key] !== undefined;
+    if (hasKey) {
+      return t(key);
+    }
+    return defaultValue;
+  };
+
   return (
     <div className="fixed inset-0 z-[100] flex items-end justify-center pointer-events-none">
       <div 
@@ -325,9 +337,9 @@ export default function LocationSelector() {
 
         <div className="px-6 py-4 flex items-center justify-between">
           <div className="flex flex-col">
-            <h2 className="text-[14px] font-black tracking-[0.1em] text-on-surface uppercase mb-1">SELECT LOCATION</h2>
-            <p className="text-[10px] font-bold text-on-surface/40 leading-tight">
-              Selecting a location will limit all content<br/>to that region.
+            <h2 className="text-[14px] font-black tracking-[0.1em] text-on-surface uppercase mb-1">{t('location-selector.title')}</h2>
+            <p className="text-[10px] font-bold text-on-surface/40 leading-tight whitespace-pre-line">
+              {t('location-selector.desc')}
             </p>
           </div>
           <button 
@@ -352,8 +364,8 @@ export default function LocationSelector() {
                 }`}
               >
                 <span className="material-symbols-rounded text-[20px]">public</span>
-                <span className="font-headline font-black text-[10px] tracking-tighter uppercase text-left leading-none">
-                  All Tango<br/>Society
+                <span className="font-headline font-black text-[10px] tracking-tighter uppercase text-left leading-none whitespace-pre-line">
+                  {t('location-selector.all_tango')}
                 </span>
                 {location.country === 'GLOBAL' && (
                   <div className="absolute right-0 top-2 bottom-2 w-1 bg-primary rounded-l-full"></div>
@@ -363,7 +375,7 @@ export default function LocationSelector() {
 
             {filteredRegions.map((region) => (
               <div key={region.continent} className="py-2">
-                <h3 className="px-4 py-2 text-[9px] font-black tracking-[0.1em] text-on-surface/30 uppercase border-b border-outline-variant/5 mb-1">{region.continent}</h3>
+                <h3 className="px-4 py-2 text-[9px] font-black tracking-[0.1em] text-on-surface/30 uppercase border-b border-outline-variant/5 mb-1">{getLocalizedText('region.continent.' + region.continent, region.continent)}</h3>
                 {region.countries.map((country) => (
                   <button 
                     key={country.name}
@@ -378,7 +390,7 @@ export default function LocationSelector() {
                       {country.flag}
                     </span>
                     <span className="font-headline font-bold text-[11px] tracking-tight uppercase text-left break-words">
-                      {country.name}
+                      {getLocalizedText('region.country.' + country.name, country.name)}
                     </span>
                     {expandedCountry === country.name && (
                       <div className="absolute right-0 top-2 bottom-2 w-1 bg-primary rounded-l-full"></div>
@@ -402,7 +414,7 @@ export default function LocationSelector() {
                       : 'text-primary hover:bg-primary/5'
                   }`}
                 >
-                  (ALL) {expandedCountry}
+                  ({t('location-selector.all')}) {getLocalizedText('region.country.' + expandedCountry, expandedCountry)}
                 </button>
 
                 {REGIONS.flatMap(r => r.countries)
@@ -417,14 +429,14 @@ export default function LocationSelector() {
                           : 'text-on-surface/70 hover:text-on-surface hover:bg-on-surface/[0.03]'
                       }`}
                     >
-                      {city.name}
+                      {getLocalizedText('region.city.' + city.name, city.name)}
                     </button>
                   ))}
               </div>
             ) : (
               <div className="h-full flex flex-col items-center justify-center opacity-20 px-8 text-center">
                 <span className="material-symbols-outlined text-[48px] mb-4">location_on</span>
-                <p className="text-[12px] font-bold tracking-widest uppercase">Select a country<br/>to see cities</p>
+                <p className="text-[12px] font-bold tracking-widest uppercase whitespace-pre-line">{t('location-selector.select_country')}</p>
               </div>
             )}
           </div>

@@ -50,6 +50,7 @@ export interface Social {
   staffNames?: string[];            // Staff display names
   organizerPhone?: string;          // Organizer phone number
   tableCapacity?: number;           // Max table seats (for closure threshold)
+  subCategory?: 'milonga' | 'practica'; // 기본 분류: 밀롱가(기본) / 쁘락띠까
   moments?: string[];               // Up to 20 images (Moments)
   posterLayoutId?: string;           // Selected poster template layout ID
   posterExportUrl?: string;          // Pre-generated poster image URL for quick download/share

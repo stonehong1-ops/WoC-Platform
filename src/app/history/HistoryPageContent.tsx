@@ -11,12 +11,14 @@ import {
   formatFullDate,
   formatNotiDate
 } from './helpers/historyHelpers';
+import BottomSheet from '@/components/common/BottomSheet';
 
 export function HistoryPageContent() {
   const {
     t,
     language,
     user,
+    profile,
     activeTab,
     setActiveTab,
     selectedDetail,
@@ -32,8 +34,50 @@ export function HistoryPageContent() {
     handleCopyAccount,
     handleOpenDetail,
     handleCloseDetail,
-    handleChatWithSeller
+    handleChatWithSeller,
+    updateHistoryItemMemo,
+    cancelHistoryItem
   } = useHistoryData();
+
+  const isSystemAdmin = !!(profile?.systemRole === 'admin' || profile?.isAdmin);
+  const isGroupOwner = !!(user && groupDetails?.ownerId === user.uid);
+  const isApplicant = !!(user && selectedDetail?.raw?.userId === user.uid);
+  const hasEditPermission = !!(selectedDetail && selectedDetail.type === 'Class' && (isSystemAdmin || isGroupOwner || isApplicant));
+
+  const [isEditSheetOpen, setIsEditSheetOpen] = React.useState(false);
+  const [tempMemo, setTempMemo] = React.useState('');
+  const [isSavingMemo, setIsSavingMemo] = React.useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = React.useState(false);
+
+  React.useEffect(() => {
+    if (selectedDetail) {
+      setTempMemo(selectedDetail.raw?.memo || selectedDetail.raw?.notes || '');
+    }
+  }, [selectedDetail]);
+
+  const handleSaveMemo = async () => {
+    if (!selectedDetail) return;
+    setIsSavingMemo(true);
+    try {
+      await updateHistoryItemMemo(selectedDetail.id, selectedDetail.source, tempMemo);
+      setIsEditSheetOpen(false);
+    } catch (e) {
+      // Handled inside hook
+    } finally {
+      setIsSavingMemo(false);
+    }
+  };
+
+  const handleCancelClick = async () => {
+    if (!selectedDetail) return;
+    try {
+      await cancelHistoryItem(selectedDetail.id, selectedDetail.source);
+      setShowCancelConfirm(false);
+      setIsEditSheetOpen(false);
+    } catch (e) {
+      // Handled inside hook
+    }
+  };
 
   // Find class/bundle specific details
   let itemInfo: any = null;
@@ -193,11 +237,16 @@ export function HistoryPageContent() {
 
           {/* ━━━ Header ━━━ */}
           <div className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 transition-all duration-300 ${isScrolled ? 'bg-white/95 backdrop-blur-md shadow-sm' : 'bg-gradient-to-b from-black/30 to-transparent'} max-w-md mx-auto`}>
-            <button onClick={handleCloseDetail} className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors active:scale-90 ${isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'}`}>
-              <span className="material-symbols-outlined text-xl">arrow_back</span>
-            </button>
-            <div className={`text-base font-bold truncate max-w-[180px] transition-opacity ${isScrolled ? 'opacity-100 text-[#2d3435]' : 'opacity-0'}`}>{selectedDetail.title}</div>
-            <div className="w-10"></div> {/* Placeholder to balance the flex-between */}
+            {hasEditPermission ? (
+              <button 
+                onClick={() => setIsEditSheetOpen(true)}
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-95 ${isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'}`}
+              >
+                <span className="material-symbols-outlined text-xl">edit</span>
+              </button>
+            ) : (
+              <div className="w-10"></div>
+            )} {/* Placeholder to balance the flex-between */}
           </div>
 
           {/* ━━━ Scrollable Content ━━━ */}
@@ -386,6 +435,17 @@ export function HistoryPageContent() {
                         </div>
                       </div>
                     )}
+                    {(selectedDetail.raw?.memo || selectedDetail.raw?.notes) && (
+                      <div className="flex items-start gap-3 mt-4 pt-4 border-t border-slate-100/50">
+                        <div className="w-8 h-8 rounded-full bg-[#f2f4f4] flex items-center justify-center shrink-0 text-[#596061]">
+                          <span className="material-symbols-outlined text-[16px]">notes</span>
+                        </div>
+                        <div className="pt-0.5">
+                          <p className="font-['Inter'] text-[10px] font-black uppercase tracking-wider text-[#acb3b4] mb-0.5">{language === 'KR' ? '신청자 메모' : 'Applicant Memo'}</p>
+                          <p className="font-['Inter'] text-[13px] font-bold text-[#2d3435] whitespace-pre-wrap">{selectedDetail.raw?.memo || selectedDetail.raw?.notes}</p>
+                        </div>
+                      </div>
+                    )}
                   </>
                 )}
 
@@ -548,6 +608,117 @@ export function HistoryPageContent() {
       {chatRoomId && (
         <div className="fixed inset-0 z-[200] bg-white animate-in slide-in-from-right duration-300">
           <ChatRoom roomId={chatRoomId as string} onBack={handleCloseChat} />
+        </div>
+      )}
+
+      {/* 수정/편집 전용 BottomSheet 제어반 */}
+      <BottomSheet
+        isOpen={isEditSheetOpen}
+        onClose={() => setIsEditSheetOpen(false)}
+        title={language === 'KR' ? '신청 내역 편집' : 'Edit Application'}
+        height="auto"
+      >
+        <div className="px-6 py-4 pb-10 space-y-6 max-w-md mx-auto">
+          <p className="text-xs font-semibold text-slate-400">
+            {language === 'KR' ? '신청 정보에 남길 메모를 입력하거나 일정을 관리합니다.' : 'You can enter a memo or manage options for this application.'}
+          </p>
+
+          {/* 메모 입력창 */}
+          <div className="flex flex-col gap-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
+              {language === 'KR' ? '신청자 메모' : 'Applicant Memo'}
+            </label>
+            <textarea
+              value={tempMemo}
+              onChange={(e) => setTempMemo(e.target.value)}
+              placeholder={language === 'KR' ? '전달할 특이사항이나 메모를 입력하세요.' : 'Enter any notes or special requests.'}
+              className="w-full h-24 text-sm p-3.5 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all font-medium text-slate-700 resize-none"
+            />
+          </div>
+
+          <div className="flex flex-col gap-3">
+            {/* 번들 전용 수업/파트너 변경 단추 */}
+            {selectedDetail && (selectedDetail.raw?.itemType === 'discount' || selectedDetail.domain === 'class_legacy' && (selectedDetail.raw?.includedClassIds || selectedDetail.raw?.includedClasses)) && (
+              <button
+                onClick={() => {
+                  setIsEditSheetOpen(false);
+                  setIsSelectionPopupOpen(true);
+                }}
+                className="w-full py-4 bg-blue-50/50 hover:bg-blue-50 active:scale-[0.99] border border-blue-100 rounded-2xl flex items-center justify-between px-5 transition-all text-left"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="material-symbols-outlined text-blue-500 text-lg">edit_note</span>
+                  <span className="text-sm font-bold text-slate-800">{language === 'KR' ? '신청수업 및 파트너 변경' : 'Change Classes & Partners'}</span>
+                </div>
+                <span className="material-symbols-outlined text-blue-400 text-sm">chevron_right</span>
+              </button>
+            )}
+
+            {/* 개별 클래스 전용 취소 단추 */}
+            {selectedDetail && (selectedDetail.raw?.itemType === 'class' || selectedDetail.domain === 'class_daily' || selectedDetail.domain === 'class_special') && selectedDetail.status !== 'CANCELED' && (
+              <button
+                onClick={() => {
+                  setShowCancelConfirm(true);
+                }}
+                className="w-full py-4 bg-red-50/50 hover:bg-red-50 active:scale-[0.99] border border-red-100 rounded-2xl flex items-center justify-between px-5 transition-all text-left"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="material-symbols-outlined text-red-500 text-lg">cancel</span>
+                  <span className="text-sm font-bold text-red-600">{language === 'KR' ? '신청 취소하기 (삭제)' : 'Cancel Application (Delete)'}</span>
+                </div>
+                <span className="material-symbols-outlined text-red-300 text-sm">chevron_right</span>
+              </button>
+            )}
+
+            {/* 저장/닫기 단추 */}
+            <div className="flex gap-3 pt-3">
+              <button
+                onClick={() => setIsEditSheetOpen(false)}
+                className="flex-1 py-3.5 bg-slate-100 hover:bg-slate-200 active:scale-[0.99] rounded-xl text-center text-sm font-black text-slate-500 transition-all"
+              >
+                {language === 'KR' ? '취소' : 'Cancel'}
+              </button>
+              <button
+                onClick={handleSaveMemo}
+                disabled={isSavingMemo}
+                className="flex-1 py-3.5 bg-[#1E293B] hover:bg-slate-800 text-white font-bold text-sm rounded-xl active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isSavingMemo && <span className="material-symbols-outlined animate-spin text-sm">sync</span>}
+                {language === 'KR' ? '메모 저장' : 'Save Memo'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </BottomSheet>
+
+      {/* 다이렉트 취소 확인 컨펌 다이얼로그 */}
+      {showCancelConfirm && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-auto overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 text-center">
+              <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+                <span className="material-symbols-outlined text-red-500 text-[26px]">warning</span>
+              </div>
+              <h2 className="text-base font-black text-[#2d3435] mb-2">{language === 'KR' ? '정말 신청을 취소하시겠습니까?' : 'Are you sure you want to cancel?'}</h2>
+              <p className="text-xs text-[#596061] font-semibold leading-relaxed">
+                {language === 'KR' ? '이 작업은 취소 즉시 새로고침 없이 프로덕션 데이터에 실시간으로 반영됩니다.' : 'This will immediately cancel the application on the production server.'}
+              </p>
+            </div>
+            <div className="px-6 pb-6 pt-2 flex gap-3">
+              <button
+                onClick={() => setShowCancelConfirm(false)}
+                className="flex-1 py-3.5 rounded-xl border border-[#e0e4e5] text-xs font-bold text-[#596061] hover:bg-[#f8f9fa] active:scale-95 transition-all"
+              >
+                {language === 'KR' ? '아니오' : 'No'}
+              </button>
+              <button
+                onClick={handleCancelClick}
+                className="flex-1 py-3.5 rounded-xl bg-red-500 text-white text-xs font-bold hover:bg-red-600 active:scale-95 transition-all flex items-center justify-center shadow-sm"
+              >
+                {language === 'KR' ? '예, 취소합니다' : 'Yes, Cancel'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

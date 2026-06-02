@@ -27,9 +27,8 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
                     pathname.startsWith('/stay') ||
                     pathname.startsWith('/lost') ||
                     pathname.startsWith('/hub');
-    const isSpace = pathname.startsWith('/groups/');
 
-    if (!loading && !isPublic && !isSpace && (!user || !profile?.isRegistered)) {
+    if (!loading && !isPublic && (!user || !profile?.isRegistered)) {
       setShowLogin(true);
     }
   }, [user, profile, loading, pathname, setShowLogin]);

@@ -326,11 +326,11 @@ export default function ClassPageContent({
                                         return (
                                           <div className={`w-7 h-7 rounded-full overflow-hidden bg-[#e0e4e5] border border-[#f2f4f4] ${hasInstError ? 'flex items-center justify-center text-[9px] font-bold text-[#596061] bg-[#f8f9fa]' : ''}`}>
                                             {hasInstError ? (
-                                              instructor.name.substring(0, 2).toUpperCase()
+                                              (instructor?.name || 'TR').substring(0, 2).toUpperCase()
                                             ) : (instructor as any).avatar || (instructor as any).photoURL || (instructor as any).image || (instructor as any).imageUrl ? (
                                               <img 
                                                 src={(instructor as any).avatar || (instructor as any).photoURL || (instructor as any).image || (instructor as any).imageUrl} 
-                                                alt={instructor.name} 
+                                                alt={instructor?.name || 'Instructor'} 
                                                 className="w-full h-full object-cover" 
                                                 onError={() => {
                                                   setImageErrors(prev => ({ ...prev, [instKey]: true }));
@@ -338,13 +338,13 @@ export default function ClassPageContent({
                                               />
                                             ) : (
                                               <div className="w-full h-full flex items-center justify-center text-[9px] font-bold text-[#596061] bg-[#f8f9fa]">
-                                                {instructor.name.substring(0, 2).toUpperCase()}
+                                                {(instructor?.name || 'TR').substring(0, 2).toUpperCase()}
                                               </div>
                                             )}
                                           </div>
                                         );
                                       })()}
-                                      <p className="text-[8px] font-bold text-[#596061] mt-0.5 text-center truncate w-full">{instructor.name}</p>
+                                      <p className="text-[8px] font-bold text-[#596061] mt-0.5 text-center truncate w-full">{instructor?.name || 'Instructor'}</p>
                                     </div>
                                   ))}
                                 </div>
@@ -478,11 +478,11 @@ export default function ClassPageContent({
                                   return (
                                     <div className={`w-7 h-7 rounded-full overflow-hidden bg-[#e0e4e5] border border-[#f2f4f4] ${hasInstError ? 'flex items-center justify-center text-[9px] font-bold text-[#596061] bg-[#f8f9fa]' : ''}`}>
                                       {hasInstError ? (
-                                        instructor.name.substring(0, 2).toUpperCase()
+                                        (instructor?.name || 'TR').substring(0, 2).toUpperCase()
                                       ) : (instructor as any).avatar || (instructor as any).photoURL || (instructor as any).image || (instructor as any).imageUrl ? (
                                         <img 
                                           src={(instructor as any).avatar || (instructor as any).photoURL || (instructor as any).image || (instructor as any).imageUrl} 
-                                          alt={instructor.name} 
+                                          alt={instructor?.name || 'Instructor'} 
                                           className="w-full h-full object-cover" 
                                           onError={() => {
                                             setImageErrors(prev => ({ ...prev, [instKey]: true }));
@@ -490,13 +490,13 @@ export default function ClassPageContent({
                                         />
                                       ) : (
                                         <div className="w-full h-full flex items-center justify-center text-[9px] font-bold text-[#596061] bg-[#f8f9fa]">
-                                          {instructor.name.substring(0, 2).toUpperCase()}
+                                          {(instructor?.name || 'TR').substring(0, 2).toUpperCase()}
                                         </div>
                                       )}
                                     </div>
                                   );
                                 })()}
-                                <p className="text-[8px] font-bold text-[#596061] mt-0.5 text-center truncate w-full">{instructor.name}</p>
+                                <p className="text-[8px] font-bold text-[#596061] mt-0.5 text-center truncate w-full">{instructor?.name || 'Instructor'}</p>
                               </div>
                             ))}
                           </div>

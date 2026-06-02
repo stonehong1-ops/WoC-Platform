@@ -22,16 +22,20 @@ self.addEventListener('push', (event) => {
 
   try {
     const payload = event.data.json();
-    console.log('[Service Worker] Push Received:', payload);
 
     const title = payload.notification?.title || payload.data?.title || 'WoC Today';
     const body = payload.notification?.body || payload.data?.message || payload.data?.body || '새로운 메시지가 도착했습니다.';
     
+    // tag = roomId → 같은 채팅방 알림은 최신 1개로 자동 교체 (카카오톡 방식)
+    const tag = payload.data?.roomId || payload.data?.type || 'woc-default';
+
     const options = {
       body: body,
       icon: '/icon.png',
       badge: '/icon.png',
       vibrate: [100, 50, 100],
+      tag: tag,
+      renotify: true,
       data: payload.data || {}
     };
 
@@ -46,7 +50,9 @@ self.addEventListener('push', (event) => {
         self.registration.showNotification('WoC Today', {
           body: text,
           icon: '/icon.png',
-          badge: '/icon.png'
+          badge: '/icon.png',
+          tag: 'woc-fallback',
+          renotify: true
         })
       );
     } catch (textErr) {

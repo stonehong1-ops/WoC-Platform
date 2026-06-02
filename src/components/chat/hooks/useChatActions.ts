@@ -28,7 +28,7 @@ export function useChatActions({
   setSelectedInviteUserIds,
   triggerEmotionEffect
 }: UseChatActionsProps) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { t } = useLanguage();
   const router = useRouter();
 
@@ -155,7 +155,7 @@ export function useChatActions({
   };
 
   const handleSend = async () => {
-    if (!inputText.trim() || !user) return;
+    if (!inputText.trim() || !user || !profile?.isRegistered) return;
     const text = inputText;
     setInputText('');
     
@@ -164,7 +164,7 @@ export function useChatActions({
     await chatService.sendMessage({
       roomId,
       senderId: user.uid,
-      senderName: user.displayName || 'Anonymous',
+      senderName: profile?.nickname || user.displayName || 'User',
       text,
       type: 'text',
       replyTo: replyTo?.id,
@@ -244,7 +244,7 @@ export function useChatActions({
           await chatService.sendMessage({
             roomId,
             senderId: user.uid,
-            senderName: user.displayName || 'Anonymous',
+            senderName: profile?.nickname || user.displayName || 'User',
             text: defaultText,
             type,
             mediaUrl: url
@@ -277,7 +277,7 @@ export function useChatActions({
       await chatService.sendMessage({
         roomId,
         senderId: user.uid,
-        senderName: user.displayName || 'Anonymous',
+        senderName: profile?.nickname || user.displayName || 'User',
         text: defaultText,
         type,
         mediaUrl: url
@@ -337,7 +337,7 @@ export function useChatActions({
       await chatService.sendMessage({
         roomId,
         senderId: user.uid,
-        senderName: user.displayName || 'Anonymous',
+        senderName: profile?.nickname || user.displayName || 'User',
         text: meetupTitle.trim(),
         type: 'meetup',
         metadata: {
@@ -372,7 +372,7 @@ export function useChatActions({
       const numParticipants = room.participants?.length || 1;
       const perPerson = Math.round(total / numParticipants);
 
-      await chatService.sendSettlementMessage(roomId, user.uid, user.displayName || 'Anonymous', {
+      await chatService.sendSettlementMessage(roomId, user.uid, profile?.nickname || user.displayName || 'User', {
         title: settlementTitle.trim(),
         totalAmount: total,
         perPersonAmount: perPerson,
@@ -412,7 +412,7 @@ export function useChatActions({
       await chatService.sendMessage({
         roomId,
         senderId: user.uid,
-        senderName: user.displayName || 'Anonymous',
+        senderName: profile?.nickname || user.displayName || 'User',
         text: pollTitle.trim(),
         type: 'poll',
         metadata: {

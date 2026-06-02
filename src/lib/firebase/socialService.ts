@@ -26,12 +26,38 @@ export const socialService = {
   // Get active socials for today (regular by dayOfWeek, popup by date)
   getTodayActiveSocials: async (dayOfWeek: number, todayDate: Date): Promise<Social[]> => {
     try {
+      const getWeekOrdinal = (d: Date) => Math.ceil(d.getDate() / 7);
+      const isLastWeekOfMonth = (d: Date) => {
+        const currentMonth = d.getMonth();
+        const nextWeekDate = new Date(d);
+        nextWeekDate.setDate(d.getDate() + 7);
+        return nextWeekDate.getMonth() !== currentMonth;
+      };
+
+      const ordinal = getWeekOrdinal(todayDate);
+      const isLast = isLastWeekOfMonth(todayDate);
+
       // 1. Regular socials
       const regularSnap = await getDocs(
         query(collection(db, SOCIALS_COLLECTION), where('type', '==', 'regular'))
       );
       const allRegular = regularSnap.docs.map(d => ({ id: d.id, ...d.data() })) as Social[];
-      const todayRegular = allRegular.filter(s => Number(s.dayOfWeek) === dayOfWeek);
+      const todayRegular = allRegular.filter(s => {
+        if (Number(s.dayOfWeek) !== dayOfWeek) return false;
+
+        const rec = (s.recurrence || 'every').trim().toLowerCase();
+        const recParts = rec.split(',').map(x => x.trim());
+
+        return recParts.some(part => {
+          if (part === 'every' || part === '') return true;
+          if (part === '1st' && ordinal === 1) return true;
+          if (part === '2nd' && ordinal === 2) return true;
+          if (part === '3rd' && ordinal === 3) return true;
+          if (part === '4th' && ordinal === 4) return true;
+          if (part === 'last' && isLast) return true;
+          return false;
+        });
+      });
 
       // 2. Popup socials
       const popupSnap = await getDocs(
@@ -224,8 +250,13 @@ export const socialService = {
     const docRef = doc(collection(db, `${SOCIALS_COLLECTION}/${socialId}/reservations`));
     const batch = writeBatch(db);
 
+    // Firestore는 undefined 값을 허용하지 않으므로 사전에 제거
+    const safeData = Object.fromEntries(
+      Object.entries(data).filter(([, v]) => v !== undefined)
+    );
+
     batch.set(docRef, {
-      ...data,
+      ...safeData,
       socialId,
       createdAt: serverTimestamp(),
     });

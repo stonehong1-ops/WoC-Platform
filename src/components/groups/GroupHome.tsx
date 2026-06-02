@@ -163,7 +163,8 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
     if (loading || isMembersLoading) return;
 
     const tabParam = searchParams.get('tab') as TabType | null;
-    const currentTab = tabParam || 'home';
+    const isMember = isFullMember || isAdminUser;
+    const currentTab = tabParam || (isMember ? 'home' : 'about');
 
     // activeTab 상태값의 시차 문제를 차단하기 위해 함수형 또는 조건식으로 안정성 강화
     setActiveTab(prev => {
@@ -174,7 +175,7 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
       return prev;
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, loading, isMembersLoading]);
+  }, [searchParams, loading, isMembersLoading, isFullMember, isAdminUser]);
 
   // 모달 제어를 Query String으로 전환
   const showGroupChat = searchParams.get('modal') === 'chat';

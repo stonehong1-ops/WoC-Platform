@@ -87,6 +87,7 @@ export default function ClassPortal() {
   
   const [selectedDetailClass, setSelectedDetailClass] = useState<GroupClass | null>(null);
   const [chatOverlayRoomId, setChatOverlayRoomId] = useState<string | null>(null);
+  const [portalImageErrors, setPortalImageErrors] = useState<Record<string, boolean>>({});
 
   const [userBookings, setUserBookings] = useState<BaseBooking[]>(() => {
     if (typeof window !== 'undefined' && user) {
@@ -707,13 +708,28 @@ export default function ClassPortal() {
                       <div className="p-4 flex flex-col gap-3 cursor-pointer" onClick={() => handleClassClick(cls)}>
                         <div className="flex gap-3">
                           <div className="shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-slate-100 border border-slate-100">
-                            {cls.imageUrl || cls.group?.coverImage || cls.group?.logo ? (
-                              <img src={cls.imageUrl || cls.group?.coverImage || cls.group?.logo} alt={cls.title} className="w-full h-full object-cover" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <span className="material-symbols-outlined text-[24px] text-slate-300">school</span>
-                              </div>
-                            )}
+                            {(() => {
+                              const imgKey = `today-${cls.id}`;
+                              const hasError = portalImageErrors[imgKey];
+                              const displaySrc = cls.imageUrl || cls.group?.coverImage || cls.group?.logo;
+                              if (hasError || !displaySrc) {
+                                return (
+                                  <div className="w-full h-full flex items-center justify-center bg-slate-100 text-slate-300">
+                                    <span className="material-symbols-outlined text-[24px]">school</span>
+                                  </div>
+                                );
+                              }
+                              return (
+                                <img 
+                                  src={displaySrc} 
+                                  alt={cls.title} 
+                                  className="w-full h-full object-cover" 
+                                  onError={() => {
+                                    setPortalImageErrors(prev => ({ ...prev, [imgKey]: true }));
+                                  }}
+                                />
+                              );
+                            })()}
                           </div>
                           <div className="flex-1 min-w-0">
                             {isStartingSoon && (
@@ -723,21 +739,7 @@ export default function ClassPortal() {
                             )}
                             <div className="flex items-start justify-between gap-2">
                               <h4 className="text-[16px] font-black text-slate-800 leading-tight mb-1 flex-1 truncate">{cls.title}</h4>
-                              {isInstructor && (
-                                <button 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setEditingClass(cls);
-                                    setTempIsDailyBookingOpen(!!cls.isDailyBookingOpen);
-                                    setTempInstructorComment(cls.instructorComment || '');
-                                    setTempDailyClassPrice(cls.dailyClassPrice || Math.floor((cls.price || 0) / 3) + 5000);
-                                    setCapacityModalOpen(true);
-                                  }}
-                                  className="shrink-0 flex items-center justify-center w-7 h-7 rounded-full bg-slate-50 text-slate-400 hover:text-slate-600 hover:bg-slate-100 border border-slate-100 transition-colors"
-                                >
-                                  <span className="material-symbols-outlined text-[15px]">settings</span>
-                                </button>
-                              )}
+
                             </div>
                             <p className="text-[12px] font-medium text-slate-500 truncate mb-0.5">
                               {startTimeStr}-{endTimeStr} · {cls.location || cls.group?.name}
@@ -868,13 +870,28 @@ export default function ClassPortal() {
                       <div className="p-4 flex flex-col gap-3 cursor-pointer" onClick={() => handleClassClick(cls)}>
                         <div className="flex gap-3">
                           <div className="shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-slate-100 border border-slate-100">
-                            {cls.imageUrl || cls.group?.coverImage || cls.group?.logo ? (
-                              <img src={cls.imageUrl || cls.group?.coverImage || cls.group?.logo} alt={cls.title} className="w-full h-full object-cover" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <span className="material-symbols-outlined text-[24px] text-slate-300">school</span>
-                              </div>
-                            )}
+                            {(() => {
+                              const imgKey = `week-${cls.id}`;
+                              const hasError = portalImageErrors[imgKey];
+                              const displaySrc = cls.imageUrl || cls.group?.coverImage || cls.group?.logo;
+                              if (hasError || !displaySrc) {
+                                return (
+                                  <div className="w-full h-full flex items-center justify-center bg-slate-100 text-slate-300">
+                                    <span className="material-symbols-outlined text-[24px]">school</span>
+                                  </div>
+                                );
+                              }
+                              return (
+                                <img 
+                                  src={displaySrc} 
+                                  alt={cls.title} 
+                                  className="w-full h-full object-cover" 
+                                  onError={() => {
+                                    setPortalImageErrors(prev => ({ ...prev, [imgKey]: true }));
+                                  }}
+                                />
+                              );
+                            })()}
                           </div>
                           <div className="flex-1 min-w-0">
                             {isStartingSoon && (
@@ -887,21 +904,7 @@ export default function ClassPortal() {
                                 {cls.title}
                                 {cls.level && <span className="text-[10px] font-medium text-slate-400 truncate uppercase">{cls.level}</span>}
                               </h4>
-                              {isInstructor && (
-                                <button 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setEditingClass(cls);
-                                    setTempIsDailyBookingOpen(!!cls.isDailyBookingOpen);
-                                    setTempInstructorComment(cls.instructorComment || '');
-                                    setTempDailyClassPrice(cls.dailyClassPrice || Math.floor((cls.price || 0) / 3) + 5000);
-                                    setCapacityModalOpen(true);
-                                  }}
-                                  className="shrink-0 flex items-center justify-center w-7 h-7 rounded-full bg-slate-50 text-slate-400 hover:text-slate-600 hover:bg-slate-100 border border-slate-100 transition-colors"
-                                >
-                                  <span className="material-symbols-outlined text-[15px]">settings</span>
-                                </button>
-                              )}
+
                             </div>
                             <p className="text-[12px] font-medium text-slate-500 truncate mb-0.5">
                               {startTimeStr}-{endTimeStr} · {cls.location || cls.group?.name}
@@ -1017,12 +1020,27 @@ export default function ClassPortal() {
             onClick={() => router.push(`/class/${group.id}?month=${targetMonthStr}`)}
             className="bg-white border border-[#f2f4f4] rounded-[24px] p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition-all cursor-pointer group"
           >
-            <div className="w-16 h-16 rounded-2xl overflow-hidden flex-shrink-0 bg-slate-100">
-              <img 
-                src={group.logo || group.coverImage || ''} 
-                alt={group.name} 
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
-              />
+            <div className="w-16 h-16 rounded-2xl overflow-hidden flex-shrink-0 bg-slate-100 flex items-center justify-center">
+              {(() => {
+                const imgKey = `month-group-${group.id}`;
+                const hasError = portalImageErrors[imgKey];
+                const displaySrc = group.logo || group.coverImage;
+                if (hasError || !displaySrc) {
+                  return (
+                    <span className="material-symbols-outlined text-slate-300 text-[24px]">storefront</span>
+                  );
+                }
+                return (
+                  <img 
+                    src={displaySrc} 
+                    alt={group.name} 
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                    onError={() => {
+                      setPortalImageErrors(prev => ({ ...prev, [imgKey]: true }));
+                    }}
+                  />
+                );
+              })()}
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-baseline gap-1.5 mb-1">
@@ -1094,9 +1112,33 @@ export default function ClassPortal() {
               onClick={() => handleClassClick(cls)}
               className="relative rounded-[32px] overflow-hidden bg-[#2d3435] text-white shadow-2xl cursor-pointer group"
             >
-              <div className="absolute inset-0">
-                <img src={cls.imageUrl || group?.coverImage || ''} alt={cls.title} className="w-full h-full object-cover opacity-60" />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#2d3435] via-[#2d3435]/40 to-transparent" />
+              <div className="absolute inset-0 bg-slate-800 flex items-center justify-center">
+                {(() => {
+                  const imgKey = `special-${cls.id}`;
+                  const hasError = portalImageErrors[imgKey];
+                  const displaySrc = cls.imageUrl || group?.coverImage;
+                  if (hasError || !displaySrc) {
+                    return (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-800 text-slate-500">
+                        <span className="material-symbols-outlined text-6xl opacity-30">stars</span>
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#2d3435] via-[#2d3435]/40 to-transparent" />
+                      </div>
+                    );
+                  }
+                  return (
+                    <>
+                      <img 
+                        src={displaySrc} 
+                        alt={cls.title} 
+                        className="w-full h-full object-cover opacity-60" 
+                        onError={() => {
+                          setPortalImageErrors(prev => ({ ...prev, [imgKey]: true }));
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#2d3435] via-[#2d3435]/40 to-transparent" />
+                    </>
+                  );
+                })()}
               </div>
               <div className="relative p-8 pt-24">
                 <div className="inline-flex items-center gap-2 bg-primary px-4 py-1.5 rounded-full mb-4 shadow-lg shadow-primary/30">
@@ -1269,13 +1311,28 @@ export default function ClassPortal() {
           <div className="space-y-6 py-2">
             <div className="flex gap-3 p-3 bg-neutral-50 rounded-2xl border border-neutral-200">
               <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-neutral-200">
-                {(checkoutClass.imageUrl || checkoutClass.group?.coverImage || checkoutClass.group?.logo) ? (
-                  <img src={checkoutClass.imageUrl || checkoutClass.group?.coverImage || checkoutClass.group?.logo} alt={checkoutClass.title} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <span className="material-symbols-outlined text-[24px] text-neutral-400">school</span>
-                  </div>
-                )}
+                {(() => {
+                  const imgKey = `checkout-${checkoutClass.id}`;
+                  const hasError = portalImageErrors[imgKey];
+                  const displaySrc = checkoutClass.imageUrl || checkoutClass.group?.coverImage || checkoutClass.group?.logo;
+                  if (hasError || !displaySrc) {
+                    return (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <span className="material-symbols-outlined text-[24px] text-neutral-400">school</span>
+                      </div>
+                    );
+                  }
+                  return (
+                    <img 
+                      src={displaySrc} 
+                      alt={checkoutClass.title} 
+                      className="w-full h-full object-cover" 
+                      onError={() => {
+                        setPortalImageErrors(prev => ({ ...prev, [imgKey]: true }));
+                      }}
+                    />
+                  );
+                })()}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-[10px] font-bold text-neutral-500 uppercase">{checkoutClass.group?.name || 'World of Community'}</p>
@@ -1403,6 +1460,14 @@ export default function ClassPortal() {
         itemId={selectedDetailClass?.id}
         itemDetail={selectedDetailClass}
         onClose={() => setSelectedDetailClass(null)}
+        onManage={(cls) => {
+          setSelectedDetailClass(null);
+          setEditingClass(cls);
+          setTempIsDailyBookingOpen(!!cls.isDailyBookingOpen);
+          setTempInstructorComment(cls.instructorComment || '');
+          setTempDailyClassPrice(cls.dailyClassPrice || Math.floor((cls.price || 0) / 3) + 5000);
+          setCapacityModalOpen(true);
+        }}
       />
 
       {/* Chat Overlay - 관리자와 채팅을 현재 페이지 위에 오버레이로 표시 */}

@@ -25,9 +25,10 @@ export function useSocialData() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSocial, setSelectedSocial] = useState<Social | null>(null);
   const [localViewSocial, setLocalViewSocial] = useState<Social | null>(null);
+  const [viewSocialDate, setViewSocialDate] = useState<Date | null>(null);
   const isClosingRef = useRef(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [viewType, setViewType] = useState<'slide' | 'list' | 'weekly' | 'favorite'>('slide');
+  const [viewType, setViewType] = useState<'slide' | 'list' | 'weekly' | 'favorite'>('weekly');
   const [venuesMap, setVenuesMap] = useState<Record<string, any>>({});
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [likedSocialIds, setLikedSocialIds] = useState<string[]>([]);
@@ -36,7 +37,7 @@ export function useSocialData() {
   
   const { location, toggleSelector } = useLocation();
   const { user, profile, loading, setShowLogin } = useAuth();
-  const { setSubHeader, setGlobalNavHidden } = useNavigation();
+  const { setSubHeader } = useNavigation();
   const { t, language } = useLanguage();
   
   const dateLocale = language === 'KR' ? 'ko-KR' : 'en-US';
@@ -155,6 +156,7 @@ export function useSocialData() {
   // URL의 viewSocial 파라미터와 로컬 viewSocial 상태의 실시간 정밀 동기화
   useEffect(() => {
     const viewId = searchParams.get('viewSocial');
+    const viewDateStr = searchParams.get('viewDate');
     
     if (isClosingRef.current) {
       if (!viewId) {
@@ -169,9 +171,15 @@ export function useSocialData() {
         || dailySocials.find(s => s.id === viewId);
       if (found) {
         setLocalViewSocial(found);
+        if (viewDateStr) {
+          setViewSocialDate(new Date(viewDateStr));
+        } else {
+          setViewSocialDate(null);
+        }
       }
     } else {
       setLocalViewSocial(null);
+      setViewSocialDate(null);
     }
   }, [searchParams, regulars, popups, dailySocials]);
 
@@ -238,33 +246,39 @@ export function useSocialData() {
     closeCreateURL();
   }, [closeCreateURL]);
 
-  const handleOpenView = useCallback((social: Social) => {
+  const handleOpenView = useCallback((social: Social, date?: Date) => {
     isClosingRef.current = false;
     setLocalViewSocial(social);
-    openViewURL(social.id);
+    setViewSocialDate(date || null);
+    
+    if (date) {
+      const pad = (n: number) => n.toString().padStart(2, '0');
+      const dateStr = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+      openViewURL(social.id, { viewDate: dateStr });
+    } else {
+      openViewURL(social.id);
+    }
   }, [openViewURL]);
 
   const handleCloseView = useCallback(() => {
-    // 1. 로컬 상태 즉시 해제 → SocialViewer 언마운트
     setLocalViewSocial(null);
+    setViewSocialDate(null);
     isClosingRef.current = true;
 
-    // 2. React router 경유로 URL 쿼리 정리 (searchParams 동기화 보장)
-    closeViewURL();
+    const params = new URLSearchParams(window.location.search);
+    params.delete('viewSocial');
+    params.delete('viewDate');
+    const newQuery = params.toString();
+    window.history.replaceState(null, '', `${window.location.pathname}${newQuery ? `?${newQuery}` : ''}`);
 
-    // 3. 전역 네비게이션 가시성 복구
-    setGlobalNavHidden(false);
-
-    // 4. 터치 포커스 찌꺼기 해제
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
     }
 
-    // 5. closing guard 해제 (다음 틱에서 searchParams effect가 정상 반응하도록)
     requestAnimationFrame(() => {
       isClosingRef.current = false;
     });
-  }, [closeViewURL, setGlobalNavHidden]);
+  }, []);
 
   const handleOpenEdit = useCallback((social: Social) => {
     setSelectedSocial(social);
@@ -360,7 +374,8 @@ export function useSocialData() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const filtered = locationFilteredSocials;
+    // 쁘락띠까(practica) subCategory 제외 필터 적용
+    const filtered = locationFilteredSocials.filter(s => s.subCategory !== 'practica');
     const instances: { date: Date, social: Social }[] = [];
 
     for (let i = 0; i < 7; i++) {
@@ -372,7 +387,24 @@ export function useSocialData() {
       filtered.forEach(s => {
         const dayNum = Number(s.dayOfWeek);
         if (s.type === 'regular' && !isNaN(dayNum) && dayNum === targetDayOfWeek) {
-          instances.push({ date: targetDate, social: s });
+          const ordinal = getWeekOrdinal(targetDate);
+          const isLast = isLastWeekOfMonth(targetDate);
+          const rec = (s.recurrence || 'every').trim().toLowerCase();
+          const recParts = rec.split(',').map(x => x.trim());
+          
+          const matchRecurrence = recParts.some(part => {
+            if (part === 'every' || part === '') return true;
+            if (part === '1st' && ordinal === 1) return true;
+            if (part === '2nd' && ordinal === 2) return true;
+            if (part === '3rd' && ordinal === 3) return true;
+            if (part === '4th' && ordinal === 4) return true;
+            if (part === 'last' && isLast) return true;
+            return false;
+          });
+
+          if (matchRecurrence) {
+            instances.push({ date: targetDate, social: s });
+          }
         } else if (s.type === 'popup' && s.date) {
           const sDate = typeof s.date.toDate === 'function' ? s.date.toDate() : new Date(s.date as any);
           sDate.setHours(0, 0, 0, 0);
@@ -418,14 +450,17 @@ export function useSocialData() {
       if (Number(s.dayOfWeek) !== targetDay) return false;
 
       const rec = (s.recurrence || 'every').trim().toLowerCase();
-      if (rec === 'every' || rec === '') return true;
-      if (rec === '1st' && ordinal === 1) return true;
-      if (rec === '2nd' && ordinal === 2) return true;
-      if (rec === '3rd' && ordinal === 3) return true;
-      if (rec === '4th' && ordinal === 4) return true;
-      if (rec === 'last' && isLast) return true;
+      const recParts = rec.split(',').map(x => x.trim());
 
-      return false;
+      return recParts.some(part => {
+        if (part === 'every' || part === '') return true;
+        if (part === '1st' && ordinal === 1) return true;
+        if (part === '2nd' && ordinal === 2) return true;
+        if (part === '3rd' && ordinal === 3) return true;
+        if (part === '4th' && ordinal === 4) return true;
+        if (part === 'last' && isLast) return true;
+        return false;
+      });
     });
 
     // 2. Popup milonga filter
@@ -556,6 +591,7 @@ export function useSocialData() {
     cityDisplay,
     viewSocial,
     localViewSocial,
+    viewSocialDate,
     isViewOpenURL,
     isEditOpenURL,
     handleToggleLike,

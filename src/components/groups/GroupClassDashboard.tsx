@@ -77,6 +77,7 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
   const [allClasses, setAllClasses] = useState<GroupClass[]>([]);
   const [allDiscounts, setAllDiscounts] = useState<ClassDiscount[]>([]);
   const [registrations, setRegistrations] = useState<ClassRegistration[]>([]);
+  const [dashboardImageErrors, setDashboardImageErrors] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const unsubClasses = groupService.subscribeClasses(group.id, setAllClasses);
@@ -1736,14 +1737,29 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
                 <div className="flex items-center gap-2">
                   {currentClassObj.instructors.map((ins: any, idx: number) => (
                     <div key={idx} className="flex items-center gap-1.5 bg-white border border-slate-200/80 rounded-full pl-1 pr-2.5 py-0.5 shadow-2xs">
-                      <div className="w-6 h-6 rounded-full bg-slate-100 overflow-hidden flex-shrink-0">
-                        {ins.avatar || ins.image ? (
-                          <img src={ins.avatar || ins.image} alt={ins.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-slate-400 bg-slate-100">
-                            <span className="material-symbols-outlined text-xs">person</span>
-                          </div>
-                        )}
+                      <div className="w-6 h-6 rounded-full bg-slate-100 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                        {(() => {
+                          const imgKey = `instructor-${ins.userId || ins.uid || idx}`;
+                          const hasError = dashboardImageErrors[imgKey];
+                          const displaySrc = ins.avatar || ins.image;
+                          if (hasError || !displaySrc) {
+                            return (
+                              <div className="w-full h-full flex items-center justify-center text-slate-400 bg-slate-100">
+                                <span className="material-symbols-outlined text-xs">person</span>
+                              </div>
+                            );
+                          }
+                          return (
+                            <img 
+                              src={displaySrc} 
+                              alt={ins.name} 
+                              className="w-full h-full object-cover" 
+                              onError={() => {
+                                setDashboardImageErrors(prev => ({ ...prev, [imgKey]: true }));
+                              }}
+                            />
+                          );
+                        })()}
                       </div>
                       <span className="text-[11px] font-black text-slate-700 leading-none">{ins.name}</span>
                     </div>
@@ -1986,14 +2002,28 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
                           const isFbOwner = fb.userId === resolvedOwnerId;
                           return (
                             <div key={fb.id} className="flex gap-2.5 items-start">
-                              <div className="w-8 h-8 rounded-full bg-slate-100 overflow-hidden shrink-0">
-                                {fb.userAvatar ? (
-                                  <img src={fb.userAvatar} alt={fb.userName} className="w-full h-full object-cover" />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center text-slate-400 bg-slate-200">
-                                    <span className="material-symbols-outlined text-sm">person</span>
-                                  </div>
-                                )}
+                              <div className="w-8 h-8 rounded-full bg-slate-100 overflow-hidden shrink-0 flex items-center justify-center">
+                                {(() => {
+                                  const imgKey = `feedback-${fb.id}`;
+                                  const hasError = dashboardImageErrors[imgKey];
+                                  if (hasError || !fb.userAvatar) {
+                                    return (
+                                      <div className="w-full h-full flex items-center justify-center text-slate-400 bg-slate-200">
+                                        <span className="material-symbols-outlined text-sm">person</span>
+                                      </div>
+                                    );
+                                  }
+                                  return (
+                                    <img 
+                                      src={fb.userAvatar} 
+                                      alt={fb.userName} 
+                                      className="w-full h-full object-cover" 
+                                      onError={() => {
+                                        setDashboardImageErrors(prev => ({ ...prev, [imgKey]: true }));
+                                      }}
+                                    />
+                                  );
+                                })()}
                               </div>
                               <div className={`flex flex-col p-3 rounded-2xl border max-w-[85%] ${
                                 isFbOwner 

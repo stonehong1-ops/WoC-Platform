@@ -38,8 +38,38 @@ function RentalPageContent() {
   const { isOpen: isDetailOpen, value: itemId, openModal: openDetail, closeModal: closeDetail } = useModalNavigation('itemId');
   const { isOpen: isComposeOpen, openModal: openCompose, closeModal: closeCompose } = useModalNavigation('compose');
 
-  const [spaces, setSpaces] = useState<RentalSpace[]>([]);
-  const [allVenues, setAllVenues] = useState<Venue[]>([]);
+  // Restore cached spaces and venues to achieve 0ms initial render
+  const cachedSpaces = React.useMemo(() => {
+    if (typeof window !== 'undefined') {
+      const cached = sessionStorage.getItem('woc_rental_all_spaces');
+      if (cached) {
+        try {
+          return JSON.parse(cached);
+        } catch (e) {
+          console.error('Failed to parse cached rental spaces:', e);
+        }
+      }
+    }
+    return [];
+  }, []);
+
+  const cachedVenues = React.useMemo(() => {
+    if (typeof window !== 'undefined') {
+      const cached = sessionStorage.getItem('woc_rental_all_venues');
+      if (cached) {
+        try {
+          return JSON.parse(cached);
+        } catch (e) {
+          console.error('Failed to parse cached rental venues:', e);
+        }
+      }
+    }
+    return [];
+  }, []);
+
+  const [spaces, setSpaces] = useState<RentalSpace[]>(cachedSpaces);
+  const [allVenues, setAllVenues] = useState<Venue[]>(cachedVenues);
+  const [isLoading, setIsLoading] = useState(cachedSpaces.length === 0);
   const [activeSize, setActiveSize] = useState('All');
   const [activeStudio, setActiveStudio] = useState('All');
   const [sortOption, setSortOption] = useState<SortOption>('latest');
@@ -63,12 +93,46 @@ function RentalPageContent() {
   }, [openCompose]);
 
   useEffect(() => {
-    const unsub = rentalService.subscribeSpaces((data) => setSpaces(data));
+    if (typeof window !== 'undefined') {
+      const cached = sessionStorage.getItem('woc_rental_all_spaces');
+      if (cached) {
+        try {
+          setSpaces(JSON.parse(cached));
+          setIsLoading(false);
+        } catch (e) {
+          console.error('Failed to parse cached spaces:', e);
+        }
+      }
+    }
+
+    const unsub = rentalService.subscribeSpaces((data) => {
+      setSpaces(data);
+      setIsLoading(false);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('woc_rental_all_spaces', JSON.stringify(data));
+      }
+    });
     return () => unsub();
   }, []);
 
   useEffect(() => {
-    const unsub = venueService.subscribeVenues((data) => setAllVenues(data));
+    if (typeof window !== 'undefined') {
+      const cached = sessionStorage.getItem('woc_rental_all_venues');
+      if (cached) {
+        try {
+          setAllVenues(JSON.parse(cached));
+        } catch (e) {
+          console.error('Failed to parse cached venues:', e);
+        }
+      }
+    }
+
+    const unsub = venueService.subscribeVenues((data) => {
+      setAllVenues(data);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('woc_rental_all_venues', JSON.stringify(data));
+      }
+    });
     return () => unsub();
   }, []);
 
@@ -291,11 +355,19 @@ function RentalPageContent() {
         .material-symbols-rounded { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
       `}} />
 
-      {/* ③ Rental List Area */}
       <div className="pt-4 px-4 mb-10 text-left min-h-[400px]">
-
-
-        {filteredSpaces.length === 0 ? (
+        {isLoading && filteredSpaces.length === 0 ? (
+          <div className="grid grid-cols-2 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="animate-pulse flex flex-col">
+                <div className="aspect-square bg-slate-200/80 rounded-xl mb-3" />
+                <div className="h-2.5 bg-slate-200/60 rounded w-1/3 mb-2" />
+                <div className="h-4 bg-slate-200/70 rounded w-3/4 mb-2" />
+                <div className="h-3 bg-slate-200/60 rounded w-1/2" />
+              </div>
+            ))}
+          </div>
+        ) : filteredSpaces.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center opacity-30">
             <span className="material-symbols-rounded text-6xl mb-4">search_off</span>
             <p className="text-xs font-black uppercase tracking-widest">{t('rental.no_spaces')}</p>
@@ -324,6 +396,8 @@ function RentalPageContent() {
                         src={firstImage}
                         fallbackType="cover"
                         category={(space as any).groupCategory || 'Rental'}
+                        loading="lazy"
+                        decoding="async"
                       />
                     );
                   })()}

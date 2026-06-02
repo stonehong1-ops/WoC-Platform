@@ -18,30 +18,25 @@ import PosterOverlay from "./poster/PosterOverlay";
 import { extractPosterData } from "./poster/posterTypes";
 import { POSTER_LAYOUTS } from "./poster/PosterLayouts";
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useNavigation } from "@/components/providers/NavigationProvider";
 
 interface SocialViewerProps {
   social: Social;
   onClose: () => void;
+  targetDate?: Date;
 }
 
 type TabId = "home" | "live" | "feed" | "reservation";
 
 const ADMIN_UIDS = ["7iaZAmaYY9dNNEShmJmROI8XrtH2"];
 
-export default function SocialViewer({ social: initialSocial, onClose }: SocialViewerProps) {
+export default function SocialViewer({ social: initialSocial, onClose, targetDate }: SocialViewerProps) {
   const { user, profile } = useAuth();
   const { t } = useLanguage();
-  const { setGlobalNavHidden } = useNavigation();
   const [social, setSocial] = useState<Social>(initialSocial);
   const [activeTab, setActiveTab] = useState<TabId>("home");
   const [showEditModal, setShowEditModal] = useState(false);
 
-  // Hide global navigation on mount, restore on unmount
-  useEffect(() => {
-    setGlobalNavHidden(true);
-    return () => setGlobalNavHidden(false);
-  }, [setGlobalNavHidden]);
+
 
   useEffect(() => {
     const unsub = socialService.subscribeSocial(initialSocial.id, (data) => {
@@ -60,14 +55,18 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
   const [images, setImages] = useState<string[]>([]);
 
   useEffect(() => {
-    if (social.posterExportUrl) {
+    const hasPoster = social.posterLayoutId && social.posterLayoutId !== 'none';
+    if (hasPoster) {
+      // Live poster mode: use original image as background, overlay renders DJ live
+      setImages(social.imageUrl ? [social.imageUrl] : []);
+    } else if (social.posterExportUrl) {
       setImages([social.posterExportUrl]);
     } else if (social.imageUrl) {
       setImages([social.imageUrl]);
     } else {
       setImages([]);
     }
-  }, [social.imageUrl, social.posterExportUrl]);
+  }, [social.imageUrl, social.posterExportUrl, social.posterLayoutId]);
 
   // UI state
   const [isScrolled, setIsScrolled] = useState(false);
@@ -92,7 +91,13 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
   const [showMenu, setShowMenu] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
-  const posterData = useMemo(() => extractPosterData(social), [social]);
+  const targetDateStr = useMemo(() => {
+    if (!targetDate) return undefined;
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${targetDate.getFullYear()}-${pad(targetDate.getMonth() + 1)}-${pad(targetDate.getDate())}`;
+  }, [targetDate]);
+
+  const posterData = useMemo(() => extractPosterData(social, targetDateStr), [social, targetDateStr]);
 
   // Fetch the pre-generated poster image
   const fetchPosterBlob = async (): Promise<Blob | null> => {
@@ -257,9 +262,9 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
                   </div>
                 ))}
               </div>
-              {/* Poster overlay on detail hero */}
-              {social.posterLayoutId && social.posterLayoutId !== "none" && !social.posterExportUrl && (
-                <PosterOverlay social={social} />
+              {/* Live poster overlay on detail hero */}
+              {social.posterLayoutId && social.posterLayoutId !== "none" && (
+                <PosterOverlay social={social} targetDate={targetDate} />
               )}
             </div>
           )}
@@ -281,7 +286,8 @@ export default function SocialViewer({ social: initialSocial, onClose }: SocialV
         {activeTab === "home" && (
           <SocialHomeTab 
             social={social} 
-            onChatWithOrganizer={handleChatWithOrganizer} 
+            targetDate={targetDate}
+            onChatWithOrganizer={handleChatWithOrganizer}  
             canEdit={!!canEdit} 
             onShowImages={(imgs, idx) => {
               setImages(imgs);

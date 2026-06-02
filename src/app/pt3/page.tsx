@@ -71,6 +71,104 @@ const GLOBAL_ANIMATIONS = `
     -webkit-text-fill-color: transparent;
     animation: pt1-shimmer 4s linear infinite;
   }
+
+  @media screen {
+    /* 캡처를 돌리는 동안 화면에 보이지는 않되, 
+       브라우저 렌더링 엔진이 완벽한 A4 landscape 물리 비율로 그리게 강제합니다 */
+    .print-only-container {
+      position: absolute !important;
+      left: -9999px !important;
+      top: -9999px !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+      width: 1500px !important;
+      height: auto !important;
+    }
+    
+    .print-slide {
+      width: 1500px !important;
+      height: 1060px !important;
+      box-sizing: border-box !important;
+      overflow: hidden !important;
+      background: #fcf8f8 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: center !important;
+    }
+
+    .print-slide > * {
+      width: 1500px !important;
+      height: 1060px !important;
+      min-height: 1060px !important;
+      max-height: 1060px !important;
+      box-sizing: border-box !important;
+      overflow: hidden !important;
+    }
+  }
+
+  /* 캡처 타깃 슬라이드의 모든 페이드인 애니메이션 강제 종결 및 투명화 해결 */
+  .print-only-container * {
+    animation: none !important;
+    opacity: 1 !important;
+    transition: none !important;
+  }
+
+  @media print {
+    .screen-only-view {
+      display: none !important;
+    }
+
+    html, body, #__next {
+      background: #fcf8f8 !important;
+      color: #1c1b1b !important;
+      width: 297mm !important;
+      height: auto !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      overflow: visible !important;
+      display: block !important;
+    }
+
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      box-sizing: border-box !important;
+    }
+
+    .print-only-container {
+      display: block !important;
+      position: relative !important;
+      z-index: 99999 !important;
+      background: #fcf8f8 !important;
+      width: 297mm !important;
+      height: auto !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    .print-slide {
+      width: 297mm !important;
+      height: 210mm !important;
+      page-break-after: always !important;
+      break-after: page !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: center !important;
+      box-sizing: border-box !important;
+      overflow: hidden !important;
+      background: #fcf8f8 !important;
+      position: relative !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    
+    @page {
+      size: landscape;
+      margin: 0;
+    }
+  }
 `;
 
 const PresentationPage = () => {
@@ -83,6 +181,88 @@ const PresentationPage = () => {
   // Iframe states
   const [iframeUrl, setIframeUrl] = useState('/groups/freestyle-tango');
   const [fadeIframe, setFadeIframe] = useState(false);
+
+  // 초고화질 원클릭 PDF 변환 저장 빌더
+  const handleDownloadPDF = async () => {
+    const { toast } = await import('sonner');
+    const toastId = toast.loading("초고화질 피치덱 PDF 생성 중... (약 5~10초 소요)");
+
+    try {
+      const html2canvas = (await import('html2canvas-pro')).default;
+      const { jsPDF } = await import('jspdf');
+
+      const printContainer = document.querySelector('.print-only-container') as HTMLElement;
+      if (!printContainer) {
+        throw new Error("출력 슬라이드 영역을 찾을 수 없습니다.");
+      }
+
+      const slides = printContainer.querySelectorAll('.print-slide');
+      if (slides.length === 0) {
+        throw new Error("출력할 슬라이드 엘리먼트가 존재하지 않습니다.");
+      }
+
+      // ── 캡처 전: 출력 컨테이너를 화면 내부로 일시 노출 ──
+      // 브라우저가 완벽한 레이아웃 계산을 수행한 상태에서 캡처를 보장합니다.
+      const origStyles = printContainer.style.cssText;
+      printContainer.style.cssText = `
+        position: fixed !important;
+        left: 0 !important;
+        top: 0 !important;
+        z-index: -1 !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        width: 1500px !important;
+        height: auto !important;
+        overflow: visible !important;
+      `;
+      // 브라우저 레이아웃 리플로우 강제 트리거
+      await new Promise(r => setTimeout(r, 300));
+      printContainer.getBoundingClientRect();
+
+      // A4 landscape 규격 선언 (297mm x 210mm)
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      for (let i = 0; i < slides.length; i++) {
+        const slide = slides[i] as HTMLElement;
+        
+        // scale: 2 로 레티나 고해상도 캡처 보증
+        const canvas = await html2canvas(slide, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#fcf8f8',
+          logging: false,
+          width: 1500,
+          height: 1060,
+        });
+
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        
+        if (i > 0) {
+          pdf.addPage([297, 210], 'landscape');
+        }
+
+        // A4 landscape 크기에 여백 오차 0%로 정밀 흡수
+        pdf.addImage(imgData, 'JPEG', 0, 0, 297, 210);
+      }
+
+      // ── 캡처 완료: 출력 컨테이너를 원래 숨김 상태로 복원 ──
+      printContainer.style.cssText = origStyles;
+
+      pdf.save("WoC_Ecosystem_PitchDeck.pdf");
+      toast.success("초고화질 피치덱 PDF 다운로드가 완료되었습니다!", { id: toastId });
+    } catch (error) {
+      console.error("PDF 생성 에러:", error);
+      // 에러 발생 시에도 원래 스타일 복원 시도
+      const pc = document.querySelector('.print-only-container') as HTMLElement;
+      if (pc) pc.style.cssText = '';
+      toast.error("PDF 생성 중 예상치 못한 에러가 발생했습니다. 다시 시도해 주세요.", { id: toastId });
+    }
+  };
 
   // Check demo mode from query params
   useEffect(() => {
@@ -206,7 +386,7 @@ const PresentationPage = () => {
       <style>{GLOBAL_ANIMATIONS}</style>
       
       {showStartScreen ? (
-        <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-[#050505]">
+        <div className="screen-only-view absolute inset-0 z-[100] flex flex-col items-center justify-center bg-[#050505]">
           {/* Ambient glow */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="w-[600px] h-[600px] rounded-full bg-white/[0.02] blur-[120px]" style={{ animation: 'pt1-startGlow 4s ease-in-out infinite' }} />
@@ -227,7 +407,7 @@ const PresentationPage = () => {
       ) : null}
 
       {/* Presentation Left Side */}
-      <div className={`w-full lg:flex-1 h-screen relative flex flex-col bg-[#fcf8f8] text-[#1c1b1b] overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] z-10 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${isFocusMode ? 'rounded-none' : 'lg:rounded-r-[40px]'}`}>
+      <div className={`screen-only-view w-full lg:flex-1 h-screen relative flex flex-col bg-[#fcf8f8] text-[#1c1b1b] overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] z-10 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${isFocusMode ? 'rounded-none' : 'lg:rounded-r-[40px]'}`}>
         <PresentationHeader />
 
         <main className="relative flex-1 w-full flex items-center justify-center overflow-hidden">
@@ -241,12 +421,13 @@ const PresentationPage = () => {
           totalSlides={totalSlides}
           onJump={jumpToSlide}
           sectionIndexes={[0, 1, 2, 3, 4, 5, 6]}
+          onPrint={handleDownloadPDF}
         />
       </div>
 
       {/* Live App Right Side */}
       <div 
-        className={`hidden lg:flex shrink-0 h-screen bg-[#050505] flex-col items-center justify-center relative z-0 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${isFocusMode ? 'w-[40px] xl:w-[60px] cursor-pointer hover:bg-[#111]' : 'w-[420px] xl:w-[480px] 2xl:w-[560px]'}`} 
+        className={`screen-only-view hidden lg:flex shrink-0 h-screen bg-[#050505] flex-col items-center justify-center relative z-0 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${isFocusMode ? 'w-[40px] xl:w-[60px] cursor-pointer hover:bg-[#111]' : 'w-[420px] xl:w-[480px] 2xl:w-[560px]'}`} 
         onClick={() => isFocusMode && setIsFocusMode(false)}
       >
         {isFocusMode ? (
@@ -336,6 +517,15 @@ const PresentationPage = () => {
             </div>
           </>
         )}
+      </div>
+
+      {/* 인쇄 전용 숨김 슬라이드 묶음 (PDF 출력용) */}
+      <div className="print-only-container">
+        {SLIDES.map((SlideComponent, idx) => (
+          <div key={idx} className="print-slide">
+            <SlideComponent />
+          </div>
+        ))}
       </div>
     </div>
   );

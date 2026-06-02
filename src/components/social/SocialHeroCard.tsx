@@ -88,19 +88,13 @@ export default function SocialHeroCard({ social, date }: { social: Social, date?
   const displayTitle = getSocialDisplayTitle(social);
   const djName = getDjDisplay(social, date);
   const hasPoster = social.posterLayoutId && social.posterLayoutId !== "none";
-  
-  if (social.posterExportUrl) {
-    return (
-      <SocialCardImage imageUrl={social.posterExportUrl} title={social.title} />
-    );
-  }
 
   return (
     <>
-      <SocialCardImage imageUrl={social.imageUrl} title={social.title} />
+      <SocialCardImage imageUrl={hasPoster ? social.imageUrl : (social.posterExportUrl || social.imageUrl)} title={social.title} />
       
       {hasPoster ? (
-        /* Poster layout overlay */
+        /* Live poster layout overlay — DJ changes auto-reflected */
         <PosterOverlay social={social} />
       ) : (
         /* Default overlay */

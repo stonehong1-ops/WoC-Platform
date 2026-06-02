@@ -13,6 +13,9 @@ interface GroupCalendarFormProps {
     endDate: string;
     endTime: string;
     type: CalendarEvent['type'];
+    weekPlans: string[];
+    org: string;
+    dj: string;
   };
   setFormData: React.Dispatch<React.SetStateAction<{
     title: string;
@@ -22,6 +25,9 @@ interface GroupCalendarFormProps {
     endDate: string;
     endTime: string;
     type: CalendarEvent['type'];
+    weekPlans: string[];
+    org: string;
+    dj: string;
   }>>;
   isSaving: boolean;
   handleFormClose: () => void;
@@ -98,6 +104,69 @@ export const GroupCalendarForm: React.FC<GroupCalendarFormProps> = ({
             <label className="font-label-sm text-label-sm text-on-surface-variant" htmlFor="description">{t('calendar.descriptionLabel') || "Description"}</label>
             <textarea className="w-full rounded border border-outline/20 bg-surface focus:border-primary focus:ring-1 focus:ring-primary font-body-md text-body-md text-on-surface py-3 px-4 resize-none" id="description" placeholder={t('calendar.addDetailsPlaceholder') || "Add details..."} rows={4} value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} />
           </div>
+          {formData.type === 'class' && (
+            <div className="flex flex-col gap-4 border-t border-outline/10 pt-4">
+              <span className="font-label-md text-label-md text-on-surface-variant">
+                {t('calendar.weeklyOutline') || '주차별 수업개요'}
+              </span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="flex flex-col gap-2">
+                    <label className="font-label-sm text-label-sm text-on-surface-variant" htmlFor={`week-plan-${i}`}>
+                      {t(`calendar.week${i + 1}`) || `${i + 1}주차`}
+                    </label>
+                    <input
+                      className="w-full rounded border border-outline/20 bg-surface focus:border-primary focus:ring-1 focus:ring-primary font-body-md text-body-md text-on-surface py-3 px-3 min-w-0"
+                      id={`week-plan-${i}`}
+                      type="text"
+                      placeholder={t('calendar.weekOutlinePlaceholder')?.replace('{week}', String(i + 1)) || `${i + 1}주차 수업개요를 입력하세요`}
+                      value={formData.weekPlans?.[i] || ''}
+                      onChange={(e) => {
+                        const newPlans = [...(formData.weekPlans || ['', '', '', ''])];
+                        newPlans[i] = e.target.value;
+                        setFormData({ ...formData, weekPlans: newPlans });
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {(formData.type === 'social' || formData.type === 'milonga') && (
+            <div className="flex flex-col gap-4 border-t border-outline/10 pt-4">
+              <span className="font-label-md text-label-md text-on-surface-variant">
+                {t('calendar.eventDetails') || '행사 상세 정보'}
+              </span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-2">
+                  <label className="font-label-sm text-label-sm text-on-surface-variant" htmlFor="event-org">
+                    Org
+                  </label>
+                  <input
+                    className="w-full rounded border border-outline/20 bg-surface focus:border-primary focus:ring-1 focus:ring-primary font-body-md text-body-md text-on-surface py-3 px-3 min-w-0"
+                    id="event-org"
+                    type="text"
+                    placeholder={t('calendar.orgPlaceholder') || '주최 오거나이저 입력...'}
+                    value={formData.org || ''}
+                    onChange={(e) => setFormData({ ...formData, org: e.target.value })}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="font-label-sm text-label-sm text-on-surface-variant" htmlFor="event-dj">
+                    DJ
+                  </label>
+                  <input
+                    className="w-full rounded border border-outline/20 bg-surface focus:border-primary focus:ring-1 focus:ring-primary font-body-md text-body-md text-on-surface py-3 px-3 min-w-0"
+                    id="event-dj"
+                    type="text"
+                    placeholder={t('calendar.djPlaceholder') || '담당 DJ 입력...'}
+                    value={formData.dj || ''}
+                    onChange={(e) => setFormData({ ...formData, dj: e.target.value })}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </form>
       </main>
     </div>
