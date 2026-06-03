@@ -653,7 +653,7 @@ export default function TodayPageContent() {
   }, [socials, location]);
 
   const milongas = locationFilteredSocials.filter((s) => s.subCategory !== "practica");
-  const practicas = locationFilteredSocials.filter((s) => s.subCategory === "practica");
+  const practicas = locationFilteredSocials.filter((s) => s.subCategory === "practica").sort((a, b) => (a.startTime || "00:00").localeCompare(b.startTime || "00:00"));
 
   // ── 소셜 페이지와 동일한 홍대/강남 + 낮밀 그룹핑 로직 ──
   const milongasByDistrict = useMemo(() => {
