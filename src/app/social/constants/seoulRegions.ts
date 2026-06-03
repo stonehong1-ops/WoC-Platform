@@ -181,6 +181,10 @@ export const INSTRUCTOR_NAME_MAP: Record<string, string> = {
   "may": "메이",
   "vicky": "비키",
   "basil": "바질",
+  "susana": "수사나",
+  "trees": "트리스",
+  "nacho": "DJ 나초",
+  "hernan": "DJ 에르난",
 };
 
 export function formatInstructorNames(instructorStr: string, locale: string): string {
