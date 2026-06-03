@@ -25,6 +25,7 @@ import dynamic from 'next/dynamic';
 
 const ChatRoomComponent = dynamic(() => import('../chat/ChatRoom'));
 import UserBadge from '@/components/common/UserBadge';
+import { formatInstructorNames } from "@/app/social/constants/seoulRegions";
 
 
 export default function ClassPortal() {
@@ -750,7 +751,7 @@ export default function ClassPortal() {
                                   <UserBadge
                                     key={inst.id || inst.uid || inst.userId || idx}
                                     uid={inst.id || inst.uid || inst.userId || ''}
-                                    nickname={inst.name}
+                                    nickname={formatInstructorNames(inst.name || '', language)}
                                     photoURL={inst.avatar || inst.photoURL || inst.image || inst.imageUrl}
                                     avatarSize="w-5 h-5"
                                     nameClassName="font-bold text-[10px] text-slate-600 truncate max-w-[60px]"
@@ -915,7 +916,7 @@ export default function ClassPortal() {
                                   <UserBadge
                                     key={inst.id || inst.uid || inst.userId || idx}
                                     uid={inst.id || inst.uid || inst.userId || ''}
-                                    nickname={inst.name}
+                                    nickname={formatInstructorNames(inst.name || '', language)}
                                     photoURL={inst.avatar || inst.photoURL || inst.image || inst.imageUrl}
                                     avatarSize="w-5 h-5"
                                     nameClassName="font-bold text-[10px] text-slate-600 truncate max-w-[60px]"

@@ -19,13 +19,17 @@ interface ClassPageContentProps {
   propModalId?: string;
   isOverlay?: boolean;
   onClose?: () => void;
+  editRegistration?: any;
+  isEditMode?: boolean;
 }
 
 export default function ClassPageContent({
   propGroupId,
   propModalId,
   isOverlay = false,
-  onClose
+  onClose,
+  editRegistration,
+  isEditMode = false
 }: ClassPageContentProps) {
   const {
     router,
@@ -47,6 +51,8 @@ export default function ClassPageContent({
     t,
     selectedRole,
     setSelectedRole,
+    applicantMemo,
+    setApplicantMemo,
     ownerInfo,
     currentDate,
     sortOption,
@@ -79,7 +85,7 @@ export default function ClassPageContent({
     handleApplyModalSubmit,
     handleDownload,
     reportPayment
-  } = useClassData(propGroupId, propModalId, onClose);
+  } = useClassData(propGroupId, propModalId, onClose, editRegistration, isEditMode);
 
   if (loading) {
     return (
@@ -636,6 +642,7 @@ export default function ClassPageContent({
           setPassSelectedClassIds(new Set());
           setClassPartners({});
         }}
+        isEditMode={isEditMode}
         title={isDiscountSelected ? t('class.checkout.bundle_registration') : t('class.checkout.class_registration')}
         subtitle={isDiscountSelected ? undefined : `${group?.name || 'Club'} · ${monthDisplay}`}
         isSubmitDisabled={isDiscountSelected && passSelectedClassIds.size === 0}
@@ -864,6 +871,20 @@ export default function ClassPageContent({
               })}
             </div>
           )}
+
+          {/* Applicant Memo */}
+          <div className="bg-neutral-50 rounded-2xl p-4 border border-neutral-200">
+            <h4 className="text-sm font-bold text-neutral-900 mb-2">
+              {language === 'KR' ? '신청자 메모' : 'Applicant Memo'} <span className="normal-case tracking-normal text-neutral-400 font-normal">({language === 'KR' ? '선택' : 'Optional'})</span>
+            </h4>
+            <textarea
+              value={applicantMemo}
+              onChange={(e) => setApplicantMemo(e.target.value)}
+              placeholder={language === 'KR' ? '추가 요청사항이나 특이사항을 기재해주세요.' : 'Enter any special requests or notes.'}
+              rows={2}
+              className="w-full bg-white border border-neutral-200 rounded-xl px-3 py-2 text-xs text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none font-bold"
+            />
+          </div>
 
           {/* Notice */}
           <div className="bg-neutral-50 rounded-xl p-4 border border-neutral-100">

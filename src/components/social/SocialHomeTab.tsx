@@ -20,6 +20,7 @@ interface Props {
 }
 
 import { getNextEventDateObj, getDjDisplay } from "@/lib/utils/socialUtils";
+import { formatInstructorNames } from "@/app/social/constants/seoulRegions";
 
 function getNextEventDate(social: Social, language: string): string {
   const dateLocale = language === 'KR' ? 'ko-KR' : 'en-US';
@@ -290,7 +291,7 @@ export default function SocialHomeTab({ social, targetDate, onChatWithOrganizer,
               <div className="min-w-0 flex-1">
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t('social.dj')}</p>
                 <h4 className="text-[14.5px] font-black text-slate-800 mt-0.5 truncate">
-                  {getDjDisplay(social, targetDate).replace('TBD', t('social.tbd'))}
+                  {formatInstructorNames(getDjDisplay(social, targetDate), language).replace('TBD', t('social.tbd'))}
                 </h4>
               </div>
             </div>
@@ -374,7 +375,7 @@ export default function SocialHomeTab({ social, targetDate, onChatWithOrganizer,
                         {dj.djId ? (
                           <UserBadge
                             uid={dj.djId}
-                            nickname={dj.djName}
+                            nickname={formatInstructorNames(dj.djName, language)}
                             avatarSize="w-9 h-9"
                             nameClassName="font-bold text-xs text-[#2d3435] truncate"
                             nativeClassName="text-[9px] font-semibold text-slate-400 ml-1.5 truncate max-w-[80px]"
@@ -390,7 +391,7 @@ export default function SocialHomeTab({ social, targetDate, onChatWithOrganizer,
                               <span className="material-symbols-rounded text-sm text-[#596061]">headphones</span>
                             </div>
                             <div>
-                              <p className="text-xs font-bold text-[#2d3435]">{dj.djName}</p>
+                              <p className="text-xs font-bold text-[#2d3435]">{formatInstructorNames(dj.djName, language)}</p>
                               <p className="text-[9.5px] font-bold text-primary mt-0.5">
                                 {new Date(dj.date).toLocaleDateString(dateLocale, { weekday: 'short', month: 'short', day: 'numeric' })}
                               </p>
@@ -430,7 +431,7 @@ export default function SocialHomeTab({ social, targetDate, onChatWithOrganizer,
                           {dj.djId ? (
                             <UserBadge
                               uid={dj.djId}
-                              nickname={dj.djName}
+                              nickname={formatInstructorNames(dj.djName, language)}
                               avatarSize="w-8 h-8"
                               nameClassName="font-bold text-[11px] text-[#596061] truncate"
                               nativeClassName="text-[8px] font-semibold text-slate-400 ml-1 truncate max-w-[60px]"
@@ -446,7 +447,7 @@ export default function SocialHomeTab({ social, targetDate, onChatWithOrganizer,
                                 <span className="material-symbols-rounded text-xs text-[#acb3b4]">headphones</span>
                               </div>
                               <div>
-                                <p className="text-[11px] font-bold text-[#596061]">{dj.djName}</p>
+                                <p className="text-[11px] font-bold text-[#596061]">{formatInstructorNames(dj.djName, language)}</p>
                                 <p className="text-[9px] font-medium text-[#acb3b4]">
                                   {new Date(dj.date).toLocaleDateString(dateLocale, { month: 'short', day: 'numeric', year: 'numeric' })}
                                 </p>

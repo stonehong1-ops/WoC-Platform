@@ -138,7 +138,7 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
   // Dynamic Tab synchronization: 멤버 데이터 비동기 로드 완료 시 캐시가 없어서 about에 임시 안착했던 멤버를 첫 메뉴로 지능적 강제 리다이렉트합니다.
   useEffect(() => {
     if (loading || isMembersLoading) return;
-    const isMember = isFullMember || isAdminUser;
+    const isMember = isFullMember;
     const tabParam = searchParams.get('tab');
 
     if (isMember && !tabParam && activeTab === 'about') {
@@ -163,8 +163,8 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
     if (loading || isMembersLoading) return;
 
     const tabParam = searchParams.get('tab') as TabType | null;
-    const isMember = isFullMember || isAdminUser;
-    const currentTab = tabParam || (isMember ? 'home' : 'about');
+    const isMember = isFullMember;
+    const currentTab = tabParam || (isMember ? 'feed' : 'about');
 
     // activeTab 상태값의 시차 문제를 차단하기 위해 함수형 또는 조건식으로 안정성 강화
     setActiveTab(prev => {
@@ -355,7 +355,7 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
     }
     if (hasInitiallyDetected.current) return;
     const tabParam = searchParams.get('tab');
-    const isMember = isFullMember || isAdminUser;
+    const isMember = isFullMember;
     if (isMember && !tabParam && (activeTab === 'home' || activeTab === 'about') && tabId !== 'home' && tabId !== 'about') {
       hasInitiallyDetected.current = true;
       setActiveTab(tabId as TabType);

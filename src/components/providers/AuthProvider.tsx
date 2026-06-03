@@ -41,6 +41,7 @@ interface UserProfile {
   career?: string;
   partnerStatus?: string;
   allowPhoneCalls?: boolean;
+  customSchedules?: any[];
 }
 
 interface AuthContextType {
@@ -179,6 +180,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               career: data.career || '',
               partnerStatus: data.partnerStatus || '',
               allowPhoneCalls: data.allowPhoneCalls !== false,
+              customSchedules: data.customSchedules || [],
             });
 
             // 구시대 알림 비허용 필드가 DB 문서에 남아 있다면 완전 영구 영탈(삭제)

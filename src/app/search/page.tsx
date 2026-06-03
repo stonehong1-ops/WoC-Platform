@@ -7,12 +7,66 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useDebounce } from "@/hooks/useDebounce";
 import { searchService, SearchResultItem } from "@/services/searchService";
 import Link from "next/link";
+import { formatInstructorNames } from "@/app/social/constants/seoulRegions";
+
+const getDisplayTitleAndSubtitle = (item: SearchResultItem, language: string) => {
+  let displayTitle = item.title;
+  let displaySubtitle = item.subtitle || '';
+
+  if (item.type === 'social') {
+    displayTitle = language === 'KR' 
+      ? (item.titleKo || item.title) 
+      : (item.title || item.titleKo || 'Unknown');
+      
+    const venue = language === 'KR'
+      ? (item.venueNameNative || item.venueName || '')
+      : (item.venueName || item.venueNameNative || '');
+    
+    const dj = item.djName ? formatInstructorNames(item.djName, language) : '';
+    const org = language === 'KR'
+      ? (item.organizerNameNative || item.organizerName || '')
+      : (item.organizerName || item.organizerNameNative || '');
+      
+    const djOrOrg = dj ? `DJ ${dj}` : (org ? (language === 'KR' ? `주최 ${org}` : `by ${org}`) : '');
+    
+    const parts = [venue, djOrOrg, item.startTime].filter(Boolean);
+    displaySubtitle = parts.join(' · ');
+
+  } else if (item.type === 'venue') {
+    displayTitle = language === 'KR'
+      ? (item.titleKo || item.title)
+      : (item.title || item.titleKo || 'Unknown');
+    displaySubtitle = item.subtitle || '';
+    
+  } else if (item.type === 'person') {
+    displayTitle = language === 'KR'
+      ? (item.titleKo || item.title)
+      : (item.title || item.titleKo || 'Unknown');
+    displaySubtitle = item.subtitle || '';
+    
+  } else if (item.type === 'group') {
+    displayTitle = language === 'KR'
+      ? (item.titleKo || item.title)
+      : (item.title || item.titleKo || 'Unknown');
+    displaySubtitle = language === 'KR'
+      ? (item.subtitleKo || item.subtitle || '')
+      : (item.subtitle || item.subtitleKo || '');
+      
+  } else if (item.type === 'event') {
+    displayTitle = language === 'KR'
+      ? (item.titleKo || item.title)
+      : (item.title || item.titleKo || 'Unknown');
+    displaySubtitle = item.subtitle || '';
+  }
+
+  return { title: displayTitle, subtitle: displaySubtitle };
+};
 
 // Placeholder data for design
 const TRENDING_TAGS = ["#TangoShoes", "#Milonga", "#BeginnerClass", "#BuenosAires", "#Festival"];
 
 export default function SearchPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedQuery = useDebounce(searchQuery, 500);
@@ -21,7 +75,7 @@ export default function SearchPage() {
   const [searchResults, setSearchResults] = useState<SearchResultItem[]>([]);
   
   // Restore initial trending data from sessionStorage
-  const [initialData, setInitialData] = useState<{shops: SearchResultItem[], classes: SearchResultItem[], events: SearchResultItem[], groups: SearchResultItem[]}>(() => {
+  const [initialData, setInitialData] = useState<{shops: SearchResultItem[], socials: SearchResultItem[], events: SearchResultItem[], groups: SearchResultItem[]}>(() => {
     if (typeof window !== 'undefined') {
       const cached = sessionStorage.getItem('woc_search_initial');
       if (cached) {
@@ -32,7 +86,7 @@ export default function SearchPage() {
         }
       }
     }
-    return { shops: [], classes: [], events: [], groups: [] };
+    return { shops: [], socials: [], events: [], groups: [] };
   });
 
   // Restore recent searches from localStorage
@@ -237,35 +291,38 @@ export default function SearchPage() {
                 </div>
               </section>
 
-              {/* Section 2: Class */}
+              {/* Section 2: Social (밀롱가·쁘락티카) */}
               <section>
                 <div className="flex items-center justify-between px-4 mb-4">
                   <h2 className="text-[18px] font-black text-on-surface tracking-tight flex items-center gap-1.5">
-                    <span className="material-symbols-outlined text-primary text-[20px]">school</span>
-                    {t('search.upcomingClasses')}
+                    <span className="material-symbols-outlined text-primary text-[20px]">nightlife</span>
+                    {t('search.hotSocials')}
                   </h2>
-                  <Link href="/class" className="text-[13px] font-bold text-on-surface/50 flex items-center hover:text-primary transition-colors">
+                  <Link href="/social" className="text-[13px] font-bold text-on-surface/50 flex items-center hover:text-primary transition-colors">
                     {t('search.viewAll')} <span className="material-symbols-outlined text-[16px]">chevron_right</span>
                   </Link>
                 </div>
                 <div className="flex gap-4 overflow-x-auto px-4 no-scrollbar pb-4">
-                  {initialData.classes.map((item) => (
-                    <Link href={item.url} key={item.id} className="min-w-[200px] flex flex-col gap-2 cursor-pointer active:scale-95 transition-transform group">
-                      <div className="w-full aspect-video rounded-2xl overflow-hidden relative bg-on-surface/5 border border-on-surface/5 group-hover:shadow-md transition-shadow">
-                        {item.image ? (
-                          <Image src={item.image} alt={item.title} fill className="object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-surface-variant text-on-surface-variant">
-                            <span className="material-symbols-outlined text-[32px]">school</span>
-                          </div>
-                        )}
-                      </div>
-                      <div>
-                        <h3 className="text-[15px] font-bold text-on-surface line-clamp-1">{item.title}</h3>
-                        {item.subtitle && <p className="text-[13px] font-medium text-on-surface/60">{item.subtitle}</p>}
-                      </div>
-                    </Link>
-                  ))}
+                  {initialData.socials.map((item) => {
+                    const { title, subtitle } = getDisplayTitleAndSubtitle(item, language);
+                    return (
+                      <Link href={item.url} key={item.id} className="min-w-[200px] flex flex-col gap-2 cursor-pointer active:scale-95 transition-transform group">
+                        <div className="w-full aspect-video rounded-2xl overflow-hidden relative bg-on-surface/5 border border-on-surface/5 group-hover:shadow-md transition-shadow">
+                          {item.image ? (
+                            <Image src={item.image} alt={title} fill className="object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-surface-variant text-on-surface-variant">
+                              <span className="material-symbols-outlined text-[32px]">nightlife</span>
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <h3 className="text-[15px] font-bold text-on-surface line-clamp-1">{title}</h3>
+                          {subtitle && <p className="text-[13px] font-medium text-on-surface/60">{subtitle}</p>}
+                        </div>
+                      </Link>
+                    );
+                  })}
                 </div>
               </section>
 
@@ -281,25 +338,28 @@ export default function SearchPage() {
                   </Link>
                 </div>
                 <div className="flex flex-col gap-3 px-4">
-                  {initialData.events.map((item) => (
-                    <Link href={item.url} key={item.id} className="flex gap-4 items-center bg-surface p-3 rounded-2xl active:scale-[0.98] transition-all hover:shadow-md border border-on-surface/5">
-                      <div className="w-[70px] h-[70px] rounded-xl overflow-hidden relative flex-shrink-0 bg-on-surface/5">
-                        {item.image ? (
-                          <Image src={item.image} alt={item.title} fill className="object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-surface-variant text-on-surface-variant">
-                            <span className="material-symbols-outlined text-[24px]">event</span>
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex flex-col flex-1">
-                        <h3 className="text-[15px] font-bold text-on-surface">{item.title}</h3>
-                        <div className="flex items-center gap-2 mt-1">
-                          {item.subtitle && <span className="text-[12px] font-medium text-on-surface/60">{item.subtitle}</span>}
+                  {initialData.events.map((item) => {
+                    const { title, subtitle } = getDisplayTitleAndSubtitle(item, language);
+                    return (
+                      <Link href={item.url} key={item.id} className="flex gap-4 items-center bg-surface p-3 rounded-2xl active:scale-[0.98] transition-all hover:shadow-md border border-on-surface/5">
+                        <div className="w-[70px] h-[70px] rounded-xl overflow-hidden relative flex-shrink-0 bg-on-surface/5">
+                          {item.image ? (
+                            <Image src={item.image} alt={title} fill className="object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-surface-variant text-on-surface-variant">
+                              <span className="material-symbols-outlined text-[24px]">event</span>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    </Link>
-                  ))}
+                        <div className="flex flex-col flex-1">
+                          <h3 className="text-[15px] font-bold text-on-surface">{title}</h3>
+                          <div className="flex items-center gap-2 mt-1">
+                            {subtitle && <span className="text-[12px] font-medium text-on-surface/60">{subtitle}</span>}
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })}
                 </div>
               </section>
 
@@ -315,23 +375,26 @@ export default function SearchPage() {
                   </Link>
                 </div>
                 <div className="flex gap-4 overflow-x-auto px-4 no-scrollbar pb-8">
-                  {initialData.groups.map((item) => (
-                    <Link href={item.url} key={item.id} className="min-w-[120px] flex flex-col items-center gap-3 cursor-pointer active:scale-95 transition-transform group">
-                      <div className="w-[80px] h-[80px] rounded-full overflow-hidden relative bg-on-surface/5 ring-2 ring-transparent group-hover:ring-primary/20 transition-all shadow-sm">
-                        {item.image ? (
-                          <Image src={item.image} alt={item.title} fill className="object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-surface-variant text-on-surface-variant">
-                            <span className="material-symbols-outlined text-[32px]">groups</span>
-                          </div>
-                        )}
-                      </div>
-                      <div className="text-center">
-                        <h3 className="text-[14px] font-bold text-on-surface leading-tight mb-1">{item.title}</h3>
-                        {item.subtitle && <p className="text-[12px] font-medium text-on-surface/50">{item.subtitle}</p>}
-                      </div>
-                    </Link>
-                  ))}
+                  {initialData.groups.map((item) => {
+                    const { title, subtitle } = getDisplayTitleAndSubtitle(item, language);
+                    return (
+                      <Link href={item.url} key={item.id} className="min-w-[120px] flex flex-col items-center gap-3 cursor-pointer active:scale-95 transition-transform group">
+                        <div className="w-[80px] h-[80px] rounded-full overflow-hidden relative bg-on-surface/5 ring-2 ring-transparent group-hover:ring-primary/20 transition-all shadow-sm">
+                          {item.image ? (
+                            <Image src={item.image} alt={title} fill className="object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-surface-variant text-on-surface-variant">
+                              <span className="material-symbols-outlined text-[32px]">groups</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-center">
+                          <h3 className="text-[14px] font-bold text-on-surface leading-tight mb-1">{title}</h3>
+                          {subtitle && <p className="text-[12px] font-medium text-on-surface/50">{subtitle}</p>}
+                        </div>
+                      </Link>
+                    );
+                  })}
                 </div>
               </section>
             </div>
@@ -354,41 +417,46 @@ export default function SearchPage() {
                 <h2 className="text-[14px] font-black text-on-surface/60 mb-2 tracking-tight">
                   {t('search.resultsFor', { query: debouncedQuery })}
                 </h2>
-                {searchResults.map((item) => (
-                  <Link 
-                    href={item.url} 
-                    key={`${item.type}-${item.id}`} 
-                    onClick={() => addRecentSearch(debouncedQuery)}
-                    className="flex gap-4 items-center bg-surface p-3 rounded-2xl active:scale-[0.98] transition-all hover:shadow-md border border-on-surface/5"
-                  >
-                    <div className="w-[60px] h-[60px] rounded-xl overflow-hidden relative flex-shrink-0 bg-on-surface/5">
-                      {item.image ? (
-                        <Image src={item.image} alt={item.title} fill className="object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-surface-variant text-on-surface-variant">
-                          <span className="material-symbols-outlined text-[24px]">
-                            {item.type === 'shop' ? 'storefront' : item.type === 'class' ? 'school' : item.type === 'event' ? 'event' : 'group'}
+                {searchResults.map((item) => {
+                  const { title, subtitle } = getDisplayTitleAndSubtitle(item, language);
+                  return (
+                    <Link 
+                      href={item.url} 
+                      key={`${item.type}-${item.id}`} 
+                      onClick={() => addRecentSearch(debouncedQuery)}
+                      className="flex gap-4 items-center bg-surface p-3 rounded-2xl active:scale-[0.98] transition-all hover:shadow-md border border-on-surface/5"
+                    >
+                      <div className="w-[60px] h-[60px] rounded-xl overflow-hidden relative flex-shrink-0 bg-on-surface/5">
+                        {item.image ? (
+                          <Image src={item.image} alt={title} fill className="object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-surface-variant text-on-surface-variant">
+                            <span className="material-symbols-outlined text-[24px]">
+                              {item.type === 'product' ? 'storefront' : item.type === 'social' ? 'nightlife' : item.type === 'event' ? 'event' : item.type === 'venue' ? 'location_on' : item.type === 'person' ? 'star' : 'group'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex flex-col flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={`text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider ${
+                            item.type === 'product' ? 'bg-orange-100 text-orange-600' :
+                            item.type === 'social' ? 'bg-pink-100 text-pink-600' :
+                            item.type === 'event' ? 'bg-purple-100 text-purple-600' :
+                            item.type === 'venue' ? 'bg-cyan-100 text-cyan-600' :
+                            item.type === 'person' ? 'bg-amber-100 text-amber-600' :
+                            'bg-green-100 text-green-600'
+                          }`}>
+                            {t('search.type.' + item.type)}
                           </span>
                         </div>
-                      )}
-                    </div>
-                    <div className="flex flex-col flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className={`text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider ${
-                          item.type === 'shop' ? 'bg-orange-100 text-orange-600' :
-                          item.type === 'class' ? 'bg-blue-100 text-blue-600' :
-                          item.type === 'event' ? 'bg-purple-100 text-purple-600' :
-                          'bg-green-100 text-green-600'
-                        }`}>
-                          {t('search.type.' + item.type)}
-                        </span>
+                        <h3 className="text-[15px] font-bold text-on-surface line-clamp-1">{title}</h3>
+                        {subtitle && <p className="text-[12px] font-medium text-on-surface/60 mt-0.5">{subtitle}</p>}
                       </div>
-                      <h3 className="text-[15px] font-bold text-on-surface line-clamp-1">{item.title}</h3>
-                      {item.subtitle && <p className="text-[12px] font-medium text-on-surface/60 mt-0.5">{item.subtitle}</p>}
-                    </div>
-                    <span className="material-symbols-outlined text-on-surface/20 text-[20px]">chevron_right</span>
-                  </Link>
-                ))}
+                      <span className="material-symbols-outlined text-on-surface/20 text-[20px]">chevron_right</span>
+                    </Link>
+                  );
+                })}
               </div>
             )}
           </div>

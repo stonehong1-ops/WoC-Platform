@@ -8,7 +8,7 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-export default function WalletPage() {
+export default function WalletPage({ isEmbedded = false }: { isEmbedded?: boolean }) {
   const { user } = useAuth();
   const { t, language } = useLanguage();
   const [balance, setBalance] = useState(0);
@@ -96,12 +96,12 @@ export default function WalletPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAF8FF] pb-24 font-inter">
+    <div className={isEmbedded ? "bg-transparent font-inter" : "min-h-screen bg-[#FAF8FF] pb-24 font-inter"}>
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Inter:wght@400;500;600;700&display=swap');
       `}</style>
 
-      <div className="px-4 pt-12 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className={isEmbedded ? "space-y-8 animate-in fade-in duration-500" : "px-4 pt-12 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500"}>
         
         {/* Balance Card */}
         <section className="relative overflow-hidden bg-gradient-to-br from-[#1E293B] to-[#334155] rounded-[32px] p-8 shadow-xl shadow-slate-900/10 text-white">

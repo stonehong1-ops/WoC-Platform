@@ -7,6 +7,7 @@ import Portal from '@/components/common/Portal';
 import { useLanguage } from '@/contexts/LanguageContext';
 import UserProfileClickable from '@/components/common/UserProfileClickable';
 import UserBadge from '@/components/common/UserBadge';
+import { formatInstructorNames } from "@/app/social/constants/seoulRegions";
 import { MapSelectorBottomSheet, MapType } from '@/components/common/MapSelectorBottomSheet';
 import { groupService } from '@/lib/firebase/groupService';
 import { GroupClass, ClassDiscount, ClassScheduleEntry } from '@/types/group';
@@ -546,7 +547,7 @@ export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDeta
                     <div key={inst.userId || idx} className="flex items-center justify-between bg-slate-50/50 border border-slate-100 rounded-2xl p-3">
                       <UserBadge
                         uid={inst.userId || ''}
-                        nickname={inst.name}
+                        nickname={formatInstructorNames(inst.name || '', language)}
                         photoURL={inst.avatar}
                         avatarSize="w-9 h-9"
                         nameClassName="font-bold text-sm text-[#2d3435]"

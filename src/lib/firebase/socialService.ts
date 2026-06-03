@@ -472,4 +472,46 @@ export const socialService = {
       claimedBy: claimedByUid,
     });
   },
+
+  // DJ 추가 (양방향 연동)
+  addDjToSocial: async (socialId: string, djId: string, djName: string, date: string): Promise<void> => {
+    const socialRef = doc(db, SOCIALS_COLLECTION, socialId);
+    const snap = await getDoc(socialRef);
+    if (!snap.exists()) throw new Error('Social not found');
+    const social = snap.data() as Social;
+    const djs = social.djs || [];
+    
+    if (djs.some(d => d.date === date && d.djId === djId)) return;
+    
+    const randomId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 11);
+    const newDj = {
+      id: randomId,
+      date,
+      djId,
+      djName
+    };
+    
+    const updatedDjs = [...djs, newDj].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    
+    await updateDoc(socialRef, {
+      djs: updatedDjs,
+      djName: updatedDjs.find(d => new Date(d.date) >= new Date())?.djName || updatedDjs[updatedDjs.length - 1]?.djName || ""
+    });
+  },
+
+  // DJ 제거 (양방향 연동)
+  removeDjFromSocial: async (socialId: string, djId: string, date: string): Promise<void> => {
+    const socialRef = doc(db, SOCIALS_COLLECTION, socialId);
+    const snap = await getDoc(socialRef);
+    if (!snap.exists()) throw new Error('Social not found');
+    const social = snap.data() as Social;
+    const djs = social.djs || [];
+    
+    const updatedDjs = djs.filter(d => !(d.date === date && d.djId === djId));
+    
+    await updateDoc(socialRef, {
+      djs: updatedDjs,
+      djName: updatedDjs.find(d => new Date(d.date) >= new Date())?.djName || updatedDjs[updatedDjs.length - 1]?.djName || ""
+    });
+  }
 };

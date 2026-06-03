@@ -28,6 +28,11 @@ const manrope = Manrope({
 export const metadata: Metadata = {
   title: "WoC",
   description: "A premium group platform for shared experiences and collective living.",
+  icons: {
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -68,6 +73,7 @@ export default function RootLayout({
       <head>
         <meta name="google" content="notranslate" />
         <meta name="color-scheme" content="light" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" rel="stylesheet" />
       </head>
       <body className="overflow-x-hidden bg-background text-on-surface font-body selection:bg-primary-container selection:text-on-primary-container antialiased">

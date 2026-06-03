@@ -49,6 +49,13 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
   const [showClaimResults, setShowClaimResults] = useState(false);
   const [showLiveMap, setShowLiveMap] = useState(false);
 
+  useEffect(() => {
+    if (user && !claimOwnerId) {
+      setClaimOwnerId(user.uid);
+      setClaimOwnerName(profile?.nickname || user.displayName || "");
+    }
+  }, [user, profile]);
+
   const handleLeaveGroup = async () => {
     if (!user || !group.id) return;
     
@@ -383,7 +390,7 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
                   const lower = val.toLowerCase();
                   const filtered = allUsers.filter((u: any) =>
                     (u.nickname && u.nickname.toLowerCase().includes(lower)) ||
-                    (u.nativeNickname && u.nativeNickname.includes(val))
+                    (u.nativeNickname && u.nativeNickname.toLowerCase().includes(lower))
                   );
                   setClaimResults(filtered.slice(0, 6));
                   setShowClaimResults(filtered.length > 0);
@@ -408,7 +415,8 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
                 <button
                   key={u.id}
                   onClick={() => {
-                    setClaimOwnerName(u.nickname || u.nativeNickname || '');
+                    const displayName = u.nativeNickname ? `${u.nickname} (${u.nativeNickname})` : (u.nickname || '');
+                    setClaimOwnerName(displayName);
                     setClaimOwnerId(u.id);
                     setShowClaimResults(false);
                   }}
@@ -416,8 +424,9 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
                 >
                   <span className="material-symbols-outlined text-slate-400 text-[16px]">person</span>
                   <div className="flex flex-col">
-                    <p className="font-bold text-white text-xs group-hover:text-primary leading-tight font-body">{u.nickname}</p>
-                    {u.nativeNickname && <span className="text-[9px] text-slate-400 font-medium leading-tight font-body">{u.nativeNickname}</span>}
+                    <p className="font-bold text-white text-xs group-hover:text-primary leading-tight font-body">
+                      {u.nickname} {u.nativeNickname ? `(${u.nativeNickname})` : ''}
+                    </p>
                   </div>
                   {u.id === user?.uid && (
                     <span className="ml-auto text-[9px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full font-body">{t('group.claim.me') || "Me"}</span>

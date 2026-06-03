@@ -1,20 +1,37 @@
-import { collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { collection, query, getDocs, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase/clientApp';
 
 export interface SearchResultItem {
   id: string;
-  type: 'shop' | 'class' | 'event' | 'group';
+  type: 'product' | 'event' | 'social' | 'group' | 'venue' | 'person';
   title: string;
+  titleKo?: string;
   subtitle?: string;
+  subtitleKo?: string;
   image?: string;
   url: string;
+
+  // 다국어 명칭 정제를 위한 추가 필드
+  venueName?: string;
+  venueNameNative?: string;
+  djName?: string;
+  organizerName?: string;
+  organizerNameNative?: string;
+  startTime?: string;
+}
+
+/**
+ * 여러 텍스트 필드 중 하나라도 queryText를 포함하면 true를 반환합니다.
+ * 한글·영문 대소문자 무관 부분 문자열 매칭.
+ */
+function matchesAny(queryText: string, ...fields: (string | undefined | null)[]): boolean {
+  return fields.some(f => f && f.toLowerCase().includes(queryText));
 }
 
 export const searchService = {
   /**
-   * 전역 검색: 다중 컬렉션을 병렬로 쿼리하여 결과를 통합합니다.
-   * 기본적으로 title(또는 name) 필드에 대해 접두사(Prefix) 검색을 수행합니다.
-   * 추후 Algolia나 searchKeywords 배열 검색으로 확장이 용이하도록 설계되었습니다.
+   * 전역 검색: 실제 Firestore 컬렉션 7개를 병렬 조회한 뒤 클라이언트 필터링으로 통합 결과를 반환합니다.
+   * 한글 전용 필드(titleNative, nativeName, nameKo 등)를 함께 매칭하여 한/영 양방향 검색을 지원합니다.
    */
   async globalSearch(searchQuery: string): Promise<SearchResultItem[]> {
     if (!searchQuery.trim()) return [];
@@ -23,78 +40,126 @@ export const searchService = {
     const results: SearchResultItem[] = [];
 
     try {
-      // 1단계 업그레이드: 대소문자 매칭 및 부분 단어 검색(Case-Insensitive Substring Match)의 한계를 무결하게 극복하기 위해
-      // 각 컬렉션에서 상위 50개 리소스를 비동기 병렬로 빠르게 당긴 뒤 메모리 필터링을 수행하는 하이브리드 검색을 가동합니다.
-      const [shopDocs, classDocs, eventDocs, groupDocs] = await Promise.allSettled([
-        getDocs(query(collection(db, 'shops'), limit(50))),
-        getDocs(query(collection(db, 'classes'), limit(50))),
-        getDocs(query(collection(db, 'events'), limit(50))),
-        getDocs(query(collection(db, 'groups'), limit(50)))
+      const [productDocs, eventDocs, socialDocs, groupDocs, venueDocs, peopleDocs] = await Promise.allSettled([
+        getDocs(query(collection(db, 'products'), limit(100))),
+        getDocs(query(collection(db, 'events'), limit(100))),
+        getDocs(query(collection(db, 'socials'), limit(100))),
+        getDocs(query(collection(db, 'groups'), limit(100))),
+        getDocs(query(collection(db, 'venues'), limit(100))),
+        getDocs(query(collection(db, 'people'), limit(50)))
       ]);
 
-      if (shopDocs.status === 'fulfilled') {
-        shopDocs.value.docs.forEach(doc => {
+      // Products (상품)
+      if (productDocs.status === 'fulfilled') {
+        productDocs.value.docs.forEach(doc => {
           const data = doc.data();
-          const title = data.title || 'Unknown';
-          if (title.toLowerCase().includes(queryText)) {
+          if (matchesAny(queryText, data.title, data.description, data.brand, data.groupName)) {
             results.push({
               id: doc.id,
-              type: 'shop',
-              title: title,
-              subtitle: data.price ? `₩ ${data.price.toLocaleString()}` : '',
-              image: data.image || data.imageUrl || data.thumbnail || '',
-              url: `/shop/${doc.id}`
+              type: 'product',
+              title: data.title || 'Unknown',
+              titleKo: data.titleNative || '',
+              subtitle: data.price ? `₩ ${Number(data.price).toLocaleString()}` : data.brand || '',
+              image: data.images?.[0] || data.image || data.imageUrl || data.thumbnail || '',
+              url: `/shop?productId=${doc.id}`
             });
           }
         });
       }
 
-      if (classDocs.status === 'fulfilled') {
-        classDocs.value.docs.forEach(doc => {
-          const data = doc.data();
-          const title = data.title || 'Unknown';
-          if (title.toLowerCase().includes(queryText)) {
-            results.push({
-              id: doc.id,
-              type: 'class',
-              title: title,
-              subtitle: data.instructor || data.teacher || '',
-              image: data.image || data.imageUrl || data.thumbnail || '',
-              url: `/class/${doc.id}`
-            });
-          }
-        });
-      }
-
+      // Events (이벤트·페스티벌)
       if (eventDocs.status === 'fulfilled') {
         eventDocs.value.docs.forEach(doc => {
           const data = doc.data();
-          const title = data.title || 'Unknown';
-          if (title.toLowerCase().includes(queryText)) {
+          if (matchesAny(queryText, data.title, data.titleNative, data.description, data.hostName, data.organizerName, data.location)) {
             results.push({
               id: doc.id,
               type: 'event',
-              title: title,
-              subtitle: data.date || data.location || '',
-              image: data.image || data.imageUrl || data.thumbnail || '',
-              url: `/events/${doc.id}`
+              title: data.title || 'Unknown',
+              titleKo: data.titleNative || '',
+              subtitle: data.location || data.organizerName || '',
+              image: data.imageUrl || data.image || data.thumbnail || '',
+              url: `/events?eventId=${doc.id}`
             });
           }
         });
       }
 
+      // Socials (밀롱가·쁘락티카)
+      if (socialDocs.status === 'fulfilled') {
+        socialDocs.value.docs.forEach(doc => {
+          const data = doc.data();
+          if (matchesAny(queryText, data.title, data.titleNative, data.venueName, data.venueNameNative, data.organizerName, data.organizerNameNative, data.djName, data.district)) {
+            results.push({
+              id: doc.id,
+              type: 'social',
+              title: data.title || 'Unknown',
+              titleKo: data.titleNative || '',
+              venueName: data.venueName || '',
+              venueNameNative: data.venueNameNative || '',
+              djName: data.djName || '',
+              organizerName: data.organizerName || '',
+              organizerNameNative: data.organizerNameNative || '',
+              startTime: data.startTime || '',
+              image: data.imageUrl || data.posterExportUrl || '',
+              url: `/social?viewSocial=${doc.id}`
+            });
+          }
+        });
+      }
+
+      // Groups (그룹·스튜디오)
       if (groupDocs.status === 'fulfilled') {
         groupDocs.value.docs.forEach(doc => {
           const data = doc.data();
-          const name = data.name || data.title || 'Unknown';
-          if (name.toLowerCase().includes(queryText)) {
+          if (matchesAny(queryText, data.name, data.nativeName, data.description)) {
             results.push({
               id: doc.id,
               type: 'group',
-              title: name,
+              title: data.name || 'Unknown',
+              titleKo: data.nativeName || '',
               subtitle: data.memberCount ? `${data.memberCount} members` : '',
-              image: data.image || data.imageUrl || data.profileImage || data.thumbnail || '',
+              subtitleKo: data.memberCount ? `멤버 ${data.memberCount}명` : '',
+              image: data.logo || data.coverImage || data.profileImage || '',
               url: `/groups/${doc.id}`
+            });
+          }
+        });
+      }
+
+      // Venues (장소)
+      if (venueDocs.status === 'fulfilled') {
+        venueDocs.value.docs.forEach(doc => {
+          const data = doc.data();
+          if (matchesAny(queryText, data.name, data.nameKo, data.address, data.city, data.region)) {
+            results.push({
+              id: doc.id,
+              type: 'venue',
+              title: data.name || 'Unknown',
+              titleKo: data.nameKo || '',
+              subtitle: data.address || data.region || '',
+              image: data.imageUrl || '',
+              url: `/venues/${doc.id}`
+            });
+          }
+        });
+      }
+
+
+
+      // People (인물·마에스트로)
+      if (peopleDocs.status === 'fulfilled') {
+        peopleDocs.value.docs.forEach(doc => {
+          const data = doc.data();
+          if (matchesAny(queryText, data.name, data.title)) {
+            results.push({
+              id: doc.id,
+              type: 'person',
+              title: data.name || 'Unknown',
+              titleKo: data.name || '',
+              subtitle: data.title || '',
+              image: data.photoURL || data.imageUrl || '',
+              url: `/people/${doc.id}`
             });
           }
         });
@@ -112,37 +177,92 @@ export const searchService = {
    */
   async getInitialData() {
     try {
-      const [shopDocs, classDocs, eventDocs, groupDocs] = await Promise.allSettled([
-        getDocs(query(collection(db, 'shops'), limit(4))),
-        getDocs(query(collection(db, 'classes'), limit(4))),
+      const [productDocs, socialDocs, eventDocs, groupDocs] = await Promise.allSettled([
+        getDocs(query(collection(db, 'products'), limit(4))),
+        getDocs(query(collection(db, 'socials'), limit(4))),
         getDocs(query(collection(db, 'events'), limit(3))),
         getDocs(query(collection(db, 'groups'), limit(4)))
       ]);
 
-      const formatDocs = (docsResult: any, type: string) => {
+      const formatProducts = (docsResult: PromiseSettledResult<any>) => {
         if (docsResult.status !== 'fulfilled') return [];
         return docsResult.value.docs.map((doc: any) => {
           const data = doc.data();
           return {
             id: doc.id,
-            type,
-            title: data.title || data.name || 'Unknown',
-            subtitle: data.price ? `₩ ${data.price.toLocaleString()}` : data.instructor || data.location || data.date || (data.memberCount ? `${data.memberCount} members` : ''),
-            image: data.image || data.imageUrl || data.thumbnail || data.profileImage || '',
-            url: `/${type === 'group' ? 'groups' : type === 'event' ? 'events' : type}/${doc.id}`
+            type: 'product' as const,
+            title: data.title || 'Unknown',
+            titleKo: data.titleNative || '',
+            subtitle: data.price ? `₩ ${Number(data.price).toLocaleString()}` : data.brand || '',
+            image: data.images?.[0] || data.image || data.imageUrl || '',
+            url: `/shop/${doc.id}`
+          };
+        });
+      };
+
+      const formatSocials = (docsResult: PromiseSettledResult<any>) => {
+        if (docsResult.status !== 'fulfilled') return [];
+        return docsResult.value.docs.map((doc: any) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            type: 'social' as const,
+            title: data.title || 'Unknown',
+            titleKo: data.titleNative || '',
+            venueName: data.venueName || '',
+            venueNameNative: data.venueNameNative || '',
+            djName: data.djName || '',
+            organizerName: data.organizerName || '',
+            organizerNameNative: data.organizerNameNative || '',
+            startTime: data.startTime || '',
+            image: data.imageUrl || data.posterExportUrl || '',
+            url: `/social/${doc.id}`
+          };
+        });
+      };
+
+      const formatEvents = (docsResult: PromiseSettledResult<any>) => {
+        if (docsResult.status !== 'fulfilled') return [];
+        return docsResult.value.docs.map((doc: any) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            type: 'event' as const,
+            title: data.title || 'Unknown',
+            titleKo: data.titleNative || '',
+            subtitle: data.location || data.organizerName || '',
+            image: data.imageUrl || data.image || '',
+            url: `/events/${doc.id}`
+          };
+        });
+      };
+
+      const formatGroups = (docsResult: PromiseSettledResult<any>) => {
+        if (docsResult.status !== 'fulfilled') return [];
+        return docsResult.value.docs.map((doc: any) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            type: 'group' as const,
+            title: data.name || 'Unknown',
+            titleKo: data.nativeName || '',
+            subtitle: data.memberCount ? `${data.memberCount} members` : '',
+            subtitleKo: data.memberCount ? `멤버 ${data.memberCount}명` : '',
+            image: data.logo || data.coverImage || data.profileImage || '',
+            url: `/groups/${doc.id}`
           };
         });
       };
 
       return {
-        shops: formatDocs(shopDocs, 'shop'),
-        classes: formatDocs(classDocs, 'class'),
-        events: formatDocs(eventDocs, 'event'),
-        groups: formatDocs(groupDocs, 'group')
+        shops: formatProducts(productDocs),
+        socials: formatSocials(socialDocs),
+        events: formatEvents(eventDocs),
+        groups: formatGroups(groupDocs)
       };
     } catch (error) {
       console.error("Initial data fetch error:", error);
-      return { shops: [], classes: [], events: [], groups: [] };
+      return { shops: [], socials: [], events: [], groups: [] };
     }
   }
 };

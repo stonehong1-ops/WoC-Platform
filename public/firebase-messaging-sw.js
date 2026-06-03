@@ -23,8 +23,8 @@ self.addEventListener('push', (event) => {
     // 알림 옵션 및 메타데이터 주입
     const options = {
       body: body,
-      icon: '/icon.png',
-      badge: '/icon.png',
+      icon: '/icons/icon-192x192.png',
+      badge: '/icons/icon-192x192.png',
       vibrate: [100, 50, 100],
       data: payload.data || {}
     };
@@ -39,8 +39,8 @@ self.addEventListener('push', (event) => {
       event.waitUntil(
         self.registration.showNotification('WoC Today', {
           body: text,
-          icon: '/icon.png',
-          badge: '/icon.png'
+          icon: '/icons/icon-192x192.png',
+          badge: '/icons/icon-192x192.png'
         })
       );
     } catch (textErr) {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useAuth } from '@/components/providers/AuthProvider';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { classRegistrationService } from '@/lib/firebase/classRegistrationService';
 import { groupService } from '@/lib/firebase/groupService';
 import { bookingService } from '@/lib/firebase/bookingService';
@@ -27,6 +27,7 @@ export function useHistoryData() {
   const { user, profile } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
 
   // Tab State
   const [activeTab, setActiveTab] = useState('All');
@@ -69,6 +70,7 @@ export function useHistoryData() {
     Array.from(regMap.values()).forEach(reg => {
       // Avoid duplicate display for registrations loaded from the bookings collection
       if (bookingIds.has(reg.id)) return;
+      if (reg.status === 'CANCELED') return;
 
       items.push({
         id: reg.id,
@@ -91,6 +93,7 @@ export function useHistoryData() {
 
     // 2. New Bookings (Daily Class, Shop, Stay, Rental)
     bookings.forEach(b => {
+      if (b.status === 'CANCELLED') return;
       let domainType = 'All';
       if (b.domain && b.domain.startsWith('class')) domainType = 'Class';
       else if (b.domain === 'shop') domainType = 'Shop';
@@ -122,6 +125,7 @@ export function useHistoryData() {
     phoneStayBookings.forEach(sb => stayMap.set(sb.id, sb));
 
     Array.from(stayMap.values()).forEach(sb => {
+      if (sb.status === 'CANCELLED') return;
       items.push({
         id: sb.id,
         raw: sb,
@@ -306,7 +310,7 @@ export function useHistoryData() {
   };
 
   const handleOpenDetail = (item: any) => {
-    router.push(`/history?view=detail&id=${item.id}`, { scroll: false });
+    router.push(`${pathname}?view=detail&id=${item.id}`, { scroll: false });
   };
 
   const handleCloseDetail = () => {
@@ -314,7 +318,7 @@ export function useHistoryData() {
       if (window.history.length > 1) {
         router.back();
       } else {
-        router.replace('/history', { scroll: false });
+        router.replace(pathname, { scroll: false });
       }
     }
   };
@@ -351,23 +355,40 @@ export function useHistoryData() {
     }
   };
 
-  const updateHistoryItemMemo = async (itemId: string, source: string, newMemo: string) => {
+  const updateHistoryItemMemo = async (itemId: string, source: string, newMemo: string, partnerName?: string) => {
     if (!itemId) return;
     try {
       if (source === 'registration') {
-        await classRegistrationService.updateRegistration(itemId, { memo: newMemo } as any);
+        const updates: any = { applicantMemo: newMemo };
+        if (partnerName !== undefined) {
+          updates.partnerName = partnerName;
+        }
+        await classRegistrationService.updateRegistration(itemId, updates);
       } else if (source === 'booking') {
-        await updateDoc(doc(db, 'bookings', itemId), { memo: newMemo });
+        const updates: any = { memo: newMemo };
+        if (partnerName !== undefined) {
+          updates['payload.partnerName'] = partnerName;
+        }
+        await updateDoc(doc(db, 'bookings', itemId), updates);
       } else if (source === 'stay_booking') {
         await updateDoc(doc(db, 'stay_bookings', itemId), { notes: newMemo });
       }
-      toast.success(language === 'KR' ? '메모가 저장되었습니다.' : 'Memo has been saved.');
+      toast.success(language === 'KR' ? '변경 사항이 저장되었습니다.' : 'Changes have been saved.');
       
       // Update selectedDetail locally if it is currently open
-      setSelectedDetail((prev: any) => prev && prev.id === itemId ? { ...prev, raw: { ...prev.raw, memo: newMemo } } : prev);
+      setSelectedDetail((prev: any) => {
+        if (prev && prev.id === itemId) {
+          const updatedRaw = { ...prev.raw, memo: newMemo, applicantMemo: newMemo };
+          if (partnerName !== undefined) {
+            updatedRaw.partnerName = partnerName;
+          }
+          return { ...prev, raw: updatedRaw };
+        }
+        return prev;
+      });
     } catch (err) {
-      console.error("Failed to update history memo:", err);
-      toast.error(language === 'KR' ? '메모 저장에 실패했습니다.' : 'Failed to save memo.');
+      console.error("Failed to update history details:", err);
+      toast.error(language === 'KR' ? '변경 사항 저장에 실패했습니다.' : 'Failed to save changes.');
       throw err;
     }
   };

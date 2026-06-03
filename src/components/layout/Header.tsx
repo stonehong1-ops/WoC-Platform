@@ -93,7 +93,7 @@ export default function Header() {
           className="hover:opacity-70 transition-opacity active:scale-95 duration-100 flex items-center justify-center w-8 h-8"
           aria-label="Open menu"
         >
-          <span className="material-symbols-outlined text-on-surface !text-[18px]" data-icon="menu">menu</span>
+          <span className="material-symbols-outlined text-on-surface" style={{ fontSize: '18px' }} data-icon="menu">menu</span>
         </button>
         {/* Title */}
         <div className="flex flex-col">
@@ -109,7 +109,7 @@ export default function Header() {
             onClick={toggleSelector}
             className="hover:opacity-70 transition-opacity active:scale-95 duration-100 flex items-center justify-center w-8 h-8"
           >
-            <span className="material-symbols-outlined text-on-surface !text-[18px]" data-icon="pin_drop">pin_drop</span>
+            <span className="material-symbols-outlined text-on-surface" style={{ fontSize: '18px' }} data-icon="pin_drop">pin_drop</span>
           </button>
 
           {/* Chat */}
@@ -117,7 +117,7 @@ export default function Header() {
             href="/chat" 
             className="relative hover:opacity-70 transition-opacity active:scale-95 duration-100 flex items-center justify-center w-8 h-8"
           >
-            <span className="material-symbols-outlined text-on-surface !text-[18px]" data-icon="chat_bubble">chat_bubble</span>
+            <span className="material-symbols-outlined text-on-surface" style={{ fontSize: '18px' }} data-icon="chat_bubble">chat_bubble</span>
             {unreadCount > 0 && (
               <span className="absolute top-0 right-0 flex h-3 w-3 items-center justify-center rounded-full bg-primary text-[7px] font-black text-white outline outline-1 outline-white animate-in zoom-in">
                 {unreadCount > 99 ? '99+' : unreadCount}
@@ -130,7 +130,7 @@ export default function Header() {
             href="/search" 
             className="hover:opacity-70 transition-opacity active:scale-95 duration-100 flex items-center justify-center w-8 h-8"
           >
-            <span className="material-symbols-outlined text-on-surface !text-[18px]" data-icon="search">search</span>
+            <span className="material-symbols-outlined text-on-surface" style={{ fontSize: '18px' }} data-icon="search">search</span>
           </Link>
         </div>
       </div>

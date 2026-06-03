@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { classRegistrationService } from '@/lib/firebase/classRegistrationService';
 import { ClassRegistration, Group, GroupClass } from '@/types/group';
-import { GroupClassSelectionPopup } from './GroupClassSelectionPopup';
+import ClassPageContent from '@/app/class/[groupId]/ClassPageContent';
 import { safeDate } from '@/lib/utils/safeDate';
 import UserBadge from '@/components/common/UserBadge';
 import { toast } from 'sonner';
@@ -20,13 +20,14 @@ export function GroupClassRegistrations({ group, validClassIds, allClasses = [],
   const [registrations, setRegistrations] = useState<ClassRegistration[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
-  const { t, formatDate } = useLanguage();  
-  // Selection Popup state (for Checkboxes)
-  const [selectedPopupReg, setSelectedPopupReg] = useState<ClassRegistration | null>(null);
-  const [popupIncludedIds, setPopupIncludedIds] = useState<string[]>([]);
-
+  const { t, formatDate, language } = useLanguage();  
+  
   // Action Menu state
   const [actionReg, setActionReg] = useState<ClassRegistration | null>(null);
+  const [editRegistrationItem, setEditRegistrationItem] = useState<ClassRegistration | null>(null);
+
+  // Admin Edit Details States
+
 
   useEffect(() => {
     if (!group?.id) return;
@@ -162,24 +163,9 @@ export function GroupClassRegistrations({ group, validClassIds, allClasses = [],
     setActionReg(item);
   };
 
-  const handleEditPass = () => {
-    if (!actionReg) return;
-    let includedIds: string[] = [];
-    const resolvedType = getResolvedItemType(actionReg.itemType, actionReg.classId);
-    
-    if (resolvedType === 'discount') {
-      const discount = allDiscounts?.find(d => d.id === actionReg.classId);
-      if (discount && discount.includedClassIds && discount.includedClassIds.length > 0) {
-        includedIds = discount.includedClassIds;
-      } else {
-        // Fallback: 번들 세부 룰 유실 시 그룹의 전체 개설 클래스를 선택할 수 있도록 안전 복구
-        includedIds = allClasses?.map(c => c.id) || [];
-      }
-    }
-    
-    setPopupIncludedIds(includedIds);
-    setSelectedPopupReg(actionReg);
-    setActionReg(null); // Close action menu
+  const handleEditClick = (item: ClassRegistration) => {
+    setEditRegistrationItem(item);
+    setActionReg(null); // Close Action Modal
   };
 
   const handleDelete = async (item: ClassRegistration) => {
@@ -358,9 +344,17 @@ export function GroupClassRegistrations({ group, validClassIds, allClasses = [],
                   </div>
                   
                   <div className="p-2 flex flex-col gap-1 bg-surface-container-lowest">
+                    <button 
+                      onClick={() => handleEditClick(actionReg)}
+                      className="w-full text-left px-4 py-3.5 hover:bg-surface-variant/50 transition-colors font-body-md text-on-surface flex items-center gap-3 rounded-lg active:scale-[0.98]"
+                    >
+                      <span className="material-symbols-outlined text-[20px] text-slate-600">settings</span>
+                      {t('group.class.actions.edit_application') || '신청 정보 수정'}
+                    </button>
+
                     {resolvedActionType === 'discount' && (
                       <button 
-                        onClick={handleEditPass}
+                        onClick={() => handleEditClick(actionReg)}
                         className="w-full text-left px-4 py-3.5 hover:bg-surface-variant/50 transition-colors font-body-md text-on-surface flex items-center gap-3 rounded-lg active:scale-[0.98]"
                       >
                         <span className="material-symbols-outlined text-on-surface-variant text-[20px]">edit</span>
@@ -368,7 +362,6 @@ export function GroupClassRegistrations({ group, validClassIds, allClasses = [],
                       </button>
                     )}
                     
-
 
                     <button 
                       onClick={() => handleDelete(actionReg)}
@@ -383,15 +376,13 @@ export function GroupClassRegistrations({ group, validClassIds, allClasses = [],
             );
             })()}
 
-            {/* Class Selection Popup */}
-            {selectedPopupReg && (
-              <GroupClassSelectionPopup
-                isOpen={!!selectedPopupReg}
-                onClose={() => setSelectedPopupReg(null)}
-                registration={selectedPopupReg}
-                allClasses={allClasses}
-                includedClassIds={popupIncludedIds}
-                canEdit={user?.uid === selectedPopupReg.userId || user?.uid === group.ownerId || group.members?.some(m => m.id === user?.uid && (m.role === 'admin' || m.role === 'owner'))}
+            {editRegistrationItem && (
+              <ClassPageContent
+                propGroupId={group.id}
+                isOverlay={true}
+                editRegistration={editRegistrationItem}
+                isEditMode={true}
+                onClose={() => setEditRegistrationItem(null)}
               />
             )}
     </div>

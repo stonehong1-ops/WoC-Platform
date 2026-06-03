@@ -126,3 +126,165 @@ export const getVenueDisplay = (
   }
 };
 
+export const INSTRUCTOR_NAME_MAP: Record<string, string> = {
+  "muse": "뮤즈",
+  "aran": "아란",
+  "aran sunmi kang": "아란",
+  "epitone": "에피톤",
+  "janda": "쟌다",
+  "jarnda": "쟌다",
+  "sophia": "소피아",
+  "sophia song": "소피아송",
+  "rain": "레인",
+  "mango": "망고",
+  "jeje": "제제",
+  "ari": "아리",
+  "yerin": "예린",
+  "mj": "엠제이",
+  "linda": "린다",
+  "liz": "리즈",
+  "chaos": "카오스",
+  "luna": "루나",
+  "joa": "조아",
+  "pippi": "삐삐",
+  "who": "후",
+  "aqua": "아쿠아",
+  "chani": "차니",
+  "gina": "지나",
+  "irang": "이랑",
+  "gael": "가엘",
+  "ritta": "리따",
+  "harry": "해리",
+  "fidel": "피델",
+  "sydney": "시드니",
+  "bomi": "보미",
+  "hans": "한스",
+  "bara": "바라",
+  "aji": "아지",
+  "swan": "스완",
+  "banya": "반야",
+  "ajji": "아찌",
+  "chugong": "추공",
+  "stone": "스톤",
+  "stone hong": "스톤",
+  "natali": "나탈리",
+  "tony": "토니",
+  "shrek": "슈렉",
+  "totoro": "토토로",
+  "gaul": "가을",
+  "ellin": "엘린",
+  "joy": "기쁨",
+  "lala": "라라",
+  "shine": "샤인",
+  "polly": "폴리",
+  "jayden": "제이든",
+  "may": "메이",
+  "vicky": "비키",
+  "basil": "바질",
+};
+
+export function formatInstructorNames(instructorStr: string, locale: string): string {
+  if (!instructorStr) return "";
+  
+  // 이미 한글 문자가 포함되어 있다면 원래 강사명 반환
+  const hasKorean = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(instructorStr);
+  if (hasKorean) return instructorStr;
+
+  // KR 로케일이 아니면 영어 그대로 노출하되 첫 글자 대문자화 포맷팅
+  if (locale !== "KR") {
+    return instructorStr.split(/[,&/]/).map(part => {
+      const trimmed = part.trim();
+      if (!trimmed) return "";
+      return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+    }).filter(Boolean).join(", ");
+  }
+
+  const parts = instructorStr.split(/[,&/]/);
+  const formattedParts = parts.map(part => {
+    const trimmed = part.trim();
+    const key = trimmed.toLowerCase();
+    
+    if (INSTRUCTOR_NAME_MAP[key]) {
+      return INSTRUCTOR_NAME_MAP[key];
+    }
+    
+    const firstWord = key.split(/\s+/)[0];
+    if (INSTRUCTOR_NAME_MAP[firstWord]) {
+      return INSTRUCTOR_NAME_MAP[firstWord];
+    }
+    
+    return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+  });
+
+  return formattedParts.join(", ");
+}
+
+export const COMMUNITY_NAME_MAP: Record<string, string> = {
+  "vida mia": "비다미아",
+  "rora mil": "로라밀",
+  "salida milonga": "살리다 밀롱가",
+  "en paz friday practica": "엔빠스 금요 쁘락띠까",
+  "en paz practica": "엔빠스 쁘락띠까",
+  "camelia": "카멜리아",
+  "ptc휴강": "PTC휴강",
+  "화, 금 낮쁘락": "화, 금 낮쁘락",
+  "en paz studio": "엔빠스 스튜디오",
+  "en paz": "엔빠스",
+  "solotango": "솔로땅고",
+  "la vida": "라비다",
+  "pasion": "빠시온",
+  "troilo": "트로일로",
+  "bonita": "보니따",
+  "arbol": "아르볼",
+  "su! 달려용!": "수! 달려용!",
+  "hernan": "에르난",
+  "stone": "스톤",
+  "stone hong": "스톤",
+  "aran": "아란",
+};
+
+export const REVERSE_COMMUNITY_MAP: Record<string, string> = {
+  "비다미아": "Vida Mia",
+  "로라밀": "RoRa Mil",
+  "살리다 밀롱가": "Salida Milonga",
+  "엔빠스 금요 쁘락띠까": "En Paz Friday Practica",
+  "엔빠스 쁘락띠까": "En Paz Practica",
+  "카멜리아": "Camelia",
+  "엔빠스 스튜디오": "En Paz Studio",
+  "엔빠스": "En Paz",
+  "솔로땅고": "SoloTango",
+  "라비다": "La Vida",
+  "빠시온": "Pasion",
+  "트로일로": "Troilo",
+  "보니따": "Bonita",
+  "아르볼": "Arbol",
+  "에르난": "Hernan",
+  "스톤": "Stone",
+  "아란": "Aran",
+};
+
+export function formatCommunityName(nameStr: string, locale: string): string {
+  if (!nameStr) return "";
+  const trimmed = nameStr.trim();
+  
+  if (locale === "KR") {
+    const key = trimmed.toLowerCase();
+    if (COMMUNITY_NAME_MAP[key]) {
+      return COMMUNITY_NAME_MAP[key];
+    }
+    return trimmed;
+  } else {
+    if (REVERSE_COMMUNITY_MAP[trimmed]) {
+      return REVERSE_COMMUNITY_MAP[trimmed];
+    }
+    const lowerKey = trimmed.toLowerCase();
+    for (const [en, ko] of Object.entries(COMMUNITY_NAME_MAP)) {
+      if (ko.toLowerCase() === lowerKey) {
+        return en.charAt(0).toUpperCase() + en.slice(1);
+      }
+    }
+    return trimmed;
+  }
+}
+
+

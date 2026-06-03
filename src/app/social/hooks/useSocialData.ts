@@ -261,15 +261,10 @@ export function useSocialData() {
   }, [openViewURL]);
 
   const handleCloseView = useCallback(() => {
+    isClosingRef.current = true;
+    closeViewURL();
     setLocalViewSocial(null);
     setViewSocialDate(null);
-    isClosingRef.current = true;
-
-    const params = new URLSearchParams(window.location.search);
-    params.delete('viewSocial');
-    params.delete('viewDate');
-    const newQuery = params.toString();
-    window.history.replaceState(null, '', `${window.location.pathname}${newQuery ? `?${newQuery}` : ''}`);
 
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
@@ -278,7 +273,7 @@ export function useSocialData() {
     requestAnimationFrame(() => {
       isClosingRef.current = false;
     });
-  }, []);
+  }, [closeViewURL]);
 
   const handleOpenEdit = useCallback((social: Social) => {
     setSelectedSocial(social);

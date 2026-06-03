@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function LandingPage() {
@@ -10,6 +10,7 @@ export default function LandingPage() {
   const [isIOS, setIsIOS] = useState(false);
   const [isInApp, setIsInApp] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const beforeInstallPromiseRef = useRef<((prompt: any) => void) | null>(null);
   
   // UI 상태 관리
   const [isInstalling, setIsInstalling] = useState(false);
@@ -43,6 +44,15 @@ export default function LandingPage() {
     setIsIOS(iosCheck);
     setIsInApp(inAppCheck);
 
+    // PWA 설치를 미지원하는 안드로이드 브라우저(크롬, 삼성인터넷이 아닌 경우)는 메인으로 자동 패스
+    const isAndroid = /Android/i.test(ua);
+    const isChrome = /Chrome|CriOS/i.test(ua);
+    const isSamsung = /SamsungBrowser/i.test(ua);
+    if (isAndroid && !isChrome && !isSamsung && !inAppCheck) {
+      window.location.replace('/today');
+      return;
+    }
+
     // 3. 이미 설치된 상태 확인
     const installed = localStorage.getItem('woc_pwa_installed') === 'true';
     setIsAlreadyInstalled(installed);
@@ -51,18 +61,27 @@ export default function LandingPage() {
     const currentUrl = window.location.href;
     if (inAppCheck) {
       if (iosCheck) {
-        window.location.href = `kakaotalk://web/openExternalApp?url=${encodeURIComponent(currentUrl)}`;
+        // iOS: 카카오톡만 자체 스킴으로 자동 탈출, Facebook/Instagram/Line은 InAppBrowserGuard에 위임
+        if (/KAKAOTALK/i.test(ua)) {
+          window.location.href = `kakaotalk://web/openExternalApp?url=${encodeURIComponent(currentUrl)}`;
+          return;
+        }
+        // Facebook/Instagram/Line iOS 인앱: 강제 리다이렉트 없이 랜딩 페이지 정상 렌더링
       } else {
         const stripped = currentUrl.replace(/https?:\/\//i, '');
         window.location.href = `intent://${stripped}#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(currentUrl)};end`;
+        return;
       }
-      return;
     }
 
     // 5. beforeinstallprompt 캡처
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
+      if (beforeInstallPromiseRef.current) {
+        beforeInstallPromiseRef.current(e);
+        beforeInstallPromiseRef.current = null;
+      }
     };
 
     // 6. appinstalled 감지
@@ -82,10 +101,36 @@ export default function LandingPage() {
 
   // Native Install Trigger
   const handleInstallClick = async () => {
-    if (deferredPrompt) {
+    if (isAlreadyInstalled) return;
+
+    let activePrompt = deferredPrompt;
+
+    // 만약 아직 캡처되지 않았다면 일반 환경일 때 최대 2초간 대기
+    if (!activePrompt && !isIOS && !isInApp) {
+      setIsInstalling(true);
+      setInstallBtnText(t('pwa.preparing_install', '준비 중...'));
+
+      activePrompt = await new Promise((resolve) => {
+        const timer = setTimeout(() => {
+          beforeInstallPromiseRef.current = null;
+          resolve(null);
+        }, 2000);
+
+        beforeInstallPromiseRef.current = (prompt) => {
+          clearTimeout(timer);
+          resolve(prompt);
+        };
+      });
+
+      setIsInstalling(false);
+      setInstallBtnText('앱 설치');
+    }
+
+    if (activePrompt) {
       try {
-        await deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
+        // 사용자 제스처 컨텍스트 유지 시간 내 실행을 위해 prompt() 즉시 구동
+        activePrompt.prompt();
+        const { outcome } = await activePrompt.userChoice;
         if (outcome === 'accepted') {
           setDeferredPrompt(null);
           setIsInstalling(true);
@@ -96,7 +141,7 @@ export default function LandingPage() {
         console.error('PWA prompt fire failed', err);
       }
     } else {
-      // PWA 1클릭 API 미지원 기기/브라우저에 대한 즉각적이고 친절한 가이드 제공
+      // 대기 타임아웃 이후에도 없거나 미지원 디바이스일 경우 가이드 출력
       if (isIOS) {
         alert(t('pwa.unsupported_ios_desc'));
       } else {
@@ -182,6 +227,13 @@ export default function LandingPage() {
                   <span className="text-[16px] tracking-tight">{installBtnText}</span>
                 </div>
               </button>
+              <button
+                onClick={() => window.location.replace('/today')}
+                className="mt-3 w-[85%] h-12 border border-gray-200 text-gray-600 font-bold rounded-full transition-all active:scale-[0.97] flex items-center justify-center gap-2 hover:bg-gray-50 text-sm shadow-sm"
+              >
+                <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                <span>{t('pwa.continue_web')}</span>
+              </button>
               <p className="text-[11px] text-gray-400/80 font-medium mt-3.5 tracking-tight">
                 {t('pwa.will_be_installed')}
               </p>
@@ -204,6 +256,14 @@ export default function LandingPage() {
               <p className="mt-5 text-[11px] text-gray-500 font-bold text-center w-full tracking-tight break-keep">
                 {t('pwa.ios_safari_guide')}
               </p>
+
+              <button
+                onClick={() => window.location.replace('/today')}
+                className="mt-5 w-[85%] h-12 border border-gray-200 text-gray-600 font-bold rounded-full transition-all active:scale-[0.97] flex items-center justify-center gap-2 hover:bg-gray-50 text-sm shadow-sm"
+              >
+                <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                <span>{t('pwa.continue_web')}</span>
+              </button>
             </div>
           )}
 

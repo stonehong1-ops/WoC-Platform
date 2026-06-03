@@ -247,6 +247,15 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
   const [editRole, setEditRole] = useState<'Leader' | 'Follower' | 'Couple'>('Leader');
   const [editDepositor, setEditDepositor] = useState('');
   const [editMemo, setEditMemo] = useState('');
+  const [editPartnerName, setEditPartnerName] = useState('');
+
+  const isGroupAdmin = !!(user && (
+    group.ownerId === user.uid ||
+    group.members?.some(m => m.id === user.uid && (m.role === 'admin' || m.role === 'owner')) ||
+    profile?.systemRole === 'admin' ||
+    profile?.isAdmin
+  ));
+
 
   const isRegistrationOpen = useMemo(() => {
     if (!group?.classPaymentSettings?.openMonths) return true;
@@ -288,6 +297,8 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
     if (!user) return false;
     return resolvedOwnerId === user.uid || group?.representative?.name === profile?.nickname;
   }, [user, resolvedOwnerId, group?.representative, profile]);
+
+  const hasManagePermission = isGroupAdmin || isInstructor;
 
   const handleToggleAttendance = async (reg: any, weekNum: number, currentVal: boolean) => {
     try {
@@ -802,7 +813,8 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
     const firstReg = groupedReg.registrations[0];
     setEditRole(firstReg?.role || 'Leader');
     setEditDepositor(firstReg?.depositorName || groupedReg.applicantName || '');
-    setEditMemo(firstReg?.applicantMemo || '');
+    setEditMemo(firstReg?.applicantMemo || firstReg?.memo || '');
+    setEditPartnerName(firstReg?.partnerName || '');
   };
 
   const handleUpdate = async () => {
@@ -812,7 +824,8 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
         classRegistrationService.updateRegistration(r.id, {
           role: editRole,
           depositorName: editDepositor,
-          applicantMemo: editMemo
+          applicantMemo: editMemo,
+          partnerName: editPartnerName
         })
       );
       await Promise.all(promises);
@@ -821,6 +834,30 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
     } catch (error) {
       console.error("Error updating registrations:", error);
       toast.error(t('class-dashboard.toast.registration_update_failed'));
+    }
+  };
+
+  const handleDeleteGrouped = async (groupedReg: any) => {
+    if (!groupedReg?.registrations || groupedReg.registrations.length === 0) return;
+    
+    const userInput = window.prompt("⚠️ WARNING: Deleted records cannot be recovered.\n\nTo confirm deletion, type 'DELETE' exactly in the field below.");
+    if (userInput !== 'DELETE') {
+      if (userInput !== null) {
+        toast.error(language === 'KR' ? '삭제 확인 문자가 일치하지 않습니다.' : 'Verification word mismatch.');
+      }
+      return;
+    }
+
+    try {
+      const promises = groupedReg.registrations.map((r: any) =>
+        classRegistrationService.deleteRegistration(r.id)
+      );
+      await Promise.all(promises);
+      toast.success(language === 'KR' ? '신청이 삭제되었습니다.' : 'Registration deleted successfully.');
+      closeRegModal();
+    } catch (error) {
+      console.error("Error deleting registrations:", error);
+      toast.error(language === 'KR' ? '삭제에 실패했습니다.' : 'Failed to delete registration.');
     }
   };
 
@@ -1222,7 +1259,7 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
                                   </span>
                                 );
                               })()}
-                              {isMe && (
+                              {(isMe || hasManagePermission) && (
                                 <button
                                   onClick={() => openEditModal(g)}
                                   className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 font-bold text-[11px] text-[#596061] shadow-xs active:scale-95 transition-all flex items-center gap-1"
@@ -1454,8 +1491,10 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
 
 
       {/* DETAIL MODAL (모바일 친화적인 바텀시트 모달) */}
-      {selectedGroupedReg && (
-        <div className="fixed inset-0 z-[999] bg-black/60 backdrop-blur-xs animate-in fade-in duration-200 flex items-end justify-center">
+      {(() => {
+        const isMe = !!(user && selectedGroupedReg && selectedGroupedReg.userId === user.uid);
+        return selectedGroupedReg && (
+          <div className="fixed inset-0 z-[999] bg-black/60 backdrop-blur-xs animate-in fade-in duration-200 flex items-end justify-center">
           {/* Click outside to close */}
           <div className="absolute inset-0" onClick={() => closeRegModal()}></div>
           
@@ -1487,12 +1526,37 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
                   </div>
                 )}
               </div>
-              <button
-                onClick={() => closeRegModal()}
-                className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
-              >
-                <span className="material-symbols-outlined text-lg">close</span>
-              </button>
+              <div className="flex items-center gap-2">
+                {(isMe || hasManagePermission) && (
+                  <>
+                    <button
+                      onClick={() => {
+                        closeRegModal();
+                        openEditModal(selectedGroupedReg);
+                      }}
+                      className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 font-bold text-[11px] text-[#596061] shadow-xs active:scale-95 transition-all flex items-center gap-1"
+                    >
+                      <span className="material-symbols-outlined text-[12px]">edit</span>
+                      {t('class-dashboard.modify') || '수정'}
+                    </button>
+                    {hasManagePermission && (
+                      <button
+                        onClick={() => handleDeleteGrouped(selectedGroupedReg)}
+                        className="px-2.5 py-1.5 rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 font-bold text-[11px] text-red-600 shadow-xs active:scale-95 transition-all flex items-center gap-1"
+                      >
+                        <span className="material-symbols-outlined text-[12px]">delete</span>
+                        {t('common.delete') || '삭제'}
+                      </button>
+                    )}
+                  </>
+                )}
+                <button
+                  onClick={() => closeRegModal()}
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-lg">close</span>
+                </button>
+              </div>
             </div>
             
             {/* Scrollable list */}
@@ -1591,6 +1655,27 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
                       </div>
                     </div>
                     
+                    {/* Memo & Partner detail display */}
+                    {(reg.partnerName || reg.applicantMemo || reg.memo) && (
+                      <div className="mt-2.5 pt-2.5 border-t border-slate-200/50 flex flex-col gap-1.5 text-[11px] font-bold text-slate-500">
+                        {reg.partnerName && reg.partnerName.trim() !== '' && (
+                          <div className="flex items-center gap-1.5">
+                            <span className="material-symbols-outlined text-[13px] text-slate-400">group</span>
+                            <span>{language === 'KR' ? '대표 파트너' : 'Representative Partner'}: <strong className="text-slate-700">{reg.partnerName}</strong></span>
+                          </div>
+                        )}
+                        {(reg.applicantMemo || reg.memo) && (
+                          <div className="flex items-start gap-1.5">
+                            <span className="material-symbols-outlined text-[13px] text-slate-400 mt-0.5">notes</span>
+                            <div className="flex-1">
+                              <span>{language === 'KR' ? '신청자 메모' : 'Applicant Memo'}:</span>
+                              <p className="text-slate-700 font-medium whitespace-pre-wrap mt-0.5 bg-slate-100/50 p-2.5 rounded-xl border border-slate-100">{reg.applicantMemo || reg.memo}</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
                     <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 pt-2.5 mt-1 border-t border-slate-200/50">
                       <span>
                         {language === 'KR' ? '댄스 역할' : 'Dance Role'}: <strong className="text-slate-600">{(reg.role || 'Leader').toUpperCase()}</strong>
@@ -1605,7 +1690,8 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
             </div>
           </div>
         </div>
-      )}
+      );
+    })()}
 
       {/* EDIT MODAL (본인 정보 수정) */}
       {editingGroupedReg && (
@@ -1668,6 +1754,20 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
                   onChange={(e) => setEditDepositor(e.target.value)}
                   className="w-full px-4 py-2.5 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-blue-600 font-bold text-slate-800"
                   placeholder={language === 'KR' ? '실제 입금자명을 입력하세요' : 'Enter depositor name'}
+                />
+              </div>
+
+              {/* Field 4: Partner Name */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider block">
+                  {language === 'KR' ? '대표 파트너명' : 'Representative Partner'}
+                </label>
+                <input
+                  type="text"
+                  value={editPartnerName}
+                  onChange={(e) => setEditPartnerName(e.target.value)}
+                  className="w-full px-4 py-2.5 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-blue-600 font-bold text-slate-800"
+                  placeholder={language === 'KR' ? '파트너의 이름을 입력하세요' : 'Enter partner\'s name'}
                 />
               </div>
 

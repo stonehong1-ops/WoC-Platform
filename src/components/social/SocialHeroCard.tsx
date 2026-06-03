@@ -1,39 +1,19 @@
+"use client";
+
 import React, { useState } from 'react';
 import { Social } from '@/types/social';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { formatCommunityName } from '@/app/social/constants/seoulRegions';
 
 export function DualText({ text, subText, primaryClassName, secondaryClassName, containerClassName }: { text: string; subText?: string; primaryClassName?: string; secondaryClassName?: string; containerClassName?: string }) {
+  const { language } = useLanguage();
   if (!text) return null;
   
-  let main = text;
-  let sub = subText;
+  const resolved = formatCommunityName(subText || text, language);
 
-  if (!sub) {
-    const hasKorean = /[가-힣]/.test(text);
-    const hasEnglish = /[a-zA-Z]/.test(text);
-    
-    if (hasKorean && hasEnglish) {
-      main = text.replace(/[가-힣()]+/g, '').replace(/\s+/g, ' ').trim();
-      const subMatch = text.match(/[가-힣]+/g);
-      sub = subMatch ? subMatch.join(' ') : '';
-    }
-  }
-  
-  if (main && sub && main.trim().toLowerCase() === sub.trim().toLowerCase()) {
-    sub = undefined;
-  }
-  
-  if (sub) {
-    return (
-      <div className={`flex items-baseline gap-1.5 min-w-0 ${containerClassName || ''}`}>
-        <span className={primaryClassName}>{main || text}</span>
-        <span className={secondaryClassName}>{sub}</span>
-      </div>
-    );
-  }
-  
   return (
     <div className={`flex items-baseline min-w-0 ${containerClassName || ''}`}>
-      <span className={primaryClassName}>{main || text}</span>
+      <span className={primaryClassName}>{resolved}</span>
     </div>
   );
 }

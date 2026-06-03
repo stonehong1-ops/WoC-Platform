@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   GoogleAuthProvider, 
   FacebookAuthProvider,
   signInWithPopup,
   signInWithRedirect,
+  getRedirectResult,
   RecaptchaVerifier,
   signInWithPhoneNumber,
   ConfirmationResult,
@@ -19,6 +20,8 @@ import { getAuthErrorMessage } from '../helpers/authHelpers';
 
 export function useAuthFlow() {
   const { user, profile, showLogin, setShowLogin } = useAuth();
+  const verifyingRef = useRef(false);
+  const sendingRef = useRef(false);
   const { language, setLanguage, t } = useLanguage();
 
   const [isLoading, setIsLoading] = useState(false);
@@ -91,6 +94,55 @@ export function useAuthFlow() {
     };
   }, [showLogin]);
 
+  // 1.2. Handle Social Login Redirect Result on Mount
+  useEffect(() => {
+    const checkRedirectResult = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result && result.user) {
+          setIsLoading(true);
+          const loggedUser = result.user;
+          let method = 'Google';
+          if (result.providerId === 'facebook.com') {
+            method = 'Facebook';
+          }
+          setAuthMethod(method);
+
+          const userDoc = await getDoc(doc(db, 'users', loggedUser.uid));
+          if (userDoc.exists() && userDoc.data()?.isRegistered === true) {
+            if (!userDoc.data()?.photoURL && loggedUser.photoURL) {
+              await setDoc(doc(db, 'users', loggedUser.uid), {
+                photoURL: loggedUser.photoURL,
+                updatedAt: serverTimestamp(),
+              }, { merge: true });
+            }
+            handleClose();
+            const lastContext = localStorage.getItem('woc_context');
+            setTimeout(() => {
+              if (lastContext) {
+                localStorage.removeItem('woc_context');
+                window.location.replace(lastContext);
+              } else {
+                window.location.replace('/today');
+              }
+            }, 50);
+          } else {
+            // 미가입 유저는 FORM 단계로 유도하고 모달 강제 오픈
+            setStep('FORM');
+            setShowLogin(true);
+          }
+        }
+      } catch (err: any) {
+        console.error("Redirect login handling error:", err);
+        alert(t('auth.alert_login_failed') + err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkRedirectResult();
+  }, [t, setShowLogin]);
+
   // 1.5. Fast Warp for already registered users - user 및 profile 변경 감지 시 리다이렉트
   useEffect(() => {
     if (showLogin && user && profile?.isRegistered) {
@@ -129,7 +181,7 @@ export function useAuthFlow() {
     }
 
     // b. Auto OTP Code Verification
-    if (verificationCode.length === 6 && confirmationResult && !isLoading) {
+    if (step === 'PHONE_VERIFY' && verificationCode.length === 6 && confirmationResult && !isLoading) {
       handleVerifyCode();
     }
 
@@ -360,7 +412,7 @@ export function useAuthFlow() {
   };
 
   const handleSendCode = async () => {
-    if (isLoading || cooldown) return;
+    if (isLoading || cooldown || sendingRef.current) return;
     if (!phoneNumber) {
       alert(t('auth.alert_invalid_phone'));
       return;
@@ -372,7 +424,12 @@ export function useAuthFlow() {
       return;
     }
 
+    sendingRef.current = true;
     setIsLoading(true);
+    
+    // [Clean Session Guard] 신규 발송 시 이전 인증 세션과 입력 버퍼를 확실히 청소
+    setConfirmationResult(null);
+    setVerificationCode('');
     try {
       const sendSmsProcess = async () => {
         const useVisible = timeoutCount >= 2;
@@ -442,16 +499,18 @@ export function useAuthFlow() {
         setTimeout(() => setCooldown(false), 10000);
       }
     } finally {
+      sendingRef.current = false;
       setIsLoading(false);
     }
   };
 
   const handleVerifyCode = async () => {
-    if (isLoading) return;
+    if (isLoading || verifyingRef.current) return;
     if (!verificationCode || !confirmationResult) {
       alert(t('auth.alert_enter_code'));
       return;
     }
+    verifyingRef.current = true;
     setIsLoading(true);
     try {
       const result = await confirmationResult.confirm(verificationCode);
@@ -460,11 +519,15 @@ export function useAuthFlow() {
 
       const userDoc = await getDoc(doc(db, 'users', loggedUser.uid));
       if (userDoc.exists() && userDoc.data()?.isRegistered === true) {
+        setVerificationCode('');
+        setConfirmationResult(null);
         handleClose();
         setTimeout(() => {
           window.location.replace('/today');
         }, 50);
       } else {
+        setVerificationCode('');
+        setConfirmationResult(null);
         setStep('FORM');
       }
     } catch (error: any) {
@@ -473,6 +536,7 @@ export function useAuthFlow() {
       const msg = getAuthErrorMessage(error.code, error.message, language);
       alert(msg);
     } finally {
+      verifyingRef.current = false;
       setIsLoading(false);
     }
   };

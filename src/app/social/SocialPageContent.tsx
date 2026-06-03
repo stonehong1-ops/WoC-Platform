@@ -10,7 +10,9 @@ import {
   detectSeoulDistrict, 
   getDensityMode, 
   getDjDisplay,
-  getVenueDisplay
+  getVenueDisplay,
+  formatInstructorNames,
+  formatCommunityName
 } from './constants/seoulRegions';
 import { Social } from '@/types/social';
 import PosterOverlay from '@/components/social/poster/PosterOverlay';
@@ -131,13 +133,12 @@ export default function SocialPageContent() {
 
                     <div className="mt-auto">
                       <h3 className="text-lg font-black text-slate-800 leading-tight">
-                        {social.title}
-                        {social.titleNative && <span className="block text-xs font-bold text-slate-400 mt-0.5">{social.titleNative}</span>}
+                        {formatCommunityName(social.titleNative || social.title, language)}
                       </h3>
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 mt-3 text-[10px] font-bold text-slate-600">
-                        <span className="inline-flex items-center gap-1 bg-slate-100 px-2.5 py-1 rounded-xl"><span className="material-symbols-outlined text-[13px] text-blue-500">location_on</span>{getVenueDisplay(social, language, venuesMap)}</span>
-                        <span className="inline-flex items-center gap-1 bg-slate-100 px-2.5 py-1 rounded-xl"><span className="material-symbols-outlined text-[13px] text-slate-500">person</span>{social.organizerNameNative || social.organizerName}</span>
-                        {social.djName && <span className="inline-flex items-center gap-1 bg-slate-100 px-2.5 py-1 rounded-xl"><span className="material-symbols-outlined text-[13px] text-amber-500">headphones</span>DJ {social.djName}</span>}
+                        <span className="inline-flex items-center gap-1 bg-slate-100 px-2.5 py-1 rounded-xl"><span className="material-symbols-outlined text-[13px] text-blue-500">location_on</span>{formatCommunityName(getVenueDisplay(social, language, venuesMap), language)}</span>
+                        <span className="inline-flex items-center gap-1 bg-slate-100 px-2.5 py-1 rounded-xl"><span className="material-symbols-outlined text-[13px] text-slate-500">person</span>{formatCommunityName(social.organizerNameNative || social.organizerName || "", language)}</span>
+                        {social.djName && <span className="inline-flex items-center gap-1 bg-slate-100 px-2.5 py-1 rounded-xl"><span className="material-symbols-outlined text-[13px] text-amber-500">headphones</span>DJ {formatInstructorNames(social.djName, language)}</span>}
                       </div>
                     </div>
                   </div>
@@ -181,15 +182,14 @@ export default function SocialPageContent() {
                       {t('social.badge_day')}
                     </span>
                   )}
-                  {social.djName && <span className="text-[9.5px] font-bold text-slate-400 truncate">DJ {social.djName}</span>}
+                  {social.djName && <span className="text-[9.5px] font-bold text-slate-400 truncate">DJ {formatInstructorNames(social.djName, language)}</span>}
                 </div>
-                <h4 className="text-[14.5px] font-black text-slate-800 truncate leading-tight mt-1.5 flex items-baseline gap-1.5">
-                  {social.title}
-                  {social.titleNative && <span className="text-[10px] font-semibold text-slate-400 truncate">{social.titleNative}</span>}
+                <h4 className="text-[14.5px] font-black text-slate-800 truncate leading-tight mt-1.5">
+                  {formatCommunityName(social.titleNative || social.title, language)}
                 </h4>
                 <div className="flex items-center gap-2.5 mt-1.5 text-[10px] font-bold text-slate-500 truncate leading-none">
-                  <span className="inline-flex items-center gap-0.5"><span className="material-symbols-outlined text-[11px] text-blue-500 shrink-0">location_on</span>{getVenueDisplay(social, language, venuesMap)}</span>
-                  <span className="inline-flex items-center gap-0.5"><span className="material-symbols-outlined text-[11px] text-slate-400 shrink-0">person</span>{social.organizerNameNative || social.organizerName}</span>
+                  <span className="inline-flex items-center gap-0.5"><span className="material-symbols-outlined text-[11px] text-blue-500 shrink-0">location_on</span>{formatCommunityName(getVenueDisplay(social, language, venuesMap), language)}</span>
+                  <span className="inline-flex items-center gap-0.5"><span className="material-symbols-outlined text-[11px] text-slate-400 shrink-0">person</span>{formatCommunityName(social.organizerNameNative || social.organizerName || "", language)}</span>
                 </div>
               </div>
             </div>
@@ -230,15 +230,14 @@ export default function SocialPageContent() {
                       {t('social.badge_day')}
                     </span>
                   )}
-                  {social.djName && <span className="text-[9.5px] font-bold text-slate-400 truncate">DJ {social.djName}</span>}
+                  {social.djName && <span className="text-[9.5px] font-bold text-slate-400 truncate">DJ {formatInstructorNames(social.djName, language)}</span>}
                 </div>
-                <h4 className="text-[13.5px] font-black text-slate-800 truncate leading-tight mt-1 flex items-baseline gap-1.5">
-                  {social.title}
-                  {social.titleNative && <span className="text-[9.5px] font-semibold text-slate-400 truncate">{social.titleNative}</span>}
+                <h4 className="text-[13.5px] font-black text-slate-800 truncate leading-tight mt-1">
+                  {formatCommunityName(social.titleNative || social.title, language)}
                 </h4>
                 <div className="flex items-center gap-2 mt-1 text-[9.5px] font-bold text-slate-500 truncate leading-none">
-                  <span className="inline-flex items-center gap-0.5"><span className="material-symbols-outlined text-[10px] text-blue-500 shrink-0">location_on</span>{getVenueDisplay(social, language, venuesMap)}</span>
-                  <span className="inline-flex items-center gap-0.5"><span className="material-symbols-outlined text-[10px] text-slate-400 shrink-0">person</span>{social.organizerNameNative || social.organizerName}</span>
+                  <span className="inline-flex items-center gap-0.5"><span className="material-symbols-outlined text-[10px] text-blue-500 shrink-0">location_on</span>{formatCommunityName(getVenueDisplay(social, language, venuesMap), language)}</span>
+                  <span className="inline-flex items-center gap-0.5"><span className="material-symbols-outlined text-[10px] text-slate-400 shrink-0">person</span>{formatCommunityName(social.organizerNameNative || social.organizerName || "", language)}</span>
                 </div>
               </div>
             </div>
@@ -278,20 +277,15 @@ export default function SocialPageContent() {
               </div>
               
               <div className="text-[13px] font-black text-slate-900 truncate leading-tight mt-1">
-                {displayTitle.primary}
-                {displayTitle.secondary && (
-                  <span className="text-[10px] font-semibold text-slate-400 ml-1">
-                    ({displayTitle.secondary})
-                  </span>
-                )}
+                {formatCommunityName(social.titleNative || social.title, language)}
               </div>
               
               <div className="text-[10.5px] font-bold text-slate-500 truncate leading-none mt-1.5 mb-0.5">
-                <span>{venueText}</span>
+                <span>{formatCommunityName(venueText, language)}</span>
                 {organizerText && (
                   <>
-                    <span className="text-slate-350 font-normal mx-1">•</span>
-                    <span className="text-slate-400 font-semibold">{organizerText}</span>
+                    <span className="text-slate-355 font-normal mx-1">•</span>
+                    <span className="text-slate-400 font-semibold">{formatCommunityName(organizerText, language)}</span>
                   </>
                 )}
               </div>
@@ -365,16 +359,15 @@ export default function SocialPageContent() {
                             )}
                           </div>
                           <div className="flex-1 min-w-0 pr-2">
-                            <h4 className="text-[14px] font-bold text-slate-800 truncate leading-tight flex items-baseline gap-1.5">
-                              {social.title}
-                              {social.titleNative && <span className="text-[10px] font-medium text-slate-400 truncate">{social.titleNative}</span>}
+                            <h4 className="text-[14px] font-bold text-slate-800 truncate leading-tight">
+                              {formatCommunityName(social.titleNative || social.title, language)}
                             </h4>
                             <p className="text-[11px] font-medium text-slate-500 truncate mt-0.5">
-                              <span className="inline-flex items-center gap-0.5"><span className="material-symbols-outlined text-[14px] leading-none">location_on</span>{getVenueDisplay(social, language, venuesMap)}</span>
+                              <span className="inline-flex items-center gap-0.5"><span className="material-symbols-outlined text-[14px] leading-none">location_on</span>{formatCommunityName(getVenueDisplay(social, language, venuesMap), language)}</span>
                             </p>
                             <p className="text-[11px] font-medium text-slate-500 truncate mt-0.5">
                               <span className="inline-flex items-center gap-0.5"><span className="material-symbols-outlined text-[14px] leading-none">schedule</span>{social.startTime}-{social.endTime}</span>
-                              {social.djName && <span className="ml-2 inline-flex items-center gap-0.5"><span className="material-symbols-outlined text-[14px] leading-none">headphones</span>DJ {social.djName}</span>}
+                              {social.djName && <span className="ml-2 inline-flex items-center gap-0.5"><span className="material-symbols-outlined text-[14px] leading-none">headphones</span>DJ {formatInstructorNames(social.djName, language)}</span>}
                             </p>
                           </div>
                           <div className="shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-white shadow-sm border border-slate-100 md:group-hover:border-blue-200 transition-all">

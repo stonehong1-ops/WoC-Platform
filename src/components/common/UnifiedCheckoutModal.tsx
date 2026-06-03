@@ -10,6 +10,7 @@ interface UnifiedCheckoutModalProps {
   onClose: () => void;
   title: string;
   subtitle?: string;
+  isEditMode?: boolean;
   
   // Step 1: Summary UI
   children: React.ReactNode;
@@ -101,7 +102,8 @@ export default function UnifiedCheckoutModal({
   initialBookingId,
   initialOrderNumber,
   initialCreatedAt,
-  isSubmitDisabled = false
+  isSubmitDisabled = false,
+  isEditMode = false
 }: UnifiedCheckoutModalProps) {
   const { user } = useAuth();
   const { language, t } = useLanguage();
@@ -164,6 +166,10 @@ export default function UnifiedCheckoutModal({
     setLocalProcessing(true);
     try {
       const result = await onCheckout();
+      if (isEditMode) {
+        onClose();
+        return;
+      }
       if (result) {
         if (result.includes('|')) {
           const [bId, oNum] = result.split('|');
@@ -221,7 +227,7 @@ export default function UnifiedCheckoutModal({
           {isProcessing || localProcessing ? (
             <span className="animate-pulse">{language === 'KR' ? '처리 중...' : 'Processing...'}</span>
           ) : user ? (
-            buttonText
+            isEditMode ? (language === 'KR' ? '수정 완료' : 'Save Changes') : buttonText
           ) : (
             language === 'KR' ? '로그인 후 신청하기' : 'Login to Book'
           )}

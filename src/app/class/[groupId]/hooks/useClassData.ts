@@ -8,18 +8,25 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBookingEngine } from '@/hooks/useBookingEngine';
 import { toast } from 'sonner';
+import { useModalNavigation } from "@/hooks/useModalNavigation";
 import { 
   DAY_ORDER, 
   getDayOfWeek 
 } from '../constants/classConstants';
 
-export function useClassData(propGroupId?: string, propModalId?: string, onClose?: () => void) {
+export function useClassData(
+  propGroupId?: string,
+  propModalId?: string,
+  onClose?: () => void,
+  editRegistration?: any,
+  isEditMode?: boolean
+) {
   const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
   const rawGroupId = (propGroupId || params?.groupId || params?.id) as string;
   const groupId = rawGroupId;
-  const modalClassId = propModalId || searchParams.get('modal');
+  const { isOpen: isClassDetailOpen, value: modalClassId, openModal: openClassDetailURL, closeModal: closeClassDetailURL } = useModalNavigation('modal');
   const fromSource = searchParams.get('from');
   
   const [group, setGroup] = useState<Group | null>(null);
@@ -32,6 +39,7 @@ export function useClassData(propGroupId?: string, propModalId?: string, onClose
   const { user, profile } = useAuth();
   const { language, t } = useLanguage();
   const [selectedRole, setSelectedRole] = useState<'leader' | 'follower' | null>(null);
+  const [applicantMemo, setApplicantMemo] = useState('');
   const [ownerInfo, setOwnerInfo] = useState<{name: string | null, localName: string | null, avatar: string | null, phone: string | null} | null>(null);
 
   // Firestore sub-collections state
@@ -91,6 +99,42 @@ export function useClassData(propGroupId?: string, propModalId?: string, onClose
     }
   }, [isApplyModalOpen, profile, selectedRole]);
 
+  // Restore registration data in Edit Mode
+  useEffect(() => {
+    if (isEditMode && editRegistration) {
+      if (editRegistration.role) {
+        const r = editRegistration.role.toLowerCase();
+        if (r === 'leader') setSelectedRole('leader');
+        else if (r === 'follower') setSelectedRole('follower');
+      }
+
+      if (editRegistration.itemType === 'discount') {
+        setSelectedClasses(new Set([editRegistration.classId]));
+        if (editRegistration.selectedClassIds) {
+          setPassSelectedClassIds(new Set(editRegistration.selectedClassIds));
+        }
+        if (editRegistration.participatingClassPartners) {
+          setClassPartners(editRegistration.participatingClassPartners);
+        }
+      } else {
+        if (editRegistration.selectedClassIds) {
+          setSelectedClasses(new Set(editRegistration.selectedClassIds));
+        } else {
+          setSelectedClasses(new Set([editRegistration.classId]));
+        }
+        
+        if (editRegistration.participatingClassPartners) {
+          setClassPartners(editRegistration.participatingClassPartners);
+        } else if (editRegistration.classId && editRegistration.partnerName) {
+          setClassPartners({ [editRegistration.classId]: editRegistration.partnerName });
+        }
+      }
+
+      setApplicantMemo(editRegistration.applicantMemo || '');
+      setIsApplyModalOpen(true);
+    }
+  }, [isEditMode, editRegistration]);
+
   useEffect(() => {
     if (!groupId) return;
     
@@ -148,24 +192,29 @@ export function useClassData(propGroupId?: string, propModalId?: string, onClose
   }, [groupId]);
 
   useEffect(() => {
-    if (modalClassId && (subClasses.length > 0 || subDiscounts.length > 0)) {
-      const all = [
-        ...subDiscounts.map(d => ({ ...d, itemType: 'discount' as const })),
-        ...subClasses.map(c => ({ ...c, itemType: 'class' as const }))
-      ];
-      const targetItem = all.find(item => item.id === modalClassId);
-      if (targetItem) {
-        setSelectedClassDetail(targetItem);
+    if (modalClassId) {
+      if (subClasses.length > 0 || subDiscounts.length > 0) {
+        const all = [
+          ...subDiscounts.map(d => ({ ...d, itemType: 'discount' as const })),
+          ...subClasses.map(c => ({ ...c, itemType: 'class' as const }))
+        ];
+        const targetItem = all.find(item => item.id === modalClassId);
+        if (targetItem) {
+          setSelectedClassDetail(targetItem);
+        }
       }
+    } else {
+      setSelectedClassDetail(null);
     }
   }, [modalClassId, subClasses, subDiscounts]);
 
   const closeDetailModal = useCallback(() => {
     setSelectedClassDetail(null);
+    closeClassDetailURL();
     if (propModalId && onClose) {
       onClose();
     }
-  }, [propModalId, onClose]);
+  }, [propModalId, onClose, closeClassDetailURL]);
 
   const currentMonthStr = useMemo(() => {
     return `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
@@ -231,6 +280,7 @@ export function useClassData(propGroupId?: string, propModalId?: string, onClose
 
   const handleCardClick = (item: any) => {
     setSelectedClassDetail(item);
+    openClassDetailURL(item.id);
     if (item.itemType === 'discount') {
       const passClasses = item.includedClassIds && item.includedClassIds.length > 0 
         ? allGroupClasses.filter(c => item.includedClassIds.includes(c.id))
@@ -303,6 +353,34 @@ export function useClassData(propGroupId?: string, propModalId?: string, onClose
       const selectedClassesArray = Array.from(selectedClasses);
       const isDiscount = isDiscountSelected;
       
+      if (isEditMode && editRegistration) {
+        const updates: any = {
+          role: selectedRole || 'follower',
+          applicantMemo: applicantMemo
+        };
+
+        if (isDiscount) {
+          updates.selectedClassIds = Array.from(passSelectedClassIds);
+          updates.participatingClassPartners = classPartners;
+        } else {
+          if (selectedClassesArray.length === 1) {
+            const classId = selectedClassesArray[0];
+            updates.partnerName = classPartners[classId] || '';
+          } else {
+            updates.selectedClassIds = selectedClassesArray;
+            updates.participatingClassPartners = classPartners;
+          }
+        }
+
+        const { classRegistrationService } = await import('@/lib/firebase/classRegistrationService');
+        await classRegistrationService.updateRegistration(editRegistration.id, updates);
+        toast.success(language === 'KR' ? '신청 정보가 수정되었습니다.' : 'Application details updated.');
+        
+        if (onClose) onClose();
+        setIsApplyModalOpen(false);
+        return;
+      }
+      
       let finalItemName = '';
       let finalItemId = '';
       let finalTotalAmount = 0;
@@ -312,7 +390,8 @@ export function useClassData(propGroupId?: string, propModalId?: string, onClose
         groupId: groupId,
         groupName: group?.name || '',
         userAvatar: (profile as any)?.photoURL || (profile as any)?.avatar || user?.photoURL || '',
-        contactNumber: (profile as any)?.phone || (profile as any)?.contactNumber || user?.phoneNumber || ''
+        contactNumber: (profile as any)?.phone || (profile as any)?.contactNumber || user?.phoneNumber || '',
+        applicantMemo: applicantMemo
       };
       
       if (isDiscount) {
@@ -471,6 +550,8 @@ export function useClassData(propGroupId?: string, propModalId?: string, onClose
     t,
     selectedRole,
     setSelectedRole,
+    applicantMemo,
+    setApplicantMemo,
     ownerInfo,
     subClasses,
     subDiscounts,

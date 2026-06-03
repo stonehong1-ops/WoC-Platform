@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { usePathname } from "next/navigation";
+import React, { useState, useEffect, Suspense } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useNavigation } from "@/components/providers/NavigationProvider";
@@ -46,7 +46,8 @@ const NAV_STRUCTURE = {
     { name: "nav.history", icon: "history", path: "/history" },
     { name: "nav.live", icon: "cinematic_blur", path: "/live?view=my" },
     { name: "nav.wallet", icon: "account_balance_wallet", path: "/wallet" },
-    { name: "nav.my_info", icon: "person", path: "/profile" },
+    { name: "myinfo.schedule_tab", icon: "calendar_today", path: "/profile?tab=schedule" },
+    { name: "nav.my_info", icon: "person", path: "/profile?tab=profile" },
   ],
 };
 
@@ -295,13 +296,13 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
               {/* Notification */}
               <Link 
                 href="/notification" 
-                className={`w-[38px] h-[38px] rounded-full flex items-center justify-center active:scale-95 transition-all relative ${
+                className={`w-[32px] h-[32px] rounded-full flex items-center justify-center active:scale-95 transition-all relative ${
                   pathname === '/notification' ? 'bg-[#007AFF]/10 text-[#007AFF]' : 'bg-[#F1F5F9] text-[#1E293B]'
                 }`}
                 title={t('notification.title', '알림')}
               >
                 <span 
-                  className="material-symbols-outlined !text-[22px]"
+                  className="material-symbols-outlined !text-[20px]"
                   style={{ fontVariationSettings: pathname === '/notification' ? "'FILL' 1" : "'FILL' 0" }}
                 >
                   notifications
@@ -316,13 +317,13 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
               {/* Chat */}
               <Link 
                 href="/chat" 
-                className={`w-[38px] h-[38px] rounded-full flex items-center justify-center active:scale-95 transition-all relative ${
+                className={`w-[32px] h-[32px] rounded-full flex items-center justify-center active:scale-95 transition-all relative ${
                   pathname.startsWith('/chat') ? 'bg-[#007AFF]/10 text-[#007AFF]' : 'bg-[#F1F5F9] text-[#1E293B]'
                 }`}
                 title={t('chatroom.room_chat', '채팅')}
               >
                 <span 
-                  className="material-symbols-outlined !text-[22px]"
+                  className="material-symbols-outlined !text-[20px]"
                   style={{ fontVariationSettings: pathname.startsWith('/chat') ? "'FILL' 1" : "'FILL' 0" }}
                 >
                   chat_bubble
@@ -342,7 +343,7 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
                 }`}
               >
                 <span 
-                  className="material-symbols-outlined !text-[18px]"
+                  className="material-symbols-outlined !text-[20px]"
                   style={{ fontVariationSettings: pathname.startsWith('/search') ? "'FILL' 1" : "'FILL' 0" }}
                 >
                   search
@@ -367,29 +368,11 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
           </div>
 
           {/* Scrolling Sub-Menu: Refined to match image (Icons Removed) */}
+          {/* Scrolling Sub-Menu: Refined to match image (Icons Removed) */}
           {!isNoSubMenuPage && (
-            <nav className="flex w-full px-0 border-b border-slate-100/60 bg-white">
-              <div className="flex w-full items-end justify-between px-3">
-                {subMenu.map((item) => {
-                  const isActive = pathname === item.path || (item.path !== "/" && pathname.startsWith(item.path));
-                  // Preserve society context for /events link
-                  const society = typeof window !== 'undefined' ? (new URLSearchParams(window.location.search).get('society') || sessionStorage.getItem('woc_society')) : null;
-                  const resolvedPath = item.path === '/events' && society ? `/events?society=${society}` : item.path;
-                  return (
-                    <Link 
-                      key={item.name} 
-                      href={resolvedPath} 
-                      className={`flex flex-col items-center justify-end flex-1 pt-3.5 pb-2.5 transition-all duration-300 border-b-[3px] ${isActive ? 'border-[#007AFF]' : 'border-transparent'}`}
-                    >
-                      <span className={`text-[14px] tracking-tight uppercase transition-all duration-300 ${isActive ? 'font-black text-[#007AFF]' : 'font-bold text-slate-500'}`}>
-                        {t(item.name)}
-                      </span>
-                    </Link>
-                  );
-                })}
-                
-              </div>
-            </nav>
+            <Suspense fallback={<div className="h-[43px] bg-white border-b border-slate-100/60" />}>
+              <SubMenuNavigation subMenu={subMenu} pathname={pathname} />
+            </Suspense>
           )}
 
           {/* Custom Sub-Header Slot (e.g. Shop Filters) */}
@@ -432,9 +415,9 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
               {isPhotoTab ? (
                 <div className="relative flex items-center justify-center w-[24px] h-[24px]">
                   <UserAvatar 
-                    photoURL={profile?.photoURL}
-                    className={`!w-[24px] !h-[24px] rounded-full transition-all duration-300 ${isActive ? 'ring-[2px] ring-[#007AFF] ring-offset-1' : 'opacity-80 hover:opacity-100'}`}
-                    iconSize="18px"
+                     photoURL={profile?.photoURL}
+                     className={`!w-[24px] !h-[24px] rounded-full transition-all duration-300 ${isActive ? 'ring-[2px] ring-[#007AFF] ring-offset-1' : 'opacity-80 hover:opacity-100'}`}
+                     iconSize="18px"
                   />
                 </div>
               ) : (
@@ -454,6 +437,48 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
           })}
         </footer>
     </div>
+  );
+}
+
+function SubMenuNavigation({ subMenu, pathname }: { subMenu: any[]; pathname: string }) {
+  const searchParams = useSearchParams();
+  const { t } = useLanguage();
+
+  return (
+    <nav className="flex w-full px-0 border-b border-slate-100/60 bg-white">
+      <div className="flex w-full items-end justify-between px-3">
+        {subMenu.map((item) => {
+          if (!item || !item.path || typeof item.path !== 'string') return null;
+          // tab=schedule, tab=profile 등 쿼리 파라미터 추출 판별
+          const [itemPathname, itemQuery] = item.path.split('?');
+          const itemParams = new URLSearchParams(itemQuery || '');
+          
+          let isActive = false;
+          if (itemQuery) {
+            const pathMatches = pathname === itemPathname;
+            const paramsMatch = Array.from(itemParams.entries()).every(([key, val]) => searchParams.get(key) === val);
+            isActive = pathMatches && paramsMatch;
+          } else {
+            isActive = pathname === item.path || (item.path !== "/" && pathname.startsWith(item.path) && !item.path.includes('?'));
+          }
+
+          const society = searchParams.get('society') || (typeof window !== 'undefined' ? sessionStorage.getItem('woc_society') : null);
+          const resolvedPath = item.path === '/events' && society ? `/events?society=${society}` : item.path;
+
+          return (
+            <Link 
+              key={item.name} 
+              href={resolvedPath} 
+              className={`flex flex-col items-center justify-end flex-1 pt-3.5 pb-2.5 transition-all duration-300 border-b-[3px] ${isActive ? 'border-[#007AFF]' : 'border-transparent'}`}
+            >
+              <span className={`text-[14px] tracking-tight uppercase transition-all duration-300 ${isActive ? 'font-black text-[#007AFF]' : 'font-bold text-slate-500'}`}>
+                {t(item.name)}
+              </span>
+            </Link>
+          );
+        })}
+      </div>
+    </nav>
   );
 }
 
