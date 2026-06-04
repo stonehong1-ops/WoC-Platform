@@ -575,6 +575,8 @@ export const en: Record<string, string> = {
     'auth.verifying_code': 'Verifying code...',
 
     // Common
+    'common.show_more': 'Show More',
+    'common.show_less': 'Show Less',
     'common.later': 'Later',
     'common.user': 'User',
     'common.members': 'Members',

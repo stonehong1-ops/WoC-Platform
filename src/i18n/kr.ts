@@ -838,6 +838,8 @@ export const kr: Record<string, string> = {
     'auth.verifying_code': '인증번호 확인 중...',
 
     // 공통
+    'common.show_more': '더 보기',
+    'common.show_less': '접기',
     'common.later': '나중에',
     'common.user': '사용자',
     'common.members': '멤버',

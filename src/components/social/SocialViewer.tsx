@@ -35,6 +35,7 @@ export default function SocialViewer({ social: initialSocial, onClose, targetDat
   const [social, setSocial] = useState<Social>(initialSocial);
   const [activeTab, setActiveTab] = useState<TabId>("home");
   const [showEditModal, setShowEditModal] = useState(false);
+  const [isDescExpanded, setIsDescExpanded] = useState(false);
 
 
 
@@ -270,10 +271,35 @@ export default function SocialViewer({ social: initialSocial, onClose, targetDat
           )}
         </div>
 
-        <div className="px-4 pt-4 pb-4 border-b border-[#f2f4f4]">
-          <p className="text-sm text-[#596061] whitespace-pre-wrap leading-relaxed line-clamp-none">
-            {(social as any).description || t('social.no_description')}
+        <div className="px-4 pt-4 pb-4 border-b border-[#f2f4f4] text-left">
+          <p className="text-sm text-[#596061] whitespace-pre-wrap leading-relaxed">
+            {(() => {
+              const descText = (social as any).description || "";
+              const lines = descText.split('\n');
+              if (lines.length > 10 && !isDescExpanded) {
+                return lines.slice(0, 10).join('\n');
+              }
+              return descText || t('social.no_description');
+            })()}
           </p>
+          {((social as any).description || "").split('\n').length > 10 && (
+            <button 
+              onClick={() => setIsDescExpanded(!isDescExpanded)} 
+              className="text-xs font-black text-blue-600 mt-2 hover:underline active:scale-95 transition-all flex items-center gap-0.5"
+            >
+              {isDescExpanded ? (
+                <>
+                  <span>{t('common.show_less')}</span>
+                  <span className="material-symbols-rounded text-[14px]">expand_less</span>
+                </>
+              ) : (
+                <>
+                  <span>{t('common.show_more')}</span>
+                  <span className="material-symbols-rounded text-[14px]">expand_more</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
 
         {/* Tab Anchor — inline tab bar (hidden when stuck) */}
