@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useSocialData } from './hooks/useSocialData';
 import EditSocialEvent from '@/components/social/EditSocialEvent';
 import SocialViewer from '@/components/social/SocialViewer';
@@ -12,7 +12,8 @@ import {
   getDjDisplay,
   getVenueDisplay,
   formatInstructorNames,
-  formatCommunityName
+  formatCommunityName,
+  getWeekOrdinal
 } from './constants/seoulRegions';
 import { Social } from '@/types/social';
 import PosterOverlay from '@/components/social/poster/PosterOverlay';
@@ -55,13 +56,50 @@ export default function SocialPageContent() {
     handleOpenEdit,
     handleCloseEdit
   } = useSocialData();
+  const [activeWeek, setActiveWeek] = useState(() => {
+    return getWeekOrdinal(new Date());
+  });
+
+  // activeWeek 변경 시 해당 주차의 첫 날짜 요소로 부드럽게 스크롤
+  useEffect(() => {
+    const el = document.getElementById(`week-${activeWeek}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [activeWeek]);
 
   // SubHeader Injection: 최상단 원라인 바 (One-Line Controller Bar) 이식
   useEffect(() => {
+    const today = new Date();
+    const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    const maxWeeks = getWeekOrdinal(endOfMonth);
+    const weeks = Array.from({ length: maxWeeks }, (_, i) => i + 1);
+
     const filterBar = (
-      <div className="relative w-full bg-white flex items-center justify-end px-3.5 py-2 shadow-sm border-b border-slate-100 z-30 h-11">
-        {/* 신규 소셜 등록 원라인 통합 */}
-        <div className="flex items-center gap-1.5">
+      <div className="relative w-full bg-white flex items-center justify-between px-3.5 py-2 shadow-sm border-b border-slate-100 z-30 h-11">
+        {/* 주차 네비게이션 (클래스 탭의 네비게이션 스타일 이식) */}
+        <div className="flex items-center gap-3 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100">
+          <button 
+            onClick={() => setActiveWeek(prev => Math.max(1, prev - 1))} 
+            disabled={activeWeek <= 1}
+            className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-slate-200 active:scale-90 transition-all text-slate-500 disabled:opacity-30 disabled:pointer-events-none"
+          >
+            <span className="material-symbols-outlined text-[18px]">chevron_left</span>
+          </button>
+          <span className="text-[11px] font-black text-slate-700 uppercase tracking-widest min-w-[60px] text-center">
+            {language === 'KR' ? `${activeWeek}주차` : `Week ${activeWeek}`}
+          </span>
+          <button 
+            onClick={() => setActiveWeek(prev => Math.min(maxWeeks, prev + 1))} 
+            disabled={activeWeek >= maxWeeks}
+            className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-slate-200 active:scale-90 transition-all text-slate-500 disabled:opacity-30 disabled:pointer-events-none"
+          >
+            <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+          </button>
+        </div>
+
+        {/* 신규 소셜 등록 */}
+        <div className="flex items-center gap-1.5 shrink-0 ml-2">
           {(profile?.isAdmin || (profile as any)?.systemRole === 'admin' || profile?.isRegistered) && (
             <button
               onClick={() => handleOpenCreate()}
@@ -76,7 +114,7 @@ export default function SocialPageContent() {
     );
     const height = 44;
     setSubHeader(filterBar, height);
-  }, [profile, setSubHeader, t, handleOpenCreate]);
+  }, [profile, setSubHeader, t, handleOpenCreate, language, activeWeek]);
 
   useEffect(() => {
     return () => setSubHeader(null);
@@ -314,8 +352,14 @@ export default function SocialPageContent() {
                 const holiday = isKoreanHoliday(group.date);
                 const isWeekend = group.date.getDay() === 0 || group.date.getDay() === 6;
                 const isRed = isWeekend || !!holiday;
+                const weekNum = getWeekOrdinal(group.date);
+                const isFirstDayOfWeek = idx === 0 || getWeekOrdinal(overviewTimeline[idx - 1].date) !== weekNum;
                 return (
-                  <div key={idx} className="overflow-hidden rounded-xl border border-slate-100 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] bg-white">
+                  <div 
+                    key={idx} 
+                    id={isFirstDayOfWeek ? `week-${weekNum}` : undefined}
+                    className="overflow-hidden rounded-xl border border-slate-100 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] bg-white scroll-mt-28"
+                  >
                     {/* Day Header */}
                     <div className={`flex items-center gap-3 px-4 py-3 border-b border-slate-100 ${isToday ? 'bg-blue-600' : isRed ? 'bg-red-500' : 'bg-slate-800'}`}>
                       <div className="flex flex-col items-center justify-center w-10 h-10 rounded-lg bg-white/15 shrink-0">

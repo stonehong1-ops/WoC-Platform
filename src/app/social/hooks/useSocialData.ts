@@ -373,9 +373,13 @@ export function useSocialData() {
     const filtered = locationFilteredSocials.filter(s => s.subCategory !== 'practica');
     const instances: { date: Date, social: Social }[] = [];
 
-    for (let i = 0; i < 7; i++) {
-      const targetDate = new Date(today);
-      targetDate.setDate(today.getDate() + i);
+    const year = today.getFullYear();
+    const month = today.getMonth();
+    const endOfMonth = new Date(year, month + 1, 0);
+    const totalDays = endOfMonth.getDate();
+
+    for (let i = 0; i < totalDays; i++) {
+      const targetDate = new Date(year, month, 1 + i);
       const targetDayOfWeek = targetDate.getDay();
       const targetDateTime = targetDate.getTime();
 
