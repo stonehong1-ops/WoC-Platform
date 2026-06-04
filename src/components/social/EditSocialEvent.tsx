@@ -67,26 +67,15 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
   };
 
 
-  const getAvailableRecurrences = (dateStr: string) => {
-    const d = dateStr ? new Date(dateStr) : new Date();
-    if (isNaN(d.getTime())) return [{ id: 'every', label: t('social.every_week') }];
-    
-    const dateNum = d.getDate();
-    const nth = Math.ceil(dateNum / 7);
-    const nthStr = nth === 1 ? '1st' : nth === 2 ? '2nd' : nth === 3 ? '3rd' : nth === 4 ? '4th' : '5th';
-    
-    const options = [
+  const getAvailableRecurrences = () => {
+    return [
       { id: 'every', label: t('social.every_week') },
-      { id: nthStr, label: t('social.nth_week', { nth: nthStr }) }
+      { id: '1st', label: t('social.nth_week', { nth: '1st' }) },
+      { id: '2nd', label: t('social.nth_week', { nth: '2nd' }) },
+      { id: '3rd', label: t('social.nth_week', { nth: '3rd' }) },
+      { id: '4th', label: t('social.nth_week', { nth: '4th' }) },
+      { id: '5th', label: t('social.nth_week', { nth: '5th' }) },
     ];
-    
-    const nextWeek = new Date(d);
-    nextWeek.setDate(d.getDate() + 7);
-    if (nextWeek.getMonth() !== d.getMonth() && nthStr !== '5th') {
-      options.push({ id: 'last', label: t('social.last_week') });
-    }
-    
-    return options;
   };
 
   // Location State
@@ -208,16 +197,7 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
     if (changed) setOrganizerList(updated);
   }, [allUsers]);
 
-  useEffect(() => {
-    if (type === 'regular' && startDate) {
-      const options = getAvailableRecurrences(startDate);
-      const currentParts = recurrence.split(',').map(x => x.trim());
-      const hasInvalid = currentParts.some(part => part !== 'every' && !options.find(o => o.id === part));
-      if (hasInvalid) {
-        setRecurrence('every');
-      }
-    }
-  }, [startDate, type]);
+
 
   const handleStartTimeChange = (val: string) => {
     setStartTime(val);
@@ -627,7 +607,7 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
             <div className={`transition-opacity ${type === 'regular' ? 'opacity-100' : 'hidden'}`}>
               <label className="block text-[11px] font-bold text-[#acb3b4] uppercase tracking-wider mb-2">{t('social.frequency')}</label>
               <div className="flex flex-wrap gap-2">
-                {getAvailableRecurrences(startDate).map(r => {
+                {getAvailableRecurrences().map(r => {
                   const isActive = r.id === 'every' 
                     ? (recurrence === 'every' || recurrence === '')
                     : recurrence.split(',').map(x => x.trim()).includes(r.id);
