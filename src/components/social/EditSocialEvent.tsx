@@ -103,9 +103,25 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
   // Users Data
   const [allUsers, setAllUsers] = useState<PlatformUser[]>([]);
 
-  // Organizer State
-  const [organizerId, setOrganizerId] = useState(socialData?.organizerId || user?.uid || '');
-  const [organizerName, setOrganizerName] = useState(socialData?.organizerName || user?.displayName || t('social.anonymous'));
+  // Organizer State (복수 선택)
+  const getInitialOrganizers = () => {
+    if (socialData?.organizerIds && socialData.organizerIds.length > 0) {
+      return socialData.organizerIds.map((id, i) => ({
+        id,
+        name: socialData.organizerNames?.[i] || '',
+        nativeName: socialData.organizerNativeNames?.[i] || '',
+      }));
+    }
+    if (socialData?.organizerId) {
+      return [{ id: socialData.organizerId, name: socialData.organizerName || '', nativeName: socialData.organizerNameNative || '' }];
+    }
+    if (user?.uid) {
+      return [{ id: user.uid, name: user.displayName || t('social.anonymous'), nativeName: '' }];
+    }
+    return [];
+  };
+  const [organizerList, setOrganizerList] = useState<{ id: string; name: string; nativeName: string }[]>(getInitialOrganizers());
+  const [organizerSearch, setOrganizerSearch] = useState('');
   const [organizerResults, setOrganizerResults] = useState<PlatformUser[]>([]);
   const [showOrganizerResults, setShowOrganizerResults] = useState(false);
 
@@ -224,12 +240,13 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
   };
 
   const handleOrganizerSearch = (val: string) => {
-    setOrganizerName(val);
+    setOrganizerSearch(val);
     if (val.length >= 1) {
       const lower = val.toLowerCase();
       const filtered = allUsers.filter(u =>
-        (u.nickname && u.nickname.toLowerCase().includes(lower)) ||
-        (u.nativeNickname && u.nativeNickname.includes(val))
+        !organizerList.find(o => o.id === u.id) &&
+        ((u.nickname && u.nickname.toLowerCase().includes(lower)) ||
+        (u.nativeNickname && u.nativeNickname.includes(val)))
       );
       setOrganizerResults(filtered.slice(0, 6));
       setShowOrganizerResults(filtered.length > 0);
@@ -240,8 +257,8 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
   };
 
   const handleSelectOrganizer = (u: PlatformUser) => {
-    setOrganizerName(u.nickname || t('social.anonymous'));
-    setOrganizerId(u.id);
+    setOrganizerList([...organizerList, { id: u.id, name: u.nickname || t('social.anonymous'), nativeName: u.nativeNickname || '' }]);
+    setOrganizerSearch('');
     setShowOrganizerResults(false);
   };
 
@@ -303,9 +320,12 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
         titleNative: titleNative || '',
         description: description || '',
         type: type || 'regular',
-        organizerId: organizerId,
-        organizerName: organizerName,
-        organizerNameNative: '', // Can be populated if needed
+        organizerId: organizerList[0]?.id || '',
+        organizerName: organizerList[0]?.name || '',
+        organizerNameNative: organizerList[0]?.nativeName || '',
+        organizerIds: organizerList.map(o => o.id),
+        organizerNames: organizerList.map(o => o.name),
+        organizerNativeNames: organizerList.map(o => o.nativeName),
         venueId: venueId || '',
         venueName: venueName || '',
         country: formCountry || '',
@@ -671,8 +691,7 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
               <label className="block text-[11px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1.5">{t('social.organizer_label')}</label>
               <div className="relative flex items-center px-4 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/20 transition-all">
                 <span className="material-symbols-rounded text-[#acb3b4] mr-2">person_filled</span>
-                <input value={organizerName} onChange={(e) => handleOrganizerSearch(e.target.value)}
-                  onFocus={() => organizerName.length >= 1 && setShowOrganizerResults(organizerResults.length > 0)}
+                <input value={organizerSearch} onChange={(e) => handleOrganizerSearch(e.target.value)}
                   onBlur={() => setTimeout(() => setShowOrganizerResults(false), 200)}
                   className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-sm font-bold text-[#2d3435] placeholder:text-[#acb3b4] outline-none"
                   placeholder={t('social.search_user_placeholder')} type="text" />
@@ -688,6 +707,20 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
                         {u.nativeNickname && <span className="text-[10px] text-[#acb3b4] font-medium leading-tight">{u.nativeNickname}</span>}
                       </div>
                     </button>
+                  ))}
+                </div>
+              )}
+
+              {organizerList.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-3 p-3 bg-[#f8f9fa] rounded-xl border border-[#e0e4e5]">
+                  {organizerList.map(o => (
+                    <div key={o.id} className="flex items-center gap-1.5 bg-white border border-[#e0e4e5] px-3 py-1.5 rounded-full shadow-sm">
+                      <span className="material-symbols-rounded text-[14px] text-primary">person</span>
+                      <span className="text-[11px] font-bold text-[#2d3435]">{o.name}</span>
+                      <button onClick={() => setOrganizerList(organizerList.filter(x => x.id !== o.id))} className="text-[#acb3b4] hover:text-red-500 transition-colors ml-1 flex items-center justify-center">
+                        <span className="material-symbols-rounded text-[14px]">cancel</span>
+                      </button>
+                    </div>
                   ))}
                 </div>
               )}

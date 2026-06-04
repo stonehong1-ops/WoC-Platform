@@ -161,12 +161,24 @@ function SocialCard({ social, date, venuesMap, onPress }: {
   const hasDj = djName && djName !== "TBD" && djName !== "TBA";
   const djFormatted = hasDj ? formatInstructorNames(djName, language) : "";
 
-  // org 이름: formatCommunityName이 locale별 변환 처리 (영문→한글, 한글→영문 양방향)
-  const orgRaw = social.organizerNameNative || social.organizerName || "";
-  const orgRawEn = social.organizerName || social.organizerNameNative || "";
-  const orgFormatted = language === "KR"
-    ? (orgRaw ? formatCommunityName(orgRaw, "KR") : "")
-    : (orgRawEn ? formatCommunityName(orgRawEn, "EN") : "");
+  // org 이름: 복수 주최자 지원
+  const getOrgDisplay = () => {
+    const names = language === "KR"
+      ? (social.organizerNativeNames?.length ? social.organizerNativeNames : social.organizerNames)
+      : (social.organizerNames?.length ? social.organizerNames : social.organizerNativeNames);
+    if (names && names.length > 0) {
+      return names
+        .map(n => n ? formatCommunityName(n, language) : "")
+        .filter(Boolean)
+        .join(", ");
+    }
+    // fallback: 단일 organizer 필드
+    const orgRaw = language === "KR"
+      ? (social.organizerNameNative || social.organizerName || "")
+      : (social.organizerName || social.organizerNameNative || "");
+    return orgRaw ? formatCommunityName(orgRaw, language) : "";
+  };
+  const orgFormatted = getOrgDisplay();
 
   // 바텀라인: org 이프 º dj 나초
   const bottomParts: string[] = [];

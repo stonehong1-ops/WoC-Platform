@@ -26,6 +26,9 @@ export interface Social {
   organizerId: string;
   organizerName: string;
   organizerNameNative?: string;
+  organizerIds?: string[];           // Multiple organizers (array)
+  organizerNames?: string[];         // Multiple organizer display names
+  organizerNativeNames?: string[];   // Multiple organizer native names
   venueId: string;
   venueName: string;
   venueNameNative?: string;
