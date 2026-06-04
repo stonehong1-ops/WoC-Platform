@@ -519,48 +519,60 @@ export default function SocialHomeTab({ social, targetDate, onChatWithOrganizer,
           <p className="text-[10px] font-black text-primary uppercase tracking-widest">{t('social.organizer_staff')}</p>
         </div>
         <div className="px-4 py-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <UserBadge
-              uid={social.organizerId || 'unknown'}
-              nickname={social.organizerName}
-              nativeNickname={social.organizerNameNative}
-              photoURL={orgPhoto}
-              avatarSize="w-10 h-10"
-              nameClassName="font-bold text-sm text-[#2d3435] group-active:text-primary transition-colors cursor-pointer"
-              nativeClassName="text-[11px] font-semibold text-slate-400 ml-1.5 cursor-pointer"
-              subText={<p className="text-[10px] text-[#acb3b4] font-bold uppercase cursor-pointer">{t('social.organizer')}</p>}
-              onClick={() => {
-                const isVirtualAdmin = ADMIN_UIDS.includes(social.organizerId || '') && 
-                  ((social.organizerName && !isStoneHongName(social.organizerName)) || 
-                   (social.organizerNameNative && !isStoneHongName(social.organizerNameNative)));
-                
-                if (isVirtualAdmin) return;
+          {/* 복수 주최자 표시 */}
+          {(social.organizerIds && social.organizerIds.length > 0
+            ? social.organizerIds.map((orgId, idx) => {
+                const orgName = social.organizerNames?.[idx] || '';
+                const orgNative = social.organizerNativeNames?.[idx] || '';
+                return { id: orgId, name: orgName, nativeName: orgNative };
+              })
+            : [{ id: social.organizerId || 'unknown', name: social.organizerName || '', nativeName: social.organizerNameNative || '' }]
+          ).map((org, idx) => (
+            <div key={org.id + '-' + idx} className="flex items-center justify-between">
+              <UserBadge
+                uid={org.id}
+                nickname={org.name}
+                nativeNickname={org.nativeName || undefined}
+                photoURL={idx === 0 ? orgPhoto : undefined}
+                avatarSize="w-10 h-10"
+                nameClassName="font-bold text-sm text-[#2d3435] group-active:text-primary transition-colors cursor-pointer"
+                nativeClassName="text-[11px] font-semibold text-slate-400 ml-1.5 cursor-pointer"
+                subText={<p className="text-[10px] text-[#acb3b4] font-bold uppercase cursor-pointer">{t('social.organizer')}</p>}
+                onClick={() => {
+                  const isVirtualAdmin = ADMIN_UIDS.includes(org.id) && 
+                    ((org.name && !isStoneHongName(org.name)) || 
+                     (org.nativeName && !isStoneHongName(org.nativeName)));
+                  
+                  if (isVirtualAdmin) return;
 
-                setSelectedNamecardUser({
-                  uid: social.organizerId || 'unknown',
-                  name: social.organizerName || 'Organizer',
-                  nativeName: social.organizerNameNative || undefined,
-                  photoURL: orgPhoto || undefined,
-                  phone: orgPhone || undefined,
-                  phoneNumber: orgProfile?.phoneNumber || undefined,
-                  email: orgProfile?.email || undefined,
-                  roles: ['Organizer'],
-                  bio: orgProfile?.bio || undefined,
-                  allowPhoneCalls: orgProfile?.allowPhoneCalls !== false
-                });
-              }}
-            />
-            <div className="flex items-center gap-2">
-              {orgPhone && (
-                <button onClick={handleCallOrganizer} className="w-9 h-9 rounded-full bg-[#f2f4f4] flex items-center justify-center">
-                  <span className="material-symbols-rounded text-lg text-[#596061]">call</span>
-                </button>
+                  setSelectedNamecardUser({
+                    uid: org.id,
+                    name: org.name || 'Organizer',
+                    nativeName: org.nativeName || undefined,
+                    photoURL: idx === 0 ? orgPhoto : undefined,
+                    phone: idx === 0 ? orgPhone : undefined,
+                    phoneNumber: idx === 0 ? orgProfile?.phoneNumber : undefined,
+                    email: idx === 0 ? orgProfile?.email : undefined,
+                    roles: ['Organizer'],
+                    bio: idx === 0 ? orgProfile?.bio : undefined,
+                    allowPhoneCalls: idx === 0 ? orgProfile?.allowPhoneCalls !== false : true
+                  });
+                }}
+              />
+              {idx === 0 && (
+                <div className="flex items-center gap-2">
+                  {orgPhone && (
+                    <button onClick={handleCallOrganizer} className="w-9 h-9 rounded-full bg-[#f2f4f4] flex items-center justify-center">
+                      <span className="material-symbols-rounded text-lg text-[#596061]">call</span>
+                    </button>
+                  )}
+                  <button onClick={onChatWithOrganizer} className="w-9 h-9 rounded-full bg-[#f2f4f4] flex items-center justify-center">
+                    <span className="material-symbols-rounded text-lg text-[#596061]">chat</span>
+                  </button>
+                </div>
               )}
-              <button onClick={onChatWithOrganizer} className="w-9 h-9 rounded-full bg-[#f2f4f4] flex items-center justify-center">
-                <span className="material-symbols-rounded text-lg text-[#596061]">chat</span>
-              </button>
             </div>
-          </div>
+          ))}
           {social.staffNames && social.staffNames.length > 0 && (
             <div className="border-t border-[#f2f4f4] pt-3 space-y-2">
               {social.staffNames.map((name, i) => {
