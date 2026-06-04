@@ -183,8 +183,12 @@ export const INSTRUCTOR_NAME_MAP: Record<string, string> = {
   "basil": "바질",
   "susana": "수사나",
   "trees": "트리스",
-  "nacho": "DJ 나초",
-  "hernan": "DJ 에르난",
+  "nacho": "나초",
+  "hernan": "에르난",
+  "henry": "헨리",
+  "alex": "알렉스",
+  "becca": "베카",
+  "carlos": "카를로스",
 };
 
 export function formatInstructorNames(instructorStr: string, locale: string): string {
@@ -276,6 +280,9 @@ export function formatCommunityName(nameStr: string, locale: string): string {
     if (COMMUNITY_NAME_MAP[key]) {
       return COMMUNITY_NAME_MAP[key];
     }
+    if (INSTRUCTOR_NAME_MAP[key]) {
+      return INSTRUCTOR_NAME_MAP[key];
+    }
     return trimmed;
   } else {
     if (REVERSE_COMMUNITY_MAP[trimmed]) {
@@ -284,6 +291,11 @@ export function formatCommunityName(nameStr: string, locale: string): string {
     const lowerKey = trimmed.toLowerCase();
     for (const [en, ko] of Object.entries(COMMUNITY_NAME_MAP)) {
       if (ko.toLowerCase() === lowerKey) {
+        return en.charAt(0).toUpperCase() + en.slice(1);
+      }
+    }
+    for (const [en, ko] of Object.entries(INSTRUCTOR_NAME_MAP)) {
+      if (ko.toLowerCase() === lowerKey || en.toLowerCase() === lowerKey) {
         return en.charAt(0).toUpperCase() + en.slice(1);
       }
     }
