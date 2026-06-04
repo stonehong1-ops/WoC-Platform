@@ -327,6 +327,9 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
       if (type === 'regular') {
         finalData.dayOfWeek = dayOfWeek;
         finalData.recurrence = recurrence;
+        if (startDate) {
+          finalData.date = new Date(startDate);
+        }
       } else {
         finalData.dayOfWeek = null;
         finalData.recurrence = null;

@@ -311,6 +311,8 @@ export default function TodayPageContent() {
   // DJ 필터 연동 상태
   const [selectedDjName, setSelectedDjName] = useState<string>("All");
   const [showDjFilter, setShowDjFilter] = useState(false);
+  const [djSortType, setDjSortType] = useState<"count" | "name">("count");
+  const [groupSortType, setGroupSortType] = useState<"count" | "name">("count");
 
   const router = useRouter();
 
@@ -445,9 +447,9 @@ export default function TodayPageContent() {
     });
   }, [allGroups, allClasses, location, venuesMap, allSocials]);
 
-  // 서울 지역 내의 소셜들에서 DJ 이름 목록 추출
-  const activeDjs = useMemo(() => {
-    const djsCountMap: Record<string, number> = {};
+  // 이번 주 전체 소셜 일정 목록
+  const thisWeekAllSocialEvents = useMemo(() => {
+    const events: { s: Social; d: Date }[] = [];
     const cityLower = (location?.city || "All").toLowerCase().trim();
     const isSeoul = cityLower.includes("seoul") || cityLower.includes("서울") || cityLower.includes("soul");
     
@@ -460,33 +462,144 @@ export default function TodayPageContent() {
     });
 
     locationFiltered.forEach(s => {
-      const djNamesThisSocial = new Set<string>();
+      if (s.type === "regular" && s.dayOfWeek !== undefined) {
+        weekDates.forEach(d => {
+          if (d.getDay() === Number(s.dayOfWeek)) {
+            events.push({ s, d });
+          }
+        });
+      } else if (s.type === "popup" && s.date) {
+        const sDate = toJsDate(s.date);
+        const isInWeek = weekDates.some(d => d.toDateString() === sDate.toDateString());
+        if (isInWeek) {
+          events.push({ s, d: sDate });
+        }
+      }
+    });
+    return events;
+  }, [allSocials, weekDates, location]);
+
+  // 이번 주 전체 클래스 일정 목록
+  const thisWeekAllClassEvents = useMemo(() => {
+    const result: { cls: GroupClass; date: Date }[] = [];
+    allClasses.forEach(({ cls }) => {
+      if (cls.status !== "Open") return;
+      cls.schedule?.forEach((s: any) => {
+        const dStr = parseDateStr(s.date);
+        const clsDate = normalizeDateStr(dStr);
+        if (clsDate) {
+          const isInWeek = weekDates.some(d => d.toDateString() === clsDate.toDateString());
+          if (isInWeek) {
+            result.push({ cls, date: clsDate });
+          }
+        }
+      });
+    });
+    return result;
+  }, [allClasses, weekDates]);
+
+  // 이번 주 각 DJ별 횟수 계산
+  const djWeeklyCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    thisWeekAllSocialEvents.forEach(({ s, d }) => {
+      const djNameStr = getDjDisplay(s, d);
+      if (djNameStr) {
+        const names = djNameStr.split(/[,/&+\s]+/).map(n => n.trim()).filter(Boolean);
+        names.forEach(name => {
+          if (name !== "TBD" && name !== "TBA") {
+            counts[name] = (counts[name] || 0) + 1;
+          }
+        });
+      }
+    });
+    return counts;
+  }, [thisWeekAllSocialEvents]);
+
+  // 이번 주 각 그룹별 횟수 계산 (소셜 + 클래스)
+  const groupWeeklyCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    allGroups.forEach(g => {
+      counts[g.id] = 0;
+    });
+
+    thisWeekAllSocialEvents.forEach(({ s }) => {
+      allGroups.forEach(grp => {
+        const isMatched = isVenueMatched(s.venueId, grp) || 
+                          (s.organizerId === grp.id) ||
+                          (grp.ownerId && !isSystemOwner(grp.ownerId) && s.organizerId === grp.ownerId);
+        if (isMatched) {
+          counts[grp.id] = (counts[grp.id] || 0) + 1;
+        }
+      });
+    });
+
+    thisWeekAllClassEvents.forEach(({ cls }) => {
+      if (cls.groupId) {
+        counts[cls.groupId] = (counts[cls.groupId] || 0) + 1;
+      }
+    });
+
+    return counts;
+  }, [thisWeekAllSocialEvents, thisWeekAllClassEvents, allGroups]);
+
+  const sortedActiveGroups = useMemo(() => {
+    const groupsList = [...activeGroupsInLocation];
+    return groupsList.sort((a, b) => {
+      if (groupSortType === "count") {
+        const countA = groupWeeklyCounts[a.id] || 0;
+        const countB = groupWeeklyCounts[b.id] || 0;
+        if (countB !== countA) return countB - countA;
+      }
+      
+      const nameA = language === "KR" ? (a.nativeName || a.name) : a.name;
+      const nameB = language === "KR" ? (b.nativeName || b.name) : b.name;
+      return nameA.localeCompare(nameB, language === "KR" ? "ko" : "en");
+    });
+  }, [activeGroupsInLocation, groupSortType, groupWeeklyCounts, language]);
+
+
+  // 서울 지역 내의 소셜들에서 DJ 이름 목록 추출 및 정렬 적용
+  const activeDjs = useMemo(() => {
+    const djsSet = new Set<string>();
+    const cityLower = (location?.city || "All").toLowerCase().trim();
+    const isSeoul = cityLower.includes("seoul") || cityLower.includes("서울") || cityLower.includes("soul");
+    
+    const locationFiltered = allSocials.filter(s => {
+      if (!location || location.city === "ALL") return true;
+      if (!s.city) return true;
+      const sc = s.city.toLowerCase().trim();
+      if (isSeoul) return ["seoul", "서울", "soul"].some(a => sc.includes(a) || a.includes(sc));
+      return sc.includes(cityLower) || cityLower.includes(sc);
+    });
+
+    locationFiltered.forEach(s => {
       if (s.djs && Array.isArray(s.djs)) {
         s.djs.forEach(dj => {
-          if (dj.djName) {
-            djNamesThisSocial.add(dj.djName.trim());
-          }
+          if (dj.djName) djsSet.add(dj.djName.trim());
         });
       }
       if (s.djName) {
         const names = s.djName.split(/[,/&+\s]+/).map(n => n.trim()).filter(Boolean);
         names.forEach(n => {
-          if (n !== "TBD" && n !== "TBA") {
-            djNamesThisSocial.add(n);
-          }
+          if (n !== "TBD" && n !== "TBA") djsSet.add(n);
         });
       }
-      djNamesThisSocial.forEach(dj => {
-        djsCountMap[dj] = (djsCountMap[dj] || 0) + 1;
-      });
     });
 
-    return Object.keys(djsCountMap).sort((a, b) => {
-      const countDiff = djsCountMap[b] - djsCountMap[a];
-      if (countDiff !== 0) return countDiff;
-      return a.localeCompare(b);
+    const djsList = Array.from(djsSet);
+
+    return djsList.sort((a, b) => {
+      if (djSortType === "count") {
+        const countA = djWeeklyCounts[a] || 0;
+        const countB = djWeeklyCounts[b] || 0;
+        if (countB !== countA) return countB - countA;
+      }
+      
+      const nameA = formatDjFilterName(a, language);
+      const nameB = formatDjFilterName(b, language);
+      return nameA.localeCompare(nameB, language === "KR" ? "ko" : "en");
     });
-  }, [allSocials, location]);
+  }, [allSocials, location, djSortType, djWeeklyCounts, language]);
 
   const groupMatchedSocials = useMemo(() => {
     if (selectedGroupId === "All") return allSocials;
@@ -1141,7 +1254,27 @@ export default function TodayPageContent() {
         {showGroupFilter && (
           <div className="absolute top-full left-0 right-0 z-40 bg-white shadow-2xl border-t border-slate-100 p-4 max-h-[300px] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-300">
             <div className="flex items-center justify-between mb-3 px-1">
-              <span className="text-[13px] font-black text-slate-800 uppercase tracking-tight">{t("today.group_filter")}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[13px] font-black text-slate-800 uppercase tracking-tight">{t("today.group_filter")}</span>
+                <div className="flex items-center gap-0.5 bg-slate-100 p-0.5 rounded-lg text-[9px] font-black">
+                  <button
+                    onClick={() => setGroupSortType("count")}
+                    className={`px-1.5 py-0.5 rounded transition-all ${
+                      groupSortType === "count" ? "bg-white text-slate-800 shadow-sm" : "text-slate-400 hover:text-slate-600"
+                    }`}
+                  >
+                    {t("today.sort_by_count")}
+                  </button>
+                  <button
+                    onClick={() => setGroupSortType("name")}
+                    className={`px-1.5 py-0.5 rounded transition-all ${
+                      groupSortType === "name" ? "bg-white text-slate-800 shadow-sm" : "text-slate-400 hover:text-slate-600"
+                    }`}
+                  >
+                    {t("today.sort_by_name")}
+                  </button>
+                </div>
+              </div>
               <button 
                 onClick={() => setShowGroupFilter(false)} 
                 className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:text-slate-600 active:scale-90 transition-all"
@@ -1170,9 +1303,10 @@ export default function TodayPageContent() {
                 </div>
               </button>
 
-              {activeGroupsInLocation.map(grp => {
+              {sortedActiveGroups.map(grp => {
                 const isSelected = selectedGroupId === grp.id;
                 const displayName = language === "KR" ? (grp.nativeName || grp.name) : grp.name;
+                const count = groupWeeklyCounts[grp.id] || 0;
                 return (
                   <button
                     key={grp.id}
@@ -1188,7 +1322,7 @@ export default function TodayPageContent() {
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="truncate pr-1">{displayName}</span>
+                      <span className="truncate pr-1">{displayName} ({count})</span>
                       {isSelected && (
                         <span className="material-symbols-outlined !text-[12px]">check_circle</span>
                       )}
@@ -1204,7 +1338,27 @@ export default function TodayPageContent() {
         {showDjFilter && (
           <div className="absolute top-full left-0 right-0 z-40 bg-white shadow-2xl border-t border-slate-100 p-4 max-h-[300px] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-300">
             <div className="flex items-center justify-between mb-3 px-1">
-              <span className="text-[13px] font-black text-slate-800 uppercase tracking-tight">{t("today.dj_filter")}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[13px] font-black text-slate-800 uppercase tracking-tight">{t("today.dj_filter")}</span>
+                <div className="flex items-center gap-0.5 bg-slate-100 p-0.5 rounded-lg text-[9px] font-black">
+                  <button
+                    onClick={() => setDjSortType("count")}
+                    className={`px-1.5 py-0.5 rounded transition-all ${
+                      djSortType === "count" ? "bg-white text-slate-800 shadow-sm" : "text-slate-400 hover:text-slate-600"
+                    }`}
+                  >
+                    {t("today.sort_by_count")}
+                  </button>
+                  <button
+                    onClick={() => setDjSortType("name")}
+                    className={`px-1.5 py-0.5 rounded transition-all ${
+                      djSortType === "name" ? "bg-white text-slate-800 shadow-sm" : "text-slate-400 hover:text-slate-600"
+                    }`}
+                  >
+                    {t("today.sort_by_name")}
+                  </button>
+                </div>
+              </div>
               <button 
                 onClick={() => setShowDjFilter(false)} 
                 className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:text-slate-600 active:scale-90 transition-all"
@@ -1235,6 +1389,7 @@ export default function TodayPageContent() {
 
               {activeDjs.map(dj => {
                 const isSelected = selectedDjName === dj;
+                const count = djWeeklyCounts[dj] || 0;
                 return (
                   <button
                     key={dj}
@@ -1250,7 +1405,7 @@ export default function TodayPageContent() {
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="truncate pr-1">{formatDjFilterName(dj, language)}</span>
+                      <span className="truncate pr-1">{formatDjFilterName(dj, language)} ({count})</span>
                       {isSelected && (
                         <span className="material-symbols-outlined !text-[12px]">check_circle</span>
                       )}
