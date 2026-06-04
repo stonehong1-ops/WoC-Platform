@@ -201,6 +201,10 @@ export default function ManageEntry({ isOpen, onClose, isLoaded, initialData, mo
       alert(t('venues.alert_place_name'));
       return;
     }
+    if (/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(formData.name)) {
+      alert(t('venues.alert_english_only'));
+      return;
+    }
     if (formData.categories.length === 0) {
       alert(t('venues.alert_category'));
       return;
@@ -281,7 +285,7 @@ export default function ManageEntry({ isOpen, onClose, isLoaded, initialData, mo
                 <div className="space-y-5">
                   <div className="group">
                     <label className="block text-[10px] font-bold text-[#596061] mb-2 tracking-widest uppercase">{t('venues.place_name_required')}</label>
-                    <input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder={t('venues.place_name_placeholder')} className="w-full bg-[#e8eff0] border-none rounded-xl px-5 py-4 text-[#2D3435] font-bold focus:bg-white focus:ring-2 focus:ring-[#005BC0]/20 transition-all placeholder:text-[#596061]/30 text-[15px]"/>
+                    <input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value.replace(/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/g, '')})} placeholder={t('venues.place_name_placeholder')} className="w-full bg-[#e8eff0] border-none rounded-xl px-5 py-4 text-[#2D3435] font-bold focus:bg-white focus:ring-2 focus:ring-[#005BC0]/20 transition-all placeholder:text-[#596061]/30 text-[15px]"/>
                   </div>
                   <div className="group">
                     <label className="block text-[10px] font-bold text-[#596061] mb-2 tracking-widest uppercase">{t('venues.korean_name_optional')}</label>
