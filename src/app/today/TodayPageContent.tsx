@@ -158,10 +158,19 @@ function SocialCard({ social, date, venuesMap, onPress }: {
 }) {
   const { language } = useLanguage();
   const djName = getDjDisplay(social, date);
-  const isOrg = !djName || djName === "TBD" || djName === "TBA";
-  const djDisplay = isOrg
-    ? formatCommunityName(social.organizerNameNative || social.organizerName || "", language)
-    : formatInstructorNames(djName, language);
+  const hasDj = djName && djName !== "TBD" && djName !== "TBA";
+  const djFormatted = hasDj ? formatInstructorNames(djName, language) : "";
+
+  const orgRaw = language === "KR"
+    ? (social.organizerNameNative || social.organizerName || "")
+    : (social.organizerName || social.organizerNameNative || "");
+  const orgFormatted = orgRaw ? formatCommunityName(orgRaw, language) : "";
+
+  // 바텀라인: org / DJ 조건부 조합
+  const bottomParts: string[] = [];
+  if (orgFormatted) bottomParts.push(`org ${orgFormatted}`);
+  if (djFormatted) bottomParts.push(djFormatted);
+  const bottomLine = bottomParts.join(" / ");
 
   const venue = getVenueDisplay(social, language, venuesMap);
 
@@ -198,12 +207,12 @@ function SocialCard({ social, date, venuesMap, onPress }: {
       )}
       {/* 하단 정보 */}
       <div className="absolute bottom-0 left-0 right-0 p-2 space-y-0.5">
-        <p className="text-white font-black text-[12px] leading-tight line-clamp-2">
+        <p className="text-white font-black text-[13px] leading-tight line-clamp-2">
           {language === "KR" ? (social.titleNative || social.title) : (social.title || social.titleNative)}
         </p>
-        {djDisplay && (
-          <p className={`text-[10px] font-semibold truncate ${isOrg ? "text-amber-300" : "text-white/70"}`}>
-            {isOrg ? "org " : ""}{djDisplay}
+        {bottomLine && (
+          <p className="text-[10px] font-semibold truncate text-white/70">
+            {bottomLine}
           </p>
         )}
       </div>
