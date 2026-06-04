@@ -166,11 +166,11 @@ function SocialCard({ social, date, venuesMap, onPress }: {
     : (social.organizerName || social.organizerNameNative || "");
   const orgFormatted = orgRaw ? formatCommunityName(orgRaw, language) : "";
 
-  // 바텀라인: org / DJ 조건부 조합
+  // 바텀라인: org 이프 º dj 나초
   const bottomParts: string[] = [];
   if (orgFormatted) bottomParts.push(`org ${orgFormatted}`);
-  if (djFormatted) bottomParts.push(djFormatted);
-  const bottomLine = bottomParts.join(" / ");
+  if (djFormatted) bottomParts.push(`dj ${djFormatted}`);
+  const bottomLine = bottomParts.join(" º ");
 
   const venue = getVenueDisplay(social, language, venuesMap);
 
@@ -201,8 +201,8 @@ function SocialCard({ social, date, venuesMap, onPress }: {
       </div>
       {/* 우상단 장소 칩 */}
       {shortVenue && (
-        <span className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white text-[8px] font-black px-1.5 py-0.5 rounded-full leading-none shadow-sm max-w-[85px] truncate">
-          {shortVenue}
+        <span className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white text-[8px] font-black px-1.5 py-0.5 rounded-full leading-none shadow-sm max-w-[90px] truncate flex items-center gap-0.5">
+          <span className="material-symbols-outlined !text-[8px]">location_on</span>{shortVenue}
         </span>
       )}
       {/* 하단 정보 */}
