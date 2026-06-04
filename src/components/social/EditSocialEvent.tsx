@@ -194,6 +194,20 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
     userService.getAllUsers().then(setAllUsers).catch(console.error);
   }, []);
 
+  // allUsers 로드 후 anonymous 주최자 보정
+  useEffect(() => {
+    if (allUsers.length === 0 || organizerList.length === 0) return;
+    const updated = organizerList.map(o => {
+      const matched = allUsers.find(u => u.id === o.id);
+      if (matched && (!o.name || o.name === t('social.anonymous'))) {
+        return { ...o, name: matched.nickname || o.name, nativeName: matched.nativeNickname || o.nativeName };
+      }
+      return o;
+    });
+    const changed = updated.some((u, i) => u.name !== organizerList[i].name || u.nativeName !== organizerList[i].nativeName);
+    if (changed) setOrganizerList(updated);
+  }, [allUsers]);
+
   useEffect(() => {
     if (type === 'regular' && startDate) {
       const options = getAvailableRecurrences(startDate);
