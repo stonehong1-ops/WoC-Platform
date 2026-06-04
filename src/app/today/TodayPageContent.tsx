@@ -161,16 +161,19 @@ function SocialCard({ social, date, venuesMap, onPress }: {
   const hasDj = djName && djName !== "TBD" && djName !== "TBA";
   const djFormatted = hasDj ? formatInstructorNames(djName, language) : "";
 
-  // org 이름: 복수 주최자 지원
+  // org 이름: 복수 주최자 지원 + KR/EN 개별 주최자별 선택
   const getOrgDisplay = () => {
-    const names = language === "KR"
-      ? (social.organizerNativeNames?.length ? social.organizerNativeNames : social.organizerNames)
-      : (social.organizerNames?.length ? social.organizerNames : social.organizerNativeNames);
-    if (names && names.length > 0) {
-      return names
-        .map(n => n ? formatCommunityName(n, language) : "")
-        .filter(Boolean)
-        .join(", ");
+    const ids = social.organizerIds;
+    const enNames = social.organizerNames;
+    const krNames = social.organizerNativeNames;
+
+    if (ids && ids.length > 0 && enNames && enNames.length > 0) {
+      return ids.map((_, i) => {
+        const en = enNames[i] || "";
+        const kr = krNames?.[i] || "";
+        const picked = language === "KR" ? (kr || en) : (en || kr);
+        return picked ? formatCommunityName(picked, language) : "";
+      }).filter(Boolean).join(", ");
     }
     // fallback: 단일 organizer 필드
     const orgRaw = language === "KR"
@@ -929,6 +932,25 @@ export default function TodayPageContent() {
   }, [allClasses, selectedGroupId]);
 
   // 주간 일정용 소셜 동적 생성
+  // 헬퍼: 소셜의 주최자 이름을 KR/EN에 맞게 반환
+  const getOrgDisplayForSocial = (s: Social) => {
+    const ids = s.organizerIds;
+    const enNames = s.organizerNames;
+    const krNames = s.organizerNativeNames;
+    if (ids && ids.length > 0 && enNames && enNames.length > 0) {
+      return ids.map((_, i) => {
+        const en = enNames[i] || "";
+        const kr = krNames?.[i] || "";
+        const picked = language === "KR" ? (kr || en) : (en || kr);
+        return picked ? formatCommunityName(picked, language) : "";
+      }).filter(Boolean).join(", ");
+    }
+    const orgRaw = language === "KR"
+      ? (s.organizerNameNative || s.organizerName || "")
+      : (s.organizerName || s.organizerNameNative || "");
+    return orgRaw ? formatCommunityName(orgRaw, language) : "";
+  };
+
   const socialEvents = useMemo(() => {
     if (selectedGroupId === "All" && selectedDjName === "All") return [];
 
@@ -961,7 +983,7 @@ export default function TodayPageContent() {
               type: eventType,
               createdBy: "system",
               createdAt: Date.now(),
-              org: formatCommunityName(s.organizerNameNative || s.organizerName || "", language),
+              org: getOrgDisplayForSocial(s),
               dj: formatInstructorNames(currentDj, language),
               location: formatCommunityName(getVenueDisplay(s, language, venuesMap), language),
             });
@@ -991,7 +1013,7 @@ export default function TodayPageContent() {
             type: eventType,
             createdBy: "system",
             createdAt: Date.now(),
-            org: formatCommunityName(s.organizerNameNative || s.organizerName || "", language),
+            org: getOrgDisplayForSocial(s),
             dj: formatInstructorNames(currentDj, language),
             location: formatCommunityName(getVenueDisplay(s, language, venuesMap), language),
           });
@@ -1041,7 +1063,7 @@ export default function TodayPageContent() {
               type: eventType,
               createdBy: "system",
               createdAt: Date.now(),
-              org: formatCommunityName(s.organizerNameNative || s.organizerName || "", language),
+              org: getOrgDisplayForSocial(s),
               dj: formatInstructorNames(currentDj, language),
               location: formatCommunityName(getVenueDisplay(s, language, venuesMap), language),
             });
@@ -1070,7 +1092,7 @@ export default function TodayPageContent() {
             type: eventType,
             createdBy: "system",
             createdAt: Date.now(),
-            org: formatCommunityName(s.organizerNameNative || s.organizerName || "", language),
+            org: getOrgDisplayForSocial(s),
             dj: formatInstructorNames(currentDj, language),
             location: formatCommunityName(getVenueDisplay(s, language, venuesMap), language),
           });
