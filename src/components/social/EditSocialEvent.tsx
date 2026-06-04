@@ -104,9 +104,6 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
     if (socialData?.organizerId) {
       return [{ id: socialData.organizerId, name: socialData.organizerName || '', nativeName: socialData.organizerNameNative || '' }];
     }
-    if (user?.uid) {
-      return [{ id: user.uid, name: user.displayName || t('social.anonymous'), nativeName: '' }];
-    }
     return [];
   };
   const [organizerList, setOrganizerList] = useState<{ id: string; name: string; nativeName: string }[]>(getInitialOrganizers());
@@ -183,10 +180,11 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
     userService.getAllUsers().then(setAllUsers).catch(console.error);
   }, []);
 
-  // allUsers 로드 후 anonymous 주최자 보정
+  // allUsers 로드 후 anonymous 주최자 보정 (manual_ prefix는 비회원이므로 제외)
   useEffect(() => {
     if (allUsers.length === 0 || organizerList.length === 0) return;
     const updated = organizerList.map(o => {
+      if (o.id.startsWith('manual_')) return o; // 비회원 주최자 건너뛰기
       const matched = allUsers.find(u => u.id === o.id);
       if (matched && (!o.name || o.name === t('social.anonymous'))) {
         return { ...o, name: matched.nickname || o.name, nativeName: matched.nativeNickname || o.nativeName };
@@ -252,6 +250,16 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
 
   const handleSelectOrganizer = (u: PlatformUser) => {
     setOrganizerList([...organizerList, { id: u.id, name: u.nickname || t('social.anonymous'), nativeName: u.nativeNickname || '' }]);
+    setOrganizerSearch('');
+    setShowOrganizerResults(false);
+  };
+
+  // 비회원 주최자 직접 추가 (텍스트 입력)
+  const handleAddFreeTextOrganizer = () => {
+    const text = organizerSearch.trim();
+    if (!text) return;
+    if (organizerList.find(o => o.name === text)) return; // 중복 방지
+    setOrganizerList([...organizerList, { id: `manual_${Date.now()}`, name: text, nativeName: '' }]);
     setOrganizerSearch('');
     setShowOrganizerResults(false);
   };
@@ -687,8 +695,15 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
                 <span className="material-symbols-rounded text-[#acb3b4] mr-2">person_filled</span>
                 <input value={organizerSearch} onChange={(e) => handleOrganizerSearch(e.target.value)}
                   onBlur={() => setTimeout(() => setShowOrganizerResults(false), 200)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddFreeTextOrganizer(); } }}
                   className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-sm font-bold text-[#2d3435] placeholder:text-[#acb3b4] outline-none"
                   placeholder={t('social.search_user_placeholder')} type="text" />
+                {organizerSearch.trim() && (
+                  <button type="button" onClick={handleAddFreeTextOrganizer}
+                    className="ml-2 px-2 py-1 bg-primary/10 text-primary rounded-lg text-[10px] font-black hover:bg-primary/20 transition-colors shrink-0">
+                    <span className="material-symbols-rounded text-[14px]">add</span>
+                  </button>
+                )}
               </div>
               {showOrganizerResults && (
                 <div className="absolute top-full left-0 w-full mt-1 bg-white border border-[#e0e4e5] rounded-xl shadow-lg z-50 overflow-hidden">

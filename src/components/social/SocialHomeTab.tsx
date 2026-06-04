@@ -86,6 +86,12 @@ export default function SocialHomeTab({ social, targetDate, onChatWithOrganizer,
   const primaryOrgNative = social.organizerNativeNames?.[0] || social.organizerNameNative;
   useEffect(() => {
     if (primaryOrgId) {
+      // 비회원 주최자(manual_ prefix)는 프로필 조회 건너뛰기
+      if (primaryOrgId.startsWith('manual_')) {
+        setOrgProfile(null);
+        return;
+      }
+
       const isVirtualAdmin = ADMIN_UIDS.includes(primaryOrgId) && 
         ((primaryOrgName && !isStoneHongName(primaryOrgName)) || 
          (primaryOrgNative && !isStoneHongName(primaryOrgNative)));

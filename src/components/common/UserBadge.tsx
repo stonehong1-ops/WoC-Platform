@@ -83,6 +83,16 @@ export default function UserBadge({
 
   useEffect(() => {
     if (uid) {
+      // 비회원 주최자(manual_ prefix)는 프로필 조회 건너뛰기
+      if (uid.startsWith('manual_')) {
+        setUserData({
+          nickname: initialNickname,
+          nativeNickname: initialNativeNickname,
+          photoURL: initialPhotoURL || null,
+        });
+        return;
+      }
+
       if (isVirtualAdmin) {
         setUserData({
           nickname: initialNickname,
