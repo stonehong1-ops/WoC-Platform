@@ -80,21 +80,24 @@ export default function SocialHomeTab({ social, targetDate, onChatWithOrganizer,
     }
   }, [social.venueId]);
 
-  // Auto-fetch org profile (for phone, photo, etc.)
+  // Auto-fetch org profile (for phone, photo, etc.) - 복수 주최자 배열 우선
+  const primaryOrgId = social.organizerIds?.[0] || social.organizerId;
+  const primaryOrgName = social.organizerNames?.[0] || social.organizerName;
+  const primaryOrgNative = social.organizerNativeNames?.[0] || social.organizerNameNative;
   useEffect(() => {
-    if (social.organizerId) {
-      const isVirtualAdmin = ADMIN_UIDS.includes(social.organizerId) && 
-        ((social.organizerName && !isStoneHongName(social.organizerName)) || 
-         (social.organizerNameNative && !isStoneHongName(social.organizerNameNative)));
+    if (primaryOrgId) {
+      const isVirtualAdmin = ADMIN_UIDS.includes(primaryOrgId) && 
+        ((primaryOrgName && !isStoneHongName(primaryOrgName)) || 
+         (primaryOrgNative && !isStoneHongName(primaryOrgNative)));
 
       if (isVirtualAdmin) {
         setOrgProfile(null);
         return;
       }
 
-      userService.getUserById(social.organizerId).then(setOrgProfile).catch(console.error);
+      userService.getUserById(primaryOrgId).then(setOrgProfile).catch(console.error);
     }
-  }, [social.organizerId, social.organizerName, social.organizerNameNative]);
+  }, [primaryOrgId, primaryOrgName, primaryOrgNative]);
 
   const subEvents: SocialSubEvent[] = Array.isArray(social.socialEvents)
     ? social.socialEvents.map((e: any) => typeof e === "string" ? { id: e, title: e, maxParticipants: 0 } : e)
@@ -643,7 +646,7 @@ export default function SocialHomeTab({ social, targetDate, onChatWithOrganizer,
           isOpen={!!selectedNamecardUser}
           onClose={() => setSelectedNamecardUser(null)}
           onChat={(uid) => {
-             if (uid === social.organizerId) {
+             if (uid === primaryOrgId || social.organizerIds?.includes(uid)) {
                 onChatWithOrganizer();
              } else {
                 alert(t('social.chat_unavailable'));
