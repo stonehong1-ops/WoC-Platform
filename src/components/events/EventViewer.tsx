@@ -27,7 +27,7 @@ const ADMIN_UIDS = ["7iaZAmaYY9dNNEShmJmROI8XrtH2"];
 
 export default function EventViewer({ event: initialEvent, onClose }: EventViewerProps) {
   const { user, profile } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { setGlobalNavHidden } = useNavigation();
   const [event, setEvent] = useState<Event>(initialEvent);
   const [activeTab, setActiveTab] = useState<TabId>("home");
@@ -162,8 +162,10 @@ export default function EventViewer({ event: initialEvent, onClose }: EventViewe
           <span className="material-symbols-rounded text-xl">arrow_back</span>
         </button>
         <div className={`flex flex-col items-center max-w-[160px] transition-colors ${isScrolled ? "text-[#2d3435]" : "text-white drop-shadow-md"}`}>
-          <div className="text-base font-bold truncate w-full text-center">{event.title}</div>
-          {event.titleNative && <div className={`text-[10px] font-bold truncate w-full text-center ${isScrolled ? "text-[#acb3b4]" : "text-white/90 drop-shadow-md"}`}>{event.titleNative}</div>}
+          <div className="text-base font-bold truncate w-full text-center">
+            {language === 'KR' && event.titleNative ? event.titleNative : event.title}
+          </div>
+          {event.titleNative && language !== 'KR' && <div className={`text-[10px] font-bold truncate w-full text-center ${isScrolled ? "text-[#acb3b4]" : "text-white/90 drop-shadow-md"}`}>{event.titleNative}</div>}
         </div>
         <div className="flex items-center gap-1">
           {canEdit && (

@@ -14,7 +14,6 @@ import {
   writeBatch
 } from 'firebase/firestore';
 import { Notification } from '@/types/notification';
-import { dictionary } from '@/i18n';
 
 const NOTIFICATIONS_COLLECTION = 'notifications';
 
@@ -32,7 +31,8 @@ async function getTranslatedText(targetUserId: string, key: string, params?: any
       }
     }
 
-    const dict = dictionary[language] as Record<string, string>;
+    const { loadDictionary } = await import('@/i18n');
+    const dict = (await loadDictionary(language)) as Record<string, string>;
     
     // 알림 전용 키 네이밍 규칙에 맞추어 타이틀과 메시지 획득
     let title = dict[`${key}_title`] || dict[`${key}.title`] || `${key}_title`;

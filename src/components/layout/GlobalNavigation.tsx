@@ -10,7 +10,7 @@ import UserAvatar from "@/components/common/UserAvatar";
 import CreateProduct from "@/components/shop/CreateProduct";
 import { useNotification } from '@/contexts/NotificationContext';
 import { chatService } from '@/lib/firebase/chatService';
-import { COUNTRY_MAPPING } from "@/lib/constants/locations";
+import { COUNTRY_MAPPING } from "@/constants/locations";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 const NAV_STRUCTURE = {
@@ -43,10 +43,10 @@ const NAV_STRUCTURE = {
     { name: "nav.groups", icon: "groups", path: "/groups" },
   ],
   My: [
-    { name: "nav.history", icon: "history", path: "/history" },
+    { name: "myinfo.schedule_tab", icon: "calendar_today", path: "/profile?tab=schedule" },
+    { name: "nav.coaching", icon: "psychology", path: "/coaching" },
     { name: "nav.live", icon: "cinematic_blur", path: "/live?view=my" },
     { name: "nav.wallet", icon: "account_balance_wallet", path: "/wallet" },
-    { name: "myinfo.schedule_tab", icon: "calendar_today", path: "/profile?tab=schedule" },
     { name: "nav.my_info", icon: "person", path: "/profile?tab=profile" },
   ],
 };
@@ -190,7 +190,7 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
     activeTab = "Lounge";
   } else if (pathname.startsWith("/groups")) {
     activeTab = "Groups";
-  } else if (pathname.startsWith("/my") || pathname.startsWith("/wallet") || pathname.startsWith("/history") || pathname.startsWith("/profile") || (pathname.startsWith("/live") && isMyView)) {
+  } else if (pathname.startsWith("/my") || pathname.startsWith("/wallet") || pathname.startsWith("/history") || pathname.startsWith("/profile") || pathname.startsWith("/coaching") || (pathname.startsWith("/live") && isMyView)) {
     activeTab = "My";
   } else if (pathname.startsWith("/admin")) {
     activeTab = "My";
@@ -352,7 +352,7 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
 
               {/* My Profile Avatar (상단 이전 배치) */}
               <Link 
-                href="/profile" 
+                href="/profile?tab=schedule" 
                 className={`w-[32px] h-[32px] rounded-full flex items-center justify-center active:scale-95 transition-all overflow-hidden relative ${
                   pathname.startsWith('/profile') ? 'ring-[2px] ring-[#007AFF] ring-offset-1' : 'opacity-80 hover:opacity-100'
                 }`}

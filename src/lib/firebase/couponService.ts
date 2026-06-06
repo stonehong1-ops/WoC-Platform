@@ -13,6 +13,8 @@ import {
   limit
 } from 'firebase/firestore';
 import { db } from './clientApp';
+import { reportError } from '@/lib/utils/errorHandler';
+
 
 // ═══════════════════════════════════════════════════════════════
 // Coupon Data Models
@@ -53,12 +55,17 @@ export interface UserCoupon {
  * Admin: Create a new coupon
  */
 export const createCoupon = async (data: Omit<Coupon, 'id' | 'issuedCount' | 'createdAt' | 'status'>) => {
-  return await addDoc(collection(db, 'coupons'), {
-    ...data,
-    issuedCount: 0,
-    createdAt: Timestamp.now(),
-    status: 'ACTIVE'
-  });
+  try {
+    return await addDoc(collection(db, 'coupons'), {
+      ...data,
+      issuedCount: 0,
+      createdAt: Timestamp.now(),
+      status: 'ACTIVE'
+    });
+  } catch (error) {
+    await reportError(error, 'couponService.createCoupon');
+    throw error;
+  }
 };
 
 /**
@@ -83,6 +90,7 @@ export const getActiveCoupons = async (options?: { scope?: 'GLOBAL' | 'GROUP', g
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Coupon));
   } catch (error: any) {
+    await reportError(error, 'couponService.getActiveCoupons');
     console.error("Error fetching active coupons:", error);
     
     // Fallback for missing index
@@ -108,8 +116,13 @@ export const getActiveCoupons = async (options?: { scope?: 'GLOBAL' | 'GROUP', g
  * Admin: Delete/Deactivate coupon (soft delete)
  */
 export const deleteCoupon = async (couponId: string) => {
-  const ref = doc(db, 'coupons', couponId);
-  await updateDoc(ref, { status: 'INACTIVE' });
+  try {
+    const ref = doc(db, 'coupons', couponId);
+    await updateDoc(ref, { status: 'INACTIVE' });
+  } catch (error) {
+    await reportError(error, 'couponService.deleteCoupon');
+    throw error;
+  }
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -168,6 +181,7 @@ export const issueCoupon = async (couponId: string, userId: string, userName: st
       return { success: true, message: 'SUCCESS' };
     });
   } catch (err: any) {
+    await reportError(err, 'couponService.issueCoupon', userId);
     console.error("Coupon issuance failed:", err);
     return { success: false, message: err.message || 'ERROR' };
   }
@@ -181,13 +195,18 @@ export const issueCoupon = async (couponId: string, userId: string, userName: st
  * Admin: Get all issuances for a specific coupon
  */
 export const getCouponIssuances = async (couponId: string) => {
-  const q = query(
-    collection(db, 'user_coupons'),
-    where('couponId', '==', couponId),
-    orderBy('issuedAt', 'desc')
-  );
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserCoupon));
+  try {
+    const q = query(
+      collection(db, 'user_coupons'),
+      where('couponId', '==', couponId),
+      orderBy('issuedAt', 'desc')
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserCoupon));
+  } catch (error) {
+    await reportError(error, 'couponService.getCouponIssuances');
+    return [];
+  }
 };
 
 /**
@@ -195,16 +214,20 @@ export const getCouponIssuances = async (couponId: string) => {
  */
 export const getAllCouponIssuances = async (couponIds: string[]) => {
   if (couponIds.length === 0) return [];
-  
-  const q = query(
-    collection(db, 'user_coupons'),
-    where('couponId', 'in', couponIds)
-  );
-  const snapshot = await getDocs(q);
-  const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserCoupon));
-  
-  // Sort in memory instead of requiring composite index
-  return data.sort((a, b) => (b.issuedAt?.toMillis() || 0) - (a.issuedAt?.toMillis() || 0));
+  try {
+    const q = query(
+      collection(db, 'user_coupons'),
+      where('couponId', 'in', couponIds)
+    );
+    const snapshot = await getDocs(q);
+    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserCoupon));
+    
+    // Sort in memory instead of requiring composite index
+    return data.sort((a, b) => (b.issuedAt?.toMillis() || 0) - (a.issuedAt?.toMillis() || 0));
+  } catch (error) {
+    await reportError(error, 'couponService.getAllCouponIssuances');
+    return [];
+  }
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -215,35 +238,45 @@ export const getAllCouponIssuances = async (couponIds: string[]) => {
  * User: Get list of my issued coupons
  */
 export const getUserCoupons = async (userId: string) => {
-  const q = query(
-    collection(db, 'user_coupons'),
-    where('userId', '==', userId)
-  );
-  const snapshot = await getDocs(q);
-  
-  const now = Timestamp.now();
-  const coupons = snapshot.docs.map(doc => {
-    const data = doc.data() as UserCoupon;
-    // Client-side expiry check
-    if (data.status === 'UNUSED' && data.expiresAt && data.expiresAt.toMillis() < now.toMillis()) {
-      return { ...data, id: doc.id, status: 'EXPIRED' } as UserCoupon;
-    }
-    return { ...data, id: doc.id } as UserCoupon;
-  });
+  try {
+    const q = query(
+      collection(db, 'user_coupons'),
+      where('userId', '==', userId)
+    );
+    const snapshot = await getDocs(q);
+    
+    const now = Timestamp.now();
+    const coupons = snapshot.docs.map(doc => {
+      const data = doc.data() as UserCoupon;
+      // Client-side expiry check
+      if (data.status === 'UNUSED' && data.expiresAt && data.expiresAt.toMillis() < now.toMillis()) {
+        return { ...data, id: doc.id, status: 'EXPIRED' } as UserCoupon;
+      }
+      return { ...data, id: doc.id } as UserCoupon;
+    });
 
-  // Sort by issuedAt desc on client side
-  return coupons.sort((a, b) => (b.issuedAt?.toMillis() || 0) - (a.issuedAt?.toMillis() || 0));
+    // Sort by issuedAt desc on client side
+    return coupons.sort((a, b) => (b.issuedAt?.toMillis() || 0) - (a.issuedAt?.toMillis() || 0));
+  } catch (error) {
+    await reportError(error, 'couponService.getUserCoupons', userId);
+    return [];
+  }
 };
 
 /**
  * User: Use coupon at an event/store
  */
 export const useCoupon = async (userCouponId: string) => {
-  const ref = doc(db, 'user_coupons', userCouponId);
-  await updateDoc(ref, {
-    status: 'USED',
-    usedAt: Timestamp.now()
-  });
+  try {
+    const ref = doc(db, 'user_coupons', userCouponId);
+    await updateDoc(ref, {
+      status: 'USED',
+      usedAt: Timestamp.now()
+    });
+  } catch (error) {
+    await reportError(error, 'couponService.useCoupon');
+    throw error;
+  }
 };
 
 /**
@@ -278,6 +311,7 @@ export const cancelCoupon = async (userCouponId: string, couponId: string): Prom
       return { success: true, message: 'SUCCESS' };
     });
   } catch (err: any) {
+    await reportError(err, 'couponService.cancelCoupon');
     console.error("Coupon cancellation failed:", err);
     return { success: false, message: err.message || 'ERROR' };
   }
@@ -287,15 +321,20 @@ export const cancelCoupon = async (userCouponId: string, couponId: string): Prom
  * Syncs the issuedCount of a coupon with the actual number of issuance records.
  */
 export async function syncCouponCount(couponId: string) {
-  const issuancesRef = collection(db, 'user_coupons');
-  const q = query(issuancesRef, where('couponId', '==', couponId));
-  const querySnapshot = await getDocs(q);
-  const actualCount = querySnapshot.docs.length;
+  try {
+    const issuancesRef = collection(db, 'user_coupons');
+    const q = query(issuancesRef, where('couponId', '==', couponId));
+    const querySnapshot = await getDocs(q);
+    const actualCount = querySnapshot.docs.length;
 
-  const couponRef = doc(db, 'coupons', couponId);
-  await updateDoc(couponRef, {
-    issuedCount: actualCount,
-  });
+    const couponRef = doc(db, 'coupons', couponId);
+    await updateDoc(couponRef, {
+      issuedCount: actualCount,
+    });
 
-  return actualCount;
+    return actualCount;
+  } catch (error) {
+    await reportError(error, 'couponService.syncCouponCount');
+    throw error;
+  }
 }

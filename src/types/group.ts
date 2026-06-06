@@ -8,7 +8,7 @@ export interface Author {
   role?: string;
 }
 
-export interface Post {
+export interface GroupPost {
   id: string;
   author: Author;
   title?: string;
@@ -21,20 +21,24 @@ export interface Post {
   comments: number;
   views: number;
   category?: string; // Board category ID
-  createdAt: any;
-  updatedAt?: any;
+  createdAt: Timestamp | Date | number | null;
+  updatedAt?: Timestamp | Date | number | null;
   tags?: string[];
   taggedUserIds?: string[];
   postTags?: { id: string; label: string; kind: string; photo?: string }[];
   bgTheme?: string;
 }
+/** @deprecated Use GroupPost instead */
+export type Post = GroupPost;
 
-export interface Comment {
+export interface GroupComment {
   id: string;
   author: Author;
   content: string;
-  createdAt: any;
+  createdAt: Timestamp | Date | number | null;
 }
+/** @deprecated Use GroupComment instead */
+export type Comment = GroupComment;
 
 export interface Member {
   id: string;
@@ -42,7 +46,7 @@ export interface Member {
   avatar: string;
   photoURL?: string;
   role?: string;
-  joinedAt?: any;
+  joinedAt?: Timestamp | Date | number | null;
   status?: 'active' | 'pending' | 'rejected';
 }
 
@@ -79,11 +83,11 @@ export interface Group {
   coverImageDescription?: string;
   aboutPhotos?: string[];
   memberCount: number;
-  posts: Post[];
+  posts: GroupPost[];
   members: Member[];
   venueId?: string;
   ownerId?: string;
-  updatedAt?: any;
+  updatedAt?: Timestamp | Date | number | null;
   tags?: string[];
   logo?: string;
   gallery?: GallerySection[];
@@ -124,8 +128,14 @@ export interface Group {
   };
   classes?: GroupClass[];
   discounts?: ClassDiscount[];
+  /** @deprecated Use independent collection */
   shopItems?: ShopItem[];
+  /** @deprecated Use independent collection */
   stayRooms?: StayRoom[];
+  bankName?: string;
+  accountHolder?: string;
+  accountNumber?: string;
+  memberIds?: string[];
   staySettings?: StaySettings;
   shopSettings?: ShopSettings;
   rentalSettings?: RentalSettings;
@@ -168,7 +178,7 @@ export interface ShopItem {
   discountPrice?: number;
   images: string[];
   status: 'Active' | 'Stopped';
-  createdAt: any;
+  createdAt: Timestamp | null;
   options?: string[]; // e.g., ["250", "260", "270"] or ["S", "M", "L"]
   stock?: number;
 }
@@ -207,7 +217,7 @@ export interface StayRoom {
   
   images: string[];
   status: 'Active' | 'Stopped';
-  createdAt: any;
+  createdAt: Timestamp | null;
 }
 
 export interface StaySettings {
@@ -257,7 +267,7 @@ export interface ActiveServices {
 
 export interface ClassScheduleEntry {
   week: number;
-  date: any;
+  date: string | null;
   timeSlot: string;
   content: string;
 }
@@ -269,6 +279,7 @@ export interface GroupClass {
   description: string;
   level: 'Basic' | 'Beginner' | 'Intermediate' | 'Advanced' | 'Masterclass';
   currency: string;
+  /** @deprecated Use price */
   amount: number;
   price?: number;
   instructors: {
@@ -306,7 +317,7 @@ export interface GroupClass {
   registrationOpenDate?: string;
   registrationCloseDate?: string;
   notice?: string;
-  feedbacks?: any[];
+  feedbacks?: unknown[];
 }
 
 export interface ClassDiscount {
@@ -326,15 +337,15 @@ export interface CalendarEvent {
   id: string;
   title: string;
   description?: string;
-  startDate: any; // Timestamp, Date, or number (millis)
-  endDate?: any;
+  startDate: Timestamp | Date | number | null; // Timestamp, Date, or number (millis)
+  endDate?: Timestamp | Date | number | null;
   startTime?: string; // "18:00"
   endTime?: string;   // "20:00"
   location?: string;
   type: 'general' | 'class' | 'social' | 'milonga' | 'practice' | 'rental';
   color?: string;
   createdBy: string;
-  createdAt: any;
+  createdAt: Timestamp | Date | number | null;
   weekPlans?: string[];
   org?: string;
   dj?: string;
@@ -359,9 +370,9 @@ export interface ClassRegistration {
   currency: string;
   depositorName?: string;
   depositDate?: string;
-  appliedAt: any;
-  updatedAt: any;
-  confirmedAt?: any;          // 관리자가 접수 완료 처리 시 (향후 구현)
+  appliedAt: Timestamp | null;
+  updatedAt: Timestamp | null;
+  confirmedAt?: Timestamp | null;          // 관리자가 접수 완료 처리 시 (향후 구현)
   itemType?: 'class' | 'discount';  // 신규 등록 시 저장
   groupName?: string;         // 신규 등록 시 저장
   contactNumber?: string;

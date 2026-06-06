@@ -27,7 +27,7 @@ const getNormalizedDate = (val: any): Date => {
 
 export default function EventDetail({ event, onClose, onEdit, onDelete }: EventDetailProps) {
   const { user } = useAuth();
-  const { formatDate } = useLanguage();
+  const { formatDate, language } = useLanguage();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const { setGlobalNavHidden } = useNavigation();
@@ -71,7 +71,9 @@ export default function EventDetail({ event, onClose, onEdit, onDelete }: EventD
           </div>
           
           <div className={`flex-[2] flex justify-center items-center transition-all duration-300 ${isScrolled ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'}`}>
-             <span className="text-[15px] font-bold text-[#2d3435] tracking-tight truncate max-w-[200px]">{event.title}</span>
+             <span className="text-[15px] font-bold text-[#2d3435] tracking-tight truncate max-w-[200px]">
+               {language === 'KR' && event.titleNative ? event.titleNative : event.title}
+             </span>
           </div>
 
           <div className="flex-1 flex justify-end gap-2 pointer-events-auto">
@@ -108,8 +110,10 @@ export default function EventDetail({ event, onClose, onEdit, onDelete }: EventD
           <div className="p-5">
             {/* Title & Stats */}
             <div className="mb-6">
-              <h1 className="text-2xl font-black text-[#2d3435] font-headline leading-tight mb-1">{event.title}</h1>
-              {event.titleNative && (
+              <h1 className="text-2xl font-black text-[#2d3435] font-headline leading-tight mb-1">
+                {language === 'KR' && event.titleNative ? event.titleNative : event.title}
+              </h1>
+              {event.titleNative && language !== 'KR' && (
                 <p className="text-[13px] text-gray-500 font-bold">{event.titleNative}</p>
               )}
             </div>

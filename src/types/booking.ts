@@ -49,7 +49,7 @@ export interface BaseBooking {
   cancelledAt?: Timestamp;
   
   // 옵션 데이터 (도메인별 특수 데이터. 엔진은 이 데이터를 그대로 저장만 함)
-  payload: Record<string, any>; 
+  payload: Record<string, unknown>; 
 }
 
 export interface UnifiedCheckoutData {
@@ -60,5 +60,5 @@ export interface UnifiedCheckoutData {
   totalAmount: number;
   currency: string;
   domain: BookingDomain;
-  payload: Record<string, any>;
+  payload: Record<string, unknown>;
 }

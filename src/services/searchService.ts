@@ -18,6 +18,10 @@ export interface SearchResultItem {
   organizerName?: string;
   organizerNameNative?: string;
   startTime?: string;
+
+  // 역할 정보 명세 필드
+  roleLabel?: string;
+  roleLabelKo?: string;
 }
 
 /**
@@ -40,12 +44,13 @@ export const searchService = {
     const results: SearchResultItem[] = [];
 
     try {
-      const [productDocs, eventDocs, socialDocs, groupDocs, venueDocs, peopleDocs] = await Promise.allSettled([
+      const [productDocs, eventDocs, socialDocs, groupDocs, venueDocs, userDocs, peopleDocs] = await Promise.allSettled([
         getDocs(query(collection(db, 'products'), limit(100))),
         getDocs(query(collection(db, 'events'), limit(100))),
         getDocs(query(collection(db, 'socials'), limit(100))),
         getDocs(query(collection(db, 'groups'), limit(100))),
         getDocs(query(collection(db, 'venues'), limit(100))),
+        getDocs(query(collection(db, 'users'), limit(500))),
         getDocs(query(collection(db, 'people'), limit(50)))
       ]);
 
@@ -152,6 +157,30 @@ export const searchService = {
         peopleDocs.value.docs.forEach(doc => {
           const data = doc.data();
           if (matchesAny(queryText, data.name, data.title)) {
+            const rolesArr = data.roles || [];
+            let roleLabel = 'Maestro';
+            let roleLabelKo = '마에스트로';
+
+            if (rolesArr.length > 0) {
+              const primaryRole = rolesArr[0];
+              if (primaryRole === 'Instructor') {
+                roleLabel = 'Instructor';
+                roleLabelKo = '강사';
+              } else if (primaryRole === 'Organizer') {
+                roleLabel = 'Organizer';
+                roleLabelKo = '오거나이저';
+              } else if (primaryRole === 'Couple') {
+                roleLabel = 'Couple';
+                roleLabelKo = '커플';
+              } else if (primaryRole === 'Touring') {
+                roleLabel = 'Touring';
+                roleLabelKo = '투어';
+              } else if (primaryRole === 'Dancer') {
+                roleLabel = 'Dancer';
+                roleLabelKo = '댄서';
+              }
+            }
+
             results.push({
               id: doc.id,
               type: 'person',
@@ -159,7 +188,54 @@ export const searchService = {
               titleKo: data.name || '',
               subtitle: data.title || '',
               image: data.photoURL || data.imageUrl || '',
-              url: `/people/${doc.id}`
+              url: `/people/${doc.id}`,
+              roleLabel,
+              roleLabelKo
+            });
+          }
+        });
+      }
+
+      // Users (사용자)
+      if (userDocs.status === 'fulfilled') {
+        userDocs.value.docs.forEach(doc => {
+          const data = doc.data();
+          if (matchesAny(queryText, data.name, data.nickname, data.nativeNickname, data.email)) {
+            if (results.some(r => r.id === doc.id && r.type === 'person')) return;
+
+            let roleLabel = 'Member';
+            let roleLabelKo = '멤버';
+
+            if (data.isInstructor) {
+              roleLabel = 'Instructor';
+              roleLabelKo = '강사';
+            } else if (data.isOrganizer) {
+              roleLabel = 'Organizer';
+              roleLabelKo = '오거나이저';
+            } else if (data.isDj) {
+              roleLabel = 'DJ';
+              roleLabelKo = 'DJ';
+            } else if (data.isAdmin) {
+              roleLabel = 'Admin';
+              roleLabelKo = '관리자';
+            } else if (data.role === 'leader') {
+              roleLabel = 'Leader';
+              roleLabelKo = '리더';
+            } else if (data.role === 'follower') {
+              roleLabel = 'Follower';
+              roleLabelKo = '팔로워';
+            }
+
+            results.push({
+              id: doc.id,
+              type: 'person',
+              title: data.nickname || data.name || data.nativeNickname || 'Unknown',
+              titleKo: data.nativeNickname || data.nickname || data.name || '',
+              subtitle: data.email || '',
+              image: data.photoURL || '',
+              url: `/people/${doc.id}`,
+              roleLabel,
+              roleLabelKo
             });
           }
         });
@@ -177,11 +253,12 @@ export const searchService = {
    */
   async getInitialData() {
     try {
-      const [productDocs, socialDocs, eventDocs, groupDocs] = await Promise.allSettled([
+      const [productDocs, socialDocs, eventDocs, groupDocs, peopleDocs] = await Promise.allSettled([
         getDocs(query(collection(db, 'products'), limit(4))),
         getDocs(query(collection(db, 'socials'), limit(4))),
         getDocs(query(collection(db, 'events'), limit(3))),
-        getDocs(query(collection(db, 'groups'), limit(4)))
+        getDocs(query(collection(db, 'groups'), limit(4))),
+        getDocs(query(collection(db, 'people'), limit(4)))
       ]);
 
       const formatProducts = (docsResult: PromiseSettledResult<any>) => {
@@ -254,15 +331,59 @@ export const searchService = {
         });
       };
 
+      const formatPeople = (docsResult: PromiseSettledResult<any>) => {
+        if (docsResult.status !== 'fulfilled') return [];
+        return docsResult.value.docs.map((doc: any) => {
+          const data = doc.data();
+
+          const rolesArr = data.roles || [];
+          let roleLabel = 'Maestro';
+          let roleLabelKo = '마에스트로';
+
+          if (rolesArr.length > 0) {
+            const primaryRole = rolesArr[0];
+            if (primaryRole === 'Instructor') {
+              roleLabel = 'Instructor';
+              roleLabelKo = '강사';
+            } else if (primaryRole === 'Organizer') {
+              roleLabel = 'Organizer';
+              roleLabelKo = '오거나이저';
+            } else if (primaryRole === 'Couple') {
+              roleLabel = 'Couple';
+              roleLabelKo = '커플';
+            } else if (primaryRole === 'Touring') {
+              roleLabel = 'Touring';
+              roleLabelKo = '투어';
+            } else if (primaryRole === 'Dancer') {
+              roleLabel = 'Dancer';
+              roleLabelKo = '댄서';
+            }
+          }
+
+          return {
+            id: doc.id,
+            type: 'person' as const,
+            title: data.name || 'Unknown',
+            titleKo: data.name || '',
+            subtitle: data.title || '',
+            image: data.photoURL || data.imageUrl || '',
+            url: `/people/${doc.id}`,
+            roleLabel,
+            roleLabelKo
+          };
+        });
+      };
+
       return {
         shops: formatProducts(productDocs),
         socials: formatSocials(socialDocs),
         events: formatEvents(eventDocs),
-        groups: formatGroups(groupDocs)
+        groups: formatGroups(groupDocs),
+        people: formatPeople(peopleDocs)
       };
     } catch (error) {
       console.error("Initial data fetch error:", error);
-      return { shops: [], socials: [], events: [], groups: [] };
+      return { shops: [], socials: [], events: [], groups: [], people: [] };
     }
   }
 };

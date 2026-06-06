@@ -6,34 +6,38 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { shopService } from '@/lib/firebase/shopService';
 import { plazaService } from '@/lib/firebase/plazaService';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { CITY_COORDINATES } from '@/lib/constants/locations';
+import { CITY_COORDINATES } from '@/constants/locations';
+
+import { Product } from '@/types/shop';
 
 interface CreateProductProps {
   onClose?: () => void;
   onSuccess?: () => void;
+  productToEdit?: Product;
 }
 
 const CURRENCIES = ['KRW', 'USD', 'EUR', 'JPY', 'CNY'];
 const MAX_PHOTOS = 20;
 
-export default function CreateProduct({ onClose, onSuccess }: CreateProductProps) {
+export default function CreateProduct({ onClose, onSuccess, productToEdit }: CreateProductProps) {
   const { t } = useLanguage();
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   
-  const [name, setName] = useState('');
-  const [brand, setBrand] = useState('');
-  const [price, setPrice] = useState('');
-  const [currency, setCurrency] = useState('KRW');
-  const [category, setCategory] = useState('Shoes');
-  const [description, setDescription] = useState('');
+  const [name, setName] = useState(productToEdit ? (productToEdit.title || productToEdit.name || '') : '');
+  const [brand, setBrand] = useState(productToEdit ? productToEdit.brand : '');
+  const [price, setPrice] = useState(productToEdit ? productToEdit.price.toString() : '');
+  const [currency, setCurrency] = useState(productToEdit ? productToEdit.currency : 'KRW');
+  const [category, setCategory] = useState(productToEdit ? productToEdit.category : 'Shoes');
+  const [description, setDescription] = useState(productToEdit ? productToEdit.description : '');
   
-  const [region, setRegion] = useState('SEOUL');
-  const [locationDetail, setLocationDetail] = useState('');
+  const [region, setRegion] = useState(productToEdit ? (productToEdit.location || 'SEOUL') : 'SEOUL');
+  const [locationDetail, setLocationDetail] = useState(productToEdit ? (productToEdit.locationDetail || '') : '');
 
+  const [existingUrls, setExistingUrls] = useState<string[]>(productToEdit ? (productToEdit.images || [productToEdit.imageUrl].filter(Boolean) as string[]) : []);
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
-  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>(productToEdit ? (productToEdit.images || [productToEdit.imageUrl].filter(Boolean) as string[]) : []);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -44,7 +48,8 @@ export default function CreateProduct({ onClose, onSuccess }: CreateProductProps
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
-    const availableSlots = MAX_PHOTOS - mediaFiles.length;
+    const totalPhotosCount = existingUrls.length + mediaFiles.length;
+    const availableSlots = MAX_PHOTOS - totalPhotosCount;
     const filesToAdd = files.slice(0, availableSlots);
 
     if (files.length > availableSlots) {
@@ -62,13 +67,20 @@ export default function CreateProduct({ onClose, onSuccess }: CreateProductProps
   };
 
   const removePhoto = (index: number) => {
-    setMediaFiles(prev => prev.filter((_, i) => i !== index));
-    setPreviewUrls(prev => {
-      const urls = [...prev];
-      URL.revokeObjectURL(urls[index]);
-      urls.splice(index, 1);
-      return urls;
-    });
+    const isExisting = index < existingUrls.length;
+    if (isExisting) {
+      setExistingUrls(prev => prev.filter((_, i) => i !== index));
+      setPreviewUrls(prev => prev.filter((_, i) => i !== index));
+    } else {
+      const fileIndex = index - existingUrls.length;
+      setMediaFiles(prev => prev.filter((_, i) => i !== fileIndex));
+      setPreviewUrls(prev => {
+        const urls = [...prev];
+        URL.revokeObjectURL(urls[index]);
+        urls.splice(index, 1);
+        return urls;
+      });
+    }
   };
 
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -87,7 +99,8 @@ export default function CreateProduct({ onClose, onSuccess }: CreateProductProps
       alert(t('shop.msg_login_first') || 'Please login first.');
       return;
     }
-    if (!name.trim() || !price.trim() || mediaFiles.length === 0 || !region) {
+    const totalPhotosCount = existingUrls.length + mediaFiles.length;
+    if (!name.trim() || !price.trim() || totalPhotosCount === 0 || !region) {
       alert(t('shop.msg_fill_required_photo') || "Please fill in all required fields and add at least one photo.");
       return;
     }
@@ -96,7 +109,6 @@ export default function CreateProduct({ onClose, onSuccess }: CreateProductProps
     setUploadProgress(0);
     
     try {
-      // 1. Upload media files sequentially with cumulative progress tracking
       const uploadedUrls: string[] = [];
       if (mediaFiles.length > 0) {
         for (let i = 0; i < mediaFiles.length; i++) {
@@ -110,26 +122,34 @@ export default function CreateProduct({ onClose, onSuccess }: CreateProductProps
         setUploadProgress(null);
       }
 
-      // Register Product
-      await shopService.addProduct({
+      const finalImageUrls = [...existingUrls, ...uploadedUrls];
+
+      const productPayload = {
         title: name,
         brand,
         price: parseInt(price, 10),
         category,
         description,
-        images: uploadedUrls,
-        groupId: '',
-        groupName: '',
+        images: finalImageUrls,
+        groupId: productToEdit ? productToEdit.groupId : '',
+        groupName: productToEdit ? productToEdit.groupName : '',
         currency,
         location: region,
         locationDetail,
-        options: [],
-        stock: 1,
-        status: 'Active',
-        deliveryType: 'shipping',
-        sellerId: user.uid,
-        sellerName: user.displayName || 'Anonymous',
-      } as any);
+        options: productToEdit ? productToEdit.options : [],
+        stock: productToEdit ? productToEdit.stock : 1,
+        status: productToEdit ? productToEdit.status : 'Active',
+        deliveryType: productToEdit ? productToEdit.deliveryType : 'shipping',
+        sellerId: productToEdit ? productToEdit.sellerId : user.uid,
+        sellerName: productToEdit ? productToEdit.sellerName : (user.displayName || 'Anonymous'),
+      };
+
+      if (productToEdit) {
+        await shopService.updateProduct(productToEdit.id, productPayload as any);
+        alert(t('shop.alert_update_success') || 'Product updated successfully.');
+      } else {
+        await shopService.addProduct(productPayload as any);
+      }
 
       onSuccess?.();
       onClose?.();
@@ -142,15 +162,15 @@ export default function CreateProduct({ onClose, onSuccess }: CreateProductProps
       setPreviewUrls([]);
       setDescription('');
     } catch (error) {
-      console.error("Error creating product:", error);
-      alert(t('shop.msg_fail_register') || "Failed to register product. Please check your connection.");
+      console.error("Error saving product:", error);
+      alert(productToEdit ? (t('shop.alert_update_failed') || 'Failed to update product.') : (t('shop.msg_fail_register') || "Failed to register product."));
     } finally {
       setIsSubmitting(false);
       setUploadProgress(null);
     }
   };
 
-  const isValid = !!(name.trim() && price.trim() && mediaFiles.length > 0 && region);
+  const isValid = !!(name.trim() && price.trim() && (existingUrls.length + mediaFiles.length) > 0 && region);
 
   return (
     <main className="max-w-md mx-auto h-[100dvh] bg-white flex flex-col overflow-hidden relative text-left">
@@ -160,7 +180,7 @@ export default function CreateProduct({ onClose, onSuccess }: CreateProductProps
           <span className="material-symbols-rounded text-2xl">arrow_back</span>
         </button>
         <h1 className="text-[14px] font-black uppercase tracking-widest text-slate-800">
-          {t('shop.host_product') || 'Host Product'}
+          {productToEdit ? (t('shop.edit_product') || 'Edit Product') : (t('shop.host_product') || 'Host Product')}
         </h1>
         <div className="w-10" />
       </div>
@@ -323,10 +343,10 @@ export default function CreateProduct({ onClose, onSuccess }: CreateProductProps
               uploadProgress !== null ? (
                 `${uploadProgress}%`
               ) : (
-                t('shop.status_registering') || 'Registering...'
+                productToEdit ? (t('common.saving') || 'Saving...') : (t('shop.status_registering') || 'Registering...')
               )
             ) : (
-              t('shop.button_register') || 'Host Product'
+              productToEdit ? (t('common.save') || 'Save') : (t('shop.button_register') || 'Host Product')
             )}
           </button>
         </div>

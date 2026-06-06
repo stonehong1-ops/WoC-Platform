@@ -9,7 +9,6 @@ import {
   isKoreanHoliday, 
   detectSeoulDistrict, 
   getDensityMode, 
-  getDjDisplay,
   getVenueDisplay,
   formatInstructorNames,
   formatCommunityName,
@@ -17,6 +16,7 @@ import {
 } from './constants/seoulRegions';
 import { Social } from '@/types/social';
 import PosterOverlay from '@/components/social/poster/PosterOverlay';
+import { isVideoUrl, getDjDisplay } from '@/lib/utils/socialUtils';
 
 export default function SocialPageContent() {
   const {
@@ -141,7 +141,19 @@ export default function SocialPageContent() {
               >
                 {social.imageUrl ? (
                   <div className="absolute inset-0 z-0">
-                    <img src={social.imageUrl} alt="" className="w-full h-full object-cover brightness-[0.95]" />
+                    {isVideoUrl(social.imageUrl) ? (
+                      <video 
+                        src={social.imageUrl} 
+                        className="w-full h-full object-cover brightness-[0.95]" 
+                        muted 
+                        autoPlay 
+                        loop 
+                        playsInline 
+                        preload="metadata"
+                      />
+                    ) : (
+                      <img src={social.imageUrl} alt="" className="w-full h-full object-cover brightness-[0.95]" />
+                    )}
                     {!hasPoster && <div className="absolute inset-0 bg-gradient-to-t from-white via-white/85 to-white/40" />}
                   </div>
                 ) : (
@@ -199,7 +211,19 @@ export default function SocialPageContent() {
             >
               <div className="shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-slate-50 border border-slate-100 relative">
                 {social.imageUrl ? (
-                  <img src={social.imageUrl} alt="" className="w-full h-full object-cover" />
+                  isVideoUrl(social.imageUrl) ? (
+                    <video 
+                      src={social.imageUrl} 
+                      className="w-full h-full object-cover" 
+                      muted 
+                      autoPlay 
+                      loop 
+                      playsInline 
+                      preload="metadata"
+                    />
+                  ) : (
+                    <img src={social.imageUrl} alt="" className="w-full h-full object-cover" />
+                  )
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-slate-50 text-slate-300">
                     <span className="material-symbols-outlined text-lg">music_note</span>
@@ -247,7 +271,19 @@ export default function SocialPageContent() {
             >
               <div className="shrink-0 w-12 h-12 rounded-xl overflow-hidden bg-slate-50 border border-slate-100 relative">
                 {social.imageUrl ? (
-                  <img src={social.imageUrl} alt="" className="w-full h-full object-cover" />
+                  isVideoUrl(social.imageUrl) ? (
+                    <video 
+                      src={social.imageUrl} 
+                      className="w-full h-full object-cover" 
+                      muted 
+                      autoPlay 
+                      loop 
+                      playsInline 
+                      preload="metadata"
+                    />
+                  ) : (
+                    <img src={social.imageUrl} alt="" className="w-full h-full object-cover" />
+                  )
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-slate-50 text-slate-300">
                     <span className="material-symbols-outlined text-sm">music_note</span>
@@ -390,7 +426,19 @@ export default function SocialPageContent() {
                         >
                           <div className="shrink-0 w-10 h-10 rounded-lg overflow-hidden bg-slate-100 border border-slate-100 relative">
                             {social.imageUrl ? (
-                              <img src={social.imageUrl} alt={social.title} className="w-full h-full object-cover" />
+                              isVideoUrl(social.imageUrl) ? (
+                                <video 
+                                  src={social.imageUrl} 
+                                  className="w-full h-full object-cover" 
+                                  muted 
+                                  autoPlay 
+                                  loop 
+                                  playsInline 
+                                  preload="metadata"
+                                />
+                              ) : (
+                                <img src={social.imageUrl} alt={social.title} className="w-full h-full object-cover" />
+                              )
                             ) : (
                               <div className="w-full h-full flex items-center justify-center">
                                 <span className="material-symbols-outlined text-[18px] text-slate-300">music_note</span>

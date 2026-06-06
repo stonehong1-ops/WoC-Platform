@@ -1,6 +1,6 @@
 'use client';
 
-import React, { ReactNode, useEffect } from 'react';
+import React, { ReactNode, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Portal from './Portal';
 
@@ -21,6 +21,28 @@ export default function BottomSheet({
   footer,
   height = "80vh" 
 }: BottomSheetProps) {
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    if (!isOpen || typeof window === 'undefined' || !window.visualViewport) return;
+
+    const handleResize = () => {
+      const vv = window.visualViewport;
+      if (!vv) return;
+      const kHeight = window.innerHeight - vv.height;
+      setKeyboardHeight(kHeight > 60 ? kHeight : 0);
+    };
+
+    window.visualViewport.addEventListener('resize', handleResize);
+    window.visualViewport.addEventListener('scroll', handleResize);
+    handleResize();
+
+    return () => {
+      window.visualViewport?.removeEventListener('resize', handleResize);
+      window.visualViewport?.removeEventListener('scroll', handleResize);
+    };
+  }, [isOpen]);
+
   // Lock body scroll and manage history stack for Android/Device back button
   useEffect(() => {
     if (!isOpen) return;
@@ -72,7 +94,7 @@ export default function BottomSheet({
 
             {/* Sheet Container */}
             <motion.div
-              drag="y"
+              drag={keyboardHeight > 0 ? false : "y"}
               dragConstraints={{ top: 0 }}
               dragElastic={{ top: 0.05, bottom: 0.85 }}
               onDragEnd={(event, info) => {
@@ -89,9 +111,14 @@ export default function BottomSheet({
                 relative w-full max-w-2xl bg-surface-container-lowest 
                 rounded-t-[32px] sm:rounded-3xl shadow-2xl 
                 flex flex-col overflow-hidden z-10
-                max-h-[90vh] sm:max-h-[85vh] touch-pan-y
+                touch-pan-y
               `}
-              style={{ height: "auto", minHeight: "40vh" }}
+              style={{ 
+                height: "auto", 
+                minHeight: "40vh",
+                paddingBottom: keyboardHeight,
+                maxHeight: keyboardHeight > 0 ? `calc(100vh - ${keyboardHeight}px - 16px)` : '90vh'
+              }}
             >
               {/* Drag Handle & Header */}
               <div className="pt-3 pb-2 px-4 flex flex-col items-center shrink-0 border-b border-outline-variant/5 cursor-grab active:cursor-grabbing">

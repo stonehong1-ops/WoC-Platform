@@ -8,7 +8,7 @@ import { Post } from '@/types/feed';
 import UserAvatar from '@/components/common/UserAvatar';
 import { useModalNavigation } from '@/hooks/useModalNavigation';
 import { useLocation } from '@/components/providers/LocationProvider';
-import { COUNTRY_MAPPING } from '@/lib/constants/locations';
+import { COUNTRY_MAPPING } from '@/constants/locations';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface UniversalFeedProps {

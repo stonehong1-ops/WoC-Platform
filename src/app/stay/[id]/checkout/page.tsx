@@ -11,8 +11,11 @@ import { groupService } from '@/lib/firebase/groupService';
 import { Stay, StayBookingStatus } from '@/types/stay';
 import { Group } from '@/types/group';
 import { sendSmsViaSolapi } from '@/app/actions/smsActions';
+import { reportError } from '@/lib/utils/errorHandler';
+
 
 import { addDays } from 'date-fns';
+import { KOREAN_HOLIDAYS } from '@/lib/utils/dateUtils';
 import SectionCard from '@/components/ui/SectionCard';
 import InfoRow from '@/components/ui/InfoRow';
 
@@ -71,6 +74,7 @@ function CheckoutContent() {
           const g = await groupService.getGroup(data.groupId);
           setGroup(g);
         } catch (err) {
+          await reportError(err, 'stay.checkout.fetchGroup');
           console.error("Failed to fetch group", err);
         }
       }
@@ -130,17 +134,7 @@ function CheckoutContent() {
   const baseTotal = baseRate * nights;
   const cleaningFee = stay.pricing?.cleaningFee || 0;
   
-  // 2024-2025 Korean Holidays (YYYY-MM-DD)
-  const KOREAN_HOLIDAYS = [
-    '2024-01-01', '2024-02-09', '2024-02-10', '2024-02-11', '2024-02-12',
-    '2024-03-01', '2024-04-10', '2024-05-05', '2024-05-06', '2024-05-15',
-    '2024-06-06', '2024-08-15', '2024-09-16', '2024-09-17', '2024-09-18',
-    '2024-10-03', '2024-10-09', '2024-12-25',
-    '2025-01-01', '2025-01-28', '2025-01-29', '2025-01-30', '2025-03-01',
-    '2025-03-03', '2025-05-05', '2025-05-06', '2025-06-06', '2025-08-15',
-    '2025-10-03', '2025-10-05', '2025-10-06', '2025-10-07', '2025-10-09',
-    '2025-12-25'
-  ];
+  
 
   let weekendNights = 0;
   let curr = new Date(checkIn);
@@ -220,6 +214,7 @@ function CheckoutContent() {
       try {
         await stayService.setStayInProgressStatus(user.uid, stay.id);
       } catch (e) {
+        await reportError(e, 'stay.checkout.setStayInProgress');
         console.error('Failed to update stay to in_progress:', e);
       }
 
@@ -279,11 +274,13 @@ function CheckoutContent() {
           type: 'text'
         });
       } catch (chatErr) {
+        await reportError(chatErr, 'stay.checkout.chatNotification');
         console.error('Stay booking chat notification failed:', chatErr);
       }
 
       router.push(`/stay/${stayId}/checkout/complete?bookingId=${booking.id}`);
     } catch (error: any) {
+      await reportError(error, 'stay.checkout.submit', user?.uid);
       console.error(error);
       alert(t('checkout.submit_failed', '예약 신청에 실패했습니다. ') + (error.message || ''));
       setIsSubmitting(false);

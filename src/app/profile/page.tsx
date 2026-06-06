@@ -25,6 +25,7 @@ const ADMIN_ITEMS = [
   { icon: 'wallpaper', label: 'PICs', labelKo: '사진관리', href: '/admin/pics' },
   { icon: 'person_search', label: 'People', labelKo: '피플관리', href: '/admin/people' },
   { icon: 'location_city', label: 'Place', labelKo: '장소관리', href: '/admin/place' },
+  { icon: 'bug_report', label: 'Errors', labelKo: '에러로그', href: '/admin/errors' },
   { icon: 'terminal', label: 'Mobile Agent', labelKo: '모바일 에이전트', href: '/admin/antigravity' },
   { icon: 'more_horiz', label: 'Others', labelKo: '기타관리', href: '/admin/others' },
 ];

@@ -28,14 +28,15 @@ export function useModalNavigation(key: string) {
   const closeModal = useCallback(() => {
     if (!isOpen) return;
 
-    // router.back() 대신 replace()로 현재 파라미터만 제거.
-    // 임베드 컴포넌트(GroupHome 등)에서 router.back()을 쓰면
-    // 히스토리 스택을 거슬러 올라가 엉뚱한 페이지로 이동하는 버그가 있어,
-    // 항상 replace로 해당 key만 URL에서 지워 모달을 닫는다.
     const params = new URLSearchParams(searchParams.toString());
     params.delete(key);
     const newQuery = params.toString();
     router.replace(`${pathname}${newQuery ? `?${newQuery}` : ''}`, { scroll: false });
+
+    // Next.js App Router의 쿼리 파라미터 변경 미감지 버그 대응을 위해 popstate 이벤트를 강제 트리거합니다.
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }
   }, [router, searchParams, pathname, key, isOpen]);
 
   return {

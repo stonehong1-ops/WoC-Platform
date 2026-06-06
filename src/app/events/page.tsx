@@ -434,8 +434,8 @@ export default function EventsPage() {
                 style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.3) 50%, transparent 100%)' }}>
                 <p className="text-white mb-1 tracking-tight"
                   style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '1.25rem', lineHeight: '1.75rem', fontWeight: 800, textShadow: '0 2px 10px rgba(0,0,0,0.9), 0 0 4px rgba(0,0,0,0.5)' }}>
-                  {featuredEvent.title}
-                  {featuredEvent.titleNative && (
+                  {language === 'KR' && featuredEvent.titleNative ? featuredEvent.titleNative : featuredEvent.title}
+                  {featuredEvent.titleNative && language !== 'KR' && (
                     <span className="ml-2 font-normal" style={{ fontSize: '0.875rem', opacity: 0.85 }}>{featuredEvent.titleNative}</span>
                   )}
                 </p>
@@ -513,7 +513,7 @@ export default function EventsPage() {
                                     style={{ backgroundColor: colorSet.bg, color: colorSet.text, width: `calc(${span * 100}% - 4px)`, top: `${slotIdx * 26}px`, left: '2px', zIndex: 10 }}
                                   >
                                     {event.location ? (() => { const flagUrl = getFlagImageUrl(event.location.split(',').pop()?.trim() || ''); return flagUrl ? <img src={flagUrl} alt="flag" className="inline-block mr-1 w-3.5 h-[10.5px] object-cover rounded-sm shadow-sm" /> : null; })() : null}
-                                    <span className="truncate">{event.title}</span>
+                                    <span className="truncate">{language === 'KR' && event.titleNative ? event.titleNative : event.title}</span>
                                   </div>
                                 );
                               }
@@ -586,8 +586,8 @@ export default function EventsPage() {
                               </div>
                               <div className="flex flex-col justify-center min-w-0 flex-1 py-0.5">
                                 <span className="text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-100 w-fit px-1.5 py-0.5 rounded uppercase tracking-wider mb-1.5">{dateStr}</span>
-                                <h3 className="font-bold text-slate-900 text-[14px] leading-snug truncate">{event.title}</h3>
-                                {event.titleNative && <p className="text-[11px] text-slate-400 truncate mt-0.5">{event.titleNative}</p>}
+                                <h3 className="font-bold text-slate-900 text-[14px] leading-snug truncate">{language === 'KR' && event.titleNative ? event.titleNative : event.title}</h3>
+                                {event.titleNative && language !== 'KR' && <p className="text-[11px] text-slate-400 truncate mt-0.5">{event.titleNative}</p>}
                                 <div className="flex items-center gap-2 mt-1.5 text-[11px] font-medium text-slate-500">
                                   {event.location && (
                                     <span className="flex items-center gap-1">
@@ -660,8 +660,8 @@ export default function EventsPage() {
                             </div>
                             <div className="flex flex-col justify-center min-w-0 flex-1 py-0.5">
                               <span className="text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-100 w-fit px-1.5 py-0.5 rounded uppercase tracking-wider mb-1.5">{dateStr}</span>
-                              <h3 className="font-bold text-slate-900 text-[14px] leading-snug truncate">{event.title}</h3>
-                              {event.titleNative && <p className="text-[11px] text-slate-400 truncate mt-0.5">{event.titleNative}</p>}
+                              <h3 className="font-bold text-slate-900 text-[14px] leading-snug truncate">{language === 'KR' && event.titleNative ? event.titleNative : event.title}</h3>
+                              {event.titleNative && language !== 'KR' && <p className="text-[11px] text-slate-400 truncate mt-0.5">{event.titleNative}</p>}
                               <div className="flex items-center gap-2 mt-1.5 text-[11px] font-medium text-slate-500">
                                 {event.location && (
                                   <span className="flex items-center gap-1">

@@ -8,19 +8,10 @@ import {
   serverTimestamp,
   Timestamp 
 } from 'firebase/firestore';
+import { FeedPost } from '@/types/feed';
 
-export interface Post {
-  id: string;
-  userId: string;
-  userName: string;
-  userPhoto?: string;
-  content: string;
-  images?: string[];
-  location?: string;
-  likes: number;
-  commentsCount: number;
-  createdAt: Timestamp;
-}
+/** @deprecated Use FeedPost from '@/types/feed' directly */
+export type Post = FeedPost;
 
 const COLLECTION_NAME = 'plaza';
 

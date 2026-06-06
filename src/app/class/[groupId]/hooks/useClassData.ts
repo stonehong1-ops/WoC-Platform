@@ -521,6 +521,16 @@ export function useClassData(
         });
       }
     });
+
+    // 각 요일별 클래스를 시작 시간순으로 정렬
+    map.forEach(list => {
+      list.sort((a, b) => {
+        const timeA = a.startTime || '00:00';
+        const timeB = b.startTime || '00:00';
+        return timeA.localeCompare(timeB);
+      });
+    });
+
     return map;
   }, [sortedClasses]);
 

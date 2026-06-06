@@ -2,10 +2,10 @@ import React, { useState, useRef } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { resaleService } from '@/lib/firebase/resaleService';
 import { plazaService } from '@/lib/firebase/plazaService';
-import { ItemCondition, TradeMethod } from '@/types/resale';
+import { ResaleItem, ItemCondition, TradeMethod } from '@/types/resale';
 import FullScreenRegistration from '@/components/common/FullScreenRegistration';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { CITY_COORDINATES } from '@/lib/constants/locations';
+import { CITY_COORDINATES } from '@/constants/locations';
 import { useLocation } from '@/components/providers/LocationProvider';
 import { REGIONS } from '@/components/layout/LocationSelector';
 
@@ -13,12 +13,13 @@ interface CreateResaleItemProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  itemToEdit?: ResaleItem;
 }
 
 const CURRENCIES = ['KRW', 'USD', 'EUR', 'JPY', 'CNY'];
 const MAX_PHOTOS = 20;
 
-export default function CreateResaleItem({ isOpen, onClose, onSuccess }: CreateResaleItemProps) {
+export default function CreateResaleItem({ isOpen, onClose, onSuccess, itemToEdit }: CreateResaleItemProps) {
   const { user } = useAuth();
   const { t } = useLanguage();
   const { location } = useLocation();
@@ -34,20 +35,21 @@ export default function CreateResaleItem({ isOpen, onClose, onSuccess }: CreateR
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   
-  const [title, setTitle] = useState('');
-  const [price, setPrice] = useState('');
-  const [currency, setCurrency] = useState('KRW');
-  const [canNegotiate, setCanNegotiate] = useState(false);
+  const [title, setTitle] = useState(itemToEdit ? itemToEdit.title : '');
+  const [price, setPrice] = useState(itemToEdit ? itemToEdit.price.toString() : '');
+  const [currency, setCurrency] = useState(itemToEdit ? itemToEdit.currency : 'KRW');
+  const [canNegotiate, setCanNegotiate] = useState(itemToEdit ? itemToEdit.canNegotiate : false);
 
-  const [region, setRegion] = useState(defaultCity);
+  const [region, setRegion] = useState(itemToEdit ? itemToEdit.location : defaultCity);
   
-  const [category, setCategory] = useState('Others');
-  const [condition, setCondition] = useState<ItemCondition>('A');
-  const [tradeMethod, setTradeMethod] = useState<TradeMethod>('both');
-  const [description, setDescription] = useState('');
+  const [category, setCategory] = useState(itemToEdit ? itemToEdit.category : 'Others');
+  const [condition, setCondition] = useState<ItemCondition>(itemToEdit ? itemToEdit.condition : 'A');
+  const [tradeMethod, setTradeMethod] = useState<TradeMethod>(itemToEdit ? itemToEdit.tradeMethod : 'both');
+  const [description, setDescription] = useState(itemToEdit ? itemToEdit.description : '');
   
+  const [existingUrls, setExistingUrls] = useState<string[]>(itemToEdit ? (itemToEdit.imageUrls || [itemToEdit.imageUrl].filter(Boolean) as string[]) : []);
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
-  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>(itemToEdit ? (itemToEdit.imageUrls || [itemToEdit.imageUrl].filter(Boolean) as string[]) : []);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -63,7 +65,8 @@ export default function CreateResaleItem({ isOpen, onClose, onSuccess }: CreateR
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
-    const availableSlots = MAX_PHOTOS - mediaFiles.length;
+    const totalPhotosCount = existingUrls.length + mediaFiles.length;
+    const availableSlots = MAX_PHOTOS - totalPhotosCount;
     const filesToAdd = files.slice(0, availableSlots);
 
     if (files.length > availableSlots) {
@@ -81,13 +84,20 @@ export default function CreateResaleItem({ isOpen, onClose, onSuccess }: CreateR
   };
 
   const removePhoto = (index: number) => {
-    setMediaFiles(prev => prev.filter((_, i) => i !== index));
-    setPreviewUrls(prev => {
-      const urls = [...prev];
-      URL.revokeObjectURL(urls[index]);
-      urls.splice(index, 1);
-      return urls;
-    });
+    const isExisting = index < existingUrls.length;
+    if (isExisting) {
+      setExistingUrls(prev => prev.filter((_, i) => i !== index));
+      setPreviewUrls(prev => prev.filter((_, i) => i !== index));
+    } else {
+      const fileIndex = index - existingUrls.length;
+      setMediaFiles(prev => prev.filter((_, i) => i !== fileIndex));
+      setPreviewUrls(prev => {
+        const urls = [...prev];
+        URL.revokeObjectURL(urls[index]);
+        urls.splice(index, 1);
+        return urls;
+      });
+    }
   };
 
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -101,7 +111,8 @@ export default function CreateResaleItem({ isOpen, onClose, onSuccess }: CreateR
   };
 
   const handleSubmit = async () => {
-    if (!user || !title || !price || mediaFiles.length === 0 || !region) {
+    const totalPhotosCount = existingUrls.length + mediaFiles.length;
+    if (!user || !title || !price || totalPhotosCount === 0 || !region) {
       alert(t('resale.msg_fill_required') || 'Please fill in required fields and add at least one photo.');
       return;
     }
@@ -113,16 +124,20 @@ export default function CreateResaleItem({ isOpen, onClose, onSuccess }: CreateR
       let uploadedUrls: string[] = [];
       const totalFiles = mediaFiles.length;
       
-      uploadedUrls = await Promise.all(
-        mediaFiles.map(async (file, index) => {
-          const url = await plazaService.uploadMedia(file, (p) => {
-            setUploadProgress(Math.round(((index * 100) + p) / totalFiles));
-          });
-          return url;
-        })
-      );
+      if (totalFiles > 0) {
+        uploadedUrls = await Promise.all(
+          mediaFiles.map(async (file, index) => {
+            const url = await plazaService.uploadMedia(file, (p) => {
+              setUploadProgress(Math.round(((index * 100) + p) / totalFiles));
+            });
+            return url;
+          })
+        );
+      }
 
-      await resaleService.registerItem({
+      const finalImageUrls = [...existingUrls, ...uploadedUrls];
+
+      const itemPayload = {
         title,
         description,
         price: parseInt(price, 10),
@@ -130,33 +145,40 @@ export default function CreateResaleItem({ isOpen, onClose, onSuccess }: CreateR
         location: region,
         locationDetail: '',
         category,
-        imageUrl: uploadedUrls[0],
-        imageUrls: uploadedUrls,
+        imageUrl: finalImageUrls[0] || '',
+        imageUrls: finalImageUrls,
         sellerId: user.uid,
         sellerName: user.displayName || 'Anonymous',
         condition,
         tradeMethod,
         canNegotiate,
-      });
+      };
+
+      if (itemToEdit) {
+        await resaleService.updateItem(itemToEdit.id, itemPayload);
+        alert(t('resale.alert_update_success') || 'Item updated successfully.');
+      } else {
+        await resaleService.registerItem(itemPayload);
+      }
 
       onSuccess?.();
       onClose();
     } catch (error) {
-      console.error("Error creating resale item:", error);
-      alert(t('resale.msg_post_failed') || 'Failed to post item.');
+      console.error("Error saving resale item:", error);
+      alert(itemToEdit ? (t('resale.alert_update_failed') || 'Failed to update item.') : (t('resale.msg_post_failed') || 'Failed to post item.'));
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const isValid = !!(title && price && mediaFiles.length > 0 && region);
+  const isValid = !!(title && price && (existingUrls.length + mediaFiles.length) > 0 && region);
 
   return (
     <FullScreenRegistration
       id="resale"
       isOpen={isOpen}
       onClose={onClose}
-      title={t('resale.create_title') || 'CREATE RESALE'}
+      title={itemToEdit ? (t('resale.edit_title') || 'EDIT RESALE') : (t('resale.create_title') || 'CREATE RESALE')}
       submitLabel="SAVE"
       submittingLabel={`${t('resale.posting') || 'UPLOADING'} ${uploadProgress}%`}
       onSubmit={handleSubmit}

@@ -16,6 +16,7 @@ import { Notification } from "@/types/notification";
 import { galleryService, GalleryPost } from "@/lib/firebase/galleryService";
 import { socialService } from "@/lib/firebase/socialService";
 import { feedService } from "@/lib/firebase/feedService";
+import { Timestamp } from 'firebase/firestore';
 
 export interface UseGroupDataProps {
   initialGroup: Group;
@@ -158,7 +159,7 @@ export function useGroupData({ initialGroup }: UseGroupDataProps) {
     const unsubscribePosts = groupService.subscribePosts(currentGroup.id, (posts) => {
       const normalized = posts.map(p => ({ ...p, createdAt: ensureTimestamp(p.createdAt) }));
       const notice = normalized.find(p => p.category?.toLowerCase() === 'notice') || normalized[0] || null;
-      setNoticePost(notice);
+      setNoticePost(notice as Post | null);
       if (notice && typeof window !== 'undefined') {
         sessionStorage.setItem(`woc_notice_${currentGroup.id}`, JSON.stringify(notice));
       }
@@ -381,7 +382,7 @@ export function useGroupData({ initialGroup }: UseGroupDataProps) {
         name: profile.nickname,
         avatar: profile.photoURL || '',
         role: 'member',
-        joinedAt: Date.now()
+        joinedAt: Timestamp.fromMillis(Date.now())
       };
 
       if (strategy === 'open') {

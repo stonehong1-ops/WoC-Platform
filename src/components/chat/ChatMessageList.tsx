@@ -1,3 +1,4 @@
+import { reportError } from '@/lib/utils/errorHandler';
 import React, { useState, useMemo } from 'react';
 import type { ChatRoom, ChatMessage, MessageType } from '@/types/chat';
 import { safeDate } from '@/lib/utils/safeDate';
@@ -498,7 +499,9 @@ export default function ChatMessageList({
           || otherUsers.find((u: any) => u.nickname === name || u.displayName === name);
         const resolvedName = matchedMember ? (matchedMember.nickname || matchedMember.name || matchedMember.displayName) : name;
         displayString = t('chat.system_join', { name: resolvedName });
-      } catch (e) {}
+      } catch (e) {
+        reportError(e, 'chat_parseSystemJoinParams');
+      }
     } else if (displayString.startsWith('chat.system_leave_params::')) {
       try {
         const paramsStr = displayString.split('chat.system_leave_params::')[1];
@@ -507,7 +510,9 @@ export default function ChatMessageList({
           || otherUsers.find((u: any) => u.nickname === name || u.displayName === name);
         const resolvedName = matchedMember ? (matchedMember.nickname || matchedMember.name || matchedMember.displayName) : name;
         displayString = t('chat.system_leave', { name: resolvedName });
-      } catch (e) {}
+      } catch (e) {
+        reportError(e, 'chat_parseSystemLeaveParams');
+      }
     } else if (displayString.startsWith('chat.system_kick_params::')) {
       try {
         const paramsStr = displayString.split('chat.system_kick_params::')[1];
@@ -516,7 +521,9 @@ export default function ChatMessageList({
           || otherUsers.find((u: any) => u.nickname === name || u.displayName === name);
         const resolvedName = matchedMember ? (matchedMember.nickname || matchedMember.name || matchedMember.displayName) : name;
         displayString = t('chat.system_kick', { name: resolvedName });
-      } catch (e) {}
+      } catch (e) {
+        reportError(e, 'chat_parseSystemKickParams');
+      }
     } else if (displayString.startsWith('chat.')) {
       displayString = t(displayString);
     }
@@ -602,6 +609,7 @@ export default function ChatMessageList({
       await chatService.toggleReaction(msgId, user.uid, emoji);
       setMenuMsgId(null);
     } catch (e) {
+      reportError(e, 'chat_addEmojiReaction');
       console.error(e);
     }
   };

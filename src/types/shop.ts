@@ -9,6 +9,7 @@ export interface Product {
   groupName: string;
   brand: string;
   title: string;
+  /** @deprecated Use title */
   name?: string; // legacy compat
   description: string;
   category: string;
@@ -18,6 +19,7 @@ export interface Product {
   location?: string;
   locationDetail?: string;
   images: string[];
+  /** @deprecated Use images */
   imageUrl?: string; // legacy compat (single image)
   options: string[]; // sizes or variants
   stock: number;
@@ -88,7 +90,7 @@ export interface OrderItem {
   option: string;          // selected size
   quantity: number;
   price: number;
-  selectedOptions?: Record<string, any>;  // custom options { width, heel, outsole }
+  selectedOptions?: Record<string, unknown>;  // custom options { width, heel, outsole }
   optionExtra?: number;    // extra price from custom options
 }
 

@@ -96,15 +96,6 @@ export const detectSeoulDistrict = (social: Social, language: string, venuesMap:
   return language === 'KR' ? '한강아래 (강남지역)' : 'South of River (Gangnam)';
 };
 
-export const getDjDisplay = (social: Social, date?: Date): string => {
-  if (!social.djs || !Array.isArray(social.djs) || social.djs.length === 0) return social.djName || '';
-  if (!date) return social.djName || '';
-  const pad = (n: number) => n.toString().padStart(2, '0');
-  const dStr = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-  const matched = social.djs.find(dj => dj && dj.date === dStr);
-  return matched ? matched.djName : (social.djName || '');
-};
-
 export const getVenueDisplay = (
   social: Social,
   language: string,

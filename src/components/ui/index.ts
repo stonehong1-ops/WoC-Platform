@@ -6,12 +6,9 @@
  * 세부 그레이스케일/레이아웃은 직접 관리.
  * 
  * 사용법:
- * import { SectionCard, InfoRow, ChipSelector } from '@/components/ui';
+ * import { SectionCard, InfoRow, CollapseSection } from '@/components/ui';
  */
 
 export { default as SectionCard } from './SectionCard';
 export { default as InfoRow } from './InfoRow';
-export { default as RadioSelector } from './RadioSelector';
-export { default as ChipSelector } from './ChipSelector';
-export { default as FullScreenModal } from './FullScreenModal';
 export { default as CollapseSection } from './CollapseSection';

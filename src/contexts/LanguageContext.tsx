@@ -4,7 +4,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { enUS, ko } from 'date-fns/locale';
-import { dictionary } from '../i18n';
+import { loadDictionary } from '../i18n';
 
 type Language = 'EN' | 'KR';
 
@@ -15,14 +15,19 @@ interface LanguageContextType {
   t: (key: string, params?: any) => string;
   formatDate: (date: any, formatStr?: string) => string;
   formatRelativeTime: (date: any) => string;
+  dictionaryState: Record<string, string>;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLangState] = useState<Language>('KR');
+  const [dictionaryState, setDictionaryState] = useState<Record<string, string>>({});
+  const [isI18nLoading, setIsI18nLoading] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
     const saved = localStorage.getItem('woc_language') as Language;
     if (saved && (saved === 'EN' || saved === 'KR')) {
       setLangState(saved);
@@ -36,10 +41,25 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    let active = true;
+    setIsI18nLoading(true);
+    loadDictionary(language).then(dict => {
+      if (active) {
+        setDictionaryState(dict);
+        setIsI18nLoading(false);
+      }
+    }).catch(err => {
+      console.error('Failed to load dictionary:', err);
+      setIsI18nLoading(false);
+    });
+    return () => { active = false; };
+  }, [language]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && isMounted) {
       document.documentElement.lang = language === 'KR' ? 'ko' : 'en';
     }
-  }, [language]);
+  }, [language, isMounted]);
 
   const setLanguage = useCallback((lang: Language) => {
     setLangState(lang);
@@ -52,10 +72,13 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   const t = useCallback((key: string, params?: any): string => {
     const langKey = (language || 'KR').toUpperCase() as Language;
-    const hasTranslation = dictionary[langKey]?.[key] !== undefined;
-    let text = dictionary[langKey]?.[key];
+    let text = dictionaryState[key];
+    const hasTranslation = text !== undefined;
 
     if (!hasTranslation) {
+      if (isI18nLoading) {
+        return '';
+      }
       console.error(`🚨 [Missing Translation] Key "${key}" is missing in language "${langKey}"`);
       
       // 런타임 클라이언트 브라우저 환경에서 실시간 경고 토스트 송출
@@ -79,7 +102,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     }
 
     return text;
-  }, [language]);
+  }, [language, dictionaryState, isI18nLoading]);
 
   const formatDate = useCallback((date: any, formatStr: string = 'yyyy-MM-dd') => {
     if (!date) return '';
@@ -133,8 +156,16 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   }, [language]);
 
   const contextValue = useMemo(() => ({
-    language, toggleLanguage, setLanguage, t, formatDate, formatRelativeTime
-  }), [language, toggleLanguage, setLanguage, t, formatDate, formatRelativeTime]);
+    language, toggleLanguage, setLanguage, t, formatDate, formatRelativeTime, dictionaryState
+  }), [language, toggleLanguage, setLanguage, t, formatDate, formatRelativeTime, dictionaryState]);
+
+  if (!isMounted || (isI18nLoading && Object.keys(dictionaryState).length === 0)) {
+    return (
+      <div className="fixed inset-0 z-[9999] bg-[#fdf7ff] flex flex-col items-center justify-center">
+        <div className="w-10 h-10 rounded-full border-4 border-[#004190]/10 border-t-[#004190] animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <LanguageContext.Provider value={contextValue}>

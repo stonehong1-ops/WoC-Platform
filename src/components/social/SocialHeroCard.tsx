@@ -1,9 +1,10 @@
 "use client";
-
+ 
 import React, { useState } from 'react';
 import { Social } from '@/types/social';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatCommunityName } from '@/app/social/constants/seoulRegions';
+import { isVideoUrl } from '@/lib/utils/socialUtils';
 
 export function DualText({ text, subText, primaryClassName, secondaryClassName, containerClassName }: { text: string; subText?: string; primaryClassName?: string; secondaryClassName?: string; containerClassName?: string }) {
   const { language } = useLanguage();
@@ -44,6 +45,19 @@ export function SocialCardImage({ imageUrl, title }: { imageUrl?: string; title?
     );
   }
 
+  if (isVideoUrl(imageUrl)) {
+    return (
+      <video
+        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 md:group-hover:scale-110"
+        src={imageUrl}
+        muted
+        autoPlay
+        loop
+        playsInline
+      />
+    );
+  }
+
   return (
     <img 
       className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 md:group-hover:scale-110" 
@@ -65,8 +79,9 @@ export function getSocialDisplayTitle(social: Social) {
 }
 
 export default function SocialHeroCard({ social, date }: { social: Social, date?: Date }) {
+  const { language } = useLanguage();
   const displayTitle = getSocialDisplayTitle(social);
-  const djName = getDjDisplay(social, date);
+  const djName = getDjDisplay(social, date, language);
   const hasPoster = social.posterLayoutId && social.posterLayoutId !== "none";
 
   return (
@@ -107,7 +122,7 @@ export default function SocialHeroCard({ social, date }: { social: Social, date?
                 secondaryClassName="text-white/40 text-[9px] md:text-[10px] font-normal truncate ml-1.5" 
                 containerClassName="w-full"
               />
-              {djName && djName !== 'TBD' && djName !== 'TBA' && (
+              {djName && djName.toUpperCase() !== 'TBD' && djName.toUpperCase() !== 'TBA' && djName.trim() !== '' && (
                 <p className="text-white/90 text-xs md:text-sm font-bold truncate">
                   DJ {djName}
                 </p>

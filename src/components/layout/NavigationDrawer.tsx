@@ -94,7 +94,7 @@ export default function NavigationDrawer() {
               e.preventDefault();
               e.stopPropagation();
               closeDrawer();
-              router.push('/profile');
+              router.push('/profile?tab=schedule');
             }}
           />
         </div>
@@ -231,7 +231,8 @@ export default function NavigationDrawer() {
             <h2 className="px-5 mb-2 text-[9px] font-black tracking-[0.25em] text-on-surface/30 uppercase">{t('nav.my') || 'MY'}</h2>
             <div className="space-y-0.5">
               {[
-                { icon: 'history', label: t('nav.history'), href: '/history' },
+                { icon: 'calendar_today', label: t('myinfo.schedule_tab') || 'Schedule', href: '/profile?tab=schedule' },
+                { icon: 'psychology', label: t('nav.coaching') || 'Coaching', href: '/coaching' },
                 { icon: 'cinematic_blur', label: t('nav.live'), href: '/live?view=my' },
                 { icon: 'account_balance_wallet', label: t('nav.wallet'), href: '/wallet' },
                 { icon: 'manage_accounts', label: t('nav.my_info'), href: '/profile' },

@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { useLocation } from '@/components/providers/LocationProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { dictionary } from '@/i18n';
 
 
 export const REGIONS = [
@@ -291,7 +290,7 @@ export const REGIONS = [
 
 export default function LocationSelector() {
   const { location, setLocation, isSelectorOpen, setIsSelectorOpen, selectorCallback, clearSelectorCallback } = useLocation();
-  const { t, language } = useLanguage();
+  const { t, language, dictionaryState } = useLanguage();
   const [expandedCountry, setExpandedCountry] = useState<string | null>(location.country);
 
   const handleClose = () => setIsSelectorOpen(false); // Replaced useHistoryBack
@@ -313,8 +312,7 @@ export default function LocationSelector() {
   const filteredRegions = REGIONS;
 
   const getLocalizedText = (key: string, defaultValue: string) => {
-    const langKey = (language || 'KR').toUpperCase() as 'EN' | 'KR';
-    const hasKey = dictionary[langKey]?.[key] !== undefined;
+    const hasKey = dictionaryState?.[key] !== undefined;
     if (hasKey) {
       return t(key);
     }

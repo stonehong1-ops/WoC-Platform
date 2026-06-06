@@ -1,4 +1,5 @@
 "use client";
+import { reportError } from '@/lib/utils/errorHandler';
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -118,9 +119,10 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
           if (vData) {
             setVenueAddress(vData.address || vData.city || '');
           }
-        } catch (e) {
-          console.error('Failed to fetch venue address:', e);
-        }
+    } catch (e) {
+      reportError(e, 'groupAbout.fetchVenueAddress');
+      console.error('Failed to fetch venue address:', e);
+    }
       }
     };
     fetchVenueAddress();
@@ -257,6 +259,7 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
             allowPhoneCalls: userProfile?.allowPhoneCalls !== false
           };
         } catch (error) {
+          reportError(error, 'groupAbout.fetchMemberProfile');
           console.error(`Failed to fetch profile for user ${member.id}:`, error);
           return { ...member, profile: null };
         }
@@ -638,9 +641,10 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
                                 status: 'pending'
                               }
                             });
-                          } catch (chatErr) {
-                            console.error("Failed to send approval todo chat:", chatErr);
-                          }
+      } catch (chatErr) {
+        reportError(chatErr, 'groupAbout.sendApprovalChat');
+        console.error("Failed to send approval todo chat:", chatErr);
+      }
 
                           router.push(`${window.location.pathname}?modal=join`, { scroll: false });
                         } catch (error) {

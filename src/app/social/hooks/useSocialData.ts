@@ -75,40 +75,42 @@ export function useSocialData() {
     };
   }, []);
 
-  // 2. Real-time Firebase Subscriptions (Venues & User Likes)
-  const isVenuesSubscribed = useRef(false);
+  // 2. Real-time Firebase Subscriptions (Venues)
   useEffect(() => {
-    let unsubVenues = () => {};
-    if (!isVenuesSubscribed.current) {
-      isVenuesSubscribed.current = true;
-      unsubVenues = onSnapshot(collection(db, 'venues'), (snapshot) => {
-        const map: Record<string, any> = {};
-        snapshot.docs.forEach(doc => {
-          const data = doc.data();
-          map[doc.id] = { id: doc.id, ...data };
-          
-          const city = (data.city || '').toUpperCase();
-          if (city === 'SEOUL' && !data.seoulArea) {
-            const address = (data.address || '').toLowerCase();
-            const district = (data.district || '').toLowerCase();
-            const gangbukDists = ['마포', '용산', '성동', '서대문', '종로', '중구', '광진', '은평', '성북', '동대문', '중랑', '강북', '도봉', '노원'];
-            let assignedArea = 'gangnam';
-            for (const d of gangbukDists) {
-              if (address.includes(d) || district.includes(d)) {
-                assignedArea = 'gangbuk';
-                break;
-              }
+    const unsubVenues = onSnapshot(collection(db, 'venues'), (snapshot) => {
+      const map: Record<string, any> = {};
+      snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        map[doc.id] = { id: doc.id, ...data };
+        
+        const city = (data.city || '').toUpperCase();
+        if (city === 'SEOUL' && !data.seoulArea) {
+          const address = (data.address || '').toLowerCase();
+          const district = (data.district || '').toLowerCase();
+          const gangbukDists = ['마포', '용산', '성동', '서대문', '종로', '중구', '광진', '은평', '성북', '동대문', '중랑', '강북', '도봉', '노원'];
+          let assignedArea = 'gangnam';
+          for (const d of gangbukDists) {
+            if (address.includes(d) || district.includes(d)) {
+              assignedArea = 'gangbuk';
+              break;
             }
-            import('firebase/firestore').then(({ doc: fireDoc, updateDoc }) => {
-              updateDoc(fireDoc(db, 'venues', doc.id), { seoulArea: assignedArea })
-                .catch(err => console.error('seoulArea 자동 마이그레이션 실패:', err));
-            });
           }
-        });
-        setVenuesMap(map);
+          import('firebase/firestore').then(({ doc: fireDoc, updateDoc }) => {
+            updateDoc(fireDoc(db, 'venues', doc.id), { seoulArea: assignedArea })
+              .catch(err => console.error('seoulArea 자동 마이그레이션 실패:', err));
+          });
+        }
       });
-    }
+      setVenuesMap(map);
+    });
 
+    return () => {
+      unsubVenues();
+    };
+  }, []);
+
+  // 3. Real-time Firebase Subscriptions (User Likes)
+  useEffect(() => {
     let unsubLikes = () => {};
     if (user) {
       unsubLikes = socialService.subscribeMyLikes(user.uid, (likes) => {

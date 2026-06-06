@@ -13,7 +13,8 @@ import {
   writeBatch,
   getDocs,
   setDoc,
-  getDoc
+  getDoc,
+  deleteDoc
 } from 'firebase/firestore';
 import { ResaleItem, UserReputation } from '@/types/resale';
 
@@ -183,6 +184,29 @@ export const resaleService = {
       await updateDoc(itemRef, { likesCount: increment(1) });
     } else {
       await updateDoc(likeRef, { status: 'in_progress', updatedAt: serverTimestamp() });
+    }
+  },
+
+  updateItem: async (itemId: string, itemData: Partial<ResaleItem>) => {
+    try {
+      const itemRef = doc(db, RESALE_COLLECTION, itemId);
+      await updateDoc(itemRef, {
+        ...itemData,
+        updatedAt: serverTimestamp()
+      });
+    } catch (error) {
+      console.error("Error updating resale item:", error);
+      throw error;
+    }
+  },
+
+  deleteItem: async (itemId: string) => {
+    try {
+      const itemRef = doc(db, RESALE_COLLECTION, itemId);
+      await deleteDoc(itemRef);
+    } catch (error) {
+      console.error("Error deleting resale item:", error);
+      throw error;
     }
   }
 };

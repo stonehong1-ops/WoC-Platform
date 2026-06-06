@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Member } from "@/types/group";
+import { safeDate } from "@/lib/utils/safeDate";
 import { motion } from "framer-motion";
 
 interface MemberProfileOverlayProps {
@@ -127,7 +128,7 @@ export default function MemberProfileOverlay({ member, onClose }: MemberProfileO
                       <p className="text-[14px] leading-[1.4] tracking-[0.01em] font-medium text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>Joined</p>
                       <p className="text-xs text-on-surface-variant">
                         {member.joinedAt
-                          ? new Date(typeof member.joinedAt === 'number' ? member.joinedAt : member.joinedAt?.toDate?.() || member.joinedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+                          ? (safeDate(member.joinedAt) || new Date()).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
                           : 'Unknown'}
                       </p>
                     </div>
@@ -163,7 +164,7 @@ export default function MemberProfileOverlay({ member, onClose }: MemberProfileO
                         <p className="text-[14px] leading-[1.4] tracking-[0.01em] font-medium text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>Joined the community</p>
                         <span className="text-xs text-on-surface-variant">
                           {member.joinedAt
-                            ? new Date(typeof member.joinedAt === 'number' ? member.joinedAt : member.joinedAt?.toDate?.() || member.joinedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                            ? (safeDate(member.joinedAt) || new Date()).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
                             : ''}
                         </span>
                       </div>

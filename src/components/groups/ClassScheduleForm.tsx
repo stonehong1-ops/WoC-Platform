@@ -65,7 +65,7 @@ export const ClassScheduleForm: React.FC<ClassScheduleFormProps> = ({
               {/* Date row with day of week */}
               <div className="flex items-center gap-2">
                 <input
-                  value={entry.date}
+                  value={entry.date || ''}
                   onChange={e => onUpdateSchedule(index, 'date', e.target.value)}
                   className="flex-1 bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-semibold text-gray-800 focus:ring-2 focus:ring-primary/10"
                   type="date"

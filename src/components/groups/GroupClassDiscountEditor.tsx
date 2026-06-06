@@ -380,11 +380,11 @@ const GroupClassDiscountEditor: React.FC<GroupClassDiscountEditorProps> = ({
                             {cls.schedule && cls.schedule.length > 0 ? (
                               (() => {
                                 const baseDate = cls.schedule[0].date;
-                                const day = getDayOfWeek(baseDate);
+                                const day = getDayOfWeek(baseDate || '');
                                 const daySuffix = language === "KR"
                                   ? `(${DAY_LABELS[day]?.ko || ""})`
                                   : ` (${DAY_LABELS[day]?.en || ""})`;
-                                return `${baseDate}${daySuffix} • ${cls.schedule[0].timeSlot}`;
+                                return `${baseDate || ''}${daySuffix} • ${cls.schedule[0].timeSlot}`;
                               })()
                             ) : (
                               t("discount.no_schedule") || "No schedule"

@@ -11,8 +11,18 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { groupService } from '@/lib/firebase/groupService';
 import { socialService } from '@/lib/firebase/socialService';
 import { CalendarEvent, Group, GroupClass } from '@/types/group';
+import { Timestamp } from 'firebase/firestore';
 import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
+
+/** Safely convert Timestamp | Date | number | null → Date */
+const toDateSafe = (v: Timestamp | Date | number | null): Date => {
+  if (!v) return new Date();
+  if (typeof v === 'number') return new Date(v);
+  if (v instanceof Date) return v;
+  if (typeof (v as Timestamp).toDate === 'function') return (v as Timestamp).toDate();
+  return new Date();
+};
 
 export type ViewMode = 'day' | 'week' | 'month';
 
@@ -244,7 +254,7 @@ export const useGroupCalendar = (group: Group) => {
         const foundEvent = events.find(e => e.id === eventId);
         if (foundEvent) {
           setEditingEvent(foundEvent);
-          const eventDate = new Date(foundEvent.startDate);
+          const eventDate = toDateSafe(foundEvent.startDate);
           setFormData({
             title: foundEvent.title,
             description: foundEvent.description || '',
@@ -334,7 +344,7 @@ export const useGroupCalendar = (group: Group) => {
   };
 
   const selectedDayEvents = useMemo(() => {
-    const filtered = events.filter(e => isSameDay(new Date(e.startDate), selectedDate));
+    const filtered = events.filter(e => isSameDay(toDateSafe(e.startDate), selectedDate));
     return [...filtered].sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
   }, [events, selectedDate]);
 
@@ -356,14 +366,14 @@ export const useGroupCalendar = (group: Group) => {
   // Build month-view weekly groupings
   const monthViewEvents = useMemo(() => {
     return events
-      .filter(e => isSameMonth(new Date(e.startDate), currentMonth))
-      .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+      .filter(e => isSameMonth(toDateSafe(e.startDate), currentMonth))
+      .sort((a, b) => toDateSafe(a.startDate).getTime() - toDateSafe(b.startDate).getTime());
   }, [events, currentMonth]);
 
   const weekGroups = useMemo(() => {
     const groups: Record<number, CalendarEvent[]> = {};
     monthViewEvents.forEach(e => {
-      const wn = Math.ceil(new Date(e.startDate).getDate() / 7);
+      const wn = Math.ceil(toDateSafe(e.startDate).getDate() / 7);
       if (!groups[wn]) groups[wn] = [];
       groups[wn].push(e);
     });

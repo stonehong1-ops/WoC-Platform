@@ -7,6 +7,7 @@ import { chatService } from '@/lib/firebase/chatService';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { StayBooking } from '@/types/stay';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { safeDate } from '@/lib/utils/safeDate';
 
 function CompleteContent() {
   const router = useRouter();
@@ -33,7 +34,7 @@ function CompleteContent() {
         const roomId = await chatService.getOrCreatePrivateRoom(
           [user.uid, hostId], user.uid, 'business'
         );
-        const checkOutDate = booking.checkOut.toDate ? booking.checkOut.toDate() : new Date(booking.checkOut);
+        const checkOutDate = safeDate(booking.checkOut) || new Date();
         const lastNightDate = new Date(checkOutDate.getTime() - 24 * 60 * 60 * 1000);
         const msg = `💸 [STAY PAYMENT]\n` +
           `Stay: ${booking.stayTitle}\n` +
@@ -109,7 +110,7 @@ function CompleteContent() {
               <span className="text-[10px] font-bold text-[#acb3b4] uppercase tracking-widest">{t('stay.checkout.checkin_checkout', 'Dates')}</span>
               <span className="text-xs font-bold text-[#596061] text-right">
                 {(() => {
-                  const checkOutDate = booking.checkOut.toDate ? booking.checkOut.toDate() : new Date(booking.checkOut);
+                  const checkOutDate = safeDate(booking.checkOut) || new Date();
                   const lastNightDate = new Date(checkOutDate.getTime() - 24 * 60 * 60 * 1000);
                   return `${formatDate(booking.checkIn)} - ${formatDate(lastNightDate)} (${booking.nights}${t('stay.nights_unit', '박')} · ${t('stay.checkout_date_label', '{date} 퇴실').replace('{date}', formatDate(booking.checkOut))})`;
                 })()}

@@ -18,6 +18,7 @@ export interface TagSearchResult {
   type: 'group' | 'social' | 'event' | 'class' | 'people';
   id: string;
   name: string;
+  nameNative?: string;
   subtitle: string;
   groupId?: string;
   instructors?: string;
@@ -251,7 +252,10 @@ export const tagSearchService = {
           const data = d.data() as GroupClass;
           if (data.status !== 'Open') return;
           const hasToday = data.schedule?.some(entry => {
-            if (entry.date) return new Date(entry.date).toDateString() === todayStr;
+            if (entry.date) {
+              const d = typeof (entry.date as any).toDate === 'function' ? (entry.date as any).toDate() : new Date(entry.date as any);
+              return d.toDateString() === todayStr;
+            }
             return false;
           });
           if (hasToday) {
@@ -475,7 +479,8 @@ export const tagSearchService = {
             const groupId = pathSegments[1] || '';
             const hasToday = data.schedule?.some(entry => {
               if (entry.date) {
-                return new Date(entry.date).toDateString() === todayStr;
+                const d = typeof (entry.date as any).toDate === 'function' ? (entry.date as any).toDate() : new Date(entry.date as any);
+                return d.toDateString() === todayStr;
               }
               return false;
             });

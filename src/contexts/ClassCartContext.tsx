@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from 'sonner';
 
@@ -56,7 +56,7 @@ export const ClassCartProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   }, [cart, isLoaded]);
 
-  const addToCart = (groupId: string, groupName: string, item: CartItem) => {
+  const addToCart = useCallback((groupId: string, groupName: string, item: CartItem) => {
     setCart((prev) => {
       // If cart is empty, we can add it and set the group
       if (prev.items.length === 0) {
@@ -82,9 +82,9 @@ export const ClassCartProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       toast.success(`Added to cart.`);
       return { ...prev, items: [...prev.items, item] };
     });
-  };
+  }, [t]);
 
-  const removeFromCart = (itemId: string) => {
+  const removeFromCart = useCallback((itemId: string) => {
     setCart((prev) => {
       const newItems = prev.items.filter(i => i.itemId !== itemId);
       if (newItems.length === 0) {
@@ -92,17 +92,26 @@ export const ClassCartProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
       return { ...prev, items: newItems };
     });
-  };
+  }, []);
 
-  const clearCart = () => {
+  const clearCart = useCallback(() => {
     setCart({ groupId: null, groupName: null, items: [] });
-  };
+  }, []);
 
   const totalPrice = cart.items.reduce((sum, item) => sum + item.price, 0);
   const currency = cart.items.length > 0 ? cart.items[0].currency : 'KRW';
 
+  const contextValue = useMemo(() => ({
+    cart,
+    addToCart,
+    removeFromCart,
+    clearCart,
+    totalPrice,
+    currency
+  }), [cart, addToCart, removeFromCart, clearCart, totalPrice, currency]);
+
   return (
-    <ClassCartContext.Provider value={{ cart, addToCart, removeFromCart, clearCart, totalPrice, currency }}>
+    <ClassCartContext.Provider value={contextValue}>
       {children}
     </ClassCartContext.Provider>
   );

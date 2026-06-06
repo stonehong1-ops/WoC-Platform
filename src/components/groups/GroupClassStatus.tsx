@@ -90,7 +90,7 @@ export default function GroupClassStatus({ groupId, isAdmin = false, group: init
   const filteredClasses = useMemo(() => {
     return allClasses.filter(c => {
       if (c.targetMonth) return c.targetMonth === currentMonthStr;
-      if (c.schedule?.length) return c.schedule.some(s => s.date?.startsWith(currentMonthStr));
+      if (c.schedule?.length) return c.schedule.some(s => (s.date || '').startsWith(currentMonthStr));
       return false; // If no targetMonth and no schedule, hide it to prevent cross-month pollution
     });
   }, [allClasses, currentMonthStr]);
@@ -103,7 +103,7 @@ export default function GroupClassStatus({ groupId, isAdmin = false, group: init
           const cls = allClasses.find(c => c.id === id);
           if (!cls) return false;
           if (cls.targetMonth) return cls.targetMonth === currentMonthStr;
-          if (cls.schedule?.length) return cls.schedule.some(s => s.date?.startsWith(currentMonthStr));
+          if (cls.schedule?.length) return cls.schedule.some(s => (s.date || '').startsWith(currentMonthStr));
           return false;
         });
       }

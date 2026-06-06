@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { usePathname } from 'next/navigation';
-import { NAV_ITEMS } from '@/lib/constants/navigation';
+import { NAV_ITEMS } from '@/constants/navigation';
 import { Bell, MessageCircle, Search, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';

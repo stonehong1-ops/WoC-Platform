@@ -9,8 +9,9 @@ import { eventService } from '@/lib/firebase/eventService';
 import { galleryService, GalleryPost } from '@/lib/firebase/galleryService';
 import { plazaService, Post as PlazaPost } from '@/lib/firebase/plazaService';
 import { userService } from '@/lib/firebase/userService';
+import { venueService } from '@/lib/firebase/venueService';
 import { db } from '@/lib/firebase/clientApp';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { Event as EventType } from '@/types/event';
 import { PlatformUser } from '@/types/user';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -64,6 +65,11 @@ export default function SocietyPage() {
   const [comingSoonCard, setComingSoonCard] = useState<{title: string; icon: string; desc: string} | null>(null);
 
   const [societyId, setSocietyId] = useState('tango');
+  const [totalMembers, setTotalMembers] = useState<number>(2184);
+  const [totalCities, setTotalCities] = useState<number>(27);
+  const [weeklyNewMembers, setWeeklyNewMembers] = useState<number>(0);
+  const [totalGroups, setTotalGroups] = useState<number>(63);
+  const [totalCountries, setTotalCountries] = useState<number>(2);
   
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -120,10 +126,132 @@ export default function SocietyPage() {
 
   // Fetch featured users (instructors)
   useEffect(() => {
-    userService.getAllUsers().then((users) => {
-      const instructors = users.filter(u => u.isInstructor).sort((a, b) => a.nickname.localeCompare(b.nickname));
+    userService.getInstructors().then((users) => {
+      const instructors = users.sort((a, b) => a.nickname.localeCompare(b.nickname));
       setFeaturedUsers(instructors);
     }).catch(console.error);
+  }, []);
+
+  // Fetch statistics dynamically with single doc cache and fallback self-healing
+  useEffect(() => {
+    async function loadStats() {
+      try {
+        const statsDocRef = doc(db, 'settings', 'stats');
+        const statsSnap = await getDoc(statsDocRef);
+        
+        const now = Date.now();
+        if (statsSnap.exists()) {
+          const statsData = statsSnap.data();
+          const updatedAt = statsData.updatedAt || 0;
+          
+          // 24 hours cache validity
+          if (now - updatedAt < 86400000) {
+            setTotalGroups(statsData.totalGroups || 63);
+            setTotalMembers(statsData.totalMembers || 2184);
+            setWeeklyNewMembers(statsData.weeklyNewMembers || 0);
+            setTotalCities(statsData.totalCities || 27);
+            setTotalCountries(statsData.totalCountries || 2);
+            return;
+          }
+        }
+        
+        // Background scan & update cache if expired or missing
+        const [groupsSnap, users, venues] = await Promise.all([
+          getDocs(collection(db, 'groups')),
+          userService.getAllUsers(),
+          venueService.getVenues()
+        ]);
+        
+        const gCount = groupsSnap.size;
+        const mCount = users.length + 50;
+        
+        const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
+        let newCount = 0;
+        users.forEach((u) => {
+          let userTime = null;
+          if (u.createdAt) {
+            if (u.createdAt.seconds !== undefined) {
+              userTime = u.createdAt.seconds * 1000;
+            } else if (typeof u.createdAt === 'number') {
+              userTime = u.createdAt;
+            } else if (typeof u.createdAt.toDate === 'function') {
+              userTime = u.createdAt.toDate().getTime();
+            } else if (typeof u.createdAt === 'string') {
+              userTime = new Date(u.createdAt).getTime();
+            }
+          }
+          if (userTime && userTime >= sevenDaysAgo) {
+            newCount++;
+          }
+        });
+        
+        const citiesSet = new Set<string>();
+        const countriesSet = new Set<string>();
+        const activeVenues = venues.filter(v => v.status === 'active');
+        
+        activeVenues.forEach((venue) => {
+          if (venue.city) {
+            const cityNorm = venue.city.trim().toUpperCase();
+            const countryNorm = (venue.country || '').trim().toUpperCase();
+            const isKorea = countryNorm === 'KOREA' || countryNorm === 'SOUTH KOREA' || countryNorm === 'SOUTH_KOREA';
+            const isShanghai = cityNorm === 'SHANGHAI' || venue.city.includes('상하이');
+            if (isKorea || isShanghai) {
+              citiesSet.add(cityNorm);
+            }
+          }
+          if (venue.country) {
+            let countryNorm = venue.country.trim().toUpperCase();
+            if (countryNorm === 'KOREA' || countryNorm === 'SOUTH_KOREA') {
+              countryNorm = 'SOUTH KOREA';
+            }
+            countriesSet.add(countryNorm);
+          }
+        });
+        
+        // 가입 회원들의 국가코드 추가 합산
+        users.forEach((u) => {
+          if (u.countryCode) {
+            let countryNorm = u.countryCode.trim().toUpperCase();
+            if (countryNorm === 'KR' || countryNorm === 'KOREA' || countryNorm === 'SOUTH_KOREA') {
+              countryNorm = 'SOUTH KOREA';
+            } else if (countryNorm === 'SG' || countryNorm === 'SINGAPORE') {
+              countryNorm = 'SINGAPORE';
+            } else if (countryNorm === 'US' || countryNorm === 'USA' || countryNorm === 'UNITED STATES') {
+              countryNorm = 'UNITED STATES';
+            } else if (countryNorm === 'CN' || countryNorm === 'CHINA') {
+              countryNorm = 'CHINA';
+            } else if (countryNorm === 'AU' || countryNorm === 'AUSTRALIA') {
+              countryNorm = 'AUSTRALIA';
+            }
+            countriesSet.add(countryNorm);
+          }
+        });
+        
+        const cCount = citiesSet.size || 27;
+        const coCount = countriesSet.size || 3;
+        
+        setTotalGroups(gCount);
+        setTotalMembers(mCount);
+        setWeeklyNewMembers(newCount);
+        setTotalCities(cCount);
+        setTotalCountries(coCount);
+        
+        // Update stats cache
+        const { setDoc } = await import('firebase/firestore');
+        await setDoc(statsDocRef, {
+          totalGroups: gCount,
+          totalMembers: mCount,
+          weeklyNewMembers: newCount,
+          totalCities: cCount,
+          totalCountries: coCount,
+          updatedAt: now
+        }, { merge: true });
+        
+      } catch (err) {
+        console.error("Error loading stats dynamically:", err);
+      }
+    }
+    loadStats();
   }, []);
 
   // Force Tailwind CDN re-process on client-side navigation
@@ -269,7 +397,9 @@ export default function SocietyPage() {
                     ? formatDate(typeof heroEvent.startDate.toDate === 'function' ? heroEvent.startDate.toDate() : new Date(heroEvent.startDate as any), 'dateOnly')
                     : t('home.hero_upcoming')}
                 </span>
-                <h1 className="font-body-lg text-body-lg md:font-title-lg md:text-title-lg text-white mb-4">{heroEvent.title}</h1>
+                <h1 className="font-body-lg text-body-lg md:font-title-lg md:text-title-lg text-white mb-4">
+                  {language === 'KR' && heroEvent.titleNative ? heroEvent.titleNative : heroEvent.title}
+                </h1>
                 <p className="font-label-md text-label-md text-white/90 max-w-2xl mb-8 line-clamp-3">{heroEvent.description}</p>
                 <button
                   className="bg-primary text-white font-label-md text-label-md py-4 px-10 rounded shadow-lg hover:opacity-90 transition-opacity"
@@ -413,7 +543,9 @@ export default function SocietyPage() {
                   {/* Location */}
                   {post.location && (
                     <div className="mt-5 text-outline font-body-md text-body-md">
-                      {post.location}
+                      {typeof post.location === 'string'
+                        ? post.location
+                        : `${post.location.city || ''}${post.location.city && post.location.country ? ', ' : ''}${post.location.country || ''}`}
                     </div>
                   )}
                 </div>
@@ -621,16 +753,79 @@ export default function SocietyPage() {
           </section>
         </main>
 
-        {/* Footer — 번역 미대상 영역 */}
         <footer className="bg-background border-t border-outline/15 py-section_gap">
-          <div className="max-w-7xl mx-auto px-page_margin flex flex-col md:flex-row justify-between items-center gap-element_gap">
-            <div className="font-headline-md text-headline-md font-extrabold text-on-background">{t('home.global_tango_society')}</div>
-            <nav className="flex flex-wrap justify-center gap-6">
-              <a className="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md" href="#">{t('common.about')}</a>
-              <a className="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md" href="#">{t('common.terms')}</a>
-              <a className="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md" href="#">{t('common.privacy')}</a>
-            </nav>
-            <div className="text-on-surface-variant font-label-sm text-label-sm">{t('common.footer_rights')}</div>
+          <div className="max-w-7xl mx-auto px-page_margin flex flex-col items-center gap-10">
+            {/* 로고 */}
+            <div className="font-headline-md text-headline-md font-extrabold text-on-background text-center">
+              {t('home.global_tango_society')}
+            </div>
+
+            {/* 회원카운트 격자 카드 (소사이어티 페이지 스타일 연장선) */}
+            <div className="w-full max-w-md bg-surface-container-lowest rounded-2xl border border-outline/10 overflow-hidden shadow-sm">
+              <div className="grid grid-cols-2">
+                {/* 1. COMMUNITIES */}
+                <div className="p-6 flex flex-col items-center justify-center text-center border-r border-b border-outline/10">
+                  <span className="material-symbols-outlined text-[24px] text-outline mb-3">groups</span>
+                  <span className="text-[32px] font-extrabold text-on-background leading-none mb-2">{totalGroups}</span>
+                  <span className="text-[11px] font-black text-outline uppercase tracking-wider">
+                    {t('home.society_stats.communities')}
+                  </span>
+                </div>
+                
+                {/* 2. MEMBERS */}
+                <div className="p-6 flex flex-col items-center justify-center text-center border-b border-outline/10">
+                  <span className="material-symbols-outlined text-[24px] text-outline mb-3">person</span>
+                  <div className="flex items-center justify-center gap-1.5 mb-2">
+                    <span className="text-[32px] font-extrabold text-on-background leading-none">
+                      {totalMembers.toLocaleString()}
+                    </span>
+                    {weeklyNewMembers > 0 && (
+                      <span 
+                        className="text-[12px] font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded-full select-none cursor-help"
+                        title={language === 'KR' ? '최근 1주일 신규 가입자 수' : 'New members in the last week'}
+                      >
+                        +{weeklyNewMembers}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[11px] font-black text-outline uppercase tracking-wider">
+                    {t('home.society_stats.members')}
+                  </span>
+                </div>
+
+                {/* 3. CITIES */}
+                <div className="p-6 flex flex-col items-center justify-center text-center border-r border-outline/10">
+                  <span className="material-symbols-outlined text-[24px] text-outline mb-3">map</span>
+                  <span className="text-[32px] font-extrabold text-on-background leading-none mb-2">
+                    {totalCities}
+                  </span>
+                  <span className="text-[11px] font-black text-outline uppercase tracking-wider">
+                    {t('home.society_stats.cities')}
+                  </span>
+                </div>
+
+                {/* 4. COUNTRY */}
+                <div className="p-6 flex flex-col items-center justify-center text-center">
+                  <span className="material-symbols-outlined text-[24px] text-outline mb-3">public</span>
+                  <span className="text-[32px] font-extrabold text-on-background leading-none mb-2">{totalCountries}</span>
+                  <span className="text-[11px] font-black text-outline uppercase tracking-wider">
+                    {t('home.society_stats.country')}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* 하단 푸터 링크 & 카피라이트 */}
+            <div className="w-full flex flex-col md:flex-row justify-between items-center gap-6 pt-6 border-t border-outline/10">
+              <nav className="flex flex-wrap justify-center gap-6">
+                <a className="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md" href="#">{t('common.about')}</a>
+                <a className="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md" href="#">{t('common.terms')}</a>
+                <a className="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md" href="#">{t('common.privacy')}</a>
+              </nav>
+              <div className="text-on-surface-variant font-label-sm text-label-sm text-center md:text-right">
+                {t('common.footer_rights')}
+              </div>
+            </div>
           </div>
         </footer>
       </div>

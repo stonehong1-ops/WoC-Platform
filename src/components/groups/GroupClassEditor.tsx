@@ -521,7 +521,7 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
                             <div className="flex flex-col gap-1 text-sm text-on-surface-variant mb-3">
                               <div className="flex items-center gap-2">
                                 <span className="text-sm font-semibold text-primary" style={{ fontFamily: "'Inter', sans-serif" }}>
-                                  {cls.schedule?.length ? (t('group.class.plus_sessions')?.replace('{date}', cls.schedule[0].date).replace('{count}', String(cls.schedule.length - 1)) || `${cls.schedule[0].date} plus ${cls.schedule.length - 1} sessions`) : (t('group.class.no_sessions') || 'No sessions')}
+                                  {cls.schedule?.length ? (t('group.class.plus_sessions')?.replace('{date}', cls.schedule[0].date || '').replace('{count}', String(cls.schedule.length - 1)) || `${cls.schedule[0].date || ''} plus ${cls.schedule.length - 1} sessions`) : (t('group.class.no_sessions') || 'No sessions')}
                                 </span>
                                 <span className="ml-2 text-on-surface-variant font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>{cls.schedule?.[0]?.timeSlot || ''}</span>
                               </div>

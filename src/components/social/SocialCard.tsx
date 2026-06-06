@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { MapPin, Clock, Disc, Users } from 'lucide-react';
-import { SocialEvent } from '@/lib/constants/socialData';
+import { SocialEvent } from '@/constants/socialData';
 import { cn } from '@/lib/utils';
 
 interface SocialCardProps {

@@ -12,6 +12,7 @@ import { PlatformUser } from "@/types/user";
 import { venueService } from "@/lib/firebase/venueService";
 import { Venue } from "@/types/venue";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { safeDate } from "@/lib/utils/safeDate";
 import { ClassInstructorForm } from "./ClassInstructorForm";
 import { ClassScheduleForm } from "./ClassScheduleForm";
 import { motion } from "framer-motion";
@@ -155,7 +156,7 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({
       for (let i = 0; i < weeks; i++) {
         const nextWeekNum = updatedSchedule.length + 1;
         const lastDate =
-          updatedSchedule.length > 0 ? new Date(updatedSchedule[updatedSchedule.length - 1].date) : new Date();
+          updatedSchedule.length > 0 ? (safeDate(updatedSchedule[updatedSchedule.length - 1].date) || new Date()) : new Date();
 
         const nextDate = new Date(lastDate);
         if (updatedSchedule.length > 0) {
@@ -195,7 +196,7 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({
   const handleGenerateFourWeeks = () => {
     if (formData.schedule.length === 1 && formData.schedule[0].date) {
       const base = formData.schedule[0];
-      const baseDate = new Date(base.date);
+      const baseDate = safeDate(base.date) || new Date();
       const generated = Array.from({ length: 3 }).map((_, i) => {
         const nextDate = new Date(baseDate);
         nextDate.setDate(baseDate.getDate() + (i + 1) * 7);
@@ -290,7 +291,7 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({
       let finalSchedule = formData.schedule;
       if (!isSpecial && !isEditMode && formData.schedule.length === 1) {
         const baseSchedule = formData.schedule[0];
-        const baseDate = new Date(baseSchedule.date);
+        const baseDate = safeDate(baseSchedule.date) || new Date();
         finalSchedule = Array.from({ length: 4 }).map((_, i) => {
           const nextDate = new Date(baseDate);
           nextDate.setDate(baseDate.getDate() + i * 7);
@@ -305,6 +306,8 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({
       const finalData = { 
         ...formData, 
         imageUrl: finalImageUrl,
+        image: finalImageUrl,
+        photoURL: finalImageUrl,
         videoUrl: finalVideoUrl,
         schedule: finalSchedule 
       };

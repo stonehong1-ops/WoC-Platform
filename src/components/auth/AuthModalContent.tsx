@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { COUNTRY_CODES } from '@/lib/constants/countryCodes';
+import { COUNTRY_CODES } from '@/constants/countryCodes';
 import { useAuthFlow } from './hooks/useAuthFlow';
 import { getRegionName } from './helpers/authHelpers';
 

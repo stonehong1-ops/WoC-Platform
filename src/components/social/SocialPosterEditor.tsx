@@ -173,7 +173,9 @@ export default function SocialPosterEditor({ social, onClose }: Props) {
       const container = document.getElementById(`poster-editor-export-container-${social.id}`);
       const previewContainer = previewRef.current;
       
-      if (container && previewContainer && selectedId !== "none") {
+      if (selectedId === "none") {
+        posterExportUrl = "";
+      } else if (container && previewContainer) {
         const pw = previewContainer.offsetWidth;
         const ph = previewContainer.offsetHeight;
         container.style.width = `${pw}px`;

@@ -15,7 +15,7 @@ export function getNextEventDateObj(social: Social): Date | null {
   return null;
 }
 
-export function getDjDisplay(social: Social, targetDate?: Date): string {
+export function getDjDisplay(social: Social, targetDate?: Date, locale: string = "KR"): string {
   if (social.djs && social.djs.length > 0) {
     const nextEventDate = targetDate || getNextEventDateObj(social);
     
@@ -27,17 +27,32 @@ export function getDjDisplay(social: Social, targetDate?: Date): string {
 
       const matchedDj = social.djs.find(d => d.date === nextEventDateStr);
       if (matchedDj) {
+        if (locale === "KR") {
+          return matchedDj.djNativeName || matchedDj.djName;
+        }
         return matchedDj.djName;
-      } else {
-        if (social.type === "regular") return "TBD";
       }
     } else {
       const sorted = [...social.djs].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
       const today = new Date();
       today.setHours(0,0,0,0);
       const nextDj = sorted.find(d => new Date(d.date) >= today);
-      if (nextDj) return nextDj.djName;
+      if (nextDj) {
+        if (locale === "KR") {
+          return nextDj.djNativeName || nextDj.djName;
+        }
+        return nextDj.djName;
+      }
     }
   }
-  return social.djName ? social.djName : "TBD";
+  return "TBD";
+}
+
+export function isVideoUrl(url?: string, fileType?: string): boolean {
+  if (!url) return false;
+  if (url.startsWith('blob:')) {
+    return fileType?.startsWith('video/') || false;
+  }
+  const decoded = decodeURIComponent(url.split('?')[0]).toLowerCase();
+  return decoded.endsWith('.mp4') || decoded.endsWith('.mov') || decoded.endsWith('.webm') || decoded.endsWith('.m3u8') || decoded.endsWith('.avi');
 }

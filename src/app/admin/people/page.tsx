@@ -11,7 +11,7 @@ export default function AdminPeoplePage() {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState<'engagement' | 'joinDate' | 'lastVisit'>('engagement');
+  const [sortBy, setSortBy] = useState<'engagement' | 'joinDate' | 'lastVisit'>('lastVisit');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [visibleCount, setVisibleCount] = useState(10);
   const itemsPerPage = 10;

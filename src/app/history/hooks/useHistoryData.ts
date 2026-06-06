@@ -115,7 +115,7 @@ export function useHistoryData() {
         currency: b.currency,
         appliedAt: b.createdAt,
         confirmedAt: b.confirmedAt,
-        imageUrl: b.itemImageUrl || b.payload?.images?.[0] || b.payload?.imageUrl || ''
+        imageUrl: b.itemImageUrl || (b.payload as any)?.images?.[0] || b.payload?.imageUrl || ''
       });
     });
 

@@ -1,4 +1,9 @@
 스톤님의 실시간 지시사항:
-오눌 : dj 선택  / DJ 단어빼고 Stone 스톤
+[Error Fix Request]
+- Context: couponService.getUserCoupons
+- Message: Missing or insufficient permissions.
+- URL: https://www.woc.today/wallet
+- User: Stone Hong (스톤) (ID: E4w5SqJ0nBTHfOkvj5yey6GpYbt2)
+- Timestamp: 2026. 6. 6. 오후 7:28:32
 
-전송 일시: 2026-06-03T06:53:39.877Z
+전송 일시: 2026-06-06T10:46:43.216Z

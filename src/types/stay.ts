@@ -130,8 +130,8 @@ export interface StayLike {
   userId: string;
   stayId: string;
   status?: 'liked' | 'pending' | 'in_progress'; // 비즈니스 파이프라인 상태
-  createdAt: any; // Timestamp
-  updatedAt?: any; // Timestamp
+  createdAt: Timestamp | null;
+  updatedAt?: Timestamp | null;
 }
 
 
@@ -151,14 +151,14 @@ export type StayBookingStatus =
 
 export interface BookingStatusHistoryEntry {
   status: StayBookingStatus;
-  changedAt: any;            // Timestamp
+  changedAt: Timestamp | null;
   changedBy: string;         // userId
   note?: string;
 }
 
 export interface BookingSmsLogEntry {
   type: 'applied' | 'payment_request' | 'paid' | 'confirmed' | 'door_code';
-  sentAt: any;               // Timestamp
+  sentAt: Timestamp | Date | number | string | null;
   sentBy: string;            // 발송자 userId
   to: string;                // 수신 전화번호
   message: string;
@@ -182,8 +182,8 @@ export interface BookingPaymentInfo {
   holderName?: string;       // Snapshot of holder name
   depositorName?: string;    // 입금자명
   depositDate?: string;      // 입금 예정일
-  transferredAt?: any;       // 실제 입금 시각 (Timestamp)
-  confirmedAt?: any;         // 관리자 확인 시각 (Timestamp)
+  transferredAt?: Timestamp | null;       // 실제 입금 시각
+  confirmedAt?: Timestamp | null;         // 관리자 확인 시각
 }
 
 export interface StayBooking {
@@ -201,8 +201,8 @@ export interface StayBooking {
   contactNumber: string;     // SMS 발송 대상
 
   // 예약 정보
-  checkIn: any;              // Timestamp
-  checkOut: any;             // Timestamp
+  checkIn: Timestamp | Date | number | string | null;
+  checkOut: Timestamp | Date | number | string | null;
   nights: number;
   guests: number;
 
@@ -217,8 +217,8 @@ export interface StayBooking {
   statusHistory: BookingStatusHistoryEntry[];
   smsLog: BookingSmsLogEntry[];
 
-  appliedAt: any;            // Timestamp
-  updatedAt: any;            // Timestamp
+  appliedAt: Timestamp | null;
+  updatedAt: Timestamp | null;
 }
 
 
@@ -239,10 +239,10 @@ export interface UnifiedTodoItem {
   itemDetail?: string;         // "3 nights" | "2시간"
   groupId: string;
   status: string;
-  appliedAt: any;
+  appliedAt: Timestamp | null;
   contactNumber?: string;      // SMS 발송용
   // 원본 참조
   sourceCollection: 'class_registrations' | 'stay_bookings';
   sourceId: string;
-  sourceData?: any;            // 원본 데이터 전체 (액션 처리용)
+  sourceData?: Record<string, unknown>;            // 원본 데이터 전체 (액션 처리용)
 }

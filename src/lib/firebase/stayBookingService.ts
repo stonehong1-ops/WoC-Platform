@@ -10,7 +10,8 @@ import {
   orderBy,
   serverTimestamp,
   onSnapshot,
-  writeBatch
+  writeBatch,
+  Timestamp
 } from "firebase/firestore";
 import { db } from "./clientApp";
 import { StayBooking, StayBookingStatus, BookingStatusHistoryEntry, BookingSmsLogEntry } from "@/types/stay";
@@ -46,7 +47,7 @@ export const stayBookingService = {
         status: 'APPLIED' as StayBookingStatus,
         statusHistory: [{
           status: 'APPLIED' as StayBookingStatus,
-          changedAt: new Date().toISOString(),
+          changedAt: Timestamp.now(),
           changedBy: data.userId,
           note: 'Booking requested'
         }],
@@ -108,7 +109,7 @@ export const stayBookingService = {
       const existing = snap.data() as StayBooking;
       const historyEntry: BookingStatusHistoryEntry = {
         status: newStatus,
-        changedAt: new Date().toISOString(),
+        changedAt: Timestamp.now(),
         changedBy,
         note
       };

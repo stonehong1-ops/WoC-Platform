@@ -1,3 +1,5 @@
+import { Timestamp } from 'firebase/firestore';
+
 export interface UserProfile {
   id: string;
   nickname: string;
@@ -14,16 +16,24 @@ export interface UserProfile {
   isStaff?: boolean;
   isStayHost?: boolean;
   systemRole?: 'admin' | 'staff' | 'member';
-  createdAt?: any;
-  updatedAt?: any;
+  createdAt?: Timestamp | null;
+  updatedAt?: Timestamp | null;
   email?: string;
   phoneNumber?: string;
   joinedGroups?: string[];
-  lastVisitedAt?: any;
+  lastVisitedAt?: Timestamp | null;
   authMethod?: string;
   career?: string;
   partnerStatus?: string;
   allowPhoneCalls?: boolean;
+  phone?: string;
+  contactNumber?: string;
+  fcmTokens?: string[];
+  language?: string;
+  countryCode?: string;
+  likedClassIds?: string[];
+  likedStayIds?: string[];
+  notificationSnoozedUntil?: Timestamp | null;
 }
 
 export interface PlatformUser extends UserProfile { }

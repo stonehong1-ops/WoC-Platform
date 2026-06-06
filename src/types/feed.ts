@@ -10,7 +10,7 @@ export interface Reaction {
   createdAt: Timestamp;
 }
 
-export interface Post {
+export interface FeedPost {
   id: string;
   userId: string;
   userName: string;
@@ -51,8 +51,10 @@ export interface Post {
   title?: string;          // New: For announcement titles
   createdAt: Timestamp;
 }
+/** @deprecated Use FeedPost instead */
+export type Post = FeedPost;
 
-export interface Comment {
+export interface FeedComment {
   id: string;
   userId: string;
   userName: string;
@@ -64,6 +66,8 @@ export interface Comment {
   isOfficial?: boolean;
   createdAt: Timestamp;
 }
+/** @deprecated Use FeedComment instead */
+export type Comment = FeedComment;
 
 export interface FeedContext {
   scope: 'plaza' | 'group' | 'venue' | 'event' | 'helpdesk';

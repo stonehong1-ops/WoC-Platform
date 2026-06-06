@@ -1,3 +1,5 @@
+import { Timestamp } from 'firebase/firestore';
+
 export type RentalSpace = {
   id: string;
   hostId: string;
@@ -19,15 +21,15 @@ export type RentalSpace = {
   facilities: string[];
   rules: string;
   regularClasses: { day: number; start: string; end: string }[]; // day: 0 (Sun) - 6 (Sat)
-  createdAt?: any;
-  updatedAt?: any;
+  createdAt?: Timestamp | null;
+  updatedAt?: Timestamp | null;
   likesCount?: number;
 };
 
 export type RentalLike = {
   userId: string;
   spaceId: string;
-  createdAt: any;
+  createdAt: Timestamp | null;
   status?: 'liked' | 'pending' | 'in_progress';
 };
 
@@ -44,5 +46,5 @@ export type RentalRequest = {
   message: string;
   status: 'PENDING' | 'REVIEWING' | 'APPROVED' | 'CONFIRMED' | 'REJECTED';
   chatRoomId?: string;
-  createdAt?: any;
+  createdAt?: Timestamp | null;
 };

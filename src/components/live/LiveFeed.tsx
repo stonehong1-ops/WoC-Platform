@@ -425,12 +425,15 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
   useEffect(() => {
     const handleComposeOpen = (e: CustomEvent) => {
       if (e.detail?.id === 'gallery') {
-        router.push('/live/create?source=live');
+        const createUrl = entityType === 'group' && entityId
+          ? `/live/create?source=live&groupId=${entityId}`
+          : `/live/create?source=live`;
+        router.push(createUrl);
       }
     };
     window.addEventListener('woc:compose:open', handleComposeOpen as EventListener);
     return () => window.removeEventListener('woc:compose:open', handleComposeOpen as EventListener);
-  }, [router]);
+  }, [router, entityType, entityId]);
 
   // 스톤님 정적 HTML 동적 데이터 바인딩 치환 헬퍼 (애니메이션, 영상, 7일 집계 카운트 자동 매핑)
   const getDashboardHtml = () => {
@@ -605,7 +608,7 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
         >
           {posts.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-white/50 pb-20">
-              <Link href="/live/create?source=live" className="bg-white/10 p-6 rounded-full mb-4 backdrop-blur-md hover:bg-white/20 transition-colors">
+              <Link href={entityType === 'group' && entityId ? `/live/create?source=live&groupId=${entityId}` : "/live/create?source=live"} className="bg-white/10 p-6 rounded-full mb-4 backdrop-blur-md hover:bg-white/20 transition-colors">
                 <Plus size={40} />
               </Link>
               <p className="font-bold">{t('gallery.no_posts')}</p>
@@ -646,6 +649,8 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
               onFirstCardLoaded={idx === 0 ? () => setFirstCardReady(true) : undefined}
               loadingPercent={idx === 0 ? loadingPercent : undefined}
               handleProgress={idx === 0 ? handleProgress : undefined}
+              entityType={entityType}
+              entityId={entityId}
             />
           ))}
         </div>
@@ -883,7 +888,9 @@ const GalleryCard = ({
   activeFilter,
   onFirstCardLoaded,
   loadingPercent: parentLoadingPercent,
-  handleProgress: parentHandleProgress
+  handleProgress: parentHandleProgress,
+  entityType,
+  entityId
 }: {
   post: GalleryPost,
   onOpenComments: () => void,
@@ -894,14 +901,21 @@ const GalleryCard = ({
   activeFilter?: LiveFilter,
   onFirstCardLoaded?: () => void,
   loadingPercent?: number,
-  handleProgress?: (e: React.SyntheticEvent<HTMLVideoElement>) => void
+  handleProgress?: (e: React.SyntheticEvent<HTMLVideoElement>) => void,
+  entityType?: 'social' | 'group' | 'event' | 'class' | 'venue' | 'people',
+  entityId?: string
 }) => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { t } = useLanguage();
   const [activeDot, setActiveDot] = useState(0);
   const [isMirrored, setIsMirrored] = useState(false);
   const [isVideoLoading, setIsVideoLoading] = useState(true);
   const [localLoadingPercent, setLocalLoadingPercent] = useState(0);
+  const [showMenu, setShowMenu] = useState(false);
+
+  const isAdmin = profile?.isAdmin === true || profile?.systemRole === 'admin';
+  const isAuthor = !!(user?.uid && user.uid === post.authorId);
+  const canManage = isAuthor || isAdmin;
   
   const effectiveLoadingPercent = parentLoadingPercent !== undefined ? parentLoadingPercent : localLoadingPercent;
 
@@ -997,7 +1011,9 @@ const GalleryCard = ({
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!user || user.uid !== post.authorId) return;
+    if (!user) return;
+    const isAuthor = user.uid === post.authorId;
+    if (!isAuthor && !isAdmin) return;
     if (confirm(t('gallery.confirm_delete'))) {
       await galleryService.deletePost(post.id);
     }
@@ -1157,22 +1173,37 @@ const GalleryCard = ({
           </div>
 
           <div className="flex items-center gap-2 pointer-events-auto shrink-0">
-            {user?.uid === post.authorId && (
-              <>
-                <Link
-                  href={`/live/create?edit=${post.id}&source=live`}
-                  className="w-8 h-8 rounded-full bg-black/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/20 transition-colors border border-white/10 shadow-sm"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <Edit2 size={14} />
-                </Link>
+            {canManage && (
+              <div className="relative">
                 <button
-                  className="w-8 h-8 rounded-full bg-black/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-red-500/80 transition-colors border border-white/10 shadow-sm"
-                  onClick={handleDelete}
+                  onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
+                  className="w-8 h-8 rounded-full bg-black/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/20 transition-colors border border-white/10 shadow-sm"
                 >
-                  <Trash2 size={14} />
+                  <MoreVertical size={16} />
                 </button>
-              </>
+                {showMenu && (
+                  <>
+                    <div className="fixed inset-0 z-[29]" onClick={(e) => { e.stopPropagation(); setShowMenu(false); }} />
+                    <div className="absolute right-0 top-10 z-30 w-36 bg-black/80 backdrop-blur-xl rounded-2xl border border-white/15 shadow-2xl overflow-hidden">
+                      <Link
+                        href={`/live/create?edit=${post.id}&source=live`}
+                        className="flex items-center gap-2.5 px-4 py-3 text-white text-sm font-semibold hover:bg-white/10 transition-colors"
+                        onClick={(e) => { e.stopPropagation(); setShowMenu(false); }}
+                      >
+                        <Edit2 size={14} />
+                        <span>{t('gallery.edit') || '수정'}</span>
+                      </Link>
+                      <button
+                        className="flex items-center gap-2.5 px-4 py-3 text-red-400 text-sm font-semibold hover:bg-white/10 transition-colors w-full text-left"
+                        onClick={(e) => { e.stopPropagation(); setShowMenu(false); handleDelete(e); }}
+                      >
+                        <Trash2 size={14} />
+                        <span>{t('gallery.delete') || '삭제'}</span>
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             )}
             {isImmersive && (
               <button
@@ -1274,7 +1305,7 @@ const GalleryCard = ({
           className={`absolute right-2 flex flex-col items-center gap-4 z-20 transition-all duration-300 pointer-events-auto ${isImmersive ? 'bottom-12 pb-safe' : 'bottom-12 md:bottom-16'}`}
         >
           {!isImmersive && (
-            <Link href="/live/create?source=live" onClick={(e) => e.stopPropagation()} className="flex flex-col items-center group">
+            <Link href={entityType === 'group' && entityId ? `/live/create?source=live&groupId=${entityId}` : "/live/create?source=live"} onClick={(e) => e.stopPropagation()} className="flex flex-col items-center group">
               <div className="w-9 h-9 rounded-full flex items-center justify-center bg-black/20 backdrop-blur-md border border-white/10 text-white transition-transform active:scale-90 shadow-sm">
                 <Plus size={18} className="drop-shadow-md" />
               </div>

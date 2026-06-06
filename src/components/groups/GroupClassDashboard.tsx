@@ -12,6 +12,9 @@ import { useModalNavigation } from '@/hooks/useModalNavigation';
 import { classRegistrationService } from '@/lib/firebase/classRegistrationService';
 import UserBadge from '@/components/common/UserBadge';
 import { toast } from 'sonner';
+import ClassPageContent from '@/app/class/[groupId]/ClassPageContent';
+import { safeDate } from '@/lib/utils/safeDate';
+
 
 interface GroupClassDashboardProps {
   group: Group;
@@ -195,7 +198,7 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
     const now = new Date();
     
     const scheduleCount = Math.max(cls.schedule?.length || 0, 4);
-    const sortedSched = cls.schedule ? [...cls.schedule].sort((a, b) => a.date.localeCompare(b.date)) : [];
+    const sortedSched = cls.schedule ? [...cls.schedule].sort((a, b) => (a.date || '').localeCompare(b.date || '')) : [];
 
     for (let i = 0; i < scheduleCount; i++) {
       const sched = sortedSched[i];
@@ -212,7 +215,7 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
       const schedDate = new Date(cleanDateStr);
       const isPast = schedDate < now;
       
-      const isCurrent = !isPast && (i === 0 || new Date(sortedSched[i-1]?.date.replace(/\./g, '-')) < now);
+      const isCurrent = !isPast && (i === 0 || new Date((sortedSched[i-1]?.date || '').replace(/\./g, '-')) < now);
 
       if (isPast) {
         dots.push(
@@ -242,6 +245,8 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
 
   // Detail & Editing Modals State
   const [editingGroupedReg, setEditingGroupedReg] = useState<any | null>(null);
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const [editRegistrationItem, setEditRegistrationItem] = useState<any | null>(null);
 
   // Edit fields
   const [editRole, setEditRole] = useState<'Leader' | 'Follower' | 'Couple'>('Leader');
@@ -594,8 +599,8 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
       const gTime = groups[key].updatedAt || groups[key].appliedAt;
 
       if (rTime && gTime) {
-        const rDate = rTime.toDate ? rTime.toDate() : new Date(rTime);
-        const gDate = gTime.toDate ? gTime.toDate() : new Date(gTime);
+        const rDate = safeDate(rTime) || new Date(0);
+        const gDate = safeDate(gTime) || new Date(0);
         if (rDate > gDate) {
           groups[key].updatedAt = rTime;
           groups[key].appliedAt = r.appliedAt;
@@ -611,8 +616,8 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
       const timeB = b.updatedAt || b.appliedAt;
       if (!timeA) return 1;
       if (!timeB) return -1;
-      const dateA = timeA.toDate ? timeA.toDate() : new Date(timeA);
-      const dateB = timeB.toDate ? timeB.toDate() : new Date(timeB);
+      const dateA = safeDate(timeA) || new Date(0);
+      const dateB = safeDate(timeB) || new Date(0);
       return dateB.getTime() - dateA.getTime();
     });
   }, [filteredRegistrations]);
@@ -719,7 +724,7 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
     targetClassIds.forEach(id => {
       const cls = allClasses.find(c => c.id === id);
       if (cls && cls.schedule && cls.schedule.length > 0) {
-        const sortedSched = [...cls.schedule].sort((a, b) => a.date.localeCompare(b.date));
+        const sortedSched = [...cls.schedule].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
         const firstDate = sortedSched[0]?.date;
         if (firstDate) {
           const dd = new Date(firstDate.replace(/\./g, '-'));
@@ -808,13 +813,27 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
     return `${month}.${date}(${dayName}) ${hh}:${min}`;
   };
 
-  const openEditModal = (groupedReg: any) => {
-    setEditingGroupedReg(groupedReg);
-    const firstReg = groupedReg.registrations[0];
-    setEditRole(firstReg?.role || 'Leader');
-    setEditDepositor(firstReg?.depositorName || groupedReg.applicantName || '');
-    setEditMemo(firstReg?.applicantMemo || firstReg?.memo || '');
-    setEditPartnerName(firstReg?.partnerName || '');
+  const openEditModal = (reg: any) => {
+    const isGrouped = reg.registrations && Array.isArray(reg.registrations);
+    if (isGrouped) {
+      setEditingGroupedReg(reg);
+      const firstReg = reg.registrations[0];
+      setEditRole(firstReg?.role || 'Leader');
+      setEditDepositor(firstReg?.depositorName || reg.applicantName || '');
+      setEditMemo(firstReg?.applicantMemo || firstReg?.memo || '');
+      setEditPartnerName(firstReg?.partnerName || '');
+    } else {
+      setEditingGroupedReg({
+        id: reg.id,
+        userId: reg.userId,
+        applicantName: reg.applicantName,
+        registrations: [reg]
+      });
+      setEditRole(reg?.role || 'Leader');
+      setEditDepositor(reg?.depositorName || reg.applicantName || '');
+      setEditMemo(reg?.applicantMemo || reg?.memo || '');
+      setEditPartnerName(reg?.partnerName || '');
+    }
   };
 
   const handleUpdate = async () => {
@@ -840,13 +859,12 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
   const handleDeleteGrouped = async (groupedReg: any) => {
     if (!groupedReg?.registrations || groupedReg.registrations.length === 0) return;
     
-    const userInput = window.prompt("⚠️ WARNING: Deleted records cannot be recovered.\n\nTo confirm deletion, type 'DELETE' exactly in the field below.");
-    if (userInput !== 'DELETE') {
-      if (userInput !== null) {
-        toast.error(language === 'KR' ? '삭제 확인 문자가 일치하지 않습니다.' : 'Verification word mismatch.');
-      }
-      return;
-    }
+    const confirmed = window.confirm(
+      language === 'KR' 
+        ? '정말 이 신청 그룹을 삭제하시겠습니까? 삭제된 데이터는 복구할 수 없습니다.' 
+        : 'Are you sure you want to delete this registration group? This action cannot be undone.'
+    );
+    if (!confirmed) return;
 
     try {
       const promises = groupedReg.registrations.map((r: any) =>
@@ -857,6 +875,26 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
       closeRegModal();
     } catch (error) {
       console.error("Error deleting registrations:", error);
+      toast.error(language === 'KR' ? '삭제에 실패했습니다.' : 'Failed to delete registration.');
+    }
+  };
+
+  const handleDeleteRegistration = async (reg: any) => {
+    if (!reg) return;
+    
+    const confirmed = window.confirm(
+      language === 'KR' 
+        ? '정말 이 신청을 삭제하시겠습니까? 삭제된 데이터는 복구할 수 없습니다.' 
+        : 'Are you sure you want to delete this registration? This action cannot be undone.'
+    );
+    if (!confirmed) return;
+
+    try {
+      await classRegistrationService.deleteRegistration(reg.id);
+      toast.success(language === 'KR' ? '신청이 삭제되었습니다.' : 'Registration deleted successfully.');
+      closeRegModal();
+    } catch (error) {
+      console.error("Error deleting registration:", error);
       toast.error(language === 'KR' ? '삭제에 실패했습니다.' : 'Failed to delete registration.');
     }
   };
@@ -982,8 +1020,8 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
                       const teachers = cls.instructors?.map(ins => ins.name).join(' & ') || (language === 'KR' ? '미지정 강사' : 'TBD');
                       
                       const currentClassObj = monthClasses.find(c => c.id === cls.id);
-                      const sortedSched = currentClassObj?.schedule ? [...currentClassObj.schedule].sort((a, b) => a.date.localeCompare(b.date)) : [];
-                      const completedWeeksCount = sortedSched.filter(s => new Date(s.date.replace(/\./g, '-')) < new Date()).length;
+                      const sortedSched = currentClassObj?.schedule ? [...currentClassObj.schedule].sort((a, b) => (a.date || '').localeCompare(b.date || '')) : [];
+                      const completedWeeksCount = sortedSched.filter(s => new Date((s.date || '').replace(/\./g, '-')) < new Date()).length;
                       
                       let attendancePercent = 100;
                       if (stats.membersList.length > 0 && completedWeeksCount > 0) {
@@ -1249,7 +1287,7 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
                               )}
                             </div>
 
-                            {/* Right Side: Payment Status Badge + Edit Button */}
+                            {/* Right Side: Payment Status Badge */}
                             <div className="flex items-center gap-2">
                               {representativeReg?.status && (() => {
                                 const badge = getStatusBadge(representativeReg.status);
@@ -1259,15 +1297,6 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
                                   </span>
                                 );
                               })()}
-                              {(isMe || hasManagePermission) && (
-                                <button
-                                  onClick={() => openEditModal(g)}
-                                  className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 font-bold text-[11px] text-[#596061] shadow-xs active:scale-95 transition-all flex items-center gap-1"
-                                >
-                                  <span className="material-symbols-outlined text-[12px]">edit</span>
-                                  {t('class-dashboard.modify')}
-                                </button>
-                              )}
                             </div>
                           </div>
 
@@ -1300,7 +1329,7 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
                           </div>
 
                           {/* Bottom Side: Membership & Personal Memo */}
-                          {(representativeReg?.adminMemo || representativeReg?.applicantMemo) && (
+                          {(representativeReg?.adminMemo || representativeReg?.applicantMemo || representativeReg?.memo || representativeReg?.notes) && (
                             <div className="mt-3 pt-3 border-t border-slate-100 space-y-1.5">
                               {representativeReg.adminMemo && (
                                 <div className="text-[11px] text-slate-500 font-medium leading-relaxed flex items-start gap-1">
@@ -1310,11 +1339,11 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
                                   </span>
                                 </div>
                               )}
-                              {representativeReg.applicantMemo && (
+                              {(representativeReg.applicantMemo || representativeReg.memo || representativeReg.notes) && (
                                 <div className="text-[11px] text-slate-500 font-medium leading-relaxed flex items-start gap-1">
                                   <span className="material-symbols-outlined text-[13px] mt-0.5 text-emerald-500 shrink-0">comment</span>
                                   <span>
-                                    <strong className="text-emerald-600 font-bold">{language === 'KR' ? '입금메모' : 'Deposit Memo'}.</strong> {representativeReg.applicantMemo}
+                                    <strong className="text-emerald-600 font-bold">{language === 'KR' ? '입금메모' : 'Deposit Memo'}.</strong> {representativeReg.applicantMemo || representativeReg.memo || representativeReg.notes}
                                   </span>
                                 </div>
                               )}
@@ -1527,29 +1556,6 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
                 )}
               </div>
               <div className="flex items-center gap-2">
-                {(isMe || hasManagePermission) && (
-                  <>
-                    <button
-                      onClick={() => {
-                        closeRegModal();
-                        openEditModal(selectedGroupedReg);
-                      }}
-                      className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 font-bold text-[11px] text-[#596061] shadow-xs active:scale-95 transition-all flex items-center gap-1"
-                    >
-                      <span className="material-symbols-outlined text-[12px]">edit</span>
-                      {t('class-dashboard.modify') || '수정'}
-                    </button>
-                    {hasManagePermission && (
-                      <button
-                        onClick={() => handleDeleteGrouped(selectedGroupedReg)}
-                        className="px-2.5 py-1.5 rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 font-bold text-[11px] text-red-600 shadow-xs active:scale-95 transition-all flex items-center gap-1"
-                      >
-                        <span className="material-symbols-outlined text-[12px]">delete</span>
-                        {t('common.delete') || '삭제'}
-                      </button>
-                    )}
-                  </>
-                )}
                 <button
                   onClick={() => closeRegModal()}
                   className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
@@ -1571,9 +1577,67 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
                         {getRegistrationTitle(reg)}
                         {reg.partnerName && reg.partnerName.trim() !== '' && t('class-dashboard.partner_suffix', { name: reg.partnerName })}
                       </h4>
-                      <span className={`px-2.5 py-0.5 rounded-full border text-[9px] font-black shrink-0 ${badge.bg}`}>
-                        {badge.label}
-                      </span>
+                      <div className="flex items-center gap-1.5 shrink-0 relative">
+                        {(isMe || hasManagePermission) && (
+                          <>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveMenuId(activeMenuId === reg.id ? null : reg.id);
+                              }}
+                              className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-slate-200 text-slate-500 transition-colors"
+                            >
+                              <span className="material-symbols-outlined text-lg">more_vert</span>
+                            </button>
+
+                            {activeMenuId === reg.id && (
+                              <>
+                                {/* Backdrop overlay to close menu */}
+                                <div 
+                                  className="fixed inset-0 z-40" 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActiveMenuId(null);
+                                  }}
+                                />
+                                {/* Dropdown menu container */}
+                                <div className="absolute right-0 top-8 bg-white border border-slate-200 rounded-xl shadow-lg py-1.5 z-50 min-w-[100px] animate-in fade-in slide-in-from-top-2 duration-150">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setActiveMenuId(null);
+                                      closeRegModal();
+                                      setEditRegistrationItem(reg);
+                                    }}
+                                    className="w-full text-left px-3.5 py-2 hover:bg-slate-50 text-slate-700 font-bold text-[11px] flex items-center gap-2"
+                                  >
+                                    <span className="material-symbols-outlined text-[14px]">edit</span>
+                                    {t('class-dashboard.modify') || '수정'}
+                                  </button>
+                                  {hasManagePermission && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setActiveMenuId(null);
+                                        handleDeleteRegistration(reg);
+                                      }}
+                                      className="w-full text-left px-3.5 py-2 hover:bg-slate-50 text-red-600 font-bold text-[11px] flex items-center gap-2 border-t border-slate-100"
+                                    >
+                                      <span className="material-symbols-outlined text-[14px]">delete</span>
+                                      {t('common.delete') || '삭제'}
+                                    </button>
+                                  )}
+                                </div>
+                              </>
+                            )}
+                          </>
+                        )}
+                        {badge.label !== '입금대기' && badge.label !== 'Pending' && badge.label !== '대기중' && (
+                          <span className={`px-2.5 py-0.5 rounded-full border text-[9px] font-black ${badge.bg}`}>
+                            {badge.label}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     
                     {/* Included individual classes */}
@@ -1656,7 +1720,7 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
                     </div>
                     
                     {/* Memo & Partner detail display */}
-                    {(reg.partnerName || reg.applicantMemo || reg.memo) && (
+                    {(reg.partnerName || reg.applicantMemo || reg.memo || reg.notes) && (
                       <div className="mt-2.5 pt-2.5 border-t border-slate-200/50 flex flex-col gap-1.5 text-[11px] font-bold text-slate-500">
                         {reg.partnerName && reg.partnerName.trim() !== '' && (
                           <div className="flex items-center gap-1.5">
@@ -1664,12 +1728,12 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
                             <span>{language === 'KR' ? '대표 파트너' : 'Representative Partner'}: <strong className="text-slate-700">{reg.partnerName}</strong></span>
                           </div>
                         )}
-                        {(reg.applicantMemo || reg.memo) && (
+                        {(reg.applicantMemo || reg.memo || reg.notes) && (
                           <div className="flex items-start gap-1.5">
                             <span className="material-symbols-outlined text-[13px] text-slate-400 mt-0.5">notes</span>
                             <div className="flex-1">
                               <span>{language === 'KR' ? '신청자 메모' : 'Applicant Memo'}:</span>
-                              <p className="text-slate-700 font-medium whitespace-pre-wrap mt-0.5 bg-slate-100/50 p-2.5 rounded-xl border border-slate-100">{reg.applicantMemo || reg.memo}</p>
+                              <p className="text-slate-700 font-medium whitespace-pre-wrap mt-0.5 bg-slate-100/50 p-2.5 rounded-xl border border-slate-100">{reg.applicantMemo || reg.memo || reg.notes}</p>
                             </div>
                           </div>
                         )}
@@ -1881,12 +1945,12 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
                 <div className="flex overflow-x-auto no-scrollbar gap-2 pb-2 px-4">
                   {(() => {
                     const scheduleCount = Math.max(currentClassObj?.schedule?.length || 0, 4);
-                    const sortedSched = currentClassObj?.schedule ? [...currentClassObj.schedule].sort((a, b) => a.date.localeCompare(b.date)) : [];
+                    const sortedSched = currentClassObj?.schedule ? [...currentClassObj.schedule].sort((a, b) => (a.date || '').localeCompare(b.date || '')) : [];
                     
                     return Array.from({ length: scheduleCount }).map((_, i) => {
                       const sched = sortedSched[i];
                       const isActive = activeWeekIndex === i;
-                      const isCompleted = sched ? new Date(sched.date.replace(/\./g, '-')) < new Date() : false;
+                      const isCompleted = sched && sched.date ? new Date(sched.date.replace(/\./g, '-')) < new Date() : false;
                       
                       return (
                         <button
@@ -1927,7 +1991,7 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
                     </h3>
                     <p className="font-body-md text-body-md text-on-surface bg-surface p-3 rounded-lg border border-surface-variant leading-relaxed">
                       {(() => {
-                        const sortedSched = currentClassObj?.schedule ? [...currentClassObj.schedule].sort((a, b) => a.date.localeCompare(b.date)) : [];
+                        const sortedSched = currentClassObj?.schedule ? [...currentClassObj.schedule].sort((a, b) => (a.date || '').localeCompare(b.date || '')) : [];
                         return sortedSched[activeWeekIndex]?.content || currentClassObj?.description || (language === 'KR' ? '등록된 수업 진도 계획이 아직 없습니다.' : 'No planned lesson details available.');
                       })()}
                     </p>
@@ -2240,7 +2304,7 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
                             </div>
                             <div className="grid grid-cols-4 gap-2 pt-1">
                               {[1, 2, 3, 4].map((w) => {
-                                const sortedSched = currentClassObj?.schedule ? [...currentClassObj.schedule].sort((a, b) => a.date.localeCompare(b.date)) : [];
+                                const sortedSched = currentClassObj?.schedule ? [...currentClassObj.schedule].sort((a, b) => (a.date || '').localeCompare(b.date || '')) : [];
                                 const sched = sortedSched[w - 1];
                                 
                                 const now = new Date();
@@ -2314,6 +2378,15 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
         );
       })()}
 
+      {editRegistrationItem && (
+        <ClassPageContent
+          propGroupId={group.id}
+          isOverlay={true}
+          editRegistration={editRegistrationItem}
+          isEditMode={true}
+          onClose={() => setEditRegistrationItem(null)}
+        />
+      )}
     </div>
   );
 }

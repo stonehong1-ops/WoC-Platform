@@ -4,6 +4,7 @@ import React from 'react';
 import { isToday, isSameDay } from 'date-fns';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Group, CalendarEvent } from '@/types/group';
+import { safeDate } from '@/lib/utils/safeDate';
 import { useGroupCalendar, ViewMode } from './hooks/useGroupCalendar';
 import { GroupCalendarGrid } from './GroupCalendarGrid';
 import { EventDetailBottomSheet } from './EventDetailBottomSheet';
@@ -166,7 +167,7 @@ const GroupCalendar: React.FC<GroupCalendarProps> = ({ group }) => {
             const dayNum = formatDate(wd, 'calendarDay');
             const isTodayDate = isToday(wd);
             const dayEvents = events
-              .filter(e => isSameDay(new Date(e.startDate), wd))
+              .filter(e => isSameDay(safeDate(e.startDate) || new Date(), wd))
               .sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
 
             return (
@@ -214,7 +215,7 @@ const GroupCalendar: React.FC<GroupCalendarProps> = ({ group }) => {
                 <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider border-b border-slate-200 pb-2">{t('common.weekLabel') || 'Week'} {wn}</h3>
                 <div className="flex flex-col gap-3">
                   {wEvents.length > 0 ? wEvents.map(event => {
-                    const ed = new Date(event.startDate);
+                    const ed = safeDate(event.startDate) || new Date();
                     return (
                       <div key={event.id} onClick={() => { setSelectedDate(ed); setCurrentMonth(new Date(ed.getFullYear(), ed.getMonth(), 1)); setViewMode('day'); }} className="bg-white rounded-xl p-4 border border-slate-100 shadow-sm flex gap-4 items-center hover:shadow-md transition-shadow cursor-pointer">
                         <div className="flex flex-col items-center justify-center min-w-[50px] border-r border-slate-100 pr-4">

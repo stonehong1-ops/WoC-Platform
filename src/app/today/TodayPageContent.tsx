@@ -10,14 +10,20 @@ import { socialService } from "@/lib/firebase/socialService";
 import { eventService } from "@/lib/firebase/eventService";
 import { groupService } from "@/lib/firebase/groupService";
 import { db } from "@/lib/firebase/clientApp";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, query, limit } from "firebase/firestore";
 import { Social } from "@/types/social";
 import { Event } from "@/types/event";
 import { GroupClass, Group } from "@/types/group";
-import { detectSeoulDistrict, getDjDisplay, getVenueDisplay, formatInstructorNames, formatCommunityName } from "@/app/social/constants/seoulRegions";
+import { detectSeoulDistrict, getVenueDisplay, formatInstructorNames, formatCommunityName } from "@/app/social/constants/seoulRegions";
+import { getDjDisplay } from "@/lib/utils/socialUtils";
 import SocialViewer from "@/components/social/SocialViewer";
 import ClassDetail from "@/components/class/ClassDetail";
 import EventViewer from "@/components/events/EventViewer";
+
+// 분리된 하위 컴포넌트 임포트
+import TodayHeroSection from "./components/TodayHeroSection";
+import TodaySocialSection from "./components/TodaySocialSection";
+import TodayClassSection from "./components/TodayClassSection";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -120,11 +126,6 @@ function normalizeDateStr(dStr: string): Date | null {
   return new Date(`${y}-${m}-${d}T00:00:00`);
 }
 
-const isDaySocial = (s: Social) => {
-  const hour = parseInt((s.startTime || "19:00").split(":")[0]);
-  return !isNaN(hour) && hour < 18;
-};
-
 function formatDjFilterName(djName: string, locale: string): string {
   if (djName === "All") return "";
   const translated = formatInstructorNames(djName, "KR");
@@ -134,163 +135,6 @@ function formatDjFilterName(djName: string, locale: string): string {
   }
   return djName;
 }
-
-// ── Section Header ────────────────────────────────────────────────────────────
-
-function SectionHeader({ icon, label, count }: {
-  icon: string; label: string; count: number;
-}) {
-  return (
-    <div className="flex items-center gap-2 mb-3">
-      <span className="material-symbols-outlined !text-[20px] text-slate-500">{icon}</span>
-      <span className="text-[15px] font-black text-[#1e293b] tracking-tight">{label}</span>
-      {count > 0 && (
-        <span className="text-[13px] font-bold text-slate-400">{count}</span>
-      )}
-    </div>
-  );
-}
-
-// ── Social Card (3열용) ───────────────────────────────────────────────────────
-
-function SocialCard({ social, date, venuesMap, onPress }: {
-  social: Social; date: Date; venuesMap: Record<string, any>; onPress: () => void;
-}) {
-  const { language } = useLanguage();
-  const djName = getDjDisplay(social, date);
-  const hasDj = djName && djName !== "TBD" && djName !== "TBA";
-  const djFormatted = hasDj ? formatInstructorNames(djName, language) : "";
-
-  // org 이름: 복수 주최자 지원 + KR/EN 개별 주최자별 선택
-  const getOrgDisplay = () => {
-    const ids = social.organizerIds;
-    const enNames = social.organizerNames;
-    const krNames = social.organizerNativeNames;
-
-    if (ids && ids.length > 0 && enNames && enNames.length > 0) {
-      return ids.map((_, i) => {
-        const en = enNames[i] || "";
-        const kr = krNames?.[i] || "";
-        const picked = language === "KR" ? (kr || en) : (en || kr);
-        return picked ? formatCommunityName(picked, language) : "";
-      }).filter(Boolean).join(", ");
-    }
-    // fallback: 단일 organizer 필드
-    const orgRaw = language === "KR"
-      ? (social.organizerNameNative || social.organizerName || "")
-      : (social.organizerName || social.organizerNameNative || "");
-    return orgRaw ? formatCommunityName(orgRaw, language) : "";
-  };
-  const orgFormatted = getOrgDisplay();
-
-  // 바텀라인: org 이프 º dj 나초
-  const bottomParts: string[] = [];
-  if (orgFormatted) bottomParts.push(`org ${orgFormatted}`);
-  if (djFormatted) bottomParts.push(`dj ${djFormatted}`);
-  const bottomLine = bottomParts.join(" º ");
-
-  const venue = getVenueDisplay(social, language, venuesMap);
-
-  const shortVenue = venue.length > 8 ? venue.slice(0, 8) + "…" : venue;
-  const isDay = isDaySocial(social);
-
-  return (
-    <button onClick={onPress} className="block w-full rounded-xl overflow-hidden relative shadow-sm text-left" style={{ aspectRatio: "3/4" }}>
-      <div className="absolute inset-0 bg-[#12121e]">
-        {social.imageUrl && (
-          <Image src={social.imageUrl} alt={social.title} fill className="object-cover opacity-70" sizes="33vw" />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
-      </div>
-      {/* 배지 세로 적층 (좌상단) */}
-      <div className="absolute top-2 left-2 flex flex-col gap-1 items-start">
-        <span className="bg-black/60 backdrop-blur-sm text-white text-[9px] font-black px-1.5 py-0.5 rounded-full leading-none">
-          {social.startTime || "—"}
-        </span>
-        {isDay && (
-          <span className="bg-amber-400 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full leading-none">낮밀</span>
-        )}
-        {social.type === "popup" && (
-          <span className="bg-rose-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded-lg leading-none uppercase tracking-wide shadow-md">
-            POPUP
-          </span>
-        )}
-      </div>
-      {/* 우상단 장소 칩 */}
-      {shortVenue && (
-        <span className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white text-[8px] font-black px-1.5 py-0.5 rounded-full leading-none shadow-sm max-w-[90px] truncate flex items-center gap-0.5">
-          <span className="material-symbols-outlined !text-[8px]">location_on</span>{shortVenue}
-        </span>
-      )}
-      {/* 하단 정보 */}
-      <div className="absolute bottom-0 left-0 right-0 p-2 space-y-0.5">
-        <p className="text-white font-black text-[13px] leading-tight line-clamp-2">
-          {language === "KR" ? (social.titleNative || social.title) : (social.title || social.titleNative)}
-        </p>
-        {bottomLine && (
-          <p className="text-[10px] font-semibold truncate text-white/70">
-            {bottomLine}
-          </p>
-        )}
-      </div>
-    </button>
-  );
-}
-
-// ── Class Card (3열용) ────────────────────────────────────────────────────────
-
-function ClassCard({ cls, timeSlot, onPress }: { cls: GroupClass; timeSlot: string; onPress: () => void }) {
-  const { language } = useLanguage();
-  const [imageError, setImageError] = useState(false);
-  const getInstructorsLabel = (instructors: any[]) => {
-    if (!instructors || instructors.length === 0) return '';
-    const formattedNames = instructors.map(i => formatInstructorNames(i.name || '', language));
-    if (formattedNames.length === 1) return formattedNames[0];
-    if (formattedNames.length === 2) return `${formattedNames[0]}, ${formattedNames[1]}`;
-    return `${formattedNames[0]}, ${formattedNames[1]}, ...`;
-  };
-
-  const hasImage = cls.imageUrl && !imageError;
-
-  return (
-    <button onClick={onPress} className="block w-full text-left">
-      <div className="relative rounded-xl overflow-hidden bg-[#1a1a2e] shadow-md" style={{ aspectRatio: "1/1" }}>
-        {hasImage ? (
-          <Image 
-            src={cls.imageUrl || ""} 
-            alt={cls.title} 
-            fill 
-            className="object-cover opacity-75" 
-            sizes="33vw" 
-            onError={() => setImageError(true)}
-          />
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 to-purple-900 flex items-center justify-center">
-            <span className="material-symbols-outlined text-white/10 text-5xl">school</span>
-          </div>
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
-        {timeSlot && (
-          <div className="absolute top-2 left-2">
-            <span className="bg-[#007AFF]/80 backdrop-blur-sm text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">
-              {timeSlot}
-            </span>
-          </div>
-        )}
-        <div className="absolute bottom-0 left-0 right-0 p-2">
-          <p className="text-white font-black text-[11px] leading-tight line-clamp-2">{formatCommunityName(cls.title, language)}</p>
-          {cls.instructors && cls.instructors.length > 0 && (
-            <p className="text-white/60 text-[10px] font-semibold mt-0.5 truncate">
-              {getInstructorsLabel(cls.instructors)}
-            </p>
-          )}
-        </div>
-      </div>
-    </button>
-  );
-}
-
-// ── Main ──────────────────────────────────────────────────────────────────────
 
 interface ClassEntry {
   cls: GroupClass;
@@ -528,7 +372,7 @@ export default function TodayPageContent() {
   const djWeeklyCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     thisWeekAllSocialEvents.forEach(({ s, d }) => {
-      const djNameStr = getDjDisplay(s, d);
+      const djNameStr = getDjDisplay(s, d, language);
       if (djNameStr) {
         const names = djNameStr.split(/[,/&+\s]+/).map(n => n.trim()).filter(Boolean);
         names.forEach(name => {
@@ -582,7 +426,6 @@ export default function TodayPageContent() {
       return nameA.localeCompare(nameB, language === "KR" ? "ko" : "en");
     });
   }, [activeGroupsInLocation, groupSortType, groupWeeklyCounts, language]);
-
 
   // 서울 지역 내의 소셜들에서 DJ 이름 목록 추출 및 정렬 적용
   const activeDjs = useMemo(() => {
@@ -701,7 +544,8 @@ export default function TodayPageContent() {
   useEffect(() => {
     setLoadingEvents(true);
     const now = new Date();
-    getDocs(collection(db, "events")).then(snap => {
+    const q = query(collection(db, "events"), limit(50));
+    getDocs(q).then(snap => {
       const allEv = snap.docs.map(d => ({ id: d.id, ...d.data() }) as Event);
       const matchesSociety = (e: Event) => !e.societyId || e.societyId === 'tango';
       const isActive = (e: Event) => {
@@ -740,7 +584,8 @@ export default function TodayPageContent() {
 
   // Load all socials for filtering active groups
   useEffect(() => {
-    getDocs(collection(db, "socials")).then(snap => {
+    const q = query(collection(db, "socials"), limit(200));
+    getDocs(q).then(snap => {
       const list = snap.docs.map(d => ({ id: d.id, ...d.data() }) as Social);
       setAllSocials(list);
     }).catch(console.error);
@@ -750,8 +595,15 @@ export default function TodayPageContent() {
   const filteredClasses = useMemo(() => {
     const targetStr = selectedDate.toDateString();
     const result: ClassEntry[] = [];
+    const cityLower = (location?.city || "All").toLowerCase().trim();
+    const isAll = cityLower === "all";
+    const activeGroupIds = new Set(activeGroupsInLocation.map(g => g.id));
+
     allClasses.forEach(({ cls }) => {
       if (cls.status !== "Open") return;
+      if (!isAll) {
+        if (!activeGroupIds.has(cls.groupId || "")) return;
+      }
       cls.schedule?.forEach((s: any) => {
         const dStr = parseDateStr(s.date);
         const clsDate = normalizeDateStr(dStr);
@@ -761,111 +613,25 @@ export default function TodayPageContent() {
           if (!exists) {
             result.push({ 
               cls, 
-              timeSlot: actualTimeSlot 
+              timeSlot: actualTimeSlot
             });
           }
         }
       });
     });
-    result.sort((a, b) => a.timeSlot.localeCompare(b.timeSlot));
+    result.sort((a, b) => (a.timeSlot || "").localeCompare(b.timeSlot || ""));
     return result;
-  }, [allClasses, selectedDate]);
+  }, [allClasses, selectedDate, location, activeGroupsInLocation]);
 
-  // 실시간 URL 싱크 데이터 바인딩 (클래스)
   const selectedClass = useMemo(() => {
     if (!viewClassId) return null;
-    return allClasses.find(c => c.cls.id === viewClassId)?.cls || null;
+    const item = allClasses.find(c => c.cls.id === viewClassId);
+    return item ? item.cls : null;
   }, [viewClassId, allClasses]);
 
-  // location.city 기준 필터링
-  const locationFilteredSocials = useMemo(() => {
-    if (!location || location.city === "ALL") return socials;
-    const lc = location.city.toLowerCase().trim();
-    const seoulAlias = ["seoul", "서울", "soul"];
-    const isSeoul = seoulAlias.some(a => lc.includes(a) || a.includes(lc));
-    return socials.filter(s => {
-      if (!s.city) return true;
-      const sc = s.city.toLowerCase().trim();
-      if (isSeoul) return seoulAlias.some(a => sc.includes(a) || a.includes(sc));
-      return sc.includes(lc) || lc.includes(sc);
-    });
-  }, [socials, location]);
-
-  const milongas = locationFilteredSocials.filter((s) => s.subCategory !== "practica");
-  const practicas = locationFilteredSocials.filter((s) => s.subCategory === "practica").sort((a, b) => (a.startTime || "00:00").localeCompare(b.startTime || "00:00"));
-
-  // ── 소셜 페이지와 동일한 홍대/강남 + 낮밀 그룹핑 로직 ──
-  const milongasByDistrict = useMemo(() => {
-    if (!location) return [];
-    const cityUpper = (location.city || "").toUpperCase().trim();
-    const isSeoul = cityUpper === "SEOUL" || cityUpper === "서울";
-    const grouped: Record<string, Social[]> = {};
-
-    if (isSeoul) {
-      const preGrouped: Record<string, Social[]> = {};
-      milongas.forEach(s => {
-        const dist = detectSeoulDistrict(s, language, venuesMap);
-        if (!preGrouped[dist]) preGrouped[dist] = [];
-        preGrouped[dist].push(s);
-      });
-
-      Object.keys(preGrouped).forEach(dist => {
-        const list = preGrouped[dist];
-        const hasDaySocial = list.some(s => isDaySocial(s));
-
-        if (hasDaySocial) {
-          const dayList = list.filter(s => isDaySocial(s));
-          const nightList = list.filter(s => !isDaySocial(s));
-          if (dayList.length > 0) grouped[`${dist} - ${t("social.timeline_day")}`] = dayList;
-          if (nightList.length > 0) grouped[`${dist} - ${t("social.timeline_night")}`] = nightList;
-        } else {
-          grouped[dist] = list;
-        }
-      });
-    } else {
-      if (milongas.length > 0) grouped[location.city || ""] = milongas;
-    }
-
-    Object.keys(grouped).forEach(key => {
-      grouped[key].sort((a, b) => (a.startTime || "00:00").localeCompare(b.startTime || "00:00"));
-    });
-
-    const sorted = Object.entries(grouped).sort(([a], [b]) => {
-      const aGangbuk = a.includes("한강위") || a.includes("홍대") || a.includes("Hongdae");
-      const bGangbuk = b.includes("한강위") || b.includes("홍대") || b.includes("Hongdae");
-      if (aGangbuk && !bGangbuk) return -1;
-      if (!aGangbuk && bGangbuk) return 1;
-      const aDay = a.includes("낮") || a.includes("Day");
-      const bDay = b.includes("낮") || b.includes("Day");
-      if (aDay && !bDay) return -1;
-      if (!aDay && bDay) return 1;
-      return a.localeCompare(b);
-    });
-
-    return sorted;
-  }, [milongas, language, venuesMap, location, t]);
-
-  // 이벤트 D-day
-  const eventDday = (() => {
-    if (!heroEvent?.endDate && !heroEvent?.startDate) return "";
-    const end = toJsDate(heroEvent.endDate || heroEvent.startDate);
-    const diff = Math.ceil((end.getTime() - Date.now()) / 86400000);
-    if (diff < 0) return "";
-    if (diff === 0) return "D-Day";
-    return `D-${diff}`;
-  })();
-
-  const eventStart = heroEvent?.startDate ? toJsDate(heroEvent.startDate) : null;
-  const eventEnd = heroEvent?.endDate ? toJsDate(heroEvent.endDate) : null;
-  const fmt = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric", weekday: "short" });
-  const eventDateRange = eventStart ? (eventEnd ? `${fmt(eventStart)} – ${fmt(eventEnd)}` : fmt(eventStart)) : "";
-
-  const weekRangeLabel = (() => {
-    if (weekDates.length === 0) return "";
-    const first = weekDates[0];
-    const last = weekDates[6];
-    return `${first.getMonth() + 1}/${first.getDate()} – ${last.getMonth() + 1}/${last.getDate()}`;
-  })();
+  const selectedDateYmd = useMemo(() => {
+    return `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, "0")}-${String(selectedDate.getDate()).padStart(2, "0")}`;
+  }, [selectedDate]);
 
   const parseDateToYmd = (dateVal: any): string => {
     if (!dateVal) return "";
@@ -873,70 +639,117 @@ export default function TodayPageContent() {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   };
 
-  const selectedDateYmd = useMemo(() => {
-    const d = selectedDate;
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  }, [selectedDate]);
+  // 1. 소셜 목록 필터링
+  const milongas = useMemo(() => {
+    const cityLower = (location?.city || "All").toLowerCase().trim();
+    const isSeoul = cityLower.includes("seoul") || cityLower.includes("서울") || cityLower.includes("soul");
+    const isAll = cityLower === "all";
 
-  // 클래스 일정 동적 생성
-  const classEvents = useMemo(() => {
-    if (!selectedGroupId || selectedGroupId === "All") return [];
-    const groupCls = allClasses.filter(c => c.cls.groupId === selectedGroupId).map(c => c.cls);
-    
-    return groupCls.flatMap(cls => {
-      const weekPlans = ["", "", "", ""];
-      (cls.schedule || []).forEach(sch => {
-        if (sch.week >= 1 && sch.week <= 4) {
-          weekPlans[sch.week - 1] = sch.content || "";
-        }
-      });
+    const locFiltered = socials.filter(s => {
+      if (isAll) return true;
+      if (!s.city) return true;
+      const sc = s.city.toLowerCase().trim();
+      if (isSeoul) return ["seoul", "서울", "soul"].some(a => sc.includes(a) || a.includes(sc));
+      return sc.includes(cityLower) || cityLower.includes(sc);
+    });
 
-      return (cls.schedule || []).map((sch, idx) => {
-        let st = cls.startTime || "";
-        let et = cls.endTime || "";
-        if (sch.timeSlot) {
-          const parts = sch.timeSlot.split("-");
-          if (parts.length === 2) {
-            st = parts[0].trim();
-            et = parts[1].trim();
-          } else {
-            st = sch.timeSlot.trim();
-          }
-        }
-        
-        const parsedDate = sch.date ? (normalizeDateStr(parseDateStr(sch.date)) || new Date()) : new Date();
-        const dStr = sch.date ? parseDateStr(sch.date) : parseDateStr(parsedDate);
-        
-        const desc = sch.content || cls.description || "";
+    return locFiltered.filter(s => s.subCategory !== "practica");
+  }, [socials, location]);
 
-        return {
-          id: `class-${cls.id}-${idx}`,
-          itemId: cls.id,
-          title: formatCommunityName(cls.title, language),
-          description: desc.trim(),
-          startDate: parsedDate.getTime(),
-          dateStr: dStr,
-          startTime: st,
-          endTime: et,
-          type: "class" as const,
-          createdBy: "system",
-          createdAt: Date.now(),
-          weekPlans: weekPlans,
-          instructor: formatInstructorNames(cls.instructors?.map(i => i.name).join(", ") || "", language),
-          level: cls.level || "",
-          week: sch.week || 0,
-          location: formatCommunityName(cls.location || selectedGroup?.name || "", language),
-        };
+  const practicas = useMemo(() => {
+    const cityLower = (location?.city || "All").toLowerCase().trim();
+    const isSeoul = cityLower.includes("seoul") || cityLower.includes("서울") || cityLower.includes("soul");
+    const isAll = cityLower === "all";
+
+    const locFiltered = socials.filter(s => {
+      if (isAll) return true;
+      if (!s.city) return true;
+      const sc = s.city.toLowerCase().trim();
+      if (isSeoul) return ["seoul", "서울", "soul"].some(a => sc.includes(a) || a.includes(sc));
+      return sc.includes(cityLower) || cityLower.includes(sc);
+    });
+
+    return locFiltered.filter(s => s.subCategory === "practica");
+  }, [socials, location]);
+
+  // 서울 구별 그룹화
+  const milongasByDistrict = useMemo(() => {
+    const groups: Record<string, Social[]> = {};
+    const cityLower = (location?.city || "All").toLowerCase().trim();
+    const isSeoul = cityLower.includes("seoul") || cityLower.includes("서울") || cityLower.includes("soul");
+
+    const isDaySocial = (s: Social) => {
+      const hour = parseInt((s.startTime || "19:00").split(":")[0]);
+      return !isNaN(hour) && hour < 18;
+    };
+
+    milongas.forEach(s => {
+      // 1. 서울이 아닌 활성 지역일 때는 구 필터링 생략하고 단일 지역명으로 리스트업
+      if (!isSeoul) {
+        const regionName = s.city || location.city || "Other";
+        if (!groups[regionName]) groups[regionName] = [];
+        groups[regionName].push(s);
+        return;
+      }
+
+      // 2. 서울 지역일 때는 지정된 4대 핵심 권역(홍대인근 낮밀/홍대인근/강남 낮밀/강남) 분배 적용
+      const rawDistrict = detectSeoulDistrict(s, language, venuesMap);
+      const isDay = isDaySocial(s);
+      
+      let finalGroup = "";
+      const isHongdaeArea = rawDistrict.includes("한강위") || rawDistrict.includes("Hongdae");
+      
+      if (isHongdaeArea) {
+        finalGroup = isDay 
+          ? (language === "KR" ? "홍대인근 낮밀" : "Hongdae (Day)")
+          : (language === "KR" ? "홍대인근" : "Hongdae");
+      } else {
+        // 기본 강남권역 분류
+        finalGroup = isDay
+          ? (language === "KR" ? "강남 낮밀" : "Gangnam (Day)")
+          : (language === "KR" ? "강남" : "Gangnam");
+      }
+      
+      if (!groups[finalGroup]) {
+        groups[finalGroup] = [];
+      }
+      groups[finalGroup].push(s);
+    });
+
+    // 각 그룹 내부 목록은 시작 시간 오름차순 정렬
+    Object.keys(groups).forEach(key => {
+      groups[key].sort((a, b) => {
+        const timeA = a.startTime || "99:99";
+        const timeB = b.startTime || "99:99";
+        return timeA.localeCompare(timeB);
       });
     });
-  }, [allClasses, selectedGroupId]);
 
-  // 주간 일정용 소셜 동적 생성
-  // 헬퍼: 소셜의 주최자 이름을 KR/EN에 맞게 반환
-  const getOrgDisplayForSocial = (s: Social) => {
-    const ids = s.organizerIds;
-    const enNames = s.organizerNames;
-    const krNames = s.organizerNativeNames;
+    const entries = Object.entries(groups);
+    
+    if (!isSeoul) {
+      return entries.sort((a, b) => a[0].localeCompare(b[0], language === "KR" ? "ko" : "en"));
+    }
+
+    const groupOrder = language === "KR"
+      ? ["홍대인근 낮밀", "홍대인근", "강남 낮밀", "강남"]
+      : ["Hongdae (Day)", "Hongdae", "Gangnam (Day)", "Gangnam"];
+
+    return entries.sort((a, b) => {
+      const idxA = groupOrder.indexOf(a[0]);
+      const idxB = groupOrder.indexOf(b[0]);
+      const valA = idxA === -1 ? 999 : idxA;
+      const valB = idxB === -1 ? 999 : idxB;
+      if (valA !== valB) return valA - valB;
+      return a[0].localeCompare(b[0], language === "KR" ? "ko" : "en");
+    });
+  }, [milongas, venuesMap, location, language]);
+
+  const getOrgDisplayForSocial = (social: Social) => {
+    const ids = social.organizerIds;
+    const enNames = social.organizerNames;
+    const krNames = social.organizerNativeNames;
+
     if (ids && ids.length > 0 && enNames && enNames.length > 0) {
       return ids.map((_, i) => {
         const en = enNames[i] || "";
@@ -946,24 +759,31 @@ export default function TodayPageContent() {
       }).filter(Boolean).join(", ");
     }
     const orgRaw = language === "KR"
-      ? (s.organizerNameNative || s.organizerName || "")
-      : (s.organizerName || s.organizerNameNative || "");
+      ? (social.organizerNameNative || social.organizerName || "")
+      : (social.organizerName || social.organizerNameNative || "");
     return orgRaw ? formatCommunityName(orgRaw, language) : "";
   };
 
+  // 2. 선택된 날짜의 소셜들
   const socialEvents = useMemo(() => {
-    if (selectedGroupId === "All" && selectedDjName === "All") return [];
-
     const events: any[] = [];
-    djAndGroupMatchedSocials.forEach(s => {
-      const isMilonga = s.title.toLowerCase().includes("milonga") || s.title.toLowerCase().includes("밀롱가");
-      const isPractica = s.subCategory === "practica" || s.title.toLowerCase().includes("practica") || s.title.toLowerCase().includes("쁘락");
-      const eventType = isMilonga ? "milonga" : isPractica ? "practice" : "social";
+    const eventType = "social";
+    const cityLower = (location?.city || "All").toLowerCase().trim();
+    const isSeoul = cityLower.includes("seoul") || cityLower.includes("서울") || cityLower.includes("soul");
 
+    const locationFiltered = djAndGroupMatchedSocials.filter(s => {
+      if (!location || location.city === "ALL") return true;
+      if (!s.city) return true;
+      const sc = s.city.toLowerCase().trim();
+      if (isSeoul) return ["seoul", "서울", "soul"].some(a => sc.includes(a) || a.includes(sc));
+      return sc.includes(cityLower) || cityLower.includes(sc);
+    });
+
+    locationFiltered.forEach(s => {
       if (s.type === "regular" && s.dayOfWeek !== undefined) {
         weekDates.forEach(d => {
           if (d.getDay() === Number(s.dayOfWeek)) {
-            const currentDj = getDjDisplay(s, d) || "";
+            const currentDj = getDjDisplay(s, d, language) || "";
             if (selectedDjName !== "All") {
               const currentDjParts = currentDj.split(/[,/&+\s]+/).map(n => n.trim().toLowerCase());
               if (!currentDjParts.includes(selectedDjName.toLowerCase())) {
@@ -971,8 +791,9 @@ export default function TodayPageContent() {
               }
             }
 
+            const isRealDj = currentDj && currentDj.toUpperCase() !== "TBD" && currentDj.toUpperCase() !== "TBA" && currentDj.trim() !== "";
             events.push({
-              id: `social-${s.id}-${d.toDateString()}`,
+              id: `social-week-${s.id}-${d.toDateString()}`,
               itemId: s.id,
               title: formatCommunityName(s.titleNative || s.title, language),
               description: s.description || "",
@@ -984,7 +805,7 @@ export default function TodayPageContent() {
               createdBy: "system",
               createdAt: Date.now(),
               org: getOrgDisplayForSocial(s),
-              dj: formatInstructorNames(currentDj, language),
+              dj: isRealDj ? formatInstructorNames(currentDj, language) : "",
               location: formatCommunityName(getVenueDisplay(s, language, venuesMap), language),
             });
           }
@@ -993,7 +814,7 @@ export default function TodayPageContent() {
         const sDate = toJsDate(s.date);
         const isInWeek = weekDates.some(d => d.toDateString() === sDate.toDateString());
         if (isInWeek) {
-          const currentDj = getDjDisplay(s, sDate) || "";
+          const currentDj = getDjDisplay(s, sDate, language) || "";
           if (selectedDjName !== "All") {
             const currentDjParts = currentDj.split(/[,/&+\s]+/).map(n => n.trim().toLowerCase());
             if (!currentDjParts.includes(selectedDjName.toLowerCase())) {
@@ -1001,8 +822,9 @@ export default function TodayPageContent() {
             }
           }
 
+          const isRealDj = currentDj && currentDj.toUpperCase() !== "TBD" && currentDj.toUpperCase() !== "TBA" && currentDj.trim() !== "";
           events.push({
-            id: `social-${s.id}`,
+            id: `social-week-${s.id}`,
             itemId: s.id,
             title: formatCommunityName(s.titleNative || s.title, language),
             description: s.description || "",
@@ -1014,36 +836,91 @@ export default function TodayPageContent() {
             createdBy: "system",
             createdAt: Date.now(),
             org: getOrgDisplayForSocial(s),
-            dj: formatInstructorNames(currentDj, language),
+            dj: isRealDj ? formatInstructorNames(currentDj, language) : "",
             location: formatCommunityName(getVenueDisplay(s, language, venuesMap), language),
           });
         }
       }
     });
     return events;
-  }, [djAndGroupMatchedSocials, weekDates, selectedDjName, selectedGroupId]);
+  }, [djAndGroupMatchedSocials, weekDates, location, selectedDjName, venuesMap, language]);
 
-  // 당월 소셜 전체 생성
-  const monthlySocialEvents = useMemo(() => {
-    if (selectedGroupId === "All" && selectedDjName === "All") return [];
-
+  // 3. 선택된 날짜의 클래스들
+  const classEvents = useMemo(() => {
     const events: any[] = [];
+    const eventType = "class";
+    allClasses.forEach(({ cls }) => {
+      if (cls.status !== "Open") return;
+      if (selectedGroupId !== "All" && cls.groupId !== selectedGroupId) return;
+
+      cls.schedule?.forEach((s: any) => {
+        const dStr = parseDateStr(s.date);
+        const clsDate = normalizeDateStr(dStr);
+        if (clsDate) {
+          const isInWeek = weekDates.some(d => d.toDateString() === clsDate.toDateString());
+          if (isInWeek) {
+            const getInstructorsLabel = (instructors: any[]) => {
+              if (!instructors || instructors.length === 0) return "";
+              const formattedNames = instructors.map(i => formatInstructorNames(i.name || "", language));
+              return formattedNames.join(", ");
+            };
+
+            events.push({
+              id: `class-week-${cls.id}-${clsDate.toDateString()}`,
+              itemId: cls.id,
+              title: formatCommunityName(cls.title, language),
+              description: cls.description || "",
+              startDate: clsDate.getTime(),
+              dateStr: parseDateToYmd(clsDate),
+              startTime: s.timeSlot || cls.startTime || "",
+              endTime: cls.endTime || "",
+              type: eventType,
+              createdBy: cls.groupId || "system",
+              createdAt: Date.now(),
+              instructor: getInstructorsLabel(cls.instructors || []),
+              level: cls.level || "",
+            });
+          }
+        }
+      });
+    });
+    return events;
+  }, [allClasses, weekDates, selectedGroupId, language]);
+
+  // 4. 월간 달력 소셜 이벤트 목록
+  const monthlySocialEvents = useMemo(() => {
+    const events: any[] = [];
+    const eventType = "social";
     const now = new Date();
     const year = now.getFullYear();
     const month = now.getMonth();
 
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const monthDays: Date[] = Array.from({ length: daysInMonth }, (_, i) => new Date(year, month, i + 1));
+    const startOfMonth = new Date(year, month, 1);
+    const endOfMonth = new Date(year, month + 31); // 넉넉히 31일치
 
-    djAndGroupMatchedSocials.forEach(s => {
-      const isMilonga = s.title.toLowerCase().includes("milonga") || s.title.toLowerCase().includes("밀롱가");
-      const isPractica = s.subCategory === "practica" || s.title.toLowerCase().includes("practica") || s.title.toLowerCase().includes("쁘락");
-      const eventType = isMilonga ? "milonga" : isPractica ? "practice" : "social";
+    const daysInMonth: Date[] = [];
+    for (let d = new Date(startOfMonth); d <= endOfMonth; d.setDate(d.getDate() + 1)) {
+      if (d.getMonth() === month) {
+        daysInMonth.push(new Date(d));
+      }
+    }
 
+    const cityLower = (location?.city || "All").toLowerCase().trim();
+    const isSeoul = cityLower.includes("seoul") || cityLower.includes("서울") || cityLower.includes("soul");
+
+    const locationFiltered = djAndGroupMatchedSocials.filter(s => {
+      if (!location || location.city === "ALL") return true;
+      if (!s.city) return true;
+      const sc = s.city.toLowerCase().trim();
+      if (isSeoul) return ["seoul", "서울", "soul"].some(a => sc.includes(a) || a.includes(sc));
+      return sc.includes(cityLower) || cityLower.includes(sc);
+    });
+
+    locationFiltered.forEach(s => {
       if (s.type === "regular" && s.dayOfWeek !== undefined) {
-        monthDays.forEach(d => {
+        daysInMonth.forEach(d => {
           if (d.getDay() === Number(s.dayOfWeek)) {
-            const currentDj = getDjDisplay(s, d) || "";
+            const currentDj = getDjDisplay(s, d, language) || "";
             if (selectedDjName !== "All") {
               const currentDjParts = currentDj.split(/[,/&+\s]+/).map(n => n.trim().toLowerCase());
               if (!currentDjParts.includes(selectedDjName.toLowerCase())) {
@@ -1051,6 +928,7 @@ export default function TodayPageContent() {
               }
             }
 
+            const isRealDj = currentDj && currentDj.toUpperCase() !== "TBD" && currentDj.toUpperCase() !== "TBA" && currentDj.trim() !== "";
             events.push({
               id: `social-month-${s.id}-${d.toDateString()}`,
               itemId: s.id,
@@ -1064,7 +942,7 @@ export default function TodayPageContent() {
               createdBy: "system",
               createdAt: Date.now(),
               org: getOrgDisplayForSocial(s),
-              dj: formatInstructorNames(currentDj, language),
+              dj: isRealDj ? formatInstructorNames(currentDj, language) : "",
               location: formatCommunityName(getVenueDisplay(s, language, venuesMap), language),
             });
           }
@@ -1072,7 +950,7 @@ export default function TodayPageContent() {
       } else if (s.type === "popup" && s.date) {
         const sDate = toJsDate(s.date);
         if (sDate.getFullYear() === year && sDate.getMonth() === month) {
-          const currentDj = getDjDisplay(s, sDate) || "";
+          const currentDj = getDjDisplay(s, sDate, language) || "";
           if (selectedDjName !== "All") {
             const currentDjParts = currentDj.split(/[,/&+\s]+/).map(n => n.trim().toLowerCase());
             if (!currentDjParts.includes(selectedDjName.toLowerCase())) {
@@ -1080,6 +958,7 @@ export default function TodayPageContent() {
             }
           }
 
+          const isRealDj = currentDj && currentDj.toUpperCase() !== "TBD" && currentDj.toUpperCase() !== "TBA" && currentDj.trim() !== "";
           events.push({
             id: `social-month-${s.id}`,
             itemId: s.id,
@@ -1093,14 +972,14 @@ export default function TodayPageContent() {
             createdBy: "system",
             createdAt: Date.now(),
             org: getOrgDisplayForSocial(s),
-            dj: formatInstructorNames(currentDj, language),
+            dj: isRealDj ? formatInstructorNames(currentDj, language) : "",
             location: formatCommunityName(getVenueDisplay(s, language, venuesMap), language),
           });
         }
       }
     });
     return events;
-  }, [djAndGroupMatchedSocials, selectedDjName, selectedGroupId]);
+  }, [djAndGroupMatchedSocials, selectedDjName, selectedGroupId, venuesMap, language, location]);
 
   // 전체 일정 합산
   const allCombinedEvents = useMemo(() => {
@@ -1247,7 +1126,7 @@ export default function TodayPageContent() {
         </div>
       </div>
 
-      {/* ── 그룹 필터 바 (마켓 브랜드 필터 스타일) ── */}
+      {/* ── 그룹 필터 바 ── */}
       <div className="relative z-30 px-4 py-2.5 flex items-center justify-between bg-white border-b border-slate-100/80">
         <div className="flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-[#007AFF] animate-pulse" />
@@ -1257,8 +1136,7 @@ export default function TodayPageContent() {
         </div>
         
         <div className="flex items-center gap-2">
-
-          {/* 그룹 필터 드롭다운 트리거 */}
+          {/* 그룹 필터 트리거 */}
           <button
             onClick={() => {
               setShowGroupFilter(!showGroupFilter);
@@ -1276,7 +1154,7 @@ export default function TodayPageContent() {
             </span>
           </button>
 
-          {/* DJ 필터 드롭다운 트리거 */}
+          {/* DJ 필터 트리거 */}
           <button
             onClick={() => {
               setShowDjFilter(!showDjFilter);
@@ -1467,172 +1345,37 @@ export default function TodayPageContent() {
       <div className="px-4 pt-5 pb-6">
 
         {selectedGroupId === "All" && selectedDjName === "All" ? (
-          /* 기존 지역 기반 당일 소셜/클래스 목록 */
+          /* 기존 지역 기반 당일 소셜/클래스 목록 (하위 분리 컴포넌트 탑재) */
           <div className="space-y-7 animate-in fade-in duration-300">
-            {/* 소셜(밀롱가) — 홍대/강남 + 낮밀 구분 */}
-            <section>
-              <SectionHeader icon="local_fire_department" label={t("today.milonga")} count={milongas.length} />
+            {/* 소셜 및 쁘락띠까 목록 */}
+            <TodaySocialSection
+              loadingSocials={loadingSocials}
+              milongas={milongas}
+              milongasByDistrict={milongasByDistrict}
+              selectedDate={selectedDate}
+              venuesMap={venuesMap}
+              openSocialModal={openSocialModal}
+              practicas={practicas}
+            />
 
-              {loadingSocials ? (
-                <div className="space-y-4">
-                  {[0, 1].map(g => (
-                    <div key={g}>
-                      <div className="h-4 w-28 bg-slate-200 rounded animate-pulse mb-2" />
-                      <div className="grid grid-cols-3 gap-2">
-                        {[1, 2, 3].map(i => (
-                          <div key={i} className="rounded-xl bg-slate-200 animate-pulse" style={{ aspectRatio: "3/4" }} />
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : milongasByDistrict.length > 0 ? (
-                <div className="space-y-5">
-                  {milongasByDistrict.map(([district, items]) => (
-                    <div key={district}>
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="material-symbols-outlined !text-[13px] text-blue-500">location_searching</span>
-                        <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">{district}</span>
-                        <div className="flex-1 h-px bg-slate-200" />
-                        <span className="text-[11px] font-bold text-slate-300">{items.length}</span>
-                      </div>
-                      <div className="grid grid-cols-3 gap-2">
-                        {items.map(s => (
-                          <SocialCard key={s.id} social={s} date={selectedDate} venuesMap={venuesMap} onPress={() => openSocialModal(s.id)} />
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-8 bg-white rounded-2xl border border-dashed border-slate-200">
-                  <span className="material-symbols-outlined !text-[32px] text-slate-300 mb-2">music_off</span>
-                  <p className="text-[13px] font-semibold text-slate-400">{t("today.no_social")}</p>
-                </div>
-              )}
-            </section>
+            {/* 클래스 목록 */}
+            <TodayClassSection
+              loadingClasses={loadingClasses}
+              filteredClasses={filteredClasses}
+              openClassModal={openClassModal}
+            />
 
-            {/* 쁘락띠까 */}
-            <section>
-              <SectionHeader icon="directions_run" label={t("today.practica")} count={practicas.length} />
-              {loadingSocials ? (
-                <div className="flex gap-2 flex-wrap min-h-[32px]">
-                  {[1, 2, 3].map(i => <div key={i} className="h-8 w-24 rounded-full bg-slate-200 animate-pulse" />)}
-                </div>
-              ) : practicas.length > 0 ? (
-                <div className="flex gap-2 flex-wrap">
-                  {practicas.map(s => {
-                    const venueName = getVenueDisplay(s, language, venuesMap);
-                    return (
-                      <button
-                        key={s.id}
-                        onClick={() => openSocialModal(s.id)}
-                        className="inline-flex flex-col items-start gap-0.5 bg-white border border-[#e0e4e5] rounded-2xl px-3.5 py-2 text-[13px] font-bold text-[#2d3435] shadow-sm active:scale-95 transition-transform"
-                      >
-                        <div className="flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-orange-400 flex-shrink-0" />
-                          <span>{s.titleNative || s.title}</span>
-                        </div>
-                        <div className="pl-3.5 text-[11px] font-semibold text-[#8e9a9c] whitespace-nowrap">
-                          {s.startTime && `${s.startTime}`}
-                          {venueName && ` • ${venueName}`}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="min-h-[32px] flex items-center">
-                  <p className="text-[13px] font-semibold text-slate-300">—</p>
-                </div>
-              )}
-            </section>
-
-            {/* 클래스 — 3열 */}
-            <section>
-              <SectionHeader icon="school" label={t("today.class")} count={filteredClasses.length} />
-              {loadingClasses ? (
-                <div className="grid grid-cols-3 gap-2">
-                  {[1, 2, 3, 4, 5, 6].map(i => (
-                    <div key={i} className="rounded-xl bg-slate-200 animate-pulse" style={{ aspectRatio: "1/1" }} />
-                  ))}
-                </div>
-              ) : filteredClasses.length > 0 ? (
-                <div className="grid grid-cols-3 gap-2">
-                  {filteredClasses.slice(0, 6).map(({ cls, timeSlot }, idx) => (
-                    <ClassCard key={`${cls.id}-${idx}`} cls={cls} timeSlot={timeSlot} onPress={() => openClassModal(cls.id)} />
-                  ))}
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-8 bg-white rounded-2xl border border-dashed border-slate-200">
-                  <span className="material-symbols-outlined !text-[32px] text-slate-300 mb-2">school</span>
-                  <p className="text-[13px] font-semibold text-slate-400">{t("today.no_class")}</p>
-                </div>
-              )}
-            </section>
-
-            {/* 이벤트 배너 슬라이더 (최근 5개) */}
-            {loadingEvents ? (
-              <div className="h-[76px] rounded-2xl bg-slate-200 animate-pulse" />
-            ) : heroEvents.length > 0 ? (
-              <div className="w-full space-y-2">
-                {(() => {
-                  const ev = heroEvents[currentBannerIndex];
-                  if (!ev) return null;
-                  return (
-                    <button
-                      onClick={() => {
-                        setHeroEvent(ev);
-                        openEventModal(ev.id);
-                      }}
-                      className={`w-full flex items-center justify-between gap-3 bg-gradient-to-r ${getEventTheme(ev.title, currentBannerIndex)} rounded-2xl px-4 py-3 active:scale-[0.99] transition-all duration-500 text-left relative overflow-hidden`}
-                    >
-                      <div className="flex items-center gap-3 flex-1 min-w-0 z-10">
-                        <div className="w-[52px] h-[52px] rounded-xl overflow-hidden relative bg-white/10 flex-shrink-0">
-                          {ev.imageUrl ? (
-                            <Image src={ev.imageUrl} alt={ev.title} fill className="object-cover" sizes="52px" />
-                          ) : (
-                            <div className="absolute inset-0 bg-white/10 flex items-center justify-center">
-                              <span className="material-symbols-outlined !text-[20px] text-white/50">event</span>
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-black text-[13px] text-white leading-tight line-clamp-2">
-                            {ev.title}
-                          </p>
-                          <p className="text-[11px] font-semibold text-white/80 mt-1 truncate">
-                            {getEventDateRange(ev)}
-                          </p>
-                        </div>
-                      </div>
-                      {getEventDday(ev) && (
-                        <div className="flex-shrink-0 ml-1 z-10">
-                          <span className="bg-white/20 text-white text-[9px] font-black px-1.5 py-0.5 rounded-md leading-none whitespace-nowrap">
-                            {getEventDday(ev)}
-                          </span>
-                        </div>
-                      )}
-                    </button>
-                  );
-                })()}
-
-                {heroEvents.length > 1 && (
-                  <div className="flex justify-center items-center gap-1.5 py-1">
-                    {heroEvents.map((_, dotIdx) => (
-                      <button
-                        key={dotIdx}
-                        onClick={() => setCurrentBannerIndex(dotIdx)}
-                        className={`h-1.5 rounded-full transition-all duration-300 ${
-                          currentBannerIndex === dotIdx ? "w-4 bg-slate-500" : "w-1.5 bg-slate-300"
-                        }`}
-                        aria-label={`Go to slide ${dotIdx + 1}`}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            ) : null}
+            {/* 이벤트 배너 슬라이더 */}
+            <TodayHeroSection
+              loadingEvents={loadingEvents}
+              heroEvents={heroEvents}
+              currentBannerIndex={currentBannerIndex}
+              setCurrentBannerIndex={setCurrentBannerIndex}
+              setHeroEvent={setHeroEvent}
+              openEventModal={openEventModal}
+              getEventDateRange={getEventDateRange}
+              getEventDday={getEventDday}
+            />
           </div>
         ) : (
           /* 그룹 모드 (오늘 상세 카드 + 이번 주 요일별 세로 목록) */

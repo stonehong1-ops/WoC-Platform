@@ -174,13 +174,33 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
     setSaving(true);
     try {
       const userDocRef = doc(db, 'users', profile.uid);
+      
+      let finalPhone = '';
+      if (details.phoneNumber) {
+        let cleanedPhone = details.phoneNumber.replace(/[^\d]/g, '');
+        if (cleanedPhone) {
+          const ccMatch = details.countryCode.match(/^\+(\d+)/);
+          const ccPrefix = ccMatch ? ccMatch[0] : '+82';
+          const ccDigits = ccMatch ? ccMatch[1] : '82';
+
+          if (cleanedPhone.startsWith(ccDigits)) {
+            finalPhone = `+${cleanedPhone}`;
+          } else {
+            if (cleanedPhone.startsWith('0')) {
+              cleanedPhone = cleanedPhone.substring(1);
+            }
+            finalPhone = `${ccPrefix}${cleanedPhone}`;
+          }
+        }
+      }
+
       await updateDoc(userDocRef, {
         nickname: details.nickname,
         nativeNickname: details.nativeNickname,
         bio: details.bio,
         gender: details.gender,
         role: details.role,
-        phoneNumber: details.phoneNumber,
+        phoneNumber: finalPhone,
         countryCode: details.countryCode,
         isAdmin: details.isAdmin,
         isInstructor: details.isInstructor,

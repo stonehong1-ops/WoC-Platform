@@ -1,4 +1,5 @@
 'use client';
+import { reportError } from '@/lib/utils/errorHandler';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from 'sonner';
 
@@ -72,6 +73,7 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
             profile: userProfile
           };
         } catch (error) {
+          reportError(error, 'groupMemberManager.fetchMemberProfile');
           console.error(`Failed to fetch profile for user ${member.id}:`, error);
           return { ...member, profile: null };
         }
@@ -101,9 +103,10 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
         
         try {
           await setDoc(memberRef, memberUpdate, { merge: true });
-        } catch (e) {
-          console.warn("Member subcollection update failed:", e);
-        }
+    } catch (e) {
+      reportError(e, 'groupMemberManager.updateSubcollection');
+      console.warn("Member subcollection update failed:", e);
+    }
       }
 
       setMembers(prev => prev.map(m => {
@@ -175,6 +178,7 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
         return m;
       }));
     } catch (error) {
+      reportError(error, 'groupMemberManager.updateStaffPermission');
       console.error('Error updating staff permission:', error);
     }
   };

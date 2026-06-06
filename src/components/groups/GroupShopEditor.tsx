@@ -1,5 +1,6 @@
-// 그룹 관리자가 등록된 상품과 주문 내역을 처리하고 상점 설정을 변경하는 어드민 대시보드 컴포넌트
 "use client";
+import { reportError } from '@/lib/utils/errorHandler';
+// 그룹 관리자가 등록된 상품과 주문 내역을 처리하고 상점 설정을 변경하는 어드민 대시보드 컴포넌트
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Group } from "@/types/group";
@@ -53,9 +54,10 @@ const GroupShopEditor: React.FC<GroupShopEditorProps> = ({ group, onClose, isInl
       if (cached) {
         try {
           return JSON.parse(cached);
-        } catch (e) {
-          console.error('Failed to parse cached group products:', e);
-        }
+    } catch (e) {
+      reportError(e, 'groupShopEditor.parseCachedProducts');
+      console.error('Failed to parse cached group products:', e);
+    }
       }
     }
     return [];
@@ -66,9 +68,10 @@ const GroupShopEditor: React.FC<GroupShopEditorProps> = ({ group, onClose, isInl
       if (cached) {
         try {
           return JSON.parse(cached);
-        } catch (e) {
-          console.error('Failed to parse cached group orders:', e);
-        }
+    } catch (e) {
+      reportError(e, 'groupShopEditor.parseCachedOrders');
+      console.error('Failed to parse cached group orders:', e);
+    }
       }
     }
     return [];
@@ -104,9 +107,10 @@ const GroupShopEditor: React.FC<GroupShopEditorProps> = ({ group, onClose, isInl
       if (cached) {
         try {
           setProducts(JSON.parse(cached));
-        } catch (e) {
-          console.error('Failed to parse cached products:', e);
-        }
+    } catch (e) {
+      reportError(e, 'groupShopEditor.parseCachedProducts2');
+      console.error('Failed to parse cached products:', e);
+    }
       }
     }
 
@@ -128,9 +132,10 @@ const GroupShopEditor: React.FC<GroupShopEditorProps> = ({ group, onClose, isInl
       if (cached) {
         try {
           setOrders(JSON.parse(cached));
-        } catch (e) {
-          console.error('Failed to parse cached orders:', e);
-        }
+    } catch (e) {
+      reportError(e, 'groupShopEditor.parseCachedOrders2');
+      console.error('Failed to parse cached orders:', e);
+    }
       }
     }
 
@@ -226,9 +231,10 @@ const GroupShopEditor: React.FC<GroupShopEditorProps> = ({ group, onClose, isInl
               type: 'text'
             });
           }
-        } catch (chatErr) {
-          console.error("Failed to send seller action chat notification:", chatErr);
-        }
+      } catch (chatErr) {
+        reportError(chatErr, 'groupShopEditor.sellerActionChatNotification');
+        console.error("Failed to send seller action chat notification:", chatErr);
+      }
       }
 
       if (newStatus === "SHIPPING") {

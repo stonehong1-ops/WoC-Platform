@@ -4,6 +4,7 @@
 import React from 'react';
 import { isSameMonth, isSameDay, isToday, startOfMonth } from 'date-fns';
 import { CalendarEvent } from '@/types/group';
+import { safeDate } from '@/lib/utils/safeDate';
 
 interface GroupCalendarGridProps {
   currentMonth: Date;
@@ -56,7 +57,7 @@ export const GroupCalendarGrid: React.FC<GroupCalendarGridProps> = ({
           const isCurrentMonth = isSameMonth(d, currentMonth);
           const isSelected = isSameDay(d, selectedDate);
           const isTodayDate = isToday(d);
-          const dayEvents = events.filter(e => isSameDay(new Date(e.startDate), d));
+          const dayEvents = events.filter(e => isSameDay(safeDate(e.startDate) || new Date(), d));
           // col index 0=Mon…5=Sat,6=Sun
           const colIdx = i % 7;
           const isWeekend = colIdx === 5 || colIdx === 6;

@@ -12,6 +12,7 @@ import {
   formatNotiDate
 } from './helpers/historyHelpers';
 import BottomSheet from '@/components/common/BottomSheet';
+import ClassPageContent from '@/app/class/[groupId]/ClassPageContent';
 
 export function HistoryPageContent() {
   const {
@@ -244,22 +245,31 @@ export function HistoryPageContent() {
           `}} />
 
           {/* ━━━ Header ━━━ */}
-          <div className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 transition-all duration-300 ${isScrolled ? 'bg-white/95 backdrop-blur-md shadow-sm' : 'bg-gradient-to-b from-black/30 to-transparent'} max-w-md mx-auto`}>
+          <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 border-b border-[#f2f4f4] bg-white max-w-md mx-auto flex-shrink-0">
+            <button 
+              onClick={handleCloseDetail} 
+              className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-[#f2f4f4] transition-colors"
+            >
+              <span className="material-symbols-outlined text-xl text-[#596061]">arrow_back</span>
+            </button>
+            <div className="flex flex-col items-center flex-1 min-w-0 px-2 text-center">
+              <h2 className="text-base font-black text-[#2d3435] truncate w-full">{selectedDetail.title}</h2>
+            </div>
             {hasEditPermission ? (
               <button 
                 onClick={() => setIsManageMenuOpen(true)}
-                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-95 ${isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'}`}
+                className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-[#f2f4f4] transition-colors"
               >
-                <span className="material-symbols-outlined text-xl">more_vert</span>
+                <span className="material-symbols-outlined text-xl text-[#596061]">more_vert</span>
               </button>
             ) : (
               <div className="w-10"></div>
-            )} {/* Placeholder to balance the flex-between */}
+            )}
           </div>
 
           {/* ━━━ Scrollable Content ━━━ */}
           <div
-            className="flex-1 overflow-y-auto detail-scrollbar pb-[100px] max-w-md mx-auto w-full"
+            className="flex-1 overflow-y-auto detail-scrollbar pb-[100px] pt-[56px] max-w-md mx-auto w-full"
             onScroll={(e) => setIsScrolled(e.currentTarget.scrollTop > 60)}
           >
             {/* 1) Image Carousel / Hero */}
@@ -443,17 +453,6 @@ export function HistoryPageContent() {
                         </div>
                       </div>
                     )}
-                    {(selectedDetail.raw?.memo || selectedDetail.raw?.notes) && (
-                      <div className="flex items-start gap-3 mt-4 pt-4 border-t border-slate-100/50">
-                        <div className="w-8 h-8 rounded-full bg-[#f2f4f4] flex items-center justify-center shrink-0 text-[#596061]">
-                          <span className="material-symbols-outlined text-[16px]">notes</span>
-                        </div>
-                        <div className="pt-0.5">
-                          <p className="font-['Inter'] text-[10px] font-black uppercase tracking-wider text-[#acb3b4] mb-0.5">{language === 'KR' ? '신청자 메모' : 'Applicant Memo'}</p>
-                          <p className="font-['Inter'] text-[13px] font-bold text-[#2d3435] whitespace-pre-wrap">{selectedDetail.raw?.memo || selectedDetail.raw?.notes}</p>
-                        </div>
-                      </div>
-                    )}
                   </>
                 )}
 
@@ -505,6 +504,19 @@ export function HistoryPageContent() {
                           {t('history.change_class_partners')}
                         </span>
                       </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* 신청자 메모 공통 렌더링 */}
+                {selectedDetail.type === 'Class' && (selectedDetail.raw?.memo || selectedDetail.raw?.notes || selectedDetail.raw?.applicantMemo) && (
+                  <div className="flex items-start gap-3 mt-4 pt-4 border-t border-slate-100/50 w-full">
+                    <div className="w-8 h-8 rounded-full bg-[#f2f4f4] flex items-center justify-center shrink-0 text-[#596061]">
+                      <span className="material-symbols-outlined text-[16px]">notes</span>
+                    </div>
+                    <div className="pt-0.5">
+                      <p className="font-['Inter'] text-[10px] font-black uppercase tracking-wider text-[#acb3b4] mb-0.5">{language === 'KR' ? '신청자 메모' : 'Applicant Memo'}</p>
+                      <p className="font-['Inter'] text-[13px] font-bold text-[#2d3435] whitespace-pre-wrap">{selectedDetail.raw?.memo || selectedDetail.raw?.notes || selectedDetail.raw?.applicantMemo}</p>
                     </div>
                   </div>
                 )}
@@ -665,93 +677,19 @@ export function HistoryPageContent() {
         </>
       )}
 
-      {/* 수정/편집 전용 BottomSheet 제어반 */}
-      <BottomSheet
-        isOpen={isEditSheetOpen}
-        onClose={() => setIsEditSheetOpen(false)}
-        title={language === 'KR' ? '신청 내역 편집' : 'Edit Application'}
-        height="auto"
-      >
-        <div className="px-6 py-4 pb-10 space-y-6 max-w-md mx-auto">
-          <p className="text-xs font-semibold text-slate-400">
-            {isBundle
-              ? (language === 'KR' ? '신청 정보에 남길 메모 및 파트너명을 입력하거나 일정을 관리합니다.' : 'You can edit notes, partner name or manage options for this application.')
-              : (language === 'KR' ? '신청 정보에 남길 메모를 입력합니다.' : 'You can enter a memo for this application.')
-            }
-          </p>
-
-          {/* 메모 입력창 */}
-          <div className="flex flex-col gap-2">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
-              {language === 'KR' ? '신청자 메모' : 'Applicant Memo'}
-            </label>
-            <textarea
-              value={tempMemo}
-              onChange={(e) => setTempMemo(e.target.value)}
-              placeholder={language === 'KR' ? '전달할 특이사항이나 메모를 입력하세요.' : 'Enter any notes or special requests.'}
-              className="w-full h-24 text-sm p-3.5 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all font-medium text-slate-700 resize-none"
-            />
-          </div>
-
-          {/* 번들 전용 파트너명 입력창 */}
-          {isBundle && (
-            <div className="flex flex-col gap-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
-                {t('history.partner_name') || '대표 파트너명'}
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={tempPartnerName}
-                  onChange={(e) => setTempPartnerName(e.target.value)}
-                  placeholder={t('history.partner_placeholder') || '대표 파트너의 이름을 입력하세요.'}
-                  className="w-full text-sm py-2.5 pl-9 pr-4 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all font-medium text-slate-700"
-                />
-                <span className="material-symbols-outlined text-slate-400 text-[18px] absolute left-3 top-1/2 -translate-y-1/2">
-                  group
-                </span>
-              </div>
-            </div>
-          )}
-
-          <div className="flex flex-col gap-3">
-            {/* 번들 전용 수업/파트너 변경 단추 */}
-            {isBundle && (
-              <button
-                onClick={() => {
-                  setIsEditSheetOpen(false);
-                  setIsSelectionPopupOpen(true);
-                }}
-                className="w-full py-4 bg-blue-50/50 hover:bg-blue-50 active:scale-[0.99] border border-blue-100 rounded-2xl flex items-center justify-between px-5 transition-all text-left"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="material-symbols-outlined text-blue-500 text-lg">edit_note</span>
-                  <span className="text-sm font-bold text-slate-800">{t('history.change_class_partners') || '참여 수업 / 파트너 변경'}</span>
-                </div>
-                <span className="material-symbols-outlined text-blue-400 text-sm">chevron_right</span>
-              </button>
-            )}
-
-            {/* 저장/닫기 단추 */}
-            <div className="flex gap-3 pt-3">
-              <button
-                onClick={() => setIsEditSheetOpen(false)}
-                className="flex-1 py-3.5 bg-slate-100 hover:bg-slate-200 active:scale-[0.99] rounded-xl text-center text-sm font-black text-slate-500 transition-all"
-              >
-                {language === 'KR' ? '취소' : 'Cancel'}
-              </button>
-              <button
-                onClick={handleSaveMemo}
-                disabled={isSavingMemo}
-                className="flex-1 py-3.5 bg-[#1E293B] hover:bg-slate-800 text-white font-bold text-sm rounded-xl active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                {isSavingMemo && <span className="material-symbols-outlined animate-spin text-sm">sync</span>}
-                {t('history.save_changes') || '변경 사항 저장'}
-              </button>
-            </div>
-          </div>
-        </div>
-      </BottomSheet>
+      {/* 실제 등록/신청창과 동일한 수정창 팝업 연동 */}
+      {isEditSheetOpen && selectedDetail && (
+        <ClassPageContent
+          propGroupId={selectedDetail.raw?.groupId || selectedDetail.raw?.clubId || groupDetails?.id}
+          isOverlay={true}
+          editRegistration={selectedDetail.raw}
+          isEditMode={true}
+          onClose={() => {
+            setIsEditSheetOpen(false);
+            handleCloseDetail();
+          }}
+        />
+      )}
 
       {/* 다이렉트 취소 확인 컨펌 다이얼로그 */}
       {showCancelConfirm && (

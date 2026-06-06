@@ -33,6 +33,20 @@ export default function AntigravityTerminalPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Check for redirect error message parameters
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const msg = params.get("message");
+      if (msg) {
+        setInputText(msg);
+        // Clear query parameters to keep URL clean
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+      }
+    }
+  }, []);
+
   // Subscribe to real-time messages from Firestore
   useEffect(() => {
     setIsLoading(true);

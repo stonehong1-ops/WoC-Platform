@@ -10,7 +10,7 @@ export interface ChatMessage {
   senderPhoto?: string;
   text: string;
   type: MessageType;
-  timestamp: any;
+  timestamp: Timestamp | null;
   mediaUrl?: string;
   readBy: string[];
   reactions?: Record<string, string>;
@@ -51,12 +51,12 @@ export interface ChatRoom {
   type: 'public' | 'private' | 'group' | 'notice' | 'personal' | 'groups' | 'business';
   participants: string[];
   lastMessage?: string;
-  lastMessageTime?: any;
+  lastMessageTime?: Timestamp | null;
   lastMessageSenderId?: string;
   lastMessageReadBy?: string[];
   unreadCounts?: Record<string, number>;
   imageUrl?: string;
-  createdAt: any;
+  createdAt: Timestamp | null;
   createdBy: string;
   customName?: string;
   description?: string;

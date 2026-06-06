@@ -18,6 +18,7 @@ import {
 } from 'firebase/firestore';
 import { Social, SocialType, SocialReservation, SocialWeeklyState } from '@/types/social';
 import { notificationService } from './notificationService';
+import { reportError } from '@/lib/utils/errorHandler';
 
 const SOCIALS_COLLECTION = 'socials';
 const LIKES_COLLECTION = 'social_likes';
@@ -199,50 +200,75 @@ export const socialService = {
 
   // 3. Admin: Create a new social event
   async saveSocial(data: Omit<Social, 'id' | 'createdAt'>) {
-    const docRef = await addDoc(collection(db, SOCIALS_COLLECTION), {
-      ...data,
-      createdAt: serverTimestamp(),
-    });
-    return docRef.id;
+    try {
+      const docRef = await addDoc(collection(db, SOCIALS_COLLECTION), {
+        ...data,
+        createdAt: serverTimestamp(),
+      });
+      return docRef.id;
+    } catch (error) {
+      await reportError(error, 'socialService.saveSocial');
+      throw error;
+    }
   },
 
   // 4. Update existing social
   async updateSocial(id: string, data: Partial<Omit<Social, 'id' | 'createdAt'>>) {
-    await updateDoc(doc(db, SOCIALS_COLLECTION, id), {
-      ...data,
-      updatedAt: serverTimestamp(),
-    });
+    try {
+      await updateDoc(doc(db, SOCIALS_COLLECTION, id), {
+        ...data,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (error) {
+      await reportError(error, 'socialService.updateSocial');
+      throw error;
+    }
   },
 
   // 5. Delete social
   async deleteSocial(id: string) {
-    await deleteDoc(doc(db, SOCIALS_COLLECTION, id));
+    try {
+      await deleteDoc(doc(db, SOCIALS_COLLECTION, id));
+    } catch (error) {
+      await reportError(error, 'socialService.deleteSocial');
+      throw error;
+    }
   },
 
   // 6. Get list of Organizers/Venues for Filter
   getFilterOptions: async () => {
-    const q = query(collection(db, SOCIALS_COLLECTION));
-    const snapshot = await getDocs(q);
-    const data = snapshot.docs.map(d => d.data() as Social);
-    
-    const organizers = Array.from(new Set(data.map(s => s.organizerName)));
-    const venues = Array.from(new Set(data.map(s => s.venueName)));
-    
-    return { organizers, venues };
+    try {
+      const q = query(collection(db, SOCIALS_COLLECTION));
+      const snapshot = await getDocs(q);
+      const data = snapshot.docs.map(d => d.data() as Social);
+      
+      const organizers = Array.from(new Set(data.map(s => s.organizerName)));
+      const venues = Array.from(new Set(data.map(s => s.venueName)));
+      
+      return { organizers, venues };
+    } catch (error) {
+      await reportError(error, 'socialService.getFilterOptions');
+      return { organizers: [], venues: [] };
+    }
   },
 
   // 7. Search Socials by Title
   async searchSocials(keyword: string) {
     if (!keyword) return [];
     const lowerKw = keyword.toLowerCase();
-    const snapshot = await getDocs(collection(db, SOCIALS_COLLECTION));
-    return snapshot.docs
-      .map(doc => ({ id: doc.id, ...doc.data() } as any))
-      .filter(s => {
-        const title = (s.title || '').toLowerCase();
-        const native = (s.titleNative || '').toLowerCase();
-        return title.includes(lowerKw) || native.includes(lowerKw);
-      });
+    try {
+      const snapshot = await getDocs(collection(db, SOCIALS_COLLECTION));
+      return snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() } as any))
+        .filter(s => {
+          const title = (s.title || '').toLowerCase();
+          const native = (s.titleNative || '').toLowerCase();
+          return title.includes(lowerKw) || native.includes(lowerKw);
+        });
+    } catch (error) {
+      await reportError(error, 'socialService.searchSocials');
+      return [];
+    }
   },
 
   // 8. Add Reservation

@@ -4,7 +4,7 @@ import { rentalService } from '@/lib/firebase/rentalService';
 import { plazaService } from '@/lib/firebase/plazaService';
 import FullScreenRegistration from '@/components/common/FullScreenRegistration';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { CITY_COORDINATES } from '@/lib/constants/locations';
+import { CITY_COORDINATES } from '@/constants/locations';
 
 interface CreateRentalSpaceProps {
   isOpen: boolean;

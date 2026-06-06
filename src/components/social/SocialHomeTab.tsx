@@ -161,10 +161,12 @@ export default function SocialHomeTab({ social, targetDate, onChatWithOrganizer,
     const finalDjName = djNameInput.trim() || "TBD";
     setIsSubmitting(true);
     try {
+      const selectedUser = selectedDjId ? allUsers.find(u => u.id === selectedDjId) : null;
       const newDj: any = {
         id: uuidv4(),
         date: selectedDate,
-        djName: finalDjName,
+        djName: selectedUser ? (selectedUser.nickname || finalDjName) : finalDjName,
+        djNativeName: selectedUser ? (selectedUser.nativeNickname || "") : "",
       };
       if (selectedDjId) {
         newDj.djId = selectedDjId;
@@ -292,19 +294,6 @@ export default function SocialHomeTab({ social, targetDate, onChatWithOrganizer,
           </div>
           
           <div className="px-4 py-4 space-y-4">
-            {/* 1. 현재 DJ 강조 섹션 */}
-            <div className="flex items-center gap-4 p-3 bg-slate-50 border border-slate-100 rounded-xl">
-              <div className="w-11 h-11 rounded-full bg-primary/5 flex items-center justify-center shrink-0 border border-primary/10 shadow-inner">
-                <span className="material-symbols-rounded text-lg text-primary">headphones</span>
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t('social.dj')}</p>
-                <h4 className="text-[14.5px] font-black text-slate-800 mt-0.5 truncate">
-                  {formatInstructorNames(getDjDisplay(social, targetDate), language).replace('TBD', t('social.tbd'))}
-                </h4>
-              </div>
-            </div>
-
             {/* 어드민용 일정 추가 인라인 폼 (isAdding === true 일 때 펼쳐짐) */}
             {canEdit && isAdding && (
               <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3.5 animate-in slide-in-from-top-2 duration-200">

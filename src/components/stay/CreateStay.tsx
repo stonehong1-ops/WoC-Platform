@@ -7,7 +7,7 @@ import { stayService } from '@/lib/firebase/stayService';
 import { plazaService } from '@/lib/firebase/plazaService';
 import { StayType } from '@/types/stay';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { CITY_COORDINATES } from '@/lib/constants/locations';
+import { CITY_COORDINATES } from '@/constants/locations';
 import { motion } from 'framer-motion';
 
 interface CreateStayProps {

@@ -12,6 +12,7 @@ import ChatRoom from '@/components/chat/ChatRoom';
 import UserProfileClickable from '@/components/common/UserProfileClickable';
 import { useNavigation } from '@/components/providers/NavigationProvider';
 import UserBadge from '@/components/common/UserBadge';
+import CreateResaleItem from './CreateResaleItem';
 
 interface ResaleItemDetailProps {
   item: ResaleItem;
@@ -19,7 +20,7 @@ interface ResaleItemDetailProps {
 }
 
 export default function ResaleItemDetail({ item, onClose }: ResaleItemDetailProps) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { t } = useLanguage();
   const { setGlobalNavHidden } = useNavigation();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -34,9 +35,28 @@ export default function ResaleItemDetail({ item, onClose }: ResaleItemDetailProp
   const [isImageExpanded, setIsImageExpanded] = useState(false);
   const [chatRoomId, setChatRoomId] = useState<string | null>(null);
   const [showPurchaseFlow, setShowPurchaseFlow] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const isOwner = user?.uid === item.sellerId;
+  const isAdmin = !!(profile?.systemRole === 'admin' || profile?.isAdmin);
+  const canEditOrDelete = isOwner || isAdmin;
+
+  const handleDelete = async () => {
+    if (!confirm(t('resale.confirm_delete') || 'Are you sure you want to delete this item?')) return;
+    setIsSubmitting(true);
+    try {
+      await resaleService.deleteItem(item.id);
+      alert(t('resale.alert_delete_success') || 'Item deleted successfully.');
+      onClose();
+    } catch (error) {
+      console.error("Failed to delete item:", error);
+      alert(t('resale.alert_delete_failed') || 'Failed to delete item.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     setGlobalNavHidden(true);
@@ -199,6 +219,34 @@ export default function ResaleItemDetail({ item, onClose }: ResaleItemDetailProp
             className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'}`}>
             <span className="material-symbols-rounded text-xl">share</span>
           </button>
+          {canEditOrDelete && (
+            <div className="relative">
+              <button 
+                onClick={() => setShowMenu(!showMenu)}
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'}`}
+              >
+                <span className="material-symbols-rounded text-xl">more_vert</span>
+              </button>
+              {showMenu && (
+                <div className="absolute right-0 mt-2 z-[120] bg-white border border-slate-100 shadow-xl rounded-2xl py-1 w-28 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                  <button 
+                    onClick={() => { setShowMenu(false); setShowEditModal(true); }}
+                    className="w-full px-4 py-2.5 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2"
+                  >
+                    <span className="material-symbols-rounded text-base text-slate-400">edit</span>
+                    {t('common.edit')}
+                  </button>
+                  <button 
+                    onClick={() => { setShowMenu(false); handleDelete(); }}
+                    className="w-full px-4 py-2.5 text-left text-xs font-bold text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
+                  >
+                    <span className="material-symbols-rounded text-base text-red-400">delete</span>
+                    {t('common.delete')}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -450,6 +498,19 @@ export default function ResaleItemDetail({ item, onClose }: ResaleItemDetailProp
           onComplete={() => {
             setShowPurchaseFlow(false);
             onClose(); // Close the detail modal entirely when done
+          }}
+        />
+      )}
+
+      {/* Edit Modal */}
+      {showEditModal && (
+        <CreateResaleItem
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          itemToEdit={item}
+          onSuccess={() => {
+            setShowEditModal(false);
+            onClose(); // Close detail to refresh list
           }}
         />
       )}

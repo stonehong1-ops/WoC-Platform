@@ -16,6 +16,7 @@ export interface SocialDj {
   date: string; // YYYY-MM-DD
   djId?: string;
   djName: string;
+  djNativeName?: string;
 }
 
 export interface Social {

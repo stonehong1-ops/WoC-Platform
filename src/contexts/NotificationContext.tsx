@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { db } from '@/lib/firebase/clientApp';
 import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
@@ -74,8 +74,14 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
+  const contextValue = useMemo(() => ({
+    notifications,
+    unreadCount,
+    loading
+  }), [notifications, unreadCount, loading]);
+
   return (
-    <NotificationContext.Provider value={{ notifications, unreadCount, loading }}>
+    <NotificationContext.Provider value={contextValue}>
       {children}
     </NotificationContext.Provider>
   );

@@ -16,11 +16,11 @@ import Link from 'next/link';
 import { useModalNavigation } from '@/hooks/useModalNavigation';
 import { useNavigation } from '@/components/providers/NavigationProvider';
 import UserBadge from '@/components/common/UserBadge';
-import { dictionary } from '@/i18n';
 import { db } from '@/lib/firebase/clientApp';
 import { doc, getDoc, Timestamp } from 'firebase/firestore';
 import StayReservationFlow from './StayReservationFlow';
 import { isWeekendOrHolidayStay } from '@/lib/utils/dateUtils';
+import { safeDate } from '@/lib/utils/safeDate';
 
 import {
   addMonths,
@@ -92,7 +92,7 @@ interface StayDetailProps {
 
 export default function StayDetail({ stayId, onClose, isLiked, onToggleLike, isExiting = false }: StayDetailProps) {
   const { user, setShowLogin, profile } = useAuth();
-  const { t, formatDate, language } = useLanguage();
+  const { t, formatDate, language, dictionaryState } = useLanguage();
   const { setGlobalNavHidden } = useNavigation();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -499,9 +499,8 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike, isE
     return rows;
   }, [currentMonth, allBookings, bookingDateMap, startDate, endDate, isAdmin, formatDate, t]);
 
-  const langKey = (language || 'KR').toUpperCase() === 'KR' ? 'KR' : 'EN';
   const stayKey = stayId === 'tango-stay-canaro' ? 'deokeun' : (stayId === 'tango-stay-hapjeong' ? 'hapjeong' : 'hongdae');
-  const staysObj = dictionary && (dictionary as any)[langKey]?.stays;
+  const staysObj = (dictionaryState as any)?.stays;
   const stayLang = staysObj ? staysObj[stayKey] : undefined;
 
   const gallery = useMemo(() => {
@@ -1246,15 +1245,19 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike, isE
                   let checkOutLabel = '';
 
                   if (checkInVal) {
-                    const dStart = checkInVal.toDate ? checkInVal.toDate() : new Date(checkInVal);
-                    stayStartLabel = formatDate(dStart, 'shortMonthDay');
+                    const dStart = safeDate(checkInVal);
+                    if (dStart) {
+                      stayStartLabel = formatDate(dStart, 'shortMonthDay');
+                    }
                   }
 
                   if (checkOutVal) {
-                    const dOut = checkOutVal.toDate ? checkOutVal.toDate() : new Date(checkOutVal);
-                    checkOutLabel = formatDate(dOut, 'shortMonthDay');
-                    const dEnd = new Date(dOut.getTime() - 24 * 60 * 60 * 1000);
-                    stayEndLabel = formatDate(dEnd, 'shortMonthDay');
+                    const dOut = safeDate(checkOutVal);
+                    if (dOut) {
+                      checkOutLabel = formatDate(dOut, 'shortMonthDay');
+                      const dEnd = new Date(dOut.getTime() - 24 * 60 * 60 * 1000);
+                      stayEndLabel = formatDate(dEnd, 'shortMonthDay');
+                    }
                   }
 
                   return (

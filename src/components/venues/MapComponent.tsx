@@ -5,7 +5,7 @@ import { GoogleMap, Marker, Autocomplete } from '@react-google-maps/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from '@/components/providers/LocationProvider';
 import { useNavigation } from '@/components/providers/NavigationProvider';
-import { CITY_COORDINATES, DEFAULT_COORDINATES } from '@/lib/constants/locations';
+import { CITY_COORDINATES, DEFAULT_COORDINATES } from '@/constants/locations';
 import { OverlayView } from '@react-google-maps/api';
 import useSupercluster from 'use-supercluster';
 import { useLanguage } from '@/contexts/LanguageContext';

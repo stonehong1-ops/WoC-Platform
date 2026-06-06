@@ -67,6 +67,19 @@ export const userService = {
       ...doc.data()
     })) as PlatformUser[];
   },
+  
+  // Get all instructors
+  getInstructors: async (): Promise<PlatformUser[]> => {
+    const q = query(
+      collection(db, USERS_COLLECTION),
+      where('isInstructor', '==', true)
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })) as PlatformUser[];
+  },
 
   // Toggle Like on a class
   toggleLikeClass: async (uid: string, classId: string, isLiking: boolean): Promise<void> => {

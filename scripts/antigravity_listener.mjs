@@ -45,7 +45,18 @@ try {
 
         // A. 승인 여부 판독 및 보안 락 해제 토큰 주입
         const normalizedMsg = (message || '').trim().toLowerCase();
-        const isApproval = ['승인', '승인합니다', 'y', 'yes', '고', 'go', '진행', '진행해'].some(term => normalizedMsg.includes(term));
+        
+        const englishTerms = ['y', 'yes', 'go'];
+        const hasEnglishApproval = englishTerms.some(term => {
+          const regex = new RegExp(`\\b${term}\\b`, 'i');
+          return regex.test(normalizedMsg);
+        });
+
+        const koreanTerms = ['승인', '승인합니다', '진행', '진행해'];
+        const hasKoreanApproval = koreanTerms.some(term => normalizedMsg.includes(term)) || 
+                                  /(?:^|\s)고(?:\s|$)/.test(normalizedMsg);
+
+        const isApproval = hasEnglishApproval || hasKoreanApproval;
 
         if (isApproval) {
           try {

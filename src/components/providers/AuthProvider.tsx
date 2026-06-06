@@ -135,19 +135,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.error('Migration link failed:', error);
         }
 
-        // Update last visited time
+        // Update last visited time only for registered users
         try {
           const userDocExists = userSnap && userSnap.exists();
-          const existingData = userDocExists ? userSnap.data() : null;
-          
-          await setDoc(userDocRef, { 
-            lastVisitedAt: serverTimestamp(),
-            pinnedPostIds: existingData?.pinnedPostIds ?? [],
-            interactedUserIds: existingData?.interactedUserIds ?? [],
-            pinnedUserIds: existingData?.pinnedUserIds ?? []
-          }, { merge: true });
+          if (userDocExists && userSnap.data()?.isRegistered === true) {
+            const existingData = userSnap.data();
+            await setDoc(userDocRef, { 
+              lastVisitedAt: serverTimestamp(),
+              pinnedPostIds: existingData?.pinnedPostIds ?? [],
+              interactedUserIds: existingData?.interactedUserIds ?? [],
+              pinnedUserIds: existingData?.pinnedUserIds ?? []
+            }, { merge: true });
+          }
         } catch (error) {
-          console.error('Failed to init/update user document:', error);
+          console.error('Failed to update lastVisitedAt:', error);
         }
 
         // 실시간 프로필 감시 시작

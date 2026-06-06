@@ -75,7 +75,7 @@ export default function SearchPage() {
   const [searchResults, setSearchResults] = useState<SearchResultItem[]>([]);
   
   // Restore initial trending data from sessionStorage
-  const [initialData, setInitialData] = useState<{shops: SearchResultItem[], socials: SearchResultItem[], events: SearchResultItem[], groups: SearchResultItem[]}>(() => {
+  const [initialData, setInitialData] = useState<{shops: SearchResultItem[], socials: SearchResultItem[], events: SearchResultItem[], groups: SearchResultItem[], people: SearchResultItem[]}>(() => {
     if (typeof window !== 'undefined') {
       const cached = sessionStorage.getItem('woc_search_initial');
       if (cached) {
@@ -86,7 +86,7 @@ export default function SearchPage() {
         }
       }
     }
-    return { shops: [], socials: [], events: [], groups: [] };
+    return { shops: [], socials: [], events: [], groups: [], people: [] };
   });
 
   // Restore recent searches from localStorage
@@ -184,7 +184,7 @@ export default function SearchPage() {
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
             placeholder={t('search.placeholder')}
-            className="flex-1 bg-transparent border-none outline-none text-[15px] text-on-surface placeholder:text-on-surface/30 font-bold"
+            className="flex-1 bg-transparent border-none outline-none text-[12px] text-on-surface placeholder:text-on-surface/30 font-bold"
             autoFocus
           />
           {searchQuery && (
@@ -397,6 +397,41 @@ export default function SearchPage() {
                   })}
                 </div>
               </section>
+
+              {/* Section 5: People */}
+              <section>
+                <div className="flex items-center justify-between px-4 mb-4">
+                  <h2 className="text-[18px] font-black text-on-surface tracking-tight flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-primary text-[20px]">person</span>
+                    {t('search.activePeople')}
+                  </h2>
+                  <Link href="/people" className="text-[13px] font-bold text-on-surface/50 flex items-center hover:text-primary transition-colors">
+                    {t('search.viewAll')} <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+                  </Link>
+                </div>
+                <div className="flex gap-4 overflow-x-auto px-4 no-scrollbar pb-8">
+                  {initialData.people && initialData.people.map((item) => {
+                    const { title, subtitle } = getDisplayTitleAndSubtitle(item, language);
+                    return (
+                      <Link href={item.url} key={item.id} className="min-w-[120px] flex flex-col items-center gap-3 cursor-pointer active:scale-95 transition-transform group">
+                        <div className="w-[80px] h-[80px] rounded-full overflow-hidden relative bg-on-surface/5 ring-2 ring-transparent group-hover:ring-primary/20 transition-all shadow-sm">
+                          {item.image ? (
+                            <Image src={item.image} alt={title} fill className="object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-surface-variant text-on-surface-variant">
+                              <span className="material-symbols-outlined text-[32px]">person</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-center">
+                          <h3 className="text-[14px] font-bold text-on-surface leading-tight mb-1">{title}</h3>
+                          {subtitle && <p className="text-[12px] font-medium text-on-surface/50 truncate max-w-[110px]">{subtitle}</p>}
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </section>
             </div>
           </>
         ) : (
@@ -447,7 +482,12 @@ export default function SearchPage() {
                             item.type === 'person' ? 'bg-amber-100 text-amber-600' :
                             'bg-green-100 text-green-600'
                           }`}>
-                            {t('search.type.' + item.type)}
+                            {item.type === 'person'
+                              ? (language === 'KR'
+                                  ? (item.roleLabelKo || item.roleLabel || t('search.type.person'))
+                                  : (item.roleLabel || item.roleLabelKo || t('search.type.person')))
+                              : t('search.type.' + item.type)
+                            }
                           </span>
                         </div>
                         <h3 className="text-[15px] font-bold text-on-surface line-clamp-1">{title}</h3>

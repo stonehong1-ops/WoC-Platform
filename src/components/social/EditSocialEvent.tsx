@@ -11,6 +11,7 @@ import { Social, SocialType } from '@/types/social';
 import { Venue } from '@/types/venue';
 import { PlatformUser } from '@/types/user';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { isVideoUrl } from '@/lib/utils/socialUtils';
 
 interface EditSocialEventProps {
   onClose: () => void;
@@ -434,7 +435,22 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
               >
                 {images[0] ? (
                   <>
-                    <img className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src={images[0]} alt="poster" />
+                    {isVideoUrl(images[0], imageFile?.type) ? (
+                      <video 
+                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                        src={images[0]} 
+                        muted 
+                        autoPlay 
+                        loop 
+                        playsInline 
+                      />
+                    ) : (
+                      <img 
+                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                        src={images[0]} 
+                        alt="poster" 
+                      />
+                    )}
                     <div className="absolute top-3 left-3 bg-primary text-white text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded shadow-sm z-10">{t('social.primary')}</div>
                   </>
                 ) : (
@@ -446,11 +462,27 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
               </div>
             </div>
             <p className="text-center text-[11px] font-bold text-[#acb3b4]">{t('social.optimal_ratio_desc')}</p>
-            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => {
+            <input ref={fileInputRef} type="file" accept="image/*,video/*" className="hidden" onChange={(e) => {
               const f = e.target.files?.[0];
               if (f) {
-                setImages([URL.createObjectURL(f)]);
-                setImageFile(f);
+                if (f.type.startsWith('video/')) {
+                  const video = document.createElement('video');
+                  video.preload = 'metadata';
+                  video.onloadedmetadata = () => {
+                    window.URL.revokeObjectURL(video.src);
+                    if (video.duration > 15) {
+                      alert(t('social.alert_video_too_long'));
+                      e.target.value = '';
+                      return;
+                    }
+                    setImages([URL.createObjectURL(f)]);
+                    setImageFile(f);
+                  };
+                  video.src = URL.createObjectURL(f);
+                } else {
+                  setImages([URL.createObjectURL(f)]);
+                  setImageFile(f);
+                }
               }
             }} />
           </div>
@@ -734,35 +766,6 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
                 </div>
               )}
             </div>
-
-            {/* DJ — 쁘락띠까일 때 숨김 */}
-            {subCategory !== 'practica' && (
-            <div className="relative z-20">
-              <label className="block text-[11px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1.5">{t('social.dj_label')}</label>
-              <div className="relative flex items-center px-4 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/20 transition-all">
-                <span className="material-symbols-rounded text-[#acb3b4] mr-2">headphones</span>
-                <input value={djName} onChange={(e) => handleDjSearch(e.target.value)}
-                  onFocus={() => djName.length >= 1 && setShowDjResults(djResults.length > 0)}
-                  onBlur={() => setTimeout(() => setShowDjResults(false), 200)}
-                  className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-sm font-bold text-[#2d3435] placeholder:text-[#acb3b4] outline-none"
-                  placeholder={t('social.search_dj_placeholder')} type="text" />
-              </div>
-              {showDjResults && (
-                <div className="absolute top-full left-0 w-full mt-1 bg-white border border-[#e0e4e5] rounded-xl shadow-lg z-50 overflow-hidden">
-                  {djResults.map(u => (
-                    <button key={u.id} onClick={() => handleSelectDj(u)}
-                      className="w-full text-left px-4 py-3 hover:bg-[#f8f9fa] flex items-center gap-3 group transition-colors border-b border-[#f2f4f4] last:border-0">
-                      <span className="material-symbols-rounded text-[#acb3b4] text-[18px]">headphones</span>
-                      <div className="flex flex-col">
-                        <p className="font-bold text-[#2d3435] text-sm group-hover:text-primary leading-tight">{u.nickname}</p>
-                        {u.nativeNickname && <span className="text-[10px] text-[#acb3b4] font-medium leading-tight">{u.nativeNickname}</span>}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            )}
 
             {/* Staff */}
             <div className="relative z-10">

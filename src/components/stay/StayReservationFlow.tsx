@@ -6,6 +6,7 @@ import { stayBookingService } from '@/lib/firebase/stayBookingService';
 import { stayService } from '@/lib/firebase/stayService';
 import { chatService } from '@/lib/firebase/chatService';
 import { Stay, StayBookingStatus, StayBooking } from '@/types/stay';
+import { Timestamp } from 'firebase/firestore';
 import ImageWithFallback from '@/components/common/ImageWithFallback';
 import { useLanguage } from '@/contexts/LanguageContext';
 import UnifiedCheckoutModal from '@/components/common/UnifiedCheckoutModal';
@@ -133,8 +134,8 @@ export default function StayReservationFlow({
       applicantName,
       userAvatar: profile?.photoURL || user.photoURL || '',
       contactNumber: buyerPhone,
-      checkIn,
-      checkOut,
+      checkIn: Timestamp.fromDate(checkIn),
+      checkOut: Timestamp.fromDate(checkOut),
       nights,
       guests,
       pricing: {
@@ -203,7 +204,7 @@ export default function StayReservationFlow({
             const smsResult = await sendSmsViaSolapi(formattedPhone, smsContent);
             await stayBookingService.addSmsLog(createdBookingId, {
               type: 'paid',
-              sentAt: new Date().toISOString(),
+              sentAt: Timestamp.now(),
               sentBy: user.uid,
               to: formattedPhone,
               message: smsContent,
@@ -217,7 +218,8 @@ export default function StayReservationFlow({
       }
 
       // 2. Send Chat Notification Card to Host
-      if (hostId && user) {
+      // 호스트 본인이 자기 스테이에 예약한 경우 채팅 전송 건너뜀 (동일 UID로 기존 타인 채팅방 오매칭 방지)
+      if (hostId && user && hostId !== user.uid) {
         const roomId = await chatService.getOrCreatePrivateRoom([user.uid, hostId], user.uid, 'business');
         
         // 2-1. Initial Stay Detail Card Message in chat room

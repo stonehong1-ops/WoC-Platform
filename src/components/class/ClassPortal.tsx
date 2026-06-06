@@ -1,4 +1,5 @@
 'use client';
+import { reportError } from '@/lib/utils/errorHandler';
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
@@ -17,6 +18,7 @@ import { useBookingEngine } from '@/hooks/useBookingEngine';
 import UnifiedCheckoutModal from '@/components/common/UnifiedCheckoutModal';
 import Portal from '@/components/common/Portal';
 import GroupClassAddEditor from '@/components/groups/GroupClassAddEditor';
+import { safeDate } from '@/lib/utils/safeDate';
 import BottomSheet from '@/components/common/BottomSheet';
 import { bookingService } from '@/lib/firebase/bookingService';
 import { BaseBooking } from '@/types/booking';
@@ -42,9 +44,10 @@ export default function ClassPortal() {
       if (cached) {
         try {
           return JSON.parse(cached);
-        } catch (e) {
-          console.error('Failed to parse cached class portal data:', e);
-        }
+    } catch (e) {
+      reportError(e, 'classPortal.parseCachedData');
+      console.error('Failed to parse cached class portal data:', e);
+    }
       }
     }
     return null;
@@ -65,7 +68,7 @@ export default function ClassPortal() {
   const [showOrganizerFilter, setShowOrganizerFilter] = useState(false);
   const [showClubFilter, setShowClubFilter] = useState(false);
   const [selectedOrganizer, setSelectedOrganizer] = useState('All');
-  const [selectedClub, setSelectedClub] = useState('All');
+  const [selectedGroupId, setSelectedGroupId] = useState('All');
   
   const [capacityModalOpen, setCapacityModalOpen] = useState(false);
   const [editingClass, setEditingClass] = useState<GroupClass | null>(null);
@@ -97,6 +100,7 @@ export default function ClassPortal() {
         try {
           return JSON.parse(cached);
         } catch (e) {
+          reportError(e, 'classPortal.parseCachedData');
           console.error(e);
         }
       }
@@ -120,9 +124,10 @@ export default function ClassPortal() {
       if (cached) {
         try {
           setUserBookings(JSON.parse(cached));
-        } catch (e) {
-          console.error('Failed to parse cached bookings:', e);
-        }
+    } catch (e) {
+      reportError(e, 'classPortal.parseCachedBookings');
+      console.error('Failed to parse cached bookings:', e);
+    }
       }
     }
 
@@ -187,13 +192,30 @@ export default function ClassPortal() {
     return Array.from(instSet).sort();
   }, [allClasses]);
 
-  const clubs = useMemo(() => {
-    const clubSet = new Set<string>();
-    groups.forEach(g => {
-      if (g.name) clubSet.add(g.name);
+  // 각 그룹별 전체 클래스 개수(allClasses 기준)
+  const groupCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    allClasses.forEach(cls => {
+      if (cls.groupId) {
+        counts[cls.groupId] = (counts[cls.groupId] || 0) + 1;
+      }
     });
-    return Array.from(clubSet).sort();
-  }, [groups]);
+    return counts;
+  }, [allClasses]);
+
+  // 카운트가 있는 그룹들만 필터 목록에 노출하고, 카운트 순으로 정렬
+  const filteredFilterGroups = useMemo(() => {
+    const activeGroups = groups.filter(g => (groupCounts[g.id] || 0) > 0);
+    return [...activeGroups].sort((a, b) => {
+      const countA = groupCounts[a.id] || 0;
+      const countB = groupCounts[b.id] || 0;
+      if (countB !== countA) return countB - countA;
+      
+      const nameA = language === 'KR' ? (a.nativeName || a.name) : a.name;
+      const nameB = language === 'KR' ? (b.nativeName || b.name) : b.name;
+      return nameA.localeCompare(nameB, language === 'KR' ? 'ko' : 'en');
+    });
+  }, [groups, groupCounts, language]);
 
   const weekTimeline = useMemo(() => {
     if (activeTab !== 'WEEK') return [];
@@ -226,7 +248,7 @@ export default function ClassPortal() {
     allClasses.forEach(cls => {
       const group = groups.find(g => g.id === cls.groupId);
       
-      if (selectedClub !== 'All' && group?.name !== selectedClub) return;
+      if (selectedGroupId !== 'All' && cls.groupId !== selectedGroupId) return;
       if (selectedOrganizer !== 'All') {
         const hasInstructor = cls.instructors?.some((i) => i.name === selectedOrganizer);
         if (!hasInstructor) return;
@@ -234,12 +256,9 @@ export default function ClassPortal() {
 
       cls.schedule?.forEach((s) => {
         if (!s.date) return;
-        let dStr = '';
-        if (typeof s.date === 'string') dStr = s.date.trim();
-        else if (s.date && typeof s.date.toDate === 'function') {
-          const dObj = s.date.toDate();
-          dStr = `${dObj.getFullYear()}-${String(dObj.getMonth() + 1).padStart(2, '0')}-${String(dObj.getDate()).padStart(2, '0')}`;
-        }
+        const dObj = safeDate(s.date);
+        if (!dObj) return;
+        const dStr = `${dObj.getFullYear()}-${String(dObj.getMonth() + 1).padStart(2, '0')}-${String(dObj.getDate()).padStart(2, '0')}`;
 
         if (dStr) {
           const normalized = dStr.replace(/[\.\/]/g, '-').replace(/\s+/g, '');
@@ -277,7 +296,7 @@ export default function ClassPortal() {
       });
     });
     return result;
-  }, [activeTab, allClasses, groups, weekOffset, selectedOrganizer, selectedClub]);
+  }, [activeTab, allClasses, groups, weekOffset, selectedOrganizer, selectedGroupId]);
 
   // Sub Header Tab Navigation
   useEffect(() => {
@@ -316,9 +335,14 @@ export default function ClassPortal() {
               </button>
               <button
                 onClick={() => { setShowClubFilter(!showClubFilter); if (!showClubFilter) setShowOrganizerFilter(false); }}
-                className={`flex items-center gap-0.5 text-[12px] font-bold transition-all ${selectedClub !== 'All' ? 'text-blue-600' : 'text-slate-600 hover:text-slate-800'}`}
+                className={`flex items-center gap-0.5 text-[12px] font-bold transition-all ${selectedGroupId !== 'All' ? 'text-blue-600' : 'text-slate-600 hover:text-slate-800'}`}
               >
-                {selectedClub === 'All' ? t('class.filter_club') : selectedClub}
+                {selectedGroupId === 'All' ? t('class.filter_club') : (
+                  (() => {
+                    const grp = groups.find(g => g.id === selectedGroupId);
+                    return grp ? (language === 'KR' ? (grp.nativeName || grp.name) : grp.name) : '';
+                  })()
+                )}
                 <span className={`material-symbols-outlined text-[16px] transition-transform ${showClubFilter ? 'rotate-180' : ''}`}>expand_more</span>
               </button>
             </div>
@@ -349,12 +373,27 @@ export default function ClassPortal() {
                   </button>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  {['All', ...clubs].map(ven => (
-                    <button key={ven} onClick={() => { setSelectedClub(ven); setShowClubFilter(false); }}
-                      className={`px-4 py-3 rounded-2xl text-[12px] font-bold text-left transition-all border ${selectedClub === ven ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-100' : 'bg-slate-50/50 text-slate-600 border-transparent hover:bg-slate-100/80'}`}>
-                      <div className="flex items-center justify-between"><span className="truncate pr-2">{ven}</span>{selectedClub === ven && <span className="material-symbols-outlined text-[14px]">check_circle</span>}</div>
-                    </button>
-                  ))}
+                  <button key="All" onClick={() => { setSelectedGroupId('All'); setShowClubFilter(false); }}
+                    className={`px-4 py-3 rounded-2xl text-[12px] font-bold text-left transition-all border ${selectedGroupId === 'All' ? 'bg-[#1e293b] text-white border-[#1e293b] shadow-md shadow-slate-100' : 'bg-slate-50/50 text-slate-600 border-transparent hover:bg-slate-100/80'}`}>
+                    <div className="flex items-center justify-between">
+                      <span className="truncate">{t('today.all_groups') || 'All Groups'}</span>
+                      {selectedGroupId === 'All' && <span className="material-symbols-outlined text-[14px]">check_circle</span>}
+                    </div>
+                  </button>
+                  {filteredFilterGroups.map(grp => {
+                    const count = groupCounts[grp.id] || 0;
+                    const isSelected = selectedGroupId === grp.id;
+                    const displayName = language === 'KR' ? (grp.nativeName || grp.name) : grp.name;
+                    return (
+                      <button key={grp.id} onClick={() => { setSelectedGroupId(grp.id); setShowClubFilter(false); }}
+                        className={`px-4 py-3 rounded-2xl text-[12px] font-bold text-left transition-all border ${isSelected ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-100' : 'bg-slate-50/50 text-slate-600 border-transparent hover:bg-slate-100/80'}`}>
+                        <div className="flex items-center justify-between">
+                          <span className="truncate pr-2">{displayName} ({count})</span>
+                          {isSelected && <span className="material-symbols-outlined text-[14px]">check_circle</span>}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -365,7 +404,7 @@ export default function ClassPortal() {
     const height = (activeTab === 'WEEK' || activeTab === 'TODAY') ? 88 : 44;
     setSubHeader(filterBar, height);
     return () => setSubHeader(null);
-  }, [activeTab, selectedOrganizer, selectedClub, showOrganizerFilter, showClubFilter, organizers, clubs, setSubHeader]);
+  }, [activeTab, selectedOrganizer, selectedGroupId, showOrganizerFilter, showClubFilter, organizers, filteredFilterGroups, groupCounts, language, setSubHeader]);
 
   const handleClassClick = (cls: GroupClass) => {
     setSelectedDetailClass(cls);
@@ -385,7 +424,7 @@ export default function ClassPortal() {
     const classes: (GroupClass & { group?: Group; scheduleEntry?: ClassScheduleEntry })[] = [];
     allClasses.forEach(cls => {
       const group = groups.find(g => g.id === cls.groupId);
-      if (selectedClub !== 'All' && group?.name !== selectedClub) return;
+      if (selectedGroupId !== 'All' && cls.groupId !== selectedGroupId) return;
       if (selectedOrganizer !== 'All') {
         const hasInstructor = cls.instructors?.some((i) => i.name === selectedOrganizer);
         if (!hasInstructor) return;
@@ -393,12 +432,9 @@ export default function ClassPortal() {
 
       cls.schedule?.forEach((s) => {
         if (!s.date) return;
-        let dStr = '';
-        if (typeof s.date === 'string') dStr = s.date.trim();
-        else if (s.date && typeof s.date.toDate === 'function') {
-          const dObj = s.date.toDate();
-          dStr = `${dObj.getFullYear()}-${String(dObj.getMonth() + 1).padStart(2, '0')}-${String(dObj.getDate()).padStart(2, '0')}`;
-        }
+        const dObj = safeDate(s.date);
+        if (!dObj) return;
+        const dStr = `${dObj.getFullYear()}-${String(dObj.getMonth() + 1).padStart(2, '0')}-${String(dObj.getDate()).padStart(2, '0')}`;
 
         if (dStr) {
           const normalized = dStr.replace(/[\.\/]/g, '-').replace(/\s+/g, '');
@@ -449,7 +485,7 @@ export default function ClassPortal() {
     });
 
     return blocks.filter(b => b.classes.length > 0);
-  }, [activeTab, allClasses, groups, selectedOrganizer, selectedClub]);
+  }, [activeTab, allClasses, groups, selectedOrganizer, selectedGroupId]);
 
   const handleSaveCapacity = async () => {
     if (!editingClass || !editingClass.groupId) return;
@@ -790,11 +826,18 @@ export default function ClassPortal() {
     <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 text-left pb-10">
       <div className="flex items-center justify-between px-1 mb-2">
         <div className="flex items-center gap-2">
-          {(selectedOrganizer !== 'All' || selectedClub !== 'All') && (
+          {(selectedOrganizer !== 'All' || selectedGroupId !== 'All') && (
             <>
               <span className="material-symbols-outlined text-[14px] text-blue-600">filter_alt</span>
               <span className="text-[11px] font-bold text-blue-600 uppercase tracking-wider">
-                {selectedOrganizer !== 'All' ? selectedOrganizer : ''}{selectedOrganizer !== 'All' && selectedClub !== 'All' ? ' · ' : ''}{selectedClub !== 'All' ? selectedClub : ''}
+                {selectedOrganizer !== 'All' ? selectedOrganizer : ''}
+                {selectedOrganizer !== 'All' && selectedGroupId !== 'All' ? ' · ' : ''}
+                {selectedGroupId !== 'All' ? (
+                  (() => {
+                    const grp = groups.find(g => g.id === selectedGroupId);
+                    return grp ? (language === 'KR' ? (grp.nativeName || grp.name) : grp.name) : '';
+                  })()
+                ) : ''}
               </span>
             </>
           )}
@@ -1064,7 +1107,7 @@ export default function ClassPortal() {
 
               </div>
               {group.updatedAt && (() => {
-                const updated = group.updatedAt?.toDate ? group.updatedAt.toDate() : new Date(group.updatedAt);
+                const updated = safeDate(group.updatedAt) || new Date();
                 const diffMs = Date.now() - updated.getTime();
                 const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
                 const label = diffDays === 0 ? t('class.updated_today') : diffDays === 1 ? t('class.updated_yesterday') : t('class.updated_days_ago').replace('{days}', String(diffDays));

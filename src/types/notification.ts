@@ -1,3 +1,5 @@
+import { Timestamp } from 'firebase/firestore';
+
 export type BaseNotificationType = 'INFO';
 export type NotificationCategory = 'CLASS' | 'STAY' | 'SHOP' | 'FEED' | 'SYSTEM' | 'GROUP' | 'ADMIN' | 'SOCIAL' | 'BOOKING';
 export type NotificationType = string; // Legacy: 'GROUP_INVITE' | 'GENERAL' | 'ADMIN', New: 'CLASS_APPLY', etc.
@@ -38,9 +40,9 @@ export interface Notification {
   referenceId?: string;
   itemName?: string;
   i18nKey?: string;
-  i18nParams?: any;
+  i18nParams?: Record<string, unknown>;
   
   // Metadata
-  createdAt: number | any; // number or Firestore Timestamp
-  expiresAt?: number | any;
+  createdAt: number | Timestamp;
+  expiresAt?: number | Timestamp;
 }

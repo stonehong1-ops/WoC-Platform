@@ -83,7 +83,7 @@ export default function NotificationTray() {
                         {noti.category || 'SYSTEM'}
                       </span>
                       <span className="text-[10px] text-on-surface/40">
-                        {noti.createdAt?.seconds ? formatRelativeTime(noti.createdAt.seconds * 1000) : 'Just now'}
+                        {typeof noti.createdAt === 'number' ? formatRelativeTime(noti.createdAt) : noti.createdAt?.seconds ? formatRelativeTime(noti.createdAt.seconds * 1000) : 'Just now'}
                       </span>
                     </div>
                     <h3 className={`text-[14px] leading-snug mt-1.5 ${!noti.isRead ? 'font-bold text-on-background' : 'font-medium text-on-surface'}`}>

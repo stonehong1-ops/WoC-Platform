@@ -18,6 +18,7 @@ import PosterOverlay from "./poster/PosterOverlay";
 import { extractPosterData } from "./poster/posterTypes";
 import { POSTER_LAYOUTS } from "./poster/PosterLayouts";
 import { useLanguage } from '@/contexts/LanguageContext';
+import { isVideoUrl } from '@/lib/utils/socialUtils';
 
 interface SocialViewerProps {
   social: Social;
@@ -259,7 +260,18 @@ export default function SocialViewer({ social: initialSocial, onClose, targetDat
               <div className="flex h-full transition-transform duration-300 ease-out" style={{ transform: `translateX(-${currentImg * 100}%)` }}>
                 {images.map((img, i) => (
                   <div key={i} className="w-full flex-shrink-0 h-full">
-                    <img src={img} alt={`${titleStr} ${i + 1}`} className="w-full h-full object-cover" />
+                    {isVideoUrl(img) ? (
+                      <video 
+                        src={img} 
+                        className="w-full h-full object-cover" 
+                        muted 
+                        autoPlay 
+                        loop 
+                        playsInline 
+                      />
+                    ) : (
+                      <img src={img} alt={`${titleStr} ${i + 1}`} className="w-full h-full object-cover" />
+                    )}
                   </div>
                 ))}
               </div>
@@ -364,7 +376,17 @@ export default function SocialViewer({ social: initialSocial, onClose, targetDat
             <div className="flex w-full transition-transform duration-300 ease-out h-full items-center" style={{ transform: `translateX(-${currentImg * 100}%)` }}>
               {images.map((img, i) => (
                 <div key={i} className="w-full flex-shrink-0 flex items-center justify-center px-4">
-                  <img src={img} alt={`Fullscreen ${i + 1}`} className="w-full max-h-[80vh] object-contain" />
+                  {isVideoUrl(img) ? (
+                    <video 
+                      src={img} 
+                      className="w-full max-h-[80vh] object-contain" 
+                      controls 
+                      autoPlay 
+                      playsInline 
+                    />
+                  ) : (
+                    <img src={img} alt={`Fullscreen ${i + 1}`} className="w-full max-h-[80vh] object-contain" />
+                  )}
                 </div>
               ))}
             </div>
@@ -400,12 +422,12 @@ export default function SocialViewer({ social: initialSocial, onClose, targetDat
                   <button onClick={() => { setShowMenu(false); setShowEditModal(true); }}
                     className="flex items-center gap-4 w-full px-5 py-3.5 rounded-xl hover:bg-gray-50 active:bg-gray-100 transition-colors">
                     <span className="material-symbols-rounded text-[22px] text-[#2d3435]">edit</span>
-                    <span className="text-[15px] font-medium text-[#2d3435]">Edit</span>
+                    <span className="text-[15px] font-medium text-[#2d3435]">{t('social.menu_edit')}</span>
                   </button>
                   <button onClick={() => { setShowMenu(false); handleDelete(); }}
                     className="flex items-center gap-4 w-full px-5 py-3.5 rounded-xl hover:bg-red-50 active:bg-red-100 transition-colors">
                     <span className="material-symbols-rounded text-[22px] text-red-500">delete</span>
-                    <span className="text-[15px] font-medium text-red-500">Delete</span>
+                    <span className="text-[15px] font-medium text-red-500">{t('social.menu_delete')}</span>
                   </button>
                   <div className="h-px bg-gray-100 mx-4 my-1" />
                 </>
@@ -415,19 +437,19 @@ export default function SocialViewer({ social: initialSocial, onClose, targetDat
                   setIsExporting(true);
                   try {
                     const blob = await fetchPosterBlob();
-                    if (!blob) { alert("No image available"); return; }
+                    if (!blob) { alert(t('social.no_image_available')); return; }
                     const url = URL.createObjectURL(blob);
                     const link = document.createElement("a");
                     link.download = `${social.title.replace(/\s+/g, "_")}_poster.png`;
                     link.href = url;
                     link.click();
                     URL.revokeObjectURL(url);
-                  } catch (err) { console.error(err); alert("Failed to download"); }
+                  } catch (err) { console.error(err); alert(t('social.download_failed')); }
                   finally { setIsExporting(false); }
                 }}
                 className="flex items-center gap-4 w-full px-5 py-3.5 rounded-xl hover:bg-gray-50 active:bg-gray-100 transition-colors">
                 <span className="material-symbols-rounded text-[22px] text-[#2d3435]">download</span>
-                <span className="text-[15px] font-medium text-[#2d3435]">Download Poster</span>
+                <span className="text-[15px] font-medium text-[#2d3435]">{t('social.menu_download_poster')}</span>
               </button>
               <button onClick={async () => {
                   setShowMenu(false);
@@ -447,7 +469,7 @@ export default function SocialViewer({ social: initialSocial, onClose, targetDat
                       await navigator.share({ title: titleStr, url: window.location.href });
                     } else {
                       navigator.clipboard?.writeText(window.location.href);
-                      alert("Link copied!");
+                      alert(t('social.link_copied'));
                     }
                   } catch (err) {
                     if ((err as Error).name !== "AbortError") console.error(err);
@@ -455,7 +477,7 @@ export default function SocialViewer({ social: initialSocial, onClose, targetDat
                 }}
                 className="flex items-center gap-4 w-full px-5 py-3.5 rounded-xl hover:bg-gray-50 active:bg-gray-100 transition-colors">
                 <span className="material-symbols-rounded text-[22px] text-[#2d3435]">share</span>
-                <span className="text-[15px] font-medium text-[#2d3435]">Share Poster</span>
+                <span className="text-[15px] font-medium text-[#2d3435]">{t('social.menu_share_poster')}</span>
               </button>
               <button onClick={() => {
                   setShowMenu(false);
@@ -463,18 +485,18 @@ export default function SocialViewer({ social: initialSocial, onClose, targetDat
                     navigator.share({ title: titleStr, url: window.location.href }).catch(() => {});
                   } else {
                     navigator.clipboard?.writeText(window.location.href);
-                    alert("Link copied!");
+                    alert(t('social.link_copied'));
                   }
                 }}
                 className="flex items-center gap-4 w-full px-5 py-3.5 rounded-xl hover:bg-gray-50 active:bg-gray-100 transition-colors">
                 <span className="material-symbols-rounded text-[22px] text-[#2d3435]">link</span>
-                <span className="text-[15px] font-medium text-[#2d3435]">Share Link</span>
+                <span className="text-[15px] font-medium text-[#2d3435]">{t('social.menu_share_link')}</span>
               </button>
               <div className="h-px bg-gray-100 mx-4 my-1" />
               <button onClick={() => { setShowMenu(false); setShowPosterEditor(true); }}
                 className="flex items-center gap-4 w-full px-5 py-3.5 rounded-xl hover:bg-gray-50 active:bg-gray-100 transition-colors">
                 <span className="material-symbols-rounded text-[22px] text-primary">auto_fix_high</span>
-                <span className="text-[15px] font-medium text-primary">Poster Editor</span>
+                <span className="text-[15px] font-medium text-primary">{t('social.menu_poster_editor')}</span>
               </button>
             </div>
           </div>
@@ -486,7 +508,7 @@ export default function SocialViewer({ social: initialSocial, onClose, targetDat
         <div className="fixed inset-0 z-[300] bg-black/60 flex items-center justify-center">
           <div className="flex flex-col items-center gap-3">
             <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            <span className="text-white text-sm font-medium">Exporting...</span>
+            <span className="text-white text-sm font-medium">{t('social.exporting')}</span>
           </div>
         </div>
       )}

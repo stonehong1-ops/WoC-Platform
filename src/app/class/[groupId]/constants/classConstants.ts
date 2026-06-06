@@ -10,7 +10,7 @@ export const DAY_COLORS: Record<string, string> = {
   FRI: '#dc2626', SAT: '#0891b2', SUN: '#be185d',
 };
 
-export function getDayOfWeek(dateStr: string): string {
+export function getDayOfWeek(dateStr: string | null): string {
   if (!dateStr) return '';
   const cleanDate = dateStr.replace(/\./g, '-');
   const d = new Date(cleanDate);
@@ -18,7 +18,7 @@ export function getDayOfWeek(dateStr: string): string {
   return ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][d.getDay()];
 }
 
-export function formatScheduleDates(schedule: { week: number; date: string }[]): string {
+export function formatScheduleDates(schedule: { week: number; date: string | null }[]): string {
   if (!schedule || schedule.length === 0) return '';
   const days = schedule.map(s => {
     if (!s.date) return '';

@@ -113,6 +113,8 @@ export default function ClassPageContent({
   };
 
   return (
+    <>
+      {!isEditMode && (
     <div className="fixed inset-0 z-[200] bg-white flex flex-col animate-in slide-in-from-bottom duration-300">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-[#f2f4f4] flex-shrink-0 bg-white z-10">
@@ -245,7 +247,7 @@ export default function ClassPageContent({
 
                     <div className="divide-y divide-[#f2f4f4]">
                       {dayClasses.map(cls => {
-                        const schedDates = formatScheduleDates(cls.schedule);
+                        const schedDates = formatScheduleDates(cls.schedule || []);
                         const instructors = cls.instructors || [];
                         const startDate = cls.schedule?.[0]?.date;
                         let startDisplay = '';
@@ -397,7 +399,7 @@ export default function ClassPageContent({
               // Flat List View
               <div className="border border-[#e0e4e5] rounded-2xl overflow-hidden divide-y divide-[#f2f4f4]">
                 {sortedClasses.map(cls => {
-                  const schedDates = formatScheduleDates(cls.schedule);
+                  const schedDates = formatScheduleDates(cls.schedule || []);
                   const instructors = cls.instructors || [];
                   const startDate = cls.schedule?.[0]?.date;
                   let startDisplay = '';
@@ -631,6 +633,9 @@ export default function ClassPageContent({
             </div>
           </button>
         </div>
+      )}
+
+    </div>
       )}
 
       {/* Item Details Popup Modal */}
@@ -974,6 +979,6 @@ export default function ClassPageContent({
         isOpen={!!selectedClassDetail && !checkoutModalOpen}
         onClose={closeDetailModal}
       />
-    </div>
+    </>
   );
 }

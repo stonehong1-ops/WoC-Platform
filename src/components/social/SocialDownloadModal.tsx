@@ -13,11 +13,11 @@ interface SocialDownloadModalProps {
 }
 
 export default function SocialDownloadModal({ social, onClose }: SocialDownloadModalProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const cardRef = useRef<HTMLDivElement>(null);
   const [isDownloading, setIsDownloading] = useState(false);
 
-  const djName = getDjDisplay(social);
+  const djName = getDjDisplay(social, undefined, language);
   
   // Format DJ Name with dual name if possible
   // Note: SocialDj only has djName, but the main social has djName and djNameNative as fallback
