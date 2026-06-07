@@ -94,8 +94,8 @@ export const Slide3 = () => {
         </h2>
       </div>
 
-      <div className="grid grid-cols-12 gap-10 w-full max-w-[1250px] items-center">
-        <div className="col-span-5 flex flex-col gap-8 border-r border-[#111111]/10 pr-10 pt1-sl pt1-d3">
+      <div className="grid grid-cols-12 gap-10 w-full max-w-[1250px] items-stretch">
+        <div className="col-span-5 flex flex-col justify-center gap-8 border-r border-[#111111]/10 pr-10 pt1-sl pt1-d3">
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-bold tracking-widest text-red-500/70 uppercase">Problem 01</span>
@@ -406,11 +406,10 @@ export const Slide6 = () => {
             </span>
             
             <div className="flex flex-wrap gap-2.5 max-w-[400px] mb-8">
-              {legacyTools.map((tool, idx) => (
+              {legacyTools.map((tool) => (
                 <span 
                   key={tool} 
                   className="px-3.5 py-1.5 border border-[#111111]/10 bg-[#111111]/[0.01] rounded-sm text-[13.5px] font-semibold text-[#111111]/50 tracking-tight"
-                  style={{ transform: `translateY(${(idx % 3) * 3}px)` }}
                 >
                   {tool}
                 </span>
@@ -646,7 +645,7 @@ export const Slide9 = () => (
       </div>
 
       <div className="grid grid-cols-2 gap-10 border-t border-b border-[#111111]/10 py-8">
-        <div className="flex flex-col pt1-sl pt1-d4 border-r border-[#111111]/10 pr-10">
+        <div className="flex flex-col h-full pt1-sl pt1-d4 border-r border-[#111111]/10 pr-10">
           <div className="flex items-baseline gap-4 mb-4">
             <span className="text-[14px] font-bold tracking-widest text-[#111111]/30">01</span>
             <h3 className="text-[26px] font-black tracking-tight text-[#111111]">수직적 온보딩 (Vertical Onboarding)</h3>
@@ -670,7 +669,7 @@ export const Slide9 = () => (
           </div>
         </div>
 
-        <div className="flex flex-col pt1-sr pt1-d4 pl-10">
+        <div className="flex flex-col h-full pt1-sr pt1-d4 pl-10">
           <div className="flex items-baseline gap-4 mb-4">
             <span className="text-[14px] font-bold tracking-widest text-emerald-600/70">02</span>
             <h3 className="text-[26px] font-black tracking-tight text-[#111111]">수평적 이주 (Horizontal Migration)</h3>
@@ -744,8 +743,8 @@ export const Slide10 = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-12 gap-8 items-center border-t border-b border-[#111111]/10 py-6">
-          <div className="col-span-7 flex flex-col gap-3 pt1-sl pt1-d4">
+        <div className="grid grid-cols-12 gap-8 items-stretch border-t border-b border-[#111111]/10 py-6">
+          <div className="col-span-7 flex flex-col gap-3 h-full pt1-sl pt1-d4">
             {categories.map((r) => (
               <div key={r.cat} className={`${r.color} rounded-lg px-5 py-3 flex items-center gap-4 border border-[#d4d4d4]/10 transition-transform duration-300 hover:scale-[1.01]`}>
                 <span className="font-['Space_Grotesk'] text-[12px] md:text-[14px] font-black tracking-widest uppercase w-[120px] text-left shrink-0">{r.cat}</span>
@@ -754,7 +753,7 @@ export const Slide10 = () => {
             ))}
           </div>
 
-          <div className="col-span-5 flex flex-col justify-center pl-6 border-l border-[#111111]/10 pt1-sr pt1-d5">
+          <div className="col-span-5 flex flex-col justify-center h-full pl-6 border-l border-[#111111]/10 pt1-sr pt1-d5">
             <h3 className="text-[24px] font-black leading-tight tracking-tight mb-4 break-keep">
               하나의 커뮤니티는 하나의 독립된 경제 생태계가 됩니다
             </h3>
@@ -951,9 +950,122 @@ export const Slide12 = () => (
     </div>
   </div>
 );
-
-// Slide 13: 클로징 (WORLD OF COMMUNITY_ Life Goes On.)
+// Slide 13: 투자 유치 계획 (Angel Investment Round)
 export const Slide13 = () => (
+  <div className="relative z-10 flex flex-col w-full h-full bg-[#fcf8f8] text-[#111111] px-[100px] justify-center overflow-hidden">
+    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+      <div className="text-[25vw] font-black text-[#111111]/[0.015] leading-none select-none whitespace-nowrap">
+        ANGEL
+      </div>
+    </div>
+
+    <div className="max-w-[1200px] w-full relative z-10 flex flex-col justify-center">
+      <span className="text-[13px] font-bold tracking-[0.4em] text-[#111111]/30 uppercase block mb-6 pt1-fu">
+        Angel Investment Round
+      </span>
+      <h2 className="text-[44px] md:text-[54px] font-black tracking-tight leading-none mb-10 pt1-fu pt1-d2">
+        투자 유치 계획
+      </h2>
+
+      <div className="flex flex-col gap-8">
+        {/* 1단: 상단 (핵심 숫자) */}
+        <div className="grid grid-cols-3 gap-6 pt1-fu pt1-d3">
+          <div className="border border-[#111111]/10 bg-[#111111]/[0.01] p-6 rounded-sm flex flex-col justify-center items-center text-center">
+            <span className="text-[11px] font-bold tracking-wider text-[#111111]/45 uppercase mb-2">투자 희망금</span>
+            <span className="text-[36px] font-black text-[#111111] tracking-tight">7,000만원</span>
+          </div>
+          <div className="border border-[#111111]/10 bg-[#111111]/[0.01] p-6 rounded-sm flex flex-col justify-center items-center text-center">
+            <span className="text-[11px] font-bold tracking-wider text-[#111111]/45 uppercase mb-2">희망 지분율</span>
+            <span className="text-[36px] font-black text-[#111111] tracking-tight">20%</span>
+          </div>
+          <div className="border border-[#111111]/10 bg-[#111111]/[0.01] p-6 rounded-sm flex flex-col justify-center items-center text-center">
+            <span className="text-[11px] font-bold tracking-wider text-[#111111]/45 uppercase mb-2">포스트 밸류에이션</span>
+            <span className="text-[36px] font-black text-emerald-600 tracking-tight">3.5억원</span>
+          </div>
+        </div>
+
+        {/* 2단: 중단 (자금 활용 계획) */}
+        <div className="grid grid-cols-2 gap-8 pt1-fu pt1-d4">
+          <div className="border border-[#111111]/10 bg-white/40 p-6 rounded-sm flex flex-col justify-between">
+            <div>
+              <div className="flex justify-between items-baseline mb-4 border-b border-[#111111]/10 pb-2">
+                <h3 className="text-[16px] font-black text-[#111111]">창업자 선투입 비용 일부 정산</h3>
+                <span className="text-[20px] font-black text-[#111111]/70">2,000만원 <span className="text-[13px] text-[#111111]/40 font-medium">(29%)</span></span>
+              </div>
+              <p className="text-[13.5px] text-[#111111]/50 leading-relaxed break-keep mt-2">
+                개발 및 운영 과정에서 선투입한 비용 일부 회수
+              </p>
+            </div>
+          </div>
+
+          <div className="border border-[#111111]/10 bg-white/40 p-6 rounded-sm flex flex-col justify-between">
+            <div>
+              <div className="flex justify-between items-baseline mb-4 border-b border-[#111111]/10 pb-2">
+                <h3 className="text-[16px] font-black text-[#111111]">제품 고도화 및 운영 자금</h3>
+                <span className="text-[20px] font-black text-emerald-600">5,000만원 <span className="text-[13px] text-[#111111]/40 font-medium">(71%)</span></span>
+              </div>
+              <ul className="grid grid-cols-2 gap-x-4 gap-y-2 text-[13.5px] text-[#111111]/60 font-semibold mt-2">
+                <li className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-[#111111]/30 rounded-full"></span>
+                  플랫폼 인프라 운영
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-[#111111]/30 rounded-full"></span>
+                  AI 서비스 활용
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-[#111111]/30 rounded-full"></span>
+                  기능 고도화 및 유지보수
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-[#111111]/30 rounded-full"></span>
+                  커뮤니티 확장 및 검증
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {/* 3단: 하단 (12개월 목표) */}
+        <div className="border border-[#111111]/10 bg-[#111111]/[0.01] p-6 rounded-sm pt1-fu pt1-d5">
+          <h3 className="text-[14px] font-black text-[#111111]/75 mb-4 uppercase tracking-wider flex items-center gap-2">
+            <span className="material-symbols-outlined text-[16px] text-[#111111]/60">checklist</span>
+            투자 후 12개월 목표
+          </h3>
+          <div className="grid grid-cols-5 gap-4">
+            {[
+              'WoC 핵심 시스템 완성',
+              '커뮤니티 운영 데이터 확보',
+              '실제 거래 및 수익 모델 검증',
+              '탱고 외 커뮤니티 확장 검증',
+              'Seed 투자 유치 기반 확보'
+            ].map((goal, idx) => (
+              <div key={idx} className="bg-white/60 border border-[#111111]/5 p-4 rounded-sm flex flex-col justify-between items-start">
+                <span className="text-[10px] font-['Space_Grotesk'] font-bold text-[#111111]/30 mb-2 block">0{idx + 1}</span>
+                <p className="text-[13px] font-bold text-[#111111]/70 tracking-tight break-keep leading-snug">
+                  ✓ {goal}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Footer Copy */}
+      <div className="mt-10 border-t border-[#111111]/10 pt-6 text-center pt1-fu pt1-d6">
+        <p className="text-[17px] font-black tracking-tight text-[#111111] leading-none mb-2">
+          커뮤니티를 위한 운영 인프라를 구축합니다.
+        </p>
+        <p className="text-[11px] font-['Space_Grotesk'] font-bold tracking-[0.2em] text-[#111111]/30 uppercase">
+          World of Community (WoC)
+        </p>
+      </div>
+    </div>
+  </div>
+);
+
+// Slide 14: 클로징 (WORLD OF COMMUNITY_ Life Goes On.)
+export const Slide14 = () => (
   <div className="relative z-10 flex flex-col w-full h-full bg-[#111111] text-[#fcf8f8] px-[100px] justify-center text-center overflow-hidden">
     <style>{`
       @keyframes pt1-closingZoom {

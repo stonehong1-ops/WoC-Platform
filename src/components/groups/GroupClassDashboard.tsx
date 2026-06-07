@@ -298,12 +298,78 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
   const [isEditingComment, setIsEditingComment] = useState(false);
   const [feedbackText, setFeedbackText] = useState('');
 
+  // 주차별 미디어 관리를 위한 상태 변수들
+  const [weeklyMediaModalOpen, setWeeklyMediaModalOpen] = useState(false);
+  const [selectedMediaWeek, setSelectedMediaWeek] = useState<number>(1);
+  const [inputMediaVideoUrl, setInputMediaVideoUrl] = useState('');
+  const [inputMediaImageUrl, setInputMediaImageUrl] = useState('');
+  const [isSavingMedia, setIsSavingMedia] = useState(false);
+
   const isInstructor = useMemo(() => {
     if (!user) return false;
     return resolvedOwnerId === user.uid || group?.representative?.name === profile?.nickname;
   }, [user, resolvedOwnerId, group?.representative, profile]);
 
   const hasManagePermission = isGroupAdmin || isInstructor;
+
+  // 주차별 미디어 저장 헬퍼
+  const handleSaveWeeklyMedia = async (currentClassObj: GroupClass) => {
+    if (!selectedDashboardClass) return;
+    setIsSavingMedia(true);
+    try {
+      const updatedWeeklyMedia = {
+        ...(currentClassObj?.weeklyMedia || {}),
+        [String(selectedMediaWeek)]: {
+          videoUrl: inputMediaVideoUrl.trim(),
+          imageUrl: inputMediaImageUrl.trim()
+        }
+      };
+      
+      const updateData: any = { weeklyMedia: updatedWeeklyMedia };
+      // 1주차는 기존 videoUrl 필드와도 동기화하여 하위 호환성 보장
+      if (selectedMediaWeek === 1) {
+        updateData.videoUrl = inputMediaVideoUrl.trim();
+      }
+      
+      await groupService.updateClass(group.id, selectedDashboardClass, updateData);
+      toast.success(t('class-dashboard.toast.video_registered'));
+      setWeeklyMediaModalOpen(false);
+      setInputMediaVideoUrl('');
+      setInputMediaImageUrl('');
+    } catch (e) {
+      console.error("Weekly media save error:", e);
+      toast.error(t('class-dashboard.toast.video_register_failed'));
+    } finally {
+      setIsSavingMedia(false);
+    }
+  };
+
+  // 주차별 미디어 삭제 헬퍼
+  const handleDeleteWeeklyMedia = async (currentClassObj: GroupClass, weekNum: number) => {
+    if (!selectedDashboardClass) return;
+    const confirmed = window.confirm(
+      language === 'KR' 
+        ? '정말 이 주차의 미디어를 삭제하시겠습니까?' 
+        : 'Are you sure you want to delete this week\'s media?'
+    );
+    if (!confirmed) return;
+    
+    try {
+      const updatedWeeklyMedia = { ...(currentClassObj?.weeklyMedia || {}) };
+      delete updatedWeeklyMedia[String(weekNum)];
+      
+      const updateData: any = { weeklyMedia: updatedWeeklyMedia };
+      if (weekNum === 1) {
+        updateData.videoUrl = '';
+      }
+      
+      await groupService.updateClass(group.id, selectedDashboardClass, updateData);
+      toast.success(language === 'KR' ? '삭제되었습니다.' : 'Deleted successfully.');
+    } catch (e) {
+      console.error("Weekly media delete error:", e);
+      toast.error(language === 'KR' ? '삭제에 실패했습니다.' : 'Failed to delete.');
+    }
+  };
 
   const handleToggleAttendance = async (reg: any, weekNum: number, currentVal: boolean) => {
     try {
@@ -1046,29 +1112,120 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
                         <div
                           key={cls.id}
                           onClick={() => openDashboardClassModal(cls.id)}
-                          className="flex items-center justify-between py-1.5 px-2 bg-surface hover:bg-surface-container-low rounded-lg border border-transparent hover:border-outline-variant transition-colors group cursor-pointer"
+                          className="flex flex-col gap-3 p-4 bg-white hover:bg-slate-50/50 rounded-2xl border border-slate-100 hover:border-blue-100 transition-all group cursor-pointer shadow-xs hover:shadow-sm"
                         >
-                          <div className="flex flex-col flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5 justify-between pr-2">
-                              <span className="font-body-sm text-body-sm text-on-surface font-black truncate flex-1">{cls.title}</span>
-                              {completedWeeksCount > 0 && stats.membersList.length > 0 && (
-                                <span className="text-[10px] font-black text-emerald-600 shrink-0">
-                                  {language === 'KR' ? `출석률 ${attendancePercent}%` : `Attendance ${attendancePercent}%`}
-                                </span>
-                              )}
+                          {/* 상단: 클래스 이름 & 상태/출석률 */}
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex flex-col min-w-0">
+                              <span className="text-[14px] font-black text-slate-800 leading-snug truncate group-hover:text-blue-600 transition-colors">
+                                {cls.title}
+                              </span>
+                              <span className="text-[11px] text-slate-400 font-bold mt-0.5">
+                                {teachers}
+                              </span>
                             </div>
-                            <span className="text-[11px] text-on-surface-variant font-medium">{teachers}</span>
-                            <div className="flex items-center gap-3 mt-0.5">
-                              <div className="flex items-center gap-2 text-outline">
-                                <span className="flex items-center gap-0.5 font-label-sm"><span className="material-symbols-outlined text-[14px] text-blue-600">person</span> {stats.leaders}</span>
-                                <span className="flex items-center gap-0.5 font-label-sm"><span className="material-symbols-outlined text-[14px] text-rose-500">person</span> {stats.followers}</span>
-                                <span className="flex items-center gap-0.5 font-label-sm ml-2"><span className="material-symbols-outlined text-[14px] text-on-surface-variant">percent</span> {stats.percent}%</span>
-                              </div>
-                            </div>
+                            {completedWeeksCount > 0 && stats.membersList.length > 0 && (
+                              <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100/50 shrink-0">
+                                {language === 'KR' ? `출석률 ${attendancePercent}%` : `Attendance ${attendancePercent}%`}
+                              </span>
+                            )}
                           </div>
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            {renderScheduleStatusDots(cls)}
-                            <span className="material-symbols-outlined text-outline-variant text-[18px]">chevron_right</span>
+
+                          {/* 중간: 참가자 리더/팔로워 성비 및 매칭도 */}
+                          <div className="flex items-center justify-between border-t border-slate-50 pt-2.5">
+                            <div className="flex items-center gap-2.5 text-slate-400">
+                              <span className="flex items-center gap-1 text-[11px] font-black">
+                                <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                                {language === 'KR' ? '리더' : 'Leader'} {stats.leaders}
+                              </span>
+                              <span className="flex items-center gap-1 text-[11px] font-black">
+                                <span className="w-2 h-2 rounded-full bg-rose-400"></span>
+                                {language === 'KR' ? '팔로워' : 'Follower'} {stats.followers}
+                              </span>
+                              <span className="flex items-center gap-1 text-[11px] font-black text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded">
+                                <span className="material-symbols-outlined text-[12px] text-slate-400">percent</span>
+                                {stats.percent}%
+                              </span>
+                            </div>
+                            <span className="material-symbols-outlined text-slate-300 text-[18px] group-hover:text-blue-500 transition-all group-hover:translate-x-0.5">
+                              chevron_right
+                            </span>
+                          </div>
+
+                          {/* 하단: 주차별 동영상 라인 (한 줄로 빼기) */}
+                          <div className="border-t border-slate-50 pt-3 flex flex-col gap-2">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                              <span className="material-symbols-outlined text-[12px]">video_library</span>
+                              {t('class-dashboard.weekly_media_title')}
+                            </span>
+                            
+                            <div className="flex overflow-x-auto gap-3 py-1.5 no-scrollbar" onClick={(e) => e.stopPropagation()}>
+                              {(() => {
+                                const totalWeeks = Math.max(cls.schedule?.length || 0, 4);
+                                const weeklyMedia = cls.weeklyMedia || {};
+                                const videoItems: React.ReactNode[] = [];
+
+                                for (let w = 1; w <= totalWeeks; w++) {
+                                  const media = weeklyMedia[String(w)] || {};
+                                  let videoUrl = media.videoUrl || '';
+                                  let imageUrl = media.imageUrl || '';
+                                  
+                                  if (w === 1 && !videoUrl && cls.videoUrl) {
+                                    videoUrl = cls.videoUrl;
+                                  }
+
+                                  const hasMedia = !!videoUrl;
+                                  const displayThumb = imageUrl || cls.imageUrl || group.coverImage || '';
+
+                                  videoItems.push(
+                                    <div
+                                      key={w}
+                                      onClick={() => {
+                                        setActiveWeekIndex(w - 1);
+                                        openDashboardClassModal(cls.id);
+                                      }}
+                                      className={`relative w-28 aspect-video rounded-xl overflow-hidden border transition-all shrink-0 cursor-pointer group/media ${
+                                        hasMedia 
+                                          ? 'border-slate-100 shadow-2xs hover:shadow-xs hover:scale-[1.02] bg-slate-900' 
+                                          : 'border-dashed border-slate-200 bg-slate-50 hover:bg-slate-100/50'
+                                      }`}
+                                    >
+                                      {hasMedia ? (
+                                        <>
+                                          <img 
+                                            src={displayThumb} 
+                                            alt={`Week ${w}`} 
+                                            className="w-full h-full object-cover opacity-80 group-hover/media:opacity-95 transition-opacity" 
+                                          />
+                                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex flex-col justify-between p-1.5">
+                                            <span className="text-[9px] font-black text-white bg-blue-600/90 px-1 py-0.5 rounded self-start leading-none uppercase">
+                                              W{w}
+                                            </span>
+                                            <div className="w-5 h-5 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-xs flex items-center justify-center self-center transition-colors">
+                                              <span className="material-symbols-outlined text-white text-[12px] icon-fill">play_arrow</span>
+                                            </div>
+                                            <span className="text-[9px] font-black text-white/90 truncate leading-none">
+                                              {language === 'KR' ? `${w}주차` : `Week ${w}`}
+                                            </span>
+                                          </div>
+                                        </>
+                                      ) : (
+                                        <div className="w-full h-full flex flex-col items-center justify-center p-1 text-center">
+                                          <span className="text-[9px] font-black text-slate-400 bg-slate-200/50 px-1 py-0.5 rounded leading-none uppercase mb-1">
+                                            W{w}
+                                          </span>
+                                          <span className="text-[8px] font-bold text-slate-400 tracking-tighter">
+                                            COMING SOON
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                }
+
+                                return videoItems;
+                              })()}
+                            </div>
                           </div>
                         </div>
                       );
@@ -2002,84 +2159,217 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
               {/* Post-Class Records Section */}
               <section className="px-4">
                 <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-card-padding shadow-sm flex flex-col gap-5">
-                  {/* DEMO VIDEO */}
-                  <div className="flex flex-col gap-2">
+                  {/* DEMO VIDEO - Weekly Media Line */}
+                  <div className="flex flex-col gap-3">
                     <h3 className="font-sans font-black text-[13px] text-[#0057bd] uppercase flex items-center gap-1 tracking-tight">
                       <span className="material-symbols-outlined text-[16px]">videocam</span>
-                      {language === 'KR' ? '수업 영상 및 데모' : 'DEMO VIDEO'}
+                      {t('class-dashboard.weekly_media_title')}
                     </h3>
-                    {(() => {
-                      const videoUrl = currentClassObj?.videoUrl;
-                      
-                      return (
-                        <div className="flex flex-col gap-2">
-                          <div 
-                            onClick={() => {
-                              if (videoUrl) {
-                                window.open(videoUrl, '_blank');
-                              } else {
-                                setShowVideoInput(!showVideoInput);
-                              }
-                            }}
-                            className="relative w-full aspect-video bg-surface-container rounded-lg border border-outline-variant flex items-center justify-center group cursor-pointer overflow-hidden shadow-sm"
-                          >
-                            <div className="absolute inset-0 bg-gradient-to-tr from-surface-variant to-surface-container-high opacity-50"></div>
-                            {videoUrl ? (
-                              <>
-                                <div className="w-14 h-14 bg-primary text-on-primary rounded-full flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-200 z-10">
-                                  <span className="material-symbols-outlined text-3xl icon-fill">play_arrow</span>
+                    <div className="flex overflow-x-auto gap-4 py-2 px-1 no-scrollbar">
+                      {(() => {
+                        const totalWeeks = Math.max(currentClassObj?.schedule?.length || 0, 4);
+                        const weeklyMedia = currentClassObj?.weeklyMedia || {};
+                        const elements: React.ReactNode[] = [];
+
+                        for (let w = 1; w <= totalWeeks; w++) {
+                          const media = weeklyMedia[String(w)] || {};
+                          let videoUrl = media.videoUrl || '';
+                          let imageUrl = media.imageUrl || '';
+                          
+                          // 하위호환성: 1주차인데 videoUrl이 없고 클래스 단일 videoUrl이 존재하면 fallback
+                          if (w === 1 && !videoUrl && currentClassObj?.videoUrl) {
+                            videoUrl = currentClassObj.videoUrl;
+                          }
+
+                          const hasMedia = !!videoUrl;
+                          const displayThumb = imageUrl || currentClassObj?.imageUrl || group.coverImage || '';
+
+                          if (hasMedia) {
+                            elements.push(
+                              <div
+                                key={w}
+                                className="relative w-44 aspect-video rounded-2xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all shrink-0 cursor-pointer group"
+                                onClick={() => {
+                                  if (videoUrl) window.open(videoUrl, '_blank');
+                                }}
+                              >
+                                {displayThumb ? (
+                                  <img src={displayThumb} alt={`Week ${w}`} className="w-full h-full object-cover absolute inset-0" />
+                                ) : (
+                                  <div className="w-full h-full bg-slate-900 absolute inset-0"></div>
+                                )}
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/10 z-0"></div>
+                                
+                                {/* Play Button Overlay */}
+                                <div className="absolute inset-0 flex items-center justify-center z-10">
+                                  <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center shadow-lg border border-white/20 group-hover:scale-110 transition-transform duration-200">
+                                    <span className="material-symbols-outlined text-white text-[20px] icon-fill">play_arrow</span>
+                                  </div>
                                 </div>
-                                <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent z-10">
-                                  <span className="font-label-sm text-label-sm text-white font-black">
-                                    {language === 'KR' ? `수업 녹화 영상 - ${activeWeekIndex + 1}주차` : `Class Recording - Week ${activeWeekIndex + 1}`}
+
+                                {/* Week Badge & Admin Controls */}
+                                <div className="absolute bottom-2 left-3 right-2 flex items-center justify-between z-20">
+                                  <span className="text-[10px] font-black text-white px-2 py-0.5 bg-[#0057bd] rounded-md shadow-sm">
+                                    {t('class-dashboard.week_label').replace('{week}', String(w))}
+                                  </span>
+                                  {hasManagePermission && (
+                                    <div className="flex gap-1">
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setSelectedMediaWeek(w);
+                                          setInputMediaVideoUrl(videoUrl);
+                                          setInputMediaImageUrl(imageUrl);
+                                          setWeeklyMediaModalOpen(true);
+                                        }}
+                                        className="w-6 h-6 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/50 active:scale-95 transition-all"
+                                      >
+                                        <span className="material-symbols-outlined text-[14px]">edit</span>
+                                      </button>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleDeleteWeeklyMedia(currentClassObj!, w);
+                                        }}
+                                        className="w-6 h-6 rounded-full bg-red-500/80 backdrop-blur-sm flex items-center justify-center text-white hover:bg-red-600 active:scale-95 transition-all"
+                                      >
+                                        <span className="material-symbols-outlined text-[14px]">delete</span>
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          } else {
+                            // 미디어가 없고 관리자 권한이 있는 경우: 등록 카드 제공
+                            if (hasManagePermission) {
+                              elements.push(
+                                <div
+                                  key={w}
+                                  onClick={() => {
+                                    setSelectedMediaWeek(w);
+                                    setInputMediaVideoUrl('');
+                                    setInputMediaImageUrl('');
+                                    setWeeklyMediaModalOpen(true);
+                                  }}
+                                  className="relative w-44 aspect-video rounded-2xl border-2 border-dashed border-slate-200/90 bg-slate-50/50 hover:bg-slate-100/80 hover:border-slate-300 hover:scale-[1.01] active:scale-[0.99] transition-all shrink-0 cursor-pointer flex flex-col items-center justify-center gap-1 p-2 text-center"
+                                >
+                                  <span className="material-symbols-outlined text-slate-400 text-[20px]">add_circle</span>
+                                  <span className="text-[10px] font-black text-slate-400 tracking-tight">
+                                    {t('class-dashboard.week_label').replace('{week}', String(w))}
+                                  </span>
+                                  <span className="text-[9px] font-bold text-slate-300">
+                                    {t('class-dashboard.register_weekly_media')}
                                   </span>
                                 </div>
-                              </>
-                            ) : (
-                              <div className="flex flex-col items-center gap-2 p-4 text-center z-10 animate-in fade-in">
-                                <span className="material-symbols-outlined text-3xl text-primary">add_link</span>
-                                <span className="text-xs font-black text-primary underline">
-                                  {language === 'KR' ? '영상이 없습니다. 클릭하여 영상 등록' : 'No video. Click to register video'}
-                                </span>
-                              </div>
-                            )}
+                              );
+                            } else {
+                              // 일반 사용자 뷰: 준비중 플레이스홀더 제공
+                              elements.push(
+                                <div
+                                  key={w}
+                                  className="relative w-44 aspect-video rounded-2xl border border-slate-100 bg-slate-50/30 shrink-0 flex flex-col items-center justify-center gap-1.5 p-2 text-center"
+                                >
+                                  <span className="material-symbols-outlined text-slate-300 text-[22px]">movie_edit</span>
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="text-[10px] font-black text-slate-400">
+                                      {t('class-dashboard.week_label').replace('{week}', String(w))}
+                                    </span>
+                                    <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">
+                                      COMING SOON
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            }
+                          }
+                        }
+                        return elements;
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* WEEKLY MEDIA UPLOAD MODAL */}
+                  {weeklyMediaModalOpen && currentClassObj && (
+                    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                      <div className="w-full max-w-sm bg-white rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col border border-slate-100">
+                        {/* Header */}
+                        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                          <div className="flex flex-col">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                              {t('class-dashboard.week_label').replace('{week}', String(selectedMediaWeek))}
+                            </span>
+                            <span className="font-extrabold text-[15px] text-[#2d3435] mt-0.5">
+                              {t('class-dashboard.register_weekly_media')}
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setWeeklyMediaModalOpen(false);
+                              setInputMediaVideoUrl('');
+                              setInputMediaImageUrl('');
+                            }}
+                            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 transition-colors text-slate-400"
+                          >
+                            <span className="material-symbols-outlined text-lg">close</span>
+                          </button>
+                        </div>
+                        
+                        {/* Body Fields */}
+                        <div className="p-5 space-y-4">
+                          <div className="space-y-1.5">
+                            <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider block">
+                              {t('class-dashboard.video_url')} <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="url"
+                              value={inputMediaVideoUrl}
+                              onChange={(e) => setInputMediaVideoUrl(e.target.value)}
+                              placeholder={t('class-dashboard.video_url_placeholder')}
+                              className="w-full px-4 py-2.5 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-blue-600 font-bold text-slate-800"
+                            />
                           </div>
 
-                          {showVideoInput && !videoUrl && (
-                            <div className="flex gap-2 items-center mt-1 p-2 bg-white rounded-xl border border-slate-200/80 shadow-2xs animate-in slide-in-from-top-2 duration-200">
-                              <input
-                                type="url"
-                                value={videoInputLink}
-                                onChange={(e) => setVideoInputLink(e.target.value)}
-                                placeholder="https://..."
-                                className="flex-1 px-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-blue-600 font-bold text-slate-800"
-                              />
-                              <button
-                                onClick={async () => {
-                                  if (!videoInputLink.trim()) {
-                                    toast.warning(t('class-dashboard.toast.enter_video_link'));
-                                    return;
-                                  }
-                                  try {
-                                    await groupService.updateClass(group.id, selectedDashboardClass, { videoUrl: videoInputLink });
-                                    toast.success(t('class-dashboard.toast.video_registered'));
-                                    setShowVideoInput(false);
-                                    setVideoInputLink('');
-                                  } catch (e) {
-                                    console.error(e);
-                                    toast.error(t('class-dashboard.toast.video_register_failed'));
-                                  }
-                                }}
-                                className="px-3 py-1.5 bg-[#0057bd] text-white rounded-lg font-black text-[11px] hover:bg-[#004bb4] active:scale-95"
-                              >
-                                {language === 'KR' ? '등록' : 'Register'}
-                              </button>
-                            </div>
-                          )}
+                          <div className="space-y-1.5">
+                            <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider block">
+                              {t('class-dashboard.image_url')}
+                            </label>
+                            <input
+                              type="url"
+                              value={inputMediaImageUrl}
+                              onChange={(e) => setInputMediaImageUrl(e.target.value)}
+                              placeholder={t('class-dashboard.image_url_placeholder')}
+                              className="w-full px-4 py-2.5 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-blue-600 font-bold text-slate-800"
+                            />
+                          </div>
                         </div>
-                      );
-                    })()}
-                  </div>
+
+                        {/* Actions */}
+                        <div className="px-5 py-4 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-2">
+                          <button
+                            onClick={() => {
+                              setWeeklyMediaModalOpen(false);
+                              setInputMediaVideoUrl('');
+                              setInputMediaImageUrl('');
+                            }}
+                            className="px-4 py-2 bg-slate-200 text-slate-600 hover:bg-slate-300 rounded-xl font-bold text-xs active:scale-95 transition-all"
+                          >
+                            {language === 'KR' ? '취소' : 'Cancel'}
+                          </button>
+                          <button
+                            onClick={() => handleSaveWeeklyMedia(currentClassObj)}
+                            disabled={isSavingMedia || !inputMediaVideoUrl.trim()}
+                            className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-xl font-bold text-xs active:scale-95 transition-all shadow-md shadow-blue-100 flex items-center justify-center gap-1.5 disabled:opacity-50"
+                          >
+                            {isSavingMedia ? (
+                              <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            ) : null}
+                            {t('class-dashboard.save_media')}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   {/* INSTRUCTOR COMMENTS */}
                   <div className="flex flex-col gap-2 border-t border-outline-variant pt-4">
                     <div className="flex items-center justify-between">

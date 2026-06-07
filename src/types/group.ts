@@ -318,6 +318,7 @@ export interface GroupClass {
   registrationCloseDate?: string;
   notice?: string;
   feedbacks?: unknown[];
+  weeklyMedia?: Record<string, { videoUrl?: string; imageUrl?: string }>;
 }
 
 export interface ClassDiscount {

@@ -5,10 +5,10 @@ import PresentationHeader from '@/components/presentation/PresentationHeader';
 import PresentationFooter from '@/components/presentation/PresentationFooter';
 import { useNavigation } from '@/components/providers/NavigationProvider';
 
-import { Slide1, Slide2, Slide3, Slide4, Slide5, Slide6, Slide7, Slide8, Slide9, Slide10, Slide11, Slide12, Slide13 } from './slides-s1';
+import { Slide1, Slide2, Slide3, Slide4, Slide5, Slide6, Slide7, Slide8, Slide9, Slide10, Slide11, Slide12, Slide13, Slide14 } from './slides-s1';
 
 const SLIDES = [
-  Slide1, Slide2, Slide3, Slide4, Slide5, Slide6, Slide7, Slide8, Slide9, Slide10, Slide11, Slide12, Slide13
+  Slide1, Slide2, Slide3, Slide4, Slide5, Slide6, Slide7, Slide8, Slide9, Slide10, Slide11, Slide12, Slide13, Slide14
 ];
 
 const SLIDE_URLS: Record<number, string> = {
@@ -24,7 +24,8 @@ const SLIDE_URLS: Record<number, string> = {
   9: '/groups/freestyle-tango?tab=settings',     // Slide 10: 모듈형 커뮤니티 시스템
   10: '/groups/freestyle-tango',                 // Slide 11: 전략적 비즈니스 시너지
   11: '/groups/freestyle-tango',                 // Slide 12: 투자 회수 및 BEP 검증
-  12: '/groups/freestyle-tango',                 // Slide 13: 클로징
+  12: '/groups/freestyle-tango',                 // Slide 13: 투자 유치 계획
+  13: '/groups/freestyle-tango',                 // Slide 14: 클로징
 };
 
 const GLOBAL_ANIMATIONS = `
