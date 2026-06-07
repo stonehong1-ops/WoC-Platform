@@ -2,7 +2,7 @@ import React from "react";
 import { Social } from "@/types/social";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { detectSeoulDistrict, getVenueDisplay, formatInstructorNames, formatCommunityName } from "@/app/social/constants/seoulRegions";
-import { getDjDisplay } from "@/lib/utils/socialUtils";
+import { getDjDisplay, getEventMessage } from "@/lib/utils/socialUtils";
 import { SocialCardImage } from "@/components/social/SocialHeroCard";
 
 interface TodaySocialSectionProps {
@@ -63,6 +63,8 @@ function SocialCard({ social, date, venuesMap, onPress }: {
   const djName = getDjDisplay(social, date, language);
   const hasDj = djName && djName.toUpperCase() !== "TBD" && djName.toUpperCase() !== "TBA" && djName.trim() !== "";
   const djFormatted = hasDj ? formatInstructorNames(djName, language) : "";
+  const eventMessage = getEventMessage(social, date);
+  const hasMessage = eventMessage && eventMessage.trim() !== "";
 
   const getOrgDisplay = () => {
     const ids = social.organizerIds;
@@ -97,6 +99,13 @@ function SocialCard({ social, date, venuesMap, onPress }: {
     <button onClick={onPress} className="block w-full rounded-xl overflow-hidden relative shadow-sm text-left" style={{ aspectRatio: "3/4" }}>
       <div className="absolute inset-0 bg-[#12121e]">
         <SocialCardImage imageUrl={displayImageUrl} title={social.title} />
+        {hasMessage && (
+          <div className="absolute inset-0 bg-black/60 flex items-center justify-center p-2 z-10">
+            <span className="bg-rose-500 text-white text-[11px] font-black px-2.5 py-1 rounded-lg shadow-lg text-center max-w-full truncate">
+              {eventMessage}
+            </span>
+          </div>
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none" />
       </div>
       <div className="absolute top-2 left-2 flex flex-col gap-1 items-start">

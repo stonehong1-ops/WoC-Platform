@@ -56,3 +56,21 @@ export function isVideoUrl(url?: string, fileType?: string): boolean {
   const decoded = decodeURIComponent(url.split('?')[0]).toLowerCase();
   return decoded.endsWith('.mp4') || decoded.endsWith('.mov') || decoded.endsWith('.webm') || decoded.endsWith('.m3u8') || decoded.endsWith('.avi');
 }
+
+export function getEventMessage(social: Social, targetDate?: Date): string | null {
+  if (social.type === "regular" && social.djs && social.djs.length > 0) {
+    const nextEventDate = targetDate || getNextEventDateObj(social);
+    if (nextEventDate) {
+      const year = nextEventDate.getFullYear();
+      const month = String(nextEventDate.getMonth() + 1).padStart(2, '0');
+      const day = String(nextEventDate.getDate()).padStart(2, '0');
+      const nextEventDateStr = `${year}-${month}-${day}`;
+
+      const matchedDj = social.djs.find(d => d.date === nextEventDateStr);
+      if (matchedDj && matchedDj.message) {
+        return matchedDj.message.trim().slice(0, 10);
+      }
+    }
+  }
+  return null;
+}

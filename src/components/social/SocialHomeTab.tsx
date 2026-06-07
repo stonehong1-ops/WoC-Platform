@@ -64,6 +64,7 @@ export default function SocialHomeTab({ social, targetDate, onChatWithOrganizer,
   const [showDjResults, setShowDjResults] = useState(false);
   const [selectedDjId, setSelectedDjId] = useState<string>("");
   const [showPastDjs, setShowPastDjs] = useState(false);
+  const [messageInput, setMessageInput] = useState("");
 
   // 어드민용 검색 리스트 fetch
   useEffect(() => {
@@ -158,7 +159,8 @@ export default function SocialHomeTab({ social, targetDate, onChatWithOrganizer,
       return;
     }
 
-    const finalDjName = djNameInput.trim() || "TBD";
+    const hasMsg = messageInput.trim() !== "";
+    const finalDjName = djNameInput.trim() || (hasMsg ? "" : "TBD");
     setIsSubmitting(true);
     try {
       const selectedUser = selectedDjId ? allUsers.find(u => u.id === selectedDjId) : null;
@@ -170,6 +172,9 @@ export default function SocialHomeTab({ social, targetDate, onChatWithOrganizer,
       };
       if (selectedDjId) {
         newDj.djId = selectedDjId;
+      }
+      if (hasMsg) {
+        newDj.message = messageInput.trim().slice(0, 10);
       }
 
       const currentDjs = social.djs || [];
@@ -184,6 +189,7 @@ export default function SocialHomeTab({ social, targetDate, onChatWithOrganizer,
       setSelectedDate("");
       setDjNameInput("");
       setSelectedDjId("");
+      setMessageInput("");
       toast.success(t('social.add_dj_success') || "DJ added successfully!");
     } catch (err) {
       console.error(err);
@@ -347,6 +353,20 @@ export default function SocialHomeTab({ social, targetDate, onChatWithOrganizer,
                     </div>
                   )}
                 </div>
+                <div className="relative">
+                  <label className="block text-[10px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1.5">{t('social.message_label') || "특이사항 (최대 10자)"}</label>
+                  <div className="flex items-center px-3 py-2 border border-[#e0e4e5] rounded-lg focus-within:border-primary/50 bg-white transition-colors">
+                    <span className="material-symbols-rounded text-[#acb3b4] mr-1.5 text-xs">info</span>
+                    <input 
+                      type="text" 
+                      value={messageInput}
+                      onChange={e => setMessageInput(e.target.value.slice(0, 10))}
+                      maxLength={10}
+                      placeholder="예) 오늘 쉽니다, 1주년 이벤트"
+                      className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-xs font-bold text-[#2d3435] placeholder:text-[#acb3b4] outline-none"
+                    />
+                  </div>
+                </div>
                 <button 
                   onClick={handleAddDj}
                   disabled={isSubmitting}
@@ -378,9 +398,14 @@ export default function SocialHomeTab({ social, targetDate, onChatWithOrganizer,
                             nameClassName="font-bold text-xs text-[#2d3435] truncate"
                             nativeClassName="text-[9px] font-semibold text-slate-400 ml-1.5 truncate max-w-[80px]"
                             subText={
-                              <p className="text-[9.5px] font-bold text-primary mt-0.5">
-                                {new Date(dj.date).toLocaleDateString(dateLocale, { weekday: 'short', month: 'short', day: 'numeric' })}
-                              </p>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                {dj.message && (
+                                  <span className="bg-rose-50 text-rose-600 text-[8px] font-black px-1.5 py-0.5 rounded uppercase leading-none">{dj.message}</span>
+                                )}
+                                <span className="text-[9.5px] font-bold text-primary">
+                                  {new Date(dj.date).toLocaleDateString(dateLocale, { weekday: 'short', month: 'short', day: 'numeric' })}
+                                </span>
+                              </div>
                             }
                           />
                         ) : (
@@ -389,7 +414,12 @@ export default function SocialHomeTab({ social, targetDate, onChatWithOrganizer,
                               <span className="material-symbols-rounded text-sm text-[#596061]">headphones</span>
                             </div>
                             <div>
-                              <p className="text-xs font-bold text-[#2d3435]">{formatInstructorNames(dj.djName, language)}</p>
+                              <div className="flex items-center gap-1.5">
+                                <p className="text-xs font-bold text-[#2d3435]">{formatInstructorNames(dj.djName, language)}</p>
+                                {dj.message && (
+                                  <span className="bg-rose-50 text-rose-600 text-[8px] font-black px-1.5 py-0.5 rounded uppercase leading-none">{dj.message}</span>
+                                )}
+                              </div>
                               <p className="text-[9.5px] font-bold text-primary mt-0.5">
                                 {new Date(dj.date).toLocaleDateString(dateLocale, { weekday: 'short', month: 'short', day: 'numeric' })}
                               </p>
@@ -434,9 +464,14 @@ export default function SocialHomeTab({ social, targetDate, onChatWithOrganizer,
                               nameClassName="font-bold text-[11px] text-[#596061] truncate"
                               nativeClassName="text-[8px] font-semibold text-slate-400 ml-1 truncate max-w-[60px]"
                               subText={
-                                <p className="text-[9px] font-medium text-[#acb3b4]">
-                                  {new Date(dj.date).toLocaleDateString(dateLocale, { month: 'short', day: 'numeric', year: 'numeric' })}
-                                </p>
+                                <div className="flex items-center gap-1.5 mt-0.5">
+                                  {dj.message && (
+                                    <span className="bg-rose-50 text-rose-600 text-[8px] font-black px-1.5 py-0.5 rounded uppercase leading-none">{dj.message}</span>
+                                  )}
+                                  <span className="text-[9px] font-medium text-[#acb3b4]">
+                                    {new Date(dj.date).toLocaleDateString(dateLocale, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                  </span>
+                                </div>
                               }
                             />
                           ) : (
@@ -445,7 +480,12 @@ export default function SocialHomeTab({ social, targetDate, onChatWithOrganizer,
                                 <span className="material-symbols-rounded text-xs text-[#acb3b4]">headphones</span>
                               </div>
                               <div>
-                                <p className="text-[11px] font-bold text-[#596061]">{formatInstructorNames(dj.djName, language)}</p>
+                                <div className="flex items-center gap-1.5">
+                                  <p className="text-[11px] font-bold text-[#596061]">{formatInstructorNames(dj.djName, language)}</p>
+                                  {dj.message && (
+                                    <span className="bg-rose-50 text-rose-600 text-[8px] font-black px-1.5 py-0.5 rounded uppercase leading-none">{dj.message}</span>
+                                  )}
+                                </div>
                                 <p className="text-[9px] font-medium text-[#acb3b4]">
                                   {new Date(dj.date).toLocaleDateString(dateLocale, { month: 'short', day: 'numeric', year: 'numeric' })}
                                 </p>

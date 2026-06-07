@@ -1933,6 +1933,7 @@ export const en: Record<string, string> = {
     'social.alert_title_required': 'Please enter an event title',
     'social.alert_save_error': 'An error occurred while saving',
     'social.alert_video_too_long': 'Video poster must be 15 seconds or less.',
+    'social.message_label': 'Special Note (Max 10 chars)',
     'social.alert_delete_confirm': 'Are you sure you want to delete this event?',
     'social.alert_english_only': 'English only',
     'social.unlimited': 'Unlimited',

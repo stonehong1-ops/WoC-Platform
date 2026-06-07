@@ -17,6 +17,7 @@ export interface SocialDj {
   djId?: string;
   djName: string;
   djNativeName?: string;
+  message?: string;
 }
 
 export interface Social {

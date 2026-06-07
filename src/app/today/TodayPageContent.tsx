@@ -15,7 +15,7 @@ import { Social } from "@/types/social";
 import { Event } from "@/types/event";
 import { GroupClass, Group } from "@/types/group";
 import { detectSeoulDistrict, getVenueDisplay, formatInstructorNames, formatCommunityName } from "@/app/social/constants/seoulRegions";
-import { getDjDisplay } from "@/lib/utils/socialUtils";
+import { getDjDisplay, getEventMessage } from "@/lib/utils/socialUtils";
 import SocialViewer from "@/components/social/SocialViewer";
 import ClassDetail from "@/components/class/ClassDetail";
 import EventViewer from "@/components/events/EventViewer";
@@ -807,6 +807,7 @@ export default function TodayPageContent() {
               org: getOrgDisplayForSocial(s),
               dj: isRealDj ? formatInstructorNames(currentDj, language) : "",
               location: formatCommunityName(getVenueDisplay(s, language, venuesMap), language),
+              message: getEventMessage(s, d) || "",
             });
           }
         });
@@ -838,6 +839,7 @@ export default function TodayPageContent() {
             org: getOrgDisplayForSocial(s),
             dj: isRealDj ? formatInstructorNames(currentDj, language) : "",
             location: formatCommunityName(getVenueDisplay(s, language, venuesMap), language),
+            message: getEventMessage(s, sDate) || "",
           });
         }
       }
@@ -944,6 +946,7 @@ export default function TodayPageContent() {
               org: getOrgDisplayForSocial(s),
               dj: isRealDj ? formatInstructorNames(currentDj, language) : "",
               location: formatCommunityName(getVenueDisplay(s, language, venuesMap), language),
+              message: getEventMessage(s, d) || "",
             });
           }
         });
@@ -974,6 +977,7 @@ export default function TodayPageContent() {
             org: getOrgDisplayForSocial(s),
             dj: isRealDj ? formatInstructorNames(currentDj, language) : "",
             location: formatCommunityName(getVenueDisplay(s, language, venuesMap), language),
+            message: getEventMessage(s, sDate) || "",
           });
         }
       }
@@ -1408,6 +1412,7 @@ export default function TodayPageContent() {
 
                     const isClickable = ["class", "social", "milonga", "practice"].includes(ev.type);
 
+                    const hasMessage = ev.message && ev.message.trim() !== "";
                     return (
                       <div 
                         key={`${ev.id}-${idx}`}
@@ -1416,6 +1421,13 @@ export default function TodayPageContent() {
                         role={isClickable ? "button" : undefined}
                         tabIndex={isClickable ? 0 : undefined}
                       >
+                        {hasMessage && (
+                          <div className="absolute inset-0 bg-black/60 flex items-center justify-center p-2 z-10">
+                            <span className="bg-rose-500 text-white text-[12px] font-black px-3 py-1.5 rounded-xl shadow-lg text-center max-w-[90%] truncate">
+                              {ev.message}
+                            </span>
+                          </div>
+                        )}
                         <div className="flex items-center justify-between">
                           <span className={`text-[9px] font-black px-2 py-0.5 rounded-md leading-none ${cat.bg}`}>
                             {categoryLabel}

@@ -2024,6 +2024,7 @@ export const kr: Record<string, string> = {
     'social.alert_title_required': '이벤트 제목을 입력해 주세요',
     'social.alert_save_error': '저장 중 오류가 발생했습니다',
     'social.alert_video_too_long': '동영상 포스터는 15초 이하만 등록할 수 있습니다.',
+    'social.message_label': '특이사항 (최대 10자)',
     'social.alert_delete_confirm': '이 이벤트를 삭제하시겠습니까?',
     'social.alert_english_only': '영문만 입력 가능합니다',
     'social.unlimited': '무제한',
