@@ -267,9 +267,6 @@ export default function TodayPageContent() {
       const v = g.venueId ? venuesMap[g.venueId] : null;
       if (!v) return false;
 
-      const isStudio = v.category === "Studio" || (v.types && v.types.includes("Studio"));
-      if (!isStudio) return false;
-
       const vCity = (v.city || "").toLowerCase().trim();
       const vAddr = (v.address || "").toLowerCase().trim();
       const isVenueInSeoul = vCity.includes("seoul") || vCity.includes("서울") || vCity.includes("soul") ||
