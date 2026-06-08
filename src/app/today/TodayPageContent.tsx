@@ -785,7 +785,8 @@ export default function TodayPageContent() {
             events.push({
               id: `social-week-${s.id}-${d.toDateString()}`,
               itemId: s.id,
-              title: getSocialTitleDisplay(s, language),
+              title: language === "KR" ? (s.titleNative || s.title) : (s.title || s.titleNative),
+              subtitle: language === "KR" ? (s.titleNative && s.title && s.titleNative !== s.title ? s.title : "") : (s.title && s.titleNative && s.title !== s.titleNative ? s.titleNative : ""),
               description: s.description || "",
               startDate: d.getTime(),
               dateStr: parseDateToYmd(d),
@@ -818,7 +819,8 @@ export default function TodayPageContent() {
           events.push({
             id: `social-week-${s.id}`,
             itemId: s.id,
-            title: getSocialTitleDisplay(s, language),
+            title: language === "KR" ? (s.titleNative || s.title) : (s.title || s.titleNative),
+            subtitle: language === "KR" ? (s.titleNative && s.title && s.titleNative !== s.title ? s.title : "") : (s.title && s.titleNative && s.title !== s.titleNative ? s.titleNative : ""),
             description: s.description || "",
             startDate: sDate.getTime(),
             dateStr: parseDateToYmd(sDate),
@@ -993,7 +995,8 @@ export default function TodayPageContent() {
             events.push({
               id: `social-month-${s.id}-${d.toDateString()}`,
               itemId: s.id,
-              title: getSocialTitleDisplay(s, language),
+              title: language === "KR" ? (s.titleNative || s.title) : (s.title || s.titleNative),
+              subtitle: language === "KR" ? (s.titleNative && s.title && s.titleNative !== s.title ? s.title : "") : (s.title && s.titleNative && s.title !== s.titleNative ? s.titleNative : ""),
               description: s.description || "",
               startDate: d.getTime(),
               dateStr: parseDateToYmd(d),
@@ -1028,7 +1031,8 @@ export default function TodayPageContent() {
           events.push({
             id: `social-month-${s.id}`,
             itemId: s.id,
-            title: getSocialTitleDisplay(s, language),
+            title: language === "KR" ? (s.titleNative || s.title) : (s.title || s.titleNative),
+            subtitle: language === "KR" ? (s.titleNative && s.title && s.titleNative !== s.title ? s.title : "") : (s.title && s.titleNative && s.title !== s.titleNative ? s.titleNative : ""),
             description: s.description || "",
             startDate: sDate.getTime(),
             dateStr: parseDateToYmd(sDate),
@@ -1547,9 +1551,16 @@ export default function TodayPageContent() {
                           )}
                         </div>
 
-                        <h3 className="text-[15px] font-black text-slate-800 mt-2.5 leading-tight">
-                          {ev.title}
-                        </h3>
+                        <div className="mt-2.5">
+                          <h3 className="text-[15px] font-black text-slate-800 leading-tight">
+                            {ev.title}
+                          </h3>
+                          {ev.subtitle && (
+                            <span className="text-[11px] font-medium text-slate-400 block mt-0.5 truncate">
+                              {ev.subtitle}
+                            </span>
+                          )}
+                        </div>
 
                         {/* 메타 정보 */}
                         <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-[11px] font-semibold text-slate-500 border-t border-slate-50 pt-2.5">
@@ -1731,9 +1742,16 @@ export default function TodayPageContent() {
                                     )}
                                   </div>
 
-                                  <h4 className="text-[12.5px] font-black text-slate-800 leading-tight">
-                                    {ev.title}
-                                  </h4>
+                                  <div className="space-y-0.5">
+                                    <h4 className="text-[12.5px] font-black text-slate-800 leading-tight">
+                                      {ev.title}
+                                    </h4>
+                                    {ev.subtitle && (
+                                      <span className="text-[10px] font-medium text-slate-400 block truncate">
+                                        {ev.subtitle}
+                                      </span>
+                                    )}
+                                  </div>
 
                                   {/* 메타 배지 */}
                                   <div className="flex flex-wrap gap-x-2.5 gap-y-0.5 text-[9.5px] font-semibold text-slate-400 leading-tight">
