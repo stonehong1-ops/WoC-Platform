@@ -14,7 +14,7 @@ import { collection, getDocs, query, limit } from "firebase/firestore";
 import { Social } from "@/types/social";
 import { Event } from "@/types/event";
 import { GroupClass, Group } from "@/types/group";
-import { detectSeoulDistrict, getVenueDisplay, formatInstructorNames, formatCommunityName } from "@/app/social/constants/seoulRegions";
+import { detectSeoulDistrict, getVenueDisplay, formatInstructorNames, formatCommunityName, getWeekOrdinal, isLastWeekOfMonth } from "@/app/social/constants/seoulRegions";
 import { getDjDisplay, getEventMessage } from "@/lib/utils/socialUtils";
 import SocialViewer from "@/components/social/SocialViewer";
 import ClassDetail from "@/components/class/ClassDetail";
@@ -332,7 +332,24 @@ export default function TodayPageContent() {
       if (s.type === "regular" && s.dayOfWeek !== undefined) {
         weekDates.forEach(d => {
           if (d.getDay() === Number(s.dayOfWeek)) {
-            events.push({ s, d });
+            const ordinal = getWeekOrdinal(d);
+            const isLast = isLastWeekOfMonth(d);
+            const rec = (s.recurrence || "every").trim().toLowerCase();
+            const recParts = rec.split(",").map(x => x.trim());
+
+            const matchRecurrence = recParts.some(part => {
+              if (part === "every" || part === "") return true;
+              if (part === "1st" && ordinal === 1) return true;
+              if (part === "2nd" && ordinal === 2) return true;
+              if (part === "3rd" && ordinal === 3) return true;
+              if (part === "4th" && ordinal === 4) return true;
+              if (part === "last" && isLast) return true;
+              return false;
+            });
+
+            if (matchRecurrence) {
+              events.push({ s, d });
+            }
           }
         });
       } else if (s.type === "popup" && s.date) {
@@ -572,6 +589,7 @@ export default function TodayPageContent() {
 
     allClasses.forEach(({ cls }) => {
       if (cls.status !== "Open") return;
+      if (selectedGroupId !== "All" && cls.groupId !== selectedGroupId) return;
       if (!isAll) {
         if (!activeGroupIds.has(cls.groupId || "")) return;
       }
@@ -592,7 +610,7 @@ export default function TodayPageContent() {
     });
     result.sort((a, b) => (a.timeSlot || "").localeCompare(b.timeSlot || ""));
     return result;
-  }, [allClasses, selectedDate, location, activeGroupsInLocation]);
+  }, [allClasses, selectedDate, location, activeGroupsInLocation, selectedGroupId]);
 
   const selectedClass = useMemo(() => {
     if (!viewClassId) return null;
@@ -1043,6 +1061,37 @@ export default function TodayPageContent() {
       return { ...w, events: evs };
     });
   }, [groupEvents, classEvents, monthlySocialEvents]);
+
+  // 주차 탭 상태 (0: 1주차 ~ 4: 5주차)
+  const [selectedWeekTab, setSelectedWeekTab] = useState<number>(0);
+
+  // selectedDate가 바뀔 때 해당 일자가 속한 주차로 탭을 동기화해 줍니다.
+  useEffect(() => {
+    const currentWeekIdx = getWeekOfMonth(selectedDate) - 1;
+    setSelectedWeekTab(Math.max(0, Math.min(4, currentWeekIdx)));
+  }, [selectedDate]);
+
+  // 선택된 주차 탭의 일정을 날짜별로 그룹화하는 로직
+  const weekEventsByDate = useMemo(() => {
+    const weekData = monthlyEventsByWeek[selectedWeekTab];
+    if (!weekData || !weekData.events) return [];
+
+    const grouped: Record<string, { date: Date; ymd: string; events: any[] }> = {};
+    weekData.events.forEach(ev => {
+      if (!ev.dateStr) return;
+      const dateStr = ev.dateStr;
+      if (!grouped[dateStr]) {
+        const parts = dateStr.split("-");
+        const date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        grouped[dateStr] = { date, ymd: dateStr, events: [] };
+      }
+      grouped[dateStr].events.push(ev);
+    });
+
+    const list = Object.values(grouped);
+    list.sort((a, b) => a.date.getTime() - b.date.getTime());
+    return list;
+  }, [monthlyEventsByWeek, selectedWeekTab]);
 
   const selectedGroupDisplay = useMemo(() => {
     if (selectedGroupId === "All") return t("today.all_groups");
@@ -1500,18 +1549,38 @@ export default function TodayPageContent() {
               )}
             </div>
 
-            {/* 이번 주 요일별 피드 세로 목록 섹션 */}
+            {/* 주차별 다른 일정 탭 섹션 */}
             <div className="pt-2">
               <div className="flex items-center gap-2 mb-3">
                 <span className="material-symbols-outlined !text-[20px] text-indigo-500">date_range</span>
                 <span className="text-[14px] font-black text-[#1e293b] tracking-tight">
-                  {language === "KR" ? "이번 주 다른 일정" : "Other Schedule This Week"}
+                  {language === "KR" ? "주차별 일정 보기" : "Schedule by Week"}
                 </span>
               </div>
 
-              {groupOtherWeekEventsByDate.length > 0 ? (
+              {/* 주차 탭바 */}
+              <div className="flex items-center gap-1.5 bg-slate-100/60 p-1 rounded-xl mb-4">
+                {[1, 2, 3, 4, 5].map((wk) => {
+                  const isActive = selectedWeekTab === wk - 1;
+                  return (
+                    <button
+                      key={wk}
+                      onClick={() => setSelectedWeekTab(wk - 1)}
+                      className={`flex-1 py-2 rounded-lg text-[11px] font-black transition-all ${
+                        isActive
+                          ? "bg-white text-indigo-600 shadow-sm"
+                          : "text-slate-500 hover:text-slate-800"
+                      }`}
+                    >
+                      {language === "KR" ? `${wk}주차` : `Wk ${wk}`}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {weekEventsByDate.length > 0 ? (
                 <div className="space-y-4">
-                  {groupOtherWeekEventsByDate.map(({ date, ymd, events }) => {
+                  {weekEventsByDate.map(({ date, ymd, events }) => {
                     const formattedDate = language === "KR"
                       ? `${date.getMonth() + 1}월 ${date.getDate()}일 (${getDayLabel(language, date)})`
                       : date.toLocaleDateString("en-US", { month: "short", day: "numeric", weekday: "short" });
@@ -1526,6 +1595,7 @@ export default function TodayPageContent() {
                         <div className="space-y-2">
                           {events.map((ev: any, idx: number) => {
                             const isClickable = ["class", "social", "milonga", "practice"].includes(ev.type);
+                            const hasMessage = ev.message && ev.message.trim() !== "";
                             return (
                               <div 
                                 key={`${ev.id}-${idx}`}
@@ -1546,6 +1616,11 @@ export default function TodayPageContent() {
                                 </div>
 
                                 <div className="flex items-center gap-1.5 flex-shrink-0">
+                                  {hasMessage && (
+                                    <span className="text-[9px] font-bold text-rose-500 bg-rose-50 px-2 py-0.5 rounded-full">
+                                      {ev.message}
+                                    </span>
+                                  )}
                                   {ev.location && (
                                     <span className="text-[9px] font-bold text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-full">
                                       {ev.location}
@@ -1566,23 +1641,11 @@ export default function TodayPageContent() {
                   })}
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-6 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
-                  <p className="text-[11px] font-semibold text-slate-400">
-                    {language === "KR" ? "이번 주 다른 일정이 없습니다." : "No other events scheduled for this week."}
+                <div className="flex flex-col items-center justify-center py-8 bg-white rounded-2xl border border-dashed border-slate-200">
+                  <span className="material-symbols-outlined !text-[32px] text-slate-300 mb-2">event_busy</span>
+                  <p className="text-[12px] font-semibold text-slate-400">
+                    {language === "KR" ? "일정이 없습니다." : "No events scheduled."}
                   </p>
-                </div>
-              )}
-
-              {/* 월간 일정 보기 버튼 */}
-              {selectedGroupId !== "All" && (
-                <div className="mt-4 pt-1">
-                  <button
-                    onClick={() => openMonthCalendar("true")}
-                    className="w-full flex items-center justify-center gap-1.5 bg-white hover:bg-slate-50 text-[#1e293b] rounded-xl py-3 text-[11px] font-black transition-all active:scale-[0.98] border border-slate-200/60 shadow-sm"
-                  >
-                    <span className="material-symbols-outlined !text-[16px] text-slate-500">calendar_month</span>
-                    <span>{t("today.monthly_schedule")}</span>
-                  </button>
                 </div>
               )}
             </div>
