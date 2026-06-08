@@ -957,6 +957,23 @@ export default function TodayPageContent() {
       if (s.type === "regular" && s.dayOfWeek !== undefined) {
         daysInMonth.forEach(d => {
           if (d.getDay() === Number(s.dayOfWeek)) {
+            const ordinal = getWeekOrdinal(d);
+            const isLast = isLastWeekOfMonth(d);
+            const rec = (s.recurrence || "every").trim().toLowerCase();
+            const recParts = rec.split(",").map(x => x.trim());
+
+            const matchRecurrence = recParts.some(part => {
+              if (part === "every" || part === "") return true;
+              if (part === "1st" && ordinal === 1) return true;
+              if (part === "2nd" && ordinal === 2) return true;
+              if (part === "3rd" && ordinal === 3) return true;
+              if (part === "4th" && ordinal === 4) return true;
+              if (part === "last" && isLast) return true;
+              return false;
+            });
+
+            if (!matchRecurrence) return;
+
             const currentDj = getDjDisplay(s, d, language) || "";
             if (selectedDjName !== "All") {
               const currentDjParts = currentDj.split(/[,/&+\s]+/).map(n => n.trim().toLowerCase());
@@ -1640,12 +1657,19 @@ export default function TodayPageContent() {
                       ? `${date.getMonth() + 1}월 ${date.getDate()}일 (${getDayLabel(language, date)})`
                       : date.toLocaleDateString("en-US", { month: "short", day: "numeric", weekday: "short" });
 
+                    const dayOfWeek = date.getDay();
+                    const headerStyle = dayOfWeek === 0 
+                      ? { bg: "bg-rose-50/40 border-b border-rose-100/50", text: "text-rose-600/90", badge: "bg-rose-100/50 text-rose-600" }
+                      : dayOfWeek === 6 
+                      ? { bg: "bg-blue-50/30 border-b border-blue-100/40", text: "text-blue-600/90", badge: "bg-blue-100/50 text-blue-600" }
+                      : { bg: "bg-slate-50/80 border-b border-slate-100", text: "text-slate-700", badge: "bg-slate-200/60 text-slate-600" };
+
                     return (
                       <div key={ymd} className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300">
                         {/* 요일 헤더 */}
-                        <div className="bg-slate-50/80 px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">
-                          <span className="text-[12px] font-black text-slate-700 tracking-tight">{formattedDate}</span>
-                          <span className="bg-slate-200/60 text-slate-600 text-[10px] font-black px-2 py-0.5 rounded-full">{events.length}</span>
+                        <div className={`px-4 py-2.5 flex items-center justify-between ${headerStyle.bg}`}>
+                          <span className={`text-[12px] font-black tracking-tight ${headerStyle.text}`}>{formattedDate}</span>
+                          <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${headerStyle.badge}`}>{events.length}</span>
                         </div>
 
                         {/* 요일 내 이벤트 리스트 */}
