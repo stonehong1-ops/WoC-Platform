@@ -424,35 +424,9 @@ export default function TodayPageContent() {
     });
   }, [activeGroupsInLocation, groupSortType, groupWeeklyCounts, language]);
 
-  // 서울 지역 내의 소셜들에서 DJ 이름 목록 추출 및 정렬 적용
+  // 이번 주 일정에서 활동하는 DJ 이름 목록 추출 및 정렬 적용
   const activeDjs = useMemo(() => {
-    const djsSet = new Set<string>();
-    const cityLower = (location?.city || "All").toLowerCase().trim();
-    const isSeoul = cityLower.includes("seoul") || cityLower.includes("서울") || cityLower.includes("soul");
-    
-    const locationFiltered = allSocials.filter(s => {
-      if (!location || location.city === "ALL") return true;
-      if (!s.city) return true;
-      const sc = s.city.toLowerCase().trim();
-      if (isSeoul) return ["seoul", "서울", "soul"].some(a => sc.includes(a) || a.includes(sc));
-      return sc.includes(cityLower) || cityLower.includes(sc);
-    });
-
-    locationFiltered.forEach(s => {
-      if (s.djs && Array.isArray(s.djs)) {
-        s.djs.forEach(dj => {
-          if (dj.djName) djsSet.add(dj.djName.trim());
-        });
-      }
-      if (s.djName) {
-        const names = s.djName.split(/[,/&+\s]+/).map(n => n.trim()).filter(Boolean);
-        names.forEach(n => {
-          if (n !== "TBD" && n !== "TBA") djsSet.add(n);
-        });
-      }
-    });
-
-    const djsList = Array.from(djsSet);
+    const djsList = Object.keys(djWeeklyCounts);
 
     return djsList.sort((a, b) => {
       if (djSortType === "count") {
@@ -465,7 +439,7 @@ export default function TodayPageContent() {
       const nameB = formatDjFilterName(b, language);
       return nameA.localeCompare(nameB, language === "KR" ? "ko" : "en");
     });
-  }, [allSocials, location, djSortType, djWeeklyCounts, language]);
+  }, [djWeeklyCounts, djSortType, language]);
 
   const groupMatchedSocials = useMemo(() => {
     if (selectedGroupId === "All") return allSocials;
@@ -1140,7 +1114,12 @@ export default function TodayPageContent() {
           {/* 그룹 필터 트리거 */}
           <button
             onClick={() => {
-              setShowGroupFilter(!showGroupFilter);
+              if (selectedGroupId !== "All") {
+                setSelectedGroupId("All");
+                setShowGroupFilter(false);
+              } else {
+                setShowGroupFilter(!showGroupFilter);
+              }
               setShowDjFilter(false);
             }}
             className={`flex items-center gap-0.5 bg-white border rounded-full px-3 py-1.5 text-[10px] font-black shadow-sm transition-all active:scale-95 ${
@@ -1158,7 +1137,12 @@ export default function TodayPageContent() {
           {/* DJ 필터 트리거 */}
           <button
             onClick={() => {
-              setShowDjFilter(!showDjFilter);
+              if (selectedDjName !== "All") {
+                setSelectedDjName("All");
+                setShowDjFilter(false);
+              } else {
+                setShowDjFilter(!showDjFilter);
+              }
               setShowGroupFilter(false);
             }}
             className={`flex items-center gap-0.5 bg-white border rounded-full px-3 py-1.5 text-[10px] font-black shadow-sm transition-all active:scale-95 ${
