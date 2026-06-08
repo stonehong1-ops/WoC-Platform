@@ -878,6 +878,51 @@ export default function TodayPageContent() {
     return events;
   }, [allClasses, weekDates, selectedGroupId, language]);
 
+  // 월간용 전체 클래스 일정 목록 수집
+  const monthlyClassEvents = useMemo(() => {
+    const events: any[] = [];
+    const eventType = "class";
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+
+    allClasses.forEach(({ cls }) => {
+      if (cls.status !== "Open") return;
+      if (selectedGroupId !== "All" && cls.groupId !== selectedGroupId) return;
+
+      cls.schedule?.forEach((s: any) => {
+        const dStr = parseDateStr(s.date);
+        const clsDate = normalizeDateStr(dStr);
+        if (clsDate) {
+          if (clsDate.getFullYear() === year && clsDate.getMonth() === month) {
+            const getInstructorsLabel = (instructors: any[]) => {
+              if (!instructors || instructors.length === 0) return "";
+              const formattedNames = instructors.map(i => formatInstructorNames(i.name || "", language));
+              return formattedNames.join(", ");
+            };
+
+            events.push({
+              id: `class-month-${cls.id}-${clsDate.toDateString()}`,
+              itemId: cls.id,
+              title: formatCommunityName(cls.title, language),
+              description: cls.description || "",
+              startDate: clsDate.getTime(),
+              dateStr: parseDateToYmd(clsDate),
+              startTime: s.timeSlot || cls.startTime || "",
+              endTime: cls.endTime || "",
+              type: eventType,
+              createdBy: cls.groupId || "system",
+              createdAt: Date.now(),
+              instructor: getInstructorsLabel(cls.instructors || []),
+              level: cls.level || "",
+            });
+          }
+        }
+      });
+    });
+    return events;
+  }, [allClasses, selectedGroupId, language]);
+
   // 4. 월간 달력 소셜 이벤트 목록
   const monthlySocialEvents = useMemo(() => {
     const events: any[] = [];
@@ -1038,7 +1083,7 @@ export default function TodayPageContent() {
       dateStr: parseDateToYmd(e.startDate),
     }));
 
-    const allMonthEvents = [...mappedGroupEvents, ...classEvents, ...monthlySocialEvents];
+    const allMonthEvents = [...mappedGroupEvents, ...monthlyClassEvents, ...monthlySocialEvents];
 
     return weeks.map(w => {
       const evs = allMonthEvents.filter(ev => {
@@ -1060,7 +1105,7 @@ export default function TodayPageContent() {
       });
       return { ...w, events: evs };
     });
-  }, [groupEvents, classEvents, monthlySocialEvents]);
+  }, [groupEvents, monthlyClassEvents, monthlySocialEvents]);
 
   // 주차 탭 상태 (0: 1주차 ~ 4: 5주차)
   const [selectedWeekTab, setSelectedWeekTab] = useState<number>(() => {
