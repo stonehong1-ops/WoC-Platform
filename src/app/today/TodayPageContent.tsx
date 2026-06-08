@@ -229,6 +229,34 @@ export default function TodayPageContent() {
     }
   };
 
+  // 주간 일정 보기 이미지 캡처 다운로드 핸들러
+  const handleDownloadWeeklySchedule = async () => {
+    try {
+      const html2canvas = (await import("html2canvas-pro")).default;
+      const element = document.getElementById("weekly-schedule-capture-area");
+      if (!element) return;
+
+      const canvas = await html2canvas(element, {
+        useCORS: true,
+        scale: 2,
+        backgroundColor: "#f5f7fa",
+        logging: false,
+      });
+
+      const dataUrl = canvas.toDataURL("image/png");
+      const link = document.createElement("a");
+      const groupName = selectedGroupId === "All" 
+        ? (language === "KR" ? "전체그룹" : "All Groups") 
+        : (selectedGroup ? (language === "KR" ? (selectedGroup.nativeName || selectedGroup.name) : selectedGroup.name) : "Group");
+      const weekName = language === "KR" ? `${selectedWeekTab + 1}주차` : `Week ${selectedWeekTab + 1}`;
+      link.download = `${groupName}_${weekName}_일정.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (error) {
+      console.error("Failed to download weekly schedule image", error);
+    }
+  };
+
   const showEventViewer = useMemo(() => {
     return !!viewEventId && heroEvent?.id === viewEventId;
   }, [viewEventId, heroEvent]);
@@ -1631,11 +1659,22 @@ export default function TodayPageContent() {
 
             {/* 주차별 다른 일정 탭 섹션 */}
             <div className="pt-2">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="material-symbols-outlined !text-[20px] text-indigo-500">date_range</span>
-                <span className="text-[14px] font-black text-[#1e293b] tracking-tight">
-                  {language === "KR" ? "주차별 일정 보기" : "Schedule by Week"}
-                </span>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined !text-[20px] text-indigo-500">date_range</span>
+                  <span className="text-[14px] font-black text-[#1e293b] tracking-tight">
+                    {language === "KR" ? "주차별 일정 보기" : "Schedule by Week"}
+                  </span>
+                </div>
+                {weekEventsByDate.length > 0 && (
+                  <button
+                    onClick={handleDownloadWeeklySchedule}
+                    className="flex items-center gap-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 hover:text-indigo-600 rounded-lg px-2.5 py-1.5 text-[10px] font-bold shadow-sm transition-all active:scale-95 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined !text-[13px]">download</span>
+                    <span>{language === "KR" ? "이미지 저장" : "Save Image"}</span>
+                  </button>
+                )}
               </div>
 
               {/* 주차 탭바 */}
@@ -1659,7 +1698,7 @@ export default function TodayPageContent() {
               </div>
 
               {weekEventsByDate.length > 0 ? (
-                <div className="space-y-4">
+                <div id="weekly-schedule-capture-area" className="space-y-4 p-2 bg-[#f5f7fa] rounded-2xl">
                   {weekEventsByDate.map(({ date, ymd, events }) => {
                     const formattedDate = language === "KR"
                       ? `${date.getMonth() + 1}월 ${date.getDate()}일 (${getDayLabel(language, date)})`
