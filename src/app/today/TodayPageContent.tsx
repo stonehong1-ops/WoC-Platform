@@ -915,6 +915,7 @@ export default function TodayPageContent() {
               createdAt: Date.now(),
               instructor: getInstructorsLabel(cls.instructors || []),
               level: cls.level || "",
+              imageUrl: cls.imageUrl || "",
             });
           }
         }
@@ -965,6 +966,8 @@ export default function TodayPageContent() {
             }
 
             const isRealDj = currentDj && currentDj.toUpperCase() !== "TBD" && currentDj.toUpperCase() !== "TBA" && currentDj.trim() !== "";
+            const hasPoster = s.posterLayoutId && s.posterLayoutId !== "none";
+            const displayImageUrl = hasPoster ? s.imageUrl : (s.posterExportUrl || s.imageUrl || "");
             events.push({
               id: `social-month-${s.id}-${d.toDateString()}`,
               itemId: s.id,
@@ -981,6 +984,7 @@ export default function TodayPageContent() {
               dj: isRealDj ? formatInstructorNames(currentDj, language) : "",
               location: formatCommunityName(getVenueDisplay(s, language, venuesMap), language),
               message: getEventMessage(s, d) || "",
+              imageUrl: displayImageUrl,
             });
           }
         });
@@ -996,6 +1000,8 @@ export default function TodayPageContent() {
           }
 
           const isRealDj = currentDj && currentDj.toUpperCase() !== "TBD" && currentDj.toUpperCase() !== "TBA" && currentDj.trim() !== "";
+          const hasPoster = s.posterLayoutId && s.posterLayoutId !== "none";
+          const displayImageUrl = hasPoster ? s.imageUrl : (s.posterExportUrl || s.imageUrl || "");
           events.push({
             id: `social-month-${s.id}`,
             itemId: s.id,
@@ -1012,6 +1018,7 @@ export default function TodayPageContent() {
             dj: isRealDj ? formatInstructorNames(currentDj, language) : "",
             location: formatCommunityName(getVenueDisplay(s, language, venuesMap), language),
             message: getEventMessage(s, sDate) || "",
+            imageUrl: displayImageUrl,
           });
         }
       }
@@ -1081,6 +1088,7 @@ export default function TodayPageContent() {
       ...e,
       startDate: toJsDate(e.startDate).getTime(),
       dateStr: parseDateToYmd(e.startDate),
+      imageUrl: e.imageUrl || e.coverImage || "",
     }));
 
     const allMonthEvents = [...mappedGroupEvents, ...monthlyClassEvents, ...monthlySocialEvents];
@@ -1633,51 +1641,105 @@ export default function TodayPageContent() {
                       : date.toLocaleDateString("en-US", { month: "short", day: "numeric", weekday: "short" });
 
                     return (
-                      <div key={ymd} className="space-y-2">
-                        <div className="flex items-center gap-2 px-1">
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{formattedDate}</span>
-                          <div className="flex-1 h-px bg-slate-100" />
+                      <div key={ymd} className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        {/* 요일 헤더 */}
+                        <div className="bg-slate-50/80 px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">
+                          <span className="text-[12px] font-black text-slate-700 tracking-tight">{formattedDate}</span>
+                          <span className="bg-slate-200/60 text-slate-600 text-[10px] font-black px-2 py-0.5 rounded-full">{events.length}</span>
                         </div>
 
-                        <div className="space-y-2">
+                        {/* 요일 내 이벤트 리스트 */}
+                        <div className="divide-y divide-slate-100/60">
                           {events.map((ev: any, idx: number) => {
                             const isClickable = ["class", "social", "milonga", "practice"].includes(ev.type);
                             const hasMessage = ev.message && ev.message.trim() !== "";
+
+                            const typeColors: Record<string, { bg: string; text: string; labelKo: string; labelEn: string }> = {
+                              milonga: { bg: "bg-rose-50 text-rose-600", text: "text-rose-600", labelKo: "밀롱가", labelEn: "Milonga" },
+                              social: { bg: "bg-rose-50 text-rose-600", text: "text-rose-600", labelKo: "소셜", labelEn: "Social" },
+                              class: { bg: "bg-blue-50 text-blue-600", text: "text-blue-600", labelKo: "클래스", labelEn: "Class" },
+                              practice: { bg: "bg-amber-50 text-amber-600", text: "text-amber-600", labelKo: "연습", labelEn: "Practice" },
+                              general: { bg: "bg-slate-50 text-slate-600", text: "text-slate-600", labelKo: "일반", labelEn: "General" },
+                              rental: { bg: "bg-purple-50 text-purple-600", text: "text-purple-600", labelKo: "대관", labelEn: "Rental" },
+                            };
+                            const typeMeta = typeColors[ev.type] || typeColors.general;
+                            const typeLabel = language === "KR" ? typeMeta.labelKo : typeMeta.labelEn;
+
                             return (
                               <div 
                                 key={`${ev.id}-${idx}`}
                                 onClick={isClickable ? () => handleEventClick(ev) : undefined}
-                                className={`bg-white rounded-xl p-3 border border-slate-100/80 shadow-sm flex items-center justify-between gap-3 ${isClickable ? "cursor-pointer hover:bg-slate-50/50" : ""}`}
+                                className={`p-4 flex gap-3.5 items-start transition-all ${isClickable ? "cursor-pointer hover:bg-slate-50/40 active:bg-slate-50/80" : ""}`}
                                 role={isClickable ? "button" : undefined}
                                 tabIndex={isClickable ? 0 : undefined}
                               >
-                                <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                  {ev.startTime && (
-                                    <span className="text-[10px] font-black text-slate-400 flex-shrink-0">
-                                      {ev.startTime} {ev.endTime ? `~ ${ev.endTime}` : ""}
-                                    </span>
+                                {/* 썸네일 이미지 */}
+                                <div className="w-12 h-12 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0 relative border border-slate-100/60 shadow-sm">
+                                  {ev.imageUrl ? (
+                                    <img 
+                                      src={ev.imageUrl} 
+                                      alt={ev.title} 
+                                      className="w-full h-full object-cover"
+                                      loading="lazy"
+                                    />
+                                  ) : (
+                                    <div className={`w-full h-full bg-gradient-to-br ${
+                                      ev.type === 'class' ? 'from-blue-400 to-indigo-500' :
+                                      ev.type === 'practice' ? 'from-amber-400 to-orange-500' :
+                                      'from-rose-400 to-pink-500'
+                                    } flex items-center justify-center`}>
+                                      <span className="material-symbols-outlined text-white !text-[16px]">
+                                        {ev.type === 'class' ? 'school' :
+                                         ev.type === 'practice' ? 'directions_run' :
+                                         ev.type === 'milonga' ? 'local_fire_department' : 'event'}
+                                      </span>
+                                    </div>
                                   )}
-                                  <p className="text-[12px] font-bold text-slate-700 truncate">
-                                    {ev.title}
-                                  </p>
                                 </div>
 
-                                <div className="flex items-center gap-1.5 flex-shrink-0">
-                                  {hasMessage && (
-                                    <span className="text-[9px] font-bold text-rose-500 bg-rose-50 px-2 py-0.5 rounded-full">
-                                      {ev.message}
+                                {/* 텍스트 영역 */}
+                                <div className="min-w-0 flex-1 space-y-1">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className={`text-[8px] font-black px-1.5 py-0.5 rounded ${typeMeta.bg}`}>
+                                      {typeLabel}
                                     </span>
-                                  )}
-                                  {ev.location && (
-                                    <span className="text-[9px] font-bold text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-full">
-                                      {ev.location}
-                                    </span>
-                                  )}
-                                  {(ev.dj || ev.instructor) && (
-                                    <span className="text-[9px] font-bold text-slate-400 border border-slate-100 px-2 py-0.5 rounded-full max-w-[80px] truncate">
-                                      {formatInstructorNames(ev.dj || ev.instructor || '', language)}
-                                    </span>
-                                  )}
+                                    {ev.startTime && (
+                                      <span className="text-[10px] font-bold text-slate-400">
+                                        {ev.startTime} {ev.endTime ? `~ ${ev.endTime}` : ""}
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <h4 className="text-[12.5px] font-black text-slate-800 leading-tight">
+                                    {ev.title}
+                                  </h4>
+
+                                  {/* 메타 배지 */}
+                                  <div className="flex flex-wrap gap-x-2.5 gap-y-0.5 text-[9.5px] font-semibold text-slate-400 leading-tight">
+                                    {hasMessage && (
+                                      <span className="text-rose-500 bg-rose-50 font-bold px-1 rounded">
+                                        {ev.message}
+                                      </span>
+                                    )}
+                                    {ev.location && (
+                                      <div className="flex items-center gap-0.5">
+                                        <span className="material-symbols-outlined !text-[10px]">location_on</span>
+                                        <span className="truncate max-w-[120px]">{ev.location}</span>
+                                      </div>
+                                    )}
+                                    {ev.dj && (
+                                      <div className="flex items-center gap-0.5">
+                                        <span className="material-symbols-outlined !text-[10px]">headphones</span>
+                                        <span className="truncate max-w-[90px]">{formatDjFilterName(ev.dj, language)}</span>
+                                      </div>
+                                    )}
+                                    {ev.instructor && (
+                                      <div className="flex items-center gap-0.5">
+                                        <span className="material-symbols-outlined !text-[10px]">school</span>
+                                        <span className="truncate max-w-[90px]">{formatInstructorNames(ev.instructor, language)}</span>
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             );

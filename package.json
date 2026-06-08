@@ -1,6 +1,6 @@
 {
   "name": "woc",
-  "version": "2026-06-08-010",
+  "version": "2026-06-08-011",
   "private": true,
   "scripts": {
     "dev": "next dev",
