@@ -780,11 +780,12 @@ export default function TodayPageContent() {
               }
             }
 
+            const eventType = s.subCategory === "practica" ? "practice" : (s.subCategory || "social");
             const isRealDj = currentDj && currentDj.toUpperCase() !== "TBD" && currentDj.toUpperCase() !== "TBA" && currentDj.trim() !== "";
             events.push({
               id: `social-week-${s.id}-${d.toDateString()}`,
               itemId: s.id,
-              title: formatCommunityName(s.titleNative || s.title, language),
+              title: getSocialTitleDisplay(s, language),
               description: s.description || "",
               startDate: d.getTime(),
               dateStr: parseDateToYmd(d),
@@ -812,11 +813,12 @@ export default function TodayPageContent() {
             }
           }
 
+          const eventType = s.subCategory === "practica" ? "practice" : (s.subCategory || "social");
           const isRealDj = currentDj && currentDj.toUpperCase() !== "TBD" && currentDj.toUpperCase() !== "TBA" && currentDj.trim() !== "";
           events.push({
             id: `social-week-${s.id}`,
             itemId: s.id,
-            title: formatCommunityName(s.titleNative || s.title, language),
+            title: getSocialTitleDisplay(s, language),
             description: s.description || "",
             startDate: sDate.getTime(),
             dateStr: parseDateToYmd(sDate),
@@ -870,6 +872,7 @@ export default function TodayPageContent() {
               createdAt: Date.now(),
               instructor: getInstructorsLabel(cls.instructors || []),
               level: cls.level || "",
+              weekPlans: cls.schedule ? cls.schedule.map((sch: any) => sch.content || "") : [],
             });
           }
         }
@@ -916,6 +919,7 @@ export default function TodayPageContent() {
               instructor: getInstructorsLabel(cls.instructors || []),
               level: cls.level || "",
               imageUrl: cls.imageUrl || "",
+              weekPlans: cls.schedule ? cls.schedule.map((sch: any) => sch.content || "") : [],
             });
           }
         }
@@ -982,13 +986,14 @@ export default function TodayPageContent() {
               }
             }
 
+            const eventType = s.subCategory === "practica" ? "practice" : (s.subCategory || "social");
             const isRealDj = currentDj && currentDj.toUpperCase() !== "TBD" && currentDj.toUpperCase() !== "TBA" && currentDj.trim() !== "";
             const hasPoster = s.posterLayoutId && s.posterLayoutId !== "none";
             const displayImageUrl = hasPoster ? s.imageUrl : (s.posterExportUrl || s.imageUrl || "");
             events.push({
               id: `social-month-${s.id}-${d.toDateString()}`,
               itemId: s.id,
-              title: formatCommunityName(s.titleNative || s.title, language),
+              title: getSocialTitleDisplay(s, language),
               description: s.description || "",
               startDate: d.getTime(),
               dateStr: parseDateToYmd(d),
@@ -1016,13 +1021,14 @@ export default function TodayPageContent() {
             }
           }
 
+          const eventType = s.subCategory === "practica" ? "practice" : (s.subCategory || "social");
           const isRealDj = currentDj && currentDj.toUpperCase() !== "TBD" && currentDj.toUpperCase() !== "TBA" && currentDj.trim() !== "";
           const hasPoster = s.posterLayoutId && s.posterLayoutId !== "none";
           const displayImageUrl = hasPoster ? s.imageUrl : (s.posterExportUrl || s.imageUrl || "");
           events.push({
             id: `social-month-${s.id}`,
             itemId: s.id,
-            title: formatCommunityName(s.titleNative || s.title, language),
+            title: getSocialTitleDisplay(s, language),
             description: s.description || "",
             startDate: sDate.getTime(),
             dateStr: parseDateToYmd(sDate),
@@ -1546,44 +1552,35 @@ export default function TodayPageContent() {
                         </h3>
 
                         {/* 메타 정보 */}
-                        <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] font-semibold text-slate-500 border-t border-slate-50 pt-2.5">
-                          {(ev.type === "social" || ev.type === "milonga") ? (
-                            ev.org && (
-                              <div className="flex items-center gap-1 min-w-0">
-                                <span className="material-symbols-outlined !text-[13px] text-slate-400 flex-shrink-0">person</span>
-                                <span className="truncate">{ev.org}</span>
-                              </div>
-                            )
-                          ) : (
-                            ev.location && (
-                              <div className="flex items-center gap-1 min-w-0">
-                                <span className="material-symbols-outlined !text-[13px] text-slate-400 flex-shrink-0">location_on</span>
-                                <span className="truncate">{ev.location}</span>
-                              </div>
-                            )
-                          )}
-                          {ev.dj && (
+                        <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-[11px] font-semibold text-slate-500 border-t border-slate-50 pt-2.5">
+                          {ev.location && (
                             <div className="flex items-center gap-1 min-w-0">
-                              <span className="material-symbols-outlined !text-[13px] text-slate-400 flex-shrink-0">headphones</span>
-                              <span className="truncate">{formatDjFilterName(ev.dj, language)}</span>
+                              <span className="material-symbols-outlined !text-[13px] text-slate-400 flex-shrink-0">location_on</span>
+                              <span className="truncate">{ev.location}</span>
                             </div>
                           )}
-                          {ev.type !== "social" && ev.type !== "milonga" && ev.instructor && (
+                          {["social", "milonga", "practice"].includes(ev.type) && ev.org && (
+                            <div className="flex items-center gap-1 min-w-0">
+                              <span className="material-symbols-outlined !text-[13px] text-slate-400 flex-shrink-0">person</span>
+                              <span className="truncate">org {ev.org}</span>
+                            </div>
+                          )}
+                          {["social", "milonga", "practice"].includes(ev.type) && ev.dj && (
+                            <div className="flex items-center gap-1 min-w-0">
+                              <span className="material-symbols-outlined !text-[13px] text-slate-400 flex-shrink-0">headphones</span>
+                              <span className="truncate">dj {formatDjFilterName(ev.dj, language)}</span>
+                            </div>
+                          )}
+                          {ev.type === "class" && ev.instructor && (
                             <div className="flex items-center gap-1 min-w-0">
                               <span className="material-symbols-outlined !text-[13px] text-slate-400 flex-shrink-0">school</span>
                               <span className="truncate">{formatInstructorNames(ev.instructor, language)}</span>
                             </div>
                           )}
-                          {ev.type !== "social" && ev.type !== "milonga" && ev.level && (
+                          {ev.type === "class" && ev.level && (
                             <div className="flex items-center gap-1 min-w-0">
                               <span className="material-symbols-outlined !text-[13px] text-slate-400 flex-shrink-0">bar_chart</span>
                               <span className="truncate">{ev.level}</span>
-                            </div>
-                          )}
-                          {ev.type !== "social" && ev.type !== "milonga" && ev.org && (
-                            <div className="flex items-center gap-1 min-w-0">
-                              <span className="material-symbols-outlined !text-[13px] text-slate-400 flex-shrink-0">person</span>
-                              <span className="truncate">{ev.org}</span>
                             </div>
                           )}
                         </div>
@@ -1977,4 +1974,14 @@ function getWeekOfMonth(date: Date): number {
   if (day >= 15 && day <= 21) return 3;
   if (day >= 22 && day <= 28) return 4;
   return 5;
+}
+
+// 소셜 양방향 다국어 타이틀 표기 함수 (KR: 월나다 Wol Nada / EN: Wol Nada 월나다)
+function getSocialTitleDisplay(s: any, language: string) {
+  const native = (s.titleNative || "").trim();
+  const eng = (s.title || "").trim();
+  if (native && eng && native !== eng) {
+    return language === "KR" ? `${native} ${eng}` : `${eng} ${native}`;
+  }
+  return native || eng;
 }
