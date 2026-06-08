@@ -1063,7 +1063,9 @@ export default function TodayPageContent() {
   }, [groupEvents, classEvents, monthlySocialEvents]);
 
   // 주차 탭 상태 (0: 1주차 ~ 4: 5주차)
-  const [selectedWeekTab, setSelectedWeekTab] = useState<number>(0);
+  const [selectedWeekTab, setSelectedWeekTab] = useState<number>(() => {
+    return Math.max(0, Math.min(4, getWeekOfMonth(selectedDate) - 1));
+  });
 
   // selectedDate가 바뀔 때 해당 일자가 속한 주차로 탭을 동기화해 줍니다.
   useEffect(() => {
