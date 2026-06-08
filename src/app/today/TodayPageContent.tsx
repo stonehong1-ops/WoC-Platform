@@ -1147,11 +1147,11 @@ export default function TodayPageContent() {
     return Math.max(0, Math.min(4, getWeekOfMonth(selectedDate) - 1));
   });
 
-  // selectedDate가 바뀔 때 해당 일자가 속한 주차로 탭을 동기화해 줍니다.
+  // selectedDate 또는 selectedGroupId가 바뀔 때 해당 일자가 속한 주차로 탭을 동기화해 줍니다.
   useEffect(() => {
     const currentWeekIdx = getWeekOfMonth(selectedDate) - 1;
     setSelectedWeekTab(Math.max(0, Math.min(4, currentWeekIdx)));
-  }, [selectedDate]);
+  }, [selectedDate, selectedGroupId]);
 
   // 선택된 주차 탭의 일정을 날짜별로 그룹화하는 로직
   const weekEventsByDate = useMemo(() => {
@@ -1512,10 +1512,10 @@ export default function TodayPageContent() {
                 <div className="space-y-4">
                   {groupTodayEvents.map((ev, idx) => {
                     const catColors: Record<string, { bg: string; text: string; labelKo: string; labelEn: string }> = {
-                      milonga: { bg: "bg-rose-50 text-rose-600 border border-rose-100", text: "text-rose-700", labelKo: "밀롱가", labelEn: "Milonga" },
+                      milonga: { bg: "bg-rose-50 text-rose-600 border border-rose-100", text: "text-rose-700", labelKo: "소셜", labelEn: "Social" },
                       social: { bg: "bg-rose-50 text-rose-600 border border-rose-100", text: "text-rose-700", labelKo: "소셜", labelEn: "Social" },
                       class: { bg: "bg-blue-50 text-blue-600 border border-blue-100", text: "text-blue-700", labelKo: "클래스", labelEn: "Class" },
-                      practice: { bg: "bg-amber-50 text-amber-600 border border-amber-100", text: "text-amber-700", labelKo: "연습", labelEn: "Practice" },
+                      practice: { bg: "bg-amber-50 text-amber-600 border border-amber-100", text: "text-amber-700", labelKo: "쁘락띠까", labelEn: "Practica" },
                       general: { bg: "bg-slate-50 text-slate-600 border border-slate-100", text: "text-slate-700", labelKo: "일반", labelEn: "General" },
                       rental: { bg: "bg-purple-50 text-purple-600 border border-purple-100", text: "text-purple-700", labelKo: "대관", labelEn: "Rental" },
                     };
@@ -1687,10 +1687,10 @@ export default function TodayPageContent() {
                             const hasMessage = ev.message && ev.message.trim() !== "";
 
                             const typeColors: Record<string, { bg: string; text: string; labelKo: string; labelEn: string }> = {
-                              milonga: { bg: "bg-rose-50 text-rose-600", text: "text-rose-600", labelKo: "밀롱가", labelEn: "Milonga" },
+                              milonga: { bg: "bg-rose-50 text-rose-600", text: "text-rose-600", labelKo: "소셜", labelEn: "Social" },
                               social: { bg: "bg-rose-50 text-rose-600", text: "text-rose-600", labelKo: "소셜", labelEn: "Social" },
                               class: { bg: "bg-blue-50 text-blue-600", text: "text-blue-600", labelKo: "클래스", labelEn: "Class" },
-                              practice: { bg: "bg-amber-50 text-amber-600", text: "text-amber-600", labelKo: "연습", labelEn: "Practice" },
+                              practice: { bg: "bg-amber-50 text-amber-600", text: "text-amber-600", labelKo: "쁘락띠까", labelEn: "Practica" },
                               general: { bg: "bg-slate-50 text-slate-600", text: "text-slate-600", labelKo: "일반", labelEn: "General" },
                               rental: { bg: "bg-purple-50 text-purple-600", text: "text-purple-600", labelKo: "대관", labelEn: "Rental" },
                             };
