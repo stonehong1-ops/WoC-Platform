@@ -1554,12 +1554,12 @@ export default function TodayPageContent() {
                         <div className="mt-2.5">
                           <h3 className="text-[15px] font-black text-slate-800 leading-tight">
                             {ev.title}
+                            {ev.subtitle && (
+                              <span className="text-[12px] font-semibold text-slate-400 ml-1.5">
+                                / {ev.subtitle}
+                              </span>
+                            )}
                           </h3>
-                          {ev.subtitle && (
-                            <span className="text-[11px] font-medium text-slate-400 block mt-0.5 truncate">
-                              {ev.subtitle}
-                            </span>
-                          )}
                         </div>
 
                         {/* 메타 정보 */}
@@ -1745,12 +1745,12 @@ export default function TodayPageContent() {
                                   <div className="space-y-0.5">
                                     <h4 className="text-[12.5px] font-black text-slate-800 leading-tight">
                                       {ev.title}
+                                      {ev.subtitle && (
+                                        <span className="text-[10.5px] font-semibold text-slate-400 ml-1.5">
+                                          / {ev.subtitle}
+                                        </span>
+                                      )}
                                     </h4>
-                                    {ev.subtitle && (
-                                      <span className="text-[10px] font-medium text-slate-400 block truncate">
-                                        {ev.subtitle}
-                                      </span>
-                                    )}
                                   </div>
 
                                   {/* 메타 배지 */}
