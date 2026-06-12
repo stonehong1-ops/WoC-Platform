@@ -15,7 +15,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 const NAV_STRUCTURE = {
   World: [
-    { name: "nav.home", icon: "radio_button_unchecked", path: "/home" },
+    { name: "nav.society", icon: "radio_button_unchecked", path: "/home" },
     { name: "nav.plaza", icon: "quick_phrases", path: "/plaza" },
     { name: "nav.venues", icon: "map", path: "/venues" },
     { name: "nav.people", icon: "group", path: "/people" },
@@ -37,7 +37,7 @@ const NAV_STRUCTURE = {
     { name: "nav.pics", icon: "photo_library", path: "/pics" },
     { name: "nav.lost_found", icon: "find_in_page", path: "/lost" },
     { name: "nav.hub", icon: "airline_stops", path: "/hub" },
-    { name: "nav.explore", icon: "explore", path: "/explore" },
+    { name: "nav.jump", icon: "explore", path: "/explore" },
   ],
   Groups: [
     { name: "nav.groups", icon: "groups", path: "/groups" },

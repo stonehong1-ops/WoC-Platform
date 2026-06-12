@@ -2,64 +2,285 @@ import React from 'react';
 
 // Slide 0: WoC (Intro Cover)
 export const Slide0 = () => (
-  <div className="relative z-10 flex flex-col w-full h-full bg-[#111111] text-[#fcf8f8] px-[100px] justify-center overflow-hidden">
+  <div className="relative z-10 flex flex-col items-center justify-center text-center w-full h-full px-10 bg-[#111111] text-[#fcf8f8] overflow-hidden">
     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-      <div className="w-[600px] h-[600px] rounded-full bg-white/[0.01] blur-[120px] pt1-si" />
+      <div className="w-[500px] h-[500px] rounded-full bg-white/[0.01] blur-[100px] pt1-si" />
     </div>
-    <div className="max-w-[1200px] w-full relative z-10 text-center">
-      <h2 className="font-['Space_Grotesk'] text-[72px] md:text-[96px] font-black tracking-[0.1em] text-white/95 uppercase block leading-none mb-6 pt1-fu">
+
+    <div className="relative z-10 max-w-[1200px] w-full flex flex-col items-center">
+      <span className="font-['Space_Grotesk'] text-[13px] font-bold tracking-[0.4em] text-white/30 uppercase mb-12 pt1-fu">
+        PRESENTATION 2026
+      </span>
+
+      <h1 className="text-[100px] md:text-[180px] font-black text-[#fcf8f8] leading-none tracking-[-0.08em] pt1-si">
         WoC
-      </h2>
-      <p className="font-['Space_Grotesk'] text-[18px] md:text-[22px] font-bold tracking-[0.3em] text-white/45 uppercase mb-8 pt1-fu pt1-d2">
-        WORLD OF COMMUNITY
+      </h1>
+      
+      <p className="font-['Space_Grotesk'] text-[20px] md:text-[28px] font-medium tracking-tight text-white/60 mt-4 pt1-fu pt1-d2">
+        World of Community
       </p>
-      <div className="inline-block w-12 h-[2px] bg-emerald-500 mb-8 pt1-lg pt1-d3" />
-      <p className="text-[18px] md:text-[20px] font-bold text-white/70 leading-tight tracking-tight pt1-fu pt1-d4">
-        사람들의 활동을 운영하는 플랫폼
+
+      <div className="w-[100px] h-[1px] bg-white/15 my-12 pt1-lg pt1-d4" />
+
+      <p className="text-[16px] md:text-[20px] font-black tracking-[0.3em] text-white/45 uppercase pt1-fu pt1-d5">
+        커뮤니티 플랫폼
       </p>
     </div>
   </div>
 );
 
-// Slide 1: THE STORY (Table of Contents / Story Flow)
-export const Slide1 = () => {
-  const steps = [
-    { eng: 'MONEY FLOWS HERE', label: '사람들이 실제로 돈을 쓰는 시장' },
-    { eng: 'THE LAST PLATFORM', label: '아직 지배적 플랫폼이 없는 영역' },
-    { eng: 'WHY NO WINNER YET', label: '문제는 기능이 아니라 운영체계의 부재' },
-    { eng: 'ONE PLATFORM', label: '수많은 커뮤니티를 하나의 OS로 통합' },
-    { eng: 'LIFE GOES ON_', label: '사용자의 취미는 고정되지 않고 이동함' },
-    { eng: 'FRAGMENTED WORLD', label: '파편화되고 로컬화된 기존 서비스 극복' },
-    { eng: 'THE FIRST SOCIETY', label: '작은 탱고 커뮤니티에서 비즈니스 작동 증명' },
-    { eng: 'PENETRATION STRATEGY', label: '작은 커뮤니티에서 범용 운영체계로의 진화' },
-    { eng: 'THE NEXT 60 SOCIETIES', label: '검증된 운영체계의 범용 복사' },
-    { eng: 'STRATEGIC VALUE', label: '정체 산업 및 빅테크 플랫폼과의 시너지' },
-    { eng: 'WHY NOW', label: '빠른 BEP 돌파와 즉각적인 거래 중심 성장' }
+// Slide App Structure: APP STRUCTURE
+export const SlideAppStructure = () => {
+  const categories = [
+    {
+      title: 'WORLD',
+      desc: '소셜 및 콘텐츠 매거진',
+      tabs: ['Society (매거진)', 'Plaza (공유 피드)', 'Venues (공간 지도)', 'People (인물 정보/일정)'],
+      color: 'border-emerald-600/20 bg-emerald-600/[0.01]'
+    },
+    {
+      title: 'MARKET',
+      desc: '커머스 및 공유 경제',
+      tabs: ['Shop (상점)', 'Resale (중고 거래)', 'Rental (공간 대여)', 'Stay (숙박/카우치서핑)'],
+      color: 'border-[#111111]/10 bg-white/40'
+    },
+    {
+      title: 'NOW',
+      desc: '실시간 이벤트',
+      tabs: ['Today (모든 행사)', 'Social (모임 예매)', 'Class (수업/등록)', 'Events (행사 정보/등록)'],
+      color: 'border-emerald-600/20 bg-emerald-600/[0.01]'
+    },
+    {
+      title: 'LOUNGE',
+      desc: '아카이브 및 발견',
+      tabs: ['Pics (스냅 사진첩)', 'Lost & Found (분실물)', 'Hub (오프라인 물류)', 'Jump (다른 취미 점프)'],
+      color: 'border-[#111111]/10 bg-white/40'
+    },
+    {
+      title: 'GROUPS',
+      desc: '커뮤니티 허브',
+      tabs: ['Groups (소사이어티 탐색)', 'Individual Group (그룹 내부 모듈)', 'Group Admin (그룹 설정)'],
+      color: 'border-emerald-600/20 bg-emerald-600/[0.01]'
+    }
+  ];
+
+  const groupModules = [
+    { name: 'Feed & Board', desc: '자유게시판 및 타임라인 소통' },
+    { name: 'Notice Board', desc: '운영진 필독 중요 공지사항' },
+    { name: 'Album & Moments', desc: '그룹 행사 스냅 사진첩 공유' },
+    { name: 'Classes & Academy', desc: '수업 커리큘럼 및 주차별 미디어라인' },
+    { name: 'Calendar & Booking', desc: '그룹 일정 달력 및 수련회 예약' },
+    { name: 'Team Workspace', desc: '스태프 업무 관리 및 칸반 보드' }
   ];
 
   return (
-    <div className="relative z-10 flex flex-col w-full h-full bg-[#fcf8f8] text-[#111111] px-[100px] justify-center overflow-hidden">
-      <div className="max-w-[1200px] w-full relative z-10">
+    <div className="relative z-10 flex flex-col w-full h-full bg-[#fcf8f8] text-[#111111] px-[80px] justify-center overflow-hidden">
+      <div className="max-w-[1300px] w-full mx-auto relative z-10">
+        <h2 className="font-['Space_Grotesk'] text-[44px] md:text-[56px] font-black tracking-[0.05em] text-[#111111]/90 uppercase block leading-none mb-4 pt1-fu">
+          APP STRUCTURE
+        </h2>
+        <p className="text-[16px] md:text-[18px] font-bold text-[#111111]/45 leading-tight tracking-tight mb-8 pt1-fu pt1-d2">
+          5대 핵심 카테고리와 22대 하위 탭 구조로 통합된 모듈러 운영체제
+        </p>
+
+        {/* 5대 카테고리 그리드 */}
+        <div className="grid grid-cols-5 gap-4 pt1-si pt1-d3">
+          {categories.map((cat, idx) => (
+            <div key={idx} className={`border p-4.5 rounded-sm flex flex-col justify-between hover:scale-[1.02] transition-transform duration-200 ${cat.color}`}>
+              <div>
+                <span className="font-['Space_Grotesk'] text-[16px] font-black text-[#111111] block mb-1">{cat.title}</span>
+                <span className="text-[10px] font-bold text-[#111111]/40 block mb-3">{cat.desc}</span>
+                <div className="flex flex-col gap-1.5">
+                  {cat.tabs.map((tab, tIdx) => (
+                    <div key={tIdx} className="bg-white/60 border border-[#111111]/5 px-2 py-1 rounded-sm text-[11px] font-bold text-[#111111]/75">
+                      {tab}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* 개별 그룹 하위 구조 섹션 */}
+        <div className="mt-5 border-t border-[#111111]/10 pt-5 pt1-fu pt1-d4">
+          <span className="font-['Space_Grotesk'] text-[10.5px] font-black tracking-widest text-[#111111]/45 uppercase block mb-2.5">
+            INDIVIDUAL GROUP INNER MODULES (개별 그룹 하위 구조)
+          </span>
+          <div className="grid grid-cols-6 gap-3">
+            {groupModules.map((mod, idx) => (
+              <div key={idx} className="border border-emerald-600/10 bg-emerald-600/[0.01] p-3 rounded-sm">
+                <span className="text-[12.5px] font-black text-emerald-600 block mb-1 leading-tight">{mod.name}</span>
+                <span className="text-[10px] font-bold text-[#111111]/45 block leading-tight">{mod.desc}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 하단 보조 제어 영역 */}
+        <div className="grid grid-cols-3 gap-4 mt-5 pt1-fu pt1-d6">
+          <div className="border border-[#111111]/10 bg-white/40 p-3.5 rounded-sm flex justify-between items-center">
+            <div>
+              <span className="font-['Space_Grotesk'] text-[11px] font-black text-[#111111]/40 block uppercase">Lounge / Personalization</span>
+              <span className="text-[13.5px] font-black text-[#111111]">MY 개인 허브</span>
+            </div>
+            <span className="text-[11px] font-bold text-[#111111]/50 text-right leading-tight">일정 · 지갑 · 코칭(Coaching) · 설정</span>
+          </div>
+          <div className="border border-[#111111]/10 bg-white/40 p-3.5 rounded-sm flex justify-between items-center">
+            <div>
+              <span className="font-['Space_Grotesk'] text-[11px] font-black text-[#111111]/40 block uppercase">Global Actions</span>
+              <span className="text-[13.5px] font-black text-[#111111]">전역 알림 & 챗 / 검색 / 위치(Jump)</span>
+            </div>
+            <span className="text-[11px] font-bold text-[#111111]/50 text-right leading-tight">실시간 푸시 · DM · 소사이어티 점프</span>
+          </div>
+          <div className="border border-[#111111]/10 bg-white/40 p-3.5 rounded-sm flex justify-between items-center">
+            <div>
+              <span className="font-['Space_Grotesk'] text-[11px] font-black text-emerald-600/60 block uppercase">Backoffice System</span>
+              <span className="text-[13.5px] font-black text-emerald-600">최고 관리자 (Admin)</span>
+            </div>
+            <span className="text-[11px] font-bold text-emerald-600/75 text-right leading-tight">배너 · 권한 · 검수 제어</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Slide 1: THE STORY
+export const Slide1 = () => {
+  const steps = [
+    {
+      num: '01',
+      eng: 'LIFE GOES ON_',
+      kor: '삶은 계속된다',
+      text: (
+        <>
+          일상은 퍽퍽하고<br/>
+          현실은 까칠하다.<br/>
+          <br/>
+          하지만 사람들은<br/>
+          계속 사랑하고<br/>
+          계속 배우고<br/>
+          계속 만나고<br/>
+          계속 춤추고<br/>
+          계속 여행한다.<br/>
+          <br/>
+          행복과 건강을 향한<br/>
+          사람들의 활동은 멈추지 않는다.
+        </>
+      ),
+      bg: 'border-[#111111]/10 bg-white/40'
+    },
+    {
+      num: '02',
+      eng: 'BROKEN EXPERIENCE',
+      kor: '취미를 위해 너무나 많은 App들을 떠돌아야했다',
+      text: (
+        <>
+          커뮤니티는 여기<br/>
+          소통은 저기<br/>
+          행사는 다른 곳<br/>
+          결제는 또 다른 곳<br/>
+          <br/>
+          그런데도<br/>
+          아직 누구도<br/>
+          이 시장을 지배하지 못했다.
+        </>
+      ),
+      bg: 'border-[#111111]/10 bg-white/40'
+    },
+    {
+      num: '03',
+      eng: 'MONEY FLOWS HERE',
+      kor: '그곳에는 살아있는 돈이 있었다',
+      text: (
+        <>
+          사람들은<br/>
+          자신이 선택한 활동에<br/>
+          기꺼이 돈을 지불한다.<br/>
+          <br/>
+          배움<br/>
+          만남<br/>
+          행사<br/>
+          여행<br/>
+          취미<br/>
+          문화<br/>
+          <br/>
+          이곳에는<br/>
+          실제 돈이 흐르고 있었다.
+        </>
+      ),
+      bg: 'border-[#111111]/10 bg-white/40'
+    },
+    {
+      num: '04',
+      eng: 'THE FIRST SOCIETY',
+      kor: '가장 어려운 곳에서 시작하기로 했다',
+      text: (
+        <>
+          소셜댄스는<br/>
+          개인의 취미 중에서도<br/>
+          가장 큰 용기가 필요한 영역이다.<br/>
+          <br/>
+          낯선 사람을 만나고<br/>
+          함께 배우고<br/>
+          함께 활동해야 한다.<br/>
+          <br/>
+          만약 이곳에서 가능하다면<br/>
+          어디서든 가능할 것이라고 생각했다.<br/>
+          <br/>
+          이 실험에서 나는 커뮤니티경제(Community Economy)라는 개념을 발견했다.
+        </>
+      ),
+      bg: 'border-[#111111]/10 bg-white/40'
+    },
+    {
+      num: '05',
+      eng: 'THE LAST PLATFORM',
+      kor: '마지막 플랫폼 비즈니스',
+      text: (
+        <>
+          사람은 이미 연결되어 있었다.<br/>
+          <br/>
+          필요했던 것은<br/>
+          또 하나의 커뮤니티가 아니었다.<br/>
+          <br/>
+          활동을 운영하는 시스템이었다.<br/>
+          <br/>
+          WoC는<br/>
+          커뮤니티 플랫폼이 아니다.<br/>
+          <br/>
+          사람들의 활동을 운영하는<br/>
+          Community Operating System이다.<br/>
+          <br/>
+          <span className="text-emerald-600 font-black">The Last Platform.</span><br/>
+          이것은 마지막 플랫폼이자 플랫폼OS이고 플랫폼의 완성이다.
+        </>
+      ),
+      bg: 'border-emerald-600/30 bg-emerald-600/[0.015]'
+    }
+  ];
+
+  return (
+    <div className="relative z-10 flex flex-col w-full h-full bg-[#fcf8f8] text-[#111111] px-[80px] py-[40px] justify-center overflow-hidden">
+      <div className="max-w-[1300px] w-full mx-auto relative z-10">
         <h2 className="font-['Space_Grotesk'] text-[44px] md:text-[56px] font-black tracking-[0.05em] text-[#111111]/90 uppercase block leading-none mb-4 pt1-fu">
           THE STORY
         </h2>
         <p className="text-[16px] md:text-[18px] font-bold text-[#111111]/45 leading-tight tracking-tight mb-8 pt1-fu pt1-d2">
-          왜 우리는 WoC를 만드는가
+          어떻게 WoC는 시작되었는가
         </p>
 
-        <div className="flex flex-col gap-2 max-w-[800px] pt1-si pt1-d3">
+        <div className="grid grid-cols-5 gap-4 pt1-si pt1-d4">
           {steps.map((step, idx) => (
-            <div key={idx} className="flex items-center gap-6 group hover:translate-x-2 transition-transform duration-200">
-              <span className="font-['Space_Grotesk'] text-[12px] font-black text-emerald-600 w-8">
-                0{idx + 1}
-              </span>
-              <div className="flex-1 flex justify-between items-center border-b border-[#111111]/5 pb-2">
-                <span className="font-['Space_Grotesk'] text-[15px] font-black tracking-wider text-[#111111]/85">
-                  {step.eng}
-                </span>
-                <span className="text-[13px] font-bold text-[#111111]/40">
-                  {step.label}
-                </span>
+            <div key={idx} className={`border p-5 rounded-sm flex flex-col justify-between hover:scale-[1.02] transition-transform duration-200 ${step.bg}`}>
+              <div>
+                <span className="font-['Space_Grotesk'] text-[24px] font-black text-emerald-600 block mb-2">{step.num}</span>
+                <span className="font-['Space_Grotesk'] text-[18px] font-black text-[#111111]/85 block mb-1.5 leading-snug">{step.eng}</span>
+                <span className="text-[13px] font-bold text-[#111111]/40 block mb-4 leading-none">{step.kor}</span>
+                <p className="text-[11.5px] font-medium text-[#111111]/55 leading-relaxed break-keep">
+                  {step.text}
+                </p>
               </div>
             </div>
           ))}
@@ -72,35 +293,89 @@ export const Slide1 = () => {
 // Slide 2: MONEY FLOWS HERE
 export const Slide2 = () => {
   const stats = [
-    { value: '108억', eng: '10.8 BILLION', label: '전체 소셜시장 거래 규모' },
-    { value: '32억', eng: '3.2 BILLION', label: 'WoC 타겟 결제 거래액' },
-    { value: '2.2억', eng: '220 MILLION', label: '수수료 기반 플랫폼 매출' }
+    { num: '108', unit: '억 원', period: '연간', label: '전체 시장 거래 규모', eng: 'TANGO MARKET SIZE', sub: '수업 · 밀롱가 · 워크샵 · 공연 · 축제' },
+    { num: '32', unit: '억 원', period: '연간', label: 'WoC 처리 거래액', eng: 'PLATFORM GMV', sub: 'WoC를 통해 실제 결제되는 금액' },
+    { num: '2.2', unit: '억 원', period: '연간', label: 'WoC 플랫폼 매출', eng: 'WOC REVENUE', sub: '결제 · 정산 · 솔루션 수수료 기반' },
   ];
 
   return (
-    <div className="relative z-10 flex flex-col w-full h-full bg-[#fcf8f8] text-[#111111] px-[100px] justify-center overflow-hidden">
-      <div className="max-w-[1200px] w-full relative z-10">
-        <h2 className="font-['Space_Grotesk'] text-[44px] md:text-[56px] font-black tracking-[0.05em] text-[#111111]/90 uppercase block leading-none mb-4 pt1-fu">
-          MONEY FLOWS HERE
-        </h2>
-        <p className="text-[16px] md:text-[18px] font-bold text-[#111111]/45 leading-tight tracking-tight mb-12 pt1-fu pt1-d2">
-          Money Flows Here ➔ 실제 돈이 흐르는 시장 (통계청 기준 1인 월 평균 약 <span className="font-['Space_Grotesk'] font-bold text-[#111111]">45</span>만원 취미·문화·활동 소비)
-        </p>
+    <div className="relative z-10 flex flex-col w-full h-full bg-[#fcf8f8] text-[#111111] px-[80px] py-[40px] justify-center overflow-hidden">
+      <div className="max-w-[1300px] w-full mx-auto relative z-10">
+        <div className="mb-8">
+          <h2 className="font-['Space_Grotesk'] text-[44px] md:text-[56px] font-black tracking-[0.05em] text-[#111111]/90 uppercase block leading-none mb-4 pt1-fu">
+            MONEY FLOWS HERE
+          </h2>
+          <p className="text-[16px] md:text-[18px] font-bold text-[#111111]/45 leading-tight tracking-tight pt1-fu pt1-d2">
+            탱고: 고작 2,000명이 만드는 연간 108억 규모의 커뮤니티 활동 경제 (Community Economy)
+          </p>
+        </div>
 
-        <div className="grid grid-cols-3 gap-8 border-t border-b border-[#111111]/10 py-12 pt1-si pt1-d4">
-          {stats.map((item, idx) => (
-            <div key={idx} className="flex flex-col items-start p-2">
-              <span className="font-['Space_Grotesk'] text-[10px] font-bold tracking-wider text-[#111111]/30 uppercase mb-2">
-                {item.eng}
-              </span>
-              <span className="text-[52px] md:text-[64px] font-black text-[#111111] tracking-tighter leading-none mb-3">
-                {item.value}
-              </span>
-              <p className="text-[13.5px] font-bold text-[#111111]/60">
-                {item.label}
-              </p>
+        <div className="grid grid-cols-12 gap-8 items-stretch border-t border-b border-[#111111]/10 py-8 pt1-si pt1-d3">
+          {/* 좌측: 핵심 금액 지표 카드 (col-span-5) */}
+          <div className="col-span-5 flex flex-col justify-center border-r border-[#111111]/10 pr-8 gap-4">
+            <span className="text-[10px] font-bold tracking-widest text-[#111111]/40 uppercase block mb-1">
+              CORE ECONOMY METRICS (핵심 경제 수치)
+            </span>
+            <div className="flex flex-col gap-3">
+              {stats.map((s, idx) => (
+                <div key={s.label} className="border border-[#111111]/10 bg-white/40 p-4 rounded-sm flex flex-col justify-center hover:scale-[1.01] transition-transform duration-200" style={{ animationDelay: `${400 + idx * 100}ms` }}>
+                  <div className="flex justify-between items-baseline mb-1">
+                    <span className="text-[13px] font-black text-[#111111]">{s.label}</span>
+                    <span className="font-['Space_Grotesk'] text-[9px] font-bold text-[#111111]/30 tracking-wider uppercase">{s.eng}</span>
+                  </div>
+                  <div className="flex items-baseline gap-1 mt-1">
+                    <span className="text-[9px] font-bold text-[#111111]/40 uppercase tracking-widest mr-1">{s.period}</span>
+                    <span className="font-['Space_Grotesk'] text-[24px] md:text-[28px] font-black text-[#111111] leading-none">{s.num}</span>
+                    <span className="text-[13px] md:text-[15px] font-bold text-[#111111]/60 ml-0.5">{s.unit}</span>
+                  </div>
+                  <p className="text-[10.5px] font-medium text-[#111111]/45 mt-1.5 leading-normal break-keep">{s.sub}</p>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
+
+          {/* 우측: 커뮤니티 거래 구조 비교표 (col-span-7) */}
+          <div className="col-span-7 flex flex-col justify-center pl-8">
+            <span className="text-[10px] font-bold tracking-widest text-emerald-600 uppercase mb-4 block">
+              ECOSYSTEM SCALABILITY (생태계 확장 시뮬레이션)
+            </span>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-[#111111]/10 text-[10px] font-bold text-[#111111]/40 uppercase tracking-wider">
+                    <th className="pb-2.5">커뮤니티</th>
+                    <th className="pb-2.5 text-right">커뮤니티 규모</th>
+                    <th className="pb-2.5 text-center">핵심 운영자</th>
+                    <th className="pb-2.5 text-right">주요 거래 구조</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#111111]/5">
+                  {[
+                    { ko: '탱고', eng: 'TANGO', size: '2,000명', leader: '강사 · DJ · 오거나이저', structure: '수업 · 밀롱가 · 축제' },
+                    { ko: '살사', eng: 'SALSA', size: '30,000명', leader: '강사 · 동호회 운영진', structure: '수업 · 파티 · 공연' },
+                    { ko: '바차타', eng: 'BACHATA', size: '10,000명', leader: '강사 · 팀 리더', structure: '수업 · 행사 · 워크숍' },
+                    { ko: '요가 · 필라테스', eng: 'YOGA & PILATES', size: '300,000+명', leader: '원장 · 강사', structure: '수업 · 예약 · 회원권' },
+                  ].map((row, idx) => (
+                    <tr key={idx} className="text-[12px] hover:bg-white/20 transition-colors" style={{ animationDelay: `${500 + idx * 80}ms` }}>
+                      <td className="py-2.5 font-black text-[#111111] leading-tight">
+                        {row.ko}
+                        <span className="font-['Space_Grotesk'] text-[8.5px] font-bold text-[#111111]/30 block tracking-wider uppercase mt-0.5">{row.eng}</span>
+                      </td>
+                      <td className="py-2.5 text-right font-black text-[#111111]/85 font-['Space_Grotesk']">{row.size}</td>
+                      <td className="py-2.5 text-center font-bold text-[#111111]/50">{row.leader}</td>
+                      <td className="py-2.5 text-right font-black text-emerald-600/80">{row.structure}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        {/* 하단 주석 안내 */}
+        <div className="mt-5 flex justify-between items-center text-[11px] font-bold text-[#111111]/35 tracking-tight pt1-fu pt1-d6">
+          <p>* 국민 1인당 월 평균 약 45만원은 취미·여가·문화·활동에 사용됩니다 (통계청 기준).</p>
+          <p>* WoC는 사교 활동 운영체계(OS)를 통해 이 거대한 경제의 결제 및 정산 인프라를 독점합니다.</p>
         </div>
       </div>
     </div>
@@ -124,8 +399,8 @@ export const Slide3 = () => {
         <h2 className="font-['Space_Grotesk'] text-[44px] md:text-[56px] font-black tracking-[0.05em] text-[#111111]/90 uppercase block leading-none mb-4 pt1-fu">
           THE LAST PLATFORM
         </h2>
-        <p className="text-[16px] md:text-[18px] font-bold text-[#111111]/45 leading-tight tracking-tight mb-12 pt1-fu pt1-d2">
-          아직 지배적 플랫폼이 없습니다
+        <p className="text-[16px] md:text-[18px] font-bold text-[#111111]/45 leading-tight tracking-tight mb-12 pt1-fu pt1-d2 break-keep">
+          커뮤니티 플랫폼은 1. 깊은 인사이트가 필요하고 2. 운영체제(OS) 형태 여야만 하기 때문에 아직 본격적인 시도가 없었습니다
         </p>
 
         <div className="grid grid-cols-12 gap-8 items-stretch pt1-si pt1-d4">
@@ -145,10 +420,10 @@ export const Slide3 = () => {
           {/* 우측: 취미 활동 커뮤니티 경제 공간 */}
           <div className="col-span-5 flex flex-col justify-center pl-4">
             <span className="text-[11px] font-bold tracking-widest text-[#111111]/45 uppercase mb-4">
-              미개척 영역 (취미·활동·커뮤니티 경제)
+              미개척 영역 (취미·활동·커뮤니티를 위한 OS형 플랫폼)
             </span>
             <div className="border border-dashed border-emerald-600/30 bg-emerald-600/[0.01] p-6 rounded-sm flex flex-col justify-center items-center text-center relative group hover:bg-emerald-600/[0.03] transition-all">
-              <span className="text-[18px] font-black text-[#111111]/40 mb-1">No Winner Yet</span>
+              <span className="text-[18px] font-black text-[#111111]/40 mb-1">커뮤니티 경제 / Community Economy</span>
               <span className="text-xl font-bold text-emerald-600 my-1">➔</span>
               <span className="text-[24px] font-black text-emerald-600 tracking-tight leading-none">WoC OS</span>
               <div className="absolute top-2 right-2 flex items-center justify-center w-5 h-5 rounded-full bg-emerald-50 border border-emerald-100">
@@ -162,109 +437,109 @@ export const Slide3 = () => {
   );
 };
 
-// Slide 4: WHY NO WINNER YET
 export const Slide4 = () => {
-  const tools = [
-    { title: '위버스', target: '팬덤 전용', limit: '아티스트-팬 일방향 소통 한계' },
-    { title: '클래스101', target: '교육 전용', limit: '동영상 시청 중심, 교류 없음' },
-    { title: '온오프믹스', target: '행사 전용', limit: '일회성 단순 예약에 그침' },
-    { title: '커뮤니티 플랫폼', target: '소통 전용', limit: '게시판 중심, 정산/결제 불가' }
+  const fragmentedCards = [
+    { title: '커뮤니티', sub: '네이버카페 · 네이버밴드 · 페이스북 그룹' },
+    { title: '소통', sub: '인스타그램 · 카카오톡 · 디스코드' },
+    { title: '교육', sub: '클래스101 · 탈잉' },
+    { title: '행사', sub: '온오프믹스 · 이벤터스' },
+    { title: '결제', sub: '토스 · PG 시스템' },
+  ];
+
+  const osModules = [
+    '커뮤니티', '소통', '클래스', '이벤트',
+    '결제', '정산', '멤버십', '그룹관리', '글로벌'
   ];
 
   return (
-    <div className="relative z-10 flex flex-col w-full h-full bg-[#fcf8f8] text-[#111111] px-[100px] justify-center overflow-hidden">
-      <div className="max-w-[1200px] w-full relative z-10">
-        <h2 className="font-['Space_Grotesk'] text-[44px] md:text-[56px] font-black tracking-[0.05em] text-[#111111]/90 uppercase block leading-none mb-4 pt1-fu">
-          WHY NO WINNER YET
-        </h2>
-        <p className="text-[16px] md:text-[18px] font-bold text-[#111111]/45 leading-tight tracking-tight mb-12 pt1-fu pt1-d2">
-          문제는 기능이 아니라 운영입니다
-        </p>
-
-        <div className="grid grid-cols-12 gap-8 items-stretch border-t border-b border-[#111111]/10 py-10 pt1-si pt1-d3">
-          {/* 좌측: 기존 대표 툴들 */}
-          <div className="col-span-7 grid grid-cols-2 gap-4 border-r border-[#111111]/10 pr-8">
-            {tools.map((t) => (
-              <div key={t.title} className="border border-[#111111]/10 bg-white/40 p-5 rounded-sm flex flex-col justify-between">
-                <div>
-                  <div className="flex justify-between items-baseline mb-2">
-                    <span className="text-[18px] font-black text-[#111111]">{t.title}</span>
-                    <span className="text-[10px] font-black text-[#111111]/40 uppercase tracking-widest">{t.target}</span>
-                  </div>
-                  <p className="text-[12.5px] text-[#111111]/50 leading-relaxed break-keep">{t.limit}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* 우측: WoC 중앙 허브 */}
-          <div className="col-span-5 flex flex-col justify-center items-center text-center pl-6">
-            <span className="text-[11px] font-bold tracking-widest text-emerald-600 uppercase mb-4 block">THE WOC OS SOLUTION</span>
-            <div className="border-2 border-emerald-600 bg-emerald-600/[0.02] p-8 rounded-sm w-full">
-              <span className="text-[28px] font-black text-[#111111] leading-none block mb-3">WoC OS</span>
-              <p className="text-[16px] font-black text-emerald-600 leading-snug tracking-tight break-keep">
-                기능은 많지만<br/>운영체계는 없었습니다
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Slide 5: ONE PLATFORM
-export const Slide5 = () => {
-  const ringItems = [
-    { name: '커뮤니티', x: 250, y: 70 },
-    { name: '클래스', x: 377, y: 123 },
-    { name: '행사', x: 430, y: 250 },
-    { name: '결제', x: 377, y: 377 },
-    { name: '정산', x: 250, y: 430 },
-    { name: '장소', x: 123, y: 377 },
-    { name: '멤버십', x: 70, y: 250 },
-    { name: '회원관리', x: 123, y: 123 },
-  ];
-
-  return (
-    <div className="relative z-10 flex flex-col w-full h-full bg-[#fcf8f8] text-[#111111] px-[80px] justify-center overflow-hidden">
+    <div className="relative z-10 flex flex-col w-full h-full bg-[#fcf8f8] text-[#111111] px-[80px] py-[40px] justify-center overflow-hidden">
       <div className="max-w-[1300px] w-full mx-auto relative z-10">
         <h2 className="font-['Space_Grotesk'] text-[44px] md:text-[56px] font-black tracking-[0.05em] text-[#111111]/90 uppercase block leading-none mb-4 pt1-fu">
           ONE PLATFORM
         </h2>
-        <p className="text-[16px] md:text-[18px] font-bold text-[#111111]/45 leading-tight tracking-tight mb-4 pt1-fu pt1-d2">
-          수많은 커뮤니티를 하나의 운영체계로
+        <p className="text-[16px] md:text-[18px] font-bold text-[#111111]/45 leading-tight tracking-tight mb-8 pt1-fu pt1-d2">
+          사람은 연결되었지만, 활동은 연결되지 않았습니다
         </p>
 
-        <div className="flex justify-center items-center pt1-si pt1-d4 relative h-[450px]">
-          <div className="w-[360px] h-[360px] relative flex items-center justify-center bg-white/20 rounded-full border border-[#111111]/10">
-            <div className="w-[180px] h-[180px] rounded-full border-4 border-emerald-600 bg-white flex flex-col items-center justify-center p-4 shadow-[0_15px_45px_rgba(0,0,0,0.06)] z-10 text-center">
-              <h4 className="text-[26px] font-black tracking-tighter text-[#111111] leading-none mb-1">
-                WoC OS
-              </h4>
-              <p className="text-[9.5px] font-black text-emerald-600 tracking-widest uppercase">Operating System</p>
+        <div className="grid grid-cols-12 gap-8 items-stretch border-t border-b border-[#111111]/10 py-8 pt1-si pt1-d3">
+          {/* 좌측: 분절된 활동 구조 */}
+          <div className="col-span-5 flex flex-col justify-center border-r border-[#111111]/10 pr-8 gap-4">
+            <div>
+              <span className="text-[11px] font-bold tracking-widest text-red-500/70 uppercase mb-1 block">
+                FRAGMENTED SERVICES
+              </span>
+              <span className="text-[13px] font-bold text-[#111111]/40 block mb-4">
+                각각은 존재했지만 연결되어 있지 않았습니다
+              </span>
             </div>
             
-            <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" viewBox="0 0 500 500">
-              <circle cx={250} cy={250} r={180} fill="none" stroke="#111111" strokeWidth="0.75" strokeDasharray="6 6" opacity="0.2" />
-              {ringItems.map(item => (
-                <line key={item.name} x1={250} y1={250} x2={item.x} y2={item.y} stroke="#059669" strokeWidth="1" opacity="0.3" />
+            <div className="flex flex-col gap-3">
+              {fragmentedCards.map((card) => (
+                <div 
+                  key={card.title} 
+                  className="border border-[#111111]/10 bg-white/40 px-4 py-2.5 rounded-sm flex justify-between items-center hover:scale-[1.01] transition-transform duration-200"
+                >
+                  <span className="text-[14px] font-black text-[#111111]">{card.title}</span>
+                  <span className="text-[12px] font-semibold text-[#111111]/45">{card.sub}</span>
+                </div>
               ))}
-            </svg>
+            </div>
+          </div>
 
-            {ringItems.map((item) => (
-              <div
-                key={item.name}
-                style={{
-                  left: `${item.x}px`,
-                  top: `${item.y}px`,
-                  transform: 'translate(-50%, -50%)',
-                }}
-                className="absolute px-4 py-2 rounded-xl border border-emerald-600/10 bg-emerald-500/[0.02] text-[13.5px] font-black text-[#111111]/70 shadow-2xs z-20 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 transition-all duration-300 cursor-default"
-              >
-                {item.name}
+          {/* 우측: WoC 통합 솔루션 */}
+          <div className="col-span-7 flex flex-col justify-center pl-8 relative">
+            <span className="text-[11px] font-bold tracking-widest text-emerald-600 uppercase mb-4 block">
+              THE WOC OS SOLUTION
+            </span>
+            
+            {/* 원형 통합 구조도 */}
+            <div className="relative w-[300px] h-[300px] flex items-center justify-center bg-emerald-600/[0.01] border border-dashed border-emerald-600/15 rounded-full mx-auto">
+              <div className="w-[130px] h-[130px] rounded-full border-2 border-emerald-600 bg-white flex flex-col items-center justify-center p-3 text-center shadow-md z-10">
+                <span className="font-['Space_Grotesk'] text-[22px] font-black text-[#111111] leading-none mb-1">WoC OS</span>
+                <span className="text-[9.5px] font-extrabold text-emerald-600 tracking-tight leading-none mt-1">커뮤니티 OS</span>
               </div>
-            ))}
+              
+              {/* 9대 모듈 배치 */}
+              {osModules.map((mod, idx) => {
+                const angle = -90 + (idx * 360) / 9;
+                const radius = 110;
+                const x = 150 + radius * Math.cos((angle * Math.PI) / 180);
+                const y = 150 + radius * Math.sin((angle * Math.PI) / 180);
+                return (
+                  <div
+                    key={mod}
+                    style={{
+                      left: `${x}px`,
+                      top: `${y}px`,
+                      transform: 'translate(-50%, -50%)',
+                    }}
+                    className="absolute px-3.5 py-1.5 border border-emerald-600/20 bg-white rounded-full text-[11px] font-black text-[#111111]/85 shadow-3xs whitespace-nowrap tracking-tight"
+                  >
+                    {mod}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* 우측 핵심 카피 */}
+            <div className="mt-6 text-center">
+              <span className="font-['Space_Grotesk'] text-[11px] font-black tracking-widest text-emerald-600 uppercase block mb-1">
+                Everything Connected.
+              </span>
+              <span className="text-[16px] font-black text-[#111111] tracking-tight">
+                모든 활동이 하나의 시스템으로 연결됩니다.
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* 하단 결론 및 요약 문장 */}
+        <div className="mt-8 border-t border-[#111111]/10 pt-5 grid grid-cols-2 gap-8 text-[12.5px] font-semibold text-[#111111]/60 leading-relaxed max-w-[1100px] mx-auto pt1-fu pt1-d6">
+          <div className="text-right border-r border-[#111111]/10 pr-8">
+            기존 서비스는 소통, 교육, 행사, 결제를 <span className="text-red-500/80 font-bold">각각 해결했습니다.</span>
+          </div>
+          <div className="text-left pl-8">
+            WoC는 사람의 활동이 시작되고 끝나는 전 과정을 <span className="text-emerald-600 font-black">하나의 운영체계 안에서 연결합니다.</span>
           </div>
         </div>
       </div>
@@ -275,61 +550,61 @@ export const Slide5 = () => {
 // Slide 6: LIFE GOES ON_
 export const Slide6 = () => {
   const categories = [
-    { num: '01', title: 'Stage', items: '살사 · 탱고 · 스윙' },
-    { num: '02', title: 'Road', items: '러닝 · 자전거 · 캠핑' },
-    { num: '03', title: 'Table', items: '위스키 · 요리 · 커피' },
-    { num: '04', title: 'Muse', items: '영화 · 음악 · 미술' },
-    { num: '05', title: 'Mind', items: '어학 · 글쓰기 · 식물' }
+    { title: '무대', eng: 'STAGE', items: ['탱고', '살사', '바차타', '플라멩코', '발레'] },
+    { title: '야외', eng: 'ROAD', items: ['러닝', '자전거', '캠핑', '트레킹', '클라이밍'] },
+    { title: '창작', eng: 'TABLE', items: ['커피', '요리', '베이킹', '도예', '목공'] },
+    { title: '예술', eng: 'MUSE', items: ['K-Pop', '영화', '애니메이션', '문학', '바이닐'] },
+    { title: '일상', eng: 'MIND', items: ['영어', '일본어', '글쓰기', '인테리어', '식물'] },
   ];
 
   return (
-    <div className="relative z-10 flex flex-col w-full h-full bg-[#fcf8f8] text-[#111111] px-[80px] justify-center overflow-hidden">
+    <div 
+      className="relative z-10 flex flex-col w-full h-full text-[#111111] px-[80px] justify-center overflow-hidden bg-cover bg-center"
+      style={{ backgroundImage: "url('/lifegoeson_v3.jpg')" }}
+    >
+      {/* 배경 이미지의 가독성을 위한 은은한 흰색 마스크 레이어 */}
+      <div className="absolute inset-0 bg-white/70 z-0" />
+
       <div className="max-w-[1300px] w-full mx-auto relative z-10">
         <h2 className="font-['Space_Grotesk'] text-[44px] md:text-[56px] font-black tracking-[0.05em] text-[#111111]/90 uppercase block leading-none mb-4 pt1-fu">
           LIFE GOES ON_
         </h2>
-        <p className="text-[16px] md:text-[18px] font-bold text-[#111111]/45 leading-tight tracking-tight mb-12 pt1-fu pt1-d2">
+        <p className="text-[16px] md:text-[18px] font-bold text-[#111111]/45 leading-tight tracking-tight mb-8 pt1-fu pt1-d2">
           사람들은 하나의 취미만 하지 않습니다 (Ecosystem Network Effect)
         </p>
 
-        <div className="grid grid-cols-12 gap-8 items-stretch pt1-si pt1-d4">
-          {/* 좌측: 카테고리 정보 요약 */}
-          <div className="col-span-4 flex flex-col gap-2 border-r border-[#111111]/10 pr-6">
-            <span className="text-[10px] font-bold tracking-widest text-[#111111]/45 uppercase block mb-2">WoC Life Themes</span>
-            <div className="flex flex-col gap-2">
-              {categories.map((cat, idx) => (
-                <div key={idx} className="border border-[#111111]/10 bg-white/40 px-4 py-2.5 rounded-sm flex justify-between items-center">
-                  <span className="text-[13px] font-black text-[#111111]/80">{cat.title}</span>
-                  <span className="text-[11px] font-bold text-[#111111]/40">{cat.items}</span>
-                </div>
-              ))}
+        <div className="grid grid-cols-5 gap-6 pt1-si pt1-d4">
+          {categories.map((cat, idx) => (
+            <div key={cat.title} className="flex flex-col border border-[#111111]/10 bg-white/80 p-5 pt1-fi shadow-2xs backdrop-blur-2xs" style={{ animationDelay: `${400 + idx * 80}ms` }}>
+              <span className="text-[17px] font-black tracking-tight text-[#111111] border-b border-[#111111]/10 pb-2 mb-4 block leading-tight">
+                {cat.title}
+                <span className="font-['Space_Grotesk'] text-[10px] font-bold tracking-wider text-[#111111]/30 uppercase block mt-0.5">{cat.eng}</span>
+              </span>
+              <ul className="flex flex-col gap-2.5">
+                {cat.items.map((item) => (
+                  <li key={item} className="text-[13.5px] font-bold text-[#111111]/60 tracking-tight flex items-center gap-2">
+                    <span className="w-1 h-1 bg-[#111111]/25 rounded-full shrink-0"></span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
             </div>
-          </div>
+          ))}
+        </div>
 
-          {/* 우측: 거대하고 강력한 네트워크 효과 흐름 */}
-          <div className="col-span-8 flex flex-col justify-center bg-emerald-600/[0.02] border border-emerald-600/10 p-8 rounded-sm text-center">
-            <span className="text-[11px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-8 block font-['Space_Grotesk']">Network Effect Dynamics</span>
-            <div className="flex justify-around items-center max-w-[700px] mx-auto w-full relative">
-              <div className="flex flex-col items-center">
-                <span className="font-['Space_Grotesk'] text-[24px] font-black text-[#111111]/90">People move.</span>
-                <span className="text-[11px] font-bold text-[#111111]/40 mt-1">사용자는 취미를 이동함</span>
-              </div>
-              <span className="text-[20px] font-black text-emerald-600 animate-pulse">➔</span>
-              <div className="flex flex-col items-center">
-                <span className="font-['Space_Grotesk'] text-[24px] font-black text-[#111111]/90">Communities move.</span>
-                <span className="text-[11px] font-bold text-[#111111]/40 mt-1">커뮤니티가 연쇄 이동함</span>
-              </div>
-              <span className="text-[20px] font-black text-emerald-600 animate-pulse">➔</span>
-              <div className="flex flex-col items-center">
-                <span className="font-['Space_Grotesk'] text-[24px] font-black text-[#111111]/90">Money moves.</span>
-                <span className="text-[11px] font-bold text-[#111111]/40 mt-1">소비액과 결제망이 확장됨</span>
-              </div>
-              <span className="text-[20px] font-black text-emerald-600 animate-pulse">➔</span>
-              <div className="flex flex-col items-center">
-                <span className="font-['Space_Grotesk'] text-[28px] font-black text-emerald-600">WoC grows.</span>
-                <span className="text-[11px] font-black text-emerald-600/60 mt-1">플랫폼의 폭발적 성장</span>
-              </div>
-            </div>
+        <div className="mt-8 pt-5 border-t border-[#111111]/10 pt1-si pt1-d6">
+          <span className="text-[11.5px] font-black tracking-tight text-[#111111]/60 block mb-4">
+            생태계 확장 파이프라인
+            <span className="font-['Space_Grotesk'] text-[9.5px] font-bold tracking-widest text-[#111111]/30 uppercase ml-2">ECOSYSTEM PIPELINE</span>
+          </span>
+          <div className="flex items-center justify-between max-w-[850px] text-[14px] md:text-[15px] font-black text-[#111111]">
+            <div className="flex items-center justify-center px-4 py-2 border border-[#111111]/20 bg-white/80 text-[#111111]/70">WoC 코어</div>
+            <span className="text-[#111111]/30 font-light">➔</span>
+            <div className="flex items-center justify-center px-4 py-2 border border-[#111111]/20 bg-white/80 text-[#111111]/70">5대 핵심 테마 (무대 · 야외 · 창작 · 예술 · 일상)</div>
+            <span className="text-[#111111]/30 font-light">➔</span>
+            <div className="flex items-center justify-center px-4 py-2 border border-[#111111]/20 bg-white/80 text-[#111111]/70">수백 개의 활동</div>
+            <span className="text-[#111111]/30 font-light">➔</span>
+            <div className="flex items-center justify-center px-4.5 py-2 border border-[#111111] bg-[#111111] text-[#fcf8f8]">수천 개의 커뮤니티</div>
           </div>
         </div>
       </div>
@@ -339,73 +614,141 @@ export const Slide6 = () => {
 
 // Slide 7: FRAGMENTED WORLD
 export const Slide7 = () => {
-  const legacyItems = ['커뮤니티', '교육', '행사', '예약', '상점', '운영'];
-  const cities = ['서울', '부산', '도쿄', '홍콩', '싱가포르', '부에노스아이레스'];
+  const legacyItems = [
+    { cat: '커뮤니티', list: '네이버카페 · 밴드 · 페이스북 그룹' },
+    { cat: '교육', list: '학원 · 클래스 플랫폼' },
+    { cat: '행사', list: '모임 플랫폼 · 행사 플랫폼' },
+    { cat: '상점', list: '쇼핑몰 · 예약 시스템' },
+    { cat: '운영', list: '엑셀 · 문자 · 카카오톡' },
+  ];
+
+  const problem2Cities = ['서울', '부산', '도쿄', '뉴욕', '파리', '부에노스아이레스'];
+
+  const wocFeatures = [
+    '커뮤니케이션', '클래스', '이벤트', '장소',
+    '마켓', '멤버십', '회원관리', '그룹운영'
+  ];
+
+  const networkCities = [
+    { name: '서울', x: 425, y: 250 },
+    { name: '부산', x: 370, y: 370 },
+    { name: '도쿄', x: 250, y: 425 },
+    { name: '뉴욕', x: 130, y: 370 },
+    { name: '런던', x: 75, y: 250 },
+    { name: '파리', x: 130, y: 130 },
+    { name: '부에노스아이레스', x: 250, y: 75 },
+    { name: '싱가포르', x: 370, y: 130 },
+  ];
 
   return (
-    <div className="relative z-10 flex flex-col w-full h-full bg-[#fcf8f8] text-[#111111] px-[80px] justify-center overflow-hidden">
-      <div className="max-w-[1300px] w-full mx-auto relative z-10">
-        <h2 className="font-['Space_Grotesk'] text-[44px] md:text-[56px] font-black tracking-[0.05em] text-[#111111]/90 uppercase block leading-none mb-4 pt1-fu">
-          FRAGMENTED WORLD
+    <div className="relative z-10 flex flex-col items-center justify-center w-full h-full px-[80px] bg-[#fcf8f8] overflow-hidden">
+      <div className="max-w-[1300px] w-full mb-10 pt1-fu">
+        <h2 className="font-['Space_Grotesk'] text-[44px] md:text-[56px] font-black tracking-[0.05em] text-[#111111]/90 uppercase block leading-none mb-4">
+          BROKEN EXPERIENCE
         </h2>
-        <p className="text-[16px] md:text-[18px] font-bold text-[#111111]/45 leading-tight tracking-tight mb-12 pt1-fu pt1-d2">
-          기존 서비스는 분리되어 있습니다
+        <p className="text-[16px] md:text-[18px] font-bold text-[#111111]/45 leading-tight tracking-tight pt1-fu pt1-d2">
+          취미를 위해 너무나 많은 App들을 떠돌아야합니다
         </p>
+      </div>
 
-        <div className="grid grid-cols-12 gap-10 items-stretch">
-          {/* 좌측: Problem 01 & 02 */}
-          <div className="col-span-5 flex flex-col gap-6 border-r border-[#111111]/10 pr-10 pt1-sl pt1-d3">
-            <div className="border border-red-500/10 bg-red-500/[0.01] p-5 rounded-sm">
-              <span className="text-[10px] font-bold tracking-widest text-red-500/70 uppercase block mb-1">Problem 01 / 파편화</span>
-              <p className="text-[13px] text-[#111111]/50 mb-3 font-medium">각기 다른 도구로 흩어진 운영</p>
-              <div className="flex flex-wrap gap-1.5">
-                {legacyItems.map(item => (
-                  <span key={item} className="px-2 py-0.5 bg-red-500/[0.03] border border-red-500/15 rounded-sm text-[12px] font-bold text-red-500/60">{item}</span>
-                ))}
-              </div>
+      <div className="grid grid-cols-12 gap-10 w-full max-w-[1300px] items-stretch">
+        <div className="col-span-5 flex flex-col justify-center gap-8 border-r border-[#111111]/10 pr-10 pt1-sl pt1-d3">
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold tracking-widest text-red-500/70 uppercase">Problem 01</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500/40"></span>
             </div>
-
-            <div className="border border-red-500/10 bg-red-500/[0.01] p-5 rounded-sm">
-              <span className="text-[10px] font-bold tracking-widest text-red-500/70 uppercase block mb-1">Problem 02 / 로컬화</span>
-              <p className="text-[13px] text-[#111111]/50 mb-3 font-medium">지역에 갇혀 교류 없는 생태계</p>
-              <div className="flex flex-wrap gap-1.5">
-                {cities.map(city => (
-                  <span key={city} className="px-2 py-0.5 bg-red-500/[0.03] border border-red-500/15 rounded-sm text-[12px] font-bold text-red-500/60">{city}</span>
-                ))}
-              </div>
+            <h3 className="text-[18px] md:text-[22px] font-black text-[#111111] tracking-tight leading-tight">
+              파편화된 운영
+            </h3>
+            <div className="flex flex-col gap-2 mt-2">
+              {legacyItems.map((item) => (
+                <div key={item.cat} className="flex items-baseline gap-3 text-[13px] md:text-[14.5px]">
+                  <span className="w-16 shrink-0 font-black text-[#111111]/70 border-r border-[#111111]/15 pr-2.5 text-right">
+                    {item.cat}
+                  </span>
+                  <span className="font-semibold text-[#111111]/55 tracking-tight">
+                    {item.list}
+                  </span>
+                </div>
+              ))}
             </div>
+            <p className="text-[12px] font-bold text-red-500/70 tracking-tight leading-tight mt-1">
+              * 각 기능은 존재하지만 서로 유기적으로 연결되어 있지 않습니다.
+            </p>
           </div>
 
-          {/* 우측: WoC 중앙 허브 */}
-          <div className="col-span-7 flex flex-col items-center justify-center pl-10 pt1-sr pt1-d4 relative">
-            <div className="w-[360px] h-[360px] relative flex items-center justify-center bg-white/10 rounded-full border border-[#111111]/5">
-              <div className="w-[180px] h-[180px] rounded-full border-2 border-[#111111] bg-white flex flex-col items-center justify-center p-4 shadow-[0_15px_40px_rgba(0,0,0,0.05)] z-10 text-center">
-                <h4 className="text-[28px] font-black tracking-tighter text-[#111111] leading-none mb-1">
-                  WoC
-                </h4>
-                <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-2">통합 & 글로벌</p>
-                <div className="w-8 h-[1.5px] bg-[#111111] mb-2" />
-                <p className="text-[11px] font-bold leading-tight text-[#111111]/60 tracking-tight">
-                  파편화에서 통합으로<br/>지역에서 글로벌로
-                </p>
-              </div>
-
-              {cities.map((city, idx) => {
-                const angles = [0, 60, 120, 180, 240, 300];
-                const rad = (angles[idx] * Math.PI) / 180;
-                const x = 180 + Math.cos(rad) * 130;
-                const y = 180 + Math.sin(rad) * 130;
-                return (
-                  <div
-                    key={city}
-                    style={{ left: `${x}px`, top: `${y}px`, transform: 'translate(-50%, -50%)' }}
-                    className="absolute px-2.5 py-1 rounded-full border border-[#111111]/15 bg-white text-[11px] font-black text-[#111111] shadow-xs z-20"
-                  >
-                    {city}
-                  </div>
-                );
-              })}
+          <div className="flex flex-col gap-3 pt-6 border-t border-[#111111]/5">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold tracking-widest text-red-500/70 uppercase">Problem 02</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500/40"></span>
             </div>
+            <h3 className="text-[18px] md:text-[22px] font-black text-[#111111] tracking-tight leading-tight">
+              지역에 갇힌 커뮤니티
+            </h3>
+            <div className="flex flex-wrap gap-2 mt-1">
+              {problem2Cities.map((city) => (
+                <span key={city} className="px-2.5 py-1 border border-red-500/10 bg-red-500/[0.02] rounded-full text-[12.5px] font-semibold text-red-500/50">
+                  {city}
+                </span>
+              ))}
+            </div>
+            <p className="text-[12.5px] font-medium text-[#111111]/60 leading-tight">
+              각 지역 커뮤니티가 독립적으로 운영됩니다.
+            </p>
+            <p className="text-[12px] font-bold text-red-500/70 tracking-tight leading-tight mt-1">
+              * 사람도 정보도 행사도 지역 단위로 단절되어 있습니다.
+            </p>
+          </div>
+        </div>
+
+        <div className="col-span-7 flex flex-col items-center justify-center pl-10 relative pt1-sr pt1-d4 z-0">
+          <span className="text-[11px] font-bold tracking-widest text-[#111111]/45 uppercase mb-4 block self-start">
+            WoC Solution / Global Network Infrastructure
+          </span>
+          <div className="w-[500px] h-[500px] relative flex items-center justify-center bg-white/10 rounded-full border border-[#111111]/5 shadow-[inset_0_0_30px_rgba(0,0,0,0.01)] scale-[0.8] 2xl:scale-95 origin-center">
+            <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" viewBox="0 0 500 500">
+              {networkCities.map((city) => (
+                <line
+                  key={city.name}
+                  x1={250}
+                  y1={250}
+                  x2={city.x}
+                  y2={city.y}
+                  stroke="#111111"
+                  strokeWidth="0.75"
+                  strokeDasharray="4 4"
+                  opacity="0.3"
+                  className="animate-pulse"
+                />
+              ))}
+            </svg>
+
+            <div className="w-[210px] h-[210px] rounded-full border-[2.5px] border-[#111111] bg-white flex flex-col items-center justify-center p-5 shadow-[0_15px_45px_rgba(0,0,0,0.06)] z-10 text-center relative group hover:scale-[1.02] transition-transform duration-300">
+              <h4 className="text-[30px] font-black tracking-tighter text-[#111111] mb-1 leading-none">
+                WoC
+              </h4>
+              <div className="w-10 h-[1.5px] bg-[#111111] mb-2.5" />
+              <p className="text-[10.5px] font-bold leading-[1.4] text-[#111111]/70 tracking-tight break-keep max-w-[160px]">
+                {wocFeatures.join(' · ')}
+              </p>
+            </div>
+
+            {networkCities.map((city, idx) => (
+              <div
+                key={city.name}
+                style={{
+                  left: `${city.x}px`,
+                  top: `${city.y}px`,
+                  transform: 'translate(-50%, -50%)',
+                  animationDelay: `${600 + idx * 80}ms`
+                }}
+                className="absolute px-3 py-1.5 rounded-full border border-[#111111]/15 bg-white text-[12.5px] font-black text-[#111111] shadow-sm z-20 hover:border-[#111111] hover:shadow-md transition-all duration-200 cursor-default flex items-center gap-1.5 pt1-fi"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
+                {city.name}
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -415,7 +758,12 @@ export const Slide7 = () => {
 
 // Slide 8: THE FIRST SOCIETY
 export const Slide8 = () => {
-  const validations = ['Community', 'Class', 'Event', 'Payment', 'Settlement', 'Global Visitors'];
+  const progressItems = [
+    { step: '01', text: '현재 2,000명 중 300명 (약 15%) 회원 확보 완료' },
+    { step: '02', text: '앱 출시(Android/iOS) 및 프로모션을 통해 3Q 내 100% 달성 가능' },
+    { step: '03', text: '신용카드 및 해외 결제 시스템 도입 완료 (3Q ~ 4Q)' },
+    { step: '04', text: '아시아 및 글로벌 참여자 확장 ➔ 완전체 탱고월드 App 완성 (4Q)' },
+  ];
 
   return (
     <div className="relative z-10 flex flex-col w-full h-full bg-[#fcf8f8] text-[#111111] px-[100px] justify-center overflow-hidden">
@@ -427,20 +775,32 @@ export const Slide8 = () => {
           작은 커뮤니티에서 먼저 증명합니다
         </p>
 
-        <div className="grid grid-cols-12 gap-10 items-stretch border-t border-b border-[#111111]/10 py-12">
+        <div className="grid grid-cols-12 gap-10 items-stretch border-t border-b border-[#111111]/10 py-8">
           <div className="col-span-5 flex flex-col justify-center pt1-sl pt1-d3">
-            <span className="font-['Space_Grotesk'] text-[18px] font-black text-emerald-600 mb-2">2026</span>
+            <span className="font-['Space_Grotesk'] text-[18px] font-black text-emerald-600 mb-2">2026 3Q</span>
             <span className="text-[72px] font-black text-[#111111] leading-none tracking-tighter mb-4">Tango</span>
             <span className="text-[24px] font-bold text-[#111111]/60 tracking-tight">2,000 Members</span>
           </div>
 
           <div className="col-span-7 flex flex-col justify-center pl-10 border-l border-[#111111]/10 pt1-sr pt1-d4">
-            <span className="text-[10px] font-bold tracking-widest text-[#111111]/45 uppercase mb-6 block">CORE VALIDATION LIST</span>
-            <div className="grid grid-cols-2 gap-4">
-              {validations.map(val => (
-                <div key={val} className="flex items-center gap-3 bg-[#111111]/[0.01] border border-[#111111]/5 px-5 py-3.5 rounded-sm">
-                  <span className="text-emerald-600 font-bold text-[14px]">✓</span>
-                  <span className="text-[15px] font-black text-[#111111]/70">{val}</span>
+            <div className="mb-4">
+              <span className="text-[11px] font-bold tracking-widest text-emerald-600 uppercase mb-1 block">
+                CURRENT PROGRESS
+              </span>
+              <span className="text-[13px] font-bold text-[#111111]/40 block">
+                실질적인 현재 진행 상황 및 마일스톤
+              </span>
+            </div>
+            
+            <div className="flex flex-col gap-3">
+              {progressItems.map((item) => (
+                <div key={item.step} className="flex items-center gap-4 bg-white border border-[#111111]/10 p-3.5 rounded-sm hover:scale-[1.01] transition-transform duration-200 shadow-3xs">
+                  <span className="font-['Space_Grotesk'] text-[15px] font-black text-emerald-600 shrink-0">
+                    {item.step}
+                  </span>
+                  <span className="text-[13.5px] font-black text-[#111111]/85 tracking-tight break-keep">
+                    {item.text}
+                  </span>
                 </div>
               ))}
             </div>
@@ -449,7 +809,7 @@ export const Slide8 = () => {
 
         <div className="mt-8 flex justify-between items-center pt1-fu pt1-d6">
           <p className="text-[12.5px] font-semibold text-[#111111]/45 tracking-tight">
-            * 시장 확사 목적이 아닌, 운영체계(OS) 모델의 무결한 작동을 검증했습니다.
+            * 시장 확장 목적이 아닌, 운영체계(OS) 모델의 무결한 작동을 검증했습니다.
           </p>
           <span className="font-['Space_Grotesk'] text-[12px] font-black tracking-[0.2em] text-emerald-600 uppercase">
             Community OS Validation
@@ -554,7 +914,7 @@ export const Slide10 = () => (
             검증된 운영체계를 다른 커뮤니티에 복제합니다
           </p>
         </div>
-        <span className="font-['Space_Grotesk'] text-[36px] font-black text-emerald-600 pt1-fu">2027 H1</span>
+        <span className="font-['Space_Grotesk'] text-[36px] font-black text-emerald-600 pt1-fu">2026 4Q</span>
       </div>
 
       <div className="grid grid-cols-12 gap-8 items-stretch border-t border-b border-[#111111]/10 py-10">
@@ -578,19 +938,19 @@ export const Slide10 = () => (
           <span className="text-[10px] font-bold tracking-widest text-[#111111]/45 uppercase mb-6 block text-center">REPLICATION MECHANISM</span>
           
           <div className="grid grid-cols-4 gap-4 items-center mb-8 relative">
-            <div className="border border-[#111111]/10 bg-white p-4 rounded-sm text-center shadow-3xs z-10">
+            <div className="relative z-10 border border-[#111111]/10 bg-white p-4 rounded-sm text-center shadow-3xs">
               <span className="text-[11px] text-[#111111]/40 block mb-1">Step 01</span>
               <span className="text-[14px] font-black text-[#111111]">Leader Network</span>
             </div>
-            <div className="border border-emerald-600 bg-emerald-500/[0.03] p-4 rounded-sm text-center shadow-3xs z-10">
+            <div className="relative z-10 border border-emerald-600 bg-[#f0fdf4] p-4 rounded-sm text-center shadow-3xs">
               <span className="text-[11px] text-emerald-600/50 block mb-1">Step 02</span>
               <span className="text-[14px] font-black text-emerald-600">WoC OS</span>
             </div>
-            <div className="border border-[#111111]/10 bg-white p-4 rounded-sm text-center shadow-3xs z-10">
+            <div className="relative z-10 border border-[#111111]/10 bg-white p-4 rounded-sm text-center shadow-3xs">
               <span className="text-[11px] text-[#111111]/40 block mb-1">Step 03</span>
               <span className="text-[14px] font-black text-[#111111]">Community Org</span>
             </div>
-            <div className="border border-emerald-600/20 bg-white p-4 rounded-sm text-center shadow-3xs z-10">
+            <div className="relative z-10 border border-emerald-600/20 bg-white p-4 rounded-sm text-center shadow-3xs">
               <span className="text-[11px] text-[#111111]/40 block mb-1">Step 04</span>
               <span className="text-[14px] font-black text-emerald-600">Replication</span>
             </div>
@@ -646,7 +1006,7 @@ export const Slide11 = () => (
             더 큰 시장에서 새로운 워크플로를 검증합니다
           </p>
         </div>
-        <span className="font-['Space_Grotesk'] text-[36px] font-black text-emerald-600 pt1-fu">2027 H2</span>
+        <span className="font-['Space_Grotesk'] text-[36px] font-black text-emerald-600 pt1-fu">2027 H1</span>
       </div>
 
       <div className="grid grid-cols-12 gap-8 items-stretch border-t border-b border-[#111111]/10 py-10">
@@ -655,11 +1015,11 @@ export const Slide11 = () => (
           <span className="text-[10px] font-bold tracking-widest text-[#111111]/45 uppercase mb-3 block">COMMUNITY WORKFLOW</span>
           <div className="bg-[#111111]/[0.01] border border-[#111111]/5 p-6 rounded-sm text-center">
             <div className="flex justify-center items-center gap-3 mb-2">
-              <span className="font-black text-[#111111]">탱고</span>
-              <span className="text-[#111111]/30">➔</span>
-              <span className="font-black text-[#111111]">살사</span>
-              <span className="text-[#111111]/30">➔</span>
-              <span className="font-black text-[#111111]">바차타</span>
+              <span className="text-[20px] font-black text-[#111111]">탱고</span>
+              <span className="text-emerald-600 text-[18px] font-black">➔</span>
+              <span className="text-[20px] font-black text-[#111111]">살사</span>
+              <span className="text-emerald-600 text-[18px] font-black">➔</span>
+              <span className="text-[20px] font-black text-[#111111]">바차타</span>
             </div>
             <p className="text-[12.5px] text-[#111111]/45 mt-3 leading-relaxed">
               기본적인 모임 생성, 소셜 결제, 파티 기획, 친목 교류 위주의 수평적인 모임 구조
@@ -671,14 +1031,20 @@ export const Slide11 = () => (
         <div className="col-span-2 flex flex-col justify-center items-center pt1-fi pt1-d4 text-emerald-600 font-bold text-center">
           <span className="text-[11px] uppercase tracking-wider block mb-1">Scale Up</span>
           <span className="text-[28px] font-black leading-none mb-1">➔</span>
+          <span className="text-[14px] font-black text-emerald-600 block mb-1.5 break-keep">웰니스의 유사도 90%</span>
           <span className="text-[10px] uppercase tracking-widest text-[#111111]/40 block">Complexity</span>
         </div>
 
         {/* 우측: 더 큰 매스마켓 (학원/교육 웰니스 시장) */}
         <div className="col-span-5 flex flex-col justify-center pl-8 pt1-sr pt1-d3">
           <span className="text-[10px] font-bold tracking-widest text-[#111111]/45 uppercase mb-3 block">ACADEMY WORKFLOW (YOGA / PILATES)</span>
-          <div className="border border-emerald-600/20 bg-emerald-600/[0.01] p-6 rounded-sm">
-            <div className="grid grid-cols-3 gap-2 text-[12.5px] text-[#111111]/85 font-black text-center mb-4">
+          <div className="border border-emerald-600/20 bg-emerald-600/[0.01] p-6 rounded-sm text-center">
+            <div className="flex justify-center items-center gap-3 mb-2">
+              <span className="text-[20px] font-black text-[#111111]">요가</span>
+              <span className="text-[#111111]/30 text-[18px] font-black">/</span>
+              <span className="text-[20px] font-black text-[#111111]">필라테스</span>
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-[12.5px] text-[#111111]/85 font-black text-center mb-4 mt-3">
               <span className="px-2 py-1 bg-white border border-[#111111]/10 rounded-sm">강사</span>
               <span className="px-2 py-1 bg-white border border-[#111111]/10 rounded-sm">학원</span>
               <span className="px-2 py-1 bg-white border border-[#111111]/10 rounded-sm">수강생</span>
@@ -686,7 +1052,7 @@ export const Slide11 = () => (
               <span className="px-2 py-1 bg-white border border-[#111111]/10 rounded-sm">회원관리</span>
               <span className="px-2 py-1 bg-white border border-[#111111]/10 rounded-sm">재등록</span>
             </div>
-            <p className="text-[12.5px] text-[#111111]/50 leading-relaxed">
+            <p className="text-[12.5px] text-[#111111]/50 leading-relaxed text-left">
               웰니스 전문 학원 및 프랜차이즈 관리 체계를 포괄하는 복잡도가 향상된 구조
             </p>
           </div>
@@ -725,7 +1091,7 @@ export const Slide12 = () => {
             </p>
           </div>
           <div className="text-right pt1-fu">
-            <span className="font-['Space_Grotesk'] text-[12px] font-black text-emerald-600 block mb-1">2028</span>
+            <span className="font-['Space_Grotesk'] text-[12px] font-black text-emerald-600 block mb-1">2027-2028</span>
             <span className="font-['Space_Grotesk'] text-[24px] font-black text-[#111111] leading-none uppercase tracking-widest">EDUCATION OS</span>
           </div>
         </div>
@@ -765,6 +1131,84 @@ export const Slide12 = () => {
     </div>
   );
 };
+
+// Slide Promotion Benefit: PROMOTION BENEFIT
+export const SlidePromotionBenefit = () => (
+  <div className="relative z-10 flex flex-col w-full h-full bg-[#fcf8f8] text-[#111111] px-[80px] py-[40px] justify-center overflow-hidden">
+    <div className="max-w-[1300px] w-full mx-auto">
+      <div className="mb-6">
+        <h2 className="font-['Space_Grotesk'] text-[44px] md:text-[56px] font-black tracking-[0.05em] text-[#111111]/90 uppercase block leading-none mb-4 pt1-fu">
+          PROMOTION BENEFIT
+        </h2>
+        <p className="text-[16px] md:text-[18px] font-bold text-[#111111]/45 leading-tight tracking-tight pt1-fu pt1-d2 break-keep">
+          광고비 없이 허브를 통해 사용자를 수직적으로 확보(Vertical)하고, 검증된 사용자 경험을 바탕으로 이종 활동 커뮤니티로 장벽 없이 수평적 이주(Horizontal)를 유도합니다.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-10 border-t border-b border-[#111111]/10 py-8">
+        <div className="flex flex-col h-full pt1-sl pt1-d4 border-r border-[#111111]/10 pr-10">
+          <div className="flex items-baseline gap-4 mb-4">
+            <span className="text-[14px] font-bold tracking-widest text-[#111111]/30">01</span>
+            <h3 className="text-[26px] font-black tracking-tight text-[#111111]">수직적 온보딩 (Vertical Onboarding)</h3>
+          </div>
+          <p className="text-[14.5px] leading-[1.6] text-[#111111]/60 mb-6 break-keep font-semibold">
+            강사(Instructor) 및 소셜 댄스 동호회 운영진(Organizer) 등 핵심 운영 주체를 허브 노드로 우선 락인합니다. 클래스 개설, 실시간 예약, 정산 툴을 지원하여 이들에게 종속된 수많은 활동 회원을 자연스럽게 동시 온보딩합니다.
+          </p>
+          <div className="flex items-center gap-8 mt-auto">
+            <div className="flex items-center gap-2">
+              <div className="text-[32px] font-[900] tracking-tighter text-[#111111]">1:50</div>
+              <div className="text-[10px] font-bold tracking-wider text-[#111111]/40 uppercase leading-none">
+                Instructor<br/>Students
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="text-[32px] font-[900] tracking-tighter text-[#111111]">1:100</div>
+              <div className="text-[10px] font-bold tracking-wider text-[#111111]/40 uppercase leading-none">
+                Organizer<br/>Participants
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col h-full pt1-sr pt1-d4 pl-10">
+          <div className="flex items-baseline gap-4 mb-4">
+            <span className="text-[14px] font-bold tracking-widest text-emerald-600/70">02</span>
+            <h3 className="text-[26px] font-black tracking-tight text-[#111111]">수평적 이주 (Horizontal Migration)</h3>
+          </div>
+          <p className="text-[14.5px] leading-[1.6] text-[#111111]/60 mb-6 break-keep font-semibold">
+            살사 소사이어티(Salsa Society) 등 플랫폼 내 특정 커뮤니티에서 결제와 소셜 기능의 신뢰를 겪은 사용자들이 플랫폼 장벽 없이 요가 강습, 캠핑 소모임, 자전거 라이딩 등 이종 영역으로 스스로 이주하여 참여 범위를 수평 확장합니다.
+          </p>
+          <div className="flex items-center gap-6 mt-auto">
+            <div className="px-3.5 py-1.5 bg-[#111111] text-white text-[12.5px] font-black tracking-wider uppercase rounded-sm">
+              Salsa Society User
+            </div>
+            <span className="text-[#111111]/30 font-bold">➔</span>
+            <div className="flex gap-2">
+              <span className="px-2.5 py-1 border border-emerald-600/20 bg-emerald-600/[0.02] text-emerald-600 rounded-full text-[11px] font-bold">요가 (Yoga)</span>
+              <span className="px-2.5 py-1 border border-emerald-600/20 bg-emerald-600/[0.02] text-emerald-600 rounded-full text-[11px] font-bold">캠핑 (Camping)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-8 pt-2 flex flex-col md:flex-row items-center justify-between gap-4 text-[13px] font-bold pt1-si pt1-d8">
+        <div className="flex items-center gap-3">
+          <span className="px-2 py-0.5 bg-[#111111]/5 border border-[#111111]/15 text-[#111111]/60 text-[10px] uppercase tracking-wider rounded-sm">Vertical Flow</span>
+          <span className="text-[#111111]/70">허브(강사/오거나이저) ➔ 일반 회원 수직 락인</span>
+        </div>
+        <div className="hidden md:block text-[#111111]/25">|</div>
+        <div className="flex items-center gap-3">
+          <span className="px-2 py-0.5 bg-emerald-600/10 border border-emerald-600/20 text-emerald-600 text-[10px] uppercase tracking-wider rounded-sm">Horizontal Flow</span>
+          <span className="text-[#111111]/70">살사 소사이어티 ➔ 요가 · 캠핑 등 플랫폼 내 이종 커뮤니티 수평 전이</span>
+        </div>
+      </div>
+
+      <div className="mt-6 text-[11px] font-bold text-[#111111]/30 tracking-tight text-center pt1-fu pt1-d10">
+        * WoC는 개별 사용자를 획득하기 위한 마케팅 비용을 최소화하고, 수직 온보딩의 전파력과 수평 확장의 이주력을 극대화하여 평생 가치(LTV)를 극대화하는 성장을 달성합니다.
+      </div>
+    </div>
+  </div>
+);
 
 // Slide 13: STRATEGIC VALUE
 export const Slide13 = () => (
@@ -904,51 +1348,51 @@ export const Slide16 = () => (
     </div>
 
     <div className="max-w-[1200px] w-full relative z-10 flex flex-col justify-center">
-      <h2 className="font-['Space_Grotesk'] text-[44px] md:text-[56px] font-black tracking-[0.05em] text-[#111111]/90 uppercase block leading-none mb-4 pt1-fu">
+      <h2 className="font-['Space_Grotesk'] text-[44px] md:text-[56px] font-black tracking-[0.05em] text-[#111111]/90 uppercase block leading-none mb-3 pt1-fu">
         ANGEL ROUND
       </h2>
-      <p className="text-[16px] md:text-[18px] font-bold text-[#111111]/45 leading-tight tracking-tight mb-10 pt1-fu pt1-d2">
+      <p className="text-[16px] md:text-[18px] font-bold text-[#111111]/45 leading-tight tracking-tight mb-5 pt1-fu pt1-d2">
         투자 유치 계획 (Angel Investment Round)
       </p>
 
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-4">
         {/* 1단: 상단 (핵심 숫자) */}
-        <div className="grid grid-cols-3 gap-6 pt1-fu pt1-d3">
-          <div className="border border-[#111111]/10 bg-[#111111]/[0.01] p-6 rounded-sm flex flex-col justify-center items-center text-center">
-            <span className="text-[11px] font-bold tracking-wider text-[#111111]/45 uppercase mb-2">투자 규모</span>
-            <span className="text-[36px] font-black text-[#111111] tracking-tight">7,000만원</span>
+        <div className="grid grid-cols-3 gap-4 pt1-fu pt1-d3">
+          <div className="border border-[#111111]/10 bg-[#111111]/[0.01] p-3.5 rounded-sm flex flex-col justify-center items-center text-center">
+            <span className="text-[11px] font-bold tracking-wider text-[#111111]/45 uppercase mb-1.5">투자 규모</span>
+            <span className="text-[32px] font-black text-[#111111] tracking-tight">1억원</span>
           </div>
-          <div className="border border-[#111111]/10 bg-[#111111]/[0.01] p-6 rounded-sm flex flex-col justify-center items-center text-center">
-            <span className="text-[11px] font-bold tracking-wider text-[#111111]/45 uppercase mb-2">지분 구조</span>
-            <span className="text-[36px] font-black text-[#111111] tracking-tight">20% 지분 인수</span>
+          <div className="border border-[#111111]/10 bg-[#111111]/[0.01] p-3.5 rounded-sm flex flex-col justify-center items-center text-center">
+            <span className="text-[11px] font-bold tracking-wider text-[#111111]/45 uppercase mb-1.5">지분 구조</span>
+            <span className="text-[32px] font-black text-[#111111] tracking-tight">25% 지분 인수</span>
           </div>
-          <div className="border border-[#111111]/10 bg-[#111111]/[0.01] p-6 rounded-sm flex flex-col justify-center items-center text-center">
-            <span className="text-[11px] font-bold tracking-wider text-[#111111]/45 uppercase mb-2">기업 가치</span>
-            <span className="text-[36px] font-black text-emerald-600 tracking-tight">3.5억원</span>
+          <div className="border border-[#111111]/10 bg-[#111111]/[0.01] p-3.5 rounded-sm flex flex-col justify-center items-center text-center">
+            <span className="text-[11px] font-bold tracking-wider text-[#111111]/45 uppercase mb-1.5">기업 가치</span>
+            <span className="text-[32px] font-black text-emerald-600 tracking-tight">4.0억원</span>
           </div>
         </div>
 
         {/* 2단: 중단 (사용 계획) */}
-        <div className="grid grid-cols-2 gap-8 pt1-fu pt1-d4">
-          <div className="border border-[#111111]/10 bg-white/40 p-6 rounded-sm flex flex-col justify-between">
+        <div className="grid grid-cols-2 gap-5 pt1-fu pt1-d4">
+          <div className="border border-[#111111]/10 bg-white/40 p-4 rounded-sm flex flex-col justify-between">
             <div>
-              <div className="flex justify-between items-baseline mb-4 border-b border-[#111111]/10 pb-2">
-                <h3 className="text-[16px] font-black text-[#111111]">창업자 선투입 비용 일부 정산</h3>
-                <span className="text-[20px] font-black text-[#111111]/70">2,000만원 <span className="text-[13px] text-[#111111]/40 font-medium">(29%)</span></span>
+              <div className="flex justify-between items-baseline mb-3 border-b border-[#111111]/10 pb-1.5">
+                <h3 className="text-[15px] font-black text-[#111111]">창업자 선투입 비용 일부 정산</h3>
+                <span className="text-[18px] font-black text-[#111111]/70">3,000만원 <span className="text-[12px] text-[#111111]/40 font-medium">(30%)</span></span>
               </div>
-              <p className="text-[13.5px] text-[#111111]/50 leading-relaxed break-keep mt-2">
+              <p className="text-[12.5px] text-[#111111]/50 leading-relaxed break-keep mt-1.5">
                 개발 및 운영 과정에서 선투입한 비용 일부 회수
               </p>
             </div>
           </div>
 
-          <div className="border border-[#111111]/10 bg-white/40 p-6 rounded-sm flex flex-col justify-between">
+          <div className="border border-[#111111]/10 bg-white/40 p-4 rounded-sm flex flex-col justify-between">
             <div>
-              <div className="flex justify-between items-baseline mb-4 border-b border-[#111111]/10 pb-2">
-                <h3 className="text-[16px] font-black text-emerald-600">제품 고도화 및 운영 자금</h3>
-                <span className="text-[20px] font-black text-emerald-600">5,000만원 <span className="text-[13px] text-[#111111]/40 font-medium">(71%)</span></span>
+              <div className="flex justify-between items-baseline mb-3 border-b border-[#111111]/10 pb-1.5">
+                <h3 className="text-[15px] font-black text-emerald-600">제품 고도화 및 운영 자금</h3>
+                <span className="text-[18px] font-black text-emerald-600">7,000만원 <span className="text-[12px] text-[#111111]/40 font-medium">(70%)</span></span>
               </div>
-              <ul className="grid grid-cols-2 gap-x-4 gap-y-2 text-[13.5px] text-[#111111]/60 font-semibold mt-2">
+              <ul className="grid grid-cols-2 gap-x-4 gap-y-1 text-[12.5px] text-[#111111]/60 font-semibold mt-1.5">
                 <li className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 bg-[#111111]/30 rounded-full"></span>
                   플랫폼 인프라 운영
@@ -971,11 +1415,11 @@ export const Slide16 = () => (
         </div>
 
         {/* 3단: 하단 (로드맵) */}
-        <div className="border border-[#111111]/10 bg-[#111111]/[0.01] p-6 rounded-sm pt1-fu pt1-d5">
-          <h3 className="text-[14px] font-black text-[#111111]/75 mb-4 uppercase tracking-wider flex items-center gap-2">
+        <div className="border border-[#111111]/10 bg-[#111111]/[0.01] p-4 rounded-sm pt1-fu pt1-d5">
+          <h3 className="text-[13px] font-black text-[#111111]/75 mb-3 uppercase tracking-wider flex items-center gap-2">
             투자 후 12개월 목표
           </h3>
-          <div className="grid grid-cols-5 gap-4">
+          <div className="grid grid-cols-5 gap-3.5">
             {[
               'WoC 핵심 시스템 완성',
               '커뮤니티 운영 데이터 확보',
@@ -983,9 +1427,9 @@ export const Slide16 = () => (
               '탱고 외 커뮤니티 확장 검증',
               'Seed 투자 유치 기반 확보'
             ].map((goal, idx) => (
-              <div key={idx} className="bg-white/60 border border-[#111111]/5 p-4 rounded-sm flex flex-col justify-between items-start">
-                <span className="text-[10px] font-['Space_Grotesk'] font-bold text-[#111111]/30 mb-2 block">0{idx + 1}</span>
-                <p className="text-[13px] font-bold text-[#111111]/70 tracking-tight break-keep leading-snug">
+              <div key={idx} className="bg-white/60 border border-[#111111]/5 p-3 rounded-sm flex flex-col justify-between items-start">
+                <span className="text-[10px] font-['Space_Grotesk'] font-bold text-[#111111]/30 mb-1.5 block">0{idx + 1}</span>
+                <p className="text-[12px] font-bold text-[#111111]/70 tracking-tight break-keep leading-snug">
                   ✓ {goal}
                 </p>
               </div>
@@ -995,11 +1439,11 @@ export const Slide16 = () => (
       </div>
 
       {/* Footer Copy */}
-      <div className="mt-10 border-t border-[#111111]/10 pt-6 text-center pt1-fu pt1-d6">
-        <p className="text-[17px] font-black tracking-tight text-[#111111] leading-none mb-2">
+      <div className="mt-6 border-t border-[#111111]/10 pt-4 text-center pt1-fu pt1-d6">
+        <p className="text-[14px] font-black tracking-tight text-[#111111] leading-none mb-1.5">
           커뮤니티를 위한 운영 인프라를 구축합니다.
         </p>
-        <p className="text-[11px] font-['Space_Grotesk'] font-bold tracking-[0.2em] text-[#111111]/30 uppercase">
+        <p className="text-[10px] font-['Space_Grotesk'] font-bold tracking-[0.2em] text-[#111111]/30 uppercase">
           World of Community (WoC)
         </p>
       </div>

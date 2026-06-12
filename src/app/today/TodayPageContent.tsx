@@ -19,6 +19,7 @@ import { getDjDisplay, getEventMessage } from "@/lib/utils/socialUtils";
 import SocialViewer from "@/components/social/SocialViewer";
 import ClassDetail from "@/components/class/ClassDetail";
 import EventViewer from "@/components/events/EventViewer";
+import { toast } from "sonner";
 
 // 분리된 하위 컴포넌트 임포트
 import TodayHeroSection from "./components/TodayHeroSection";
@@ -26,6 +27,60 @@ import TodaySocialSection from "./components/TodaySocialSection";
 import TodayClassSection from "./components/TodayClassSection";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
+const PALETTE_COLORS = [
+  "#f5f7fa", // Slate Light (기본)
+  "#ffffff", // 순수 화이트
+  "#e0e6ed", // 실버 그레이
+  "#ffe3e3", // 연한 핑크
+  "#fff3bf", // 파스텔 옐로우
+  "#c3fae8", // 민트
+  "#d0ebff", // 파스텔 블루
+  "#e5dbff", // 연한 라벤더
+  "#1a1b1e", // 다크 그레이
+  "#2c2e33", // 차콜
+  "#101113", // 리치 블랙
+  "#1c2333", // 네이비 다크
+  "#0b1528", // 딥 오션 다크
+  "#24122c", // 다크 퍼플
+  "#1f0e13", // 다크 와인
+];
+
+function isDark(color: string): boolean {
+  const c = color.substring(1);
+  const rgb = parseInt(c, 16);
+  const r = (rgb >> 16) & 0xff;
+  const g = (rgb >> 8) & 0xff;
+  const b = (rgb >> 0) & 0xff;
+  const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return luma < 120;
+}
+
+function getPatternStyle(pattern: "none" | "stripe" | "dot", bgColor: string): React.CSSProperties {
+  if (pattern === "none") return {};
+  const dark = isDark(bgColor);
+  const color = dark ? "rgba(255, 255, 255, 0.07)" : "rgba(0, 0, 0, 0.04)";
+  
+  if (pattern === "stripe") {
+    return {
+      backgroundImage: `repeating-linear-gradient(45deg, ${color}, ${color} 10px, transparent 10px, transparent 20px)`,
+    };
+  }
+  
+  if (pattern === "dot") {
+    return {
+      backgroundImage: `radial-gradient(${color} 15%, transparent 16%)`,
+      backgroundSize: "16px 16px",
+    };
+  }
+  
+  return {};
+}
+
+const getProxyImageUrl = (url?: string) => {
+  if (!url) return "";
+  if (url.startsWith("/") || url.startsWith("data:")) return url;
+  return `/api/proxy/image?url=${encodeURIComponent(url)}`;
+};
 
 function getWeekDates(baseDate: Date, weekOffset: number = 0): Date[] {
   const start = new Date(baseDate);
@@ -141,6 +196,67 @@ interface ClassEntry {
   timeSlot: string;
 }
 
+function TimelineEventItem({ ev, onClick, language }: { ev: any; onClick: () => void; language: string }) {
+  const catColors: Record<string, { bg: string; text: string; labelKo: string; labelEn: string }> = {
+    milonga: { bg: "bg-rose-50 text-rose-600 border border-rose-100/30", text: "text-rose-700", labelKo: "소셜", labelEn: "Social" },
+    practica: { bg: "bg-amber-50 text-amber-600 border border-amber-100/30", text: "text-amber-700", labelKo: "쁘락띠까", labelEn: "Practica" },
+    class: { bg: "bg-blue-50 text-blue-600 border border-blue-100/30", text: "text-blue-700", labelKo: "클래스", labelEn: "Class" },
+  };
+
+  const cat = catColors[ev.type] || { bg: "bg-slate-50 text-slate-600 border border-slate-100/30", text: "text-slate-700", labelKo: "기타", labelEn: "Misc" };
+  const label = language === "KR" ? cat.labelKo : cat.labelEn;
+
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center justify-between text-left py-2.5 px-3 hover:bg-slate-50 rounded-xl transition-all border border-transparent"
+    >
+      <div className="flex items-start gap-3.5 min-w-0 flex-1">
+        {/* 좌측: 시간 및 타입 칩 수직 스택 */}
+        <div className="flex flex-col items-center gap-1 flex-shrink-0 w-[52px]">
+          {/* 시간 */}
+          <span className="text-[11px] font-mono font-black text-slate-800 bg-slate-100/80 px-1.5 py-0.5 rounded-md leading-none w-full text-center">
+            {ev.startTime}
+          </span>
+          {/* 타입 칩 */}
+          <span className={`text-[8px] font-black px-1 py-0.5 rounded-md leading-none w-full text-center ${cat.bg}`}>
+            {label}
+          </span>
+        </div>
+        
+        {/* 우측: 제목 및 메타정보 */}
+        <div className="min-w-0 flex-1 flex flex-col gap-0.5 pt-0.5">
+          {/* 제목 라인 */}
+          <span className="text-[12.5px] font-black text-slate-700 truncate leading-snug">
+            {ev.title}
+          </span>
+          
+          {/* 하단 메타 정보 라인 */}
+          <div className="flex items-center gap-2 text-[10px] text-slate-400 font-semibold flex-wrap">
+            {ev.location && (
+              <span className="flex items-center gap-0.5 max-w-[120px] truncate">
+                <span className="material-symbols-outlined !text-[10.3px] text-slate-300">location_on</span>
+                {ev.location}
+              </span>
+            )}
+            {ev.djOrInstructor && (
+              <span className="flex items-center gap-0.5 max-w-[120px] truncate">
+                <span className="material-symbols-outlined !text-[10.3px] text-slate-300">
+                  {ev.type === "class" ? "school" : "headphones"}
+                </span>
+                {ev.djOrInstructor}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+      <span className="material-symbols-outlined !text-[16px] text-slate-300 flex-shrink-0 ml-2">
+        chevron_right
+      </span>
+    </button>
+  );
+}
+
 export default function TodayPageContent() {
   const { t, language } = useLanguage();
   const { location } = useLocation();
@@ -172,17 +288,40 @@ export default function TodayPageContent() {
   // 그룹 연동 상태
   const [allGroups, setAllGroups] = useState<Group[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string>("All");
-  const [showGroupFilter, setShowGroupFilter] = useState(false);
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+  const [filterTab, setFilterTab] = useState<"group" | "dj">("group");
+  const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const [groupEvents, setGroupEvents] = useState<any[]>([]);
   const { isOpen: showMonthCalendar, openModal: openMonthCalendar, closeModal: closeMonthCalendar } = useModalNavigation("viewMonth");
   const [selectedMonthTab, setSelectedMonthTab] = useState<number>(0);
   const [allSocials, setAllSocials] = useState<Social[]>([]);
 
+  // 오늘 일정 뷰 모드 상태 (list: 목록 방식, timeline: 시간대별 통합 방식)
+  const [todayViewMode, setTodayViewMode] = useState<"list" | "timeline">("list");
+  const [todayTypeFilter, setTodayTypeFilter] = useState<"all" | "social" | "class" | "practice" | "event">("all");
+  const [showColorPicker, setShowColorPicker] = useState(false);
+
+  // 주간 일정 배경색 및 무늬 패턴 상태
+  const [weeklyBgColor, setWeeklyBgColor] = useState<string>("#f5f7fa");
+  const [weeklyPattern, setWeeklyPattern] = useState<"none" | "stripe" | "dot">("none");
+
+  // 주간 일정 뷰 모드 상태
+  const [weeklyViewMode, setWeeklyViewMode] = useState<"list" | "tile">("list");
+
   // DJ 필터 연동 상태
   const [selectedDjName, setSelectedDjName] = useState<string>("All");
-  const [showDjFilter, setShowDjFilter] = useState(false);
   const [djSortType, setDjSortType] = useState<"count" | "name">("count");
   const [groupSortType, setGroupSortType] = useState<"count" | "name">("count");
+
+  useEffect(() => {
+    if (showFilterDropdown) {
+      if (selectedDjName !== "All") {
+        setFilterTab("dj");
+      } else {
+        setFilterTab("group");
+      }
+    }
+  }, [showFilterDropdown, selectedDjName]);
 
   const router = useRouter();
 
@@ -239,7 +378,7 @@ export default function TodayPageContent() {
       const canvas = await html2canvas(element, {
         useCORS: true,
         scale: 2,
-        backgroundColor: "#f5f7fa",
+        backgroundColor: weeklyBgColor,
         logging: false,
       });
 
@@ -252,8 +391,10 @@ export default function TodayPageContent() {
       link.download = `${groupName}_${weekName}_일정.png`;
       link.href = dataUrl;
       link.click();
+      toast.success(language === "KR" ? "이미지가 성공적으로 저장되었습니다." : "Image saved successfully.");
     } catch (error) {
       console.error("Failed to download weekly schedule image", error);
+      toast.error(language === "KR" ? "이미지 저장에 실패했습니다." : "Failed to save image.");
     }
   };
 
@@ -504,8 +645,7 @@ export default function TodayPageContent() {
         const parts = dj.djName.split(/[,/&+\s]+/).map((n: string) => n.trim().toLowerCase());
         return parts.includes(selectedDjName.toLowerCase());
       });
-      const hasDjInDjName = s.djName && s.djName.split(/[,/&+\s]+/).map(n => n.trim().toLowerCase()).includes(selectedDjName.toLowerCase());
-      return hasDjInDjs || hasDjInDjName;
+      return hasDjInDjs;
     });
   }, [groupMatchedSocials, selectedDjName]);
 
@@ -686,7 +826,13 @@ export default function TodayPageContent() {
       return sc.includes(cityLower) || cityLower.includes(sc);
     });
 
-    return locFiltered.filter(s => s.subCategory === "practica");
+    const filtered = locFiltered.filter(s => s.subCategory === "practica");
+    filtered.sort((a, b) => {
+      const timeA = a.startTime || "99:99";
+      const timeB = b.startTime || "99:99";
+      return timeA.localeCompare(timeB);
+    });
+    return filtered;
   }, [socials, location]);
 
   // 서울 구별 그룹화
@@ -762,6 +908,275 @@ export default function TodayPageContent() {
     });
   }, [milongas, venuesMap, location, language]);
 
+  // 쁘락띠까 서울 구별 그룹화
+  const practicasByDistrict = useMemo(() => {
+    const groups: Record<string, Social[]> = {};
+    const cityLower = (location?.city || "All").toLowerCase().trim();
+    const isSeoul = cityLower.includes("seoul") || cityLower.includes("서울") || cityLower.includes("soul");
+
+    const isDaySocial = (s: Social) => {
+      const hour = parseInt((s.startTime || "19:00").split(":")[0]);
+      return !isNaN(hour) && hour < 18;
+    };
+
+    practicas.forEach(s => {
+      if (!isSeoul) {
+        const regionName = s.city || location.city || "Other";
+        if (!groups[regionName]) groups[regionName] = [];
+        groups[regionName].push(s);
+        return;
+      }
+
+      const rawDistrict = detectSeoulDistrict(s, language, venuesMap);
+      const isDay = isDaySocial(s);
+      
+      let finalGroup = "";
+      const isHongdaeArea = rawDistrict.includes("한강위") || rawDistrict.includes("Hongdae");
+      
+      if (isHongdaeArea) {
+        finalGroup = isDay 
+          ? (language === "KR" ? "홍대인근 낮쁘락" : "Hongdae (Day)")
+          : (language === "KR" ? "홍대인근" : "Hongdae");
+      } else {
+        finalGroup = isDay
+          ? (language === "KR" ? "강남 낮쁘락" : "Gangnam (Day)")
+          : (language === "KR" ? "강남" : "Gangnam");
+      }
+      
+      if (!groups[finalGroup]) {
+        groups[finalGroup] = [];
+      }
+      groups[finalGroup].push(s);
+    });
+
+    Object.keys(groups).forEach(key => {
+      groups[key].sort((a, b) => {
+        const timeA = a.startTime || "99:99";
+        const timeB = b.startTime || "99:99";
+        return timeA.localeCompare(timeB);
+      });
+    });
+
+    const entries = Object.entries(groups);
+    if (!isSeoul) {
+      return entries.sort((a, b) => a[0].localeCompare(b[0], language === "KR" ? "ko" : "en"));
+    }
+
+    const groupOrder = language === "KR"
+      ? ["홍대인근 낮쁘락", "홍대인근", "강남 낮쁘락", "강남"]
+      : ["Hongdae (Day)", "Hongdae", "Gangnam (Day)", "Gangnam"];
+
+    return entries.sort((a, b) => {
+      const idxA = groupOrder.indexOf(a[0]);
+      const idxB = groupOrder.indexOf(b[0]);
+      const valA = idxA === -1 ? 999 : idxA;
+      const valB = idxB === -1 ? 999 : idxB;
+      if (valA !== valB) return valA - valB;
+      return a[0].localeCompare(b[0], language === "KR" ? "ko" : "en");
+    });
+  }, [practicas, venuesMap, location, language]);
+
+  // 클래스 서울 구별 그룹화
+  const classesByDistrict = useMemo(() => {
+    const groups: Record<string, ClassEntry[]> = {};
+    const cityLower = (location?.city || "All").toLowerCase().trim();
+    const isSeoul = cityLower.includes("seoul") || cityLower.includes("서울") || cityLower.includes("soul");
+
+    const isDayClass = (cEntry: ClassEntry) => {
+      const startPart = cEntry.timeSlot ? cEntry.timeSlot.split("-")[0].trim() : (cEntry.cls.startTime || "");
+      const hour = parseInt((startPart || "19:00").split(":")[0]);
+      return !isNaN(hour) && hour < 18;
+    };
+
+    filteredClasses.forEach(cEntry => {
+      if (!isSeoul) {
+        const regionName = location.city || "Other";
+        if (!groups[regionName]) groups[regionName] = [];
+        groups[regionName].push(cEntry);
+        return;
+      }
+
+      const grp = allGroups.find(g => g.id === cEntry.cls.groupId);
+      const vId = grp?.venueId || "";
+      const dummySocial: any = {
+        venueId: vId,
+        district: cEntry.cls.location || "",
+        venueNameNative: cEntry.cls.location || "",
+        venueName: cEntry.cls.location || ""
+      };
+      
+      const rawDistrict = detectSeoulDistrict(dummySocial, language, venuesMap);
+      const isDay = isDayClass(cEntry);
+      
+      let finalGroup = "";
+      const isHongdaeArea = rawDistrict.includes("한강위") || rawDistrict.includes("Hongdae");
+      
+      if (isHongdaeArea) {
+        finalGroup = isDay 
+          ? (language === "KR" ? "홍대인근 낮클래스" : "Hongdae (Day Class)")
+          : (language === "KR" ? "홍대인근 클래스" : "Hongdae Class");
+      } else {
+        finalGroup = isDay
+          ? (language === "KR" ? "강남 낮클래스" : "Gangnam (Day Class)")
+          : (language === "KR" ? "강남 클래스" : "Gangnam Class");
+      }
+      
+      if (!groups[finalGroup]) {
+        groups[finalGroup] = [];
+      }
+      groups[finalGroup].push(cEntry);
+    });
+
+    Object.keys(groups).forEach(key => {
+      groups[key].sort((a, b) => {
+        const startA = a.timeSlot ? a.timeSlot.split("-")[0].trim() : (a.cls.startTime || "99:99");
+        const startB = b.timeSlot ? b.timeSlot.split("-")[0].trim() : (b.cls.startTime || "99:99");
+        return startA.localeCompare(startB);
+      });
+    });
+
+    const entries = Object.entries(groups);
+    if (!isSeoul) {
+      return entries.sort((a, b) => a[0].localeCompare(b[0], language === "KR" ? "ko" : "en"));
+    }
+
+    const groupOrder = language === "KR"
+      ? ["홍대인근 낮클래스", "홍대인근 클래스", "강남 낮클래스", "강남 클래스"]
+      : ["Hongdae (Day Class)", "Hongdae Class", "Gangnam (Day Class)", "Gangnam Class"];
+
+    return entries.sort((a, b) => {
+      const idxA = groupOrder.indexOf(a[0]);
+      const idxB = groupOrder.indexOf(b[0]);
+      const valA = idxA === -1 ? 999 : idxA;
+      const valB = idxB === -1 ? 999 : idxB;
+      if (valA !== valB) return valA - valB;
+      return a[0].localeCompare(b[0], language === "KR" ? "ko" : "en");
+    });
+  }, [filteredClasses, allGroups, venuesMap, location, language]);
+
+  // 오늘 개최 중인 이벤트만 필터링
+  const todayActiveEvents = useMemo(() => {
+    return heroEvents.filter(ev => {
+      if (!ev.startDate) return false;
+      const start = toJsDate(ev.startDate).getTime();
+      const end = ev.endDate ? toJsDate(ev.endDate).getTime() : start;
+      
+      const startOfDay = new Date(selectedDate);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(selectedDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      
+      return start <= endOfDay.getTime() && end >= startOfDay.getTime();
+    });
+  }, [heroEvents, selectedDate]);
+
+  // 오늘 전체 시간순 타임라인 통합 리스트 생성
+  const todayTimelineEvents = useMemo(() => {
+    const events: {
+      id: string;
+      type: "milonga" | "practica" | "class";
+      title: string;
+      startTime: string;
+      endTime?: string;
+      location?: string;
+      djOrInstructor?: string;
+      isDay: boolean;
+      rawItem: any;
+    }[] = [];
+
+    const parseHour = (timeStr?: string): number => {
+      if (!timeStr) return 19;
+      const hour = parseInt(timeStr.split(":")[0]);
+      return isNaN(hour) ? 19 : hour;
+    };
+
+    // 1. 밀롱가 추가
+    milongas.forEach(s => {
+      const hour = parseHour(s.startTime);
+      events.push({
+        id: s.id,
+        type: "milonga",
+        title: (language === "KR" ? (s.titleNative || s.title) : (s.title || s.titleNative)) || "",
+        startTime: s.startTime || "",
+        endTime: s.endTime || undefined,
+        location: formatCommunityName(getVenueDisplay(s, language, venuesMap), language),
+        djOrInstructor: getDjDisplay(s, selectedDate, language),
+        isDay: hour < 18,
+        rawItem: s
+      });
+    });
+
+    // 2. 쁘락띠까 추가
+    practicas.forEach(s => {
+      const hour = parseHour(s.startTime);
+      events.push({
+        id: s.id,
+        type: "practica",
+        title: (language === "KR" ? (s.titleNative || s.title) : (s.title || s.titleNative)) || "",
+        startTime: s.startTime || "",
+        endTime: s.endTime || undefined,
+        location: formatCommunityName(getVenueDisplay(s, language, venuesMap), language),
+        djOrInstructor: getDjDisplay(s, selectedDate, language),
+        isDay: hour < 18,
+        rawItem: s
+      });
+    });
+
+    // 3. 클래스 추가
+    filteredClasses.forEach(({ cls, timeSlot }) => {
+      const startPart = timeSlot ? timeSlot.split("-")[0].trim() : (cls.startTime || "");
+      const endPart = timeSlot && timeSlot.includes("-") ? timeSlot.split("-")[1].trim() : undefined;
+      const hour = parseHour(startPart);
+      
+      const instructorName = cls.instructors && cls.instructors.length > 0
+        ? cls.instructors.map((ins: any) => language === "KR" ? (ins.instructorNativeName || ins.name) : ins.name).join(", ")
+        : (cls.instructorProfile || "");
+
+      // 그룹명 매핑하여 한글/영문 선택 노출
+      const grp = allGroups.find(g => g.id === cls.groupId);
+      const groupLabel = grp
+        ? (language === "KR" ? (grp.nativeName || grp.name) : grp.name)
+        : "";
+      const classTitleWithGroup = groupLabel ? `[${groupLabel}] ${cls.title}` : cls.title;
+
+      events.push({
+        id: cls.id || "",
+        type: "class",
+        title: classTitleWithGroup,
+        startTime: startPart,
+        endTime: endPart,
+        location: cls.location ? formatCommunityName(cls.location, language) : "",
+        djOrInstructor: instructorName,
+        isDay: hour < 18,
+        rawItem: cls
+      });
+    });
+
+    // 시작 시간 기준 오름차순 정렬
+    events.sort((a, b) => {
+      if (!a.startTime) return 1;
+      if (!b.startTime) return -1;
+      return a.startTime.localeCompare(b.startTime);
+    });
+
+    // 카테고리 필터링 적용
+    return events.filter(ev => {
+      if (todayTypeFilter === "all") return true;
+      if (todayTypeFilter === "social") return ev.type === "milonga";
+      if (todayTypeFilter === "practice") return ev.type === "practica";
+      if (todayTypeFilter === "class") return ev.type === "class";
+      return true;
+    });
+  }, [milongas, practicas, filteredClasses, language, venuesMap, selectedDate, todayTypeFilter]);
+
+  const dayTimelineEvents = useMemo(() => {
+    return todayTimelineEvents.filter(ev => ev.isDay);
+  }, [todayTimelineEvents]);
+
+  const nightTimelineEvents = useMemo(() => {
+    return todayTimelineEvents.filter(ev => !ev.isDay);
+  }, [todayTimelineEvents]);
+
   const getOrgDisplayForSocial = (social: Social) => {
     const ids = social.organizerIds;
     const enNames = social.organizerNames;
@@ -810,6 +1225,8 @@ export default function TodayPageContent() {
 
             const eventType = s.subCategory === "practica" ? "practice" : (s.subCategory || "social");
             const isRealDj = currentDj && currentDj.toUpperCase() !== "TBD" && currentDj.toUpperCase() !== "TBA" && currentDj.trim() !== "";
+            const hasPoster = s.posterLayoutId && s.posterLayoutId !== "none";
+            const displayImageUrl = hasPoster ? s.imageUrl : (s.posterExportUrl || s.imageUrl || "");
             events.push({
               id: `social-week-${s.id}-${d.toDateString()}`,
               itemId: s.id,
@@ -827,6 +1244,7 @@ export default function TodayPageContent() {
               dj: isRealDj ? formatInstructorNames(currentDj, language) : "",
               location: formatCommunityName(getVenueDisplay(s, language, venuesMap), language),
               message: getEventMessage(s, d) || "",
+              imageUrl: displayImageUrl,
             });
           }
         });
@@ -844,6 +1262,8 @@ export default function TodayPageContent() {
 
           const eventType = s.subCategory === "practica" ? "practice" : (s.subCategory || "social");
           const isRealDj = currentDj && currentDj.toUpperCase() !== "TBD" && currentDj.toUpperCase() !== "TBA" && currentDj.trim() !== "";
+          const hasPoster = s.posterLayoutId && s.posterLayoutId !== "none";
+          const displayImageUrl = hasPoster ? s.imageUrl : (s.posterExportUrl || s.imageUrl || "");
           events.push({
             id: `social-week-${s.id}`,
             itemId: s.id,
@@ -861,6 +1281,7 @@ export default function TodayPageContent() {
             dj: isRealDj ? formatInstructorNames(currentDj, language) : "",
             location: formatCommunityName(getVenueDisplay(s, language, venuesMap), language),
             message: getEventMessage(s, sDate) || "",
+            imageUrl: displayImageUrl,
           });
         }
       }
@@ -1096,7 +1517,9 @@ export default function TodayPageContent() {
   }, [groupEvents, classEvents, socialEvents, selectedDjName]);
 
   const groupTodayEvents = useMemo(() => {
-    return allCombinedEvents.filter(ev => ev.dateStr === selectedDateYmd);
+    const filtered = allCombinedEvents.filter(ev => ev.dateStr === selectedDateYmd);
+    filtered.sort((a, b) => (a.startTime || "00:00").localeCompare(b.startTime || "00:00"));
+    return filtered;
   }, [allCombinedEvents, selectedDateYmd]);
 
   const groupOtherWeekEventsByDate = useMemo(() => {
@@ -1186,8 +1609,18 @@ export default function TodayPageContent() {
     const weekData = monthlyEventsByWeek[selectedWeekTab];
     if (!weekData || !weekData.events) return [];
 
+    // 카테고리 타입 필터 적용
+    const filteredEvents = weekData.events.filter(ev => {
+      if (todayTypeFilter === "all") return true;
+      if (todayTypeFilter === "class") return ev.type === "class";
+      if (todayTypeFilter === "social") return ["social", "milonga"].includes(ev.type) && ev.subCategory !== "practica";
+      if (todayTypeFilter === "practice") return ev.type === "practice" || ev.subCategory === "practica";
+      if (todayTypeFilter === "event") return ev.type === "event";
+      return true;
+    });
+
     const grouped: Record<string, { date: Date; ymd: string; events: any[] }> = {};
-    weekData.events.forEach(ev => {
+    filteredEvents.forEach(ev => {
       if (!ev.dateStr) return;
       const dateStr = ev.dateStr;
       if (!grouped[dateStr]) {
@@ -1201,7 +1634,19 @@ export default function TodayPageContent() {
     const list = Object.values(grouped);
     list.sort((a, b) => a.date.getTime() - b.date.getTime());
     return list;
-  }, [monthlyEventsByWeek, selectedWeekTab]);
+  }, [monthlyEventsByWeek, selectedWeekTab, todayTypeFilter]);
+
+  // 선택된 주차의 모든 개별 이벤트들을 평면적으로 나열한 리스트 (그리드 타일 뷰에 활용)
+  const weekEventsFlat = useMemo(() => {
+    const flatList: { ev: any; date: Date; ymd: string; isMulti: boolean }[] = [];
+    weekEventsByDate.forEach(({ date, ymd, events }) => {
+      const isMulti = events.length > 1;
+      events.forEach(ev => {
+        flatList.push({ ev, date, ymd, isMulti });
+      });
+    });
+    return flatList;
+  }, [weekEventsByDate]);
 
   const selectedGroupDisplay = useMemo(() => {
     if (selectedGroupId === "All") return t("today.all_groups");
@@ -1209,6 +1654,25 @@ export default function TodayPageContent() {
     if (!g) return t("today.all_groups");
     return language === "KR" ? (g.nativeName || g.name) : g.name;
   }, [selectedGroupId, allGroups, language, t]);
+
+  const filterLabel = useMemo(() => {
+    if (todayTypeFilter === "all") return language === "KR" ? "모두" : "All";
+    if (todayTypeFilter === "social") return language === "KR" ? "소셜" : "Social";
+    if (todayTypeFilter === "class") return language === "KR" ? "클래스" : "Class";
+    if (todayTypeFilter === "practice") return language === "KR" ? "쁘락띠까" : "Practica";
+    if (todayTypeFilter === "event") return language === "KR" ? "이벤트" : "Event";
+    return "";
+  }, [todayTypeFilter, language]);
+
+  const baseMonth = useMemo(() => {
+    return weekEventsByDate.length > 0 ? (weekEventsByDate[0].date.getMonth() + 1) : (selectedDate.getMonth() + 1);
+  }, [weekEventsByDate, selectedDate]);
+
+  const weeklyHeaderTitle = useMemo(() => {
+    return language === "KR"
+      ? `${selectedGroupDisplay} ${baseMonth}월 ${selectedWeekTab + 1}주차 일정 (${filterLabel})`
+      : `${selectedGroupDisplay} Week ${selectedWeekTab + 1} Schedule (${filterLabel})`;
+  }, [selectedGroupDisplay, baseMonth, selectedWeekTab, filterLabel, language]);
 
   return (
     <div className="min-h-screen bg-[#f5f7fa]">
@@ -1232,16 +1696,16 @@ export default function TodayPageContent() {
               <button
                 key={idx}
                 onClick={() => setSelectedDate(d)}
-                className={`flex-1 flex flex-col items-center py-1.5 rounded-xl transition-all duration-200 ${
+                className={`flex-1 flex flex-col items-center justify-center py-1.5 rounded-xl transition-all duration-200 ${
                   isSelected ? "bg-[#1e293b] shadow-md" : "hover:bg-slate-100/80"
                 }`}
               >
-                <span className={`text-[10px] font-bold tracking-wide uppercase ${
+                <span className={`text-[10px] font-bold tracking-wide uppercase w-full text-center block ${
                   isSelected ? "text-white/70" : isSat ? "text-blue-500" : isSun ? "text-red-500" : "text-slate-400"
                 }`}>
                   {getDayLabel(language, d)}
                 </span>
-                <span className={`text-[17px] font-black leading-tight mt-0.5 ${
+                <span className={`text-[17px] font-black leading-tight mt-0.5 w-full text-center block ${
                   isSelected ? "text-white" : isToday ? "text-[#007AFF]" : isSat ? "text-blue-500" : isSun ? "text-red-500" : "text-[#1e293b]"
                 }`}>
                   {d.getDate()}
@@ -1260,267 +1724,437 @@ export default function TodayPageContent() {
         </div>
       </div>
 
-      {/* ── 그룹 필터 바 ── */}
+      {/* ── 통합 필터 바 ── */}
       <div className="relative z-30 px-4 py-2.5 flex items-center justify-between bg-white border-b border-slate-100/80">
-        <div className="flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#007AFF] animate-pulse" />
-          <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">
-            {location.city || "ALL"}
-          </span>
-        </div>
-        
         <div className="flex items-center gap-2">
-          {/* 그룹 필터 트리거 */}
-          <button
-            onClick={() => {
-              if (selectedGroupId !== "All") {
-                setSelectedGroupId("All");
-                setShowGroupFilter(false);
-              } else {
-                setShowGroupFilter(!showGroupFilter);
-              }
-              setShowDjFilter(false);
-            }}
-            className={`flex items-center gap-0.5 bg-white border rounded-full px-3 py-1.5 text-[10px] font-black shadow-sm transition-all active:scale-95 ${
-              selectedGroupId !== "All"
-                ? "text-indigo-600 border-indigo-200 bg-indigo-50/10"
-                : "text-slate-600 border-slate-200 hover:bg-slate-50"
-            }`}
-          >
-            <span>{selectedGroupDisplay}</span>
-            <span className={`material-symbols-outlined !text-[14px] transition-transform duration-200 ${showGroupFilter ? "rotate-180" : ""}`}>
-              expand_more
-            </span>
-          </button>
+          {/* 1. 분류 필터 드롭다운 */}
+          <div className="relative">
+            <button
+              onClick={() => {
+                if (todayTypeFilter !== "all") {
+                  setTodayTypeFilter("all");
+                  setShowTypeDropdown(false);
+                } else {
+                  setShowTypeDropdown(!showTypeDropdown);
+                  setShowFilterDropdown(false);
+                }
+              }}
+              className={`flex items-center gap-1 bg-white border rounded-full px-3.5 py-1.5 text-[10.5px] font-black shadow-sm transition-all active:scale-95 cursor-pointer ${
+                todayTypeFilter !== "all"
+                  ? "text-[#007AFF] border-[#007AFF]/20 bg-[#007AFF]/5"
+                  : "text-slate-600 border-slate-200 hover:bg-slate-50"
+              }`}
+            >
+              <span>
+                {todayTypeFilter === "all"
+                  ? (language === "KR" ? "모두" : "All")
+                  : todayTypeFilter === "social"
+                  ? (language === "KR" ? "소셜" : "Social")
+                  : todayTypeFilter === "practice"
+                  ? (language === "KR" ? "쁘락띠까" : "Practica")
+                  : todayTypeFilter === "class"
+                  ? (language === "KR" ? "클래스" : "Class")
+                  : (language === "KR" ? "이벤트" : "Event")}
+              </span>
+              <span className={`material-symbols-outlined !text-[14px] transition-transform duration-200 ${showTypeDropdown ? "rotate-180" : ""}`}>
+                expand_more
+              </span>
+            </button>
 
-          {/* DJ 필터 트리거 */}
-          <button
-            onClick={() => {
-              if (selectedDjName !== "All") {
-                setSelectedDjName("All");
-                setShowDjFilter(false);
-              } else {
-                setShowDjFilter(!showDjFilter);
-              }
-              setShowGroupFilter(false);
-            }}
-            className={`flex items-center gap-0.5 bg-white border rounded-full px-3 py-1.5 text-[10px] font-black shadow-sm transition-all active:scale-95 ${
-              selectedDjName !== "All"
-                ? "text-purple-600 border-purple-200 bg-purple-50/10"
-                : "text-slate-600 border-slate-200 hover:bg-slate-50"
-            }`}
-          >
-            <span>{selectedDjName === "All" ? t("today.all_djs") : formatDjFilterName(selectedDjName, language)}</span>
-            <span className={`material-symbols-outlined !text-[14px] transition-transform duration-200 ${showDjFilter ? "rotate-180" : ""}`}>
-              expand_more
-            </span>
-          </button>
+            {/* 분류 필터 팝오버 */}
+            {showTypeDropdown && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowTypeDropdown(false)} />
+                <div className="absolute top-full left-0 z-50 mt-1.5 w-[120px] bg-white shadow-2xl border border-slate-100 rounded-2xl p-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
+                  {(["all", "social", "practice", "class", "event"] as const).map((type) => {
+                    const label = {
+                      all: language === "KR" ? "모두" : "All",
+                      social: language === "KR" ? "소셜" : "Social",
+                      practice: language === "KR" ? "쁘락띠까" : "Practica",
+                      class: language === "KR" ? "클래스" : "Class",
+                      event: language === "KR" ? "이벤트" : "Event",
+                    }[type];
+                    const isSelected = todayTypeFilter === type;
+                    return (
+                      <button
+                        key={type}
+                        onClick={() => {
+                          setTodayTypeFilter(type);
+                          setShowTypeDropdown(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${
+                          isSelected
+                            ? "bg-[#1e293b] text-white font-black"
+                            : "text-slate-600 hover:bg-slate-50"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* 2. 그룹/DJ 필터 드롭다운 */}
+          <div className="relative">
+            <button
+              onClick={() => {
+                if (selectedGroupId !== "All" || selectedDjName !== "All") {
+                  setSelectedGroupId("All");
+                  setSelectedDjName("All");
+                  setShowFilterDropdown(false);
+                } else {
+                  setShowFilterDropdown(!showFilterDropdown);
+                  setShowTypeDropdown(false);
+                }
+              }}
+              className={`flex items-center gap-1 bg-white border rounded-full px-3.5 py-1.5 text-[10.5px] font-black shadow-sm transition-all active:scale-95 cursor-pointer ${
+                selectedGroupId !== "All" || selectedDjName !== "All"
+                  ? "text-[#007AFF] border-[#007AFF]/20 bg-[#007AFF]/5"
+                  : "text-slate-600 border-slate-200 hover:bg-slate-50"
+              }`}
+            >
+              <span>
+                {selectedGroupId !== "All"
+                  ? selectedGroupDisplay
+                  : selectedDjName !== "All"
+                  ? `DJ ${formatDjFilterName(selectedDjName, language)}`
+                  : (language === "KR" ? "그룹/DJ" : "Group/DJ")}
+              </span>
+              <span className={`material-symbols-outlined !text-[14px] transition-transform duration-200 ${showFilterDropdown ? "rotate-180" : ""}`}>
+                expand_more
+              </span>
+            </button>
+
+            {/* 그룹/DJ 필터 팝오버 (상단 탭, 하단 넓은 2열 그리드 리스트) */}
+            {showFilterDropdown && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowFilterDropdown(false)} />
+                <div className="absolute top-full left-0 z-50 mt-1.5 w-[320px] bg-white shadow-2xl border border-slate-100/80 rounded-2xl p-4 animate-in fade-in slide-in-from-top-2 duration-200 max-h-[360px] overflow-y-auto no-scrollbar">
+                  {/* 상단 세그먼트 탭 */}
+                  <div className="flex bg-slate-100 p-0.5 rounded-xl mb-3">
+                    <button
+                      onClick={() => setFilterTab("group")}
+                      className={`flex-1 text-center py-1.5 rounded-lg text-[10.5px] font-black transition-all cursor-pointer ${
+                        filterTab === "group"
+                          ? "bg-white text-[#1e293b] shadow-sm"
+                          : "text-slate-400 hover:text-slate-600"
+                      }`}
+                    >
+                      {language === "KR" ? "그룹 필터" : "Group Filter"}
+                    </button>
+                    <button
+                      onClick={() => setFilterTab("dj")}
+                      className={`flex-1 text-center py-1.5 rounded-lg text-[10.5px] font-black transition-all cursor-pointer ${
+                        filterTab === "dj"
+                          ? "bg-white text-[#1e293b] shadow-sm"
+                          : "text-slate-400 hover:text-slate-600"
+                      }`}
+                    >
+                      {language === "KR" ? "DJ 필터" : "DJ Filter"}
+                    </button>
+                  </div>
+
+                  {/* 탭 내용 분기 */}
+                  {filterTab === "group" ? (
+                    <div className="space-y-3">
+                      {/* 정렬 및 전체 버튼 */}
+                      <div className="flex items-center justify-between px-1">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                          {language === "KR" ? "그룹 목록" : "Groups"}
+                        </span>
+                        <div className="flex items-center gap-0.5 bg-slate-100 p-0.5 rounded-lg text-[9px] font-black">
+                          <button
+                            onClick={() => setGroupSortType("count")}
+                            className={`px-1.5 py-0.5 rounded transition-all cursor-pointer ${
+                              groupSortType === "count" ? "bg-white text-slate-800 shadow-sm" : "text-slate-400 hover:text-slate-600"
+                            }`}
+                          >
+                            {t("today.sort_by_count")}
+                          </button>
+                          <button
+                            onClick={() => setGroupSortType("name")}
+                            className={`px-1.5 py-0.5 rounded transition-all cursor-pointer ${
+                              groupSortType === "name" ? "bg-white text-slate-800 shadow-sm" : "text-slate-400 hover:text-slate-600"
+                            }`}
+                          >
+                            {t("today.sort_by_name")}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* 2열 그리드 목록 */}
+                      <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto no-scrollbar">
+                        <button
+                          onClick={() => {
+                            setSelectedGroupId("All");
+                            setSelectedDjName("All");
+                            setShowFilterDropdown(false);
+                          }}
+                          className={`px-3 py-2 rounded-xl text-[10.5px] font-bold text-left transition-all border cursor-pointer ${
+                            selectedGroupId === "All"
+                              ? "bg-[#1e293b] text-white border-[#1e293b] shadow-sm"
+                              : "bg-slate-50 text-slate-600 border-transparent hover:bg-slate-100"
+                          }`}
+                        >
+                          {t("today.all_groups")}
+                        </button>
+
+                        {sortedActiveGroups.map(grp => {
+                          const isSelected = selectedGroupId === grp.id;
+                          const displayName = language === "KR" ? (grp.nativeName || grp.name) : grp.name;
+                          const count = groupWeeklyCounts[grp.id] || 0;
+                          return (
+                            <button
+                              key={grp.id}
+                              onClick={() => {
+                                setSelectedGroupId(grp.id);
+                                setSelectedDjName("All");
+                                setShowFilterDropdown(false);
+                              }}
+                              className={`px-3 py-2 rounded-xl text-[10.5px] font-bold text-left transition-all border cursor-pointer ${
+                                isSelected
+                                  ? "bg-[#1e293b] text-white border-[#1e293b] shadow-sm"
+                                  : "bg-slate-50 text-slate-600 border-transparent hover:bg-slate-100"
+                              }`}
+                            >
+                              <span className="truncate pr-1">{displayName} ({count})</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {/* 정렬 및 전체 버튼 */}
+                      <div className="flex items-center justify-between px-1">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                          DJs
+                        </span>
+                        <div className="flex items-center gap-0.5 bg-slate-100 p-0.5 rounded-lg text-[9px] font-black">
+                          <button
+                            onClick={() => setDjSortType("count")}
+                            className={`px-1.5 py-0.5 rounded transition-all cursor-pointer ${
+                              djSortType === "count" ? "bg-white text-slate-800 shadow-sm" : "text-slate-400 hover:text-slate-600"
+                            }`}
+                          >
+                            {t("today.sort_by_count")}
+                          </button>
+                          <button
+                            onClick={() => setDjSortType("name")}
+                            className={`px-1.5 py-0.5 rounded transition-all cursor-pointer ${
+                              djSortType === "name" ? "bg-white text-slate-800 shadow-sm" : "text-slate-400 hover:text-slate-600"
+                            }`}
+                          >
+                            {t("today.sort_by_name")}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* 2열 그리드 목록 */}
+                      <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto no-scrollbar">
+                        <button
+                          onClick={() => {
+                            setSelectedDjName("All");
+                            setSelectedGroupId("All");
+                            setShowFilterDropdown(false);
+                          }}
+                          className={`px-3 py-2 rounded-xl text-[10.5px] font-bold text-left transition-all border cursor-pointer ${
+                            selectedDjName === "All"
+                              ? "bg-[#1e293b] text-white border-[#1e293b] shadow-sm"
+                              : "bg-slate-50 text-slate-600 border-transparent hover:bg-slate-100"
+                          }`}
+                        >
+                          {t("today.all_djs")}
+                        </button>
+
+                        {activeDjs.map(dj => {
+                          const isSelected = selectedDjName === dj;
+                          const count = djWeeklyCounts[dj] || 0;
+                          return (
+                            <button
+                              key={dj}
+                              onClick={() => {
+                                setSelectedDjName(dj);
+                                setSelectedGroupId("All");
+                                setShowFilterDropdown(false);
+                              }}
+                              className={`px-3 py-2 rounded-xl text-[10.5px] font-bold text-left transition-all border cursor-pointer ${
+                                isSelected
+                                  ? "bg-[#1e293b] text-white border-[#1e293b] shadow-sm"
+                                  : "bg-slate-50 text-slate-600 border-transparent hover:bg-slate-100"
+                              }`}
+                            >
+                              <span className="truncate pr-1">{formatDjFilterName(dj, language)} ({count})</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
-        {/* 그룹 드롭다운 팝오버 셀렉터 */}
-        {showGroupFilter && (
-          <div className="absolute top-full left-0 right-0 z-40 bg-white shadow-2xl border-t border-slate-100 p-4 max-h-[300px] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-300">
-            <div className="flex items-center justify-between mb-3 px-1">
-              <div className="flex items-center gap-2">
-                <span className="text-[13px] font-black text-slate-800 uppercase tracking-tight">{t("today.group_filter")}</span>
-                <div className="flex items-center gap-0.5 bg-slate-100 p-0.5 rounded-lg text-[9px] font-black">
-                  <button
-                    onClick={() => setGroupSortType("count")}
-                    className={`px-1.5 py-0.5 rounded transition-all ${
-                      groupSortType === "count" ? "bg-white text-slate-800 shadow-sm" : "text-slate-400 hover:text-slate-600"
-                    }`}
-                  >
-                    {t("today.sort_by_count")}
-                  </button>
-                  <button
-                    onClick={() => setGroupSortType("name")}
-                    className={`px-1.5 py-0.5 rounded transition-all ${
-                      groupSortType === "name" ? "bg-white text-slate-800 shadow-sm" : "text-slate-400 hover:text-slate-600"
-                    }`}
-                  >
-                    {t("today.sort_by_name")}
-                  </button>
-                </div>
-              </div>
-              <button 
-                onClick={() => setShowGroupFilter(false)} 
-                className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:text-slate-600 active:scale-90 transition-all"
-              >
-                <span className="material-symbols-outlined !text-[16px]">close</span>
-              </button>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={() => {
-                  setSelectedGroupId("All");
-                  setSelectedDjName("All");
-                  setShowGroupFilter(false);
-                }}
-                className={`px-3 py-2.5 rounded-xl text-[11px] font-black text-left transition-all border ${
-                  selectedGroupId === "All"
-                    ? "bg-[#1e293b] text-white border-[#1e293b] shadow-md shadow-slate-100"
-                    : "bg-slate-50/50 text-slate-600 border-transparent hover:bg-slate-100/80"
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="truncate">{t("today.all_groups")}</span>
-                  {selectedGroupId === "All" && (
-                    <span className="material-symbols-outlined !text-[12px]">check_circle</span>
-                  )}
-                </div>
-              </button>
-
-              {sortedActiveGroups.map(grp => {
-                const isSelected = selectedGroupId === grp.id;
-                const displayName = language === "KR" ? (grp.nativeName || grp.name) : grp.name;
-                const count = groupWeeklyCounts[grp.id] || 0;
-                return (
-                  <button
-                    key={grp.id}
-                    onClick={() => {
-                      setSelectedGroupId(grp.id);
-                      setSelectedDjName("All");
-                      setShowGroupFilter(false);
-                    }}
-                    className={`px-3 py-2.5 rounded-xl text-[11px] font-black text-left transition-all border ${
-                      isSelected
-                        ? "bg-[#1e293b] text-white border-[#1e293b] shadow-md shadow-slate-100"
-                        : "bg-slate-50/50 text-slate-600 border-transparent hover:bg-slate-100/80"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="truncate pr-1">{displayName} ({count})</span>
-                      {isSelected && (
-                        <span className="material-symbols-outlined !text-[12px]">check_circle</span>
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* DJ 드롭다운 팝오버 셀렉터 */}
-        {showDjFilter && (
-          <div className="absolute top-full left-0 right-0 z-40 bg-white shadow-2xl border-t border-slate-100 p-4 max-h-[300px] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-300">
-            <div className="flex items-center justify-between mb-3 px-1">
-              <div className="flex items-center gap-2">
-                <span className="text-[13px] font-black text-slate-800 uppercase tracking-tight">{t("today.dj_filter")}</span>
-                <div className="flex items-center gap-0.5 bg-slate-100 p-0.5 rounded-lg text-[9px] font-black">
-                  <button
-                    onClick={() => setDjSortType("count")}
-                    className={`px-1.5 py-0.5 rounded transition-all ${
-                      djSortType === "count" ? "bg-white text-slate-800 shadow-sm" : "text-slate-400 hover:text-slate-600"
-                    }`}
-                  >
-                    {t("today.sort_by_count")}
-                  </button>
-                  <button
-                    onClick={() => setDjSortType("name")}
-                    className={`px-1.5 py-0.5 rounded transition-all ${
-                      djSortType === "name" ? "bg-white text-slate-800 shadow-sm" : "text-slate-400 hover:text-slate-600"
-                    }`}
-                  >
-                    {t("today.sort_by_name")}
-                  </button>
-                </div>
-              </div>
-              <button 
-                onClick={() => setShowDjFilter(false)} 
-                className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:text-slate-600 active:scale-90 transition-all"
-              >
-                <span className="material-symbols-outlined !text-[16px]">close</span>
-              </button>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={() => {
-                  setSelectedDjName("All");
-                  setSelectedGroupId("All");
-                  setShowDjFilter(false);
-                }}
-                className={`px-3 py-2.5 rounded-xl text-[11px] font-black text-left transition-all border ${
-                  selectedDjName === "All"
-                    ? "bg-[#1e293b] text-white border-[#1e293b] shadow-md shadow-slate-100"
-                    : "bg-slate-50/50 text-slate-600 border-transparent hover:bg-slate-100/80"
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="truncate">{t("today.all_djs")}</span>
-                  {selectedDjName === "All" && (
-                    <span className="material-symbols-outlined !text-[12px]">check_circle</span>
-                  )}
-                </div>
-              </button>
-
-              {activeDjs.map(dj => {
-                const isSelected = selectedDjName === dj;
-                const count = djWeeklyCounts[dj] || 0;
-                return (
-                  <button
-                    key={dj}
-                    onClick={() => {
-                      setSelectedDjName(dj);
-                      setSelectedGroupId("All");
-                      setShowDjFilter(false);
-                    }}
-                    className={`px-3 py-2.5 rounded-xl text-[11px] font-black text-left transition-all border ${
-                      isSelected
-                        ? "bg-[#1e293b] text-white border-[#1e293b] shadow-md shadow-slate-100"
-                        : "bg-slate-50/50 text-slate-600 border-transparent hover:bg-slate-100/80"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="truncate pr-1">{formatDjFilterName(dj, language)} ({count})</span>
-                      {isSelected && (
-                        <span className="material-symbols-outlined !text-[12px]">check_circle</span>
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
+        {/* 목록 / 타임라인 뷰방식 토글 */}
+        <div className="flex items-center bg-slate-100 p-0.5 rounded-xl shadow-inner">
+          <button
+            onClick={() => setTodayViewMode("list")}
+            className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all cursor-pointer ${
+              todayViewMode === "list"
+                ? "bg-white text-[#1e293b] shadow-sm"
+                : "text-slate-400 hover:text-slate-600"
+            }`}
+            title={t("today.view_mode_list")}
+          >
+            <span className="material-symbols-outlined !text-[16px]">format_list_bulleted</span>
+          </button>
+          <button
+            onClick={() => setTodayViewMode("timeline")}
+            className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all cursor-pointer ${
+              todayViewMode === "timeline"
+                ? "bg-white text-[#1e293b] shadow-sm"
+                : "text-slate-400 hover:text-slate-600"
+            }`}
+            title={t("today.view_mode_timeline")}
+          >
+            <span className="material-symbols-outlined !text-[16px]">schedule</span>
+          </button>
+        </div>
       </div>
 
       {/* ── Content ── */}
       <div className="px-4 pt-5 pb-6">
 
         {selectedGroupId === "All" && selectedDjName === "All" ? (
-          /* 기존 지역 기반 당일 소셜/클래스 목록 (하위 분리 컴포넌트 탑재) */
-          <div className="space-y-7 animate-in fade-in duration-300">
-            {/* 소셜 및 쁘락띠까 목록 */}
-            <TodaySocialSection
-              loadingSocials={loadingSocials}
-              milongas={milongas}
-              milongasByDistrict={milongasByDistrict}
-              selectedDate={selectedDate}
-              venuesMap={venuesMap}
-              openSocialModal={openSocialModal}
-              practicas={practicas}
-            />
+          todayViewMode === "timeline" ? (
+            /* 타임라인 방식 뷰 (이미지 배제한 텍스트 중심) */
+            <div className="space-y-6 animate-in fade-in duration-300">
+              {/* 낮 일정 */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="material-symbols-outlined !text-[20px] text-amber-500">light_mode</span>
+                  <span className="text-[14px] font-black text-[#1e293b] tracking-tight">
+                    {t("today.time_slot_day")}
+                  </span>
+                  {dayTimelineEvents.length > 0 && (
+                    <span className="text-[12px] font-bold text-slate-400">{dayTimelineEvents.length}</span>
+                  )}
+                </div>
 
-            {/* 클래스 목록 */}
-            <TodayClassSection
-              loadingClasses={loadingClasses}
-              filteredClasses={filteredClasses}
-              openClassModal={openClassModal}
-            />
+                {loadingSocials || loadingClasses ? (
+                  <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-3">
+                    {[1, 2].map(i => (
+                      <div key={i} className="h-10 w-full rounded-xl bg-slate-100 animate-pulse" />
+                    ))}
+                  </div>
+                ) : dayTimelineEvents.length > 0 ? (
+                  <div className="bg-white rounded-2xl border border-slate-100 p-3 shadow-sm space-y-2">
+                    {dayTimelineEvents.map((ev) => (
+                      <TimelineEventItem 
+                        key={ev.id} 
+                        ev={ev} 
+                        onClick={() => {
+                          if (ev.type === "class") openClassModal(ev.id);
+                          else openSocialModal(ev.id);
+                        }} 
+                        language={language}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center py-6 bg-white rounded-2xl border border-dashed border-slate-200">
+                    <p className="text-[12px] font-semibold text-slate-400">{t("today.no_day_schedule")}</p>
+                  </div>
+                )}
+              </div>
 
-            {/* 이벤트 배너 슬라이더 */}
-            <TodayHeroSection
-              loadingEvents={loadingEvents}
-              heroEvents={heroEvents}
-              currentBannerIndex={currentBannerIndex}
-              setCurrentBannerIndex={setCurrentBannerIndex}
-              setHeroEvent={setHeroEvent}
-              openEventModal={openEventModal}
-              getEventDateRange={getEventDateRange}
-              getEventDday={getEventDday}
-            />
-          </div>
+              {/* 저녁 일정 */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="material-symbols-outlined !text-[20px] text-indigo-500">dark_mode</span>
+                  <span className="text-[14px] font-black text-[#1e293b] tracking-tight">
+                    {t("today.time_slot_night")}
+                  </span>
+                  {nightTimelineEvents.length > 0 && (
+                    <span className="text-[12px] font-bold text-slate-400">{nightTimelineEvents.length}</span>
+                  )}
+                </div>
+
+                {loadingSocials || loadingClasses ? (
+                  <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-3">
+                    {[1, 2].map(i => (
+                      <div key={i} className="h-10 w-full rounded-xl bg-slate-100 animate-pulse" />
+                    ))}
+                  </div>
+                ) : nightTimelineEvents.length > 0 ? (
+                  <div className="bg-white rounded-2xl border border-slate-100 p-3 shadow-sm space-y-2">
+                    {nightTimelineEvents.map((ev) => (
+                      <TimelineEventItem 
+                        key={ev.id} 
+                        ev={ev} 
+                        onClick={() => {
+                          if (ev.type === "class") openClassModal(ev.id);
+                          else openSocialModal(ev.id);
+                        }} 
+                        language={language}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center py-6 bg-white rounded-2xl border border-dashed border-slate-200">
+                    <p className="text-[12px] font-semibold text-slate-400">{t("today.no_night_schedule")}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            /* 기존 지역 기반 당일 소셜/클래스 목록 (하위 분리 컴포넌트 탑재) */
+            <div className="space-y-7 animate-in fade-in duration-300">
+              {/* 소셜 및 쁘락띠까 목록 */}
+              {(todayTypeFilter === "all" || todayTypeFilter === "social" || todayTypeFilter === "practice") && (
+                <TodaySocialSection
+                  loadingSocials={loadingSocials}
+                  milongas={todayTypeFilter === "practice" ? [] : milongas}
+                  milongasByDistrict={todayTypeFilter === "practice" ? [] : milongasByDistrict}
+                  selectedDate={selectedDate}
+                  venuesMap={venuesMap}
+                  openSocialModal={openSocialModal}
+                  practicas={todayTypeFilter === "social" ? [] : practicas}
+                  practicasByDistrict={practicasByDistrict}
+                  currentFilter={todayTypeFilter}
+                />
+              )}
+
+              {/* 클래스 목록 */}
+              {(todayTypeFilter === "all" || todayTypeFilter === "class") && (
+                <TodayClassSection
+                  loadingClasses={loadingClasses}
+                  filteredClasses={filteredClasses}
+                  openClassModal={openClassModal}
+                  classesByDistrict={classesByDistrict}
+                  currentFilter={todayTypeFilter}
+                  venuesMap={venuesMap}
+                />
+              )}
+
+              {/* 이벤트 배너 슬라이더 (오늘 진행 중인 이벤트 풀샷) */}
+              {(todayTypeFilter === "all" || todayTypeFilter === "event") && (
+                <TodayHeroSection
+                  loadingEvents={loadingEvents}
+                  todayActiveEvents={todayActiveEvents}
+                  openEventModal={openEventModal}
+                  getEventDateRange={getEventDateRange}
+                  getEventDday={getEventDday}
+                  currentFilter={todayTypeFilter}
+                />
+              )}
+            </div>
+          )
         ) : (
           /* 그룹 모드 (오늘 상세 카드 + 이번 주 요일별 세로 목록) */
           <div className="space-y-6 animate-in fade-in duration-300">
@@ -1667,13 +2301,26 @@ export default function TodayPageContent() {
                   </span>
                 </div>
                 {weekEventsByDate.length > 0 && (
-                  <button
-                    onClick={handleDownloadWeeklySchedule}
-                    className="flex items-center gap-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 hover:text-indigo-600 rounded-lg px-2.5 py-1.5 text-[10px] font-bold shadow-sm transition-all active:scale-95 cursor-pointer"
-                  >
-                    <span className="material-symbols-outlined !text-[13px]">download</span>
-                    <span>{language === "KR" ? "이미지 저장" : "Save Image"}</span>
-                  </button>
+                  <div className="flex items-center gap-1.5">
+
+
+                    <button
+                      onClick={() => setWeeklyViewMode(weeklyViewMode === "list" ? "tile" : "list")}
+                      className="flex items-center justify-center bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 hover:text-indigo-600 rounded-lg p-2 text-[14px] shadow-sm transition-all active:scale-95 cursor-pointer"
+                      title={language === "KR" ? (weeklyViewMode === "list" ? "타일 보기로 전환" : "리스트 보기로 전환") : (weeklyViewMode === "list" ? "Switch to Tile" : "Switch to List")}
+                    >
+                      <span className="material-symbols-outlined !text-[16px]">
+                        {weeklyViewMode === "list" ? "grid_view" : "format_list_bulleted"}
+                      </span>
+                    </button>
+                    <button
+                      onClick={handleDownloadWeeklySchedule}
+                      className="flex items-center justify-center bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 hover:text-indigo-600 rounded-lg p-2 text-[14px] shadow-sm transition-all active:scale-95 cursor-pointer"
+                      title={language === "KR" ? "이미지 저장" : "Save Image"}
+                    >
+                      <span className="material-symbols-outlined !text-[16px]">download</span>
+                    </button>
+                  </div>
                 )}
               </div>
 
@@ -1685,7 +2332,7 @@ export default function TodayPageContent() {
                     <button
                       key={wk}
                       onClick={() => setSelectedWeekTab(wk - 1)}
-                      className={`flex-1 py-2 rounded-lg text-[11px] font-black transition-all ${
+                      className={`flex-1 py-2 rounded-lg text-[11px] font-black transition-all cursor-pointer ${
                         isActive
                           ? "bg-white text-indigo-600 shadow-sm"
                           : "text-slate-500 hover:text-slate-800"
@@ -1697,136 +2344,345 @@ export default function TodayPageContent() {
                 })}
               </div>
 
-              {weekEventsByDate.length > 0 ? (
-                <div id="weekly-schedule-capture-area" className="space-y-4 p-2 bg-[#f5f7fa] rounded-2xl">
-                  {weekEventsByDate.map(({ date, ymd, events }) => {
-                    const formattedDate = language === "KR"
-                      ? `${date.getMonth() + 1}월 ${date.getDate()}일 (${getDayLabel(language, date)})`
-                      : date.toLocaleDateString("en-US", { month: "short", day: "numeric", weekday: "short" });
+              {/* 타일 뷰 커스터마이징 제어판 (배경색 및 무늬 패턴) */}
+              {weeklyViewMode === "tile" && weekEventsByDate.length > 0 && (
+                <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm mb-4 space-y-4 animate-in fade-in slide-in-from-top-1 duration-300">
+                  {/* 배경색 선택 */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                      <span className="material-symbols-outlined !text-[14px]">palette</span>
+                      {t("today.weekly_bg_color")}
+                    </span>
+                    
+                    <div className="relative">
+                      {/* 현재 선택된 컬러 표시 버튼 */}
+                      <button
+                        onClick={() => setShowColorPicker(!showColorPicker)}
+                        className="flex items-center gap-2 bg-slate-50 border border-slate-200 hover:bg-slate-100 rounded-xl px-3 py-1.5 text-[11px] font-black text-slate-700 transition-all shadow-sm active:scale-95 cursor-pointer"
+                      >
+                        <span 
+                          className="w-3.5 h-3.5 rounded-full border border-black/10 flex-shrink-0"
+                          style={{ backgroundColor: weeklyBgColor }}
+                        />
+                        <span className="font-mono text-[10px] uppercase">{weeklyBgColor}</span>
+                        <span className="material-symbols-outlined !text-[14px] text-slate-400">
+                          {showColorPicker ? "expand_less" : "expand_more"}
+                        </span>
+                      </button>
 
-                    const dayOfWeek = date.getDay();
-                    const headerStyle = dayOfWeek === 0 
-                      ? { bg: "bg-rose-50/40 border-b border-rose-100/50", text: "text-rose-600/90", badge: "bg-rose-100/50 text-rose-600" }
-                      : dayOfWeek === 6 
-                      ? { bg: "bg-blue-50/30 border-b border-blue-100/40", text: "text-blue-600/90", badge: "bg-blue-100/50 text-blue-600" }
-                      : { bg: "bg-slate-50/80 border-b border-slate-100", text: "text-slate-700", badge: "bg-slate-200/60 text-slate-600" };
-
-                    return (
-                      <div key={ymd} className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300">
-                        {/* 요일 헤더 */}
-                        <div className={`px-4 py-2.5 flex items-center justify-between ${headerStyle.bg}`}>
-                          <span className={`text-[12px] font-black tracking-tight ${headerStyle.text}`}>{formattedDate}</span>
-                          <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${headerStyle.badge}`}>{events.length}</span>
-                        </div>
-
-                        {/* 요일 내 이벤트 리스트 */}
-                        <div className="divide-y divide-slate-100/60">
-                          {events.map((ev: any, idx: number) => {
-                            const isClickable = ["class", "social", "milonga", "practice"].includes(ev.type);
-                            const hasMessage = ev.message && ev.message.trim() !== "";
-
-                            const typeColors: Record<string, { bg: string; text: string; labelKo: string; labelEn: string }> = {
-                              milonga: { bg: "bg-rose-50 text-rose-600", text: "text-rose-600", labelKo: "소셜", labelEn: "Social" },
-                              social: { bg: "bg-rose-50 text-rose-600", text: "text-rose-600", labelKo: "소셜", labelEn: "Social" },
-                              class: { bg: "bg-blue-50 text-blue-600", text: "text-blue-600", labelKo: "클래스", labelEn: "Class" },
-                              practice: { bg: "bg-amber-50 text-amber-600", text: "text-amber-600", labelKo: "쁘락띠까", labelEn: "Practica" },
-                              general: { bg: "bg-slate-50 text-slate-600", text: "text-slate-600", labelKo: "일반", labelEn: "General" },
-                              rental: { bg: "bg-purple-50 text-purple-600", text: "text-purple-600", labelKo: "대관", labelEn: "Rental" },
-                            };
-                            const typeMeta = typeColors[ev.type] || typeColors.general;
-                            const typeLabel = language === "KR" ? typeMeta.labelKo : typeMeta.labelEn;
-
-                            return (
-                              <div 
-                                key={`${ev.id}-${idx}`}
-                                onClick={isClickable ? () => handleEventClick(ev) : undefined}
-                                className={`p-4 flex gap-3.5 items-start transition-all ${isClickable ? "cursor-pointer hover:bg-slate-50/40 active:bg-slate-50/80" : ""}`}
-                                role={isClickable ? "button" : undefined}
-                                tabIndex={isClickable ? 0 : undefined}
-                              >
-                                {/* 썸네일 이미지 */}
-                                <div className="w-12 h-12 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0 relative border border-slate-100/60 shadow-sm">
-                                  {ev.imageUrl ? (
-                                    <img 
-                                      src={ev.imageUrl} 
-                                      alt={ev.title} 
-                                      className="w-full h-full object-cover"
-                                      loading="lazy"
-                                    />
-                                  ) : (
-                                    <div className={`w-full h-full bg-gradient-to-br ${
-                                      ev.type === 'class' ? 'from-blue-400 to-indigo-500' :
-                                      ev.type === 'practice' ? 'from-amber-400 to-orange-500' :
-                                      'from-rose-400 to-pink-500'
-                                    } flex items-center justify-center`}>
-                                      <span className="material-symbols-outlined text-white !text-[16px]">
-                                        {ev.type === 'class' ? 'school' :
-                                         ev.type === 'practice' ? 'directions_run' :
-                                         ev.type === 'milonga' ? 'local_fire_department' : 'event'}
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-
-                                {/* 텍스트 영역 */}
-                                <div className="min-w-0 flex-1 space-y-1">
-                                  <div className="flex items-center gap-1.5 flex-wrap">
-                                    <span className={`text-[8px] font-black px-1.5 py-0.5 rounded ${typeMeta.bg}`}>
-                                      {typeLabel}
+                      {/* 드롭다운 레이어 */}
+                      {showColorPicker && (
+                        <>
+                          {/* 외부 클릭 감지용 투명 오버레이 */}
+                          <div 
+                            className="fixed inset-0 z-40" 
+                            onClick={() => setShowColorPicker(false)}
+                          />
+                          <div className="absolute right-0 mt-1.5 w-48 bg-white border border-slate-200/80 rounded-2xl shadow-xl p-2.5 z-50 grid grid-cols-5 gap-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
+                            {PALETTE_COLORS.map((color) => {
+                              const isSelected = weeklyBgColor === color;
+                              const dark = isDark(color);
+                              return (
+                                <button
+                                  key={color}
+                                  onClick={() => {
+                                    setWeeklyBgColor(color);
+                                    setShowColorPicker(false);
+                                  }}
+                                  className={`w-7 h-7 rounded-full border transition-all active:scale-90 relative ${
+                                    isSelected ? "border-slate-800 scale-105 shadow-sm" : "border-slate-200/60 hover:scale-105"
+                                  }`}
+                                  style={{ backgroundColor: color }}
+                                  title={color}
+                                >
+                                  {isSelected && (
+                                    <span className={`absolute inset-0 flex items-center justify-center text-[10px] ${dark ? "text-white" : "text-slate-800"}`}>
+                                      <span className="material-symbols-outlined !text-[12px] font-bold">check</span>
                                     </span>
-                                    {ev.startTime && (
-                                      <span className="text-[10px] font-bold text-slate-400">
-                                        {ev.startTime} {ev.endTime ? `~ ${ev.endTime}` : ""}
-                                      </span>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 무늬 패턴 선택 */}
+                  <div className="flex flex-col gap-2">
+                    <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                      <span className="material-symbols-outlined !text-[14px]">texture</span>
+                      {t("today.weekly_pattern")}
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      {(["none", "stripe", "dot"] as const).map((pat) => {
+                        const isSelected = weeklyPattern === pat;
+                        const label = t(`today.weekly_pattern_${pat}`);
+                        return (
+                          <button
+                            key={pat}
+                            onClick={() => setWeeklyPattern(pat)}
+                            className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all border active:scale-95 cursor-pointer ${
+                              isSelected
+                                ? "bg-[#1e293b] text-white border-[#1e293b] shadow-sm"
+                                : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {weekEventsByDate.length > 0 ? (
+                weeklyViewMode === "list" ? (
+                  <div 
+                    id="weekly-schedule-capture-area" 
+                    className="space-y-4 p-2 rounded-2xl transition-all duration-300"
+                    style={{ backgroundColor: weeklyBgColor, ...getPatternStyle(weeklyPattern, weeklyBgColor) }}
+                  >
+                    {/* 캡처용 타이틀 헤더 */}
+                    <div className={`w-full text-center py-4 px-6 border-b font-black text-[16px] md:text-[18px] tracking-tight transition-all duration-300 rounded-t-2xl ${
+                      isDark(weeklyBgColor) ? "text-white/90 border-white/10" : "text-slate-800 border-slate-200/60"
+                    }`}>
+                      {weeklyHeaderTitle}
+                    </div>
+
+                    {weekEventsByDate.map(({ date, ymd, events }) => {
+                      const formattedDate = language === "KR"
+                        ? `${date.getMonth() + 1}월 ${date.getDate()}일 (${getDayLabel(language, date)})`
+                        : date.toLocaleDateString("en-US", { month: "short", day: "numeric", weekday: "short" });
+
+                      const dayOfWeek = date.getDay();
+                      const headerStyle = dayOfWeek === 0 
+                        ? { bg: "bg-rose-50/40 border-b border-rose-100/50", text: "text-rose-600/90", badge: "bg-rose-100/50 text-rose-600" }
+                        : dayOfWeek === 6 
+                        ? { bg: "bg-blue-50/30 border-b border-blue-100/40", text: "text-blue-600/90", badge: "bg-blue-100/50 text-blue-600" }
+                        : { bg: "bg-slate-50/80 border-b border-slate-100", text: "text-slate-700", badge: "bg-slate-200/60 text-slate-600" };
+
+                      return (
+                        <div key={ymd} className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300">
+                          {/* 요일 헤더 */}
+                          <div className={`px-4 py-2.5 flex items-center justify-between ${headerStyle.bg}`}>
+                            <span className={`text-[12px] font-black tracking-tight ${headerStyle.text}`}>{formattedDate}</span>
+                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${headerStyle.badge}`}>{events.length}</span>
+                          </div>
+
+                          {/* 요일 내 이벤트 리스트 */}
+                          <div className="divide-y divide-slate-100/60">
+                            {events.map((ev: any, idx: number) => {
+                              const isClickable = ["class", "social", "milonga", "practice"].includes(ev.type);
+                              const hasMessage = ev.message && ev.message.trim() !== "";
+
+                              const typeColors: Record<string, { bg: string; text: string; labelKo: string; labelEn: string }> = {
+                                milonga: { bg: "bg-rose-50 text-rose-600", text: "text-rose-600", labelKo: "소셜", labelEn: "Social" },
+                                social: { bg: "bg-rose-50 text-rose-600", text: "text-rose-600", labelKo: "소셜", labelEn: "Social" },
+                                class: { bg: "bg-blue-50 text-blue-600", text: "text-blue-600", labelKo: "클래스", labelEn: "Class" },
+                                practice: { bg: "bg-amber-50 text-amber-600", text: "text-amber-600", labelKo: "쁘락띠까", labelEn: "Practica" },
+                                general: { bg: "bg-slate-50 text-slate-600", text: "text-slate-600", labelKo: "일반", labelEn: "General" },
+                                rental: { bg: "bg-purple-50 text-purple-600", text: "text-purple-600", labelKo: "대관", labelEn: "Rental" },
+                              };
+                              const typeMeta = typeColors[ev.type] || typeColors.general;
+                              const typeLabel = language === "KR" ? typeMeta.labelKo : typeMeta.labelEn;
+
+                              return (
+                                <div 
+                                  key={`${ev.id}-${idx}`}
+                                  onClick={isClickable ? () => handleEventClick(ev) : undefined}
+                                  className={`p-4 flex gap-3.5 items-start transition-all ${isClickable ? "cursor-pointer hover:bg-slate-50/40 active:bg-slate-50/80" : ""}`}
+                                  role={isClickable ? "button" : undefined}
+                                  tabIndex={isClickable ? 0 : undefined}
+                                >
+                                  {/* 썸네일 이미지 */}
+                                  <div className="w-12 h-12 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0 relative border border-slate-100/60 shadow-sm">
+                                    {ev.imageUrl ? (
+                                      <>
+                                        <img 
+                                          src={getProxyImageUrl(ev.imageUrl)} 
+                                          alt={ev.title} 
+                                          className="w-full h-full object-cover"
+                                          loading="lazy"
+                                          onError={(e) => {
+                                            e.currentTarget.style.display = 'none';
+                                            const sibling = e.currentTarget.nextSibling as HTMLElement;
+                                            if (sibling) sibling.style.setProperty('display', 'flex', 'important');
+                                          }}
+                                        />
+                                        <div 
+                                          className={`w-full h-full bg-gradient-to-br ${
+                                            ev.type === 'class' ? 'from-blue-400 to-indigo-500' :
+                                            ev.type === 'practice' ? 'from-amber-400 to-orange-500' :
+                                            'from-rose-400 to-pink-500'
+                                          } flex items-center justify-center`}
+                                          style={{ display: 'none' }}
+                                        >
+                                          <span className="material-symbols-outlined text-white !text-[16px]">
+                                            {ev.type === 'class' ? 'school' :
+                                             ev.type === 'practice' ? 'directions_run' :
+                                             ev.type === 'milonga' ? 'local_fire_department' : 'event'}
+                                          </span>
+                                        </div>
+                                      </>
+                                    ) : (
+                                      <div className={`w-full h-full bg-gradient-to-br ${
+                                        ev.type === 'class' ? 'from-blue-400 to-indigo-500' :
+                                        ev.type === 'practice' ? 'from-amber-400 to-orange-500' :
+                                        'from-rose-400 to-pink-500'
+                                      } flex items-center justify-center`}>
+                                        <span className="material-symbols-outlined text-white !text-[16px]">
+                                          {ev.type === 'class' ? 'school' :
+                                           ev.type === 'practice' ? 'directions_run' :
+                                           ev.type === 'milonga' ? 'local_fire_department' : 'event'}
+                                        </span>
+                                      </div>
                                     )}
                                   </div>
 
-                                  <div className="space-y-0.5">
-                                    <h4 className="text-[12.5px] font-black text-slate-800 leading-tight">
-                                      {ev.title}
-                                      {ev.subtitle && (
-                                        <span className="text-[10.5px] font-semibold text-slate-400 ml-1.5">
-                                          / {ev.subtitle}
+                                  {/* 텍스트 영역 */}
+                                  <div className="min-w-0 flex-1 space-y-1">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <span className={`text-[8px] font-black px-1.5 py-0.5 rounded ${typeMeta.bg}`}>
+                                        {typeLabel}
+                                      </span>
+                                      {ev.startTime && (
+                                        <span className="text-[10px] font-bold text-slate-400">
+                                          {ev.startTime} {ev.endTime ? `~ ${ev.endTime}` : ""}
                                         </span>
                                       )}
-                                    </h4>
-                                  </div>
+                                    </div>
 
-                                  {/* 메타 배지 */}
-                                  <div className="flex flex-wrap gap-x-2.5 gap-y-0.5 text-[9.5px] font-semibold text-slate-400 leading-tight">
-                                    {hasMessage && (
-                                      <span className="text-rose-500 bg-rose-50 font-bold px-1 rounded">
-                                        {ev.message}
-                                      </span>
-                                    )}
-                                    {ev.location && (
-                                      <div className="flex items-center gap-0.5">
-                                        <span className="material-symbols-outlined !text-[10px]">location_on</span>
-                                        <span className="truncate max-w-[120px]">{ev.location}</span>
-                                      </div>
-                                    )}
-                                    {ev.dj && (
-                                      <div className="flex items-center gap-0.5">
-                                        <span className="material-symbols-outlined !text-[10px]">headphones</span>
-                                        <span className="truncate max-w-[90px]">{formatDjFilterName(ev.dj, language)}</span>
-                                      </div>
-                                    )}
-                                    {ev.instructor && (
-                                      <div className="flex items-center gap-0.5">
-                                        <span className="material-symbols-outlined !text-[10px]">school</span>
-                                        <span className="truncate max-w-[90px]">{formatInstructorNames(ev.instructor, language)}</span>
-                                      </div>
-                                    )}
+                                    <div className="space-y-0.5">
+                                      <h4 className="text-[12.5px] font-black text-slate-800 leading-tight">
+                                        {ev.title}
+                                        {ev.subtitle && (
+                                          <span className="text-[10.5px] font-semibold text-slate-400 ml-1.5">
+                                            / {ev.subtitle}
+                                          </span>
+                                        )}
+                                      </h4>
+                                    </div>
+
+                                    {/* 메타 배지 */}
+                                    <div className="flex flex-wrap gap-x-2.5 gap-y-0.5 text-[9.5px] font-semibold text-slate-400 leading-tight">
+                                      {hasMessage && (
+                                        <span className="text-rose-500 bg-rose-50 font-bold px-1 rounded">
+                                          {ev.message}
+                                        </span>
+                                      )}
+                                      {ev.location && (
+                                        <div className="flex items-center gap-0.5">
+                                          <span className="material-symbols-outlined !text-[10px]">location_on</span>
+                                          <span className="whitespace-nowrap">{ev.location}</span>
+                                        </div>
+                                      )}
+                                      {ev.dj && (
+                                        <div className="flex items-center gap-0.5">
+                                          <span className="material-symbols-outlined !text-[10px]">headphones</span>
+                                          <span className="whitespace-nowrap">{formatDjFilterName(ev.dj, language)}</span>
+                                        </div>
+                                      )}
+                                      {ev.instructor && (
+                                        <div className="flex items-center gap-0.5">
+                                          <span className="material-symbols-outlined !text-[10px]">school</span>
+                                          <span className="whitespace-nowrap">{formatInstructorNames(ev.instructor, language)}</span>
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                            );
-                          })}
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div 
+                    id="weekly-schedule-capture-area" 
+                    className="grid grid-cols-3 sm:grid-cols-4 gap-0 p-0 border-t border-l border-slate-200 overflow-hidden transition-all duration-300"
+                    style={{ backgroundColor: weeklyBgColor, ...getPatternStyle(weeklyPattern, weeklyBgColor) }}
+                  >
+                    {/* 캡처용 타이틀 헤더 */}
+                    <div className={`col-span-3 sm:col-span-4 w-full text-center py-4 px-6 border-b font-black text-[16px] md:text-[18px] tracking-tight transition-all duration-300 ${
+                      isDark(weeklyBgColor) ? "text-white/90 border-white/10" : "text-slate-800 border-slate-200/60"
+                    }`}>
+                      {weeklyHeaderTitle}
+                    </div>
+
+                    {weekEventsFlat.map(({ ev, date, ymd }, idx) => {
+                      const yoil = getDayLabel("KR", date);
+                      
+                      const isSunday = date.getDay() === 0;
+                      const isSaturday = date.getDay() === 6;
+                      const dateColorClass = isSunday ? "text-red-500 font-bold" : isSaturday ? "text-blue-500 font-bold" : "text-slate-500 font-semibold";
+
+                      const isClickable = ["class", "social", "milonga", "practice"].includes(ev.type);
+                      const orgDisplay = ev.org || getOrgDisplayForSocial(ev) || ev.groupName || ev.organizerName || "";
+                      
+                      // 시간 중복 노출 방어 처리
+                      const hasRange = ev.startTime && (ev.startTime.includes("-") || ev.startTime.includes("~"));
+                      const displayTime = hasRange ? ev.startTime : `${ev.startTime || ""}${ev.endTime ? ` ~ ${ev.endTime}` : ""}`;
+
+                      return (
+                        <div 
+                          key={`${ev.id}-${idx}`} 
+                          onClick={isClickable ? () => handleEventClick(ev) : undefined}
+                          className={`bg-white border-r border-b border-slate-200 p-2 flex flex-col justify-between items-center text-center min-h-[145px] transition-all duration-300 ${
+                            isClickable ? "cursor-pointer hover:bg-slate-50/40 active:bg-slate-50" : ""
+                          }`}
+                          role={isClickable ? "button" : undefined}
+                          tabIndex={isClickable ? 0 : undefined}
+                        >
+                          {/* 상단 날짜 및 시간 영역 (요일 솟음 보정 flex 연동) */}
+                          <div className="flex flex-col items-center w-full">
+                            <div className={`flex items-center justify-center gap-0.5 text-[10px] tracking-tight ${dateColorClass}`}>
+                              <span>{date.getMonth() + 1}/{date.getDate()}</span>
+                              <span className="leading-none flex items-center justify-center">({yoil})</span>
+                            </div>
+                            <span className="text-[10px] md:text-[11px] font-normal text-slate-500 whitespace-nowrap truncate w-full mt-0.5 leading-none">
+                              {displayTime}
+                            </span>
+                          </div>
+
+                          {/* 구분선 (단순 실선) */}
+                          <div className="h-[1px] bg-slate-100 w-full my-1"></div>
+
+                          {/* 중앙 콘텐츠 영역 (제목 및 조직/org) - 여백 축소 */}
+                          <div className="flex-1 flex flex-col justify-center items-center w-full py-0.5">
+                            <h4 className="text-[12px] md:text-[13px] font-black text-slate-900 tracking-tight leading-tight line-clamp-2">
+                              {ev.title}
+                            </h4>
+                            {orgDisplay && (
+                              <p className="text-[9px] md:text-[10px] font-semibold text-slate-400 mt-0.5 truncate max-w-full text-center leading-none">
+                                {orgDisplay}
+                              </p>
+                            )}
+                          </div>
+
+                          {/* 하단 DJ/강사 정보 배지 (세로 두 줄 알약 형태 - 간격 및 패딩 보강) */}
+                          <div className="w-full mt-2">
+                            {ev.dj ? (
+                              <div className="flex flex-col items-center justify-center border border-slate-200 rounded-lg px-1 py-1 bg-slate-50/50 w-full text-[8.5px] md:text-[9.5px] tracking-tight">
+                                <span className="text-slate-400 font-medium scale-90 select-none leading-none">DJ</span>
+                                <span className="text-slate-700 font-bold mt-1 text-center break-words w-full px-0.5 leading-tight">{formatDjFilterName(ev.dj, language)}</span>
+                              </div>
+                            ) : ev.instructor ? (
+                              <div className="flex flex-col items-center justify-center border border-slate-200 rounded-lg px-1 py-1 bg-slate-50/50 w-full text-[8.5px] md:text-[9.5px] tracking-tight">
+                                <span className="text-slate-400 font-medium scale-90 select-none leading-none">강사</span>
+                                <span className="text-slate-700 font-bold mt-1 text-center break-words w-full px-0.5 leading-tight">{formatInstructorNames(ev.instructor, language)}</span>
+                              </div>
+                            ) : null}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )
               ) : (
                 <div className="flex flex-col items-center justify-center py-8 bg-white rounded-2xl border border-dashed border-slate-200">
                   <span className="material-symbols-outlined !text-[32px] text-slate-300 mb-2">event_busy</span>
@@ -1835,6 +2691,7 @@ export default function TodayPageContent() {
                   </p>
                 </div>
               )}
+
             </div>
           </div>
         )}

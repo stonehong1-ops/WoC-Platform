@@ -141,12 +141,12 @@ export default function NamecardModal({ user, isOpen, onClose, onChat, onCall }:
 
           {/* Scrollable Area */}
           <div className="overflow-y-auto max-h-[75vh] sm:max-h-[85vh] flex flex-col namecard-scrollbar-hide">
-            {/* Profile Visual Section - shrink-0 부여로 이미지 찌그러짐 원천 봉쇄, 모바일에서는 h-40으로 축소 */}
-            <div className="relative w-full overflow-hidden shrink-0 h-40 sm:h-64">
+            {/* Profile Visual Section - shrink-0 부여로 이미지 찌그러짐 원천 봉쇄, 모바일에서는 h-72으로 확대 */}
+            <div className="relative w-full overflow-hidden shrink-0 h-72 sm:h-96">
               {user.photoURL ? (
                 <img 
                   alt={`${displayName} Professional Portrait`} 
-                  className="w-full h-full object-cover grayscale-[10%] brightness-95" 
+                  className="w-full h-full object-cover object-center grayscale-[10%] brightness-95" 
                   src={user.photoURL}
                 />
               ) : (
@@ -156,71 +156,58 @@ export default function NamecardModal({ user, isOpen, onClose, onChat, onCall }:
                   </span>
                 </div>
               )}
-              {/* Role Badges */}
-              <div className="absolute right-4 top-16 z-30 flex flex-col gap-2 items-end">
-                {user.roles && user.roles.map((role, idx) => {
-                  if (idx === 0) {
-                    return (
-                      <span key={role} className="px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-primary text-[10px] font-bold glass-effect">
-                        {role}
-                      </span>
-                    );
-                  }
-                  return (
-                    <span key={role} className="px-3 py-1 rounded-full border border-outline-variant bg-surface-container-low/80 text-on-surface-variant text-[10px] font-bold glass-effect">
-                      {role}
-                    </span>
-                  );
-                })}
-              </div>
-              <div className="absolute bottom-0 left-0 w-full h-24 bg-gradient-to-t from-surface to-transparent"></div>
-            </div>
+              {/* Gradient overlay for better text readability */}
+              <div className="absolute bottom-0 left-0 w-full h-36 bg-gradient-to-t from-black/80 via-black/30 to-transparent z-20 pointer-events-none"></div>
 
-            {/* Content Canvas */}
-            <div className="px-6 sm:px-8 -mt-6 relative z-10 pb-6 flex flex-col">
-              {/* Hero Info */}
-              <div className="flex flex-col gap-1 mb-5 shrink-0">
-                <h1 className="text-[26px] font-black text-on-surface tracking-tight">{displayName}</h1>
-                <div className="flex flex-col mt-2 gap-1">
-                  {subName && <p className="text-[13px] font-bold text-on-surface-variant/80 tracking-wide">{subName}</p>}
-                  <div className="min-h-[16px]">
+              {/* Name Overlay */}
+              <div className="absolute bottom-6 left-6 sm:left-8 z-30 drop-shadow-md">
+                <h1 className="text-[28px] font-black text-white tracking-tight flex items-baseline gap-2" style={{ textShadow: '0px 2px 8px rgba(0,0,0,0.8)' }}>
+                  {displayName}
+                  {subName && <span className="text-[16px] font-bold text-white/90 tracking-wide font-normal" style={{ textShadow: '0px 2px 6px rgba(0,0,0,0.8)' }}>{subName}</span>}
+                </h1>
+                <div className="flex flex-col gap-0.5 mt-1">
+                  <div className="min-h-[14px]">
                     {user.email ? (
-                      <p className="text-xs text-on-surface-variant/60 mt-0.5">{user.email}</p>
+                      <p className="text-[12px] text-white/80 font-medium tracking-wide" style={{ textShadow: '0px 1px 4px rgba(0,0,0,0.8)' }}>{user.email}</p>
                     ) : (
-                      <p className="text-xs text-transparent mt-0.5 select-none">placeholder@email.com</p>
+                      <p className="text-[12px] text-transparent select-none">placeholder@email.com</p>
                     )}
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* Content Canvas */}
+            <div className="px-6 sm:px-8 pt-6 relative z-10 pb-6 flex flex-col">
 
               {/* Bio Card */}
               {user.bio && (
-                <div className="bg-surface-container-low rounded-xl p-4 mb-5 border border-surface-container-highest/50 shrink-0">
-                  <p className="font-body-sm text-body-sm text-on-surface italic leading-relaxed">
+                <div className="bg-surface-container-low rounded-xl p-3 mb-4 border border-surface-container-highest/50 shrink-0">
+                  <p className="text-[12px] text-on-surface italic leading-relaxed">
                     "{user.bio}"
                   </p>
                 </div>
               )}
 
               {/* Stats Grid */}
-              <div className="grid grid-cols-3 gap-2 mb-5 shrink-0">
-                <div className="bg-secondary-container/30 p-[14px] rounded-xl flex flex-col items-center justify-center text-center">
-                  <span className="text-[9px] uppercase tracking-wider font-bold text-on-secondary-container/60 mb-0.5">Role</span>
-                  <span className="font-headline-sm text-[15px] font-bold text-on-secondary-container">
+              <div className="grid grid-cols-3 gap-2 mb-4 shrink-0">
+                <div className="bg-secondary-container/30 p-[10px] rounded-xl flex flex-col items-center justify-center text-center">
+                  <span className="text-[8px] uppercase tracking-wider font-bold text-on-secondary-container/60 mb-0.5">Role</span>
+                  <span className="text-[13px] font-bold text-on-secondary-container">
                     {user.role ? (user.role.charAt(0).toUpperCase() + user.role.slice(1)) : (user.roles?.[0] || 'Member')}
                   </span>
                 </div>
-                <div className="bg-primary-container/10 p-[14px] rounded-xl flex flex-col items-center justify-center text-center">
-                  <span className="text-[9px] uppercase tracking-wider font-bold text-primary/60 mb-0.5">Career</span>
-                  <span className="font-headline-sm text-[15px] font-bold text-primary">
+                <div className="bg-primary-container/10 p-[10px] rounded-xl flex flex-col items-center justify-center text-center">
+                  <span className="text-[8px] uppercase tracking-wider font-bold text-primary/60 mb-0.5">Career</span>
+                  <span className="text-[13px] font-bold text-primary">
                     {user.career 
                       ? calculateCareerDuration(user.career, t) 
                       : t('my.not_linked')}
                   </span>
                 </div>
-                <div className="bg-tertiary-fixed/30 p-[14px] rounded-xl flex flex-col items-center justify-center text-center">
-                  <span className="text-[9px] uppercase tracking-wider font-bold text-on-tertiary-fixed-variant/60 mb-0.5">Partner</span>
-                  <span className="font-headline-sm text-[15px] font-bold text-on-tertiary-fixed-variant">
+                <div className="bg-tertiary-fixed/30 p-[10px] rounded-xl flex flex-col items-center justify-center text-center">
+                  <span className="text-[8px] uppercase tracking-wider font-bold text-on-tertiary-fixed-variant/60 mb-0.5">Partner</span>
+                  <span className="text-[13px] font-bold text-on-tertiary-fixed-variant">
                     {user.partnerStatus === 'has' 
                       ? t('myinfo.partnership_has') 
                       : user.partnerStatus === 'searching' 
@@ -231,52 +218,52 @@ export default function NamecardModal({ user, isOpen, onClose, onChat, onCall }:
               </div>
 
               {/* Social Links */}
-              <div className="flex justify-around items-center py-4 border-y border-outline-variant/20 mb-6 shrink-0">
+              <div className="flex justify-around items-center py-3 border-y border-outline-variant/20 mb-4 shrink-0">
                 <div 
                   className={`flex flex-col items-center gap-1 group transition-opacity ${user.socialLinks?.facebook ? 'cursor-pointer' : 'opacity-30'}`}
                   onClick={() => user.socialLinks?.facebook && window.open(user.socialLinks.facebook, '_blank')}
                 >
-                  <div className="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center group-hover:bg-primary/10 transition-colors active:scale-95">
-                    <span className="material-symbols-outlined text-[20px] text-outline group-hover:text-primary transition-colors">face_nod</span>
+                  <div className="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center group-hover:bg-primary/10 transition-colors active:scale-95">
+                    <span className="material-symbols-outlined text-[16px] text-outline group-hover:text-primary transition-colors">face_nod</span>
                   </div>
-                  <span className="text-[10px] font-medium text-on-surface-variant">Facebook</span>
+                  <span className="text-[9px] font-medium text-on-surface-variant">Facebook</span>
                 </div>
                 <div 
                   className={`flex flex-col items-center gap-1 group transition-opacity ${user.socialLinks?.instagram ? 'cursor-pointer' : 'opacity-30'}`}
                   onClick={() => user.socialLinks?.instagram && window.open(user.socialLinks.instagram, '_blank')}
                 >
-                  <div className="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center group-hover:bg-primary/10 transition-colors active:scale-95">
-                    <span className="material-symbols-outlined text-[20px] text-outline group-hover:text-primary transition-colors">photo_camera</span>
+                  <div className="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center group-hover:bg-primary/10 transition-colors active:scale-95">
+                    <span className="material-symbols-outlined text-[16px] text-outline group-hover:text-primary transition-colors">photo_camera</span>
                   </div>
-                  <span className="text-[10px] font-medium text-on-surface-variant">Instagram</span>
+                  <span className="text-[9px] font-medium text-on-surface-variant">Instagram</span>
                 </div>
                 <div 
                   className={`flex flex-col items-center gap-1 group transition-opacity ${user.socialLinks?.whatsapp ? 'cursor-pointer' : 'opacity-30'}`}
                   onClick={() => user.socialLinks?.whatsapp && window.open(user.socialLinks.whatsapp, '_blank')}
                 >
-                  <div className="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center group-hover:bg-primary/10 transition-colors active:scale-95">
-                    <span className="material-symbols-outlined text-[20px] text-outline group-hover:text-primary transition-colors">chat</span>
+                  <div className="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center group-hover:bg-primary/10 transition-colors active:scale-95">
+                    <span className="material-symbols-outlined text-[16px] text-outline group-hover:text-primary transition-colors">chat</span>
                   </div>
-                  <span className="text-[10px] font-medium text-on-surface-variant">WhatsApp</span>
+                  <span className="text-[9px] font-medium text-on-surface-variant">WhatsApp</span>
                 </div>
               </div>
 
               {/* Action Cluster */}
-              <div className="flex gap-4 shrink-0 pb-4 pb-safe">
+              <div className="flex gap-3 shrink-0 pb-2 pb-safe">
                 <button 
                   onClick={() => onChat?.(user.uid)}
-                  className="flex-1 h-12 rounded-xl bg-primary text-white font-action-text text-action-text flex items-center justify-center gap-2 shadow-lg shadow-primary/20 active:scale-[0.98] transition-all"
+                  className="flex-1 h-10 rounded-xl bg-primary text-white text-[14px] font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-primary/20 active:scale-[0.98] transition-all"
                 >
-                  <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>chat_bubble</span>
+                  <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>chat_bubble</span>
                   Chat
                 </button>
                 {/* phone 혹은 phoneNumber가 존재할 때 정상 노출되도록 철저히 가드 */}
                 {(user.phone || user.phoneNumber) && onCall && (
                   <button 
                     onClick={handleCallClick}
-                    className="w-12 h-12 rounded-xl border-2 border-outline-variant bg-transparent text-on-surface flex items-center justify-center active:bg-surface-container-high active:scale-[0.98] transition-all shrink-0"
+                    className="w-10 h-10 rounded-xl border-2 border-outline-variant bg-transparent text-on-surface flex items-center justify-center active:bg-surface-container-high active:scale-[0.98] transition-all shrink-0"
                   >
-                    <span className="material-symbols-outlined text-[20px]">call</span>
+                    <span className="material-symbols-outlined text-[18px]">call</span>
                   </button>
                 )}
               </div>

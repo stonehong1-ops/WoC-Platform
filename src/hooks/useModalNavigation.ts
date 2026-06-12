@@ -28,16 +28,14 @@ export function useModalNavigation(key: string) {
   const closeModal = useCallback(() => {
     if (!isOpen) return;
 
+    // router.back() 사용 시 딥링크나 새로고침 후 모달 닫기 시 이전 사이트(예: 페이스북)로 이탈하는 문제 발생.
+    // 이를 방지하기 위해 해당 파라미터만 제거한 원래의 URL로 replace 합니다.
     const params = new URLSearchParams(searchParams.toString());
     params.delete(key);
-    const newQuery = params.toString();
-    router.replace(`${pathname}${newQuery ? `?${newQuery}` : ''}`, { scroll: false });
-
-    // Next.js App Router의 쿼리 파라미터 변경 미감지 버그 대응을 위해 popstate 이벤트를 강제 트리거합니다.
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new PopStateEvent('popstate'));
-    }
-  }, [router, searchParams, pathname, key, isOpen]);
+    const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
+    
+    router.replace(newUrl, { scroll: false });
+  }, [router, isOpen, searchParams, pathname, key]);
 
   return {
     isOpen,

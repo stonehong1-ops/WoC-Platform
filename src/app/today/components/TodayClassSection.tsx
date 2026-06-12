@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import Image from "next/image";
 import { GroupClass } from "@/types/group";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { SectionHeader } from "./TodaySocialSection";
@@ -14,6 +13,9 @@ interface TodayClassSectionProps {
   loadingClasses: boolean;
   filteredClasses: ClassEntry[];
   openClassModal: (id: string) => void;
+  classesByDistrict: [string, ClassEntry[]][];
+  currentFilter: "all" | "social" | "class" | "practice" | "event";
+  venuesMap: Record<string, any>;
 }
 
 function ClassCard({ cls, timeSlot, onPress }: { cls: GroupClass; timeSlot: string; onPress: () => void }) {
@@ -33,12 +35,11 @@ function ClassCard({ cls, timeSlot, onPress }: { cls: GroupClass; timeSlot: stri
     <button onClick={onPress} className="block w-full text-left">
       <div className="relative rounded-xl overflow-hidden bg-[#1a1a2e] shadow-md" style={{ aspectRatio: "1/1" }}>
         {hasImage ? (
-          <Image 
+          <img 
             src={cls.imageUrl || ""} 
             alt={cls.title} 
-            fill 
-            className="object-cover opacity-75" 
-            sizes="33vw" 
+            className="absolute inset-0 w-full h-full object-cover opacity-75" 
+            loading="lazy"
             onError={() => setImageError(true)}
           />
         ) : (
@@ -70,9 +71,12 @@ function ClassCard({ cls, timeSlot, onPress }: { cls: GroupClass; timeSlot: stri
 export default function TodayClassSection({
   loadingClasses,
   filteredClasses,
-  openClassModal
+  openClassModal,
+  classesByDistrict,
+  currentFilter,
+  venuesMap
 }: TodayClassSectionProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   return (
     <section>
@@ -84,15 +88,39 @@ export default function TodayClassSection({
           ))}
         </div>
       ) : filteredClasses.length > 0 ? (
-        <div className="grid grid-cols-3 gap-2">
-          {filteredClasses.slice(0, 6).map(({ cls, timeSlot }, idx) => (
-            <ClassCard key={`${cls.id}-${idx}`} cls={cls} timeSlot={timeSlot} onPress={() => openClassModal(cls.id)} />
-          ))}
-        </div>
+        currentFilter === "class" ? (
+          /* 클래스 단독 필터: 홍대/강남 구획 + 3열 Grid 카드 뷰 */
+          <div className="space-y-5 animate-in fade-in duration-300">
+            {classesByDistrict.map(([district, items]) => (
+              <div key={district}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="material-symbols-outlined !text-[13px] text-blue-500">location_searching</span>
+                  <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">{district}</span>
+                  <div className="flex-1 h-px bg-slate-200" />
+                  <span className="text-[11px] font-bold text-slate-300">{items.length}</span>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {items.map(({ cls, timeSlot }, idx) => (
+                    <ClassCard key={`${cls.id}-${idx}`} cls={cls} timeSlot={timeSlot} onPress={() => openClassModal(cls.id)} />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          /* 모두(all) 필터: 기존 6개 제한 카드 그리드 */
+          <div className="grid grid-cols-3 gap-2">
+            {filteredClasses.slice(0, 6).map(({ cls, timeSlot }, idx) => (
+              <ClassCard key={`${cls.id}-${idx}`} cls={cls} timeSlot={timeSlot} onPress={() => openClassModal(cls.id)} />
+            ))}
+          </div>
+        )
       ) : (
         <div className="flex flex-col items-center justify-center py-8 bg-white rounded-2xl border border-dashed border-slate-200">
           <span className="material-symbols-outlined !text-[32px] text-slate-300 mb-2">school</span>
-          <p className="text-[13px] font-semibold text-slate-400">{t("today.no_class")}</p>
+          <p className="text-[13px] font-semibold text-slate-400">
+            {language === "KR" ? "등록된 클래스가 없습니다." : "No class sessions registered."}
+          </p>
         </div>
       )}
     </section>

@@ -273,7 +273,16 @@ export function AuthModalContent() {
             </div>
             
             {/* reCAPTCHA Placeholder for visible fallback */}
-            <div id="recaptcha-placeholder" className="flex justify-center empty:hidden"></div>
+            <div 
+              id="recaptcha-placeholder" 
+              className={`flex justify-center transition-all ${
+                timeoutCount >= 2 
+                  ? 'w-full min-h-[78px] py-2' 
+                  : 'w-0 h-0 overflow-hidden absolute pointer-events-none'
+              }`}
+              tabIndex={-1}
+              aria-hidden="true"
+            ></div>
 
             <button 
               disabled={isLoading || cooldown}
@@ -357,9 +366,6 @@ export function AuthModalContent() {
               {isLoading && <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>}
               {t('auth.verify_code')}
             </button>
-
-            {/* reCAPTCHA Placeholder for visible fallback during resend */}
-            <div id="recaptcha-placeholder" className="flex justify-center empty:hidden"></div>
 
             <button 
               disabled={isLoading || cooldown}

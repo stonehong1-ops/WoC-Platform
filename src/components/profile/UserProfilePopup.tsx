@@ -1,7 +1,10 @@
 // 사용자 프로필 정보를 불러와 프리미엄 NamecardModal로 렌더링하는 팝업 래퍼 컴포넌트
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import NamecardModal, { NamecardUser } from './NamecardModal';
 import { userService } from '@/lib/firebase/userService';
+import { chatService } from '@/lib/firebase/chatService';
+import { useAuth } from '@/components/providers/AuthProvider';
 
 interface UserProfilePopupProps {
   isOpen: boolean;
@@ -42,6 +45,8 @@ interface FullProfile {
 export default function UserProfilePopup({ isOpen, onClose, uid, initialData }: UserProfilePopupProps) {
   const [profile, setProfile] = useState<FullProfile | null>(initialData as FullProfile || null);
   const [loading, setLoading] = useState(!initialData);
+  const router = useRouter();
+  const { user: currentUser } = useAuth();
 
   useEffect(() => {
     if (!isOpen || !uid) return;
@@ -103,12 +108,27 @@ export default function UserProfilePopup({ isOpen, onClose, uid, initialData }: 
     allowPhoneCalls: profile.allowPhoneCalls
   };
 
+  const handleChat = async () => {
+    if (!currentUser) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
+    try {
+      const roomId = await chatService.getOrCreatePrivateRoom([currentUser.uid, uid], currentUser.uid);
+      onClose();
+      router.push(`/chat?roomId=${roomId}`);
+    } catch (err) {
+      console.error("Failed to create chat room:", err);
+      alert("채팅방을 열 수 없습니다.");
+    }
+  };
+
   return (
     <NamecardModal
       user={namecardUser}
       isOpen={isOpen}
       onClose={onClose}
-      onChat={() => {}}
+      onChat={handleChat}
       onCall={(phone) => {
         if (phone) {
           window.open(`tel:${phone}`);

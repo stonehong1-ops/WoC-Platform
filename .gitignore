@@ -33,6 +33,10 @@ yarn-error.log*
 
 # firebase
 .firebase
+functions/node_modules
+
+# android/capacitor
+/android
 .env*.local
 woc-platform-seoul-1234-firebase-adminsdk-fbsvc-225cc1138a.json
 

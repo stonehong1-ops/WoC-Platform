@@ -24,9 +24,7 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
-  eslint: {
-    ignoreDuringBuilds: false,
-  },
+  serverExternalPackages: ['puppeteer-core', '@sparticuz/chromium'],
   async rewrites() {
     return [
       {

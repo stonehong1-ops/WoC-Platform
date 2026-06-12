@@ -42,6 +42,11 @@ interface UserProfile {
   partnerStatus?: string;
   allowPhoneCalls?: boolean;
   customSchedules?: any[];
+  socialLinks?: {
+    facebook?: string;
+    instagram?: string;
+    whatsapp?: string;
+  };
 }
 
 interface AuthContextType {

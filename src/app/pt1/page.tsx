@@ -5,30 +5,30 @@ import PresentationHeader from '@/components/presentation/PresentationHeader';
 import PresentationFooter from '@/components/presentation/PresentationFooter';
 import { useNavigation } from '@/components/providers/NavigationProvider';
 
-import { Slide0, Slide1, Slide2, Slide3, Slide4, Slide5, Slide6, Slide7, Slide8, Slide9, Slide10, Slide11, Slide12, Slide13, Slide14, Slide15, Slide16 } from './slides-s1';
+import { Slide0, SlideAppStructure, Slide1, Slide2, Slide3, Slide4, Slide6, Slide7, Slide8, Slide10, Slide11, Slide12, SlidePromotionBenefit, Slide13, Slide14, Slide15, Slide16 } from './slides-s1';
 
 const SLIDES = [
-  Slide0, Slide1, Slide2, Slide3, Slide4, Slide5, Slide6, Slide7, Slide8, Slide9, Slide10, Slide11, Slide12, Slide13, Slide14, Slide15, Slide16
+  Slide0, SlideAppStructure, Slide1, Slide6, Slide2, Slide3, Slide7, Slide4, Slide8, Slide10, Slide11, Slide12, SlidePromotionBenefit, Slide13, Slide14, Slide16, Slide15
 ];
 
 const SLIDE_URLS: Record<number, string> = {
   0: '/groups/freestyle-tango',                  // Slide 0: 인트로
-  1: '/groups/freestyle-tango',                  // Slide 1: 더 스토리
-  2: '/groups/freestyle-tango?tab=calendar',     // Slide 2: 머니 플로우
-  3: '/groups/freestyle-tango?tab=calendar',     // Slide 3: 마지막 플랫폼
-  4: '/groups/freestyle-tango',                  // Slide 4: 위너가 없는 이유
-  5: '/groups/freestyle-tango',                  // Slide 5: 원 플랫폼
-  6: '/groups/freestyle-tango?tab=class',        // Slide 6: 라이프 고즈 온
-  7: '/groups/freestyle-tango',                  // Slide 7: 파편화
+  1: '/groups/freestyle-tango',                  // Slide 1: 앱구성도 (App Structure)
+  2: '/groups/freestyle-tango',                  // Slide 2: 더 스토리
+  3: '/groups/freestyle-tango?tab=class',        // Slide 3: 라이프 고즈 온
+  4: '/groups/freestyle-tango?tab=calendar',     // Slide 4: 머니 플로우
+  5: '/groups/freestyle-tango?tab=calendar',     // Slide 5: 마지막 플랫폼
+  6: '/groups/freestyle-tango',                  // Slide 6: Broken Experience (파편화)
+  7: '/groups/freestyle-tango',                  // Slide 7: 원 플랫폼
   8: '/groups/freestyle-tango?tab=class',        // Slide 8: 첫 소사이어티
-  9: '/groups/freestyle-tango?tab=class',        // Slide 9: OS 검증
-  10: '/groups/freestyle-tango?tab=class',       // Slide 10: 네트워크 확장
-  11: '/groups/freestyle-tango?tab=class',       // Slide 11: 매스마켓 검증
-  12: '/groups/freestyle-tango?tab=settings',    // Slide 12: 60개 소사이어티
+  9: '/groups/freestyle-tango?tab=class',        // Slide 9: 네트워크 확장 (구 index 10)
+  10: '/groups/freestyle-tango?tab=class',       // Slide 10: 매스마켓 검증 (구 index 11)
+  11: '/groups/freestyle-tango?tab=settings',    // Slide 11: 60개 소사이어티 (구 index 12)
+  12: '/groups/freestyle-tango?tab=settings',    // Slide 12: 프로모션 베네핏 (신규)
   13: '/groups/freestyle-tango',                 // Slide 13: 전략적 가치
   14: '/groups/freestyle-tango',                 // Slide 14: 와이 나우
-  15: '/groups/freestyle-tango',                 // Slide 15: 클로징 OS
-  16: '/groups/freestyle-tango',                 // Slide 16: 엔젤 라운드
+  15: '/groups/freestyle-tango',                 // Slide 15: 엔젤 라운드
+  16: '/groups/freestyle-tango',                 // Slide 16: 클로징 OS
 };
 
 const GLOBAL_ANIMATIONS = `
@@ -139,12 +139,23 @@ const GLOBAL_ANIMATIONS = `
       padding: 0 !important;
       overflow: visible !important;
       display: block !important;
+      font-family: var(--font-jakarta), "Plus Jakarta Sans", "Inter", "Noto Sans KR", sans-serif !important;
     }
 
     * {
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
       box-sizing: border-box !important;
+    }
+
+    /* PDF 출력 시 한글-영문 폰트간 baseline 불일치로 인한 영문·숫자 쳐짐 방지 */
+    /* Space Grotesk의 기준선 불일치 문제를 해결하기 위해 인쇄 시에는 Plus Jakarta Sans 폰트 스택으로 완전히 대체 적용합니다. */
+    [class*="Space_Grotesk"], .font-\['Space_Grotesk'\], [class*="Space"], [class*="Grotesk"] {
+      font-family: var(--font-jakarta), "Plus Jakarta Sans", "Inter", "Noto Sans KR", sans-serif !important;
+    }
+
+    span, p, a, li, div, h1, h2, h3, h4 {
+      vertical-align: baseline !important;
     }
 
     .print-only-container {
@@ -173,6 +184,14 @@ const GLOBAL_ANIMATIONS = `
       position: relative !important;
       margin: 0 !important;
       padding: 0 !important;
+    }
+
+    .print-slide > * {
+      width: 100% !important;
+      height: 100% !important;
+      min-height: 100% !important;
+      max-height: 100% !important;
+      box-sizing: border-box !important;
     }
     
     @page {

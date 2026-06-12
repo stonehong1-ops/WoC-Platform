@@ -197,7 +197,7 @@ export default function EventViewer({ event: initialEvent, onClose }: EventViewe
       {/* Scrollable Content */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto detail-scrollbar pb-[80px]">
         {/* Image */}
-        <div className="relative aspect-[4/5] overflow-hidden bg-[#f2f4f4]">
+        <div className="relative w-full bg-black">
           {images.length === 0 && (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-[#c4cacc]">
               <span className="material-symbols-rounded text-5xl mb-1">local_activity</span>
@@ -205,11 +205,11 @@ export default function EventViewer({ event: initialEvent, onClose }: EventViewe
             </div>
           )}
           {images.length > 0 && (
-            <div className="relative h-full" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onClick={() => openImageModal("true")}>
-              <div className="flex h-full transition-transform duration-300 ease-out" style={{ transform: `translateX(-${currentImg * 100}%)` }}>
+            <div className="relative w-full" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onClick={() => openImageModal("true")}>
+              <div className="flex w-full transition-transform duration-300 ease-out" style={{ transform: `translateX(-${currentImg * 100}%)` }}>
                 {images.map((img, i) => (
-                  <div key={i} className="w-full flex-shrink-0 h-full">
-                    <img src={img} alt={`${event.title} ${i + 1}`} className="w-full h-full object-cover" />
+                  <div key={i} className="w-full flex-shrink-0 flex items-center justify-center">
+                    <img src={img} alt={`${event.title} ${i + 1}`} className="w-full h-auto max-h-[75vh] object-contain" />
                   </div>
                 ))}
               </div>

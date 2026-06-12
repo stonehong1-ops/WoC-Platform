@@ -221,50 +221,40 @@ export function useAuthFlow() {
       (window as any).recaptchaVerifier = null;
     }
 
-    document.querySelectorAll('[id^="recaptcha-box-"]').forEach(el => el.remove());
-    document.querySelectorAll('iframe[src*="recaptcha"]').forEach(el => el.remove());
+    // reCAPTCHA 위젯 DOM과 내부 상태를 확실히 정리
+    const placeholder = document.getElementById('recaptcha-placeholder');
+    if (placeholder) {
+      placeholder.innerHTML = '';
+    }
+    // Google reCAPTCHA 글로벌 위젯도 리셋
+    try {
+      if ((window as any).grecaptcha) {
+        (window as any).grecaptcha.reset();
+      }
+    } catch (e) {
+      // grecaptcha가 아직 로드되지 않은 경우 무시
+    }
   };
 
   const setupRecaptcha = async (useVisible: boolean = false) => {
-    const existingVerifier = (window as any).recaptchaVerifier;
-    let needNewVerifier = true;
+    // 매 요청마다 이전의 기존 인스턴스와 DOM을 깔끔하게 날리고 완전히 새로 생성하여 렌더링
+    resetRecaptcha();
 
-    if (existingVerifier) {
-      const containerId = existingVerifier.container?.id || existingVerifier.m;
-      if (containerId && document.getElementById(containerId)) {
-        needNewVerifier = false;
-      }
+    // placeholder가 현재 DOM에 존재하는지 확인
+    const placeholder = document.getElementById('recaptcha-placeholder');
+    if (!placeholder) {
+      throw new Error('recaptcha-placeholder element not found');
     }
 
-    if (needNewVerifier) {
-      resetRecaptcha();
-
-      const containerId = `recaptcha-box-${Date.now()}`;
-      const container = document.createElement('div');
-      container.id = containerId;
-      
-      if (!useVisible) {
-        container.style.display = 'none';
-        document.body.appendChild(container);
-      } else {
-        const parent = document.getElementById('recaptcha-placeholder');
-        if (parent) {
-          parent.appendChild(container);
-        } else {
-          document.body.appendChild(container);
-        }
+    (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-placeholder', {
+      'size': useVisible ? 'normal' : 'invisible',
+      'callback': () => {},
+      'expired-callback': () => {
+        resetRecaptcha();
       }
+    });
 
-      (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
-        'size': useVisible ? 'normal' : 'invisible',
-        'callback': () => {},
-        'expired-callback': () => {
-          resetRecaptcha();
-        }
-      });
-
-      await (window as any).recaptchaVerifier.render();
-    }
+    await (window as any).recaptchaVerifier.render();
   };
 
   const handleEmailLogin = async () => {
@@ -444,7 +434,9 @@ export function useAuthFlow() {
           cleanedNumber = cleanedNumber.slice(currentCCNumeric.length);
         }
         
-        cleanedNumber = cleanedNumber.replace(/^0+/, '');
+        if (currentCC === '+82') {
+          cleanedNumber = cleanedNumber.replace(/^0+/, '');
+        }
         setPhoneNumber(cleanedNumber);
         
         const finalPhoneE164 = `${currentCC}${cleanedNumber}`;
@@ -452,7 +444,7 @@ export function useAuthFlow() {
       };
 
       const useVisible = timeoutCount >= 2;
-      const timeoutDuration = useVisible ? 60000 : 15000;
+      const timeoutDuration = useVisible ? 60000 : 30000;
       
       const timeoutProcess = new Promise<never>((_, reject) => {
         setTimeout(() => reject(new Error('timeout')), timeoutDuration);

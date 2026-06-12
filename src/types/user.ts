@@ -34,6 +34,11 @@ export interface UserProfile {
   likedClassIds?: string[];
   likedStayIds?: string[];
   notificationSnoozedUntil?: Timestamp | null;
+  socialLinks?: {
+    facebook?: string;
+    instagram?: string;
+    whatsapp?: string;
+  };
 }
 
 export interface PlatformUser extends UserProfile { }

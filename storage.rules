@@ -61,5 +61,25 @@ service firebase.storage {
       allow read: if true;
       allow write: if request.auth != null;
     }
+    match /lost_found/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    match /stays/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    match /rental/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    match /music365/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    match /tangoHistory/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
   }
 }

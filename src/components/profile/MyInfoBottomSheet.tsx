@@ -31,6 +31,11 @@ interface UserProfile {
   role?: 'leader' | 'follower';
   career?: string;
   partnerStatus?: string;
+  socialLinks?: {
+    facebook?: string;
+    instagram?: string;
+    whatsapp?: string;
+  };
 }
 
 interface MyInfoBottomSheetProps {
@@ -63,7 +68,10 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
     allowPhoneCalls: true,
     role: 'follower' as 'leader' | 'follower',
     career: '',
-    partnerStatus: 'none'
+    partnerStatus: 'none',
+    facebook: '',
+    instagram: '',
+    whatsapp: ''
   });
 
   const [careerYear, setCareerYear] = useState('');
@@ -89,7 +97,10 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
         allowPhoneCalls: profile.allowPhoneCalls !== false,
         role: profile.role || 'follower',
         career: profile.career || '',
-        partnerStatus: profile.partnerStatus || 'none'
+        partnerStatus: profile.partnerStatus || 'none',
+        facebook: profile.socialLinks?.facebook || '',
+        instagram: profile.socialLinks?.instagram || '',
+        whatsapp: profile.socialLinks?.whatsapp || ''
       });
 
       // 경력 YYYY-MM 파싱
@@ -211,6 +222,11 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
         allowPhoneCalls: details.allowPhoneCalls,
         career: details.career,
         partnerStatus: details.partnerStatus,
+        socialLinks: {
+          facebook: details.facebook,
+          instagram: details.instagram,
+          whatsapp: details.whatsapp
+        },
         updatedAt: serverTimestamp()
       });
       onClose();
@@ -253,10 +269,10 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
           <main className="pt-2 pb-12 max-w-2xl mx-auto px-6 space-y-12">
             
             {/* Section 1: Profile Photo */}
-            <section className="flex flex-col items-center gap-6">
+            <section className="flex flex-col items-center gap-4">
               <div className="relative group cursor-pointer" onClick={handlePhotoClick}>
-                <div className="w-32 h-32 rounded-squircle overflow-hidden border-4 border-surface shadow-sm bg-surface-container relative flex items-center justify-center">
-                  <span className="material-symbols-outlined text-on-surface-variant absolute" style={{ fontSize: '64px', fontVariationSettings: "'FILL' 1" }}>person</span>
+                <div className="w-40 h-40 rounded-squircle overflow-hidden border-4 border-surface shadow-sm bg-surface-container relative flex items-center justify-center">
+                  <span className="material-symbols-outlined text-on-surface-variant absolute" style={{ fontSize: '80px', fontVariationSettings: "'FILL' 1" }}>person</span>
                   
                   {/* Photo Display */}
                   {details.photoURL && details.photoURL !== 'https://lh3.googleusercontent.com/a/default-user' && (
@@ -271,42 +287,42 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
                   {/* Upload Overlay */}
                   {uploading && (
                     <div className="absolute inset-0 bg-black/60 z-30 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-300">
-                      <div className="relative w-16 h-16">
+                      <div className="relative w-20 h-20">
                         <svg className="w-full h-full -rotate-90">
                           <circle
-                            cx="32"
-                            cy="32"
-                            r="28"
+                            cx="40"
+                            cy="40"
+                            r="36"
                             stroke="currentColor"
-                            strokeWidth="3"
+                            strokeWidth="3.5"
                             fill="transparent"
                             className="text-white/10"
                           />
                           <circle
-                            cx="32"
-                            cy="32"
-                            r="28"
+                            cx="40"
+                            cy="40"
+                            r="36"
                             stroke="currentColor"
-                            strokeWidth="3"
+                            strokeWidth="3.5"
                             fill="transparent"
-                            strokeDasharray={2 * Math.PI * 28}
-                            strokeDashoffset={2 * Math.PI * 28 * (1 - uploadProgress / 100)}
+                            strokeDasharray={2 * Math.PI * 36}
+                            strokeDashoffset={2 * Math.PI * 36 * (1 - uploadProgress / 100)}
                             className="text-primary transition-all duration-300 ease-out"
                             strokeLinecap="round"
                           />
                         </svg>
-                        <span className="absolute inset-0 flex items-center justify-center text-[11px] font-black text-white">
+                        <span className="absolute inset-0 flex items-center justify-center text-[12px] font-black text-white">
                           {isOptimizing ? '...' : `${uploadProgress}%`}
                         </span>
                       </div>
-                      <p className="text-[9px] text-white/50 font-black mt-3 uppercase tracking-widest">
+                      <p className="text-[10px] text-white/50 font-black mt-3 uppercase tracking-widest">
                         {isOptimizing ? t('myinfo.optimizing') : t('myinfo.uploading')}
                       </p>
                     </div>
                   )}
                 </div>
-                <div className="absolute inset-0 bg-black/20 rounded-squircle opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <span className="material-symbols-outlined text-white text-3xl">edit</span>
+                <div className="absolute inset-0 bg-black/20 rounded-squircle opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-20">
+                  <span className="material-symbols-outlined text-white text-4xl">edit</span>
                 </div>
                 <input 
                   type="file" 
@@ -316,19 +332,19 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
                   onChange={handlePhotoChange}
                 />
               </div>
-              <div className="flex gap-3">
+              <div className="flex gap-2">
                 <button 
                   onClick={handlePhotoClick}
                   type="button"
                   disabled={uploading}
-                  className="px-4 py-2 bg-primary text-on-primary font-medium text-sm rounded shadow-sm hover:brightness-110 transition-all disabled:opacity-50"
+                  className="px-3 py-1.5 bg-primary text-on-primary font-medium text-xs rounded shadow-sm hover:brightness-110 transition-all disabled:opacity-50"
                 >
                   {uploading ? (isOptimizing ? t('myinfo.optimizing') : t('myinfo.uploading')) : t('myinfo.photo_change')}
                 </button>
                 <button 
                   onClick={() => setDetails(prev => ({ ...prev, photoURL: '' }))}
                   type="button"
-                  className="px-4 py-2 bg-surface-container-high text-on-surface-variant font-medium text-sm rounded hover:bg-surface-dim transition-all"
+                  className="px-3 py-1.5 bg-surface-container-high text-on-surface-variant font-medium text-xs rounded hover:bg-surface-dim transition-all"
                 >
                   {t('myinfo.photo_delete')}
                 </button>
@@ -447,6 +463,49 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
                     </div>
 
                   </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Section 3.5: Social Links */}
+            <section className="space-y-6">
+              <h2 className="font-headline text-lg font-bold text-on-surface">Social Links</h2>
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 bg-surface border border-outline-variant rounded px-4 py-2.5 focus-within:ring-1 focus-within:ring-primary focus-within:border-primary transition-all">
+                  <div className="w-6 h-6 flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-outline text-[20px]">face_nod</span>
+                  </div>
+                  <input 
+                    className="flex-1 min-w-0 bg-transparent text-sm text-on-surface outline-none placeholder:text-outline" 
+                    type="url" 
+                    placeholder="Facebook Profile URL"
+                    value={details.facebook}
+                    onChange={(e) => setDetails(prev => ({ ...prev, facebook: e.target.value }))}
+                  />
+                </div>
+                <div className="flex items-center gap-3 bg-surface border border-outline-variant rounded px-4 py-2.5 focus-within:ring-1 focus-within:ring-primary focus-within:border-primary transition-all">
+                  <div className="w-6 h-6 flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-outline text-[20px]">photo_camera</span>
+                  </div>
+                  <input 
+                    className="flex-1 min-w-0 bg-transparent text-sm text-on-surface outline-none placeholder:text-outline" 
+                    type="url" 
+                    placeholder="Instagram Profile URL"
+                    value={details.instagram}
+                    onChange={(e) => setDetails(prev => ({ ...prev, instagram: e.target.value }))}
+                  />
+                </div>
+                <div className="flex items-center gap-3 bg-surface border border-outline-variant rounded px-4 py-2.5 focus-within:ring-1 focus-within:ring-primary focus-within:border-primary transition-all">
+                  <div className="w-6 h-6 flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-outline text-[20px]">chat</span>
+                  </div>
+                  <input 
+                    className="flex-1 min-w-0 bg-transparent text-sm text-on-surface outline-none placeholder:text-outline" 
+                    type="url" 
+                    placeholder="WhatsApp Link"
+                    value={details.whatsapp}
+                    onChange={(e) => setDetails(prev => ({ ...prev, whatsapp: e.target.value }))}
+                  />
                 </div>
               </div>
             </section>

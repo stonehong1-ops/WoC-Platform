@@ -180,6 +180,20 @@ export const INSTRUCTOR_NAME_MAP: Record<string, string> = {
   "alex": "알렉스",
   "becca": "베카",
   "carlos": "카를로스",
+  "okiz": "오키즈",
+  "okiz baek": "오키즈",
+  "odysseus dada": "오디세우스 다다",
+  "odysseus": "오디세우스",
+  "dani.cecil": "다니 세실",
+  "o.n.e": "O.N.E",
+  "one": "O.N.E",
+  "aqui": "아끼",
+  "ivy": "아이비",
+  "billy": "빌리",
+  "hagun": "하군",
+  "bana": "반아",
+  "tbd": "미정",
+  "미정": "TBD"
 };
 
 export function formatInstructorNames(instructorStr: string, locale: string): string {
@@ -187,13 +201,21 @@ export function formatInstructorNames(instructorStr: string, locale: string): st
   
   // 이미 한글 문자가 포함되어 있다면 원래 강사명 반환
   const hasKorean = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(instructorStr);
-  if (hasKorean) return instructorStr;
+  if (hasKorean && locale === "KR") return instructorStr;
 
-  // KR 로케일이 아니면 영어 그대로 노출하되 첫 글자 대문자화 포맷팅
   if (locale !== "KR") {
     return instructorStr.split(/[,&/]/).map(part => {
       const trimmed = part.trim();
       if (!trimmed) return "";
+      
+      const lowerKey = trimmed.toLowerCase();
+      // Reverse lookup
+      for (const [en, ko] of Object.entries(INSTRUCTOR_NAME_MAP)) {
+        if (ko.toLowerCase() === lowerKey || ko === trimmed) {
+          return en.charAt(0).toUpperCase() + en.slice(1);
+        }
+      }
+      
       return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
     }).filter(Boolean).join(", ");
   }
@@ -240,6 +262,21 @@ export const COMMUNITY_NAME_MAP: Record<string, string> = {
   "stone": "스톤",
   "stone hong": "스톤",
   "aran": "아란",
+  "timeworld tango club": "타임월드 탱고클럽",
+  "daejeon friday fever": "대전 프라이데이 Fever",
+  "daejeon jjin tango": "대전 찐탱고",
+  "jjin tango studio": "찐탱고 연습실",
+  "cafe de tango (busan)": "카페 데 탱고 (부산)",
+  "cafe de tango team": "Cafe de Tango Team",
+  "tango cafe ideal (busan)": "탱고 카페 이데알 (부산)",
+  "ideal team": "Ideal Team",
+  "andante": "안단테",
+  "ocho": "오초",
+  "la ventana": "라벤따나",
+  "pista": "피스타",
+  "onada": "오나다",
+  "tbd": "미정",
+  "미정": "TBD"
 };
 
 export const REVERSE_COMMUNITY_MAP: Record<string, string> = {
@@ -260,6 +297,18 @@ export const REVERSE_COMMUNITY_MAP: Record<string, string> = {
   "에르난": "Hernan",
   "스톤": "Stone",
   "아란": "Aran",
+  "타임월드 탱고클럽": "Timeworld Tango Club",
+  "대전 프라이데이 fever": "Daejeon Friday Fever",
+  "대전 찐탱고": "Daejeon JJin Tango",
+  "찐탱고 연습실": "JJin Tango Studio",
+  "카페 데 탱고 (부산)": "Cafe de Tango (Busan)",
+  "탱고 카페 이데알 (부산)": "Tango Cafe Ideal (Busan)",
+  "안단테": "Andante",
+  "오초": "Ocho",
+  "라벤따나": "La Ventana",
+  "피스타": "Pista",
+  "오나다": "Onada",
+  "미정": "TBD"
 };
 
 export function formatCommunityName(nameStr: string, locale: string): string {

@@ -319,7 +319,7 @@ const GroupClassAddEditor: React.FC<GroupClassAddEditorProps> = ({
 
       const cleanUndefined = (obj: any): any => {
         if (Array.isArray(obj)) return obj.map(cleanUndefined);
-        if (obj !== null && typeof obj === "object") {
+        if (obj !== null && typeof obj === "object" && (obj.constructor === Object || !obj.constructor)) {
           return Object.fromEntries(
             Object.entries(obj)
               .filter(([_, v]) => v !== undefined)

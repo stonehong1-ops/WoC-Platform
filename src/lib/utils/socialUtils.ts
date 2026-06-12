@@ -45,7 +45,7 @@ export function getDjDisplay(social: Social, targetDate?: Date, locale: string =
       }
     }
   }
-  return "TBD";
+  return "";
 }
 
 export function isVideoUrl(url?: string, fileType?: string): boolean {

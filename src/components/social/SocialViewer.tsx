@@ -248,7 +248,7 @@ export default function SocialViewer({ social: initialSocial, onClose, targetDat
       {/* Scrollable Content */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto detail-scrollbar pb-[80px]">
         {/* Image */}
-        <div ref={heroRef} className="relative aspect-[4/5] overflow-hidden bg-[#f2f4f4]">
+        <div ref={heroRef} className={`relative overflow-hidden ${(social.posterLayoutId && social.posterLayoutId !== "none") ? "aspect-[4/5] bg-[#f2f4f4]" : "w-full bg-black"}`}>
           {images.length === 0 && (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-[#c4cacc]">
               <span className="material-symbols-rounded text-5xl mb-1">local_activity</span>
@@ -256,21 +256,21 @@ export default function SocialViewer({ social: initialSocial, onClose, targetDat
             </div>
           )}
           {images.length > 0 && (
-            <div className="relative h-full" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onClick={() => openImageModal("true")}>
-              <div className="flex h-full transition-transform duration-300 ease-out" style={{ transform: `translateX(-${currentImg * 100}%)` }}>
+            <div className="relative w-full" style={{ height: (social.posterLayoutId && social.posterLayoutId !== "none") ? "100%" : "auto" }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onClick={() => openImageModal("true")}>
+              <div className="flex w-full transition-transform duration-300 ease-out" style={{ height: (social.posterLayoutId && social.posterLayoutId !== "none") ? "100%" : "auto", transform: `translateX(-${currentImg * 100}%)` }}>
                 {images.map((img, i) => (
-                  <div key={i} className="w-full flex-shrink-0 h-full">
+                  <div key={i} className="w-full flex-shrink-0 flex items-center justify-center" style={{ height: (social.posterLayoutId && social.posterLayoutId !== "none") ? "100%" : "auto" }}>
                     {isVideoUrl(img) ? (
                       <video 
                         src={img} 
-                        className="w-full h-full object-cover" 
+                        className={`w-full ${(social.posterLayoutId && social.posterLayoutId !== "none") ? "h-full object-cover" : "h-auto max-h-[75vh] object-contain"}`}
                         muted 
                         autoPlay 
                         loop 
                         playsInline 
                       />
                     ) : (
-                      <img src={img} alt={`${titleStr} ${i + 1}`} className="w-full h-full object-cover" />
+                      <img src={img} alt={`${titleStr} ${i + 1}`} className={`w-full ${(social.posterLayoutId && social.posterLayoutId !== "none") ? "h-full object-cover" : "h-auto max-h-[75vh] object-contain"}`} />
                     )}
                   </div>
                 ))}

@@ -25,6 +25,7 @@ const ADMIN_ITEMS = [
   { icon: 'wallpaper', label: 'PICs', labelKo: '사진관리', href: '/admin/pics' },
   { icon: 'person_search', label: 'People', labelKo: '피플관리', href: '/admin/people' },
   { icon: 'location_city', label: 'Place', labelKo: '장소관리', href: '/admin/place' },
+  { icon: 'auto_awesome_mosaic', label: 'Covers', labelKo: '표지제작', href: '/admin/covers' },
   { icon: 'bug_report', label: 'Errors', labelKo: '에러로그', href: '/admin/errors' },
   { icon: 'terminal', label: 'Mobile Agent', labelKo: '모바일 에이전트', href: '/admin/antigravity' },
   { icon: 'more_horiz', label: 'Others', labelKo: '기타관리', href: '/admin/others' },
@@ -624,6 +625,40 @@ function MyInfoPageContent() {
                         ? t('myinfo.allow_calls_on') 
                         : t('myinfo.allow_calls_off')}
                     </p>
+                  </div>
+                </div>
+
+
+                {/* Social Links on Profile */}
+                <div className="flex gap-4 items-start mt-6 pt-6 border-t border-surface-container-highest/30">
+                  <div className="w-10 h-10 flex flex-shrink-0 items-center justify-center rounded-lg bg-primary-fixed text-on-primary-fixed">
+                    <span className="material-symbols-outlined text-[24px]">link</span>
+                  </div>
+                  <div className="flex-grow">
+                    <p className="text-xs font-bold text-outline uppercase tracking-widest mb-2">Social Links</p>
+                    <div className="flex flex-wrap gap-2">
+                      {profile?.socialLinks?.facebook ? (
+                        <a href={profile.socialLinks.facebook} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-container rounded-full hover:bg-primary/10 transition-colors text-[13px] font-bold text-on-surface-variant hover:text-primary border border-outline-variant/30">
+                          <span className="material-symbols-outlined text-[16px]">face_nod</span>
+                          Facebook
+                        </a>
+                      ) : null}
+                      {profile?.socialLinks?.instagram ? (
+                        <a href={profile.socialLinks.instagram} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-container rounded-full hover:bg-primary/10 transition-colors text-[13px] font-bold text-on-surface-variant hover:text-primary border border-outline-variant/30">
+                          <span className="material-symbols-outlined text-[16px]">photo_camera</span>
+                          Instagram
+                        </a>
+                      ) : null}
+                      {profile?.socialLinks?.whatsapp ? (
+                        <a href={profile.socialLinks.whatsapp} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-container rounded-full hover:bg-primary/10 transition-colors text-[13px] font-bold text-on-surface-variant hover:text-primary border border-outline-variant/30">
+                          <span className="material-symbols-outlined text-[16px]">chat</span>
+                          WhatsApp
+                        </a>
+                      ) : null}
+                      {(!profile?.socialLinks?.facebook && !profile?.socialLinks?.instagram && !profile?.socialLinks?.whatsapp) && (
+                        <p className="text-on-surface-variant/70 font-medium text-sm mt-1">{t('my.not_linked', '연결 안됨')}</p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

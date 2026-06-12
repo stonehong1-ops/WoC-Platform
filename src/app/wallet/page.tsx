@@ -96,7 +96,7 @@ export default function WalletPage({ isEmbedded = false }: { isEmbedded?: boolea
   }
 
   return (
-    <div className={isEmbedded ? "bg-transparent font-inter" : "min-h-screen bg-[#FAF8FF] pb-24 font-inter"}>
+    <div className={isEmbedded ? "bg-transparent font-inter" : "min-h-screen bg-slate-50 pb-24 font-inter"}>
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Inter:wght@400;500;600;700&display=swap');
       `}</style>
@@ -104,7 +104,7 @@ export default function WalletPage({ isEmbedded = false }: { isEmbedded?: boolea
       <div className={isEmbedded ? "space-y-8 animate-in fade-in duration-500" : "px-4 pt-12 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500"}>
         
         {/* Balance Card */}
-        <section className="relative overflow-hidden bg-gradient-to-br from-[#1E293B] to-[#334155] rounded-[32px] p-8 shadow-xl shadow-slate-900/10 text-white">
+        <section className="relative overflow-hidden bg-gradient-to-br from-slate-800 to-slate-700 rounded-[32px] p-8 shadow-xl shadow-slate-900/10 text-white">
           <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
           <div className="absolute bottom-0 left-0 w-24 h-24 bg-purple-500/10 rounded-full blur-3xl -ml-12 -mb-12"></div>
           
@@ -127,7 +127,7 @@ export default function WalletPage({ isEmbedded = false }: { isEmbedded?: boolea
         {/* Coupons Section */}
         <section>
           <div className="flex justify-between items-end mb-4 px-2">
-            <h2 className="text-lg font-extrabold text-[#1E293B] font-jakarta">{t('wallet.my_coupons')}</h2>
+            <h2 className="text-lg font-extrabold text-slate-800 font-jakarta">{t('wallet.my_coupons')}</h2>
             <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">{coupons.filter(c => c.status === 'UNUSED').length} {t('wallet.available')}</span>
           </div>
 
@@ -188,7 +188,7 @@ export default function WalletPage({ isEmbedded = false }: { isEmbedded?: boolea
 
         {/* History Section */}
         <section className="pb-8">
-          <h2 className="text-lg font-extrabold text-[#1E293B] mb-4 px-2 font-jakarta">{t('wallet.recent_activity')}</h2>
+          <h2 className="text-lg font-extrabold text-slate-800 mb-4 px-2 font-jakarta">{t('wallet.recent_activity')}</h2>
           <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm overflow-hidden">
             {transactions.length === 0 ? (
               <div className="p-12 text-center text-slate-400 text-sm">

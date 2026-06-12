@@ -1,14 +1,17 @@
 # World of Community (WoC) Information Architecture (IA)
 
-이 문서는 World of Community (WoC) 글로벌 통합 커뮤니티 플랫폼의 전체 메뉴 구조, 세부 탭 흐름, 그리고 등록/수정창, 상세보기창, 바텀시트를 포함한 오버레이 모달까지 물리적 구조와 함께 상세하게 규정합니다.
+> [!TIP]
+> **GPT 기획 요청 가이드 (GPT Prompt Template)**
+> 이 문서를 그대로 전체 복사하여 ChatGPT나 Claude 등 생성형 AI 서비스에 다음과 같이 프롬프트를 전송하십시오.
+> ```text
+> "아래의 WoC 플랫폼 최신 IA 설계 문서를 바탕으로, [원하는 추가 기능이나 수정사항]에 대한 세부 기능 기획서와 백엔드 데이터 모델링, 그리고 예외 처리 플로우를 상세하게 작성해줘."
+> ```
 
 ---
 
 ## [Core Principle] WoC 플랫폼 온보딩 & PWA 설치 공식 표준 프로세스
 
 World of Community (WoC) 플랫폼은 일반적인 웹 애플리케이션의 설치 권유 흐름(앱 사용 중 백그라운드 팝업 유도)을 철저히 배제하고, 기획자 스톤님의 비즈니스 철학에 근거하여 다음 **'앱 선제적 배포 및 설치 ➔ 로그인 인증 ➔ 서비스 사용'**의 독점적 3단계 온보딩 기조를 엄격하게 수호하고 강제합니다.
-
-이 프로세스는 플랫폼의 최고 존엄 설계 원칙이며, 어떤 에이전트나 개발자도 일반적인 서비스 워커 권유 흐름으로 임의 변경해서는 안 됩니다.
 
 ```mermaid
 graph LR
@@ -71,286 +74,204 @@ World of Community (WoC) 플랫폼은 그룹별 성격에 최적화된 온보딩
 
 ---
 
-## 1. 전역 내비게이션 & 공통 모달 (Global Overlay)
+## 1. 전역 공통 레이아웃 & 내비게이션 (Global Overlay)
 
-어떤 화면에서든 트리거되거나 내비게이션 드로어를 통해 진입할 수 있는 플랫폼 공통 오버레이 흐름입니다.
+어떤 화면에서든 트리거되거나 노출되는 플랫폼 최상위 공통 내비게이션 뼈대입니다.
 
 ```mermaid
 graph TD
-    A[Global Navigation Drawer] --> B(LocationSelector: 지역/위치 선택 바텀시트)
-    A --> C(AppSettingsPopup: 언어 및 테마 팝업)
-    A --> D(NotificationTray: 실시간 알림 패널)
-    A --> E(MyGroupsTray: 내 활성화 그룹 단축 트레이)
+    Header[글로벌 헤더] --> HeaderL[Left: LocationSelector - 지역/위치 바텀시트]
+    Header --> HeaderR[Right: Action Icons - 알림 / 채팅 / 통합 검색 / 프로필]
+    Footer[글로벌 하단 탭바] --> F1[World - /home]
+    Footer --> F2[Market - /shop]
+    Footer --> F3[Now - /today]
+    Footer --> F4[Lounge - /pics]
+    Footer --> F5[Groups - /groups]
 ```
 
-- **NavigationDrawer** (전체 햄버거 메뉴)
-  - 연동 흐름: 전역 하단 탭바 우측 `More` 클릭시 슬라이딩 활성화됩니다.
-- **NotificationTray** (전역 알림 패널 오버레이)
-  - 연동 흐름: 헤더 영역 종 아이콘 클릭 시 활성화됩니다.
-- **LocationSelector** (지역/위치 선택 바텀시트)
-  - 연동 흐름: 헤더 영역 지구본/지역 이름 클릭 시 슬라이드 업 활성화됩니다.
-- **AppSettingsPopup** (앱 설정 팝업)
-  - 연동 흐름: 드로어 내 톱니바퀴 클릭 시 다국어(한국어/영어) 및 다크모드를 변경합니다.
-- **MyGroupsTray** (내 그룹 목록 단축 오버레이)
-  - 연동 흐름: 좌측 상단 그룹 숏컷 클릭 시 렌더링됩니다.
+### 1.1 글로벌 상단 헤더 (Global Header)
+- **좌측 영역 (Location)**: `LocationSelector` 바텀시트
+  - 지역 이름(예: Seoul, South Korea 또는 All Tango Society) 클릭 시 위치 선택 모달이 활성화되어 데이터 컨텍스트를 글로벌/로컬 기준으로 분기 제어합니다.
+- **우측 영역 (Action Icons)**:
+  - **알림 센터 아이콘**: 클릭 시 알림 센터(`/notification`)로 이동합니다. 실시간 미확인 알림 개수를 나타내는 레드 배지가 표시됩니다.
+  - **채팅 아이콘**: 클릭 시 실시간 채팅 목록(`/chat`)으로 이동합니다. 읽지 않은 메시지 개수를 나타내는 레드 배지가 표시됩니다.
+  - **검색 아이콘**: 클릭 시 통합 검색 화면(`/search`)으로 이동합니다.
+  - **내 프로필 아바타**: 클릭 시 마이 개인화 허브(`/profile?tab=schedule`)로 이동합니다.
+
+### 1.2 글로벌 하단 탭바 (Global Footer Tabbar)
+전역 화면 하단에 고정 탑재되는 5대 핵심 카테고리 탭입니다. 상세 페이지(Detail) 및 일부 관리자 화면(Admin) 진입 시에는 자동으로 숨김 처리됩니다.
 
 ---
 
-## 2. 17대 대메뉴 및 화면 계층 구조
+## 2. 5대 전역 카테고리 & 서브 내비게이션 구조
 
-모든 대메뉴는 [라우트 경로], [하위 탭 구성], [트리거 모달/바텀시트 흐름]을 완전하게 포함합니다.
+하단 탭 선택 시 활성화되는 상단 서브 탭 내비게이션 구조 및 매핑 경로입니다.
 
-### 2.1 랜딩 & 홈 (`/`, `/home`)
-- **경로**: `/` (스플래시) ➔ `/home` (메인 대시보드)
-- **화면 내 탭 구성**
-  - **Dashboard 탭**: 전체 요약, 내 활동 지표, 최근 알림 요약 정보
-- **PWA 설치 및 동작 제약 규칙**:
-  - **앱 설치 후 앱사용 안내만 하고 절대 웹에서 앱의 인증페이지로 넘어가지 않는다.**
-- **연계 모달 및 바텀시트 흐름**
-  - `[등록/수정창]`: 없음.
-  - `[상세보기창]`: `Music365Popup` (오늘의 음악 상세 플레이어 팝업), `TangoHistoryPopup` (오늘의 커뮤니티 역사 팝업)
-  - `[기타 팝업]`: `PWAInstallPrompt` (웹 앱 설치 유도 바텀시트)
+```mermaid
+graph TD
+    TabWorld[1. World] --> W1[Society: /home]
+    TabWorld --> W2[Plaza: /plaza]
+    TabWorld --> W3[Venues: /venues]
+    TabWorld --> W4[People: /people]
 
-### 2.2 글로벌 검색 & 탐색 (`/explore`, `/search`)
-- **경로**: `/explore` (발견) ➔ `/search` (통합 검색)
-- **화면 내 탭 구성**
-  - **All 탭**: 검색 결과 전체 요약 정보
-  - **Groups 탭**: 필터링된 커뮤니티 그룹 목록
-  - **Venues 탭**: 태그별 주변 공간 및 지도 연동 리스트
-  - **People 탭**: 매칭 가능한 가입 회원 프로필 리스트
-- **연계 모달 및 바텀시트 흐름**
-  - `[등록/수정창]`: 없음.
-  - `[상세보기창]`: `UserProfilePopup` (회원 간편 프로필 팝업)
-  - `[기타 팝업]`: `FilterBottomSheet` (검색 정렬 및 범위 설정 바텀시트)
+    TabMarket[2. Market] --> M1[Shop: /shop]
+    TabMarket --> M2[Resale: /resale]
+    TabMarket --> M3[Rental: /rental]
+    TabMarket --> M4[Stay: /stay]
 
-### 2.3 알림 센터 (`/notification`)
+    TabNow[3. Now] --> N1[Today: /today]
+    TabNow --> N2[Live: /live]
+    TabNow --> N3[Social: /social]
+    TabNow --> N4[Class: /class]
+    TabNow --> N5[Events: /events]
+
+    TabLounge[4. Lounge] --> L1[Pics: /pics]
+    TabLounge --> L2[Lost: /lost]
+    TabLounge --> L3[Hub: /hub]
+    TabLounge --> L4[Jump: /explore]
+
+    TabGroups[5. Groups] --> G1[Groups: /groups]
+```
+
+### 2.1 World 탭 (글로벌 소셜 메인)
+- **Society** (`/home`)
+  - **구성**: 글로벌/로컬 소사이어티 소식, 트렌딩 콘텐츠 아티클 및 브랜드 스토리텔링 매거진.
+  - **모달**: `Music365Popup` (오늘의 음악 상세 플레이어), `TangoHistoryPopup` (오늘의 탱고 역사 팝업).
+- **Plaza** (`/plaza`)
+  - **구성**: 전체 회원이 자유롭게 공유하고 소통하는 통합 타임라인 피드.
+  - **모달/오버레이**: `PostEditorModal` (전역 피드 작성/수정 모달), `PostDetailModal` (포스트 내용 상세 및 댓글 입력).
+- **Venues** (`/venues`)
+  - **구성**: 스튜디오, 연습실, 제휴 브랜드 상점 등 주변 공간 지도 연동 리스트 및 위치 태그.
+- **People** (`/people`)
+  - **구성**: 유력 인물 정보 디렉토리, 강사진 일정 연동 및 프로필 카드 리스트.
+  - **모달**: `UserProfilePopup` (간편 프로필 상세 및 1:1 대화 연결).
+
+### 2.2 Market 탭 (공유 경제 및 커머스)
+- **Shop** (`/shop`)
+  - **구성**: 커뮤니티 전용 의류, 신발, 잡화 및 매뉴얼 북 판매 상점.
+  - **모달**: `ProductDetail` (상품 비주얼 갤러리 및 상세 옵션), `PurchaseFlow` (주문/결제 통합 바텀시트), `CreateProduct` (운영진용 상품 등록 모달).
+- **Resale** (`/resale`)
+  - **구성**: 멤버 간 1:1 안전 결제 기반 중고 제품 거래 마켓.
+  - **모달**: `ResaleItemDetail` (제품 상세 정보 및 판매자 채팅 연동), `CreateResaleItem` (중고 거래 물품 등록 모달).
+- **Rental** (`/rental`)
+  - **구성**: 연습실 및 밀론가 공간 시간대별 렌탈 대여 예약 관리.
+  - **모달**: `RentalDetail` (구비 장비 및 대여 가능 여부 상세), `RentalRequestFlow` (예약 날짜 선택 및 결제).
+- **Stay** (`/stay`)
+  - **구성**: 수련회, 행사 참가용 숙박 및 카우치서핑 통합 예약.
+  - **모달**: `StayDetail` (날짜별 방 타입 및 요금 상세), `StayReservationFlow` (예약 및 결제 신청 바텀시트).
+
+### 2.3 Now 탭 (실시간 이벤트 및 클래스)
+- **Today** (`/today`)
+  - **구성**: 오늘 하루 동안 진행되는 라이브, 소셜 파티, 아카데미 클래스 등 모든 오늘의 행사 종합 캘린더 피드.
+- **Live** (`/live`)
+  - **구성**: 현재 송출 중인 라이브 스트리밍, 예약 방송, 지난 녹화본 목록.
+  - **모달**: `LiveStreamingViewer` (실시간 송출 시청 및 라이브 채팅 참여 전체 화면 모달).
+- **Social** (`/social`)
+  - **구성**: 소셜 모임 및 밀론가 파티 등 특별 이벤트 등록 및 입장권 예매.
+  - **모달**: `SocialViewer` (이벤트 상세 정보, 티켓 수량 선택 및 결제), `EditSocialEvent` (등록/수정 에디터).
+- **Class** (`/class`)
+  - **구성**: 수강 일정 조회, 수강생 모집 정보 및 강좌 등록 신청.
+  - **모달**: `ClassDetail` (주차별 미디어 라인, 커리큘럼, 수강료 및 강사 상세 모달), `WeeklyMediaEditor` (주차별 비디오/이미지 썸네일 등록 팝업).
+- **Events** (`/events`)
+  - **구성**: 지역 내 주요 행사 정보 목록 및 참가 티켓 등록 신청.
+
+### 2.4 Lounge 탭 (아카이브 및 발견)
+- **Pics** (`/pics`)
+  - **구성**: 행사 및 파티 현장 스냅 사진 실시간 스트리밍 갤러리.
+  - **모달**: `MediaGalleryViewer` (고화질 사진 다운로드 및 전체 화면 스와이프).
+- **Lost & Found** (`/lost`)
+  - **구성**: 분실물 습득 및 주인 탐색 전용 게시판.
+  - **모달**: `LostFoundDetail` (분실 물품 상태 사진 및 습득/보관처 정보), `CreateLostItem` (분실물 등록 모달).
+- **Hub** (`/hub`)
+  - **구성**: 오프라인 제휴 공간 및 주요 글로벌 파트너를 위한 물류 허브 링크 목록.
+- **Jump** (`/explore`)
+  - **구성**: 다른 취미(요가, 살사, 자전거 등)의 소사이어티로 한 번에 전환하여 점프하는 탐색 통로.
+
+### 2.5 Groups 탭 (커뮤니티 디렉토리)
+- **Groups** (`/groups`)
+  - **구성**: 플랫폼에 개설된 모든 소사이어티 그룹 목록 및 내가 가입된 그룹 간편 가입 처리.
+  - **모달**: `CreateGroupModal` (그룹 테마색, 로고, 가입 방식 설정 모달).
+
+---
+
+## 3. My 개인화 허브 & 챗 / 알림 (My Workspace)
+
+사용자 본인의 개인 지갑, 예약 이력, 1:1 실시간 대화 및 계정 설정을 통제하는 전용 영역입니다.
+
+### 3.1 My 탭 메뉴 구조 (상단 프로필 진입)
+- **Schedule** (`/profile?tab=schedule`)
+  - **구성**: 내가 신청하여 가입 완료된 모든 클래스, 소셜 이벤트, 객실 및 렌탈 예약의 주간/월간 타임라인 스케줄러.
+- **Coaching** (`/coaching`)
+  - **구성**: 강사 또는 어드민과의 1:1 개인 피드백, 상담, 영상 분석 및 맞춤형 피드백 룸 목록.
+- **My Live** (`/live?view=my`)
+  - **구성**: 내가 예약한 방송 관리 및 직접 방송 송출 콘솔 제어.
+- **Wallet** (`/wallet`)
+  - **구성**: 가상 자산 잔액, 충전 내역, 티켓 예매 내역 및 정산 지급을 위한 계좌 등록(`BankSelectionEditor`).
+- **My Info** (`/profile?tab=profile`)
+  - **구성**: 아바타 및 간편 정보 수정(`MyInfoBottomSheet`), 개인정보 보호 동의 설정(`/privacy`), 회원 탈퇴 모달(`DeactivateBottomSheet`).
+
+### 3.2 알림 센터 (`/notification`)
 - **경로**: `/notification`
-- **화면 내 탭 구성**
-  - **All 탭**: 전체 알림 목록
-  - **Social 탭**: 라이크, 댓글, 피드 소식 알림 목록
-  - **Events 탭**: 클래스, 숙박, 대여 관련 소식 목록
-  - **System 탭**: 관리자 공지 및 시스템 오류 보고 목록
-- **연계 모달 및 바텀시트 흐름**
-  - `[등록/수정창]`: 없음.
-  - `[상세보기창]`: 클릭 시 알림과 관련된 상세 페이지(예: `/history`)로 전향 라우팅을 수행합니다.
+- **구조**: 전체(All) / 소셜(Social) / 이벤트(Events) / 시스템 공지(System) 분기형 탭.
 
-### 2.4 활동 역사 기록 (`/history`)
-- **경로**: `/history`
-- **화면 내 탭 구성**
-  - **Class 탭**: 수강 신청 완료 및 진행 중인 클래스 목록
-  - **Stay 탭**: 객실 예약 완료 및 과거 숙박 이력
-  - **Shop 탭**: 쇼핑몰 주문 상세 내역 및 배송 상태 정보
-  - **Social 탭**: 예약한 소셜 모임 목록
-- **연계 모달 및 바텀시트 흐름**
-  - `[상세보기창]`: `StayDetailViewer` (숙소 예약 상세 영수증 팝업), `ShopOrderDetailViewer` (쇼핑 주문 상세 영수증 팝업)
-
-### 2.5 전역 광장 피드 & 채팅 (`/plaza`, `/chat`)
-- **경로**: `/plaza` (광장) ➔ `/chat` (실시간 통신)
-- **화면 내 탭 구성 (`/chat`)**
-  - **Direct Message 탭**: 개인 간 1:1 메시지방 리스트
-  - **Group Chat 탭**: 가입된 그룹별 실시간 채팅방 목록
-- **연계 모달 및 바텀시트 흐름**
-  - `[등록/수정창]`: `PostEditorModal` (전역 피드 글 작성 및 수정 모달)
-  - `[상세보기창]`: `PostDetailModal` (포스트 내용 상세 및 실시간 댓글 바텀시트), `ChatRoom` (개별 채팅방 전체 화면 레이아웃)
-  - `[기타 팝업]`: `MemberProfileOverlay` (채팅방 내 회원 프로필 간편 조회 바텀시트)
-
-### 2.6 라이브 스트리밍 (`/live`)
-- **경로**: `/live` ➔ `/live/create` (생성 페이지)
-- **화면 내 탭 구성**
-  - **Active 탭**: 현재 송출 중인 라이브 목록
-  - **Scheduled 탭**: 예약된 라이브 방송 목록
-  - **Replay 탭**: 지난 라이브 녹화본 목록
-- **연계 모달 및 바텀시트 흐름**
-  - `[등록/수정창]`: `LiveStreamingEditor` (방송 정보 수정 및 커버 이미지 등록 바텀시트)
-  - `[상세보기창]`: `LiveStreamingViewer` (실시간 방송 시청 및 라이브 채팅 참여 전체 모달)
-
-### 2.7 회원 디렉토리 (`/people`)
-- **경로**: `/people` ➔ `/people/register` (초대) ➔ `/people/[id]` (회원 프로필 상세)
-- **화면 내 탭 구성 (`/people/[id]`)**
-  - **Profile 탭**: 소개글 및 개인 경력 정보
-  - **Groups 탭**: 해당 회원이 소속되거나 가입된 그룹 목록
-  - **Posts 탭**: 해당 회원이 전역 광장 및 그룹 피드에 쓴 글
-  - **Classes 탭**: 강사로서 등록한 클래스 또는 학생으로 참여한 수강 리스트
-- **연계 모달 및 바텀시트 흐름**
-  - `[등록/수정창]`: `NamecardModal` (나만의 명함 디자인 편집 및 수정 모달)
-  - `[상세보기창]`: `UserProfileModal` (다른 회원 정보 상세 뷰어 다이얼로그)
-  - `[기타 팝업]`: `MyInfoBottomSheet` (본인 정보 및 아바타 간편 변경 바텀시트)
-
-### 2.8 소셜 포스터 이벤트 (`/social`)
-- **경로**: `/social`
-- **화면 내 탭 구성**
-  - **Calendar 탭**: 날짜별 소셜 모임 및 파티 일정 달력
-  - **Poster List 탭**: 비주얼 카드 방식의 소셜 포스터 리스트
-- **연계 모달 및 바텀시트 흐름**
-  - `[등록/수정창]`: `EditSocialEvent` (소셜 등록/수정 및 예매 티켓 생성 다이얼로그)
-  - `[상세보기창]`: `SocialViewer` (소셜 이벤트 상세 정보 및 결제 진입 바텀시트), `SocialDjLineupSheet` (DJ 라인업 상세 정보 바텀시트)
-  - `[기타 팝업]`: `SocialDownloadModal` (모임 안내 포스터 이미지 파일 저장 및 공유 모달), `PosterOverlay` (포스터 자동 생성용 그래픽 에디터 오버레이)
-
-### 2.9 마켓 쇼핑몰 (`/shop`)
-- **경로**: `/shop`
-- **화면 내 탭 구성**
-  - **All 탭**: 전체 상품 목록
-  - **Fashion 탭**: 의류 상품
-  - **Shoes 탭**: 탱고화 및 전용 신발
-  - **Accessories 탭**: 잡화 소품
-  - **Books 탭**: 커뮤니티 전용 매뉴얼 및 도서
-- **연계 모달 및 바텀시트 흐름**
-  - `[등록/수정창]`: `CreateProduct` (상품 등록 및 재고 수량 편집 모달)
-  - `[상세보기창]`: `ProductDetail` (상품 비주얼 갤러리 및 상세 옵션 모달)
-  - `[기타 팝업]`: `PurchaseFlow` (수량 지정, 카드 등록, 주소지 입력 및 주문 완료 통합 바텀시트), `WishlistTray` (장바구니 및 관심 상품 임시 보관함 트레이)
-
-### 2.10 중고 거래 마켓 (`/resale`)
-- **경로**: `/resale`
-- **화면 내 탭 구성**
-  - **Buy 탭**: 판매 중인 중고 제품 목록
-  - **Sell 탭**: 내가 등록한 중고 거래 판매글 관리 목록
-- **연계 모달 및 바텀시트 흐름**
-  - `[등록/수정창]`: `CreateResaleItem` (중고 거래 등록/수정 및 가격 설정 모달)
-  - `[상세보기창]`: `ResaleItemDetail` (중고 제품 상태 및 1:1 채팅 연동 상세 모달)
-  - `[기타 팝업]`: `ResalePurchaseFlow` (직거래 및 안전 결제 선택 진행 바텀시트), `ResaleWishlistTray` (찜한 중고 거래 품목 리스트)
-
-### 2.11 대여 공간 & 장소 (`/rental`, `/venues`)
-- **경로**: `/rental` (물품/공간 대여) ➔ `/rental/register` (등록) ➔ `/rental/[id]` (상세)
-- **화면 내 탭 구성 (`/venues` 지도 화면)**
-  - **Map 탭**: 주변 공간/장소 지도 렌더링
-  - **List 탭**: 등록된 공간 정보 요약 카드 리스트
-- **연계 모달 및 바텀시트 흐름**
-  - `[등록/수정창]`: `CreateRentalSpace` (대여 가능한 밀론가 공간/연습실 등록 모달)
-  - `[상세보기창]`: `RentalDetail` (공간 구비 장비 및 시간대별 대여 가능 상세 모달)
-  - `[기타 팝업]`: `RentalRequestFlow` (대여 시작/종료일 선택 및 결제 신청 바텀시트), `RentalWishlistTray` (관심 등록 대여 장소 보관함)
-
-### 2.12 숙박 & 수련회 (`/stay`)
-- **경로**: `/stay` ➔ `/stay/[id]` (상세) ➔ `/stay/[id]/checkout` (체크아웃) ➔ `/stay/[id]/checkout/complete` (완료)
-- **화면 내 탭 구성**
-  - **All Stay 탭**: 등록된 전역 수련 객실 목록
-  - **Group Stay 탭**: 특정 그룹 전용 펜션/숙박 정보 목록
-- **연계 모달 및 바텀시트 흐름**
-  - `[등록/수정창]`: `CreateStay` (신규 객실 및 숙박 정보 등록/수정 모달)
-  - `[상세보기창]`: `StayDetail` (날짜별 방 타입 및 요금 조회 상세 모달)
-  - `[기타 팝업]`: `StayReservationFlow` (예약 날짜 변경 및 호스트 문의 바텀시트), `StayWishlistTray` (관심 등록 객실 목록)
-
-### 2.13 클래스 아카데미 (`/class`)
-- **경로**: `/class` ➔ `/class/[groupId]` (그룹 개별 클래스 목록)
-- **화면 내 탭 구성 (`/class/[groupId]`)**
-  - **Open Classes 탭**: 수강 신청 모집 중인 강좌 목록
-  - **Closed Classes 탭**: 모집 종료 및 진행 중인 강좌 목록
-- **연계 모달 및 바텀시트 흐름**
-  - `[상세보기창]`: `ClassDetail` (커리큘럼, 강사 소개, 수업 시간 상세 정보 모달)
-  - `[기타 팝업]`: `ClassRegistrationFlow` (수강생 이름 입력 및 수강료 결제 신청 바텀시트)
-
-### 2.14 분실물 보관 센터 (`/lost`)
-- **경로**: `/lost` ➔ `/lost/register` (등록) ➔ `/lost/[id]` (상세)
-- **화면 내 탭 구성**
-  - **Lost 탭**: 분실한 물건을 찾는 게시글 목록
-  - **Found 탭**: 습득한 물건을 주인에게 돌려주기 위한 게시글 목록
-- **연계 모달 및 바텀시트 흐름**
-  - `[등록/수정창]`: `CreateLostItem` (분실 장소, 시간, 보관 위치 등록 모달)
-  - `[상세보기창]`: `LostFoundDetail` (분실 물품 상태 사진 및 습득 보관처 정보 상세 모달)
-  - `[기타 팝업]`: `LostClaimFlow` (소유자 본인 인증 및 습득자와 1:1 대화 연결 바텀시트)
-
-### 2.15 커뮤니티 그룹 디렉토리 (`/groups`)
-- **경로**: `/groups` ➔ `/groups/[id]` (개별 그룹 메인 진입점)
-- **화면 내 탭 구성 (`/groups` 전체)**
-  - **Popular 탭**: 인기 급상승 활성 커뮤니티 그룹
-  - **My Groups 탭**: 내가 현재 가입하여 활동 중인 그룹 목록
-- **연계 모달 및 바텀시트 흐름**
-  - `[등록/수정창]`: `CreateGroupModal` (그룹 테마색, 로고, 가입 질문 설정 모달)
-
-### 2.16 마이 프로필 & 지갑 (`/profile`, `/wallet`, `/privacy`)
-- **경로**: `/profile` (내 정보) ➔ `/wallet` (자산) ➔ `/privacy` (개인정보 보호)
-- **화면 내 탭 구성 (`/profile`)**
-  - **Account 탭**: 이메일, 전화번호 등 기본 계정 정보
-  - **Groups 탭**: 가입된 그룹 및 관리자 권한 여부 확인
-  - **Settings 탭**: 전역 알림 발송 온/오프 토글 스위치 설정
-- **연계 모달 및 바텀시트 흐름**
-  - `[등록/수정창]`: `MyInfoBottomSheet` (프로필 사진 업로드 및 닉네임 수정 바텀시트)
-  - `[상세보기창]`: 없음.
-  - `[기타 팝업]`: `DeactivateBottomSheet` (계정 비활성화 및 영구 탈퇴 처리 바텀시트), `BankSelectionEditor` (지급 및 정산을 위한 개인 계좌/은행 정보 에디터)
-
-### 2.17 플랫폼 어드민 시스템 (`/admin`)
-- **경로**: `/admin` (메인 대시보드) ➔ `/admin/[sub-path]` (기능별 어드민)
-- **화면 내 하위 경로 일람**
-  - `/admin/banners` (글로벌 배너 에디터)
-  - `/admin/people` (전체 가입자 권한 변경)
-  - `/admin/pics` (소셜 사진 라이브러리 검수)
-  - `/admin/place` (지도 장소 검수 및 등록)
-  - `/admin/others` (앱 패치 공지 및 기타 시스템 리소스 구성)
-- **연계 모달 및 바텀시트 흐름**
-  - `[등록/수정창]`: `BannerEditorModal` (전역 배너 슬라이더 등록 모달), `SafeZoneEditor` (사진 이미지 세이프 크롭 가이드라인 조정 모달)
-  - `[상세보기창]`: `UserLevelManager` (가입 유저 차단 및 등급 승급 제어 상세 팝업)
-  - `[기타 팝업]`: `ImportPackModal` (대량 사진 파일 업로드 및 압축 해제 처리 모달)
+### 3.3 실시간 챗 (`/chat`)
+- **경로**: `/chat`
+- **구조**: 1:1 DM 탭 / 그룹 채팅 탭. 클릭 시 전체 화면 채팅방(`ChatRoom`) 활성화.
 
 ---
 
-## 3. 개별 그룹 내부 상세 구조 (Group Inner IA)
+## 4. 개별 그룹 내부 상세 구조 (Group Inner IA)
 
-- **공통 진입 경로**: `/groups/[id]`
-- **특징**: `GroupHome` 컴포넌트 내부에서 활성화된 기능에 따라 탭바 메뉴가 동적으로 구성됩니다.
+- **경로**: `/groups/[id]` (개별 그룹 메인 진입점)
+- **특징**: 그룹 어드민이 활성화한 기능에 따라 상단 탭 메뉴가 Dynamic하게 온오프 및 정렬(`GroupModuleRenderer`)됩니다.
 
-```mermaid
-graph TD
-    Home[Group Home Entry: /groups/id] --> F1(Feed & Notices: 공지 및 일반 글)
-    Home F2(Education: 클래스 연동)
-    Home F3(Booking & Events: 달력 및 이벤트)
-    Home F4(Work & Collaboration: 업무 및 태스크 관리)
-    Home F5(Settings: 어드민 제어 센터)
-```
+### 4.1 개별 그룹 내부 6대 핵심 모듈 (Group Inner Modules)
 
-### 3.1 그룹 내부 화면 구성 탭 (Dynamic Module Tabs)
+#### 1. Feed & Board (피드 및 일반 게시글)
+- **역할**: 그룹원들이 자유롭게 글을 쓰고 사진을 업로드하여 일상을 공유하는 피드형 게시판.
+- **모달**: `PostEditorModal` (글쓰기/수정), `PostDetailModal` (댓글 등록 및 상세 보기).
 
-#### 1. Feed & Board 탭 (피드 및 게시판)
-- **제공 기능**: 공지 게시판, 사진첩, 일반 소통 자유게시판을 결합한 통합 타임라인입니다.
-- **연계 모달 및 바텀시트 흐름**
-  - `[등록/수정창]`: `PostEditorModal` (그룹원 및 관리자 전용 포스트 등록 및 수정 모달)
-  - `[상세보기창]`: `PostDetailModal` (댓글 입력 및 조회용 글 상세보기 모달)
+#### 2. Notice Board (공지사항)
+- **역할**: 그룹 운영진이 작성한 공지사항 아카이브.
+- **모달**: `AdminNoticeEditor` (어드민 전용 공지 글쓰기 모달).
 
-#### 2. Notice Board 탭 (공지사항)
-- **제공 기능**: 강사진 및 운영진이 작성한 중요 필독 공지 목록입니다.
-- **연계 모달 및 바텀시트 흐름**
-  - `[등록/수정창]`: `AdminNoticeEditor` (어드민 공지 작성 모달)
-  - `[상세보기창]`: `PostDetailModal` (댓글은 비활성화 가능하며 공지 정밀 보기 수행)
+#### 3. Album & Moments (미디어 갤러리)
+- **역할**: 그룹 행사, 연습 등에서 촬영한 단체/인물 스냅 사진 공유 보관소.
+- **모달**: `UploadGalleryModal` (다중 사진 업로드), `MediaGalleryViewer` (스와이프 뷰어).
 
-#### 3. Album & Moments 탭 (미디어 갤러리)
-- **제공 기능**: 그룹 행사 및 밀론가 파티에서 공유된 회원 실시간 촬영 사진 보관소입니다.
-- **연계 모달 및 바텀시트 흐름**
-  - `[등록/수정창]`: `UploadGalleryModal` (다중 사진 파일 업로드 모달)
-  - `[상세보기창]`: `MediaGalleryViewer` (고화질 스와이프 사진 다운로드 뷰어 모달)
+#### 4. Classes & Academy (교육 및 아카데미)
+- **역할**: 수강 일정 조회, 수강 신청/수강생 관리, 커리큘럼 제공.
+- **대시보드 스펙**:
+  - **와이드 카드**: 테두리와 섀도우를 입힌 가로형 카드 디자인 (둥근 점 인디케이터 전면 제거).
+  - **성비 정보**: 남녀 참가자 수 및 성비 비율을 칩 레이아웃으로 탑재.
+  - **가로 미디어라인**: 카드 하단에 주차별 수업 동영상을 바로 확인할 수 있는 미니 가로 썸네일 카루셀 탑재 (미등록 주차는 `COMING SOON`).
+  - **숏컷 연동**: 썸네일 터치 시, 해당 주차가 활성화된 상태로 `ClassDetail` 모달 팝업으로 즉각 라우팅.
+- **모달**: `GroupClassEditor` (수강료/정원 관리), `ClassDetail` (커리큘럼 및 동영상 플레이어), `WeeklyMediaEditor` (주차별 동영상/이미지 업로드).
 
-#### 4. Classes 탭 (교육 아카데미)
-- **제공 기능**: 그룹 내에서 정식 개설한 단계별 강좌 스케줄 및 신청 리스트입니다.
-- **연계 모달 및 바텀시트 흐름**
-  - `[등록/수정창]`: `GroupClassEditor` (수강료, 강사, 최대 인원, 일정 등록 및 편집 통합 모달)
-  - `[상세보기창]`: `ClassDetail` (커리큘럼 및 클래스 세부 일정 정보 팝업)
-  - `[기타 팝업]`: `ClassRegistrationFlow` (결제 및 수강 완료 바텀시트)
+#### 5. Calendar & Booking (일정 및 예약)
+- **역할**: 그룹의 정기 일정, 쁘락띠까 연습, 엠티/합숙 등 단체 행사 캘린더.
+- **모달**: `GroupCalendarForm` (캘린더 등록 및 숙소 예약 연동), `EventDetailBottomSheet` (참가 신청/접수).
 
-#### 5. Calendar & Booking 탭 (그룹 달력)
-- **제공 기능**: 그룹이 주최하는 전체 워크샵 및 정기 모임 통합 달력입니다.
-- **연계 모달 및 바텀시트 흐름**
-  - `[등록/수정창]`: `GroupCalendarForm` (신규 캘린더 이벤트 등록 및 리트릿 숙소 예약 동시 연동 에디터)
-  - `[상세보기창]`: `EventDetailBottomSheet` (일정별 참가 희망자 접수 및 장소 링크 상세 보기 바텀시트)
+#### 6. Team Workspace (협업 및 태스크)
+- **역할**: 그룹 운영 스태프들을 위한 실시간 프로젝트 태스크 관리.
+- **모달**: `SprintBoard` (칸반보드 드래그앤드롭), `TaskManager` (업무 할당 및 마감 관리).
 
-#### 6. Team Workspace 탭 (태스크 & 협업)
-- **제공 기능**: 그룹 스태프 및 조기 파트너들을 위한 실시간 프로젝트 업무 스페이스입니다.
-- **연계 모달 및 바텀시트 흐름**
-  - `[등록/수정창]`: `TaskManager` / `SprintBoard` (신규 스태프 업무 생성 및 상태 변경 드래그 앤 드롭 모달)
-  - `[상세보기창]`: `TaskDetailBottomSheet` (작업 마감일 및 담당 스태프 배정 상세 바텀시트)
+### 4.2 그룹 어드민 설정 제어 (Group Admin Panel)
+- **진입**: `/groups/[id]?tab=admin` (그룹 대표 전용 권한)
+- **어드민 메뉴 일람**:
+  - **Module Configuration**: `GroupFunctionBuilder` (피드, 알림, 쇼핑, 숙박 등 그룹 내 활성화할 메뉴 탭 선택 및 드래그 정렬 빌더).
+  - **Member Management**: `GroupMemberManager` (가입 신청 대기 회원 수락/거절 및 그룹 등급 제어).
+  - **Finance & Tuition**: `TuitionManager` (수강생 입금 매칭 및 미납 알림), `PayrollTracker` (강사료 지급 비율 설정).
+  - **Group Design**: `GroupDesignEditor` (Stitch 디자인 스펙 기반 헤더 색상, 폰트 및 태그 커스텀).
 
 ---
 
-## 4. 개별 그룹 어드민 상세 설계 (Group Admin IA)
+## 5. 플랫폼 시스템 어드민 (Backoffice Admin)
 
-그룹 관리자가 대시보드 및 설정을 제어하기 위한 서브 플로우 맵입니다.
-
-### 4.1 그룹 설정 관리 제어
-- **경로**: `/groups/[id]?tab=admin` ➔ `GroupSettings` 진입
-- **서브 메뉴 및 매핑 모달 흐름**
-  - **Module Configuration (기능 스위처)**
-    - `[등록/수정창]`: `GroupFunctionBuilder` (피드, 알림, 쇼핑, 숙박 등 그룹 내 활성화할 메뉴 탭을 선택하고 Drag로 우선순위를 결정하는 빌더 모달)
-  - **Member Management (가입 회원 통제)**
-    - `[등록/수정창]`: 없음.
-    - `[상세보기창]`: `GroupMemberManager` (가입 신청 수락/거절 및 그룹 등급 조정 다이얼로그)
-  - **Finance & Tuition (회비 및 강사료 정산)**
-    - `[등록/수정창]`: `TuitionManager` (수강생 입금 검증 및 미납 체크), `PayrollTracker` (강사료 지급 비율 설정)
-    - `[상세보기창]`: `SettlementReports` (그룹 내 모든 도메인 거래 금액 일간/월간 수지 분석 리포트 오버레이)
-  - **Group Design (커버 및 레이아웃 커스텀)**
-    - `[등록/수정창]`: `GroupDesignEditor` (Stitch 디자인 스펙을 적용하여 헤더 색상, 폰트, 커뮤니티 성격 태그를 수정하는 레이아웃 커스터마이저 모달)
+- **경로**: `/admin` (플랫폼 총괄 최고관리자 권한 필요)
+- **서브 메뉴 및 매핑 모달 흐름**:
+  - **banners** (`/admin/banners`): 글로벌 메인 배너 슬라이더 등록 모달(`BannerEditorModal`).
+  - **people** (`/admin/people`): 전체 가입자 권한 수동 조율 및 차단/해제(`UserLevelManager`).
+  - **pics** (`/admin/pics`): 사진 라이브러리 검수 및 자동 크롭 가이드라인 조정(`SafeZoneEditor`).
+  - **place** (`/admin/place`): 지도 장소 검수 및 신규 연습 장소 등록.
+  - **others** (`/admin/others`): 대량 사진 업로드 모달(`ImportPackModal`) 및 서버 리소스 초기화.
