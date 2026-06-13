@@ -58,6 +58,14 @@ function ResalePageContent() {
       }
     };
     window.addEventListener('woc:compose:open', handleComposeOpen as EventListener);
+
+    // sessionStorage 플래그 체크 (통합 등록 메뉴에서 진입 시)
+    const pending = sessionStorage.getItem('woc_compose_pending');
+    if (pending === 'resale') {
+      sessionStorage.removeItem('woc_compose_pending');
+      openCreate('true');
+    }
+
     return () => window.removeEventListener('woc:compose:open', handleComposeOpen as EventListener);
   }, [openCreate]);
   
@@ -294,19 +302,7 @@ function ResalePageContent() {
         .material-symbols-rounded { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
       `}} />
 
-      {/* Integrated Registration Action */}
-      <div className="mx-4 my-3 px-5 py-3 flex items-center justify-between bg-white rounded-xl border border-slate-100 shadow-sm">
-        <p className="text-[12px] font-bold text-slate-400 uppercase tracking-tight">
-          {t('resale.have_items_share', 'Have items to share?')}
-        </p>
-        <button 
-          onClick={() => openCreate('true')}
-          className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 transition-colors py-2"
-        >
-          <span className="text-[13px] font-bold">{t('resale.post_item', 'Post Item')}</span>
-          <span className="material-symbols-outlined text-[18px]">add_circle</span>
-        </button>
-      </div>
+
 
       {/* ⑤ Product Grid (필터+정렬 결과) */}
       <div className="pt-4 px-4 mb-10 text-left min-h-[400px]">

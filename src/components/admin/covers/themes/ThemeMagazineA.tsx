@@ -39,15 +39,10 @@ export default function ThemeMagazineA({
   const dayNum = date.getDate();
   const dateStrKorean = `${date.getMonth() + 1}월 ${dayNum}일`;
 
-  const defaultMilongaImg = "https://images.unsplash.com/photo-1544208453-625d7efd6f3c?auto=format&fit=crop&q=80&w=1080";
-  const defaultClassImg = "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?auto=format&fit=crop&q=80&w=600";
-  const defaultPracticaImg = "https://images.unsplash.com/photo-1544208453-625d7efd6f3c?auto=format&fit=crop&q=80&w=1080";
-
-  const milongaImgUrl = useBase64Image(milonga?.imageUrl || defaultMilongaImg);
-  const classImgUrl = useBase64Image(tangoClass?.imageUrl || defaultClassImg);
-  const practicaImgUrl = useBase64Image(practica?.imageUrl || defaultPracticaImg);
-  const fallbackBannerImgUrl = useBase64Image("https://images.unsplash.com/photo-1544208453-625d7efd6f3c?auto=format&fit=crop&q=80&w=1080");
-  const bannerImgUrl = useBase64Image(banner?.imageUrl || banner?.posterUrl || '');
+  const milongaImgUrl = useBase64Image(milonga?.imageUrl || undefined);
+  const classImgUrl = useBase64Image(tangoClass?.imageUrl || undefined);
+  const practicaImgUrl = useBase64Image(practica?.imageUrl || undefined);
+  const bannerImgUrl = useBase64Image(banner?.imageUrl || banner?.posterUrl || undefined);
 
   return (
     <div 
@@ -84,7 +79,7 @@ export default function ThemeMagazineA({
 
         {/* Main Section: Milonga */}
         {milonga && (
-          <div className="w-full h-[700px] rounded-[40px] overflow-hidden relative shadow-2xl mb-12">
+          <div className="w-full h-[700px] rounded-[40px] overflow-hidden relative shadow-2xl mb-12 bg-slate-800">
             {milongaImgUrl && (
               <img 
                 src={milongaImgUrl} 
@@ -229,11 +224,6 @@ export default function ThemeMagazineA({
           </div>
         ) : (
           <div className="w-full h-[220px] bg-black rounded-[40px] p-10 relative overflow-hidden flex items-center justify-between text-white shadow-2xl mb-8">
-            <img 
-              alt="Tango Shoes" 
-              className="absolute left-0 top-0 h-full w-1/2 object-cover opacity-30 grayscale" 
-              src={fallbackBannerImgUrl || ''}
-            />
             <div className="relative z-10 w-full flex justify-between items-center">
               <div>
                 <div className="flex items-center gap-4">

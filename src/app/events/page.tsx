@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { eventService } from '@/lib/firebase/eventService';
 import { Event } from '@/types/event';
@@ -11,6 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from '@/components/providers/LocationProvider';
 import { useNavigation } from '@/components/providers/NavigationProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useModalNavigation } from '@/hooks/useModalNavigation';
 
 // Helper to safely convert Firestore timestamp or other date formats and strip time
 const getNormalizedDate = (val: any): Date => {
@@ -57,6 +59,8 @@ const getFlagImageUrl = (countryName: string) => {
 };
 
 export default function EventsPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { toggleDrawer, setSubHeader } = useNavigation();
   const { location } = useLocation();
   const { user, profile, setShowLogin } = useAuth();
@@ -64,6 +68,13 @@ export default function EventsPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [likedEventIds, setLikedEventIds] = useState<string[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const { isOpen: isCreateOpenURL, openModal: openCreateURL, closeModal: closeCreateURL } = useModalNavigation('create');
+
+  // URL 쿼리와 로컬 등록 모달 상태의 무결점 실시간 정밀 동기화
+  useEffect(() => {
+    setShowCreateModal(isCreateOpenURL);
+  }, [isCreateOpenURL]);
+
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
   
@@ -136,14 +147,40 @@ export default function EventsPage() {
   useEffect(() => {
     const handleComposeOpen = (e: CustomEvent) => {
       if (e.detail?.id === 'events') {
-        setShowCreateModal(true);
+        openCreateURL('true');
       }
     };
     window.addEventListener('woc:compose:open', handleComposeOpen as EventListener);
-    return () => window.removeEventListener('woc:compose:open', handleComposeOpen as EventListener);
-  }, []);
 
-  // Handle browser back button for modals
+    // sessionStorage 플래그 체크 (통합 등록 메뉴에서 진입 시)
+    const pending = sessionStorage.getItem('woc_compose_pending');
+    if (pending === 'events') {
+      sessionStorage.removeItem('woc_compose_pending');
+      openCreateURL('true');
+    }
+
+    // 네이티브 URL 즉각 체크 가드 (Next.js 라우터 갱신 누락 방어)
+    const checkNativeQuery = () => {
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('create') === 'true') {
+          setShowCreateModal(true);
+        } else {
+          setShowCreateModal(false);
+        }
+      }
+    };
+
+    checkNativeQuery();
+    window.addEventListener('popstate', checkNativeQuery);
+
+    return () => {
+      window.removeEventListener('woc:compose:open', handleComposeOpen as EventListener);
+      window.removeEventListener('popstate', checkNativeQuery);
+    };
+  }, [openCreateURL]);
+
+  // Handle browser back button for detail viewer modal
   useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
       if (e.state && e.state.wocModal) {
@@ -151,12 +188,10 @@ export default function EventsPage() {
       }
       if (selectedEvent) {
         setSelectedEvent(null);
-      } else if (showCreateModal) {
-        setShowCreateModal(false);
       }
     };
 
-    if (selectedEvent || showCreateModal) {
+    if (selectedEvent) {
       const currentState = window.history.state || {};
       window.history.pushState({ ...currentState, wocModal: true }, '');
       window.addEventListener('popstate', handlePopState);
@@ -165,7 +200,7 @@ export default function EventsPage() {
     return () => {
       window.removeEventListener('popstate', handlePopState);
     };
-  }, [selectedEvent, showCreateModal]);
+  }, [selectedEvent]);
 
   const handleCloseEvent = () => {
     setSelectedEvent(null);
@@ -175,10 +210,7 @@ export default function EventsPage() {
   };
 
   const handleCloseCreate = () => {
-    setShowCreateModal(false);
-    if (window.history.state?.wocModal) {
-      window.history.back();
-    }
+    closeCreateURL();
   };
 
   // Filter events by location
@@ -526,19 +558,7 @@ export default function EventsPage() {
                   </div>
                 </div>
 
-                {/* Integrated Event Registration Action */}
-                <div className="mx-4 my-3 px-5 py-3 flex items-center justify-between bg-white rounded-xl border border-slate-100 shadow-sm mt-4">
-                  <p className="text-[12px] font-bold text-slate-400 uppercase tracking-tight">
-                    {t('event.host_new')}
-                  </p>
-                  <button 
-                    onClick={() => setShowCreateModal(true)}
-                    className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 transition-colors py-2"
-                  >
-                    <span className="text-[13px] font-bold">{t('event.register')}</span>
-                    <span className="material-symbols-outlined text-[18px]">add_circle</span>
-                  </button>
-                </div>
+
               </section>
             )}
 
@@ -692,7 +712,13 @@ export default function EventsPage() {
 
         <AnimatePresence>
           {showCreateModal && (
-            <CreateEvent isOpen={showCreateModal} onClose={handleCloseCreate} onSuccess={() => {}} />
+            <CreateEvent
+              isOpen={showCreateModal}
+              onClose={handleCloseCreate}
+              onSuccess={(id) => {
+                router.push(`/create-success?type=event&id=${id || ''}`);
+              }}
+            />
           )}
           {selectedEvent && (
             <EventViewer 

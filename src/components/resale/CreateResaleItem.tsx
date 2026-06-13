@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { resaleService } from '@/lib/firebase/resaleService';
 import { plazaService } from '@/lib/firebase/plazaService';
@@ -23,6 +24,7 @@ export default function CreateResaleItem({ isOpen, onClose, onSuccess, itemToEdi
   const { user } = useAuth();
   const { t } = useLanguage();
   const { location } = useLocation();
+  const router = useRouter();
   
   const currentCountry = location?.country || 'KOREA';
   const countryData = REGIONS.flatMap(r => r.countries).find(c => c.name === currentCountry);
@@ -113,7 +115,6 @@ export default function CreateResaleItem({ isOpen, onClose, onSuccess, itemToEdi
   const handleSubmit = async () => {
     const totalPhotosCount = existingUrls.length + mediaFiles.length;
     if (!user || !title || !price || totalPhotosCount === 0 || !region) {
-      alert(t('resale.msg_fill_required') || 'Please fill in required fields and add at least one photo.');
       return;
     }
 
@@ -154,18 +155,18 @@ export default function CreateResaleItem({ isOpen, onClose, onSuccess, itemToEdi
         canNegotiate,
       };
 
+      let newId: string | undefined;
       if (itemToEdit) {
         await resaleService.updateItem(itemToEdit.id, itemPayload);
-        alert(t('resale.alert_update_success') || 'Item updated successfully.');
+        onSuccess?.();
+        onClose();
       } else {
-        await resaleService.registerItem(itemPayload);
+        newId = await resaleService.registerItem(itemPayload);
+        onSuccess?.();
+        router.replace('/create-success?type=resale&id=' + (newId || ''));
       }
-
-      onSuccess?.();
-      onClose();
     } catch (error) {
       console.error("Error saving resale item:", error);
-      alert(itemToEdit ? (t('resale.alert_update_failed') || 'Failed to update item.') : (t('resale.msg_post_failed') || 'Failed to post item.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -190,10 +191,10 @@ export default function CreateResaleItem({ isOpen, onClose, onSuccess, itemToEdi
         {/* Photo Upload Area */}
         <div className="space-y-3">
           <div className="flex items-center justify-between ml-1">
-            <label className="text-[13px] font-black text-gray-400 uppercase tracking-widest">
+            <label className="text-[14px] font-bold text-gray-400">
               {t('resale.add_photo') || 'PHOTOS'} <span className="text-primary">*</span>
             </label>
-            <span className="text-[13px] font-bold text-gray-400">{mediaFiles.length}/{MAX_PHOTOS}</span>
+            <span className="text-[13px] font-bold text-gray-400">{previewUrls.length}/{MAX_PHOTOS}</span>
           </div>
           
           <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 items-center">
@@ -233,21 +234,21 @@ export default function CreateResaleItem({ isOpen, onClose, onSuccess, itemToEdi
 
         {/* Title */}
         <div className="space-y-2">
-          <label className="text-[13px] font-black text-gray-400 uppercase tracking-widest ml-1">
+          <label className="text-[14px] font-bold text-gray-400 ml-1">
             {t('resale.what_sharing') || 'TITLE'} <span className="text-primary">*</span>
           </label>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder={t('resale.title_placeholder') || 'What are you selling?'}
-            className="w-full text-[24px] font-black tracking-tighter border-none focus:ring-0 placeholder:text-gray-200 p-0 bg-transparent"
+            className="w-full text-[16px] font-bold border-none focus:ring-0 placeholder:text-gray-200 p-0 bg-transparent"
             required
           />
         </div>
 
         {/* Category */}
         <div className="space-y-3">
-          <label className="text-[13px] font-black text-gray-400 uppercase tracking-widest ml-1">
+          <label className="text-[14px] font-bold text-gray-400 ml-1">
             {t('resale.category') || 'CATEGORY'}
           </label>
           <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
@@ -270,7 +271,7 @@ export default function CreateResaleItem({ isOpen, onClose, onSuccess, itemToEdi
 
         {/* Price & Currency & Negotiation */}
         <div className="space-y-4">
-          <label className="text-[13px] font-black text-gray-400 uppercase tracking-widest ml-1">
+          <label className="text-[14px] font-bold text-gray-400 ml-1">
             {t('resale.price') || 'PRICE'} <span className="text-primary">*</span>
           </label>
           
@@ -278,7 +279,7 @@ export default function CreateResaleItem({ isOpen, onClose, onSuccess, itemToEdi
             <select 
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
-              className="bg-gray-50 border-none rounded-2xl px-4 py-4 text-sm font-black focus:ring-2 focus:ring-primary/10 w-[100px] shrink-0"
+              className="bg-gray-50 border-none rounded-2xl px-4 py-4 text-[16px] font-bold focus:ring-2 focus:ring-primary/10 w-[100px] shrink-0"
             >
               {CURRENCIES.map(curr => (
                 <option key={curr} value={curr}>{curr}</option>
@@ -289,7 +290,7 @@ export default function CreateResaleItem({ isOpen, onClose, onSuccess, itemToEdi
               value={formatPrice(price)}
               onChange={handlePriceChange}
               placeholder="0"
-              className="flex-1 min-w-0 bg-gray-50 border-none rounded-2xl px-5 py-4 text-lg font-black focus:ring-2 focus:ring-primary/10 text-right overflow-hidden"
+              className="flex-1 min-w-0 bg-gray-50 border-none rounded-2xl px-5 py-4 text-[16px] font-bold focus:ring-2 focus:ring-primary/10 text-right overflow-hidden"
               required
             />
           </div>
@@ -322,7 +323,7 @@ export default function CreateResaleItem({ isOpen, onClose, onSuccess, itemToEdi
 
         {/* Location Region Selector */}
         <div className="space-y-3">
-          <label className="text-[13px] font-black text-gray-400 uppercase tracking-widest ml-1">
+          <label className="text-[14px] font-bold text-gray-400 ml-1">
             {t('resale.location') || 'LOCATION'} <span className="text-primary">*</span>
           </label>
           <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
@@ -345,7 +346,7 @@ export default function CreateResaleItem({ isOpen, onClose, onSuccess, itemToEdi
 
         {/* Condition Selector */}
         <div className="space-y-3">
-           <label className="text-[13px] font-black text-gray-400 uppercase tracking-widest ml-1">
+           <label className="text-[14px] font-bold text-gray-400 ml-1">
              {t('resale.condition') || 'CONDITION'}
            </label>
            <div className="grid grid-cols-4 gap-3">
@@ -371,13 +372,13 @@ export default function CreateResaleItem({ isOpen, onClose, onSuccess, itemToEdi
 
         {/* Trade Options */}
         <div className="space-y-3">
-          <label className="text-[13px] font-black text-gray-400 uppercase tracking-widest ml-1">
+          <label className="text-[14px] font-bold text-gray-400 ml-1">
             {t('resale.trade_method') || 'TRADE METHOD'}
           </label>
           <select 
             value={tradeMethod}
             onChange={(e) => setTradeMethod(e.target.value as TradeMethod)}
-            className="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-primary/10"
+            className="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 text-[16px] font-bold focus:ring-2 focus:ring-primary/10"
           >
             <option value="direct">{t('resale.trade_direct') || 'Direct'}</option>
             <option value="delivery">{t('resale.trade_delivery') || 'Delivery'}</option>
@@ -387,14 +388,14 @@ export default function CreateResaleItem({ isOpen, onClose, onSuccess, itemToEdi
 
         {/* Description */}
         <div className="space-y-3 pb-8">
-          <label className="text-[13px] font-black text-gray-400 uppercase tracking-widest ml-1">
+          <label className="text-[14px] font-bold text-gray-400 ml-1">
             {t('resale.story') || 'DESCRIPTION'}
           </label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder={t('resale.story_placeholder') || 'Describe your item in detail...'}
-            className="w-full min-h-[160px] bg-gray-50 border-none rounded-[28px] px-6 py-5 text-sm font-medium focus:ring-2 focus:ring-primary/10 resize-y leading-relaxed"
+            className="w-full min-h-[160px] bg-gray-50 border-none rounded-[28px] px-6 py-5 text-[16px] font-medium focus:ring-2 focus:ring-primary/10 resize-y leading-relaxed"
           />
         </div>
         

@@ -60,18 +60,40 @@ export function useSocialData() {
     };
     window.addEventListener('woc:compose:open', handleComposeOpen as EventListener);
 
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get('id');
-    if (id) {
-      socialService.getSocialById(id).then((social) => {
-        if (social) {
-          handleOpenView(social);
-        }
-      });
+    // sessionStorage 플래그 체크 (통합 등록 메뉴에서 진입 시)
+    const pending = sessionStorage.getItem('woc_compose_pending');
+    if (pending === 'social') {
+      sessionStorage.removeItem('woc_compose_pending');
+      handleOpenCreate();
     }
+
+    // 네이티브 URL 쿼리 즉각 검사 및 가드 (Next.js 라우터 얕은 라우팅 갱신 누락 방지)
+    const checkNativeQuery = () => {
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('createSocial') === 'true') {
+          setIsCreateOpen(true);
+        } else {
+          setIsCreateOpen(false);
+        }
+
+        const id = params.get('id');
+        if (id) {
+          socialService.getSocialById(id).then((social) => {
+            if (social) {
+              handleOpenView(social);
+            }
+          });
+        }
+      }
+    };
+
+    checkNativeQuery();
+    window.addEventListener('popstate', checkNativeQuery);
 
     return () => {
       window.removeEventListener('woc:compose:open', handleComposeOpen as EventListener);
+      window.removeEventListener('popstate', checkNativeQuery);
     };
   }, []);
 
@@ -133,11 +155,7 @@ export function useSocialData() {
 
   // URL 쿼리와 로컬 등록 모달 상태의 무결점 실시간 정밀 동기화 (Single Source of Truth)
   useEffect(() => {
-    if (isCreateOpenURL) {
-      setIsCreateOpen(true);
-    } else {
-      setIsCreateOpen(false);
-    }
+    setIsCreateOpen(isCreateOpenURL);
   }, [isCreateOpenURL]);
 
   // URL 쿼리와 로컬 수정 모달 상태의 무결점 실시간 정밀 동기화 (Single Source of Truth)

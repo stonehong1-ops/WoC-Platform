@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import React, { useState, useEffect, useCallback, Suspense } from "react";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useNavigation } from "@/components/providers/NavigationProvider";
@@ -12,6 +12,9 @@ import { useNotification } from '@/contexts/NotificationContext';
 import { chatService } from '@/lib/firebase/chatService';
 import { COUNTRY_MAPPING } from "@/constants/locations";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { toast } from 'sonner';
+import CreateMenuBottomSheet from "@/components/common/CreateMenuBottomSheet";
+import BottomSheet from "@/components/common/BottomSheet";
 
 const NAV_STRUCTURE = {
   World: [
@@ -65,7 +68,58 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
   const { t } = useLanguage();
   const pathname = usePathname();
   const [isMyView, setIsMyView] = useState(false);
+  const [isCreateMenuOpen, setIsCreateMenuOpen] = useState(false);
+  const [isSocialSelectOpen, setIsSocialSelectOpen] = useState(false);
+  const router = useRouter();
   const { user, profile } = useAuth();
+
+  // + 버튼 페이지별 분기 핸들러
+  const handleCreatePress = useCallback(() => {
+    if (!user) {
+      toast(t('create_menu.no_permission', '로그인이 필요합니다'));
+      return;
+    }
+
+    // 바로 열기 (등록창 직행)
+    if (pathname.startsWith('/plaza')) { router.push('/plaza?createFlow=true'); return; }
+    if (pathname.startsWith('/venues')) { router.push('/venues?editId=new'); return; }
+    if (pathname.startsWith('/people')) { router.push('/people/register'); return; }
+    if (pathname.startsWith('/resale')) { router.push('/resale?create=true'); return; }
+    if (pathname.startsWith('/events')) { router.push('/events?create=true'); return; }
+    if (pathname.startsWith('/lost')) { router.push('/lost/register'); return; }
+    if (pathname.startsWith('/groups')) { router.push('/groups?action=create'); return; }
+    if (pathname.startsWith('/coaching')) { router.push('/coaching'); return; }
+    if (pathname.startsWith('/live')) { router.push('/live/create?source=live'); return; }
+
+    // 선택 바텀시트 (밀롱가 / 쁘락띠까)
+    if (pathname.startsWith('/today') || pathname.startsWith('/social')) {
+      setIsSocialSelectOpen(true);
+      return;
+    }
+
+    // 토스트 (등록 불가 안내)
+    if (pathname.startsWith('/home')) { toast(t('create_btn.admin_only', '관리자만 설정 가능합니다')); return; }
+    if (pathname.startsWith('/shop')) { toast(t('create_btn.group_owner_only', '그룹에서 오너만 등록 가능합니다')); return; }
+    if (pathname.startsWith('/rental')) { toast(t('create_btn.group_owner_setting', '그룹에서 오너만 설정 가능합니다')); return; }
+    if (pathname.startsWith('/stay')) { toast(t('create_btn.group_owner_setting', '그룹에서 오너만 설정 가능합니다')); return; }
+    if (pathname.startsWith('/class')) { toast(t('create_btn.group_instructor_only', '그룹에서 오너 또는 강사만 등록 가능합니다')); return; }
+    if (pathname.startsWith('/pics')) { toast(t('create_btn.ai_photos_only', '시스템에서 AI가 생성한 사진만 등록됩니다')); return; }
+    if (pathname.startsWith('/hub')) { toast(t('create_btn.hub_admin_only', '물품입고는 WoC 관리자만 등록 가능합니다')); return; }
+    if (pathname.startsWith('/explore')) { toast(t('create_btn.jump_admin_only', '취미는 WoC 관리자만 등록 가능합니다')); return; }
+    if (pathname.startsWith('/wallet')) { toast(t('create_btn.no_register', '등록 기능이 없습니다')); return; }
+    if (pathname.startsWith('/profile')) {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('tab') === 'schedule') { toast(t('create_btn.in_development', '개발진행중')); return; }
+      toast(t('create_btn.admin_only', '관리자만 설정 가능합니다'));
+      return;
+    }
+    if (pathname.startsWith('/notification')) { toast(t('create_btn.admin_only', '관리자만 설정 가능합니다')); return; }
+    if (pathname.startsWith('/chat')) { toast(t('create_btn.chat_hint', '피플 검색 후 대화를 입력할 수 있습니다')); return; }
+    if (pathname.startsWith('/search')) { toast(t('create_btn.search_hint', '검색창에서 직접 입력할 수 있습니다')); return; }
+
+    // 매칭 안 되는 나머지 페이지 → 기본 CreateMenu
+    setIsCreateMenuOpen(true);
+  }, [pathname, user, router, t]);
 
   useEffect(() => {
     // Detect view mode from URL search params on client side
@@ -435,7 +489,74 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
               </Link>
             );
           })}
+
+
+          {/* Divider */}
+          <div className="w-px h-7 bg-slate-200 shrink-0" />
+
+          {/* Create (+) Tab */}
+          <button
+            onClick={handleCreatePress}
+            className="relative flex flex-col items-center justify-center gap-0.5 min-w-[52px] h-[52px] transition-all duration-300 text-slate-400 hover:text-[#007AFF] active:scale-90"
+          >
+            <span 
+              className="material-symbols-outlined !text-[26px] transition-colors duration-300"
+              style={{ fontVariationSettings: "'FILL' 0, 'wght' 600" }}
+            >
+              add_circle
+            </span>
+            <span className="text-[11px] leading-none tracking-tight font-medium">
+              {t('nav.create', '등록')}
+            </span>
+          </button>
         </footer>
+
+        {/* Create Menu Bottom Sheet (폴백용) */}
+        <CreateMenuBottomSheet 
+          isOpen={isCreateMenuOpen} 
+          onClose={() => setIsCreateMenuOpen(false)} 
+        />
+
+        {/* 오늘/소셜 밀롱가·쁘락띠까 선택 바텀시트 */}
+        <BottomSheet
+          isOpen={isSocialSelectOpen}
+          onClose={() => setIsSocialSelectOpen(false)}
+          title={t('create_btn.social_select_title', '등록 유형 선택')}
+          height="auto"
+        >
+          <div className="flex flex-col gap-3 py-4 px-2 font-manrope">
+            <button
+              onClick={() => {
+                setIsSocialSelectOpen(false);
+                router.push('/social?createSocial=true&socialType=milonga');
+              }}
+              className="flex items-center gap-4 p-4 rounded-2xl text-white transition-all active:scale-[0.98] hover:shadow-lg"
+              style={{ background: 'linear-gradient(135deg, #FF2D55, #FF9500)' }}
+            >
+              <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center">
+                <span className="material-symbols-outlined !text-[24px] text-white" style={{ fontFamily: "'Material Symbols Outlined'" }}>celebration</span>
+              </div>
+              <div>
+                <h5 className="text-[14px] font-black tracking-tight">{t('create_btn.milonga', '밀롱가 등록')}</h5>
+              </div>
+            </button>
+            <button
+              onClick={() => {
+                setIsSocialSelectOpen(false);
+                router.push('/social?createSocial=true&socialType=practica');
+              }}
+              className="flex items-center gap-4 p-4 rounded-2xl text-white transition-all active:scale-[0.98] hover:shadow-lg"
+              style={{ background: 'linear-gradient(135deg, #007AFF, #5856D6)' }}
+            >
+              <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center">
+                <span className="material-symbols-outlined !text-[24px] text-white" style={{ fontFamily: "'Material Symbols Outlined'" }}>school</span>
+              </div>
+              <div>
+                <h5 className="text-[14px] font-black tracking-tight">{t('create_btn.practica', '쁘락띠까 등록')}</h5>
+              </div>
+            </button>
+          </div>
+        </BottomSheet>
     </div>
   );
 }

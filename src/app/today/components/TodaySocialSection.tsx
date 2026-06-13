@@ -22,10 +22,10 @@ export function SectionHeader({ icon, label, count }: {
 }) {
   return (
     <div className="flex items-center gap-2 mb-3">
-      <span className="material-symbols-outlined !text-[20px] text-slate-500">{icon}</span>
-      <span className="text-[15px] font-black text-[#1e293b] tracking-tight">{label}</span>
+      <span className="material-symbols-outlined !text-[24px] text-slate-500">{icon}</span>
+      <span className="text-[19px] font-black text-[#1e293b] tracking-tight">{label}</span>
       {count > 0 && (
-        <span className="text-[13px] font-bold text-slate-400">{count}</span>
+        <span className="text-[15px] font-bold text-slate-400">{count}</span>
       )}
     </div>
   );
@@ -246,23 +246,13 @@ export default function TodaySocialSection({
             )
           ) : practicas.length > 0 ? (
             currentFilter === "practice" ? (
-              /* 쁘락띠까 단독 필터: 홍대/강남 구획 + 3열 Grid 카드 뷰 */
-              <div className="space-y-5 animate-in fade-in duration-300">
-                {practicasByDistrict.map(([district, items]) => (
-                  <div key={district}>
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="material-symbols-outlined !text-[13px] text-blue-500">location_searching</span>
-                      <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">{district}</span>
-                      <div className="flex-1 h-px bg-slate-200" />
-                      <span className="text-[11px] font-bold text-slate-300">{items.length}</span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2">
-                      {items.map(s => (
-                        <SocialCard key={s.id} social={s} date={selectedDate} venuesMap={venuesMap} onPress={() => openSocialModal(s.id)} />
-                      ))}
-                    </div>
-                  </div>
-                ))}
+              /* 쁘락띠까 단독 필터: 지역 구분 없이 시간순 통합 3열 Grid */
+              <div className="animate-in fade-in duration-300">
+                <div className="grid grid-cols-3 gap-2">
+                  {practicas.map(s => (
+                    <SocialCard key={s.id} social={s} date={selectedDate} venuesMap={venuesMap} onPress={() => openSocialModal(s.id)} />
+                  ))}
+                </div>
               </div>
             ) : (
               /* 모두(all) 필터: 기존 가로 칩 리스트 */

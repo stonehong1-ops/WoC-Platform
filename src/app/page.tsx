@@ -27,7 +27,7 @@ export default function LandingPage() {
 
     if (isStandalone) {
       localStorage.setItem('woc_pwa_installed', 'true');
-      window.location.replace('/today');
+      window.location.replace('/live');
       return;
     }
 
@@ -49,7 +49,7 @@ export default function LandingPage() {
     const isChrome = /Chrome|CriOS/i.test(ua);
     const isSamsung = /SamsungBrowser/i.test(ua);
     if (isAndroid && !isChrome && !isSamsung && !inAppCheck) {
-      window.location.replace('/today');
+      window.location.replace('/live');
       return;
     }
 
@@ -228,7 +228,7 @@ export default function LandingPage() {
                 </div>
               </button>
               <button
-                onClick={() => window.location.replace('/today')}
+                onClick={() => window.location.replace('/live')}
                 className="mt-3 w-[85%] h-12 border border-gray-200 text-gray-600 font-bold rounded-full transition-all active:scale-[0.97] flex items-center justify-center gap-2 hover:bg-gray-50 text-sm shadow-sm"
               >
                 <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
@@ -258,7 +258,7 @@ export default function LandingPage() {
               </p>
 
               <button
-                onClick={() => window.location.replace('/today')}
+                onClick={() => window.location.replace('/live')}
                 className="mt-5 w-[85%] h-12 border border-gray-200 text-gray-600 font-bold rounded-full transition-all active:scale-[0.97] flex items-center justify-center gap-2 hover:bg-gray-50 text-sm shadow-sm"
               >
                 <span className="material-symbols-outlined text-[18px]">arrow_forward</span>

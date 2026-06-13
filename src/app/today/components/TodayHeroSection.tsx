@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Event } from "@/types/event";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -39,6 +39,28 @@ export default function TodayHeroSection({
   currentFilter
 }: TodayHeroSectionProps) {
   const { language } = useLanguage();
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  // 이벤트 데이터 변경 시 인덱스 바운더리 체크
+  useEffect(() => {
+    if (currentIndex >= todayActiveEvents.length) {
+      setCurrentIndex(0);
+    }
+  }, [todayActiveEvents, currentIndex]);
+
+  // 배너 자동 롤링 타이머 (4초)
+  useEffect(() => {
+    if (todayActiveEvents.length <= 1) return;
+    const interval = setInterval(() => {
+      setIsTransitioning(true);
+      setTimeout(() => {
+        setCurrentIndex((prev) => (prev + 1) % todayActiveEvents.length);
+        setIsTransitioning(false);
+      }, 300); // fade out transition duration
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [todayActiveEvents.length]);
 
   if (loadingEvents) {
     return <div className="h-[150px] rounded-2xl bg-slate-200 animate-pulse" />;
@@ -69,6 +91,10 @@ export default function TodayHeroSection({
     return null;
   }
 
+  const activeIndex = currentIndex < todayActiveEvents.length ? currentIndex : 0;
+  const ev = todayActiveEvents[activeIndex];
+  const dday = getEventDday(ev);
+
   return (
     <div className="w-full space-y-3 animate-in fade-in duration-300">
       {/* 타이틀 */}
@@ -80,50 +106,60 @@ export default function TodayHeroSection({
         <span className="text-[13px] font-bold text-slate-400">{todayActiveEvents.length}</span>
       </div>
 
-      {todayActiveEvents.map((ev, index) => {
-        const dday = getEventDday(ev);
-        return (
-          <button
-            key={ev.id}
-            onClick={() => openEventModal(ev.id)}
-            className="block w-[calc(100%+32px)] -mx-4 relative shadow-sm text-left active:scale-[0.99] transition-all cursor-pointer bg-slate-900"
-          >
-            {/* 이미지 */}
-            <div className="relative w-full flex items-center justify-center">
-              {ev.imageUrl ? (
-                <img 
-                  src={ev.imageUrl} 
-                  alt={ev.title} 
-                  className="w-full h-auto object-contain" 
-                  loading="lazy"
-                />
-              ) : (
-                <div className="w-full h-[200px] bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-white/50 !text-[32px]">event</span>
-                </div>
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
-            </div>
-
-            {/* 상단 D-day */}
-            {dday && (
-              <span className="absolute top-3 left-3 bg-rose-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded-md leading-none shadow-md">
-                {dday}
-              </span>
+      <button
+        onClick={() => openEventModal(ev.id)}
+        className="block w-full relative shadow-sm text-left active:scale-[0.99] transition-all cursor-pointer bg-slate-900 overflow-hidden h-[90px] xs:h-[105px] md:h-[120px] rounded-2xl"
+      >
+        <div className={`relative w-full h-full transition-opacity duration-300 ${isTransitioning ? "opacity-0" : "opacity-100"}`}>
+          {/* 이미지 */}
+          <div className="relative w-full h-full flex items-center justify-center">
+            {ev.imageUrl ? (
+              <img 
+                src={ev.imageUrl} 
+                alt={language === "KR" && ev.titleNative ? ev.titleNative : ev.title} 
+                className="w-full h-full object-cover" 
+                loading="lazy"
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                <span className="material-symbols-outlined text-white/50 !text-[32px]">event</span>
+              </div>
             )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent pointer-events-none" />
+          </div>
 
-            {/* 하단 정보 */}
-            <div className="absolute bottom-0 left-0 right-0 p-3.5 space-y-0.5 z-10">
-              <h4 className="text-white font-black text-[13.5px] leading-tight line-clamp-2">
-                {ev.title}
-              </h4>
-              <p className="text-[10.5px] font-semibold text-white/80">
-                {getEventDateRange(ev)}
-              </p>
-            </div>
-          </button>
-        );
-      })}
+          {/* 상단 D-day */}
+          {dday && (
+            <span className="absolute top-2.5 left-2.5 bg-rose-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded-md leading-none shadow-md">
+              {dday}
+            </span>
+          )}
+
+          {/* 하단 정보 */}
+          <div className="absolute bottom-0 left-0 right-0 p-3 pr-20 space-y-0.5 z-10">
+            <h4 className="text-white font-black text-[13px] leading-tight line-clamp-1">
+              {language === "KR" && ev.titleNative ? ev.titleNative : ev.title}
+            </h4>
+            <p className="text-[10px] font-semibold text-white/80 line-clamp-1">
+              {getEventDateRange(ev)}
+            </p>
+          </div>
+        </div>
+
+        {/* 인디케이터 도트 */}
+        {todayActiveEvents.length > 1 && (
+          <div className="absolute bottom-3 right-3 flex items-center gap-1.5 z-20">
+            {todayActiveEvents.map((_, i) => (
+              <span
+                key={i}
+                className={`h-1.5 rounded-full transition-all duration-300 ${
+                  i === activeIndex ? "w-3 bg-indigo-500" : "w-1.5 bg-white/40"
+                }`}
+              />
+            ))}
+          </div>
+        )}
+      </button>
     </div>
   );
 }

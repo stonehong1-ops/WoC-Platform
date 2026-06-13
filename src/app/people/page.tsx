@@ -102,19 +102,7 @@ export default function PeoplePage() {
 
       <div className="px-0 pt-0 pb-32 flex flex-col gap-6">
 
-        {/* Integrated Registration Action */}
-        <div className="mx-4 my-3 px-5 py-3 flex items-center justify-between bg-white rounded-xl border border-slate-100 shadow-sm">
-          <p className="text-[12px] font-bold text-slate-400 uppercase tracking-tight">
-            {t('people.know_artist')}
-          </p>
-          <button 
-            onClick={() => router.push('/people/register')}
-            className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 transition-colors py-2"
-          >
-            <span className="text-[13px] font-bold">{t('people.register_artist')}</span>
-            <span className="material-symbols-outlined text-[18px]">add_circle</span>
-          </button>
-        </div>
+
 
         {/* Cards Feed */}
         <div className="flex flex-col gap-6 px-4">

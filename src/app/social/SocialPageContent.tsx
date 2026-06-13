@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useSocialData } from './hooks/useSocialData';
 import EditSocialEvent from '@/components/social/EditSocialEvent';
 import SocialViewer from '@/components/social/SocialViewer';
@@ -19,6 +20,7 @@ import PosterOverlay from '@/components/social/poster/PosterOverlay';
 import { isVideoUrl, getDjDisplay } from '@/lib/utils/socialUtils';
 
 export default function SocialPageContent() {
+  const router = useRouter();
   const {
     regulars,
     popups,
@@ -97,24 +99,11 @@ export default function SocialPageContent() {
             <span className="material-symbols-outlined text-[18px]">chevron_right</span>
           </button>
         </div>
-
-        {/* 신규 소셜 등록 */}
-        <div className="flex items-center gap-1.5 shrink-0 ml-2">
-          {(profile?.isAdmin || (profile as any)?.systemRole === 'admin' || profile?.isRegistered) && (
-            <button
-              onClick={() => handleOpenCreate()}
-              className="flex items-center gap-0.5 px-2 py-0.5 bg-blue-600 border border-blue-600 text-white rounded-lg text-[10px] font-black active:scale-95 transition-all shadow-sm shadow-blue-500/10 hover:bg-blue-700 shrink-0"
-            >
-              <span className="material-symbols-rounded text-[11px]">add</span>
-              <span>{t('social.register')}</span>
-            </button>
-          )}
-        </div>
       </div>
     );
     const height = 44;
     setSubHeader(filterBar, height);
-  }, [profile, setSubHeader, t, handleOpenCreate, language, activeWeek]);
+  }, [profile, setSubHeader, t, language, activeWeek]);
 
   useEffect(() => {
     return () => setSubHeader(null);
@@ -495,6 +484,9 @@ export default function SocialPageContent() {
       {isCreateOpen && (
         <EditSocialEvent
           onClose={handleCloseCreate}
+          onSuccess={(id) => {
+            router.push(`/create-success?type=social&id=${id || ''}`);
+          }}
         />
       )}
     </main>

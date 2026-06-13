@@ -211,16 +211,7 @@ export default function UniversalFeed({ context, currentUser, profile, activeFil
 
         {/* ⚡ 프리미엄 피드 한 줄 툴바 (브랜드 글쓰기 프롬프트 + 고급 세그먼티드 뷰 스위치) */}
         <div className="mx-4 my-3 px-3 py-2 bg-white/95 backdrop-blur-md rounded-3xl border border-slate-100/80 shadow-sm shadow-slate-100/50 flex items-center justify-between gap-3 shrink-0">
-          {/* 좌측: 감각적인 브랜드 그라데이션 글쓰기 알약 칩 */}
-          <div 
-            onClick={() => openCreate('new')}
-            className="flex items-center gap-2 flex-grow cursor-pointer bg-gradient-to-r from-blue-500/[0.04] to-indigo-500/[0.02] hover:from-blue-500/[0.07] hover:to-indigo-500/[0.04] transition-all px-4 py-2 rounded-full border border-blue-500/10 hover:border-blue-500/20 active:scale-[0.98] select-none"
-          >
-            <span className="material-symbols-outlined text-[16px] text-blue-500 font-bold">edit_note</span>
-            <span className="text-[11.5px] font-black text-slate-600 tracking-tight truncate">
-              {t('plaza.compose_prompt', 'Share your thoughts...')}
-            </span>
-          </div>
+
 
           {/* 우측: 슬랙/애플 감성의 부드러운 뷰 세그먼트 스위치 */}
           <div className="flex bg-slate-50/80 p-0.5 rounded-2xl border border-slate-200/20 shrink-0 select-none">

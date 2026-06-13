@@ -73,8 +73,7 @@ function RegisterPageContent() {
     setExistingImages(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     if (!user) {
       alert(t('lost.register.msg_login_required'));
       return;
@@ -120,12 +119,10 @@ function RegisterPageContent() {
 
       if (editId) {
         await lostFoundService.updateItem(editId, itemData);
-        alert(t('lost.register.msg_success_update'));
         router.back();
       } else {
-        await lostFoundService.addItem(itemData as Omit<LostFoundItem, 'id' | 'createdAt' | 'updatedAt' | 'likesCount' | 'viewsCount'>);
-        alert(t('lost.register.msg_success_register'));
-        router.back();
+        const newId = await lostFoundService.addItem(itemData as Omit<LostFoundItem, 'id' | 'createdAt' | 'updatedAt' | 'likesCount' | 'viewsCount'>);
+        router.replace('/create-success?type=lost&id=' + newId);
       }
     } catch (err) {
       console.error(err);
@@ -143,31 +140,34 @@ function RegisterPageContent() {
         <button type="button" onClick={() => router.back()} className="w-10 h-10 flex items-center justify-center -ml-2 active:scale-95 transition-transform text-slate-700">
           <span className="material-symbols-rounded text-2xl">arrow_back</span>
         </button>
-        <h1 className="text-[14px] font-black uppercase tracking-widest text-slate-800">
+        <h1 className="text-[16px] font-bold text-slate-800">
           {editId ? t('lost.register.title_edit') : t('lost.register.title_register')}
         </h1>
-        <div className="w-10" />
+        <button type="button" onClick={handleSubmit} disabled={isSubmitting}
+          className="px-5 py-2 rounded-full bg-[#007AFF] text-white text-[14px] font-bold disabled:opacity-50 active:scale-95 transition-all">
+          {isSubmitting ? (uploadProgress !== null ? `${uploadProgress}%` : (editId ? t('lost.register.status_updating') : t('lost.register.status_registering'))) : (editId ? t('lost.register.button_update') : t('lost.register.button_register'))}
+        </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden">
         {/* Form Scrollable Content */}
         <div className="flex-1 overflow-y-auto px-4 mt-4 space-y-6 pb-6 text-left no-scrollbar">
           
           {/* Type Toggle */}
           <div className="flex bg-[#f2f4f4] rounded-xl p-1">
             <button type="button" onClick={() => setType('LOST')}
-              className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${type === 'LOST' ? 'bg-white shadow-sm text-red-500' : 'text-[#596061]'}`}>
+              className={`flex-1 py-2.5 text-[14px] font-bold rounded-lg transition-all ${type === 'LOST' ? 'bg-white shadow-sm text-red-500' : 'text-[#596061]'}`}>
               {t('lost.register.type_lost')}
             </button>
             <button type="button" onClick={() => setType('FOUND')}
-              className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${type === 'FOUND' ? 'bg-white shadow-sm text-primary' : 'text-[#596061]'}`}>
+              className={`flex-1 py-2.5 text-[14px] font-bold rounded-lg transition-all ${type === 'FOUND' ? 'bg-white shadow-sm text-primary' : 'text-[#596061]'}`}>
               {t('lost.register.type_found')}
             </button>
           </div>
 
           {/* Images */}
           <div>
-            <label className="block text-xs font-bold text-[#596061] mb-2 uppercase tracking-wider">
+            <label className="block text-[14px] font-bold text-[#596061] mb-2">
               {t('lost.register.upload_photos', { count: images.length + existingImages.length })}
             </label>
             <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
@@ -200,57 +200,42 @@ function RegisterPageContent() {
           {/* Details */}
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">{t('lost.register.label_title')} <span className="text-red-400">*</span></label>
+              <label className="block text-[14px] font-bold text-[#596061] mb-1.5">{t('lost.register.label_title')} <span className="text-red-400">*</span></label>
               <input required type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder={t('lost.register.placeholder_title')}
-                className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" />
+                className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" />
             </div>
 
             <div className="flex gap-3">
               <div className="flex-1">
-                <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">{t('lost.register.label_location')} <span className="text-red-400">*</span></label>
+                <label className="block text-[14px] font-bold text-[#596061] mb-1.5">{t('lost.register.label_location')} <span className="text-red-400">*</span></label>
                 <input required type="text" value={location} onChange={e => setLocation(e.target.value)} placeholder={t('lost.register.placeholder_location')}
-                  className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" />
+                  className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" />
               </div>
               <div className="flex-1">
-                <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">{t('lost.register.label_date')} <span className="text-red-400">*</span></label>
+                <label className="block text-[14px] font-bold text-[#596061] mb-1.5">{t('lost.register.label_date')} <span className="text-red-400">*</span></label>
                 <input required type="date" value={date} onChange={e => setDate(e.target.value)}
-                  className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" />
+                  className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">{t('lost.register.label_reward')}</label>
+              <label className="block text-[14px] font-bold text-[#596061] mb-1.5">{t('lost.register.label_reward')}</label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-[#acb3b4]">₩</span>
                 <input type="number" value={reward} onChange={e => setReward(e.target.value ? Number(e.target.value) : '')} placeholder={t('lost.register.placeholder_reward')}
-                  className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl pl-9 pr-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" />
+                  className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl pl-9 pr-4 py-3 text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">{t('lost.register.label_description')}</label>
+              <label className="block text-[14px] font-bold text-[#596061] mb-1.5">{t('lost.register.label_description')}</label>
               <textarea rows={5} value={description} onChange={e => setDescription(e.target.value)} placeholder={t('lost.register.placeholder_description')}
-                className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none" />
+                className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none" />
             </div>
           </div>
         </div>
 
-        {/* Submit */}
-        <div className="flex-shrink-0 w-full p-4 border-t border-slate-100 bg-white pb-[calc(1rem+env(safe-area-inset-bottom))] z-50">
-          <button type="submit" disabled={isSubmitting}
-            className="w-full bg-primary text-white font-bold py-3.5 rounded-xl shadow-lg shadow-primary/20 active:scale-[0.98] transition-transform disabled:opacity-50">
-            {isSubmitting ? (
-              uploadProgress !== null ? (
-                `${uploadProgress}%`
-              ) : (
-                editId ? t('lost.register.status_updating') : t('lost.register.status_registering')
-              )
-            ) : (
-              editId ? t('lost.register.button_update') : t('lost.register.button_register')
-            )}
-          </button>
-        </div>
-      </form>
+      </div>
     </main>
   );
 }

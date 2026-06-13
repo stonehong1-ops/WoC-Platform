@@ -73,60 +73,38 @@ export default function UniversalCompose({
   if (!isOpen || !mounted) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 overflow-hidden">
+    <div className="fixed inset-0 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 overflow-hidden" style={{ zIndex: 100000 }}>
       <div 
         className="absolute inset-0" 
         onClick={() => setIsOpen(false)} 
       />
       
       <div className="relative bg-white w-full max-w-xl h-[95dvh] sm:h-auto sm:max-h-[90vh] rounded-t-[32px] sm:rounded-[32px] shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom duration-300">
-        {/* Header - Premium Style */}
-        <div className="px-8 py-6 border-b border-gray-50 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10 font-manrope">
-          <div className="flex flex-col">
-            {label && (
-              <span className="text-[10px] font-black text-primary tracking-[0.25em] uppercase mb-1">
-                {label}
-              </span>
-            )}
-            <h3 className="text-[20px] font-black text-gray-900 uppercase tracking-tighter">
-              {title}
-            </h3>
-          </div>
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={() => setIsOpen(false)} 
-              className="w-10 h-10 rounded-full flex items-center justify-center bg-gray-50 hover:bg-gray-100 transition-all text-gray-400"
-            >
-              <span className="material-symbols-outlined text-[20px]">close</span>
-            </button>
-          </div>
+        {/* Header - Standard */}
+        <div className="flex-shrink-0 bg-white border-b border-slate-100 px-4 h-14 flex items-center justify-between z-50">
+          <button 
+            type="button"
+            onClick={() => setIsOpen(false)} 
+            className="w-10 h-10 flex items-center justify-center -ml-2 active:scale-95 transition-transform text-slate-700"
+          >
+            <span className="material-symbols-rounded text-2xl">close</span>
+          </button>
+          <h3 className="text-[16px] font-bold text-slate-800">
+            {title}
+          </h3>
+          <button
+            type="button"
+            onClick={onSubmit}
+            disabled={isSubmitting}
+            className="px-5 py-2 rounded-full bg-[#007AFF] text-white text-[14px] font-bold disabled:opacity-50 active:scale-95 transition-all"
+          >
+            {isSubmitting ? finalSubmittingLabel : finalSubmitLabel}
+          </button>
         </div>
 
         {/* Content Area */}
         <div className="flex-1 overflow-y-auto p-8 space-y-8 no-scrollbar scroll-smooth pb-8">
           {children}
-        </div>
-
-        {/* Action Button Area - Premium Style */}
-        <div className="p-6 border-t border-gray-50 bg-white flex-shrink-0 z-10 w-full pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
-          <button
-            onClick={onSubmit}
-            disabled={isSubmitting}
-            className={`w-full h-14 rounded-full font-black text-[15px] transition-all flex items-center justify-center gap-2 uppercase tracking-widest shadow-xl ${
-              isSubmitting
-                ? 'bg-gray-100 text-gray-300'
-                : 'bg-primary text-white shadow-primary/30 hover:scale-[1.02] active:scale-[0.98]'
-            }`}
-          >
-            {isSubmitting ? (
-              <>
-                <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin" />
-                <span>{finalSubmittingLabel}</span>
-              </>
-            ) : (
-              <span>{finalSubmitLabel}</span>
-            )}
-          </button>
         </div>
       </div>
     </div>,

@@ -1,5 +1,6 @@
 import React from 'react';
 import { CoverEvent } from '../CoverEditor';
+import { useBase64Image } from '../useBase64Image';
 
 interface ThemeCProps {
   date: Date;
@@ -27,12 +28,13 @@ function classifyRegion(ev: CoverEvent): 'hongdae' | 'gangnam' {
 /* ─── Image card (milonga or class) ─── */
 function ImageCard({ ev, aspect = '3/4' }: { ev: CoverEvent; aspect?: string }) {
   const isMilonga = ev.type === 'milonga' || ev.type === 'social';
-  const hasImage = !!ev.imageUrl;
+  const base64Url = useBase64Image(ev.imageUrl || undefined);
+  const hasImage = !!base64Url;
 
   return (
     <div className="relative overflow-hidden rounded-[3px]" style={{ aspectRatio: aspect }}>
       {hasImage ? (
-        <img src={ev.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <img src={base64Url} alt="" className="absolute inset-0 w-full h-full object-cover" />
       ) : (
         <div className="absolute inset-0 bg-gradient-to-br from-gray-400 to-gray-600" />
       )}

@@ -79,23 +79,17 @@ export default function FullScreenRegistration({
   return createPortal(
     <div className="fixed inset-0 z-[9999] bg-white text-on-surface font-body-md antialiased flex flex-col animate-in fade-in duration-200">
       {/* Header */}
-      <header className="flex-shrink-0 w-full z-50 flex items-center justify-between px-4 h-16 bg-white shadow-sm border-b border-slate-100">
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={handleClose} 
-            className="p-2 rounded-full active:scale-95 duration-150 hover:bg-slate-50"
-          >
-            <span className="material-symbols-outlined text-slate-500">close</span>
-          </button>
-          <h1 className="font-title-md text-title-md text-on-surface truncate">
-            {title}
-          </h1>
-        </div>
-        
+      <header className="flex-shrink-0 bg-white border-b border-slate-100 px-4 h-14 flex items-center justify-between z-50">
+        <button type="button" onClick={handleClose} className="w-10 h-10 flex items-center justify-center -ml-2 active:scale-95 transition-transform text-slate-700">
+          <span className="material-symbols-rounded text-2xl">arrow_back</span>
+        </button>
+        <h1 className="text-[16px] font-bold text-slate-800 truncate">
+          {title}
+        </h1>
         <button
           onClick={onSubmit}
           disabled={isSubmitting || !isValid}
-          className="px-5 py-2 rounded-xl bg-primary-container text-white font-title-md text-body-md hover:opacity-90 active:scale-95 duration-150 transition-all disabled:opacity-40"
+          className="px-5 py-2 rounded-full bg-[#007AFF] text-white text-[14px] font-bold disabled:opacity-50 active:scale-95 transition-all"
         >
           {isSubmitting ? (
             <div className="flex items-center gap-2">

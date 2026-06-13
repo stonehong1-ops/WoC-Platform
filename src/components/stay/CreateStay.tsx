@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { stayService } from '@/lib/firebase/stayService';
 import { plazaService } from '@/lib/firebase/plazaService';
@@ -23,6 +24,7 @@ const MAX_PHOTOS = 20;
 export default function CreateStay({ isOpen, onClose, onSuccess, isExiting = false }: CreateStayProps) {
   const { user } = useAuth();
   const { t } = useLanguage();
+  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   
@@ -96,7 +98,6 @@ export default function CreateStay({ isOpen, onClose, onSuccess, isExiting = fal
 
   const handleSubmit = async () => {
     if (!user || !title || !price || mediaFiles.length === 0 || !region) {
-      alert(t('stay.create.alert.required_fields'));
       return;
     }
 
@@ -156,10 +157,9 @@ export default function CreateStay({ isOpen, onClose, onSuccess, isExiting = fal
       });
 
       onSuccess?.();
-      onClose();
+      router.replace('/create-success?type=stay&id=');
     } catch (error) {
       console.error("Error creating stay:", error);
-      alert(t('stay.create.alert.failed'));
     } finally {
       setIsSubmitting(false);
       setUploadProgress(null);
@@ -184,24 +184,31 @@ export default function CreateStay({ isOpen, onClose, onSuccess, isExiting = fal
         }`}
       >
         {/* Header */}
-        <div className="flex-shrink-0 bg-white border-b border-[#e0e4e5]/30 px-4 h-14 flex items-center justify-between z-50">
+        <div className="flex-shrink-0 bg-white border-b border-slate-100 px-4 h-14 flex items-center justify-between z-50">
           <button type="button" onClick={onClose} className="w-10 h-10 flex items-center justify-center -ml-2 active:scale-95 transition-transform text-slate-700">
-            <span className="material-symbols-outlined text-2xl">arrow_back</span>
+            <span className="material-symbols-rounded text-2xl">arrow_back</span>
           </button>
-          <h1 className="text-[14px] font-black uppercase tracking-widest text-slate-800">
+          <h1 className="text-[16px] font-bold text-slate-800">
             {t('stay.create.title')}
           </h1>
-          <div className="w-10" />
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={isSubmitting || !isValid}
+            className="px-5 py-2 rounded-full bg-[#007AFF] text-white text-[14px] font-bold disabled:opacity-50 active:scale-95 transition-all"
+          >
+            {isSubmitting ? (uploadProgress !== null ? `${uploadProgress}%` : t('stay.create.saving')) : (t('common.save') || 'Save')}
+          </button>
         </div>
 
-        <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden">
           {/* Scrollable Content */}
           <div className="flex-1 overflow-y-auto px-5 py-6 space-y-6 no-scrollbar text-left">
             
             {/* Photo Upload Area */}
             <div className="space-y-3">
               <div className="flex items-center justify-between ml-1">
-                <label className="block text-xs font-bold text-[#596061] uppercase tracking-wider">
+                <label className="block text-[14px] font-bold text-[#596061]">
                   {t('stay.create.photos')} <span className="text-primary">*</span>
                 </label>
                 <span className="text-[11px] font-bold text-gray-400">{mediaFiles.length}/{MAX_PHOTOS}</span>
@@ -244,7 +251,7 @@ export default function CreateStay({ isOpen, onClose, onSuccess, isExiting = fal
 
             {/* Basic Info */}
             <div>
-              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
+              <label className="block text-[14px] font-bold text-[#596061] mb-1.5">
                 {t('stay.create.stay_title')} <span className="text-primary">*</span>
               </label>
               <input
@@ -252,21 +259,21 @@ export default function CreateStay({ isOpen, onClose, onSuccess, isExiting = fal
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder={t('stay.create.title_placeholder')}
-                className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-medium"
+                className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3.5 text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-medium"
                 type="text"
               />
             </div>
 
             {/* Stay Type */}
             <div>
-              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
+              <label className="block text-[14px] font-bold text-[#596061] mb-1.5">
                 {t('stay.create.type')}
               </label>
               <div className="relative">
                 <select 
                   value={type}
                   onChange={(e) => setType(e.target.value as StayType)}
-                  className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none pr-10 font-bold"
+                  className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3.5 text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none pr-10 font-bold"
                 >
                   {stayTypes.map(st => <option key={st} value={st}>{t(`stay.type.${st}`)}</option>)}
                 </select>
@@ -276,7 +283,7 @@ export default function CreateStay({ isOpen, onClose, onSuccess, isExiting = fal
             
             {/* Price & Currency */}
             <div>
-              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
+              <label className="block text-[14px] font-bold text-[#596061] mb-1.5">
                 {t('stay.create.price_night')} <span className="text-primary">*</span>
               </label>
               
@@ -285,7 +292,7 @@ export default function CreateStay({ isOpen, onClose, onSuccess, isExiting = fal
                   <select 
                     value={currency}
                     onChange={(e) => setCurrency(e.target.value)}
-                    className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none pr-8 font-black"
+                    className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3.5 text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none pr-8 font-bold"
                   >
                     {CURRENCIES.map(curr => (
                       <option key={curr} value={curr}>{curr}</option>
@@ -299,14 +306,14 @@ export default function CreateStay({ isOpen, onClose, onSuccess, isExiting = fal
                   value={formatPrice(price)}
                   onChange={handlePriceChange}
                   placeholder="0"
-                  className="flex-1 min-w-0 bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-right font-black"
+                  className="flex-1 min-w-0 bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3.5 text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-right font-bold"
                 />
               </div>
             </div>
 
             {/* Location Region Selector */}
             <div className="space-y-3">
-              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
+              <label className="block text-[14px] font-bold text-[#596061] mb-1.5">
                 {t('stay.create.location')} <span className="text-primary">*</span>
               </label>
               <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
@@ -329,7 +336,7 @@ export default function CreateStay({ isOpen, onClose, onSuccess, isExiting = fal
 
             {/* Location Detail Text Input */}
             <div>
-              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
+              <label className="block text-[14px] font-bold text-[#596061] mb-1.5">
                 {t('stay.create.location_detail')}
               </label>
               <input
@@ -337,13 +344,13 @@ export default function CreateStay({ isOpen, onClose, onSuccess, isExiting = fal
                 value={addressDetail}
                 onChange={(e) => setAddressDetail(e.target.value)}
                 placeholder={t('stay.create.location_detail_placeholder')}
-                className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3.5 text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
               />
             </div>
 
             {/* Amenities */}
             <div className="space-y-3">
-              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
+              <label className="block text-[14px] font-bold text-[#596061] mb-1.5">
                 {t('stay.create.amenities')}
               </label>
               <div className="flex flex-wrap gap-2">
@@ -367,14 +374,14 @@ export default function CreateStay({ isOpen, onClose, onSuccess, isExiting = fal
 
             {/* Description */}
             <div>
-              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
+              <label className="block text-[14px] font-bold text-[#596061] mb-1.5">
                 {t('stay.create.experience')}
               </label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder={t('stay.create.experience_placeholder')}
-                className="w-full min-h-[140px] bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none leading-relaxed"
+                className="w-full min-h-[140px] bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3.5 text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none leading-relaxed"
               />
               <div className="flex justify-end mt-1.5 mr-1">
                 <span className="text-[10px] font-bold text-gray-300">{description?.length || 0} / 2000</span>
@@ -382,26 +389,7 @@ export default function CreateStay({ isOpen, onClose, onSuccess, isExiting = fal
             </div>
 
           </div>
-
-          {/* Submit Floating Bar */}
-          <div className="flex-shrink-0 w-full p-4 border-t border-slate-100 bg-white pb-[calc(1rem+env(safe-area-inset-bottom))] z-50">
-            <button 
-              type="submit" 
-              disabled={isSubmitting || !isValid}
-              className="w-full bg-primary text-white font-bold py-3.5 rounded-xl shadow-lg shadow-primary/20 active:scale-[0.98] transition-transform disabled:opacity-50 flex items-center justify-center"
-            >
-              {isSubmitting ? (
-                uploadProgress !== null ? (
-                  `${uploadProgress}%`
-                ) : (
-                  t('stay.create.saving')
-                )
-              ) : (
-                t('stay.create.save')
-              )}
-            </button>
-          </div>
-        </form>
+        </div>
       </main>
     </div>
   );

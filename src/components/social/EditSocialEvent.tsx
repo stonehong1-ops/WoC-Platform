@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useLocation } from '@/components/providers/LocationProvider';
 import { socialService } from '@/lib/firebase/socialService';
@@ -15,12 +16,13 @@ import { isVideoUrl } from '@/lib/utils/socialUtils';
 
 interface EditSocialEventProps {
   onClose: () => void;
-  onSuccess?: () => void;
+  onSuccess?: (id?: string) => void;
   socialData?: Social;
 }
 
 export default function EditSocialEvent({ onClose, onSuccess, socialData }: EditSocialEventProps) {
   const { t } = useLanguage();
+  const router = useRouter();
   const { user } = useAuth();
   const { location, openSelectorWithCallback } = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -297,7 +299,7 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
   };
 
   const handleSave = async () => {
-    if (!user || !title) return alert(t('social.alert_title_required'));
+    if (!user || !title) return;
     setIsSubmitting(true);
     try {
       let finalImageUrl = images[0] || '';
@@ -361,16 +363,19 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
         }
       }
 
+      let newId: string | undefined;
       if (socialData?.id) {
         await socialService.updateSocial(socialData.id, finalData);
+        newId = socialData.id;
+        onSuccess?.(newId);
+        onClose();
       } else {
-        await socialService.saveSocial(finalData);
+        newId = await socialService.saveSocial(finalData);
+        onSuccess?.(newId);
+        router.replace('/create-success?type=social&id=' + newId);
       }
-      onSuccess?.();
-      onClose();
     } catch (e) {
       console.error(e);
-      alert(t('social.alert_save_error'));
     } finally {
       setIsSubmitting(false);
     }
@@ -389,17 +394,15 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
   };
 
   return (
-    <div className="fixed inset-0 z-[200] bg-white overflow-y-auto animate-in fade-in duration-300">
+    <div className="fixed inset-0 bg-white overflow-y-auto animate-in fade-in duration-300" style={{ zIndex: 100000 }}>
       <style dangerouslySetInnerHTML={{ __html: `.material-symbols-rounded { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }` }} />
 
       {/* Header */}
-      <header className="fixed top-0 left-0 w-full z-[210] flex justify-between items-center px-4 h-14 bg-white/95 backdrop-blur-md border-b border-[#f2f4f4]">
-        <div className="flex items-center gap-2">
-          <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors">
-            <span className="material-symbols-rounded text-[#2d3435]">close</span>
-          </button>
-          <h1 className="text-lg font-black font-headline text-[#2d3435]">{socialData ? t('social.edit_social') : t('social.create_social')}</h1>
-        </div>
+      <header className="fixed top-0 left-0 w-full flex-shrink-0 bg-white border-b border-slate-100 px-4 h-14 flex items-center justify-between z-50" style={{ zIndex: 100010 }}>
+        <button type="button" onClick={onClose} className="w-10 h-10 flex items-center justify-center -ml-2 active:scale-95 transition-transform text-slate-700">
+          <span className="material-symbols-rounded text-2xl">arrow_back</span>
+        </button>
+        <h1 className="text-[16px] font-bold text-slate-800">{socialData ? t('social.edit_social') : t('social.create_social')}</h1>
         <div className="flex items-center gap-2">
           {socialData && (
             <button onClick={handleDelete} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-red-50 text-red-500 transition-colors">
@@ -409,10 +412,9 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
           <button
             onClick={handleSave}
             disabled={isSubmitting}
-            className="flex items-center gap-1.5 px-4 py-2 bg-primary text-white rounded-full hover:bg-primary/90 transition-colors disabled:opacity-50 font-bold text-sm shadow-sm"
+            className="px-5 py-2 rounded-full bg-[#007AFF] text-white text-[14px] font-bold disabled:opacity-50 active:scale-95 transition-all"
           >
-            <span className="material-symbols-rounded text-[18px]">{isSubmitting ? 'sync' : 'done'}</span>
-            {t('social.save')}
+            {t('common.save')}
           </button>
         </div>
       </header>
@@ -424,7 +426,7 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
           <div className="bg-[#f8f9fa] px-4 py-3 border-b border-[#e0e4e5] flex items-center justify-between rounded-t-[15px]">
             <div className="flex items-center gap-2">
               <span className="material-symbols-rounded text-sm text-primary">image</span>
-              <p className="text-[10px] font-black text-primary uppercase tracking-widest">{t('social.poster_gallery')}</p>
+              <p className="text-[14px] font-bold text-primary">{t('social.poster_gallery')}</p>
             </div>
           </div>
           <div className="p-4">
@@ -493,7 +495,7 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
           <div className="bg-[#f8f9fa] px-4 py-3 border-b border-[#e0e4e5] flex items-center justify-between rounded-t-[15px]">
             <div className="flex items-center gap-2">
               <span className="material-symbols-rounded text-sm text-primary">photo_library</span>
-              <p className="text-[10px] font-black text-primary uppercase tracking-widest">{t('social.moments')}</p>
+              <p className="text-[14px] font-bold text-primary">{t('social.moments')}</p>
             </div>
             <p className="text-[10px] font-bold text-[#acb3b4]">{moments.length} / 20</p>
           </div>
@@ -546,39 +548,39 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
         <div className="border border-[#e0e4e5] rounded-2xl bg-white">
           <div className="bg-[#f8f9fa] px-4 py-3 border-b border-[#e0e4e5] flex items-center gap-2 rounded-t-[15px]">
             <span className="material-symbols-rounded text-sm text-primary">info</span>
-            <p className="text-[10px] font-black text-primary uppercase tracking-widest">{t('social.basic_info')}</p>
+            <p className="text-[14px] font-bold text-primary">{t('social.basic_info')}</p>
           </div>
           <div className="p-4 space-y-4">
             <div>
-              <label className="block text-[11px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1.5">{t('social.event_title_en')}</label>
+              <label className="block text-[14px] font-bold text-[#acb3b4] mb-1.5">{t('social.event_title_en')}</label>
               <div className={`flex items-center px-4 py-3 border rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/20 transition-all ${titleError ? 'border-red-300 ring-2 ring-red-100' : 'border-[#e0e4e5]'}`}>
                 <input value={title} onChange={(e) => handleTitleChange(e.target.value)}
-                  className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-base font-bold text-[#2d3435] placeholder:text-[#acb3b4] outline-none"
+                  className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-[16px] font-bold text-[#2d3435] placeholder:text-[#acb3b4] outline-none"
                   placeholder="e.g. Milonga El Bulin" type="text" />
               </div>
               {titleError && <p className="text-[10px] font-bold text-red-500 mt-1 ml-1">{titleError}</p>}
             </div>
             
             <div>
-              <label className="block text-[11px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1.5">{t('social.title_native')}</label>
+              <label className="block text-[14px] font-bold text-[#acb3b4] mb-1.5">{t('social.title_native')}</label>
               <div className="flex items-center px-4 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/20 transition-all">
                 <input value={titleNative} onChange={(e) => setTitleNative(e.target.value)}
-                  className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-base font-bold text-[#2d3435] placeholder:text-[#acb3b4] outline-none"
+                  className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-[16px] font-bold text-[#2d3435] placeholder:text-[#acb3b4] outline-none"
                   placeholder={t('social.title_native_placeholder', 'e.g. Milonga El Bulin')} type="text" />
               </div>
             </div>
  
             <div>
-              <label className="block text-[11px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1.5">{t('social.description_optional')}</label>
+              <label className="block text-[14px] font-bold text-[#acb3b4] mb-1.5">{t('social.description_optional')}</label>
               <div className="flex px-4 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/20 transition-all">
                 <textarea value={description} onChange={(e) => setDescription(e.target.value)}
-                  className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-sm font-medium text-[#2d3435] placeholder:text-[#acb3b4] outline-none min-h-[80px] resize-none"
+                  className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-[16px] font-medium text-[#2d3435] placeholder:text-[#acb3b4] outline-none min-h-[80px] resize-none"
                   placeholder={t('social.description_placeholder')} />
               </div>
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-[#acb3b4] uppercase tracking-wider mb-2">{t('social.event_type')}</label>
+              <label className="block text-[14px] font-bold text-[#acb3b4] mb-2">{t('social.event_type')}</label>
               <div className="flex gap-2 p-1 bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl">
                 <button onClick={() => setType('regular')}
                   className={`flex-1 py-2 rounded-lg font-bold text-sm flex items-center justify-center gap-1.5 transition-all ${type === 'regular' ? 'bg-white text-primary shadow-sm border border-[#e0e4e5]' : 'text-[#acb3b4] hover:text-[#596061]'}`}>
@@ -593,7 +595,7 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
 
             {/* 기본 분류: 밀롱가 / 쁘락띠까 */}
             <div>
-              <label className="block text-[11px] font-bold text-[#acb3b4] uppercase tracking-wider mb-2">{t('social.sub_category')}</label>
+              <label className="block text-[14px] font-bold text-[#acb3b4] mb-2">{t('social.sub_category')}</label>
               <div className="flex gap-2 p-1 bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl">
                 <button onClick={() => setSubCategory('milonga')}
                   className={`flex-1 py-2 rounded-lg font-bold text-sm flex items-center justify-center gap-1.5 transition-all ${subCategory === 'milonga' ? 'bg-white text-primary shadow-sm border border-[#e0e4e5]' : 'text-[#acb3b4] hover:text-[#596061]'}`}>
@@ -612,12 +614,12 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
         <div className="border border-[#e0e4e5] rounded-2xl bg-white">
           <div className="bg-[#f8f9fa] px-4 py-3 border-b border-[#e0e4e5] flex items-center gap-2 rounded-t-[15px]">
             <span className="material-symbols-rounded text-sm text-primary">schedule</span>
-            <p className="text-[10px] font-black text-primary uppercase tracking-widest">{t('social.date_time')}</p>
+            <p className="text-[14px] font-bold text-primary">{t('social.date_time')}</p>
           </div>
           <div className="p-4 space-y-5">
             <div className="flex flex-col gap-4">
               <div>
-                <label className="block text-[11px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1.5">{type === 'regular' ? t('social.start_date') : t('social.date')}</label>
+                <label className="block text-[14px] font-bold text-[#acb3b4] mb-1.5">{type === 'regular' ? t('social.start_date') : t('social.date')}</label>
                 <div className="flex items-center px-4 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/20 transition-all">
                   <input value={startDate} onChange={(e) => {
                     const val = e.target.value;
@@ -629,23 +631,23 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
                       }
                     }
                   }}
-                  className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-sm font-bold text-[#2d3435] outline-none" type="date" />
+                  className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-[16px] font-bold text-[#2d3435] outline-none" type="date" />
                 </div>
               </div>
               <div>
-                <label className="block text-[11px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1.5">{t('social.time_interval')}</label>
+                <label className="block text-[14px] font-bold text-[#acb3b4] mb-1.5">{t('social.time_interval')}</label>
                 <div className="flex items-center justify-between px-3 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/20 transition-all">
                   <input value={startTime} onChange={(e) => handleStartTimeChange(e.target.value)} 
-                    className="w-full bg-transparent border-none p-0 focus:ring-0 text-sm font-bold text-[#2d3435] text-center outline-none" type="time" />
+                    className="w-full bg-transparent border-none p-0 focus:ring-0 text-[16px] font-bold text-[#2d3435] text-center outline-none" type="time" />
                   <span className="text-[#acb3b4] font-medium text-xs px-4">-</span>
                   <input value={endTime} onChange={(e) => setEndTime(e.target.value)} 
-                    className="w-full bg-transparent border-none p-0 focus:ring-0 text-sm font-bold text-[#2d3435] text-center outline-none" type="time" />
+                    className="w-full bg-transparent border-none p-0 focus:ring-0 text-[16px] font-bold text-[#2d3435] text-center outline-none" type="time" />
                 </div>
               </div>
             </div>
  
             <div className={`transition-opacity ${type === 'regular' ? 'opacity-100' : 'hidden'}`}>
-              <label className="block text-[11px] font-bold text-[#acb3b4] uppercase tracking-wider mb-2">{t('social.frequency')}</label>
+              <label className="block text-[14px] font-bold text-[#acb3b4] mb-2">{t('social.frequency')}</label>
               <div className="flex flex-wrap gap-2">
                 {getAvailableRecurrences().map(r => {
                   const isActive = r.id === 'every' 
@@ -667,17 +669,17 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
         <div className="relative z-40 border border-[#e0e4e5] rounded-2xl bg-white">
           <div className="bg-[#f8f9fa] px-4 py-3 border-b border-[#e0e4e5] flex items-center gap-2 rounded-t-[15px]">
             <span className="material-symbols-rounded text-sm text-primary">location_on</span>
-            <p className="text-[10px] font-black text-primary uppercase tracking-widest">{t('social.location')}</p>
+            <p className="text-[14px] font-bold text-primary">{t('social.location')}</p>
           </div>
           <div className="p-4 space-y-4">
             <div className="relative z-50">
-              <label className="block text-[11px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1.5">{t('social.venue_label')}</label>
+              <label className="block text-[14px] font-bold text-[#acb3b4] mb-1.5">{t('social.venue_label')}</label>
               <div className="relative flex items-center px-4 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/20 transition-all">
                 <span className="material-symbols-rounded text-[#acb3b4] mr-2">search</span>
                 <input value={venueName} onChange={(e) => handleVenueSearch(e.target.value)}
                   onFocus={() => venueName.length >= 1 && setShowVenueResults(venueResults.length > 0)}
                   onBlur={() => setTimeout(() => setShowVenueResults(false), 200)}
-                  className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-sm font-bold text-[#2d3435] placeholder:text-[#acb3b4] outline-none"
+                  className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-[16px] font-bold text-[#2d3435] placeholder:text-[#acb3b4] outline-none"
                   placeholder={t('social.search_venue_placeholder')} type="text" />
               </div>
               {showVenueResults && (
@@ -697,13 +699,13 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
             </div>
  
             <div>
-              <label className="block text-[11px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1.5">{t('social.region_autofill')}</label>
+              <label className="block text-[14px] font-bold text-[#acb3b4] mb-1.5">{t('social.region_autofill')}</label>
               <button onClick={() => openSelectorWithCallback((country, city) => { setFormCountry(country); setFormCity(city); })}
                 className="w-full flex items-center justify-between px-4 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] hover:bg-[#f2f4f4] transition-colors">
                 <div className="flex items-center gap-2">
                   <span className="material-symbols-rounded text-primary">public</span>
                   <div className="text-left">
-                    <p className="text-sm font-bold text-[#2d3435]">{formCountry || t('social.select_country')}</p>
+                    <p className="text-[16px] font-bold text-[#2d3435]">{formCountry || t('social.select_country')}</p>
                     <p className="text-[10px] font-medium text-[#acb3b4]">{formCity || t('social.select_city')}</p>
                   </div>
                 </div>
@@ -717,18 +719,18 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
         <div className="relative z-30 border border-[#e0e4e5] rounded-2xl bg-white">
           <div className="bg-[#f8f9fa] px-4 py-3 border-b border-[#e0e4e5] flex items-center gap-2 rounded-t-[15px]">
             <span className="material-symbols-rounded text-sm text-primary">group</span>
-            <p className="text-[10px] font-black text-primary uppercase tracking-widest">{t('social.roles_staff')}</p>
+            <p className="text-[14px] font-bold text-primary">{t('social.roles_staff')}</p>
           </div>
           <div className="p-4 space-y-4">
             {/* Organizer */}
             <div className="relative z-30">
-              <label className="block text-[11px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1.5">{t('social.organizer_label')}</label>
+              <label className="block text-[14px] font-bold text-[#acb3b4] mb-1.5">{t('social.organizer_label')}</label>
               <div className="relative flex items-center px-4 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/20 transition-all">
                 <span className="material-symbols-rounded text-[#acb3b4] mr-2">person_filled</span>
                 <input value={organizerSearch} onChange={(e) => handleOrganizerSearch(e.target.value)}
                   onBlur={() => setTimeout(() => setShowOrganizerResults(false), 200)}
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddFreeTextOrganizer(); } }}
-                  className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-sm font-bold text-[#2d3435] placeholder:text-[#acb3b4] outline-none"
+                  className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-[16px] font-bold text-[#2d3435] placeholder:text-[#acb3b4] outline-none"
                   placeholder={t('social.search_user_placeholder')} type="text" />
                 {organizerSearch.trim() && (
                   <button type="button" onClick={handleAddFreeTextOrganizer}
@@ -769,7 +771,7 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
 
             {/* Staff */}
             <div className="relative z-10">
-              <label className="block text-[11px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1.5">{t('social.staff_registration')}</label>
+              <label className="block text-[14px] font-bold text-[#acb3b4] mb-1.5">{t('social.staff_registration')}</label>
               <div className="relative flex items-center px-4 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/20 transition-all">
                 <span className="material-symbols-rounded text-[#acb3b4] mr-2">person_add</span>
                 <input value={staffSearch} onChange={(e) => {
@@ -786,7 +788,7 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
                     } else setShowStaffResults(false);
                   }}
                   onBlur={() => setTimeout(() => setShowStaffResults(false), 200)}
-                  className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-sm font-bold text-[#2d3435] placeholder:text-[#acb3b4] outline-none"
+                  className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-[16px] font-bold text-[#2d3435] placeholder:text-[#acb3b4] outline-none"
                   placeholder={t('social.search_staff_placeholder')} type="text" />
               </div>
               {showStaffResults && (
@@ -825,16 +827,16 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
         <div className="relative z-20 border border-[#e0e4e5] rounded-2xl bg-white">
           <div className="bg-[#f8f9fa] px-4 py-3 border-b border-[#e0e4e5] flex items-center gap-2 rounded-t-[15px]">
             <span className="material-symbols-rounded text-sm text-primary">local_activity</span>
-            <p className="text-[10px] font-black text-primary uppercase tracking-widest">{t('social.ticketing_details')}</p>
+            <p className="text-[14px] font-bold text-primary">{t('social.ticketing_details')}</p>
           </div>
           <div className="p-4 space-y-4">
             <div className="flex flex-col gap-4">
               <div>
-                <label className="block text-[11px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1.5">{t('social.entry_price')}</label>
+                <label className="block text-[14px] font-bold text-[#acb3b4] mb-1.5">{t('social.entry_price')}</label>
                 <div className="flex items-center gap-2">
                   <div className="px-3 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/20 transition-all w-24">
                     <select value={currency} onChange={(e) => setCurrency(e.target.value)}
-                      className="w-full bg-transparent border-none p-0 text-sm font-bold text-[#2d3435] focus:ring-0 outline-none appearance-none">
+                      className="w-full bg-transparent border-none p-0 text-[16px] font-bold text-[#2d3435] focus:ring-0 outline-none appearance-none">
                       <option value="KRW">KRW</option>
                       <option value="USD">USD</option>
                       <option value="EUR">EUR</option>
@@ -843,17 +845,17 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
                   </div>
                   <div className="flex-1 flex items-center px-4 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/20 transition-all">
                     <input value={priceAmount} onChange={(e) => setPriceAmount(e.target.value)}
-                      className="w-full bg-transparent border-none p-0 focus:ring-0 text-sm font-bold text-[#2d3435] placeholder:text-[#acb3b4] outline-none" type="number" placeholder="0" />
+                      className="w-full bg-transparent border-none p-0 focus:ring-0 text-[16px] font-bold text-[#2d3435] placeholder:text-[#acb3b4] outline-none" type="number" placeholder="0" />
                   </div>
                 </div>
               </div>
               
               <div>
-                <label className="block text-[11px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1.5">{t('social.table_capacity')}</label>
+                <label className="block text-[14px] font-bold text-[#acb3b4] mb-1.5">{t('social.table_capacity')}</label>
                 <div className="flex items-center px-4 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/20 transition-all">
                   <span className="material-symbols-rounded text-[#acb3b4] mr-2">deck</span>
                   <input value={tableCapacity || ''} onChange={(e) => setTableCapacity(parseInt(e.target.value) || 0)}
-                    className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-sm font-bold text-[#2d3435] placeholder:text-[#acb3b4] outline-none" type="number" placeholder="e.g. 15" min="0" />
+                    className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-[16px] font-bold text-[#2d3435] placeholder:text-[#acb3b4] outline-none" type="number" placeholder="e.g. 15" min="0" />
                 </div>
               </div>
             </div>
@@ -861,11 +863,11 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
             {/* 드레스코드 — 쁘락띠까일 때 숨김 */}
             {subCategory !== 'practica' && (
             <div>
-              <label className="block text-[11px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1.5">{t('social.dress_code')}</label>
+              <label className="block text-[14px] font-bold text-[#acb3b4] mb-1.5">{t('social.dress_code')}</label>
               <div className="flex items-center px-4 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/20 transition-all">
                 <span className="material-symbols-rounded text-[#acb3b4] mr-2">checkroom</span>
                 <input value={dressCode} onChange={(e) => setDressCode(e.target.value)}
-                  className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-sm font-bold text-[#2d3435] placeholder:text-[#acb3b4] outline-none" placeholder={t('social.dress_code_placeholder')} type="text" />
+                  className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-[16px] font-bold text-[#2d3435] placeholder:text-[#acb3b4] outline-none" placeholder={t('social.dress_code_placeholder')} type="text" />
               </div>
             </div>
             )}
@@ -877,7 +879,7 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
           <div className="bg-[#f8f9fa] px-4 py-3 border-b border-[#e0e4e5] flex items-center justify-between rounded-t-[15px]">
             <div className="flex items-center gap-2">
               <span className="material-symbols-rounded text-sm text-primary">celebration</span>
-              <p className="text-[10px] font-black text-primary uppercase tracking-widest">{t('social.events_schedule')}</p>
+              <p className="text-[14px] font-bold text-primary">{t('social.events_schedule')}</p>
             </div>
             <button onClick={() => setSocialEvents([...socialEvents, { id: Date.now(), title: '', description: '', maxParticipants: 1, isUnlimited: true }])}
               className="text-[10px] font-bold text-primary flex items-center gap-1 bg-primary/10 px-2.5 py-1 rounded-full hover:bg-primary/20 transition-colors">
@@ -899,7 +901,7 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
                 </button>
                 <div className="space-y-2">
                   <input value={event.title} onChange={(e) => setSocialEvents(socialEvents.map(ev => ev.id === event.id ? { ...ev, title: e.target.value } : ev))}
-                    className="w-full bg-transparent border-b border-[#e0e4e5] pb-1 focus:border-primary focus:ring-0 text-sm font-bold text-[#2d3435] placeholder:text-[#acb3b4] outline-none transition-colors"
+                    className="w-full bg-transparent border-b border-[#e0e4e5] pb-1 focus:border-primary focus:ring-0 text-[16px] font-bold text-[#2d3435] placeholder:text-[#acb3b4] outline-none transition-colors"
                     type="text" placeholder={t('social.sub_event_title_placeholder')} />
                   <input value={event.description} onChange={(e) => setSocialEvents(socialEvents.map(ev => ev.id === event.id ? { ...ev, description: e.target.value } : ev))}
                     className="w-full bg-transparent border-none p-0 focus:ring-0 text-xs text-[#596061] placeholder:text-[#acb3b4] outline-none"

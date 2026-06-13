@@ -2,6 +2,7 @@
 
 // 상품 등록창의 레이아웃 및 폼 UI를 분실물 등록창의 스타일과 100% 매칭하는 컴포넌트
 import React, { useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { shopService } from '@/lib/firebase/shopService';
 import { plazaService } from '@/lib/firebase/plazaService';
@@ -22,6 +23,7 @@ const MAX_PHOTOS = 20;
 export default function CreateProduct({ onClose, onSuccess, productToEdit }: CreateProductProps) {
   const { t } = useLanguage();
   const { user } = useAuth();
+  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   
@@ -93,15 +95,12 @@ export default function CreateProduct({ onClose, onSuccess, productToEdit }: Cre
     return parseInt(val, 10).toLocaleString();
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     if (!user) {
-      alert(t('shop.msg_login_first') || 'Please login first.');
       return;
     }
     const totalPhotosCount = existingUrls.length + mediaFiles.length;
     if (!name.trim() || !price.trim() || totalPhotosCount === 0 || !region) {
-      alert(t('shop.msg_fill_required_photo') || "Please fill in all required fields and add at least one photo.");
       return;
     }
 
@@ -144,26 +143,18 @@ export default function CreateProduct({ onClose, onSuccess, productToEdit }: Cre
         sellerName: productToEdit ? productToEdit.sellerName : (user.displayName || 'Anonymous'),
       };
 
+      let newId: string | undefined;
       if (productToEdit) {
         await shopService.updateProduct(productToEdit.id, productPayload as any);
-        alert(t('shop.alert_update_success') || 'Product updated successfully.');
+        onSuccess?.();
+        onClose?.();
       } else {
-        await shopService.addProduct(productPayload as any);
+        newId = await shopService.addProduct(productPayload as any);
+        onSuccess?.();
+        router.replace('/create-success?type=shop&id=' + (newId || ''));
       }
-
-      onSuccess?.();
-      onClose?.();
-      
-      // Reset form
-      setName('');
-      setBrand('');
-      setPrice('');
-      setMediaFiles([]);
-      setPreviewUrls([]);
-      setDescription('');
     } catch (error) {
       console.error("Error saving product:", error);
-      alert(productToEdit ? (t('shop.alert_update_failed') || 'Failed to update product.') : (t('shop.msg_fail_register') || "Failed to register product."));
     } finally {
       setIsSubmitting(false);
       setUploadProgress(null);
@@ -179,20 +170,27 @@ export default function CreateProduct({ onClose, onSuccess, productToEdit }: Cre
         <button type="button" onClick={onClose} className="w-10 h-10 flex items-center justify-center -ml-2 active:scale-95 transition-transform text-slate-700">
           <span className="material-symbols-rounded text-2xl">arrow_back</span>
         </button>
-        <h1 className="text-[14px] font-black uppercase tracking-widest text-slate-800">
+        <h1 className="text-[16px] font-bold text-slate-800">
           {productToEdit ? (t('shop.edit_product') || 'Edit Product') : (t('shop.host_product') || 'Host Product')}
         </h1>
-        <div className="w-10" />
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={isSubmitting || !isValid}
+          className="px-5 py-2 rounded-full bg-[#007AFF] text-white text-[14px] font-bold disabled:opacity-50 active:scale-95 transition-all"
+        >
+          {isSubmitting ? (uploadProgress !== null ? `${uploadProgress}%` : (t('common.saving') || 'Saving...')) : (t('common.save') || 'Save')}
+        </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden">
         {/* Form Scrollable Content */}
         <div className="flex-1 overflow-y-auto px-4 mt-4 space-y-6 pb-6 text-left no-scrollbar">
           
           {/* Images */}
           <div>
-            <label className="block text-xs font-bold text-[#596061] mb-2 uppercase tracking-wider">
-              {t('shop.upload_photo') || 'PHOTOS'} ({mediaFiles.length}/{MAX_PHOTOS}) <span className="text-red-400">*</span>
+            <label className="block text-[14px] font-bold text-[#596061] mb-2">
+              {t('shop.upload_photo') || 'PHOTOS'} ({previewUrls.length}/{MAX_PHOTOS}) <span className="text-red-400">*</span>
             </label>
             <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
               {mediaFiles.length < MAX_PHOTOS && (
@@ -223,25 +221,25 @@ export default function CreateProduct({ onClose, onSuccess, productToEdit }: Cre
           <div className="space-y-4">
             {/* Brand Name */}
             <div>
-              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
+              <label className="block text-[14px] font-bold text-[#596061] mb-1.5">
                 {t('shop.brand_name') || 'Brand Name'}
               </label>
               <input type="text" value={brand} onChange={e => setBrand(e.target.value)} placeholder={t('shop.ex_brand') || "Ex. Tango Elite"}
-                className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" />
+                className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" />
             </div>
 
             {/* Product Name */}
             <div>
-              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
+              <label className="block text-[14px] font-bold text-[#596061] mb-1.5">
                 {t('shop.product_name') || 'Product Name'} <span className="text-red-400">*</span>
               </label>
               <input required type="text" value={name} onChange={e => setName(e.target.value)} placeholder={t('shop.ex_product_name') || "Ex. Performance Leather Shoes"}
-                className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" />
+                className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" />
             </div>
 
             {/* Category */}
             <div>
-              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
+              <label className="block text-[14px] font-bold text-[#596061] mb-1.5">
                 {t('shop.category') || 'Category'}
               </label>
               <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
@@ -265,13 +263,13 @@ export default function CreateProduct({ onClose, onSuccess, productToEdit }: Cre
             {/* Price & Currency */}
             <div className="flex gap-3">
               <div className="w-[100px] shrink-0">
-                <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
-                  {t('shop.currency') || 'Currency'}
-                </label>
+                <label className="block text-[14px] font-bold text-[#596061] mb-1.5">
+                {t('shop.currency') || 'Currency'}
+              </label>
                 <select 
                   value={currency}
                   onChange={(e) => setCurrency(e.target.value)}
-                  className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-3 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-bold"
+                  className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-3 py-3 text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-bold"
                 >
                   {CURRENCIES.map(curr => (
                     <option key={curr} value={curr}>{curr}</option>
@@ -279,22 +277,22 @@ export default function CreateProduct({ onClose, onSuccess, productToEdit }: Cre
                 </select>
               </div>
               <div className="flex-1">
-                <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
-                  {t('shop.price') || 'Price'} <span className="text-red-400">*</span>
-                </label>
+                <label className="block text-[14px] font-bold text-[#596061] mb-1.5">
+                {t('shop.price') || 'Price'} <span className="text-red-400">*</span>
+              </label>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-[#acb3b4]">
                     {currency === 'KRW' ? '₩' : currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency === 'JPY' ? '¥' : '¥'}
                   </span>
                   <input required type="text" value={formatPrice(price)} onChange={handlePriceChange} placeholder="0"
-                    className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl pl-9 pr-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-bold text-right" />
+                    className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl pl-9 pr-4 py-3 text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-bold text-right" />
                 </div>
               </div>
             </div>
 
             {/* Location Region Selector */}
             <div>
-              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
+              <label className="block text-[14px] font-bold text-[#596061] mb-1.5">
                 {t('shop.location') || 'Location'} <span className="text-red-400">*</span>
               </label>
               <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
@@ -317,40 +315,24 @@ export default function CreateProduct({ onClose, onSuccess, productToEdit }: Cre
 
             {/* Location Detail */}
             <div>
-              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
+              <label className="block text-[14px] font-bold text-[#596061] mb-1.5">
                 {t('shop.location_detail') || 'Location Detail'}
               </label>
               <input type="text" value={locationDetail} onChange={e => setLocationDetail(e.target.value)} placeholder={t('shop.location_detail_placeholder') || 'Enter specific location details'}
-                className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" />
+                className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" />
             </div>
 
             {/* Description */}
             <div>
-              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
+              <label className="block text-[14px] font-bold text-[#596061] mb-1.5">
                 {t('shop.product_story') || 'Product Story'}
               </label>
               <textarea rows={5} value={description} onChange={e => setDescription(e.target.value)} placeholder={t('shop.product_story_placeholder') || "Tell us about the condition, materials, and why you're selling..."}
-                className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none" />
+                className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none" />
             </div>
           </div>
         </div>
-
-        {/* Submit */}
-        <div className="flex-shrink-0 w-full p-4 border-t border-slate-100 bg-white pb-[calc(1rem+env(safe-area-inset-bottom))] z-50">
-          <button type="submit" disabled={isSubmitting || !isValid}
-            className="w-full bg-primary text-white font-bold py-3.5 rounded-xl shadow-lg shadow-primary/20 active:scale-[0.98] transition-transform disabled:opacity-50">
-            {isSubmitting ? (
-              uploadProgress !== null ? (
-                `${uploadProgress}%`
-              ) : (
-                productToEdit ? (t('common.saving') || 'Saving...') : (t('shop.status_registering') || 'Registering...')
-              )
-            ) : (
-              productToEdit ? (t('common.save') || 'Save') : (t('shop.button_register') || 'Host Product')
-            )}
-          </button>
-        </div>
-      </form>
+      </div>
     </main>
   );
 }

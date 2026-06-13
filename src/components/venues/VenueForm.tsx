@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import imageCompression from 'browser-image-compression';
@@ -25,6 +26,7 @@ const CATEGORY_OPTIONS = [
 ];
 
 export default function VenueForm({ isOpen, onClose, initialData }: VenueFormProps) {
+  const router = useRouter();
   const { t } = useLanguage();
   const [formData, setFormData] = useState<Omit<Venue, 'id' | 'createdAt'>>({
     name: '',
@@ -157,8 +159,7 @@ export default function VenueForm({ isOpen, onClose, initialData }: VenueFormPro
   }, [initialData, isOpen]);
 
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     setIsSubmitting(true);
 
     const isSeoul = (formData.city || '').toLowerCase() === 'seoul' || (formData.region || '').toLowerCase() === 'seoul';
@@ -170,11 +171,11 @@ export default function VenueForm({ isOpen, onClose, initialData }: VenueFormPro
     try {
       if (initialData?.id) {
         await venueService.updateVenue(initialData.id, finalFormData);
+        onClose();
       } else {
-        await venueService.addVenue(finalFormData);
+        const newId = await venueService.addVenue(finalFormData);
+        router.replace('/create-success?type=venue&id=' + (newId || ''));
       }
-      onClose();
-      toast.success(initialData ? t('toast.venue.save_success_update') : t('toast.venue.save_success_create'));
     } catch (error) {
       console.error('Failed to save venue:', error);
       toast.error(t('toast.venue.save_failed'));
@@ -198,29 +199,25 @@ export default function VenueForm({ isOpen, onClose, initialData }: VenueFormPro
   return (
     <div className="fixed inset-0 z-[110] bg-background font-body text-on-background overflow-y-auto animate-slide-up no-scrollbar">
       {/* Header (TopAppBar) */}
-      <header className="fixed top-0 left-0 w-full bg-surface border-b border-outline-variant/30 h-16 px-4 flex justify-between items-center z-[120]">
-        <div className="flex items-center gap-4">
-          <button 
-            onClick={onClose}
-            className="p-2 hover:bg-surface-container rounded-full transition-colors flex items-center justify-center"
-          >
-            <span className="material-symbols-rounded text-on-surface-variant">arrow_back</span>
-          </button>
-          <h1 className="font-headline text-base font-bold text-on-surface">
-            {initialData ? 'Edit Entry' : 'Manage Entry'}
-          </h1>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="text-[10px] font-extrabold text-on-surface-variant tracking-tighter uppercase mr-2 hidden md:block">World of Group</div>
-          {initialData && (
-            <button 
-              onClick={handleDelete}
-              className="p-2 hover:bg-error-container/10 rounded-full transition-colors flex items-center justify-center group"
-            >
-              <span className="material-symbols-rounded text-on-surface-variant group-hover:text-error">delete</span>
-            </button>
-          )}
-        </div>
+      <header className="fixed top-0 left-0 w-full flex-shrink-0 bg-white border-b border-slate-100 px-4 h-14 flex items-center justify-between z-[120]">
+        <button 
+          type="button"
+          onClick={onClose}
+          className="w-10 h-10 flex items-center justify-center -ml-2 active:scale-95 transition-transform text-slate-700"
+        >
+          <span className="material-symbols-rounded text-2xl">arrow_back</span>
+        </button>
+        <h1 className="text-[16px] font-bold text-slate-800">
+          {initialData ? 'Edit Entry' : 'Manage Entry'}
+        </h1>
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={isSubmitting}
+          className="px-5 py-2 rounded-full bg-[#007AFF] text-white text-[14px] font-bold disabled:opacity-50 active:scale-95 transition-all"
+        >
+          {isSubmitting ? 'Saving...' : t('common.save')}
+        </button>
       </header>
 
       <main className="max-w-3xl mx-auto px-6 pt-24 pb-12 md:pt-32 md:pb-20">
@@ -231,7 +228,7 @@ export default function VenueForm({ isOpen, onClose, initialData }: VenueFormPro
           <p className="text-on-surface-variant text-base leading-relaxed">Keep your venue details up to date for the local group.</p>
         </header>
 
-        <form onSubmit={handleSubmit} className="space-y-16">
+        <form onSubmit={(e) => e.preventDefault()} className="space-y-16">
           {/* 1. Venue Name */}
           <section>
             <div className="flex items-center gap-2 mb-6">
@@ -240,9 +237,9 @@ export default function VenueForm({ isOpen, onClose, initialData }: VenueFormPro
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest ml-1" htmlFor="venue-name-en">Venue Name (English) *</label>
+                <label className="block text-[14px] font-bold text-on-surface-variant ml-1" htmlFor="venue-name-en">Venue Name (English) *</label>
                 <input 
-                  className="w-full px-4 py-4 bg-surface-container-lowest border-none ring-1 ring-outline-variant focus:ring-2 focus:ring-primary rounded-xl transition-all font-body text-on-surface" 
+                  className="w-full px-4 py-4 bg-surface-container-lowest border-none ring-1 ring-outline-variant focus:ring-2 focus:ring-primary rounded-xl transition-all font-body text-[16px] text-on-surface" 
                   id="venue-name-en" 
                   placeholder="e.g. Blue Coffee Roasters" 
                   required 
@@ -252,9 +249,9 @@ export default function VenueForm({ isOpen, onClose, initialData }: VenueFormPro
                 />
               </div>
               <div className="space-y-2">
-                <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest ml-1" htmlFor="venue-name-ko">Venue Name (Korean) <span className="normal-case opacity-70">(If applicable)</span></label>
+                <label className="block text-[14px] font-bold text-on-surface-variant ml-1" htmlFor="venue-name-ko">Venue Name (Korean) <span className="opacity-70">(If applicable)</span></label>
                 <input 
-                  className="w-full px-4 py-4 bg-surface-container-lowest border-none ring-1 ring-outline-variant focus:ring-2 focus:ring-primary rounded-xl transition-all font-body text-on-surface" 
+                  className="w-full px-4 py-4 bg-surface-container-lowest border-none ring-1 ring-outline-variant focus:ring-2 focus:ring-primary rounded-xl transition-all font-body text-[16px] text-on-surface" 
                   id="venue-name-ko" 
                   placeholder="e.g. Blue Horizon Studio" 
                   type="text" 
@@ -283,7 +280,7 @@ export default function VenueForm({ isOpen, onClose, initialData }: VenueFormPro
                   />
                   <div className="flex flex-col items-center justify-center p-4 aspect-square bg-surface-container-low rounded-xl border-2 border-transparent transition-all group-hover:bg-surface-container peer-checked:border-primary peer-checked:bg-primary-container/30">
                     <span className="material-symbols-rounded text-on-surface-variant peer-checked:text-primary mb-2">{cat.icon}</span>
-                    <span className="font-label text-xs font-semibold text-on-surface-variant group-hover:text-on-surface">{cat.label}</span>
+                    <span className="font-label text-[12px] font-semibold text-on-surface-variant group-hover:text-on-surface">{cat.label}</span>
                   </div>
                 </label>
               ))}
@@ -312,12 +309,12 @@ export default function VenueForm({ isOpen, onClose, initialData }: VenueFormPro
             </div>
             <div className="grid grid-cols-1 gap-6">
               <div className="space-y-2">
-                <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest ml-1" htmlFor="timezone">Venue Timezone</label>
+                <label className="block text-[14px] font-bold text-on-surface-variant ml-1" htmlFor="timezone">Venue Timezone</label>
                 <div className="flex items-center gap-3 w-full px-4 py-4 bg-surface-container-low/50 border-none ring-1 ring-outline-variant/30 rounded-xl font-body text-on-surface-variant">
                   <span className="material-symbols-rounded text-primary/70 text-lg">auto_mode</span>
-                  <span className="text-sm font-medium">Auto-detected: <span className="text-on-surface font-semibold">Singapore/Beijing (UTC+08:00)</span></span>
+                  <span className="text-[13px] font-medium">Auto-detected: <span className="text-on-surface font-semibold">Singapore/Beijing (UTC+08:00)</span></span>
                 </div>
-                <p className="text-[10px] text-on-surface-variant italic px-1">Derived automatically from your pinned map location.</p>
+                <p className="text-[13px] text-on-surface-variant italic px-1">Derived automatically from your pinned map location.</p>
               </div>
             </div>
           </section>
@@ -338,7 +335,7 @@ export default function VenueForm({ isOpen, onClose, initialData }: VenueFormPro
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-rounded text-outline">search</span>
                 <input 
-                  className="w-full pl-12 pr-4 py-4 bg-surface-container-lowest border-none ring-1 ring-outline-variant focus:ring-2 focus:ring-primary rounded-xl transition-all font-body text-on-surface" 
+                  className="w-full pl-12 pr-4 py-4 bg-surface-container-lowest border-none ring-1 ring-outline-variant focus:ring-2 focus:ring-primary rounded-xl transition-all font-body text-[16px] text-on-surface" 
                   placeholder="Address or phone number" 
                   type="text" 
                   value={formData.address}
@@ -371,7 +368,7 @@ export default function VenueForm({ isOpen, onClose, initialData }: VenueFormPro
               {((formData.city || '').toLowerCase() === 'seoul' || (formData.region || '').toLowerCase() === 'seoul') && (
                 <div className="mt-6 space-y-3 p-4 bg-surface-container-low rounded-xl border border-outline-variant/30 animate-fade-in">
                   <div className="flex items-center justify-between">
-                    <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-widest ml-1">
+                    <label className="block text-[14px] font-bold text-on-surface-variant ml-1">
                       Seoul Area Category
                     </label>
                     <span className="text-[10px] font-extrabold text-[#005BC0] uppercase tracking-tighter">Fast Query</span>
@@ -477,8 +474,8 @@ export default function VenueForm({ isOpen, onClose, initialData }: VenueFormPro
               ) : (
                 <div className="w-full aspect-video bg-surface-container-lowest border-2 border-dashed border-outline-variant/50 rounded-2xl flex flex-col items-center justify-center p-6 text-center">
                   <span className="material-symbols-rounded text-outline text-4xl mb-2">add_photo_alternate</span>
-                  <p className="text-sm font-medium text-on-surface-variant">No photo selected</p>
-                  <p className="text-xs text-on-surface-variant/70 mt-1">Click "Fetch from Google Maps" to automatically search for a photo using the venue name and address.</p>
+                  <p className="text-[14px] font-medium text-on-surface-variant">No photo selected</p>
+                  <p className="text-[13px] text-on-surface-variant/70 mt-1">Click "Fetch from Google Maps" to automatically search for a photo using the venue name and address.</p>
                 </div>
               )}
               
@@ -486,7 +483,7 @@ export default function VenueForm({ isOpen, onClose, initialData }: VenueFormPro
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-rounded text-outline">link</span>
                 <input 
-                  className="w-full pl-12 pr-4 py-4 bg-surface-container-lowest border-none ring-1 ring-outline-variant focus:ring-2 focus:ring-primary rounded-xl transition-all font-body text-on-surface text-sm" 
+                  className="w-full pl-12 pr-4 py-4 bg-surface-container-lowest border-none ring-1 ring-outline-variant focus:ring-2 focus:ring-primary rounded-xl transition-all font-body text-on-surface text-[16px]" 
                   placeholder="Or enter image URL manually..." 
                   type="url" 
                   value={formData.imageUrl || ''}
@@ -496,23 +493,19 @@ export default function VenueForm({ isOpen, onClose, initialData }: VenueFormPro
             </div>
           </section>
 
-          <footer className="pt-8 flex flex-col gap-4">
-            <button 
-              disabled={isSubmitting}
-              className="w-full bg-[#005BC0] text-on-primary py-4 rounded-xl font-headline font-bold text-lg hover:shadow-xl hover:shadow-primary/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-70" 
-              type="submit"
-            >
-              <span className="material-symbols-rounded" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-              {isSubmitting ? 'Saving...' : 'Complete'}
-            </button>
-            <button 
-              onClick={onClose}
-              className="w-full px-8 py-4 bg-transparent text-outline font-bold rounded-xl border-2 border-outline-variant hover:bg-surface-container-low transition-all" 
-              type="button"
-            >
-              Cancel
-            </button>
-          </footer>
+          {/* Delete button for edit mode */}
+          {initialData && (
+            <footer className="pt-8">
+              <button 
+                type="button"
+                onClick={handleDelete}
+                className="w-full px-8 py-4 text-red-500 font-bold rounded-xl border-2 border-red-200 hover:bg-red-50 transition-all flex items-center justify-center gap-2"
+              >
+                <span className="material-symbols-rounded text-xl">delete</span>
+                Delete Venue
+              </button>
+            </footer>
+          )}
         </form>
       </main>
 

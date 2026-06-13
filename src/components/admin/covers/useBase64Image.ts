@@ -24,6 +24,9 @@ export function useBase64Image(url: string | undefined | null) {
           : url;
           
         const response = await fetch(fetchUrl);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch image: status ${response.status}`);
+        }
         const blob = await response.blob();
         
         const reader = new FileReader();
@@ -35,6 +38,9 @@ export function useBase64Image(url: string | undefined | null) {
         reader.readAsDataURL(blob);
       } catch (e) {
         console.error("Failed to convert image to base64", e);
+        if (isMounted) {
+          setBase64(undefined);
+        }
       }
     };
 

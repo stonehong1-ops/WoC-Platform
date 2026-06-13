@@ -2,6 +2,45 @@ import React from 'react';
 import { CoverEvent } from '../CoverEditor';
 import { useBase64Image } from '../useBase64Image';
 
+interface ExtraSocialItemProps {
+  m: CoverEvent;
+  getRegionChip: (city?: string, location?: string) => string | null;
+}
+
+function ExtraSocialItem({ m, getRegionChip }: ExtraSocialItemProps) {
+  const base64Url = useBase64Image(m.imageUrl || undefined);
+  return (
+    <>
+      {base64Url && (
+        <img 
+          src={base64Url} 
+          alt="Milonga" 
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+      )}
+      <div className="absolute inset-0 bg-black/60"></div>
+      {getRegionChip(m.city, m.location) && (
+        <div className="absolute top-2 left-2 bg-red-500 text-white rounded-full px-1.5 py-0.5 text-[7px] font-bold z-10">
+          {getRegionChip(m.city, m.location)}
+        </div>
+      )}
+      <div className="absolute inset-0 p-3 flex flex-col text-white">
+        <p className="text-[8px] font-bold tracking-widest uppercase text-[#FF5E3A] text-right">Milonga</p>
+        <h3 className="font-noto font-bold text-xs mt-1 leading-tight text-white">{m.titleNative || m.title}</h3>
+        <div className="mt-auto space-y-1">
+          <p className="text-[8px] flex items-center gap-1 font-bold text-white">
+            <span className="w-1 h-1 bg-[#FF5E3A] rounded-full"></span> {m.startTime || '00:00'}
+          </p>
+          <div className="flex flex-col text-[7px] opacity-90 line-clamp-2 leading-tight text-white">
+            {m.organizer && <span>org. {m.organizer}</span>}
+            {m.dj && <span>dj. {m.dj}</span>}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
 interface ThemeProps {
   date: Date;
   milonga: CoverEvent | null;
@@ -26,16 +65,10 @@ export default function ThemeMagazineB({
   const day = date.getDate();
   const dayNameKo = date.toLocaleDateString('ko-KR', { weekday: 'short' });
 
-  const defaultMilongaImg = "https://images.unsplash.com/photo-1544208453-625d7efd6f3c?auto=format&fit=crop&q=80&w=1080";
-  const defaultClassImg = "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?auto=format&fit=crop&q=80&w=600";
-  const defaultPracticaImg = "https://images.unsplash.com/photo-1544208453-625d7efd6f3c?auto=format&fit=crop&q=80&w=1080";
-
-  const milongaImgUrl = useBase64Image(milonga?.imageUrl || defaultMilongaImg);
-  const classImgUrl = useBase64Image(tangoClass?.imageUrl || defaultClassImg);
-  const practicaImgUrl = useBase64Image(practica?.imageUrl || defaultPracticaImg);
-
-  const fallbackBannerImgUrl = useBase64Image("https://images.unsplash.com/photo-1544208453-625d7efd6f3c?auto=format&fit=crop&q=80&w=1080");
-  const bannerImgUrl = useBase64Image(banner?.imageUrl || banner?.posterUrl || '');
+  const milongaImgUrl = useBase64Image(milonga?.imageUrl || undefined);
+  const classImgUrl = useBase64Image(tangoClass?.imageUrl || undefined);
+  const practicaImgUrl = useBase64Image(practica?.imageUrl || undefined);
+  const bannerImgUrl = useBase64Image(banner?.imageUrl || banner?.posterUrl || undefined);
 
   // Get regional highlights (sort by time)
   const selectedIds = [milonga?.id, milonga2?.id, milonga3?.id, milonga4?.id, milonga5?.id].filter(Boolean);
@@ -101,7 +134,7 @@ export default function ThemeMagazineB({
                 <div className="inline-block px-2 py-0.5 text-[9px] font-bold text-black border border-black rounded-full">woc.today</div>
               </div>
             </div>
-            <div className="w-2/3 aspect-square relative overflow-hidden" data-purpose="hero-image-container">
+            <div className="w-2/3 aspect-square relative overflow-hidden bg-slate-800" data-purpose="hero-image-container">
               {milongaImgUrl && (
                 <img 
                   src={milongaImgUrl} 
@@ -139,34 +172,9 @@ export default function ThemeMagazineB({
           {/* BEGIN: Extra Socials Grid (Social 2, 3, 4, 5) */}
           <section className="grid grid-cols-4 w-full border border-gray-100 bg-white" data-purpose="extra-socials-grid">
             {[milonga2, milonga3, milonga4, milonga5].map((m, idx) => (
-              <div key={idx} className="relative aspect-[3/4] overflow-hidden border-r border-gray-100 last:border-r-0">
+              <div key={idx} className="relative aspect-[3/4] overflow-hidden border-r border-gray-100 last:border-r-0 bg-slate-800">
                 {m ? (
-                  <>
-                    <img 
-                      src={m.imageUrl || defaultMilongaImg} 
-                      alt="Milonga" 
-                      className="absolute inset-0 w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-black/60"></div>
-                    {getRegionChip(m.city, m.location) && (
-                      <div className="absolute top-2 left-2 bg-red-500 text-white rounded-full px-1.5 py-0.5 text-[7px] font-bold z-10">
-                        {getRegionChip(m.city, m.location)}
-                      </div>
-                    )}
-                    <div className="absolute inset-0 p-3 flex flex-col text-white">
-                      <p className="text-[8px] font-bold tracking-widest uppercase text-[#FF5E3A] text-right">Milonga</p>
-                      <h3 className="font-noto font-bold text-xs mt-1 leading-tight text-white">{m.titleNative || m.title}</h3>
-                      <div className="mt-auto space-y-1">
-                        <p className="text-[8px] flex items-center gap-1 font-bold text-white">
-                          <span className="w-1 h-1 bg-[#FF5E3A] rounded-full"></span> {m.startTime || '00:00'}
-                        </p>
-                        <div className="flex flex-col text-[7px] opacity-90 line-clamp-2 leading-tight text-white">
-                          {m.organizer && <span>org. {m.organizer}</span>}
-                          {m.dj && <span>dj. {m.dj}</span>}
-                        </div>
-                      </div>
-                    </div>
-                  </>
+                  <ExtraSocialItem m={m} getRegionChip={getRegionChip} />
                 ) : (
                   <div className="p-3 flex flex-col h-full bg-gray-50 items-center justify-center text-gray-300">
                     <span className="text-[10px] font-bold">WOC</span>
@@ -280,11 +288,6 @@ export default function ThemeMagazineB({
           ) : (
             <section className="w-full mt-auto" data-purpose="banner-section">
               <div className="bg-[#111] p-2 relative overflow-hidden flex items-center justify-between text-white min-h-[70px]">
-                <img 
-                  alt="Tango Shoes" 
-                  className="absolute left-0 top-0 h-full w-1/2 object-cover opacity-30 grayscale" 
-                  src={fallbackBannerImgUrl || ''}
-                />
                 <div className="relative z-10 w-full flex justify-between items-center">
                   <div>
                     <div className="flex items-center gap-2">

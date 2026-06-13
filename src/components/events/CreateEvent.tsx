@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useLocation } from '@/components/providers/LocationProvider';
 import { eventService } from '@/lib/firebase/eventService';
@@ -10,11 +11,12 @@ import { useLanguage } from '@/contexts/LanguageContext';
 interface CreateEventProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess?: () => void;
+  onSuccess?: (id?: string) => void;
 }
 
 export default function CreateEvent({ isOpen, onClose, onSuccess }: CreateEventProps) {
   const { user } = useAuth();
+  const router = useRouter();
   const { location } = useLocation();
   const { t } = useLanguage();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -29,7 +31,6 @@ export default function CreateEvent({ isOpen, onClose, onSuccess }: CreateEventP
 
   const handleSubmit = async () => {
     if (!user || !title || !startDate) {
-      alert(t('event.msg_fill_required'));
       return;
     }
 
@@ -41,7 +42,7 @@ export default function CreateEvent({ isOpen, onClose, onSuccess }: CreateEventP
       const endObj = endDate ? new Date(endDate) : new Date(startDate);
       endObj.setHours(0, 0, 0, 0);
       
-      await eventService.createEvent({
+      const newId = await eventService.createEvent({
         title,
         titleNative,
         description,
@@ -54,11 +55,11 @@ export default function CreateEvent({ isOpen, onClose, onSuccess }: CreateEventP
         hostPhoto: user.photoURL || '',
       });
 
-      onSuccess?.();
+      onSuccess?.(newId);
       onClose();
+      router.replace('/create-success?type=event&id=' + (newId || ''));
     } catch (error) {
       console.error("Error creating event:", error);
-      alert(t('event.msg_post_failed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -85,7 +86,7 @@ export default function CreateEvent({ isOpen, onClose, onSuccess }: CreateEventP
     >
       {/* Title Input */}
       <div className="space-y-2">
-        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{t('event.title_label')}</label>
+        <label className="text-[14px] font-bold text-gray-400 ml-1">{t('event.title_label')}</label>
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -98,7 +99,7 @@ export default function CreateEvent({ isOpen, onClose, onSuccess }: CreateEventP
 
       {/* Native Name Input */}
       <div className="space-y-2">
-        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{t('event.native_title_label')}</label>
+        <label className="text-[14px] font-bold text-gray-400 ml-1">{t('event.native_title_label')}</label>
         <input
           value={titleNative}
           onChange={(e) => setTitleNative(e.target.value)}
@@ -109,7 +110,7 @@ export default function CreateEvent({ isOpen, onClose, onSuccess }: CreateEventP
 
       {/* Category Selector */}
       <div className="space-y-4">
-        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 text-center block">{t('event.category_label')}</label>
+        <label className="text-[14px] font-bold text-gray-400 ml-1 text-center block">{t('event.category_label')}</label>
         <div className="flex flex-wrap gap-2 justify-center">
           {categories.map((cat) => (
             <button
@@ -131,23 +132,23 @@ export default function CreateEvent({ isOpen, onClose, onSuccess }: CreateEventP
       <div className="grid grid-cols-2 gap-8 pt-4">
         {/* Date Input */}
         <div className="space-y-2">
-          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{t('event.start_date_label')}</label>
+          <label className="text-[14px] font-bold text-gray-400 ml-1">{t('event.start_date_label')}</label>
           <input
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="w-full px-5 py-3.5 bg-gray-50 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-primary/10 transition-all"
+            className="w-full px-5 py-3.5 bg-gray-50 border-none rounded-2xl text-[16px] font-bold focus:ring-2 focus:ring-primary/10 transition-all"
             required
           />
         </div>
         {/* End Date Input */}
         <div className="space-y-2">
-          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{t('event.end_date_label')}</label>
+          <label className="text-[14px] font-bold text-gray-400 ml-1">{t('event.end_date_label')}</label>
           <input
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="w-full px-5 py-3.5 bg-gray-50 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-primary/10 transition-all"
+            className="w-full px-5 py-3.5 bg-gray-50 border-none rounded-2xl text-[16px] font-bold focus:ring-2 focus:ring-primary/10 transition-all"
             placeholder={t('event.optional_placeholder')}
           />
         </div>
@@ -155,26 +156,26 @@ export default function CreateEvent({ isOpen, onClose, onSuccess }: CreateEventP
 
       {/* Location Input */}
       <div className="space-y-2">
-        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{t('event.location_label')}</label>
+        <label className="text-[14px] font-bold text-gray-400 ml-1">{t('event.location_label')}</label>
         <div className="relative">
           <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-300 text-[20px]">location_on</span>
           <input
             value={locationName}
             onChange={(e) => setLocationName(e.target.value)}
             placeholder={t('event.location_placeholder')}
-            className="w-full pl-12 pr-5 py-3.5 bg-gray-50 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-primary/10 transition-all"
+            className="w-full pl-12 pr-5 py-3.5 bg-gray-50 border-none rounded-2xl text-[16px] font-bold focus:ring-2 focus:ring-primary/10 transition-all"
           />
         </div>
       </div>
 
       {/* Description */}
       <div className="space-y-2">
-        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{t('event.description_label')}</label>
+        <label className="text-[14px] font-bold text-gray-400 ml-1">{t('event.description_label')}</label>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder={t('event.description_placeholder')}
-          className="w-full min-h-[140px] px-5 py-4 bg-gray-50 border-none rounded-3xl text-sm font-medium focus:ring-2 focus:ring-primary/10 transition-all resize-none"
+          className="w-full min-h-[140px] px-5 py-4 bg-gray-50 border-none rounded-3xl text-[16px] font-medium focus:ring-2 focus:ring-primary/10 transition-all resize-none"
         />
       </div>
     </UniversalCompose>

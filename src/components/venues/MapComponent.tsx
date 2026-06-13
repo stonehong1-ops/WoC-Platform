@@ -647,15 +647,8 @@ export default function MapComponent({
       {/* Layer 1.5: Map Control Group (Top Right - Standard Google Maps Style) */}
       <div className="absolute top-[80px] right-4 z-40 flex flex-col gap-0.5 pointer-events-auto">
         <button 
-          onClick={(e) => { e.stopPropagation(); onRegisterOpen(); }}
-          className="w-10 h-10 bg-white text-[#5F6368] shadow-[0_1px_4px_rgba(0,0,0,0.3)] rounded-t-[2px] flex items-center justify-center hover:bg-slate-50 active:bg-slate-100 transition-colors border-b border-slate-100"
-          title="Register Venue"
-        >
-          <span className="material-symbols-rounded !text-[22px]">add_location</span>
-        </button>
-        <button 
           onClick={(e) => { e.stopPropagation(); findMyLocation(); }}
-          className="w-10 h-10 bg-white text-[#5F6368] shadow-[0_1px_4px_rgba(0,0,0,0.3)] rounded-b-[2px] flex items-center justify-center hover:bg-slate-50 active:bg-slate-100 transition-colors"
+          className="w-10 h-10 bg-white text-[#5F6368] shadow-[0_1px_4px_rgba(0,0,0,0.3)] rounded-[2px] flex items-center justify-center hover:bg-slate-50 active:bg-slate-100 transition-colors"
           title="My Location"
         >
           <span className="material-symbols-rounded !text-[22px]">my_location</span>

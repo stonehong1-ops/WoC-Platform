@@ -55,3 +55,6 @@ artifacts/backup/
 /recover*
 /db_groups_dump.json
 /create_ari_profile.*
+
+# Facebook bot session
+/scripts/facebook-bot/fb_session.json

@@ -124,6 +124,14 @@ export function useGroupsData() {
       }
     };
     window.addEventListener('woc:compose:open', handleComposeOpen as EventListener);
+
+    // sessionStorage 플래그 체크 (통합 등록 메뉴에서 진입 시)
+    const pending = sessionStorage.getItem('woc_compose_pending');
+    if (pending === 'groups') {
+      sessionStorage.removeItem('woc_compose_pending');
+      openCreateModal();
+    }
+
     return () => window.removeEventListener('woc:compose:open', handleComposeOpen as EventListener);
   }, []);
 

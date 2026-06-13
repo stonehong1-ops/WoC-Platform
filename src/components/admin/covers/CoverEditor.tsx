@@ -4,7 +4,7 @@ import { collection, getDocs } from 'firebase/firestore';
 import { groupService } from '@/lib/firebase/groupService';
 import { socialService } from '@/lib/firebase/socialService';
 import { venueService } from '@/lib/firebase/venueService';
-import * as htmlToImage from 'html-to-image';
+import html2canvas from 'html2canvas-pro';
 import ThemeMagazineA from './themes/ThemeMagazineA';
 import ThemeMagazineB from './themes/ThemeMagazineB';
 import ThemeMagazineC from './themes/ThemeMagazineC';
@@ -31,6 +31,7 @@ export interface CoverEvent {
   dj?: string;
   groupName?: string;
   city?: string;
+  seoulArea?: string;
 }
 
 const REGIONS = [
@@ -70,6 +71,7 @@ export default function CoverEditor() {
   const [previewScale, setPreviewScale] = useState(0.3);
   const [modalScale, setModalScale] = useState(0.35);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  const [contentHeight, setContentHeight] = useState<number | 'auto'>('auto');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -84,6 +86,28 @@ export default function CoverEditor() {
       setModalScale(w / 1080);
     }
   }, []);
+
+  // Measure the height of the theme container for Theme C and Theme D
+  useEffect(() => {
+    if (!isPreviewModalOpen) return;
+    
+    // Delay slightly to allow rendering
+    const timer = setTimeout(() => {
+      const node = modalCaptureRef.current;
+      if (node) {
+        const innerScaled = node.querySelector('.scale-\\[3\\]') as HTMLElement | null;
+        if (innerScaled) {
+          // The visual height is offsetHeight * 3
+          const actualHeight = innerScaled.offsetHeight * 3;
+          setContentHeight(actualHeight);
+        } else {
+          setContentHeight('auto');
+        }
+      }
+    }, 150);
+    
+    return () => clearTimeout(timer);
+  }, [isPreviewModalOpen, selectedTheme, targetDate, selectedMilongaId, selectedMilongaId2, selectedMilongaId3, selectedClassId, selectedPracticaId]);
 
   const captureRef = useRef<HTMLDivElement>(null);
   const modalCaptureRef = useRef<HTMLDivElement>(null);
@@ -133,7 +157,7 @@ export default function CoverEditor() {
           socialService.getTodayActiveSocials(targetDate.getDay(), targetDate),
           venueService.getVenues()
         ]);
-        const venuesMap = new Map(venuesData.map(v => [v.id, v.nameKo || v.name || '']));
+        const venuesMap = new Map(venuesData.map(v => [v.id, { name: v.nameKo || v.name || '', seoulArea: (v as any).seoulArea || '' }]));
 
         socialsData.forEach(data => {
            const orgStr = data.organizerNameNative || data.organizerNativeNames?.[0] || data.organizerName || '';
@@ -145,12 +169,13 @@ export default function CoverEditor() {
              subtitle: formatCommunityName(orgStr, 'KR'),
              startTime: data.startTime || '',
              endTime: data.endTime || '',
-             location: formatCommunityName(venuesMap.get(data.venueId || '') || data.venueName || data.city || '', 'KR'),
+             location: formatCommunityName(venuesMap.get(data.venueId || '')?.name || data.venueName || data.city || '', 'KR'),
              imageUrl: data.imageUrl || '',
              originalStartDate: targetDate,
              organizer: formatCommunityName(orgStr, 'KR'),
              dj: formatInstructorNames(getDjDisplay(data as any, targetDate, 'KR') || data.djName || data.djs?.[0]?.djName || '', 'KR'),
-             city: data.city || ''
+             city: data.city || '',
+             seoulArea: venuesMap.get(data.venueId || '')?.seoulArea || ''
            });
         });
 
@@ -406,38 +431,107 @@ export default function CoverEditor() {
       await new Promise(r => setTimeout(r, 300));
       
       const node = modalCaptureRef.current;
+
+      // 1. Replace all img src with proxied URLs to bypass CORS for ALL external domains
+      const images = Array.from(node.querySelectorAll('img'));
+      const originalSrcs: { img: HTMLImageElement; src: string }[] = [];
+      images.forEach(img => {
+        const src = img.src;
+        if (src && src.startsWith('http') && !src.startsWith(window.location.origin)) {
+          originalSrcs.push({ img, src });
+          img.src = `/api/proxy/image?url=${encodeURIComponent(src)}`;
+        }
+      });
+
+      // 2. Wait for all images to fully load
+      await Promise.all(
+        images.map((img) => {
+          if (img.complete && img.naturalWidth !== 0) return Promise.resolve();
+          return new Promise<void>((resolve) => {
+            img.onload = () => resolve();
+            img.onerror = () => resolve();
+          });
+        })
+      );
+
+      // 3. Wait for fonts and rendering
+      await document.fonts.ready;
+      await new Promise(r => requestAnimationFrame(r));
+      await new Promise(r => requestAnimationFrame(r));
+      await new Promise(r => setTimeout(r, 500));
+
+      // 4. Determine target node and scale option
+      let targetNode: HTMLElement = node;
+      let scaleOption = 2; // High quality for Theme A/B
       
-      // Warm-up call for Safari/iOS
-      try { await htmlToImage.toPng(node, { quality: 0.1, cacheBust: true }); } catch(e) {}
-      
-      let dataUrl: string;
-      try {
-        dataUrl = await htmlToImage.toJpeg(node, {
-          quality: 0.95,
-          pixelRatio: 2,
-          cacheBust: true,
-          style: { transform: 'none', margin: '0' }
-        });
-      } catch {
-        // Fallback to PNG if JPEG fails
-        dataUrl = await htmlToImage.toPng(node, {
-          pixelRatio: 2,
-          cacheBust: true,
-          style: { transform: 'none', margin: '0' }
-        });
+      if (selectedTheme === 'C' || selectedTheme === 'D') {
+        const innerScaled = node.querySelector('.scale-\\[3\\]') as HTMLElement | null;
+        if (innerScaled) {
+          targetNode = innerScaled;
+          scaleOption = 3; // Capture 360px layout at 3x scale to produce 1080px width natively
+        }
       }
 
+      // 5. Capture using html2canvas-pro
+      const canvas = await html2canvas(targetNode, {
+        useCORS: true,
+        allowTaint: false,
+        scale: scaleOption,
+        backgroundColor: '#f5f5f7',
+        logging: false,
+        onclone: (clonedDoc) => {
+          if (selectedTheme === 'C' || selectedTheme === 'D') {
+            // In the cloned doc, find the 360px container and remove its transform and absolute positioning
+            // so it flows and renders natively at 360px, then scaled by html2canvas's scale option
+            const clonedInner = clonedDoc.querySelector('.scale-\\[3\\]') as HTMLElement | null;
+            if (clonedInner) {
+              clonedInner.style.transform = 'none';
+              clonedInner.style.position = 'relative';
+              clonedInner.style.width = '360px';
+              clonedInner.style.top = '0';
+              clonedInner.style.left = '0';
+            }
+          } else {
+            const clonedNode = clonedDoc.getElementById('woc-capture-container');
+            if (clonedNode && clonedNode.parentElement) {
+              // Reset parent modal scale transform
+              clonedNode.parentElement.style.transform = 'none';
+              clonedNode.parentElement.style.width = '1080px';
+            }
+          }
+        }
+      });
+
+      // 6. Restore original image sources
+      originalSrcs.forEach(({ img, src }) => {
+        img.src = src;
+      });
+
+      // 7. Convert canvas to Blob using native toBlob (most reliable method)
+      const blob = await new Promise<Blob | null>((resolve) => 
+        canvas.toBlob((b) => resolve(b), "image/jpeg", 0.95)
+      );
+
+      if (!blob) {
+        toast.error("이미지 생성에 실패했습니다 (Blob 변환 실패).", { id: 'capture' });
+        return;
+      }
+
+      const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement("a");
       const dateStr = targetDate.toISOString().split('T')[0];
-      const ext = dataUrl.startsWith('data:image/png') ? 'png' : 'jpg';
-      link.download = `WOC_COVER_${dateStr}.${ext}`;
-      link.href = dataUrl;
+      link.download = `WOC_COVER_${dateStr}.jpg`;
+      link.href = blobUrl;
       link.click();
       
+      setTimeout(() => {
+        URL.revokeObjectURL(blobUrl);
+      }, 100);
+      
       toast.success("이미지가 성공적으로 저장되었습니다.", { id: 'capture' });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Capture failed", error);
-      toast.error("이미지 생성에 실패했습니다. 다시 시도해 주세요.", { id: 'capture' });
+      toast.error(`이미지 생성에 실패했습니다: ${error?.message || error || '알 수 없는 오류'}`, { id: 'capture' });
     }
   };
 
@@ -812,12 +906,23 @@ export default function CoverEditor() {
               className="origin-top flex-shrink-0"
               style={{ 
                 transform: `scale(${modalScale})`, 
-                height: selectedTheme === 'C' ? 'auto' : 1920 * modalScale, 
+                height: (selectedTheme === 'C' || selectedTheme === 'D')
+                  ? (contentHeight === 'auto' ? 'auto' : `${contentHeight * modalScale}px`)
+                  : 1920 * modalScale, 
                 width: 1080 * modalScale 
               }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div ref={modalCaptureRef} className={`w-[1080px] shadow-2xl relative bg-white ${selectedTheme === 'C' ? '' : 'h-[1920px]'}`}>
+              <div 
+                id="woc-capture-container" 
+                ref={modalCaptureRef} 
+                className={`w-[1080px] shadow-2xl relative bg-white`}
+                style={{
+                  height: (selectedTheme === 'C' || selectedTheme === 'D')
+                    ? (contentHeight === 'auto' ? 'auto' : `${contentHeight}px`)
+                    : '1920px'
+                }}
+              >
                 {selectedTheme === 'A' ? (
                   <ThemeMagazineA 
                     date={targetDate}

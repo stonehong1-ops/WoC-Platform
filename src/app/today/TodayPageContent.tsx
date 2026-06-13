@@ -274,16 +274,7 @@ export default function TodayPageContent() {
   const [loadingSocials, setLoadingSocials] = useState(true);
   const [loadingEvents, setLoadingEvents] = useState(true);
   const [loadingClasses, setLoadingClasses] = useState(true);
-  const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
 
-  // 배너 자동 롤링 타이머 (4초)
-  useEffect(() => {
-    if (heroEvents.length <= 1) return;
-    const interval = setInterval(() => {
-      setCurrentBannerIndex((prev) => (prev + 1) % heroEvents.length);
-    }, 4000);
-    return () => clearInterval(interval);
-  }, [heroEvents]);
 
   // 그룹 연동 상태
   const [allGroups, setAllGroups] = useState<Group[]>([]);
@@ -837,6 +828,7 @@ export default function TodayPageContent() {
 
   // 서울 구별 그룹화
   const milongasByDistrict = useMemo(() => {
+    if (Object.keys(venuesMap).length === 0) return [];
     const groups: Record<string, Social[]> = {};
     const cityLower = (location?.city || "All").toLowerCase().trim();
     const isSeoul = cityLower.includes("seoul") || cityLower.includes("서울") || cityLower.includes("soul");
@@ -910,6 +902,7 @@ export default function TodayPageContent() {
 
   // 쁘락띠까 서울 구별 그룹화
   const practicasByDistrict = useMemo(() => {
+    if (Object.keys(venuesMap).length === 0) return [];
     const groups: Record<string, Social[]> = {};
     const cityLower = (location?.city || "All").toLowerCase().trim();
     const isSeoul = cityLower.includes("seoul") || cityLower.includes("서울") || cityLower.includes("soul");
@@ -978,6 +971,7 @@ export default function TodayPageContent() {
 
   // 클래스 서울 구별 그룹화
   const classesByDistrict = useMemo(() => {
+    if (Object.keys(venuesMap).length === 0) return [];
     const groups: Record<string, ClassEntry[]> = {};
     const cityLower = (location?.city || "All").toLowerCase().trim();
     const isSeoul = cityLower.includes("seoul") || cityLower.includes("서울") || cityLower.includes("soul");

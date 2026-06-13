@@ -788,10 +788,11 @@ const GalleryCreateContent = () => {
 
       if (isEditMode && editId) {
         await galleryService.updatePost(editId, postData);
+        router.back();
       } else {
-        await galleryService.createPost({ authorId: user.uid, authorName: user.displayName || profile?.nickname || 'Anonymous', authorPhoto: user.photoURL || '', ...postData });
+        const newPost = await galleryService.createPost({ authorId: user.uid, authorName: user.displayName || profile?.nickname || 'Anonymous', authorPhoto: user.photoURL || '', ...postData });
+        router.replace('/create-success?type=live&id=' + (newPost || ''));
       }
-      router.push('/live');
     } catch (err) {
       console.error(err);
       alert(t('gallery.error_saving', 'Error saving post.'));
@@ -805,10 +806,16 @@ const GalleryCreateContent = () => {
     <div className="fixed inset-0 z-[100] bg-white md:bg-black/80 flex justify-center backdrop-blur-sm">
       <div className="gallery-create-container w-full h-full overflow-y-auto bg-white shadow-xl flex flex-col relative">
         {/* Header */}
-        <div className="create-header">
-          <button onClick={() => router.back()}><ChevronLeft size={24} /></button>
-          <span className="create-title">{isEditMode ? t('gallery.edit_post', 'Edit Post') : t('gallery.new_post', 'New Post')}</span>
-          <button className="btn-post" onClick={handlePost} disabled={isUploading || (images.length === 0 && existingImages.length === 0) || !caption.trim()}>
+        <div className="flex-shrink-0 bg-white border-b border-slate-100 px-4 h-14 flex items-center justify-between z-50 sticky top-0">
+          <button type="button" onClick={() => router.back()} className="w-10 h-10 flex items-center justify-center -ml-2 active:scale-95 transition-transform text-slate-700">
+            <span className="material-symbols-rounded text-2xl">arrow_back</span>
+          </button>
+          <span className="text-[16px] font-bold text-slate-800">{isEditMode ? t('gallery.edit_post', 'Edit Post') : t('gallery.new_post', 'New Post')}</span>
+          <button 
+            className="px-5 py-2 rounded-full bg-[#007AFF] text-white text-[14px] font-bold disabled:opacity-50 active:scale-95 transition-all" 
+            onClick={handlePost} 
+            disabled={isUploading || (images.length === 0 && existingImages.length === 0) || !caption.trim()}
+          >
             {isUploading ? `${uploadProgress}%` : (isEditMode ? t('common.update', 'Update') : t('common.post', 'Post'))}
           </button>
         </div>
@@ -842,7 +849,7 @@ const GalleryCreateContent = () => {
         <div className="px-4 py-2 border-b border-gray-100 flex items-center gap-2 bg-white">
           <input
             type="text"
-            className="flex-1 text-xs bg-transparent border-none focus:outline-none placeholder:text-gray-400 font-normal text-gray-800"
+            className="flex-1 text-[16px] bg-transparent border-none focus:outline-none placeholder:text-gray-400 font-normal text-gray-800"
             placeholder={(t('gallery.write_caption') || '내용을 입력하세요...') + ' (필수)'}
             value={caption}
             maxLength={MAX_CAPTION}
@@ -875,13 +882,13 @@ const GalleryCreateContent = () => {
           {/* [1] 태그 검색 섹션 (최상단) */}
           <div className="space-y-2 shrink-0">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider">태그 검색</span>
+              <span className="text-[13px] font-extrabold text-gray-500 uppercase tracking-wider">태그 검색</span>
               <div className="flex-1 h-px bg-gray-100" />
             </div>
             <div className="relative">
               <input
                 type="text"
-                className="w-full bg-white border border-gray-200 rounded-xl pl-9 pr-10 py-2.5 text-xs focus:outline-none focus:border-primary shadow-sm text-gray-800 placeholder:text-gray-400 placeholder:font-normal"
+                className="w-full bg-white border border-gray-200 rounded-xl pl-9 pr-10 py-2.5 text-[16px] focus:outline-none focus:border-primary shadow-sm text-gray-800 placeholder:text-gray-400 placeholder:font-normal"
                 placeholder={t('gallery.search_placeholder', 'Search group, social, event, class, people...')}
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
@@ -926,7 +933,7 @@ const GalleryCreateContent = () => {
           {/* [2] 연관 추천 태그 섹션 (가운데) - 단일 칩 정렬식 */}
           <div className="space-y-2.5 shrink-0">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider">{t('gallery.relevant_tags') || '연관 추천 태그'}</span>
+              <span className="text-[13px] font-extrabold text-gray-500 uppercase tracking-wider">{t('gallery.relevant_tags') || '연관 추천 태그'}</span>
               <div className="flex-1 h-px bg-gray-100" />
             </div>
 
@@ -1032,7 +1039,7 @@ const GalleryCreateContent = () => {
           <div className="flex-1 space-y-2.5 min-h-[120px]">
             <div className="flex items-center gap-1.5">
               <Hash size={12} className="text-gray-400 shrink-0" />
-              <span className="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider">최종 태그 결과</span>
+              <span className="text-[13px] font-extrabold text-gray-500 uppercase tracking-wider">최종 태그 결과</span>
             </div>
 
             {/* 선택된 태그가 없는 경우 안내 문구 */}

@@ -1,0 +1,35 @@
+name: Facebook Auto Post
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # 매일 KST 09:00 실행 (UTC 00:00)
+  workflow_dispatch: # 수동 실행 지원
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium
+
+      - name: Restore FB Session
+        run: |
+          mkdir -p scripts/facebook-bot
+          echo '${{ secrets.FB_SESSION_JSON }}' > scripts/facebook-bot/fb_session.json
+
+      - name: Run Autopost Bot
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: node scripts/facebook-bot/post.js

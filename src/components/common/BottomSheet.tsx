@@ -1,6 +1,6 @@
 'use client';
 
-import React, { ReactNode, useEffect, useState } from 'react';
+import React, { ReactNode, useEffect, useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Portal from './Portal';
 
@@ -22,6 +22,7 @@ export default function BottomSheet({
   height = "80vh" 
 }: BottomSheetProps) {
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const stateKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!isOpen || typeof window === 'undefined' || !window.visualViewport) return;
@@ -52,15 +53,19 @@ export default function BottomSheet({
 
     // b. History virtual stack creation
     const stateKey = `bottom_sheet_${Date.now()}`;
+    stateKeyRef.current = stateKey;
     window.history.pushState({ stateKey }, '');
 
     // c. Popstate handler for Device back button
-    const handlePopState = (e: PopStateEvent) => {
+    //    When the user presses the hardware back button, the browser has ALREADY
+    //    performed history.back() before this handler fires. So we only need to
+    //    close the sheet — no additional history.back() required.
+    const handlePopState = () => {
+      stateKeyRef.current = null;
       onClose();
     };
 
     // Delay listener registration to avoid catching stale popstate events
-    // fired asynchronously by a previous BottomSheet's cleanup history.back()
     const guardTimer = setTimeout(() => {
       window.addEventListener('popstate', handlePopState);
     }, 50);
@@ -69,13 +74,25 @@ export default function BottomSheet({
       clearTimeout(guardTimer);
       document.body.style.overflow = 'unset';
       window.removeEventListener('popstate', handlePopState);
-
-      // d. Clean up the history stack if closed manually (X button, Backdrop click, Swipe down)
-      if (window.history.state?.stateKey === stateKey) {
-        window.history.back();
-      }
+      // STATE-BASED DESIGN: No history.back() in cleanup.
+      // history.back() is handled exclusively by handleDismiss() (internal close)
+      // or by the browser itself (hardware back button / popstate).
+      // External closes (e.g., parent calling onClose before router.push)
+      // intentionally leave the stale history entry for router.replace to overwrite.
+      stateKeyRef.current = null;
     };
   }, [isOpen, onClose]);
+
+  // Internal dismiss handler — called ONLY by BottomSheet's own UI controls
+  // (X button, Backdrop click, Swipe down). Synchronously cleans up the
+  // history entry that this BottomSheet pushed, then delegates to onClose.
+  const handleDismiss = useCallback(() => {
+    if (stateKeyRef.current && window.history.state?.stateKey === stateKeyRef.current) {
+      stateKeyRef.current = null;
+      window.history.back();
+    }
+    onClose();
+  }, [onClose]);
 
   return (
     <AnimatePresence>
@@ -87,7 +104,7 @@ export default function BottomSheet({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={onClose}
+              onClick={handleDismiss}
               className="absolute inset-0 bg-black/60 backdrop-blur-sm"
               style={{ zIndex: -1 }}
             />
@@ -100,7 +117,7 @@ export default function BottomSheet({
               onDragEnd={(event, info) => {
                 // If dragged down past 120px or swiped fast enough, trigger close
                 if (info.offset.y > 120 || info.velocity.y > 350) {
-                  onClose();
+                  handleDismiss();
                 }
               }}
               initial={{ y: "100%" }}
@@ -128,7 +145,7 @@ export default function BottomSheet({
                     {title}
                   </h3>
                   <button 
-                    onClick={onClose}
+                    onClick={handleDismiss}
                     className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors"
                   >
                     <span className="material-symbols-outlined text-on-surface-variant">close</span>

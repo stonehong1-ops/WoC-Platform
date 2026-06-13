@@ -40,6 +40,7 @@ export default function GroupsPageContent() {
     openCreateModal,
     handleGroupSelect,
     closeModals,
+    handleCreateClose,
     getFilteredGroups,
     handleVenueSearch,
     handleCreateSubmit
@@ -116,19 +117,7 @@ export default function GroupsPageContent() {
           </div>
         </section>
 
-        {/* Integrated Group Action */}
-        <div className="mx-4 my-3 px-5 py-3 flex items-center justify-between bg-white rounded-xl border border-slate-100 shadow-sm">
-          <p className="text-[12px] font-bold text-slate-400 uppercase tracking-tight">
-            {t('groups.start_community_label')}
-          </p>
-          <button 
-            onClick={openCreateModal}
-            className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 transition-colors py-2"
-          >
-            <span className="text-[13px] font-bold">{t('groups.create_button')}</span>
-            <span className="material-symbols-outlined text-[18px]">add_circle</span>
-          </button>
-        </div>
+
 
         {/* Category Best Section */}
         <section className="space-y-4">
@@ -272,7 +261,7 @@ export default function GroupsPageContent() {
           <header className="flex-shrink-0 fixed top-0 w-full z-[140] flex items-center justify-between px-4 h-16 bg-white shadow-sm border-b border-slate-100">
             <div className="flex items-center gap-3">
               <button
-                onClick={closeModals}
+                onClick={handleCreateClose}
                 className="p-2 rounded-full active:scale-95 duration-150 hover:bg-slate-50"
               >
                 <span className="material-symbols-outlined text-slate-500">close</span>

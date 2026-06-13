@@ -73,6 +73,14 @@ function VenuesPageContent() {
       }
     };
     window.addEventListener('woc:compose:open', handleComposeOpen as EventListener);
+
+    // sessionStorage 플래그 체크 (통합 등록 메뉴에서 진입 시)
+    const pending = sessionStorage.getItem('woc_compose_pending');
+    if (pending === 'venues') {
+      sessionStorage.removeItem('woc_compose_pending');
+      handleRegisterOpen();
+    }
+
     return () => window.removeEventListener('woc:compose:open', handleComposeOpen as EventListener);
   }, [openEdit]);
 
