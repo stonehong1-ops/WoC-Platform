@@ -6,7 +6,7 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { eventService } from '@/lib/firebase/eventService';
 import { Event } from '@/types/event';
 import { isSameDay, startOfDay, addDays, getDay, startOfWeek, endOfWeek, eachDayOfInterval, differenceInCalendarDays, endOfDay, startOfMonth, endOfMonth, format } from 'date-fns';
-import CreateEvent from '@/components/events/CreateEvent';
+import EditEvent from '@/components/events/EditEvent';
 import EventViewer from '@/components/events/EventViewer';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from '@/components/providers/LocationProvider';
@@ -712,8 +712,7 @@ export default function EventsPage() {
 
         <AnimatePresence>
           {showCreateModal && (
-            <CreateEvent
-              isOpen={showCreateModal}
+            <EditEvent
               onClose={handleCloseCreate}
               onSuccess={(id) => {
                 router.push(`/create-success?type=event&id=${id || ''}`);

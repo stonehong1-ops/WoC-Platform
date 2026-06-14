@@ -14,7 +14,7 @@ import ProgramEditor from './ProgramEditor';
 import { syncMilongasToSocial, deleteLinkedSocials } from '@/lib/firebase/syncMilongaToSocial';
 import { useLanguage } from '@/contexts/LanguageContext';
 
-interface Props { onClose: () => void; onSuccess?: () => void; eventData?: Event; }
+interface Props { onClose: () => void; onSuccess?: (id?: string) => void; eventData?: Event; }
 
 const toDateStr = (v: any) => {
   if (!v) return '';
@@ -186,7 +186,7 @@ export default function EditEvent({ onClose, onSuccess, eventData }: Props) {
           .then(() => {})
           .catch(e => console.error('[Sync] Failed:', e));
       }
-      onSuccess?.(); onClose();
+      onSuccess?.(savedId); onClose();
     } catch (e) { console.error(e); alert(t('event.save_failed')); }
     finally { setIsSubmitting(false); }
   };
@@ -208,7 +208,7 @@ export default function EditEvent({ onClose, onSuccess, eventData }: Props) {
       <header className="fixed top-0 left-0 w-full z-[210] flex justify-between items-center px-4 h-14 bg-white/95 backdrop-blur-md border-b border-[#f2f4f4]">
         <div className="flex items-center gap-2">
           <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors">
-            <span className="material-symbols-rounded text-[#2d3435]">close</span>
+            <span className="material-symbols-rounded text-[#2d3435]">arrow_back</span>
           </button>
           <h1 className="text-lg font-black font-headline text-[#2d3435]">{eventData ? t('event.edit_title') : t('event.create_title_new')}</h1>
         </div>

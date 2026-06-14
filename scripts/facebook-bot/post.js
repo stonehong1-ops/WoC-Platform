@@ -87,7 +87,7 @@ function getKSTDateString() {
     // 4. 스타일 D 표지 캡처
     console.log('표지 이미지를 렌더링하고 캡처합니다...');
     const renderUrl = `https://www.woc.today/admin/covers/render?theme=D&date=${dateStr}`;
-    await page.goto(renderUrl, { waitUntil: 'networkidle' });
+    await page.goto(renderUrl, { waitUntil: 'domcontentloaded' });
     
     // 렌더링 완료 요소를 감지 (캡처 타겟 대기)
     const targetSelector = '#capture-target';
@@ -104,7 +104,7 @@ function getKSTDateString() {
 
     // 5. 페이스북 그룹 접속 및 포스팅
     console.log('페이스북 그룹 페이지에 진입합니다...');
-    await page.goto('https://www.facebook.com/groups/evening.tea.milonga', { waitUntil: 'networkidle' });
+    await page.goto('https://www.facebook.com/groups/evening.tea.milonga', { waitUntil: 'domcontentloaded' });
 
     // 로그인 만료 여부 검증 (로그인 페이지 등으로 리다이렉트 되었는지 체크)
     if (page.url().includes('login')) {

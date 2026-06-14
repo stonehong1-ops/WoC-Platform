@@ -178,6 +178,7 @@ function RenderContent() {
 
   return (
     <div 
+      id="capture-target"
       className="w-[1080px] relative bg-[#f5f5f7] overflow-hidden"
       style={{
         height: (theme === 'C' || theme === 'D')

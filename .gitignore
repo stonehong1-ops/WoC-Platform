@@ -56,5 +56,8 @@ artifacts/backup/
 /db_groups_dump.json
 /create_ari_profile.*
 
-# Facebook bot session
+# Facebook bot session & temp files
 /scripts/facebook-bot/fb_session.json
+/scripts/facebook-bot/cover.png
+/scripts/facebook-bot/cover_preview_dryrun.png
+/scripts/facebook-bot/get_render_html.js
