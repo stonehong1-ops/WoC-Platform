@@ -15,6 +15,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     const isPublic = pathname === '/' || 
                     pathname === '/login' ||
                     pathname === '/app' ||
+                    pathname.startsWith('/yedamche') ||
                     pathname.startsWith('/live') || 
                     pathname.startsWith('/events') || 
                     pathname.startsWith('/social') || 

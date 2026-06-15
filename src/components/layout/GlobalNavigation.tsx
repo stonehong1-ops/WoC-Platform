@@ -280,7 +280,7 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
   // Compute effective hidden state based on context and pathname
   const isDetailPage = /^\/(class|shop|people|social|resale|rental|stay|events)\/[^\/]+/.test(pathname);
   const isAppPage = pathname === '/app' || pathname.startsWith('/app/');
-  const isHiddenPath = pathname === '/' || pathname.startsWith('/admin') || pathname.includes('/checkout') || pathname.includes('/register') || isDetailPage || isAppPage;
+  const isHiddenPath = pathname === '/' || pathname.startsWith('/admin') || pathname.includes('/checkout') || pathname.includes('/register') || isDetailPage || isAppPage || pathname === '/yedamche' || pathname.startsWith('/yedamche/');
   const effectiveIsGlobalNavHidden = isGlobalNavHidden || isHiddenPath;
 
   // 가시성 복구 시 스크롤 위치 및 인라인 transform 오프셋 강제 리셋 (Hit Test 영역 0px 편차 복원 방어막)

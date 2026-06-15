@@ -44,6 +44,19 @@ interface MyInfoBottomSheetProps {
   profile: UserProfile | null;
 }
 
+const normalizeCountryCode = (code: string | undefined | null): string => {
+  if (!code) return '+82 (KR)';
+  const upper = code.trim().toUpperCase();
+  if (['+82 (KR)', '+1 (US)', '+44 (UK)', '+49 (DE)'].includes(upper)) {
+    return upper;
+  }
+  if (upper.includes('KR') || upper.includes('KOR') || upper.includes('82')) return '+82 (KR)';
+  if (upper.includes('US') || upper.includes('USA') || upper.includes('1')) return '+1 (US)';
+  if (upper.includes('UK') || upper.includes('GB') || upper.includes('44')) return '+44 (UK)';
+  if (upper.includes('DE') || upper.includes('GER') || upper.includes('49')) return '+49 (DE)';
+  return '+82 (KR)';
+};
+
 export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBottomSheetProps) {
   const { user, signOut } = useAuth();
   const { t } = useLanguage();
@@ -58,10 +71,10 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
     bio: '',
     gender: 'Other',
     phoneNumber: '',
-    countryCode: '+1 (US)',
+    countryCode: '+82 (KR)',
     isAdmin: false,
     isInstructor: false,
-     isOrganizer: false,
+    isOrganizer: false,
     isDj: false,
     isServiceProvider: false,
     photoURL: '',
@@ -81,13 +94,14 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
 
   useEffect(() => {
     if (profile) {
+      const normalizedCC = normalizeCountryCode(profile.countryCode);
       setDetails({
         nickname: profile.nickname || '',
         nativeNickname: profile.nativeNickname || '',
         bio: profile.bio || '',
         gender: profile.gender || 'Other',
-        phoneNumber: formatLocalPhoneNumber(profile.phoneNumber, profile.countryCode || '+1 (US)'),
-        countryCode: profile.countryCode || '+1 (US)',
+        phoneNumber: formatLocalPhoneNumber(profile.phoneNumber, normalizedCC),
+        countryCode: normalizedCC,
         isAdmin: profile.isAdmin || false,
         isInstructor: profile.isInstructor || false,
         isOrganizer: profile.isOrganizer || false,

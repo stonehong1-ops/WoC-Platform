@@ -38,14 +38,16 @@ export const socialService = {
       const ordinal = getWeekOrdinal(todayDate);
       const isLast = isLastWeekOfMonth(todayDate);
 
-      // 1. Regular socials
+      // 1. Regular socials: 오늘 요일(dayOfWeek)에 해당하는 것만 Firestore 쿼리 (비용 대폭 절감)
       const regularSnap = await getDocs(
-        query(collection(db, SOCIALS_COLLECTION), where('type', '==', 'regular'))
+        query(
+          collection(db, SOCIALS_COLLECTION),
+          where('type', '==', 'regular'),
+          where('dayOfWeek', '==', dayOfWeek)
+        )
       );
       const allRegular = regularSnap.docs.map(d => ({ id: d.id, ...d.data() })) as Social[];
       const todayRegular = allRegular.filter(s => {
-        if (Number(s.dayOfWeek) !== dayOfWeek) return false;
-
         const rec = (s.recurrence || 'every').trim().toLowerCase();
         const recParts = rec.split(',').map(x => x.trim());
 
@@ -60,18 +62,31 @@ export const socialService = {
         });
       });
 
-      // 2. Popup socials
-      const popupSnap = await getDocs(
-        query(collection(db, SOCIALS_COLLECTION), where('type', '==', 'popup'))
-      );
-      const allPopup = popupSnap.docs.map(d => ({ id: d.id, ...d.data() })) as Social[];
-      const todayPopup = allPopup.filter(s => {
-        if (!s.date) return false;
-        const sDate = typeof s.date.toDate === 'function' ? s.date.toDate() : new Date((s.date as any).seconds * 1000);
-        return sDate.toDateString() === todayDate.toDateString();
-      });
+      // 2. Popup socials: 오늘 날짜의 00:00:00 ~ 23:59:59 범위 조건으로만 Firestore 쿼리 (비용 절감)
+      const startOfToday = new Date(todayDate);
+      startOfToday.setHours(0, 0, 0, 0);
+      const endOfToday = new Date(todayDate);
+      endOfToday.setHours(23, 59, 59, 999);
 
-      return [...todayRegular, ...todayPopup];
+      const startTimestamp = Timestamp.fromDate(startOfToday);
+      const endTimestamp = Timestamp.fromDate(endOfToday);
+
+      const popupSnap = await getDocs(
+        query(
+          collection(db, SOCIALS_COLLECTION),
+          where('date', '>=', startTimestamp),
+          where('date', '<=', endTimestamp)
+        )
+      );
+      const todayPopup = popupSnap.docs
+        .map(d => ({ id: d.id, ...d.data() }) as Social)
+        .filter(s => s.type === 'popup');
+
+      // 3. 중복 일정 충돌 방지: 동일 장소(venueId)에 팝업 밀롱가 일정이 있으면 오늘 정규 밀롱가 일정은 숨김 처리
+      const popupVenueIds = new Set(todayPopup.map(p => p.venueId).filter(Boolean));
+      const filteredRegulars = todayRegular.filter(r => !popupVenueIds.has(r.venueId));
+
+      return [...filteredRegulars, ...todayPopup];
     } catch (error) {
       console.error("Error in getTodayActiveSocials:", error);
       return [];
@@ -165,7 +180,13 @@ export const socialService = {
         return false;
       });
       
-      callback?.(filtered);
+      // 중복 일정 충돌 방지: 동일 장소(venueId)에 팝업 밀롱가 일정이 있으면 정규 밀롱가 일정은 숨김 처리
+      const regulars = filtered.filter(s => s.type === 'regular');
+      const popups = filtered.filter(s => s.type === 'popup');
+      const popupVenueIds = new Set(popups.map(p => p.venueId).filter(Boolean));
+      const filteredRegulars = regulars.filter(r => !popupVenueIds.has(r.venueId));
+      
+      callback?.([...filteredRegulars, ...popups]);
     });
   },
 

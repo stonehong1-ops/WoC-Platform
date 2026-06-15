@@ -104,24 +104,6 @@ export function useSocialData() {
       snapshot.docs.forEach(doc => {
         const data = doc.data();
         map[doc.id] = { id: doc.id, ...data };
-        
-        const city = (data.city || '').toUpperCase();
-        if (city === 'SEOUL' && !data.seoulArea) {
-          const address = (data.address || '').toLowerCase();
-          const district = (data.district || '').toLowerCase();
-          const gangbukDists = ['마포', '용산', '성동', '서대문', '종로', '중구', '광진', '은평', '성북', '동대문', '중랑', '강북', '도봉', '노원'];
-          let assignedArea = 'gangnam';
-          for (const d of gangbukDists) {
-            if (address.includes(d) || district.includes(d)) {
-              assignedArea = 'gangbuk';
-              break;
-            }
-          }
-          import('firebase/firestore').then(({ doc: fireDoc, updateDoc }) => {
-            updateDoc(fireDoc(db, 'venues', doc.id), { seoulArea: assignedArea })
-              .catch(err => console.error('seoulArea 자동 마이그레이션 실패:', err));
-          });
-        }
       });
       setVenuesMap(map);
     });
@@ -489,7 +471,11 @@ export function useSocialData() {
       return sDate.toDateString() === targetDate.toDateString();
     });
 
-    const unifiedList = [...matchedRegulars, ...matchedPopups];
+    // 3. 중복 일정 충돌 방지: 동일 장소(venueId)에 팝업 밀롱가 일정이 있으면 오늘 정규 밀롱가 일정은 숨김 처리
+    const popupVenueIds = new Set(matchedPopups.map(p => p.venueId).filter(Boolean));
+    const filteredRegulars = matchedRegulars.filter(r => !popupVenueIds.has(r.venueId));
+
+    const unifiedList = [...filteredRegulars, ...matchedPopups];
 
     // 3. Dynamic DJ assignment mapping
     const listWithActiveDj = unifiedList.map(s => {

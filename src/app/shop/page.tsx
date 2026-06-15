@@ -38,37 +38,30 @@ const SHOP_FILTER_DEFS: Record<string, { labelKey: string; fullLabelKey?: string
 function ShopPageContent() {
   const { t } = useLanguage();
   const { user, profile } = useAuth();
-  // Restore cached products and venues to achieve 0ms initial render
-  const cachedProducts = React.useMemo(() => {
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [allVenues, setAllVenues] = useState<Venue[]>([]);
+
+  // Restore cached products and venues to achieve 0ms initial render after mount to avoid hydration mismatch
+  useEffect(() => {
     if (typeof window !== 'undefined') {
-      const cached = sessionStorage.getItem('woc_shop_all_products');
-      if (cached) {
+      const cachedProds = sessionStorage.getItem('woc_shop_all_products');
+      if (cachedProds) {
         try {
-          return JSON.parse(cached);
+          setAllProducts(JSON.parse(cachedProds));
         } catch (e) {
           console.error('Failed to parse cached shop products:', e);
         }
       }
-    }
-    return [];
-  }, []);
-
-  const cachedVenues = React.useMemo(() => {
-    if (typeof window !== 'undefined') {
-      const cached = sessionStorage.getItem('woc_shop_all_venues');
-      if (cached) {
+      const cachedVens = sessionStorage.getItem('woc_shop_all_venues');
+      if (cachedVens) {
         try {
-          return JSON.parse(cached);
+          setAllVenues(JSON.parse(cachedVens));
         } catch (e) {
           console.error('Failed to parse cached shop venues:', e);
         }
       }
     }
-    return [];
   }, []);
-
-  const [allProducts, setAllProducts] = useState<Product[]>(cachedProducts);
-  const [allVenues, setAllVenues] = useState<Venue[]>(cachedVenues);
   const [activeFilter, setActiveFilter] = useState('all');
   const [activeBrand, setActiveBrand] = useState('All');
   const [sortOption, setSortOption] = useState<SortOption>('latest');
@@ -180,7 +173,7 @@ function ShopPageContent() {
   const brands = useMemo(() => {
     const shopVenues = allVenues.filter(v => 
       v.status === 'active' && 
-      (v.types.includes('Shop') || v.types.includes('Service') || v.category === 'Shop' || v.category === 'Service')
+      ((Array.isArray(v.types) && (v.types.includes('Shop') || v.types.includes('Service'))) || v.category === 'Shop' || v.category === 'Service')
     );
     const names = Array.from(new Set(shopVenues.map(v => v.name).filter(Boolean)));
     return ['All', ...names.sort()];
@@ -455,7 +448,7 @@ function ShopPageContent() {
                   <div className="flex items-center justify-between mt-1">
                     <div className="flex items-center gap-1.5">
                       <span className="text-sm font-bold text-[#2d3435] font-headline">
-                        ₩{(product.discountPrice || product.price)?.toLocaleString()}
+                        ₩{(product.discountPrice || product.price || 0).toLocaleString()}
                       </span>
                       {product.discountPrice && product.discountPrice > 0 && (
                         <span className="text-[10px] text-[#596061] line-through">₩{product.price?.toLocaleString()}</span>
