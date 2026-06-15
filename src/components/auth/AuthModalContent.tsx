@@ -401,7 +401,7 @@ export function AuthModalContent() {
                   >
                     <option value="">{t('auth.select_country')}</option>
                     {COUNTRY_CODES.map((c, i) => (
-                      <option key={`reg-${c.iso}-${i}`} value={c.iso}>
+                      <option key={`reg-${c.iso}-${i}`} value={`${c.code} (${c.iso})`}>
                         {getRegionName(c.iso, language)}
                       </option>
                     ))}

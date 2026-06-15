@@ -42,7 +42,7 @@ export function useAuthFlow() {
   const [details, setDetails] = useState({
     nickname: '',
     nativeNickname: '',
-    countryCode: 'KR',
+    countryCode: '+82 (KR)',
     gender: 'Other'
   });
 
