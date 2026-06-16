@@ -1,6 +1,7 @@
 import React from 'react';
 import { CoverEvent } from '../CoverEditor';
 import { useBase64Image } from '../useBase64Image';
+import { getCityGroup } from '@/app/social/constants/regionMapping';
 
 interface ThemeProps {
   date: Date;
@@ -65,7 +66,7 @@ export default function ThemeMagazineA({
               Life goes on
             </p>
             <p className="text-[28px] font-bold text-slate-700 mt-2 tracking-tight">
-              오늘, {region.ko}의 탱고씬 ({dateStrKorean})
+              오늘, 대한민국의 탱고씬 ({dateStrKorean})
             </p>
           </div>
           <div className="flex flex-col items-end text-right">
@@ -73,7 +74,7 @@ export default function ThemeMagazineA({
             <h2 className="text-[72px] font-black leading-none text-[#111] tracking-tighter">
               {monthName} {dayNum}
             </h2>
-            <p className="text-[32px] font-medium tracking-[0.4em] text-slate-500 mt-2">{region.en}</p>
+            <p className="text-[32px] font-medium tracking-[0.4em] text-slate-500 mt-2">KOREA</p>
           </div>
         </div>
 
@@ -239,6 +240,29 @@ export default function ThemeMagazineA({
                 <div className="mt-2 border border-white/30 rounded-full px-6 py-2 text-[20px] font-medium tracking-widest inline-block">woc.today</div>
               </div>
             </div>
+          </div>
+        )}
+        {/* 전국 소셜 요약 */}
+        {allMilongas.length > 0 && (
+          <div className="w-full text-center mb-6 text-[22px] font-black text-slate-600 tracking-wider font-noto">
+            {(() => {
+              const counts: Record<string, number> = {};
+              allMilongas.forEach(m => {
+                const group = getCityGroup(m.city || m.location);
+                const label = group === 'SEOUL' ? '서울' :
+                              group === 'BUSAN' ? '부산' :
+                              group === 'DAEJEON' ? '대전' : '광주';
+                counts[label] = (counts[label] || 0) + 1;
+              });
+              
+              // 정렬 순서 고정: 서울 -> 부산 -> 대전 -> 광주
+              const orderedLabels = ['서울', '부산', '대전', '광주'];
+              const textParts = orderedLabels
+                .filter(label => counts[label] > 0)
+                .map(label => `${label} ${counts[label]}`)
+                .join('  ·  ');
+              return textParts ? `오늘의 전국 소셜 현황  [ ${textParts} ]` : '';
+            })()}
           </div>
         )}
         <p className="font-noto text-[20px] text-slate-500 font-bold tracking-tight">상세 내용은 <span className="text-slate-800">www.WOC.today</span>에서 제공됨</p>

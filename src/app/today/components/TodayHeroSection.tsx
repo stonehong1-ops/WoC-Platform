@@ -95,6 +95,65 @@ export default function TodayHeroSection({
   const ev = todayActiveEvents[activeIndex];
   const dday = getEventDday(ev);
 
+  if (currentFilter === "event") {
+    return (
+      <div className="w-full space-y-4 animate-in fade-in duration-300">
+        {/* 타이틀 */}
+        <div className="flex items-center gap-2 mb-1">
+          <span className="material-symbols-outlined !text-[20px] text-indigo-500">event</span>
+          <span className="text-[15px] font-black text-[#1e293b] tracking-tight">
+            {language === "KR" ? "진행 중인 이벤트" : "Ongoing Events"}
+          </span>
+          <span className="text-[13px] font-bold text-slate-400">{todayActiveEvents.length}</span>
+        </div>
+
+        <div className="space-y-4">
+          {todayActiveEvents.map(item => {
+            const itemDday = getEventDday(item);
+            return (
+              <button
+                key={item.id}
+                onClick={() => openEventModal(item.id)}
+                className="block w-full relative shadow-md text-left active:scale-[0.99] transition-all cursor-pointer bg-slate-900 overflow-hidden h-[160px] xs:h-[180px] rounded-2xl"
+              >
+                <div className="relative w-full h-full flex items-center justify-center">
+                  {item.imageUrl ? (
+                    <img 
+                      src={item.imageUrl} 
+                      alt={language === "KR" && item.titleNative ? item.titleNative : item.title} 
+                      className="w-full h-full object-cover" 
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                      <span className="material-symbols-outlined text-white/50 !text-[32px]">event</span>
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent pointer-events-none" />
+                </div>
+
+                {itemDday && (
+                  <span className="absolute top-3 left-3 bg-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded-lg leading-none shadow-md">
+                    {itemDday}
+                  </span>
+                )}
+
+                <div className="absolute bottom-0 left-0 right-0 p-4 pr-16 space-y-1 z-10">
+                  <h4 className="text-white font-black text-[16px] leading-tight line-clamp-1">
+                    {language === "KR" && item.titleNative ? item.titleNative : item.title}
+                  </h4>
+                  <p className="text-[12px] font-semibold text-white/80 line-clamp-1">
+                    {getEventDateRange(item)}
+                  </p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full space-y-3 animate-in fade-in duration-300">
       {/* 타이틀 */}

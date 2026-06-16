@@ -251,19 +251,8 @@ export default function CoverEditor() {
   const todaysEvents = events;
   
   const allMilongas = useMemo(() => {
-    return todaysEvents.filter(e => {
-      if (e.type !== 'milonga' && e.type !== 'social') return false;
-      const sCity = (e.city || '').toLowerCase();
-      const sLoc = (e.location || '').toLowerCase();
-      const rEn = selectedRegion.en.toLowerCase();
-      const rKo = selectedRegion.ko.toLowerCase();
-      
-      const matchesCity = sCity.includes(rEn) || sCity.includes(rKo) || (rEn === 'seoul' && sCity.includes('soul'));
-      const matchesLoc = sLoc.includes(rEn) || sLoc.includes(rKo) || (rEn === 'seoul' && (sLoc.includes('soul') || sLoc.includes('강남') || sLoc.includes('홍대') || sLoc.includes('마포')));
-      
-      return matchesCity || matchesLoc;
-    });
-  }, [todaysEvents, selectedRegion]);
+    return todaysEvents.filter(e => e.type === 'milonga' || e.type === 'social');
+  }, [todaysEvents]);
   const allClasses = useMemo(() => todaysEvents.filter(e => e.type === 'class'), [todaysEvents]);
   const allPracticas = useMemo(() => todaysEvents.filter(e => e.type === 'practice'), [todaysEvents]);
 

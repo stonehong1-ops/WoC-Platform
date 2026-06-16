@@ -12,7 +12,7 @@ export const REGIONS = [
       {
         name: 'KOREA',
         flag: '🇰🇷',
-        cities: ['SEOUL', 'INCHEON', 'BUSAN', 'JEJU', 'DAEGU', 'DAEJEON', 'GWANGJU'].map(n => ({ name: n }))
+        cities: ['SEOUL', 'BUSAN', 'DAEJEON', 'GWANGJU'].map(n => ({ name: n }))
       },
       {
         name: 'CHINA',

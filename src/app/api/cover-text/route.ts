@@ -178,8 +178,8 @@ export async function GET(request: Request) {
 
       if (regionGroup.ko !== currentRegionKo) {
         if (currentMainCity) {
-          koText += `\n--------\n\n`;
-          enText += `\n--------\n\n`;
+          koText += `\n\n`;
+          enText += `\n\n`;
         }
         koText += `📍${regionGroup.ko.replace(/[()]/g, '')}\n\n`;
         enText += `📍${regionGroup.en.replace(/[()]/g, '')}\n\n`;
@@ -230,9 +230,11 @@ export async function GET(request: Request) {
       } else if (ev.type === 'class') {
         const extraKo = ev.instructor ? ` | ${ev.instructor}` : '';
         const extraEn = ev.instructor ? ` | ${formatInstructorNames(ev.instructor, 'EN')}` : '';
+        const locKo = ev.location ? ` | ${ev.location}` : '';
+        const locEn = ev.location ? ` | ${formatCommunityName(ev.location, 'EN')}` : '';
 
-        koText += `. ${titleKo} | ${time} | ${ev.location || '미정'}${extraKo}\n`;
-        enText += `. ${titleEn} | ${time} | ${formatCommunityName(ev.location || '', 'EN')}${extraEn}\n`;
+        koText += `. ${titleKo} | ${time}${locKo}${extraKo}\n`;
+        enText += `. ${titleEn} | ${time}${locEn}${extraEn}\n`;
       }
     });
 

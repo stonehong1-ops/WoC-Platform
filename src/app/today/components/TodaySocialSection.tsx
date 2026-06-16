@@ -8,12 +8,12 @@ import { SocialCardImage } from "@/components/social/SocialHeroCard";
 interface TodaySocialSectionProps {
   loadingSocials: boolean;
   milongas: Social[];
-  milongasByDistrict: [string, Social[]][];
+  milongasSorted: (Social & { districtLabel: string })[];
   selectedDate: Date;
   venuesMap: Record<string, any>;
   openSocialModal: (id: string) => void;
   practicas: Social[];
-  practicasByDistrict: [string, Social[]][];
+  practicasSorted: (Social & { districtLabel: string })[];
   currentFilter: "all" | "social" | "class" | "practice" | "event";
 }
 
@@ -30,11 +30,6 @@ export function SectionHeader({ icon, label, count }: {
     </div>
   );
 }
-
-const isDaySocial = (s: Social) => {
-  const hour = parseInt((s.startTime || "19:00").split(":")[0]);
-  return !isNaN(hour) && hour < 18;
-};
 
 function getRecurrenceDisplay(recurrence: string | undefined, t: (key: string) => string): string {
   if (!recurrence || recurrence === "every") return "";
@@ -91,7 +86,6 @@ function SocialCard({ social, date, venuesMap, onPress }: {
   const hasBoth = !!orgFormatted && !!djFormatted;
   const venue = formatCommunityName(getVenueDisplay(social, language, venuesMap), language);
   const shortVenue = venue.length > 8 ? venue.slice(0, 8) + "…" : venue;
-  const isDay = isDaySocial(social);
   const recurrenceText = social.type === "regular" ? getRecurrenceDisplay(social.recurrence, t) : "";
 
   const hasPoster = social.posterLayoutId && social.posterLayoutId !== "none";
@@ -114,9 +108,6 @@ function SocialCard({ social, date, venuesMap, onPress }: {
         <span className="bg-black/60 backdrop-blur-sm text-white text-[9px] font-black px-1.5 py-0.5 rounded-full leading-none">
           {social.startTime || "—"}
         </span>
-        {isDay && (
-          <span className="bg-amber-400 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full leading-none">낮밀</span>
-        )}
         {social.type === "popup" && (
           <span className="bg-rose-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded-lg leading-none uppercase tracking-wide shadow-md">
             POPUP
@@ -161,15 +152,31 @@ function SocialCard({ social, date, venuesMap, onPress }: {
 export default function TodaySocialSection({
   loadingSocials,
   milongas,
-  milongasByDistrict,
+  milongasSorted,
   selectedDate,
   venuesMap,
   openSocialModal,
   practicas,
-  practicasByDistrict,
+  practicasSorted,
   currentFilter
 }: TodaySocialSectionProps) {
   const { t, language } = useLanguage();
+
+  const milongaCounts = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    milongasSorted.forEach(s => {
+      counts[s.districtLabel] = (counts[s.districtLabel] || 0) + 1;
+    });
+    return counts;
+  }, [milongasSorted]);
+
+  const practicaCounts = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    practicasSorted.forEach(s => {
+      counts[s.districtLabel] = (counts[s.districtLabel] || 0) + 1;
+    });
+    return counts;
+  }, [practicasSorted]);
 
   const showMilonga = currentFilter === "all" || currentFilter === "social";
   const showPractica = currentFilter === "all" || currentFilter === "practice";
@@ -182,35 +189,36 @@ export default function TodaySocialSection({
           <SectionHeader icon="local_fire_department" label={t("today.milonga")} count={milongas.length} />
 
           {loadingSocials ? (
-            <div className="space-y-4">
-              {[0, 1].map(g => (
-                <div key={g}>
-                  <div className="h-4 w-28 bg-slate-200 rounded animate-pulse mb-2" />
-                  <div className="grid grid-cols-3 gap-2">
-                    {[1, 2, 3].map(i => (
-                      <div key={i} className="rounded-xl bg-slate-200 animate-pulse" style={{ aspectRatio: "3/4" }} />
-                    ))}
-                  </div>
+            <div className="grid grid-cols-3 gap-x-2 gap-y-4">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="flex flex-col gap-1">
+                  <div className="h-4 w-12 bg-slate-100 rounded animate-pulse" />
+                  <div className="rounded-xl bg-slate-200 animate-pulse w-full" style={{ aspectRatio: "3/4" }} />
                 </div>
               ))}
             </div>
-          ) : milongasByDistrict.length > 0 ? (
-            <div className="space-y-5">
-              {milongasByDistrict.map(([district, items]) => (
-                <div key={district}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="material-symbols-outlined !text-[13px] text-blue-500">location_searching</span>
-                    <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">{district}</span>
-                    <div className="flex-1 h-px bg-slate-200" />
-                    <span className="text-[11px] font-bold text-slate-300">{items.length}</span>
+          ) : milongasSorted.length > 0 ? (
+            <div className="grid grid-cols-3 gap-x-2 gap-y-4">
+              {milongasSorted.map((s, index) => {
+                const showHeader = index === 0 || milongasSorted[index - 1].districtLabel !== s.districtLabel;
+                const count = milongaCounts[s.districtLabel] || 0;
+                const displayLabel = count > 1 ? `${s.districtLabel}(${count})` : s.districtLabel;
+                return (
+                  <div key={s.id} className="flex flex-col gap-1">
+                    <div className="h-4 flex items-center gap-0.5 text-slate-500">
+                      {showHeader ? (
+                        <>
+                          <span className="material-symbols-outlined !text-[12px] text-blue-500">location_on</span>
+                          <span className="text-[10px] font-black uppercase tracking-widest">{displayLabel}</span>
+                        </>
+                      ) : (
+                        <span className="text-[10px] opacity-0 pointer-events-none">—</span>
+                      )}
+                    </div>
+                    <SocialCard social={s} date={selectedDate} venuesMap={venuesMap} onPress={() => openSocialModal(s.id)} />
                   </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    {items.map(s => (
-                      <SocialCard key={s.id} social={s} date={selectedDate} venuesMap={venuesMap} onPress={() => openSocialModal(s.id)} />
-                    ))}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-8 bg-white rounded-2xl border border-dashed border-slate-200">
@@ -227,15 +235,11 @@ export default function TodaySocialSection({
           <SectionHeader icon="directions_run" label={t("today.practica")} count={practicas.length} />
           {loadingSocials ? (
             currentFilter === "practice" ? (
-              <div className="space-y-4">
-                {[0, 1].map(g => (
-                  <div key={g}>
-                    <div className="h-4 w-28 bg-slate-200 rounded animate-pulse mb-2" />
-                    <div className="grid grid-cols-3 gap-2">
-                      {[1, 2, 3].map(i => (
-                        <div key={i} className="rounded-xl bg-slate-200 animate-pulse" style={{ aspectRatio: "3/4" }} />
-                      ))}
-                    </div>
+              <div className="grid grid-cols-3 gap-x-2 gap-y-4">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="flex flex-col gap-1">
+                    <div className="h-4 w-12 bg-slate-100 rounded animate-pulse" />
+                    <div className="rounded-xl bg-slate-200 animate-pulse w-full" style={{ aspectRatio: "3/4" }} />
                   </div>
                 ))}
               </div>
@@ -244,20 +248,37 @@ export default function TodaySocialSection({
                 {[1, 2, 3].map(i => <div key={i} className="h-8 w-24 rounded-full bg-slate-200 animate-pulse" />)}
               </div>
             )
-          ) : practicas.length > 0 ? (
+          ) : practicasSorted.length > 0 ? (
             currentFilter === "practice" ? (
-              /* 쁘락띠까 단독 필터: 지역 구분 없이 시간순 통합 3열 Grid */
+              /* 쁘락띠까 단독 필터: 지역 구분선 대신 카드 위 지역명 노출식 3열 Grid */
               <div className="animate-in fade-in duration-300">
-                <div className="grid grid-cols-3 gap-2">
-                  {practicas.map(s => (
-                    <SocialCard key={s.id} social={s} date={selectedDate} venuesMap={venuesMap} onPress={() => openSocialModal(s.id)} />
-                  ))}
+                <div className="grid grid-cols-3 gap-x-2 gap-y-4">
+                  {practicasSorted.map((s, index) => {
+                    const showHeader = index === 0 || practicasSorted[index - 1].districtLabel !== s.districtLabel;
+                    const count = practicaCounts[s.districtLabel] || 0;
+                    const displayLabel = count > 1 ? `${s.districtLabel}(${count})` : s.districtLabel;
+                    return (
+                      <div key={s.id} className="flex flex-col gap-1">
+                        <div className="h-4 flex items-center gap-0.5 text-slate-500">
+                          {showHeader ? (
+                            <>
+                              <span className="material-symbols-outlined !text-[12px] text-blue-500">location_on</span>
+                              <span className="text-[10px] font-black uppercase tracking-widest">{displayLabel}</span>
+                            </>
+                          ) : (
+                            <span className="text-[10px] opacity-0 pointer-events-none">—</span>
+                          )}
+                        </div>
+                        <SocialCard social={s} date={selectedDate} venuesMap={venuesMap} onPress={() => openSocialModal(s.id)} />
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ) : (
-              /* 모두(all) 필터: 기존 가로 칩 리스트 */
+              /* 모두(all) 필터: 정렬된 순서대로 가로 칩 리스트 */
               <div className="flex gap-2 flex-wrap">
-                {practicas.map(s => {
+                {practicasSorted.map(s => {
                   const venueName = formatCommunityName(getVenueDisplay(s, language, venuesMap), language);
                   return (
                     <button

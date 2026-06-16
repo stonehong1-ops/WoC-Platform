@@ -1,6 +1,7 @@
 import React from 'react';
 import { CoverEvent } from '../CoverEditor';
 import { useBase64Image } from '../useBase64Image';
+import { getCityGroup } from '@/app/social/constants/regionMapping';
 
 interface ThemeCProps {
   date: Date;
@@ -19,10 +20,21 @@ const GANGNAM_KEYWORDS = [
   '피스타', 'pista'
 ];
 
-function classifyRegion(ev: CoverEvent): 'hongdae' | 'gangnam' {
-  const s = `${ev.city || ''} ${ev.location || ''} ${ev.groupName || ''} ${ev.title || ''} ${ev.titleNative || ''}`.toLowerCase();
-  if (GANGNAM_KEYWORDS.some(k => s.includes(k))) return 'gangnam';
-  return 'hongdae';
+function getSortedEvents(events: CoverEvent[]) {
+  const mapped = events.map(ev => {
+    const cityGroup = getCityGroup(ev.city || ev.location);
+    let groupWeight = 99;
+    if (cityGroup === 'SEOUL') groupWeight = 1;
+    else if (cityGroup === 'BUSAN') groupWeight = 2;
+    else if (cityGroup === 'DAEJEON') groupWeight = 3;
+    else if (cityGroup === 'GWANGJU') groupWeight = 4;
+    return { ...ev, groupWeight, cityGroup };
+  });
+  mapped.sort((a, b) => {
+    if (a.groupWeight !== b.groupWeight) return a.groupWeight - b.groupWeight;
+    return (a.startTime || '').localeCompare(b.startTime || '');
+  });
+  return mapped;
 }
 
 /* ─── Image card (milonga or class) ─── */
@@ -126,29 +138,52 @@ export default function ThemeMagazineC({
   const dayNameKo = date.toLocaleDateString('ko-KR', { weekday: 'short' });
   const dayNameEn = date.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
 
-  // Classify & sort
-  const hongdaeM = allMilongas.filter(m => classifyRegion(m) === 'hongdae').sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
-  const gangnamM = allMilongas.filter(m => classifyRegion(m) === 'gangnam').sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
+  // 전국 단위 정렬 적용
+  const sortedMilongas = getSortedEvents(allMilongas);
+  const sortedClasses = getSortedEvents(allClasses);
+  const sortedPracticas = getSortedEvents(allPracticas);
 
-  const hongdaeP = allPracticas.filter(p => classifyRegion(p) === 'hongdae').sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
-  const gangnamP = allPracticas.filter(p => classifyRegion(p) === 'gangnam').sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
+  // 쁘락띠까: 수도권(서울/경기 등) vs 지방권(부산/대전/광주 등) 분리
+  const sudogwonP = sortedPracticas.filter(p => getCityGroup(p.city || p.location) === 'SEOUL');
+  const jibangP = sortedPracticas.filter(p => getCityGroup(p.city || p.location) !== 'SEOUL');
 
-  const hongdaeC = allClasses.filter(c => classifyRegion(c) === 'hongdae').sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
-  const gangnamC = allClasses.filter(c => classifyRegion(c) === 'gangnam').sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
-
-  // Build milonga items array (one continuous flow)
+  // Build milonga items array (one continuous flow with labels on city changes)
   type CardItem = { ev: CoverEvent; label?: string };
-  const milongaItems: CardItem[] = [];
-  hongdaeM.forEach((m, i) => milongaItems.push({ ev: m, label: i === 0 ? '🔥 밀롱가 · 홍대' : undefined }));
-  gangnamM.forEach((m, i) => milongaItems.push({ ev: m, label: i === 0 ? '🔥 밀롱가 · 강남' : undefined }));
+  const milongaItems: CardItem[] = sortedMilongas.map((m, index) => {
+    const prev = index > 0 ? sortedMilongas[index - 1] : null;
+    const prevGroup = prev ? getCityGroup(prev.city || prev.location) : null;
+    const currGroup = getCityGroup(m.city || m.location);
+    const showHeader = !prev || prevGroup !== currGroup;
 
-  // Build class items array (one continuous flow)
-  const classItems: CardItem[] = [];
-  hongdaeC.forEach((c, i) => classItems.push({ ev: c, label: i === 0 ? '🎓 클래스 · 홍대' : undefined }));
-  gangnamC.forEach((c, i) => classItems.push({ ev: c, label: i === 0 ? '🎓 클래스 · 강남' : undefined }));
+    let label: string | undefined;
+    if (showHeader) {
+      const gLabel = currGroup === 'SEOUL' ? '서울' :
+                     currGroup === 'BUSAN' ? '부산' :
+                     currGroup === 'DAEJEON' ? '대전' : '광주';
+      label = `🔥 밀롱가 · ${gLabel}`;
+    }
+    return { ev: m, label };
+  });
+
+  // Build class items array (one continuous flow with labels on city changes)
+  const classItems: CardItem[] = sortedClasses.map((c, index) => {
+    const prev = index > 0 ? sortedClasses[index - 1] : null;
+    const prevGroup = prev ? getCityGroup(prev.city || prev.location) : null;
+    const currGroup = getCityGroup(c.city || c.location);
+    const showHeader = !prev || prevGroup !== currGroup;
+
+    let label: string | undefined;
+    if (showHeader) {
+      const gLabel = currGroup === 'SEOUL' ? '서울' :
+                     currGroup === 'BUSAN' ? '부산' :
+                     currGroup === 'DAEJEON' ? '대전' : '광주';
+      label = `🎓 클래스 · ${gLabel}`;
+    }
+    return { ev: c, label };
+  });
 
   const hasMilongas = milongaItems.length > 0;
-  const hasPracticas = hongdaeP.length > 0 || gangnamP.length > 0;
+  const hasPracticas = sortedPracticas.length > 0;
   const hasClasses = classItems.length > 0;
 
   return (
@@ -166,7 +201,7 @@ export default function ThemeMagazineC({
             <p style={{ fontFamily: "'Bebas Neue', cursive" }} className="text-[14px] text-white leading-none tracking-tight">
               TODAY IN TANGO
             </p>
-            <span className="text-[5px] text-white/40 font-bold">오늘, {region.ko}의 탱고씬</span>
+            <span className="text-[5px] text-white/40 font-bold">오늘, 대한민국의 탱고씬</span>
           </div>
           <div className="flex items-center gap-[4px]">
             <p style={{ fontFamily: "'Bebas Neue', cursive" }} className="text-[14px] text-[#FF5E3A] leading-none tracking-tight">
@@ -193,8 +228,8 @@ export default function ThemeMagazineC({
           {/* ── 쁘락띠까: 2 text cells (col-span-2 each) ── */}
           {hasPracticas && (
             <div className="grid grid-cols-4 gap-[3px] mt-[4px]">
-              <PracticaCell label="🏃 쁘락띠까 · 홍대" items={hongdaeP} />
-              <PracticaCell label="🏃 쁘락띠까 · 강남" items={gangnamP} />
+              <PracticaCell label="🏃 쁘락띠까 · 수도권" items={sudogwonP} />
+              <PracticaCell label="🏃 쁘락띠까 · 지방권" items={jibangP} />
             </div>
           )}
 

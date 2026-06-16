@@ -10,6 +10,7 @@ import { useModalNavigation } from '@/hooks/useModalNavigation';
 import { useLocation } from '@/components/providers/LocationProvider';
 import { COUNTRY_MAPPING } from '@/constants/locations';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { matchLocationGroup } from '@/app/social/constants/regionMapping';
 
 interface UniversalFeedProps {
   context: any;
@@ -103,7 +104,7 @@ export default function UniversalFeed({ context, currentUser, profile, activeFil
           return countryMatch;
         }
         
-        const cityMatch = p.location.city.toUpperCase() === location.city.toUpperCase();
+        const cityMatch = matchLocationGroup(location.city, p.location.city);
         return countryMatch && cityMatch;
       });
     }

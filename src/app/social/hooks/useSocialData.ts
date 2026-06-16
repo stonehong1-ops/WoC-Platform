@@ -15,6 +15,7 @@ import {
   isKoreanHoliday, 
   detectSeoulDistrict 
 } from '../constants/seoulRegions';
+import { matchLocationGroup } from '../constants/regionMapping';
 
 export function useSocialData() {
   const searchParams = useSearchParams();
@@ -290,24 +291,30 @@ export function useSocialData() {
 
   // Location filter checker
   const matchLocation = useCallback((s: Social) => {
-    const isGlobal = !location.country || location.country === 'ALL';
+    const isGlobal = !location.country || location.country === 'ALL' || location.country === 'GLOBAL';
     const isCityAll = !location.city || location.city === 'ALL';
     if (isGlobal && isCityAll) return true;
 
     if (!isGlobal) {
-      if (!s.country) return false;
-      const matchCountry = String(s.country).trim().toLowerCase() === String(location.country).trim().toLowerCase();
-      if (!matchCountry) return false;
+      const selectedCountryUpper = String(location.country).trim().toUpperCase();
+      const docCountryUpper = String(s.country || '').trim().toUpperCase();
+      
+      if (selectedCountryUpper === 'KOREA') {
+        const isKoreaDoc = !docCountryUpper || ['KOREA', 'KR', 'SOUTH KOREA'].includes(docCountryUpper);
+        if (!isKoreaDoc) return false;
+      } else {
+        if (docCountryUpper !== selectedCountryUpper) return false;
+      }
     }
 
     if (!isCityAll) {
-      if (!s.city) return false;
-      const matchCity = String(s.city).trim().toLowerCase() === String(location.city).trim().toLowerCase();
-      if (!matchCity) return false;
+      const venue = s.venueId ? venuesMap[s.venueId] : null;
+      const resolvedCity = s.city || venue?.city || venue?.address || '';
+      return matchLocationGroup(location.city, resolvedCity);
     }
 
     return true;
-  }, [location.country, location.city]);
+  }, [location.country, location.city, venuesMap]);
 
   const locationFilteredSocials = useMemo(() => {
     return [...regulars, ...dailySocials, ...popups].filter(matchLocation);
@@ -554,11 +561,8 @@ export function useSocialData() {
     }
     return location.city === 'SEOUL' ? (language === 'KR' ? '서울' : 'Seoul') :
            location.city === 'BUSAN' ? (language === 'KR' ? '부산' : 'Busan') :
-           location.city === 'DAEJEON' ? (language === 'KR' ? '대전' : 'Daejeon') :
-           location.city === 'DAEGU' ? (language === 'KR' ? '대구' : 'Daegu') :
            location.city === 'GWANGJU' ? (language === 'KR' ? '광주' : 'Gwangju') :
-           location.city === 'INCHEON' ? (language === 'KR' ? '인천' : 'Incheon') :
-           location.city === 'JEJU' ? (language === 'KR' ? '제주' : 'Jeju') : location.city;
+           location.city === 'DAEJEON' ? (language === 'KR' ? '대전' : 'Daejeon') : location.city;
   }, [location?.city, language]);
 
   return {

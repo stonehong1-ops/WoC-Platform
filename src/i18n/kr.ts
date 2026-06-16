@@ -4679,13 +4679,13 @@ export const kr: Record<string, string> = {
     'region.country.PHILIPPINES': '필리핀',
     'region.country.MALAYSIA': '말레이시아',
     'region.country.AUSTRALIA': '호주',
-    'region.city.SEOUL': '서울',
+    'region.city.SEOUL': '서울 (인천/경기/강원 포함)',
     'region.city.INCHEON': '인천',
-    'region.city.BUSAN': '부산',
+    'region.city.BUSAN': '부산 (대구/영남 포함)',
     'region.city.JEJU': '제주',
     'region.city.DAEGU': '대구',
-    'region.city.DAEJEON': '대전',
-    'region.city.GWANGJU': '광주',
+    'region.city.DAEJEON': '대전 (충청 포함)',
+    'region.city.GWANGJU': '광주 (호남/제주 포함)',
     
     // 글로벌 국가 및 도시 추가 번역 (한글)
     'region.country.NEW ZEALAND': '뉴질랜드',

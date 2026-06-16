@@ -1,6 +1,7 @@
 import React from 'react';
 import { CoverEvent } from '../CoverEditor';
 import { useBase64Image } from '../useBase64Image';
+import { getCityGroup } from '@/app/social/constants/regionMapping';
 
 interface ExtraSocialItemProps {
   m: CoverEvent;
@@ -70,30 +71,40 @@ export default function ThemeMagazineB({
   const practicaImgUrl = useBase64Image(practica?.imageUrl || undefined);
   const bannerImgUrl = useBase64Image(banner?.imageUrl || banner?.posterUrl || undefined);
 
-  // Get regional highlights (sort by time)
+  // Get national highlights (sort by region & time)
   const selectedIds = [milonga?.id, milonga2?.id, milonga3?.id, milonga4?.id, milonga5?.id].filter(Boolean);
   const regionalMilongas = allMilongas
     .filter(s => !selectedIds.includes(s.id))
-    .filter(s => {
-      const sCity = (s.city || '').toLowerCase();
-      const sLoc = (s.location || '').toLowerCase();
-      const rEn = region.en.toLowerCase();
-      const rKo = region.ko.toLowerCase();
-      
-      // Match against city or location strings
-      const matchesCity = sCity.includes(rEn) || sCity.includes(rKo) || (rEn === 'seoul' && sCity.includes('soul'));
-      const matchesLoc = sLoc.includes(rEn) || sLoc.includes(rKo) || (rEn === 'seoul' && (sLoc.includes('soul') || sLoc.includes('강남') || sLoc.includes('홍대') || sLoc.includes('마포')));
-      return matchesCity || matchesLoc;
-    })
-    .sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
+    .map(s => {
+      const cityGroup = getCityGroup(s.city || s.location);
+      let groupWeight = 99;
+      if (cityGroup === 'SEOUL') groupWeight = 1;
+      else if (cityGroup === 'BUSAN') groupWeight = 2;
+      else if (cityGroup === 'DAEJEON') groupWeight = 3;
+      else if (cityGroup === 'GWANGJU') groupWeight = 4;
+      return { ...s, groupWeight, cityGroup };
+    });
+
+  regionalMilongas.sort((a, b) => {
+    if (a.groupWeight !== b.groupWeight) return a.groupWeight - b.groupWeight;
+    return (a.startTime || '').localeCompare(b.startTime || '');
+  });
 
   const highlights = regionalMilongas.slice(0, 3);
 
   const getRegionChip = (city?: string, location?: string) => {
-    const str = ((city || '') + ' ' + (location || '')).toLowerCase();
-    if (str.includes('강남')) return '강남';
-    if (str.includes('홍대')) return '홍대';
-    if (str.includes('마포')) return '마포';
+    const dbCity = city || location || '';
+    const group = getCityGroup(dbCity);
+    if (group === 'SEOUL') {
+      const str = ((city || '') + ' ' + (location || '')).toLowerCase();
+      if (str.includes('강남')) return '서울 강남';
+      if (str.includes('홍대')) return '서울 홍대';
+      if (str.includes('마포')) return '서울 마포';
+      return '서울';
+    }
+    if (group === 'BUSAN') return '부산';
+    if (group === 'DAEJEON') return '대전';
+    if (group === 'GWANGJU') return '광주';
     return '';
   };
 
@@ -121,12 +132,12 @@ export default function ThemeMagazineB({
               <div className="mt-2 flex flex-col">
                 <h1 className="text-title-xl text-black uppercase leading-[0.82] tracking-tight">TANGO</h1>
                 <h2 className="text-2xl text-gray-400 uppercase leading-[0.9] font-inter mt-1.5 mb-1 tracking-wide font-light">IN</h2>
-                <h1 className="text-title-xl text-black uppercase leading-[0.82] tracking-tight">{region.en}</h1>
+                <h1 className="text-title-xl text-black uppercase leading-[0.82] tracking-tight">KOREA</h1>
               </div>
               
               <div className="mt-4 flex flex-col gap-1.5">
                 <p className="text-[9px] font-noto font-bold text-gray-800 tracking-tight">
-                  오늘, {region.ko}의 탱고씬 <span className="text-[#FF5E3A]">{month}/{day} {dayNameKo}</span>
+                  오늘, 대한민국의 탱고씬 <span className="text-[#FF5E3A]">{month}/{day} {dayNameKo}</span>
                 </p>
               </div>
 
@@ -240,7 +251,15 @@ export default function ThemeMagazineB({
                 <div className="mt-2 space-y-2 overflow-hidden flex-1">
                   {highlights.length > 0 ? highlights.map((h, i) => (
                     <div key={i} className="border-l border-indigo-400 pl-1.5">
-                      <p className="text-[8px] font-noto leading-tight truncate">{h.titleNative || h.title}</p>
+                      <p className="text-[8px] font-noto leading-tight truncate">
+                        {(() => {
+                          const group = getCityGroup(h.city || h.location);
+                          const cityPrefix = group === 'SEOUL' ? '서울' :
+                                             group === 'BUSAN' ? '부산' :
+                                             group === 'DAEJEON' ? '대전' : '광주';
+                          return `[${cityPrefix}] ${h.titleNative || h.title}`;
+                        })()}
+                      </p>
                       <p className="text-[6px] opacity-60">{h.startTime || '00:00'}</p>
                     </div>
                   )) : (

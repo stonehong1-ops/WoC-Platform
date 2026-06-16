@@ -4680,13 +4680,13 @@ export const en: Record<string, string> = {
     'region.country.PHILIPPINES': 'PHILIPPINES',
     'region.country.MALAYSIA': 'MALAYSIA',
     'region.country.AUSTRALIA': 'AUSTRALIA',
-    'region.city.SEOUL': 'SEOUL',
+    'region.city.SEOUL': 'Seoul (incl. Incheon/Gyeonggi/Gangwon)',
     'region.city.INCHEON': 'INCHEON',
-    'region.city.BUSAN': 'BUSAN',
+    'region.city.BUSAN': 'Busan (incl. Daegu/Yeongnam)',
     'region.city.JEJU': 'JEJU',
     'region.city.DAEGU': 'DAEGU',
-    'region.city.DAEJEON': 'DAEJEON',
-    'region.city.GWANGJU': 'GWANGJU',
+    'region.city.DAEJEON': 'Daejeon (incl. Chungcheong)',
+    'region.city.GWANGJU': 'Gwangju (incl. Honam/Jeju)',
     
     // 글로벌 국가 및 도시 추가 번역 (영어)
     'region.country.NEW ZEALAND': 'NEW ZEALAND',

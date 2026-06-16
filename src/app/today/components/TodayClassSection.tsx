@@ -13,7 +13,7 @@ interface TodayClassSectionProps {
   loadingClasses: boolean;
   filteredClasses: ClassEntry[];
   openClassModal: (id: string) => void;
-  classesByDistrict: [string, ClassEntry[]][];
+  classesSorted: (ClassEntry & { districtLabel: string })[];
   currentFilter: "all" | "social" | "class" | "practice" | "event";
   venuesMap: Record<string, any>;
 }
@@ -72,11 +72,19 @@ export default function TodayClassSection({
   loadingClasses,
   filteredClasses,
   openClassModal,
-  classesByDistrict,
+  classesSorted,
   currentFilter,
   venuesMap
 }: TodayClassSectionProps) {
   const { t, language } = useLanguage();
+
+  const classCounts = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    classesSorted.forEach(c => {
+      counts[c.districtLabel] = (counts[c.districtLabel] || 0) + 1;
+    });
+    return counts;
+  }, [classesSorted]);
 
   return (
     <section>
@@ -89,28 +97,35 @@ export default function TodayClassSection({
         </div>
       ) : filteredClasses.length > 0 ? (
         currentFilter === "class" ? (
-          /* 클래스 단독 필터: 홍대/강남 구획 + 3열 Grid 카드 뷰 */
+          /* 클래스 단독 필터: 홍대/강남 구획 구분선 제거식 3열 Grid */
           <div className="space-y-5 animate-in fade-in duration-300">
-            {classesByDistrict.map(([district, items]) => (
-              <div key={district}>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="material-symbols-outlined !text-[13px] text-blue-500">location_searching</span>
-                  <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">{district}</span>
-                  <div className="flex-1 h-px bg-slate-200" />
-                  <span className="text-[11px] font-bold text-slate-300">{items.length}</span>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  {items.map(({ cls, timeSlot }, idx) => (
-                    <ClassCard key={`${cls.id}-${idx}`} cls={cls} timeSlot={timeSlot} onPress={() => openClassModal(cls.id)} />
-                  ))}
-                </div>
-              </div>
-            ))}
+            <div className="grid grid-cols-3 gap-x-2 gap-y-4">
+              {classesSorted.map(({ cls, timeSlot, districtLabel }, index) => {
+                const showHeader = index === 0 || classesSorted[index - 1].districtLabel !== districtLabel;
+                const count = classCounts[districtLabel] || 0;
+                const displayLabel = count > 1 ? `${districtLabel}(${count})` : districtLabel;
+                return (
+                  <div key={`${cls.id}-${index}`} className="flex flex-col gap-1">
+                    <div className="h-4 flex items-center gap-0.5 text-slate-500">
+                      {showHeader ? (
+                        <>
+                          <span className="material-symbols-outlined !text-[12px] text-blue-500">location_on</span>
+                          <span className="text-[10px] font-black uppercase tracking-widest">{displayLabel}</span>
+                        </>
+                      ) : (
+                        <span className="text-[10px] opacity-0 pointer-events-none">—</span>
+                      )}
+                    </div>
+                    <ClassCard cls={cls} timeSlot={timeSlot} onPress={() => openClassModal(cls.id)} />
+                  </div>
+                );
+              })}
+            </div>
           </div>
         ) : (
-          /* 모두(all) 필터: 기존 6개 제한 카드 그리드 */
+          /* 모두(all) 필터: 정렬 완료된 상위 6개 카드 그리드 */
           <div className="grid grid-cols-3 gap-2">
-            {filteredClasses.slice(0, 6).map(({ cls, timeSlot }, idx) => (
+            {classesSorted.slice(0, 6).map(({ cls, timeSlot }, idx) => (
               <ClassCard key={`${cls.id}-${idx}`} cls={cls} timeSlot={timeSlot} onPress={() => openClassModal(cls.id)} />
             ))}
           </div>

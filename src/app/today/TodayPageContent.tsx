@@ -15,6 +15,7 @@ import { Social } from "@/types/social";
 import { Event } from "@/types/event";
 import { GroupClass, Group } from "@/types/group";
 import { detectSeoulDistrict, getVenueDisplay, formatInstructorNames, formatCommunityName, getWeekOrdinal, isLastWeekOfMonth } from "@/app/social/constants/seoulRegions";
+import { getCityGroup, getCityCategoryLabel, matchLocationGroup } from "@/app/social/constants/regionMapping";
 import { getDjDisplay, getEventMessage } from "@/lib/utils/socialUtils";
 import SocialViewer from "@/components/social/SocialViewer";
 import ClassDetail from "@/components/class/ClassDetail";
@@ -416,9 +417,6 @@ export default function TodayPageContent() {
   const activeGroupsInLocation = useMemo(() => {
     if (!location) return [];
 
-    const cityLower = (location.city || "All").toLowerCase().trim();
-    const isSeoul = cityLower.includes("seoul") || cityLower.includes("서울") || cityLower.includes("soul");
-
     const now = new Date();
     const curYear = now.getFullYear();
     const curMonth = now.getMonth();
@@ -427,18 +425,17 @@ export default function TodayPageContent() {
       const v = g.venueId ? venuesMap[g.venueId] : null;
       if (!v) return false;
 
-      const vCity = (v.city || "").toLowerCase().trim();
-      const vAddr = (v.address || "").toLowerCase().trim();
-      const isVenueInSeoul = vCity.includes("seoul") || vCity.includes("서울") || vCity.includes("soul") ||
-                             vAddr.includes("seoul") || vAddr.includes("서울") || vAddr.includes("soul");
+      if (!location || location.city === "ALL") return true;
+
+      const vCity = v.city || "";
+      const vAddr = v.address || "";
       
-      if (isSeoul) {
-        return isVenueInSeoul;
-      } else {
-        const matchesCity = vCity.includes(cityLower) || cityLower.includes(vCity) ||
-                            vAddr.includes(cityLower) || cityLower.includes(vAddr);
-        return matchesCity;
+      if (vCity.trim()) {
+        return matchLocationGroup(location.city, vCity);
       }
+      
+      const detectedGroup = getCityGroup(vAddr);
+      return detectedGroup === getCityGroup(location.city);
     });
 
     return seoulStudios.filter(grp => {
@@ -477,15 +474,10 @@ export default function TodayPageContent() {
   // 이번 주 전체 소셜 일정 목록
   const thisWeekAllSocialEvents = useMemo(() => {
     const events: { s: Social; d: Date }[] = [];
-    const cityLower = (location?.city || "All").toLowerCase().trim();
-    const isSeoul = cityLower.includes("seoul") || cityLower.includes("서울") || cityLower.includes("soul");
-    
     const locationFiltered = allSocials.filter(s => {
-      if (!location || location.city === "ALL") return true;
-      if (!s.city) return true;
-      const sc = s.city.toLowerCase().trim();
-      if (isSeoul) return ["seoul", "서울", "soul"].some(a => sc.includes(a) || a.includes(sc));
-      return sc.includes(cityLower) || cityLower.includes(sc);
+      const venue = s.venueId ? venuesMap[s.venueId] : null;
+      const resolvedCity = s.city || venue?.city || venue?.address || '';
+      return matchLocationGroup(location.city, resolvedCity);
     });
 
     locationFiltered.forEach(s => {
@@ -789,32 +781,50 @@ export default function TodayPageContent() {
 
   // 1. 소셜 목록 필터링
   const milongas = useMemo(() => {
-    const cityLower = (location?.city || "All").toLowerCase().trim();
-    const isSeoul = cityLower.includes("seoul") || cityLower.includes("서울") || cityLower.includes("soul");
-    const isAll = cityLower === "all";
-
     const locFiltered = socials.filter(s => {
-      if (isAll) return true;
-      if (!s.city) return true;
-      const sc = s.city.toLowerCase().trim();
-      if (isSeoul) return ["seoul", "서울", "soul"].some(a => sc.includes(a) || a.includes(sc));
-      return sc.includes(cityLower) || cityLower.includes(sc);
+      // 1. 국가 방어 코드 적용
+      const isGlobal = !location.country || location.country === 'ALL' || location.country === 'GLOBAL';
+      if (!isGlobal) {
+        const selectedCountryUpper = String(location.country).trim().toUpperCase();
+        const docCountryUpper = String(s.country || '').trim().toUpperCase();
+        
+        if (selectedCountryUpper === 'KOREA') {
+          const isKoreaDoc = !docCountryUpper || ['KOREA', 'KR', 'SOUTH KOREA'].includes(docCountryUpper);
+          if (!isKoreaDoc) return false;
+        } else {
+          if (docCountryUpper !== selectedCountryUpper) return false;
+        }
+      }
+
+      // 2. 도시/장소 조인 매핑 적용
+      const venue = s.venueId ? venuesMap[s.venueId] : null;
+      const resolvedCity = s.city || venue?.city || venue?.address || '';
+      return matchLocationGroup(location.city, resolvedCity);
     });
 
     return locFiltered.filter(s => s.subCategory !== "practica");
-  }, [socials, location]);
+  }, [socials, location, venuesMap]);
 
   const practicas = useMemo(() => {
-    const cityLower = (location?.city || "All").toLowerCase().trim();
-    const isSeoul = cityLower.includes("seoul") || cityLower.includes("서울") || cityLower.includes("soul");
-    const isAll = cityLower === "all";
-
     const locFiltered = socials.filter(s => {
-      if (isAll) return true;
-      if (!s.city) return true;
-      const sc = s.city.toLowerCase().trim();
-      if (isSeoul) return ["seoul", "서울", "soul"].some(a => sc.includes(a) || a.includes(sc));
-      return sc.includes(cityLower) || cityLower.includes(sc);
+      // 1. 국가 방어 코드 적용
+      const isGlobal = !location.country || location.country === 'ALL' || location.country === 'GLOBAL';
+      if (!isGlobal) {
+        const selectedCountryUpper = String(location.country).trim().toUpperCase();
+        const docCountryUpper = String(s.country || '').trim().toUpperCase();
+        
+        if (selectedCountryUpper === 'KOREA') {
+          const isKoreaDoc = !docCountryUpper || ['KOREA', 'KR', 'SOUTH KOREA'].includes(docCountryUpper);
+          if (!isKoreaDoc) return false;
+        } else {
+          if (docCountryUpper !== selectedCountryUpper) return false;
+        }
+      }
+
+      // 2. 도시/장소 조인 매핑 적용
+      const venue = s.venueId ? venuesMap[s.venueId] : null;
+      const resolvedCity = s.city || venue?.city || venue?.address || '';
+      return matchLocationGroup(location.city, resolvedCity);
     });
 
     const filtered = locFiltered.filter(s => s.subCategory === "practica");
@@ -824,229 +834,208 @@ export default function TodayPageContent() {
       return timeA.localeCompare(timeB);
     });
     return filtered;
-  }, [socials, location]);
+  }, [socials, location, venuesMap]);
 
-  // 서울 구별 그룹화
-  const milongasByDistrict = useMemo(() => {
+  // 서울 및 광역권 정렬된 소셜 목록 가공
+  const milongasSorted = useMemo(() => {
     if (Object.keys(venuesMap).length === 0) return [];
-    const groups: Record<string, Social[]> = {};
-    const cityLower = (location?.city || "All").toLowerCase().trim();
-    const isSeoul = cityLower.includes("seoul") || cityLower.includes("서울") || cityLower.includes("soul");
-
-    const isDaySocial = (s: Social) => {
-      const hour = parseInt((s.startTime || "19:00").split(":")[0]);
-      return !isNaN(hour) && hour < 18;
-    };
-
-    milongas.forEach(s => {
-      // 1. 서울이 아닌 활성 지역일 때는 구 필터링 생략하고 단일 지역명으로 리스트업
-      if (!isSeoul) {
-        const regionName = s.city || location.city || "Other";
-        if (!groups[regionName]) groups[regionName] = [];
-        groups[regionName].push(s);
-        return;
-      }
-
-      // 2. 서울 지역일 때는 지정된 4대 핵심 권역(홍대인근 낮밀/홍대인근/강남 낮밀/강남) 분배 적용
-      const rawDistrict = detectSeoulDistrict(s, language, venuesMap);
-      const isDay = isDaySocial(s);
-      
-      let finalGroup = "";
-      const isHongdaeArea = rawDistrict.includes("한강위") || rawDistrict.includes("Hongdae");
-      
-      if (isHongdaeArea) {
-        finalGroup = isDay 
-          ? (language === "KR" ? "홍대인근 낮밀" : "Hongdae (Day)")
-          : (language === "KR" ? "홍대인근" : "Hongdae");
-      } else {
-        // 기본 강남권역 분류
-        finalGroup = isDay
-          ? (language === "KR" ? "강남 낮밀" : "Gangnam (Day)")
-          : (language === "KR" ? "강남" : "Gangnam");
-      }
-      
-      if (!groups[finalGroup]) {
-        groups[finalGroup] = [];
-      }
-      groups[finalGroup].push(s);
-    });
-
-    // 각 그룹 내부 목록은 시작 시간 오름차순 정렬
-    Object.keys(groups).forEach(key => {
-      groups[key].sort((a, b) => {
-        const timeA = a.startTime || "99:99";
-        const timeB = b.startTime || "99:99";
-        return timeA.localeCompare(timeB);
-      });
-    });
-
-    const entries = Object.entries(groups);
     
-    if (!isSeoul) {
-      return entries.sort((a, b) => a[0].localeCompare(b[0], language === "KR" ? "ko" : "en"));
-    }
-
-    const groupOrder = language === "KR"
-      ? ["홍대인근 낮밀", "홍대인근", "강남 낮밀", "강남"]
-      : ["Hongdae (Day)", "Hongdae", "Gangnam (Day)", "Gangnam"];
-
-    return entries.sort((a, b) => {
-      const idxA = groupOrder.indexOf(a[0]);
-      const idxB = groupOrder.indexOf(b[0]);
-      const valA = idxA === -1 ? 999 : idxA;
-      const valB = idxB === -1 ? 999 : idxB;
-      if (valA !== valB) return valA - valB;
-      return a[0].localeCompare(b[0], language === "KR" ? "ko" : "en");
-    });
-  }, [milongas, venuesMap, location, language]);
-
-  // 쁘락띠까 서울 구별 그룹화
-  const practicasByDistrict = useMemo(() => {
-    if (Object.keys(venuesMap).length === 0) return [];
-    const groups: Record<string, Social[]> = {};
-    const cityLower = (location?.city || "All").toLowerCase().trim();
-    const isSeoul = cityLower.includes("seoul") || cityLower.includes("서울") || cityLower.includes("soul");
-
-    const isDaySocial = (s: Social) => {
-      const hour = parseInt((s.startTime || "19:00").split(":")[0]);
-      return !isNaN(hour) && hour < 18;
-    };
-
-    practicas.forEach(s => {
-      if (!isSeoul) {
-        const regionName = s.city || location.city || "Other";
-        if (!groups[regionName]) groups[regionName] = [];
-        groups[regionName].push(s);
-        return;
-      }
-
-      const rawDistrict = detectSeoulDistrict(s, language, venuesMap);
-      const isDay = isDaySocial(s);
+    const mapped = milongas.map(s => {
+      const dbCity = s.city || "";
+      const dbCityLower = dbCity.toLowerCase().trim();
+      const isSeoulCity = dbCityLower === "seoul" || dbCityLower === "서울" || dbCityLower === "soul";
       
-      let finalGroup = "";
-      const isHongdaeArea = rawDistrict.includes("한강위") || rawDistrict.includes("Hongdae");
-      
-      if (isHongdaeArea) {
-        finalGroup = isDay 
-          ? (language === "KR" ? "홍대인근 낮쁘락" : "Hongdae (Day)")
-          : (language === "KR" ? "홍대인근" : "Hongdae");
-      } else {
-        finalGroup = isDay
-          ? (language === "KR" ? "강남 낮쁘락" : "Gangnam (Day)")
+      let districtLabel = "";
+      if (isSeoulCity) {
+        const rawDistrict = detectSeoulDistrict(s, language, venuesMap);
+        const isHongdaeArea = rawDistrict.includes("한강위") || rawDistrict.includes("Hongdae");
+        districtLabel = isHongdaeArea 
+          ? (language === "KR" ? "홍대인근" : "Hongdae")
           : (language === "KR" ? "강남" : "Gangnam");
+      } else {
+        districtLabel = getCityCategoryLabel(dbCity, language) || dbCity || "Other";
       }
-      
-      if (!groups[finalGroup]) {
-        groups[finalGroup] = [];
+
+      const cityGroup = getCityGroup(dbCity);
+      let groupWeight = 5;
+      if (cityGroup === 'SEOUL') groupWeight = 1;
+      else if (cityGroup === 'BUSAN') groupWeight = 2;
+      else if (cityGroup === 'DAEJEON') groupWeight = 3;
+      else if (cityGroup === 'GWANGJU') groupWeight = 4;
+
+      let districtWeight = 99;
+      if (cityGroup === 'SEOUL') {
+        if (districtLabel === "홍대인근" || districtLabel === "Hongdae") districtWeight = 1;
+        else if (districtLabel === "강남" || districtLabel === "Gangnam") districtWeight = 2;
+        else if (districtLabel === "인천" || districtLabel === "Incheon") districtWeight = 3;
+        else if (districtLabel === "경기" || districtLabel === "Gyeonggi") districtWeight = 4;
+        else if (districtLabel === "강원" || districtLabel === "Gangwon") districtWeight = 5;
       }
-      groups[finalGroup].push(s);
+
+      return {
+        ...s,
+        districtLabel,
+        groupWeight,
+        districtWeight
+      };
     });
 
-    Object.keys(groups).forEach(key => {
-      groups[key].sort((a, b) => {
-        const timeA = a.startTime || "99:99";
-        const timeB = b.startTime || "99:99";
-        return timeA.localeCompare(timeB);
-      });
+    mapped.sort((a, b) => {
+      if (a.groupWeight !== b.groupWeight) {
+        return a.groupWeight - b.groupWeight;
+      }
+      if (a.groupWeight === 1) {
+        if (a.districtWeight !== b.districtWeight) {
+          return a.districtWeight - b.districtWeight;
+        }
+      } else {
+        const nameCompare = a.districtLabel.localeCompare(b.districtLabel, language === "KR" ? "ko" : "en");
+        if (nameCompare !== 0) return nameCompare;
+      }
+      const timeA = a.startTime || "99:99";
+      const timeB = b.startTime || "99:99";
+      return timeA.localeCompare(timeB);
     });
 
-    const entries = Object.entries(groups);
-    if (!isSeoul) {
-      return entries.sort((a, b) => a[0].localeCompare(b[0], language === "KR" ? "ko" : "en"));
-    }
+    return mapped;
+  }, [milongas, venuesMap, language]);
 
-    const groupOrder = language === "KR"
-      ? ["홍대인근 낮쁘락", "홍대인근", "강남 낮쁘락", "강남"]
-      : ["Hongdae (Day)", "Hongdae", "Gangnam (Day)", "Gangnam"];
-
-    return entries.sort((a, b) => {
-      const idxA = groupOrder.indexOf(a[0]);
-      const idxB = groupOrder.indexOf(b[0]);
-      const valA = idxA === -1 ? 999 : idxA;
-      const valB = idxB === -1 ? 999 : idxB;
-      if (valA !== valB) return valA - valB;
-      return a[0].localeCompare(b[0], language === "KR" ? "ko" : "en");
-    });
-  }, [practicas, venuesMap, location, language]);
-
-  // 클래스 서울 구별 그룹화
-  const classesByDistrict = useMemo(() => {
+  // 서울 및 광역권 정렬된 쁘락띠까 목록 가공
+  const practicasSorted = useMemo(() => {
     if (Object.keys(venuesMap).length === 0) return [];
-    const groups: Record<string, ClassEntry[]> = {};
-    const cityLower = (location?.city || "All").toLowerCase().trim();
-    const isSeoul = cityLower.includes("seoul") || cityLower.includes("서울") || cityLower.includes("soul");
-
-    const isDayClass = (cEntry: ClassEntry) => {
-      const startPart = cEntry.timeSlot ? cEntry.timeSlot.split("-")[0].trim() : (cEntry.cls.startTime || "");
-      const hour = parseInt((startPart || "19:00").split(":")[0]);
-      return !isNaN(hour) && hour < 18;
-    };
-
-    filteredClasses.forEach(cEntry => {
-      if (!isSeoul) {
-        const regionName = location.city || "Other";
-        if (!groups[regionName]) groups[regionName] = [];
-        groups[regionName].push(cEntry);
-        return;
+    
+    const mapped = practicas.map(s => {
+      const dbCity = s.city || "";
+      const dbCityLower = dbCity.toLowerCase().trim();
+      const isSeoulCity = dbCityLower === "seoul" || dbCityLower === "서울" || dbCityLower === "soul";
+      
+      let districtLabel = "";
+      if (isSeoulCity) {
+        const rawDistrict = detectSeoulDistrict(s, language, venuesMap);
+        const isHongdaeArea = rawDistrict.includes("한강위") || rawDistrict.includes("Hongdae");
+        districtLabel = isHongdaeArea 
+          ? (language === "KR" ? "홍대인근" : "Hongdae")
+          : (language === "KR" ? "강남" : "Gangnam");
+      } else {
+        districtLabel = getCityCategoryLabel(dbCity, language) || dbCity || "Other";
       }
 
+      const cityGroup = getCityGroup(dbCity);
+      let groupWeight = 5;
+      if (cityGroup === 'SEOUL') groupWeight = 1;
+      else if (cityGroup === 'BUSAN') groupWeight = 2;
+      else if (cityGroup === 'DAEJEON') groupWeight = 3;
+      else if (cityGroup === 'GWANGJU') groupWeight = 4;
+
+      let districtWeight = 99;
+      if (cityGroup === 'SEOUL') {
+        if (districtLabel === "홍대인근" || districtLabel === "Hongdae") districtWeight = 1;
+        else if (districtLabel === "강남" || districtLabel === "Gangnam") districtWeight = 2;
+        else if (districtLabel === "인천" || districtLabel === "Incheon") districtWeight = 3;
+        else if (districtLabel === "경기" || districtLabel === "Gyeonggi") districtWeight = 4;
+        else if (districtLabel === "강원" || districtLabel === "Gangwon") districtWeight = 5;
+      }
+
+      return {
+        ...s,
+        districtLabel,
+        groupWeight,
+        districtWeight
+      };
+    });
+
+    mapped.sort((a, b) => {
+      if (a.groupWeight !== b.groupWeight) {
+        return a.groupWeight - b.groupWeight;
+      }
+      if (a.groupWeight === 1) {
+        if (a.districtWeight !== b.districtWeight) {
+          return a.districtWeight - b.districtWeight;
+        }
+      } else {
+        const nameCompare = a.districtLabel.localeCompare(b.districtLabel, language === "KR" ? "ko" : "en");
+        if (nameCompare !== 0) return nameCompare;
+      }
+      const timeA = a.startTime || "99:99";
+      const timeB = b.startTime || "99:99";
+      return timeA.localeCompare(timeB);
+    });
+
+    return mapped;
+  }, [practicas, venuesMap, language]);
+
+  // 서울 및 광역권 정렬된 클래스 목록 가공
+  const classesSorted = useMemo(() => {
+    if (Object.keys(venuesMap).length === 0) return [];
+    
+    const mapped = filteredClasses.map(cEntry => {
       const grp = allGroups.find(g => g.id === cEntry.cls.groupId);
       const vId = grp?.venueId || "";
-      const dummySocial: any = {
-        venueId: vId,
-        district: cEntry.cls.location || "",
-        venueNameNative: cEntry.cls.location || "",
-        venueName: cEntry.cls.location || ""
-      };
+      const v = vId ? venuesMap[vId] : null;
+      const dbCity = v?.city || grp?.address || "";
+      const dbCityLower = dbCity.toLowerCase().trim();
+      const isSeoulCity = dbCityLower === "seoul" || dbCityLower === "서울" || dbCityLower === "soul";
       
-      const rawDistrict = detectSeoulDistrict(dummySocial, language, venuesMap);
-      const isDay = isDayClass(cEntry);
-      
-      let finalGroup = "";
-      const isHongdaeArea = rawDistrict.includes("한강위") || rawDistrict.includes("Hongdae");
-      
-      if (isHongdaeArea) {
-        finalGroup = isDay 
-          ? (language === "KR" ? "홍대인근 낮클래스" : "Hongdae (Day Class)")
-          : (language === "KR" ? "홍대인근 클래스" : "Hongdae Class");
+      let districtLabel = "";
+      if (isSeoulCity) {
+        const dummySocial: any = {
+          venueId: vId,
+          district: cEntry.cls.location || "",
+          venueNameNative: cEntry.cls.location || "",
+          venueName: cEntry.cls.location || ""
+        };
+        const rawDistrict = detectSeoulDistrict(dummySocial, language, venuesMap);
+        const isHongdaeArea = rawDistrict.includes("한강위") || rawDistrict.includes("Hongdae");
+        districtLabel = isHongdaeArea 
+          ? (language === "KR" ? "홍대인근" : "Hongdae")
+          : (language === "KR" ? "강남" : "Gangnam");
       } else {
-        finalGroup = isDay
-          ? (language === "KR" ? "강남 낮클래스" : "Gangnam (Day Class)")
-          : (language === "KR" ? "강남 클래스" : "Gangnam Class");
+        districtLabel = getCityCategoryLabel(dbCity, language) || dbCity || "Other";
       }
-      
-      if (!groups[finalGroup]) {
-        groups[finalGroup] = [];
+
+      const cityGroup = getCityGroup(dbCity);
+      let groupWeight = 5;
+      if (cityGroup === 'SEOUL') groupWeight = 1;
+      else if (cityGroup === 'BUSAN') groupWeight = 2;
+      else if (cityGroup === 'DAEJEON') groupWeight = 3;
+      else if (cityGroup === 'GWANGJU') groupWeight = 4;
+
+      let districtWeight = 99;
+      if (cityGroup === 'SEOUL') {
+        if (districtLabel === "홍대인근" || districtLabel === "Hongdae") districtWeight = 1;
+        else if (districtLabel === "강남" || districtLabel === "Gangnam") districtWeight = 2;
+        else if (districtLabel === "인천" || districtLabel === "Incheon") districtWeight = 3;
+        else if (districtLabel === "경기" || districtLabel === "Gyeonggi") districtWeight = 4;
+        else if (districtLabel === "강원" || districtLabel === "Gangwon") districtWeight = 5;
       }
-      groups[finalGroup].push(cEntry);
+
+      return {
+        ...cEntry,
+        districtLabel,
+        groupWeight,
+        districtWeight
+      };
     });
 
-    Object.keys(groups).forEach(key => {
-      groups[key].sort((a, b) => {
-        const startA = a.timeSlot ? a.timeSlot.split("-")[0].trim() : (a.cls.startTime || "99:99");
-        const startB = b.timeSlot ? b.timeSlot.split("-")[0].trim() : (b.cls.startTime || "99:99");
-        return startA.localeCompare(startB);
-      });
+    mapped.sort((a, b) => {
+      if (a.groupWeight !== b.groupWeight) {
+        return a.groupWeight - b.groupWeight;
+      }
+      if (a.groupWeight === 1) {
+        if (a.districtWeight !== b.districtWeight) {
+          return a.districtWeight - b.districtWeight;
+        }
+      } else {
+        const nameCompare = a.districtLabel.localeCompare(b.districtLabel, language === "KR" ? "ko" : "en");
+        if (nameCompare !== 0) return nameCompare;
+      }
+      const startA = a.timeSlot ? a.timeSlot.split("-")[0].trim() : (a.cls.startTime || "99:99");
+      const startB = b.timeSlot ? b.timeSlot.split("-")[0].trim() : (b.cls.startTime || "99:99");
+      return startA.localeCompare(startB);
     });
 
-    const entries = Object.entries(groups);
-    if (!isSeoul) {
-      return entries.sort((a, b) => a[0].localeCompare(b[0], language === "KR" ? "ko" : "en"));
-    }
-
-    const groupOrder = language === "KR"
-      ? ["홍대인근 낮클래스", "홍대인근 클래스", "강남 낮클래스", "강남 클래스"]
-      : ["Hongdae (Day Class)", "Hongdae Class", "Gangnam (Day Class)", "Gangnam Class"];
-
-    return entries.sort((a, b) => {
-      const idxA = groupOrder.indexOf(a[0]);
-      const idxB = groupOrder.indexOf(b[0]);
-      const valA = idxA === -1 ? 999 : idxA;
-      const valB = idxB === -1 ? 999 : idxB;
-      if (valA !== valB) return valA - valB;
-      return a[0].localeCompare(b[0], language === "KR" ? "ko" : "en");
-    });
-  }, [filteredClasses, allGroups, venuesMap, location, language]);
+    return mapped;
+  }, [filteredClasses, allGroups, venuesMap, language]);
 
   // 오늘 개최 중인 이벤트만 필터링
   const todayActiveEvents = useMemo(() => {
@@ -1198,11 +1187,9 @@ export default function TodayPageContent() {
     const isSeoul = cityLower.includes("seoul") || cityLower.includes("서울") || cityLower.includes("soul");
 
     const locationFiltered = djAndGroupMatchedSocials.filter(s => {
-      if (!location || location.city === "ALL") return true;
-      if (!s.city) return true;
-      const sc = s.city.toLowerCase().trim();
-      if (isSeoul) return ["seoul", "서울", "soul"].some(a => sc.includes(a) || a.includes(sc));
-      return sc.includes(cityLower) || cityLower.includes(sc);
+      const venue = s.venueId ? venuesMap[s.venueId] : null;
+      const resolvedCity = s.city || venue?.city || venue?.address || '';
+      return matchLocationGroup(location.city, resolvedCity);
     });
 
     locationFiltered.forEach(s => {
@@ -1395,11 +1382,9 @@ export default function TodayPageContent() {
     const isSeoul = cityLower.includes("seoul") || cityLower.includes("서울") || cityLower.includes("soul");
 
     const locationFiltered = djAndGroupMatchedSocials.filter(s => {
-      if (!location || location.city === "ALL") return true;
-      if (!s.city) return true;
-      const sc = s.city.toLowerCase().trim();
-      if (isSeoul) return ["seoul", "서울", "soul"].some(a => sc.includes(a) || a.includes(sc));
-      return sc.includes(cityLower) || cityLower.includes(sc);
+      const venue = s.venueId ? venuesMap[s.venueId] : null;
+      const resolvedCity = s.city || venue?.city || venue?.address || '';
+      return matchLocationGroup(location.city, resolvedCity);
     });
 
     locationFiltered.forEach(s => {
@@ -2024,7 +2009,19 @@ export default function TodayPageContent() {
       {/* ── Content ── */}
       <div className="px-4 pt-5 pb-6">
 
-        {selectedGroupId === "All" && selectedDjName === "All" ? (
+        {todayTypeFilter === "event" ? (
+          /* 이벤트 단독 필터 뷰 (지역 필터와 무관하게 다가올 이벤트 전체 리스트 노출) */
+          <div className="animate-in fade-in duration-300">
+            <TodayHeroSection
+              loadingEvents={loadingEvents}
+              todayActiveEvents={heroEvents}
+              openEventModal={openEventModal}
+              getEventDateRange={getEventDateRange}
+              getEventDday={getEventDday}
+              currentFilter={todayTypeFilter}
+            />
+          </div>
+        ) : selectedGroupId === "All" && selectedDjName === "All" ? (
           todayViewMode === "timeline" ? (
             /* 타임라인 방식 뷰 (이미지 배제한 텍스트 중심) */
             <div className="space-y-6 animate-in fade-in duration-300">
@@ -2114,12 +2111,12 @@ export default function TodayPageContent() {
                 <TodaySocialSection
                   loadingSocials={loadingSocials}
                   milongas={todayTypeFilter === "practice" ? [] : milongas}
-                  milongasByDistrict={todayTypeFilter === "practice" ? [] : milongasByDistrict}
+                  milongasSorted={todayTypeFilter === "practice" ? [] : milongasSorted}
                   selectedDate={selectedDate}
                   venuesMap={venuesMap}
                   openSocialModal={openSocialModal}
                   practicas={todayTypeFilter === "social" ? [] : practicas}
-                  practicasByDistrict={practicasByDistrict}
+                  practicasSorted={practicasSorted}
                   currentFilter={todayTypeFilter}
                 />
               )}
@@ -2130,17 +2127,17 @@ export default function TodayPageContent() {
                   loadingClasses={loadingClasses}
                   filteredClasses={filteredClasses}
                   openClassModal={openClassModal}
-                  classesByDistrict={classesByDistrict}
+                  classesSorted={classesSorted}
                   currentFilter={todayTypeFilter}
                   venuesMap={venuesMap}
                 />
               )}
 
               {/* 이벤트 배너 슬라이더 (오늘 진행 중인 이벤트 풀샷) */}
-              {(todayTypeFilter === "all" || todayTypeFilter === "event") && (
+              {todayTypeFilter === "all" && (
                 <TodayHeroSection
                   loadingEvents={loadingEvents}
-                  todayActiveEvents={todayActiveEvents}
+                  todayActiveEvents={heroEvents}
                   openEventModal={openEventModal}
                   getEventDateRange={getEventDateRange}
                   getEventDday={getEventDday}
