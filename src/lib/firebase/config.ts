@@ -1,6 +1,9 @@
 // Firebase configuration only — instance initialization is in clientApp.ts
 
-const sanitize = (val: string | undefined) => val?.trim() || "";
+const sanitize = (val: string | undefined) => {
+  if (!val) return "";
+  return val.replace(/\\r|\\n|\r|\n|"/g, "").trim();
+};
 
 export const firebaseConfig = {
   apiKey: sanitize(process.env.NEXT_PUBLIC_FIREBASE_API_KEY),

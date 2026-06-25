@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Group } from '@/types/group';
 import { useNavigation } from '@/components/providers/NavigationProvider';
 import ImageWithFallback from '@/components/common/ImageWithFallback';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface MyGroupsTrayProps {
   groups: Group[];
@@ -15,6 +16,7 @@ interface MyGroupsTrayProps {
 type TrayState = 'COLLAPSED' | 'EXPANDED';
 
 export default function MyGroupsTray({ groups, onGroupSelect }: MyGroupsTrayProps) {
+  const { t } = useLanguage();
   const router = useRouter();
   const [trayState, setTrayState] = useState<TrayState>('COLLAPSED');
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -84,7 +86,7 @@ export default function MyGroupsTray({ groups, onGroupSelect }: MyGroupsTrayProp
               </div>
 
               <span className="text-sm text-slate-800 font-bold ml-3 tracking-wide">
-                My Groups ({groups.length})
+                {t('group.my_groups') || 'My Groups'} ({groups.length})
               </span>
             </div>
 

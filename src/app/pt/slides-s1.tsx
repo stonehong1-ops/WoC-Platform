@@ -1,1092 +1,1221 @@
 import React from 'react';
 
-// Slide 1: 인트로 커버 (Intro Cover)
+// Slide 1: Cover Slide (커버)
 export const Slide1 = () => (
-  <div className="relative z-10 flex flex-col items-center justify-center text-center w-full h-full px-10 bg-[#111111] text-[#fcf8f8] overflow-hidden">
+  <div className="slide slide-dark flex flex-col items-center justify-center text-center">
     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-      <div className="w-[500px] h-[500px] rounded-full bg-white/[0.01] blur-[100px] pt1-si" />
+      <div className="w-[500px] h-[500px] rounded-full bg-blue-500/[0.03] blur-[100px]" />
     </div>
-
     <div className="relative z-10 max-w-[1200px] w-full flex flex-col items-center">
-      <span className="font-['Space_Grotesk'] text-[13px] font-bold tracking-[0.4em] text-white/30 uppercase mb-12 pt1-fu">
-        PRESENTATION 2026
+      <span className="font-['Space_Grotesk'] text-[14px] font-bold tracking-[0.4em] text-white/40 uppercase mb-8">
+        ANGEL ROUND PROPOSAL
       </span>
-
-      <h1 className="text-[100px] md:text-[180px] font-black text-[#fcf8f8] leading-none tracking-[-0.08em] pt1-si">
-        WoC
-      </h1>
-      
-      <p className="font-['Space_Grotesk'] text-[20px] md:text-[28px] font-medium tracking-tight text-white/60 mt-4 pt1-fu pt1-d2">
+      <h1 className="text-[90px] font-black text-[#fcf8f8] leading-none tracking-[-0.04em] select-none font-['Space_Grotesk']">
         World of Community
+      </h1>
+      <p className="text-[24px] font-extrabold tracking-tight text-white/80 mt-6">
+        취미 활동을 위한 커뮤니티 운영 플랫폼
       </p>
-
-      <div className="w-[100px] h-[1px] bg-white/15 my-12 pt1-lg pt1-d4" />
-
-      <p className="text-[16px] md:text-[20px] font-black tracking-[0.3em] text-white/45 uppercase pt1-fu pt1-d5">
-        커뮤니티 플랫폼
+      
+      <div className="w-[80px] h-[1px] bg-white/20 my-10" />
+      
+      <p className="text-[16px] font-medium text-white/60 max-w-[600px] leading-relaxed">
+        탐색, 신청, 결제, 정산, 참여, 기록을 하나로 연결합니다.
       </p>
-    </div>
-  </div>
-);
-
-// Slide 2: 비전 (취미를 위한 플랫폼)
-export const Slide2 = () => (
-  <div className="relative z-10 flex flex-col items-center justify-center text-center w-full h-full px-10 bg-[#fcf8f8] overflow-hidden">
-    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-      <div className="w-[600px] h-[600px] rounded-full bg-[#111111]/[0.02] blur-[120px] pt1-si" />
-    </div>
-    <div className="relative z-10 max-w-[1200px] w-full flex flex-col items-center">
-      <p className="font-['Space_Grotesk'] text-[15px] font-bold tracking-[0.4em] text-[#111111]/30 uppercase mb-12 pt1-fu">비전</p>
-      <h2 className="text-[44px] md:text-[72px] font-black text-[#111111] leading-[1.2] tracking-tighter break-keep pt1-fu pt1-d2">
-        취미를 위한<br/>
-        <span className="text-[#111111]/60 font-bold">플랫폼</span>
-      </h2>
-      <p className="mt-8 text-[18px] md:text-[24px] font-black tracking-tight text-[#111111]/55 pt1-fu pt1-d4">
-        요가, 러닝, 자전거, 살사, 위스키, 뮤지컬
-        <span className="block mt-2 font-['Space_Grotesk'] text-[12px] font-semibold tracking-[0.2em] text-[#111111]/25 uppercase">
-          Yoga, Running, Cycling, Salsa, Whiskey, Musical
-        </span>
-      </p>
-      <div className="w-[100px] h-[1px] bg-[#111111]/15 my-12 pt1-lg pt1-d5" />
-      <div className="flex flex-col items-center gap-4 text-[16px] md:text-[21px] font-medium text-[#111111]/60 tracking-tight leading-relaxed break-keep">
-        <p className="pt1-fu pt1-d6">사람들은 좋아하는 활동에 많은 <span className="text-[#111111] font-bold">시간과 돈을 사용합니다.</span></p>
-        <p className="pt1-fu pt1-d8">WoC는 그 <span className="text-[#111111] font-bold">개인활동과 커뮤니티활동 원활하게 운영하는 시스템</span>입니다.</p>
+      
+      <div className="mt-10 flex flex-col items-center">
+        <span className="text-[14px] font-bold tracking-widest text-blue-400 uppercase font-['Space_Grotesk'] mb-2">Life goes ON_</span>
+        <p className="text-[14px] text-white/40 font-medium">사람들의 활동은 계속됩니다. 이제 운영체제가 필요합니다.</p>
       </div>
     </div>
+    <p className="source text-white/30 font-['Space_Grotesk']">WOC 2026 · Angel Round Proposal · 2026</p>
   </div>
 );
 
-// Slide 3: 비즈니스 포지셔닝 (분절 vs 연결)
+// Slide 2: Problem Statement (문제 인식)
+export const Slide2 = () => {
+  return (
+    <div className="slide">
+      <p className="chapter">문제 인식</p>
+      <p className="page">2 / 19</p>
+      <h1 className="title">사람들은 취미에 돈을 쓰지만, 운영은 아직도 수작업입니다</h1>
+      <p className="subtitle">오프라인 커뮤니티 활동은 활발하지만, 예약·결제·정산·회원관리는 여러 도구로 흩어져 있습니다.</p>
+      
+      <div className="body-area">
+        {/* 좌측 3단 카드 */}
+        <div className="flex-[5] flex flex-col gap-4 justify-between h-full">
+          <div className="card py-6 flex-1">
+            <h3 className="text-[18px] font-extrabold leading-none text-blue-600">01 분산된 운영 도구</h3>
+            <p className="text-[14px] leading-relaxed opacity-80 break-keep">밴드, 카페, 카카오톡, 구글시트, 인스타그램, 계좌이체가 각각 따로 사용됩니다.</p>
+          </div>
+          <div className="card py-6 flex-1">
+            <h3 className="text-[18px] font-extrabold leading-none text-blue-600">02 반복되는 수작업</h3>
+            <p className="text-[14px] leading-relaxed opacity-80 break-keep">운영자는 신청자 확인, 입금 확인, 명단 대조, 정산에 많은 시간을 소모합니다.</p>
+          </div>
+          <div className="card py-6 flex-1">
+            <h3 className="text-[18px] font-extrabold leading-none text-blue-600">03 축적되지 않는 데이터</h3>
+            <p className="text-[14px] leading-relaxed opacity-80 break-keep">참여 이력, 결제 이력, 활동 기록이 흩어져 운영 자산으로 남지 않습니다.</p>
+          </div>
+        </div>
+
+        {/* 우측 분산 도구 구조도 */}
+        <div className="flex-[7] chart-box justify-center items-center relative">
+          <span className="text-[13px] font-bold text-gray-400 block self-start mb-2">분산된 경험</span>
+          <div className="relative w-full h-[280px] flex items-center justify-center">
+            {/* 연결선 SVG */}
+            <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 500 280">
+              <line x1="250" y1="140" x2="250" y2="50" stroke="#f43f5e" strokeWidth="2" strokeDasharray="4 4" />
+              <line x1="250" y1="140" x2="110" y2="90" stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="3 3" />
+              <line x1="250" y1="140" x2="390" y2="90" stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="3 3" />
+              <line x1="250" y1="140" x2="120" y2="200" stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="3 3" />
+              <line x1="250" y1="140" x2="380" y2="200" stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="3 3" />
+            </svg>
+
+            {/* 노드들 */}
+            <div className="absolute top-[20px] px-4 py-2 border border-red-200 bg-red-50 text-red-600 text-[13px] font-bold rounded-lg shadow-sm">● 계좌이체</div>
+            <div className="absolute top-[70px] left-[20px] px-4 py-2 border border-gray-200 bg-white text-gray-600 text-[13px] font-bold rounded-lg shadow-2xs">● 밴드 / 카페</div>
+            <div className="absolute top-[70px] right-[20px] px-4 py-2 border border-gray-200 bg-white text-gray-600 text-[13px] font-bold rounded-lg shadow-2xs">● 구글시트</div>
+            <div className="absolute bottom-[50px] left-[30px] px-4 py-2 border border-yellow-200 bg-yellow-50 text-yellow-600 text-[13px] font-bold rounded-lg shadow-sm">● 카카오톡</div>
+            <div className="absolute bottom-[50px] right-[30px] px-4 py-2 border border-gray-200 bg-white text-gray-600 text-[13px] font-bold rounded-lg shadow-2xs">● 인스타그램</div>
+
+            {/* 중앙 호스트 */}
+            <div className="z-10 w-[90px] h-[90px] rounded-full bg-blue-900 border-4 border-white flex items-center justify-center text-white text-[15px] font-extrabold shadow-md">
+              운영자
+            </div>
+          </div>
+          <span className="text-[11px] text-gray-400 block mt-2 text-center w-full">※ 수작업 및 다중 도구 병행 사용 구조</span>
+        </div>
+      </div>
+      <p className="source font-extrabold text-blue-600">사람은 연결되었지만, 활동은 아직 연결되지 않았습니다.</p>
+    </div>
+  );
+};
+
+// Slide 3: Market Opportunity (시장 기회)
 export const Slide3 = () => {
-  const legacyItems = [
-    { cat: '커뮤니티', list: '네이버카페 · 밴드 · 페이스북 그룹' },
-    { cat: '교육', list: '학원 · 클래스 플랫폼' },
-    { cat: '행사', list: '모임 플랫폼 · 행사 플랫폼' },
-    { cat: '상점', list: '쇼핑몰 · 예약 시스템' },
-    { cat: '운영', list: '엑셀 · 문자 · 카카오톡' },
+  const opportunities = [
+    { num: '01 이미 존재하는 소비', desc: '수업, 모임, 행사, 워크숍, 회비, 참가비 등 오프라인 활동 결제는 이미 일상적으로 발생하고 있습니다.' },
+    { num: '02 반복되는 참여', desc: '취미와 배움은 일회성 소비가 아니라 반복 참여와 재결제로 이어지는 활동입니다.' },
+    { num: '03 운영 시스템의 부재', desc: '하지만 이 시장의 운영은 여전히 공지, 신청, 입금 확인, 정산, 명단 관리가 분리되어 있습니다.' }
   ];
 
-  const problem2Cities = ['서울', '부산', '도쿄', '뉴욕', '파리', '부에노스아이레스'];
-
-  const wocFeatures = [
-    '커뮤니케이션', '클래스', '이벤트', '장소',
-    '마켓', '멤버십', '회원관리', '그룹운영'
-  ];
-
-  const networkCities = [
-    { name: '서울', x: 425, y: 250 },
-    { name: '부산', x: 370, y: 370 },
-    { name: '도쿄', x: 250, y: 425 },
-    { name: '뉴욕', x: 130, y: 370 },
-    { name: '런던', x: 75, y: 250 },
-    { name: '파리', x: 130, y: 130 },
-    { name: '부에노스아이레스', x: 250, y: 75 },
-    { name: '싱가포르', x: 370, y: 130 },
+  const markets = [
+    { title: 'Dance', desc: '소셜댄스 · 스테이지댄스' },
+    { title: 'Wellness', desc: '요가 · 필라테스' },
+    { title: 'Education', desc: '입시학원 · 어학원' },
+    { title: 'Sports', desc: '러닝 · 사이클링' },
+    { title: 'Hobby', desc: '커피 · 공예 · 사진' },
+    { title: 'Society', desc: '팬덤 · 지역 커뮤니티' }
   ];
 
   return (
-    <div className="relative z-10 flex flex-col items-center justify-center w-full h-full px-[60px] md:px-[100px] bg-[#fcf8f8] overflow-hidden">
-      <div className="max-w-[1300px] w-full mb-10 text-center">
-        <span className="font-['Space_Grotesk'] text-[13px] font-bold tracking-[0.3em] text-[#111111]/30 uppercase block mb-3 pt1-fu">비즈니스 포지셔닝</span>
-        <h2 className="text-[34px] md:text-[50px] font-black text-[#111111] leading-[1.2] tracking-tighter break-keep pt1-fu pt1-d2">
-          기존 커뮤니티는 분리되어 있습니다<br/>
-          <span className="text-[#111111]/50 font-bold">WoC는 연결되어 있습니다</span>
-        </h2>
-      </div>
-
-      <div className="grid grid-cols-12 gap-10 w-full max-w-[1250px] items-stretch">
-        <div className="col-span-5 flex flex-col justify-center gap-8 border-r border-[#111111]/10 pr-10 pt1-sl pt1-d3">
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold tracking-widest text-red-500/70 uppercase">Problem 01</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-red-500/40"></span>
+    <div className="slide">
+      <p className="chapter">시장 기회</p>
+      <p className="page">3 / 19</p>
+      <h1 className="title">거대한 커뮤니티 경제는 이미 존재합니다</h1>
+      <p className="subtitle">사람들은 배우고, 운동하고, 춤추고, 취미를 즐기기 위해 지속적으로 비용을 지출합니다.</p>
+      
+      <div className="body-area">
+        {/* 좌측 3단 카드 */}
+        <div className="flex-[5] flex flex-col gap-4 justify-between h-full">
+          {opportunities.map((o) => (
+            <div key={o.num} className="card py-6 flex-1 justify-center">
+              <h3 className="text-[17px] font-extrabold leading-none text-blue-600">{o.num}</h3>
+              <p className="text-[13.5px] leading-relaxed opacity-80 break-keep">{o.desc}</p>
             </div>
-            <h3 className="text-[18px] md:text-[22px] font-black text-[#111111] tracking-tight leading-tight">
-              파편화된 운영
-            </h3>
-            <div className="flex flex-col gap-2 mt-2">
-              {legacyItems.map((item) => (
-                <div key={item.cat} className="flex items-baseline gap-3 text-[13px] md:text-[14.5px]">
-                  <span className="w-16 shrink-0 font-black text-[#111111]/70 border-r border-[#111111]/15 pr-2.5 text-right">
-                    {item.cat}
+          ))}
+        </div>
+
+        {/* 우측 6대 카테고리 그리드 */}
+        <div className="flex-[7] chart-box justify-between">
+          <span className="text-[13px] font-bold text-gray-400 block mb-3">활동 시장</span>
+          <div className="grid grid-cols-2 gap-3 w-full flex-1">
+            {markets.map((m) => (
+              <div key={m.title} className="border border-[#e5e7eb] rounded-xl bg-white p-4 flex flex-col justify-center shadow-3xs">
+                <span className="text-[16px] font-black text-gray-800 font-['Space_Grotesk']">{m.title}</span>
+                <span className="text-[12.5px] text-gray-400 font-semibold mt-1">{m.desc}</span>
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-100 text-[11px] text-gray-400 font-bold">
+            <span>활동 참여 → 반복 결제 → 운영 필요</span>
+            <span>※ 오프라인 커뮤니티 경제의 지속성 흐름</span>
+          </div>
+        </div>
+      </div>
+      <p className="source font-extrabold text-blue-600">WoC는 새로운 시장을 만드는 것이 아니라, 이미 존재하는 활동과 결제 흐름을 연결합니다.</p>
+    </div>
+  );
+};
+
+// Slide 4: Platform Limit (기존 플랫폼의 한계)
+export const Slide4 = () => {
+  return (
+    <div className="slide">
+      <p className="chapter">기존 플랫폼의 한계</p>
+      <p className="page">4 / 19</p>
+      <h1 className="title">기존 플랫폼은 소통에는 강하지만, 운영에는 약합니다</h1>
+      <p className="subtitle">공지와 대화는 가능하지만, 예약·결제·정산·회원관리·활동기록은 분산되어 있습니다.</p>
+      
+      <div className="body-area">
+        {/* 좌측 분산 도구 표 */}
+        <div className="flex-[5] flex flex-col justify-between py-2">
+          <span className="text-[13px] font-bold text-gray-400 block mb-2">현재 사용 중인 분산 도구</span>
+          <div className="grid grid-cols-2 gap-4 flex-1">
+            <div className="border-b border-gray-100 pb-2">
+              <span className="text-[14px] font-black text-gray-800 block">밴드 / 카페</span>
+              <span className="text-[12px] text-gray-400 font-medium">공지, 게시글, 사진 공유</span>
+            </div>
+            <div className="border-b border-gray-100 pb-2">
+              <span className="text-[14px] font-black text-gray-800 block">카카오톡</span>
+              <span className="text-[12px] text-gray-400 font-medium">빠른 문의와 소통</span>
+            </div>
+            <div className="border-b border-gray-100 pb-2">
+              <span className="text-[14px] font-black text-gray-800 block">인스타그램 / 페이스북</span>
+              <span className="text-[12px] text-gray-400 font-medium">홍보와 콘텐츠 노출</span>
+            </div>
+            <div className="border-b border-gray-100 pb-2">
+              <span className="text-[14px] font-black text-gray-800 block">온오프믹스 / 이벤터스</span>
+              <span className="text-[12px] text-gray-400 font-medium">단발성 행사 신청</span>
+            </div>
+            <div className="pb-2 col-span-1">
+              <span className="text-[14px] font-black text-gray-800 block">구글시트 / 엑셀</span>
+              <span className="text-[12px] text-gray-400 font-medium">명단 및 입금 수기 관리</span>
+            </div>
+            <div className="pb-2 col-span-1">
+              <span className="text-[14px] font-black text-red-500 block">계좌이체</span>
+              <span className="text-[12px] text-red-400 font-medium">수동 결제 확인</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 우측 원형 구조도 */}
+        <div className="flex-[7] chart-box justify-center items-center relative">
+          <span className="text-[13px] font-bold text-gray-400 block self-start mb-2">통합 운영 구조</span>
+          
+          <div className="relative w-full h-[280px] flex items-center justify-center">
+            {/* SVG 연결선 */}
+            <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 500 280">
+              {[0, 40, 80, 120, 160, 200, 240, 280, 320].map((deg) => {
+                const rad = (deg * Math.PI) / 180;
+                const x2 = 250 + 105 * Math.cos(rad);
+                const y2 = 140 + 90 * Math.sin(rad);
+                return (
+                  <line key={deg} x1="250" y1="140" x2={x2} y2={y2} stroke="#3b82f6" strokeWidth="1" strokeDasharray="2 2" />
+                );
+              })}
+            </svg>
+
+            {/* 중앙 WoC OS */}
+            <div className="z-10 w-[95px] h-[95px] rounded-full bg-blue-900 border-4 border-white flex items-center justify-center text-white text-[14px] font-black shadow-md text-center">
+              WoC OS
+            </div>
+
+            {/* 노드들 (absolute 배치) */}
+            <div className="absolute top-[20px] px-2 py-1 border border-gray-100 bg-white text-[11px] font-bold rounded shadow-3xs">커뮤니티</div>
+            <div className="absolute top-[50px] right-[60px] px-2 py-1 border border-gray-100 bg-white text-[11px] font-bold rounded shadow-3xs">소통</div>
+            <div className="absolute top-[120px] right-[25px] px-2 py-1 border border-gray-100 bg-white text-[11px] font-bold rounded shadow-3xs">클래스</div>
+            <div className="absolute bottom-[60px] right-[55px] px-2 py-1 border border-gray-100 bg-white text-[11px] font-bold rounded shadow-3xs">이벤트</div>
+            <div className="absolute bottom-[20px] px-2 py-1 border border-gray-100 bg-white text-[11px] font-bold rounded shadow-3xs">결제</div>
+            <div className="absolute bottom-[60px] left-[55px] px-2 py-1 border border-gray-100 bg-white text-[11px] font-bold rounded shadow-3xs">정산</div>
+            <div className="absolute top-[120px] left-[25px] px-2 py-1 border border-gray-100 bg-white text-[11px] font-bold rounded shadow-3xs">멤버십</div>
+            <div className="absolute top-[50px] left-[60px] px-2 py-1 border border-gray-100 bg-white text-[11px] font-bold rounded shadow-3xs">그룹관리</div>
+            <div className="absolute top-[10px] left-[150px] px-2 py-1 border border-blue-200 bg-blue-50 text-blue-600 text-[10px] font-black rounded shadow-3xs">글로벌</div>
+          </div>
+          <span className="text-[11px] font-black text-blue-600 uppercase tracking-wider block mt-2 text-center w-full">EVERYTHING CONNECTED. 모든 활동이 하나의 시스템으로 연결됩니다.</span>
+        </div>
+      </div>
+      <p className="source font-extrabold text-blue-600">현재 시장의 실제 대체재는 "카카오톡 공지 + 계좌이체 + 엑셀 장부"입니다.</p>
+    </div>
+  );
+};
+
+// Slide 5: Solution (해결 방안)
+export const Slide5 = () => {
+  const steps = [
+    { label: '탐색', desc: '활동과 커뮤니티 발견' },
+    { label: '신청', desc: '클래스·모임 간편 신청' },
+    { label: '결제', desc: '앱 내 원스톱 결제' },
+    { label: '정산', desc: '호스트별 정산 관리' },
+    { label: '참여', desc: '오프라인 활동 참여' },
+    { label: '기록', desc: '이력 및 데이터 축적' }
+  ];
+
+  return (
+    <div className="slide">
+      <p className="chapter">해결 방안</p>
+      <p className="page">5 / 19</p>
+      <h1 className="title">WoC는 커뮤니티 활동을 운영 가능한 시스템으로 연결합니다</h1>
+      <p className="subtitle">탐색, 신청, 결제, 정산, 참여, 기록을 하나의 흐름으로 통합합니다.</p>
+      
+      <div className="body-area flex-col justify-between">
+        {/* 가로 타임라인 다이어그램 */}
+        <div className="w-full bg-gray-50 border border-gray-100 rounded-2xl p-6 relative flex items-center justify-between">
+          <div className="absolute top-1/2 left-6 right-6 h-[2px] bg-blue-200 -translate-y-1/2 pointer-events-none z-0" />
+          {steps.map((s, idx) => (
+            <div key={s.label} className="relative z-10 flex flex-col items-center bg-white border border-gray-100 rounded-xl p-3 shadow-3xs w-[160px] text-center">
+              <span className="text-[12px] font-extrabold text-blue-600 block mb-1">0{idx + 1}</span>
+              <span className="text-[15px] font-black text-gray-800 block">{s.label}</span>
+              <span className="text-[11px] font-medium text-gray-400 mt-1 break-keep">{s.desc}</span>
+            </div>
+          ))}
+          <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-blue-900 px-4 py-1 rounded-full text-white text-[10px] font-black tracking-wider uppercase border-2 border-white shadow-sm z-20">
+            Community OS Core : 커뮤니티 운영의 공통 구조를 하나의 시스템으로 통합
+          </div>
+        </div>
+
+        {/* 하단 2단 가치 제안 카드 */}
+        <div className="grid grid-cols-2 gap-6 w-full mt-4">
+          <div className="card py-6">
+            <h3 className="text-[18px] font-extrabold text-blue-900 border-b border-gray-100 pb-2 mb-2">운영자 (Host) 가치</h3>
+            <ul className="text-[14px] leading-relaxed text-gray-600 font-medium flex flex-col gap-1.5">
+              <li>• 예약·결제·정산 등 소모적인 행정 업무 극대화 감소</li>
+              <li>• 회원 등급 관리 및 정기 모임/반복 운영 시스템화</li>
+            </ul>
+          </div>
+          <div className="card py-6">
+            <h3 className="text-[18px] font-extrabold text-blue-900 border-b border-gray-100 pb-2 mb-2">회원 (Member) 가치</h3>
+            <ul className="text-[14px] leading-relaxed text-gray-600 font-medium flex flex-col gap-1.5">
+              <li>• 원클릭 필터링을 통한 활동 검색부터 즉시 결제 처리</li>
+              <li>• 활동 참여 이력과 디지털 기록 자동 저장 및 자산화</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <p className="source font-extrabold text-blue-600">“WoC는 흩어진 도구를 대체하는 것이 아니라, 커뮤니티 활동 전체를 하나의 운영 흐름으로 연결합니다.”</p>
+    </div>
+  );
+};
+
+// Slide 6: Platform Structure (플랫폼 구조)
+export const Slide6 = () => {
+  const modules = [
+    { title: 'Groups', desc: '커뮤니티 운영' },
+    { title: 'Venues', desc: '공간 정보' },
+    { title: 'Profile', desc: '활동 이력' },
+    { title: 'Live', desc: '현장 기록' },
+    { title: 'Members', desc: '회원 관리' },
+    { title: 'Settlement', desc: '정산 관리' },
+    { title: 'Payment', desc: '결제 흐름' },
+    { title: 'Booking', desc: '신청·예약' }
+  ];
+
+  return (
+    <div className="slide">
+      <p className="chapter">플랫폼 구조</p>
+      <p className="page">6 / 19</p>
+      <h1 className="title">하나의 OS 구조로 여러 커뮤니티를 운영합니다</h1>
+      <p className="subtitle">WoC는 예약, 결제, 정산, 회원, 콘텐츠, 공간 정보를 공통 모듈로 연결합니다.</p>
+      
+      <div className="body-area">
+        {/* 좌측 의미 설명 */}
+        <div className="flex-[4] card justify-center py-8">
+          <span className="text-[12px] font-bold text-blue-500 uppercase tracking-widest block mb-2 font-['Space_Grotesk'] font-bold">Concept Definition</span>
+          <h3 className="text-[20px] font-extrabold text-gray-800 leading-tight mb-4">모듈형 구조의 의미</h3>
+          <p className="text-[14px] leading-relaxed text-gray-500 font-medium break-keep">
+            각 시장마다 앱을 새로 만드는 것이 아니라, 공통 운영 모듈을 시장별 데이터와 화면에 맞게 재조합합니다.
+          </p>
+        </div>
+
+        {/* 우측 공통 모듈 아키텍처 */}
+        <div className="flex-[8] chart-box justify-center items-center relative">
+          <span className="text-[13px] font-bold text-gray-400 block self-start mb-2">WOC COMMUNITY OS (공통 운영 구조)</span>
+          
+          <div className="relative w-full h-[220px] flex items-center justify-center">
+            {/* SVG 연결선 */}
+            <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 500 220">
+              <line x1="250" y1="110" x2="110" y2="50" stroke="#cbd5e1" strokeWidth="1.5" />
+              <line x1="250" y1="110" x2="390" y2="50" stroke="#cbd5e1" strokeWidth="1.5" />
+              <line x1="250" y1="110" x2="110" y2="170" stroke="#cbd5e1" strokeWidth="1.5" />
+              <line x1="250" y1="110" x2="390" y2="170" stroke="#cbd5e1" strokeWidth="1.5" />
+              <line x1="250" y1="110" x2="250" y2="35" stroke="#cbd5e1" strokeWidth="1.5" />
+              <line x1="250" y1="110" x2="250" y2="185" stroke="#cbd5e1" strokeWidth="1.5" />
+              <line x1="250" y1="110" x2="80" y2="110" stroke="#cbd5e1" strokeWidth="1.5" />
+              <line x1="250" y1="110" x2="420" y2="110" stroke="#cbd5e1" strokeWidth="1.5" />
+            </svg>
+
+            {/* 코어 허브 */}
+            <div className="z-10 w-[140px] h-[70px] rounded-2xl bg-blue-900 border-4 border-white flex flex-col items-center justify-center text-white shadow-md">
+              <span className="text-[11px] font-black tracking-widest">WOC COMMUNITY OS</span>
+              <span className="text-[9px] font-bold opacity-75 mt-0.5">공통 운영 구조</span>
+            </div>
+
+            {/* 박스 노드들 */}
+            <div className="absolute top-[10px] left-[50px] w-[110px] py-2 border border-blue-200 bg-blue-50 text-[12px] font-bold rounded-lg text-center shadow-3xs">
+              <span className="block font-black text-gray-800">Booking</span>
+              <span className="text-[9.5px] text-gray-400">신청·예약</span>
+            </div>
+            <div className="absolute top-[10px] left-[195px] w-[110px] py-2 border border-blue-200 bg-blue-50 text-[12px] font-bold rounded-lg text-center shadow-3xs">
+              <span className="block font-black text-gray-800">Payment</span>
+              <span className="text-[9.5px] text-gray-400">결제 흐름</span>
+            </div>
+            <div className="absolute top-[10px] right-[50px] w-[110px] py-2 border border-blue-200 bg-blue-50 text-[12px] font-bold rounded-lg text-center shadow-3xs">
+              <span className="block font-black text-gray-800">Groups</span>
+              <span className="text-[9.5px] text-gray-400">커뮤니티 운영</span>
+            </div>
+            <div className="absolute top-[75px] left-[10px] w-[110px] py-2 border border-blue-200 bg-blue-50 text-[12px] font-bold rounded-lg text-center shadow-3xs">
+              <span className="block font-black text-gray-800">Settlement</span>
+              <span className="text-[9.5px] text-gray-400">정산 관리</span>
+            </div>
+            <div className="absolute top-[75px] right-[10px] w-[110px] py-2 border border-blue-200 bg-blue-50 text-[12px] font-bold rounded-lg text-center shadow-3xs">
+              <span className="block font-black text-gray-800">Venues</span>
+              <span className="text-[9.5px] text-gray-400">공간 정보</span>
+            </div>
+            <div className="absolute bottom-[10px] left-[50px] w-[110px] py-2 border border-blue-200 bg-blue-50 text-[12px] font-bold rounded-lg text-center shadow-3xs">
+              <span className="block font-black text-gray-800">Members</span>
+              <span className="text-[9.5px] text-gray-400">회원 관리</span>
+            </div>
+            <div className="absolute bottom-[10px] left-[195px] w-[110px] py-2 border border-blue-200 bg-blue-50 text-[12px] font-bold rounded-lg text-center shadow-3xs">
+              <span className="block font-black text-gray-800">Live</span>
+              <span className="text-[9.5px] text-gray-400">현장 기록</span>
+            </div>
+            <div className="absolute bottom-[10px] right-[50px] w-[110px] py-2 border border-blue-200 bg-blue-50 text-[12px] font-bold rounded-lg text-center shadow-3xs">
+              <span className="block font-black text-gray-800">Profile</span>
+              <span className="text-[9.5px] text-gray-400">활동 이력</span>
+            </div>
+          </div>
+
+          <div className="w-full flex items-center justify-center gap-2 mt-4 pt-3 border-t border-gray-100">
+            <span className="text-[12px] font-black text-gray-800">시장 확장성 :</span>
+            <div className="flex gap-1 text-[11px] font-bold">
+              <span className="bg-blue-900 text-white px-2 py-0.5 rounded">Dance OS</span>
+              <span className="text-gray-400">→</span>
+              <span className="bg-gray-100 text-gray-500 px-2 py-0.5 rounded">Wellness OS</span>
+              <span className="text-gray-400">→</span>
+              <span className="bg-gray-100 text-gray-500 px-2 py-0.5 rounded">Academy/Learning OS</span>
+              <span className="text-gray-400">→</span>
+              <span className="bg-gray-100 text-gray-500 px-2 py-0.5 rounded">Sports / Hobby / Society</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p className="source font-extrabold text-blue-600">“WoC의 핵심은 특정 취미 앱이 아니라, 다양한 커뮤니티 시장에 반복 적용 가능한 운영 모듈 구조입니다.”</p>
+    </div>
+  );
+};
+
+// Slide 7: Product Proof (제품 구현)
+export const Slide7 = () => {
+  const points = [
+    { title: '01 PWA 기반 서비스', desc: '브라우저와 모바일 홈화면에서 바로 접근 가능한 웹앱 구조' },
+    { title: '02 커뮤니티 운영 기능', desc: '클래스, 소셜, 이벤트, 그룹 운영 흐름 구현' },
+    { title: '03 실제 운영 검증', desc: '초기 커뮤니티 운영 환경에서 기능과 흐름 검증 중' }
+  ];
+
+  return (
+    <div className="slide">
+      <p className="chapter">제품 구현</p>
+      <p className="page">7 / 19</p>
+      <h1 className="title">WoC는 이미 실제 서비스로 구현되어 있습니다</h1>
+      <p className="subtitle">웹앱/PWA 기반으로 주요 기능이 구현되었고, 실제 커뮤니티 운영 환경에서 검증되고 있습니다.</p>
+      
+      <div className="body-area">
+        {/* 좌측 3단 리스트 */}
+        <div className="flex-[4] flex flex-col gap-4 justify-between h-full py-2">
+          <span className="text-[13px] font-bold text-gray-400 block mb-1">구현된 핵심 구조</span>
+          {points.map((p) => (
+            <div key={p.title} className="card py-6 flex-1 justify-center">
+              <h3 className="text-[17px] font-black text-blue-900 mb-1">{p.title}</h3>
+              <p className="text-[13px] leading-relaxed text-gray-500 break-keep font-medium">{p.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* 우측 모바일 목업 리스트 플레이스홀더 */}
+        <div className="flex-[8] chart-box justify-center items-center relative">
+          <span className="text-[13px] font-bold text-gray-400 block self-start mb-2">실제 제품 화면 : 주요 커뮤니티 운영 기능 구현</span>
+          
+          <div className="grid grid-cols-7 gap-1.5 w-full flex-1 items-center bg-gray-50 border border-gray-100 rounded-xl p-3">
+            {[...Array(7)].map((_, i) => (
+              <div key={i} className="aspect-[9/19] bg-white border border-gray-100 rounded shadow-3xs flex flex-col justify-between p-1.5">
+                <span className="text-[8px] text-gray-300 font-bold block">App Screen 0{i+1}</span>
+                <div className="w-full h-2/3 bg-gray-50 rounded flex items-center justify-center text-[7px] text-gray-300 font-bold tracking-tighter uppercase">WoC Screen</div>
+              </div>
+            ))}
+          </div>
+          
+          <span className="text-[12px] font-black text-gray-800 mt-2 block">탐색 · 신청 · 참여 · 기록 흐름을 하나의 제품 안에서 구현</span>
+        </div>
+      </div>
+      <p className="source font-extrabold text-blue-600">“WoC는 아이디어 단계가 아니라, 실제 화면과 운영 구조를 갖춘 실행 가능한 제품입니다.”</p>
+    </div>
+  );
+};
+
+// Slide 8: Market Validation (시장 검증)
+export const Slide8 = () => {
+  const stats = [
+    { title: '01 광고비 없이 확보', desc: '초기 유료 광고보다 커뮤니티 네트워크와 호스트 중심 확산으로 확보했습니다.' },
+    { title: '02 핵심 타겟 시장에서 검증', desc: '운영 복잡도가 높은 오프라인 커뮤니티 활동 시장에서 실제 니즈를 확인하고 있습니다.' },
+    { title: '03 실제 운영 환경에서 PoC', desc: '공지, 신청, 참여, 운영 흐름을 실제 커뮤니티 환경에서 검증 중입니다.' }
+  ];
+
+  return (
+    <div className="slide">
+      <p className="chapter">시장 검증</p>
+      <p className="page">8 / 19</p>
+      <h1 className="title">광고비 없이 370명 이상의 초기 회원을 확보했습니다</h1>
+      <p className="subtitle">초기 커뮤니티 운영 환경에서 호스트 중심 온보딩 구조와 실제 사용 흐름을 검증하고 있습니다.</p>
+      
+      <div className="body-area">
+        {/* 좌측 3단 리스트 */}
+        <div className="flex-[5] flex flex-col gap-4 justify-between h-full py-1">
+          <span className="text-[15px] font-black text-blue-900 block mb-1">8개 국가 · 13개 도시 · 370+명 (광고 없이 확보한 초기 가입자)</span>
+          {stats.map((s) => (
+            <div key={s.title} className="card py-6 flex-1 justify-center">
+              <h3 className="text-[17px] font-extrabold text-gray-800 leading-none mb-1">{s.title}</h3>
+              <p className="text-[13.5px] leading-relaxed text-gray-500 font-medium break-keep">{s.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* 우측 B2B2C 다이어그램 */}
+        <div className="flex-[7] chart-box justify-center items-center relative">
+          <span className="text-[13px] font-bold text-gray-400 block self-start mb-2">B2B2C 온보딩 구조</span>
+          
+          <div className="relative w-full h-[220px] flex items-center justify-between px-6 bg-gray-50 border border-gray-100 rounded-xl">
+            <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 500 220">
+              <path d="M 120 110 Q 230 40 340 110" fill="none" stroke="#3b82f6" strokeWidth="2" strokeDasharray="4 4" />
+              <line x1="120" y1="110" x2="340" y2="110" stroke="#cbd5e1" strokeWidth="2" />
+            </svg>
+
+            {/* 호스트 */}
+            <div className="relative z-10 w-[95px] h-[95px] rounded-full bg-blue-900 border-4 border-white flex flex-col items-center justify-center text-white shadow-md text-center">
+              <span className="text-[14px] font-black">HOST</span>
+              <span className="text-[10px] font-bold opacity-80 mt-0.5">호스트 · 운영자</span>
+            </div>
+
+            {/* 연결 라벨 */}
+            <span className="absolute top-[40px] left-[180px] bg-white border border-blue-200 text-blue-600 text-[10px] font-extrabold px-2 py-0.5 rounded shadow-3xs uppercase tracking-wider">
+              MEMBERS 커뮤니티 회원
+            </span>
+
+            {/* 리핏 */}
+            <div className="relative z-10 w-[95px] h-[95px] rounded-full bg-white border-4 border-blue-200 flex flex-col items-center justify-center text-blue-900 shadow-md text-center">
+              <span className="text-[14px] font-black">REPEAT</span>
+              <span className="text-[10px] font-extrabold mt-0.5">반복 참여</span>
+            </div>
+          </div>
+          <span className="text-[12px] font-black text-gray-800 mt-3 block text-center w-full">한 명의 운영자가 움직이면, 수십~수백 명의 회원 접점이 함께 형성됩니다.</span>
+        </div>
+      </div>
+      <p className="source font-extrabold text-blue-600">탱고는 최종 시장이 아니라, Community OS를 검증하는 첫 실험실입니다.</p>
+    </div>
+  );
+};
+
+// Slide 9: Revenue Model (수익 모델)
+export const Slide9 = () => {
+  const points = [
+    { title: '01 거래 기반 수익', desc: '클래스, 소셜, 워크숍, 이벤트 등 실제 활동 결제액을 기준으로 수익이 발생합니다.' },
+    { title: '02 정산 기반 운영 가치', desc: '호스트는 결제 확인, 명단 관리, 매출 확인, 정산 업무를 하나의 흐름에서 처리합니다.' },
+    { title: '03 확장형 수익 구조', desc: '이후 호스트 운영 솔루션 구독료, B2B SaaS, 프랜차이즈 라이선스로 확장할 수 있습니다.' }
+  ];
+
+  return (
+    <div className="slide">
+      <p className="chapter">수익 모델</p>
+      <p className="page">9 / 19</p>
+      <h1 className="title">WoC의 초기 수익은 결제와 정산에서 발생합니다</h1>
+      <p className="subtitle">클래스, 모임, 워크숍, 이벤트 결제액을 기준으로 플랫폼 수수료를 부과합니다.</p>
+      
+      <div className="body-area">
+        {/* 좌측 3단 리스트 */}
+        <div className="flex-[5] flex flex-col gap-4 justify-between h-full py-1">
+          <span className="text-[13px] font-bold text-gray-400 block mb-1">초기 핵심 수익 구조</span>
+          {points.map((p) => (
+            <div key={p.title} className="card py-6 flex-1 justify-center">
+              <h3 className="text-[17px] font-extrabold text-gray-800 leading-none mb-1">{p.title}</h3>
+              <p className="text-[13.5px] leading-relaxed text-gray-500 font-medium break-keep">{p.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* 우측 수수료 다이어그램 */}
+        <div className="flex-[7] chart-box justify-center items-center relative">
+          <span className="text-[13px] font-bold text-gray-400 block self-start mb-2">거래·정산 기반 플랫폼 수수료 모델</span>
+          
+          <div className="relative w-full h-[200px] flex items-center justify-between px-6 bg-gray-50 border border-gray-100 rounded-xl">
+            <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 500 200">
+              <line x1="120" y1="100" x2="380" y2="100" stroke="#cbd5e1" strokeWidth="2" />
+            </svg>
+
+            {/* 모임 결제액 */}
+            <div className="relative z-10 w-[110px] h-[80px] border border-gray-200 bg-white rounded-xl p-2.5 flex flex-col justify-center items-center text-center shadow-3xs">
+              <span className="text-[12px] font-black text-gray-800">Activity GMV</span>
+              <span className="text-[9.5px] text-gray-400 mt-1">클래스 • 모임 • 워크숍</span>
+            </div>
+
+            {/* 수수료 원형 라벨 */}
+            <div className="relative z-10 w-[95px] h-[95px] rounded-full bg-blue-900 border-4 border-white flex flex-col items-center justify-center text-white shadow-md text-center">
+              <span className="text-[10px] font-bold tracking-widest text-blue-300">MONEY FLOWS HERE</span>
+              <span className="text-[20px] font-black leading-none mt-0.5">0.5%</span>
+              <span className="text-[9px] font-medium opacity-80 mt-1">플랫폼 수수료</span>
+            </div>
+
+            {/* 플랫폼 매출 */}
+            <div className="relative z-10 w-[110px] h-[80px] border border-blue-200 bg-blue-50 rounded-xl p-2.5 flex flex-col justify-center items-center text-center shadow-3xs">
+              <span className="text-[12px] font-black text-blue-900">WoC Revenue</span>
+              <span className="text-[9.5px] text-blue-500 font-extrabold mt-1">결제·정산 반복 수익</span>
+            </div>
+          </div>
+          <span className="text-[11px] text-gray-400 block mt-2 text-center w-full">※ 카드/PG 원가를 제외한 순수 플랫폼 수수료 기준</span>
+          
+          <div className="w-full flex items-center justify-center gap-2 mt-3 pt-2 border-t border-gray-100 text-[11px] text-gray-400 font-bold">
+            <span>향후 확장 수익 :</span>
+            <div className="flex gap-2">
+              <span className="bg-gray-100 px-2 py-0.5 rounded text-gray-500">솔루션 구독료</span>
+              <span>|</span>
+              <span className="bg-gray-100 px-2 py-0.5 rounded text-gray-500">B2B SaaS / 라이선스</span>
+              <span>|</span>
+              <span className="bg-gray-100 px-2 py-0.5 rounded text-gray-500">글로벌 정산 수수료</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p className="source font-extrabold text-blue-600">“WoC는 커뮤니티 활동에서 이미 발생하는 결제 흐름 위에 0.5% 플랫폼 수익을 쌓는 구조입니다.”</p>
+    </div>
+  );
+};
+
+// Slide 10: Unit Economics (단위 경제학)
+export const Slide10 = () => {
+  const inputs = [
+    { num: '01 월 활동 결제액', bold: '135,000원', desc: '사용자 1인이 월간 커뮤니티 활동에 지출하는 결제액 기준입니다.' },
+    { num: '02 플랫폼 순수 수수료율', bold: '0.5%', desc: '카드/PG 원가를 제외한 순수 플랫폼 수수료 기준입니다.' },
+    { num: '03 반복 결제 구조', bold: '월 → 연', desc: '수업, 모임, 이벤트 참여가 반복되며 플랫폼 수익이 누적됩니다.' }
+  ];
+
+  return (
+    <div className="slide">
+      <p className="chapter">단위 경제학</p>
+      <p className="page">10 / 19</p>
+      <h1 className="title">커뮤니티 경제는 작은 반복 결제가 누적되는 구조입니다</h1>
+      <p className="subtitle">사용자 1인 월 활동 결제액 135,000원 기준, 플랫폼 순수 수익은 월 675원입니다.</p>
+      
+      <div className="body-area">
+        {/* 좌측 3단 전제 리스트 */}
+        <div className="flex-[5] flex flex-col gap-4 justify-between h-full py-1">
+          <span className="text-[13px] font-bold text-gray-400 block mb-1">단위 경제학 전제</span>
+          {inputs.map((i) => (
+            <div key={i.num} className="card py-6 flex-1 justify-center">
+              <div className="flex justify-between items-baseline mb-1">
+                <h3 className="text-[16px] font-black text-gray-800 leading-none">{i.num}</h3>
+                <span className="text-[16px] font-black text-blue-600 font-['Space_Grotesk']">{i.bold}</span>
+              </div>
+              <p className="text-[13px] leading-relaxed text-gray-500 font-medium break-keep">{i.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* 우측 3단계 누적 그래프 */}
+        <div className="flex-[7] chart-box justify-center items-center relative">
+          <span className="text-[13px] font-bold text-gray-400 block self-start mb-2 font-['Space_Grotesk']">Unit Economics</span>
+          
+          <div className="w-full flex-1 flex flex-col gap-3 justify-center">
+            <div className="flex justify-between items-center p-3 border border-gray-100 bg-white rounded-xl shadow-3xs">
+              <span className="bg-blue-900 text-white text-[11px] font-black px-2 py-0.5 rounded">1단계</span>
+              <span className="text-[13.5px] font-extrabold text-gray-700">135,000원  ×  수수료율 0.5%</span>
+              <span className="text-[16px] font-black text-blue-600 font-['Space_Grotesk']">= 675원 / 월</span>
+            </div>
+            <div className="flex justify-between items-center p-3 border border-gray-100 bg-white rounded-xl shadow-3xs">
+              <span className="bg-blue-900 text-white text-[11px] font-black px-2 py-0.5 rounded">2단계</span>
+              <span className="text-[13.5px] font-extrabold text-gray-700">675원  ×  기간 12개월</span>
+              <span className="text-[16px] font-black text-blue-600 font-['Space_Grotesk']">= 8,100원 / 연</span>
+            </div>
+            <div className="flex justify-between items-center p-3 border border-blue-200 bg-blue-50/50 rounded-xl shadow-3xs">
+              <span className="bg-blue-900 text-white text-[11px] font-black px-2 py-0.5 rounded">3단계</span>
+              <span className="text-[13.5px] font-extrabold text-gray-800">8,100원  ×  활성 회원 100명</span>
+              <span className="text-[16px] font-black text-blue-900 font-['Space_Grotesk']">= 810,000원 / 연</span>
+            </div>
+            <span className="text-[10px] text-gray-400 block text-right font-medium">※ 호스트 1명이 보유한 활성 회원 100명 예시</span>
+          </div>
+          
+          <div className="w-full flex justify-between items-center mt-3 pt-2 border-t border-gray-100 text-[11px] text-gray-400 font-bold">
+            <span>Per Active User 기준</span>
+            <span>※ 카드/PG 원가를 제외한 순수 플랫폼 수수료 기준</span>
+          </div>
+        </div>
+      </div>
+      <p className="source font-extrabold text-blue-600">작은 수수료율이라도 반복 결제 시장에서는 사용자 수가 쌓일수록 안정적인 플랫폼 수익으로 전환됩니다.</p>
+    </div>
+  );
+};
+
+// Slide 11: Initial Market (초기 시장)
+export const Slide11 = () => {
+  const reasons = [
+    { num: '01 높은 반복 참여', desc: '수업, 소셜, 워크숍, 이벤트가 반복적으로 발생하여 결제와 참여 이력이 계속 축적됩니다.' },
+    { num: '02 복잡한 운영 구조', desc: '강사, 오거나이저, 장소, DJ, 참가자, 회비, 정산이 얽혀 있어 운영 자동화 니즈가 큽니다.' },
+    { num: '03 커뮤니티 기반 확산', desc: '한 명의 호스트가 움직이면, 함께 활동하는 회원 그룹이 자연스럽게 따라오는 구조입니다.' }
+  ];
+
+  return (
+    <div className="slide">
+      <p className="chapter">초기 시장</p>
+      <p className="page">11 / 19</p>
+      <h1 className="title">Dance OS에서 첫 BEP를 검증합니다</h1>
+      <p className="subtitle">초기 시장은 커뮤니티 참여도가 높고 운영 구조가 복잡한 Dance 시장입니다.</p>
+      
+      <div className="body-area">
+        {/* 좌측 3단 리스트 */}
+        <div className="flex-[5] flex flex-col gap-4 justify-between h-full py-1">
+          <span className="text-[13px] font-bold text-gray-400 block mb-1">Dance OS를 첫 시장으로 선택한 이유</span>
+          {reasons.map((r) => (
+            <div key={r.num} className="card py-6 flex-1 justify-center">
+              <h3 className="text-[17px] font-extrabold text-gray-800 leading-none mb-1">{r.num}</h3>
+              <p className="text-[13.5px] leading-relaxed text-gray-500 font-medium break-keep">{r.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* 우측 Dance OS 연결구조 */}
+        <div className="flex-[7] chart-box justify-center items-center relative">
+          <span className="text-[13px] font-bold text-gray-400 block self-start mb-2 font-['Space_Grotesk']">First Validation Market</span>
+          
+          <div className="relative w-full h-[220px] flex items-center justify-center">
+            {/* 연결선 SVG */}
+            <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 500 220">
+              <line x1="250" y1="110" x2="140" y2="50" stroke="#cbd5e1" strokeWidth="1.5" />
+              <line x1="250" y1="110" x2="360" y2="50" stroke="#cbd5e1" strokeWidth="1.5" />
+              <line x1="250" y1="110" x2="140" y2="170" stroke="#cbd5e1" strokeWidth="1.5" />
+              <line x1="250" y1="110" x2="360" y2="170" stroke="#cbd5e1" strokeWidth="1.5" />
+              <line x1="250" y1="110" x2="100" y2="110" stroke="#cbd5e1" strokeWidth="1.5" />
+              <line x1="250" y1="110" x2="400" y2="110" stroke="#3b82f6" strokeWidth="2" strokeDasharray="3 3" />
+            </svg>
+
+            {/* 코어 허브 */}
+            <div className="z-10 w-[110px] h-[75px] rounded-xl bg-blue-900 border-4 border-white flex flex-col items-center justify-center text-white shadow-md">
+              <span className="text-[14px] font-black">Dance OS</span>
+              <span className="text-[9px] font-bold opacity-80 mt-0.5">수업 · 소셜 · 워크숍 · 이벤트</span>
+            </div>
+
+            {/* 노드들 */}
+            <div className="absolute top-[20px] left-[80px] px-3 py-1.5 border border-gray-150 bg-white text-[12px] font-bold rounded-lg shadow-3xs">클래스 운영</div>
+            <div className="absolute top-[20px] right-[80px] px-3 py-1.5 border border-gray-150 bg-white text-[12px] font-bold rounded-lg shadow-3xs">소셜 모임</div>
+            <div className="absolute top-[90px] left-[20px] px-3 py-1.5 border border-gray-150 bg-white text-[12px] font-bold rounded-lg shadow-3xs">워크숍 신청</div>
+            <div className="absolute top-[90px] right-[20px] px-3 py-1.5 border border-blue-200 bg-blue-50 text-blue-600 text-[12px] font-black rounded-lg shadow-3xs">결제 · 정산</div>
+            <div className="absolute bottom-[20px] left-[80px] px-3 py-1.5 border border-gray-150 bg-white text-[12px] font-bold rounded-lg shadow-3xs">회원 관리</div>
+            <div className="absolute bottom-[20px] right-[80px] px-3 py-1.5 border border-gray-150 bg-white text-[12px] font-bold rounded-lg shadow-3xs">이벤트 예약</div>
+          </div>
+
+          <div className="w-full flex justify-center gap-6 mt-4 pt-3 border-t border-gray-100 text-[12px] font-black text-gray-800">
+            <span>1단계 목표 사용자 <span className="text-blue-600">5만 명</span></span>
+            <span className="text-gray-300">|</span>
+            <span>예상 연간 플랫폼 수익 <span className="text-blue-600">약 4억 원</span></span>
+          </div>
+        </div>
+      </div>
+      <p className="source font-extrabold text-blue-600">Dance는 수업, 소셜, 워크숍, 이벤트가 반복되는 가장 적극적인 취미 활동 영역으로, Community OS의 운영 구조를 먼저 검증하는 시장입니다.</p>
+    </div>
+  );
+};
+
+// Slide 12: Stage 2 Market (2단계 시장)
+export const Slide12 = () => {
+  const reasons = [
+    { num: '01 유사한 운영 구조', desc: '강사, 공간, 회원, 예약, 수강료, 반복 참여가 결합된 구조로 Dance OS와 운영 방식이 유사합니다.' },
+    { num: '02 반복 결제 시장', desc: '요가, 필라테스, 피트니스는 정기 수업과 재등록이 반복되는 결제 중심 시장입니다.' },
+    { num: '03 인접 시장 확장성', desc: '커뮤니티 운영 모듈을 재사용하여 화면과 데이터만 시장에 맞게 조정할 수 있습니다.' }
+  ];
+
+  return (
+    <div className="slide">
+      <p className="chapter">2단계 시장</p>
+      <p className="page">12 / 19</p>
+      <h1 className="title">Wellness OS로 동일한 운영 구조를 확장합니다</h1>
+      <p className="subtitle">요가, 필라테스, 피트니스는 강사·공간·회원·예약·결제 구조가 Dance OS와 유사합니다.</p>
+      
+      <div className="body-area">
+        {/* 좌측 3단 리스트 */}
+        <div className="flex-[5] flex flex-col gap-4 justify-between h-full py-1">
+          <span className="text-[13px] font-bold text-gray-400 block mb-1">Wellness 확장 이유</span>
+          {reasons.map((r) => (
+            <div key={r.num} className="card py-6 flex-1 justify-center">
+              <h3 className="text-[17px] font-extrabold text-gray-800 leading-none mb-1">{r.num}</h3>
+              <p className="text-[13.5px] leading-relaxed text-gray-500 font-medium break-keep">{r.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* 우측 확장 구조도 */}
+        <div className="flex-[7] chart-box justify-center items-center relative">
+          <span className="text-[13px] font-bold text-gray-400 block self-start mb-2 font-['Space_Grotesk']">Adjacent Expansion Market</span>
+          
+          <div className="relative w-full h-[220px] flex items-center justify-between px-6 bg-gray-50 border border-gray-100 rounded-xl">
+            <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 500 220">
+              <line x1="110" y1="110" x2="190" y2="110" stroke="#cbd5e1" strokeWidth="2" />
+              <line x1="310" y1="110" x2="390" y2="110" stroke="#cbd5e1" strokeWidth="2" />
+            </svg>
+
+            {/* Dance OS */}
+            <div className="relative z-10 w-[95px] h-[80px] border border-gray-200 bg-white rounded-xl p-2.5 flex flex-col justify-center items-center text-center shadow-3xs">
+              <span className="text-[13px] font-black text-gray-800">Dance OS</span>
+              <span className="text-[10px] text-gray-400 font-bold mt-1">1차 검증 시장</span>
+            </div>
+
+            {/* 모듈들 */}
+            <div className="relative z-10 w-[120px] h-[140px] border border-blue-200 bg-blue-50/50 rounded-xl p-3 flex flex-col justify-center gap-1.5 shadow-3xs">
+              <span className="text-[10px] font-black text-blue-900 border-b border-blue-100 pb-1 block text-center mb-1">공통 운영 모듈</span>
+              <div className="grid grid-cols-2 gap-1 text-[9px] font-extrabold text-gray-700 text-center">
+                <span className="bg-white border border-gray-100 py-0.5 rounded">Booking</span>
+                <span className="bg-white border border-gray-100 py-0.5 rounded">Schedule</span>
+                <span className="bg-white border border-gray-100 py-0.5 rounded">Payment</span>
+                <span className="bg-white border border-gray-100 py-0.5 rounded">Settlement</span>
+                <span className="bg-white border border-gray-100 py-0.5 rounded">Members</span>
+                <span className="bg-white border border-gray-100 py-0.5 rounded">Venue</span>
+              </div>
+            </div>
+
+            {/* Wellness OS */}
+            <div className="relative z-10 w-[100px] h-[90px] bg-blue-900 border-4 border-white rounded-xl p-2 flex flex-col justify-center items-center text-center shadow-md text-white">
+              <span className="text-[13px] font-black">Wellness OS</span>
+              <span className="text-[9px] font-bold opacity-85 mt-1">인접 확장 시장</span>
+              <div className="flex flex-wrap gap-0.5 mt-2 justify-center text-[7px] font-black text-blue-300">
+                <span className="border border-blue-700 px-1 rounded">Yoga</span>
+                <span className="border border-blue-700 px-1 rounded">Pilates</span>
+                <span className="border border-blue-700 px-1 rounded">Fitness</span>
+                <span className="border border-blue-700 px-1 rounded">Gym</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="w-full flex justify-center gap-6 mt-4 pt-3 border-t border-gray-100 text-[12px] font-black text-gray-800">
+            <span>누적 사용자 목표 <span className="text-blue-600">30만 명</span></span>
+            <span className="text-gray-300">|</span>
+            <span>예상 연간 플랫폼 수익 <span className="text-blue-600">약 24억 원</span></span>
+          </div>
+        </div>
+      </div>
+      <p className="source font-extrabold text-blue-600">사용자는 다르지만, 운영 구조는 반복됩니다. Wellness는 검증된 Community OS를 가장 자연스럽게 확장할 수 있는 인접 시장입니다.</p>
+    </div>
+  );
+};
+
+// Slide 13: Stage 3 Market (3단계 시장)
+export const Slide13 = () => {
+  const reasons = [
+    { num: '01 반복 결제 구조', desc: '수강료, 재등록, 특강, 보강 등 반복 결제와 일정 관리가 지속적으로 발생합니다.' },
+    { num: '02 회원 관리 밀도', desc: '학생, 학부모, 강사, 운영자가 연결되어 출결, 공지, 상담, 기록 관리가 필요합니다.' },
+    { num: '03 운영 데이터 축적', desc: '수강 이력, 결제 이력, 출결 기록, 커뮤니케이션 내역이 운영 자산으로 축적될 수 있습니다.' }
+  ];
+
+  return (
+    <div className="slide">
+      <p className="chapter">3단계 시장</p>
+      <p className="page">13 / 19</p>
+      <h1 className="title">교육 시장은 반복 결제와 회원 관리가 중요한 다음 시장입니다</h1>
+      <p className="subtitle">입시학원, 어학원, 전문교육기관은 수강료, 출결, 재등록, 학부모 커뮤니케이션 관리가 필요한 시장입니다.</p>
+      
+      <div className="body-area">
+        {/* 좌측 3단 리스트 */}
+        <div className="flex-[5] flex flex-col gap-4 justify-between h-full py-1">
+          <span className="text-[13px] font-bold text-gray-400 block mb-1">교육 시장 확장 이유</span>
+          {reasons.map((r) => (
+            <div key={r.num} className="card py-6 flex-1 justify-center">
+              <h3 className="text-[17px] font-extrabold text-gray-800 leading-none mb-1">{r.num}</h3>
+              <p className="text-[13.5px] leading-relaxed text-gray-500 font-medium break-keep">{r.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* 우측 아카데미 다이어그램 */}
+        <div className="flex-[7] chart-box justify-center items-center relative">
+          <span className="text-[13px] font-bold text-gray-400 block self-start mb-2 font-['Space_Grotesk']">Structured Learning Market</span>
+          
+          <div className="relative w-full h-[220px] flex items-center justify-center">
+            {/* 연결선 SVG */}
+            <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 500 220">
+              <line x1="250" y1="110" x2="140" y2="50" stroke="#cbd5e1" strokeWidth="1.5" />
+              <line x1="250" y1="110" x2="360" y2="50" stroke="#3b82f6" strokeWidth="2" strokeDasharray="3 3" />
+              <line x1="250" y1="110" x2="140" y2="170" stroke="#cbd5e1" strokeWidth="1.5" />
+              <line x1="250" y1="110" x2="360" y2="170" stroke="#cbd5e1" strokeWidth="1.5" />
+              <line x1="250" y1="110" x2="100" y2="110" stroke="#cbd5e1" strokeWidth="1.5" />
+              <line x1="250" y1="110" x2="400" y2="110" stroke="#cbd5e1" strokeWidth="1.5" />
+            </svg>
+
+            {/* 코어 허브 */}
+            <div className="z-10 w-[130px] h-[75px] rounded-xl bg-blue-900 border-4 border-white flex flex-col items-center justify-center text-white shadow-md text-center">
+              <span className="text-[13px] font-black leading-tight">Academy / Learning OS</span>
+              <span className="text-[8px] font-bold opacity-80 mt-0.5">수강 · 결제 · 출결 · 재등록 · 커뮤니케이션</span>
+            </div>
+
+            {/* 노드들 */}
+            <div className="absolute top-[20px] left-[80px] px-3 py-1.5 border border-gray-150 bg-white text-[12px] font-bold rounded-lg shadow-3xs">수강 관리</div>
+            <div className="absolute top-[20px] right-[80px] px-3 py-1.5 border border-blue-200 bg-blue-50 text-blue-600 text-[12px] font-black rounded-lg shadow-3xs">결제 관리</div>
+            <div className="absolute top-[90px] left-[20px] px-3 py-1.5 border border-gray-150 bg-white text-[12px] font-bold rounded-lg shadow-3xs">출결 관리</div>
+            <div className="absolute top-[90px] right-[20px] px-3 py-1.5 border border-gray-150 bg-white text-[12px] font-bold rounded-lg shadow-3xs">재등록 관리</div>
+            <div className="absolute bottom-[20px] left-[70px] px-3 py-1.5 border border-gray-150 bg-white text-[12px] font-bold rounded-lg shadow-3xs">학부모 커뮤니케이션</div>
+            <div className="absolute bottom-[20px] right-[80px] px-3 py-1.5 border border-gray-150 bg-white text-[12px] font-bold rounded-lg shadow-3xs">학습 기록</div>
+          </div>
+
+          <div className="w-full flex justify-center gap-1.5 mt-4 pt-3 border-t border-gray-100 text-[10.5px] font-extrabold text-gray-400">
+            <span className="text-gray-800 font-black">Premium Academy OS (전문 교육)</span>
+            <span>→</span>
+            <span>National Academy OS (일반 학원)</span>
+            <span>→</span>
+            <span>Learning OS (확장형 학습 커뮤니티)</span>
+          </div>
+        </div>
+      </div>
+      <p className="source font-extrabold text-blue-600">Academy / Learning은 수강, 출결, 재등록, 커뮤니케이션이 반복되는 고관여 시장으로, Community OS를 더 큰 운영 워크플로우에서 검증하는 단계입니다.</p>
+    </div>
+  );
+};
+
+// Slide 14: Expansion Roadmap (확장 로드맵)
+export const Slide14 = () => {
+  return (
+    <div className="slide">
+      <p className="chapter">확장 로드맵</p>
+      <p className="page">14 / 19</p>
+      <h1 className="title">WoC는 시장을 한 번에 공략하지 않고 단계별로 확장합니다</h1>
+      <p className="subtitle">각 시장에서 BEP와 운영 구조를 확인한 뒤, 검증된 Community OS 모듈을 다음 시장으로 이식합니다.</p>
+      
+      <div className="body-area gap-4">
+        {/* 좌측 원칙 가치 */}
+        <div className="flex-[4] card justify-center py-8">
+          <span className="text-[12px] font-bold text-blue-500 uppercase tracking-widest block mb-2 font-['Space_Grotesk'] font-bold">Concept Definition</span>
+          <h3 className="text-[20px] font-extrabold text-gray-800 leading-tight mb-4">단계별 확장 원칙</h3>
+          <p className="text-[14px] leading-relaxed text-gray-500 font-medium break-keep">
+            초기 시장에서 운영 구조와 결제 흐름을 검증하고, 동일한 Community OS 모듈을 인접 시장에 반복 적용합니다.
+          </p>
+        </div>
+
+        {/* 우측 3단계 로드맵 카드 그리드 */}
+        <div className="flex-[8] chart-box justify-center items-center relative">
+          <span className="text-[13px] font-bold text-gray-400 block self-start mb-2 font-['Space_Grotesk']">Scalable Market Roadmap</span>
+          
+          <div className="grid grid-cols-3 gap-3 w-full flex-1">
+            <div className="border border-gray-150 rounded-xl bg-white p-3 flex flex-col justify-between shadow-3xs">
+              <span className="text-[12px] font-black text-blue-900 border-b border-gray-100 pb-1.5 block text-center">구간 1: 검증 시장</span>
+              <div className="flex flex-col gap-1.5 mt-2 flex-1 justify-center text-[10px] font-bold text-gray-700 text-center">
+                <span className="bg-blue-900 text-white py-1 rounded">Dance OS</span>
+                <span className="bg-gray-50 border border-gray-100 py-1 rounded">Wellness OS</span>
+                <span className="bg-gray-50 border border-gray-100 py-1 rounded">Premium Academy OS</span>
+              </div>
+            </div>
+            
+            <div className="border border-gray-150 rounded-xl bg-white p-3 flex flex-col justify-between shadow-3xs">
+              <span className="text-[12px] font-black text-blue-900 border-b border-gray-100 pb-1.5 block text-center">구간 2: 반복 확장</span>
+              <div className="flex flex-col gap-1.5 mt-2 flex-1 justify-center text-[10px] font-bold text-gray-700 text-center">
+                <span className="bg-gray-50 border border-gray-100 py-1 rounded">National Academy OS</span>
+                <span className="bg-gray-50 border border-gray-100 py-1 rounded">Learning OS</span>
+                <span className="bg-gray-50 border border-gray-100 py-1 rounded">Sports OS</span>
+              </div>
+            </div>
+
+            <div className="border border-gray-150 rounded-xl bg-white p-3 flex flex-col justify-between shadow-3xs">
+              <span className="text-[12px] font-black text-blue-900 border-b border-gray-100 pb-1.5 block text-center">구간 3: 장기 비전</span>
+              <div className="flex flex-col gap-1.5 mt-2 flex-1 justify-center text-[10px] font-bold text-gray-700 text-center">
+                <span className="bg-gray-50 border border-gray-100 py-1 rounded">Hobby OS</span>
+                <span className="bg-gray-50 border border-gray-100 py-1 rounded">Society OS</span>
+                <span className="bg-blue-50 border border-blue-200 text-blue-600 py-1 rounded font-black">Universal OS</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="w-full flex justify-between items-center mt-3 pt-2 border-t border-gray-100 text-[11px] text-gray-400 font-bold">
+            <span>검증된 운영 모듈 → 시장별 데이터 · 화면 재조합 → 다음 커뮤니티 시장으로 이식</span>
+          </div>
+        </div>
+      </div>
+      <p className="source font-extrabold text-blue-600">“WoC의 확장은 새로운 앱을 계속 만드는 방식이 아니라, 검증된 운영 모듈을 다음 시장에 반복 적용하는 방식입니다.”</p>
+    </div>
+  );
+};
+
+// Slide 15: Risk Management (리스크 관리)
+export const Slide15 = () => {
+  const principles = [
+    { num: '01 한 번에 모든 시장을 공략하지 않음', desc: '초기 시장에서 운영 구조와 결제 흐름을 먼저 검증한 뒤 다음 시장으로 이동합니다.' },
+    { num: '02 단계별로 멈출 수 있는 구조', desc: '각 시장이 독립적인 운영 단위가 되기 때문에, 다음 확장이 지연되어도 사업을 유지할 수 있습니다.' },
+    { num: '03 검증된 모듈만 반복 적용', desc: '새로운 앱을 계속 만드는 것이 아니라, 검증된 Community OS 모듈을 시장별로 재조합합니다.' }
+  ];
+
+  return (
+    <div className="slide">
+      <p className="chapter">리스크 관리</p>
+      <p className="page">15 / 19</p>
+      <h1 className="title">성공 가능성은 키우고, 실패 리스크는 단계별로 통제합니다</h1>
+      <p className="subtitle">WoC는 단번에 대형 플랫폼으로 성공해야만 하는 구조가 아니라, 시장별 BEP를 확인하며 확장하는 구조입니다.</p>
+      
+      <div className="body-area">
+        {/* 좌측 3단 리스크 리스트 */}
+        <div className="flex-[5] flex flex-col gap-4 justify-between h-full py-1">
+          <span className="text-[13px] font-bold text-gray-400 block mb-1">리스크 관리 원칙</span>
+          {principles.map((p) => (
+            <div key={p.num} className="card py-6 flex-1 justify-center">
+              <h3 className="text-[16px] font-black text-gray-800 leading-none mb-1">{p.num}</h3>
+              <p className="text-[13px] leading-relaxed text-gray-500 font-medium break-keep">{p.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* 우측 계단형 그래프 다이어그램 */}
+        <div className="flex-[7] chart-box justify-center items-center relative">
+          <span className="text-[13px] font-bold text-gray-400 block self-start mb-2 font-['Space_Grotesk']">Staged BEP Strategy</span>
+          
+          <div className="relative w-full h-[220px] flex items-end justify-between px-6 bg-gray-50 border border-gray-100 rounded-xl pb-10">
+            {/* 계단 다이어그램 */}
+            <div className="flex items-end gap-3 w-full justify-center">
+              <div className="w-[100px] h-[40px] bg-blue-900 border border-white text-white rounded-lg flex flex-col justify-center items-center text-center shadow-3xs p-1">
+                <span className="text-[10px] font-black">Dance OS</span>
+                <span className="text-[7.5px] bg-white/20 px-1 rounded mt-0.5">1차 BEP 확인</span>
+              </div>
+              <div className="w-[100px] h-[75px] bg-blue-800 border border-white text-white rounded-lg flex flex-col justify-center items-center text-center shadow-3xs p-1">
+                <span className="text-[10px] font-black">Wellness OS</span>
+                <span className="text-[7.5px] bg-white/20 px-1 rounded mt-0.5">2차 BEP 확인</span>
+              </div>
+              <div className="w-[110px] h-[110px] bg-blue-700 border border-white text-white rounded-lg flex flex-col justify-center items-center text-center shadow-3xs p-1">
+                <span className="text-[10px] font-black">Academy OS</span>
+                <span className="text-[7.5px] bg-white/20 px-1 rounded mt-0.5">3차 BEP 확인</span>
+              </div>
+              <div className="w-[110px] h-[140px] border border-dashed border-blue-400 bg-white text-blue-950 rounded-lg flex flex-col justify-center items-center text-center shadow-3xs p-1">
+                <span className="text-[9.5px] font-extrabold">Sports/Hobby/Society</span>
+                <span className="text-[7.5px] text-blue-500 font-bold mt-0.5">장기 확장 영역</span>
+              </div>
+            </div>
+          </div>
+          <span className="text-[11px] text-gray-400 font-bold block mt-2 text-center w-full">※ 다음 시장 진입이 지연되더라도, 이전 단계의 운영 단위가 독립 사업으로 유지될 수 있습니다.</span>
+        </div>
+      </div>
+      <p className="source font-extrabold text-blue-600">각 단계에서 BEP+ 상태를 유지하며 다음 시장을 점검하기 때문에, 확장 리스크를 단계별로 통제할 수 있습니다.</p>
+    </div>
+  );
+};
+
+// Slide 16: Financial Projection (재무 전망)
+export const Slide16 = () => {
+  const assumptions = [
+    { num: '01 낮은 수수료율', desc: '플랫폼 순수 수수료율은 보수적으로 0.5%만 적용합니다.' },
+    { num: '02 단계별 시장 확장', desc: 'Dance OS에서 시작해 Wellness, Academy / Learning으로 순차 확장합니다.' },
+    { num: '03 반복 결제 기반', desc: '수업, 모임, 이벤트, 재등록 등 반복 결제 흐름을 기반으로 수익이 누적됩니다.' }
+  ];
+
+  return (
+    <div className="slide">
+      <p className="chapter">재무 전망</p>
+      <p className="page">16 / 19</p>
+      <h1 className="title">보수적 수수료율 0.5% 기준 재무 전망</h1>
+      <p className="subtitle">플랫폼 순수 수수료율 0.5%만 적용해도 단계별 사용자 확장에 따라 수익 구조가 형성됩니다.</p>
+      
+      <div className="body-area">
+        {/* 좌측 3단 리스트 */}
+        <div className="flex-[5] flex flex-col gap-4 justify-between h-full py-1">
+          <span className="text-[13px] font-bold text-gray-400 block mb-1">재무 전망 전제</span>
+          {assumptions.map((a) => (
+            <div key={a.num} className="card py-6 flex-1 justify-center">
+              <h3 className="text-[16px] font-black text-gray-800 leading-none mb-1">{a.num}</h3>
+              <p className="text-[13px] leading-relaxed text-gray-500 font-medium break-keep">{a.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* 우측 3단 세로 막대 그래프 */}
+        <div className="flex-[7] chart-box justify-center items-center relative">
+          <span className="text-[13px] font-bold text-gray-400 block self-start mb-2 font-['Space_Grotesk']">Revenue Projection</span>
+          
+          <div className="relative w-full h-[220px] bg-gray-50 border border-gray-100 rounded-xl flex items-end justify-around pb-6 pt-8">
+            {/* 막대기 1 */}
+            <div className="flex flex-col items-center gap-2">
+              <span className="text-[10px] text-gray-400 font-extrabold">1단계 · 2026 3Q</span>
+              <span className="text-[12px] font-black text-gray-800">약 4억 원</span>
+              <div className="w-[60px] h-[35px] bg-blue-900 border border-white rounded-t-lg shadow-3xs flex justify-center items-center text-white text-[9px] font-bold">5만 명</div>
+              <span className="text-[9px] text-gray-400 font-bold whitespace-nowrap">Dance OS 검증</span>
+            </div>
+
+            {/* 막대기 2 */}
+            <div className="flex flex-col items-center gap-2">
+              <span className="text-[10px] text-gray-400 font-extrabold">2단계 · 2026 4Q</span>
+              <span className="text-[12px] font-black text-gray-800">약 16억 원</span>
+              <div className="w-[60px] h-[85px] bg-blue-800 border border-white rounded-t-lg shadow-3xs flex justify-center items-center text-white text-[9px] font-bold font-['Space_Grotesk']">20만 명</div>
+              <span className="text-[9px] text-gray-400 font-bold whitespace-nowrap">Stage/Dance 확장</span>
+            </div>
+
+            {/* 막대기 3 */}
+            <div className="flex flex-col items-center gap-2">
+              <span className="text-[10px] text-gray-400 font-extrabold">3단계 · 2027 1H</span>
+              <span className="text-[12px] font-black text-gray-800">약 24억 원</span>
+              <div className="w-[60px] h-[120px] bg-blue-700 border border-white rounded-t-lg shadow-3xs flex justify-center items-center text-white text-[9px] font-bold font-['Space_Grotesk']">30만 명</div>
+              <span className="text-[9px] text-gray-400 font-bold whitespace-nowrap">Wellness OS 확장</span>
+            </div>
+            
+            {/* 총 합계 우측 고정 */}
+            <div className="absolute top-2 right-4 flex flex-col items-end">
+              <span className="text-[10.5px] font-black text-blue-900">누적 50만 명 생태계</span>
+              <span className="text-[14px] font-black text-blue-600">합계 약 40억 원</span>
+              <span className="text-[7.5px] text-gray-400 font-bold">4단계 · 2027 2H 이후</span>
+            </div>
+          </div>
+          <span className="text-[11px] text-gray-400 font-bold block mt-2 text-center w-full">※ 카드/PG 원가를 제외한 순수 플랫폼 수수료 0.5% 기준 전망</span>
+        </div>
+      </div>
+      <p className="source font-extrabold text-blue-600">WoC의 재무 전망은 높은 수수료율이 아니라, 낮은 0.5% 수수료와 단계별 사용자 확장에 기반합니다.</p>
+    </div>
+  );
+};
+
+// Slide 17: Investment Plan (투자 계획)
+export const Slide17 = () => {
+  const funds = [
+    { title: '카드결제 및 정산 시스템 구축 (핵심)', cost: '2,000만 원', pct: 20 },
+    { title: '시스템 운영 및 고도화', cost: '3,000만 원', pct: 30 },
+    { title: '시장 확장 및 초기 마케팅', cost: '2,000만 원', pct: 20 },
+    { title: '창업자 선투입 비용 회수', cost: '2,000만 원', pct: 20 },
+    { title: '운영 예비비', cost: '1,000만 원', pct: 10 }
+  ];
+
+  return (
+    <div className="slide">
+      <p className="chapter">투자 계획</p>
+      <p className="page">17 / 19</p>
+      <h1 className="title">Angel Round 투자 계획</h1>
+      <p className="subtitle">앱 출시 이후 2개월차에 1억 원 규모의 엔젤 투자를 유치하고, 카드결제 도입과 초기 거래 데이터 확보에 집중합니다.</p>
+      
+      <div className="body-area">
+        {/* 좌측 투자 조건 요약 */}
+        <div className="flex-[4] card justify-center py-6 gap-4">
+          <span className="text-[11px] font-black text-blue-500 uppercase tracking-widest block font-['Space_Grotesk']">Investment Terms</span>
+          
+          <div className="flex flex-col gap-2">
+            <div className="flex justify-between items-center border-b border-gray-150 pb-2">
+              <span className="text-[12.5px] font-bold text-gray-500">ANGEL ROUND</span>
+              <span className="text-[18px] font-black text-gray-800">1억 원</span>
+            </div>
+            <div className="flex justify-between items-center border-b border-gray-150 pb-2">
+              <span className="text-[12.5px] font-bold text-gray-500">POST-MONEY 기준</span>
+              <span className="text-[16px] font-black text-gray-800">약 4억 원</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-[12.5px] font-bold text-gray-500">제안 지분</span>
+              <span className="text-[18px] font-black text-blue-600">25%</span>
+            </div>
+          </div>
+          
+          <p className="text-[12.5px] leading-relaxed text-gray-400 font-medium break-keep">
+            초기 투자금은 제품 완성도, 결제·정산 인프라, 초기 거래 데이터 확보에 집중됩니다.
+          </p>
+        </div>
+
+        {/* 우측 활용 계획 */}
+        <div className="flex-[8] chart-box justify-center items-center relative">
+          <span className="text-[13px] font-bold text-gray-400 block self-start mb-2 font-['Space_Grotesk']">Use of Funds</span>
+          
+          <div className="w-full flex-1 flex flex-col gap-3 justify-center">
+            {/* 가로 비율 바 */}
+            <div className="w-full h-8 bg-gray-100 rounded-lg overflow-hidden flex text-[10px] font-black text-white text-center">
+              <div className="bg-blue-900 flex items-center justify-center" style={{ width: '20%' }}>20%</div>
+              <div className="bg-blue-800 flex items-center justify-center" style={{ width: '30%' }}>30%</div>
+              <div className="bg-blue-700 flex items-center justify-center" style={{ width: '20%' }}>20%</div>
+              <div className="bg-blue-600 flex items-center justify-center" style={{ width: '20%' }}>20%</div>
+              <div className="bg-blue-500 flex items-center justify-center" style={{ width: '10%' }}>10%</div>
+            </div>
+
+            {/* 활용 내용 목록 */}
+            <div className="flex flex-col gap-1.5 w-full text-[12.5px] font-bold text-gray-700">
+              {funds.map((f) => (
+                <div key={f.title} className="flex justify-between items-center border-b border-gray-100 pb-1">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-blue-800"></span>
+                    {f.title}
                   </span>
-                  <span className="font-semibold text-[#111111]/55 tracking-tight">
-                    {item.list}
-                  </span>
+                  <span>{f.cost} <span className="text-[10.5px] text-gray-400 font-medium">({f.pct}%)</span></span>
                 </div>
               ))}
             </div>
-            <p className="text-[12px] font-bold text-red-500/70 tracking-tight leading-tight mt-1">
-              * 각 기능은 존재하지만 서로 유기적으로 연결되어 있지 않습니다.
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-3 pt-6 border-t border-[#111111]/5">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold tracking-widest text-red-500/70 uppercase">Problem 02</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-red-500/40"></span>
-            </div>
-            <h3 className="text-[18px] md:text-[22px] font-black text-[#111111] tracking-tight leading-tight">
-              지역에 갇힌 커뮤니티
-            </h3>
-            <div className="flex flex-wrap gap-2 mt-1">
-              {problem2Cities.map((city) => (
-                <span key={city} className="px-2.5 py-1 border border-red-500/10 bg-red-500/[0.02] rounded-full text-[12.5px] font-semibold text-red-500/50">
-                  {city}
-                </span>
-              ))}
-            </div>
-            <p className="text-[12.5px] font-medium text-[#111111]/60 leading-tight">
-              각 지역 커뮤니티가 독립적으로 운영됩니다.
-            </p>
-            <p className="text-[12px] font-bold text-red-500/70 tracking-tight leading-tight mt-1">
-              * 사람도 정보도 행사도 지역 단위로 단절되어 있습니다.
-            </p>
+            <span className="text-[11px] text-gray-400 block self-start font-medium">※ 사무실 임대, 정규직 인건비, 대규모 광고비에는 사용하지 않습니다.</span>
           </div>
         </div>
+      </div>
+      <p className="source font-extrabold text-blue-600">홍보비는 0원, 인건비는 1인 체제를 유지하며, 결제·정산 도입과 초기 거래 데이터 확보에 집중합니다.</p>
+    </div>
+  );
+};
 
-        <div className="col-span-7 flex flex-col items-center justify-center pl-10 relative pt1-sr pt1-d4">
-          <span className="text-[11px] font-bold tracking-widest text-[#111111]/45 uppercase mb-2 block self-start">
-            WoC Solution / Global Network Infrastructure
-          </span>
-          <div className="w-[500px] h-[500px] relative flex items-center justify-center bg-white/10 rounded-full border border-[#111111]/5 shadow-[inset_0_0_30px_rgba(0,0,0,0.01)]">
-            <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" viewBox="0 0 500 500">
-              {networkCities.map((city) => (
-                <line
-                  key={city.name}
-                  x1={250}
-                  y1={250}
-                  x2={city.x}
-                  y2={city.y}
-                  stroke="#111111"
-                  strokeWidth="0.75"
-                  strokeDasharray="4 4"
-                  opacity="0.3"
-                  className="animate-pulse"
-                />
-              ))}
+// Slide 18: Exit Vision (EXIT 및 장기 비전)
+export const Slide18 = () => {
+  const buyers = [
+    { num: '01 커뮤니티•로컬 플랫폼 기업', desc: '지역, 취미, 모임 기반 사용자 네트워크를 확장하려는 플랫폼 기업' },
+    { num: '02 교육•웰니스•프랜차이즈 기업', desc: '회원 관리, 예약, 결제, 정산 시스템이 필요한 오프라인 운영 기업' },
+    { num: '03 결제•PG•핀테크 기업', desc: '반복 결제와 정산 데이터를 확보하려는 결제 인프라 기업' }
+  ];
+
+  return (
+    <div className="slide">
+      <p className="chapter">EXIT 및 장기 비전</p>
+      <p className="page">18 / 19</p>
+      <h1 className="title">운영 및 결제데이터 기반 전략적 M&A를 검토합니다</h1>
+      <p className="subtitle">WoC는 장기적으로 전 세계 커뮤니티 활동이 구동되는 Universal Community OS를 목표로 합니다.</p>
+      
+      <div className="body-area">
+        {/* 좌측 M&A 후보 */}
+        <div className="flex-[5] flex flex-col gap-4 justify-between h-full py-1">
+          <span className="text-[13px] font-bold text-gray-400 block mb-1">전략적 M&A 후보군</span>
+          {buyers.map((b) => (
+            <div key={b.num} className="card py-6 flex-1 justify-center font-medium">
+              <h3 className="text-[16px] font-black text-gray-800 leading-none mb-1">{b.num}</h3>
+              <p className="text-[13px] leading-relaxed text-gray-500 break-keep">{b.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* 우측 5대 데이터 노드 다이어그램 */}
+        <div className="flex-[7] chart-box justify-center items-center relative">
+          <span className="text-[13px] font-bold text-gray-400 block self-start mb-2 font-['Space_Grotesk']">Long-term Vision</span>
+          
+          <div className="relative w-full h-[220px] flex items-center justify-center">
+            {/* 연결선 SVG */}
+            <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 500 220">
+              <line x1="250" y1="110" x2="250" y2="40" stroke="#cbd5e1" strokeWidth="1.5" />
+              <line x1="250" y1="110" x2="110" y2="80" stroke="#cbd5e1" strokeWidth="1.5" />
+              <line x1="250" y1="110" x2="390" y2="80" stroke="#cbd5e1" strokeWidth="1.5" />
+              <line x1="250" y1="110" x2="140" y2="170" stroke="#cbd5e1" strokeWidth="1.5" />
+              <line x1="250" y1="110" x2="360" y2="170" stroke="#cbd5e1" strokeWidth="1.5" />
             </svg>
 
-            <div className="w-[230px] h-[230px] rounded-full border-[2.5px] border-[#111111] bg-white flex flex-col items-center justify-center p-6 shadow-[0_15px_45px_rgba(0,0,0,0.06)] z-10 text-center relative group hover:scale-[1.02] transition-transform duration-300">
-              <h4 className="text-[34px] font-black tracking-tighter text-[#111111] mb-2 leading-none">
-                WoC
-              </h4>
-              <div className="w-12 h-[2px] bg-[#111111] mb-3" />
-              <p className="text-[11.5px] font-bold leading-[1.5] text-[#111111]/70 tracking-tight break-keep max-w-[170px]">
-                {wocFeatures.join(' · ')}
-              </p>
+            {/* 코어 허브 */}
+            <div className="z-10 w-[140px] h-[70px] rounded-2xl bg-blue-900 border-4 border-white flex flex-col items-center justify-center text-white shadow-md text-center">
+              <span className="text-[11px] font-black">UNIVERSAL COMMUNITY OS</span>
+              <span className="text-[8px] font-bold opacity-85 mt-0.5">전 세계 커뮤니티 활동을 연결하는 운영체제</span>
             </div>
 
-            {networkCities.map((city, idx) => (
-              <div
-                key={city.name}
-                style={{
-                  left: `${city.x}px`,
-                  top: `${city.y}px`,
-                  transform: 'translate(-50%, -50%)',
-                  animationDelay: `${600 + idx * 80}ms`
-                }}
-                className="absolute px-3 py-1.5 rounded-full border border-[#111111]/15 bg-white text-[12.5px] font-black text-[#111111] shadow-sm z-20 hover:border-[#111111] hover:shadow-md transition-all duration-200 cursor-default flex items-center gap-1.5 pt1-fi"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
-                {city.name}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-12 pt-6 border-t border-[#111111]/10 flex flex-col md:flex-row justify-between items-center gap-4 w-full max-w-[1250px]">
-        <div className="flex gap-8 text-[12px] font-bold text-[#111111]/35 leading-tight">
-          <p>* 기존 서비스는 도구를 제공합니다.</p>
-          <p>* WoC는 운영과 연결을 제공합니다.</p>
-        </div>
-        <div className="text-right">
-          <h3 className="text-[28px] md:text-[34px] font-black text-[#111111] tracking-tighter leading-none">
-            지역 커뮤니티를 글로벌 네트워크로
-          </h3>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Slide 4: 타겟 시장 검증 (Tango Market Validation)
-export const Slide4 = () => {
-  const Milongas = ['수업', '밀롱가', '워크샵', '공연', '축제'];
-  const metrics = [
-    { num: '108', unit: '억 원', period: '연간', label: '전체 시장 거래 규모', eng: 'TANGO MARKET SIZE', sub: '수업 · 밀롱가 · 워크샵 · 공연 · 축제' },
-    { num: '32', unit: '억 원', period: '연간', label: 'WoC 처리 거래액', eng: 'PLATFORM GMV', sub: 'WoC를 통해 실제 결제되는 금액' },
-    { num: '2.2', unit: '억 원', period: '연간', label: 'WoC 플랫폼 매출', eng: 'WOC REVENUE', sub: '결제 · 정산 · 솔루션 수수료 기반' },
-  ];
-
-  return (
-    <div className="relative z-10 flex flex-col w-full h-full bg-[#fcf8f8] text-[#111111] px-[80px] py-[50px] justify-center">
-      <div className="max-w-[1300px] w-full mx-auto">
-        <div className="flex flex-col lg:flex-row justify-between items-start mb-14 gap-8">
-          <div>
-            <span className="font-['Space_Grotesk'] text-[13px] font-bold tracking-[0.3em] text-[#111111]/30 uppercase block mb-4 pt1-fu">MONEY FLOWS HERE</span>
-            <h2 className="text-[44px] md:text-[68px] font-black tracking-tighter leading-none mb-6 pt1-cu pt1-d2">
-              <span className="font-['Space_Grotesk']">2,000</span>명이 만드는<br/>
-              <span className="text-[#111111]/60">연간 <span className="font-['Space_Grotesk']">108</span>억 규모의 활동 경제</span>
-            </h2>
-            <div className="text-[17px] md:text-[20px] font-medium text-[#111111]/55 tracking-tight break-keep pt1-fu pt1-d3 flex flex-col gap-2.5 leading-relaxed">
-              <p>
-                통계청 기준 국민 1인당 월 평균 약 <span className="font-['Space_Grotesk']">45</span>만원은<br/>
-                <span className="text-[#111111] font-black">취미 · 여가 · 문화 · 활동에 사용됩니다.</span>
-              </p>
-              <p className="mt-1">
-                사람들은 의무적으로 소비하는 곳보다<br/>
-                <span className="text-[#111111] font-black">스스로 선택한 활동에 시간과 돈을 사용합니다.</span>
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2.5 max-w-[450px] pt-2 pt1-fi pt1-d5">
-            {Milongas.map((t, idx) => (
-              <span key={t} className="px-4 py-2 border border-[#111111]/15 rounded-full text-[13px] font-semibold bg-[#111111]/[0.02]" style={{ animationDelay: `${600 + idx * 80}ms` }}>
-                {t}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-3 border-t border-b border-[#111111]/10 py-12 gap-12">
-          {metrics.map((s, i) => (
-            <div key={s.label} className="flex flex-col pt1-cu" style={{ animationDelay: `${500 + i * 120}ms` }}>
-              <div className="flex items-baseline gap-1 mb-3">
-                <span className="text-[11px] font-bold text-[#111111]/30 tracking-wider uppercase">{s.period}</span>
-                <span className="font-['Space_Grotesk'] text-[40px] md:text-[48px] font-black tracking-tight leading-none">{s.num}</span>
-                <span className="text-[20px] md:text-[24px] font-bold text-[#111111]/60">{s.unit}</span>
-              </div>
-              <p className="text-[15px] font-black text-[#111111] mb-1.5 leading-tight flex items-baseline gap-1.5 flex-wrap">
-                {s.label}
-                <span className="font-['Space_Grotesk'] text-[10px] font-bold tracking-wider text-[#111111]/30 uppercase shrink-0">{s.eng}</span>
-              </p>
-              <p className="text-[12px] font-medium text-[#111111]/45 tracking-tight break-keep">{s.sub}</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-8 text-[11px] font-bold text-[#111111]/30 tracking-tight pt1-fu pt1-d8 flex flex-col gap-2">
-          <p>* WoC는 단순히 거래를 연결하는 광고 플랫폼을 넘어 결제 및 정산 인프라를 직접 제공하며, 플랫폼 결제 대금 수수료를 실질적인 매출로 인식합니다.</p>
-          <div className="mt-1.5 pt-3 border-t border-[#111111]/5 flex flex-col gap-1 text-[10px] text-[#111111]/25 uppercase font-black tracking-wider leading-tight">
-            <div className="flex gap-4">
-              <span>[Red Money] <span className="font-medium text-[#111111]/35 lowercase ml-1">월세 · 통신비 · 보험 · 세금</span></span>
-              <span>|</span>
-              <span>[Activity Money] <span className="font-medium text-[#111111]/35 lowercase ml-1">수업 · 공연 · 축제 · 여행 · 취미 · 커뮤니티</span></span>
-            </div>
-            <p className="font-['Space_Grotesk'] text-[10.5px] text-[#111111]/40 font-black tracking-[0.2em] mt-0.5">Money Flows Here.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Slide 5: 마지막 플랫폼 (The Last Platform)
-export const Slide5 = () => (
-  <div className="relative z-10 flex flex-col w-full h-full bg-[#fcf8f8] text-[#111111] px-[100px] justify-center overflow-hidden">
-    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-      <div className="w-[600px] h-[600px] rounded-full bg-[#111111]/[0.015] blur-[120px] pt1-si" />
-    </div>
-
-    <div className="max-w-[1250px] w-full mx-auto relative z-10">
-      <span className="font-['Space_Grotesk'] text-[13px] font-bold tracking-[0.4em] text-[#111111]/30 uppercase block mb-10 pt1-fu">
-        THE LAST FRONTIER
-      </span>
-
-      <div className="grid grid-cols-2 gap-16 items-start border-b border-[#111111]/10 pb-12">
-        <div className="flex flex-col pt1-sl pt1-d2">
-          <span className="text-[11px] font-bold tracking-widest text-[#111111]/45 uppercase mb-4 block">
-            01 / 선점된 고정 경제 (MANDATORY PLATFORMS)
-          </span>
-          <h3 className="text-[32px] font-black text-[#111111]/50 tracking-tight leading-tight mb-6 break-keep">
-            나머지 돈은 움직일 수 없고<br/>
-            이미 기존 거대 플랫폼이 장악했습니다
-          </h3>
-          
-          <div className="flex flex-col gap-3.5 mt-2">
-            {[
-              { cat: '월세 · 관리비', items: '부동산 납부금 및 주거 고정비' },
-              { cat: '세금 · 연금', items: '국가 납세 및 사회보험 의무 지출' },
-              { cat: '통신 · 생활', items: '이동통신요금 · 쿠팡 · 배달의민족 결제액' }
-            ].map((item) => (
-              <div key={item.cat} className="flex items-baseline gap-4 text-[14.5px]">
-                <span className="w-24 shrink-0 font-bold text-[#111111]/30 border-r border-[#111111]/10 pr-3 text-right">
-                  {item.cat}
-                </span>
-                <span className="font-medium text-[#111111]/55 tracking-tight">
-                  {item.items}
-                </span>
-              </div>
-            ))}
+            {/* 노드들 */}
+            <div className="absolute top-[10px] px-3 py-1 border border-gray-150 bg-white text-[11px] font-bold rounded-lg shadow-3xs">Market Modules (시장별 운영 모듈)</div>
+            <div className="absolute top-[65px] left-[5px] px-3 py-1 border border-gray-150 bg-white text-[11px] font-bold rounded-lg shadow-3xs">Activity Data (활동 이력)</div>
+            <div className="absolute top-[65px] right-[5px] px-3 py-1 border border-gray-150 bg-white text-[11px] font-bold rounded-lg shadow-3xs">Member Network (회원 관계)</div>
+            <div className="absolute bottom-[10px] left-[45px] px-3 py-1 border border-gray-150 bg-white text-[11px] font-bold rounded-lg shadow-3xs">Payment Data (결제 흐름)</div>
+            <div className="absolute bottom-[10px] right-[45px] px-3 py-1 border border-gray-150 bg-white text-[11px] font-bold rounded-lg shadow-3xs">Settlement Data (정산 구조)</div>
           </div>
           
-          <p className="text-[12.5px] font-medium text-[#111111]/35 tracking-tight leading-relaxed mt-8 break-keep">
-            * 이 고정 경제 영역의 돈은 소비자가 자율적으로 통제하기 어려우며, 이미 확정된 플랫폼 비즈니스들이 완벽히 선점하고 분할해 가고 있습니다.
-          </p>
-        </div>
-
-        <div className="flex flex-col pt1-sr pt1-d3 pl-10 border-l border-[#111111]/10">
-          <span className="text-[11px] font-bold tracking-widest text-emerald-600 uppercase mb-4 block">
-            02 / 자율적 선택의 경제 (PASSION OPERATING SYSTEM)
+          <span className="text-[11.5px] font-black text-blue-600 block mt-3 text-center w-full uppercase tracking-wider">
+            THE LAST PLATFORM: 사람들이 좋아하는 활동을 더 쉽게 찾고, 더 편하게 참여하고, 더 오래 기록할 수 있게 하는 플랫폼
           </span>
-          <h3 className="text-[32px] font-black text-[#111111] tracking-tight leading-tight mb-6 break-keep">
-            스스로 선택한 열정의 돈은<br/>
-            <span className="text-emerald-600">아직 지배적인 플랫폼이 없습니다</span>
-          </h3>
-
-          <div className="flex flex-col gap-3.5 mt-2">
-            {[
-              { cat: '교육 · 강습', items: '요가 · 필라테스 · 댄스 · 어학 클래스 수강료' },
-              { cat: '모임 · 문화', items: '밀롱가 · 동호회 회비 · 정기 소셜 파티 티켓' },
-              { cat: '행사 · 여정', items: '워크샵 참가비 · 국내외 축제 · 취미 중심 여행 패키지' }
-            ].map((item) => (
-              <div key={item.cat} className="flex items-baseline gap-4 text-[14.5px]">
-                <span className="w-24 shrink-0 font-bold text-emerald-600/50 border-r border-emerald-600/20 pr-3 text-right">
-                  {item.cat}
-                </span>
-                <span className="font-bold text-[#111111] tracking-tight">
-                  {item.items}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          <p className="text-[12.5px] font-semibold text-emerald-600/70 tracking-tight leading-relaxed mt-8 break-keep">
-            * 통계청 기준 자발적으로 사용하는 문화/취미 소비를 통합 예약, 결제, 정산할 수 있는 플랫폼은 아직 시장에 존재하지 않습니다.
-          </p>
         </div>
       </div>
-
-      <div className="mt-12 flex flex-col md:flex-row justify-between items-center gap-6 pt1-fu pt1-d6">
-        <div className="max-w-[700px] text-left">
-          <p className="text-[15px] font-medium text-[#111111]/55 leading-relaxed break-keep">
-            사람들이 자발적으로 움직이고 지출하는 취미와 사교의 실물 결제망을 직접 연결합니다.<br/>
-            이것이 우리가 WoC를 만드는 이유이자, 이 플랫폼이 가지는 가장 강력한 시장 독점 기회입니다.
-          </p>
-        </div>
-        
-        <div className="text-right shrink-0">
-          <p className="font-['Space_Grotesk'] text-[11px] font-bold tracking-[0.3em] text-emerald-600 uppercase mb-2">
-            CONCLUSION KEYWORD
-          </p>
-          <h2 className="text-[38px] md:text-[48px] font-black text-[#111111] tracking-tighter leading-none pt1-gp">
-            이것이 <span className="text-emerald-600">마지막 플랫폼</span>이다.
-          </h2>
-        </div>
-      </div>
-    </div>
-  </div>
-);
-
-// Slide 6: 왜 지배적 플랫폼이 없을까? (Operational Complexity)
-export const Slide6 = () => {
-  const legacyTools = ['네이버카페', '밴드', '카카오톡', '위버스', '클래스101', '온오프믹스', '예약툴', '멤버십툴'];
-  const communities = ['요가', '러닝', '자전거', '살사', '위스키', '뮤지컬'];
-  const commonNeeds = ['회원', '행사', '클래스', '예약', '결제', '운영'];
-
-  return (
-    <div className="relative z-10 flex flex-col w-full h-full bg-[#fcf8f8] text-[#111111] px-[80px] py-[40px] justify-center overflow-hidden">
-      <div className="max-w-[1300px] w-full mx-auto relative z-10">
-        <span className="font-['Space_Grotesk'] text-[13px] font-bold tracking-[0.3em] text-[#111111]/30 uppercase block mb-3 pt1-fu">
-          MARKET STRUCTURE
-        </span>
-
-        <div className="mb-8 text-left">
-          <h2 className="text-[44px] md:text-[50px] font-black text-[#111111] leading-tight tracking-tighter pt1-fu pt1-d2">
-            왜 아직 지배적 플랫폼이 없을까?
-          </h2>
-        </div>
-
-        <div className="grid grid-cols-12 gap-12 border-t border-b border-[#111111]/10 py-8 items-stretch">
-          <div className="col-span-5 flex flex-col pr-10 border-r border-[#111111]/10 pt1-sl pt1-d3">
-            <span className="text-[11px] font-bold tracking-widest text-[#111111]/45 uppercase mb-6 block">
-              01 / 기존 서비스들의 한계
-            </span>
-            
-            <div className="flex flex-wrap gap-2.5 max-w-[400px] mb-8">
-              {legacyTools.map((tool) => (
-                <span 
-                  key={tool} 
-                  className="px-3.5 py-1.5 border border-[#111111]/10 bg-[#111111]/[0.01] rounded-sm text-[13.5px] font-semibold text-[#111111]/50 tracking-tight"
-                >
-                  {tool}
-                </span>
-              ))}
-            </div>
-
-            <div className="mt-auto">
-              <p className="text-[18px] font-black text-[#111111] tracking-tight leading-none mb-2">
-                사람은 하나인데
-              </p>
-              <p className="text-[14px] font-medium text-[#111111]/45">
-                도구는 모두 분리되어 작동합니다.
-              </p>
-            </div>
-          </div>
-
-          <div className="col-span-2 flex flex-col items-center justify-center text-center px-4 pt1-fi pt1-d4">
-            <div className="w-[1px] h-10 bg-[#111111]/15 mb-4" />
-            <p className="text-[15px] font-black text-[#111111] leading-snug tracking-tighter break-keep">
-              문제는 기능이 아닙니다.<br/>
-              <span className="text-[#111111]/60 font-bold">운영 구조</span>입니다.
-            </p>
-            <div className="w-[1px] h-10 bg-[#111111]/15 mt-4" />
-          </div>
-
-          <div className="col-span-5 flex flex-col pl-10 pt1-sr pt1-d3">
-            <span className="text-[11px] font-bold tracking-widest text-[#111111]/45 uppercase mb-6 block">
-              02 / 커뮤니티 운영의 다양성
-            </span>
-
-            <div className="flex flex-col gap-4 mb-8">
-              <div className="flex flex-wrap gap-2">
-                {communities.map((item) => (
-                  <span key={item} className="px-2.5 py-0.5 border border-[#111111]/15 rounded-full text-[12.5px] font-bold text-[#111111]/70">
-                    {item}
-                  </span>
-                ))}
-              </div>
-              <div className="flex items-center gap-1.5 text-[13.5px] text-[#111111]/50 font-medium tracking-tight">
-                <span className="font-bold text-[#111111]/75">필수 요구:</span>
-                {commonNeeds.join(' · ')}
-              </div>
-            </div>
-
-            <div className="mt-auto">
-              <p className="text-[18px] font-black text-[#111111] tracking-tight leading-none mb-2">
-                같은 커뮤니티가 없습니다.
-              </p>
-              <p className="text-[14px] font-medium text-[#111111]/45">
-                같은 운영 방식도 존재하지 않습니다.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-8 pt-2 flex flex-col md:flex-row justify-between items-center gap-6 pt1-fu pt1-d5">
-          <div className="text-left max-w-[650px]">
-            <p className="text-[14px] font-medium text-[#111111]/50 leading-relaxed break-keep">
-              각 취미 커뮤니티마다 정산 방식, 예약 룰, 강사 정산 구조가 극단적으로 다르기 때문에 지금까지 누구도 하나의 플랫폼으로 이를 통합해내지 못했습니다.
-            </p>
-          </div>
-          
-          <div className="text-right shrink-0">
-            <p className="font-['Space_Grotesk'] text-[10px] font-bold tracking-[0.3em] text-[#111111]/35 uppercase mb-1">
-              MARKET CONCLUSION
-            </p>
-            <h3 className="text-[28px] md:text-[34px] font-black text-[#111111] tracking-tighter leading-none pt1-gp">
-              그래서 지금까지는 <span className="text-[#111111]/60 font-bold">전용 서비스</span>만 존재했습니다.
-            </h3>
-          </div>
-        </div>
-      </div>
+      <p className="source font-extrabold text-blue-600">WoC의 장기 가치는 단순 회원 수가 아니라, 커뮤니티 활동의 결제·정산·운영 데이터가 축적되는 Community OS 구조에 있습니다.</p>
     </div>
   );
 };
 
-// Slide 7: 글로벌 생태계 카테고리 (Ecosystem)
-export const Slide7 = () => {
-  const categories = [
-    { title: '무대', eng: 'STAGE', items: ['탱고', '살사', '바차타', '플라멩코', '발레'] },
-    { title: '야외', eng: 'ROAD', items: ['러닝', '자전거', '캠핑', '트레킹', '클라이밍'] },
-    { title: '창작', eng: 'TABLE', items: ['커피', '요리', '베이킹', '도예', '목공'] },
-    { title: '예술', eng: 'MUSE', items: ['K-Pop', '영화', '애니메이션', '문학', '바이닐'] },
-    { title: '일상', eng: 'MIND', items: ['영어', '일본어', '글쓰기', '인테리어', '식물'] },
-  ];
-
-  return (
-    <div className="relative z-10 flex flex-col w-full h-full bg-[#fcf8f8] text-[#111111] px-[80px] justify-center overflow-hidden">
-      <div className="max-w-[1300px] w-full mx-auto">
-        <div className="mb-10">
-          <span className="text-[13px] font-bold tracking-[0.3em] text-[#111111]/30 uppercase block mb-3 pt1-fu">생태계 확장성</span>
-          <h2 className="text-[44px] md:text-[60px] font-black tracking-tight leading-none pt1-fu pt1-d2">
-            하나의 플랫폼, 수많은 커뮤니티
-          </h2>
-          <div className="mt-4 flex flex-col gap-1 text-[15px] md:text-[18px] font-medium text-[#111111]/55 tracking-tight break-keep pt1-fu pt1-d3">
-            <p>탱고 커뮤니티의 회원은 이미 요가, 러닝, 커피, 여행 등 다양한 활동에도 참여하고 있습니다.</p>
-            <p>WoC는 하나의 커뮤니티에서 시작하여 전체 활동 생태계로 무한히 확장합니다.</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-5 gap-6 pt1-si pt1-d4">
-          {categories.map((cat, idx) => (
-            <div key={cat.title} className="flex flex-col border border-[#111111]/10 bg-white/30 p-5 pt1-fi" style={{ animationDelay: `${400 + idx * 80}ms` }}>
-              <span className="text-[17px] font-black tracking-tight text-[#111111] border-b border-[#111111]/10 pb-2 mb-4 block leading-tight">
-                {cat.title}
-                <span className="font-['Space_Grotesk'] text-[10px] font-bold tracking-wider text-[#111111]/30 uppercase block mt-0.5">{cat.eng}</span>
-              </span>
-              <ul className="flex flex-col gap-2.5">
-                {cat.items.map((item) => (
-                  <li key={item} className="text-[13.5px] font-bold text-[#111111]/50 tracking-tight flex items-center gap-2">
-                    <span className="w-1 h-1 bg-[#111111]/25 rounded-full shrink-0"></span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-10 pt-6 border-t border-[#111111]/10 pt1-si pt1-d6">
-          <span className="text-[11.5px] font-black tracking-tight text-[#111111]/60 block mb-5">
-            생태계 확장 파이프라인
-            <span className="font-['Space_Grotesk'] text-[9.5px] font-bold tracking-widest text-[#111111]/30 uppercase ml-2">ECOSYSTEM PIPELINE</span>
-          </span>
-          <div className="flex items-center justify-between max-w-[850px] text-[14px] md:text-[15px] font-black text-[#111111]">
-            <div className="flex items-center justify-center px-4 py-2 border border-[#111111]/20 bg-white/50 text-[#111111]/70">WoC 코어</div>
-            <span className="text-[#111111]/30 font-light">➔</span>
-            <div className="flex items-center justify-center px-4 py-2 border border-[#111111]/20 bg-white/50 text-[#111111]/70">5대 핵심 테마 (무대 · 야외 · 창작 · 예술 · 일상)</div>
-            <span className="text-[#111111]/30 font-light">➔</span>
-            <div className="flex items-center justify-center px-4 py-2 border border-[#111111]/20 bg-white/50 text-[#111111]/70">수백 개의 활동</div>
-            <span className="text-[#111111]/30 font-light">➔</span>
-            <div className="flex items-center justify-center px-4.5 py-2 border border-[#111111] bg-[#111111] text-[#fcf8f8]">수천 개의 커뮤니티</div>
-          </div>
-        </div>
-
-        <div className="mt-8 flex flex-col gap-1.5 text-[11.5px] font-bold text-[#111111]/35 tracking-tight pt1-fu pt1-d8">
-          <p>* WoC는 하나의 취미 플랫폼이 아닌, 수많은 오프라인 사교 활동과 커뮤니티를 담아내고 상호 연결하는 운영 플랫폼입니다.</p>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Slide 8: 오프라인 확장 메커니즘 (확장 가능성 증명)
-export const Slide8 = () => {
-  const roadmapData = [
-    { ko: '탱고', eng: 'Tango', size: '2,000명', leader: '강사 · DJ · 오거나이저', structure: '수업 · 밀롱가 · 축제' },
-    { ko: '살사', eng: 'Salsa', size: '30,000명', leader: '강사 · 동호회 운영진', structure: '수업 · 파티 · 공연' },
-    { ko: '바차타', eng: 'Bachata', size: '10,000명', leader: '강사 · 팀 리더', structure: '수업 · 행사 · 워크샵' },
-    { ko: '요가 · 필라테스', eng: 'Yoga & Pilates', size: '300,000+명', leader: '원장 · 강사', structure: '수업 · 예약 · 회원권' },
-  ];
-
-  return (
-    <div className="relative z-10 flex flex-col w-full h-full bg-[#fcf8f8] text-[#111111] px-[80px] py-[50px] justify-center">
-      <div className="max-w-[1300px] w-full mx-auto">
-        <div className="mb-8">
-          <span className="text-[13px] font-bold tracking-[0.3em] text-[#111111]/30 uppercase block mb-3 pt1-fu">확장 가능성 증명</span>
-          <h2 className="text-[44px] md:text-[60px] font-black tracking-tight leading-none pt1-fu pt1-d2">
-            검증된 커뮤니티 확장 모델
-          </h2>
-          <p className="mt-3 text-[15px] text-[#111111]/45 font-medium pt1-fu pt1-d3">
-            WoC는 특정 취미에 종속되지 않습니다. 동일한 운영 구조를 바탕으로 다른 오프라인 시장에 고속 복제됩니다.
-          </p>
-        </div>
-
-        <div className="w-full overflow-hidden border-t border-[#111111]/15 pt1-si pt1-d4">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-[#111111]/10">
-                <th className="py-5 font-bold text-[12px] tracking-wider text-[#111111]/40 uppercase w-[20%]">커뮤니티</th>
-                <th className="py-5 font-bold text-[12px] tracking-wider text-[#111111]/40 uppercase text-center w-[20%]">커뮤니티 규모</th>
-                <th className="py-5 font-bold text-[12px] tracking-wider text-[#111111]/40 uppercase w-[30%]">핵심 운영자</th>
-                <th className="py-5 font-bold text-[12px] tracking-wider text-[#111111]/40 uppercase w-[30%]">주요 거래 구조</th>
-              </tr>
-            </thead>
-            <tbody>
-              {roadmapData.map((row) => (
-                <tr key={row.ko} className="border-b border-[#111111]/5 hover:bg-[#111111]/[0.01] transition-colors duration-200">
-                  <td className="py-5 font-bold text-[16px] md:text-[18px] text-[#111111] leading-tight">
-                    {row.ko}
-                    <span className="font-['Space_Grotesk'] text-[11px] font-bold tracking-wider text-[#111111]/30 uppercase block mt-0.5">{row.eng}</span>
-                  </td>
-                  <td className="py-5 font-bold text-[15px] text-center font-['Space_Grotesk'] text-[#111111]/70">{row.size}</td>
-                  <td className="py-5 font-medium text-[15px] text-[#111111]/60">{row.leader}</td>
-                  <td className="py-5 font-semibold text-[15px] text-[#111111]">{row.structure}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="mt-10 pt-6 border-t border-[#111111]/10 pt1-si pt1-d6">
-          <span className="text-[11.5px] font-black tracking-tight text-[#111111]/60 block mb-5">
-            WoC 확장 메커니즘
-            <span className="font-['Space_Grotesk'] text-[9.5px] font-bold tracking-widest text-[#111111]/30 uppercase ml-2">WoC EXPANSION FORMULA</span>
-          </span>
-          <div className="flex items-center justify-between max-w-[850px] text-[15px] md:text-[16px] font-black text-[#111111]">
-            <div className="flex items-center justify-center px-4 py-2 border border-[#111111]/20 bg-white/50 text-[#111111]/70">운영자</div>
-            <span className="text-[#111111]/30 font-light">➔</span>
-            <div className="flex items-center justify-center px-4 py-2 border border-[#111111]/20 bg-white/50 text-[#111111]/70">회원</div>
-            <span className="text-[#111111]/30 font-light">➔</span>
-            <div className="flex items-center justify-center px-4 py-2 border border-[#111111]/20 bg-white/50 text-[#111111]/70">활동</div>
-            <span className="text-[#111111]/30 font-light">➔</span>
-            <div className="flex items-center justify-center px-4 py-2 border border-[#111111]/20 bg-white/50 text-[#111111]/70">결제</div>
-            <span className="text-[#111111]/30 font-light">➔</span>
-            <div className="flex items-center justify-center px-4 py-2 border border-[#111111]/20 bg-white/50 text-[#111111]/70">정산</div>
-            <span className="text-[#111111]/30 font-light">➔</span>
-            <div className="flex items-center justify-center px-4.5 py-2 border border-[#111111] bg-[#111111] text-[#fcf8f8]">WoC</div>
-          </div>
-        </div>
-
-        <div className="mt-8 flex flex-col gap-1.5 text-[11.5px] font-bold text-[#111111]/35 tracking-tight pt1-fu pt1-d8">
-          <p>* 모든 오프라인 커뮤니티가 동일한 운영 구조(Formula)를 공유하고 있어 원스톱 확장이 즉시 가능합니다.</p>
-          <p>* WoC는 단순 탱고 전용 플랫폼이 아닌, 검증된 단일 운영 모델을 다각적 취미 시장에 이식하는 통합 커뮤니티 OS입니다.</p>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Slide 9: 수직적 온보딩 및 수평적 확장 전략 (Vertical & Horizontal Onboarding)
-export const Slide9 = () => (
-  <div className="relative z-10 flex flex-col w-full h-full bg-[#fcf8f8] text-[#111111] px-[80px] py-[40px] justify-center overflow-hidden">
-    <div className="max-w-[1300px] w-full mx-auto">
-      <div className="mb-6">
-        <span className="text-[13px] font-bold tracking-[0.3em] text-[#111111]/30 uppercase block mb-3 pt1-fu">온보딩 및 성장 전략</span>
-        <h2 className="text-[44px] md:text-[54px] font-black tracking-tight leading-none pt1-fu pt1-d2">
-          수직적 온보딩과 수평적 확장
-        </h2>
-        <p className="mt-3 text-[15px] text-[#111111]/45 font-medium pt1-fu pt1-d3">
-          광고비 없이 허브를 통해 사용자를 수직적으로 확보(Vertical)하고, 검증된 사용자 경험을 바탕으로 이종 활동 커뮤니티로 장벽 없이 수평적 이주(Horizontal)를 유도합니다.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-10 border-t border-b border-[#111111]/10 py-8">
-        <div className="flex flex-col h-full pt1-sl pt1-d4 border-r border-[#111111]/10 pr-10">
-          <div className="flex items-baseline gap-4 mb-4">
-            <span className="text-[14px] font-bold tracking-widest text-[#111111]/30">01</span>
-            <h3 className="text-[26px] font-black tracking-tight text-[#111111]">수직적 온보딩 (Vertical Onboarding)</h3>
-          </div>
-          <p className="text-[14.5px] leading-[1.6] text-[#111111]/60 mb-6 break-keep">
-            강사(Instructor) 및 소셜 댄스 동호회 운영진(Organizer) 등 핵심 운영 주체를 허브 노드로 우선 락인합니다. 클래스 개설, 실시간 예약, 정산 툴을 지원하여 이들에게 종속된 수많은 활동 회원을 자연스럽게 동시 온보딩합니다.
-          </p>
-          <div className="flex items-center gap-8 mt-auto">
-            <div className="flex items-center gap-2">
-              <div className="text-[32px] font-[900] tracking-tighter text-[#111111]">1:50</div>
-              <div className="text-[10px] font-bold tracking-wider text-[#111111]/40 uppercase leading-none">
-                Instructor<br/>Students
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="text-[32px] font-[900] tracking-tighter text-[#111111]">1:100</div>
-              <div className="text-[10px] font-bold tracking-wider text-[#111111]/40 uppercase leading-none">
-                Organizer<br/>Participants
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-col h-full pt1-sr pt1-d4 pl-10">
-          <div className="flex items-baseline gap-4 mb-4">
-            <span className="text-[14px] font-bold tracking-widest text-emerald-600/70">02</span>
-            <h3 className="text-[26px] font-black tracking-tight text-[#111111]">수평적 이주 (Horizontal Migration)</h3>
-          </div>
-          <p className="text-[14.5px] leading-[1.6] text-[#111111]/60 mb-6 break-keep">
-            살사 소사이어티(Salsa Society) 등 플랫폼 내 특정 커뮤니티에서 결제와 소셜 기능의 신뢰를 겪은 사용자들이 플랫폼 장벽 없이 요가 강습, 캠핑 소모임, 자전거 라이딩 등 이종 영역으로 스스로 이주하여 참여 범위를 수평 확장합니다.
-          </p>
-          <div className="flex items-center gap-6 mt-auto">
-            <div className="px-3.5 py-1.5 bg-[#111111] text-white text-[12.5px] font-black tracking-wider uppercase rounded-sm">
-              Salsa Society User
-            </div>
-            <span className="text-[#111111]/30 font-bold">➔</span>
-            <div className="flex gap-2">
-              <span className="px-2.5 py-1 border border-emerald-600/20 bg-emerald-600/[0.02] text-emerald-600 rounded-full text-[11px] font-bold">요가 (Yoga)</span>
-              <span className="px-2.5 py-1 border border-emerald-600/20 bg-emerald-600/[0.02] text-emerald-600 rounded-full text-[11px] font-bold">캠핑 (Camping)</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-8 pt-2 flex flex-col md:flex-row items-center justify-between gap-4 text-[13px] font-bold pt1-si pt1-d8">
-        <div className="flex items-center gap-3">
-          <span className="px-2 py-0.5 bg-[#111111]/5 border border-[#111111]/15 text-[#111111]/60 text-[10px] uppercase tracking-wider rounded-sm">Vertical Flow</span>
-          <span className="text-[#111111]/70">허브(강사/오거나이저) ➔ 일반 회원 수직 락인</span>
-        </div>
-        <div className="hidden md:block text-[#111111]/25">|</div>
-        <div className="flex items-center gap-3">
-          <span className="px-2 py-0.5 bg-emerald-600/10 border border-emerald-600/20 text-emerald-600 text-[10px] uppercase tracking-wider rounded-sm">Horizontal Flow</span>
-          <span className="text-[#111111]/70">살사 소사이어티 ➔ 요가 · 캠핑 등 플랫폼 내 이종 커뮤니티 수평 전이</span>
-        </div>
-      </div>
-
-      <div className="mt-6 text-[11px] font-bold text-[#111111]/30 tracking-tight text-center pt1-fu pt1-d10">
-        * WoC는 개별 사용자를 획득하기 위한 마케팅 비용을 최소화하고, 수직 온보딩의 전파력과 수평 확장의 이주력을 극대화하여 평생 가치(LTV)를 극대화하는 성장을 달성합니다.
-      </div>
-    </div>
-  </div>
-);
-
-// Slide 10: 모듈형 커뮤니티 시스템 (Modular Architecture)
-export const Slide10 = () => {
-  const categories = [
-    { cat: 'ADMIN', items: 'Brand Setting · Class Setting · Shop Setting', color: 'bg-[#111111] text-white' },
-    { cat: 'CORE', items: 'Dashboard · Calendar · Feed · Live · Chat Rooms', color: 'bg-[#222222] text-white' },
-    { cat: 'EDU & EVENT', items: 'Tuition Manager · Homework · Ticket Booking · Venues', color: 'bg-[#111111]/5 text-black' },
-    { cat: 'COMMERCE', items: 'Group Shop · Rental System · Membership Billing', color: 'bg-[#111111]/5 text-black' },
-    { cat: 'AI COOPER', items: 'Auto Translation · AI Assistant · AI Insights', color: 'bg-[#111111]/5 text-black' },
-  ];
-
-  const presets = ['Tango Studio', 'Yoga Brand', 'Daechi Academy', 'Fan Community', 'Startup Team'];
-
-  return (
-    <div className="relative z-10 flex flex-col w-full h-full bg-[#fcf8f8] text-[#111111] px-[80px] py-[40px] justify-center overflow-hidden">
-      <div className="max-w-[1300px] w-full mx-auto">
-        <div className="mb-6 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
-          <div>
-            <span className="text-[13px] font-bold tracking-[0.3em] text-[#111111]/30 uppercase block mb-3 pt1-fu">모듈형 아키텍처</span>
-            <h2 className="text-[44px] md:text-[50px] font-black tracking-tight leading-none pt1-fu pt1-d2">
-              One Platform, Infinite Systems
-            </h2>
-            <p className="mt-2 text-[15px] text-[#111111]/45 font-medium pt1-fu pt1-d3">
-              50개 이상의 세부 기능을 조립하여 각 그룹의 고유한 운영체제를 구축합니다.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2 pt1-fi pt1-d4">
-            {presets.map((preset) => (
-              <span key={preset} className="px-3 py-1 bg-white border border-[#111111]/15 rounded-full text-[11px] font-bold text-[#111111]/60">
-                {preset}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-12 gap-8 items-stretch border-t border-b border-[#111111]/10 py-6">
-          <div className="col-span-7 flex flex-col gap-3 h-full pt1-sl pt1-d4">
-            {categories.map((r) => (
-              <div key={r.cat} className={`${r.color} rounded-lg px-5 py-3 flex items-center gap-4 border border-[#d4d4d4]/10 transition-transform duration-300 hover:scale-[1.01]`}>
-                <span className="font-['Space_Grotesk'] text-[12px] md:text-[14px] font-black tracking-widest uppercase w-[120px] text-left shrink-0">{r.cat}</span>
-                <span className="text-[12px] md:text-[14.5px] font-semibold opacity-75">{r.items}</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="col-span-5 flex flex-col justify-center h-full pl-6 border-l border-[#111111]/10 pt1-sr pt1-d5">
-            <h3 className="text-[24px] font-black leading-tight tracking-tight mb-4 break-keep">
-              하나의 커뮤니티는 하나의 독립된 경제 생태계가 됩니다
-            </h3>
-            <p className="text-[14px] leading-[1.6] text-black/50 break-keep mb-6">
-              각 그룹의 성격(댄스 스튜디오, 요가, 학원 등)에 맞추어 결제 모듈, 예약 캘린더, 커뮤니티 피드 등을 유기적으로 선택 적용할 수 있는 세계 최초의 모듈형 SaaS 서비스입니다.
-            </p>
-            <div className="bg-[#111111] text-white p-4 text-center rounded-lg">
-              <p className="text-[15px] font-black tracking-tight">Salesforce와 같은 서비스 확장망 구축</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-6 text-[11px] font-bold text-[#111111]/30 tracking-tight text-center pt1-fu pt1-d8">
-          * 사용자는 개별 솔루션(예약 따로, 결제 따로)을 찾아 헤맬 필요가 없이 WoC 내에서 자신만의 시스템을 완성합니다.
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Slide 11: 전략적 가치 (Strategic Value)
-export const Slide11 = () => (
-  <div className="relative z-10 flex flex-col w-full h-full bg-[#fcf8f8] text-[#111111] px-[80px] justify-center">
-    <div className="max-w-[1300px] w-full mx-auto">
-      <div className="mb-12">
-        <span className="text-[13px] font-bold tracking-[0.3em] text-[#111111]/30 uppercase block mb-3 pt1-fu">전략적 가치</span>
-        <h2 className="text-[44px] md:text-[60px] font-black tracking-tight leading-none pt1-fu pt1-d2">
-          비즈니스 시너지와 활용 방안
-        </h2>
-        <p className="mt-3 text-[15px] text-[#111111]/45 font-medium pt1-fu pt1-d3">
-          성장 정체에 직면한 전통 산업군 및 플랫폼들과의 유기적 융합 시나리오.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-3 gap-8">
-        <div className="flex flex-col border-l border-[#111111]/15 pl-8 py-4 pt1-fu" style={{ animationDelay: '400ms' }}>
-          <span className="text-[12.5px] font-bold tracking-tight text-[#111111]/45 mb-4 block leading-none">
-            시나리오 01 / 전통 산업의 전환
-            <span className="font-['Space_Grotesk'] text-[9.5px] font-bold tracking-wider text-[#111111]/25 uppercase ml-1.5">TRADITIONAL PIVOT</span>
-          </span>
-          <h3 className="text-[22px] font-black tracking-tight mb-4 leading-tight break-keep text-[#111111]">
-            성장 정체 산업의 신규 매출 확장
-          </h3>
-          <p className="text-[14px] leading-[1.6] text-[#111111]/50 tracking-tight break-keep mb-6">
-            기존 산업은 제품 판매 중심의 성장에 머물렀으나, WoC를 통해 커뮤니티 기반 반복 매출 모델을 결합하여 새로운 사업 돌파구를 만듭니다.
-          </p>
-          <div className="mt-auto border-t border-[#111111]/5 pt-4 text-[12px] flex flex-col gap-3">
-            <div>
-              <span className="text-[#111111]/30 font-bold block text-[10px] uppercase mb-1">대상 산업군</span>
-              <p className="font-bold text-[#111111]/70 leading-tight">제지 · 섬유 · 패션 · 생활용품 · 교육 · 레저</p>
-              <p className="text-[9.5px] text-[#111111]/35 mt-0.5">(참고: 한솔제지, 무림, LF, F&F, 깨끗한나라, 대교 등)</p>
-            </div>
-            <div className="grid grid-cols-2 gap-2 border-t border-[#111111]/5 pt-3 text-[11px] leading-tight">
-              <div>
-                <span className="text-red-500/60 font-bold block text-[9px] uppercase mb-0.5">기존 구조</span>
-                <p className="text-[#111111]/50">제품 판매 · 일회성 거래</p>
-              </div>
-              <div>
-                <span className="text-emerald-600/70 font-bold block text-[9px] uppercase mb-0.5">WoC 전환</span>
-                <p className="text-[#111111] font-bold">커뮤니티 기반 반복 매출</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-col border-l border-[#111111]/15 pl-8 py-4 pt1-fu" style={{ animationDelay: '550ms' }}>
-          <span className="text-[12.5px] font-bold tracking-tight text-[#111111]/45 mb-4 block leading-none">
-            시나리오 02 / 빅테크의 인프라 선점
-            <span className="font-['Space_Grotesk'] text-[9.5px] font-bold tracking-wider text-[#111111]/25 uppercase ml-1.5">TECH INFRASTRUCTURE</span>
-          </span>
-          <h3 className="text-[22px] font-black tracking-tight mb-4 leading-tight break-keep text-[#111111]">
-            빅테크 플랫폼 확장
-          </h3>
-          <p className="text-[14px] leading-[1.6] text-[#111111]/50 tracking-tight break-keep mb-6">
-            기존 카카오, 네이버 등 online 메신저와 단순 피드 소통 위주의 서비스 한계를 넘어, 오프라인 실물 사교 인프라 예약/결제 영역을 직접 장악합니다.
-          </p>
-          <div className="mt-auto border-t border-[#111111]/5 pt-4 text-[12px] flex flex-col gap-3">
-            <div>
-              <span className="text-[#111111]/30 font-bold block text-[10px] uppercase mb-1">인프라 레이어 선점</span>
-              <p className="font-bold text-[#111111]/70 leading-tight">온라인 커뮤니티의 오프라인화</p>
-            </div>
-            <div className="grid grid-cols-2 gap-2 border-t border-[#111111]/5 pt-3 text-[11px] leading-tight">
-              <div>
-                <span className="text-[#111111]/30 font-bold block text-[9px] uppercase mb-0.5">기존 구조</span>
-                <p className="text-[#111111]/50">메신저 · 온라인 피드 광고</p>
-              </div>
-              <div>
-                <span className="text-emerald-600/70 font-bold block text-[9px] uppercase mb-0.5">WoC 전환</span>
-                <p className="text-[#111111] font-bold">오프라인 활동 예약 결제망</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-col border-l border-[#111111]/15 pl-8 py-4 pt1-fu" style={{ animationDelay: '700ms' }}>
-          <span className="text-[12.5px] font-bold tracking-tight text-[#111111]/45 mb-4 block leading-none">
-            시나리오 03 / 로컬 경제의 비즈니스화
-            <span className="font-['Space_Grotesk'] text-[9.5px] font-bold tracking-wider text-[#111111]/25 uppercase ml-1.5">LOCAL MONETIZATION</span>
-          </span>
-          <h3 className="text-[22px] font-black tracking-tight mb-4 leading-tight break-keep text-[#111111]">
-            당근 및 로컬 플랫폼
-          </h3>
-          <p className="text-[14px] leading-[1.6] text-[#111111]/50 tracking-tight break-keep mb-6">
-            지역 기반 중고거래와 단순 게시판 소모임을 넘어, 실제 오프라인 사교 활동과 클래스 결제/정산 생태계로 진화하는 로컬 비즈니스 최종 모델을 완성합니다.
-          </p>
-          <div className="mt-auto border-t border-[#111111]/5 pt-4 text-[12px] flex flex-col gap-3">
-            <div>
-              <span className="text-[#111111]/30 font-bold block text-[10px] uppercase mb-1">로컬 경제 시스템</span>
-              <p className="font-bold text-[#111111]/70 leading-tight">지역 강습 및 정기 사교 모임 수용</p>
-            </div>
-            <div className="grid grid-cols-2 gap-2 border-t border-[#111111]/5 pt-3 text-[11px] leading-tight">
-              <div>
-                <span className="text-[#111111]/30 font-bold block text-[9px] uppercase mb-0.5">기존 구조</span>
-                <p className="text-[#111111]/50">중고거래 · 로컬 커뮤니티 피드</p>
-              </div>
-              <div>
-                <span className="text-emerald-600/70 font-bold block text-[9px] uppercase mb-0.5">WoC 전환</span>
-                <p className="text-[#111111] font-bold">오프라인 활동 결제 정산망</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-);
-
-// Slide 12: 투자 회수 가능성 (Revenue & BEP)
-export const Slide12 = () => (
-  <div className="relative z-10 flex flex-col w-full h-full bg-[#fcf8f8] text-[#111111] px-[100px] justify-center overflow-hidden">
+// Slide 19: Ending Slide (엔딩)
+export const Slide19 = () => (
+  <div className="slide slide-dark flex flex-col items-center justify-center text-center">
     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-      <div className="text-[25vw] font-black text-[#111111]/[0.015] leading-none select-none whitespace-nowrap">
-        REVENUE
-      </div>
+      <div className="w-[600px] h-[600px] rounded-full bg-blue-500/[0.03] blur-[120px]" />
     </div>
-    
-    <div className="max-w-[1200px] w-full relative z-10 flex flex-col justify-center">
-      <span className="text-[13px] font-bold tracking-[0.4em] text-[#111111]/30 uppercase block mb-10 pt1-fu">투자 회수 가능성</span>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
-        <div className="flex flex-col pt1-sl pt1-d2">
-          <h2 className="text-[44px] md:text-[54px] font-black tracking-tight leading-[1.1] mb-6 pt1-gp">
-            첫 매출까지 1개월 이내
-          </h2>
-          <p className="text-[15px] text-[#111111]/55 leading-[1.6] mb-8 break-keep">
-            탱고 시장에는 이미 수업 · 밀롱가 · 워크샵 · 공연 · 축제 거래가 활발히 실존하고 있습니다. WoC는 새로운 거래 수요를 개척하는 것이 아니라, <span className="text-[#111111] font-bold">기존에 돌아가던 실물 거래를 플랫폼으로 즉시 연결</span>합니다. 따라서 서비스 론칭 직후 1개월 이내에 첫 매출 창출을 보장합니다.
-          </p>
-          <div className="flex items-center gap-4 bg-[#111111]/[0.02] border border-[#111111]/10 p-5 rounded-sm max-w-[380px]">
-            <span className="text-[11px] font-bold tracking-wider text-[#111111]/45 uppercase block">첫 매출</span>
-            <div className="w-[1px] h-[30px] bg-[#111111]/10 mx-2" />
-            <span className="text-[20px] font-black text-[#111111] tracking-tight">1개월 이내 실현</span>
-          </div>
-        </div>
-
-        <div className="flex flex-col border-t lg:border-t-0 lg:border-l border-[#111111]/10 pt-8 lg:pt-0 lg:pl-16 pt1-sr pt1-d4">
-          <h2 className="text-[44px] md:text-[54px] font-black tracking-tight leading-[1.1] mb-6 pt1-gp">
-            극도로 낮은 손익분기점 (BEP)
-          </h2>
-          <p className="text-[15px] text-[#111111]/55 leading-[1.6] mb-8 break-keep">
-            기획부터 DB 설계, 디자인, 전체 개발 및 운영 전 과정을 1인이 직접 풀스택으로 수행합니다. 대규모 고정비나 개발 인건비, 불필요한 마케팅 대행 조직을 차단하여 <span className="text-[#111111] font-bold">초기 커뮤니티 확보 단계에서 손익분기점(BEP)을 즉시 돌파</span>합니다.
-          </p>
-          <div className="flex items-center gap-4 bg-[#111111]/[0.02] border border-[#111111]/10 p-5 rounded-sm max-w-[380px]">
-            <span className="text-[11px] font-bold tracking-wider text-[#111111]/45 uppercase block">손익분기점</span>
-            <div className="w-[1px] h-[30px] bg-[#111111]/10 mx-2" />
-            <span className="text-[20px] font-black text-emerald-600 tracking-tight">초기 확보 단계 즉시 달성</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-12 p-6 border border-[#111111]/10 bg-[#111111]/[0.01] text-center pt1-fu pt1-d6">
-        <p className="text-[15px] md:text-[17px] font-bold tracking-tight text-[#111111]/80 leading-relaxed break-keep">
-          &ldquo;중요한 것은 사용자가 아니라 거래입니다.&rdquo;
-        </p>
-        <p className="mt-2 text-[13px] text-[#111111]/50 leading-relaxed break-keep max-w-[900px] mx-auto">
-          WoC는 사용자를 대거 모은 뒤 비즈니스 모델을 고민하는 플랫폼이 아닙니다. 이미 수억 대의 실물 거래가 활발히 작동하는 사교 커뮤니티의 예약 결제 인프라를 타겟하여 즉시 실질 수익을 창출하는 비즈니스 OS입니다.
-        </p>
-      </div>
-
-      <div className="w-full h-[1px] bg-[#111111]/10 my-10" />
-
-      <div className="flex flex-col md:flex-row justify-between items-center gap-4 pt1-fu pt1-d9">
-        <p className="text-[12px] font-medium tracking-tight text-[#111111]/30">
-          World of Community 2026. Confidential.
-        </p>
-        <div className="flex flex-col items-end gap-1.5 text-right">
-          <p className="text-[15px] font-black text-[#111111] tracking-tight">
-            취미를 위한 플랫폼, WoC
-          </p>
-          <p className="font-['Space_Grotesk'] text-[12px] font-bold tracking-[0.2em] text-[#111111]/40 uppercase">
-            The Operating System for Human Communities
-          </p>
-        </div>
-      </div>
-    </div>
-  </div>
-);
-// Slide 13: 투자 유치 계획 (Angel Investment Round)
-export const Slide13 = () => (
-  <div className="relative z-10 flex flex-col w-full h-full bg-[#fcf8f8] text-[#111111] px-[100px] justify-center overflow-hidden">
-    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-      <div className="text-[25vw] font-black text-[#111111]/[0.015] leading-none select-none whitespace-nowrap">
-        ANGEL
-      </div>
-    </div>
-
-    <div className="max-w-[1200px] w-full relative z-10 flex flex-col justify-center">
-      <span className="text-[13px] font-bold tracking-[0.4em] text-[#111111]/30 uppercase block mb-6 pt1-fu">
-        Angel Investment Round
-      </span>
-      <h2 className="text-[44px] md:text-[54px] font-black tracking-tight leading-none mb-10 pt1-fu pt1-d2">
-        투자 유치 계획
+    <div className="relative z-10 max-w-[1200px] w-full flex flex-col items-center">
+      <h2 className="text-[80px] font-black text-[#fcf8f8] leading-none tracking-tight break-keep">
+        감사합니다
       </h2>
-
-      <div className="flex flex-col gap-8">
-        {/* 1단: 상단 (핵심 숫자) */}
-        <div className="grid grid-cols-3 gap-6 pt1-fu pt1-d3">
-          <div className="border border-[#111111]/10 bg-[#111111]/[0.01] p-6 rounded-sm flex flex-col justify-center items-center text-center">
-            <span className="text-[11px] font-bold tracking-wider text-[#111111]/45 uppercase mb-2">투자 희망금</span>
-            <span className="text-[36px] font-black text-[#111111] tracking-tight">7,000만원</span>
-          </div>
-          <div className="border border-[#111111]/10 bg-[#111111]/[0.01] p-6 rounded-sm flex flex-col justify-center items-center text-center">
-            <span className="text-[11px] font-bold tracking-wider text-[#111111]/45 uppercase mb-2">희망 지분율</span>
-            <span className="text-[36px] font-black text-[#111111] tracking-tight">20%</span>
-          </div>
-          <div className="border border-[#111111]/10 bg-[#111111]/[0.01] p-6 rounded-sm flex flex-col justify-center items-center text-center">
-            <span className="text-[11px] font-bold tracking-wider text-[#111111]/45 uppercase mb-2">포스트 밸류에이션</span>
-            <span className="text-[36px] font-black text-emerald-600 tracking-tight">3.5억원</span>
-          </div>
-        </div>
-
-        {/* 2단: 중단 (자금 활용 계획) */}
-        <div className="grid grid-cols-2 gap-8 pt1-fu pt1-d4">
-          <div className="border border-[#111111]/10 bg-white/40 p-6 rounded-sm flex flex-col justify-between">
-            <div>
-              <div className="flex justify-between items-baseline mb-4 border-b border-[#111111]/10 pb-2">
-                <h3 className="text-[16px] font-black text-[#111111]">창업자 선투입 비용 일부 정산</h3>
-                <span className="text-[20px] font-black text-[#111111]/70">2,000만원 <span className="text-[13px] text-[#111111]/40 font-medium">(29%)</span></span>
-              </div>
-              <p className="text-[13.5px] text-[#111111]/50 leading-relaxed break-keep mt-2">
-                개발 및 운영 과정에서 선투입한 비용 일부 회수
-              </p>
-            </div>
-          </div>
-
-          <div className="border border-[#111111]/10 bg-white/40 p-6 rounded-sm flex flex-col justify-between">
-            <div>
-              <div className="flex justify-between items-baseline mb-4 border-b border-[#111111]/10 pb-2">
-                <h3 className="text-[16px] font-black text-[#111111]">제품 고도화 및 운영 자금</h3>
-                <span className="text-[20px] font-black text-emerald-600">5,000만원 <span className="text-[13px] text-[#111111]/40 font-medium">(71%)</span></span>
-              </div>
-              <ul className="grid grid-cols-2 gap-x-4 gap-y-2 text-[13.5px] text-[#111111]/60 font-semibold mt-2">
-                <li className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 bg-[#111111]/30 rounded-full"></span>
-                  플랫폼 인프라 운영
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 bg-[#111111]/30 rounded-full"></span>
-                  AI 서비스 활용
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 bg-[#111111]/30 rounded-full"></span>
-                  기능 고도화 및 유지보수
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 bg-[#111111]/30 rounded-full"></span>
-                  커뮤니티 확장 및 검증
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        {/* 3단: 하단 (12개월 목표) */}
-        <div className="border border-[#111111]/10 bg-[#111111]/[0.01] p-6 rounded-sm pt1-fu pt1-d5">
-          <h3 className="text-[14px] font-black text-[#111111]/75 mb-4 uppercase tracking-wider flex items-center gap-2">
-            <span className="material-symbols-outlined text-[16px] text-[#111111]/60">checklist</span>
-            투자 후 12개월 목표
-          </h3>
-          <div className="grid grid-cols-5 gap-4">
-            {[
-              'WoC 핵심 시스템 완성',
-              '커뮤니티 운영 데이터 확보',
-              '실제 거래 및 수익 모델 검증',
-              '탱고 외 커뮤니티 확장 검증',
-              'Seed 투자 유치 기반 확보'
-            ].map((goal, idx) => (
-              <div key={idx} className="bg-white/60 border border-[#111111]/5 p-4 rounded-sm flex flex-col justify-between items-start">
-                <span className="text-[10px] font-['Space_Grotesk'] font-bold text-[#111111]/30 mb-2 block">0{idx + 1}</span>
-                <p className="text-[13px] font-bold text-[#111111]/70 tracking-tight break-keep leading-snug">
-                  ✓ {goal}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Footer Copy */}
-      <div className="mt-10 border-t border-[#111111]/10 pt-6 text-center pt1-fu pt1-d6">
-        <p className="text-[17px] font-black tracking-tight text-[#111111] leading-none mb-2">
-          커뮤니티를 위한 운영 인프라를 구축합니다.
-        </p>
-        <p className="text-[11px] font-['Space_Grotesk'] font-bold tracking-[0.2em] text-[#111111]/30 uppercase">
-          World of Community (WoC)
-        </p>
-      </div>
+      <div className="w-[100px] h-[1px] bg-white/20 my-10" />
+      <p className="font-['Space_Grotesk'] text-[24px] font-bold tracking-[0.25em] uppercase text-white/80">
+        World of Community
+      </p>
+      <p className="text-[14px] text-white/50 font-medium mt-3">
+        취미 활동을 위한 커뮤니티 운영 플랫폼
+      </p>
     </div>
-  </div>
-);
-
-// Slide 14: 클로징 (WORLD OF COMMUNITY_ Life Goes On.)
-export const Slide14 = () => (
-  <div className="relative z-10 flex flex-col w-full h-full bg-[#111111] text-[#fcf8f8] px-[100px] justify-center text-center overflow-hidden">
-    <style>{`
-      @keyframes pt1-closingZoom {
-        from { transform: scale(1); opacity: 0.02; }
-        to { transform: scale(1.15); opacity: 0.04; }
-      }
-    `}</style>
-    <div className="absolute inset-0 flex items-center justify-center">
-      <div className="text-[30vw] font-black text-white/[0.02] leading-none select-none pointer-events-none whitespace-nowrap" style={{ animation: 'pt1-closingZoom 20s ease-out forwards' }}>
-        W.O.C
-      </div>
-    </div>
-    <div className="relative">
-      <h2 className="text-[64px] md:text-[120px] font-black tracking-[-0.06em] leading-none mb-12 pt1-fu pt1-shimmer-text">
-        WORLD OF COMMUNITY<span className="text-white/20">_</span>
-      </h2>
-      <div className="inline-block border-t border-b border-white/20 py-8 px-12 pt1-si pt1-d5">
-        <p className="text-[24px] md:text-[40px] font-bold tracking-[0.2em] uppercase pt1-gp">
-          Life Goes On.
-        </p>
-      </div>
-    </div>
+    <p className="source text-white/30 font-['Space_Grotesk']">Angel Round Proposal • 2026</p>
   </div>
 );

@@ -25,6 +25,45 @@ interface GroupClassEditorProps {
 }
 const DAY_ORDER = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'] as const;
 
+const INSTRUCTOR_NAME_MAP: { [key: string]: string } = {
+  'Aran': '아란',
+  'Stone Hong': '스톤 홍',
+  'Ariskim': '아리스킴',
+  'Muse': '뮤즈',
+  'Vicky': '비키',
+  'Epitone': '에피톤',
+  'EUN JU CHOI': '최은주',
+  'Ellin': '엘린',
+  'Basil': '바질',
+  'May': '메이',
+  'Dandoon_Hyeyoung': '단둔 혜영',
+  'Yun': '윤'
+};
+
+const ROLE_MAP: { [key: string]: string } = {
+  'Lead Instructor': '대표 강사',
+  'Instructor': '강사',
+  'TBD': '미정'
+};
+
+const getKoreanName = (engName: string): string => {
+  return INSTRUCTOR_NAME_MAP[engName] || engName;
+};
+
+const getKoreanRole = (engRole: string): string => {
+  return ROLE_MAP[engRole] || engRole;
+};
+
+const DAY_NAMES_KR: { [key: string]: string } = {
+  'MON': '월요일',
+  'TUE': '화요일',
+  'WED': '수요일',
+  'THU': '목요일',
+  'FRI': '금요일',
+  'SAT': '토요일',
+  'SUN': '일요일'
+};
+
 function getDayOfWeek(dateStr: string): string {
   if (!dateStr) return '';
   const cleanDate = dateStr.replace(/\./g, '-');
@@ -60,6 +99,107 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
   const [loading, setLoading] = useState(false);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'register' | 'application' | 'stats'>('register');
+  const [isFullScreenTextOpen, setIsFullScreenTextOpen] = useState(false);
+
+  const generateScheduleText = () => {
+    let text = "";
+
+    // 1. 번들
+    if (filteredDiscounts.length > 0) {
+      text += `🎁 [${formatDate(currentDate, 'monthYear')} 번들 및 패키지 목록]\n`;
+      text += `────────────────────\n\n`;
+      filteredDiscounts.forEach(d => {
+        text += `📌 ${d.title}\n`;
+        text += `   • 가격: ${d.amount === 0 ? (t('group.class.free') || '무료') : `${d.amount.toLocaleString()} KRW`}\n`;
+        if (d.description) {
+          const cleanDesc = d.description.replace(/\*\*/g, '').replace(/##/g, '').replace(/\*/g, '').replace(/#/g, '').trim();
+          text += `   • 설명: ${cleanDesc}\n`;
+        }
+        text += "\n";
+      });
+      text += "\n";
+    }
+
+    // 2. 요일별 수업
+    const classesByDay: { [key: string]: typeof sortedClasses } = {
+      MON: [], TUE: [], WED: [], THU: [], FRI: [], SAT: [], SUN: []
+    };
+
+    sortedClasses.forEach(cls => {
+      const day = getClassDay(cls);
+      if (classesByDay[day]) {
+        classesByDay[day].push(cls);
+      } else {
+        classesByDay['MON'].push(cls);
+      }
+    });
+
+    DAY_ORDER.forEach(day => {
+      const dayClasses = classesByDay[day];
+      if (dayClasses.length > 0) {
+        text += `────────────────────\n`;
+        text += `📅 ${DAY_NAMES_KR[day]} 수업\n`;
+        text += `────────────────────\n\n`;
+
+        dayClasses.forEach(c => {
+          const instructorsStr = c.instructors
+            ? c.instructors.map(i => getKoreanName(i.name)).join(", ")
+            : (t('group.class.tbd') || '미정');
+          
+          text += `📖 ${c.title}\n`;
+          text += `👤 강사: ${instructorsStr}\n`;
+          
+          if (c.schedule && c.schedule.length > 0) {
+            const days = c.schedule.map(s => {
+              if (!s.date) return "";
+              const cleanDate = s.date.replace(/\./g, '-');
+              const parts = cleanDate.split('-');
+              return parts.length === 3 ? parseInt(parts[2], 10) : "";
+            }).filter(x => x !== "");
+            const daysStr = days.join(", ");
+            const first = c.schedule[0];
+            const timeSlot = first.timeSlot || "";
+            const scheduleSummary = `${daysStr}일 (${timeSlot})`;
+            text += `🗓️ 일정: ${scheduleSummary}\n`;
+            
+            c.schedule.forEach((s, idx) => {
+              const weekIndex = s.week || (idx + 1);
+              const weekLabel = `${weekIndex}주차`;
+              let contentRaw = s.content ? s.content.replace(/\n/g, " ") : "";
+              let cleaned = contentRaw
+                .replace(/\*\*/g, '')
+                .replace(/##/g, '')
+                .replace(/\*/g, '')
+                .replace(/#/g, '')
+                .trim();
+              
+              const duplicatePattern = new RegExp(`^(##\\s*)?(${weekIndex}주차|${weekIndex}주|테마0?${weekIndex})\\.?\\s*[*"\\s]*`, 'i');
+              cleaned = cleaned.replace(duplicatePattern, '');
+              cleaned = cleaned.replace(/^["'\s-\.]*/, '').replace(/["'\s]*$/, '').trim();
+              
+              const finalContent = cleaned || "내용 없음";
+              text += `   • ${weekLabel}: ${finalContent}\n`;
+            });
+          } else {
+            text += `🗓️ 일정: 등록된 일정이 없습니다.\n`;
+          }
+          text += `\n`;
+        });
+      }
+    });
+
+    return text.trim() + "\n";
+  };
+
+  const handleCopyAll = () => {
+    const text = generateScheduleText();
+    navigator.clipboard.writeText(text).then(() => {
+      toast.success(t('group.class.copied') || "클립보드에 복사되었습니다.");
+    }).catch(err => {
+      console.error(err);
+      toast.error(t('common.error') || "오류가 발생했습니다.");
+    });
+  };
 
   const [currentDate, setCurrentDate] = useState(() => {
     const d = new Date();
@@ -558,6 +698,17 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
                       </React.Fragment>
                     );
                   })}
+
+                  {(filteredClasses.length > 0 || filteredDiscounts.length > 0) && (
+                    <button
+                      onClick={() => setIsFullScreenTextOpen(true)}
+                      className="mt-4 w-full py-4 px-6 bg-white text-on-surface-variant hover:bg-surface-container-low border border-outline/10 rounded-2xl flex items-center justify-center gap-2 font-bold transition-all shadow-sm active:scale-[0.98]"
+                      style={{ fontFamily: "'Inter', sans-serif" }}
+                    >
+                      <span className="material-symbols-outlined text-[20px]">assignment</span>
+                      {t('group.class.view_as_text') || '텍스트로 보기'}
+                    </button>
+                  )}
                 </section>
               </>
             )}
@@ -632,6 +783,54 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
           />
         )}
       </>
+      <AnimatePresence>
+        {isFullScreenTextOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className="fixed inset-0 z-[200] bg-background flex flex-col no-scrollbar"
+          >
+            {/* Header */}
+            <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-outline/5">
+              <div className="max-w-[896px] mx-auto px-4 py-4 flex items-center justify-between w-full">
+                <div className="flex items-center gap-4">
+                  <button 
+                    onClick={() => setIsFullScreenTextOpen(false)}
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-primary hover:bg-primary/5 transition-all"
+                  >
+                    <span className="material-symbols-outlined text-primary">arrow_back</span>
+                  </button>
+                  <h1 className="text-base font-bold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>
+                    {t('group.class.view_as_text_title') || "텍스트로 전체 보기"}
+                  </h1>
+                </div>
+                <button
+                  onClick={handleCopyAll}
+                  className="px-4 py-2 bg-primary text-on-primary rounded-xl flex items-center gap-1.5 text-xs font-bold shadow-sm hover:bg-primary-hover active:scale-95 transition-all"
+                  style={{ fontFamily: "'Inter', sans-serif" }}
+                >
+                  <span className="material-symbols-outlined text-[16px]">content_copy</span>
+                  {t('group.class.copy_all') || "전체 복사"}
+                </button>
+              </div>
+            </header>
+
+            {/* Main Area */}
+            <main className="flex-1 overflow-y-auto px-4 py-6 bg-surface-container-lowest">
+              <div className="max-w-[896px] mx-auto h-[calc(100vh-120px)] flex flex-col">
+                <textarea
+                  readOnly
+                  value={generateScheduleText()}
+                  onClick={(e) => (e.target as HTMLTextAreaElement).select()}
+                  className="w-full flex-1 p-6 bg-white border border-outline/10 rounded-2xl font-mono text-sm leading-relaxed text-on-surface focus:outline-none focus:ring-1 focus:ring-primary/20 resize-none select-text shadow-sm"
+                  style={{ fontFamily: "'Courier New', Courier, monospace" }}
+                />
+              </div>
+            </main>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   </>
   );

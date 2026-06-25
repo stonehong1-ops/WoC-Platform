@@ -91,10 +91,12 @@ export function useBookingEngine() {
           const totalFmt = data.totalAmount.toLocaleString();
           
           // Order Placed Message
+          const applicantMemo = data.payload?.applicantMemo as string | undefined;
           const orderMsg = `📦 ${t('shop.chat_order_prefix', '[ORDER PLACED]')}\n` +
             `${t('shop.chat_order_no', 'Order No')}: ${orderNumber}\n` +
             `${t('shop.chat_product_name', 'Item')}: ${data.itemName}\n` +
             `${t('shop.chat_amount', 'Amount')}: ${sym}${totalFmt}\n` +
+            (applicantMemo ? `${t('common.applicant_memo', 'Applicant Memo')}: ${applicantMemo}\n` : '') +
             (data.itemImageUrl ? `Image: ${data.itemImageUrl}` : '');
 
           await chatService.sendMessage({
@@ -177,11 +179,13 @@ export function useBookingEngine() {
         if (hostId) {
           const roomId = await chatService.getOrCreatePrivateRoom([user.uid, hostId], user.uid, 'business');
           const orderNumDisplay = bookingData.orderNumber || bookingData.id;
+          const applicantMemo = bookingData.payload?.applicantMemo as string | undefined;
           const msg = `💸 ${t('shop.chat_payment_prefix', '[PAYMENT REPORTED]')}\n` +
             `${t('shop.chat_order_no', 'Order No')}: ${orderNumDisplay}\n` +
             `${t('shop.chat_product_name', 'Item')}: ${bookingData.itemName}\n` +
             `${t('shop.chat_depositor', 'Depositor')}: ${profile?.nativeNickname || profile?.nickname || user.displayName || t('common.user', 'User')}` +
-            (memo ? `\nMemo: ${memo}` : '');
+            (applicantMemo ? `\n${t('common.applicant_memo', 'Applicant Memo')}: ${applicantMemo}` : '') +
+            (memo ? `\n${t('common.payment_memo', 'Payment Memo')}: ${memo}` : '');
           
           // 1. Buyer's payment report message
           await chatService.sendMessage({

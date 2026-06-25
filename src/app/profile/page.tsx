@@ -599,21 +599,7 @@ function MyInfoPageContent() {
                     </p>
                   </div>
                 </div>
-                <div className="flex gap-4 items-center mb-6">
-                  <div className="w-10 h-10 flex flex-shrink-0 items-center justify-center rounded-lg bg-primary-fixed text-on-primary-fixed">
-                    <span className="material-symbols-outlined text-[24px]">handshake</span>
-                  </div>
-                  <div className="flex-grow">
-                    <p className="text-xs font-bold text-outline uppercase tracking-widest">{t('myinfo.partnership')}</p>
-                    <p className="text-on-surface font-medium">
-                      {profile?.partnerStatus === 'has' 
-                        ? t('myinfo.partnership_has') 
-                        : profile?.partnerStatus === 'searching' 
-                          ? t('myinfo.partnership_searching') 
-                          : t('myinfo.partnership_none')}
-                    </p>
-                  </div>
-                </div>
+
                 <div className="flex gap-4 items-center">
                   <div className="w-10 h-10 flex flex-shrink-0 items-center justify-center rounded-lg bg-primary-fixed text-on-primary-fixed">
                     <span className="material-symbols-outlined text-[24px]">visibility</span>

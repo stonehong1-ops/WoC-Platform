@@ -189,7 +189,10 @@ export const classRegistrationService = {
           let newStatus: any = 'SUBMITTED';
           if (updates.status === 'PAYMENT_PENDING') newStatus = 'SUBMITTED';
           else if (updates.status === 'PAYMENT_REPORTED') newStatus = 'BANK_TRANSFERRED';
-          else if (updates.status === 'PAYMENT_COMPLETED') newStatus = 'SELLER_CONFIRMED';
+          else if (updates.status === 'PAYMENT_COMPLETED') {
+            newStatus = 'SELLER_CONFIRMED';
+            bookingUpdates.confirmedAt = serverTimestamp();
+          }
           else if (updates.status === 'CANCELED') newStatus = 'CANCELLED';
           bookingUpdates.status = newStatus;
         }

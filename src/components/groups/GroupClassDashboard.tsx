@@ -1360,9 +1360,18 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
       {activeTab === 'registrations' && (
         <div className="px-4 py-3 space-y-6 animate-in fade-in duration-300">
           {(() => {
-            const pendingGroups = groupedRegistrations.filter(g => g.registrations[0]?.status === 'PAYMENT_PENDING');
-            const reportedGroups = groupedRegistrations.filter(g => g.registrations[0]?.status === 'PAYMENT_REPORTED');
-            const completedGroups = groupedRegistrations.filter(g => g.registrations[0]?.status === 'PAYMENT_COMPLETED');
+            // 그룹 내 모든 신청 건의 status를 종합 판단하여 분류
+            const getGroupStatus = (g: any) => {
+              const regs = g.registrations || [];
+              const allCompleted = regs.every((r: any) => r.status === 'PAYMENT_COMPLETED');
+              if (allCompleted) return 'PAYMENT_COMPLETED';
+              const hasReported = regs.some((r: any) => r.status === 'PAYMENT_REPORTED');
+              if (hasReported) return 'PAYMENT_REPORTED';
+              return 'PAYMENT_PENDING';
+            };
+            const pendingGroups = groupedRegistrations.filter(g => getGroupStatus(g) === 'PAYMENT_PENDING');
+            const reportedGroups = groupedRegistrations.filter(g => getGroupStatus(g) === 'PAYMENT_REPORTED');
+            const completedGroups = groupedRegistrations.filter(g => getGroupStatus(g) === 'PAYMENT_COMPLETED');
 
             const sections = [
               {
@@ -1841,7 +1850,7 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
 
                         {/* Step 2: 송금완료 */}
                         {(() => {
-                          const isDone = reg.status !== 'PAYMENT_PEND';
+                          const isDone = reg.status !== 'PAYMENT_PENDING';
                           const isTransferred = reg.status !== 'PAYMENT_PENDING';
                           const stepDate = reg.depositDate || (isTransferred ? reg.updatedAt : null);
                           return (

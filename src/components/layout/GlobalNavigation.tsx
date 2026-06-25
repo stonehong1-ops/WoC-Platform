@@ -45,14 +45,51 @@ const NAV_STRUCTURE = {
   Groups: [
     { name: "nav.groups", icon: "groups", path: "/groups" },
   ],
-  My: [
-    { name: "myinfo.schedule_tab", icon: "calendar_today", path: "/profile?tab=schedule" },
-    { name: "nav.coaching", icon: "psychology", path: "/coaching" },
-    { name: "nav.live", icon: "cinematic_blur", path: "/live?view=my" },
-    { name: "nav.wallet", icon: "account_balance_wallet", path: "/wallet" },
-    { name: "nav.my_info", icon: "person", path: "/profile?tab=profile" },
-  ],
+  My: [] as { name: string; icon: string; path: string }[],
 };
+
+const MY_GROUPS = [
+  {
+    id: 'acts',
+    name: 'nav.my_acts',
+    items: [
+      { name: 'myinfo.schedule_tab', icon: 'calendar_today', path: '/profile?tab=schedule' },
+      { name: 'nav.orders', icon: 'receipt_long', path: '/history' },
+      { name: 'nav.coaching', icon: 'psychology', path: '/coaching' },
+    ],
+  },
+  {
+    id: 'lab',
+    name: 'nav.my_lab',
+    items: [
+      { name: 'nav.ai_tryon', icon: 'checkroom', path: '/profile/ai-tryon' },
+      { name: 'nav.ai_lesson', icon: 'smart_display', path: '/lab/lesson' },
+      { name: 'nav.partner_match', icon: 'handshake', path: '/lab/match' },
+    ],
+  },
+  {
+    id: 'live',
+    name: 'nav.my_live',
+    items: [
+      { name: 'nav.live_joined', icon: 'cinematic_blur', path: '/live?view=my' },
+      { name: 'nav.live_hosted', icon: 'broadcast_on_personal', path: '/live?view=hosted' },
+    ],
+  },
+  {
+    id: 'pay',
+    name: 'nav.my_pay',
+    items: [
+      { name: 'nav.deposit', icon: 'account_balance_wallet', path: '/wallet' },
+      { name: 'nav.coupons', icon: 'confirmation_number', path: '/wallet?tab=coupons', comingSoon: true },
+    ],
+  },
+  {
+    id: 'me',
+    name: 'nav.my_me',
+    directPath: '/profile?tab=profile',
+    items: [],
+  },
+];
 
 // COUNTRY_MAPPING moved to constants
 
@@ -64,9 +101,13 @@ const BOTTOM_TABS = [
   { id: "Groups", icon: "communities", label: "nav.groups", basePath: "/groups" },
 ];
 
-export default function GlobalNavigation({ children }: { children: React.ReactNode }) {
+export default function GlobalNavigation(props: { children: React.ReactNode }) {
   const { t } = useLanguage();
   const pathname = usePathname();
+  if (pathname.startsWith('/syncfit') || pathname.startsWith('/pt') || pathname.startsWith('/fys')) {
+    return <>{props.children}</>;
+  }
+  const { children } = props;
   const [isMyView, setIsMyView] = useState(false);
   const [isCreateMenuOpen, setIsCreateMenuOpen] = useState(false);
   const [isSocialSelectOpen, setIsSocialSelectOpen] = useState(false);
@@ -89,6 +130,7 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
     if (pathname.startsWith('/lost')) { router.push('/lost/register'); return; }
     if (pathname.startsWith('/groups')) { router.push('/groups?action=create'); return; }
     if (pathname.startsWith('/coaching')) { router.push('/coaching'); return; }
+    if (pathname.startsWith('/profile/ai-tryon')) { toast(t('create_btn.no_register', '등록 기능이 없습니다')); return; }
     if (pathname.startsWith('/live')) { router.push('/live/create?source=live'); return; }
 
     // 선택 바텀시트 (밀롱가 / 쁘락띠까)
@@ -126,6 +168,93 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
     const params = new URLSearchParams(window.location.search);
     setIsMyView(params.get('view') === 'my');
   }, [pathname]); // Re-check when navigation occurs
+
+  const [hasSubmenuItems, setHasSubmenuItems] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const searchParams = new URLSearchParams(window.location.search);
+    
+    let activeTab = "World";
+    if (pathname.startsWith("/shop") || pathname.startsWith("/resale") || pathname.startsWith("/rental") || pathname.startsWith("/stay")) {
+      activeTab = "Market";
+    } else if (pathname.startsWith("/today") || pathname.startsWith("/social") || pathname.startsWith("/events") || pathname.startsWith("/class") || (pathname.startsWith("/live") && !isMyView)) {
+      activeTab = "Now";
+    } else if (pathname.startsWith("/pics") || pathname.startsWith("/lost") || pathname.startsWith("/hub") || pathname.startsWith("/explore")) {
+      activeTab = "Lounge";
+    } else if (pathname.startsWith("/groups")) {
+      activeTab = "Groups";
+    } else if (pathname.startsWith("/my") || pathname.startsWith("/wallet") || pathname.startsWith("/history") || pathname.startsWith("/profile") || pathname.startsWith("/coaching") || pathname.startsWith("/lab") || (pathname.startsWith("/live") && isMyView)) {
+      activeTab = "My";
+    } else if (pathname.startsWith("/admin")) {
+      activeTab = "My";
+    }
+
+    if (pathname === "/") {
+      activeTab = "Now";
+    }
+
+    if (activeTab !== "My") {
+      setHasSubmenuItems(false);
+      return;
+    }
+
+    const isItemActive = (path: string) => {
+      const [itemPathname, itemQuery] = path.split('?');
+      const itemParams = new URLSearchParams(itemQuery || '');
+      if (itemQuery) {
+        const pathMatches = pathname === itemPathname;
+        const paramsMatch = Array.from(itemParams.entries()).every(([key, val]) => {
+          const currentVal = searchParams.get(key);
+          if (key === 'tab') {
+            return (currentVal || 'profile') === (val || 'profile');
+          }
+          return currentVal === val;
+        });
+        return pathMatches && paramsMatch;
+      }
+      if (pathname === '/profile' && itemPathname === '/profile') {
+        const currentTab = searchParams.get('tab') || 'profile';
+        const targetTab = itemParams.get('tab') || 'profile';
+        return currentTab === targetTab;
+      }
+      return pathname === path || (path !== '/' && pathname.startsWith(path) && !path.includes('?'));
+    };
+
+    let activeGroup = MY_GROUPS.find(group => {
+      if ('directPath' in group && group.directPath) {
+        if (isItemActive(group.directPath)) return true;
+      }
+      return group.items.some(item => isItemActive(item.path));
+    });
+
+    if (!activeGroup) {
+      if (pathname.startsWith('/profile')) {
+        const tab = searchParams.get('tab');
+        if (tab === 'schedule') {
+          activeGroup = MY_GROUPS.find(g => g.id === 'acts');
+        } else if (pathname.includes('ai-tryon')) {
+          activeGroup = MY_GROUPS.find(g => g.id === 'lab');
+        } else {
+          activeGroup = MY_GROUPS.find(g => g.id === 'me');
+        }
+      } else if (pathname.startsWith('/history') || pathname.startsWith('/coaching')) {
+        activeGroup = MY_GROUPS.find(g => g.id === 'acts');
+      } else if (pathname.startsWith('/lab')) {
+        activeGroup = MY_GROUPS.find(g => g.id === 'lab');
+      } else if (pathname.startsWith('/live')) {
+        activeGroup = MY_GROUPS.find(g => g.id === 'live');
+      } else if (pathname.startsWith('/wallet')) {
+        activeGroup = MY_GROUPS.find(g => g.id === 'pay');
+      } else {
+        activeGroup = MY_GROUPS[0];
+      }
+    }
+
+    const hasItems = activeGroup && activeGroup.items && activeGroup.items.length > 0;
+    setHasSubmenuItems(!!hasItems);
+  }, [pathname, isMyView]);
+
   const { isHeaderShrink, subHeader, setSubHeader, subHeaderHeight, isHeaderVisible, setIsHeaderVisible, isGlobalNavHidden, setGlobalNavHidden } = useNavigation();
   const { location, setIsSelectorOpen } = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
@@ -150,7 +279,11 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
 
   // pathname 변경 시 nav hidden 상태 강제 복원 (SocialViewer cleanup 실패 방어)
   useEffect(() => {
-    setGlobalNavHidden(false);
+    if (pathname.startsWith('/syncfit')) {
+      setGlobalNavHidden(true);
+    } else {
+      setGlobalNavHidden(false);
+    }
   }, [pathname, setGlobalNavHidden]);
 
   const totalNotiCount = notiUnreadCount;
@@ -163,7 +296,7 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
           if (isGlobalNavHidden) return;
           const currentScrollY = window.scrollY;
           const delta = currentScrollY - lastScrollY.current;
-          const headerHeight = headerRef.current?.offsetHeight || 110;
+          const headerHeight = headerRef.current?.offsetHeight || (hasSubmenuItems ? 150 : 110);
           const footerHeight = footerRef.current?.offsetHeight || 80;
           
           // Calculate new translation based on delta with threshold
@@ -244,7 +377,7 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
     activeTab = "Lounge";
   } else if (pathname.startsWith("/groups")) {
     activeTab = "Groups";
-  } else if (pathname.startsWith("/my") || pathname.startsWith("/wallet") || pathname.startsWith("/history") || pathname.startsWith("/profile") || pathname.startsWith("/coaching") || (pathname.startsWith("/live") && isMyView)) {
+  } else if (pathname.startsWith("/my") || pathname.startsWith("/wallet") || pathname.startsWith("/history") || pathname.startsWith("/profile") || pathname.startsWith("/coaching") || pathname.startsWith("/lab") || (pathname.startsWith("/live") && isMyView)) {
     activeTab = "My";
   } else if (pathname.startsWith("/admin")) {
     activeTab = "My";
@@ -274,13 +407,13 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
   const subMenu = NAV_STRUCTURE[activeTab as keyof typeof NAV_STRUCTURE] || [];
   
   // Calculate placeholder height
-  const baseHeaderHeight = isNoSubMenuPage ? 60 : 110;
+  const baseHeaderHeight = isNoSubMenuPage ? 60 : (hasSubmenuItems ? 150 : 110);
   const placeholderHeight = subHeader ? baseHeaderHeight + subHeaderHeight : baseHeaderHeight;
 
   // Compute effective hidden state based on context and pathname
   const isDetailPage = /^\/(class|shop|people|social|resale|rental|stay|events)\/[^\/]+/.test(pathname);
   const isAppPage = pathname === '/app' || pathname.startsWith('/app/');
-  const isHiddenPath = pathname === '/' || pathname.startsWith('/admin') || pathname.includes('/checkout') || pathname.includes('/register') || isDetailPage || isAppPage || pathname === '/yedamche' || pathname.startsWith('/yedamche/');
+  const isHiddenPath = pathname === '/' || pathname.startsWith('/admin') || pathname.includes('/checkout') || pathname.includes('/register') || isDetailPage || isAppPage || pathname === '/yedamche' || pathname.startsWith('/yedamche/') || pathname.startsWith('/syncfit');
   const effectiveIsGlobalNavHidden = isGlobalNavHidden || isHiddenPath;
 
   // 가시성 복구 시 스크롤 위치 및 인라인 transform 오프셋 강제 리셋 (Hit Test 영역 0px 편차 복원 방어막)
@@ -406,7 +539,7 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
 
               {/* My Profile Avatar (상단 이전 배치) */}
               <Link 
-                href="/profile?tab=schedule" 
+                href="/profile?tab=profile" 
                 className={`w-[32px] h-[32px] rounded-full flex items-center justify-center active:scale-95 transition-all overflow-hidden relative ${
                   pathname.startsWith('/profile') ? 'ring-[2px] ring-[#007AFF] ring-offset-1' : 'opacity-80 hover:opacity-100'
                 }`}
@@ -425,7 +558,11 @@ export default function GlobalNavigation({ children }: { children: React.ReactNo
           {/* Scrolling Sub-Menu: Refined to match image (Icons Removed) */}
           {!isNoSubMenuPage && (
             <Suspense fallback={<div className="h-[43px] bg-white border-b border-slate-100/60" />}>
-              <SubMenuNavigation subMenu={subMenu} pathname={pathname} />
+              {activeTab === 'My' ? (
+                <MySubMenuNavigation pathname={pathname} />
+              ) : (
+                <SubMenuNavigation subMenu={subMenu} pathname={pathname} />
+              )}
             </Suspense>
           )}
 
@@ -570,7 +707,6 @@ function SubMenuNavigation({ subMenu, pathname }: { subMenu: any[]; pathname: st
       <div className="flex w-full items-end justify-between px-3">
         {subMenu.map((item) => {
           if (!item || !item.path || typeof item.path !== 'string') return null;
-          // tab=schedule, tab=profile 등 쿼리 파라미터 추출 판별
           const [itemPathname, itemQuery] = item.path.split('?');
           const itemParams = new URLSearchParams(itemQuery || '');
           
@@ -600,6 +736,143 @@ function SubMenuNavigation({ subMenu, pathname }: { subMenu: any[]; pathname: st
         })}
       </div>
     </nav>
+  );
+}
+
+function MySubMenuNavigation({ pathname }: { pathname: string }) {
+  const searchParams = useSearchParams();
+  const { t } = useLanguage();
+
+  const isItemActive = (path: string) => {
+    const [itemPathname, itemQuery] = path.split('?');
+    const itemParams = new URLSearchParams(itemQuery || '');
+    if (itemQuery) {
+      const pathMatches = pathname === itemPathname;
+      const paramsMatch = Array.from(itemParams.entries()).every(([key, val]) => {
+        const currentVal = searchParams.get(key);
+        if (key === 'tab') {
+          return (currentVal || 'profile') === (val || 'profile');
+        }
+        return currentVal === val;
+      });
+      return pathMatches && paramsMatch;
+    }
+    if (pathname === '/profile' && itemPathname === '/profile') {
+      const currentTab = searchParams.get('tab') || 'profile';
+      const targetTab = itemParams.get('tab') || 'profile';
+      return currentTab === targetTab;
+    }
+    return pathname === path || (path !== '/' && pathname.startsWith(path) && !path.includes('?'));
+  };
+
+  let activeGroup = MY_GROUPS.find(group => {
+    if ('directPath' in group && group.directPath) {
+      if (isItemActive(group.directPath)) return true;
+    }
+    return group.items.some(item => isItemActive(item.path));
+  });
+
+  if (!activeGroup) {
+    if (pathname.startsWith('/profile')) {
+      const tab = searchParams.get('tab');
+      if (tab === 'schedule') {
+        activeGroup = MY_GROUPS.find(g => g.id === 'acts');
+      } else if (pathname.includes('ai-tryon')) {
+        activeGroup = MY_GROUPS.find(g => g.id === 'lab');
+      } else {
+        activeGroup = MY_GROUPS.find(g => g.id === 'me');
+      }
+    } else if (pathname.startsWith('/history') || pathname.startsWith('/coaching')) {
+      activeGroup = MY_GROUPS.find(g => g.id === 'acts');
+    } else if (pathname.startsWith('/lab')) {
+      activeGroup = MY_GROUPS.find(g => g.id === 'lab');
+    } else if (pathname.startsWith('/live')) {
+      activeGroup = MY_GROUPS.find(g => g.id === 'live');
+    } else if (pathname.startsWith('/wallet')) {
+      activeGroup = MY_GROUPS.find(g => g.id === 'pay');
+    } else {
+      activeGroup = MY_GROUPS[0];
+    }
+  }
+
+  const getGroupDefaultPath = (groupId: string) => {
+    switch (groupId) {
+      case 'acts':
+        return '/profile?tab=schedule';
+      case 'lab':
+        return '/profile/ai-tryon';
+      case 'live':
+        return '/live?view=my';
+      case 'pay':
+        return '/wallet';
+      case 'me':
+        return '/profile?tab=profile';
+      default:
+        return '/profile?tab=schedule';
+    }
+  };
+
+  return (
+    <div className="flex flex-col w-full bg-white">
+      {/* 1단계: 대메뉴 탭 */}
+      <nav className="flex w-full px-0 border-b border-slate-100/60 bg-white">
+        <div className="flex w-full items-end justify-between px-3">
+          {MY_GROUPS.map((group) => {
+            const isActive = activeGroup?.id === group.id;
+            const targetPath = getGroupDefaultPath(group.id);
+
+            return (
+              <Link
+                key={group.id}
+                href={targetPath}
+                className={`flex flex-col items-center justify-end flex-1 pt-3.5 pb-2.5 transition-all duration-300 border-b-[3px] ${
+                  isActive ? 'border-[#007AFF]' : 'border-transparent'
+                }`}
+              >
+                <span
+                  className={`text-[14px] tracking-tight uppercase transition-all duration-300 ${
+                    isActive ? 'font-black text-[#007AFF]' : 'font-bold text-slate-500'
+                  }`}
+                >
+                  {t(group.name)}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
+
+      {/* 2단계: 하위 메뉴 칩 */}
+      {activeGroup && activeGroup.items && activeGroup.items.length > 0 && (
+        <nav className="relative w-full bg-slate-50/30 border-b border-slate-100/60">
+          <div className="w-full px-3 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
+            {activeGroup.items.map((item: any) => {
+              const active = isItemActive(item.path);
+              const isComingSoon = item.comingSoon;
+              return (
+                <Link
+                  key={item.name + item.path}
+                  href={isComingSoon ? '#' : item.path}
+                  onClick={(e) => {
+                    if (isComingSoon) {
+                      e.preventDefault();
+                      alert(t('nav.coming_soon', 'Coming Soon'));
+                    }
+                  }}
+                  className={`flex-shrink-0 px-4 py-1.5 rounded-xl text-[12px] font-bold tracking-tight transition-all whitespace-nowrap border ${
+                    active
+                      ? 'bg-slate-900 text-white border-slate-900 shadow-sm shadow-slate-200'
+                      : 'bg-white text-slate-500 border-slate-200/80 hover:bg-slate-50'
+                  } ${isComingSoon ? 'opacity-40' : ''}`}
+                >
+                  {t(item.name)}
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
+      )}
+    </div>
   );
 }
 

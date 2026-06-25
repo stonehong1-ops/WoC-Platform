@@ -166,7 +166,8 @@ export default function GaviCartoonPopup({ onClose }: GaviCartoonPopupProps) {
       for (let i = 0; i < uploadFiles.length; i++) {
         const file = uploadFiles[i];
         const epNum = nextEpisodeNumber + i;
-        const fileRef = ref(storage, `cartoons/${uploadCategory}_ep${epNum}_${Date.now()}_${file.name}`);
+        const extension = file.name.split('.').pop() || 'png';
+        const fileRef = ref(storage, `cartoons/${uploadCategory}_ep${epNum}_${Date.now()}.${extension}`);
         await uploadBytes(fileRef, file);
         const imageUrl = await getDownloadURL(fileRef);
         

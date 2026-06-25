@@ -750,6 +750,13 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
           className={`w-11 h-11 rounded-xl flex items-center justify-center border transition-colors active:scale-90 ${isLiked ? 'bg-red-50 border-red-100 text-red-500' : 'bg-white border-[#e0e4e5] text-[#596061]'}`}>
           <span className="material-symbols-rounded text-xl" style={{ fontVariationSettings: isLiked ? "'FILL' 1" : "'FILL' 0" }}>favorite</span>
         </button>
+        <button
+          onClick={() => router.push(`/profile/ai-tryon?productId=${product.id}`)}
+          className="w-11 h-11 rounded-xl flex items-center justify-center border border-primary/30 bg-primary/5 text-primary transition-colors active:scale-90 hover:bg-primary/10"
+          title={t('nav.ai_tryon', 'AI Try-On')}
+        >
+          <span className="material-symbols-rounded text-xl">checkroom</span>
+        </button>
         <button onClick={handlePurchase}
           className="flex-shrink-0 bg-primary text-white px-7 py-3 rounded-xl font-black text-sm tracking-wide shadow-lg shadow-primary/20 active:scale-95 transition-transform">
           {t('shop.purchase', 'Purchase')}

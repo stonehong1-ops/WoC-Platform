@@ -43,10 +43,11 @@ interface LiveFeedProps {
   entityType?: 'social' | 'group' | 'event' | 'class' | 'venue' | 'people';
   entityId?: string;
   userId?: string;
+  viewMode?: 'joined' | 'hosted';
   className?: string;
 }
 
-export default function LiveFeed({ entityType, entityId, userId, className = '' }: LiveFeedProps) {
+export default function LiveFeed({ entityType, entityId, userId, viewMode, className = '' }: LiveFeedProps) {
   const { user } = useAuth();
   const [posts, setPosts] = useState<GalleryPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -216,7 +217,13 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
 
   // Client-side filtering logic
   const filteredPosts = React.useMemo(() => {
-    return posts.filter(post => {
+    let result = posts;
+
+    if (viewMode === 'hosted' && userId) {
+      result = result.filter(post => post.authorId === userId);
+    }
+
+    return result.filter(post => {
       if (activeFilter.category === 'all') return true;
 
       if (activeFilter.category === 'social') {
@@ -242,7 +249,7 @@ export default function LiveFeed({ entityType, entityId, userId, className = '' 
 
       return true;
     });
-  }, [posts, activeFilter]);
+  }, [posts, activeFilter, viewMode, userId]);
 
   const router = useRouter();
   const searchParams = useSearchParams();

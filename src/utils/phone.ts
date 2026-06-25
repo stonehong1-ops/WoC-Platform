@@ -10,6 +10,8 @@ export function formatLocalPhoneNumber(phone: string | null | undefined, country
     const match = countryCode.match(/^\+(\d+)/);
     if (match) {
       cleanCode = match[0];
+    } else if (countryCode.toUpperCase().includes('KR') || countryCode.includes('82')) {
+      cleanCode = '+82';
     }
   }
 
@@ -19,7 +21,7 @@ export function formatLocalPhoneNumber(phone: string | null | undefined, country
   }
 
   // 대한민국의 경우, 국가번호(+82)를 떼고 남은 국번이 "10", "11", "16", "17", "18", "19" 등 0이 누락된 2자리로 시작하면 맨 앞에 '0'을 자연스럽게 덧붙여 줍니다.
-  if (cleanCode === '+82' || (countryCode && countryCode.includes('KR'))) {
+  if (cleanCode === '+82' || (countryCode && countryCode.toUpperCase().includes('KR'))) {
     if (/^(10|11|16|17|18|19)/.test(rawPhone)) {
       rawPhone = '0' + rawPhone;
     }

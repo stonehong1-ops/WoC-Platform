@@ -54,10 +54,10 @@ export default function ThemeMagazineA({
       <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-rose-50 rounded-full blur-[100px] -mr-[200px] -mt-[200px] opacity-70"></div>
       <div className="absolute bottom-0 left-0 w-[1000px] h-[1000px] bg-indigo-50 rounded-full blur-[120px] -ml-[300px] -mb-[300px] opacity-60"></div>
 
-      <div className="flex-1 flex flex-col p-16 z-10">
+      <div className="flex-1 flex flex-col pt-16 pb-8 px-16 z-10">
         
         {/* Header Section */}
-        <div className="flex justify-between items-start mb-12">
+        <div className="flex justify-between items-start mb-8">
           <div className="flex flex-col">
             <h1 className="text-[120px] font-black leading-[0.85] tracking-tighter text-[#111]">
               TODAY IN<br/>TANGO
@@ -80,7 +80,7 @@ export default function ThemeMagazineA({
 
         {/* Main Section: Milonga */}
         {milonga && (
-          <div className="w-full h-[700px] rounded-[40px] overflow-hidden relative shadow-2xl mb-12 bg-slate-800">
+          <div className="w-full h-[660px] rounded-[40px] overflow-hidden relative shadow-2xl mb-8 bg-slate-800">
             {milongaImgUrl && (
               <img 
                 src={milongaImgUrl} 
@@ -124,10 +124,11 @@ export default function ThemeMagazineA({
         )}
 
         {/* Sub Sections: Class & Practica in a Row */}
-        <div className="flex gap-8 mb-12">
+        <div className="flex gap-8 mb-8">
           {/* Class */}
-          <div className="flex-1 bg-white rounded-[40px] p-10 shadow-xl relative overflow-hidden flex flex-col justify-between border border-slate-100 h-[450px]">
-            <div className="absolute top-0 right-0 w-full h-full opacity-10">
+          <div className="flex-1 bg-white rounded-[40px] p-10 shadow-xl relative overflow-hidden flex flex-col justify-between border border-slate-100 h-[410px]">
+            <div /* height scaled down for viewport fit */
+            className="absolute top-0 right-0 w-full h-full opacity-10">
               {classImgUrl && (
                 <img 
                   src={classImgUrl} 
@@ -137,13 +138,13 @@ export default function ThemeMagazineA({
             </div>
             <div className="relative z-10">
               <span className="text-blue-600 text-[22px] font-bold tracking-[0.2em] uppercase">Today's Class</span>
-              <h3 className="text-[60px] font-black text-slate-900 mt-6 leading-tight tracking-tight">
+              <h3 className="text-[54px] font-black text-slate-900 mt-4 leading-tight tracking-tight">
                 {tangoClass?.titleNative || tangoClass?.title || '클래스 일정이 없습니다'}
               </h3>
             </div>
             
             {tangoClass && (
-              <div className="relative z-10 flex flex-col gap-4 mt-8 text-[28px] text-slate-700 font-medium">
+              <div className="relative z-10 flex flex-col gap-3 mt-4 text-[26px] text-slate-700 font-medium">
                 <div className="flex items-center gap-4">
                   <span className="material-symbols-outlined text-slate-400 text-[32px]">schedule</span>
                   <span>{tangoClass.startTime}</span>
@@ -162,7 +163,7 @@ export default function ThemeMagazineA({
           </div>
 
           {/* Practica */}
-          <div className="flex-1 bg-slate-900 rounded-[40px] p-10 shadow-xl relative overflow-hidden flex flex-col justify-between h-[450px]">
+          <div className="flex-1 bg-slate-900 rounded-[40px] p-10 shadow-xl relative overflow-hidden flex flex-col justify-between h-[410px]">
             <div className="absolute top-0 right-0 w-full h-full opacity-20">
               {practicaImgUrl && (
                 <img 
@@ -173,13 +174,13 @@ export default function ThemeMagazineA({
             </div>
             <div className="relative z-10">
               <span className="text-emerald-400 text-[22px] font-bold tracking-[0.2em] uppercase">Today's Practica</span>
-              <h3 className="text-[60px] font-black text-white mt-6 leading-tight tracking-tight">
+              <h3 className="text-[54px] font-black text-white mt-4 leading-tight tracking-tight">
                 {practica?.titleNative || practica?.title || '쁘락띠까 일정이 없습니다'}
               </h3>
             </div>
             
             {practica && (
-              <div className="relative z-10 flex flex-col gap-4 mt-8 text-[28px] text-white/80 font-medium">
+              <div className="relative z-10 flex flex-col gap-3 mt-4 text-[26px] text-white/80 font-medium">
                 <div className="flex items-center gap-4">
                   <span className="material-symbols-outlined text-white/50 text-[32px]">schedule</span>
                   <span>{practica.startTime} {practica.endTime ? `- ${practica.endTime}` : ''}</span>
@@ -198,19 +199,19 @@ export default function ThemeMagazineA({
       </div>
 
       {/* Footer Event Banner */}
-      <div className="mt-auto px-16 pb-16 z-10 w-full flex flex-col items-center">
+      <div className="mt-auto px-16 pb-10 z-10 w-full flex flex-col items-center">
         {banner && bannerImgUrl ? (
-          <div className="w-full h-[220px] rounded-[40px] relative overflow-hidden flex items-center justify-between shadow-2xl mb-8">
+          <div className="w-full h-[190px] rounded-[40px] relative overflow-hidden flex items-center justify-between shadow-2xl mb-4">
             <img 
               alt="Event Banner" 
               className="absolute inset-0 w-full h-full object-cover" 
               src={bannerImgUrl}
             />
             <div className="absolute inset-0 bg-black/50"></div>
-            <div className="relative z-10 p-10 w-full flex justify-between items-center text-white">
+            <div className="relative z-10 p-8 w-full flex justify-between items-center text-white">
               <div className="flex-1 overflow-hidden pr-8">
                 <p className="text-[20px] font-bold tracking-[0.2em] text-[#FF5E3A] uppercase mb-2">Special Event</p>
-                <h3 className="font-noto font-black text-[42px] truncate leading-tight drop-shadow-md">{banner.titleNative || banner.title}</h3>
+                <h3 className="font-noto font-black text-[38px] truncate leading-tight drop-shadow-md">{banner.titleNative || banner.title}</h3>
                 {banner.startDate && (
                   <p className="text-[24px] font-medium opacity-90 mt-2 truncate">
                     {new Date(banner.startDate.seconds * 1000).toLocaleDateString('ko-KR')}
@@ -224,11 +225,11 @@ export default function ThemeMagazineA({
             </div>
           </div>
         ) : (
-          <div className="w-full h-[220px] bg-black rounded-[40px] p-10 relative overflow-hidden flex items-center justify-between text-white shadow-2xl mb-8">
+          <div className="w-full h-[190px] bg-black rounded-[40px] p-10 relative overflow-hidden flex items-center justify-between text-white shadow-2xl mb-4">
             <div className="relative z-10 w-full flex justify-between items-center">
               <div>
                 <div className="flex items-center gap-4">
-                  <span className="font-serif italic text-[#FF5E3A] text-[48px]">Explore More</span>
+                  <span className="font-serif italic text-[#FF5E3A] text-[42px]">Explore More</span>
                   <svg className="w-12 h-12 text-[#FF5E3A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path d="M17 8l4 4m0 0l-4 4m4-4H3" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path>
                   </svg>
@@ -236,7 +237,7 @@ export default function ThemeMagazineA({
                 <p className="font-noto text-[24px] opacity-70 mt-2">더 많은 일정은 WoC에서</p>
               </div>
               <div className="text-right pr-4">
-                <h2 className="text-[64px] font-black tracking-tighter">WOC</h2>
+                <h2 className="text-[54px] font-black tracking-tighter">WOC</h2>
                 <div className="mt-2 border border-white/30 rounded-full px-6 py-2 text-[20px] font-medium tracking-widest inline-block">woc.today</div>
               </div>
             </div>

@@ -82,11 +82,7 @@ export const socialService = {
         .map(d => ({ id: d.id, ...d.data() }) as Social)
         .filter(s => s.type === 'popup');
 
-      // 3. 중복 일정 충돌 방지: 동일 장소(venueId)에 팝업 밀롱가 일정이 있으면 오늘 정규 밀롱가 일정은 숨김 처리
-      const popupVenueIds = new Set(todayPopup.map(p => p.venueId).filter(Boolean));
-      const filteredRegulars = todayRegular.filter(r => !popupVenueIds.has(r.venueId));
-
-      return [...filteredRegulars, ...todayPopup];
+      return [...todayRegular, ...todayPopup];
     } catch (error) {
       console.error("Error in getTodayActiveSocials:", error);
       return [];
@@ -180,13 +176,10 @@ export const socialService = {
         return false;
       });
       
-      // 중복 일정 충돌 방지: 동일 장소(venueId)에 팝업 밀롱가 일정이 있으면 정규 밀롱가 일정은 숨김 처리
       const regulars = filtered.filter(s => s.type === 'regular');
       const popups = filtered.filter(s => s.type === 'popup');
-      const popupVenueIds = new Set(popups.map(p => p.venueId).filter(Boolean));
-      const filteredRegulars = regulars.filter(r => !popupVenueIds.has(r.venueId));
       
-      callback?.([...filteredRegulars, ...popups]);
+      callback?.([...regulars, ...popups]);
     });
   },
 

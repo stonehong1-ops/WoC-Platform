@@ -12,7 +12,10 @@ const GalleryContent = () => {
 
   return (
     <div className="fixed inset-0 z-[40] w-full bg-black overflow-hidden flex flex-col">
-      <LiveFeed userId={view === 'my' ? user?.uid : undefined} />
+      <LiveFeed 
+        userId={(view === 'my' || view === 'hosted') ? user?.uid : undefined} 
+        viewMode={view === 'hosted' ? 'hosted' : (view === 'my' ? 'joined' : undefined)}
+      />
     </div>
   );
 };

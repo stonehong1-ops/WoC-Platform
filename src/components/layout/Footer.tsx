@@ -80,11 +80,11 @@ export default function Footer() {
 
           {profile?.isAdmin && <div className="w-[1px] bg-gray-200/60 my-1.5" />}
 
-          {/* 7. ADMIN PARTITION */}
           {profile?.isAdmin && (
             <Section label="Admin" isLast>
               <NavItem href="/admin/people" icon="admin_panel_settings" label="PEOPLE" active={isActive('/admin/people')} />
               <NavItem href="/admin/banners" icon="view_carousel" label="BANNERS" active={isActive('/admin/banners')} />
+              <NavItem href="/admin/social-radar" icon="radar" label="RADAR" active={isActive('/admin/social-radar')} />
               <NavItem href="/admin/pics" icon="wallpaper" label="PICs" active={isActive('/admin/pics')} />
             </Section>
           )}

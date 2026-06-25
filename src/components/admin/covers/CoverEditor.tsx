@@ -9,6 +9,7 @@ import ThemeMagazineA from './themes/ThemeMagazineA';
 import ThemeMagazineB from './themes/ThemeMagazineB';
 import ThemeMagazineC from './themes/ThemeMagazineC';
 import ThemeMagazineD from './themes/ThemeMagazineD';
+import ThemeMagazineE from './themes/ThemeMagazineE';
 import { formatInstructorNames, formatCommunityName } from "@/app/social/constants/seoulRegions";
 import { getDjDisplay } from "@/lib/utils/socialUtils";
 import { toast } from 'sonner';
@@ -55,7 +56,7 @@ export default function CoverEditor() {
   // SNS Text Modal states
   const [isTextModalOpen, setIsTextModalOpen] = useState(false);
   const [snsTextContent, setSnsTextContent] = useState("");
-  const [selectedTheme, setSelectedTheme] = useState<'A' | 'B' | 'C' | 'D'>('A');
+  const [selectedTheme, setSelectedTheme] = useState<'A' | 'B' | 'C' | 'D' | 'E'>('A');
 
   const [selectedMilongaId, setSelectedMilongaId] = useState<string>('');
   const [selectedMilongaId2, setSelectedMilongaId2] = useState<string>('');
@@ -95,7 +96,7 @@ export default function CoverEditor() {
     const timer = setTimeout(() => {
       const node = modalCaptureRef.current;
       if (node) {
-        const innerScaled = node.querySelector('.scale-\\[3\\]') as HTMLElement | null;
+        const innerScaled = (node.querySelector('.capture-scale-wrapper') || node.querySelector('.scale-\\[3\\]')) as HTMLElement | null;
         if (innerScaled) {
           // The visual height is offsetHeight * 3
           const actualHeight = innerScaled.offsetHeight * 3;
@@ -150,7 +151,7 @@ export default function CoverEditor() {
         const newEvents: CoverEvent[] = [];
         // 0. Fetch groups to map groupName for classes
         const allGroups = await groupService.getGroups();
-        const groupMap = new Map(allGroups.map(g => [g.id, { name: g.nativeName || g.name || '', city: (g as any).city || g.address || '' }]));
+        const groupMap = new Map(allGroups.map(g => [g.id, { name: g.nativeName || g.name || '', city: (g as any).city || g.address || '', seoulArea: (g as any).seoulArea || '' }]));
 
         // 1. Fetch Socials, Practicas, and Venues
         const [socialsData, venuesData] = await Promise.all([
@@ -190,7 +191,7 @@ export default function CoverEditor() {
               const dStr = parseDateStr(s.date);
               const clsDate = normalizeDateStr(dStr);
               if (clsDate && clsDate.toDateString() === targetStr) {
-                const groupInfo = groupMap.get(cls.groupId || '') || { name: '', city: '' };
+                const groupInfo = groupMap.get(cls.groupId || '') || { name: '', city: '', seoulArea: '' };
                 newEvents.push({
                   id: `${cls.id}_${s.timeSlot || cls.startTime || ''}`,
                   type: 'class',
@@ -203,7 +204,8 @@ export default function CoverEditor() {
                   originalStartDate: clsDate,
                   instructor: formatInstructorNames(cls.instructors?.slice(0, 2).map((i: any) => i.instructorNativeName || i.nameNative || i.name).join(', ') || cls.instructorNativeName || cls.instructor || '', 'KR'),
                   groupName: groupInfo.name || cls.groupName || '',
-                  city: groupInfo.city || ''
+                  city: groupInfo.city || '',
+                  seoulArea: groupInfo.seoulArea || ''
                 });
               }
             });
@@ -294,6 +296,13 @@ export default function CoverEditor() {
     
     // 1. Grouping logic
     const getRegionGroup = (ev: CoverEvent) => {
+      if (ev.seoulArea === 'gangnam') {
+        return { ko: '(서울 강남)', en: '(Seoul Gangnam)', city: '서울', order: 2 };
+      }
+      if (ev.seoulArea === 'gangbuk') {
+        return { ko: '(서울 홍대)', en: '(Seoul Hongdae)', city: '서울', order: 1 };
+      }
+
       const searchStr = `${ev.city || ''} ${ev.location || ''} ${ev.groupName || ''} ${ev.title || ''} ${ev.titleNative || ''}`.toLowerCase();
       
       if (searchStr.includes('부산') || searchStr.includes('busan')) {
@@ -335,7 +344,7 @@ export default function CoverEditor() {
       return (a.startTime || '').localeCompare(b.startTime || '');
     });
 
-    let koText = `[오늘의 탱고 일정 - ${targetDate.getMonth() + 1}/${targetDate.getDate()} ${daysKo[targetDate.getDay()]}]\n\n`;
+    let koText = `[오늘의 탱고 일정 - ${targetDate.getMonth() + 1}/${targetDate.getDate()} ${daysKo[targetDate.getDay()]}]\n'탱고월드' 앱에서 자동 등록됨 / www.woc.today\n\n`;
     let enText = `[Today's Tango Events - ${targetDate.getMonth() + 1}/${targetDate.getDate()} ${daysEn[targetDate.getDay()]}]\n\n`;
 
     let currentRegionKo = '';
@@ -409,7 +418,8 @@ export default function CoverEditor() {
       }
     });
 
-    const fullText = `${koText.trim()}\n\n---\n\n${enText.trim()}\n\n🔎 Find more info at woc.today!`;
+    const finalKoText = koText.trim() + `\n\n페이스북에서 자동 검색 및 저장됨. 문의 : 스톤 01072092468`;
+    const fullText = `${finalKoText}\n\n---\n\n${enText.trim()}\n\n🔎 Find more info at woc.today!`;
     setSnsTextContent(fullText);
     setIsTextModalOpen(true);
   };
@@ -455,8 +465,8 @@ export default function CoverEditor() {
       let targetNode: HTMLElement = node;
       let scaleOption = 2; // High quality for Theme A/B
       
-      if (selectedTheme === 'C' || selectedTheme === 'D') {
-        const innerScaled = node.querySelector('.scale-\\[3\\]') as HTMLElement | null;
+      if (selectedTheme === 'C') {
+        const innerScaled = (node.querySelector('.capture-scale-wrapper') || node.querySelector('.scale-\\[3\\]')) as HTMLElement | null;
         if (innerScaled) {
           targetNode = innerScaled;
           scaleOption = 3; // Capture 360px layout at 3x scale to produce 1080px width natively
@@ -471,10 +481,10 @@ export default function CoverEditor() {
         backgroundColor: '#f5f5f7',
         logging: false,
         onclone: (clonedDoc) => {
-          if (selectedTheme === 'C' || selectedTheme === 'D') {
+          if (selectedTheme === 'C') {
             // In the cloned doc, find the 360px container and remove its transform and absolute positioning
             // so it flows and renders natively at 360px, then scaled by html2canvas's scale option
-            const clonedInner = clonedDoc.querySelector('.scale-\\[3\\]') as HTMLElement | null;
+            const clonedInner = (clonedDoc.querySelector('.capture-scale-wrapper') || clonedDoc.querySelector('.scale-\\[3\\]')) as HTMLElement | null;
             if (clonedInner) {
               clonedInner.style.transform = 'none';
               clonedInner.style.position = 'relative';
@@ -554,10 +564,10 @@ export default function CoverEditor() {
           {/* Theme Selector */}
           <div className="mb-6">
             <label className="block text-sm font-bold text-slate-700 mb-2">테마 스타일</label>
-            <div className="flex gap-2">
+            <div className="grid grid-cols-5 gap-1.5">
               <button 
                 onClick={() => setSelectedTheme('A')}
-                className={`flex-1 py-2 text-sm font-bold rounded-xl transition-all ${
+                className={`py-2 text-xs font-bold rounded-xl transition-all ${
                   selectedTheme === 'A' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
                 }`}
               >
@@ -565,7 +575,7 @@ export default function CoverEditor() {
               </button>
               <button 
                 onClick={() => setSelectedTheme('B')}
-                className={`flex-1 py-2 text-sm font-bold rounded-xl transition-all ${
+                className={`py-2 text-xs font-bold rounded-xl transition-all ${
                   selectedTheme === 'B' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
                 }`}
               >
@@ -573,7 +583,7 @@ export default function CoverEditor() {
               </button>
               <button 
                 onClick={() => setSelectedTheme('C')}
-                className={`flex-1 py-2 text-sm font-bold rounded-xl transition-all ${
+                className={`py-2 text-xs font-bold rounded-xl transition-all ${
                   selectedTheme === 'C' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
                 }`}
               >
@@ -581,11 +591,19 @@ export default function CoverEditor() {
               </button>
               <button 
                 onClick={() => setSelectedTheme('D')}
-                className={`flex-1 py-2 text-sm font-bold rounded-xl transition-all ${
+                className={`py-2 text-xs font-bold rounded-xl transition-all ${
                   selectedTheme === 'D' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
                 }`}
               >
                 Style D
+              </button>
+              <button 
+                onClick={() => setSelectedTheme('E')}
+                className={`py-2 text-xs font-bold rounded-xl transition-all ${
+                  selectedTheme === 'E' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                }`}
+              >
+                Style E
               </button>
             </div>
           </div>
@@ -762,14 +780,14 @@ export default function CoverEditor() {
             className="origin-top flex-shrink-0" 
             style={{ 
               transform: `scale(${previewScale})`, 
-              height: (selectedTheme === 'C' || selectedTheme === 'D') ? 'auto' : 1920 * previewScale, 
+              height: (selectedTheme === 'C' || selectedTheme === 'D' || selectedTheme === 'E') ? 'auto' : 1920 * previewScale, 
               width: 1080 * previewScale 
             }}
           >
             {/* The actual capturing DOM */}
             <div 
               ref={captureRef} 
-              className={`w-[1080px] shadow-2xl relative bg-white ${(selectedTheme === 'C' || selectedTheme === 'D') ? '' : 'h-[1920px]'}`}
+              className={`w-[1080px] shadow-2xl relative bg-white ${(selectedTheme === 'C' || selectedTheme === 'D' || selectedTheme === 'E') ? '' : 'h-[1920px]'}`}
             >
               {selectedTheme === 'A' ? (
                 <ThemeMagazineA 
@@ -812,8 +830,17 @@ export default function CoverEditor() {
                   region={selectedRegion}
                   banner={selectedBanner}
                 />
-              ) : (
+              ) : selectedTheme === 'D' ? (
                 <ThemeMagazineD
+                  date={targetDate}
+                  allMilongas={allMilongas}
+                  allClasses={allClasses}
+                  allPracticas={allPracticas}
+                  region={selectedRegion}
+                  banner={selectedBanner}
+                />
+              ) : (
+                <ThemeMagazineE
                   date={targetDate}
                   allMilongas={allMilongas}
                   allClasses={allClasses}
@@ -897,7 +924,7 @@ export default function CoverEditor() {
               className="origin-top flex-shrink-0"
               style={{ 
                 transform: `scale(${modalScale})`, 
-                height: (selectedTheme === 'C' || selectedTheme === 'D')
+                height: (selectedTheme === 'C' || selectedTheme === 'D' || selectedTheme === 'E')
                   ? (contentHeight === 'auto' ? 'auto' : `${contentHeight * modalScale}px`)
                   : 1920 * modalScale, 
                 width: 1080 * modalScale 
@@ -909,7 +936,7 @@ export default function CoverEditor() {
                 ref={modalCaptureRef} 
                 className={`w-[1080px] shadow-2xl relative bg-white`}
                 style={{
-                  height: (selectedTheme === 'C' || selectedTheme === 'D')
+                  height: (selectedTheme === 'C' || selectedTheme === 'D' || selectedTheme === 'E')
                     ? (contentHeight === 'auto' ? 'auto' : `${contentHeight}px`)
                     : '1920px'
                 }}
@@ -955,8 +982,17 @@ export default function CoverEditor() {
                     region={selectedRegion}
                     banner={selectedBanner}
                   />
-                ) : (
+                ) : selectedTheme === 'D' ? (
                   <ThemeMagazineD
+                    date={targetDate}
+                    allMilongas={allMilongas}
+                    allClasses={allClasses}
+                    allPracticas={allPracticas}
+                    region={selectedRegion}
+                    banner={selectedBanner}
+                  />
+                ) : (
+                  <ThemeMagazineE
                     date={targetDate}
                     allMilongas={allMilongas}
                     allClasses={allClasses}

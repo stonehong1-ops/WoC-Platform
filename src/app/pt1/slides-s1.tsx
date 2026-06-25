@@ -1450,3 +1450,5 @@ export const Slide16 = () => (
     </div>
   </div>
 );
+
+export const SlideStrategy = Slide09;

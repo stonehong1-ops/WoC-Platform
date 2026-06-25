@@ -169,7 +169,8 @@ export default function ContentViewerPopup({
     try {
       const nextEp = await contentService.fetchNextEpisodeNumber(collectionName);
 
-      const fileRef = ref(storage, `${collectionName}/ep${nextEp}_${Date.now()}_${uploadFile.name}`);
+      const extension = uploadFile.name.split('.').pop() || 'png';
+      const fileRef = ref(storage, `${collectionName}/ep${nextEp}_${Date.now()}.${extension}`);
       await uploadBytes(fileRef, uploadFile);
       const imageUrl = await getDownloadURL(fileRef);
 

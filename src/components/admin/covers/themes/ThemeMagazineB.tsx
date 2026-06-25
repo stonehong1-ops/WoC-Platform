@@ -1,11 +1,11 @@
 import React from 'react';
 import { CoverEvent } from '../CoverEditor';
 import { useBase64Image } from '../useBase64Image';
-import { getCityGroup } from '@/app/social/constants/regionMapping';
+import { getCityGroup, getCityCategoryLabel } from '@/app/social/constants/regionMapping';
 
 interface ExtraSocialItemProps {
   m: CoverEvent;
-  getRegionChip: (city?: string, location?: string) => string | null;
+  getRegionChip: (city?: string, location?: string, seoulArea?: string) => string | null;
 }
 
 function ExtraSocialItem({ m, getRegionChip }: ExtraSocialItemProps) {
@@ -20,9 +20,9 @@ function ExtraSocialItem({ m, getRegionChip }: ExtraSocialItemProps) {
         />
       )}
       <div className="absolute inset-0 bg-black/60"></div>
-      {getRegionChip(m.city, m.location) && (
+      {getRegionChip(m.city, m.location, m.seoulArea) && (
         <div className="absolute top-2 left-2 bg-red-500 text-white rounded-full px-1.5 py-0.5 text-[7px] font-bold z-10">
-          {getRegionChip(m.city, m.location)}
+          {getRegionChip(m.city, m.location, m.seoulArea)}
         </div>
       )}
       <div className="absolute inset-0 p-3 flex flex-col text-white">
@@ -92,20 +92,26 @@ export default function ThemeMagazineB({
 
   const highlights = regionalMilongas.slice(0, 3);
 
-  const getRegionChip = (city?: string, location?: string) => {
-    const dbCity = city || location || '';
+  const getRegionChip = (city?: string, location?: string, seoulArea?: string) => {
+    if (seoulArea === 'gangnam') return '서울 강남';
+    if (seoulArea === 'gangbuk') return '서울 홍대';
+
+    const dbCity = (city || '').trim();
+    if (!dbCity) return '';
     const group = getCityGroup(dbCity);
     if (group === 'SEOUL') {
-      const str = ((city || '') + ' ' + (location || '')).toLowerCase();
-      if (str.includes('강남')) return '서울 강남';
-      if (str.includes('홍대')) return '서울 홍대';
-      if (str.includes('마포')) return '서울 마포';
-      return '서울';
+      const dbCityLower = dbCity.toLowerCase();
+      const isSeoulCity = dbCityLower === 'seoul' || dbCityLower === '서울' || dbCityLower === 'soul';
+      if (isSeoulCity) {
+        const str = ((city || '') + ' ' + (location || '')).toLowerCase();
+        if (str.includes('강남')) return '서울 강남';
+        if (str.includes('홍대')) return '서울 홍대';
+        if (str.includes('마포')) return '서울 마포';
+        return '서울';
+      }
+      return getCityCategoryLabel(dbCity, 'KR');
     }
-    if (group === 'BUSAN') return '부산';
-    if (group === 'DAEJEON') return '대전';
-    if (group === 'GWANGJU') return '광주';
-    return '';
+    return getCityCategoryLabel(dbCity, 'KR');
   };
 
   return (
@@ -121,7 +127,7 @@ export default function ThemeMagazineB({
        `}} />
 
       {/* SCALE WRAPPER: Original design is for ~360px mobile width. 360 * 3 = 1080 */}
-      <div className="w-[360px] h-[640px] absolute top-0 left-0 origin-top-left scale-[3] flex flex-col text-gray-900 bg-white">
+      <div className="w-[360px] h-[640px] absolute top-0 left-0 flex flex-col text-gray-900 bg-white capture-scale-wrapper" style={{ transform: 'scale(3)', transformOrigin: 'top left' }}>
         
         {/* BEGIN: MainContainer */}
         <main className="w-full bg-[#f9f9f9] h-full relative overflow-hidden flex flex-col p-1.5 gap-1">
@@ -154,9 +160,9 @@ export default function ThemeMagazineB({
                 />
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20"></div>
-              {getRegionChip(milonga?.city, milonga?.location) && (
+              {getRegionChip(milonga?.city, milonga?.location, milonga?.seoulArea) && (
                 <div className="absolute top-4 left-4 bg-red-500 text-white rounded-full px-2 py-0.5 text-[8px] font-bold z-10">
-                  {getRegionChip(milonga?.city, milonga?.location)}
+                  {getRegionChip(milonga?.city, milonga?.location, milonga?.seoulArea)}
                 </div>
               )}
               <div className="absolute top-4 right-4">

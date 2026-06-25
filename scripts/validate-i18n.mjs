@@ -31,13 +31,15 @@ function getFiles(dir, fileList = []) {
   for (const file of files) {
     const absolutePath = path.join(dir, file);
     const relativePath = path.relative(process.cwd(), absolutePath);
+    const normalizedPath = relativePath.replace(/\\/g, "/");
 
     // 검사 제외 목록
     if (
       file === "node_modules" ||
       file === ".next" ||
       file === "i18n" || // i18n 폴더 아래 (kr.ts, en.ts 등)
-      relativePath.startsWith("src/app/admin/i18n") // i18n 진단 페이지
+      normalizedPath.startsWith("src/app/admin/i18n") || // i18n 진단 페이지
+      (normalizedPath.startsWith("src/app/pt") && !normalizedPath.startsWith("src/app/pt1")) // pt 한국어 고정 IR Deck 예외 처리
     ) {
       continue;
     }

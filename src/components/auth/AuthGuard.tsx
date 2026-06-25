@@ -15,6 +15,8 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     const isPublic = pathname === '/' || 
                     pathname === '/login' ||
                     pathname === '/app' ||
+                    pathname.startsWith('/syncfit') ||
+                    pathname.startsWith('/pt') ||
                     pathname.startsWith('/yedamche') ||
                     pathname.startsWith('/live') || 
                     pathname.startsWith('/events') || 
@@ -27,7 +29,8 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
                     pathname.startsWith('/resale') ||
                     pathname.startsWith('/stay') ||
                     pathname.startsWith('/lost') ||
-                    pathname.startsWith('/hub');
+                    pathname.startsWith('/hub') ||
+                    pathname.startsWith('/fys');
 
     if (!loading && !isPublic && (!user || !profile?.isRegistered)) {
       setShowLogin(true);

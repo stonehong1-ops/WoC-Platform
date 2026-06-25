@@ -229,29 +229,91 @@ export default function NavigationDrawer() {
           {/* Section: MY */}
           <div className="mb-8">
             <h2 className="px-5 mb-2 text-[9px] font-black tracking-[0.25em] text-on-surface/30 uppercase">{t('nav.my') || 'MY'}</h2>
-            <div className="space-y-0.5">
-              {[
-                { icon: 'calendar_today', label: t('myinfo.schedule_tab') || 'Schedule', href: '/profile?tab=schedule' },
-                { icon: 'psychology', label: t('nav.coaching') || 'Coaching', href: '/coaching' },
-                { icon: 'cinematic_blur', label: t('nav.live'), href: '/live?view=my' },
-                { icon: 'account_balance_wallet', label: t('nav.wallet'), href: '/wallet' },
-                { icon: 'manage_accounts', label: t('nav.my_info'), href: '/profile' },
-                ...(profile?.isAdmin ? [
-                  { icon: 'admin_panel_settings', label: 'Admin (People)', href: '/admin/people' },
-                  { icon: 'view_carousel', label: 'Admin (Banners)', href: '/admin/banners' },
-                  { icon: 'wallpaper', label: 'PICs Admin', href: '/admin/pics' }
-                ] : [])
-              ].map((item) => (
-                <Link 
-                  key={item.label}
-                  href={item.href}
-                  onClick={closeDrawer}
-                  className="flex items-center gap-4 px-5 py-3 text-on-surface/60 hover:bg-on-surface/[0.03] hover:text-on-surface rounded-2xl font-bold transition-all text-left"
-                >
-                  <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
-                  <span className="text-[15px] tracking-tight">{item.label}</span>
+            <div className="space-y-3">
+              {/* Acts */}
+              <div>
+                <p className="px-5 mb-1 text-[8px] font-black tracking-[0.2em] text-[#007AFF]/50 uppercase">{t('nav.my_acts')}</p>
+                {[
+                  { icon: 'calendar_today', label: t('myinfo.schedule_tab'), href: '/profile?tab=schedule' },
+                  { icon: 'receipt_long', label: t('nav.orders'), href: '/history' },
+                  { icon: 'psychology', label: t('nav.coaching'), href: '/coaching' },
+                ].map((item) => (
+                  <Link key={item.href} href={item.href} onClick={closeDrawer} className="flex items-center gap-4 px-5 py-2.5 text-on-surface/60 hover:bg-on-surface/[0.03] hover:text-on-surface rounded-2xl font-bold transition-all text-left">
+                    <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
+                    <span className="text-[15px] tracking-tight">{item.label}</span>
+                  </Link>
+                ))}
+              </div>
+              {/* Lab */}
+              <div>
+                <p className="px-5 mb-1 text-[8px] font-black tracking-[0.2em] text-[#007AFF]/50 uppercase">{t('nav.my_lab')}</p>
+                {[
+                  { icon: 'checkroom', label: t('nav.ai_tryon'), href: '/profile/ai-tryon' },
+                  { icon: 'smart_display', label: t('nav.ai_lesson'), href: '/lab/lesson' },
+                  { icon: 'handshake', label: t('nav.partner_match'), href: '#', soon: true },
+                ].map((item) => (
+                  <Link key={item.label} href={item.href} onClick={(e) => { if (item.soon) { e.preventDefault(); } closeDrawer(); }} className={`flex items-center gap-4 px-5 py-2.5 text-on-surface/60 hover:bg-on-surface/[0.03] hover:text-on-surface rounded-2xl font-bold transition-all text-left ${item.soon ? 'opacity-40' : ''}`}>
+                    <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
+                    <span className="text-[15px] tracking-tight">{item.label}</span>
+                    {item.soon && <span className="text-[9px] font-bold text-slate-400 uppercase ml-auto">Soon</span>}
+                  </Link>
+                ))}
+              </div>
+              {/* Live */}
+              <div>
+                <p className="px-5 mb-1 text-[8px] font-black tracking-[0.2em] text-[#007AFF]/50 uppercase">{t('nav.my_live')}</p>
+                {[
+                  { icon: 'broadcast_on_personal', label: t('nav.live_hosted'), href: '#', soon: true },
+                  { icon: 'cinematic_blur', label: t('nav.live_joined'), href: '/live?view=my' },
+                ].map((item) => (
+                  <Link key={item.label} href={item.href} onClick={(e) => { if (item.soon) { e.preventDefault(); } closeDrawer(); }} className={`flex items-center gap-4 px-5 py-2.5 text-on-surface/60 hover:bg-on-surface/[0.03] hover:text-on-surface rounded-2xl font-bold transition-all text-left ${item.soon ? 'opacity-40' : ''}`}>
+                    <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
+                    <span className="text-[15px] tracking-tight">{item.label}</span>
+                    {item.soon && <span className="text-[9px] font-bold text-slate-400 uppercase ml-auto">Soon</span>}
+                  </Link>
+                ))}
+              </div>
+              {/* Pay */}
+              <div>
+                <p className="px-5 mb-1 text-[8px] font-black tracking-[0.2em] text-[#007AFF]/50 uppercase">{t('nav.my_pay')}</p>
+                {[
+                  { icon: 'account_balance_wallet', label: t('nav.deposit'), href: '/wallet' },
+                  { icon: 'confirmation_number', label: t('nav.coupons'), href: '#', soon: true },
+                ].map((item) => (
+                  <Link key={item.label} href={item.href} onClick={(e) => { if (item.soon) { e.preventDefault(); } closeDrawer(); }} className={`flex items-center gap-4 px-5 py-2.5 text-on-surface/60 hover:bg-on-surface/[0.03] hover:text-on-surface rounded-2xl font-bold transition-all text-left ${item.soon ? 'opacity-40' : ''}`}>
+                    <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
+                    <span className="text-[15px] tracking-tight">{item.label}</span>
+                    {item.soon && <span className="text-[9px] font-bold text-slate-400 uppercase ml-auto">Soon</span>}
+                  </Link>
+                ))}
+              </div>
+              {/* Me + Admin */}
+              <div>
+                <Link href="/profile?tab=profile" onClick={closeDrawer} className="flex items-center gap-4 px-5 py-2.5 text-on-surface/60 hover:bg-on-surface/[0.03] hover:text-on-surface rounded-2xl font-bold transition-all text-left">
+                  <span className="material-symbols-outlined text-[20px]">person</span>
+                  <span className="text-[15px] tracking-tight">{t('nav.my_me')}</span>
                 </Link>
-              ))}
+                {profile?.isAdmin && (
+                  <>
+                    <Link href="/admin/people" onClick={closeDrawer} className="flex items-center gap-4 px-5 py-2.5 text-on-surface/60 hover:bg-on-surface/[0.03] hover:text-on-surface rounded-2xl font-bold transition-all text-left">
+                      <span className="material-symbols-outlined text-[20px]">admin_panel_settings</span>
+                      <span className="text-[15px] tracking-tight">Admin (People)</span>
+                    </Link>
+                    <Link href="/admin/banners" onClick={closeDrawer} className="flex items-center gap-4 px-5 py-2.5 text-on-surface/60 hover:bg-on-surface/[0.03] hover:text-on-surface rounded-2xl font-bold transition-all text-left">
+                      <span className="material-symbols-outlined text-[20px]">view_carousel</span>
+                      <span className="text-[15px] tracking-tight">Admin (Banners)</span>
+                    </Link>
+                    <Link href="/admin/social-radar" onClick={closeDrawer} className="flex items-center gap-4 px-5 py-2.5 text-on-surface/60 hover:bg-on-surface/[0.03] hover:text-on-surface rounded-2xl font-bold transition-all text-left">
+                      <span className="material-symbols-outlined text-[20px]">radar</span>
+                      <span className="text-[15px] tracking-tight">Social Radar</span>
+                    </Link>
+                    <Link href="/admin/pics" onClick={closeDrawer} className="flex items-center gap-4 px-5 py-2.5 text-on-surface/60 hover:bg-on-surface/[0.03] hover:text-on-surface rounded-2xl font-bold transition-all text-left">
+                      <span className="material-symbols-outlined text-[20px]">wallpaper</span>
+                      <span className="text-[15px] tracking-tight">PICs Admin</span>
+                    </Link>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 

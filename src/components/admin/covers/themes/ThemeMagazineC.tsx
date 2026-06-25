@@ -1,7 +1,7 @@
 import React from 'react';
 import { CoverEvent } from '../CoverEditor';
 import { useBase64Image } from '../useBase64Image';
-import { getCityGroup } from '@/app/social/constants/regionMapping';
+import { getCityGroup, getCityCategoryLabel } from '@/app/social/constants/regionMapping';
 
 interface ThemeCProps {
   date: Date;
@@ -129,6 +129,19 @@ function PracticaCell({ label, items, maxShow = 5 }: { label: string; items: Cov
   );
 }
 
+function displayCityHeader(ev: CoverEvent, cityLabel: string) {
+  if (cityLabel === '서울' || cityLabel === 'Seoul') {
+    const area = ev.seoulArea || "";
+    const loc = (ev.location || "").toLowerCase();
+    const title = (ev.titleNative || ev.title || "").toLowerCase();
+    if (area === "gangnam" || area.includes("한강아래") || loc.includes("강남") || loc.includes("서초") || loc.includes("송파") || loc.includes("양재") || loc.includes("역삼") || title.includes("강남")) {
+      return "서울 강남";
+    }
+    return "서울 홍대";
+  }
+  return cityLabel;
+}
+
 export default function ThemeMagazineC({
   date, allMilongas, allClasses, allPracticas, region, banner
 }: ThemeCProps) {
@@ -151,16 +164,14 @@ export default function ThemeMagazineC({
   type CardItem = { ev: CoverEvent; label?: string };
   const milongaItems: CardItem[] = sortedMilongas.map((m, index) => {
     const prev = index > 0 ? sortedMilongas[index - 1] : null;
-    const prevGroup = prev ? getCityGroup(prev.city || prev.location) : null;
-    const currGroup = getCityGroup(m.city || m.location);
-    const showHeader = !prev || prevGroup !== currGroup;
+    const prevCity = prev ? (prev.city || "").trim() : "";
+    const currCity = (m.city || "").trim();
+    const showHeader = !prev || prevCity !== currCity;
 
     let label: string | undefined;
     if (showHeader) {
-      const gLabel = currGroup === 'SEOUL' ? '서울' :
-                     currGroup === 'BUSAN' ? '부산' :
-                     currGroup === 'DAEJEON' ? '대전' : '광주';
-      label = `🔥 밀롱가 · ${gLabel}`;
+      const displayLabel = getCityCategoryLabel(currCity, 'KR') || '기타';
+      label = `🔥 밀롱가 · ${displayCityHeader(m, displayLabel)}`;
     }
     return { ev: m, label };
   });
@@ -168,16 +179,14 @@ export default function ThemeMagazineC({
   // Build class items array (one continuous flow with labels on city changes)
   const classItems: CardItem[] = sortedClasses.map((c, index) => {
     const prev = index > 0 ? sortedClasses[index - 1] : null;
-    const prevGroup = prev ? getCityGroup(prev.city || prev.location) : null;
-    const currGroup = getCityGroup(c.city || c.location);
-    const showHeader = !prev || prevGroup !== currGroup;
+    const prevCity = prev ? (prev.city || "").trim() : "";
+    const currCity = (c.city || "").trim();
+    const showHeader = !prev || prevCity !== currCity;
 
     let label: string | undefined;
     if (showHeader) {
-      const gLabel = currGroup === 'SEOUL' ? '서울' :
-                     currGroup === 'BUSAN' ? '부산' :
-                     currGroup === 'DAEJEON' ? '대전' : '광주';
-      label = `🎓 클래스 · ${gLabel}`;
+      const displayLabel = getCityCategoryLabel(currCity, 'KR') || '기타';
+      label = `🎓 클래스 · ${displayCityHeader(c, displayLabel)}`;
     }
     return { ev: c, label };
   });
@@ -193,7 +202,7 @@ export default function ThemeMagazineC({
       `}} />
 
       {/* Scale wrapper: 360 * 3 = 1080 */}
-      <div className="w-[360px] absolute top-0 left-0 origin-top-left scale-[3] flex flex-col text-gray-900 bg-[#f5f5f7]">
+      <div className="w-[360px] absolute top-0 left-0 flex flex-col text-gray-900 bg-[#f5f5f7] capture-scale-wrapper" style={{ transform: 'scale(3)', transformOrigin: 'top left' }}>
 
         {/* ── Compact Header ── */}
         <header className="flex items-center justify-between px-[6px] py-[5px] bg-black">

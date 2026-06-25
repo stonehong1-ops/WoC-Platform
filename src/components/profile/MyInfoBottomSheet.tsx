@@ -51,9 +51,9 @@ const normalizeCountryCode = (code: string | undefined | null): string => {
     return upper;
   }
   if (upper.includes('KR') || upper.includes('KOR') || upper.includes('82')) return '+82 (KR)';
-  if (upper.includes('US') || upper.includes('USA') || upper.includes('1')) return '+1 (US)';
-  if (upper.includes('UK') || upper.includes('GB') || upper.includes('44')) return '+44 (UK)';
-  if (upper.includes('DE') || upper.includes('GER') || upper.includes('49')) return '+49 (DE)';
+  if (upper.includes('US') || upper.includes('USA') || upper === '1' || upper === '+1' || upper.startsWith('+1 ')) return '+1 (US)';
+  if (upper.includes('UK') || upper.includes('GB') || upper === '44' || upper === '+44' || upper.startsWith('+44 ')) return '+44 (UK)';
+  if (upper.includes('DE') || upper.includes('GER') || upper === '49' || upper === '+49' || upper.startsWith('+49 ')) return '+49 (DE)';
   return '+82 (KR)';
 };
 
@@ -608,30 +608,7 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
                   </div>
                 </div>
 
-                {/* Partnership Status (Segmented Button) */}
-                <div className="space-y-1.5 col-span-2 md:col-span-1">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-outline">{t('myinfo.partnership')}</label>
-                  <div className="flex bg-surface-container rounded p-1">
-                    {[
-                      { id: 'none', label: t('myinfo.partnership_none') },
-                      { id: 'has', label: t('myinfo.partnership_has') },
-                      { id: 'searching', label: t('myinfo.partnership_searching') }
-                    ].map((opt) => (
-                      <button 
-                        key={opt.id}
-                        onClick={() => setDetails(prev => ({ ...prev, partnerStatus: opt.id }))}
-                        type="button"
-                        className={`flex-1 py-2 text-sm font-semibold rounded transition-all ${
-                          details.partnerStatus === opt.id 
-                            ? 'bg-surface text-primary shadow-sm' 
-                            : 'text-on-surface-variant hover:text-on-surface'
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+
               </div>
             </section>
 

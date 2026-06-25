@@ -5,30 +5,165 @@ import PresentationHeader from '@/components/presentation/PresentationHeader';
 import PresentationFooter from '@/components/presentation/PresentationFooter';
 import { useNavigation } from '@/components/providers/NavigationProvider';
 
-import { Slide1, Slide2, Slide3, Slide4, Slide5, Slide6, Slide7, Slide8, Slide9, Slide10, Slide11, Slide12, Slide13, Slide14 } from './slides-s1';
+import { Slide1, Slide2, Slide3, Slide4, Slide5, Slide6, Slide7, Slide8, Slide9, Slide10, Slide11, Slide12, Slide13, Slide14, Slide15, Slide16, Slide17, Slide18, Slide19 } from './slides-s1';
 
 const SLIDES = [
-  Slide1, Slide2, Slide3, Slide4, Slide5, Slide6, Slide7, Slide8, Slide9, Slide10, Slide11, Slide12, Slide13, Slide14
+  Slide1, Slide2, Slide3, Slide4, Slide5, Slide6, Slide7, Slide8, Slide9, Slide10, Slide11, Slide12, Slide13, Slide14, Slide15, Slide16, Slide17, Slide18, Slide19
 ];
 
 const SLIDE_URLS: Record<number, string> = {
-  0: '/groups/freestyle-tango',                  // Slide 1: 인트로 커버
-  1: '/groups/freestyle-tango',                  // Slide 2: 비전
-  2: '/groups/freestyle-tango',                  // Slide 3: 비즈니스 포지셔닝
-  3: '/groups/freestyle-tango?tab=calendar',     // Slide 4: 타겟 시장 검증
-  4: '/groups/freestyle-tango?tab=calendar',     // Slide 5: 마지막 플랫폼
-  5: '/groups/freestyle-tango',                  // Slide 6: 왜 아직 지배적 플랫폼이 없을까?
-  6: '/groups/freestyle-tango',                  // Slide 7: 글로벌 생태계
-  7: '/groups/freestyle-tango?tab=class',        // Slide 8: 오프라인 확장 모델
-  8: '/groups/freestyle-tango?tab=class',        // Slide 9: 핵심 고객 온보딩 전략
-  9: '/groups/freestyle-tango?tab=settings',     // Slide 10: 모듈형 커뮤니티 시스템
-  10: '/groups/freestyle-tango',                 // Slide 11: 전략적 비즈니스 시너지
-  11: '/groups/freestyle-tango',                 // Slide 12: 투자 회수 및 BEP 검증
-  12: '/groups/freestyle-tango',                 // Slide 13: 투자 유치 계획
-  13: '/groups/freestyle-tango',                 // Slide 14: 클로징
+  0: '/groups/freestyle-tango',                  // Slide 1: Cover Slide (커버)
+  1: '/groups/freestyle-tango',                  // Slide 2: Problem Statement (문제 인식)
+  2: '/groups/freestyle-tango',                  // Slide 3: Market Opportunity (시장 기회)
+  3: '/groups/freestyle-tango?tab=calendar',     // Slide 4: Platform Limit (기존 플랫폼의 한계)
+  4: '/groups/freestyle-tango?tab=calendar',     // Slide 5: Solution (해결 방안)
+  5: '/groups/freestyle-tango',                  // Slide 6: Platform Structure (플랫폼 구조)
+  6: '/groups/freestyle-tango',                  // Slide 7: Product Proof (제품 구현 검증)
+  7: '/groups/freestyle-tango?tab=class',        // Slide 8: Market Validation (시장 검증 지표)
+  8: '/groups/freestyle-tango?tab=class',        // Slide 9: Revenue Model (수익 모델)
+  9: '/groups/freestyle-tango?tab=settings',     // Slide 10: Unit Economics (단위 경제성)
+  10: '/groups/freestyle-tango',                 // Slide 11: Dance OS (1단계 검증)
+  11: '/groups/freestyle-tango',                 // Slide 12: Wellness OS (2단계 확장)
+  12: '/groups/freestyle-tango',                 // Slide 13: Academy OS (3단계 검증)
+  13: '/groups/freestyle-tango',                 // Slide 14: Expansion Roadmap (성장 로드맵)
+  14: '/groups/freestyle-tango',                 // Slide 15: Risk Management (리스크 관리)
+  15: '/groups/freestyle-tango',                 // Slide 16: Financial Projection (재무 전망)
+  16: '/groups/freestyle-tango',                 // Slide 17: Investment Plan (투자 계획)
+  17: '/groups/freestyle-tango',                 // Slide 18: Exit Vision (엑시트 비전)
+  18: '/groups/freestyle-tango',                 // Slide 19: Thank You (엔딩)
 };
 
 const GLOBAL_ANIMATIONS = `
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+  .slide {
+    width: 1280px;
+    height: 720px;
+    background-color: #ffffff;
+    font-family: 'Pretendard', sans-serif !important;
+    position: relative;
+    overflow: hidden;
+    box-sizing: border-box;
+    color: #111111;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+  }
+
+  .slide.slide-dark {
+    background-color: #050505;
+    color: #ffffff;
+    border: 1px solid #1f2937;
+  }
+
+  .chapter { position: absolute; top: 40px; left: 48px; font-size: 20px; font-weight: 800; color: #6b7280; letter-spacing: 1px; text-transform: uppercase; margin: 0; }
+  .page { position: absolute; top: 40px; right: 48px; font-size: 20px; font-weight: 800; color: #6b7280; margin: 0; }
+  .title { position: absolute; top: 84px; left: 48px; width: 1184px; font-size: 32px; font-weight: 800; color: #111111; line-height: 1.4; letter-spacing: -1px; word-break: keep-all; margin: 0; }
+  .slide-dark .title { color: #fcf8f8; }
+  .subtitle { position: absolute; top: 136px; left: 48px; width: 1184px; font-size: 22px; font-weight: 800; color: #6b7280; margin: 0; }
+
+  .body-area {
+    position: absolute;
+    top: 200px;
+    left: 48px;
+    width: 1184px;
+    height: 420px;
+    display: flex;
+    gap: 24px;
+    box-sizing: border-box;
+  }
+
+  .card {
+    background-color: #f9fafb;
+    border: 1px solid #f3f4f6;
+    border-radius: 16px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    box-sizing: border-box;
+    color: #111111;
+  }
+
+  .card-dark {
+    background-color: #111827;
+    border: 1px solid #1f2937;
+    border-radius: 16px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    box-sizing: border-box;
+    color: #ffffff;
+  }
+
+  .chart-box {
+    background-color: #f9fafb;
+    border: 1px solid #f3f4f6;
+    border-radius: 16px;
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    box-sizing: border-box;
+    color: #111111;
+  }
+
+  .bar-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+  }
+
+  .bar-label {
+    width: 180px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #4b5563;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .bar-track {
+    flex-grow: 1;
+    height: 32px;
+    background-color: #f3f4f6;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .bar-fill {
+    height: 100%;
+    background-color: #10b981;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 12px;
+    border-radius: 8px;
+    transition: width 0.8s ease-in-out;
+  }
+
+  .source {
+    position: absolute;
+    bottom: 30px;
+    left: 48px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #9ca3af;
+    margin: 0;
+  }
+
   @keyframes pt1-slideEnter { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes pt1-fadeUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes pt1-fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -189,6 +324,38 @@ const PresentationPage = () => {
   // Iframe states
   const [iframeUrl, setIframeUrl] = useState('/groups/freestyle-tango');
   const [fadeIframe, setFadeIframe] = useState(false);
+
+  // 반응형 16:9 슬라이드 스케일 조정 엔진
+  const [scale, setScale] = useState(1);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (!containerRef.current) return;
+      const parent = containerRef.current.parentElement;
+      if (!parent) return;
+      
+      const parentWidth = parent.clientWidth;
+      const parentHeight = parent.clientHeight;
+      
+      const targetWidth = 1280;
+      const targetHeight = 720;
+      
+      // 상하좌우 20px 마진 제외한 가용 영역
+      const margin = 20;
+      const scaleX = (parentWidth - margin) / targetWidth;
+      const scaleY = (parentHeight - margin) / targetHeight;
+      setScale(Math.min(scaleX, scaleY));
+    };
+
+    window.addEventListener('resize', handleResize);
+    const timer = setTimeout(handleResize, 100);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      clearTimeout(timer);
+    };
+  }, [currentSlide, showStartScreen, isFocusMode]);
 
   // 초고화질 원클릭 PDF 변환 저장 빌더
   const handleDownloadPDF = async () => {
@@ -408,9 +575,15 @@ const PresentationPage = () => {
       <div className={`screen-only-view w-full lg:flex-1 h-screen relative flex flex-col bg-[#fcf8f8] text-[#1c1b1b] overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] z-10 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${isFocusMode ? 'rounded-none' : 'lg:rounded-r-[40px]'}`}>
         <PresentationHeader />
 
-        <main className="relative flex-1 w-full flex items-center justify-center overflow-hidden">
-          <div key={currentSlide} className="w-full h-full flex items-center justify-center pt1-enter">
-            {CurrentSlideComponent ? <CurrentSlideComponent /> : null}
+        <main className="relative flex-1 w-full flex items-center justify-center overflow-hidden bg-gray-100/50">
+          <div 
+            ref={containerRef}
+            className="w-[1280px] h-[720px] shrink-0 flex items-center justify-center transition-transform duration-100"
+            style={{ transform: `scale(${scale})`, transformOrigin: 'center center' }}
+          >
+            <div key={currentSlide} className="w-full h-full pt1-enter">
+              {CurrentSlideComponent ? <CurrentSlideComponent /> : null}
+            </div>
           </div>
         </main>
 
@@ -418,7 +591,7 @@ const PresentationPage = () => {
           currentSlide={currentSlide} 
           totalSlides={totalSlides}
           onJump={jumpToSlide}
-          sectionIndexes={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]}
+          sectionIndexes={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]}
           onPrint={handleDownloadPDF}
         />
       </div>

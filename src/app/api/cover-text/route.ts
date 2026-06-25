@@ -166,7 +166,7 @@ export async function GET(request: Request) {
       return (a.startTime || '').localeCompare(b.startTime || '');
     });
 
-    let koText = `[오늘의 탱고 일정 - ${targetDate.getMonth() + 1}/${targetDate.getDate()} ${daysKo[targetDate.getDay()]}]\n\n`;
+    let koText = `[오늘의 탱고 일정 - ${targetDate.getMonth() + 1}/${targetDate.getDate()} ${daysKo[targetDate.getDay()]}]\n'탱고월드' 앱에서 자동 등록됨 / www.woc.today\n\n`;
     let enText = `[Today's Tango Events - ${targetDate.getMonth() + 1}/${targetDate.getDate()} ${daysEn[targetDate.getDay()]}]\n\n`;
 
     let currentRegionKo = '';
@@ -238,7 +238,8 @@ export async function GET(request: Request) {
       }
     });
 
-    const fullText = `${koText.trim()}\n\n---\n\n${enText.trim()}\n\n🔎 Find more info at woc.today!`;
+    const finalKoText = koText.trim() + `\n\n페이스북에서 자동 검색 및 저장됨. 문의 : 스톤 01072092468`;
+    const fullText = `${finalKoText}\n\n---\n\n${enText.trim()}\n\n🔎 Find more info at woc.today!`;
 
     const format = searchParams.get('format');
     if (format === 'text') {

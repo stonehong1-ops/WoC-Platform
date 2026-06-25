@@ -62,6 +62,7 @@ export default function Header() {
     '/admin/place': { headlineKey: 'header.place', sub: 'Admin' },
     '/admin/others': { headlineKey: 'header.others', sub: 'Admin' },
     '/admin/pics': { headlineKey: 'header.pics', sub: 'Admin' },
+    '/admin/social-radar': { headlineKey: 'header.social_radar', sub: 'Admin' },
     '/admin/antigravity': { headlineKey: 'header.antigravity', sub: 'Admin' },
     '/notification': { headlineKey: 'header.notification', sub: 'System' },
     '/search': { headlineKey: 'header.search', sub: 'System' },

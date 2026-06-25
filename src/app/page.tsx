@@ -16,6 +16,7 @@ export default function LandingPage() {
   const [isInstalling, setIsInstalling] = useState(false);
   const [installProgress, setInstallProgress] = useState(0);
   const [installBtnText, setInstallBtnText] = useState('앱 설치');
+  const [showGuideModal, setShowGuideModal] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -141,12 +142,8 @@ export default function LandingPage() {
         console.error('PWA prompt fire failed', err);
       }
     } else {
-      // 대기 타임아웃 이후에도 없거나 미지원 디바이스일 경우 가이드 출력
-      if (isIOS) {
-        alert(t('pwa.unsupported_ios_desc'));
-      } else {
-        alert(t('pwa.unsupported_android_desc'));
-      }
+      // 대기 타임아웃 이후에도 없거나 미지원 디바이스일 경우 가이드 모달 출력
+      setShowGuideModal(true);
     }
   };
 
@@ -335,6 +332,69 @@ export default function LandingPage() {
         </footer>
 
       </main>
+
+      {/* Custom PWA Guide Modal */}
+      {showGuideModal && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowGuideModal(false)}
+          />
+          
+          {/* Card */}
+          <div className="relative w-full max-w-sm bg-white border border-gray-100 rounded-3xl shadow-2xl p-6 flex flex-col items-center text-center z-10 animate-in fade-in zoom-in-95 duration-200">
+            {/* Header Icon */}
+            <div className="w-14 h-14 mb-4 flex items-center justify-center rounded-full bg-blue-50 text-blue-600 shadow-inner">
+              <span className="material-symbols-outlined text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>
+                add_to_home_screen
+              </span>
+            </div>
+
+            {/* Title */}
+            <h3 className="text-[18px] font-bold text-gray-900 mb-4 font-sans">
+              {t('pwa.guide_modal_title', '앱 설치 안내 ✨')}
+            </h3>
+
+            {/* Steps Content */}
+            <div className="w-full text-left space-y-3 mb-6 bg-slate-50 p-4 rounded-2xl">
+              {isIOS ? (
+                <>
+                  <p className="text-[12.5px] text-gray-700 leading-relaxed font-semibold">
+                    {t('pwa.guide_ios_step1', '1. 카카오톡 화면 우측 하단의 [설정(톱니바퀴)] ➔ [기타]로 이동합니다.')}
+                  </p>
+                  <p className="text-[12.5px] text-gray-700 leading-relaxed font-semibold">
+                    {t('pwa.guide_ios_step2', '2. [다른 브라우저로 열기] 또는 [기본 브라우저로 열기]를 켭니다.')}
+                  </p>
+                  <p className="text-[12.5px] text-gray-700 leading-relaxed font-semibold">
+                    {t('pwa.guide_ios_step3', '3. Safari 브라우저에서 아래 [공유] 버튼 ➔ [홈 화면에 추가]를 눌러주세요.')}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-[12.5px] text-gray-700 leading-relaxed font-semibold">
+                    {t('pwa.guide_android_step1', '1. 화면 우측 상단 메뉴(더보기 ⋮ 또는 ☰)를 누릅니다.')}
+                  </p>
+                  <p className="text-[12.5px] text-gray-700 leading-relaxed font-semibold">
+                    {t('pwa.guide_android_step2', '2. [다른 브라우저로 열기] 또는 [Chrome으로 열기]를 선택합니다.')}
+                  </p>
+                  <p className="text-[12.5px] text-gray-700 leading-relaxed font-semibold">
+                    {t('pwa.guide_android_step3', '3. Chrome 브라우저에서 다시 [앱 설치]를 실행해 주세요.')}
+                  </p>
+                </>
+              )}
+            </div>
+
+            {/* Close Button */}
+            <button
+              onClick={() => setShowGuideModal(false)}
+              className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-[13.5px] font-bold py-3 px-6 rounded-xl transition-all shadow-md active:scale-98"
+            >
+              {t('pwa.guide_close_btn', '닫기')}
+            </button>
+          </div>
+        </div>
+      )}
 
     </div>
   );

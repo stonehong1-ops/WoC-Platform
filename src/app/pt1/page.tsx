@@ -5,31 +5,33 @@ import PresentationHeader from '@/components/presentation/PresentationHeader';
 import PresentationFooter from '@/components/presentation/PresentationFooter';
 import { useNavigation } from '@/components/providers/NavigationProvider';
 
-import { Slide0, SlideAppStructure, Slide1, Slide2, Slide3, Slide4, Slide6, Slide7, Slide8, Slide10, Slide11, Slide12, SlidePromotionBenefit, Slide13, Slide14, Slide15, Slide16 } from './slides-s1';
+import { Slide0, SlideAppStructure, Slide1, Slide2, Slide3, Slide4, Slide6, Slide7, Slide8, Slide10, Slide11, Slide12, SlidePromotionBenefit, Slide13, Slide14, Slide15, Slide16, SlideStrategy } from './slides-s1';
 
 const SLIDES = [
-  Slide0, SlideAppStructure, Slide1, Slide6, Slide2, Slide3, Slide7, Slide4, Slide8, Slide10, Slide11, Slide12, SlidePromotionBenefit, Slide13, Slide14, Slide16, Slide15
+  Slide0, SlideAppStructure, Slide1, Slide6, Slide7, Slide4, Slide2, Slide3, SlideStrategy, Slide8, Slide10, Slide11, Slide12, SlidePromotionBenefit, Slide13, Slide14, Slide16, Slide15
 ];
 
 const SLIDE_URLS: Record<number, string> = {
-  0: '/groups/freestyle-tango',                  // Slide 0: 인트로
-  1: '/groups/freestyle-tango',                  // Slide 1: 앱구성도 (App Structure)
+  0: '/today',                  // Slide 0: 인트로
+  1: '/today',                  // Slide 1: 앱구성도 (App Structure)
   2: '/groups/freestyle-tango',                  // Slide 2: 더 스토리
-  3: '/groups/freestyle-tango?tab=class',        // Slide 3: 라이프 고즈 온
-  4: '/groups/freestyle-tango?tab=calendar',     // Slide 4: 머니 플로우
-  5: '/groups/freestyle-tango?tab=calendar',     // Slide 5: 마지막 플랫폼
-  6: '/groups/freestyle-tango',                  // Slide 6: Broken Experience (파편화)
-  7: '/groups/freestyle-tango',                  // Slide 7: 원 플랫폼
-  8: '/groups/freestyle-tango?tab=class',        // Slide 8: 첫 소사이어티
-  9: '/groups/freestyle-tango?tab=class',        // Slide 9: 네트워크 확장 (구 index 10)
-  10: '/groups/freestyle-tango?tab=class',       // Slide 10: 매스마켓 검증 (구 index 11)
-  11: '/groups/freestyle-tango?tab=settings',    // Slide 11: 60개 소사이어티 (구 index 12)
-  12: '/groups/freestyle-tango?tab=settings',    // Slide 12: 프로모션 베네핏 (신규)
-  13: '/groups/freestyle-tango',                 // Slide 13: 전략적 가치
-  14: '/groups/freestyle-tango',                 // Slide 14: 와이 나우
-  15: '/groups/freestyle-tango',                 // Slide 15: 엔젤 라운드
-  16: '/groups/freestyle-tango',                 // Slide 16: 클로징 OS
+  3: '/groups/freestyle-tango?tab=class',        // Slide 3: 라이프 고즈 온 (스토리 1)
+  4: '/groups/freestyle-tango',                  // Slide 4: Broken Experience (스토리 2)
+  5: '/groups/freestyle-tango',                  // Slide 5: Passion Hell (스토리 3)
+  6: '/groups/freestyle-tango?tab=calendar',     // Slide 6: 머니 플로우 (스토리 4)
+  7: '/groups/freestyle-tango?tab=calendar',     // Slide 7: 마지막 플랫폼 (스토리 5)
+  8: '/groups/freestyle-tango',                  // Slide 8: 전략 간지
+  9: '/groups/freestyle-tango?tab=class',        // Slide 9: 첫 소사이어티
+  10: '/groups/freestyle-tango?tab=class',       // Slide 10: 네트워크 확장
+  11: '/groups/freestyle-tango?tab=class',       // Slide 11: 매스마켓 검증
+  12: '/groups/freestyle-tango?tab=settings',    // Slide 12: 60개 소사이어티
+  13: '/groups/freestyle-tango?tab=settings',    // Slide 13: 프로모션 베네핏
+  14: '/groups/freestyle-tango',                 // Slide 14: 전략적 가치
+  15: '/groups/freestyle-tango',                 // Slide 15: 와이 나우
+  16: '/groups/freestyle-tango',                 // Slide 16: 엔젤 라운드
+  17: '/groups/freestyle-tango',                 // Slide 17: 클로징 OS
 };
+
 
 const GLOBAL_ANIMATIONS = `
   @keyframes pt1-slideEnter { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
@@ -209,7 +211,7 @@ const PresentationPage = () => {
   const [isDemoMode, setIsDemoMode] = useState(false);
   
   // Iframe states
-  const [iframeUrl, setIframeUrl] = useState('/groups/freestyle-tango');
+  const [iframeUrl, setIframeUrl] = useState('/today');
   const [fadeIframe, setFadeIframe] = useState(false);
 
   // 초고화질 원클릭 PDF 변환 저장 빌더
@@ -440,7 +442,7 @@ const PresentationPage = () => {
           currentSlide={currentSlide} 
           totalSlides={totalSlides}
           onJump={jumpToSlide}
-          sectionIndexes={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]}
+          sectionIndexes={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]}
           onPrint={handleDownloadPDF}
         />
       </div>

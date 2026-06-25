@@ -21,7 +21,7 @@ export default function PageWrapper({ children }: { children: React.ReactNode })
   const isExplore = pathname.startsWith('/explore');
   const isNation = pathname.startsWith('/class') || pathname.startsWith('/shop') || pathname.startsWith('/resale') || pathname.startsWith('/stay') || pathname.startsWith('/lost') || pathname.startsWith('/hub');
   
-  const isPublic = isLanding || isLogin || isApp || isLive || isVenues || isEvents || isSocial || isPlaza || isExplore || isNation || pathname.startsWith('/yedamche');
+  const isPublic = isLanding || isLogin || isApp || isLive || isVenues || isEvents || isSocial || isPlaza || isExplore || isNation || pathname.startsWith('/yedamche') || pathname.startsWith('/syncfit') || pathname.startsWith('/pt') || pathname.startsWith('/fys');
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
