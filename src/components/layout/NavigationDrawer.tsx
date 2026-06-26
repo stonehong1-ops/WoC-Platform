@@ -311,6 +311,10 @@ export default function NavigationDrawer() {
                       <span className="material-symbols-outlined text-[20px]">wallpaper</span>
                       <span className="text-[15px] tracking-tight">PICs Admin</span>
                     </Link>
+                    <a href="/fys/admin" target="_blank" rel="noopener noreferrer" onClick={closeDrawer} className="flex items-center gap-4 px-5 py-2.5 text-on-surface/60 hover:bg-on-surface/[0.03] hover:text-on-surface rounded-2xl font-bold transition-all text-left">
+                      <span className="material-symbols-outlined text-[20px]">settings_accessibility</span>
+                      <span className="text-[15px] tracking-tight">FYS Admin</span>
+                    </a>
                   </>
                 )}
               </div>

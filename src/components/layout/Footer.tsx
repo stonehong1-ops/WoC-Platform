@@ -86,6 +86,25 @@ export default function Footer() {
               <NavItem href="/admin/banners" icon="view_carousel" label="BANNERS" active={isActive('/admin/banners')} />
               <NavItem href="/admin/social-radar" icon="radar" label="RADAR" active={isActive('/admin/social-radar')} />
               <NavItem href="/admin/pics" icon="wallpaper" label="PICs" active={isActive('/admin/pics')} />
+              <a 
+                href="/fys/admin" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex flex-col items-center gap-[2px] px-2 transition-all whitespace-nowrap tracking-tight leading-none text-gray-400 hover:text-gray-900"
+              >
+                <div className="relative flex items-center justify-center w-[40px] h-[40px]">
+                  <span 
+                    className="material-symbols-outlined relative z-10" 
+                    style={{ 
+                      fontSize: '28px',
+                      fontVariationSettings: `'FILL' 0, 'wght' 400`
+                    }}
+                  >
+                    settings_accessibility
+                  </span>
+                </div>
+                <span className="text-[9px] font-bold uppercase tracking-wider">FYS Admin</span>
+              </a>
             </Section>
           )}
 
