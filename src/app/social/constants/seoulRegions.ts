@@ -228,6 +228,9 @@ export const INSTRUCTOR_NAME_MAP: Record<string, string> = {
   "zingzing lee": "징징",
   "shinji": "신지",
   "miguel": "미겔",
+  "isabelle": "이사벨",
+  "yamjeon": "얌전",
+  "rachel": "레이첼",
   "tbd": "미정",
   "미정": "TBD"
 };

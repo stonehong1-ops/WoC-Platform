@@ -167,7 +167,6 @@ export async function GET(request: Request) {
     });
 
     let koText = `[오늘의 탱고 일정 - ${targetDate.getMonth() + 1}/${targetDate.getDate()} ${daysKo[targetDate.getDay()]}]\n'탱고월드' 앱에서 자동 등록됨 / www.woc.today\n\n`;
-    let enText = `[Today's Tango Events - ${targetDate.getMonth() + 1}/${targetDate.getDate()} ${daysEn[targetDate.getDay()]}]\n\n`;
 
     let currentRegionKo = '';
     let currentMainCity = '';
@@ -179,63 +178,80 @@ export async function GET(request: Request) {
       if (regionGroup.ko !== currentRegionKo) {
         if (currentMainCity) {
           koText += `\n\n`;
-          enText += `\n\n`;
         }
         koText += `📍${regionGroup.ko.replace(/[()]/g, '')}\n\n`;
-        enText += `📍${regionGroup.en.replace(/[()]/g, '')}\n\n`;
         currentRegionKo = regionGroup.ko;
         currentMainCity = regionGroup.city;
         currentType = '';
       }
 
       let evTypeKo = '';
-      let evTypeEn = '';
       if (ev.type === 'class') {
         evTypeKo = '- 클래스 -';
-        evTypeEn = '- Class -';
       } else if (ev.type === 'practice') {
         evTypeKo = '- 쁘락띠까 -';
-        evTypeEn = '- Practica -';
       } else if (ev.type === 'milonga' || ev.type === 'social') {
         evTypeKo = '- 밀롱가 -';
-        evTypeEn = '- Milonga -';
       }
 
       if (evTypeKo !== currentType) {
         if (currentType) {
           koText += `\n`;
-          enText += `\n`;
         }
         koText += `${evTypeKo}\n`;
-        enText += `${evTypeEn}\n`;
         currentType = evTypeKo;
       }
 
       const time = ev.startTime || '';
       const titleKo = ev.titleNative || ev.title;
-      const titleEn = ev.title;
       
       if (ev.type === 'milonga' || ev.type === 'social') {
         const extraKo = [ev.organizer ? `org. ${ev.organizer}` : '', ev.dj ? `dj. ${ev.dj}` : ''].filter(Boolean).join(' / ');
-        const extraEn = [ev.organizer ? `org. ${formatCommunityName(ev.organizer, 'EN')}` : '', ev.dj ? `dj. ${formatInstructorNames(ev.dj, 'EN')}` : ''].filter(Boolean).join(' / ');
-        
         koText += `. ${titleKo} | ${time} | ${ev.location || '미정'}${extraKo ? ` (${extraKo})` : ''}\n`;
-        enText += `. ${titleEn} | ${time} | ${formatCommunityName(ev.location || '', 'EN')}${extraEn ? ` (${extraEn})` : ''}\n`;
       } else if (ev.type === 'practice') {
         const extraKo = ev.organizer ? ` (${ev.organizer})` : '';
-        const extraEn = ev.organizer ? ` (${formatCommunityName(ev.organizer, 'EN')})` : '';
-
         koText += `. ${titleKo} | ${time} | ${ev.location || '미정'}${extraKo}\n`;
-        enText += `. ${titleEn} | ${time} | ${formatCommunityName(ev.location || '', 'EN')}${extraEn}\n`;
       } else if (ev.type === 'class') {
         const extraKo = ev.instructor ? ` | ${ev.instructor}` : '';
-        const extraEn = ev.instructor ? ` | ${formatInstructorNames(ev.instructor, 'EN')}` : '';
         const locKo = ev.location ? ` | ${ev.location}` : '';
-        const locEn = ev.location ? ` | ${formatCommunityName(ev.location, 'EN')}` : '';
-
         koText += `. ${titleKo} | ${time}${locKo}${extraKo}\n`;
-        enText += `. ${titleEn} | ${time}${locEn}${extraEn}\n`;
       }
+    });
+
+    // 영문 텍스트 생성 (소셜/밀롱가만 대상)
+    let enText = `[Today's Tango Events - ${targetDate.getMonth() + 1}/${targetDate.getDate()} ${daysEn[targetDate.getDay()]}]\n\n`;
+    const socialEventsOnly = sortedEvents.filter(ev => ev.type === 'milonga' || ev.type === 'social');
+    
+    let currentRegionEn = '';
+    let currentMainCityEn = '';
+    let currentTypeEn = '';
+
+    socialEventsOnly.forEach((ev) => {
+      const regionGroup = getRegionGroup(ev);
+
+      if (regionGroup.en !== currentRegionEn) {
+        if (currentMainCityEn) {
+          enText += `\n\n`;
+        }
+        enText += `📍${regionGroup.en.replace(/[()]/g, '')}\n\n`;
+        currentRegionEn = regionGroup.en;
+        currentMainCityEn = regionGroup.city;
+        currentTypeEn = '';
+      }
+
+      const evTypeEn = '- Milonga -';
+      if (evTypeEn !== currentTypeEn) {
+        if (currentTypeEn) {
+          enText += `\n`;
+        }
+        enText += `${evTypeEn}\n`;
+        currentTypeEn = evTypeEn;
+      }
+
+      const time = ev.startTime || '';
+      const titleEn = ev.title;
+      const extraEn = [ev.organizer ? `org. ${formatCommunityName(ev.organizer, 'EN')}` : '', ev.dj ? `dj. ${formatInstructorNames(ev.dj, 'EN')}` : ''].filter(Boolean).join(' / ');
+      enText += `. ${titleEn} | ${time} | ${formatCommunityName(ev.location || '', 'EN')}${extraEn ? ` (${extraEn})` : ''}\n`;
     });
 
     const finalKoText = koText.trim() + `\n\n페이스북에서 자동 검색 및 저장됨. 문의 : 스톤 01072092468`;

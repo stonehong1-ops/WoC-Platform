@@ -67,7 +67,7 @@ export const kr: Record<string, string> = {
     'class-dashboard.partner_suffix': ' ({name})',
     'class-dashboard.registerClass': '수업 신청하기',
     'class-dashboard.startDate': '시작일 : {date}',
-    'class-dashboard.tab.dashboard': '현황',
+    'class-dashboard.tab.dashboard': '수업자료',
     'class-dashboard.tab.list': '수업정보',
     'class-dashboard.tab.registrations': '접수현황',
     'class-dashboard.tab.class_status': '인원현황',

@@ -93,7 +93,7 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
     };
   }, [group.id]);
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'list' | 'registrations' | 'class_status'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'list' | 'registrations' | 'class_status'>('list');
   const [viewMode, setViewMode] = useState<'personal' | 'byClass'>('personal');
   const { openModal: openDashboardClassModal, closeModal: closeDashboardClassModal, value: dashboardClassId } = useModalNavigation('dashboardClassId');
   const selectedDashboardClass = dashboardClassId;
@@ -1016,10 +1016,10 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
       {/* Sub Tabs Bar */}
       <div className="w-full px-4 py-4 flex items-center gap-2 overflow-x-auto no-scrollbar border-b border-[#f2f4f4] bg-white">
         {[
-          { id: 'dashboard', label: t('class-dashboard.tab.dashboard', '현황') },
           { id: 'list', label: t('class-dashboard.tab.list') },
           { id: 'registrations', label: t('class-dashboard.tab.registrations') },
-          { id: 'class_status', label: t('class-dashboard.tab.class_status') }
+          { id: 'class_status', label: t('class-dashboard.tab.class_status') },
+          { id: 'dashboard', label: t('class-dashboard.tab.dashboard', '수업자료') }
         ].map((tab) => (
           <button
             key={tab.id}

@@ -65,7 +65,7 @@ export const en: Record<string, string> = {
     'class-dashboard.partner_suffix': ' ({name})',
     'class-dashboard.registerClass': 'Register Classes',
     'class-dashboard.startDate': 'Starts: {date}',
-    'class-dashboard.tab.dashboard': 'Status',
+    'class-dashboard.tab.dashboard': 'Class Materials',
     'class-dashboard.tab.list': 'Class Info',
     'class-dashboard.tab.registrations': 'Registration Status',
     'class-dashboard.tab.class_status': 'Attendance',
