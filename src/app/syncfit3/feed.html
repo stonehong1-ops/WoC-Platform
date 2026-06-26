@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+
+<html class="light" lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>SyncFit | 협업 피드</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Outfit:wght@600;700;800;900&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;family=Outfit:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .message-bubble {
+            max-width: 85%;
+            transition: transform 0.1s ease-out;
+        }
+        .message-bubble:active {
+            transform: scale(0.98);
+        }
+        .feed-container {
+            height: calc(100vh - 128px);
+            scrollbar-width: none;
+        }
+        .feed-container::-webkit-scrollbar {
+            display: none;
+        }
+        .blur-backdrop {
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                "surface-container-high": "#e2e7ff",
+                "secondary-fixed-dim": "#c4c7c9",
+                "surface-container-highest": "#dae2fd",
+                "on-primary-fixed-variant": "#003ea8",
+                "on-secondary": "#ffffff",
+                "surface-bright": "#faf8ff",
+                "secondary-container": "#e0e3e5",
+                "outline-variant": "#c3c6d7",
+                "on-background": "#131b2e",
+                "tertiary-fixed": "#ffdad7",
+                "on-surface": "#131b2e",
+                "surface-dim": "#d2d9f4",
+                "background": "#faf8ff",
+                "inverse-on-surface": "#eef0ff",
+                "surface": "#faf8ff",
+                "on-primary": "#ffffff",
+                "on-primary-container": "#eeefff",
+                "secondary-fixed": "#e0e3e5",
+                "on-primary-fixed": "#00174b",
+                "primary-fixed": "#dbe1ff",
+                "secondary": "#5c5f61",
+                "on-tertiary-fixed": "#410004",
+                "primary-fixed-dim": "#b4c5ff",
+                "on-surface-variant": "#434655",
+                "inverse-primary": "#b4c5ff",
+                "inverse-surface": "#283044",
+                "tertiary-fixed-dim": "#ffb3ad",
+                "surface-container-low": "#f2f3ff",
+                "on-error": "#ffffff",
+                "on-tertiary-fixed-variant": "#930013",
+                "outline": "#737686",
+                "surface-container": "#eaedff",
+                "on-tertiary": "#ffffff",
+                "tertiary": "#ab0b1c",
+                "on-secondary-container": "#626567",
+                "surface-container-lowest": "#ffffff",
+                "on-secondary-fixed": "#191c1e",
+                "on-tertiary-container": "#ffecea",
+                "on-secondary-fixed-variant": "#444749",
+                "primary": "#004ac6",
+                "surface-variant": "#dae2fd",
+                "surface-tint": "#0053db",
+                "error-container": "#ffdad6",
+                "on-error-container": "#93000a",
+                "error": "#ba1a1a",
+                "tertiary-container": "#cf2c30",
+                "primary-container": "#2563eb"
+              },
+              "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "2xl": "1.5rem",
+                "full": "9999px"
+              },
+              "spacing": {
+                "card-padding-mobile": "16px",
+                "card-padding-desktop": "24px",
+                "stack-lg": "24px",
+                "stack-sm": "8px",
+                "margin-desktop": "32px",
+                "stack-md": "16px",
+                "margin-mobile": "16px",
+                "container-max": "1280px",
+                "gutter": "24px"
+              },
+              "fontFamily": {
+                "body-lg": ["Inter"],
+                "label-md": ["Inter"],
+                "headline-md": ["Outfit"],
+                "headline-lg": ["Outfit"],
+                "code-sm": ["Inter"],
+                "title-lg": ["Outfit"],
+                "body-md": ["Inter"],
+                "body-sm": ["Inter"],
+                "headline-lg-mobile": ["Outfit"],
+                "display-lg": ["Outfit"]
+              },
+              "fontSize": {
+                "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                "label-md-mobile": ["12px", {"lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                "code-sm": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                "title-lg": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                "headline-lg-mobile": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        body {
+          min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+<body class="bg-surface-container-low text-on-surface font-body-md overflow-hidden h-screen flex flex-col">
+<!-- TopNavBar (Fixed Header) -->
+<header class="flex justify-between items-center w-full px-4 h-16 z-50 bg-surface border-b border-outline-variant shrink-0">
+<div class="flex items-center gap-3">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors active:scale-95 duration-150">
+<span class="material-symbols-outlined text-primary">arrow_back_ios_new</span>
+</button>
+<div class="flex flex-col">
+<span class="font-title-lg text-title-lg font-black text-primary">ST-00001</span>
+<span class="text-[10px] font-label-md text-on-surface-variant uppercase tracking-widest">에어로 퍼포먼스 플리스</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant">language</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant">menu</span>
+</button>
+</div>
+</header>
+<!-- Chat Feed Container -->
+<main class="flex-1 overflow-y-auto p-4 space-y-6 feed-container" id="chat-feed">
+<!-- System Log -->
+<div class="flex justify-center my-4">
+<div class="bg-secondary-container/50 px-4 py-1.5 rounded-full border border-outline-variant">
+<span class="text-on-secondary-container font-label-md text-[11px] uppercase tracking-tighter">상태 변경: <span class="font-bold">샘플링 2단계</span></span>
+</div>
+</div>
+<!-- Incoming Message -->
+<div class="flex items-start gap-2">
+<div class="w-8 h-8 rounded-full bg-tertiary-fixed-dim flex-shrink-0 flex items-center justify-center overflow-hidden border border-outline-variant">
+<img alt="공급업체 아바타" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCQSrU1hc4Uqs5j6KL08vsRtiCdUVmIoPB68my4PNRCI9vDF32uLfLmwItFWI1zMwOwuP-t2Ww1Z9PwpwZwIrxRlSinbIluFffEPgpRWeqFfZEOEJ8SU8kS6Qe8oWdNFTmwBoCzz_PzFCKMfB_QpuP6cnVr9qKcDZ81X1fKm0-5t4NZyudMYyAswkROud0irNzrWtO8rC0rr0eBD8OCL9AWnAs7UuHe06l4xRZbJpn-yXi-TXPFRGZD5lKTRrNov-r_yIe_DB_kseo"/>
+</div>
+<div class="flex flex-col gap-1 items-start">
+<div class="message-bubble bg-surface text-on-surface border border-outline-variant p-3 rounded-2xl rounded-tl-none shadow-sm">
+<p class="font-body-sm">가슴 포켓의 지퍼 위치 조정이 필요합니다. 현재 테크팩 기준보다 2cm 높게 위치해 있습니다.</p>
+<!-- Translation Toggle Section -->
+<div class="mt-2 pt-2 border-t border-outline-variant/30">
+<div class="flex gap-2 mb-1">
+<button class="text-[10px] px-2 py-0.5 rounded bg-surface-container-highest text-primary font-bold transition-all active:scale-90" onclick="toggleTranslation(this, 'KR')">한국어</button>
+<button class="text-[10px] px-2 py-0.5 rounded bg-surface-container-high text-on-surface-variant font-medium transition-all active:scale-90" onclick="toggleTranslation(this, 'CN')">중국어</button>
+</div>
+<p class="text-xs text-on-surface-variant italic" id="translation-text">가슴 포켓의 지퍼 위치를 조정해야 합니다. 현재 테크팩 기준보다 2cm 높게 위치해 있습니다.</p>
+</div>
+</div>
+<span class="text-[10px] text-on-surface-variant ml-1">오전 09:14 • 공급업체</span>
+</div>
+</div>
+<!-- System Log -->
+<div class="flex justify-center my-4">
+<div class="bg-surface px-3 py-1 rounded-full border border-outline-variant shadow-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-[14px] text-error">notification_important</span>
+<span class="text-on-surface-variant font-label-md text-[11px]">그레이 헤더 원단 입고 지연 보고됨.</span>
+</div>
+</div>
+<!-- Outgoing Message with Media -->
+<div class="flex items-start gap-2 flex-row-reverse">
+<div class="w-8 h-8 rounded-full bg-primary-container flex-shrink-0 flex items-center justify-center overflow-hidden border border-outline-variant">
+<img alt="디자이너 아바타" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAi0lPC1MxVbGAaINCIlD7lRVpq8x7XLkDxcJkb_Aj0TL9QGGfO6BJw0p7PsKWijPPwpzOnaYprCwoblhV_n5mtreg275RhWMQ55owWLmZUYSbgtxH8QIB1ceAGW4xGOyAAQ3q7HKXBSbMMhtlEBniSkv2xw0ht5SMQJoXvuvnGtVty45nnaPEJzOCfUykRUTcsdtgFJZYWpVabEaqLSZBXxvLvG2IQ6YsDTtEdfrzvrIAmrTkQZYtZ28mb3cKyi3XabfeaNlyTKv0"/>
+</div>
+<div class="flex flex-col gap-1 items-end">
+<div class="message-bubble bg-primary-container text-on-primary-container p-3 rounded-2xl rounded-tr-none shadow-md">
+<p class="font-body-sm">확인했습니다. 패턴 파일을 업데이트했습니다. 새로운 포켓 위치 시뮬레이션 영상을 확인해 주세요.</p>
+<!-- Media Attachment: Video Placeholder -->
+<div class="mt-3 relative rounded-xl overflow-hidden aspect-video bg-inverse-surface group cursor-pointer border border-on-primary-container/20">
+<div class="absolute inset-0 bg-black/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-4xl text-white">play_circle</span>
+</div>
+<div class="w-full h-full bg-cover bg-center" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA2VhKYGwYGsX9IwMJgl2VTkb9bhER2n2lkK2fMd8bur1bzyuGZF3Ne6W94hMrD20F_1L9QssiuqXdtidflsSaNqGuGn9We_Gf2aZQ_j-013gOQkR20I4I1G-KGjiFDZ5v3Je4kflItYiH-02ezjT7IGxr_ANYHLprbbsOfVrJetmSS6V9elpINDBqqieGsmaCOcx_gf6BTYH17xXNyoCMtvbu3OjVzyjOn4_512Elea3NYeEmMtOwoiVnyk597w_dZtALQ2xQbtXo')"></div>
+</div>
+</div>
+<!-- Media Attachment: Image -->
+<div class="mt-2 w-48 rounded-xl overflow-hidden border-2 border-primary shadow-lg cursor-pointer" onclick="openLightbox()">
+<img alt="패턴 업데이트" class="w-full h-32 object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC-Rmr3-nEblg6FHrKKizTFt-clBVAO0tCkFMeFOeqc7hWTKaZjsVVj5xFzgGPjdZ02PCDmFJznIX5bSOy9ll6L2dR3zwMlPoZ82lM15jtuZjQQwAw9DmJggtKkceREdI5ODzO8noT5ZKcSE1ZhMK5qmqpUICmzzVM3pHlJ_6MtNUdItZkT_E2NuGRCiVtQWBuXUIYk4n84bNEmmT9420bvQEkex0U2fYq8Nw3r2JEreWDRgsF5InE6m-1VrZuq1YKQA_8RLyffwQc"/>
+</div>
+<span class="text-[10px] text-on-surface-variant mr-1">오전 09:22 • 읽음</span>
+</div>
+</div>
+<!-- Incoming Message -->
+<div class="flex items-start gap-2">
+<div class="w-8 h-8 rounded-full bg-tertiary-fixed-dim flex-shrink-0 flex items-center justify-center overflow-hidden border border-outline-variant">
+<img alt="공급업체 아바타" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDX2q2ErbqOR3OHGRGJITOlD-ArwwOalrMj9dC3opqh3gnTQKgdHAU6Qk2DvpTHcENTCxga07Z5cTgEqyS23p85CLNNz7cRlL_Ne4pK3xpXHrT0BhZVFsLE2It88GvLuIlz4tYWAoljEqnuNy0wQRWV2vaKIqGo7wI0xoN8uQdMXbR8g5aJUaxO0zkgD52wKsxAbiQtn6XmovNtAf9cGMB6jx6eEwg2pNvL3Uqce4DmqhLKyyHUkuqpEX2UYghEOvJc3aQjqPk2eqc"/>
+</div>
+<div class="flex flex-col gap-1 items-start">
+<div class="message-bubble bg-surface text-on-surface border border-outline-variant p-3 rounded-2xl rounded-tl-none shadow-sm">
+<p class="font-body-sm">시뮬레이션이 완벽하네요. 오늘 밤 두 번째 프로토타입 제작을 진행하겠습니다. 상태를 계속 업데이트하겠습니다.</p>
+</div>
+<span class="text-[10px] text-on-surface-variant ml-1">오전 09:25 • 공급업체</span>
+</div>
+</div>
+</main>
+<!-- Footer Input Bar -->
+<footer class="bg-surface px-4 py-3 border-t border-outline-variant shrink-0 z-50">
+<!-- Status Dropdown (Mini) -->
+<div class="flex items-center gap-2 mb-3">
+<div class="flex items-center gap-1.5 px-3 py-1 bg-surface-container-lowest border border-outline-variant rounded-full text-xs font-label-md text-on-surface-variant cursor-pointer hover:bg-surface-container-high transition-colors">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span>진행 중</span>
+<span class="material-symbols-outlined text-[16px]">expand_more</span>
+</div>
+<div class="flex-1"></div>
+<span class="text-[10px] text-on-surface-variant font-medium">자동 번역 활성화됨</span>
+</div>
+<div class="flex items-end gap-2">
+<button class="mb-1 w-10 h-10 flex items-center justify-center rounded-full bg-surface-container text-on-surface-variant active:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined">add_circle</span>
+</button>
+<div class="flex-1 bg-surface-container rounded-2xl border border-outline-variant focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all px-4 py-2 min-h-[44px] flex items-center">
+<textarea class="w-full bg-transparent border-none focus:ring-0 p-0 text-body-sm resize-none" placeholder="SyncFit 팀에 답장하기..." rows="1"></textarea>
+</div>
+<button class="mb-1 w-10 h-10 flex items-center justify-center rounded-full bg-primary text-white shadow-lg active:scale-90 transition-transform">
+<span class="material-symbols-outlined">send</span>
+</button>
+</div>
+<div class="h-4"></div> <!-- Safe area for gesture bar -->
+</footer>
+<!-- Lightbox Overlay (Hidden by default) -->
+<div class="fixed inset-0 z-[100] bg-black/90 hidden flex-col items-center justify-center p-4 blur-backdrop" id="lightbox">
+<button class="absolute top-6 right-6 text-white w-12 h-12 flex items-center justify-center bg-white/10 rounded-full" onclick="closeLightbox()">
+<span class="material-symbols-outlined">close</span>
+</button>
+<img class="max-w-full max-h-[707px] rounded-lg shadow-2xl" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBEtcZ_flv8sR1r8IUyR7rSY3wzTnlgU7ZRJpkQgpUNb3JjBca7XLKx2dGx5LN8fTADS8eayxNrbbu6ooLUfZ_16yZ7xME2TxRMQjoESOTQdbuXFuNagkt_ka-xRyBid01qPWGrM6Rq3zLq42-pQz1JdomB1Z0UOW1Gqw7e2m6M-y_WcoWhkqnGWN7G69RbDIrbW4-OD-n1gTi-cFlGyEhDkZO9_cWIpJZYIxkHthiw1DqoTSHO4g24plgWw2oLqjD5SE_VvKxO420"/>
+<div class="mt-6 text-center text-white">
+<p class="font-headline-md text-headline-md">업데이트된 포켓 패턴 V2</p>
+<p class="text-white/60 text-body-sm mt-1">업로드: Sarah J. • 2.4 MB</p>
+</div>
+</div>
+<script>
+    function toggleTranslation(btn, lang) {
+        const container = btn.closest('.message-bubble');
+        const text = container.querySelector('#translation-text');
+        const btns = container.querySelectorAll('button');
+        
+        btns.forEach(b => {
+            b.classList.remove('bg-surface-container-highest', 'text-primary', 'font-bold');
+            b.classList.add('bg-surface-container-high', 'text-on-surface-variant', 'font-medium');
+        });
+        
+        btn.classList.add('bg-surface-container-highest', 'text-primary', 'font-bold');
+        btn.classList.remove('bg-surface-container-high', 'text-on-surface-variant', 'font-medium');
+        
+        if (lang === 'KR') {
+            text.innerText = "가슴 포켓의 지퍼 위치를 조정해야 합니다. 현재 테크팩 기준보다 2cm 높게 위치해 있습니다.";
+        } else {
+            text.innerText = "胸袋拉链的位置需要调整。目前比工艺包参考位置高出2厘米。";
+        }
+    }
+
+    function openLightbox() {
+        document.getElementById('lightbox').classList.remove('hidden');
+        document.getElementById('lightbox').classList.add('flex');
+    }
+
+    function closeLightbox() {
+        document.getElementById('lightbox').classList.add('hidden');
+        document.getElementById('lightbox').classList.remove('flex');
+    }
+
+    // Auto-scroll to bottom of chat
+    const feed = document.getElementById('chat-feed');
+    feed.scrollTop = feed.scrollHeight;
+
+    // Auto-expand textarea
+    const textarea = document.querySelector('textarea');
+    textarea.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight) + 'px';
+        if (this.scrollHeight > 120) {
+            this.style.overflowY = 'scroll';
+            this.style.height = '120px';
+        } else {
+            this.style.overflowY = 'hidden';
+        }
+    });
+</script>
+</body></html>

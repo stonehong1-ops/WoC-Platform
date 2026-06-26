@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+
+<html class="light" lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SyncFit 대시보드 | 스타일 탐색기</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Outfit:wght@600;700;800;900&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;family=Outfit:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #e2e8f0;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #cbd5e1;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-high": "#e2e7ff",
+                        "secondary-fixed-dim": "#c4c7c9",
+                        "surface-container-highest": "#dae2fd",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "on-secondary": "#ffffff",
+                        "surface-bright": "#faf8ff",
+                        "secondary-container": "#e0e3e5",
+                        "outline-variant": "#c3c6d7",
+                        "on-background": "#131b2e",
+                        "tertiary-fixed": "#ffdad7",
+                        "on-surface": "#131b2e",
+                        "surface-dim": "#d2d9f4",
+                        "background": "#faf8ff",
+                        "inverse-on-surface": "#eef0ff",
+                        "surface": "#faf8ff",
+                        "on-primary": "#ffffff",
+                        "on-primary-container": "#eeefff",
+                        "secondary-fixed": "#e0e3e5",
+                        "on-primary-fixed": "#00174b",
+                        "primary-fixed": "#dbe1ff",
+                        "secondary": "#5c5f61",
+                        "on-tertiary-fixed": "#410004",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "on-surface-variant": "#434655",
+                        "inverse-primary": "#b4c5ff",
+                        "inverse-surface": "#283044",
+                        "tertiary-fixed-dim": "#ffb3ad",
+                        "surface-container-low": "#f2f3ff",
+                        "on-error": "#ffffff",
+                        "on-tertiary-fixed-variant": "#930013",
+                        "outline": "#737686",
+                        "surface-container": "#eaedff",
+                        "on-tertiary": "#ffffff",
+                        "tertiary": "#ab0b1c",
+                        "on-secondary-container": "#626567",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary-fixed": "#191c1e",
+                        "on-tertiary-container": "#ffecea",
+                        "on-secondary-fixed-variant": "#444749",
+                        "primary": "#004ac6",
+                        "surface-variant": "#dae2fd",
+                        "surface-tint": "#0053db",
+                        "error-container": "#ffdad6",
+                        "on-error-container": "#93000a",
+                        "error": "#ba1a1a",
+                        "tertiary-container": "#cf2c30",
+                        "primary-container": "#2563eb"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "card-padding-mobile": "16px",
+                        "card-padding-desktop": "24px",
+                        "stack-lg": "24px",
+                        "stack-sm": "8px",
+                        "margin-desktop": "32px",
+                        "stack-md": "16px",
+                        "margin-mobile": "16px",
+                        "container-max": "1280px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter", "Noto Sans KR"],
+                        "label-md": ["Inter", "Noto Sans KR"],
+                        "headline-md": ["Outfit", "Noto Sans KR"],
+                        "headline-lg": ["Outfit", "Noto Sans KR"],
+                        "code-sm": ["Inter", "Noto Sans KR"],
+                        "title-lg": ["Outfit", "Noto Sans KR"],
+                        "body-md": ["Inter", "Noto Sans KR"],
+                        "body-sm": ["Inter", "Noto Sans KR"],
+                        "headline-lg-mobile": ["Outfit", "Noto Sans KR"],
+                        "display-lg": ["Outfit", "Noto Sans KR"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                        "code-sm": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                        "title-lg": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-surface-container-low text-on-surface font-body-md overflow-hidden h-screen flex flex-col">
+<!-- TopNavBar -->
+<header class="flex justify-between items-center w-full px-margin-desktop h-16 z-50 bg-surface border-b border-outline-variant">
+<div class="flex items-center gap-stack-md">
+<span class="text-title-lg font-title-lg font-black text-primary">SyncFit</span>
+<div class="hidden md:flex items-center ml-8 gap-6 h-full">
+<a class="h-full flex items-center text-primary border-b-2 border-primary font-label-md text-label-md" href="#">상태</a>
+<a class="h-full flex items-center text-on-surface-variant hover:bg-surface-container-high transition-colors font-label-md text-label-md px-2" href="#">벤더</a>
+<a class="h-full flex items-center text-on-surface-variant hover:bg-surface-container-high transition-colors font-label-md text-label-md px-2" href="#">공장</a>
+<a class="h-full flex items-center text-on-surface-variant hover:bg-surface-container-high transition-colors font-label-md text-label-md px-2" href="#">아카이브</a>
+</div>
+</div>
+<div class="flex items-center gap-stack-md">
+<button class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-outline-variant text-label-md font-label-md hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[20px]" data-icon="language">language</span>
+<span>CN (중국어)</span>
+</button>
+<div class="h-8 w-px bg-outline-variant mx-2"></div>
+<div class="flex items-center gap-3">
+<div class="text-right hidden sm:block">
+<p class="font-label-md text-label-md text-on-surface">디자이너 2</p>
+<p class="text-[12px] text-on-surface-variant">글로벌 관리자</p>
+</div>
+<img alt="Designer 2 profile" class="w-10 h-10 rounded-full object-cover border-2 border-primary-container" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDpoRU4Sj7KZ9sugy09btuk7W2vyfigXhkaXZSDJ5icoX_g7APoIQJOxHPq_mm0fVRkueMXn29wdXFey5Y1hdURAnX4cjPGb2XsXAqq65JUhV6I1udnhLuHfq7zziXulEnoNeCrFarq6CGns0k01ywH4OUUMo2yUlGoCGvzautaGdROSAm6qX1SKo3fvxyk44xkvRkV66CADFpiQG_Wax_-3-nxl8KGKcx0h6KKvnXq0Fgg08A2PIvGNgE__vQlggCep3PX-IcvOrM"/>
+</div>
+<button class="ml-2 text-on-surface-variant hover:text-error transition-colors p-2">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+</button>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 flex overflow-hidden">
+<!-- Column 1: Style List -->
+<aside class="hidden lg:flex flex-col w-[300px] bg-surface border-r border-outline-variant">
+<div class="p-stack-md flex flex-col gap-stack-md">
+<div class="flex justify-between items-center">
+<h2 class="font-headline-md text-headline-md">스타일 탐색기</h2>
+</div>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]" data-icon="search">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-body-sm focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="스타일 검색..." type="text"/>
+</div>
+<div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+<button class="px-3 py-1 bg-primary text-on-primary rounded-full text-label-md font-label-md whitespace-nowrap">전체</button>
+<button class="px-3 py-1 bg-surface-container-high text-on-surface-variant rounded-full text-label-md font-label-md whitespace-nowrap hover:bg-surface-container-highest">디자인</button>
+<button class="px-3 py-1 bg-surface-container-high text-on-surface-variant rounded-full text-label-md font-label-md whitespace-nowrap hover:bg-surface-container-highest">생산</button>
+</div>
+<button class="w-full py-2.5 bg-primary text-on-primary rounded-lg font-label-md text-label-md flex items-center justify-center gap-2 hover:bg-primary-container transition-all active:scale-[0.98]">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+                새 제품 추가
+            </button>
+</div>
+<div class="flex-1 overflow-y-auto px-stack-md pb-stack-lg space-y-3">
+<!-- Style Card Active -->
+<div class="p-3 bg-primary-container/10 border-2 border-primary rounded-xl cursor-pointer transition-all">
+<div class="flex justify-between items-start mb-2">
+<span class="font-code-sm text-code-sm text-primary">ST-00001</span>
+<span class="px-2 py-0.5 bg-error text-white text-[10px] font-bold rounded-full">3</span>
+</div>
+<h3 class="font-label-md text-label-md mb-1">오버사이즈 테크 쉘</h3>
+<p class="text-body-sm text-on-surface-variant mb-3">2025 봄 컬렉션</p>
+<div class="flex items-center justify-between">
+<span class="px-2 py-1 bg-tertiary-fixed text-on-tertiary-fixed-variant text-[11px] rounded font-bold uppercase tracking-wider">생산중</span>
+<span class="text-[11px] text-on-surface-variant">2분 전 업데이트</span>
+</div>
+</div>
+<!-- Style Card Inactive -->
+<div class="p-3 bg-surface border border-outline-variant rounded-xl cursor-pointer hover:border-primary-container transition-all">
+<div class="flex justify-between items-start mb-2">
+<span class="font-code-sm text-code-sm text-on-surface-variant">ST-00002</span>
+</div>
+<h3 class="font-label-md text-label-md mb-1">라이너 니트 V넥</h3>
+<p class="text-body-sm text-on-surface-variant mb-3">코어 에센셜</p>
+<div class="flex items-center justify-between">
+<span class="px-2 py-1 bg-surface-container-highest text-on-surface-variant text-[11px] rounded font-bold uppercase tracking-wider">디자인</span>
+<span class="text-[11px] text-on-surface-variant">4시간 전 업데이트</span>
+</div>
+</div>
+<!-- Style Card Inactive -->
+<div class="p-3 bg-surface border border-outline-variant rounded-xl cursor-pointer hover:border-primary-container transition-all">
+<div class="flex justify-between items-start mb-2">
+<span class="font-code-sm text-code-sm text-on-surface-variant">ST-00003</span>
+</div>
+<h3 class="font-label-md text-label-md mb-1">택티컬 카고 팬츠</h3>
+<p class="text-body-sm text-on-surface-variant mb-3">2025 봄 컬렉션</p>
+<div class="flex items-center justify-between">
+<span class="px-2 py-1 bg-surface-container-highest text-on-surface-variant text-[11px] rounded font-bold uppercase tracking-wider">아카이브</span>
+<span class="text-[11px] text-on-surface-variant">1일 전 업데이트</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Column 2: Collaboration Feed -->
+<section class="flex-1 flex flex-col bg-slate-50 relative min-w-0">
+<!-- Mobile Header (Visible < 768px) -->
+<div class="md:hidden h-14 flex items-center justify-between px-4 bg-surface border-b border-outline-variant">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+<span class="font-title-lg text-title-lg">ST-00001</span>
+</div>
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</div>
+<div class="p-4 border-b border-outline-variant bg-white flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 bg-primary-container/20 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-primary" data-icon="factory">factory</span>
+</div>
+<div>
+<h1 class="font-headline-sm font-bold text-lg">둥관 정밀 텍스타일 (Dongguan Precision)</h1>
+<p class="text-body-sm text-on-surface-variant flex items-center gap-1">
+<span class="w-2 h-2 bg-green-500 rounded-full"></span> 현재 접속 중
+                    </p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-2 bg-surface-container-high px-3 py-1.5 rounded-full">
+<span class="text-label-md font-label-md">자동 번역</span>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-9 h-5 bg-outline rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-primary after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+</label>
+</div>
+</div>
+</div>
+<!-- Feed Area -->
+<div class="flex-1 overflow-y-auto p-stack-md space-y-6">
+<!-- System Message -->
+<div class="flex justify-center">
+<span class="px-4 py-1.5 bg-secondary-container text-on-secondary-fixed-variant text-[12px] font-bold rounded-full uppercase tracking-widest">
+                    시스템: 상태가 '샘플 생산'으로 변경되었습니다
+                </span>
+</div>
+<!-- Factory Message -->
+<div class="flex gap-3 max-w-[85%]">
+<div class="w-8 h-8 shrink-0 bg-secondary rounded-full overflow-hidden">
+<img alt="Factory contact" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuARfsdno299WSXQ9px-FH-zricBXUIrmcVqm1WQoh5_8CTE6nGdOOeFzbWBbmRMFqWfMoNTXajcAZln37ke9YokuZL9-wrhC1qafYKtRoog91hEE28MB4ZRl-7A2CUVUniXqzV_2aMAyNkFvlFyDxPiyR5nEseN5IRytdc0snj22H27VxG1oCSSxAvR3U7N3clHVMMBfEuxrr89ewZQv-2MdoQXKwe8a3WXdcFaycAPC4W8qQviz8ZeAQSOUVFyUnMrpxr7qANk-Gk"/>
+</div>
+<div>
+<div class="bg-white p-4 rounded-2xl rounded-tl-none border border-slate-200 shadow-sm">
+<p class="text-body-md">你好，关于ST-00001的样品制作，我们已经收到了更新的Tech Pack。所有的面料已经准备好，预计下周三可以完成首样。</p>
+<div class="mt-2 pt-2 border-t border-slate-100 flex flex-col gap-1">
+<span class="text-[10px] font-bold text-primary uppercase">번역됨 (한국어)</span>
+<p class="text-body-sm text-on-surface-variant italic">"안녕하세요, ST-00001 샘플 제작과 관련하여 업데이트된 테크 팩을 잘 받았습니다. 모든 원단 준비가 완료되었으며, 다음 주 수요일까지 첫 번째 샘플을 완성할 수 있을 것으로 예상됩니다."</p>
+</div>
+</div>
+<span class="text-[11px] text-on-surface-variant ml-1 mt-1 block">공장 현장 • 오전 09:42</span>
+</div>
+</div>
+<!-- Designer Message (Self) -->
+<div class="flex flex-row-reverse gap-3 max-w-[85%] ml-auto">
+<div class="w-8 h-8 shrink-0 bg-primary rounded-full overflow-hidden">
+<img alt="Self" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD2_Mf7ImZA9SiRDfMa-IpT2pLME8YXDlynNT0IB6HM6slkN4_6T5yLMgg3wxeq0yWDbfiVwMz2EDJacAJZgGEzXxjciDTi5k0qe_HboMlgXjLzWYoCPZYME2VvhfxEmCaN_U_Y3wMLRWZUBQ6r9mEPle8GLy86xoWW55G-2mT2RKA4BAJZUHnmZYP_lDsweWrghP1SSc7Hhi8GNkBM8yiCMpvgjC6GCqSmF40v-obRIWfgmM7cllRGjPYLHLkyQUe91RgQ6LXsK00"/>
+</div>
+<div class="text-right">
+<div class="bg-primary text-on-primary p-4 rounded-2xl rounded-tr-none shadow-md">
+<p class="text-body-md text-left">좋습니다. 내부 포켓의 심 실링(seam sealing) 처리가 14페이지의 새로운 사양을 따르는지 확인 부탁드립니다.</p>
+</div>
+<span class="text-[11px] text-on-surface-variant mr-1 mt-1 block">디자이너 2 • 오전 09:55</span>
+</div>
+</div>
+<!-- Log Change -->
+<div class="flex justify-center">
+<div class="flex items-center gap-2 text-on-surface-variant">
+<div class="h-px w-8 bg-outline-variant"></div>
+<span class="text-[11px] font-label-md">첨부파일: ST001_Revised_Seams.pdf (4.2 MB)</span>
+<div class="h-px w-8 bg-outline-variant"></div>
+</div>
+</div>
+</div>
+<!-- Input Area -->
+<div class="p-4 bg-white border-t border-outline-variant">
+<div class="max-w-4xl mx-auto flex flex-col gap-3">
+<div class="flex items-center gap-2">
+<div class="relative">
+<select class="appearance-none bg-surface-container-low border border-outline-variant rounded-full pl-3 pr-8 py-1 text-label-md font-label-md text-on-surface-variant focus:ring-primary">
+<option>상태: 생산</option>
+<option>상태: 지연</option>
+<option>상태: QC 대기</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant text-[18px]" data-icon="expand_more">expand_more</span>
+</div>
+<button class="p-1.5 text-on-surface-variant hover:bg-surface-container-high rounded-full">
+<span class="material-symbols-outlined" data-icon="alternate_email">alternate_email</span>
+</button>
+</div>
+<div class="flex items-end gap-3 bg-slate-50 border border-slate-200 rounded-2xl p-2">
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="attach_file">attach_file</span>
+</button>
+<textarea class="flex-1 bg-transparent border-none focus:ring-0 resize-none py-2 text-body-md min-h-[40px]" placeholder="공장에 메시지 입력..." rows="1"></textarea>
+<button class="bg-primary text-on-primary w-10 h-10 rounded-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all">
+<span class="material-symbols-outlined" data-icon="send">send</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Column 3: Style Detail Panel -->
+<aside class="hidden xl:flex flex-col w-[400px] bg-surface border-l border-outline-variant">
+<!-- Tabs -->
+<div class="flex border-b border-outline-variant overflow-x-auto no-scrollbar">
+<button class="flex-1 py-4 px-2 text-[12px] font-bold uppercase tracking-wider text-on-surface-variant hover:bg-surface-container-low border-b-2 border-transparent">테크 팩</button>
+<button class="flex-1 py-4 px-2 text-[12px] font-bold uppercase tracking-wider text-on-surface-variant hover:bg-surface-container-low border-b-2 border-transparent">파일</button>
+<button class="flex-1 py-4 px-2 text-[12px] font-bold uppercase tracking-wider text-on-surface-variant hover:bg-surface-container-low border-b-2 border-transparent">쇼룸</button>
+<button class="flex-1 py-4 px-2 text-[12px] font-bold uppercase tracking-wider text-primary border-b-2 border-primary bg-primary-container/5">SCM</button>
+</div>
+<div class="flex-1 overflow-y-auto p-stack-md">
+<div class="flex items-center justify-between mb-6">
+<h3 class="font-headline-md text-headline-md">SCM 계산기</h3>
+<button class="text-primary font-label-md text-label-md flex items-center gap-1">
+<span class="material-symbols-outlined text-[18px]" data-icon="history">history</span> 이력
+                </button>
+</div>
+<div class="space-y-6">
+<!-- Calculator Inputs -->
+<div class="bg-slate-50 p-stack-md rounded-2xl border border-slate-200 space-y-4">
+<div>
+<label class="block font-label-md text-label-md mb-2 text-on-surface-variant">원단 비용 (RMB/m)</label>
+<div class="relative">
+<input class="w-full bg-white border-outline-variant rounded-lg py-2.5 px-4 font-code-sm text-on-surface focus:ring-primary transition-all" type="number" value="84.50"/>
+<span class="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">¥</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div>
+<label class="block font-label-md text-label-md mb-2 text-on-surface-variant">소요량</label>
+<div class="relative">
+<input class="w-full bg-white border-outline-variant rounded-lg py-2.5 px-4 font-code-sm text-on-surface focus:ring-primary" type="number" value="1.85"/>
+<span class="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">m</span>
+</div>
+</div>
+<div>
+<label class="block font-label-md text-label-md mb-2 text-on-surface-variant">공임 비용 (CMT)</label>
+<div class="relative">
+<input class="w-full bg-white border-outline-variant rounded-lg py-2.5 px-4 font-code-sm text-on-surface focus:ring-primary" type="number" value="45.00"/>
+<span class="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">¥</span>
+</div>
+</div>
+</div>
+<div>
+<label class="block font-label-md text-label-md mb-2 text-on-surface-variant">환율 (CNY/USD)</label>
+<div class="relative">
+<input class="w-full bg-white border-outline-variant rounded-lg py-2.5 px-4 font-code-sm text-on-surface focus:ring-primary" type="number" value="7.24"/>
+<span class="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">$</span>
+</div>
+</div>
+</div>
+<!-- Auto-Calculated Results -->
+<div class="bg-primary text-on-primary p-6 rounded-2xl shadow-xl space-y-4 relative overflow-hidden group">
+<div class="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-all duration-700"></div>
+<div>
+<p class="text-[12px] font-bold uppercase tracking-widest text-on-primary/70">계산된 도매가</p>
+<h4 class="text-[40px] font-bold font-title-lg tracking-tight">$68.42</h4>
+</div>
+<div class="pt-4 border-t border-on-primary/20 grid grid-cols-2 gap-4">
+<div>
+<p class="text-[10px] font-bold uppercase text-on-primary/60">총 원가 (USD)</p>
+<p class="font-code-sm text-lg">$27.37</p>
+</div>
+<div>
+<p class="text-[10px] font-bold uppercase text-on-primary/60">마진율 %</p>
+<p class="font-code-sm text-lg">60.0%</p>
+</div>
+</div>
+</div>
+<!-- Market Insights -->
+<div class="space-y-3">
+<h4 class="font-label-md text-label-md text-on-surface-variant">카테고리 비교</h4>
+<div class="p-4 border border-outline-variant rounded-xl flex items-center gap-4">
+<div class="flex-1">
+<div class="flex justify-between mb-1">
+<span class="text-body-sm">쉘 자켓</span>
+<span class="font-code-sm text-green-600">-$4.20</span>
+</div>
+<div class="w-full h-1.5 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[75%]"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="p-stack-md border-t border-outline-variant">
+<button class="w-full py-3 bg-surface border-2 border-primary text-primary rounded-xl font-bold hover:bg-primary/5 transition-all">
+                SCM 시트 내보내기
+            </button>
+</div>
+</aside>
+</main>
+<!-- BottomNavBar (Visible on mobile only) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex lg:hidden justify-around items-center px-4 pb-safe h-16 bg-surface border-t border-outline-variant shadow-lg">
+<div class="flex flex-col items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+<span class="text-[10px] font-medium">테크 팩</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 py-1">
+<span class="material-symbols-outlined" data-icon="chat_bubble" style="font-variation-settings: 'FILL' 1;">chat_bubble</span>
+<span class="text-[10px] font-bold">협업</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="view_in_ar">view_in_ar</span>
+<span class="text-[10px] font-medium">쇼룸</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="calculate">calculate</span>
+<span class="text-[10px] font-medium">SCM</span>
+</div>
+</nav>
+<script>
+    // Micro-interaction for SCM inputs
+    const inputs = document.querySelectorAll('input[type="number"]');
+    inputs.forEach(input => {
+        input.addEventListener('input', () => {
+            // Mock calculation update effect
+            const result = document.querySelector('h4');
+            result.style.transform = 'scale(1.05)';
+            result.style.opacity = '0.8';
+            setTimeout(() => {
+                result.style.transform = 'scale(1)';
+                result.style.opacity = '1';
+            }, 100);
+        });
+    });
+
+    // Language Toggle logic for Chinese
+    const langBtn = document.querySelector('button span:contains("CN")')?.parentElement || document.querySelectorAll('button')[0];
+    if(langBtn) {
+        langBtn.addEventListener('click', () => {
+            alert('언어 설정이 변경되었습니다: 중국어(간체) 로케일이 활성화되었습니다.');
+        });
+    }
+</script>
+</body></html>

@@ -5220,6 +5220,10 @@ export const kr: Record<string, string> = {
     'syncfit.colorbook_delete_confirm': '이 컬러북 후보안을 삭제하시겠습니까?',
     'fys.form.memoLabel': '메모 (선택)',
     'fys.form.memoPlaceholder': '파트너 참여여부 및 문의사항',
+    'fys.cancel_button': '신청 취소',
+    'fys.cancel_confirm': '정말로 이 신청을 취소하시겠습니까?',
+    'fys.cancel_success': '신청이 성공적으로 취소되었습니다.',
+    'fys.cancel_failed': '신청 취소 중 오류가 발생했습니다.',
 
     // AI Virtual Try-On
     'nav.ai_tryon': 'AI 착장',

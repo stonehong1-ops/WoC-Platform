@@ -5221,6 +5221,10 @@ export const en: Record<string, string> = {
     'syncfit.colorbook_delete_confirm': 'Are you sure you want to delete this color book?',
     'fys.form.memoLabel': 'Memo (Optional)',
     'fys.form.memoPlaceholder': 'Partner status and inquiries',
+    'fys.cancel_button': 'Cancel Registration',
+    'fys.cancel_confirm': 'Are you sure you want to cancel this registration?',
+    'fys.cancel_success': 'Your registration has been successfully cancelled.',
+    'fys.cancel_failed': 'An error occurred while cancelling your registration.',
 
     // AI Virtual Try-On
     'nav.ai_tryon': 'AI Try-On',
