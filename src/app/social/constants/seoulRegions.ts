@@ -236,6 +236,10 @@ export const INSTRUCTOR_NAME_MAP: Record<string, string> = {
   "vincent": "뱅상",
   "hero": "히어로",
   "leah": "리아",
+  "joanne": "조앤",
+  "gaea": "가이아",
+  "diego xen": "디에고 젠",
+  "hwangjin": "황진",
   "tbd": "미정",
   "미정": "TBD"
 };

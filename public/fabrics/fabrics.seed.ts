@@ -1,0 +1,222 @@
+export const FABRIC_SEEDS = [
+  {
+    "id": "fabric_01",
+    "nameKo": "화이트 코튼",
+    "nameEn": "White Cotton",
+    "material": "Cotton",
+    "color": "White",
+    "texture": "plain",
+    "season": "spring/summer",
+    "imageUrl": "/fabrics/fabric_01_cotton_plain_white.png",
+    "descriptionKo": "기본 셔츠와 블라우스에 적합한 깨끗한 화이트 코튼 원단"
+  },
+  {
+    "id": "fabric_02",
+    "nameKo": "내추럴 린넨",
+    "nameEn": "Natural Beige Linen",
+    "material": "Linen",
+    "color": "Beige",
+    "texture": "slub",
+    "season": "spring/summer",
+    "imageUrl": "/fabrics/fabric_02_linen_natural_beige.png",
+    "descriptionKo": "자연스러운 조직감이 있는 베이지 린넨 원단"
+  },
+  {
+    "id": "fabric_03",
+    "nameKo": "블랙 쉬폰",
+    "nameEn": "Black Poly Chiffon",
+    "material": "Polyester",
+    "color": "Black",
+    "texture": "sheer",
+    "season": "all season",
+    "imageUrl": "/fabrics/fabric_03_poly_chiffon_black.png",
+    "descriptionKo": "가볍고 흐르는 느낌의 블랙 쉬폰 원단"
+  },
+  {
+    "id": "fabric_04",
+    "nameKo": "핑크 플라워 레이온",
+    "nameEn": "Pink Floral Rayon",
+    "material": "Rayon",
+    "color": "Pink",
+    "texture": "floral",
+    "season": "spring/summer",
+    "imageUrl": "/fabrics/fabric_04_rayon_flower_pink.png",
+    "descriptionKo": "부드러운 촉감과 잔꽃 패턴의 레이온 원단"
+  },
+  {
+    "id": "fabric_05",
+    "nameKo": "아이보리 새틴",
+    "nameEn": "Ivory Satin",
+    "material": "Satin",
+    "color": "Ivory",
+    "texture": "satin",
+    "season": "all season",
+    "imageUrl": "/fabrics/fabric_05_satin_ivory.png",
+    "descriptionKo": "은은한 광택이 있는 아이보리 새틴 원단"
+  },
+  {
+    "id": "fabric_06",
+    "nameKo": "라이트 블루 데님",
+    "nameEn": "Light Blue Denim",
+    "material": "Cotton Denim",
+    "color": "Light Blue",
+    "texture": "denim",
+    "season": "all season",
+    "imageUrl": "/fabrics/fabric_06_denim_light_blue.png",
+    "descriptionKo": "밝은 워싱감의 캐주얼 데님 원단"
+  },
+  {
+    "id": "fabric_07",
+    "nameKo": "그레이 골지 니트",
+    "nameEn": "Gray Rib Knit",
+    "material": "Knit",
+    "color": "Gray",
+    "texture": "rib",
+    "season": "fall/winter",
+    "imageUrl": "/fabrics/fabric_07_knit_rib_gray.png",
+    "descriptionKo": "신축성이 있는 그레이 골지 니트 원단"
+  },
+  {
+    "id": "fabric_08",
+    "nameKo": "아이보리 믹스 트위드",
+    "nameEn": "Ivory Mix Tweed",
+    "material": "Tweed",
+    "color": "Ivory Mix",
+    "texture": "tweed",
+    "season": "fall/winter",
+    "imageUrl": "/fabrics/fabric_08_tweed_ivory_mix.png",
+    "descriptionKo": "고급스러운 조직감의 아이보리 믹스 트위드 원단"
+  },
+  {
+    "id": "fabric_09",
+    "nameKo": "블루 스트라이프 코튼",
+    "nameEn": "Blue Stripe Cotton",
+    "material": "Cotton",
+    "color": "Blue/White",
+    "texture": "stripe",
+    "season": "spring/summer",
+    "imageUrl": "/fabrics/fabric_09_cotton_stripe_blue.png",
+    "descriptionKo": "셔츠와 원피스에 적합한 블루 스트라이프 코튼 원단"
+  },
+  {
+    "id": "fabric_10",
+    "nameKo": "모카 크레이프",
+    "nameEn": "Mocha Poly Crepe",
+    "material": "Polyester",
+    "color": "Mocha",
+    "texture": "crepe",
+    "season": "all season",
+    "imageUrl": "/fabrics/fabric_10_poly_crepe_mocha.png",
+    "descriptionKo": "잔잔한 표면감과 드레이프가 있는 모카 크레이프 원단"
+  },
+  {
+    "id": "fabric_11",
+    "nameKo": "화이트 레이스",
+    "nameEn": "White Lace",
+    "material": "Lace",
+    "color": "White",
+    "texture": "lace",
+    "season": "spring/summer",
+    "imageUrl": "/fabrics/fabric_11_lace_white.png",
+    "descriptionKo": "블라우스 포인트와 원피스에 적합한 화이트 레이스 원단"
+  },
+  {
+    "id": "fabric_12",
+    "nameKo": "브라운 코듀로이",
+    "nameEn": "Brown Corduroy",
+    "material": "Cotton Corduroy",
+    "color": "Brown",
+    "texture": "corduroy",
+    "season": "fall/winter",
+    "imageUrl": "/fabrics/fabric_12_corduroy_brown.png",
+    "descriptionKo": "따뜻한 골 조직의 브라운 코듀로이 원단"
+  },
+  {
+    "id": "fabric_13",
+    "nameKo": "블랙 메쉬",
+    "nameEn": "Black Mesh",
+    "material": "Poly Mesh",
+    "color": "Black",
+    "texture": "mesh",
+    "season": "spring/summer",
+    "imageUrl": "/fabrics/fabric_13_mesh_black.png",
+    "descriptionKo": "레이어드와 포인트 디테일에 적합한 블랙 메쉬 원단"
+  },
+  {
+    "id": "fabric_14",
+    "nameKo": "브라운 울 체크",
+    "nameEn": "Brown Wool Check",
+    "material": "Wool Blend",
+    "color": "Brown Check",
+    "texture": "check",
+    "season": "fall/winter",
+    "imageUrl": "/fabrics/fabric_14_wool_check_brown.png",
+    "descriptionKo": "재킷과 스커트에 적합한 브라운 체크 울 혼방 원단"
+  },
+  {
+    "id": "fabric_15",
+    "nameKo": "스카이 조젯",
+    "nameEn": "Sky Blue Georgette",
+    "material": "Polyester",
+    "color": "Sky Blue",
+    "texture": "georgette",
+    "season": "spring/summer",
+    "imageUrl": "/fabrics/fabric_15_poly_georgette_sky.png",
+    "descriptionKo": "가볍고 부드러운 스카이 블루 조젯 원단"
+  },
+  {
+    "id": "fabric_16",
+    "nameKo": "블랙 페이크 레더",
+    "nameEn": "Black Faux Leather",
+    "material": "PU",
+    "color": "Black",
+    "texture": "leather",
+    "season": "fall/winter",
+    "imageUrl": "/fabrics/fabric_16_faux_leather_black.png",
+    "descriptionKo": "광택과 표면감이 있는 블랙 페이크 레더 원단"
+  },
+  {
+    "id": "fabric_17",
+    "nameKo": "버건디 벨벳",
+    "nameEn": "Burgundy Velvet",
+    "material": "Velvet",
+    "color": "Burgundy",
+    "texture": "velvet",
+    "season": "fall/winter",
+    "imageUrl": "/fabrics/fabric_17_velvet_burgundy.png",
+    "descriptionKo": "깊은 컬러와 부드러운 광택의 버건디 벨벳 원단"
+  },
+  {
+    "id": "fabric_18",
+    "nameKo": "민트 시어서커",
+    "nameEn": "Mint Seersucker",
+    "material": "Cotton Blend",
+    "color": "Mint",
+    "texture": "seersucker",
+    "season": "spring/summer",
+    "imageUrl": "/fabrics/fabric_18_seersucker_mint.png",
+    "descriptionKo": "시원한 요철감의 민트 시어서커 원단"
+  },
+  {
+    "id": "fabric_19",
+    "nameKo": "네이비 플라워 쉬폰",
+    "nameEn": "Navy Floral Chiffon",
+    "material": "Polyester",
+    "color": "Navy",
+    "texture": "floral",
+    "season": "spring/summer",
+    "imageUrl": "/fabrics/fabric_19_floral_chiffon_navy.png",
+    "descriptionKo": "네이비 바탕에 플라워 패턴이 있는 쉬폰 원단"
+  },
+  {
+    "id": "fabric_20",
+    "nameKo": "차콜 헤링본",
+    "nameEn": "Charcoal Herringbone",
+    "material": "Wool Blend",
+    "color": "Charcoal",
+    "texture": "herringbone",
+    "season": "fall/winter",
+    "imageUrl": "/fabrics/fabric_20_herringbone_charcoal.png",
+    "descriptionKo": "코트와 재킷에 적합한 차콜 헤링본 울 혼방 원단"
+  }
+] as const;

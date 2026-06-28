@@ -28,6 +28,7 @@ const ADMIN_ITEMS = [
   { icon: 'auto_awesome_mosaic', label: 'Covers', labelKo: '표지제작', href: '/admin/covers' },
   { icon: 'bug_report', label: 'Errors', labelKo: '에러로그', href: '/admin/errors' },
   { icon: 'terminal', label: 'Mobile Agent', labelKo: '모바일 에이전트', href: '/admin/antigravity' },
+  { icon: 'settings_accessibility', label: 'FYS Admin', labelKo: 'FYS 관리', href: '/fys/admin', isExternal: true },
   { icon: 'more_horiz', label: 'Others', labelKo: '기타관리', href: '/admin/others' },
 ];
 
@@ -780,23 +781,46 @@ function MyInfoPageContent() {
                   <span className="text-[10px] font-black tracking-[0.25em] uppercase text-error/60">Admin Controls</span>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {ADMIN_ITEMS.map((item) => (
-                    <button
-                      key={item.href}
-                      onClick={() => setAdminPopupHref(item.href)}
-                      className="flex items-center gap-3 p-3.5 rounded-xl bg-surface-container-lowest border border-surface-container hover:border-error/20 hover:shadow-sm transition-all active:scale-98 text-left"
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-error/5 flex items-center justify-center shrink-0">
-                        <span className="material-symbols-outlined !text-[16px] text-error/70">{item.icon}</span>
-                      </div>
-                      <div className="min-w-0">
-                        <span className="text-[11px] font-black text-on-surface uppercase tracking-tight block truncate">{item.label}</span>
-                        <span className="text-[9px] text-on-surface-variant font-medium block uppercase tracking-tighter mt-0.5">
-                          {language === 'KR' ? item.labelKo : 'Manage Tools'}
-                        </span>
-                      </div>
-                    </button>
-                  ))}
+                  {ADMIN_ITEMS.map((item) => {
+                    if ((item as any).isExternal) {
+                      return (
+                        <a
+                          key={item.href}
+                          href={item.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-3 p-3.5 rounded-xl bg-surface-container-lowest border border-surface-container hover:border-error/20 hover:shadow-sm transition-all active:scale-98 text-left"
+                        >
+                          <div className="w-8 h-8 rounded-lg bg-error/5 flex items-center justify-center shrink-0">
+                            <span className="material-symbols-outlined !text-[16px] text-error/70">{item.icon}</span>
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <span className="text-[11px] font-black text-on-surface uppercase tracking-tight block truncate">{item.label}</span>
+                            <span className="text-[9px] text-on-surface-variant font-medium block uppercase tracking-tighter mt-0.5">
+                              {language === 'KR' ? item.labelKo : 'Manage Tools'}
+                            </span>
+                          </div>
+                        </a>
+                      );
+                    }
+                    return (
+                      <button
+                        key={item.href}
+                        onClick={() => setAdminPopupHref(item.href)}
+                        className="flex items-center gap-3 p-3.5 rounded-xl bg-surface-container-lowest border border-surface-container hover:border-error/20 hover:shadow-sm transition-all active:scale-98 text-left w-full"
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-error/5 flex items-center justify-center shrink-0">
+                          <span className="material-symbols-outlined !text-[16px] text-error/70">{item.icon}</span>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <span className="text-[11px] font-black text-on-surface uppercase tracking-tight block truncate">{item.label}</span>
+                          <span className="text-[9px] text-on-surface-variant font-medium block uppercase tracking-tighter mt-0.5">
+                            {language === 'KR' ? item.labelKo : 'Manage Tools'}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
