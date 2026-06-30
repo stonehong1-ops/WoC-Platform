@@ -1,13 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, Suspense } from "react";
-import { usePathname, useSearchParams, useRouter } from "next/navigation";
+import React, { useState, useEffect, useCallback } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useNavigation } from "@/components/providers/NavigationProvider";
 import { useLocation } from "@/components/providers/LocationProvider";
 import UserAvatar from "@/components/common/UserAvatar";
-import CreateProduct from "@/components/shop/CreateProduct";
 import { useNotification } from '@/contexts/NotificationContext';
 import { chatService } from '@/lib/firebase/chatService';
 import { COUNTRY_MAPPING } from "@/constants/locations";
@@ -16,99 +15,70 @@ import { toast } from 'sonner';
 import CreateMenuBottomSheet from "@/components/common/CreateMenuBottomSheet";
 import BottomSheet from "@/components/common/BottomSheet";
 
-const NAV_STRUCTURE = {
-  World: [
-    { name: "nav.society", icon: "radio_button_unchecked", path: "/home" },
-    { name: "nav.plaza", icon: "quick_phrases", path: "/plaza" },
-    { name: "nav.venues", icon: "map", path: "/venues" },
-    { name: "nav.people", icon: "group", path: "/people" },
-  ],
-  Market: [
-    { name: "nav.shop", icon: "storefront", path: "/shop" },
-    { name: "nav.resale", icon: "cached", path: "/resale" },
-    { name: "nav.rental", icon: "key", path: "/rental" },
-    { name: "nav.stay", icon: "bed", path: "/stay" },
-  ],
-  Now: [
-    { name: "nav.today", icon: "today", path: "/today" },
-    { name: "nav.live", icon: "cinematic_blur", path: "/live" },
-    { name: "nav.social", icon: "autoplay", path: "/social" },
-    { name: "nav.class", icon: "school", path: "/class" },
-    { name: "nav.events", icon: "calendar_today", path: "/events" },
-  ],
-  Lounge: [
-    { name: "nav.pics", icon: "photo_library", path: "/pics" },
-    { name: "nav.lost_found", icon: "find_in_page", path: "/lost" },
-    { name: "nav.hub", icon: "airline_stops", path: "/hub" },
-    { name: "nav.jump", icon: "explore", path: "/explore" },
-  ],
-  Groups: [
-    { name: "nav.groups", icon: "groups", path: "/groups" },
-  ],
-  My: [] as { name: string; icon: string; path: string }[],
-};
-
-const MY_GROUPS = [
+// App Shell v2: 1단 연속 좌우 스크롤 푸터 메뉴 구조
+const FOOTER_MENU = [
   {
-    id: 'acts',
-    name: 'nav.my_acts',
+    section: 'nav.section_society',
     items: [
-      { name: 'myinfo.schedule_tab', icon: 'calendar_today', path: '/profile?tab=schedule' },
-      { name: 'nav.orders', icon: 'receipt_long', path: '/history' },
-      { name: 'nav.coaching', icon: 'psychology', path: '/coaching' },
+      { name: 'nav.today', icon: 'today', path: '/home' },
+      { name: 'nav.social', icon: 'diversity_3', path: '/today' },
+      { name: 'nav.live', icon: 'cell_tower', path: '/live' },
+      { name: 'nav.plaza', icon: 'account_balance', path: '/plaza' },
     ],
   },
   {
-    id: 'lab',
-    name: 'nav.my_lab',
+    section: 'nav.section_activity',
     items: [
-      { name: 'nav.ai_tryon', icon: 'checkroom', path: '/profile/ai-tryon' },
-      { name: 'nav.ai_lesson', icon: 'smart_display', path: '/lab/lesson' },
-      { name: 'nav.partner_match', icon: 'handshake', path: '/lab/match' },
+      { name: 'nav.class', icon: 'school', path: '/class' },
+      { name: 'nav.events', icon: 'celebration', path: '/events' },
+      { name: 'nav.groups', icon: 'communities', path: '/groups' },
+      { name: 'nav.map', icon: 'map', path: '/venues' },
     ],
   },
   {
-    id: 'live',
-    name: 'nav.my_live',
+    section: 'nav.section_market',
     items: [
-      { name: 'nav.live_joined', icon: 'cinematic_blur', path: '/live?view=my' },
-      { name: 'nav.live_hosted', icon: 'broadcast_on_personal', path: '/live?view=hosted' },
+      { name: 'nav.shop', icon: 'shopping_bag', path: '/shop' },
+      { name: 'nav.resale', icon: 'sell', path: '/resale' },
+      { name: 'nav.rental', icon: 'diamond', path: '/rental' },
+      { name: 'nav.stay', icon: 'cottage', path: '/stay' },
     ],
   },
   {
-    id: 'pay',
-    name: 'nav.my_pay',
+    section: 'nav.section_lounge',
     items: [
-      { name: 'nav.deposit', icon: 'account_balance_wallet', path: '/wallet' },
-      { name: 'nav.coupons', icon: 'confirmation_number', path: '/wallet?tab=coupons', comingSoon: true },
+      { name: 'nav.people', icon: 'person', path: '/people' },
+      { name: 'nav.pics', icon: 'photo_library', path: '/pics' },
+      { name: 'nav.lost_found', icon: 'help', path: '/lost' },
+      { name: 'nav.jump', icon: 'near_me', path: '/explore' },
     ],
   },
   {
-    id: 'me',
-    name: 'nav.my_me',
-    directPath: '/profile?tab=profile',
-    items: [],
+    section: 'nav.section_my',
+    items: [
+      { name: 'nav.acts', icon: 'star', path: '/profile?tab=schedule' },
+      { name: 'nav.my_pay', icon: 'account_balance_wallet', path: '/wallet' },
+      { name: 'nav.my_live', icon: 'broadcast_on_personal', path: '/live?view=my' },
+      { name: 'nav.ai_lab', icon: 'science', path: '/profile/ai-tryon' },
+      { name: 'nav.profile', icon: 'person', path: '/profile?tab=profile' },
+    ],
   },
 ];
 
-// COUNTRY_MAPPING moved to constants
-
-const BOTTOM_TABS = [
-  { id: "World", icon: "globe", label: "nav.world", basePath: "/home" },
-  { id: "Market", icon: "redeem", label: "nav.market", basePath: "/shop" },
-  { id: "Now", icon: "contactless", label: "nav.now", basePath: "/today" },
-  { id: "Lounge", icon: "weekend", label: "nav.lounge", basePath: "/pics" },
-  { id: "Groups", icon: "communities", label: "nav.groups", basePath: "/groups" },
-];
+// 모든 메뉴 항목의 경로를 평탄화하여 activeTab 판별에 사용
+const ALL_MENU_PATHS = FOOTER_MENU.flatMap(group => group.items.map(item => ({
+  ...item,
+  section: group.section,
+})));
 
 export default function GlobalNavigation(props: { children: React.ReactNode }) {
   const { t } = useLanguage();
   const pathname = usePathname();
-  if (pathname.startsWith('/syncfit') || pathname.startsWith('/pt') || pathname.startsWith('/fys')) {
+  const searchParams = useSearchParams();
+  if (pathname.startsWith('/pt') || pathname.startsWith('/fys')) {
     return <>{props.children}</>;
   }
   const { children } = props;
-  const [isMyView, setIsMyView] = useState(false);
   const [isCreateMenuOpen, setIsCreateMenuOpen] = useState(false);
   const [isSocialSelectOpen, setIsSocialSelectOpen] = useState(false);
   const router = useRouter();
@@ -163,97 +133,7 @@ export default function GlobalNavigation(props: { children: React.ReactNode }) {
     setIsCreateMenuOpen(true);
   }, [pathname, user, router, t]);
 
-  useEffect(() => {
-    // Detect view mode from URL search params on client side
-    const params = new URLSearchParams(window.location.search);
-    setIsMyView(params.get('view') === 'my');
-  }, [pathname]); // Re-check when navigation occurs
 
-  const [hasSubmenuItems, setHasSubmenuItems] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const searchParams = new URLSearchParams(window.location.search);
-    
-    let activeTab = "World";
-    if (pathname.startsWith("/shop") || pathname.startsWith("/resale") || pathname.startsWith("/rental") || pathname.startsWith("/stay")) {
-      activeTab = "Market";
-    } else if (pathname.startsWith("/today") || pathname.startsWith("/social") || pathname.startsWith("/events") || pathname.startsWith("/class") || (pathname.startsWith("/live") && !isMyView)) {
-      activeTab = "Now";
-    } else if (pathname.startsWith("/pics") || pathname.startsWith("/lost") || pathname.startsWith("/hub") || pathname.startsWith("/explore")) {
-      activeTab = "Lounge";
-    } else if (pathname.startsWith("/groups")) {
-      activeTab = "Groups";
-    } else if (pathname.startsWith("/my") || pathname.startsWith("/wallet") || pathname.startsWith("/history") || pathname.startsWith("/profile") || pathname.startsWith("/coaching") || pathname.startsWith("/lab") || (pathname.startsWith("/live") && isMyView)) {
-      activeTab = "My";
-    } else if (pathname.startsWith("/admin")) {
-      activeTab = "My";
-    }
-
-    if (pathname === "/") {
-      activeTab = "Now";
-    }
-
-    if (activeTab !== "My") {
-      setHasSubmenuItems(false);
-      return;
-    }
-
-    const isItemActive = (path: string) => {
-      const [itemPathname, itemQuery] = path.split('?');
-      const itemParams = new URLSearchParams(itemQuery || '');
-      if (itemQuery) {
-        const pathMatches = pathname === itemPathname;
-        const paramsMatch = Array.from(itemParams.entries()).every(([key, val]) => {
-          const currentVal = searchParams.get(key);
-          if (key === 'tab') {
-            return (currentVal || 'profile') === (val || 'profile');
-          }
-          return currentVal === val;
-        });
-        return pathMatches && paramsMatch;
-      }
-      if (pathname === '/profile' && itemPathname === '/profile') {
-        const currentTab = searchParams.get('tab') || 'profile';
-        const targetTab = itemParams.get('tab') || 'profile';
-        return currentTab === targetTab;
-      }
-      return pathname === path || (path !== '/' && pathname.startsWith(path) && !path.includes('?'));
-    };
-
-    let activeGroup = MY_GROUPS.find(group => {
-      if ('directPath' in group && group.directPath) {
-        if (isItemActive(group.directPath)) return true;
-      }
-      return group.items.some(item => isItemActive(item.path));
-    });
-
-    if (!activeGroup) {
-      if (pathname.startsWith('/profile')) {
-        const tab = searchParams.get('tab');
-        if (tab === 'schedule') {
-          activeGroup = MY_GROUPS.find(g => g.id === 'acts');
-        } else if (pathname.includes('ai-tryon')) {
-          activeGroup = MY_GROUPS.find(g => g.id === 'lab');
-        } else {
-          activeGroup = MY_GROUPS.find(g => g.id === 'me');
-        }
-      } else if (pathname.startsWith('/history') || pathname.startsWith('/coaching')) {
-        activeGroup = MY_GROUPS.find(g => g.id === 'acts');
-      } else if (pathname.startsWith('/lab')) {
-        activeGroup = MY_GROUPS.find(g => g.id === 'lab');
-      } else if (pathname.startsWith('/live')) {
-        activeGroup = MY_GROUPS.find(g => g.id === 'live');
-      } else if (pathname.startsWith('/wallet')) {
-        activeGroup = MY_GROUPS.find(g => g.id === 'pay');
-      } else {
-        activeGroup = MY_GROUPS[0];
-      }
-    }
-
-    const hasItems = activeGroup && activeGroup.items && activeGroup.items.length > 0;
-    setHasSubmenuItems(!!hasItems);
-  }, [pathname, isMyView]);
 
   const { isHeaderShrink, subHeader, setSubHeader, subHeaderHeight, isHeaderVisible, setIsHeaderVisible, isGlobalNavHidden, setGlobalNavHidden } = useNavigation();
   const { location, setIsSelectorOpen } = useLocation();
@@ -277,14 +157,7 @@ export default function GlobalNavigation(props: { children: React.ReactNode }) {
     return () => unsub();
   }, [user]);
 
-  // pathname 변경 시 nav hidden 상태 강제 복원 (SocialViewer cleanup 실패 방어)
-  useEffect(() => {
-    if (pathname.startsWith('/syncfit')) {
-      setGlobalNavHidden(true);
-    } else {
-      setGlobalNavHidden(false);
-    }
-  }, [pathname, setGlobalNavHidden]);
+
 
   const totalNotiCount = notiUnreadCount;
 
@@ -296,63 +169,46 @@ export default function GlobalNavigation(props: { children: React.ReactNode }) {
           if (isGlobalNavHidden) return;
           const currentScrollY = window.scrollY;
           const delta = currentScrollY - lastScrollY.current;
-          const headerHeight = headerRef.current?.offsetHeight || (hasSubmenuItems ? 150 : 110);
-          const footerHeight = footerRef.current?.offsetHeight || 80;
+          const headerHeight = headerRef.current?.offsetHeight || 60;
+          const footerHeight = footerRef.current?.offsetHeight || 56;
           
-          // Calculate new translation based on delta with threshold
           let nextTranslateY = currentTranslateY.current;
-          const scrollUpThreshold = 15; // Sensitivity: scroll up this much before showing
+          const scrollUpThreshold = 15;
 
           if (delta > 0) {
-            // Scrolling down: Hide immediately
             accumulatedScrollUp.current = 0;
             nextTranslateY -= delta;
           } else {
-            // Scrolling up: Show only after threshold
             accumulatedScrollUp.current += Math.abs(delta);
             if (accumulatedScrollUp.current > scrollUpThreshold || currentScrollY <= 10) {
               nextTranslateY -= delta;
             }
           }
           
-          // Clamp between -headerHeight and 0
           if (nextTranslateY > 0) nextTranslateY = 0;
           if (nextTranslateY < -headerHeight) nextTranslateY = -headerHeight;
-          
-          // Force show at the very top
           if (currentScrollY <= 5) nextTranslateY = 0;
           
           currentTranslateY.current = nextTranslateY;
           
-          // Apply to Header
           if (headerRef.current) {
             headerRef.current.style.transform = `translateY(${nextTranslateY}px)`;
           }
 
-          // Apply to Footer (Synchronized)
           if (footerRef.current) {
-            // Footer slides DOWN when header goes UP
-            // Ratio-based translation to ensure they hide/show at the same pace relative to their heights
-            const hideRatio = nextTranslateY / -headerHeight; // 0 to 1
+            const hideRatio = nextTranslateY / -headerHeight;
             const footerTranslateY = hideRatio * footerHeight;
             footerRef.current.style.transform = `translateY(${footerTranslateY}px)`;
-            
-            // Set global variable for other floating UIs (like FABs) to sync
             document.documentElement.style.setProperty('--woc-bottom-nav-y', `${footerTranslateY}px`);
-
           }
           
-          // Update global visibility state for components that need delayed show (like FAB)
-          // Lenient check for zero to handle potential floating point precision issues
           const isFullyVisible = nextTranslateY >= -1;
           if (lastSentVisibility.current !== isFullyVisible) {
             setIsHeaderVisible(isFullyVisible);
             lastSentVisibility.current = isFullyVisible;
           }
           
-          // Shadow logic
           setIsScrolled(currentScrollY > 40);
-          
           lastScrollY.current = currentScrollY;
           ticking = false;
         });
@@ -361,38 +217,12 @@ export default function GlobalNavigation(props: { children: React.ReactNode }) {
     };
     
     window.addEventListener("scroll", handleScroll, { passive: true });
-    // Initial check
     handleScroll();
     
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
   
-  // Determine active primary tab based on pathname
-  let activeTab = "World";
-  if (pathname.startsWith("/shop") || pathname.startsWith("/resale") || pathname.startsWith("/rental") || pathname.startsWith("/stay")) {
-    activeTab = "Market";
-  } else if (pathname.startsWith("/today") || pathname.startsWith("/social") || pathname.startsWith("/events") || pathname.startsWith("/class") || (pathname.startsWith("/live") && !isMyView)) {
-    activeTab = "Now";
-  } else if (pathname.startsWith("/pics") || pathname.startsWith("/lost") || pathname.startsWith("/hub") || pathname.startsWith("/explore")) {
-    activeTab = "Lounge";
-  } else if (pathname.startsWith("/groups")) {
-    activeTab = "Groups";
-  } else if (pathname.startsWith("/my") || pathname.startsWith("/wallet") || pathname.startsWith("/history") || pathname.startsWith("/profile") || pathname.startsWith("/coaching") || pathname.startsWith("/lab") || (pathname.startsWith("/live") && isMyView)) {
-    activeTab = "My";
-  } else if (pathname.startsWith("/admin")) {
-    activeTab = "My";
-  } else if (pathname.startsWith("/notification") || pathname.startsWith("/chat")) {
-    activeTab = "None"; // Don't highlight any main tab for notifications/chat
-  }
-
-  // Handle default tab for "/"
-  if (pathname === "/") {
-    activeTab = "Now";
-  }
-
   const isGroupDetailPage = pathname.startsWith("/groups/");
-  const isSearchPage = pathname.startsWith("/search");
-  const isNoSubMenuPage = isSearchPage || pathname.startsWith("/groups") || pathname.startsWith("/notification") || pathname.startsWith("/chat");
 
   if (isGroupDetailPage) {
     return (
@@ -404,16 +234,13 @@ export default function GlobalNavigation(props: { children: React.ReactNode }) {
     );
   }
 
-  const subMenu = NAV_STRUCTURE[activeTab as keyof typeof NAV_STRUCTURE] || [];
-  
-  // Calculate placeholder height
-  const baseHeaderHeight = isNoSubMenuPage ? 60 : (hasSubmenuItems ? 150 : 110);
-  const placeholderHeight = subHeader ? baseHeaderHeight + subHeaderHeight : baseHeaderHeight;
+  // 헤더 60px 고정 (서브메뉴 제거)
+  const placeholderHeight = subHeader ? 60 + subHeaderHeight : 60;
 
   // Compute effective hidden state based on context and pathname
-  const isDetailPage = /^\/(class|shop|people|social|resale|rental|stay|events)\/[^\/]+/.test(pathname);
+  const isDetailPage = /^\/(?:class|shop|people|social|resale|rental|stay|events)\/[^\/]+/.test(pathname);
   const isAppPage = pathname === '/app' || pathname.startsWith('/app/');
-  const isHiddenPath = pathname === '/' || pathname.startsWith('/admin') || pathname.includes('/checkout') || pathname.includes('/register') || isDetailPage || isAppPage || pathname === '/yedamche' || pathname.startsWith('/yedamche/') || pathname.startsWith('/syncfit');
+  const isHiddenPath = pathname === '/' || pathname.startsWith('/admin') || pathname.includes('/checkout') || pathname.includes('/register') || isDetailPage || isAppPage || pathname === '/yedamche' || pathname.startsWith('/yedamche/');
   const effectiveIsGlobalNavHidden = isGlobalNavHidden || isHiddenPath;
 
   // 가시성 복구 시 스크롤 위치 및 인라인 transform 오프셋 강제 리셋 (Hit Test 영역 0px 편차 복원 방어막)
@@ -537,34 +364,21 @@ export default function GlobalNavigation(props: { children: React.ReactNode }) {
                 </span>
               </Link>
 
-              {/* My Profile Avatar (상단 이전 배치) */}
-              <Link 
-                href="/profile?tab=profile" 
-                className={`w-[32px] h-[32px] rounded-full flex items-center justify-center active:scale-95 transition-all overflow-hidden relative ${
-                  pathname.startsWith('/profile') ? 'ring-[2px] ring-[#007AFF] ring-offset-1' : 'opacity-80 hover:opacity-100'
-                }`}
-                title={t('nav.my', '마이')}
+              {/* Create (+) Button - 강조 */}
+              <button
+                onClick={handleCreatePress}
+                className="w-[32px] h-[32px] rounded-full flex items-center justify-center active:scale-90 transition-all bg-[#007AFF] text-white hover:bg-[#0066DD] shadow-sm shadow-blue-200"
+                title={t('nav.create', '등록')}
               >
-                <UserAvatar 
-                  photoURL={profile?.photoURL}
-                  className="!w-[28px] !h-[28px] rounded-full"
-                  iconSize="18px"
-                />
-              </Link>
+                <span 
+                  className="material-symbols-outlined !text-[20px]"
+                  style={{ fontVariationSettings: "'FILL' 1, 'wght' 600" }}
+                >
+                  add
+                </span>
+              </button>
             </div>
           </div>
-
-          {/* Scrolling Sub-Menu: Refined to match image (Icons Removed) */}
-          {/* Scrolling Sub-Menu: Refined to match image (Icons Removed) */}
-          {!isNoSubMenuPage && (
-            <Suspense fallback={<div className="h-[43px] bg-white border-b border-slate-100/60" />}>
-              {activeTab === 'My' ? (
-                <MySubMenuNavigation pathname={pathname} />
-              ) : (
-                <SubMenuNavigation subMenu={subMenu} pathname={pathname} />
-              )}
-            </Suspense>
-          )}
 
           {/* Custom Sub-Header Slot (e.g. Shop Filters) */}
           {subHeader && (
@@ -581,72 +395,92 @@ export default function GlobalNavigation(props: { children: React.ReactNode }) {
 
 
 
-      {/* Bottom Navigation Bar */}
+      {/* Bottom Navigation Bar - 그룹별 세로 구조(위:라벨, 아래:아이콘+텍스트) */}
       <footer 
         ref={footerRef}
-        className={`fixed bottom-0 left-0 w-full z-50 bg-white rounded-t-2xl px-6 flex justify-around items-center shadow-[0_-8px_30px_rgba(11,90,192,0.14)] will-change-transform transition-all duration-200 ${
+        className={`fixed bottom-0 left-0 w-full z-50 bg-white/95 backdrop-blur-md rounded-t-2xl shadow-[0_-4px_20px_rgba(11,90,192,0.10)] will-change-transform transition-all duration-200 ${
           effectiveIsGlobalNavHidden ? 'opacity-0 pointer-events-none invisible translate-y-[100px]' : 'opacity-100 translate-y-0'
         }`}
         style={{ 
-          height: 'calc(64px + max(env(safe-area-inset-bottom), 12px))',
-          paddingBottom: 'max(env(safe-area-inset-bottom), 12px)',
+          height: 'calc(76px + max(env(safe-area-inset-bottom), 8px))',
+          paddingBottom: 'max(env(safe-area-inset-bottom), 8px)',
           transition: 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s, visibility 0.2s'
         }}
       >
-        {BOTTOM_TABS.map((tab) => {
-          const isActive = activeTab === tab.id;
-          const isPhotoTab = tab.icon === "photo";
-          const targetPath = tab.basePath;
-          return (
-            <Link 
-              key={tab.id} 
-              href={targetPath} 
-              className={`relative flex flex-col items-center justify-center gap-0.5 min-w-[52px] h-[52px] transition-all duration-300 ${isActive ? 'text-[#007AFF]' : 'text-slate-400 hover:text-slate-600'}`}
-            >
-              {isPhotoTab ? (
-                <div className="relative flex items-center justify-center w-[24px] h-[24px]">
-                  <UserAvatar 
-                     photoURL={profile?.photoURL}
-                     className={`!w-[24px] !h-[24px] rounded-full transition-all duration-300 ${isActive ? 'ring-[2px] ring-[#007AFF] ring-offset-1' : 'opacity-80 hover:opacity-100'}`}
-                     iconSize="18px"
-                  />
-                </div>
-              ) : (
-                <span 
-                  className="material-symbols-outlined !text-[22px] transition-colors duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
-                  style={{ fontVariationSettings: isActive ? "'FILL' 1, 'wght' 500" : "'FILL' 0, 'wght' 500" }}
-                >
-                  {tab.icon}
-                </span>
-              )}
-                {/* Localized label */}
-                <span className={`text-[11px] leading-none tracking-tight ${isActive ? 'font-extrabold' : 'font-medium'}`}>
-                  {t(tab.label)}
-                </span>
-              </Link>
-            );
-          })}
-
-
-          {/* Divider */}
-          <div className="w-px h-7 bg-slate-200 shrink-0" />
-
-          {/* Create (+) Tab */}
-          <button
-            onClick={handleCreatePress}
-            className="relative flex flex-col items-center justify-center gap-0.5 min-w-[52px] h-[52px] transition-all duration-300 text-slate-400 hover:text-[#007AFF] active:scale-90"
-          >
-            <span 
-              className="material-symbols-outlined !text-[26px] transition-colors duration-300"
-              style={{ fontVariationSettings: "'FILL' 0, 'wght' 600" }}
-            >
-              add_circle
-            </span>
-            <span className="text-[11px] leading-none tracking-tight font-medium">
-              {t('nav.create', '등록')}
-            </span>
-          </button>
-        </footer>
+        <div className="w-full h-full overflow-x-auto no-scrollbar">
+          <div className="flex items-end h-full px-2 gap-0 min-w-max">
+            {FOOTER_MENU.map((group, groupIdx) => {
+              return (
+                <React.Fragment key={group.section}>
+                  {/* 그룹 간 구분자 */}
+                  {groupIdx > 0 && (
+                    <div className="w-px h-12 bg-slate-200/60 mx-1 shrink-0 self-center" />
+                  )}
+                  {/* 그룹 컨테이너: 위 라벨 + 아래 메뉴 */}
+                  <div className="flex flex-col shrink-0">
+                    {/* 그룹 라벨 (단순 정보사항) */}
+                    <span className="text-[9px] font-semibold text-slate-300 uppercase tracking-wider px-1 pb-0.5 select-none">
+                      {t(group.section)}
+                    </span>
+                    {/* 메뉴 항목들 가로 나열 */}
+                    <div className="flex items-center">
+                      {group.items.map((item) => {
+                        const [itemPath, itemQuery] = item.path.split('?');
+                        let isActive = false;
+                        if (itemQuery) {
+                          // query parameter가 있는 메뉴: searchParams로 비교
+                          const params = new URLSearchParams(itemQuery);
+                          const pathMatches = pathname === itemPath;
+                          const paramsMatch = Array.from(params.entries()).every(([key, val]) => {
+                            return searchParams.get(key) === val;
+                          });
+                          isActive = pathMatches && paramsMatch;
+                        } else {
+                          // query 없는 메뉴: 같은 pathname을 공유하는 query-based 메뉴가 현재 active이면 자신은 비활성화
+                          const hasQuerySibling = ALL_MENU_PATHS.some(m => {
+                            const [mp, mq] = m.path.split('?');
+                            if (!mq || mp !== item.path) return false;
+                            const mqParams = new URLSearchParams(mq);
+                            return pathname === mp && Array.from(mqParams.entries()).every(([k, v]) => searchParams.get(k) === v);
+                          });
+                          if (hasQuerySibling) {
+                            isActive = false;
+                          } else {
+                            isActive = pathname === item.path || (item.path !== '/' && pathname.startsWith(item.path) && !item.path.includes('?'));
+                          }
+                        }
+                        return (
+                          <Link
+                            key={item.name + item.path}
+                            href={item.path}
+                            className={`shrink-0 flex flex-col items-center justify-center w-[50px] h-[50px] transition-all duration-200 ${
+                              isActive
+                                ? 'text-[#007AFF]'
+                                : 'text-slate-500 hover:text-slate-700 active:bg-slate-50'
+                            }`}
+                          >
+                            <span
+                              className="material-symbols-outlined !text-[22px] leading-none"
+                              style={{ fontVariationSettings: isActive ? "'FILL' 1, 'wght' 400" : "'FILL' 0, 'wght' 300" }}
+                            >
+                              {item.icon}
+                            </span>
+                            <span className={`text-[10px] leading-tight mt-0.5 tracking-tight whitespace-nowrap ${
+                              isActive ? 'font-extrabold' : 'font-medium'
+                            }`}>
+                              {t(item.name)}
+                            </span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </React.Fragment>
+              );
+            })}
+          </div>
+        </div>
+      </footer>
 
         {/* Create Menu Bottom Sheet (폴백용) */}
         <CreateMenuBottomSheet 
@@ -698,181 +532,5 @@ export default function GlobalNavigation(props: { children: React.ReactNode }) {
   );
 }
 
-function SubMenuNavigation({ subMenu, pathname }: { subMenu: any[]; pathname: string }) {
-  const searchParams = useSearchParams();
-  const { t } = useLanguage();
-
-  return (
-    <nav className="flex w-full px-0 border-b border-slate-100/60 bg-white">
-      <div className="flex w-full items-end justify-between px-3">
-        {subMenu.map((item) => {
-          if (!item || !item.path || typeof item.path !== 'string') return null;
-          const [itemPathname, itemQuery] = item.path.split('?');
-          const itemParams = new URLSearchParams(itemQuery || '');
-          
-          let isActive = false;
-          if (itemQuery) {
-            const pathMatches = pathname === itemPathname;
-            const paramsMatch = Array.from(itemParams.entries()).every(([key, val]) => searchParams.get(key) === val);
-            isActive = pathMatches && paramsMatch;
-          } else {
-            isActive = pathname === item.path || (item.path !== "/" && pathname.startsWith(item.path) && !item.path.includes('?'));
-          }
-
-          const society = searchParams.get('society') || (typeof window !== 'undefined' ? sessionStorage.getItem('woc_society') : null);
-          const resolvedPath = item.path === '/events' && society ? `/events?society=${society}` : item.path;
-
-          return (
-            <Link 
-              key={item.name} 
-              href={resolvedPath} 
-              className={`flex flex-col items-center justify-end flex-1 pt-3.5 pb-2.5 transition-all duration-300 border-b-[3px] ${isActive ? 'border-[#007AFF]' : 'border-transparent'}`}
-            >
-              <span className={`text-[14px] tracking-tight uppercase transition-all duration-300 ${isActive ? 'font-black text-[#007AFF]' : 'font-bold text-slate-500'}`}>
-                {t(item.name)}
-              </span>
-            </Link>
-          );
-        })}
-      </div>
-    </nav>
-  );
-}
-
-function MySubMenuNavigation({ pathname }: { pathname: string }) {
-  const searchParams = useSearchParams();
-  const { t } = useLanguage();
-
-  const isItemActive = (path: string) => {
-    const [itemPathname, itemQuery] = path.split('?');
-    const itemParams = new URLSearchParams(itemQuery || '');
-    if (itemQuery) {
-      const pathMatches = pathname === itemPathname;
-      const paramsMatch = Array.from(itemParams.entries()).every(([key, val]) => {
-        const currentVal = searchParams.get(key);
-        if (key === 'tab') {
-          return (currentVal || 'profile') === (val || 'profile');
-        }
-        return currentVal === val;
-      });
-      return pathMatches && paramsMatch;
-    }
-    if (pathname === '/profile' && itemPathname === '/profile') {
-      const currentTab = searchParams.get('tab') || 'profile';
-      const targetTab = itemParams.get('tab') || 'profile';
-      return currentTab === targetTab;
-    }
-    return pathname === path || (path !== '/' && pathname.startsWith(path) && !path.includes('?'));
-  };
-
-  let activeGroup = MY_GROUPS.find(group => {
-    if ('directPath' in group && group.directPath) {
-      if (isItemActive(group.directPath)) return true;
-    }
-    return group.items.some(item => isItemActive(item.path));
-  });
-
-  if (!activeGroup) {
-    if (pathname.startsWith('/profile')) {
-      const tab = searchParams.get('tab');
-      if (tab === 'schedule') {
-        activeGroup = MY_GROUPS.find(g => g.id === 'acts');
-      } else if (pathname.includes('ai-tryon')) {
-        activeGroup = MY_GROUPS.find(g => g.id === 'lab');
-      } else {
-        activeGroup = MY_GROUPS.find(g => g.id === 'me');
-      }
-    } else if (pathname.startsWith('/history') || pathname.startsWith('/coaching')) {
-      activeGroup = MY_GROUPS.find(g => g.id === 'acts');
-    } else if (pathname.startsWith('/lab')) {
-      activeGroup = MY_GROUPS.find(g => g.id === 'lab');
-    } else if (pathname.startsWith('/live')) {
-      activeGroup = MY_GROUPS.find(g => g.id === 'live');
-    } else if (pathname.startsWith('/wallet')) {
-      activeGroup = MY_GROUPS.find(g => g.id === 'pay');
-    } else {
-      activeGroup = MY_GROUPS[0];
-    }
-  }
-
-  const getGroupDefaultPath = (groupId: string) => {
-    switch (groupId) {
-      case 'acts':
-        return '/profile?tab=schedule';
-      case 'lab':
-        return '/profile/ai-tryon';
-      case 'live':
-        return '/live?view=my';
-      case 'pay':
-        return '/wallet';
-      case 'me':
-        return '/profile?tab=profile';
-      default:
-        return '/profile?tab=schedule';
-    }
-  };
-
-  return (
-    <div className="flex flex-col w-full bg-white">
-      {/* 1단계: 대메뉴 탭 */}
-      <nav className="flex w-full px-0 border-b border-slate-100/60 bg-white">
-        <div className="flex w-full items-end justify-between px-3">
-          {MY_GROUPS.map((group) => {
-            const isActive = activeGroup?.id === group.id;
-            const targetPath = getGroupDefaultPath(group.id);
-
-            return (
-              <Link
-                key={group.id}
-                href={targetPath}
-                className={`flex flex-col items-center justify-end flex-1 pt-3.5 pb-2.5 transition-all duration-300 border-b-[3px] ${
-                  isActive ? 'border-[#007AFF]' : 'border-transparent'
-                }`}
-              >
-                <span
-                  className={`text-[14px] tracking-tight uppercase transition-all duration-300 ${
-                    isActive ? 'font-black text-[#007AFF]' : 'font-bold text-slate-500'
-                  }`}
-                >
-                  {t(group.name)}
-                </span>
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
-
-      {/* 2단계: 하위 메뉴 칩 */}
-      {activeGroup && activeGroup.items && activeGroup.items.length > 0 && (
-        <nav className="relative w-full bg-slate-50/30 border-b border-slate-100/60">
-          <div className="w-full px-3 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
-            {activeGroup.items.map((item: any) => {
-              const active = isItemActive(item.path);
-              const isComingSoon = item.comingSoon;
-              return (
-                <Link
-                  key={item.name + item.path}
-                  href={isComingSoon ? '#' : item.path}
-                  onClick={(e) => {
-                    if (isComingSoon) {
-                      e.preventDefault();
-                      alert(t('nav.coming_soon', 'Coming Soon'));
-                    }
-                  }}
-                  className={`flex-shrink-0 px-4 py-1.5 rounded-xl text-[12px] font-bold tracking-tight transition-all whitespace-nowrap border ${
-                    active
-                      ? 'bg-slate-900 text-white border-slate-900 shadow-sm shadow-slate-200'
-                      : 'bg-white text-slate-500 border-slate-200/80 hover:bg-slate-50'
-                  } ${isComingSoon ? 'opacity-40' : ''}`}
-                >
-                  {t(item.name)}
-                </Link>
-              );
-            })}
-          </div>
-        </nav>
-      )}
-    </div>
-  );
-}
+// SubMenuNavigation 및 MySubMenuNavigation 제거됨 (App Shell v2 개편)
 

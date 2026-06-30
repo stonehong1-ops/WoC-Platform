@@ -300,21 +300,7 @@ service cloud.firestore {
       }
     }
 
-    match /syncfit_styles/{styleId} {
-      allow read, write: if true;
-    }
-    match /syncfit_media/{mediaId} {
-      allow read, write: if true;
-    }
-    match /syncfit_messages/{messageId} {
-      allow read, write: if true;
-    }
-    match /syncfit_read_logs/{logId} {
-      allow read, write: if true;
-    }
-    match /syncfit_colorbooks/{colorBookId} {
-      allow read, write: if true;
-    }
+
     match /fysRegistrations/{regId} {
       allow read, write: if true;
     }

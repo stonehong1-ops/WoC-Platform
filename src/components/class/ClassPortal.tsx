@@ -325,7 +325,7 @@ export default function ClassPortal() {
 
         {(activeTab === 'WEEK' || activeTab === 'TODAY') && (
           <>
-            <div className="w-full h-11 px-4 flex items-center justify-end gap-4 border-t border-slate-50">
+            <div className="w-full h-11 px-4 flex items-center justify-end gap-4">
               <button
                 onClick={() => { setShowOrganizerFilter(!showOrganizerFilter); if (!showOrganizerFilter) setShowClubFilter(false); }}
                 className={`flex items-center gap-0.5 text-[12px] font-bold transition-all ${selectedOrganizer !== 'All' ? 'text-blue-600' : 'text-slate-600 hover:text-slate-800'}`}

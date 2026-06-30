@@ -8,6 +8,7 @@ import { Notification } from '@/types/notification';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { classRegistrationService } from '@/lib/firebase/classRegistrationService';
 import { toast } from 'sonner';
+import { useNavigation } from '@/components/providers/NavigationProvider';
 
 export default function NotificationPage() {
   const { user } = useAuth();
@@ -20,6 +21,29 @@ export default function NotificationPage() {
     { id: 'Events', label: t('notification.tabs.events') },
     { id: 'System', label: t('notification.tabs.system') }
   ];
+  const { setSubHeader } = useNavigation();
+
+  useEffect(() => {
+    const filterBar = (
+      <div className="w-full px-3 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar bg-white">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex-shrink-0 px-2.5 py-1 rounded-xl text-[12px] font-bold tracking-tight transition-all whitespace-nowrap border ${
+              activeTab === tab.id
+                ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-100'
+                : 'bg-slate-50/50 text-slate-500 border-slate-100 hover:bg-slate-100/80'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+    );
+    setSubHeader(filterBar);
+    return () => setSubHeader(null);
+  }, [activeTab, setSubHeader, t]);
   
   const [notifications, setNotifications] = useState<Notification[]>(() => {
     if (typeof window !== 'undefined' && user) {
@@ -327,22 +351,6 @@ export default function NotificationPage() {
   return (
     <>
       <main className="max-w-2xl mx-auto h-[calc(100vh-124px)] flex flex-col overflow-hidden bg-[#FAF8FF]">
-      {/* Tab Control (Fixed) */}
-      <div className="px-4 py-4 w-full flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0 border-b border-slate-100/50 bg-[#FAF8FF]">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex-shrink-0 px-4 py-2 rounded-lg text-[12px] font-bold tracking-wide transition-all whitespace-nowrap ${
-              activeTab === tab.id
-                ? 'bg-[#1E293B] text-white shadow-sm'
-                : 'bg-slate-50 text-slate-500 border border-slate-100 hover:bg-slate-100'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
 
       {/* Scrollable Content Area */}
       <div className="flex-1 overflow-y-auto px-4 py-2 no-scrollbar pb-20">

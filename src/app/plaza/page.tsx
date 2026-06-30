@@ -17,6 +17,7 @@ function PlazaPageContent() {
   const { user, profile } = useAuth();
   const [storyUsers, setStoryUsers] = useState<any[]>([]);
   const [activeFilter, setActiveFilter] = useState('all');
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const { openModal: openProfile, closeModal: closeProfile, value: selectedProfileId } = useModalNavigation('profileId');
   const { openModal: openCreate } = useModalNavigation('createFlow');
   const { setSubHeader } = useNavigation();
@@ -83,24 +84,49 @@ function PlazaPageContent() {
   useEffect(() => {
     const filterBar = (
       <div className="relative w-full bg-white flex flex-col">
-        {/* Row 1: Scrollable Tabs */}
-        <div className="w-full px-3 py-2.5 flex items-center gap-2 overflow-x-auto no-scrollbar">
-          {tabs.map((tab) => (
+        {/* Row 1: Scrollable Tabs & View Toggle */}
+        <div className="w-full px-3 py-2 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar flex-grow">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setActiveFilter(tab.id);
+                  window.scrollTo({ top: 0, behavior: 'instant' });
+                }}
+                className={`flex-shrink-0 px-2.5 py-1 rounded-xl text-[12px] font-bold tracking-tight transition-all whitespace-nowrap border ${
+                  activeFilter === tab.id
+                    ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-100'
+                    : 'bg-slate-50/50 text-slate-500 border-slate-100 hover:bg-slate-100/80'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          {/* 우측: 슬랙/애플 감성의 부드러운 뷰 세그먼트 스위치 */}
+          <div className="flex bg-slate-50/80 p-0.5 rounded-2xl border border-slate-200/20 shrink-0 select-none">
             <button
-              key={tab.id}
-              onClick={() => {
-                setActiveFilter(tab.id);
-                window.scrollTo({ top: 0, behavior: 'instant' });
-              }}
-              className={`flex-shrink-0 px-4 py-1.5 rounded-xl text-[12px] font-bold tracking-tight transition-all whitespace-nowrap border ${
-                activeFilter === tab.id
-                  ? 'bg-slate-900 text-white border-slate-900 shadow-sm shadow-slate-200'
-                  : 'bg-slate-50/50 text-slate-500 border-slate-100 hover:bg-slate-100/80'
+              onClick={() => setViewMode('list')}
+              className={`px-2 py-1 rounded-xl flex items-center transition-all active:scale-95 duration-100 ${
+                viewMode === 'list'
+                  ? 'bg-white text-blue-600 shadow-[0_2px_6px_rgba(0,0,0,0.06)] border border-slate-200/40 font-bold scale-[1.01]'
+                  : 'text-slate-400 hover:text-slate-600'
               }`}
             >
-              {tab.label}
+              <span className="material-symbols-outlined text-[14px]">format_list_bulleted</span>
             </button>
-          ))}
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`px-2 py-1 rounded-xl flex items-center transition-all active:scale-95 duration-100 ${
+                viewMode === 'grid'
+                  ? 'bg-white text-blue-600 shadow-[0_2px_6px_rgba(0,0,0,0.06)] border border-slate-200/40 font-bold scale-[1.01]'
+                  : 'text-slate-400 hover:text-slate-600'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[14px]">dashboard</span>
+            </button>
+          </div>
         </div>
 
         {/* Row 2: Stories (Premium Profile Line) */}
@@ -158,7 +184,7 @@ function PlazaPageContent() {
 
     setSubHeader(filterBar);
     return () => setSubHeader(null);
-  }, [activeFilter, setSubHeader, sortedStories, profile]);
+  }, [activeFilter, viewMode, setSubHeader, sortedStories, profile]);
 
 
 
@@ -173,9 +199,15 @@ function PlazaPageContent() {
 
       <div className="flex flex-col min-h-screen relative">
         <div className="relative z-10 flex flex-col min-h-screen pb-[60px]">
-          {/* Universal Feed Section */}
           <div className="flex-grow">
-            <UniversalFeed context={plazaContext} currentUser={user} profile={profile} activeFilter={activeFilter} />
+            <UniversalFeed 
+              context={plazaContext} 
+              currentUser={user} 
+              profile={profile} 
+              activeFilter={activeFilter} 
+              viewMode={viewMode}
+              setViewMode={setViewMode}
+            />
           </div>
 
         </div>

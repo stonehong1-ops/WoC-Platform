@@ -148,7 +148,7 @@ function RentalPageContent() {
   const studios = useMemo(() => {
     const studioVenues = allVenues.filter(v => 
       v.status === 'active' && 
-      (v.types.includes('Studio') || v.category === 'Studio')
+      (v.types?.includes('Studio') || v.category === 'Studio')
     );
     const names = Array.from(new Set(studioVenues.map(v => v.name).filter(Boolean)));
     return ['All', ...names.sort()];
@@ -188,9 +188,15 @@ function RentalPageContent() {
       case 'latest':
       default: 
         result.sort((a, b) => {
-          const tA = a.createdAt?.toMillis?.() || 0;
-          const tB = b.createdAt?.toMillis?.() || 0;
-          return tB - tA;
+          const getTime = (ts: any) => {
+            if (!ts) return 0;
+            if (typeof ts.toMillis === 'function') return ts.toMillis();
+            if (typeof ts.seconds === 'number') return ts.seconds * 1000;
+            if (typeof ts === 'number') return ts;
+            const d = new Date(ts);
+            return isNaN(d.getTime()) ? 0 : d.getTime();
+          };
+          return getTime(b.createdAt) - getTime(a.createdAt);
         });
         break;
     }

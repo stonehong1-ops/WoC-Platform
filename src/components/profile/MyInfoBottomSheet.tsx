@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { doc, updateDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
+import { deleteUser } from 'firebase/auth';
 import { toast } from 'sonner';
-import { db } from '@/lib/firebase/clientApp';
+import { db, auth } from '@/lib/firebase/clientApp';
 import { storageService } from '@/lib/firebase/storageService';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -255,11 +256,24 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
 
   const onDeactivate = async () => {
     try {
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        try {
+          await deleteUser(currentUser);
+        } catch (authErr: any) {
+          if (authErr.code === 'auth/requires-recent-login') {
+            toast.error(t('deactivate.recent_login_required'));
+            return;
+          }
+          throw authErr;
+        }
+      }
       await deleteDoc(doc(db, 'users', profile.uid));
       await signOut();
       window.location.href = '/';
     } catch (err) {
       console.error('Deactivation error:', err);
+      toast.error(t('common.error', '오류가 발생했습니다.'));
     }
   };
 

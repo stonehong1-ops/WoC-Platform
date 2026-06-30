@@ -52,9 +52,9 @@ export default function PeoplePage() {
                 setActiveFilter(chip.label);
                 window.scrollTo({ top: 0, behavior: 'instant' });
               }}
-              className={`flex-shrink-0 px-4 py-1.5 rounded-xl text-[12px] font-bold tracking-tight transition-all whitespace-nowrap border ${
+              className={`flex-shrink-0 px-2.5 py-1 rounded-xl text-[12px] font-bold tracking-tight transition-all whitespace-nowrap border ${
                 activeFilter === chip.label
-                  ? 'bg-slate-900 text-white border-slate-900 shadow-sm shadow-slate-200'
+                  ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-100'
                   : 'bg-slate-50/50 text-slate-500 border-slate-100 hover:bg-slate-100/80'
               }`}
             >

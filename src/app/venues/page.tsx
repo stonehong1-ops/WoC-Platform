@@ -104,7 +104,7 @@ function VenuesPageContent() {
 
   return (
     <PageWrapper>
-      <div className="fixed inset-0 w-full overflow-hidden" style={{ top: 'var(--header-height, 120px)', bottom: 'calc(64px + max(env(safe-area-inset-bottom), 12px))' }}>
+      <div className="fixed inset-0 w-full overflow-hidden" style={{ top: 'var(--header-height, 60px)', bottom: 'calc(64px + max(env(safe-area-inset-bottom), 12px))' }}>
         <MapComponent 
           isLoaded={isLoaded}
           onRegisterOpen={handleRegisterOpen}

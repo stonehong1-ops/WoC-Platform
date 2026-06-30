@@ -17,14 +17,27 @@ interface UniversalFeedProps {
   currentUser: any;
   profile?: any;
   activeFilter?: string;
+  viewMode?: 'list' | 'grid';
+  setViewMode?: (mode: 'list' | 'grid') => void;
 }
 
-export default function UniversalFeed({ context, currentUser, profile, activeFilter: propFilter }: UniversalFeedProps) {
+export default function UniversalFeed({ 
+  context, 
+  currentUser, 
+  profile, 
+  activeFilter: propFilter,
+  viewMode: propViewMode,
+  setViewMode: propSetViewMode
+}: UniversalFeedProps) {
   // 0ms의 즉각적인 체감 성능을 위해 무거운 URL 쿼리 대신 순수 로컬 상태로 모달을 초고속 제어합니다.
   const [createFlowValue, setCreateFlowValue] = useState<string | null>(null);
   const openCreate = (value: string) => setCreateFlowValue(value);
   const closeCreate = () => setCreateFlowValue(null);
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  
+  const [localViewMode, setLocalViewMode] = useState<'list' | 'grid'>('list');
+  const viewMode = propViewMode !== undefined ? propViewMode : localViewMode;
+  const setViewMode = propSetViewMode !== undefined ? propSetViewMode : setLocalViewMode;
+
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [localFilter, setLocalFilter] = useState('all');
@@ -210,36 +223,7 @@ export default function UniversalFeed({ context, currentUser, profile, activeFil
           </div>
         )}
 
-        {/* ⚡ 프리미엄 피드 한 줄 툴바 (브랜드 글쓰기 프롬프트 + 고급 세그먼티드 뷰 스위치) */}
-        <div className="mx-4 my-3 px-3 py-2 bg-white/95 backdrop-blur-md rounded-3xl border border-slate-100/80 shadow-sm shadow-slate-100/50 flex items-center justify-between gap-3 shrink-0">
 
-
-          {/* 우측: 슬랙/애플 감성의 부드러운 뷰 세그먼트 스위치 */}
-          <div className="flex bg-slate-50/80 p-0.5 rounded-2xl border border-slate-200/20 shrink-0 select-none">
-            <button
-              onClick={() => setViewMode('list')}
-              className={`px-3 py-1.5 rounded-xl flex items-center transition-all active:scale-95 duration-100 ${
-                viewMode === 'list'
-                  ? 'bg-white text-blue-600 shadow-[0_2px_6px_rgba(0,0,0,0.06)] border border-slate-200/40 font-bold scale-[1.01]'
-                  : 'text-slate-400 hover:text-slate-600'
-              }`}
-              title={t('plaza.list_view', 'List View')}
-            >
-              <span className="material-symbols-outlined text-[14px]">format_list_bulleted</span>
-            </button>
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`px-3 py-1.5 rounded-xl flex items-center transition-all active:scale-95 duration-100 ${
-                viewMode === 'grid'
-                  ? 'bg-white text-blue-600 shadow-[0_2px_6px_rgba(0,0,0,0.06)] border border-slate-200/40 font-bold scale-[1.01]'
-                  : 'text-slate-400 hover:text-slate-600'
-              }`}
-              title={t('plaza.board_view', 'Pinterest Board')}
-            >
-              <span className="material-symbols-outlined text-[14px]">dashboard</span>
-            </button>
-          </div>
-        </div>
 
         {/* Feed Posts List */}
         <div className="flex flex-col pb-24 w-full">

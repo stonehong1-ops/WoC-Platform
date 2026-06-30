@@ -109,6 +109,11 @@ export default function UnifiedCheckoutModal({
   const { language, t } = useLanguage();
   
   const [step, setStep] = useState<Step>('summary');
+  const isAndroidApp = typeof window !== 'undefined' && (
+    navigator.userAgent.includes('WOC_ANDROID_APP') || 
+    document.referrer?.includes('android-app://') ||
+    window.location.search.includes('app=true')
+  );
   const [localProcessing, setLocalProcessing] = useState(false);
   const [bookingId, setBookingId] = useState<string>('');
   const [displayOrderNumber, setDisplayOrderNumber] = useState<string>('');
@@ -243,6 +248,16 @@ export default function UnifiedCheckoutModal({
               {subtitle}
             </div>
           )}
+          {isAndroidApp && (
+            <div className="mx-5 my-2 p-3 bg-neutral-50 rounded-xl border border-neutral-100 flex items-start gap-2">
+              <span className="material-symbols-outlined text-[16px] text-neutral-500 mt-0.5">info</span>
+              <p className="text-[10px] text-neutral-500 leading-normal">
+                {language === 'KR' 
+                  ? '본 서비스는 오프라인 공간 대관 및 현장 강습 예약을 위한 신청 서비스입니다.' 
+                  : 'This service is for booking offline venue rentals and on-site training sessions.'}
+              </p>
+            </div>
+          )}
           <div className="flex-1 overflow-y-auto max-h-[60vh] sm:max-h-[75vh] md:max-h-none px-5 py-4">
             {children}
           </div>
@@ -272,6 +287,16 @@ export default function UnifiedCheckoutModal({
     return (
       <BottomSheet isOpen={isOpen} onClose={onClose} title={t('shop.payment_instructions', 'Payment Instructions')} footer={footerContent}>
         <div className="flex-1 overflow-y-auto px-5 py-6 space-y-5 bg-white">
+          {isAndroidApp && (
+            <div className="p-3.5 bg-neutral-50 rounded-2xl border border-neutral-100 flex items-start gap-2">
+              <span className="material-symbols-outlined text-[16px] text-neutral-500 mt-0.5">info</span>
+              <p className="text-[10px] text-neutral-500 leading-normal">
+                {language === 'KR' 
+                  ? '오프라인 현장 서비스 예약을 완료하기 위해 안내된 계좌로 송금해 주십시오.' 
+                  : 'Please transfer to the provided account to complete your reservation for the offline service.'}
+              </p>
+            </div>
+          )}
           {/* Timer */}
           <div className="text-center">
             <div className="inline-flex items-center gap-2 bg-[#fff7ed] border border-[#fed7aa] rounded-2xl px-5 py-3">

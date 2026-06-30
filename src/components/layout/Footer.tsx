@@ -86,6 +86,7 @@ export default function Footer() {
               <NavItem href="/admin/banners" icon="view_carousel" label="BANNERS" active={isActive('/admin/banners')} />
               <NavItem href="/admin/social-radar" icon="radar" label="RADAR" active={isActive('/admin/social-radar')} />
               <NavItem href="/admin/pics" icon="wallpaper" label="PICs" active={isActive('/admin/pics')} />
+              <NavItem href="/admin/lab/rhythm-training/rhythm-wheel" icon="music_note" label="RHYTHM" active={isActive('/admin/lab/rhythm-training/rhythm-wheel')} />
               <a 
                 href="/fys/admin" 
                 target="_blank" 

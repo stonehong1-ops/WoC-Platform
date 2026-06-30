@@ -190,35 +190,35 @@ export function PicsPageContent() {
         `}} />
         
         {/* Row 1: Scrollable Tabs */}
-        <div className="w-full px-3 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar relative z-50">
-          {/* More Filters Chip (맨 왼쪽 배치) */}
+        <div className="w-full px-3 py-2 flex items-center gap-4 overflow-x-auto no-scrollbar relative z-50">
+          {/* More Filters Trigger (tune icon) */}
           <button
             onClick={() => openFilters()}
-            className={`flex-shrink-0 px-2.5 py-1.5 rounded-xl text-[12px] font-bold tracking-tight transition-all whitespace-nowrap border flex items-center gap-1 ${
+            className={`flex items-center gap-0.5 text-[12px] font-bold transition-all shrink-0 ${
               isAnyFilterActive
-                ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-100'
-                : 'bg-slate-50/50 text-slate-500 border-slate-100 hover:bg-slate-100/80'
+                ? 'text-blue-600'
+                : 'text-slate-600 hover:text-slate-800'
             }`}
           >
-            <span className="material-symbols-outlined !text-[16px] flex items-center justify-center">tune</span>
+            <span className="material-symbols-outlined text-[16px] flex items-center">tune</span>
             <span>{t('pics.more_filters')}</span>
             {isAnyFilterActive && (
-              <span className="bg-white text-blue-600 rounded-full w-4 h-4 flex items-center justify-center text-[9px] font-black ml-0.5">
+              <span className="bg-blue-50 text-blue-600 px-1 py-0.5 rounded-md text-[10px] font-bold ml-0.5">
                 {activeFiltersCount}
               </span>
             )}
           </button>
 
           {/* 세련된 세로 구분선 */}
-          <div className="h-6 w-[1px] bg-slate-100 mx-1 shrink-0" />
+          <div className="h-4 w-[1px] bg-slate-100 mx-0.5 shrink-0" />
 
-          {/* Mood Chip */}
+          {/* Mood Filter */}
           <button
             onClick={() => setActiveBottomSheet('mood')}
-            className={`flex-shrink-0 px-2.5 py-1.5 rounded-xl text-[12px] font-bold tracking-tight transition-all whitespace-nowrap border flex items-center gap-1 ${
+            className={`flex items-center gap-0.5 text-[12px] font-bold transition-all shrink-0 ${
               activeMood !== 'All'
-                ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-100'
-                : 'bg-slate-50/50 text-slate-500 border-slate-100 hover:bg-slate-100/80'
+                ? 'text-blue-600'
+                : 'text-slate-600 hover:text-slate-800'
             }`}
           >
             <span>{activeMood !== 'All' ? t(`pics.mood.${activeMood}`) : t('pics.filter.mood')}</span>
@@ -228,22 +228,22 @@ export function PicsPageContent() {
                   e.stopPropagation();
                   setActiveMood('All');
                 }}
-                className="material-symbols-outlined !text-[14px] hover:text-blue-200 flex items-center justify-center ml-0.5"
+                className="material-symbols-outlined text-[16px] ml-0.5 hover:text-blue-800"
               >
                 close
               </span>
             ) : (
-              <span className="material-symbols-outlined !text-[14px] opacity-60 flex items-center justify-center">arrow_drop_down</span>
+              <span className="material-symbols-outlined text-[16px]">expand_more</span>
             )}
           </button>
 
-          {/* Activity Chip */}
+          {/* Activity Filter */}
           <button
             onClick={() => setActiveBottomSheet('activity')}
-            className={`flex-shrink-0 px-2.5 py-1.5 rounded-xl text-[12px] font-bold tracking-tight transition-all whitespace-nowrap border flex items-center gap-1 ${
+            className={`flex items-center gap-0.5 text-[12px] font-bold transition-all shrink-0 ${
               activeActivity !== 'All'
-                ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-100'
-                : 'bg-slate-50/50 text-slate-500 border-slate-100 hover:bg-slate-100/80'
+                ? 'text-blue-600'
+                : 'text-slate-600 hover:text-slate-800'
             }`}
           >
             <span>{activeActivity !== 'All' ? t(`pics.activity.${activeActivity}`) : t('pics.filter.activity')}</span>
@@ -253,22 +253,22 @@ export function PicsPageContent() {
                   e.stopPropagation();
                   setActiveActivity('All');
                 }}
-                className="material-symbols-outlined !text-[14px] hover:text-blue-200 flex items-center justify-center ml-0.5"
+                className="material-symbols-outlined text-[16px] ml-0.5 hover:text-blue-800"
               >
                 close
               </span>
             ) : (
-              <span className="material-symbols-outlined !text-[14px] opacity-60 flex items-center justify-center">arrow_drop_down</span>
+              <span className="material-symbols-outlined text-[16px]">expand_more</span>
             )}
           </button>
 
-          {/* Season Chip */}
+          {/* Season Filter */}
           <button
             onClick={() => setActiveBottomSheet('season')}
-            className={`flex-shrink-0 px-2.5 py-1.5 rounded-xl text-[12px] font-bold tracking-tight transition-all whitespace-nowrap border flex items-center gap-1 ${
+            className={`flex items-center gap-0.5 text-[12px] font-bold transition-all shrink-0 ${
               activeSeason !== 'All'
-                ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-100'
-                : 'bg-slate-50/50 text-slate-500 border-slate-100 hover:bg-slate-100/80'
+                ? 'text-blue-600'
+                : 'text-slate-600 hover:text-slate-800'
             }`}
           >
             <span>{activeSeason !== 'All' ? t(`pics.season.${activeSeason}`) : t('pics.filter.season')}</span>
@@ -278,22 +278,22 @@ export function PicsPageContent() {
                   e.stopPropagation();
                   setActiveSeason('All');
                 }}
-                className="material-symbols-outlined !text-[14px] hover:text-blue-200 flex items-center justify-center ml-0.5"
+                className="material-symbols-outlined text-[16px] ml-0.5 hover:text-blue-800"
               >
                 close
               </span>
             ) : (
-              <span className="material-symbols-outlined !text-[14px] opacity-60 flex items-center justify-center">arrow_drop_down</span>
+              <span className="material-symbols-outlined text-[16px]">expand_more</span>
             )}
           </button>
 
-          {/* Time Chip */}
+          {/* Time Filter */}
           <button
             onClick={() => setActiveBottomSheet('time')}
-            className={`flex-shrink-0 px-2.5 py-1.5 rounded-xl text-[12px] font-bold tracking-tight transition-all whitespace-nowrap border flex items-center gap-1 ${
+            className={`flex items-center gap-0.5 text-[12px] font-bold transition-all shrink-0 ${
               activeTime !== 'All'
-                ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-100'
-                : 'bg-slate-50/50 text-slate-500 border-slate-100 hover:bg-slate-100/80'
+                ? 'text-blue-600'
+                : 'text-slate-600 hover:text-slate-800'
             }`}
           >
             <span>{activeTime !== 'All' ? t(`pics.time.${activeTime}`) : t('pics.filter.time')}</span>
@@ -303,12 +303,12 @@ export function PicsPageContent() {
                   e.stopPropagation();
                   setActiveTime('All');
                 }}
-                className="material-symbols-outlined !text-[14px] hover:text-blue-200 flex items-center justify-center ml-0.5"
+                className="material-symbols-outlined text-[16px] ml-0.5 hover:text-blue-800"
               >
                 close
               </span>
             ) : (
-              <span className="material-symbols-outlined !text-[14px] opacity-60 flex items-center justify-center">arrow_drop_down</span>
+              <span className="material-symbols-outlined text-[16px]">expand_more</span>
             )}
           </button>
         </div>

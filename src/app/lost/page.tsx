@@ -145,7 +145,7 @@ function LostFoundPageContent() {
   // Teleport Filter Bar to Header (Dual Line Standard)
   useEffect(() => {
     const filterBar = (
-      <div className="w-full bg-white border-b border-slate-100/50 px-3 py-2 flex flex-col gap-3">
+      <div className="w-full bg-white px-3 py-2 flex flex-col gap-3">
         {/* Row 1: Type Filters */}
         <div className="w-full flex items-center justify-start gap-1.5 overflow-x-auto no-scrollbar">
           {lfFilters.map((tab) => (
@@ -155,10 +155,10 @@ function LostFoundPageContent() {
                 setActiveFilter(tab.key);
                 window.scrollTo({ top: 0, behavior: 'instant' });
               }}
-              className={`flex-shrink-0 px-4 py-1.5 rounded-lg text-[12px] font-bold tracking-tight transition-all whitespace-nowrap flex items-center gap-1.5 ${
+              className={`flex-shrink-0 px-2.5 py-1 rounded-xl text-[12px] font-bold tracking-tight transition-all whitespace-nowrap flex items-center gap-1.5 border ${
                 activeFilter === tab.key
-                   ? 'bg-[#1E293B] text-white shadow-sm'
-                  : 'bg-slate-50 text-slate-500 border border-slate-100 hover:bg-slate-100'
+                   ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-100'
+                  : 'bg-slate-50/50 text-slate-500 border-slate-100 hover:bg-slate-100/80'
               }`}
             >
               {tab.label}

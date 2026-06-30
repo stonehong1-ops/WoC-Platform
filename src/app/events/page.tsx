@@ -290,7 +290,7 @@ export default function EventsPage() {
     const filterBar = (
       <div className="relative w-full bg-white flex flex-col shadow-[0_20px_40px_-15px_rgba(0,0,0,0.15)] z-30">
         {/* Row 1: Scrollable Tabs */}
-        <div className="w-full px-3 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar border-b border-slate-100/50">
+        <div className="w-full px-3 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
           {[
             { id: 'calendar', label: t('event.tab_calendar') },
             { id: 'upcoming', label: t('event.tab_upcoming') },
