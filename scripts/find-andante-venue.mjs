@@ -24,8 +24,7 @@ async function findVenue() {
     const data = d.data();
     const name = (data.name || '').toLowerCase();
     const nameKo = (data.nameKo || '').toLowerCase();
-    const address = (data.address || '').toLowerCase();
-    if (name.includes('andante') || nameKo.includes('안단테') || address.includes('양화로')) {
+    if (name.includes('andante') || nameKo.includes('안단테')) {
       console.log(`FOUND VENUE: id=${d.id}, name=${data.name}, nameKo=${data.nameKo}, address=${data.address}`);
       found = true;
     }
