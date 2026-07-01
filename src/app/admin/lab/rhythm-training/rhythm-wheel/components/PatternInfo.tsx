@@ -11,19 +11,19 @@ export default function PatternInfo({ pattern, activeMode }: PatternInfoProps) {
     switch (difficulty) {
       case "basic":
         return (
-          <span className="bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full">
+          <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-black px-2.5 py-0.5 rounded-full">
             기초 (Basic)
           </span>
         );
       case "intermediate":
         return (
-          <span className="bg-amber-600/20 text-amber-400 border border-amber-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full">
+          <span className="bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-black px-2.5 py-0.5 rounded-full">
             중급 (Intermediate)
           </span>
         );
       case "advanced":
         return (
-          <span className="bg-rose-600/20 text-rose-400 border border-rose-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full">
+          <span className="bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-black px-2.5 py-0.5 rounded-full">
             상급 (Advanced)
           </span>
         );
@@ -53,14 +53,14 @@ export default function PatternInfo({ pattern, activeMode }: PatternInfoProps) {
   };
 
   return (
-    <div className="bg-[#1f2235] p-5 rounded-3xl border border-[#2f3452] space-y-4">
+    <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.04)] space-y-4 w-full">
       {/* 패턴 헤더 영역 */}
-      <div className="flex items-center justify-between border-b border-[#2d324d] pb-3">
+      <div className="flex items-center justify-between border-b border-slate-100 pb-3">
         <div>
-          <span className="text-[11px] font-bold text-gray-500 uppercase tracking-widest block mb-0.5">
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-0.5">
             Selected Pattern
           </span>
-          <h2 className="text-[20px] font-black text-white leading-none">
+          <h2 className="text-[18px] font-black text-slate-800 leading-none">
             패턴 {pattern.displayLabel}
           </h2>
         </div>
@@ -70,30 +70,30 @@ export default function PatternInfo({ pattern, activeMode }: PatternInfoProps) {
       {/* 패턴 세부 정보 */}
       <div className="space-y-3">
         <div>
-          <h4 className="text-[12px] font-bold text-gray-400 mb-1">패턴 해설</h4>
-          <p className="text-[13px] text-gray-300 leading-relaxed">
+          <h4 className="text-[11px] font-black text-slate-400 mb-1">패턴 해설</h4>
+          <p className="text-[13px] text-slate-600 leading-relaxed">
             {pattern.description || "이 리듬은 풋워크 정교함을 훈련하기 위한 비프 템플릿입니다."}
           </p>
         </div>
 
         <div>
-          <h4 className="text-[12px] font-bold text-gray-400 mb-1">풋워크 팁</h4>
-          <p className="text-[13px] text-orange-300 leading-relaxed font-semibold">
+          <h4 className="text-[11px] font-black text-slate-400 mb-1">풋워크 팁</h4>
+          <p className="text-[13px] text-indigo-600 leading-relaxed font-bold">
             {pattern.footworkHint || "정박과 어박의 교차 훈련을 적극 권장합니다."}
           </p>
         </div>
 
         {/* 훈련 모드 연계 가이드 */}
-        <div className="bg-[#151724] p-3.5 rounded-2xl border border-[#23273d]">
+        <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/40">
           <div className="flex items-center gap-1.5 mb-1.5">
-            <span className="material-symbols-outlined text-[16px] text-indigo-400">
+            <span className="material-symbols-outlined text-[16px] text-indigo-600 font-bold">
               sports_gymnastics
             </span>
-            <span className="text-[12px] font-black text-indigo-300">
+            <span className="text-[11px] font-black text-indigo-600">
               {activeMode} 모드 훈련 가이드
             </span>
           </div>
-          <p className="text-[12px] text-gray-400 leading-relaxed">
+          <p className="text-[12px] text-slate-500 leading-relaxed">
             {getCombinedDrillAdvice(activeMode)}
           </p>
         </div>

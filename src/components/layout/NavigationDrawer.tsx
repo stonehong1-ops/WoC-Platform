@@ -250,6 +250,7 @@ export default function NavigationDrawer() {
                 {[
                   { icon: 'checkroom', label: t('nav.ai_tryon'), href: '/profile/ai-tryon' },
                   { icon: 'smart_display', label: t('nav.ai_lesson'), href: '/lab/lesson' },
+                  { icon: 'music_note', label: t('nav.rhythm_training'), href: '/profile/ai-tryon?tab=rhythm' },
                   { icon: 'handshake', label: t('nav.partner_match'), href: '#', soon: true },
                 ].map((item) => (
                   <Link key={item.label} href={item.href} onClick={(e) => { if (item.soon) { e.preventDefault(); } closeDrawer(); }} className={`flex items-center gap-4 px-5 py-2.5 text-on-surface/60 hover:bg-on-surface/[0.03] hover:text-on-surface rounded-2xl font-bold transition-all text-left ${item.soon ? 'opacity-40' : ''}`}>

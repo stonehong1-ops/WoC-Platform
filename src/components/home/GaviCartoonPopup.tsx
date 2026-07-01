@@ -80,6 +80,8 @@ export default function GaviCartoonPopup({ onClose }: GaviCartoonPopupProps) {
         const cat = c.category || 'imagination';
         return cat === selectedCategory;
       });
+      // Sort by episodeNumber desc (latest episode first)
+      filtered.sort((a, b) => (b.episodeNumber || 0) - (a.episodeNumber || 0));
       setCartoons(filtered as Cartoon[]);
       if (filtered.length > 0) {
         setCurrentIndex(0); // Latest first

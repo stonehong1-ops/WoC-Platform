@@ -5,13 +5,12 @@ import Script from 'next/script';
 import GaviCartoonPopup from '@/components/home/GaviCartoonPopup';
 import EventViewer from '@/components/events/EventViewer';
 import UserProfilePopup from '@/components/profile/UserProfilePopup';
+import ActivitySpotlight from '@/components/home/ActivitySpotlight';
 import { eventService } from '@/lib/firebase/eventService';
-import { galleryService, GalleryPost } from '@/lib/firebase/galleryService';
-import { plazaService, Post as PlazaPost } from '@/lib/firebase/plazaService';
 import { userService } from '@/lib/firebase/userService';
 import { venueService } from '@/lib/firebase/venueService';
 import { db } from '@/lib/firebase/clientApp';
-import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { Event as EventType } from '@/types/event';
 import { PlatformUser } from '@/types/user';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -49,20 +48,35 @@ export default function SocietyPage() {
     }
   };
 
+  const getEventDateString = (evt?: EventType | null) => {
+    const target = evt || heroEvent;
+    if (!target || !target.startDate) return "2025. 8. 29(금) ~ 9. 1(월)";
+    const start = typeof target.startDate.toDate === 'function' ? target.startDate.toDate() : new Date(target.startDate as any);
+    const startStr = `${start.getFullYear()}. ${start.getMonth() + 1}. ${start.getDate()}(${['일', '월', '화', '수', '목', '금', '토'][start.getDay()]})`;
+    if (target.endDate) {
+      const end = typeof target.endDate.toDate === 'function' ? target.endDate.toDate() : new Date(target.endDate as any);
+      const endStr = start.getFullYear() === end.getFullYear()
+        ? `${end.getMonth() + 1}. ${end.getDate()}(${['일', '월', '화', '수', '목', '금', '토'][end.getDay()]})`
+        : `${end.getFullYear()}. ${end.getMonth() + 1}. ${end.getDate()}(${['일', '월', '화', '수', '목', '금', '토'][end.getDay()]})`;
+      return `${startStr} ~ ${endStr}`;
+    }
+    return startStr;
+  };
+
   const [isCartoonsOpen, setIsCartoonsOpen] = useState(false);
   const [twReady, setTwReady] = useState(false);
   const [heroEvent, setHeroEvent] = useState<EventType | null>(null);
+  const [heroEvents, setHeroEvents] = useState<EventType[]>([]);
+  const [selectedEvent, setSelectedEvent] = useState<EventType | null>(null);
+  const [activeDotIndex, setActiveDotIndex] = useState(0);
   const [isEventDetailOpen, setIsEventDetailOpen] = useState(false);
-  const [livePosts, setLivePosts] = useState<GalleryPost[]>([]);
-  const [topPlazaPosts, setTopPlazaPosts] = useState<PlazaPost[]>([]);
   const [featuredUsers, setFeaturedUsers] = useState<PlatformUser[]>([]);
-  const [isAcrossWorldOpen, setIsAcrossWorldOpen] = useState(false);
-  const [isFeelMomentOpen, setIsFeelMomentOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [translations, setTranslations] = useState<Record<string, string>>({});
-  const [translatingIds, setTranslatingIds] = useState<Set<string>>(new Set());
   const [isSafeFloorOpen, setIsSafeFloorOpen] = useState(false);
   const [comingSoonCard, setComingSoonCard] = useState<{title: string; icon: string; desc: string} | null>(null);
+  const [isAboutOpen, setIsAboutOpen] = useState(false);
+  const [isTermsOpen, setIsTermsOpen] = useState(false);
+  const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
 
   const [societyId, setSocietyId] = useState('tango');
   const [totalMembers, setTotalMembers] = useState<number>(2184);
@@ -83,46 +97,49 @@ export default function SocietyPage() {
 
   const societyInfo = societiesData.find((s: any) => s.id === societyId) || societiesData[0];
 
-  // Fetch nearest upcoming or ongoing event for Hero (society-aware)
+  // Fetch up to 5 events for Hero Slider (society-aware)
   useEffect(() => {
-    eventService.getHeroEvent(societyId).then((event) => {
-      if (event) setHeroEvent(event);
-    }).catch(console.error);
+    const fetchEvents = async () => {
+      try {
+        const q = query(
+          collection(db, 'events'),
+          orderBy('startDate', 'desc'),
+          limit(30)
+        );
+        const snap = await getDocs(q);
+        const allEvents = snap.docs.map(doc => {
+          const data = doc.data();
+          return { id: doc.id, ...data } as unknown as EventType;
+        });
+        const filtered = allEvents.filter(e => {
+          if (societyId === 'tango') return !e.societyId || e.societyId === 'tango';
+          return e.societyId === societyId;
+        });
+        const slice = filtered.slice(0, 5);
+        setHeroEvents(slice);
+        if (slice.length > 0) {
+          setHeroEvent(slice[0]);
+        }
+      } catch (err) {
+        console.error('Error fetching hero events:', err);
+      }
+    };
+    fetchEvents();
   }, [societyId]);
 
-  // Fetch gallery posts for "Live in Seoul"
+  // Slider dot track
   useEffect(() => {
-    const unsub = galleryService.subscribeFeed((posts) => {
-      setLivePosts(posts.slice(0, 3));
-    });
-    return () => unsub();
-  }, []);
-
-  // Fetch admin-selected featured plaza posts for "Stories from Seoul"
-  useEffect(() => {
-    async function fetchFeaturedPosts() {
-      try {
-        const bannerDoc = await getDoc(doc(db, 'settings', 'banners'));
-        if (bannerDoc.exists() && bannerDoc.data().featuredPlazaPostIds) {
-          const ids = bannerDoc.data().featuredPlazaPostIds as string[];
-          if (ids.length > 0) {
-            const posts = await plazaService.getPostsByIds(ids);
-            setTopPlazaPosts(posts);
-            return;
-          }
-        }
-        // Fallback: if no admin selection, use top liked posts
-        const unsub = plazaService.subscribePosts((posts) => {
-          const sorted = [...posts].sort((a, b) => (b.likes || 0) - (a.likes || 0));
-          setTopPlazaPosts(sorted.slice(0, 2));
-        });
-        return () => unsub();
-      } catch (error) {
-        console.error('Error fetching featured posts:', error);
+    const slider = document.getElementById('hero-slider');
+    if (!slider) return;
+    const handleScroll = () => {
+      if (slider.offsetWidth > 0) {
+        const index = Math.round(slider.scrollLeft / slider.offsetWidth);
+        setActiveDotIndex(index);
       }
-    }
-    fetchFeaturedPosts();
-  }, []);
+    };
+    slider.addEventListener('scroll', handleScroll, { passive: true });
+    return () => slider.removeEventListener('scroll', handleScroll);
+  }, [heroEvents]);
 
   // Fetch featured users (instructors)
   useEffect(() => {
@@ -371,343 +388,199 @@ export default function SocietyPage() {
           </div>
         )}
 
-        {/* Hero (Global) — Nearest Upcoming Event */}
-        {!heroEvent ? (
-          <section className="relative w-full aspect-[3/4] md:max-h-[700px] md:w-auto md:mx-auto overflow-hidden flex items-end bg-gradient-to-b from-[#1e1b20] to-[#121114] animate-pulse">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom,_rgba(255,255,255,0.03),_transparent)]"></div>
-            <div className="relative z-10 max-w-7xl mx-auto px-page_margin pb-section_gap w-full space-y-4">
-              <div className="h-6 w-24 bg-white/10 rounded-lg"></div>
-              <div className="h-10 w-2/3 bg-white/10 rounded-lg"></div>
-              <div className="h-14 w-5/6 bg-white/10 rounded-lg"></div>
-              <div className="h-12 w-32 bg-[#004190]/30 rounded"></div>
-            </div>
-          </section>
-        ) : (
-          <section className="relative w-full aspect-[3/4] md:max-h-[700px] md:w-auto md:mx-auto overflow-hidden flex items-end">
-            <div className="absolute inset-0 z-0">
-              {heroEvent.imageUrl && (
-                <img alt={heroEvent.title} className="w-full h-full object-cover animate-in fade-in duration-500" src={heroEvent.imageUrl}/>
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
-            </div>
-            <div className="relative z-10 max-w-7xl mx-auto px-page_margin pb-section_gap w-full">
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <span className="bg-primary text-white px-3 py-1 rounded-lg font-label-md text-label-md mb-element_gap inline-block">
-                  {heroEvent.startDate
-                    ? formatDate(typeof heroEvent.startDate.toDate === 'function' ? heroEvent.startDate.toDate() : new Date(heroEvent.startDate as any), 'dateOnly')
-                    : t('home.hero_upcoming')}
-                </span>
-                <h1 className="font-body-lg text-body-lg md:font-title-lg md:text-title-lg text-white mb-4">
-                  {language === 'KR' && heroEvent.titleNative ? heroEvent.titleNative : heroEvent.title}
-                </h1>
-                <p className="font-label-md text-label-md text-white/90 max-w-2xl mb-8 line-clamp-3">{heroEvent.description}</p>
-                <button
-                  className="bg-primary text-white font-label-md text-label-md py-4 px-10 rounded shadow-lg hover:opacity-90 transition-opacity"
-                  onClick={() => setIsEventDetailOpen(true)}
-                >{t('home.hero_explore')}</button>
-              </div>
-            </div>
-          </section>
-        )}
+        {/* Hero (Global) — Event Slider */}
+        <section className="relative w-full aspect-[2.35/1] min-h-[300px] md:max-h-[500px] overflow-hidden">
+          <div 
+            id="hero-slider"
+            className="w-full h-full flex overflow-x-auto snap-x snap-mandatory scroll-smooth hide-scrollbar"
+          >
+            {heroEvents.length > 0 ? (
+              heroEvents.map((evt, idx) => (
+                <div key={evt.id} className="w-full h-full flex-shrink-0 snap-start relative flex items-end">
+                  <div className="absolute inset-0 z-0">
+                    <img 
+                      alt={evt.title} 
+                      className="w-full h-full object-cover" 
+                      src={evt.imageUrl || "/slide4_bg_cinematic.jpg"}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent"></div>
+                  </div>
+                  <div className="relative z-10 max-w-7xl mx-auto px-page_margin pb-8 md:pb-10 w-full">
+                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 text-left text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.85)]">
+                      <span className="bg-[#6750A4] text-white text-[10px] font-black tracking-widest px-2.5 py-0.5 rounded-full mb-3 inline-block uppercase drop-shadow-none">
+                        EVENT
+                      </span>
+                      <h1 className="text-white font-headline text-xl md:text-3xl font-black tracking-tight mb-2.5 uppercase leading-tight line-clamp-1">
+                        {language === 'KR' && evt.titleNative ? evt.titleNative : evt.title}
+                      </h1>
+                      
+                      {/* Event Meta rows */}
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs md:text-sm text-white/95 mb-4">
+                        <div className="flex items-center gap-1.5">
+                          <span className="material-symbols-outlined text-[16px] text-white/70">calendar_today</span>
+                          <span>{getEventDateString(evt)}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="material-symbols-outlined text-[16px] text-white/70">location_on</span>
+                          <span>{evt.venueName || evt.location || "서울"}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="material-symbols-outlined text-[16px] text-white/70">person</span>
+                          <span>{language === 'KR' && evt.hostNameNative ? evt.hostNameNative : evt.hostName}</span>
+                        </div>
+                      </div>
 
-        <main className="max-w-7xl mx-auto px-page_margin py-section_gap space-y-section_gap">
-          {/* Live Near You (Local) — Gallery Posts */}
-          <section>
-            <div className="flex items-center justify-between mb-element_gap">
-              <h2 className="font-title-lg text-title-lg font-bold">{t('home.live_in_seoul')}</h2>
-              <a className="text-primary font-label-md text-label-md flex items-center gap-1" href="/live">{t('home.view_all')} <span className="material-symbols-outlined">arrow_forward</span></a>
-            </div>
-            <div className="flex gap-element_gap overflow-x-auto hide-scrollbar pb-4 -mx-page_margin px-page_margin md:mx-0 md:px-0">
-              {livePosts.length > 0 ? livePosts.map((post) => (
-                <div key={post.id} className="min-w-[280px] md:min-w-[320px] bg-surface-container-lowest rounded-xl border border-outline/10 overflow-hidden group cursor-pointer" onClick={() => window.location.href = '/live'}>
-                  <div className="relative h-48">
-                    {post.media?.[0] && (post.mediaTypes?.[0] === 'video' ? (
-                      <video className="w-full h-full object-cover" src={post.media[0]} muted />
-                    ) : (
-                      <img alt={post.caption} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" src={post.media[0]}/>
-                    ))}
-                    <span className="absolute top-3 left-3 bg-error text-white font-label-sm text-label-sm px-2 py-0.5 rounded-lg flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span> LIVE
+                      <button
+                        className="bg-[#6750A4] text-white font-bold py-2 px-5 rounded-full shadow-lg hover:bg-[#5a4393] transition-colors text-xs active:scale-95 drop-shadow-none"
+                        onClick={() => {
+                          setSelectedEvent(evt);
+                          setIsEventDetailOpen(true);
+                        }}
+                      >
+                        참여하기
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              // Default Fallback Slide
+              <div className="w-full h-full flex-shrink-0 snap-start relative flex items-end">
+                <div className="absolute inset-0 z-0">
+                  <img 
+                    alt="Seoul Tango Festival 2025" 
+                    className="w-full h-full object-cover" 
+                    src="/slide4_bg_cinematic.jpg"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent"></div>
+                </div>
+                <div className="relative z-10 max-w-7xl mx-auto px-page_margin pb-8 md:pb-10 w-full">
+                  <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 text-left text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.85)]">
+                    <span className="bg-[#6750A4] text-white text-[10px] font-black tracking-widest px-2.5 py-0.5 rounded-full mb-3 inline-block uppercase drop-shadow-none">
+                      EVENT
                     </span>
-                  </div>
-                  <div className="p-4">
-                    <p className="text-outline font-label-sm text-label-sm uppercase tracking-wider mb-1">{post.venueName || 'Gallery'} &bull; {post.eventName || 'Seoul'}</p>
-                    <h3 className="font-title-lg text-title-lg mb-2 line-clamp-1">{post.caption || 'Untitled'}</h3>
-                    <div className="flex items-center text-on-surface-variant font-label-md text-label-md gap-2">
-                      <span className="material-symbols-outlined text-[18px]">person</span>
-                      {post.authorName}
+                    <h1 className="text-white font-headline text-xl md:text-3xl font-black tracking-tight mb-2.5 uppercase leading-tight">
+                      SEOUL TANGO FESTIVAL 2025
+                    </h1>
+                    
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs md:text-sm text-white/95 mb-4">
+                      <div className="flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-[16px] text-white/70">calendar_today</span>
+                        <span>2025. 8. 29(금) ~ 9. 1(월)</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-[16px] text-white/70">location_on</span>
+                        <span>서울</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-[16px] text-white/70">person</span>
+                        <span>Seoul Tango Committee</span>
+                      </div>
                     </div>
-                    <div className="mt-2 text-on-surface-variant font-label-sm text-label-sm flex items-center gap-3">
-                      <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[16px]">favorite</span> {post.likesCount}</span>
-                      <span className="flex items-center gap-1"><span className="material-symbols-outlined text-[16px]">chat_bubble</span> {post.commentsCount}</span>
-                    </div>
-                  </div>
-                </div>
-              )) : (
-                <div className="min-w-[280px] md:min-w-[320px] bg-surface-container-lowest rounded-xl border border-outline/10 overflow-hidden p-6 text-center">
-                  <span className="material-symbols-outlined text-[40px] text-outline/40 mb-2">photo_camera</span>
-                  <p className="font-body-md text-on-surface-variant">{t('home.no_live_posts')}</p>
-                  <a href="/live" className="text-primary font-label-md text-label-md mt-2 inline-block">{t('home.go_to_live')}</a>
-                </div>
-              )}
-            </div>
-          </section>
 
-          {/* Local Stories — Top Plaza Posts */}
-          <section>
-            <h2 className="font-title-lg text-title-lg font-bold mb-element_gap">{t('home.stories_from_seoul')}</h2>
-            <div className="space-y-6">
-              {topPlazaPosts.map((post) => (
-                <div key={post.id} className="flex flex-col p-6 bg-surface-container-low rounded-xl border border-transparent hover:border-outline/5 transition-colors cursor-pointer" onClick={() => window.location.href = '/plaza'}>
-                  {/* Header */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-[12px] overflow-hidden flex-shrink-0">
-                        <img alt={post.userName} className="w-full h-full object-cover" src={post.userPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(post.userName)}&background=6750a4&color=fff`}/>
-                      </div>
-                      <div className="flex flex-col">
-                        <h4 className="font-title-lg text-title-lg font-bold text-on-surface">{post.userName}</h4>
-                        <p className="text-outline font-label-sm text-label-sm mt-0.5">
-                          {post.createdAt ? (() => { try { const d = typeof post.createdAt.toDate === 'function' ? post.createdAt.toDate() : new Date(post.createdAt as any); const diff = Math.floor((Date.now() - d.getTime()) / 3600000); return diff < 24 ? formatRelativeTime(d) : formatDate(d, 'shortMonthDay'); } catch { return ''; } })() : ''}
-                          {(post as any).venueName ? ` • ${(post as any).venueName}` : ''}
-                        </p>
-                      </div>
-                    </div>
-                    <button 
-                      className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-primary/10 transition-colors" 
-                      title={translations[post.id] ? 'Show Original' : 'Translate'}
-                      onClick={async (e) => { 
-                        e.stopPropagation(); 
-                        if (translations[post.id]) {
-                          const newTrans = { ...translations };
-                          delete newTrans[post.id];
-                          setTranslations(newTrans);
-                          return;
-                        }
-                        setTranslatingIds(prev => new Set(prev).add(post.id));
-                        try {
-                          const targetLang = language === 'KR' ? 'en' : 'ko';
-                          const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(post.content)}`);
-                          const data = await res.json();
-                          const translatedText = data[0].map((item: any) => item[0]).join('');
-                          setTranslations(prev => ({ ...prev, [post.id]: translatedText }));
-                        } catch (err) {
-                          console.error('Translation failed', err);
-                        } finally {
-                          setTranslatingIds(prev => {
-                            const next = new Set(prev);
-                            next.delete(post.id);
-                            return next;
-                          });
-                        }
-                      }}
+                    <button
+                      className="bg-[#6750A4] text-white font-bold py-2 px-5 rounded-full shadow-lg hover:bg-[#5a4393] transition-colors text-xs active:scale-95 drop-shadow-none"
+                      onClick={() => setComingSoonCard({ title: 'Seoul Tango Festival 2025', icon: 'celebration', desc: '서울 탱고 페스티벌 2025 세부 정보가 곧 공개됩니다.' })}
                     >
-                      <span className={`material-symbols-outlined text-[20px] ${translations[post.id] ? 'text-primary' : 'text-outline'} ${translatingIds.has(post.id) ? 'animate-spin' : ''}`}
-                        style={{ fontVariationSettings: translations[post.id] ? "'FILL' 1" : "'FILL' 0" }}
-                      >language</span>
+                      참여하기
                     </button>
                   </div>
-                  
-                  {/* Content */}
-                  <p className="font-body-md text-on-surface leading-[1.6] mb-5">
-                    {translations[post.id] || post.content}
-                  </p>
-                  {translations[post.id] && (
-                    <p className="text-outline font-label-sm text-label-sm mb-3 flex items-center gap-1">
-                      <span className="material-symbols-outlined text-[14px]">g_translate</span>
-                      Translated
-                    </p>
-                  )}
-                  {translatingIds.has(post.id) && (
-                    <p className="text-outline font-label-sm text-label-sm mb-3 animate-pulse">Translating...</p>
-                  )}
-                  
-                  {post.images && post.images.length > 0 && (
-                    <div className="mb-5 flex gap-2 overflow-hidden rounded-lg">
-                      {post.images.slice(0, 2).map((img, i) => (
-                        <img key={i} alt="" className="h-32 w-auto rounded-lg object-cover" src={img}/>
-                      ))}
-                    </div>
-                  )}
+                </div>
+              </div>
+            )}
+          </div>
 
-                  {/* Footer Stats */}
-                  <div className="flex items-center gap-4">
-                    <span className="flex items-center gap-1.5 text-on-surface-variant font-body-md text-body-md">
-                      <span className="material-symbols-outlined text-[22px]">favorite</span> {post.likes || 0}
-                    </span>
-                    <span className="flex items-center gap-1.5 text-on-surface-variant font-body-md text-body-md">
-                      <span className="material-symbols-outlined text-[22px]">chat_bubble</span> {post.commentsCount || 0}
-                    </span>
-                  </div>
-                  
-                  {/* Location */}
-                  {post.location && (
-                    <div className="mt-5 text-outline font-body-md text-body-md">
-                      {typeof post.location === 'string'
-                        ? post.location
-                        : `${post.location.city || ''}${post.location.city && post.location.country ? ', ' : ''}${post.location.country || ''}`}
-                    </div>
-                  )}
-                </div>
-              ))}
-              {topPlazaPosts.length === 0 && (
-                <div className="p-6 bg-surface-container-low rounded-xl border border-outline/5 text-center">
-                  <p className="font-body-md text-on-surface-variant">{t('home.no_stories_yet')}<a href="/plaza" className="text-primary">{t('home.visit_plaza')}</a></p>
-                </div>
-              )}
-            </div>
-          </section>
+          {/* Slider Indicator Dots */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10">
+            {Array.from({ length: Math.max(heroEvents.length, 1) }).map((_, i) => (
+              <span 
+                key={i} 
+                className={`w-2 h-2 rounded-full transition-all duration-300 ${activeDotIndex === i ? 'bg-white w-2.5 h-2.5' : 'bg-white/40'}`}
+              ></span>
+            ))}
+          </div>
+        </section>
 
-          {/* Global Pulse — Across the World */}
-          <section>
-            <div className="flex items-center justify-between mb-element_gap">
-              <h2 className="font-title-lg text-title-lg font-bold">{t('home.across_world')}</h2>
-              <span className="text-outline font-label-md text-label-md">{t('home.global_updates')}</span>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="relative h-40 rounded-xl overflow-hidden group cursor-pointer" onClick={() => setIsAcrossWorldOpen(true)}>
-                <img alt="Buenos Aires" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAL8_eb7RxUztaKg1iYMdo3q77YGWy1m_oxA_Zk-jiXi0SDDCGmJoDIEYxhkmvzYc_swmcnJfdzEqLezzs-D_coZquzaP0_w7g2m3ODHelgVYhg8AqreHqxY7S_tmk4ulK-CPHzTCxKcALUmB8M9Tu_UE0Z7uiJHgD2EZk97puJQqwgPSUjNgXl6-ImWyck5U93i6oKSflXi-IoHfnmHP3C-ps29F2auOqAhRJu8zFT5cOpMLgOlTOtJI2y_2rOSRkCTP8tVShbgpk"/>
-                <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                  <h3 className="text-white font-title-lg text-title-lg">Buenos Aires is on Fire &#128293;</h3>
-                </div>
-              </div>
-              <div className="relative h-40 rounded-xl overflow-hidden group cursor-pointer" onClick={() => setIsAcrossWorldOpen(true)}>
-                <img alt="Tokyo" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB_PuFu-FYsRTEwlJKgLRpRwV8GW2zO0eJqhgoDIKKO_3dXh31X4aR7QJrpe2s_AOZwE8S4i-YGt91e4knOnOmSEcivrakJvkA986KXr_37iOamX63DpBgilh6w8ADmUk1IRPyGa7ei8MZrUv5UemwC1Uxxw4C5l_0INF_rybkexbQ8AztTk7D4f-jt6WjeEFHKWBOS5gmbtx3M2YJDyFUR1L5tUZzsSWCECrrBrA62X_eVk-LWdWqzae2ftlhQ3YI1u4CjG8_abaY"/>
-                <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                  <h3 className="text-white font-title-lg text-title-lg">Tokyo Nights Are Back</h3>
-                </div>
-              </div>
-              <div className="relative h-40 rounded-xl overflow-hidden group cursor-pointer" onClick={() => setIsAcrossWorldOpen(true)}>
-                <img alt="Istanbul" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBRbweg__P16c0WfFJhSwQnoj6s40dtN969tweSopFo4TjRB-Sw0sAWMVZwaKbyMUV53wZRs8btOwhi-8bk4qUFvNf61TaSb9gKJtddM0fvnliJB7Yx_tC2MjMY084JTLR48rd182OygrCHxB7E-352dPNyfgHwGEyAHUhnmhht029RyS3OZ5BnK_j8WaxvZ0JSluscI9AXH7K-h87LWj4doObby7hMPMzJziHOGbOqtSYN7gjjnnJu6x3Nr3VIqEdDGW7VBkQjrQ0"/>
-                <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                  <h3 className="text-white font-title-lg text-title-lg">Istanbul is Calling Dancers</h3>
-                </div>
-              </div>
-              <div className="relative h-40 rounded-xl overflow-hidden group cursor-pointer" onClick={() => setIsAcrossWorldOpen(true)}>
-                <img alt="Da nang" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDI3ju5PMbshaDAj-9YPR5sWPxCFHHU2dC6T8h66vosdvpchUDZt6MW4HiwvKrtY2hLdJcsqO36eJNUM_-B3O-E93n8sdNCjgr_Y6Mgrrld3KBGrdR8Zu56DzL2sSWk8jHiQtPZp63pjfVZQ6g0qqPbneE8jYozeMJBORc6PvVsdX4XK3E2t3MVolMub-3sld6McTWNFWshK-hRL_0KAO6P3igYBiv3k44PVyfM8ChLiqtVJUVAtPz4Ci7xHrk15s4r_2Ac3IcNL-8"/>
-                <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                  <h3 className="text-white font-title-lg text-title-lg">Da Nang&apos;s Scene is Rising</h3>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Explore Your City */}
-          <section>
-            <h2 className="font-title-lg text-title-lg font-bold mb-element_gap">{t('home.explore_seoul')}</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <a href="/venues" className="group bg-surface-container-lowest border border-outline/10 p-6 rounded-xl flex items-center gap-6 hover:bg-primary/5 transition-colors cursor-pointer no-underline text-inherit">
-                <div className="bg-primary-container/10 p-4 rounded-full text-primary">
-                  <span className="material-symbols-outlined text-[32px]">apartment</span>
-                </div>
-                <div>
-                  <h3 className="font-title-lg text-title-lg mb-1">{t('home.find_venues')}</h3>
-                  <p className="font-body-md text-on-surface-variant">{t('home.find_venues_desc')}</p>
-                </div>
-              </a>
-              <a href="/stay" className="group bg-surface-container-lowest border border-outline/10 p-6 rounded-xl flex items-center gap-6 hover:bg-primary/5 transition-colors cursor-pointer no-underline text-inherit">
-                <div className="bg-primary-container/10 p-4 rounded-full text-primary">
-                  <span className="material-symbols-outlined text-[32px]">hotel</span>
-                </div>
-                <div>
-                  <h3 className="font-title-lg text-title-lg mb-1">{t('home.stay_nearby')}</h3>
-                  <p className="font-body-md text-on-surface-variant">{t('home.stay_nearby_desc')}</p>
-                </div>
-              </a>
-              <a href="/class" className="group bg-surface-container-lowest border border-outline/10 p-6 rounded-xl flex items-center gap-6 hover:bg-primary/5 transition-colors cursor-pointer no-underline text-inherit">
-                <div className="bg-primary-container/10 p-4 rounded-full text-primary">
-                  <span className="material-symbols-outlined text-[32px]">school</span>
-                </div>
-                <div>
-                  <h3 className="font-title-lg text-title-lg mb-1">{t('home.join_class')}</h3>
-                  <p className="font-body-md text-on-surface-variant">{t('home.join_class_desc')}</p>
-                </div>
-              </a>
-              <a href="/rental" className="group bg-surface-container-lowest border border-outline/10 p-6 rounded-xl flex items-center gap-6 hover:bg-primary/5 transition-colors cursor-pointer no-underline text-inherit">
-                <div className="bg-primary-container/10 p-4 rounded-full text-primary">
-                  <span className="material-symbols-outlined text-[32px]">camera_roll</span>
-                </div>
-                <div>
-                  <h3 className="font-title-lg text-title-lg mb-1">{t('home.rent_studio')}</h3>
-                  <p className="font-body-md text-on-surface-variant">{t('home.rent_studio_desc')}</p>
-                </div>
-              </a>
-            </div>
-          </section>
+        <main className="max-w-7xl mx-auto px-page_margin py-section_gap space-y-section_gap">
+          {/* 오늘의 하이라이트 */}
+          <ActivitySpotlight />
 
           {/* Culture & Canvas */}
           <section>
-            <h2 className="font-headline-md text-headline-md font-bold mb-element_gap">{t('home.culture_canvas')}</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-              {/* Card 1: Gavi’s Tango Cartoons */}
-              <div className="relative h-[450px] rounded-xl overflow-hidden group cursor-pointer border border-outline/5 shadow-sm" onClick={() => setIsCartoonsOpen(true)}>
-                <span className="absolute top-4 left-4 z-10 bg-black/40 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded tracking-widest">ART</span>
-                <img alt="Gavi’s Tango Cartoons" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="/gavi.jpg"/>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6">
-                  <span className="material-symbols-outlined text-white mb-2">draw</span>
-                  <h3 className="text-white font-title-lg text-title-lg mb-1">{t('home.gavi_cartoons')}</h3>
-                  <p className="text-white/80 font-body-md text-sm mb-3">{t('home.gavi_cartoons_desc')}</p>
-                  <span className="text-[#0A84FF] text-[11px] font-bold tracking-wider">NEW EPISODE</span>
-                </div>
-              </div>
-              
-              {/* Card 2: Tango Music 365 */}
-              <div className="relative h-[450px] rounded-xl overflow-hidden group cursor-pointer border border-outline/5 shadow-sm" onClick={() => setComingSoonCard({ title: t('home.tango_music'), icon: 'music_note', desc: t('home.tango_music_desc') })}>
-                <span className="absolute top-4 left-4 z-10 bg-white/20 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded tracking-widest">MUSIC</span>
-                <img alt="Tango Music 365" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="/camus.jpg"/>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6">
-                  <span className="material-symbols-outlined text-white mb-2">music_note</span>
-                  <h3 className="text-white font-title-lg text-title-lg mb-1">{t('home.tango_music')}</h3>
-                  <p className="text-white/80 font-body-md text-sm mb-3">{t('home.tango_music_desc')}</p>
-                  <span className="text-[#F5A623] text-[11px] font-bold tracking-wider">ONGOING</span>
-                </div>
-              </div>
-
-              {/* Card 3: The History of Tango */}
-              <div className="relative h-[450px] rounded-xl overflow-hidden group cursor-pointer border border-outline/5 shadow-sm" onClick={() => setComingSoonCard({ title: t('home.tango_history'), icon: 'history_edu', desc: t('home.tango_history_desc') })}>
-                <span className="absolute top-4 left-4 z-10 bg-white/20 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded tracking-widest">HISTORY</span>
-                <img alt="The History of Tango" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="/ddakji.jpg"/>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6">
-                  <span className="material-symbols-outlined text-white mb-2">history_edu</span>
-                  <h3 className="text-white font-title-lg text-title-lg mb-1">{t('home.tango_history')}</h3>
-                  <p className="text-white/80 font-body-md text-sm mb-3">{t('home.tango_history_desc')}</p>
-                  <span className="text-outline-variant text-[11px] font-bold tracking-wider">SERIES</span>
+            <div className="flex items-center justify-between mb-element_gap">
+              <h2 className="font-headline-md text-headline-md font-bold text-[#1E293B]">{t('home.culture_canvas')}</h2>
+              <a className="text-slate-500 font-label-md text-sm flex items-center gap-1 hover:text-primary transition-colors" href="/pics">
+                {t('home.view_all')}
+                <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+              </a>
+            </div>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {/* Large Spotlight Card: 기존 포커스 바인딩 */}
+              <div 
+                className="col-span-2 row-span-2 relative h-[360px] md:h-[480px] rounded-2xl overflow-hidden group cursor-pointer border border-outline/5 shadow-sm"
+                onClick={() => setIsSafeFloorOpen(true)}
+              >
+                <img 
+                  alt={societyInfo.blog_title || "탱고, 우리 삶의 언어"} 
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                  src="/life_on_bg.jpg"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent flex flex-col justify-end p-6 text-left">
+                  <span className="absolute top-4 left-4 z-10 bg-[#6750A4] text-white text-[10px] font-bold px-2 py-0.5 rounded tracking-widest">FOCUS</span>
+                  <span className="text-white/60 text-xs font-semibold uppercase tracking-wider mb-1">
+                    {societyInfo.blog_core_keyword || "탱고칼럼"}
+                  </span>
+                  <h3 className="text-white font-bold text-2xl mb-2">
+                    {societyInfo.blog_title || "탱고, 우리 삶의 언어"}
+                  </h3>
+                  <p className="text-white/80 text-sm leading-relaxed max-w-md">
+                    {societyInfo.blog_description || "탱고는 단순한 춤이 아니라, 우리가 서로를 이해하는 방식이다."}
+                  </p>
                 </div>
               </div>
 
-              {/* Card 4: Tango Novel */}
-              <div className="relative h-[450px] rounded-xl overflow-hidden group cursor-pointer border border-outline/5 shadow-sm" onClick={() => setComingSoonCard({ title: t('home.tango_novel'), icon: 'auto_stories', desc: t('home.tango_novel_desc') })}>
-                <span className="absolute top-4 left-4 z-10 bg-white/20 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded tracking-widest">STORY</span>
-                <img alt="Tango Novel" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="/aaa.jpg"/>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6">
-                  <span className="material-symbols-outlined text-white mb-2">auto_stories</span>
-                  <h3 className="text-white font-title-lg text-title-lg mb-1">{t('home.tango_novel')}</h3>
-                  <p className="text-white/80 font-body-md text-sm mb-3">{t('home.tango_novel_desc')}</p>
-                  <span className="text-outline-variant/60 text-[11px] font-bold tracking-wider">{t('common.coming_soon')}</span>
+              {/* Card 1: 가비의 탱고툰 */}
+              <div 
+                className="relative h-[172px] md:h-[232px] rounded-2xl overflow-hidden group cursor-pointer border border-outline/5 shadow-sm"
+                onClick={() => setIsCartoonsOpen(true)}
+              >
+                <img alt="가비의 탱고툰" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="/gavi.jpg"/>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4 text-left">
+                  <h4 className="text-white font-bold text-base">가비의 탱고툰</h4>
                 </div>
               </div>
 
-              {/* Card 5: Tango Travel by Beto */}
-              <div className="relative h-[450px] rounded-xl overflow-hidden group cursor-pointer border border-outline/5 shadow-sm" onClick={() => setComingSoonCard({ title: t('home.tango_travel'), icon: 'explore', desc: t('home.tango_travel_desc') })}>
-                <span className="absolute top-4 left-4 z-10 bg-white/20 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded tracking-widest">TRAVEL</span>
-                <img alt="Tango Travel" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="/beto.jpg"/>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6">
-                  <span className="material-symbols-outlined text-white mb-2">explore</span>
-                  <h3 className="text-white font-title-lg text-title-lg mb-1">{t('home.tango_travel')}</h3>
-                  <p className="text-white/80 font-body-md text-sm mb-3">{t('home.tango_travel_desc')}</p>
-                  <span className="text-[#0A84FF] text-[11px] font-bold tracking-wider">{t('common.new')}</span>
+              {/* Card 2: 탱고뮤직 365 */}
+              <div 
+                className="relative h-[172px] md:h-[232px] rounded-2xl overflow-hidden group cursor-pointer border border-outline/5 shadow-sm"
+                onClick={() => setComingSoonCard({ title: '탱고뮤직 365', icon: 'music_note', desc: '탱고뮤직 365 세부 정보가 곧 공개됩니다.' })}
+              >
+                <img alt="탱고뮤직 365" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="/camus.jpg"/>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4 text-left">
+                  <h4 className="text-white font-bold text-base">탱고뮤직 365</h4>
                 </div>
               </div>
 
-              {/* Card 6: FOCUS (Safe Floor) */}
-              <div className="relative h-[450px] rounded-xl overflow-hidden group cursor-pointer border border-outline/5 shadow-sm" onClick={() => setIsSafeFloorOpen(true)}>
-                <span className="absolute top-4 left-4 z-10 bg-red-500/80 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded tracking-widest">{t('common.focus')}</span>
-                <img alt="Safe Floor" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="https://images.unsplash.com/photo-1518609878373-06d740f60d8b?q=80&w=800"/>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6">
-                  <span className="material-symbols-outlined text-white mb-2">verified_user</span>
-                  <h3 className="text-white font-title-lg text-title-lg mb-1">{societyInfo.blog_title}</h3>
-                  <p className="text-white/80 font-body-md text-sm mb-3">{societyInfo.blog_description?.substring(0, 100)}...</p>
-                  <span className="text-red-400 text-[11px] font-bold tracking-wider">{societyInfo.blog_core_keyword || t('common.important')}</span>
+              {/* Card 3: 베토의 탱고여행 */}
+              <div 
+                className="relative h-[172px] md:h-[232px] rounded-2xl overflow-hidden group cursor-pointer border border-outline/5 shadow-sm"
+                onClick={() => setComingSoonCard({ title: '베토의 탱고여행', icon: 'explore', desc: '베토의 탱고여행 세부 정보가 곧 공개됩니다.' })}
+              >
+                <img alt="베토의 탱고여행" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="/beto.jpg"/>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4 text-left">
+                  <h4 className="text-white font-bold text-base">베토의 탱고여행</h4>
+                </div>
+              </div>
+
+              {/* Card 4: 탱고의 역사 리뷰 */}
+              <div 
+                className="relative h-[172px] md:h-[232px] rounded-2xl overflow-hidden group cursor-pointer border border-outline/5 shadow-sm"
+                onClick={() => setComingSoonCard({ title: '탱고의 역사 리뷰', icon: 'history_edu', desc: '탱고의 역사 리뷰 세부 정보가 곧 공개됩니다.' })}
+              >
+                <img alt="탱고의 역사 리뷰" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="/ddakji.jpg"/>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4 text-left">
+                  <h4 className="text-white font-bold text-base">탱고의 역사 리뷰</h4>
                 </div>
               </div>
             </div>
@@ -716,38 +589,123 @@ export default function SocietyPage() {
           {/* People — Dynamic from Firestore */}
           <section>
             <div className="flex items-center justify-between mb-element_gap">
-              <h2 className="font-headline-md text-headline-md font-bold">{t('home.people_to_know')}</h2>
-              <a className="text-primary font-label-md text-label-md" href="/people">{t('home.view_all')}</a>
+              <h2 className="font-headline-md text-headline-md font-bold text-[#1E293B]">알아야 할 사람들</h2>
+              <a 
+                className="text-slate-500 font-label-md text-sm flex items-center gap-1 hover:text-primary transition-colors" 
+                href="/people"
+              >
+                {t('home.view_all')}
+                <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+              </a>
             </div>
-            <div className="flex gap-8 overflow-x-auto hide-scrollbar -mx-page_margin px-page_margin md:mx-0 md:px-0">
-              {featuredUsers.map((user) => (
-                <div key={user.id} onClick={() => setSelectedUserId(user.id)} className="flex-shrink-0 text-center w-32 group cursor-pointer no-underline text-inherit">
-                  <div className="w-32 h-32 rounded-full overflow-hidden mb-3 ring-2 ring-transparent group-hover:ring-primary transition-all p-1">
-                    <img alt={user.nickname} className="w-full h-full object-cover rounded-full" src={user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.nickname)}&background=6750a4&color=fff&size=128`}/>
+            
+            <div className="flex gap-8 overflow-x-auto hide-scrollbar -mx-page_margin px-page_margin md:mx-0 md:px-0 py-2">
+              {featuredUsers.length > 0 ? (
+                featuredUsers.map((user) => (
+                  <div 
+                    key={user.id} 
+                    onClick={() => setSelectedUserId(user.id)} 
+                    className="flex-shrink-0 text-center w-28 md:w-32 group cursor-pointer"
+                  >
+                    <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden mb-3 ring-2 ring-transparent group-hover:ring-primary transition-all p-1 bg-slate-50 mx-auto">
+                      <img 
+                        alt={user.nickname} 
+                        className="w-full h-full object-cover rounded-full" 
+                        src={user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.nickname)}&background=6750a4&color=fff&size=128`}
+                      />
+                    </div>
+                    <h4 className="font-bold text-slate-800 text-sm md:text-base mb-0.5">{user.nickname}</h4>
+                    <p className="text-slate-400 text-xs">{user.isInstructor ? t('common.instructor') : t('common.member')}</p>
                   </div>
-                  <h4 className="font-title-lg text-title-lg text-body-md">{user.nickname}</h4>
-                  <p className="text-outline font-label-sm text-label-sm">{user.isInstructor ? t('common.instructor') : t('common.member')}</p>
-                </div>
-              ))}
+                ))
+              ) : (
+                [
+                  { id: 'amy', nickname: 'Amy', photoURL: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=200', isInstructor: true, flag: '🇺🇦' },
+                  { id: 'aran', nickname: 'Aran', photoURL: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200', isInstructor: true },
+                  { id: 'arbol', nickname: 'Arbol', photoURL: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=200', isInstructor: true },
+                  { id: 'gabriel', nickname: 'Gabriel', photoURL: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200', isInstructor: true },
+                  { id: 'luna', nickname: 'Luna', photoURL: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200', isInstructor: true },
+                  { id: 'beto', nickname: 'Beto', photoURL: '/beto.jpg', isInstructor: false, customRole: '칼럼니스트' }
+                ].map((user) => (
+                  <div 
+                    key={user.id} 
+                    onClick={() => {
+                      if (user.id === 'beto') {
+                        setComingSoonCard({ title: 'Beto', icon: 'person', desc: 'Beto 칼럼니스트의 상세 정보가 곧 제공됩니다.' });
+                      } else {
+                        setComingSoonCard({ title: user.nickname, icon: 'person', desc: `${user.nickname} 강사의 상세 정보가 곧 제공됩니다.` });
+                      }
+                    }} 
+                    className="flex-shrink-0 text-center w-28 md:w-32 group cursor-pointer"
+                  >
+                    <div className="relative w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden mb-3 ring-2 ring-transparent group-hover:ring-primary transition-all p-1 bg-slate-50 mx-auto">
+                      <img 
+                        alt={user.nickname} 
+                        className="w-full h-full object-cover rounded-full" 
+                        src={user.photoURL}
+                      />
+                      {(user as any).flag && (
+                        <span className="absolute bottom-1 left-1 text-base bg-white/80 rounded-full px-1 shadow-sm select-none">{(user as any).flag}</span>
+                      )}
+                    </div>
+                    <h4 className="font-bold text-slate-800 text-sm md:text-base mb-0.5">{user.nickname}</h4>
+                    <p className="text-slate-400 text-xs">{(user as any).customRole || (user.isInstructor ? t('common.instructor') : t('common.member'))}</p>
+                  </div>
+                ))
+              )}
             </div>
           </section>
 
-          {/* Visual: Feel the Moment */}
-          <section className="cursor-pointer" onClick={() => setIsFeelMomentOpen(true)}>
-            <h2 className="font-headline-md text-headline-md font-bold mb-element_gap text-center">{t('home.feel_moment')}</h2>
+          {/* 순간을 느끼다 */}
+          <section>
+            <div className="flex items-center justify-between mb-element_gap">
+              <h2 className="font-headline-md text-headline-md font-bold text-[#1E293B]">순간을 느끼다</h2>
+              <a className="text-slate-500 font-label-md text-sm flex items-center gap-1 hover:text-primary transition-colors" href="/live">
+                {t('home.view_all')}
+                <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+              </a>
+            </div>
+            
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              <div className="aspect-square bg-surface-variant overflow-hidden group relative">
-                <img alt="Visual Grid" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBhv85_bi1_roZXlBAsRh1L14F4hdUb8UpZ-BvqkZNtkLxQE3G_kEN4o9p57jU7pnLlk2qgAE0x-nVZEwLRCEsVch4Wj_jhfokfYd0aMTIbfdYT-4RLNf5fgjWW7eopiB5lIRQ3-d1RUEUYIUykxxmGJAK9htO4h7Mp4A6G9XhCB2DuxkzX8f3YUgf_biRCpDgU2NAiSmP3GVTCeLc7oiK0tqDgLCV0s3-7Ti1bhDrlOcMC6FaGauUK6MWOZ7ZEy4mGnyg2VRy6EXk"/>
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none"><span className="material-symbols-outlined text-white/80 text-4xl">play_circle</span></div>
+              {/* Card 1: Holding hands */}
+              <div 
+                onClick={() => setComingSoonCard({ title: '순간을 느끼다', icon: 'photo_camera', desc: '사진/영상 상세 보기가 준비 중입니다.' })}
+                className="aspect-square bg-slate-100 rounded-xl overflow-hidden group relative cursor-pointer"
+              >
+                <img alt="Visual Grid" className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500" src="https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=400"/>
+                <div className="absolute bottom-2 right-2 flex items-center justify-center text-white pointer-events-none">
+                  <span className="material-symbols-outlined text-white/95 text-[28px]" style={{ fontVariationSettings: "'FILL' 1" }}>play_circle</span>
+                </div>
               </div>
-              <div className="aspect-square bg-surface-variant overflow-hidden group">
-                <img alt="Visual Grid" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBcNE3yA37F_q_6jBOxJT7QFDk_ROnYVnIPgzCFzNSx3TNs3xVNqSvM8v2X0wGRjHJKotJI841xEuyqyDeQKuVm4LY1_DyFpX9LqRQiTNfhwwnx3w_FWnF6esGCjp1waZyZpvYtL0QxY2V8PJFa2fWQ89RkTaqgMif5jQ-f82rMqy4uJhXYL5KPJ61qLOnuCaTEL46sXxYBs02sWZl3PSsI2rusuj83UbWB7Vvunp4thZ-bOQnYJ6TEiBIv6cPGO27Xc2AhKdFX8R4"/>
+
+              {/* Card 2: Arch silhouette */}
+              <div 
+                onClick={() => setComingSoonCard({ title: '순간을 느끼다', icon: 'photo_camera', desc: '사진/영상 상세 보기가 준비 중입니다.' })}
+                className="aspect-square bg-slate-100 rounded-xl overflow-hidden group relative cursor-pointer"
+              >
+                <img alt="Visual Grid" className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500" src="https://images.unsplash.com/photo-1464746133101-a2c3f88e0dd9?q=80&w=400"/>
+                <div className="absolute bottom-2 right-2 flex items-center justify-center text-white pointer-events-none">
+                  <span className="material-symbols-outlined text-white/95 text-[28px]" style={{ fontVariationSettings: "'FILL' 1" }}>play_circle</span>
+                </div>
               </div>
-              <div className="aspect-square bg-surface-variant overflow-hidden group">
-                <img alt="Visual Grid" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDqJA4SuFwvyrf80X6-HIXKc53jUbP7A7UZRZdXTFakrKiZiJNyTgc1quNvNqQn0ZhjyXpj54uotHnj8GxIppVP1treg8PdSR5W9nGDQszDJVPICSxkC8cQen-hgJ2yeahyur8V2Ii_OyYcxW988czIJkwfXF6DL8qD2uZCxGSNKP54Q72xNRix625XCcz-s5b_WVKVHfrupAI_Qnw1byLIRm6QCrYPJcK0ub6YFtSi5LLvgl4ah-qxdCsnEhTI-4BVh17mlL8-SvE"/>
+
+              {/* Card 3: Shoes */}
+              <div 
+                onClick={() => setComingSoonCard({ title: '순간을 느끼다', icon: 'photo_camera', desc: '사진/영상 상세 보기가 준비 중입니다.' })}
+                className="aspect-square bg-slate-100 rounded-xl overflow-hidden group relative cursor-pointer"
+              >
+                <img alt="Visual Grid" className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500" src="https://images.unsplash.com/photo-1549298916-b41d501d3772?q=80&w=400"/>
               </div>
-              <div className="aspect-square bg-surface-variant overflow-hidden group">
-                <img alt="Visual Grid" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBu27sywOcBpK7ExBjlt2VFm2rDBOQoFUE07A6nryePDvFc87t2vQOqFAN0-GNjwY4X4wLox9ehj8rCgCjvql3cHxMrciKSdXYjpcUwUGWqsf5F2qB8Fj0fszFMj94ifHyco-SqNcYmxEdcloTdQq_cUpXSIu7EFYk9QzLul8QsZwL3jpDqeWZae7N5q2thamfydyQaKQrOn5srI0539LlF4mJ6NBmCCiie_AuH_Y57-goRmQzubPuyIiF7u2ch4ceAEPYSA18yCvc"/>
+
+              {/* Card 4: Theater Couple */}
+              <div 
+                onClick={() => setComingSoonCard({ title: '순간을 느끼다', icon: 'photo_camera', desc: '사진/영상 상세 보기가 준비 중입니다.' })}
+                className="aspect-square bg-slate-100 rounded-xl overflow-hidden group relative cursor-pointer"
+              >
+                <img alt="Visual Grid" className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500" src="https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=400"/>
+                <div className="absolute bottom-2 right-2 flex items-center justify-center text-white pointer-events-none">
+                  <span className="material-symbols-outlined text-white/95 text-[28px]" style={{ fontVariationSettings: "'FILL' 1" }}>play_circle</span>
+                </div>
               </div>
             </div>
           </section>
@@ -761,56 +719,40 @@ export default function SocietyPage() {
             </div>
 
             {/* 회원카운트 격자 카드 (소사이어티 페이지 스타일 연장선) */}
-            <div className="w-full max-w-md bg-surface-container-lowest rounded-2xl border border-outline/10 overflow-hidden shadow-sm">
-              <div className="grid grid-cols-2">
-                {/* 1. COMMUNITIES */}
-                <div className="p-6 flex flex-col items-center justify-center text-center border-r border-b border-outline/10">
-                  <span className="material-symbols-outlined text-[24px] text-outline mb-3">groups</span>
-                  <span className="text-[32px] font-extrabold text-on-background leading-none mb-2">{totalGroups}</span>
-                  <span className="text-[11px] font-black text-outline uppercase tracking-wider">
-                    {t('home.society_stats.communities')}
-                  </span>
+            <div className="w-full bg-surface-container-lowest rounded-2xl border border-outline/10 overflow-hidden shadow-sm">
+              <div className="grid grid-cols-4 divide-x divide-outline/10 py-6">
+                {/* 1. 그룹·모임 */}
+                <div className="flex flex-col items-center justify-center text-center">
+                  <div className="h-5 mb-1"></div>
+                  <span className="text-[32px] font-extrabold text-[#1E293B] leading-none mb-2">70</span>
+                  <span className="text-[12px] font-medium text-slate-500">그룹·모임</span>
                 </div>
                 
-                {/* 2. MEMBERS */}
-                <div className="p-6 flex flex-col items-center justify-center text-center border-b border-outline/10">
-                  <span className="material-symbols-outlined text-[24px] text-outline mb-3">person</span>
-                  <div className="flex items-center justify-center gap-1.5 mb-2">
-                    <span className="text-[32px] font-extrabold text-on-background leading-none">
-                      {totalMembers.toLocaleString()}
+                {/* 2. 멤버 */}
+                <div className="flex flex-col items-center justify-center text-center">
+                  <div className="h-5 mb-1 flex items-center justify-center">
+                    <span className="text-[11px] font-bold bg-[#EADDFF] text-[#6750A4] px-1.5 py-0.5 rounded-full select-none">
+                      {weeklyNewMembers > 0 ? `+${weeklyNewMembers}` : '+13'}
                     </span>
-                    {weeklyNewMembers > 0 && (
-                      <span 
-                        className="text-[12px] font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded-full select-none cursor-help"
-                        title={language === 'KR' ? '최근 1주일 신규 가입자 수' : 'New members in the last week'}
-                      >
-                        +{weeklyNewMembers}
-                      </span>
-                    )}
                   </div>
-                  <span className="text-[11px] font-black text-outline uppercase tracking-wider">
-                    {t('home.society_stats.members')}
+                  <span className="text-[32px] font-extrabold text-[#1E293B] leading-none mb-2">
+                    {totalMembers.toLocaleString()}
                   </span>
+                  <span className="text-[12px] font-medium text-slate-500">멤버</span>
                 </div>
 
-                {/* 3. CITIES */}
-                <div className="p-6 flex flex-col items-center justify-center text-center border-r border-outline/10">
-                  <span className="material-symbols-outlined text-[24px] text-outline mb-3">map</span>
-                  <span className="text-[32px] font-extrabold text-on-background leading-none mb-2">
-                    {totalCities}
-                  </span>
-                  <span className="text-[11px] font-black text-outline uppercase tracking-wider">
-                    {t('home.society_stats.cities')}
-                  </span>
+                {/* 3. 도시 */}
+                <div className="flex flex-col items-center justify-center text-center">
+                  <div className="h-5 mb-1"></div>
+                  <span className="text-[32px] font-extrabold text-[#1E293B] leading-none mb-2">11</span>
+                  <span className="text-[12px] font-medium text-slate-500">도시</span>
                 </div>
 
-                {/* 4. COUNTRY */}
-                <div className="p-6 flex flex-col items-center justify-center text-center">
-                  <span className="material-symbols-outlined text-[24px] text-outline mb-3">public</span>
-                  <span className="text-[32px] font-extrabold text-on-background leading-none mb-2">{totalCountries}</span>
-                  <span className="text-[11px] font-black text-outline uppercase tracking-wider">
-                    {t('home.society_stats.country')}
-                  </span>
+                {/* 4. 국가 */}
+                <div className="flex flex-col items-center justify-center text-center">
+                  <div className="h-5 mb-1"></div>
+                  <span className="text-[32px] font-extrabold text-[#1E293B] leading-none mb-2">5</span>
+                  <span className="text-[12px] font-medium text-slate-500">국가</span>
                 </div>
               </div>
             </div>
@@ -818,9 +760,24 @@ export default function SocietyPage() {
             {/* 하단 푸터 링크 & 카피라이트 */}
             <div className="w-full flex flex-col md:flex-row justify-between items-center gap-6 pt-6 border-t border-outline/10">
               <nav className="flex flex-wrap justify-center gap-6">
-                <a className="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md" href="#">{t('common.about')}</a>
-                <a className="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md" href="#">{t('common.terms')}</a>
-                <a className="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md" href="#">{t('common.privacy')}</a>
+                <button 
+                  onClick={() => setIsAboutOpen(true)}
+                  className="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md bg-transparent border-none cursor-pointer"
+                >
+                  소개
+                </button>
+                <button 
+                  onClick={() => setIsTermsOpen(true)}
+                  className="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md bg-transparent border-none cursor-pointer"
+                >
+                  이용약관
+                </button>
+                <button 
+                  onClick={() => setIsPrivacyOpen(true)}
+                  className="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md bg-transparent border-none cursor-pointer"
+                >
+                  개인정보처리방침
+                </button>
               </nav>
               <div className="text-on-surface-variant font-label-sm text-label-sm text-center md:text-right">
                 {t('common.footer_rights')}
@@ -836,49 +793,10 @@ export default function SocietyPage() {
       )}
 
       {/* Event Detail Full-Screen Popup */}
-      {isEventDetailOpen && heroEvent && (
-        <EventViewer event={heroEvent} onClose={() => setIsEventDetailOpen(false)} />
+      {isEventDetailOpen && (selectedEvent || heroEvent) && (
+        <EventViewer event={selectedEvent || heroEvent!} onClose={() => setIsEventDetailOpen(false)} />
       )}
 
-      {/* Across the World Full-Screen Popup */}
-      {isAcrossWorldOpen && (
-        <div className="fixed inset-0 z-[9999] bg-black/95 flex flex-col">
-          <div className="flex items-center justify-between p-4 border-b border-white/10">
-            <h2 className="text-white font-headline-md text-headline-md">{t('home.across_world')}</h2>
-            <button onClick={() => setIsAcrossWorldOpen(false)} className="text-white/70 hover:text-white">
-              <span className="material-symbols-outlined text-[28px]">close</span>
-            </button>
-          </div>
-          <div className="flex-1 overflow-y-auto p-6">
-            <div className="max-w-3xl mx-auto text-center">
-              <span className="material-symbols-outlined text-[64px] text-white/30 mb-4">live_tv</span>
-              <h3 className="text-white font-title-lg text-title-lg mb-3">{t('home.live_streams_title')}</h3>
-              <p className="text-white/70 font-body-md text-body-md mb-6">{t('home.live_streams_desc')}</p>
-              <p className="text-white/50 font-label-md text-label-md">{t('home.live_streams_soon')}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Feel the Moment Full-Screen Popup */}
-      {isFeelMomentOpen && (
-        <div className="fixed inset-0 z-[9999] bg-black/95 flex flex-col">
-          <div className="flex items-center justify-between p-4 border-b border-white/10">
-            <h2 className="text-white font-headline-md text-headline-md">{t('home.feel_moment')}</h2>
-            <button onClick={() => setIsFeelMomentOpen(false)} className="text-white/70 hover:text-white">
-              <span className="material-symbols-outlined text-[28px]">close</span>
-            </button>
-          </div>
-          <div className="flex-1 overflow-y-auto p-6">
-            <div className="max-w-3xl mx-auto text-center">
-              <span className="material-symbols-outlined text-[64px] text-white/30 mb-4">photo_camera</span>
-              <h3 className="text-white font-title-lg text-title-lg mb-3">{t('home.photo_video_awards')}</h3>
-              <p className="text-white/70 font-body-md text-body-md mb-6">{t('home.photo_video_desc')}</p>
-              <p className="text-white/50 font-label-md text-label-md">{t('home.nominations_open')}</p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* User Profile Popup */}
       <UserProfilePopup
@@ -1031,6 +949,134 @@ export default function SocietyPage() {
             >
               {t('common.got_it')}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* 소개 (About) Fullscreen Popup */}
+      {isAboutOpen && (
+        <div className="fixed inset-0 z-[10000] bg-white flex flex-col animate-in fade-in duration-500 overflow-y-auto">
+          {/* Header */}
+          <div className="flex-shrink-0 w-full p-6 border-b border-outline/10 flex justify-between items-center bg-slate-50">
+            <h2 className="text-xl font-extrabold text-slate-900 font-headline">World of Community (WoC) 소개</h2>
+            <button 
+              onClick={() => setIsAboutOpen(false)}
+              className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-200/80 hover:bg-slate-200 text-slate-700 transition-all animate-none"
+            >
+              <span className="material-symbols-outlined text-[24px]">close</span>
+            </button>
+          </div>
+          {/* Content */}
+          <div className="flex-1 bg-white p-8 md:p-16 max-w-4xl mx-auto w-full">
+            <div className="prose prose-slate max-w-none space-y-6 text-left">
+              <h3 className="text-3xl font-black text-[#6750A4] mb-6">글로벌 탱고 및 커뮤니티 통합 플랫폼</h3>
+              <p className="text-slate-700 text-lg leading-relaxed">
+                World of Community (WoC)는 전 세계의 탱고 애호가, 댄서, 강사 및 스튜디오 운영자를 하나의 디지털 생태계로 연결하기 위해 설계된 프리미엄 글로벌 통합 서비스입니다.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 my-10">
+                <div className="p-6 bg-slate-50 rounded-2xl border border-outline/5">
+                  <h4 className="font-bold text-slate-900 text-lg mb-2">실시간 밀롱가 & 소셜 탐색</h4>
+                  <p className="text-slate-600 text-sm leading-relaxed">
+                    오늘 서울에서 열리는 밀롱가 정보부터 해외 주요 도시의 소셜 이벤트 일정까지, 사용자의 로컬 타임존과 GPS에 기반하여 정밀한 실시간 데이터를 바인딩하여 제공합니다.
+                  </p>
+                </div>
+                <div className="p-6 bg-slate-50 rounded-2xl border border-outline/5">
+                  <h4 className="font-bold text-slate-900 text-lg mb-2">전문가 수준의 클래스 관리</h4>
+                  <p className="text-slate-600 text-sm leading-relaxed">
+                    아카데미와 강사분들을 위한 스마트 일정 기획, 신청자 관리, 번들 할인 및 월간 패스 예약 시스템을 원스톱으로 지원합니다.
+                  </p>
+                </div>
+              </div>
+              <p className="text-slate-700 text-base leading-relaxed">
+                우리는 단순히 정보를 나열하는 것을 넘어, 전 세계 지역 커뮤니티가 자생적으로 성장하고 서로 교류할 수 있는 문화를 개척합니다. WoC와 함께 매혹적인 탱고의 여정을 언제 어디서나 생생하게 누려보세요.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 이용약관 (Terms) Fullscreen Popup */}
+      {isTermsOpen && (
+        <div className="fixed inset-0 z-[10000] bg-white flex flex-col animate-in fade-in duration-500 overflow-y-auto">
+          {/* Header */}
+          <div className="flex-shrink-0 w-full p-6 border-b border-outline/10 flex justify-between items-center bg-slate-50">
+            <h2 className="text-xl font-extrabold text-slate-900 font-headline">서비스 이용약관</h2>
+            <button 
+              onClick={() => setIsTermsOpen(false)}
+              className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-200/80 hover:bg-slate-200 text-slate-700 transition-all animate-none"
+            >
+              <span className="material-symbols-outlined text-[24px]">close</span>
+            </button>
+          </div>
+          {/* Content */}
+          <div className="flex-1 bg-white p-8 md:p-16 max-w-4xl mx-auto w-full">
+            <div className="prose prose-slate max-w-none space-y-6 text-left text-sm text-slate-700 leading-relaxed">
+              <h3 className="text-2xl font-bold text-slate-900 mb-4">제 1 조 (목적)</h3>
+              <p>
+                본 약관은 World of Community(이하 &quot;회사&quot;)가 운영하는 플랫폼 및 모바일 애플리케이션(이하 &quot;서비스&quot;)을 이용함에 있어, 회사와 회원 간의 권리, 의무 및 책임 사항을 규정함을 목적으로 합니다.
+              </p>
+              
+              <h3 className="text-2xl font-bold text-slate-900 mb-4">제 2 조 (의무 및 책임)</h3>
+              <p>
+                1. 회원은 관계 법령, 본 약관의 규정, 이용안내 및 서비스 상에 공지한 주의사항을 준수하여야 하며, 기타 회사의 업무에 방해되는 행위를 하여서는 안 됩니다.<br />
+                2. 회원은 커뮤니티의 건전성과 타인의 개인정보를 존중해야 하며, 비속어 사용, 허위 정보 유포 또는 허가되지 않은 광고 행위 시 이용이 제한될 수 있습니다.
+              </p>
+
+              <h3 className="text-2xl font-bold text-slate-900 mb-4">제 3 조 (결제 및 환불 규정)</h3>
+              <p>
+                스튜디오 대관, 클래스 수강 신청 등 유료 서비스의 결제는 회사가 제공하는 안전 결제 시스템을 이용해야 하며, 예약 변경 및 환불은 각 스튜디오 및 주최측이 명시한 환불 정책 및 현행 소비자보호법에 의거하여 처리됩니다.
+              </p>
+
+              <h3 className="text-2xl font-bold text-slate-900 mb-4">제 4 조 (면책조항)</h3>
+              <p>
+                회사는 천재지변, 분산 서비스 거부 공격(DDoS), 호스팅 장애 등 불가항력으로 인해 서비스를 제공할 수 없는 경우에는 책임을 지지 않으며, 회원이 서비스를 이용하여 기대하는 이익이나 개인적 소셜 네트워킹 결과에 대해 보증하지 않습니다.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 개인정보처리방침 (Privacy) Fullscreen Popup */}
+      {isPrivacyOpen && (
+        <div className="fixed inset-0 z-[10000] bg-white flex flex-col animate-in fade-in duration-500 overflow-y-auto">
+          {/* Header */}
+          <div className="flex-shrink-0 w-full p-6 border-b border-outline/10 flex justify-between items-center bg-slate-50">
+            <h2 className="text-xl font-extrabold text-slate-900 font-headline">개인정보처리방침</h2>
+            <button 
+              onClick={() => setIsPrivacyOpen(false)}
+              className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-200/80 hover:bg-slate-200 text-slate-700 transition-all animate-none"
+            >
+              <span className="material-symbols-outlined text-[24px]">close</span>
+            </button>
+          </div>
+          {/* Content */}
+          <div className="flex-1 bg-white p-8 md:p-16 max-w-4xl mx-auto w-full">
+            <div className="prose prose-slate max-w-none space-y-6 text-left text-sm text-slate-700 leading-relaxed">
+              <h3 className="text-2xl font-bold text-slate-900 mb-4">1. 수집하는 개인정보 항목</h3>
+              <p>
+                회사는 회원가입, 원활한 고객 상담, 유료 서비스 제공 등을 위해 아래와 같은 개인정보를 수집하고 있습니다:
+              </p>
+              <ul className="list-disc pl-6 space-y-1 text-left">
+                <li>필수항목: 이메일 주소, 비밀번호, 닉네임, 프로필 사진 URL</li>
+                <li>선택항목: 연령대, 선호 지역, 주 활동 파트(리더/팔로워)</li>
+                <li>소셜 로그인 시: 제공업체(Google, Apple 등)로부터 전달받는 고유 식별값 및 프로필 명 정보</li>
+              </ul>
+
+              <h3 className="text-2xl font-bold text-slate-900 mb-4">2. 개인정보의 수집 및 이용 목적</h3>
+              <p>
+                회사는 수집한 개인정보를 다음의 목적을 위해 활용합니다:
+              </p>
+              <ul className="list-disc pl-6 space-y-1 text-left">
+                <li>서비스 제공에 따른 본인 인증, 예약 및 결제 대행</li>
+                <li>글로벌 탱고 커뮤니티 파트너 추천 및 매칭 서비스 고도화</li>
+                <li>이벤트 알림 수신 동의자에 대한 맞춤 피드 전송</li>
+              </ul>
+
+              <h3 className="text-2xl font-bold text-slate-900 mb-4">3. 개인정보의 보유 및 파기</h3>
+              <p>
+                회원의 개인정보는 서비스 탈퇴 시 지체 없이 파기되는 것을 원칙으로 합니다. 단, 전자상거래법 등 관계법령의 규정에 의하여 보존할 필요가 있는 경우 해당 법령이 정한 기간 동안 보관 후 안전하게 영구 삭제됩니다.
+              </p>
+            </div>
           </div>
         </div>
       )}

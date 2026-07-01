@@ -419,7 +419,7 @@ export default function GlobalNavigation(props: { children: React.ReactNode }) {
                   {/* 그룹 컨테이너: 위 라벨 + 아래 메뉴 */}
                   <div className="flex flex-col shrink-0">
                     {/* 그룹 라벨 (단순 정보사항) */}
-                    <span className="text-[9px] font-semibold text-slate-300 uppercase tracking-wider px-1 pb-0.5 select-none">
+                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider px-1 pb-0.5 select-none">
                       {t(group.section)}
                     </span>
                     {/* 메뉴 항목들 가로 나열 */}
@@ -456,12 +456,12 @@ export default function GlobalNavigation(props: { children: React.ReactNode }) {
                             className={`shrink-0 flex flex-col items-center justify-center w-[50px] h-[50px] transition-all duration-200 ${
                               isActive
                                 ? 'text-[#007AFF]'
-                                : 'text-slate-500 hover:text-slate-700 active:bg-slate-50'
+                                : 'text-slate-600 hover:text-slate-700 active:bg-slate-50'
                             }`}
                           >
                             <span
                               className="material-symbols-outlined !text-[22px] leading-none"
-                              style={{ fontVariationSettings: isActive ? "'FILL' 1, 'wght' 400" : "'FILL' 0, 'wght' 300" }}
+                              style={{ fontVariationSettings: isActive ? "'FILL' 1, 'wght' 500" : "'FILL' 0, 'wght' 400" }}
                             >
                               {item.icon}
                             </span>

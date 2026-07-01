@@ -5,12 +5,14 @@ import { useSearchParams } from 'next/navigation';
 import AiTryOnStudio from '@/components/tryon/AiTryOnStudio';
 import AiLessonHome from '@/components/lesson/AiLessonHome';
 import AiPartnerMatch from '@/components/partner/AiPartnerMatch';
+import RhythmWheelPage from '@/app/admin/lab/rhythm-training/rhythm-wheel/page';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useNavigation } from '@/components/providers/NavigationProvider';
 
 const AI_TABS = [
   { key: 'tryon', label: 'nav.ai_tryon', icon: 'checkroom' },
   { key: 'lesson', label: 'nav.ai_lesson', icon: 'school' },
+  { key: 'rhythm', label: 'nav.rhythm_training', icon: 'music_note' },
   { key: 'match', label: 'nav.partner_match', icon: 'favorite' },
 ] as const;
 
@@ -36,12 +38,6 @@ function AiLabContent() {
                 : 'bg-slate-50/50 text-slate-500 border-slate-100 hover:bg-slate-100/80'
             }`}
           >
-            <span
-              className="material-symbols-outlined !text-[14px]"
-              style={{ fontVariationSettings: activeTab === tab.key ? "'FILL' 1, 'wght' 500" : "'FILL' 0, 'wght' 400" }}
-            >
-              {tab.icon}
-            </span>
             {t(tab.label)}
           </button>
         ))}
@@ -55,6 +51,7 @@ function AiLabContent() {
     <>
       {activeTab === 'tryon' && <AiTryOnStudio initialProductId={productId} />}
       {activeTab === 'lesson' && <AiLessonHome />}
+      {activeTab === 'rhythm' && <RhythmWheelPage />}
       {activeTab === 'match' && (
         <div className="container mx-auto px-4 py-6 max-w-lg pb-24">
           <AiPartnerMatch />

@@ -598,7 +598,7 @@ export const en: Record<string, string> = {
     'home.nominations_open': 'Nominations open during live events.',
     'home.footer_rights': '©2026 World of Community. All rights reserved',
 
-    'home.activity_spotlight': 'Activity Spotlight',
+    'home.activity_spotlight': "Today's Highlights",
     'social.tab_slide': 'Slide',
     'social.tab_list': 'List',
     'social.tab_weekly': '1 Week',
@@ -5237,6 +5237,7 @@ export const en: Record<string, string> = {
     'fys.cancel_failed': 'An error occurred while cancelling your registration.',
 
     // AI Virtual Try-On
+    'nav.rhythm_training': 'Rhythm Training',
     'nav.ai_tryon': 'AI Try-On',
     'ai_tryon.title': 'AI Virtual Try-On',
     'ai_tryon.upload_photo': 'My Photo',

@@ -861,7 +861,7 @@ export const kr: Record<string, string> = {
     'feed.style_italic': '기울임',
     'feed.style_uppercase': '대문자',
 
-    'home.activity_spotlight': '활동 하이라이트',
+    'home.activity_spotlight': '오늘의 하이라이트',
     'social.tab_slide': '슬라이드',
     'social.tab_list': '목록',
     'social.tab_weekly': '1주일',
@@ -5236,6 +5236,7 @@ export const kr: Record<string, string> = {
     'fys.cancel_failed': '신청 취소 중 오류가 발생했습니다.',
 
     // AI Virtual Try-On
+    'nav.rhythm_training': '리듬연습',
     'nav.ai_tryon': 'AI 착장',
     'ai_tryon.title': 'AI 가상 착장',
     'ai_tryon.upload_photo': '내 사진',

@@ -1473,13 +1473,242 @@ async function run() {
   const finalJinjuDjs = [
     { date: '2026-07-02', djName: 'Rodrigo', djNameNative: '로드리고', id: 'dj-rodrigo-20260702' }
   ];
-  await db.collection('socials').doc('jinju_tangopeople_thursday_milonga').update({
+  await db.collection('socials').doc('jinju_tangopeople_thursday_milonga').set({
     imageUrl: jinjuUrl,
     djs: finalJinjuDjs,
     djName: 'Rodrigo',
     djNameNative: '로드리고',
     description: '335번째 진주밀롱가 (Jinju Milonga)\n\n• 일시: 매주 목요일 PM 8:00 ~ 11:00\n• 7/2 (목) DJ: 로드리고 (Rodrigo)\n• 연락처: 루핀 (010.2545.2499)\n• 장소: 탱고피플 (경남 진주시 평거로 7 3층)\n• 입장료: 10,000원'
-  });
+  }, { merge: true });
+
+  // === 5단계: 추가 7월 첫째/셋째 주 소셜 일정 및 포스터 연동 ===
+  console.log('Applying additional 7/1~7/17 social schedules...');
+
+  // ① 밀롱가 씨엠쁘레 (Milonga Siempre)
+  const siempreUrl = await uploadImage('media__1782830191616.jpg', 'kv30qNOhxpmMlo7fpzAl');
+  const siempreDjs = [
+    { date: '2026-07-01', djName: 'Jorge', djNameNative: '호르헤', id: 'dj-jorge-20260701' }
+  ];
+  await db.collection('socials').doc('kv30qNOhxpmMlo7fpzAl').set({
+    imageUrl: siempreUrl,
+    djs: siempreDjs,
+    djName: 'Jorge',
+    djNameNative: '호르헤',
+    instructorName: 'Miseon',
+    instructorNameNative: '미선',
+    description: '밀롱가 씨엠쁘레 (Milonga Siempre)\n\n• 일시: 매주 수요일 낮 13:00 ~ 16:00\n  - 13:00 ~ 13:50: 미선의 특강 (강사: 미선)\n  - 14:00 ~ 16:00: 밀롱가 (DJ: 호르헤)\n  - 12:00 ~ : 밀롱가 특강 (수강료 별도)\n• 입장료: 수업+밀롱가 2만원 / 밀롱가만 1.3만원 (정회원 할인제도 운영)\n• 문의: 010-7745-4324\n• 장소: 또도땅고 (Todo Tango, 서울 강남구 언주로172길 7 B1)\n\n연애보다 진한 낭만을, 또도 땅고에서 즐겨보세요.'
+  }, { merge: true });
+
+  // ② 제주 화양연화 밀롱가 (Milonga Hwayangyeonhwa)
+  const hwayangUrl = await uploadImage('media__1782830246142.png', 'popup_jeju_hwajung_20260704');
+  const hwayangDjs = [
+    { date: '2026-07-04', djName: 'Flow', djNameNative: '플로우', id: 'dj-flow-20260704' }
+  ];
+  await db.collection('socials').doc('popup_jeju_hwajung_20260704').set({
+    imageUrl: hwayangUrl,
+    djs: hwayangDjs,
+    djName: 'Flow',
+    djNameNative: '플로우',
+    organizerId: 'manual_polo',
+    organizerName: 'Polo',
+    organizerNameNative: '폴로',
+    description: '화양연화 밀롱가 (Milonga Hwayangyeonhwa)\n\n• 일시: 2026년 7월 4일 (토요일) PM 7:00 ~ 10:00\n• DJ: 플로우 (Flow)\n• Org: 폴로 (010-9707-7780)\n• 입장료: 10,000원\n• 장소: 위플 스테이 2층 (제주 제주시 연동 260-25)\n• 주차: 호텔옆 전용주차장 무료 이용\n\n제주 여행 오시면 슈즈만 챙기세요~~^^'
+  }, { merge: true });
+
+  // ③ 부산 금똥밀 3주년 마지막 파티 (Geum Ttong Milonga)
+  const geumttongUrl = await uploadImage('media__1782832744839.png', 'popup_busan_ideal_geumttong_20260717');
+  const geumttongDjs = [
+    { date: '2026-07-17', djName: 'Ston', djNameNative: '스톤', id: 'dj-ston-20260717' }
+  ];
+  await db.collection('socials').doc('popup_busan_ideal_geumttong_20260717').set({
+    imageUrl: geumttongUrl,
+    djs: geumttongDjs,
+    djName: 'Ston',
+    djNameNative: '스톤',
+    startTime: '15:00', // 포스터 시간 반영
+    endTime: '19:00',
+    description: '금똥밀 3주년 & 마지막 파티 (Friday Ddong Party)\n\n• 일시: 7월 17일 (금) 15:00 ~ 19:00 (제헌절 공휴일)\n• DJ: 스톤 (Ston)\n• 장소: 이데알 (Ideal Studio, 부산 부산진구 부전동 241-41 3층)\n• 입장료: 11,000원\n\n금똥밀 3주년, 그리고 마지막 밤을 함께해 주세요 🌙'
+  }, { merge: true });
+
+  // ④ 창원 헨땅 에스뻬라 밀롱가 (Esperar Milonga)
+  const henttangUrl = await uploadImage('media__1782832852377.png', 'changwon_minoche_friday_henttang');
+  const henttangDjs = [
+    { date: '2026-07-03', djName: 'Ston', djNameNative: '스톤', id: 'dj-ston-20260703' }
+  ];
+  await db.collection('socials').doc('changwon_minoche_friday_henttang').set({
+    imageUrl: henttangUrl,
+    djs: henttangDjs,
+    djName: 'Ston',
+    djNameNative: '스톤',
+    endTime: '24:00', // 연장 시간 반영
+    description: '창원 헨땅 에스뻬라 밀롱가 (Esperar Milonga)\n\n• 일시: 2026년 7월 3일 (금) PM 8:30 ~ 12:00\n• DJ: 스톤 (Ston)\n• 입장료: 11,000원\n• 장소: 미노체 (Tango Club Mi Noche, 창원시 마산합포구 가포로 25 B1)\n• 특이사항: 헨땅 23대 매니저 이·취임식 (매니저: 래빗), 라벨르 드레스 오픈마켓\n\n새로운 시작, 새로운 설렘! 헨땅 23대 운영진 출범 기념 밀롱가에 여러분을 초대합니다.'
+  }, { merge: true });
+
+  // ⑤ 청주 라플라타 목요 밀롱가 (Milonga La Plata)
+  const laplataUrl = await uploadImage('media__1782832960281.jpg', 'ezGoPc7VBQGwd2fpA7Ul');
+  const laplataDjs = [
+    { date: '2026-07-02', djName: 'Sofia Yeoreum', djNameNative: '소피아 여름', id: 'dj-sofia-yeoreum-20260702' }
+  ];
+  await db.collection('socials').doc('ezGoPc7VBQGwd2fpA7Ul').set({
+    imageUrl: laplataUrl,
+    djs: laplataDjs,
+    djName: 'Sofia Yeoreum',
+    djNameNative: '소피아 여름',
+    description: '청주 라플라타 목요 밀롱가 (Milonga La Plata)\n\n• 일시: 2026년 7월 2일 (목) PM 8:30 ~ 11:30\n• DJ: 소피아 여름 (Sofia Yeoreum)\n• 입장료: 10,000원\n• 장소: 아우라 스튜디오 (Studio AURA, 충청북도 청주시 서원구 사창동 474-3 3층)\n• 계좌: 카카오 3333-14-3960061 조미화'
+  }, { merge: true });
+
+  // ⑥ 부산 선셋 밀롱가 (Sunset Milonga)
+  const sunsetUrl = await uploadImage('media__1782832984983.jpg', 'popup_busan_ideal_sunset_20260704');
+  const sunsetDjs = [
+    { date: '2026-07-04', djName: 'Alu', djNameNative: '알루', id: 'dj-alu-20260704' }
+  ];
+  await db.collection('socials').doc('popup_busan_ideal_sunset_20260704').set({
+    imageUrl: sunsetUrl,
+    djs: sunsetDjs,
+    djName: 'Alu',
+    djNameNative: '알루',
+    description: '부산 선셋 밀롱가 (Sunset Milonga)\n\n• 일시: 2026년 7월 4일 (토) PM 7:00 ~ 11:00 (매월 첫째 토요일)\n  - 17:00 ~ 18:30: 밀롱가 전 비스트 강사의 알쓸음잡 수업\n• DJ: 알루 (Alu)\n• Org: 선셋 (Sunset)\n• 입장료: 12,000원\n• 장소: 이데알 스튜디오 (IDEAL 3층, 부산 부산진구 부전동 241-41)'
+  }, { merge: true });
+
+  // ⑦ 부산 부3밀 (Enjoy Bu3mil)
+  const bu3milUrl = await uploadImage('media__1782833085283.png', 'busan_detango_sunday_bu3mil');
+  const bu3milDjs = [
+    { date: '2026-07-05', djName: 'Nero Kim', djNameNative: '네로', id: 'dj-nero-20260705' }
+  ];
+  await db.collection('socials').doc('busan_detango_sunday_bu3mil').set({
+    imageUrl: bu3milUrl,
+    djs: bu3milDjs,
+    djName: 'Nero Kim',
+    djNameNative: '네로',
+    description: '부산 데땅고 엔조이 부3mil (1,3,5주차 일요일 16:00 ~ 20:00)\n\n• 일시: 2026년 7월 5일 (일) PM 4:00 ~ 8:00 (3시 조기 오픈, 차/음악 감상 가능)\n• DJ: 네로 (Nero Kim)\n• Org: 징징이 (Zingzing Lee)\n• 장소: 카페데탱고 (Café de Tango, 부산 남구 용소로 40 B1)'
+  }, { merge: true });
+
+  // ⑧ 대구 디디디 (Daegu Dia Doya DDD)
+  const dddUrl = await uploadImage('media__1782833215667.png', 'daegu_dia_wednesday_ddd');
+  const dddDjs = [
+    { date: '2026-07-01', djName: 'Doya', djNameNative: '도야', id: 'dj-doya-20260701' }
+  ];
+  await db.collection('socials').doc('daegu_dia_wednesday_ddd').set({
+    imageUrl: dddUrl,
+    djs: dddDjs,
+    djName: 'Doya',
+    djNameNative: '도야',
+    description: '대구 DIA 수DDD\n\n• 일시: 2026년 7월 1일 (수) PM 9:00 ~ 24:00\n• DJ: 도야 (Doya)\n• Org: 도야도야 (010-2980-2935)\n• 입장료: 10,000원 (수요일 수업 수강자 5,000원)\n• 장소: 탱고카페 디아 (Tango Cafe Dia, 대구 북구 침산로 168 엠브로타워 507호)'
+  }, { merge: true });
+
+  // ⑨ 부산 이뚜 (Milonga yTu)
+  const ytuUrl = await uploadImage('media__1782833409210.png', 'busan_studio242_thursday_ytu');
+  const ytuDjs = [
+    { date: '2026-07-02', djName: 'Woongi', djNameNative: '웅이', id: 'dj-woongi-20260702' },
+    { date: '2026-07-09', djName: 'Rhea', djNameNative: '레아', id: 'dj-rhea-20260709' },
+    { date: '2026-07-16', djName: 'Zingzing', djNameNative: '징징', id: 'dj-zingzing-20260716' },
+    { date: '2026-07-23', djName: 'Lluvia', djNameNative: '유비아', id: 'dj-lluvia-20260723' },
+    { date: '2026-07-30', djName: 'Teo', djNameNative: '테오', id: 'dj-teo-20260730' }
+  ];
+  await db.collection('socials').doc('busan_studio242_thursday_ytu').set({
+    imageUrl: ytuUrl,
+    djs: ytuDjs,
+    djName: 'Woongi',
+    djNameNative: '웅이',
+    description: '부산 스튜디오242 yTu\n\n• 일시: 매주 목요일 PM 8:30 ~ 11:30\n• 7월 DJ 라인업:\n  - 7/2: 웅이 (생일 축하밀)\n  - 7/9: 레아 (드레스코드: 시스루)\n  - 7/16: 징징 (맛있는 떡볶이밀)\n  - 7/23: 유비아 (시원한 비어밀)\n  - 7/30: 테오 (AM플러스밀)\n• Org: 안나 (Anna)\n• 장소: 스튜디오 242 (Studio 242, 부산 연제구 중앙대로 1039-1)'
+  }, { merge: true });
+
+  // ⑩ 대전 라붐 화요 밀롱가 (La Boom Tuesday Milonga)
+  const laboomUrl = await uploadImage('media__1782833359821.png', 'daejeon_laboom_tuesday_milonga');
+  const laboomDjs = [
+    { date: '2026-06-30', djName: 'Sarah', djNameNative: '세라', id: 'dj-sarah-20260630' }
+  ];
+  await db.collection('socials').doc('daejeon_laboom_tuesday_milonga').set({
+    imageUrl: laboomUrl,
+    djs: laboomDjs,
+    djName: 'Sarah',
+    djNameNative: '세라',
+    description: '대전오나다 라붐 화요밀롱가\n\n• 일시: 2026년 6월 30일 (화요일) PM 8:00 ~ 11:30\n• DJ: 세라 (Sarah)\n• Staff: 에비타 (Evita)\n• 입장료: 12,000원 (계좌: 농협 423 02 020908 기영호)\n• 문의: 대전탱고 010-5718-9593\n• 장소: 라붐 (Tango Bar La Boom, 대전 유성구 대학로81번길 32-11 덕일빌딩 B1)'
+  }, { merge: true });
+
+  // ⑪ 강남탱고판 12주년 기념 파티 (GTP 12th Anniversary)
+  const gtpUrl = await uploadImage('media__1782833382562.jpg', 'gtp_12th_anniversary');
+  const gtpDjs = [
+    { date: '2026-07-17', djName: 'Gonz', djNameNative: '곤즈', id: 'dj-gonz-20260717' }
+  ];
+  await db.collection('socials').doc('gtp_12th_anniversary').set({
+    type: 'popup',
+    subCategory: 'milonga',
+    title: 'GTP 12th Anniversary Party',
+    titleNative: 'GTP 12주년 기념 파티',
+    date: '2026-07-17',
+    startTime: '19:30',
+    endTime: '24:00',
+    venueId: 'jNio0nAQ8C4xFb64zu0M', // 클럽 판
+    venueName: 'Club PAN',
+    venueNameNative: '클럽 판',
+    imageUrl: gtpUrl,
+    djName: 'Gonz',
+    djNameNative: '곤즈',
+    djs: gtpDjs,
+    organizerId: 'manual_pandora',
+    organizerName: 'Pandora',
+    organizerNameNative: '판도라',
+    description: '강남탱고판(GTP) 12주년 기념 파티 🎉\n\n• 일시: 2026년 7월 17일 (금) 19:30 ~ 24:00 (오픈 19:00)\n• DJ: 곤즈 (Gonz / 최성곤)\n• MC: 요노 (Yono)\n• 스페셜 작가: 오! (Oh!)\n• 드레스코드: 파티 플렉스 (Party Flex)\n• 혜택: 베스트 드레서 30만원 마라비샤 쿠폰 지급\n• 입장료: 30,000원 (후원 테이블 100,000원, 예매 얼리버드 6/30 마감)\n• 문의: 판도라 (010-8709-0340)\n• 장소: 클럽 판 탱고 (서울 강남구 강남대로 595 B1)',
+    country: 'KR',
+    city: 'SEOUL'
+  }, { merge: true });
+
+  // ⑫ 서울 오초 밀롱가 로까 (Milonga Loca)
+  const locaUrl = await uploadImage('media__1782833626903.jpg', 'O6Oql4EXX4ZboWkQnBwD');
+  const locaDjs = [
+    { date: '2026-07-04', djName: 'TBA', djNameNative: '미정', id: 'dj-tba-20260704' }
+  ];
+  await db.collection('socials').doc('O6Oql4EXX4ZboWkQnBwD').set({
+    imageUrl: locaUrl,
+    djs: locaDjs,
+    description: '밀롱가 로까 (Milonga Loca In Seoul)\n\n• 일시: 2026년 7월 4일 (토요일) 21:00 오픈\n• 특이사항: 옷장털기 2탄 탱고 드레스 벼룩시장\n  - 셀러/스태프: 스텔라 (Stella), 켈리 (Kelly), 아녜스 (Agnes), 포포 (Popo), 세레나 (Serena)\n• 장소: 탱고클럽 오초 (Tango Club Ocho, 서울 마포구 월드컵북로2길 57 지하1층)'
+  }, { merge: true });
+
+  // ⑬ 서울 마포 브루호 수요 쁘락띠롱가 (Tango Brujo Practilonga)
+  const brujoUrl = await uploadImage('media__1782833547812.jpg', 'mapo_brujo_wednesday_practilonga');
+  await db.collection('socials').doc('mapo_brujo_wednesday_practilonga').set({
+    type: 'regular',
+    subCategory: 'milonga',
+    title: 'Tango Brujo Practilonga',
+    titleNative: '수요 쁘락띠롱가',
+    dayOfWeek: 3,
+    recurrence: 'every',
+    startTime: '19:30',
+    endTime: '22:30',
+    venueId: 'dFHFZ2z12DMVTrGxWiMm', // 탱고 브루호
+    venueName: 'Tango Brujo',
+    venueNameNative: '탱고브루호',
+    imageUrl: brujoUrl,
+    description: '심장이 걷는 밤, 탱고 쁘락띠롱가\n\n• 일시: 매주 수요일 PM 7:30 ~ 10:30\n• 입장료: 8,000원\n• 장소: 탱고브루호 스튜디오 (서울 마포구 잔다리로 68 B1)\n\n춤도 연습도 놓칠수 없다면 탱고맛집 브루호에서 💚\n연습 중 문의사항이나 가이드가 필요하신 분은 편하게 말씀해주세요.',
+    country: 'KR',
+    city: 'SEOUL'
+  }, { merge: true });
+
+  // ⑭ 서울 마포 오뜨라 밀림 3주년 파티 (Millim 3rd Anniversary)
+  const millimUrl = await uploadImage('media__1782833450284.png', 'popup_mapo_otra_millim_20260704');
+  const millimDjs = [
+    { date: '2026-07-04', djName: 'London Hong', djNameNative: '런던홍', id: 'dj-london-hong-20260704' }
+  ];
+  await db.collection('socials').doc('popup_mapo_otra_millim_20260704').set({
+    type: 'popup',
+    subCategory: 'milonga',
+    title: 'Millim 3rd Anniversary Party',
+    titleNative: '밀림 3주년 기념 파티',
+    date: '2026-07-04',
+    startTime: '19:30',
+    endTime: '23:00',
+    venueId: 'pCX88Jyhy0EzxbyBi4Nb', // 오뜨라
+    venueName: 'Otra',
+    venueNameNative: '오뜨라',
+    imageUrl: millimUrl,
+    djName: 'London Hong',
+    djNameNative: '런던홍',
+    djs: millimDjs,
+    description: '밀림 3주년 기념 파티 (Millim 3rd Anniversary Party) 🏤\n\n• 일시: 2026년 7월 4일 (토) PM 7:30 ~ 11:00\n• DJ: 런던홍 (London Hong)\n• Managers: 블랑, 탈린, 제이크, 노바, 릴라, 샤샤, 티제이, 별\n• 테이블 예약: Kakaotalk ID (SPL26) 또는 탈린에게 메시지\n• 장소: 오뜨라 탱고 클럽 (서울 마포구 홍익로5안길 20 B1)\n\n여러분들의 성원에 힘입어 밀림이 3주년을 맞이했습니다. 오셔서 축하하고 즐겨주세요.',
+    country: 'KR',
+    city: 'SEOUL'
+  }, { merge: true });
 }
 
 run().then(() => {
