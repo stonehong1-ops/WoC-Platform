@@ -18,6 +18,10 @@ export default function InAppBrowserGuard() {
   useEffect(() => {
     if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
 
+    // PWA standalone 또는 모바일 앱 환경 시 가드 간섭 완전 제거
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
+    if (isStandalone) return;
+
     // PT, PT1 및 app 경로는 인앱 브라우저 가드 대상에서 제외
     const path = window.location.pathname;
     if (path === '/pt' || path === '/pt1' || path === '/app' || path.startsWith('/pt/') || path.startsWith('/pt1/') || path.startsWith('/app/')) {
