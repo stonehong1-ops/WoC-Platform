@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { galleryService, GalleryPost } from '@/lib/firebase/galleryService';
+import { getSafeStorageUrl } from '@/lib/utils/storageUtils';
 
 export default function LivePortalHome() {
   const { t } = useLanguage();
@@ -11,6 +12,11 @@ export default function LivePortalHome() {
   
   const [posts, setPosts] = useState<GalleryPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // 실시간 라이브 피드 데이터 구독
   useEffect(() => {
@@ -133,6 +139,10 @@ export default function LivePortalHome() {
   const recommendLives = getRecommendLives();
   const recentVideos = getRecentVideos();
 
+  if (!mounted) {
+    return <div className="bg-slate-50 min-h-screen pb-24 font-manrope" />;
+  }
+
   return (
     <div className="bg-slate-50 min-h-screen pb-24 font-manrope">
       {/* 1) 상단 타이틀 영역 */}
@@ -149,7 +159,7 @@ export default function LivePortalHome() {
       </div>
 
       {/* 메인 스크롤 콘텐츠 */}
-      <div className="px-page_margin space-y-6">
+      <div className="px-page-margin space-y-6">
         
         {/* 2) 내 주변 라이브 - 폰에서 흐릿하지 않도록 더 진하고 채도 높은 보라색 그라데이션 적용 */}
         <section className="bg-gradient-to-br from-[#4D24F3] to-[#805CFF] rounded-[24px] p-5 shadow-lg shadow-purple-200/50 relative overflow-hidden">
@@ -193,7 +203,7 @@ export default function LivePortalHome() {
                   <div className="flex items-center gap-3">
                     <div className="relative w-11 h-11 rounded-full overflow-hidden flex-shrink-0 border border-slate-100">
                       <img 
-                        src={item.img} 
+                        src={getSafeStorageUrl(item.img)} 
                         alt={item.title}
                         className="w-full h-full object-cover"
                       />
@@ -250,7 +260,7 @@ export default function LivePortalHome() {
               className="relative aspect-[2.1/1] rounded-2xl overflow-hidden group cursor-pointer shadow-sm border border-slate-100"
             >
               <img 
-                src={recommendLives.main.img} 
+                src={getSafeStorageUrl(recommendLives.main.img)} 
                 alt={recommendLives.main.title} 
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-103"
               />
@@ -287,7 +297,7 @@ export default function LivePortalHome() {
                 className="relative aspect-[1.3/1] rounded-2xl overflow-hidden group cursor-pointer shadow-sm border border-slate-100"
               >
                 <img 
-                  src={recommendLives.sub1.img} 
+                  src={getSafeStorageUrl(recommendLives.sub1.img)} 
                   alt={recommendLives.sub1.title} 
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-103"
                 />
@@ -316,7 +326,7 @@ export default function LivePortalHome() {
                 className="relative aspect-[1.3/1] rounded-2xl overflow-hidden group cursor-pointer shadow-sm border border-slate-100"
               >
                 <img 
-                  src={recommendLives.sub2.img} 
+                  src={getSafeStorageUrl(recommendLives.sub2.img)} 
                   alt={recommendLives.sub2.title} 
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-103"
                 />
@@ -356,14 +366,14 @@ export default function LivePortalHome() {
           </div>
 
           {/* 가로 스크롤 리스트 */}
-          <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-page_margin px-page_margin">
+          <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-page-margin px-page-margin">
             {recentVideos.map((video, idx) => (
               <div 
                 key={video.id || idx}
                 onClick={handleEnterLive}
                 className="relative w-24 aspect-[0.7/1] rounded-xl overflow-hidden group cursor-pointer shadow-sm border border-slate-100 flex-shrink-0"
               >
-                <img src={video.img} alt={`최근영상 ${idx}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                <img src={getSafeStorageUrl(video.img)} alt={`최근영상 ${idx}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                 <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
                   <div className="w-6 h-6 rounded-full bg-white/35 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white group-hover:bg-white group-hover:text-primary transition-all">
                     <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>

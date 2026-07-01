@@ -18,6 +18,7 @@ import {
 import { Social } from '@/types/social';
 import PosterOverlay from '@/components/social/poster/PosterOverlay';
 import { isVideoUrl, getDjDisplay } from '@/lib/utils/socialUtils';
+import { getSafeStorageUrl } from '@/lib/utils/storageUtils';
 
 export default function SocialPageContent() {
   const router = useRouter();
@@ -141,7 +142,7 @@ export default function SocialPageContent() {
                         preload="metadata"
                       />
                     ) : (
-                      <img src={social.imageUrl} alt="" className="w-full h-full object-cover brightness-[0.95]" />
+                      <img src={getSafeStorageUrl(social.imageUrl)} alt="" className="w-full h-full object-cover brightness-[0.95]" />
                     )}
                     {!hasPoster && <div className="absolute inset-0 bg-gradient-to-t from-white via-white/85 to-white/40" />}
                   </div>
@@ -211,7 +212,7 @@ export default function SocialPageContent() {
                       preload="metadata"
                     />
                   ) : (
-                    <img src={social.imageUrl} alt="" className="w-full h-full object-cover" />
+                    <img src={getSafeStorageUrl(social.imageUrl)} alt="" className="w-full h-full object-cover" />
                   )
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-slate-50 text-slate-300">
@@ -271,7 +272,7 @@ export default function SocialPageContent() {
                       preload="metadata"
                     />
                   ) : (
-                    <img src={social.imageUrl} alt="" className="w-full h-full object-cover" />
+                    <img src={getSafeStorageUrl(social.imageUrl)} alt="" className="w-full h-full object-cover" />
                   )
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-slate-50 text-slate-300">
@@ -417,7 +418,7 @@ export default function SocialPageContent() {
                             {social.imageUrl ? (
                               isVideoUrl(social.imageUrl) ? (
                                 <video 
-                                  src={social.imageUrl} 
+                                  src={getSafeStorageUrl(social.imageUrl)} 
                                   className="w-full h-full object-cover" 
                                   muted 
                                   autoPlay 
@@ -426,7 +427,7 @@ export default function SocialPageContent() {
                                   preload="metadata"
                                 />
                               ) : (
-                                <img src={social.imageUrl} alt={social.title} className="w-full h-full object-cover" />
+                                <img src={getSafeStorageUrl(social.imageUrl)} alt={social.title} className="w-full h-full object-cover" />
                               )
                             ) : (
                               <div className="w-full h-full flex items-center justify-center">

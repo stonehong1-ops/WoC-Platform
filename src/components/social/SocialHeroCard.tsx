@@ -5,6 +5,7 @@ import { Social } from '@/types/social';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatCommunityName } from '@/app/social/constants/seoulRegions';
 import { isVideoUrl } from '@/lib/utils/socialUtils';
+import { getSafeStorageUrl } from '@/lib/utils/storageUtils';
 
 export function DualText({ text, subText, primaryClassName, secondaryClassName, containerClassName }: { text: string; subText?: string; primaryClassName?: string; secondaryClassName?: string; containerClassName?: string }) {
   const { language } = useLanguage();
@@ -61,7 +62,7 @@ export function SocialCardImage({ imageUrl, title }: { imageUrl?: string; title?
   return (
     <img 
       className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 md:group-hover:scale-110" 
-      src={imageUrl} 
+      src={getSafeStorageUrl(imageUrl)} 
       alt={title || 'Event poster'} 
       onError={() => setImageError(true)}
     />

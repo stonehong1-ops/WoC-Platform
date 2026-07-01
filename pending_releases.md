@@ -6,6 +6,7 @@
 ## 📌 배포 대기 중인 작업 목록 (Pending Releases)
 <!-- 아래 양식에 맞춰 완료된 작업을 누적해서 한 줄씩 기록해 주십시오. -->
 <!-- 양식 - [ ] YYYY-MM-DD | 작업자명 | 작업 요약 (예 - MyPage UI 개선 및 다국어 병행 추가) -->
+- [ ] 2026-07-01 | 개발 에이전트 | 모바일 PWA 환경 스타일 깨짐 교정(Tailwind page-margin 토큰 복구), 새로고침 Hydration mismatch 깜빡임 차단 및 소셜/추천 라이브의 구글 스토리지 비공식 경로 CORS 엑박 복구 유틸 바인딩
 
 
 ## 📌 배포 완료 내역 (Release History)

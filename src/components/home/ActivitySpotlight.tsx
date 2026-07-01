@@ -5,6 +5,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { socialService } from '@/lib/firebase/socialService';
 import { db } from '@/lib/firebase/clientApp';
 import { collectionGroup, getDocs, limit, query } from 'firebase/firestore';
+import { getSafeStorageUrl } from '@/lib/utils/storageUtils';
 
 interface SocialDisplay {
   title: string;
@@ -141,7 +142,7 @@ export default function ActivitySpotlight() {
                 <img 
                   alt={displaySocial.title} 
                   className="w-full h-full object-cover" 
-                  src={displaySocial.imageUrl}
+                  src={getSafeStorageUrl(displaySocial.imageUrl)}
                 />
               </div>
               <div>
@@ -192,7 +193,7 @@ export default function ActivitySpotlight() {
                 <img 
                   alt={displayClass.title} 
                   className="w-full h-full object-cover" 
-                  src={displayClass.imageUrl}
+                  src={getSafeStorageUrl(displayClass.imageUrl)}
                 />
               </div>
               <div>
